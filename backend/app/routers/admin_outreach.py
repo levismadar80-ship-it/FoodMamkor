@@ -13,13 +13,14 @@ import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models.models import OutreachLead, User
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     OutreachLeadCreate,
     OutreachLeadOut,
@@ -201,9 +202,17 @@ prefill_router = APIRouter(prefix="/register/producer/prefill", tags=["auth"])
 
 
 @prefill_router.get("/{token}", response_model=OutreachPrefillResponse)
-def get_prefill(token: str, db: Session = Depends(get_db)):
+# MEH-1724 F-4: unauthenticated endpoint returning lead PII (name, phone,
+# instagram, website, city). The 256-bit token makes brute force infeasible,
+# so this is defence-in-depth, not the primary control — it caps automated
+# probing of a PII surface. 30/hour is generous for the real flow (an owner
+# opening a prefill link from outreach and refreshing a few times).
+@limiter.limit("30/hour")
+def get_prefill(request: Request, token: str, db: Session = Depends(get_db)):
     """Public lookup — the token IS the auth. Returns 404 for invalid /
     expired tokens so the registration form just renders empty (no leak).
+
+    `request` is required by slowapi, which reads it via introspection.
     """
     if not token or len(token) < 16:
         raise HTTPException(status_code=404, detail="אסימון לא נמצא")

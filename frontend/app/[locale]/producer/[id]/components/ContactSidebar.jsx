@@ -12,6 +12,13 @@ export default function ContactSidebar({ producer, isVacation }) {
   return (
     <aside className="hidden lg:block">
       <div className="lg:sticky lg:top-24">
+        {/* MEH-1649: the MEH-1600 closed-state context line used to mount here,
+            directly above the card. It rendered as text floating on the cream
+            background, detached from the "שליחת הודעה" button it explains
+            (Sapir 27/07: "מוזר מה שכתוב מלמעלה"). It now lives inside
+            ContactCard under the primary CTA — one mount serving both
+            viewports. The sticky child and the <aside> are unchanged, so the
+            MEH-1546 sticky-travel constraint still holds. */}
         <ContactCard producer={producer} isVacation={isVacation} />
       </div>
     </aside>

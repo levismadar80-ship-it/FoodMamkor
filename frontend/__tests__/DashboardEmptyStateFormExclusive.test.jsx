@@ -21,8 +21,18 @@ vi.mock("next-intl", () => ({
 }));
 
 const push = vi.fn();
+// MEH-1639: the dashboard pages import Link/useRouter from the locale-aware
+// wrapper now, so the mock has to live on @/i18n/navigation. The
+// next/navigation mock below stays for useParams/useSearchParams, which
+// createNavigation does not export.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn() }),
+}));
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push, replace: vi.fn() }),
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>
+  ),
 }));
 
 // Stable identity — the pages' load effects depend on `user`; a fresh

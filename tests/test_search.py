@@ -165,6 +165,152 @@ class TestSmartSearchAutocomplete:
         assert body["categories"] == []
 
 
+def _make_cheese_fixture(db):
+    """MEH-1664 shared fixture: one Tel-Aviv cheese business + one Haifa
+    bakery that shares none of its terms.
+
+    Producer:    מחלבת השרון (תל אביב), category "גבינות עיזים"
+    Products:    "גבינת עיזים"  — the smichut form the query rules must reach
+                 "מארז מתנה" / desc "כולל יוגורט כבשים טרי" — description-only
+    Control:     מאפיית הבוקר (חיפה) — matches "חיפה" and nothing else.
+    """
+    cat = make_category(db, name="גבינות עיזים")
+    producer = make_producer(
+        db, name="מחלבת השרון", city="תל אביב", category=cat
+    )
+    db.add(
+        Product(
+            id=uuid.uuid4(),
+            producer_id=producer.id,
+            name="גבינת עיזים",
+            description="",
+        )
+    )
+    db.add(
+        Product(
+            id=uuid.uuid4(),
+            producer_id=producer.id,
+            name="מארז מתנה",
+            description="כולל יוגורט כבשים טרי",
+        )
+    )
+    control = make_producer(db, name="מאפיית הבוקר", city="חיפה")
+    db.commit()
+    return producer, control
+
+
+class TestHebrewTokenSearch:
+    """MEH-1664 — per-token matching: AND across tokens, OR across
+    (variant x field). Replaces single-substring ILIKE on both search paths.
+    """
+
+    def test_1_smichut_product_found_by_feminine_singular(self, client, db):
+        """"גבינה עיזים" finds the product "גבינת עיזים".
+
+        Neither word is a substring of the stored name in that form — the
+        ה-stem takes "גבינה" to "גבינ", which is. Pre-MEH-1664 this returned
+        nothing, because "גבינה עיזים" as one literal is not in the row.
+        """
+        _make_cheese_fixture(db)
+
+        resp = client.get("/search", params={"q": "גבינה עיזים"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()["products"]]
+        assert "גבינת עיזים" in names
+        assert "מארז מתנה" not in names
+
+    def test_2_reversed_word_order_finds_the_same_product(self, client, db):
+        """"עיזים גבינת" — reversed — finds it too. Word order is free
+        because the tokens are AND-ed independently, not matched as a run."""
+        _make_cheese_fixture(db)
+
+        resp = client.get("/search", params={"q": "עיזים גבינת"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()["products"]]
+        assert "גבינת עיזים" in names
+
+    def test_3_definite_article_finds_producer_on_producers_path(self, client, db):
+        """"הגבינה" on /producers?q= — prefix strip + stem, applied on the
+        listing path for the first time (MEH-252 only ever touched /search)."""
+        _make_cheese_fixture(db)
+
+        resp = client.get("/producers", params={"q": "הגבינה"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "מחלבת השרון" in names
+        assert "מאפיית הבוקר" not in names
+
+    def test_4_plural_query_finds_producer(self, client, db):
+        """"גבינות" finds the business through its category "גבינות עיזים".
+
+        Honest scope note: this passes on the literal variant, not the stem —
+        the ה/ת rule takes "גבינות" to "גבינו", which does NOT reach the
+        product's "גבינת". Plural->singular is the documented uncovered
+        direction (see test_hebrew_search.py
+        ::test_plural_to_singular_is_not_covered). What this test does lock is
+        that a plural query still resolves across the category source under
+        the new AND semantics.
+        """
+        _make_cheese_fixture(db)
+
+        resp = client.get("/producers", params={"q": "גבינות"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "מחלבת השרון" in names
+        assert "מאפיית הבוקר" not in names
+
+    def test_5_negative_and_across_tokens(self, client, db):
+        """AND proof: "גבינה חיפה" returns ZERO producers.
+
+        The cheese business matches "גבינה" but is in תל אביב; the Haifa
+        bakery matches "חיפה" but sells no cheese. Under the old OR-shaped
+        single-substring behaviour a widened query could surface either one —
+        under AND, neither qualifies. This is the test that would fail if a
+        future change ORs the tokens.
+        """
+        _make_cheese_fixture(db)
+
+        resp = client.get("/producers", params={"q": "גבינה חיפה"})
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_6_like_metacharacters_are_escaped(self, client, db):
+        """% and _ stay literal (MEH-1176) — 200, and no match-everything.
+
+        A bare "%" must not behave as a wildcard now that it flows through
+        the variant expansion; both endpoints escape every variant.
+        """
+        _make_cheese_fixture(db)
+
+        for wildcard in ("%", "_", "%%", "a_b"):
+            resp = client.get("/producers", params={"q": wildcard})
+            assert resp.status_code == 200, wildcard
+            assert resp.json() == [], wildcard
+
+            resp = client.get("/search", params={"q": wildcard})
+            assert resp.status_code == 200, wildcard
+            body = resp.json()
+            assert body["producers"] == [], wildcard
+            assert body["products"] == [], wildcard
+            assert body["cities"] == [], wildcard
+            assert body["categories"] == [], wildcard
+
+    def test_7_product_description_only_match_surfaces_producer(self, client, db):
+        """"יוגורט" appears ONLY in a product description.
+
+        Pre-MEH-1664 the /producers has_product EXISTS covered Product.name
+        alone, so this producer was reachable from /search but not from
+        /producers?q= — the path-unification half of the ticket.
+        """
+        _make_cheese_fixture(db)
+
+        resp = client.get("/producers", params={"q": "יוגורט"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "מחלבת השרון" in names
+        assert "מאפיית הבוקר" not in names
+
+
 class TestSearchDoSProtection:
     """MEH-145 — search query max_length=200 prevents DoS via oversized input."""
 

@@ -16,6 +16,8 @@
 // working unchanged.
 import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
+import { parseHours } from "./hours";
+import { producerPoints } from "./producerPoints.js";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -120,13 +122,17 @@ export function buildPageUrl(producer) {
     : `${SITE_URL}/producer/${producer.id}`;
 }
 
-// MEH-452: day-axis mapping for openingHoursSpecification. DAY_ABBR matches
-// the backend opening_hours string format ("Sun-Thu 09:00-18:00"); DAY_FULL
-// holds the schema.org canonical dayOfWeek values. Logic is copied (not
-// imported) from components/OpeningHours.jsx::parseHours — that file is a
-// client component with React/next-intl deps and a different output shape
-// (status map for the UI), so this stays a separate pure helper.
-const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// MEH-452: day-axis mapping for openingHoursSpecification. DAY_FULL holds the
+// schema.org canonical dayOfWeek values.
+//
+// MEH-1870: the parsing itself is NO LONGER copied here. It used to be, with
+// the stated reason that the parser lived in the client component
+// OpeningHours.jsx — but MEH-826 had already extracted it to lib/hours.js,
+// which is pure (no React, no next-intl), so the reason was stale and what
+// remained was two owners of one grammar. Extending the grammar for split
+// hours would have silently dropped every split day from the JSON-LD, because
+// this copy's anchored regex rejects the second range and `continue`s past the
+// whole entry. One owner now: lib/hours.js::parseHours.
 const DAY_FULL = [
   "Sunday",
   "Monday",
@@ -146,34 +152,21 @@ const DAY_FULL = [
  * rather than emitting an empty array.
  */
 function parseOpeningHoursSpec(raw) {
-  if (!raw || typeof raw !== "string") return null;
-  const map = {}; // dayIndex → { open, close }
-  const entries = raw.split(",").map((s) => s.trim()).filter(Boolean);
-
-  for (const entry of entries) {
-    const match = entry.match(/^([A-Za-z]+)(?:-([A-Za-z]+))?\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-    if (!match) continue;
-    const [, startDay, endDay, open, close] = match;
-    const startIdx = DAY_ABBR.findIndex((d) => d.toLowerCase() === startDay.toLowerCase());
-    if (startIdx === -1) continue;
-    const endIdx = endDay
-      ? DAY_ABBR.findIndex((d) => d.toLowerCase() === endDay.toLowerCase())
-      : startIdx;
-    if (endIdx === -1) continue;
-    const indices = endIdx >= startIdx
-      ? Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i)
-      : [startIdx];
-    for (const i of indices) map[i] = { open, close };
-  }
+  if (typeof raw !== "string") return null;
+  const map = parseHours(raw); // dayIndex → [{ open, close }, …]
+  if (!map) return null;
 
   const spec = [];
   for (let i = 0; i < 7; i++) {
-    if (map[i]) {
+    // MEH-1870: a day can carry several ranges. schema.org models that as
+    // several OpeningHoursSpecification entries sharing one dayOfWeek — there
+    // is no "two windows in one entry" form — so a lunch break emits two.
+    for (const range of map[i] ?? []) {
       spec.push({
         "@type": "OpeningHoursSpecification",
         dayOfWeek: DAY_FULL[i],
-        opens: map[i].open,
-        closes: map[i].close,
+        opens: range.open,
+        closes: range.close,
       });
     }
   }
@@ -260,11 +253,19 @@ export function buildJsonLd(producer, locale = "he") {
     if (deliveryCities.length > 0) business.areaServed = deliveryCities;
   }
 
-  if (!isDeliveryOnly && producer.lat && producer.lng) {
+  // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
+  // directly — producerPoints() still falls back to Producer.lat/lng when
+  // there is no usable location row, so today's producers are unaffected.
+  // Prefers the PRIMARY point when one exists — Producer.locations has no
+  // `order_by` (models.py:369), so points[0] is arbitrary DB row order, not
+  // necessarily the branch address this structured data should describe.
+  const geoPoints = isDeliveryOnly ? [] : producerPoints(producer);
+  const geoPoint = geoPoints.find((pt) => pt.location?.is_primary) ?? geoPoints[0];
+  if (geoPoint) {
     business.geo = {
       "@type": "GeoCoordinates",
-      latitude: producer.lat,
-      longitude: producer.lng,
+      latitude: geoPoint.lat,
+      longitude: geoPoint.lng,
     };
   }
 
@@ -539,6 +540,100 @@ export function buildEventJsonLd(event, locale = "he") {
   return {
     "@context": "https://schema.org",
     "@graph": [ev, buildBreadcrumbList(crumbs, `${eventUrl}#breadcrumb`)],
+  };
+}
+
+/**
+ * MEH-1935: JSON-LD for a diet landing page (/producers/diet/[dietSlug]).
+ *
+ * Emits a `@graph` of [ItemList, FAQPage, BreadcrumbList] from ONE
+ * <script type="application/ld+json">, mirroring the producer/event pattern.
+ * Callers must render it through serializeJsonLd() like every other site —
+ * this returns a plain object and never touches HTML itself.
+ *
+ * BreadcrumbList goes through the shared buildBreadcrumbList() owner (MEH-1062)
+ * rather than a fourth inline literal, per MEH-271's one-owner rule.
+ *
+ * The ItemList carries the businesses ACTUALLY rendered on the page (the SSR'd
+ * first page of the filtered grid), not the full filtered total — a structured
+ * -data list that claims items a crawler cannot see on the page is exactly the
+ * mismatch Google's Rich Results tests flag.
+ *
+ * @param {object}   args
+ * @param {string}   args.label     the diet label (H1) — from ATTRIBUTE_LABELS
+ * @param {string}   args.pageUrl   absolute, locale-correct page URL
+ * @param {string}   args.intro     the editorial intro paragraph
+ * @param {{question: string, answer: string}[]} args.faq
+ * @param {{name: string, url: string}[]} args.items rendered businesses
+ * @param {string}   args.locale
+ * @param {string}   args.producersUrl absolute URL of the /producers hub
+ * @param {string}   args.producersLabel breadcrumb label for the hub
+ */
+export function buildDietPageJsonLd({
+  label,
+  pageUrl,
+  intro,
+  faq = [],
+  items = [],
+  locale = "he",
+  producersUrl,
+  producersLabel,
+}) {
+  if (!label || !pageUrl) return null;
+
+  // next-intl's t.raw() returns the KEY PATH (a string) when a message is
+  // missing, not undefined — so a locale that lost its `faq` array would reach
+  // `.map` on a string and throw at render time. Coerce non-arrays to empty;
+  // the copy-contract test is what keeps a locale from silently losing it.
+  const questions = Array.isArray(faq) ? faq : [];
+  const entries = Array.isArray(items) ? items : [];
+
+  const itemList = {
+    "@type": "ItemList",
+    "@id": `${pageUrl}#itemlist`,
+    name: label,
+    description: intro || undefined,
+    numberOfItems: entries.length,
+    itemListElement: entries.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      url: it.url,
+    })),
+  };
+
+  // Google requires every FAQPage to carry at least one question; emitting an
+  // empty mainEntity is an invalid-structured-data error, so drop the entity
+  // entirely rather than shipping a hollow one.
+  const faqPage =
+    questions.length > 0
+      ? {
+          "@type": "FAQPage",
+          "@id": `${pageUrl}#faq`,
+          inLanguage: IN_LANGUAGE[locale] ?? IN_LANGUAGE.he,
+          mainEntity: questions.map((f) => ({
+            "@type": "Question",
+            name: f.question,
+            acceptedAnswer: { "@type": "Answer", text: f.answer },
+          })),
+        }
+      : null;
+
+  const crumbs = [
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+  ];
+  if (producersUrl && producersLabel) {
+    crumbs.push({ name: producersLabel, item: producersUrl });
+  }
+  crumbs.push({ name: label, item: pageUrl });
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      itemList,
+      ...(faqPage ? [faqPage] : []),
+      buildBreadcrumbList(crumbs, `${pageUrl}#breadcrumb`),
+    ],
   };
 }
 

@@ -1,0 +1,25 @@
+cards-375: [{"name":"משלוחים בלבד","badges":["delivery"],"genericDelivery":1,"deliveryOnlyPill":1,"deliveryChipTotal":2,"overflow":null},{"name":"חנות עם משלוח","badges":["delivery"],"genericDelivery":1,"deliveryOnlyPill":0,"deliveryChipTotal":1,"overflow":null},{"name":"משלוחים בלבד עם תגים","badges":["verified","recommended"],"genericDelivery":0,"deliveryOnlyPill":1,"deliveryChipTotal":1,"overflow":"+3"}]
+FAIL delivery-only-chip-total-375: {"actual":2,"expected":1}
+FAIL delivery-only-generic-badge-375: {"actual":1,"expected":0}
+PASS delivery-only-pill-375: {"actual":1,"expected":1}
+PASS physical-generic-badge-375: {"actual":1,"expected":1}
+PASS physical-no-pill-375: {"actual":0,"expected":0}
+overflow-listitems-before-375: ["משלוח","משלוח","","בחירת העורכת"]
+overflow-listitems-after-375: ["משלוח","משלוח","","בחירת העורכת","חדש","משלוח","מוצרים"]
+overflow-rows-375: ["חדש","משלוח","מוצרים"]
+overflow-label-375: "+3"
+FAIL overflow-rows-375: {"actual":["חדש","משלוח","מוצרים"],"expected":["חדש","מוצרים"]}
+FAIL overflow-label-value-375: {"actual":"+3","expected":"+2"}
+cards-1440: [{"name":"משלוחים בלבד","badges":["delivery"],"genericDelivery":1,"deliveryOnlyPill":1,"deliveryChipTotal":2,"overflow":null},{"name":"חנות עם משלוח","badges":["delivery"],"genericDelivery":1,"deliveryOnlyPill":0,"deliveryChipTotal":1,"overflow":null},{"name":"משלוחים בלבד עם תגים","badges":["verified","recommended"],"genericDelivery":0,"deliveryOnlyPill":1,"deliveryChipTotal":1,"overflow":"+3"}]
+FAIL delivery-only-chip-total-1440: {"actual":2,"expected":1}
+FAIL delivery-only-generic-badge-1440: {"actual":1,"expected":0}
+PASS delivery-only-pill-1440: {"actual":1,"expected":1}
+PASS physical-generic-badge-1440: {"actual":1,"expected":1}
+PASS physical-no-pill-1440: {"actual":0,"expected":0}
+overflow-listitems-before-1440: ["משלוח","משלוח","","בחירת העורכת"]
+overflow-listitems-after-1440: ["משלוח","משלוח","","בחירת העורכת","חדש","משלוח","מוצרים"]
+overflow-rows-1440: ["חדש","משלוח","מוצרים"]
+overflow-label-1440: "+3"
+FAIL overflow-rows-1440: {"actual":["חדש","משלוח","מוצרים"],"expected":["חדש","מוצרים"]}
+FAIL overflow-label-value-1440: {"actual":"+3","expected":"+2"}
+FAILURES: 8

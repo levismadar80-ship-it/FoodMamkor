@@ -1,23 +1,23 @@
 "use client";
 
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { EnvelopeSimple, Eye, LockSimple, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
-import { Link as LocaleLink } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
+import WhatsThis from "@/components/WhatsThis";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
-import { clampPercent } from "@/lib/percent";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
@@ -156,6 +156,10 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  // MEH-1773: explainer for the availability card below. Its twin lives on the
+  // order-window card in edit/page.js — the pair is the point, so if one moves
+  // the other has to follow.
+  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-956: track a failed dashboard fetch separately from the not-yet-loaded
@@ -512,13 +516,13 @@ export default function ProducerDashboardPage() {
             <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
             <div>
               <p className="font-semibold text-text">{h.dashboardHint}</p>
-              <Link
+              <LocaleLink
                 href="/producer/dashboard"
                 className="text-xs mt-1 inline-block hover:underline"
                 style={{ color: h.color }}
               >
                 {t("holiday_catalog_cta")}
-              </Link>
+              </LocaleLink>
             </div>
           </div>
         );
@@ -546,15 +550,37 @@ export default function ProducerDashboardPage() {
           overlap (Phase 4 drops them). */}
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
-          {t("availability.heading")}
+          {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
+              <p>. The <p> also contains InfoTooltip, whose trigger is a button
+              with its own aria-label ("מה ההבדל בין המצבים?") — labelling the
+              radiogroup from the <p> would fold that into the computed name and
+              yield "מצב נוכחי מה ההבדל בין המצבים?". Measured, not assumed. */}
+          <span id="availability-heading">{t("availability.heading")}</span>
           <InfoTooltip content={AVAILABILITY_TOOLTIP} label={t("availability.info_label")} position="bottom" />
         </p>
         <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
+        {/* MEH-1773: owners could not tell "זמינות" from "חלון הזמנות" — both
+            read as "when am I open". This says the half that is only true
+            here: temporary, manual, an exception. The other half is stated on
+            the order-window card in edit/page.js. */}
+        <WhatsThis
+          content={tWhat("availability")}
+          className="mb-2"
+          testId="whats-this-availability"
+        />
         <div
           role="radiogroup"
-          aria-label={t("availability.group_aria")}
+          // MEH-1842: derived from the visible heading rather than a parallel
+          // string. The old aria-label held the pre-MEH-1830 name, so the
+          // accessible name and the visible one had drifted apart. Deriving it
+          // means they cannot drift again; the group_aria key is now deleted.
+          // NOT a WCAG 2.5.3 failure — "Label in Name" (and its ACT rule) covers
+          // widget roles named from content, and radiogroup is named from author.
+          // The basis is MDN + W3C APG: where a visible label exists, point
+          // aria-labelledby at it; aria-label is for when none does.
+          aria-labelledby="availability-heading"
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
           className="flex flex-wrap gap-2"
         >
@@ -640,7 +666,10 @@ export default function ProducerDashboardPage() {
                 id="vacation-until"
                 type="date"
                 value={vacationUntil}
-                min={new Date().toISOString().slice(0, 10)}
+                // MEH-1983: Israel's today, not UTC's — the server validates
+                // vacation_until against israel_today(), so the UTC date
+                // offered a value the server would then reject.
+                min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
                 className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 dir="ltr"
@@ -883,10 +912,15 @@ function OverviewStatsHero({ analytics }) {
           conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
           tinted, not a card. */}
       <p className="text-sm text-fg-muted text-center">
-        {/* MEH-1118: clamp to ≤100% — WhatsApp clicks aren't a strict subset of
-            page views (card/map CTAs count without a view), so the raw ratio
-            could read "133.3% מהצופות פנו אלייך". */}
-        {t("kpi.conversion_line", { rate: clampPercent(conversion_rate) })}
+        {/* MEH-160: the clamp is gone, and removing it is the fix rather than a
+            regression of MEH-1118. MEH-1118 clamped because a >100 value read
+            as broken under "% מהצופות". The denominator is now unique daily
+            visitors while producer_whatsapp_clicks carries no viewer hash, so
+            >100 is a real reading — one visitor clicking twice — and the copy
+            says "per 100 distinct visitors", which is true at any value.
+            Clamping here would hide a wrong contract behind a screen that
+            looked fine, which is exactly what it was doing before. */}
+        {t("kpi.conversion_line", { rate: conversion_rate })}
       </p>
 
       {/* "Business of the week" eligibility badge — kept on the Overview

@@ -1,7 +1,29 @@
 import { useEffect, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 import api from "@/lib/api";
+import { ProducerDetailSchema } from "@/lib/schemas";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+
+// MEH-1888: `.loose()` is MANDATORY here, not stylistic.
+//
+// `z.object` strips unknown keys by default, and ProducerDetailSchema declares
+// 51 of ProducerDetailOut's 81 fields (measured 03/08/2026). A plain
+// `.safeParse()` whose result reached `setProducer` would therefore DELETE 30
+// fields from the object this page renders — including six the tree reads
+// today: `established_year` (ProducerHeader.jsx:241), `products`
+// (ProducerSections.jsx:112), `contact_name` + `owner_bio` (OwnerCard.jsx:31,
+// :35), and `whatsapp_group` + `order_window` (ContactCard.jsx:125, :252).
+//
+// That is exactly the MEH-901 class this validation exists to prevent, and
+// `lib/api-schemas.js:68-92` documents the same trap with a measurement:
+// `ProducerSchema.parse` on a 12-key card fixture kept 2 (MEH-1713).
+// `.loose()` is the Zod-4 spelling of `.passthrough()` — declared fields are
+// validated, undeclared ones are kept.
+//
+// It returns a NEW schema and does not mutate ProducerDetailSchema, so the
+// grid and /map keep their deliberate all-or-nothing stripping parse.
+const ProducerDetailLoose = ProducerDetailSchema.loose();
 
 /**
  * Owns the producer-page network surface — initial producer fetch,
@@ -34,8 +56,30 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
     const path = fetchPath || `/producers/${params.id}`;
     api
       .get(path)
-      .then((r) => setProducer(r.data))
-      .catch(() => setProducer(null))
+      .then((r) => {
+        // MEH-1888: this is the fetch that feeds the RENDERED tree — page.js:73
+        // renders <ProducerDetail /> with no props, so `initialProducer` is
+        // null and the server fetch feeds only JSON-LD and metadata
+        // (docs/audits/producer-detail-page-validation.md §0). Validation
+        // therefore has to happen here, and it must not cost the visitor a
+        // single field.
+        const parsed = ProducerDetailLoose.safeParse(r.data);
+        if (!parsed.success) {
+          Sentry.captureMessage("Producer detail payload failed schema validation", {
+            level: "warning",
+            extra: { path, issues: parsed.error.issues },
+          });
+        }
+        // On failure, the RAW response. A schema mismatch must never cost the
+        // visitor the page — the report is for the operator, not a gate.
+        setProducer(parsed.success ? parsed.data : r.data);
+      })
+      .catch((err) => {
+        // Was `.catch(() => setProducer(null))` — same behaviour, no longer
+        // silent (audit §1, "בליעה שקטה נוספת").
+        Sentry.captureException(err, { extra: { path } });
+        setProducer(null);
+      })
       .finally(() => setLoading(false));
   }, [params.id, fetchPath, initialProducer]);
 

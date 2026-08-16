@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Tooltip from "@/components/ui/Tooltip";
 
@@ -96,5 +96,106 @@ describe("ui/Tooltip", () => {
     );
     fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
     expect(screen.getByRole("tooltip").className).toContain("bottom-full");
+  });
+
+  // MEH-1871 — mirrors the ui/Popover contract exactly (separate primitives,
+  // MEH-792: same behaviour, no shared abstraction).
+  describe("overlay mode — dismiss on scroll (MEH-1871)", () => {
+    // Dismissal is triggered by the viewport MOVING, not by a scroll event
+    // arriving — see the ui/Popover suite for the measured 150ms-late event.
+    const setScroll = (y) => {
+      Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
+    };
+    afterEach(() => setScroll(0));
+
+    const renderOverlay = () =>
+      render(
+        <Tooltip content="הסבר" overlay>
+          <span>טריגר</span>
+        </Tooltip>,
+      );
+
+    it("closes when the window scrolls while visible", () => {
+      renderOverlay();
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      setScroll(240);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("does NOT close on a scroll event at the SAME position it opened at", () => {
+      setScroll(281);
+      renderOverlay();
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      fireEvent.scroll(globalThis); // late event, position unchanged
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      setScroll(400);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("closes when an ANCESTOR container scrolls (capture phase)", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      try {
+        renderOverlay();
+        fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+        expect(screen.getByRole("tooltip")).toBeInTheDocument();
+        setScroll(120);
+        fireEvent.scroll(container);
+        expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      } finally {
+        container.remove();
+      }
+    });
+
+    it("closes on resize and on orientationchange", () => {
+      renderOverlay();
+      const trigger = screen.getByText("טריגר").parentElement;
+      fireEvent.mouseEnter(trigger);
+      fireEvent(globalThis, new Event("resize"));
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+      fireEvent.mouseEnter(trigger);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      fireEvent(globalThis, new Event("orientationchange"));
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    // Parity with the ui/Popover suite (MEH-792: mirror implementations, so
+    // cleanup is asserted on BOTH rather than inferred from one).
+    it("removes its listeners on close, so a later scroll is inert", () => {
+      const spy = vi.spyOn(window, "removeEventListener");
+      renderOverlay();
+      const trigger = screen.getByText("טריגר").parentElement;
+      fireEvent.mouseEnter(trigger);
+      setScroll(300);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      const removed = spy.mock.calls.map((call) => call[0]);
+      expect(removed).toContain("scroll");
+      expect(removed).toContain("resize");
+      expect(removed).toContain("orientationchange");
+      spy.mockRestore();
+      // Re-open still works — cleanup did not tear down the show path.
+      fireEvent.mouseEnter(trigger);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    });
+
+    it("NON-overlay is unaffected: scroll leaves the anchored bubble visible", () => {
+      render(
+        <Tooltip content="הסבר">
+          <span>טריגר</span>
+        </Tooltip>,
+      );
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      fireEvent.scroll(globalThis);
+      fireEvent(globalThis, new Event("resize"));
+      const bubble = screen.getByRole("tooltip");
+      expect(bubble).toBeInTheDocument();
+      expect(bubble.className).toContain("absolute");
+    });
   });
 });

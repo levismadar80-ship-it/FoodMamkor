@@ -1,5 +1,7 @@
+import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
 import GroupBuyDetailClient from "./GroupBuyDetailClient";
+import { GroupBuyMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -7,14 +9,40 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was no metadata at all.
 // Fetches group-buy title server-side for D1 title format; gracefully falls
 // back to seo.group_buy.title_fallback if API unreachable.
+// MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
+// decided in docs/audits/producer-detail-page-validation.md §6 — never throw,
+// never notFound() (the MEH-1754 class). Inline per the over-engineering guard.
+const ROUTE = "/[locale]/group-buys/[id]";
+
 async function getGroupBuy(id) {
   try {
     const res = await serverFetch(`${API_URL}/group-buys/${id}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    if (!res.ok) {
+      // >= 500 only — a closed group-buy 404s routinely. Threshold from lib/api.js:140.
+      if (res.status >= 500) {
+        Sentry.captureMessage("SSR fetch failed", {
+          level: "error",
+          extra: { route: ROUTE, id, status: res.status },
+        });
+      }
+      return null;
+    }
+    const data = await res.json();
+    const parsed = GroupBuyMetadataSchema.safeParse(data);
+    if (!parsed.success) {
+      Sentry.captureMessage("SSR payload failed schema validation", {
+        level: "warning",
+        extra: { route: ROUTE, id, issues: parsed.error.issues },
+      });
+    }
+    // Raw, never `parsed.data` — the schema is minimal, so parsing would strip
+    // every undeclared key from the metadata input (MEH-901 class).
+    return data;
+  } catch (err) {
+    // Was `catch { return null }`. Same return, no longer silent.
+    Sentry.captureException(err, { extra: { route: ROUTE, id } });
     return null;
   }
 }

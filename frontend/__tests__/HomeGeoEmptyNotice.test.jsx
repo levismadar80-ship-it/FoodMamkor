@@ -34,6 +34,10 @@ vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 // Hook-test dependencies (Part 2).
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// MEH-1774: useHomePage now also takes the locale-aware router for the chip
+// deep-link; without this mock the real one runs outside a next-intl provider.
+vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/use-user-city", () => ({
@@ -71,7 +75,7 @@ const baseProps = {
   onboardAdvance: () => {},
   onboardDismiss: () => {},
   onAdvanceFromStep0: () => {},
-  onToggleChip: () => {},
+  onChipNavigate: () => {},
   onClearCategory: () => {},
   onClearLocation: () => {},
   onLoadMore: () => {},
@@ -124,7 +128,7 @@ describe("useHomePage geoEmptyNotice (MEH-1282)", () => {
       await flush();
     });
     expect(result.current.geoEmptyNotice).toBe(true);
-    act(() => result.current.toggleChip("kosher"));
+    act(() => result.current.navigateToChip("kosher"));
     expect(result.current.geoEmptyNotice).toBe(false);
   });
 });

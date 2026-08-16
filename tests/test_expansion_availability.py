@@ -14,6 +14,7 @@ healer (no sandbox DB).
 """
 from datetime import date, timedelta
 
+from app.utils.clock import israel_today
 from tests.conftest import auth_header, make_producer, make_user
 
 
@@ -74,7 +75,16 @@ def test_vacation_ending_today_is_not_auto_cleared(client, db):
     ends today).
     """
     vac_p = make_producer(db, name="חוות חוזרת היום")
-    _set_state(db, vac_p, "on_vacation", date.today())
+    # MEH-1926: seed from israel_today(), NOT date.today(). The serializer
+    # auto-clears on `vacation_until < israel_today()` (schemas.py:1867 and
+    # :2137) while the runner is UTC, so between 21:00 and 24:00 UTC Israel has
+    # already rolled over and a row dated UTC-today is in the PAST. This test
+    # asserts the exact `<` boundary, so it is the one case in this file a
+    # 3-hour skew can flip — and it did, in CI at 23:39 UTC, with
+    # `assert 'accepting_orders' == 'on_vacation'`: the vacation it exists to
+    # protect got cleared. The other dates here carry ±10-day offsets that no
+    # timezone skew can cross.
+    _set_state(db, vac_p, "on_vacation", israel_today())
 
     resp = client.get(f"/producers/{vac_p.id}")
     assert resp.status_code == 200

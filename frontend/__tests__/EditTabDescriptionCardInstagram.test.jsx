@@ -50,8 +50,11 @@ function renderCard(profile = {}) {
 
 const openAssist = () =>
   fireEvent.click(screen.getByRole("button", { name: D.assist_cta }));
-const instagramInput = () =>
-  screen.getByPlaceholderText("https://instagram.com/…");
+// MEH-1608: the placeholder is now the i18n handle-shaped example — the old
+// hardcoded "https://instagram.com/…" instructed the exact value that broke
+// the public link (the client still SENDS whatever was typed; the server
+// normalizes URL/@ forms to a bare handle on save).
+const instagramInput = () => screen.getByPlaceholderText("maafiat_hasade");
 
 beforeEach(() => {
   vi.clearAllMocks();

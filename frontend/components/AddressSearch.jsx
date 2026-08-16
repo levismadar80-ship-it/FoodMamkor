@@ -23,6 +23,14 @@ import {
  *     consume it on select (a fresh one is minted for the next search)
  *   - dedupe is done in lib/places.js so no two identical rows render
  *
+ * MEH-1766 — visible degradation. A completed lookup that yields nothing (empty
+ * result OR provider rejection) now renders a quiet Hebrew helper line telling
+ * the user she can type the address by hand, and logs the two cases distinctly.
+ * It is a HINT, never validation: free text stays submittable (Baymard — 18% of
+ * address validators trap users by refusing force-proceed). The line is
+ * suppressed while loading, below 3 chars, and on abort, so it can never flash
+ * mid-typing.
+ *
  * Props (UNCHANGED — LocationCard/RegisterProducer consumers untouched):
  *   - id (required) — for <label htmlFor>
  *   - label (string, sr-only-friendly)
@@ -32,6 +40,10 @@ import {
  *                                — fires when user picks a result
  *   - placeholder
  *   - className (optional, applied to wrapper)
+ *   - inputTestId (optional) — data-testid placed on the <input> ITSELF, not the
+ *     wrapper, so an existing Playwright `.fill()` locator keeps working when a
+ *     raw <Input> is swapped for this component (MEH-1766). Omit it and nothing
+ *     is rendered, so every pre-existing consumer is byte-identical.
  */
 export default function AddressSearch({
   id,
@@ -41,6 +53,7 @@ export default function AddressSearch({
   onSelect,
   placeholder,
   className = "",
+  inputTestId,
 }) {
   const t = useTranslations("search.address_search");
   const inputPlaceholder = placeholder ?? t("placeholder");
@@ -48,6 +61,9 @@ export default function AddressSearch({
   const [isOpen, setIsOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [loading, setLoading] = useState(false);
+  // MEH-1766: null while the field is quiet or a lookup is in flight; set to
+  // "empty" | "error" only once a query has actually COMPLETED with nothing.
+  const [providerIssue, setProviderIssue] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   // Track the latest in-flight request so a slow earlier response can't
@@ -62,6 +78,9 @@ export default function AddressSearch({
     const q = (value || "").trim();
     if (q.length < 3) {
       setSuggestions([]);
+      // MEH-1766: below the query floor nothing has been asked, so nothing has
+      // failed — the hint must never show here.
+      setProviderIssue(null);
       return;
     }
     const seq = ++requestSeq.current;
@@ -80,10 +99,31 @@ export default function AddressSearch({
         setSuggestions(list);
         setHighlight(0);
         setIsOpen(true);
-      } catch {
-        // Network error / blocked / offline / aborted — silently degrade. The
-        // input still works as plain text so the user can type their address.
-        if (seq === requestSeq.current) setSuggestions([]);
+        // MEH-1766: a successful call that matched nothing. Distinct from the
+        // rejection branch below both on screen (same hint) and in the log.
+        setProviderIssue(list.length === 0 ? "empty" : null);
+        if (list.length === 0) {
+          console.info(
+            `[AddressSearch] provider returned 0 results for ${JSON.stringify(q)} — this is a genuine no-match, the provider answered normally.`,
+          );
+        }
+      } catch (err) {
+        // Aborted by the cleanup below (the user kept typing) — not a failure,
+        // and a newer request already owns the field. No hint, no log.
+        if (err?.name === "AbortError") return;
+        if (seq !== requestSeq.current) return; // stale
+        // Provider rejected the request, or the network did. Degrade visibly
+        // (the hint) instead of silently: the input still accepts free text.
+        setSuggestions([]);
+        setProviderIssue("error");
+        console.warn(
+          `[AddressSearch] provider REJECTED the lookup for ${JSON.stringify(q)} — this is NOT a no-match. Suggestions are unavailable until it is fixed.`,
+          {
+            provider: err?.provider ?? "unknown",
+            status: err?.status ?? null,
+            detail: err?.detail ?? err?.message ?? String(err),
+          },
+        );
       } finally {
         if (seq === requestSeq.current) setLoading(false);
       }
@@ -177,6 +217,7 @@ export default function AddressSearch({
         <input
           ref={inputRef}
           id={id}
+          data-testid={inputTestId}
           type="text"
           value={value || ""}
           onChange={(e) => {
@@ -232,6 +273,19 @@ export default function AddressSearch({
             </li>
           ))}
         </ul>
+      )}
+
+      {/* MEH-1766: visible degradation. Shown ONLY after a completed lookup
+          returned nothing — never while loading, never below 3 chars, never on
+          abort (those all reset providerIssue to null). A hint, not an error:
+          no aria-invalid, no submit gating, free text still wins. */}
+      {providerIssue && !loading && (
+        <p
+          data-testid="address-search-no-results-hint"
+          className="mt-1 text-xs text-fg-muted text-start"
+        >
+          {t("no_results_hint")}
+        </p>
       )}
     </div>
   );

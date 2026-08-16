@@ -44,7 +44,12 @@ describe("OpeningHours collapsed disclosure (MEH-1334)", () => {
     const toggle = screen.getByTestId("hours-toggle");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle.textContent).toContain("היום");
-    const range = screen.getByText("09:00–17:00");
+    // MEH-1924: the STORED value is still "09:00-17:00" (see ALL_WEEK above) —
+    // only the rendered hour loses its leading zero, via the shared humanTime.
+    // The assertion moving from "09:00–17:00" to "9:00–17:00" is the whole
+    // point of that ticket: this card and the order-window card sit on the
+    // same page and used to disagree by one digit.
+    const range = screen.getByText("9:00–17:00");
     expect(range).toHaveAttribute("dir", "ltr");
     // the pre-1334 status line is gone — no "פתוח עכשיו", no status classes
     expect(screen.queryByText("פתוח עכשיו")).not.toBeInTheDocument();

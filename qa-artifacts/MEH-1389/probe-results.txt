@@ -1,0 +1,21 @@
+PASS [mobile] whatsapp CTA present on the page: {"actual":true,"expected":true}
+[mobile] measured fg=rgb(255, 255, 255) bg=rgb(22, 128, 62) ratio=5.01:1
+PASS [mobile] CTA contrast >= 4.5:1 (measured 5.01): {"actual":true,"expected":true}
+PASS [mobile] CTA fill is the darkened WhatsApp green, not #25D366: {"actual":"rgb(22, 128, 62)","expected":"rgb(22, 128, 62)"}
+[mobile] CONTROL old #25D366 fill → 1.98:1 (pre-fix state)
+PASS [mobile] control reproduces the pre-fix failure (< 4.5): {"actual":true,"expected":true}
+PASS [mobile] axe flags the whatsapp CTA for color-contrast: {"actual":0,"expected":0}
+[axe][mobile] OUT-OF-SCOPE color-contrast 1.66:1 → .end-3
+[axe][mobile] OUT-OF-SCOPE color-contrast 3.77:1 → .border-accent\/40
+[axe][mobile] out-of-scope serious color-contrast nodes: 2
+PASS [desktop] whatsapp CTA present on the page: {"actual":true,"expected":true}
+[desktop] measured fg=rgb(255, 255, 255) bg=rgb(22, 128, 62) ratio=5.01:1
+PASS [desktop] CTA contrast >= 4.5:1 (measured 5.01): {"actual":true,"expected":true}
+PASS [desktop] CTA fill is the darkened WhatsApp green, not #25D366: {"actual":"rgb(22, 128, 62)","expected":"rgb(22, 128, 62)"}
+[desktop] CONTROL old #25D366 fill → 1.98:1 (pre-fix state)
+PASS [desktop] control reproduces the pre-fix failure (< 4.5): {"actual":true,"expected":true}
+PASS [desktop] axe flags the whatsapp CTA for color-contrast: {"actual":0,"expected":0}
+[axe][desktop] OUT-OF-SCOPE color-contrast 1.66:1 → .end-3
+[axe][desktop] OUT-OF-SCOPE color-contrast 3.77:1 → .border-accent\/40
+[axe][desktop] out-of-scope serious color-contrast nodes: 2
+FAILURES: 0

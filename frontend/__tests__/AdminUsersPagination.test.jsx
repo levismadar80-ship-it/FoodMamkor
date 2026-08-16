@@ -67,6 +67,7 @@ vi.mock("next-intl", () => {
     "admin.users.pagination.page_of": "עמוד {page} מתוך {total}",
     "admin.common.search": "חיפוש",
     "admin.common.cancel": "ביטול",
+    "admin.common.loading_f": "בטעינה...",
   };
   const resolve = (fullKey, values) => {
     const raw = flat[fullKey] ?? fullKey;
@@ -160,5 +161,22 @@ describe("AdminUsersPage — client-side pagination (MEH-1046)", () => {
     await screen.findByText("אין משתמשים");
     expect(screen.queryByText("הקודם")).not.toBeInTheDocument();
     expect(screen.queryByText("הבא")).not.toBeInTheDocument();
+  });
+
+  // MEH-1656 — the page had no loading state, so the "אין משתמשים" row flashed
+  // during every fetch. The empty row must be unreachable while the request is
+  // in flight.
+  it("in-flight fetch shows the loading row and NOT the empty row", async () => {
+    apiMock.get.mockImplementation(() => new Promise(() => {})); // never resolves
+    render(<AdminUsersPage />);
+    expect(screen.getByText("בטעינה...")).toBeInTheDocument();
+    expect(screen.queryByText("אין משתמשים")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^user\d+@example\.com$/)).not.toBeInTheDocument();
+  });
+
+  it("loading row clears once the fetch resolves", async () => {
+    await renderPage();
+    expect(screen.queryByText("בטעינה...")).not.toBeInTheDocument();
+    expect(rowCount()).toBe(25);
   });
 });

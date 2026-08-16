@@ -64,6 +64,7 @@ const GEO = { lat: 32.0853, lng: 34.7818 };
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  window.localStorage.clear();
   pushMock.mockClear();
 });
 
@@ -74,7 +75,7 @@ describe("MapProducerCard — distance (MEH-826)", () => {
   });
 
   it("renders distance as a <bdi> (auto-dir, digits-first) when coords exist", () => {
-    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
     expect(pill.tagName).toBe("BDI");
@@ -86,15 +87,33 @@ describe("MapProducerCard — distance (MEH-826)", () => {
   });
 
   it("does NOT render distance when producer lat/lng are missing", () => {
-    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
     render(<MapProducerCard producer={{ ...producer, lat: null, lng: null }} />);
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
+  });
+
+  // MEH-1938 chunk 3 — the discriminating case: distance now reads through
+  // producerPoints(), so a producer whose only coordinates live in a
+  // producer_locations row (no Producer.lat/lng) still shows a distance.
+  it("renders distance from a locations[] row when Producer.lat/lng are both null", () => {
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
+    render(
+      <MapProducerCard
+        producer={{
+          ...producer,
+          lat: null,
+          lng: null,
+          locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("map-distance-pill").textContent).toBe('54 ק"מ');
   });
 });
 
 describe("MapProducerCard — meta line (🔒 §3 category-first, distance-last)", () => {
   it("renders ONE meta line: category first, distance last", () => {
-    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
     render(
       <MapProducerCard
         producer={{ ...producer, categories: [{ name: "ירקות, פירות ומשקים" }] }}
@@ -110,7 +129,7 @@ describe("MapProducerCard — meta line (🔒 §3 category-first, distance-last)
   });
 
   it("category text truncates; the distance token never shrinks", () => {
-    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
     render(
       <MapProducerCard
         producer={{ ...producer, categories: [{ name: "ירקות, פירות ומשקים" }] }}
@@ -289,7 +308,7 @@ describe("MapProducerCard — no-photo placeholder (🔒 §6)", () => {
 
 describe("MapProducerCard — price stays removed (MEH-1210)", () => {
   it("renders no price text even when price fields are set", () => {
-    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
     render(
       <MapProducerCard
         producer={{ ...producer, city: "חיפה", price_range: "מ-35₪", categories: [{ name: "דבש" }] }}

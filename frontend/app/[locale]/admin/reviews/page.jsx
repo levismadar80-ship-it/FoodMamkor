@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { Star, Trash } from "@phosphor-icons/react";
@@ -22,6 +22,65 @@ import InfoTooltip from "@/components/InfoTooltip";
  * producer's avg_rating + reviews_count are recomputed server-side by
  * the existing handler.
  */
+/**
+ * MEH-1902: the review body was `line-clamp-3` with no way to read the rest.
+ * Phase 0 confirmed the full text was reachable from nowhere on this page —
+ * no row click, no `title` attribute, and the only dialog here is the delete
+ * confirm, which renders the user and producer names and never the body. An
+ * admin moderating a long review was deciding on a third of it.
+ *
+ * The affordance is measured, not assumed: only a body that ACTUALLY overflows
+ * three lines gets a toggle, so short reviews keep the clean row they have now.
+ * Measurement happens while clamped — once expanded, `scrollHeight` collapses
+ * to `clientHeight` and would read as "no overflow", which is why the effect
+ * bails when expanded and `overflows` stays latched.
+ *
+ * Known limit, stated rather than hidden: if the measurement is unavailable
+ * (an element with no layout — jsdom, `display:none`), `overflows` stays false
+ * and NO toggle renders. That degrades to today's behaviour rather than to a
+ * broken control, but it is the "guard that consults its own subject" shape
+ * from .claude/rules/testing.md, so the spec asserts the visible case directly
+ * by stubbing the two metrics.
+ */
+function ReviewBody({ text, rowId, t }) {
+  const bodyRef = useRef(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const bodyId = `review-body-${rowId}`;
+
+  useEffect(() => {
+    const el = bodyRef.current;
+    // Only meaningful while the clamp is on — see the note above.
+    if (!el || expanded) return;
+    setOverflows(el.scrollHeight > el.clientHeight);
+  }, [text, expanded]);
+
+  return (
+    <>
+      <div
+        ref={bodyRef}
+        id={bodyId}
+        data-testid="review-body"
+        className={`text-muted text-xs whitespace-pre-line${expanded ? "" : " line-clamp-3"}`}
+      >
+        {text}
+      </div>
+      {overflows && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          data-testid="review-body-toggle"
+          className="mt-1 text-xs text-fg-muted underline underline-offset-2 hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          {expanded ? t("reviews.collapse") : t("reviews.expand")}
+        </button>
+      )}
+    </>
+  );
+}
+
 export default function AdminReviewsPage() {
   const t = useTranslations("admin");
   // MEH-848: shared generic error copy (collapsed from admin.reviews.delete_error).
@@ -188,11 +247,7 @@ export default function AdminReviewsPage() {
                       {r.title && (
                         <div className="font-medium">{r.title}</div>
                       )}
-                      {r.body && (
-                        <div className="text-muted text-xs whitespace-pre-line line-clamp-3">
-                          {r.body}
-                        </div>
-                      )}
+                      {r.body && <ReviewBody text={r.body} rowId={r.id} t={t} />}
                       {!r.title && !r.body && (
                         <span className="text-muted opacity-60">—</span>
                       )}

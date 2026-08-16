@@ -67,10 +67,26 @@ function CategoriesEditor() {
     });
   };
   const update = (id, newName) =>
-    run(`category-save-${id}`, async () => {
-      await api.put(`/admin/categories/${id}`, { name: newName });
-      load();
-    });
+    run(
+      `category-save-${id}`,
+      async () => {
+        await api.put(`/admin/categories/${id}`, { name: newName });
+        load();
+      },
+      // MEH-1589: the MEH-1571 update_category guards return 422 with an
+      // approved Hebrew detail string (license-rename block / name taken);
+      // without this callback a blocked save looked like a dead button.
+      // Non-string detail (network/500/FastAPI validation list) falls back
+      // to the generic save error — never a blank screen.
+      (err) => {
+        const detail = err?.response?.data?.detail;
+        showToast.error(
+          typeof detail === "string" && detail
+            ? detail
+            : t("content.categories.save_error"),
+        );
+      },
+    );
   // Open the confirm dialog; the DELETE call only fires from confirmRemove.
   // MEH-1034: carry producer_count so the dialog can show the blast radius.
   const remove = (cat) =>

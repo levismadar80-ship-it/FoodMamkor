@@ -161,7 +161,32 @@ function ProducerTags({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
+// MEH-1471: read-only self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only
+// (ProducerAdminOut). Renders the Hebrew option label, "אחר: <text>" for the
+// free-text case, and "—" for producers who registered before the field existed.
+// Option labels come from the auth namespace (single source of the Hebrew copy)
+// so the strings aren't duplicated in the admin namespace.
+function ReferralSource({ producer }) {
+  const t = useTranslations("admin");
+  const tOpt = useTranslations(
+    "auth.register.producer.fields.referral_source.options",
+  );
+  const key = producer.referral_source;
+  let value = "—";
+  if (key === "other") {
+    const other = (producer.referral_source_other || "").trim();
+    value = other ? `${tOpt("other")}: ${other}` : tOpt("other");
+  } else if (key) {
+    value = tOpt(key);
+  }
+  return (
+    <div className="text-[11px] text-muted mt-0.5">
+      {t("producers.table.referral.label")}: {value}
+    </div>
+  );
+}
+
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
@@ -214,9 +239,13 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
                 key: "ambassador",
                 // MEH-1267: title explains the ambassador action (Trust Tier 5)
                 // for admins who don't know what "שגריר" means.
+                // MEH-1681: the label names the ACTION the click performs, not the
+                // current state. It previously read "שגרירה" / "☆ שגריר" — state
+                // descriptions, where only the ☆ glyph carried the direction, so an
+                // admin could not tell whether clicking would set or remove the role.
                 label: (
                   <span title={t("producers.table.actions.ambassador_tooltip")}>
-                    {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
+                    {p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
                   </span>
                 ),
                 disabled: busy(`ambassador:${p.id}`),
@@ -228,6 +257,21 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
                 key: "story",
                 label: t("producers.table.actions.story_card"),
                 onSelect: () => onToggleStoryCard(p.id),
+              }]
+            : []),
+          // MEH-226: reject is terminal and emails the business owner, so it
+          // lives in the kebab with tone="danger" (MEH-1023 destructive-action
+          // convention) rather than in the always-visible strip beside
+          // approve. Pending-only — the same guard as approve and
+          // request-changes above; the backend has no status guard on reject,
+          // so this is a UI affordance, not the enforcement.
+          ...(isPending
+            ? [{
+                key: "reject",
+                label: t("producers.table.actions.reject"),
+                tone: "danger",
+                disabled: busy(`reject:${p.id}`),
+                onSelect: () => onReject(p),
               }]
             : []),
           {
@@ -283,6 +327,10 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
           <Warning size={22} weight="fill" aria-hidden="true" />
         </span>
       ) : (
+        // raw img: the URL is producer-submitted and may be ANY host (the
+        // MEH-1222 "https://bread.jpg" case). next/image rejects hosts absent
+        // from remotePatterns instead of firing onError, which is exactly the
+        // broken-image signal this admin thumb exists to show.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={optimizeCloudinary(url, { width: PENDING_THUMB_CLOUDINARY_W })}
@@ -341,6 +389,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
             <CompletenessBadge missing={missing} priority={priority} />
             <span>{p.name}</span>
           </div>
+          <ReferralSource producer={p} />
         </td>
         <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
@@ -434,14 +483,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
-  onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+  onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
   onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+    onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
   };
   return (

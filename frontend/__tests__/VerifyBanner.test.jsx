@@ -27,7 +27,7 @@ vi.mock("@phosphor-icons/react", () => ({
 
 const DISMISS_KEY = "verify-banner-dismissed";
 const BANNER_TEXT = "auth.verify.banner";
-const DISMISS_LABEL = "סגירת הודעת אימות";
+const DISMISS_LABEL = "auth.verify.dismiss";
 
 describe("VerifyBanner (MEH-1071)", () => {
   beforeEach(() => {

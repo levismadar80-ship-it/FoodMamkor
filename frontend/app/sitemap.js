@@ -7,6 +7,17 @@
 import { SITE_URL, API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { routing } from "@/i18n/routing";
+// MEH-1574: single owner for the hreflang map. This file used to keep its own
+// byte-identical copy of the same object — the exact two-owners drift class
+// lib/i18n-seo.js:18 warns about. Import it; never re-declare it here.
+import { HREFLANG_CODES } from "@/lib/i18n-seo";
+// MEH-1935: the diet-landing config is the single owner of the slug set, the
+// route path shape and the ≥5 threshold — never restate any of them here.
+import {
+  BACKED_DIET_PAGES,
+  DIET_PAGE_MIN,
+  dietPagePath,
+} from "@/lib/diet-pages";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -14,18 +25,16 @@ function urlForLocale(path, locale) {
   return `${base}${path}`;
 }
 
-// MEH-476: hreflang codes emitted to Google. "he-IL" geo-targets the Israeli
-// audience (mehamakor.online is IL-only); matches the <head> hreflang shipping
-// in MEH-476 PR 2 for cross-signal consistency. Routing locale codes ("he",
-// "en") stay unchanged in middleware + URL building above.
-const HREFLANG_CODES = { he: "he-IL", en: "en" };
-
 // Expands one logical path into one sitemap entry per locale. Every entry
 // carries the full alternates.languages map so Next.js emits an <xhtml:link>
 // per locale inside every <url> block.
+// MEH-1574: the `?? l` fallback mirrors buildAlternates (lib/i18n-seo.js:63) so
+// both hreflang consumers degrade identically — a locale added to routing.locales
+// without a HREFLANG_CODES entry emits its bare routing code instead of the
+// `undefined` key this file used to produce.
 function localizeEntry(path, meta) {
   const languages = Object.fromEntries(
-    routing.locales.map((l) => [HREFLANG_CODES[l], urlForLocale(path, l)]),
+    routing.locales.map((l) => [HREFLANG_CODES[l] ?? l, urlForLocale(path, l)]),
   );
   return routing.locales.map((locale) => ({
     url: urlForLocale(path, locale),
@@ -119,6 +128,36 @@ export default async function sitemap() {
     // API not available during build — skip dynamic pages
   }
 
+  // MEH-1935: diet landing pages (/producers/diet/[dietSlug]). Emitted ONLY for
+  // slugs that clear DIET_PAGE_MIN — the route returns a real 404 below the
+  // threshold, and listing a URL that 404s is a GSC error, the mirror of the
+  // MEH-803 noindex rule above. The count comes from the SAME filtered endpoint
+  // the page itself gates on, so sitemap and route cannot disagree.
+  //
+  // Fails OPEN (pages omitted) on any error: an absent sitemap entry costs
+  // discovery latency, whereas a listed-but-404 URL is an indexing fault.
+  let dietPages = [];
+  try {
+    const counts = await Promise.all(
+      BACKED_DIET_PAGES.map((p) =>
+        serverFetch(`${API_URL}/producers?${p.filterParam}=true&limit=1&offset=0`)
+          .then((r) => (r.ok ? Number(r.headers.get("x-total-count") || 0) : 0))
+          .catch(() => 0),
+      ),
+    );
+    dietPages = BACKED_DIET_PAGES.flatMap((p, i) =>
+      counts[i] >= DIET_PAGE_MIN
+        ? localizeEntry(dietPagePath(p.slug), {
+            lastModified: now,
+            priority: 0.8,
+            changeFrequency: "weekly",
+          })
+        : [],
+    );
+  } catch {
+    // API unavailable during build — skip the diet pages.
+  }
+
   // Event detail pages — only future events
   let eventPages = [];
   try {
@@ -140,6 +179,7 @@ export default async function sitemap() {
   return [
     ...staticPages,
     ...producerIndexPages,
+    ...dietPages,
     ...producerPages,
     ...recipePages,
     ...eventPages,

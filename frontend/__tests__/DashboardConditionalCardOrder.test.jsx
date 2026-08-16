@@ -100,6 +100,11 @@ const completeProfile = {
   images: ["https://res.cloudinary.com/demo/image/upload/v1/a.jpg"],
   delivery_areas: [],
   short_description: "דבש מקומי",
+  // MEH-1884: opening_hours joined the heuristic as a yellow-tier field, so a
+  // fixture that means "complete on every field the heuristic reads" has to
+  // carry it too. Without this the producer is missing "שעות פתיחה" and the
+  // card mounts — which is the new behaviour, not a broken assertion.
+  opening_hours: "Sun-Thu 09:00-18:00",
 };
 
 // city/coords/contact/categories/images/description all empty → missing > 0.

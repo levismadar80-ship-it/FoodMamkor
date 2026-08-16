@@ -1,11 +1,15 @@
 """MEH-252 — Hebrew prefix-letter stripping on /search.
 
-ILIKE already handles singular→plural ("גבינה" is a substring of
-"גבינות"). The real gap is the definite article: typing "הגבינה" used
-to return zero results because "הגבינה" is not a substring of
-"גבינה". Now a single-word query with a leading ה/ב/ל/מ/ש/כ/ו gets
-that letter stripped before the LIKE, as long as the remainder is
-at least 3 characters.
+ILIKE handles singular→plural in ONE direction ("גבינה" is a substring of
+"גבינות"); plural→singular and smichut never worked. The gap MEH-252 closed
+is the definite article: typing "הגבינה" returned zero results because
+"הגבינה" is not a substring of "גבינה". A leading ה/ב/ל/מ/ש/כ/ו is stripped
+before the LIKE, as long as the remainder is at least 3 characters.
+
+MEH-1664 kept every assertion here green while generalising the rule: the
+strip now runs per token (so multi-word queries get it too) and is paired
+with a ה/ת stem, in app/utils/hebrew_search.py. These tests continue to lock
+the MEH-252 behaviour as the single-token case of that design.
 """
 import pytest
 from tests.conftest import make_category, make_producer
@@ -44,8 +48,13 @@ def test_search_does_not_strip_short_words(client, db):
 
 
 def test_search_preserves_multi_word_queries_literally(client, db):
-    """Multi-word queries skip the prefix strip — stripping every
-    first letter of every word is too aggressive."""
+    """A multi-word query still finds the literal phrase.
+
+    MEH-252 skipped the prefix strip here, reasoning it was "too aggressive"
+    for multi-word input. MEH-1664 applies it to every token instead — safe
+    because the tokens are AND-ed, so a widened token cannot pull in a row
+    that fails another token. This assertion is unchanged and still passes.
+    """
     make_producer(db, name="חווה אורגנית", city="חיפה", status="approved")
 
     # Literal match still works

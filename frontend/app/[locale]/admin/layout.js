@@ -26,9 +26,11 @@ import {
   ChatCircleSlash,
   Bread,
   Package,
+  Lock,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+import EmptyState from "@/components/ui/EmptyState";
 import api from "@/lib/api";
 
 /**
@@ -86,6 +88,9 @@ const NAV_SECTIONS = [
       { href: "/admin/kashrut", key: "kashrut", Icon: Seal },
       { href: "/admin/reports", key: "reports", Icon: Warning },
       { href: "/admin/category-requests", key: "category_requests", Icon: Tag },
+      // MEH-1872: business-name change requests — the moderation queue for the
+      // only path that moves producers.name.
+      { href: "/admin/name-change-requests", key: "name_change_requests", Icon: Tag },
       // MEH-771 Chunk C — admin view of undelivered outbound WhatsApp.
       { href: "/admin/whatsapp-failures", key: "whatsapp_failures", Icon: ChatCircleSlash },
     ],
@@ -104,6 +109,7 @@ const NAV_HREFS = NAV_SECTIONS.flatMap((s) => s.items);
 
 export default function AdminLayout({ children }) {
   const t = useTranslations("admin");
+  const tDenied = useTranslations("errors.access_denied.admin");
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -116,9 +122,20 @@ export default function AdminLayout({ children }) {
   const [pendingModCount, setPendingModCount] = useState(null);
   const [pendingKashrutCount, setPendingKashrutCount] = useState(null);
 
+  // MEH-1599: same 401/403 split as producer/dashboard/layout.js:53 — an
+  // authenticated non-admin gets the in-app denied state below, NOT a bounce
+  // through /login to "/" (LoginClient.jsx:89-91 replace()s an authenticated
+  // visitor straight past the form). Only a genuinely unauthenticated visitor
+  // is redirected, and now with ?redirect= so she returns to her target.
+  // `router` is next/navigation by MEH-731's explicit choice; `pathname` is
+  // the locale-stripped one, which is exactly what ?redirect= wants.
+  const isUnauthenticated = !loading && !user;
+  const isDenied = !loading && !!user && user.role !== "admin";
+
   useEffect(() => {
-    if (!loading && (!user || user.role !== "admin")) router.push("/login");
-  }, [user, loading, router]);
+    if (!isUnauthenticated) return;
+    router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+  }, [isUnauthenticated, pathname, router]);
 
   useEffect(() => {
     if (!user || user.role !== "admin") return;
@@ -131,7 +148,24 @@ export default function AdminLayout({ children }) {
       .catch(() => { setPendingModCount(null); setPendingKashrutCount(null); });
   }, [user, pathname]);
 
-  if (loading || !user || user.role !== "admin") {
+  // 403 — rendered in place. The two admin pages that repeat this guard
+  // (producers/new/page.js:16, producers/[id]/edit/page.js:20) never mount,
+  // so exactly ONE denied state can render.
+  if (isDenied) {
+    return (
+      <div data-testid="access-denied" className="max-w-7xl mx-auto px-4">
+        <EmptyState
+          icon={Lock}
+          title={tDenied("heading")}
+          description={tDenied("message")}
+          ctaLabel={tDenied("home")}
+          ctaHref="/"
+        />
+      </div>
+    );
+  }
+
+  if (loading || !user) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-fg-muted">
         {t("common.loading_f")}
@@ -142,6 +176,20 @@ export default function AdminLayout({ children }) {
   const isActive = (href) => {
     if (href === "/admin") return pathname === "/admin";
     return pathname === href || pathname.startsWith(href + "/");
+  };
+
+  // MEH-1701: ONE owner for the badge decision, consumed by BOTH navs — the
+  // desktop sidebar and the mobile horizontal nav previously diverged here
+  // (badge desktop-only), the MEH-1698 viewport-parity class in the other
+  // direction. Same derivation idea as NAV_HREFS above: extend the shared
+  // source, don't grow a parallel one. Returns the count to show, or null.
+  // A failed fetch leaves both counts null, so `> 0` is false and no badge
+  // renders — indistinguishable from a real 0, inherited from the desktop
+  // behaviour and unchanged here.
+  const badgeCountFor = (href) => {
+    if (href === "/admin" && pendingModCount > 0) return pendingModCount;
+    if (href === "/admin/kashrut" && pendingKashrutCount > 0) return pendingKashrutCount;
+    return null;
   };
 
   return (
@@ -161,10 +209,10 @@ export default function AdminLayout({ children }) {
               {section.items.map((n) => {
                 const active = isActive(n.href);
                 const Icon = n.Icon;
-                const showBadge =
-                  (n.href === "/admin" && pendingModCount > 0) ||
-                  (n.href === "/admin/kashrut" && pendingKashrutCount > 0);
-                const badgeCount = n.href === "/admin/kashrut" ? pendingKashrutCount : pendingModCount;
+                // MEH-1701: decision moved to badgeCountFor (shared with the
+                // mobile nav); rendering here is unchanged.
+                const badgeCount = badgeCountFor(n.href);
+                const showBadge = badgeCount !== null;
                 return (
                   <Link
                     key={n.href}
@@ -206,6 +254,10 @@ export default function AdminLayout({ children }) {
           {NAV_HREFS.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
+            // MEH-1701: the same badge the desktop sidebar shows — an admin
+            // on a phone could not see anywhere in the nav that a queue is
+            // waiting. Same decision source (badgeCountFor), smaller pill.
+            const badgeCount = badgeCountFor(n.href);
             return (
               <Link
                 key={n.href}
@@ -216,6 +268,15 @@ export default function AdminLayout({ children }) {
               >
                 <Icon size={14} />
                 {t(`layout.nav.${n.key}`)}
+                {badgeCount !== null && (
+                  <span
+                    className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                    aria-label={t("common.items_pending_label", { count: badgeCount })}
+                    title={t("common.items_pending_title", { count: badgeCount })}
+                  >
+                    {badgeCount}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -6,8 +6,12 @@ import { useTranslations } from "next-intl";
 
 /**
  * Cookie consent — compact bottom bar.
- * Mobile: sits ABOVE the floating BottomNav pill (bottom = safe-area +
- *   pill-clearance) and stacks text-over-buttons so nothing clips at 360–390px.
+ * Mobile: sits ABOVE the floating BottomNav pill — bottom offset is DERIVED
+ *   from the `--bottom-nav-clearance` CSS var BottomNav publishes (MEH-1950;
+ *   live pill clearance incl. safe-area) + an 8px gap, falling back to the
+ *   static expanded geometry (safe-area + 72px) where no pill renders. Never
+ *   hardcode the pill height here — that magic-number twin is what MEH-1950
+ *   removed. Stacks text-over-buttons so nothing clips at 360–390px.
  * Desktop: bottom-0. localStorage key: "cookieConsent" ("all" | "essential").
  * MEH-850: publishes its live rendered height to the `--cookie-banner-h` CSS var
  *   on <html> (ResizeObserver) so the chat FAB self-clears it via calc(); the var
@@ -65,7 +69,7 @@ export default function CookieBanner() {
   return (
     <div
       ref={bannerRef}
-      className="cookie-banner fixed bottom-[calc(env(safe-area-inset-bottom)+80px)] md:bottom-0 inset-x-0 z-[1100] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
+      className="cookie-banner fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-[1100] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="region"
       aria-label={t("aria_label")}
     >

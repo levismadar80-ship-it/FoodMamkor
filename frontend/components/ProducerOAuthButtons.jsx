@@ -64,8 +64,15 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
     }
   };
 
-  // Google GSI — uses shared hook so only one initialize() fires per page,
-  // and cancel() clears any stale producer callback before mounting.
+  // Google GSI — the shared hook loads the script once per document and calls
+  // cancel() before each initialize() and on unmount, clearing any stale
+  // producer callback. It does NOT limit initialize() to one call per page:
+  // the guard is useEffect-scoped with no module-level flag, so a second
+  // GSI-bearing component mounting in the same document (e.g. a client-side
+  // navigation to /login) initializes again and GSI logs "called multiple
+  // times". Corrected under MEH-1778 — this comment previously claimed the
+  // one-per-page guarantee that use-google-sign-in.js never made. The defect
+  // itself is MEH-1776 / MEH-282; only the comment is fixed here.
   useGoogleSignIn(
     googleId,
     (response) => finish("google", response.credential),

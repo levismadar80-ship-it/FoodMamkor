@@ -1,12 +1,18 @@
 /**
  * MEH-1230 — GPS success must persist the user's location fix.
  *
- * Regression: no code path ever wrote `user_location` to sessionStorage, so
- * the /map "מרחק" sort option stayed permanently disabled and card distance
- * labels never rendered. MapComponent.goToMyLocation (the shared imperative
- * path behind the filter-bar crosshair + the NearMePill) now calls
+ * Regression: no code path ever wrote `user_location` at all, so the /map
+ * "מרחק" sort option stayed permanently disabled and card distance labels
+ * never rendered. MapComponent.goToMyLocation (the shared imperative path
+ * behind the filter-bar crosshair + the NearMePill) now calls
  * setUserLocation on a valid fix. lib/user-location itself is covered by
  * userLocation.test.js — this asserts the HANDLER actually invokes it.
+ *
+ * MEH-2014 moved the store from sessionStorage to localStorage, so the
+ * assertions below read localStorage. What they assert is unchanged: the
+ * handler persists the fix. The store is named explicitly rather than
+ * abstracted, because "which store" is the thing MEH-2014 changed and a
+ * future move should red here too.
  *
  * Leaflet is stubbed (the repo intentionally never mounts real Leaflet under
  * jsdom — see MapSsrFallback.test.jsx): a chainable Proxy satisfies the map
@@ -73,7 +79,7 @@ function mockGeolocation(coords) {
 
 describe("MEH-1230 — GPS success persists user_location", () => {
   beforeEach(() => {
-    window.sessionStorage.clear();
+    window.localStorage.clear();
   });
   afterEach(() => {
     vi.clearAllMocks();
@@ -99,7 +105,7 @@ describe("MEH-1230 — GPS success persists user_location", () => {
       api.goToMyLocation(vi.fn(), vi.fn());
     });
 
-    expect(JSON.parse(window.sessionStorage.getItem(STORAGE_KEY))).toEqual({
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY))).toEqual({
       lat: 31.78,
       lng: 35.21,
     });
@@ -125,6 +131,6 @@ describe("MEH-1230 — GPS success persists user_location", () => {
       api.goToMyLocation(vi.fn(), vi.fn());
     });
 
-    expect(window.sessionStorage.getItem(STORAGE_KEY)).toBe(null);
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe(null);
   });
 });

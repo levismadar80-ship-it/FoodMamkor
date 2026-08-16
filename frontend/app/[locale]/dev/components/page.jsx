@@ -10,6 +10,12 @@ import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
  * DEV-GATED: returns 404 in production (`process.env.NODE_ENV === "production"`).
  * Not linked from anywhere — reachable only by typing the URL in dev/preview.
  * This page exists to eyeball every variant in one place; it is NOT shipped UI.
+ *
+ * MEH-1617: the hardcoded Hebrew labels and placeholders below are DELIBERATELY
+ * not translated — this is an internal showcase, never user-facing, so the demo
+ * strings are fixtures rather than copy. `app/[locale]/dev/**` is therefore an
+ * entry on the i18n-lint allowlist (MEH-1618); do not "fix" these by moving
+ * them into messages/, and do not delete the allowlist entry.
  */
 
 const BUTTON_VARIANTS = ["primary", "secondary", "outlined", "ghost", "text"];

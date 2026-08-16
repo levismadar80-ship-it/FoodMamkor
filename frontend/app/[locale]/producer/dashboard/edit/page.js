@@ -43,13 +43,13 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-// MEH-1158: MapPin + per-channel glyphs feed the header previews below.
+// MEH-1158: per-channel glyphs feed the header previews below.
 // MEH-1408: CaretLeft — the "back to all sections" link's inline-start indicator
 // (base points inline-start in LTR; rtl:rotate-180 flips it to inline-start in RTL).
-// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.)
+// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.
+//  MapPin dropped MEH-2058 — its only use was the deleted "location" header preview.)
 import {
   Warning,
-  MapPin,
   CaretLeft,
   WhatsappLogo,
   Phone,
@@ -74,15 +74,29 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
+import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+// MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
+// cards.jsx is already >1600 lines).
+import DietaryScopeCard from "./DietaryScopeCard";
+// MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
+// cards.jsx is already >1600 lines).
+import GrassFedCard from "./GrassFedCard";
+// MEH-1544: weekly order-acceptance window (own file, same reason as above —
+// imported directly rather than via a cards.jsx passthrough wrapper).
+import OrderWindowEditor from "./OrderWindowEditor";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
 // Do not rename.
 const ANCHOR_TO_KEY = {
+  // MEH-1872: business-name change-request card. Registered in BOTH maps —
+  // this file's own note says a card added to the JSX without an entry renders
+  // but is unreachable by anchor.
+  "business-name": "businessName",
   bio: "bio",
   questions: "questions",
   "contact-channels": "contact",
@@ -92,11 +106,17 @@ const ANCHOR_TO_KEY = {
   // MEH-1167: kashrut-request card (badge request + cert photo + status).
   kashrut: "kashrut",
   images: "images",
-  location: "location",
+  // MEH-2058: LocationsEditor's own anchorId — was unregistered while the
+  // now-deleted LocationCard (anchor "location", singular) sat beside it as
+  // the checklist deep-link target. Registering it keeps
+  // ProfileCompletenessCard's "location" step CTA working.
+  locations: "locations",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  // MEH-1544: weekly order-acceptance window (sibling of hours, same group).
+  "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
   "owner-story": "ownerStory",
@@ -138,6 +158,7 @@ const METHOD_FIELD = {
 // Canonical section id per open-state key — hash aliases above scroll to the
 // section that actually carries the id attribute.
 const KEY_TO_ANCHOR = {
+  businessName: "business-name",
   bio: "bio",
   questions: "questions",
   contact: "contact-channels",
@@ -145,11 +166,17 @@ const KEY_TO_ANCHOR = {
   license: "license",
   kashrut: "kashrut",
   images: "images",
-  location: "location",
+  locations: "locations",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  orderWindow: "order-window",
+  // MEH-1823: registered here so #offer deep-links resolve like every other
+  // card. These three maps are a guarded registry — a card added to the JSX
+  // without an entry renders but is unreachable by anchor, which is the
+  // silent-gap class .claude/rules/testing.md documents for path registries.
+  offer: "offer",
 };
 
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
@@ -171,9 +198,20 @@ const KEY_TO_GROUP = {
   ownerStory: "profile",
   license: "trust",
   kashrut: "trust",
-  location: "location",
+  // MEH-2058: not a GROUP_MEMBERS entry (LocationsEditor was never part of
+  // the hub's "{done}/{total}" count, before or after this chunk) — only
+  // registered here so a #locations deep link resolves to the right group.
+  locations: "location",
   delivery: "location",
   hours: "location",
+  orderWindow: "location",
+  // MEH-1823: the offer lives in the location group — it is read against the
+  // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
+  // for the same reason orderWindow isn't: membership drives the hub's
+  // "{done}/{total}", and an opt-in field would show every existing business
+  // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
+  // for — the GBP-staleness risk that note already cites.
+  offer: "location",
   contact: "contact",
   questions: "contact",
 };
@@ -186,14 +224,48 @@ const OPEN_KEY_FOR = (key) =>
   key === "license" || key === "kashrut" ? "trust" : key;
 
 // Ordered member card keys per group — for the hub completion count + the
-// next-step marker placement (location is filtered out below for delivery-only
-// profiles, whose location card isn't mounted).
+// next-step marker placement.
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
   trust: ["license", "kashrut"],
-  location: ["location", "delivery", "hours"],
+  // MEH-1544: `orderWindow` is deliberately NOT a member. Membership drives the
+  // hub's "{done}/{total}" completion count, and the order window is an opt-in
+  // field — counting it would show every existing business as 2/4 instead of
+  // 2/3 and nudge them to maintain hours they never asked for (the exact
+  // GBP-staleness risk the ticket cites). It still belongs to the location
+  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
+  // MEH-2058: "location" was a member of this group before its card (the
+  // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
+  // the group's only location-writing surface and isn't tracked here (see
+  // MEH-1544's note above for why an opt-in-shaped field stays out of the count).
+  location: ["delivery", "hours"],
   contact: ["contact", "questions"],
 };
+
+// MEH-1920: card keys whose MEH-1158 preview is fixed-shape enough to enter a
+// HUB TILE. The per-card accordion header is unaffected — it owns a full row and
+// still shows every preview below.
+//
+// A hub tile packs its preview nodes into ONE narrow flex row
+// (EditHubCard.jsx:52-58 — `flex items-center gap-2 overflow-hidden`, each node
+// wrapped in `min-w-0`), and every chip carries `truncate`, whose
+// `overflow: hidden` zeroes a flex item's automatic minimum size. So a node
+// holding unbounded owner prose does not merely clip itself — it shrinks the
+// structured chips beside it to a single glyph. Measured in Chromium at 375px
+// with only the free-text node as the variable: category chips 58px→33px and
+// 49px→30px, rendering as "ת…" / "ט…" beside a clipped description. Free text
+// never enters a preview (GOV.UK / NHS summary-list pattern).
+//
+// Allowlist, not denylist: a card key added later stays out of the hub until its
+// preview is shown to be short and fixed-shape. Keys with no preview node at all
+// (kashrut / delivery / hours / questions / ownerStory) are already filtered by
+// the `previews[k]` check below and are deliberately absent here.
+const HUB_PREVIEW_KEYS = new Set([
+  "images", // PreviewThumbs — fixed 40px squares
+  "categories", // PreviewChips — closed vocabulary, capped at 3 (MEH-1297)
+  "license", // masked "•••1234" chip (MEH-1258)
+  "contact", // channel glyph + channel label
+]);
 
 // MEH-1408: thin Suspense wrapper — EditPageInner reads useSearchParams (the
 // active ?group), which requires a Suspense boundary at build (Next CSR-bailout
@@ -218,8 +290,19 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-1872: business-name change-request card.
+  const tName = useTranslations("dashboard.producer.name_change");
+  // MEH-1823: the offer feature owns one namespace shared by the dashboard
+  // card and the public badge, so the four type labels have a single source.
+  const tOffer = useTranslations("producer.offer");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
+  // MEH-1773: point-of-decision explainer for the order-window card. The
+  // ContactChannelsCard hook of the same name (:1202) is scoped to that
+  // component and not reachable from here.
+  // REUSES: frontend/app/[locale]/producer/dashboard/edit/page.js:1202 — same
+  // top-level whats_this namespace, same WhatsThis component (MEH-1115).
+  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
 
@@ -415,8 +498,7 @@ function EditPageInner() {
   // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
   // whose summary signal reads empty gets a single 8px accent dot — so the
   // owner always knows where to start. Derived from the SAME profile fields
-  // the summaries above compute (no producer-completeness import, no fetch);
-  // location is skipped for delivery-only profiles (its card isn't mounted).
+  // the summaries above compute (no producer-completeness import, no fetch).
   // Falls through to null when nothing is missing → no marker at all.
   const productsForMarker = productsCount ?? profile.products?.length ?? 0;
   const nextStepKey =
@@ -424,15 +506,13 @@ function EditPageInner() {
       ? "images"
       : (profile.categories?.length ?? 0) === 0
         ? "categories"
-        : profile.has_physical_location !== false && !(profile.city || "").trim()
-          ? "location"
-          : !(profile.description || "").trim() || isDefaultDescription(profile.description)
-            ? "bio"
-            : productsForMarker < 3
-              ? "products"
-              : !(profile.phone || "").trim()
-                ? "contact"
-                : null;
+        : !(profile.description || "").trim() || isDefaultDescription(profile.description)
+          ? "bio"
+          : productsForMarker < 3
+            ? "products"
+            : !(profile.phone || "").trim()
+              ? "contact"
+              : null;
   // ADR-019 / ADR-024: incomplete-affordance is gold (bg-accent = #896714),
   // never red — a partial profile is progress. role=img + aria-label so the
   // marker is announced; RTL logical margin-start (ms-*) keeps it beside the
@@ -484,14 +564,6 @@ function EditPageInner() {
       ) : (
         <PreviewEmpty />
       ),
-    location: (profile.city || "").trim() ? (
-      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
-        <MapPin size={16} aria-hidden="true" className="shrink-0" />
-        <span className="truncate">{profile.city}</span>
-      </span>
-    ) : (
-      <PreviewEmpty />
-    ),
     bio: bioFirstLine ? (
       <span className="block text-xs font-normal text-fg-muted truncate">
         {bioFirstLine}
@@ -558,28 +630,34 @@ function EditPageInner() {
     ),
     license: Boolean(licenseRaw),
     kashrut: (profile.kashrut_badges || []).length > 0,
-    location: Boolean((profile.city || "").trim()),
     delivery:
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
     hours: Boolean((profile.opening_hours || "").trim()),
+    // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
+    orderWindow: Object.keys(profile.order_window || {}).length > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
 
   // MEH-1408: hub-tile props per group — completion "{done}/{total}", the
   // next-step dot when the next step lands in this group, and up to two of the
-  // group's existing filled previews (MEH-1158 peek). The location card drops
-  // out of the membership for delivery-only profiles (it isn't mounted).
+  // group's existing filled previews (MEH-1158 peek).
   const groupTile = (g) => {
-    const members = GROUP_MEMBERS[g].filter(
-      (k) => !(k === "location" && profile.has_physical_location === false)
-    );
+    const members = GROUP_MEMBERS[g];
     const done = members.filter((k) => cardFilled[k]).length;
-    const groupPreviews = members
-      .filter((k) => cardFilled[k] && previews[k])
-      .map((k) => previews[k])
-      .slice(0, 2);
+    const withPreview = members.filter((k) => cardFilled[k] && previews[k]);
+    // MEH-1920: hub tiles take only fixed-shape previews (see HUB_PREVIEW_KEYS).
+    const hubSafe = withPreview.filter((k) => HUB_PREVIEW_KEYS.has(k));
+    const groupPreviews =
+      hubSafe.length > 0
+        ? hubSafe.slice(0, 2).map((k) => previews[k])
+        : withPreview.length > 0
+          ? // Filled, but every preview it could offer is free text: keep the
+            // row with the dashed placeholder the empty cards already use,
+            // rather than dropping the tile's preview row without a trace.
+            [<PreviewEmpty key="hub-empty" />]
+          : [];
     return {
       statusLine: tAcc("hub_progress", { done, total: members.length }),
       marker:
@@ -595,18 +673,18 @@ function EditPageInner() {
     images: t("images.heading"),
     categories: t("categories.heading"),
     license: t("license.heading"),
-    location: t("location.heading"),
     bio: t("description_card.heading"),
     products: tProducts("section_heading"),
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
     hours: t("hours.heading"),
+    orderWindow: t("order_window.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -821,6 +899,25 @@ function EditPageInner() {
             reportDirty={reportDirty}
           />
         </EditAccordionCard>
+
+        {/* MEH-2063: business-name editor moved LAST in the group — renaming
+            is a rare, request-based action (files a REQUEST rather than
+            writing its value; the public name does not move until an admin
+            approves — MEH-1851 removed `name` from _PRODUCER_WRITABLE_FIELDS,
+            this is the sanctioned route back, MEH-1872) and sits below the
+            content cards edited every week, not above them (industry
+            convention: frequent content actions first, rare administrative
+            actions last — GitHub "Danger Zone" / Shopify store details).
+            anchorId unchanged (deep-link contract MEH-1106). */}
+        <EditAccordionCard
+          anchorId="business-name"
+          title={tName("heading")}
+          summary={tName("accordion_summary")}
+          open={openKey === "businessName"}
+          onToggle={() => toggleKey("businessName")}
+        >
+          <BusinessNameCard profile={profile} />
+        </EditAccordionCard>
       </div>
 
       {/* ===== GROUP: trust — one unified "אישורים ותעודות" card composing the
@@ -872,10 +969,50 @@ function EditPageInner() {
             </h3>
             <KashrutCard profile={profile} reportDirty={reportDirty} />
           </div>
+
+          {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
+              vegan/vegetarian + gluten facility). Sub-section next to kashrut;
+              writes producer scope fields via PUT /producers/me (onSave merges). */}
+          <div
+            id="dietary-scope"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("dietaryScope.heading")}
+            </h3>
+            <DietaryScopeCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
+
+          {/* ②e MEH-1851 row 23 — owner-declared grass_fed. Sits in the trust
+              group next to dietary scope because it is the same KIND of claim:
+              a business-level property the owner asserts and nobody verifies
+              (labels.md records its evidence as `self-declared` already). It is
+              NOT inside DietaryScopeCard: that card asks what the catalog
+              CONTAINS, and how livestock was raised is not a dietary scope —
+              folding it in would mislabel the question. The column was already
+              writable via PUT /producers/me; only the ADMIN form could produce
+              a value, which bought friction and no verification. */}
+          <div
+            id="grass-fed"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("grassFed.heading")}
+            </h3>
+            <GrassFedCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: location — location, delivery, hours ===== */}
+      {/* ===== GROUP: location — locations, delivery, hours ===== */}
       <div
         hidden={group !== "location"}
         className="space-y-6"
@@ -883,27 +1020,9 @@ function EditPageInner() {
       >
         {backLink}
 
-        {/* ③ Edit-tab chunk C — producer-facing location/coords editor.
-            MEH-213: only physical-location producers have a map pin; delivery-only
-            businesses intentionally have no lat/lng, so the card is hidden for
-            them (has_physical_location === false). */}
-        {profile.has_physical_location !== false && (
-          <EditAccordionCard
-            anchorId="location"
-            title={t("location.heading")}
-            summary={profile.city || tAcc("location_missing")}
-            preview={previews.location}
-            marker={nextStepKey === "location" ? nextStepDot : undefined}
-            open={openKey === "location"}
-            onToggle={() => toggleKey("location")}
-          >
-            <LocationCard
-              profile={profile}
-              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-              reportDirty={reportDirty}
-            />
-          </EditAccordionCard>
-        )}
+        {/* MEH-2058: the duplicate "מיקום על המפה" card (owner-facing
+            Producer.lat/lng/city editor) was removed here — LocationsEditor
+            below is now the section's only location-writing surface. */}
 
         {/* MEH-1421 (MEH-1388 chunk 4a): multi-location editor (branch / pickup /
             market_stand). NOT gated on has_physical_location — a delivery-only
@@ -947,6 +1066,29 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
+        {/* MEH-1823 — the owner's single typed offer. Sits after delivery
+            because the most common offer (free delivery over a threshold) is
+            read against the delivery terms above it. Summary shows the live
+            offer sentence, or "no active offer" — the empty state is a real
+            state here, not a placeholder. */}
+        <EditAccordionCard
+          anchorId="offer"
+          title={tOffer("card_title")}
+          summary={
+            profile.active_offer
+              ? tOffer(`types.${profile.active_offer.offer_type}`)
+              : tOffer("type_none")
+          }
+          open={openKey === "offer"}
+          onToggle={() => toggleKey("offer")}
+        >
+          <OffersCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
         {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
         <EditAccordionCard
           anchorId="hours"
@@ -956,6 +1098,40 @@ function EditPageInner() {
           onToggle={() => toggleKey("hours")}
         >
           <HoursCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in and separate from
+            the opening-hours card above: a business that never opens this
+            renders nothing on its public page. */}
+        <EditAccordionCard
+          anchorId="order-window"
+          title={t("order_window.heading")}
+          summary={
+            cardFilled.orderWindow
+              ? t("order_window.summary_set", {
+                  count: Object.keys(profile.order_window || {}).length,
+                })
+              : t("order_window.summary_empty")
+          }
+          open={openKey === "orderWindow"}
+          onToggle={() => toggleKey("orderWindow")}
+        >
+          {/* MEH-1773: "חלון הזמנות" and the "זמינות" card on the dashboard
+              landing page both read as "when am I open", so owners could not
+              tell them apart. This names the distinction at the point of
+              editing — the recurring weekly schedule — and its twin sits on
+              the availability card (dashboard/page.js) saying the other half:
+              a manual, temporary exception. */}
+          <WhatsThis
+            content={tWhat("order_window")}
+            className="mb-1"
+            testId="whats-this-order-window"
+          />
+          <OrderWindowEditor
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
@@ -1071,9 +1247,6 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
-      </p>
-      <p className="text-xs text-fg-muted mb-4">
-        {t("context_line")}
       </p>
       {/* MEH-1477: content guidance — nudges owners toward the questions
           customers actually ask before buying (stock / delivery / ordering),
@@ -1198,9 +1371,12 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      // Surface the Chunk-2 server guards (scheme / 7-value) inline.
-      const detail = err?.response?.data?.detail;
-      setErrorMsg(typeof detail === "string" ? detail : t("save_error"));
+      // Surface the server contact guards inline (Chunk-2 scheme / 7-value +
+      // MEH-1537 email/phone/whatsapp_group format). detailToMessage handles
+      // BOTH the string detail (400/409) and the 422 RequestValidationError
+      // array — the earlier `typeof detail === "string"` check collapsed the
+      // 422 array to the generic copy, hiding the specific Hebrew field error.
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
     } finally {
       setSaving(false);
     }
@@ -1216,19 +1392,31 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       <ViewOnPageLink producerId={profile?.id} anchor="section-contact" />
 
       <div className="space-y-3">
-        <Input type="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
+        <Input type="tel" inputMode="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
           onChange={(e) => upd("phone", e.target.value)} error={fieldError("phone")} />
+        {/* MEH-1597: each placeholder shows the shape that field's validator
+            actually accepts (ProducerUpdate, backend/app/schemas/schemas.py).
+            instagram is the odd one out: it has NO validator (:997 is a bare
+            `str | None` — :1205 covers only website/facebook/external_order_form)
+            and ContactCard.jsx:105-106 builds `https://instagram.com/${handle}`
+            itself, so a URL here would render a doubled, dead link. Bare handle
+            on purpose. */}
         <Input type="text" dir="ltr" label={t("field_instagram")} value={form.instagram}
+          placeholder={t("instagram_placeholder")}
           onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
         <Input type="url" dir="ltr" label={t("field_website")} value={form.website}
+          placeholder={t("website_placeholder")}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
         {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
             empty-primary guard applies (fieldError never targets it). */}
         <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          placeholder={t("whatsapp_group_placeholder")}
           onChange={(e) => upd("whatsapp_group", e.target.value)} />
-        <Input type="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+        <Input type="email" inputMode="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+          placeholder={t("email_placeholder")}
           onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
         <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
+          placeholder={t("facebook_placeholder")}
           onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
         <Input type="url" dir="ltr" label={t("field_external_order")} value={form.external_order_form}
           onChange={(e) => upd("external_order_form", e.target.value)} error={fieldError("external_order_form")} />

@@ -44,8 +44,21 @@ import AlertPrefsPanel from "./AlertPrefsPanel";
  * (ensureFavoritesLoaded / subscribeFavorites / setFavoritedLocal) — a save on
  * /producer now reflects in every subscribed CardHeart in the same session
  * (and vice-versa), and the saved ink turned green.
+ *
+ * MEH-1693: `onFavorited` lets a PAGE own the post-save panel instead of this
+ * component. The inline mount below is suppressed for the two variants whose
+ * layout it breaks — "quiet" (a block panel inside an lg:absolute-pinned row)
+ * and "gallery" (inside an absolute hero overlay) — which is exactly why the
+ * producer page had no post-save panel at all before this ticket. Surfaces
+ * that pass `onFavorited` render the panel themselves at a sane position;
+ * surfaces that don't keep the historical inline behaviour untouched.
  */
-export default function FavoriteButton({ producerId, producerName = "", variant = "default" }) {
+export default function FavoriteButton({
+  producerId,
+  producerName = "",
+  variant = "default",
+  onFavorited,
+}) {
   const t = useTranslations("favorites.button");
   // MEH-848: shared generic error copy (collapsed from favorites.button.error_generic).
   const tError = useTranslations("error");
@@ -110,6 +123,11 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         // like gallery — a block panel inside the flex row breaks the layout,
         // and this page never showed it before (its only mount was gallery).
         if (variant !== "gallery" && variant !== "quiet") setShowAlertPanel(true);
+        // MEH-1693: page-level handoff. Fires for EVERY variant — the two
+        // suppressed above are precisely the ones that need it, and a surface
+        // that passes no callback is unaffected. Placed after the await so it
+        // only fires on a save the server accepted.
+        onFavorited?.();
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
           showToast.success(t("saved_toast_first_time"), {

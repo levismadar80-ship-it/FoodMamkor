@@ -48,7 +48,9 @@ export default function EventDetailClient() {
     // pulse per ADR-019, same idiom as the list SkeletonRows. aria-label keeps
     // the SR "loading" announcement.
     return (
-      <div aria-busy="true" aria-label={t("loading")}>
+      // MEH-1957: same fix as the list skeleton — aria-label needs a role to be
+      // permitted; without it axe reports aria-prohibited-attr (serious).
+      <div role="status" aria-busy="true" aria-label={t("loading")}>
         <div className="h-[360px] bg-border/60 animate-pulse" />
         <div className="max-w-3xl mx-auto px-4 py-12">
           <span className="block w-24 h-6 rounded-full bg-border/60 animate-pulse mb-3" />

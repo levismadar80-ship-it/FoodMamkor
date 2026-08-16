@@ -10,14 +10,16 @@
  *           components/ui/EmptyState.jsx, lib/errors.js (detailToMessage).
  * History:  MEH-776 (UIS-026 delete guard); MEH-999 follow-up (extracted from
  *           settings/page.jsx and mounted in the edit tab — was defined but
- *           never rendered).
+ *           never rendered); MEH-1809 (unified submit validation: all field
+ *           errors computed together, rendered inline via ui/Input, focus to
+ *           the first invalid field — replaced the one-at-a-time setError chain).
  */
 "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 // MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
 // currentColor, aria-hidden) instead of a baked-in emoji — same source the
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
@@ -29,6 +31,76 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
+import Input from "@/components/ui/Input";
+
+// MEH-2047: the diet tags that carry a definition, in the order the chip row
+// above them renders. Each key resolves BOTH strings — the term from the chip's
+// own `diet_<key>` label (one owner, so the disclosure can never name a tag
+// differently from the chip beside it) and the body from `diet_def_<key>`.
+//
+// The definitions are INGREDIENT-level only, deliberately. Facility scope
+// (shared vs dedicated line) and "100%" declarations belong to MEH-1508, which
+// is In Progress on exactly that surface — stating either here would pre-empt
+// its decision with copy nobody ratified.
+//
+// This list is now exactly the chip row. "דל פחמימות" was withdrawn from the
+// form in the second half of MEH-2047 — a claim with no defined standard in
+// EU/UK 1924/2006 or ת"י 1145, so no honest definition could be written for it
+// and a small business could not substantiate one without a lab analysis. The
+// `products.is_low_carb` column and every value already stored in it are
+// untouched; only the surfaces are gone. Same shape as the MEH-1259 organic
+// removal, whose comments in lib/badges.js and lib/map-chips.js are the
+// precedent this followed.
+//
+// Note the form no longer SENDS is_low_carb at all: `update_my_product` (the
+// PUT /products/{product_id} handler in backend/app/routers/producer_me.py)
+// applies model_dump(exclude_unset=True), so an omitted field is not written
+// and an existing marking survives an edit untouched. Sending `false` instead
+// would have silently cleared it.
+//
+// Cited by SYMBOL, not by line number, and that is the correction rather than
+// an incidental style choice: this comment first read `producer_me.py:1445`,
+// which was accurate when written and was 56 lines stale within the hour as
+// staging moved. It had drifted onto the POST decorator — a real line, wrong
+// handler — which reads as a working citation and is worse than a dangling
+// one. `grep update_my_product` cannot rot that way.
+const DIET_DEFINITION_KEYS = ["gluten_free", "vegan", "vegetarian", "lactose_free", "no_added_sugar"];
+
+// MEH-1809: unified submit-validation — every required/range check runs
+// together (not one-at-a-time via a setError chain) and lands on its field.
+const PRODUCT_FIELD_ORDER = ["name", "price_min", "price_max"];
+const PRODUCT_FIELD_ID_SUFFIX = { name: "name", price_min: "price-min", price_max: "price-max" };
+
+function validateProductForm(f, tErr) {
+  const errors = {};
+  if (!f.name.trim()) errors.name = tErr("name_required");
+  if (f.price_min === "") {
+    errors.price_min = tErr("price_required");
+  } else {
+    const minNum = Number(f.price_min);
+    if (minNum < 1) errors.price_min = tErr("price_min_too_low");
+    else if (minNum > 10000) errors.price_min = tErr("price_too_high");
+  }
+  if (f.price_max !== "") {
+    const maxNum = Number(f.price_max);
+    if (maxNum > 10000) errors.price_max = tErr("price_too_high");
+    else if (f.price_min !== "" && maxNum < Number(f.price_min)) errors.price_max = tErr("price_max_below_min");
+  }
+  return errors;
+}
+
+// Scroll + focus the first invalid field in form order (GOV.UK pattern).
+function focusFirstInvalidProductField(errors, idPrefix) {
+  const first = PRODUCT_FIELD_ORDER.find((field) => errors[field]);
+  if (!first) return;
+  const el = document.getElementById(`${idPrefix}-${PRODUCT_FIELD_ID_SUFFIX[first]}`);
+  el?.focus();
+  el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+}
+
+function clearFieldError(setErrors, field) {
+  setErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
+}
 
 // MEH-1116: `embedded` drops the card chrome + heading (the edit-tab accordion
 // header owns them); `onCountChange` reports the live product count up for the
@@ -42,12 +114,14 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [editFormErrors, setEditFormErrors] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.
@@ -58,6 +132,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // renders a distinct error card + retry instead of the "no products yet"
   // EmptyState; `reloadKey` re-fires the mount fetch on retry.
   const [loadError, setLoadError] = useState(false);
+  // MEH-1976: product id → the image src that failed to load. A map rather
+  // than a boolean because the thumbs render inside a .map(); one shared flag
+  // would blank every sibling when a single image 401s (MEH-1925).
+  const [failedThumbs, setFailedThumbs] = useState({});
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -108,13 +186,15 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError(tErr("name_required")); return; }
-    if (form.price_min === "") { setError(tErr("price_required")); return; }
+    const errors = validateProductForm(form, tErr);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      focusFirstInvalidProductField(errors, "new-product");
+      return;
+    }
+    setFormErrors({});
     const minNum = Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
-    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
-    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
     setSaving(true);
     setError("");
     try {
@@ -128,10 +208,11 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegan: form.is_vegan,
         is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
+        is_no_added_sugar: form.is_no_added_sugar,  // MEH-1934
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch {
@@ -153,13 +234,16 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       is_vegan: !!product.is_vegan,
       is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
+      is_no_added_sugar: !!product.is_no_added_sugar,  // MEH-1934
     });
     setError("");
+    setEditFormErrors({});
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setError("");
+    setEditFormErrors({});
   };
 
   const handleEditImageUpload = async (e) => {
@@ -209,13 +293,18 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 
   const handleEdit = async (productId, e) => {
     e.preventDefault();
-    if (!editForm.name?.trim()) { setError(tErr("name_required")); return; }
-    if (editForm.price_min === "") { setError(tErr("price_required")); return; }
+    const errors = validateProductForm(
+      { name: editForm.name || "", price_min: editForm.price_min ?? "", price_max: editForm.price_max ?? "" },
+      tErr,
+    );
+    if (Object.keys(errors).length > 0) {
+      setEditFormErrors(errors);
+      focusFirstInvalidProductField(errors, `edit-product-${productId}`);
+      return;
+    }
+    setEditFormErrors({});
     const minNum = Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
-    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
-    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
     setSavingEdit(true);
     setError("");
     try {
@@ -229,6 +318,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegan: !!editForm.is_vegan,
         is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
+        is_no_added_sugar: !!editForm.is_no_added_sugar,  // MEH-1934
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -281,7 +371,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             first add). Empty state → the EmptyState CTA is the single button. */}
         {!adding && products?.length > 0 && (
           <button
-            onClick={() => { setAdding(true); setError(""); }}
+            onClick={() => { setAdding(true); setError(""); setFormErrors({}); }}
             className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
           >
             <Plus size={14} aria-hidden="true" />
@@ -289,6 +379,11 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           </button>
         )}
       </div>
+
+      {/* MEH-1597: card-level "where it appears" line. The MEH-1539 standard
+          allows one per card when it covers every field, which it does here —
+          name, description and price all surface in the same public list. */}
+      <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
 
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
@@ -316,7 +411,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           title={t("empty.title")}
           description={t("empty.description")}
           ctaLabel={t("empty.cta")}
-          ctaOnClick={() => { setAdding(true); setError(""); }}
+          ctaOnClick={() => { setAdding(true); setError(""); setFormErrors({}); }}
           example={
             // MEH-1172: no floating decorative icon — the example card IS the
             // visual (Carbon empty-state pattern). Full opacity, slightly wider.
@@ -342,6 +437,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             <form
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
+              noValidate
               className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50"
             >
               <div className="flex items-center justify-between">
@@ -358,22 +454,24 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               {/* MEH-1273 group (a) — details: name + description (tight spacing within, wider between groups). */}
               <div className="space-y-3">
                 <div>
-                  <label htmlFor={`edit-product-${product.id}-name`} className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-                  <input
+                  <Input
                     id={`edit-product-${product.id}-name`}
+                    label={tForm("name_label")}
                     required
                     value={editForm.name || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+                    onChange={(e) => {
+                      setEditForm((f) => ({ ...f, name: e.target.value }));
+                      clearFieldError(setEditFormErrors, "name");
+                    }}
+                    error={editFormErrors.name}
                   />
                 </div>
                 <div>
-                  <label htmlFor={`edit-product-${product.id}-description`} className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-                  <input
+                  <Input
                     id={`edit-product-${product.id}-description`}
+                    label={tForm("description_label")}
                     value={editForm.description || ""}
                     onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -385,14 +483,24 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   label={tForm("price_min_label")}
                   required
                   value={editForm.price_min || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, price_min: e.target.value }))}
+                  placeholder={tForm("price_min_placeholder")}
+                  onChange={(e) => {
+                    setEditForm((f) => ({ ...f, price_min: e.target.value }));
+                    clearFieldError(setEditFormErrors, "price_min");
+                  }}
+                  error={editFormErrors.price_min}
                 />
                 <PriceField
                   id={`edit-product-${product.id}-price-max`}
                   label={tForm("price_max_label")}
                   optionalSuffix={tForm("price_max_optional_suffix")}
                   value={editForm.price_max || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
+                  placeholder={tForm("price_max_placeholder")}
+                  onChange={(e) => {
+                    setEditForm((f) => ({ ...f, price_max: e.target.value }));
+                    clearFieldError(setEditFormErrors, "price_max");
+                  }}
+                  error={editFormErrors.price_max}
                 />
               </div>
 
@@ -405,10 +513,15 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                     <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
                     <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={!!editForm.is_vegetarian} onToggle={() => setEditForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
                     <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                    {/* MEH-1934: appended last so the existing diet order is unchanged. No new chip-icons entry — same as vegetarian, which renders iconless. */}
+                    <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={!!editForm.is_no_added_sugar} onToggle={() => setEditForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
                   </div>
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
                       surfaces the business in the matching public filter. */}
                   <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
+                  {/* MEH-2047: …and what each tag MEANS. Per-product id — see
+                      the DietDefinitions doc comment. */}
+                  <DietDefinitions id={`edit-diet-definitions-${product.id}`} tForm={tForm} />
                 </div>
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
@@ -442,9 +555,21 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             </form>
           ) : (
             <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
-              {product.image_url ? (
+              {product.image_url && failedThumbs[product.id] !== product.image_url ? (
                 <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
-                  <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="48px" />
+                  <Image
+                    src={product.image_url}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                    // MEH-1976: a 401 here previously rendered a broken glyph.
+                    // Keyed by product id because this row is inside a .map —
+                    // one flag would blank every sibling thumb.
+                    onError={() =>
+                      setFailedThumbs((prev) => ({ ...prev, [product.id]: product.image_url }))
+                    }
+                  />
                 </div>
               ) : (
                 <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
@@ -482,34 +607,36 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
+        <form onSubmit={handleAdd} noValidate className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-text">{t("add_heading")}</p>
-            <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
+            <button type="button" onClick={() => { setAdding(false); setError(""); setFormErrors({}); }} aria-label={t("cancel_aria")}>
               <X size={16} className="text-fg-muted" aria-hidden="true" />
             </button>
           </div>
           {/* MEH-1273 group (a) — details: name + description. */}
           <div className="space-y-3">
             <div>
-              <label htmlFor="new-product-name" className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-              <input
+              <Input
                 id="new-product-name"
+                label={tForm("name_label")}
                 required
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }));
+                  clearFieldError(setFormErrors, "name");
+                }}
                 placeholder={tForm("name_placeholder")}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+                error={formErrors.name}
               />
             </div>
             <div>
-              <label htmlFor="new-product-description" className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-              <input
+              <Input
                 id="new-product-description"
+                label={tForm("description_label")}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder={tForm("description_placeholder")}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -522,14 +649,24 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 label={tForm("price_min_label")}
                 required
                 value={form.price_min}
-                onChange={(e) => setForm((f) => ({ ...f, price_min: e.target.value }))}
+                placeholder={tForm("price_min_placeholder")}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, price_min: e.target.value }));
+                  clearFieldError(setFormErrors, "price_min");
+                }}
+                error={formErrors.price_min}
               />
               <PriceField
                 id="new-product-price-max"
                 label={tForm("price_max_label")}
                 optionalSuffix={tForm("price_max_optional_suffix")}
                 value={form.price_max}
-                onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
+                placeholder={tForm("price_max_placeholder")}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, price_max: e.target.value }));
+                  clearFieldError(setFormErrors, "price_max");
+                }}
+                error={formErrors.price_max}
               />
             </div>
             {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
@@ -545,10 +682,14 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
                 <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={form.is_vegetarian} onToggle={() => setForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
                 <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                {/* MEH-1934 */}
+                <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={form.is_no_added_sugar} onToggle={() => setForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
               </div>
               {/* MEH-1439: tell the owner what marking a diet flag does — it
                   surfaces the business in the matching public filter. */}
               <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
+              {/* MEH-2047: …and what each tag MEANS. */}
+              <DietDefinitions id="add-diet-definitions" tForm={tForm} />
             </div>
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its
@@ -621,36 +762,82 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 // duplication, not a shared component). Save/upload logic stays in the parent;
 // these own layout only.
 
-// Price field with the ₪ adornment rendered INSIDE the input.
-// REUSES: app/[locale]/producer/dashboard/group-buys/page.js:126-137 (Input
-// startAdornment="₪") + components/ui/Input.jsx:105-110 (absolute start-3 span).
-// Logical props only (start-3 / ps-8) — RTL-safe.
-function PriceField({ id, label, optionalSuffix, value, onChange, required = false }) {
+// Price field with the ₪ adornment rendered INSIDE the input, via the
+// canonical Input startAdornment (MEH-1809 — was a hand-rolled duplicate of
+// this same primitive; now reuses it directly, error prop included).
+// MEH-1597: `placeholder` added so the two price inputs can carry an example
+// like every other field in the card. Plain number, no ₪ — the currency glyph
+// is already rendered inside the input below, and products are numeric since
+// MEH-295.
+function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, required = false, error }) {
   return (
-    <div>
-      <label htmlFor={id} className="text-xs text-fg-muted mb-1 block">
-        {label}
-        {optionalSuffix ? <span className="text-fg-muted"> {optionalSuffix}</span> : null}
-      </label>
-      <div className="relative">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted"
-        >
-          ₪
-        </span>
-        <input
-          id={id}
-          required={required}
-          type="number"
-          min={1}
-          max={10000}
-          step={0.5}
-          value={value}
-          onChange={onChange}
-          className="w-full border border-border rounded-[8px] ps-8 pe-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-        />
-      </div>
+    <Input
+      id={id}
+      label={
+        optionalSuffix ? (
+          <>
+            {label}
+            <span className="text-fg-muted"> {optionalSuffix}</span>
+          </>
+        ) : (
+          label
+        )
+      }
+      required={required}
+      type="number"
+      min={1}
+      max={10000}
+      step={0.5}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      startAdornment="₪"
+      error={error}
+    />
+  );
+}
+
+/**
+ * MEH-2047: "מה הסימונים אומרים?" — one collapsed disclosure under the chip
+ * row, listing what each tag MEANS.
+ *
+ * Distinct from the MEH-1439 helper line directly above it, which stays: that
+ * one states the tag's EFFECT ("marking it lists you in the matching filter"),
+ * and an owner who knows the effect can still mis-mark a product because she
+ * read "ללא לקטוז" as "ללא חלב". Meaning and effect are two questions.
+ *
+ * One disclosure rather than a ⓘ per chip (Sapir, 13/08): six icons on a
+ * six-chip row is the noise the DoorDash/Deliveroo pattern avoids by putting
+ * the definitions one tap away instead of beside every control.
+ *
+ * `id` is required and must be unique per mount — the edit form renders one of
+ * these PER PRODUCT, so a constant would duplicate the id across every open
+ * editor and point every trigger's aria-controls at the first panel.
+ */
+function DietDefinitions({ id, tForm }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="inline-flex items-center gap-1 rounded-md text-xs text-fg-muted underline underline-offset-2 focus-ring"
+      >
+        {tForm("diet_definitions_cta")}
+        {open ? <CaretUp size={14} aria-hidden="true" /> : <CaretDown size={14} aria-hidden="true" />}
+      </button>
+      {open && (
+        <dl id={id} className="mt-2 space-y-1.5 text-xs text-fg-muted">
+          {DIET_DEFINITION_KEYS.map((key) => (
+            <div key={key}>
+              <dt className="inline font-medium">{tForm(`diet_${key}`)}:</dt>{" "}
+              <dd className="inline">{tForm(`diet_def_${key}`)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 }
@@ -686,18 +873,26 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
 // REUSES: app/[locale]/producer/dashboard/events/new/page.js:251-288 (dashed
 // click-to-upload label + thumbnail/remove). Upload handler stays in the parent.
 function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
-  if (imageUrl) {
+  // MEH-1976: must precede the `if (imageUrl)` return — hooks cannot be
+  // conditional. Holds the src that failed to load, so a new imageUrl clears
+  // it during render with no effect.
+  const [failedSrc, setFailedSrc] = useState(null);
+  if (imageUrl && failedSrc !== imageUrl) {
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-16 h-16 rounded-[8px] overflow-hidden shrink-0 border border-border">
-          <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" />
+          <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" onError={() => setFailedSrc(imageUrl)} />
         </div>
-        <label className="cursor-pointer text-sm text-primary hover:underline">
+        {/* MEH-2033: sr-only (NOT hidden) keeps the input in the tab order —
+            display:none removes it and the wrapping label is not natively
+            focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
+            affordance; this label has no border, so the ring alone carries it. */}
+        <label className="cursor-pointer text-sm text-primary hover:underline rounded-[4px] focus-within:ring-2 focus-within:ring-primary/30">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
             accept="image/*"
-            className="hidden"
+            className="sr-only"
             onChange={onUpload}
             disabled={uploading}
           />
@@ -708,14 +903,16 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
       </div>
     );
   }
+  // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
+  // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
         onChange={onUpload}
         disabled={uploading}
       />

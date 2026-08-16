@@ -6,17 +6,13 @@
  * contract WITHOUT relying on visual QA, and use startsWith/contains for the
  * `he` case so the RLM can never fail the match. Guards dev/CI/prod divergence.
  *
- * formatCompact is a named export of the insights page (a "use client"
- * module). We import ONLY the pure function — never mounting the page — and
- * stub its side-effecting imports (api, i18n/navigation) so the module
- * evaluates cleanly in jsdom (mirrors EditTabCategoriesCard.test.jsx).
+ * MEH-1520: formatCompact moved to lib/format.js — App Router forbids
+ * non-reserved exports from page.js, and the export existed only for this
+ * test. A pure lib module needs no side-effect stubs anymore.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
-vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
-vi.mock("@/i18n/navigation", () => ({ Link: () => null }));
-
-import { formatCompact } from "@/app/[locale]/producer/dashboard/insights/page";
+import { formatCompact } from "@/lib/format";
 
 describe("formatCompact", () => {
   it("renders 4-digit values compactly in both locales (RLM-tolerant)", () => {

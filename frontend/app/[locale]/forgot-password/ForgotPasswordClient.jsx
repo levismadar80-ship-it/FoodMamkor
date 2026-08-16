@@ -40,7 +40,12 @@ export default function ForgotPasswordClient() {
         <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
 
         {submitted ? (
-          <div className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
+          /* MEH-215 journey C: the anti-enumeration ack (MEH-328). Same node
+             for a known and an unknown address — the spec asserts exactly that. */
+          <div
+            data-testid="forgot-sent"
+            className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm"
+          >
             <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
             <p className="text-fg-muted text-xs mt-2">
               {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
@@ -58,6 +63,7 @@ export default function ForgotPasswordClient() {
             {/* MEH-1145 Wave E1: plain email field → ui/Input (placeholder-only,
                 no label invented; recipe converges to the canon). */}
             <Input
+              data-testid="forgot-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -70,13 +76,14 @@ export default function ForgotPasswordClient() {
             )}
             <button
               type="submit"
+              data-testid="forgot-submit"
               disabled={loading || !email}
               className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
             >
               {loading ? t("auth.passwordRecovery.forgot.submit_sending") : t("auth.passwordRecovery.forgot.submit")}
             </button>
             <p className="text-center text-sm text-fg-muted">
-              <Link href="/login" className="text-primary hover:underline">
+              <Link href="/login" data-testid="forgot-back-to-login" className="text-primary hover:underline">
                 {t("auth.passwordRecovery.forgot.back_to_login")}
               </Link>
             </p>

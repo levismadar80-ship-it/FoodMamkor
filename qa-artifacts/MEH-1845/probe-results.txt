@@ -1,0 +1,9 @@
+PASS card-pill-shows-new-label-375: {"actual":"בשר חלק (גלאט)","expected":"בשר חלק (גלאט)"}
+PASS card-pill-not-bare-old-375: {"actual":false,"expected":false}
+PASS overflow-panel-contains-new-label-375: {"actual":true,"expected":true}
+PASS overflow-panel-has-no-bare-old-label-375: {"actual":false,"expected":false}
+PASS card-pill-shows-new-label-1440: {"actual":"בשר חלק (גלאט)","expected":"בשר חלק (גלאט)"}
+PASS card-pill-not-bare-old-1440: {"actual":false,"expected":false}
+PASS overflow-panel-contains-new-label-1440: {"actual":true,"expected":true}
+PASS overflow-panel-has-no-bare-old-label-1440: {"actual":false,"expected":false}
+FAILURES: 0

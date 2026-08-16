@@ -6,7 +6,8 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
 from app.config import settings
@@ -14,7 +15,10 @@ from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
 )
-from app.services.delivery_validation import ensure_exclusion_requires_nationwide
+from app.services.delivery_validation import (
+    ensure_exclusion_requires_nationwide,
+    ensure_nationwide_requires_delivery,
+)
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
@@ -30,13 +34,20 @@ from app.schemas.schemas import (
     GrantVerifiedIn,
     ProducerAdminCreate,
     ProducerAdminOut,
+    ProducerRejectIn,
     ProducerUpdate,
+    RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
 )
 from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
+)
+from app.services.producer_queries import (
+    attach_badge_fields,
+    create_primary_branch_location,
+    upsert_primary_branch_location,
 )
 from app.slug_utils import RESERVED_SLUGS
 from app.utils.sql import LIKE_ESCAPE, escape_like
@@ -47,7 +58,30 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _slugify(text: str) -> str:
-    """Generate URL-safe slug from text. Hebrew → transliterate-ish fallback."""
+    """Lower-case, hyphenate, and strip a name down to URL-safe characters.
+
+    MEH-1813 — this line previously read "Hebrew → transliterate-ish fallback".
+    **There is no transliteration**, here or anywhere in the repo: no
+    `unidecode`, no `any-ascii`, no PyICU, no character map. Hebrew is kept
+    verbatim — "חוות הדגן" → "חוות-הדגן". That sentence was the only thing in
+    the codebase that looked like transliteration existed, and MEH-1812 costed
+    an `/en` search option against it before measuring that it did not.
+
+    **Not Hebrew-specific either** (measured 2026-08-11). `\\w` is Unicode-aware
+    in Python 3, so every script survives, not just Hebrew: "мосты", "مزرعة" and
+    "農場" pass through unchanged, and "Café Crème" → "café-crème". The explicit
+    `\\u0590-\\u05FF` range is therefore redundant — `\\w` alone returns the
+    identical string on Hebrew input. It is left in place on purpose: this
+    change is comment-only, and the range still records the intent.
+
+    **Returns "" when nothing survives** — "!!!" → "". The empty string is not a
+    slug and must not be stored: `_ensure_unique_slug` passes an empty base
+    straight through, which is why the approval path coerces it with `or None`
+    (MEH-1817) rather than writing "" into a column whose NULL is load-bearing
+    for the `/producer/{uuid}` fallback.
+
+    Output is capped at 100 characters.
+    """
     if not text:
         return ""
     # Keep ASCII letters/numbers/hyphens; replace whitespace with hyphens
@@ -88,6 +122,185 @@ def _ensure_unique_slug(
         counter += 1
 
 
+def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
+    """MEH-1817 — publish-time canonicalization of the producer's URL.
+
+    Self-registration (`auth.py`, both branches) builds `Producer(...)` with no
+    slug, and `_slugify` ran only on the admin-create / admin-update / import
+    paths — so a self-registered business stayed `slug=NULL` forever and its
+    public page fell back to `/producer/{uuid}`, losing the Hebrew URL the
+    catalog's SEO is built on.
+
+    Approval rather than registration: the name can still change during review,
+    and a slug minted from a name that then changes is worse than none — it is
+    a wrong URL that has to be redirected.
+
+    Guarded on `not producer.slug`, so re-approving a business never rewrites
+    an existing (possibly admin-chosen) slug.
+
+    `or None` is load-bearing: `_ensure_unique_slug` returns "" unchanged for an
+    empty base, so a name that slugifies to nothing must leave the column NULL.
+    An empty string is neither a slug nor NULL — it breaks the id-URL fallback's
+    NULL check AND satisfies the `not producer.slug` guard forever after, so no
+    later approval could repair it.
+    """
+    if not producer.slug:
+        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
+
+
+def _apply_approval_state(producer: Producer) -> None:
+    """The complete set of column writes that "approved" means.
+
+    Single owner, because `_persist_approval`'s retry path must re-apply every
+    one of them after `db.rollback()` discards the first attempt. Two copies of
+    this list would drift the moment a fourth field joins approval: the handler
+    would set it, the rollback would discard it, and the retry would commit a
+    row missing it — silently, and only on the collision path, which is the one
+    path no ordinary test exercises.
+
+    The slug is deliberately NOT here. It is minted by `_mint_slug_if_absent`,
+    which needs the session (it queries for collisions) and must run *after*
+    the re-read on the retry path so it sees the winner's committed slug.
+    """
+    producer.status = "approved"
+    # MEH-1011: clear the request-changes trail on approve — the completion
+    # request (if any) is resolved once the business is approved.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
+
+
+def _assert_approvable(
+    db: Session, producer: Producer, allow_without_license: bool, admin_id
+) -> None:
+    """Both approval gates, in one owner, run against the row being written.
+
+    MEH-2017. These lived inline in `approve_producer` and therefore ran only
+    against the object fetched at the top of that handler. `_persist_approval`'s
+    retry path re-reads the row after a rollback, so a producer whose photos or
+    license number were cleared inside that window could be approved by the
+    retry although the main path would have rejected it — and `_persist_approval`
+    was the only place in the codebase able to approve without passing a gate.
+
+    One function called twice, deliberately not a validator layer or a
+    decorator: there are two call sites and no third is expected.
+
+    The override warning lives HERE rather than in the handler so the retry path
+    is audited too. A silent override on the one path this function exists to
+    protect would be the same defect wearing a smaller diff.
+    """
+    # MEH-799: approval gate — a business never goes public without at least
+    # one photo. Validation only (no schema change); registration/publish
+    # flows untouched — the gate lives at the moment of approval.
+    if not producer.images:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
+        )
+    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
+    # of register-time ensure_license_for_categories. 422 matches the photo gate
+    # above (not MEH-769's 409, which is for status transitions).
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    needs_license = categories_require_license(db, category_ids) and license_missing
+    if needs_license and not allow_without_license:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+        )
+    if needs_license and allow_without_license:
+        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
+        logger.warning(
+            "approve_producer: license-pending override for producer %s by admin %s",
+            producer.id,
+            admin_id,
+        )
+
+
+SLUG_UNIQUE_CONSTRAINT = "producers_slug_key"
+
+
+def _is_slug_collision(exc: IntegrityError) -> bool:
+    """True only for a `producers.slug` unique violation.
+
+    `db.commit()` flushes the WHOLE session, so a bare `except IntegrityError`
+    around it catches any constraint violation on any pending row — not just
+    the one this function is recovering from. Retrying an unrelated violation
+    is the dangerous branch: the rollback discards it, the retry re-applies
+    only the approval columns, and the request commits a partially-applied
+    transaction and returns 200. A wrong row, silently, on the path nothing
+    exercises.
+
+    So the default is to **re-raise**. `producers_slug_key` is the only unique
+    constraint on `producers` today (verified against `pg_constraint`), but
+    that is a fact about today's schema, not an invariant — this check is what
+    makes a future second unique index surface as a 500 with its real cause
+    instead of being swallowed by a retry meant for slugs.
+
+    Falls back to the message text when the driver exposes no `diag` (psycopg2
+    populates it; SQLite and some wrappers do not), and re-raises when neither
+    source names the constraint. Unknown means raise, never retry.
+    """
+    orig = getattr(exc, "orig", None)
+    constraint = getattr(getattr(orig, "diag", None), "constraint_name", None)
+    if constraint:
+        return constraint == SLUG_UNIQUE_CONSTRAINT
+    return SLUG_UNIQUE_CONSTRAINT in str(orig or exc)
+
+
+def _persist_approval(
+    db: Session,
+    producer_id: UUID,
+    producer: Producer,
+    allow_without_license: bool,
+    admin_id,
+) -> Producer:
+    """Mint the slug and commit, retrying once on a unique-slug collision.
+
+    `producers.slug` is UNIQUE (`models/models.py:112`) and `_ensure_unique_slug`
+    is SELECT-then-return with no lock, so two admins approving two same-named
+    businesses in one window both see the candidate free and both take it. The
+    second commit then violates the constraint.
+
+    That exposure is NEW and belongs to MEH-1817: before the mint, this handler
+    never wrote `slug`, so it could not reach the constraint at all. Left
+    uncaught it would be a raw 500 **and** roll back the entire transaction —
+    the approval, the status flip, the requested-changes clear — so the losing
+    admin's approval would fail silently with no notification sent.
+
+    Recovery follows the house pattern (`reviews.py:288`, `reports.py:62`,
+    `favorites.py:72`, `referrals.py:54`, `producer_me.py:228`): roll back and
+    retry once. The retry re-reads the row, so `_ensure_unique_slug` now sees
+    the winner's committed slug and suffixes past it.
+
+    Not retried twice. A second collision would mean a third admin approving
+    the same name in the same instant; letting that raise is more honest than
+    looping, and a 500 whose cause is one frame up beats one nobody can explain.
+
+    Only a `producers_slug_key` violation is retried — see `_is_slug_collision`.
+    """
+    _mint_slug_if_absent(db, producer)
+    try:
+        db.commit()
+        return producer
+    except IntegrityError as exc:
+        db.rollback()
+        if not _is_slug_collision(exc):
+            raise
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
+    # MEH-2017: the gates run on BOTH paths. This row is fresh from the database
+    # and is the one about to be committed, so it is re-validated rather than
+    # trusted from the pre-collision fetch — if another transaction stripped the
+    # images or the license number inside the rollback window, this raises 422
+    # exactly as the main path would have. One owner, called twice.
+    _assert_approvable(db, producer, allow_without_license, admin_id)
+    _apply_approval_state(producer)
+    _mint_slug_if_absent(db, producer)
+    db.commit()
+    return producer
+
+
 def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
     db.query(ProducerCategory).filter(
         ProducerCategory.producer_id == producer.id
@@ -119,6 +332,10 @@ def list_producers(
         joinedload(Producer.categories),
         joinedload(Producer.products),
         joinedload(Producer.delivery_areas),
+        # MEH-2060: needed by attach_badge_fields' pickup_points/offers_pickup
+        # derivation below. selectinload (not joinedload) — a 4th collection
+        # joinedload here would widen the existing 3-way cartesian.
+        selectinload(Producer.locations),
     )
     if status and status != "all":
         if status == "pending":
@@ -133,7 +350,16 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
-    return q.order_by(Producer.created_at.desc()).all()
+    results = q.order_by(Producer.created_at.desc()).all()
+    # MEH-2060: this endpoint never called attach_badge_fields before, so
+    # pickup_points (and every other computed badge field) silently defaulted
+    # to Pydantic's False/0 in this response — a pre-existing gap, not
+    # something this change introduces. Calling it here is what makes
+    # AdminProducersTable.jsx's pickup badge (:128) agree with every other
+    # consumer surface instead of reading a raw, no-longer-authoritative column.
+    for p in results:
+        attach_badge_fields(p)
+    return results
 
 
 @router.post("/producers", response_model=ProducerAdminOut, status_code=201)
@@ -182,7 +408,9 @@ def admin_create_producer(
         grass_fed=data.grass_fed,
         organic_certified=data.organic_certified,
         has_delivery=data.has_delivery,
-        pickup_points=data.pickup_points,
+        # MEH-2060: pickup_points stopped being written here — it's derived
+        # from producer_locations rows now (attach_badge_fields below), and a
+        # freshly-created producer has none yet regardless of this form field.
         kosher=data.kosher,
         producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
@@ -206,9 +434,38 @@ def admin_create_producer(
 
     _apply_categories(db, producer, data.category_ids)
     _apply_delivery_cities(db, producer, data.delivery_area_cities)
+    # MEH-1921: this is the FIFTH create-from-payload path, and the one easiest
+    # to miss — `_apply_delivery_cities` is shared with the PUT route (:286),
+    # so classifying it by call site reads "edit path, leave alone" and hides
+    # that THIS caller creates. Like the importer, the row is born
+    # `status="approved"` and is live immediately.
+    #
+    # Unlike the four signup paths, `ProducerAdminCreate` DOES carry
+    # `offers_delivery` (schemas.py:1431), so an admin can state it — and an
+    # explicit `false` alongside delivery cities is a deliberate declaration
+    # that MEH-1848's predicates are right to exclude. Only the UNSTATED case
+    # is derived, which `model_fields_set` distinguishes and a plain falsy
+    # check cannot. Same distinction `_sync_active_offer` (producer_me.py)
+    # already relies on: "omitted" and "explicitly false" are different answers.
+    if data.delivery_area_cities and "offers_delivery" not in data.model_fields_set:
+        producer.offers_delivery = True
+
+    # MEH-2059 (MEH-1938 chunk 4b): the admin half of the dual-write. Same
+    # helper the four signup paths call (producer_queries.py:351), so this is
+    # the SIXTH create-from-payload site and the field contract cannot drift
+    # between them. Declines by itself when a coordinate is missing.
+    #
+    # This site can only ever create: the producer was flushed six lines up, so
+    # it owns no locations yet — `upsert_...` would find nothing and delegate
+    # here anyway. Calling the create helper directly says that out loud.
+    #
+    # REUSES: backend/app/services/producer_queries.py:449 — the same call, in
+    # the same position (after flush, before commit), on the public-create path.
+    create_primary_branch_location(db, producer)
 
     db.commit()
     db.refresh(producer)
+    attach_badge_fields(producer)
     return producer
 
 
@@ -230,8 +487,16 @@ def admin_update_producer(
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
     payload.pop("delivery_cities", None)
+    # MEH-2060: same no-op-pop pattern, same reason — pickup_points is derived
+    # from producer_locations rows now (attach_badge_fields below); ProducerForm
+    # still has a checkbox that sends this field (frontend out of scope for this
+    # ticket, flagged separately), but the bulk setattr loop must not write it.
+    payload.pop("pickup_points", None)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
+    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
+    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
+    ensure_nationwide_requires_delivery(producer, payload)
 
     # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
     # the update. If category_ids is being changed → use the new list,
@@ -279,6 +544,22 @@ def admin_update_producer(
     if delivery_area_cities is not None:
         _apply_delivery_cities(db, producer, delivery_area_cities)
 
+    # MEH-2059 (MEH-1938 chunk 4b): the admin EDIT half of the dual-write.
+    # Gated on the payload rather than on the resulting values, because
+    # `exclude_unset=True` above means an admin editing only the name must not
+    # re-mirror `Producer.address` over a location row the OWNER authored in
+    # the dashboard. An explicit `lat: null` IS in the payload, so clearing the
+    # coordinates still reaches the helper — which mirrors the clear instead of
+    # leaving a stale point behind.
+    #
+    # Runs AFTER the setattr loop on purpose: the helper reads the producer
+    # instance, so it must see the post-update values. That is the same reason
+    # MEH-1939 takes the flushed Producer rather than five loose fields
+    # (producer_queries.py:378-383) — the row is a mirror, and reading the
+    # mirror's source off the instance is what makes them unable to drift.
+    if "lat" in payload or "lng" in payload:
+        upsert_primary_branch_location(db, producer)
+
     db.commit()
     db.refresh(producer)
 
@@ -293,6 +574,7 @@ def admin_update_producer(
             context="admin.admin_update_producer images",
         )
 
+    attach_badge_fields(producer)
     return producer
 
 
@@ -452,17 +734,22 @@ async def import_producers_excel(
 def pending_producers(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    return (
+    results = (
         db.query(Producer)
         .options(
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-2060: see list_producers above — same derivation, same reason.
+            selectinload(Producer.locations),
         )
         .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .all()
     )
+    for p in results:
+        attach_badge_fields(p)
+    return results
 
 
 @router.post("/producers/{producer_id}/approve")
@@ -478,38 +765,18 @@ def approve_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-799: approval gate — a business never goes public without at least
-    # one photo. Validation only (no schema change); registration/publish
-    # flows untouched — the gate lives at the moment of approval.
-    if not producer.images:
-        raise HTTPException(
-            status_code=422,
-            detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
-        )
-    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
-    # of register-time ensure_license_for_categories. 422 matches the photo gate
-    # above (not MEH-769's 409, which is for status transitions).
-    category_ids = [c.id for c in producer.categories]
-    license_missing = not (producer.producer_license_number or "").strip()
-    needs_license = categories_require_license(db, category_ids) and license_missing
-    if needs_license and not allow_without_license:
-        raise HTTPException(
-            status_code=422,
-            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
-        )
-    if needs_license and allow_without_license:
-        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
-        logger.warning(
-            "approve_producer: license-pending override for producer %s by admin %s",
-            producer_id,
-            user.id,
-        )
-    producer.status = "approved"
-    # MEH-1011: clear the request-changes trail on approve — the completion
-    # request (if any) is resolved once the business is approved.
-    producer.requested_changes = None
-    producer.changes_requested_at = None
-    db.commit()
+    # MEH-2017: both approval gates (MEH-799 photo, MEH-971 license) live in
+    # _assert_approvable, which _persist_approval also calls after its re-read
+    # so the retry path cannot approve a row this path would have rejected.
+    _assert_approvable(db, producer, allow_without_license, user.id)
+    # MEH-1817: the approval column writes live in _apply_approval_state so the
+    # retry path below can re-apply exactly the same set after a rollback.
+    _apply_approval_state(producer)
+    # MEH-1817: slug mint + commit, extracted so this handler stays under the
+    # C901 ceiling. See _persist_approval for why the commit is retried.
+    producer = _persist_approval(
+        db, producer_id, producer, allow_without_license, user.id
+    )
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
@@ -524,9 +791,7 @@ def approve_producer(
         _send_notification_email(
             producer_user.email,
             f'מהמקור - העסק "{p_name}" אושר!',
-            f'שלום,\n\nהעסק שלך "{p_name}" אושר במהמקור!\n'
-            f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_approved_body(p_name),
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
@@ -544,17 +809,88 @@ def approve_producer(
     return {"detail": "Producer approved"}
 
 
+# MEH-226: the five canonical rejection reasons. This dict is the SINGLE
+# source of truth for the labels — the admin UI fetches them from
+# GET /admin/producers/rejection-presets rather than carrying its own copy,
+# so the string the admin clicks, the string persisted to
+# producers.rejection_reason, and the string in the producer's email are the
+# same object (workflow.md Smell #1: two owners for one fact).
+# Insertion order is the display order.
+PRODUCER_REJECTION_PRESETS: dict[str, str] = {
+    "missing_docs": "מסמכים חסרים / לא קריאים",
+    "missing_image": "תמונה ראשית חסרה",
+    "incomplete_info": "מידע עסקי לא מלא (כתובת / טלפון / תיאור)",
+    "not_eligible": "עסק לא עומד בתנאי הפלטפורמה",
+    "other": "אחר (פירוט חופשי)",
+}
+
+
+def _compose_rejection_reason(preset_key: str | None, reason: str) -> str:
+    """Join the preset label with the admin's free text into the ONE string
+    that is persisted, emailed and sent to the admin WhatsApp line.
+
+    `other` deliberately yields the free text ALONE — its label reads
+    "אחר (פירוט חופשי)", which is a UI affordance describing the input, not a
+    reason. Prefixing it would put "סיבה: אחר (פירוט חופשי) — ..." in a
+    business owner's inbox. Every other preset prefixes its label and appends
+    the free text only when the admin actually typed some.
+
+    No preset (legacy callers, and the pre-MEH-226 `{"reason": ...}` body)
+    falls through to the free text unchanged.
+
+    PRECONDITION: `preset_key` is None or a key of PRODUCER_REJECTION_PRESETS —
+    the route handler 400s on anything else BEFORE calling this. The lookup
+    below is therefore deliberately undefended: a KeyError here would mean an
+    internal caller skipped that validation, and crashing loudly at the one
+    line that noticed beats composing a rejection reason out of a key nobody
+    recognises and mailing it to a business owner.
+    """
+    if preset_key is None or preset_key == "other":
+        return reason
+    label = PRODUCER_REJECTION_PRESETS[preset_key]
+    return f"{label} — {reason}" if reason else label
+
+
+@router.get("/producers/rejection-presets", response_model=list[RejectionPresetOut])
+def list_rejection_presets(user: User = Depends(require_admin)):
+    """MEH-226: the reject-modal's radio options. Serving them from the same
+    dict the handler composes with is what keeps the admin UI from growing a
+    second copy of the Hebrew labels."""
+    return [
+        {"key": key, "label": label}
+        for key, label in PRODUCER_REJECTION_PRESETS.items()
+    ]
+
+
 @router.post("/producers/{producer_id}/reject")
 def reject_producer(
     producer_id: UUID,
-    reason: str = Body("", embed=True),
+    body: ProducerRejectIn = Body(default_factory=ProducerRejectIn),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    # MEH-226: validate BEFORE mutating — an unknown preset must not leave the
+    # producer rejected with an empty reason. Mirrors request_producer_changes'
+    # handler-side 400 (admin.py:829).
+    preset_key = body.preset_key
+    if preset_key is not None and preset_key not in PRODUCER_REJECTION_PRESETS:
+        raise HTTPException(status_code=400, detail="סיבת דחייה לא מוכרת")
+    reason = (body.reason or "").strip()
+    if preset_key == "other" and not reason:
+        raise HTTPException(
+            status_code=400, detail="יש לפרט את סיבת הדחייה כשנבחר 'אחר'"
+        )
+
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    composed_reason = _compose_rejection_reason(preset_key, reason)
     producer.status = "rejected"
+    # MEH-226: the reason is persisted in the SAME commit as the status flip —
+    # before this it lived only in the email body, so a rejected owner saw
+    # "נדחה" with no reason on her dashboard (the banner reads
+    # producer_rejection_reason off GET /auth/me).
+    producer.rejection_reason = composed_reason or None
     # MEH-1011: clear any request-changes trail on reject — a rejected producer
     # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
     # with approve_producer's clearing.
@@ -562,15 +898,15 @@ def reject_producer(
     producer.changes_requested_at = None
     db.commit()
 
-    reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
+    # MEH-226: email fires post-commit only — a Resend failure must not roll
+    # back a decision the admin already made.
+    reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
         _send_notification_email(
             producer_user.email,
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            f'שלום,\n\nלצערנו הבקשה לרישום העסק "{producer.name}" במהמקור לא אושרה.{reason_text}\n\n'
-            f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_rejected_body(producer.name, composed_reason),
         )
 
     # Notify admin via WhatsApp
@@ -580,7 +916,12 @@ def reject_producer(
             f'❌ העסק "{producer.name}" נדחה.{reason_text}',
         )
 
-    return {"detail": "Producer rejected"}
+    return {
+        "detail": "Producer rejected",
+        "id": str(producer.id),
+        "status": producer.status,
+        "rejection_reason": producer.rejection_reason,
+    }
 
 
 # MEH-1011: producer request-changes — non-terminal "please complete" path.
@@ -634,13 +975,7 @@ def request_producer_changes(
         _send_notification_email(
             producer_user.email,
             f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
-            f"שלום,\n\n"
-            f'הבקשה לרישום "{p_name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
-            f"בית העסק, נשאר להשלים:\n\n"
-            f"{feedback}\n\n"
-            f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
-            f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_changes_requested_body(p_name, feedback, dashboard_link),
         )
 
     # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
@@ -845,6 +1180,85 @@ def seed_cities(
         inserted += result.rowcount
     db.commit()
     return {"seeded": inserted}
+
+
+# MEH-2027: the three PRODUCER-facing bodies below were inline f-strings inside
+# their route handlers, which put them out of reach of the copy contract in
+# tests/test_meh1965_email_copy_contract.py — rendering one meant standing up a
+# request, a DB row and an authenticated admin. They are pure functions of their
+# arguments so the contract can render them directly. Behaviour is unchanged:
+# the strings are byte-identical to the f-strings they replace.
+#
+# These go to producer_user.email — the business owner, NOT an admin — so they
+# are brand touchpoints and the contract's four axes (absolute links, no
+# masculine address to the reader, RTL on any HTML part, real text fallback)
+# apply to them in full.
+
+
+def _rejection_reason_suffix(reason: str) -> str:
+    """The optional reason tail, shared by the email body and the admin
+    WhatsApp line so the two cannot drift apart (workflow.md Smell #1).
+
+    MEH-226: the label was "סיבת הדחייה" and is now "הסיבה", per the approved
+    email copy. The admin WhatsApp line changes with it BY DESIGN — one owner
+    is the whole point of this helper, and splitting it to keep the WhatsApp
+    wording frozen would rebuild exactly the drift it exists to prevent.
+
+    Still returns "" for an empty reason, so the rejected-without-a-reason
+    email omits the line rather than shipping a dangling "הסיבה:".
+    """
+    return f"\nהסיבה: {reason}" if reason else ""
+
+
+def _producer_approved_body(name: str) -> str:
+    return (
+        f'שלום,\n\nהעסק שלך "{name}" אושר במהמקור!\n'
+        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_rejected_body(name: str, reason: str) -> str:
+    """MEH-226: copy approved by Sapir 14.08.2026, shipped verbatim.
+
+    The recovery line is the conditional half of that ruling. It reads "תקני
+    בלוח הבקרה" rather than the retired "הגישי שוב מהדף האישי" because the
+    resubmit flow does not exist for a rejected business —
+    `producer_me.py:1392` gates POST /producers/me/request-review to
+    pending/pending_whatsapp, so a rejected owner gets 409. Editing, by
+    contrast, IS open to her, which is what licenses this wording:
+
+      * `auth.py:363-368` — `require_producer` gates on role only, no status
+      * `producer_me.py:379-381` — `update_my_producer` 404s on a missing
+        producer and checks status nowhere
+      * `frontend/app/[locale]/producer/dashboard/edit/page.js` — no
+        producer-status gate; the only redirect is 401 → /login
+
+    `tests/test_meh226_rejection_reason.py::test_rejected_owner_can_still_edit_her_details`
+    holds that open, so this sentence stops being true loudly rather than
+    silently.
+    """
+    return (
+        f"שלום {name},\n\n"
+        f"תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה."
+        f"{_rejection_reason_suffix(reason)}\n\n"
+        f"אפשר לתקן את הפרטים בלוח הבקרה ולהשיב למייל הזה — ונבחן את הבקשה מחדש.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_changes_requested_body(
+    name: str, feedback: str, dashboard_link: str
+) -> str:
+    return (
+        f"שלום,\n\n"
+        f'הבקשה לרישום "{name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
+        f"בית העסק, נשאר להשלים:\n\n"
+        f"{feedback}\n\n"
+        f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
+        f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
 
 
 def _send_notification_email(to_email: str, subject: str, body: str):

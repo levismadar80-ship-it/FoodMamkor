@@ -23,6 +23,7 @@ vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{c
 // MEH-990: ProducersClient now renders MapPin/Plant/Leaf icons too (Emoji LOCK
 // swap of 📍🌱🌿) — mock all four so the partial mock doesn't throw on render.
 vi.mock("@phosphor-icons/react", () => ({
+  Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
@@ -31,6 +32,8 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-1418: chip leading icons (via lib/chip-icons.js).
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
+  // MEH-2046: chip-icons maps pickup_points -> Package.
+  Package: (p) => <span {...p} />,
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
@@ -67,9 +70,29 @@ vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
 
 // Filter lib — neutralize chips so syncUrl only handles q.
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-1862: ProducersClient now imports this to attach FilterSheet group
+  // metadata, and a partial vi.mock throws on any export it omits (same
+  // reason the MEH-1881 names above are stubbed). Identity is the right
+  // stub here: these specs never open the sheet, so the group a chip would
+  // be filed under is irrelevant, while dropping chips would not be.
+  withChipGroups: (chips = []) => chips,
   buildChipParams: () => ({}),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
+  // MEH-1881: ProducersClient now imports this threshold, and a partial
+  // vi.mock throws on any export it omits — so the stub has to carry it
+  // even though nothing here exercises the gate. A number keeps the gate
+  // arithmetic well-defined; `undefined` would make `n >= undefined`
+  // false forever and silently hide the chip in every one of these specs.
+  OPEN_NOW_CHIP_MIN: 5,
+  // MEH-1881: /producers renders a superset of the shared chip row; these
+  // are the names ProducersClient imports. Empty/`{}` keeps these specs
+  // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
+  PRODUCERS_CHIPS_CONFIG: [],
+  PRODUCERS_CHIPS_DEFAULT: {},
+  // MEH-1934: a partial vi.mock throws on any export the component imports.
+  GATED_DIET_KEYS: [],
+  visibleGatedDietKeys: () => [],
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),

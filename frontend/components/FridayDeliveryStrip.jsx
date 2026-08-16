@@ -19,6 +19,14 @@ function ProducerMiniCard({ producer }) {
   const img = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 })
     : null;
+  // MEH-1976: a URL that exists but fails to load (the MEH-1925 Cloudinary
+  // 401) is not the same as no URL — without this the `img ?` branch below
+  // renders a broken glyph. Falling back to the SAME cell the empty state
+  // uses keeps each surface's locked no-photo design authoritative.
+  // Derived during render rather than reset in an effect: the state holds the
+  // src that failed, so a new `img` makes this false on its own.
+  const [failedSrc, setFailedSrc] = useState(null);
+  const imgError = failedSrc !== null && failedSrc === img;
 
   return (
     <Link
@@ -27,8 +35,8 @@ function ProducerMiniCard({ producer }) {
       aria-label={producer.name}
     >
       <div className="relative h-24 bg-green-50">
-        {img ? (
-          <Image src={img} alt={producer.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="144px" />
+        {img && !imgError ? (
+          <Image src={img} alt={producer.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="144px" onError={() => setFailedSrc(img)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-2xl text-primary/40 font-headline-md">
             {(producer.name || "?")[0]}

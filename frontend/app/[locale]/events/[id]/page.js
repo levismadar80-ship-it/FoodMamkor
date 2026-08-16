@@ -1,5 +1,7 @@
+import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
 import EventDetailClient from "./EventDetailClient";
+import { EventMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -13,14 +15,44 @@ import { BRAND_NAME } from "@/lib/constants";
 // state (loading skeleton, 404 page). If the metadata fetch fails or
 // returns no event, fall back to seo.event.title_fallback so we still
 // emit valid hreflang/canonical.
+// MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
+// decided in docs/audits/producer-detail-page-validation.md §6 and is not
+// re-opened here: never throw, never notFound() (the MEH-1754 class).
+// Inline rather than behind a helper, per the ticket's over-engineering guard.
+const ROUTE = "/[locale]/events/[id]";
+
 async function getEvent(id) {
   try {
     const res = await serverFetch(`${API_URL}/events/${id}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    if (!res.ok) {
+      // >= 500 only: a 404 on an expired/removed event is ordinary, and
+      // reporting it would bury the drift signal. Threshold from lib/api.js:140.
+      if (res.status >= 500) {
+        Sentry.captureMessage("SSR fetch failed", {
+          level: "error",
+          extra: { route: ROUTE, id, status: res.status },
+        });
+      }
+      return null;
+    }
+    const data = await res.json();
+    const parsed = EventMetadataSchema.safeParse(data);
+    if (!parsed.success) {
+      Sentry.captureMessage("SSR payload failed schema validation", {
+        level: "warning",
+        extra: { route: ROUTE, id, issues: parsed.error.issues },
+      });
+    }
+    // Raw, never `parsed.data` — EventMetadataSchema is minimal by design, so
+    // the parsed object would drop every field it does not declare and
+    // buildEventJsonLd would silently lose them (MEH-901 class). The parse is
+    // a probe, not a transform.
+    return data;
+  } catch (err) {
+    // Was `catch { return null }`. Same return, no longer silent.
+    Sentry.captureException(err, { extra: { route: ROUTE, id } });
     return null;
   }
 }

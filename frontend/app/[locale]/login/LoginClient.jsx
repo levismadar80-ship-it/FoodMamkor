@@ -232,13 +232,17 @@ function LoginPageBody() {
               </span>
               <input
                 id="login-email"
+                // MEH-1599: locators for the ?redirect= round-trip spec
+                // (25-role-reachability), per docs/E2E-LOCATORS.md.
+                data-testid="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setEmailTouched(true)}
                 required
                 // MEH-991 (LOGIN-04): S9 email field shows a format example.
-                placeholder="name@example.com"
+                // MEH-1617: value moved to auth.login.email_placeholder.
+                placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   emailInvalid
@@ -263,7 +267,13 @@ function LoginPageBody() {
               <label htmlFor="login-password" className="text-[13.5px] font-semibold text-text">
                 {t("password_label")}
               </label>
-              <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+              {/* MEH-215 journey C: locator for the login → forgot-password
+                  hand-off spec (30-login-journey-c), per docs/E2E-LOCATORS.md. */}
+              <Link
+                href="/forgot-password"
+                data-testid="login-forgot-link"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 {t("forgot_password")}
               </Link>
             </div>
@@ -273,6 +283,7 @@ function LoginPageBody() {
               </span>
               <input
                 id="login-password"
+                data-testid="login-password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -315,7 +326,11 @@ function LoginPageBody() {
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm text-start" role="alert">
+            /* MEH-215 journey C: the FORM-level error, distinct from the two
+               field-level role="alert" nodes above it. A bare getByRole("alert")
+               is ambiguous here (strict-mode violation, measured), so the spec
+               targets this id. */
+            <p className="text-red-500 text-sm text-start" data-testid="login-error" role="alert">
               {error}
             </p>
           )}
@@ -324,6 +339,7 @@ function LoginPageBody() {
               Overrides the prior site-standard-rounded ("NOT green pill") constraint. */}
           <button
             type="submit"
+            data-testid="login-submit"
             disabled={loading || !formIsValid}
             className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
@@ -346,6 +362,7 @@ function LoginPageBody() {
           {t("no_account")}{" "}
           <Link
             href="/register"
+            data-testid="login-register-link"
             className="font-medium text-accent underline underline-offset-4 decoration-accent/50 hover:decoration-accent transition"
           >
             {t("register_cta")}

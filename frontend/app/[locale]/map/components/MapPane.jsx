@@ -7,13 +7,24 @@ import {
   CircleNotch,
   Leaf,
   MagnifyingGlass,
-  MapPinLine,
   MapTrifold,
   NavigationArrow,
   SquaresFour,
+  Stack,
 } from "@phosphor-icons/react";
 
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
+
+// MEH-2046: the token set every circular /map control already shares — the
+// desktop GPS circle below and NearMePill.jsx:62 both carry it. Extracted to a
+// constant here because the layer toggle now makes three, and three copies of a
+// class string is how they drift apart.
+const MAP_CONTROL_CLASS =
+  "w-11 h-11 rounded-full shadow-md items-center justify-center transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40";
+const MAP_CONTROL_ON = "bg-primary text-white border border-primary";
+const MAP_CONTROL_OFF = "bg-surface-floating text-primary border border-border hover:bg-green-50";
+// NearMePill sits at sheet-edge + 12px and is 44px tall; +12px again clears it.
+const NEAR_ME_STACK_OFFSET_PX = 68;
 
 // MEH-473: extracted to a real component so useTranslations() works.
 // next/dynamic's loading callback runs outside any component's render
@@ -69,6 +80,12 @@ export default function MapPane({
   // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
   showSecondaryLayer,
   onToggleSecondaryLayer,
+  // MEH-2046: ≥1 business currently drops off the map because the layer is off
+  // (producerPoints rule 3). Computed in MapClient, which owns the feed.
+  secondaryHidden = false,
+  // MEH-1611: id of the selected business (focus-on-select demote). Pure
+  // pass-through — MapClient owns the state, MapComponent renders the effect.
+  focusedProducerId,
   // overlay state + handlers
   mapMoved,
   onSearchThisArea,
@@ -101,25 +118,77 @@ export default function MapPane({
         mapRef={mapRef}
         visitedIds={visitedIds}
         showSecondaryLayer={showSecondaryLayer}
+        focusedProducerId={focusedProducerId}
       />
-      {/* MEH-1412 (MEH-1388 chunk 3): pickup / market_stand layer toggle. Logical
-          props (start-*) — this is a UI control, not a geographic map control, so
-          it flips correctly per locale (unlike the physical-positioned legend/GPS
-          below, which are the documented geo exceptions). z-[1000] = controls tier. */}
+      {/* MEH-2046: the layer toggle moved OFF the canvas and into the map's own
+          control corners. As a labelled pill at top-start it read as a filter —
+          it sat where filters sit and looked like the chip row above it — while
+          it actually controls which markers are drawn. Icon-only, in the control
+          cluster, it reads as what it is. The MEH-1412 behaviour is unchanged:
+          same handler, same aria-pressed, same secondary layer.
+
+          Two placements because the two breakpoints have different control
+          corners, and this control joins whichever one already exists rather
+          than opening a third: desktop stacks above the GPS circle (physical
+          right, the documented geo exception), mobile stacks above NearMePill
+          in the bottom-END corner and rides the sheet edge the same way. Only
+          one is ever rendered — `hidden lg:flex` / `lg:hidden`. */}
       <button
         type="button"
         onClick={onToggleSecondaryLayer}
         aria-pressed={showSecondaryLayer}
         aria-label={t("map.pane.pickup_layer.aria")}
-        className={`absolute top-4 start-4 z-[1000] flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-md transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          showSecondaryLayer
-            ? "bg-primary text-white border-primary"
-            : "bg-surface-floating text-text border-border hover:bg-green-50"
+        data-testid="pickup-layer-toggle-desktop"
+        // rtl-ok: geographic map control; physical right keeps it in the GPS
+        // circle's column, opposite the physical-left legend, in every locale.
+        // No eslint-disable here: no-restricted-syntax reads string-literal
+        // classNames only, so it never sees this template literal — the
+        // check-rtl.sh hook is what covers it, and the marker is what it reads.
+        className={`hidden lg:flex absolute bottom-[152px] right-4 ${MAP_CONTROL_CLASS} ${
+          showSecondaryLayer ? MAP_CONTROL_ON : MAP_CONTROL_OFF
         }`}
       >
-        <MapPinLine size={15} weight={showSecondaryLayer ? "fill" : "regular"} />
-        {t("map.pane.pickup_layer.label")}
+        <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
       </button>
+      <button
+        type="button"
+        onClick={onToggleSecondaryLayer}
+        aria-pressed={showSecondaryLayer}
+        aria-label={t("map.pane.pickup_layer.aria")}
+        data-testid="pickup-layer-toggle-mobile"
+        // REUSES: NearMePill.jsx:51 — the same `--map-sheet-h` ride, one row up,
+        // so the two move together instead of one crossing the other on a drag.
+        // A plain `bottom-4` was tried and is WRONG: once Leaflet mounts, the
+        // pane's box reaches down into the cookie-banner band (measured: the
+        // button landed at 760–804 with the banner at 728–820 and z-1100 over
+        // it). The sheet-edge ride is what keeps a bottom control clear of that,
+        // which is why the pill already uses it.
+        style={{
+          bottom: `calc(var(--map-sheet-h, 14vh) + ${NEAR_ME_STACK_OFFSET_PX}px)`,
+          transitionProperty: "bottom, background-color",
+          transitionDuration: "var(--map-sheet-anim, 300ms)",
+        }}
+        className={`lg:hidden flex absolute end-4 ${MAP_CONTROL_CLASS} ${
+          showSecondaryLayer ? MAP_CONTROL_ON : MAP_CONTROL_OFF
+        }`}
+      >
+        <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
+      </button>
+
+      {/* MEH-2046: the reminder, in the slot the pill vacated. A business whose
+          only points are pickup rows yields NO points at all when the layer is
+          off (producerPoints rule 3, deliberate) — so it does not fade or move,
+          it disappears. Silence there is the failure mode this line exists to
+          prevent; it renders only while businesses are actually being hidden. */}
+      {secondaryHidden && (
+        <div
+          role="status"
+          data-testid="pickup-layer-hidden-notice"
+          className="absolute top-4 start-4 z-[1000] max-w-[240px] rounded-lg border border-border bg-surface-floating px-3 py-1.5 text-xs text-fg-muted shadow-md"
+        >
+          {t("map.pane.pickup_layer.hidden_notice")}
+        </div>
+      )}
       {mapMoved && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">

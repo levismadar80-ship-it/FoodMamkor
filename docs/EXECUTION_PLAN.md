@@ -213,7 +213,21 @@ Every decision is filtered through this thesis. Read first when in doubt.
 | **MEH-501** | ⚪ Low | DOCS | 📚 Decision — Defer AutoDream activation, codify in ADR-008 | 🟢  |
 | **MEH-502** | ⚪ Low | OTHER | 🪝 Gap analysis — Claude Code hooks coverage vs official Agent SDK | 🟢  |
 | **MEH-503** | ⚪ Low | OTHER | 🧪 e2e.yml — root-cause fix for paths-filter base-ref fallback (fo | 🟢  |
-| **MEH-514** | ⚪ Low | OTHER | Add `git reset --hard <ref>` to bash-safety-hook allowlist when r | 🟢  |
+| **MEH-514** | ⚪ Low | OTHER | ⚠️ Premise corrected — see note below the table | 🟢  |
+
+> **MEH-514's attribution was wrong, and the correction changes what the task is
+> (MEH-1500 Phase C, 28/07).** The row used to read *"add `git reset --hard <ref>`
+> to bash-safety-hook allowlist"*. `git reset --hard` is **not** blocked by
+> `check-bash-safety.sh` and never was: the hook's `git` skip
+> (`.claude/hooks/check-bash-safety.sh:22-24`) returns `exit 0` before any pattern
+> runs, so the hook never sees the command. It is blocked by
+> **`.claude/settings.json:284`** — `"Bash(git reset --hard:*)"` in
+> `permissions.deny`. Verified behaviourally, with a matched control.
+>
+> So there is no hook allowlist to add to. Whatever MEH-514 wants has to happen in
+> `permissions.deny`, which is Sapir-only. Also measured: deny patterns **do**
+> survive chaining (`echo hi && rm --version` → denied, while `echo hi && echo bye`
+> → allowed), so the L2 block holds on chained forms too.
 
 ### 🎯 Start Here Order — Phase 5 (i18n chain)
 

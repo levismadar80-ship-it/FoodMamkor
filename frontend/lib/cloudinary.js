@@ -19,6 +19,25 @@
 // aspectRatio it pairs with c_limit (downscale only — never upscales a
 // smaller original); with aspectRatio the w_ rides the existing c_fill.
 // Used by HomeHero so the 4032px hero original ships at w_1920.
+//
+// MEH-2001: that width was OPT-IN, and almost nothing opted in — so every
+// other call site delivered the full original. Cloudinary support measured
+// a 5886px / 2.43MB WebP rendered into a 1437px box; unbounded delivery ran
+// the account to 109.85 of 25 credits (99.6% bandwidth) and suspended it.
+// A call with no usable width now falls back to this cap.
+//
+// c_limit, never c_fill/c_fit: no crop, and never an upscale of a smaller
+// original. No dpr_auto — it would multiply bandwidth on retina, which is
+// the opposite of the point.
+export const DEFAULT_MAX_WIDTH = 1200;
+
+// Pure: the caller's width when it is usable, else null. Extracted rather
+// than inlined so optimizeCloudinary's complexity stays where MEH-443 left
+// it (12) instead of climbing with the MEH-2001 branch.
+function usableWidth(width) {
+  return Number.isInteger(width) && width > 0 ? width : null;
+}
+
 export function optimizeCloudinary(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
   if (!url.includes("res.cloudinary.com")) return url;
@@ -31,13 +50,19 @@ export function optimizeCloudinary(url, opts = {}) {
   if (hasAspect) {
     parts.push("c_fill", "g_auto", `ar_${ar}`);
   }
-  const width = opts.width;
-  if (Number.isInteger(width) && width > 0) {
+  const width = usableWidth(opts.width);
+  if (!hasAspect) {
+    // Width-only path — always capped. c_limit never upscales, so the
+    // fallback is safe on an original of any size.
+    parts.push("c_limit", `w_${width ?? DEFAULT_MAX_WIDTH}`);
+  } else if (width) {
     // Intentional: with aspectRatio, w_ rides c_fill — which MAY upscale a
-    // smaller original (fill semantics). Width-only gets c_limit (never
-    // upscales). HomeHero combines both (ar_16:9 + w_1920) — safe there
-    // because the 4032px hero original only ever downscales to 1920.
-    if (!hasAspect) parts.push("c_limit");
+    // smaller original (fill semantics). HomeHero combines both (ar_16:9 +
+    // w_1920) — safe there because the 4032px hero original only ever
+    // downscales to 1920. DEFAULT_MAX_WIDTH is deliberately NOT applied
+    // here for that reason: c_fill + w_1200 would upscale every original
+    // narrower than 1200px and spend more bandwidth, not less. Capping the
+    // c_fill call sites means giving each one an explicit width.
     parts.push(`w_${width}`);
   }
   return url.replace("/upload/", `/upload/${parts.join(",")}/`);

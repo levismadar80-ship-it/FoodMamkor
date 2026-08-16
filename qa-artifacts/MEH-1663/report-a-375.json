@@ -1,0 +1,22 @@
+[
+  {
+    "name": "SELF-TEST camera probe discriminates",
+    "verdict": true,
+    "detail": "drag moved probe 51.73km (want >1), idle drift 0.0000km (want ~0)"
+  },
+  {
+    "name": "SETUP sheet raised for tapping",
+    "verdict": "INFO",
+    "detail": "dispatched=true sheetHeight=45vh"
+  },
+  {
+    "name": "A1 card receives selection treatment",
+    "verdict": false,
+    "detail": "border 1px→1px · bg rgb(255, 255, 255)→rgb(255, 255, 255) · a-375-02-after-click.webp"
+  },
+  {
+    "name": "A2 map camera moves",
+    "verdict": false,
+    "detail": "center {\"lat\":32.249974455863295,\"lng\":34.8046875,\"zoom\":9,\"tiles\":9} → {\"lat\":32.249974455863295,\"lng\":34.8046875,\"zoom\":9,\"tiles\":9} · a-375-02-after-click.webp"
+  }
+]

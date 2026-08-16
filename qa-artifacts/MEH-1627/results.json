@@ -1,0 +1,57 @@
+[
+  {
+    "name": "A1 producer page renders with an expired token",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "A2 no 404 / error copy visible",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "A2b the producer fetch itself returned 200 (not the enumeration 404)",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "A3 token was healed by the silent refresh",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "A4 backend actually issued a 401 (contract exercised, not bypassed)",
+    "pass": true,
+    "detail": "401 GET /api/auth/me"
+  },
+  {
+    "name": "A5 a refresh call was made",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "B1 submit did NOT hit the 422 dead end",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "B2 CONFIRM step reached (submit succeeded)",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "B3 the upgrade POST 401'd first (contract exercised)",
+    "pass": true,
+    "detail": "401 POST /api/auth/register/producer | 200 POST /api/auth/register/producer"
+  },
+  {
+    "name": "B4 a refresh call was made",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "B5 the POST was replayed and succeeded",
+    "pass": true,
+    "detail": "401 POST /api/auth/register/producer | 200 POST /api/auth/register/producer"
+  }
+]

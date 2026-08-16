@@ -5,6 +5,7 @@ import { CaretDown, CaretUp, Clock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 import { DAY_ABBR, DAY_KEYS, parseHours } from "@/lib/hours";
+import { humanTime } from "@/lib/time-format";
 
 // MEH-826: the parser + Israel-tz status were extracted to lib/hours so the
 // compact /map card shares one parser instead of duplicating it.
@@ -27,6 +28,22 @@ function todayIndex() {
   return DAY_ABBR.findIndex((d) => abbr.startsWith(d));
 }
 
+/**
+ * "9:00–13:00, 16:00–19:00" — an en-dash inside a range, a comma between
+ * ranges. The whole string renders inside a dir="ltr" span, so the reading
+ * order of the numerals is preserved on the RTL page.
+ *
+ * MEH-1924: the hour is humanised through the shared `humanTime`, the same
+ * formatter the order-window card uses. Both cards sit on the producer page
+ * and are a deliberate visual family; before this they disagreed by one
+ * leading zero ("09:00" here, "9:00" there), which is the inconsistency
+ * NN/g's heuristic warns makes readers hunt for a meaning that isn't there.
+ * The stored value is untouched — only the ink changes.
+ */
+function formatRanges(ranges) {
+  return ranges.map((r) => `${humanTime(r.open)}–${humanTime(r.close)}`).join(", ");
+}
+
 export default function OpeningHours({ opening_hours }) {
   const t = useTranslations("opening_hours");
   const map = useMemo(() => parseHours(opening_hours), [opening_hours]);
@@ -35,6 +52,9 @@ export default function OpeningHours({ opening_hours }) {
   if (!map) return null;
 
   const todayIdx = todayIndex();
+  // MEH-1870: a day carries a LIST of ranges. Several ranges render
+  // comma-separated ("09:00–13:00, 16:00–19:00"); one range is byte-identical
+  // to what this rendered before.
   const today = map[todayIdx];
 
   return (
@@ -51,8 +71,8 @@ export default function OpeningHours({ opening_hours }) {
         <Clock size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
         <span>
           {t("today")} ·{" "}
-          {today ? (
-            <span dir="ltr">{`${today.open}–${today.close}`}</span>
+          {today?.length ? (
+            <span dir="ltr">{formatRanges(today)}</span>
           ) : (
             t("closed_day")
           )}
@@ -77,8 +97,8 @@ export default function OpeningHours({ opening_hours }) {
                 }`}
               >
                 <span>{t(`weekdays.${DAY_KEYS[i]}`)}</span>
-                {hours ? (
-                  <span dir="ltr">{`${hours.open}–${hours.close}`}</span>
+                {hours?.length ? (
+                  <span dir="ltr">{formatRanges(hours)}</span>
                 ) : (
                   <span>{t("closed_day")}</span>
                 )}

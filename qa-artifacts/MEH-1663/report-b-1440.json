@@ -1,0 +1,42 @@
+[
+  {
+    "name": "SELF-TEST camera probe discriminates",
+    "verdict": true,
+    "detail": "drag moved probe 65.39km (want >1), idle drift 0.0000km (want ~0)"
+  },
+  {
+    "name": "SETUP sheet raised for tapping",
+    "verdict": "INFO",
+    "detail": "n/a (desktop split-pane)"
+  },
+  {
+    "name": "B1 delivery-only → camera on pickup + selected",
+    "verdict": true,
+    "detail": "camera {\"lat\":32.5190260278275,\"lng\":34.95849609375,\"zoom\":14,\"tiles\":30} vs {\"lat\":32.519,\"lng\":34.953} · selected=true · b-1440-01-delivery-only.webp"
+  },
+  {
+    "name": "B4 search-this-area banner absent after fly",
+    "verdict": true,
+    "detail": "matches=0 · b-1440-02-no-search-banner.webp"
+  },
+  {
+    "name": "B2 multi-location → framed, zoom capped ≤15",
+    "verdict": true,
+    "detail": "camera {\"lat\":32.57459172113417,\"lng\":34.9530029296875,\"zoom\":15,\"tiles\":20} · b-1440-03-multi-location.webp"
+  },
+  {
+    "name": "B3 single-point regular business → flyTo zoom 14",
+    "verdict": true,
+    "detail": "business=טבע פור camera {\"lat\":32.56533316084102,\"lng\":34.95849609375,\"zoom\":14,\"tiles\":16} · b-1440-04-single-point.webp"
+  },
+  {
+    "name": "B5 second click navigates to /{slug}",
+    "verdict": true,
+    "detail": "url=http://localhost:3000/demo-delivery-pickup · b-1440-05-second-click-nav.webp"
+  },
+  {
+    "name": "B6 pinless business → selected, camera holds, map not demoted",
+    "verdict": true,
+    "detail": "selected=true cameraHeld=true demoted=false · b-1440-06-pinless.webp"
+  }
+]

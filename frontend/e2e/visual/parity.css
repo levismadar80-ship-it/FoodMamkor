@@ -14,9 +14,31 @@
   display: none !important;
 }
 
+/* MEH-1917: the "היום" chip on the weekly order-window list marks whichever day
+ * it currently is in Asia/Jerusalem, so its POSITION moves with the calendar —
+ * a baseline captured on a Sunday disagrees with every other day of the week.
+ * Presence varies by date → HIDE, per the rule of thumb above. Belt-and-braces
+ * today: the panel is collapsed by default and the block sits far below the
+ * fold, and the producer-detail shots are viewport-only (see the fullPage note
+ * in parity.spec.ts), so no current baseline can reach it. This exists so that
+ * stops being load-bearing the moment a shot grows or the section moves up. */
+[data-testid="order-window-today-chip"] {
+  display: none !important;
+}
+
 /* Cookie-consent banner overlays the bottom of the viewport until it gets a
  * localStorage flag; the spec pre-seeds consent, this is belt-and-braces. */
 .cookie-banner {
+  display: none !important;
+}
+
+/* MEH-1583: the CustomCursor dot (components/CustomCursor.jsx:122) follows the
+ * mouse and scales up on hover, so every CLICK-then-shoot test parks a green
+ * disc on the element it just clicked — its position tracks the click
+ * coordinates, which move with layout. It is already baked into the
+ * producer-detail-phone-revealed baseline, sitting directly on the row that
+ * baseline exists to prove. Presence varies with interaction, so HIDE. */
+.custom-cursor {
   display: none !important;
 }
 

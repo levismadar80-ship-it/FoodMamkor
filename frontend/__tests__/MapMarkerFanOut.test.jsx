@@ -34,6 +34,7 @@ const recorder = vi.hoisted(() => ({
   addLayerCalls: 0, // singular adds on the cluster group (must stay 0)
   addLayersBatches: [], // arrays passed to bulk addLayers
   iconCreateFunction: null, // captured from markerClusterGroup options
+  clusterOptions: null, // MEH-1568: the whole options object, for the dead-zone guards
 }));
 
 vi.mock("leaflet", () => {
@@ -75,6 +76,7 @@ vi.mock("leaflet", () => {
       tileLayer: () => makeStub(),
       markerClusterGroup: (opts = {}) => {
         recorder.iconCreateFunction = opts.iconCreateFunction || null;
+        recorder.clusterOptions = opts;
         const group = makeStub();
         // Shadow the proxy's generic no-ops with recording variants.
         Object.defineProperty(group, "addLayer", {
@@ -129,6 +131,7 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
     recorder.addLayerCalls = 0;
     recorder.addLayersBatches.length = 0;
     recorder.iconCreateFunction = null;
+    recorder.clusterOptions = null;
   });
 
   it("creates one marker per renderable location — and NO duplicate producer pin when locations[] is non-empty", () => {
@@ -168,5 +171,76 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
     expect(recorder.addLayerCalls).toBe(0);
     expect(recorder.addLayersBatches).toHaveLength(1);
     expect(recorder.addLayersBatches[0]).toHaveLength(4);
+  });
+});
+
+/**
+ * MEH-1568 — the /map clustering dead-zone.
+ *
+ * `disableClusteringAtZoom: 11` switched clustering OFF above zoom 11, which
+ * also made spiderfy unreachable: markercluster only spiderfies a cluster that
+ * survives down to the group's internal _maxZoom, and the option caps that at
+ * `disableClusteringAtZoom - 1` (leaflet.markercluster-src.js:868-888, :975-976).
+ * Two markers at identical coordinates therefore stacked forever and the lower
+ * one was permanently unclickable at EVERY zoom. These guards lock the fix so a
+ * future "let's decluster when zoomed in" edit can't silently restore it.
+ */
+describe("MEH-1568 — cluster dead-zone guards", () => {
+  beforeEach(() => {
+    recorder.markers.length = 0;
+    recorder.addLayerCalls = 0;
+    recorder.addLayersBatches.length = 0;
+    recorder.iconCreateFunction = null;
+    recorder.clusterOptions = null;
+  });
+
+  it("never sets disableClusteringAtZoom — clustering (and therefore spiderfy) stays live at every zoom", () => {
+    render(<MapComponent producers={[multiLocationProducer]} />);
+    expect(recorder.clusterOptions).toBeTruthy();
+    expect(recorder.clusterOptions.disableClusteringAtZoom).toBeUndefined();
+    // spiderfyOnMaxZoom defaults to true (leaflet.markercluster-src.js:25) —
+    // the guard is that we never turn it OFF.
+    expect(recorder.clusterOptions.spiderfyOnMaxZoom).not.toBe(false);
+    // MEH-1424 semantics preserved: bulk addLayers path stays synchronous.
+    expect(recorder.clusterOptions.chunkedLoading).toBe(false);
+  });
+
+  it("scales maxClusterRadius by zoom — 60 wide, 40 from zoom 11 in", () => {
+    render(<MapComponent producers={[multiLocationProducer]} />);
+    const radius = recorder.clusterOptions.maxClusterRadius;
+    expect(typeof radius).toBe("function");
+    expect(radius(8)).toBe(60);
+    expect(radius(10)).toBe(60);
+    expect(radius(11)).toBe(40);
+    expect(radius(16)).toBe(40);
+  });
+
+  it("renders a single-business cluster as the category marker + POINT count, not a badge reading '1'", () => {
+    render(<MapComponent producers={[multiLocationProducer]} />);
+    // All 3 markers belong to one business — the unique-business count is 1,
+    // which is what used to render and looked like a broken badge.
+    const ownMarkers = recorder.markers.map((m) => m.marker);
+    expect(ownMarkers).toHaveLength(3);
+    const icon = recorder.iconCreateFunction({
+      getAllChildMarkers: () => ownMarkers,
+      getChildCount: () => ownMarkers.length,
+    });
+    expect(icon.__divIcon.className).toContain("mehamakor-cluster-single");
+    // Keeps the base class: globals.css transparent background + the
+    // marker-presence E2E locator (15-map-markers.spec.ts:28).
+    expect(icon.__divIcon.className).toContain("mehamakor-cluster");
+    expect(icon.__divIcon.html).toContain(">3</div>"); // 3 points…
+    expect(icon.__divIcon.html).not.toContain(">1</div>"); // …not "1 business"
+  });
+
+  it("leaves the multi-business cluster badge untouched (MEH-1412 unique-business count)", () => {
+    render(<MapComponent producers={[multiLocationProducer, emptyLocationsProducer]} />);
+    const icon = recorder.iconCreateFunction({
+      getAllChildMarkers: () => recorder.markers.map((m) => m.marker),
+      getChildCount: () => recorder.markers.length,
+    });
+    expect(icon.__divIcon.className).toBe("mehamakor-cluster");
+    expect(icon.__divIcon.className).not.toContain("mehamakor-cluster-single");
+    expect(icon.__divIcon.html).toContain(">2<"); // 2 unique businesses, not 4 markers
   });
 });

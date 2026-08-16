@@ -10,6 +10,7 @@ import { exportProducersToCSV } from "@/lib/admin-producers-export";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { useRejectFlow } from "./use-reject-flow";
 
 // Default rows-per-page on the admin producers table (MEH-23 pagination).
 const DEFAULT_PER_PAGE = 25;
@@ -181,6 +182,10 @@ function useProducerActions(loadAllProducers) {
     });
   return {
     quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy,
+    // MEH-226: exposed so useRejectFlow shares ONE busy registry with these
+    // handlers — a separate useAdminAction instance would let a reject fire
+    // while another action on the same row is still in flight.
+    run,
     // MEH-1011 Chunk 2: request-changes modal controller.
     modalProducer, feedback, setFeedback,
     openRequestChanges, closeRequestChanges, submitRequestChanges,
@@ -242,6 +247,9 @@ function useImportFlow(loadAllProducers) {
 export function useAdminProducers() {
   const data = useProducersData();
   const actions = useProducerActions(data.loadAllProducers);
+  // MEH-226: shares `actions.run`'s busy registry so a `reject:<id>` key
+  // disables the modal's submit exactly like every other admin action.
+  const rejectFlow = useRejectFlow(data.loadAllProducers, actions.run);
   const importFlow = useImportFlow(data.loadAllProducers);
 
   const exportExcel = () => exportProducersToCSV(data.producers);
@@ -291,7 +299,7 @@ export function useAdminProducers() {
   const pagedVisible = visible.slice((safePage - 1) * data.perPage, safePage * data.perPage);
 
   return {
-    ...data, ...actions, ...importFlow,
+    ...data, ...actions, ...rejectFlow, ...importFlow,
     exportExcel, handleStoryCardUpload, handlePerPageChange,
     incompleteCount, visible, pagedVisible, safePage, totalPages,
   };

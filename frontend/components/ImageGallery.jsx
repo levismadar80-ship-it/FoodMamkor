@@ -5,14 +5,28 @@ import { useTranslations } from "next-intl";
 import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import ImageWithFallback from "./ImageWithFallback";
+import FavoriteButton from "./FavoriteButton";
 import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
 import Popover from "./ui/Popover";
+// MEH-1843: one owner for the verified-popover body so the masthead seal and
+// BadgeRow's hero chip cannot drift apart on the same page.
+import { getVerifiedPopoverBody } from "./BadgeRow";
 
-// MEH-1334 (decision 6): the hero corner overlay is now SHARE, mobile-only —
-// the heart's one home is the header quiet-actions row (שמירה), and desktop
-// share lives there too, so the desktop hero stays clean.
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, shareUrl = "" }) {
+// The hero corner overlay is mobile-only; the desktop hero stays clean because
+// both controls live in the header's quiet-actions row there.
+// MEH-1334 (decision 6) made that corner SHARE-only and gave the heart a single
+// home in the header row. MEH-1693 reverses the heart half: below lg the row no
+// longer renders at all, so the corner carries BOTH circles (share + heart) and
+// the row is the desktop-only pair. `onFavorited` is forwarded to the heart so
+// the page — not this component — owns the post-save AlertPrefsPanel.
+// MEH-1843: verificationDocType / verifiedAt feed the masthead popover body,
+// which must match BadgeRow's hero popover word-for-word (both render on the
+// same producer page). Passed as narrow scalars rather than the producer object
+// to match this component's existing prop style (producerId / producerName /
+// verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
+// generic dateless sentence, which is still true, just less specific.
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited }) {
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -87,13 +101,34 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           data-testid="gallery-tint-layer"
         >
           {/* Recessive brand monogram — corner mark (end side, opposite the
-              favorite control), gold, ~24px. Decorative, never dominant. */}
-          <span
-            className="absolute top-3 end-3 font-headline-lg text-2xl text-accent/40 leading-none select-none pointer-events-none"
+              favorite control), gold, ~24px. Decorative, never dominant.
+              MEH-2025: SVG text, not an HTML text node. axe audits every
+              visible HTML text node for color-contrast (aria-hidden included)
+              and the recessive 40% fill measures 1.66:1; WCAG 1.4.3 exempts
+              purely decorative text, but an HTML text node has no way to say
+              so — an SVG mark is the standard encoding of that exemption.
+              The passing alternative (opacity >= /80, measured 3.04:1) would
+              make the mark dominant, which the recessive LOCK above forbids.
+              Same glyphs/font/fill; box 34x24 at the same corner (span box
+              measured 33x24 before the swap). */}
+          <svg
+            className="absolute top-3 end-3 select-none pointer-events-none overflow-visible"
+            width="34"
+            height="24"
+            viewBox="0 0 34 24"
             aria-hidden="true"
+            focusable="false"
           >
-            מ·ה
-          </span>
+            <text
+              x="17"
+              y="19"
+              textAnchor="middle"
+              fontSize="24"
+              className="font-headline-lg fill-accent/40"
+            >
+              מ·ה
+            </text>
+          </svg>
           {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
               its own name h1 when imageless, so the masthead must always supply
               the page's single h1 (guarantees exactly-one-h1 even for the
@@ -116,6 +151,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               <Popover
                 role="dialog"
                 sheetOnMobile
+                // MEH-1593 (surface 5): the masthead's own wrapper is
+                // `relative … overflow-hidden`, and it IS this panel's
+                // containing block — measured 27/07, 86.75px of the panel was
+                // cut off at 1440px (panel bottom 395px vs ancestor bottom
+                // 308px). `overlay` portals it out; no avoidRef needed, the
+                // panel already had 0 sibling intersections.
+                overlay
                 contentTestId="badge-tooltip-verified"
                 contentClassName="w-64 flex flex-col gap-1.5"
                 sheetContentClassName="flex flex-col gap-2"
@@ -127,7 +169,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                     data-badge="verified"
                     className="group inline-flex items-center justify-center focus:outline-none"
                   >
-                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition">
+                    {/* MEH-2025: bg-accent/10 -> bg-surface-card. Over the masthead's
+                        6%-tint-on-cream the accent/10 fill composites to #dfdbcb and
+                        text-accent measures 3.77:1 (axe serious, AA needs 4.5). On the
+                        solid surface-card fill it measures 5.19:1. Same idiom as the
+                        icon-only chip branch in BadgeRow.jsx (bg-surface-card +
+                        border-accent/40 + text-accent). */}
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition">
                       <SealCheck size={16} aria-hidden="true" />
                       {tBadge("verified_label")}
                     </span>
@@ -138,9 +186,18 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
                   {tBadge("verified_popover_title")}
                 </span>
-                <span className="block text-[13px] leading-relaxed">{tBadge("verified_popover_body")}</span>
+                <span className="block text-[13px] leading-relaxed">
+                  {getVerifiedPopoverBody(
+                    { verification_doc_type: verificationDocType, verified_at: verifiedAt },
+                    tBadge
+                  )}
+                </span>
+                {/* MEH-1840: retargeted /about#verification → /about/process, in
+                    lockstep with the identical popover in BadgeRow.jsx. Both render
+                    on the producer page, so a split target would send the same copy
+                    to two destinations. The /about#verification anchor stays live. */}
                 <LocaleLink
-                  href="/about#verification"
+                  href="/about/process"
                   className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
                 >
                   {tBadge("verified_popover_link")}
@@ -151,9 +208,19 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             )}
           </div>
         </div>
+        {/* MEH-1693: imageless masthead — same two-circle hero cluster as the
+            imaged branch below. gap-2 matches the grid's own gap so the pair
+            reads as one control group. Mutually exclusive with that branch
+            (this arm returns early), so only ONE heart mounts per render. */}
         {producerId && (
-          <div className="absolute top-3 start-3 z-10 lg:hidden">
+          <div className="absolute top-3 start-3 z-10 lg:hidden flex items-center gap-2">
             <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+            <FavoriteButton
+              producerId={producerId}
+              producerName={producerName}
+              variant="gallery"
+              onFavorited={onFavorited}
+            />
           </div>
         )}
       </div>
@@ -293,12 +360,26 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         </>
       )}
     </div>
-    {/* MEH-1334: single mobile SHARE overlay for the imaged state — pinned
-        top-start (right, RTL) over the hero corner where the heart used to
-        sit (MEH-1047 slot). z-20 clears the counter chip / pill (z-10). */}
+    {/* MEH-1334: mobile overlay for the imaged state — pinned top-start
+        (right, RTL) over the hero corner. z-20 clears the counter chip /
+        pill (z-10).
+        MEH-1693: the heart is BACK beside the share circle, reclaiming the
+        MEH-1047 slot it was pulled from. MEH-1334 decision 6 removed it to
+        kill a ❤️-hero/actions-row duplication; that duplication is gone now
+        that the row is desktop-only, so the removal's premise no longer
+        holds. Both circles share one anatomy (bg-white/95, w-11 h-11,
+        rounded-full, shadow-md) — ShareButton's overlay variant was written
+        to mirror FavoriteButton's gallery circle, so they match by
+        construction rather than by copied class strings. */}
     {producerId && (
-      <div className="absolute top-3 start-3 z-20 lg:hidden">
+      <div className="absolute top-3 start-3 z-20 lg:hidden flex items-center gap-2">
         <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+        <FavoriteButton
+          producerId={producerId}
+          producerName={producerName}
+          variant="gallery"
+          onFavorited={onFavorited}
+        />
       </div>
     )}
     </div>

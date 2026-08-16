@@ -51,11 +51,15 @@ from app.services.oauth_verifiers import (
     verify_apple_token as _verify_apple_token,
     verify_google_token as _verify_google_token,
 )
-from app.constants import DECLARATION_VERSION
+from app.constants import DECLARATION_VERSION, TERMS_VERSION
 from app.services.license_validation import ensure_license_for_categories
+from app.services.producer_queries import (
+    create_primary_branch_location,
+    persist_registration_delivery_areas,
+)
 from app.services.password_policy import validate_password
 from app.database import get_db
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product, User
+from app.models import Category, Producer, ProducerCategory, Product, User
 from app.models.models import (
     Favorite,
     HomeProduct,
@@ -69,6 +73,7 @@ from app.schemas.schemas import (
     AppleAuthRequest,
     AppleAuthResponse,
     CheckPasswordRequest,
+    DeliveryAreaCreate,
     ForgotPasswordRequest,
     GoogleAuthRequest,
     GoogleAuthResponse,
@@ -245,7 +250,7 @@ def logout(request: Request, response: Response):
 # legitimate owner finds out via send_duplicate_attempt_email. No
 # access_token — caller must verify via email then POST /auth/login.
 _REGISTER_ACK_DETAIL = (
-    "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."
+    "אם האימייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."
 )
 
 
@@ -313,6 +318,14 @@ async def register(
             phone=data.phone,
             role="consumer",
             referral_code=gen_referral_code(),
+            # MEH-1995: record the terms acceptance instead of discarding it.
+            # Stamped only when the flag is genuinely True — an omitted or
+            # False flag leaves both columns NULL, which reads as "no record",
+            # not as "refused". now(timezone.utc), never naive utcnow().
+            terms_accepted_at=(
+                datetime.now(timezone.utc) if data.terms_accepted else None
+            ),
+            terms_version=TERMS_VERSION if data.terms_accepted else None,
             email_verified=False,
             email_verify_token=verify_token,
             email_verify_expires=verify_expires,
@@ -363,9 +376,33 @@ async def register(
 # decorator-level response_model is single-shape and would strip fields
 # from one of the two — we let Pydantic serialise each return as-is.
 @router.post("/register/producer")
-# MEH-624: dual-key throttling. Per-IP cap (3/hour) + per-email cap
-# stops a botnet rotating IPs from spamming the OWASP duplicate-attempt
-# email at one victim.
+# MEH-624: dual-key throttling. Per-IP cap + per-email cap stops a botnet
+# rotating IPs from spamming the OWASP duplicate-attempt email at one victim.
+#
+# MEH-1635: the per-IP half moved 3/hour -> 10/hour. It was never the
+# anti-spam primitive — the per-email cap below is, and it is UNCHANGED.
+# Keying registration abuse on IP punishes the wrong people, and three
+# separate effects stack against a single legitimate producer:
+#
+#   1. Shared IPs. CGNAT (most Israeli mobile carriers), office NAT, and
+#      a co-working space all present one IP. Three women registering
+#      their businesses from the same cafe wifi exhausted the hour.
+#   2. Refresh-retry double-count (MEH-1627). slowapi's middleware runs
+#      BEFORE dependencies, so a request rejected at the auth layer has
+#      already burned its unit: an expired token costs 2 units for one
+#      submit (401 -> refresh -> replay), halving the real allowance.
+#   3. Resubmit after a 422 (MEH-1623 producer_name validation). Every
+#      corrected resubmit is another unit, and a 422 is exactly the case
+#      where a user retries immediately.
+#
+# 3/hour could therefore be spent without a single successful
+# registration. 10/hour keeps a per-IP ceiling on automated floods while
+# leaving room for the shared-IP + retry case.
+#
+# DO NOT copy this widening to the other 3/hour limits: auth.py:1270
+# (resend-verify, sends email) and auth.py:1289 (DELETE /me, irreversible)
+# are authenticated and deliberately stay tight — they are not shared-IP
+# bound and were not in MEH-1635's scope.
 #
 # Upgrade path trade-off (acknowledged, not blocking): authenticated
 # producer upgrades send email=None in the payload, so they all share
@@ -375,7 +412,7 @@ async def register(
 # validation REQUIRES email and the per-email key is meaningful.
 # JWT-gate makes the empty bucket uninteresting to attackers.
 # REUSES: backend/app/routers/auth.py:972-973 — same dual-key shape.
-@limiter.limit("3/hour")  # SECURITY FIX #2
+@limiter.limit("10/hour")  # SECURITY FIX #2; widened by MEH-1635
 @limiter.limit("5/15 minutes", key_func=email_from_body)
 async def register_producer(
     request: Request,
@@ -497,11 +534,29 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-1471: self-reported attribution captured at the final
+            # registration step. Schema-validated (allowed-key set / bleach);
+            # persisted verbatim. NULL when the field is absent (upgrade path).
+            referral_source=data.referral_source,
+            referral_source_other=data.referral_source_other,
             # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
+            # MEH-1838 chunk A: delivery shape, previously never captured at
+            # registration — every producer landed on the column defaults
+            # (physical-only) regardless of what the business actually is.
+            # delivery_cities is deliberately NOT written here — Phase 0 found
+            # MEH-903 A already retired that flat column (admin.py:427-429,
+            # :486-489 pop it out on both create and update); producer_listing.py
+            # :258's delivery-city match reads delivery_areas rows exclusively.
+            # The city list is instead folded into the delivery_areas write
+            # below, the same live mechanism admin.py/producer_me.py's own
+            # _apply_delivery_cities use for a flat city list.
+            has_physical_location=data.has_physical_location,
+            offers_delivery=data.offers_delivery,
+            delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
         db.flush()
@@ -517,19 +572,53 @@ async def register_producer(
                     )
                 )
                 _pos += 1
-        for da in data.delivery_areas:
-            db.add(
-                DeliveryArea(
-                    producer_id=producer.id,
-                    city=da.city,
-                    min_order=da.min_order,
-                    delivery_day=da.delivery_day,
-                )
-            )
+        # MEH-1921: the areas and the `offers_delivery` declaration are written
+        # by one owner — this loop used to omit the flag, so a business that
+        # registered WITH delivery areas was excluded from the משלוח chip by
+        # the MEH-1848 conjunct. Same call in the new-email branch below.
+        # MEH-1838 chunk A: data.delivery_cities (the new flat city-list field)
+        # is folded in here as bare DeliveryAreaCreate(city=...) rows — same
+        # shape _apply_delivery_cities (admin.py/producer_me.py) builds for the
+        # identical input, so a nationwide vs. city-list registration is
+        # visible to the same delivery_areas.any() match producer_listing.py
+        # uses for every other producer.
+        delivery_areas = list(data.delivery_areas) + [
+            DeliveryAreaCreate(city=c) for c in data.delivery_cities if c and c.strip()
+        ]
+        persist_registration_delivery_areas(db, producer, delivery_areas)
+        # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
+        # This is the UPGRADE branch, and it is the one every OAuth signup
+        # lands on — `/auth/register/producer/oauth` creates a consumer and a
+        # token only, never a Producer (its docstring, :865-871), so the
+        # Google/Apple journey finishes here as an already-authenticated user.
+        # Both branches of this route therefore need the call; covering only
+        # the new-email one below would leave OAuth signups with no location.
+        create_primary_branch_location(db, producer)
         # Link producer to existing user, upgrade role + flag.
         user.producer_id = producer.id
         user.role = "producer"
         user.is_producer = True
+        # MEH-1995: the upgrade path collects ToS consent exactly like the two
+        # account-creation paths — the checkbox renders in the STORY step with
+        # no isUpgrade condition and hard-gates submit
+        # (RegisterProducerClient.jsx:1553-1566, :1630-1633), and the flag rides
+        # the shared body object above `if (!isUpgrade)` (:572, :575). Missing
+        # this stamp meant a consent event that provably happened, and was
+        # transmitted, recorded as NULL — i.e. the DB asserting "no record" about
+        # an acceptance the user was *forced* to give. That is the exact evidence
+        # gap this ticket exists to close, so leaving it here would have shipped
+        # the bug inside its own fix. The sibling licensing declaration already
+        # stamps both paths (declared_at at :543 upgrade / :662 new), which is
+        # the house precedent this now matches.
+        #
+        # Guarded on the flag and never nulled: this user may already carry a
+        # consumer-registration consent, and an absent/False flag must leave that
+        # record intact rather than erase it. A True flag overwrites with the
+        # newer acceptance — which is an evidentiary gain, since terms_version
+        # then names the wording actually agreed to most recently.
+        if data.terms_accepted:
+            user.terms_accepted_at = datetime.now(timezone.utc)
+            user.terms_version = TERMS_VERSION
         db.commit()
         db.refresh(user)
 
@@ -545,8 +634,45 @@ async def register_producer(
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)
-        # No verify/welcome email — the user already has a verified consumer
-        # account; she's just adding producer capability.
+        # MEH-1553: no VERIFY email on the upgrade path. Verification is NOT
+        # enforced here — a logged-in but *unverified* consumer can still add
+        # producer capability (the guard above only requires a valid JWT).
+        # That unverified state is covered downstream by the verify banner
+        # (VerifyBanner.jsx) and the require_verified_producer dep (auth.py),
+        # not by this handler. That decision stands.
+        #
+        # MEH-1806 amendment: the WELCOME email now fires HERE, and this is the
+        # single place a producer welcome is sent on the OAuth journey.
+        #
+        # The omission was never argued. The comment above previously read "no
+        # verify/welcome email"; the commit that wrote it (d521ea5e) describes
+        # its own purpose as correcting a claim about *verification*, and
+        # nothing in it — or anywhere else — reasons about the welcome. It was
+        # carried along by the wording, not decided.
+        #
+        # It had a real cost: this is the branch every OAuth business owner
+        # lands on (register_producer_oauth creates the account, Step 2 upgrades
+        # it), so she got no email setting the "up to 3 business days for admin
+        # approval" expectation and no dashboard link. She did get the CONSUMER
+        # welcome from Step 0 — the wrong audience entirely — which is why the
+        # fix was not simply "add a send here": that Step 0 send is removed in
+        # the same change (see register_producer_oauth), leaving exactly one
+        # welcome per producer signup instead of two contradictory ones.
+        #
+        # The WhatsApp welcome is not a substitute — it fires only when a phone
+        # AND WhatsApp creds are configured, which is exactly the
+        # `whatsapp_expected` bool computed just below.
+        #
+        # Fires for consumer-upgrades too, not only OAuth ones: both just
+        # became producers, and the producer copy is correct for both. A
+        # long-standing consumer who upgrades keeps the consumer welcome she
+        # received at her own signup — that one was correct when it was sent,
+        # and this is a second, different event.
+        #
+        # Fail-open, like every other send — signup must never block on email.
+        background_tasks.add_task(
+            _send_welcome_email, user.email, user.name, "producer"
+        )
 
         whatsapp_expected = bool(
             p_phone
@@ -603,11 +729,21 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-1471: self-reported attribution captured at the final
+            # registration step. Schema-validated (allowed-key set / bleach);
+            # persisted verbatim. NULL when the field is absent (upgrade path).
+            referral_source=data.referral_source,
+            referral_source_other=data.referral_source_other,
             # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
+            # MEH-1838 chunk A: see the upgrade branch above — same fields,
+            # same reason (delivery_cities NOT written — see the note there).
+            has_physical_location=data.has_physical_location,
+            offers_delivery=data.offers_delivery,
+            delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
         db.flush()
@@ -623,15 +759,20 @@ async def register_producer(
                     )
                 )
                 _pos += 1
-        for da in data.delivery_areas:
-            db.add(
-                DeliveryArea(
-                    producer_id=producer.id,
-                    city=da.city,
-                    min_order=da.min_order,
-                    delivery_day=da.delivery_day,
-                )
-            )
+        # MEH-1921: see the upgrade branch above — same call, same reason. The
+        # two branches are the only Producer writers on this route and each
+        # built its own rows, so fixing one would have left the other broken.
+        # MEH-1838 chunk A: see the upgrade branch above — same city-list fold.
+        delivery_areas = list(data.delivery_areas) + [
+            DeliveryAreaCreate(city=c) for c in data.delivery_cities if c and c.strip()
+        ]
+        persist_registration_delivery_areas(db, producer, delivery_areas)
+
+        # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
+        # This is the NEW-EMAIL branch (password signup). Its twin is the
+        # upgrade branch above; the two are the only Producer writers on this
+        # route, and both need it.
+        create_primary_branch_location(db, producer)
 
         verify_token = secrets.token_urlsafe(32)
         verify_expires = datetime.utcnow() + timedelta(hours=24)
@@ -647,6 +788,14 @@ async def register_producer(
             producer_id=producer.id,
             is_producer=True,
             referral_code=gen_referral_code(),
+            # MEH-1995: same as the consumer path above. Note this is the ToS
+            # checkbox, which is a DIFFERENT consent from the licensing
+            # declaration stamped onto the producer row as declared_at /
+            # declaration_version — two consents, two records, deliberately.
+            terms_accepted_at=(
+                datetime.now(timezone.utc) if data.terms_accepted else None
+            ),
+            terms_version=TERMS_VERSION if data.terms_accepted else None,
             email_verified=False,
             email_verify_token=verify_token,
             email_verify_expires=verify_expires,
@@ -687,11 +836,14 @@ async def register_producer(
             )
             provider = None
         if provider is not None:
+            # MEH-1815: producer variant — this branch discarded the whole
+            # business payload, so the out-of-band email has to say so.
             background_tasks.add_task(
                 _send_duplicate_attempt_email,
                 existing_user.email,
                 existing_user.name,
                 provider,
+                "producer",
             )
 
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
@@ -731,7 +883,7 @@ def google_auth(
     if not settings.google_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
         )
     user_info = _verify_google_token(data.id_token)
     if not user_info:
@@ -839,7 +991,7 @@ def register_producer_oauth(
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
             )
         user_info = _verify_google_token(data.id_token)
         sub_field = "google_id"
@@ -847,7 +999,7 @@ def register_producer_oauth(
         if not settings.apple_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
             )
         user_info = _verify_apple_token(data.id_token)
         sub_field = "apple_id"
@@ -890,6 +1042,13 @@ def register_producer_oauth(
                 "role": "consumer",
                 "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
+                # MEH-1553: the OAuth provider already verified the email, so
+                # stamp email_verified=True — one-to-one with the /auth/google
+                # and /auth/apple new-user siblings. Without it the new user
+                # falls back to the column default (False), sees the verify
+                # banner, and is blocked by require_verified_producer (MEH-170
+                # gap; MEH-1164 turned that into a money-path blocker).
+                "email_verified": True,
             }
             if provider == "google":
                 kwargs["avatar_url"] = _upload_google_avatar_or_none(
@@ -932,11 +1091,34 @@ def register_producer_oauth(
             user.avatar_url = picture_for_google
             db.commit()
 
-    if is_new:
-        background_tasks.add_task(
-            _send_welcome_email, user.email, user.name, "consumer"
-        )
-    email_expected = bool(is_new and settings.resend_api_key)
+    # MEH-1806 — producer signup entry point; consumer copy is wrong-audience.
+    # Welcome fires once, Step 2, producer kind.
+    #
+    # This route used to send the CONSUMER welcome here on `is_new` — "גלי בתי
+    # עסק לפי עיר… שמרי מועדפים" — to someone who is, by construction, halfway
+    # through registering a business. Combined with the Step 2 producer welcome
+    # that MEH-1806 adds, a new OAuth owner received two mails seconds apart,
+    # both opening `ברוכה הבאה למהמקור! 🌿` and then contradicting each other.
+    #
+    # Verified producer-only before removing, not assumed: the sole production
+    # caller is ProducerOAuthButtons.jsx:37, mounted once at
+    # RegisterProducerClient.jsx:832 (/register/producer). Consumer OAuth uses
+    # /auth/google and /auth/apple (auth-context.js:145,152), which keep their
+    # own welcome sends untouched. The separation is already an asserted
+    # invariant — e2e/flows/09-login-console-clean.spec.ts fails if this
+    # endpoint is ever POSTed from the consumer /login page (MEH-274).
+    #
+    # ACCEPTED COST, stated rather than discovered later: a user who completes
+    # Step 0 and abandons before Step 2 now receives NO welcome. She holds a
+    # consumer account and finished nothing, and a test asserts the zero so it
+    # reads as a decision rather than an oversight.
+    #
+    # `email_sent` follows the send. This endpoint now dispatches no mail at
+    # all, so the flag is False unconditionally — leaving it computed from
+    # `is_new` would have kept the response advertising a welcome that no
+    # longer exists. The field has no reader today (no frontend use, no test),
+    # which is exactly why a stale `True` could have sat there indefinitely.
+    email_expected = False
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
@@ -1056,7 +1238,7 @@ def apple_auth(
     if not settings.apple_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
         )
     user_info = _verify_apple_token(data.id_token)
     if not user_info:

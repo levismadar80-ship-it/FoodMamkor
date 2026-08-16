@@ -18,6 +18,10 @@ vi.mock("next-intl", () => ({
     const map = {
       "producer.detail.contact_card.status_open": "פתוח להזמנות",
       "producer.detail.contact_card.aria.email": "אימייל",
+      // MEH-1551: email is the sole surviving channel here (whatsapp primary,
+      // only contact_email set) → it now renders as the labeled single row,
+      // not an aria-labeled circle. Behavior (timer/copy/toast/track) unchanged.
+      "producer.detail.contact_card.single.email": "שלחו אימייל",
       "producer.detail.contact_card.email_fallback_toast": ADDR_COPIED,
       "producer.detail.contact_card.email_copy_failed_toast": MAIL_COPY_FAILED,
     };
@@ -78,7 +82,7 @@ afterEach(() => {
 describe("ContactCard email — silent-mailto fallback (MEH-1221)", () => {
   it("no handler: after 1200ms copies the address + shows the toast", async () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("אימייל"));
+    fireEvent.click(screen.getByTestId("contact-single-row"));
     await vi.runAllTimersAsync();
     expect(writeText).toHaveBeenCalledWith(EMAIL);
     expect(errorToast).toHaveBeenCalledWith(ADDR_COPIED);
@@ -86,7 +90,7 @@ describe("ContactCard email — silent-mailto fallback (MEH-1221)", () => {
 
   it("handler present (window blur): timer cancelled — no copy, no toast", async () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("אימייל"));
+    fireEvent.click(screen.getByTestId("contact-single-row"));
     window.dispatchEvent(new Event("blur"));
     await vi.runAllTimersAsync();
     expect(writeText).not.toHaveBeenCalled();
@@ -97,7 +101,7 @@ describe("ContactCard email — silent-mailto fallback (MEH-1221)", () => {
     writeText.mockRejectedValueOnce(new Error("denied"));
     document.execCommand = vi.fn().mockReturnValue(false);
     renderCard();
-    fireEvent.click(screen.getByLabelText("אימייל"));
+    fireEvent.click(screen.getByTestId("contact-single-row"));
     await vi.runAllTimersAsync();
     expect(errorToast).toHaveBeenCalledWith(MAIL_COPY_FAILED);
     expect(errorToast).not.toHaveBeenCalledWith(ADDR_COPIED);
@@ -105,7 +109,7 @@ describe("ContactCard email — silent-mailto fallback (MEH-1221)", () => {
 
   it("tracking fires exactly once per click", async () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("אימייל"));
+    fireEvent.click(screen.getByTestId("contact-single-row"));
     await vi.runAllTimersAsync();
     expect(trackContactClick).toHaveBeenCalledTimes(1);
     expect(trackContactClick).toHaveBeenCalledWith(7, "email");

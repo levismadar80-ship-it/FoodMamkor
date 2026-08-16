@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "MEH-1800 — the registry of search-input placeholder strings that must stay",
+    "answerable by the live search. ONE list, read by BOTH halves of the guard:",
+    "  · frontend/__tests__/SearchPlaceholderContract.test.js (structural, blocking)",
+    "  · scripts/check_placeholder_search.py                  (live data, periodic)",
+    "Two copies of this list would drift, and a key silently dropped from one of",
+    "them is exactly the silent-coverage-gap class .claude/rules/testing.md warns",
+    "about under 'Guarded registries'.",
+    "",
+    "Add a key here when you add a placeholder that teaches the user what the",
+    "search field accepts. Do NOT add placeholders for fields that are not the",
+    "site search (admin filters, form inputs) — they are not search queries and",
+    "the live half would fail them for the wrong reason.",
+    "",
+    "KNOWN GAP, stated so it is not mistaken for coverage: this registry lists",
+    "he.json ONLY. Every en.json counterpart returns 0 on staging — including",
+    "the four MEH-1690 shipped ('Sourdough bread', 'Breads and baking',",
+    "'Zichron Yaakov', \"Ma'afiyat HaMachmetzet\") — because producer, product,",
+    "city and category names are all Hebrew, so NO English string returns a",
+    "result for ANY scope. That is a whole-locale gap, not a bad string: it",
+    "cannot be fixed by picking better English copy, and adding these keys here",
+    "would red the guard permanently with no fix available. Reported under",
+    "MEH-1800; the decision (transliterate names? search Hebrew from /en?) is",
+    "product's, not this guard's."
+  ],
+  "messagesFile": "frontend/messages/he.json",
+  "keys": [
+    "home.search.placeholder",
+    "home.search.placeholders.q1",
+    "home.search.placeholders.q2",
+    "home.search.placeholders.q3",
+    "home.search.placeholders.q4",
+    "producers.search_input.placeholder",
+    "search.input_placeholder"
+  ]
+}

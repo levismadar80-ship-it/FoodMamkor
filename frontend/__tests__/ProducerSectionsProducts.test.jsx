@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1138: imageless product cards render the canonical no-photo state
 // (cream surface + leaf glyph), never an empty gray box or a generic package
@@ -34,6 +34,32 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
+  // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
+  // LEFT in RTL) and the sheet's own icons load through this same mock.
+  CaretLeft: (props) => <span data-testid="row-chevron" className={props.className} />,
+  // MEH-2045: the sheet's "previous" chevron in RTL. Loaded through this mock
+  // for the same reason CaretLeft is — paging itself is asserted in
+  // ProductSheetNavigation.test.jsx.
+  CaretRight: (props) => <span data-testid="sheet-caret-right" className={props.className} />,
+  MapPin: () => <span data-testid="map-pin" />,
+  WhatsappLogo: () => <span data-testid="wa-logo" />,
+  X: () => <span data-testid="x-icon" />,
+  // MEH-1916: the sheet's CTA is now per-channel, so its whole icon set loads
+  // through this mock too. Routing itself is asserted in ProductSheet.test.jsx.
+  Phone: () => <span data-testid="icon-phone" />,
+  Globe: () => <span data-testid="icon-globe" />,
+  EnvelopeSimple: () => <span data-testid="icon-email" />,
+  InstagramLogo: () => <span data-testid="icon-instagram" />,
+  FacebookLogo: () => <span data-testid="icon-facebook" />,
+  Receipt: () => <span data-testid="icon-receipt" />,
+}));
+
+// MEH-1901: the sheet's beacon helpers — asserted in ProductSheet.test.jsx;
+// stubbed here so the module's localStorage/fetch reach never runs under these
+// grid-rendering assertions.
+vi.mock("@/lib/contact-tracking", () => ({
+  pingWhatsAppBeacon: vi.fn(),
+  markWhatsAppClickedLocal: vi.fn(),
 }));
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => null }));
@@ -269,6 +295,96 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.queryByText("99₪")).not.toBeInTheDocument();
   });
 
+  // MEH-1855: price_range is the canonical field (models.py:121) but every
+  // public reader only ever consulted the legacy starting_price_label alias —
+  // an owner who filled ONLY price_range saw nothing on her own page,
+  // including no signature block at all (hasSignature gated on the alias).
+  describe("MEH-1855 — price_range (canonical) read with starting_price_label (alias) fallback", () => {
+    it("price_range-only, NO top_product_name: the signature block still renders (was fully invisible)", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            // no top_product_name, no starting_price_label — only the
+            // canonical field the owner actually filled in.
+            price_range: "מ-₪20",
+            products: [],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+    });
+
+    it("price_range-only signature card WITH a matching top product: price line renders", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            price_range: "מ-₪20",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+    });
+
+    it("starting_price_label-only (alias, no price_range): unchanged — still renders", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            starting_price_label: "החל מ-25₪",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+    });
+
+    it("both set: price_range (canonical) wins over starting_price_label (alias)", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            price_range: "מ-₪20",
+            starting_price_label: "החל מ-25₪",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+      expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
+    });
+
+    it("price_range set blocks the product-price fallback (same priority rule as the alias)", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            price_range: "מ-₪20",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null, price_min: 99 }],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+      expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+    });
+  });
+
   it("no stray indicator/dot renders on an imageless card", () => {
     const { container } = render(
       <ProducerSections
@@ -278,5 +394,99 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     );
     // The old pre-MEH-1126 gray Package glyph / green box must not come back.
     expect(container.querySelector(".bg-green-50")).toBeNull();
+  });
+});
+
+// MEH-1901: the grid row and the signature card are the two triggers for the
+// product detail sheet. These assert the WIRING (row → sheet); the sheet's own
+// contract — a11y, diet chips, price paths, WhatsApp CTA — is asserted in
+// ProductSheet.test.jsx.
+describe("MEH-1901 — product rows open the detail sheet", () => {
+  const longDescription = "שורה ראשונה\n" + "א".repeat(1990);
+
+  it("the grid row is a button, not a div, and opens the sheet on click", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([
+          { id: 11, name: "גרנולה ביתית", image_url: null, description: longDescription },
+        ])}
+      />,
+    );
+    expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+
+    const row = screen.getByTestId("product-row");
+    expect(row.tagName).toBe("BUTTON");
+    fireEvent.click(row);
+
+    const sheet = screen.getByTestId("product-sheet");
+    expect(sheet).toHaveAttribute("aria-modal", "true");
+    expect(sheet).toHaveAttribute("aria-label", "גרנולה ביתית");
+    // The whole 2000-char description is reachable from the sheet — the thing
+    // this ticket exists to fix.
+    expect(screen.getByTestId("product-sheet-description").textContent).toBe(longDescription);
+  });
+
+  it("the row description clamps to TWO lines (was line-clamp-1)", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([
+          { id: 11, name: "גרנולה ביתית", image_url: null, description: longDescription },
+        ])}
+      />,
+    );
+    const rowDesc = screen.getByTestId("product-row").querySelector("p.line-clamp-2");
+    expect(rowDesc).not.toBeNull();
+    expect(screen.getByTestId("product-row").querySelector("p.line-clamp-1")).toBeNull();
+  });
+
+  it("Escape closes the sheet the row opened", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([{ id: 11, name: "גרנולה ביתית", image_url: null }])}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("product-row"));
+    expect(screen.getByTestId("product-sheet")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+  });
+
+  it("the signature card opens the SAME sheet when it matched a real product", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "מארז לחמים",
+          products: [
+            { id: 21, name: "מארז לחמים", image_url: null, description: longDescription },
+          ],
+        }}
+      />,
+    );
+    const trigger = screen.getByTestId("signature-product-trigger");
+    expect(trigger.tagName).toBe("BUTTON");
+    fireEvent.click(trigger);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מארז לחמים");
+  });
+
+  it("a free-text signature label with NO matching product stays inert — no empty sheet", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "משהו שאין לו שורה",
+          products: [],
+        }}
+      />,
+    );
+    expect(screen.queryByTestId("signature-product-trigger")).not.toBeInTheDocument();
+    expect(screen.getByText("משהו שאין לו שורה")).toBeInTheDocument();
   });
 });

@@ -349,7 +349,9 @@ def _resolve_producer_by_slug(db: Session, slug: str) -> Producer:
     "/producers/{slug}/recipes",
     response_model=list[ProducerRecipeOut],
 )
+@limiter.limit("120/minute")
 def list_public_recipes(
+    request: Request,
     slug: str,
     db: Session = Depends(get_db),
 ):
@@ -376,7 +378,9 @@ def list_public_recipes(
     "/producers/{slug}/recipes/{recipe_id}",
     response_model=ProducerRecipeOut,
 )
+@limiter.limit("120/minute")
 def get_public_recipe(
+    request: Request,
     slug: str,
     recipe_id: UUID,
     db: Session = Depends(get_db),

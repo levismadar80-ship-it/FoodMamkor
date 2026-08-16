@@ -19,7 +19,17 @@ vi.mock("@/lib/api", () => ({
 // renders; returning a fresh object here would re-fire the [..., router] effect
 // and re-fetch, masking the optimistic list mutations under test.
 const ROUTER = { push: vi.fn() };
+// MEH-1639: the dashboard pages import Link/useRouter from the locale-aware
+// wrapper now, so the mock has to live on @/i18n/navigation. The
+// next/navigation mock below stays for useParams/useSearchParams, which
+// createNavigation does not export.
 vi.mock("next/navigation", () => ({ useRouter: () => ROUTER }));
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ROUTER,
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>
+  ),
+}));
 // Stable user/auth ref — the real useAuth holds `user` in useState (stable
 // across renders). A fresh object here would re-fire the [user, …] effect and
 // re-fetch on every render, re-adding rows removed by the optimistic mutations.
@@ -89,5 +99,33 @@ describe("MEH-1405 — ManageEventsPage", () => {
     fireEvent.click(screen.getAllByLabelText(L.action_delete)[0]);
     expect(api.delete).not.toHaveBeenCalled();
     confirmSpy.mockRestore();
+  });
+
+  // MEH-1655 — create-CTA count per list state. Numeric assertions on purpose:
+  // a presence-only check cannot detect the loading-state CTA that used to
+  // render and then jump to the EmptyState CTA. Both CTAs are links named
+  // create_cta (== empty_cta), so role+name counts them exactly.
+  const createCtaCount = () =>
+    screen.queryAllByRole("link", { name: L.create_cta }).length;
+
+  it("loading (items === null) renders ZERO create-CTAs", async () => {
+    api.get.mockReturnValue(new Promise(() => {})); // never resolves
+    await renderPage();
+    expect(screen.getByText(L.loading)).toBeInTheDocument();
+    expect(createCtaCount()).toBe(0);
+  });
+
+  it("empty list renders EXACTLY 1 create-CTA (the EmptyState one)", async () => {
+    api.get.mockResolvedValue({ data: [] });
+    await renderPage();
+    await waitFor(() => expect(screen.getByText(L.empty_title)).toBeInTheDocument());
+    expect(createCtaCount()).toBe(1);
+  });
+
+  it("non-empty list renders EXACTLY 1 create-CTA (the header one)", async () => {
+    await renderPage();
+    await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
+    expect(createCtaCount()).toBe(1);
+    expect(screen.queryByText(L.empty_title)).not.toBeInTheDocument();
   });
 });

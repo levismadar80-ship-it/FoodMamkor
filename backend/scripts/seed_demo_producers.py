@@ -16,7 +16,9 @@ Related:  backend/scripts/seed_demo_business.py (single-business pattern — env
           trust_tier.py:3 (VALID_BADGE_CODES) · admin_kashrut.py:72-79 (kashrut
           expiry model, MEH-1260) · ProducerCard.jsx:242 (leaf placeholder,
           MEH-643) — the 2 image-less businesses exercise that path.
-History:  MEH-1300 (creation).
+History:  MEH-1300 (creation); MEH-1707 (the flagship demo business is spared
+          from --reset — see the TEST_NAME_PATTERNS comment below for why that
+          is a role change, not a bug fix).
 
 Run (Sapir, Railway one-off — deletes require --confirm):
     # 1) dry-run: prints exactly what WOULD be deleted + inserted, no writes
@@ -48,11 +50,31 @@ from app.models import (  # noqa: E402
 from app.models.models import Event, ProducerReview, User  # noqa: E402
 
 # ============================================================================
-# RESET — names of the current TEST businesses to delete (substring match on
-# producers.name). Covers every seed/QA/demo row that has accumulated on
-# staging (per MEH-1300 spec). Matched case-as-is; Hebrew has no case folding.
+# RESET — names of the ACCUMULATED TEST businesses to delete (substring match
+# on producers.name). Matched case-as-is; Hebrew has no case folding.
 # NOTE: the demo businesses inserted below deliberately avoid every one of
 # these substrings so a later `--reset` never sweeps a fresh demo row.
+#
+# MEH-1707: "מאפיית רוח השדה" (slug ruach-hasadeh) was REMOVED from this list,
+# and that removal is NOT a bug fix — the name was here on purpose. MEH-1300's
+# <acceptance_criteria> named all 12 substrings verbatim, and the flagship was
+# already a live staging row (seed_demo_business.py, PR #1597, 11/07) when that
+# spec was written on 17/07. What changed since is the ROW'S ROLE, not the code:
+# from MEH-1706 onward the flagship carries the seed coverage contract (the
+# end-to-end proof surface, CI-gated against drift), which makes it
+# infrastructure. `--reset` exists to clear accumulated TEST data, and
+# infrastructure is not test data.
+#
+# So: `--reset` sweeps the accumulated TEST rows below and nothing else. The
+# flagship demo business is owned by seed_demo_business.py and is spared.
+# DO NOT re-add it here — its lifecycle belongs to the script that owns it.
+#
+# Note what that does NOT give you: `seed_demo_business.py --refresh` REBUILDS
+# the flagship (delete, then recreate — see seed_demo_business.py:481-482, no
+# early return) and is therefore not a way to remove it. After this change no
+# script removes the flagship permanently; that is a deliberate manual DB
+# action. MEH-409 owns the deletion path for when the demo is swapped for a
+# real profile.
 # ============================================================================
 TEST_NAME_PATTERNS = [
     "יצרן לדוגמה",
@@ -66,7 +88,6 @@ TEST_NAME_PATTERNS = [
     "גבינות הר הגולן",
     "מאפיית המחמצת",
     "תסס",
-    "מאפיית רוח השדה",
 ]
 
 ADMIN_NOTE = (

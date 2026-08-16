@@ -23,9 +23,13 @@
  *
  *   3. markWhatsAppClickedLocal(producerId) — localStorage write that
  *      unlocks the review form. Called from ProducerDetail's inline +
- *      sidebar primary CTA ONLY. The mobile sticky bar AND the /map
- *      WhatsApp sites deliberately omit this — see StickyContactBar.jsx
- *      and DesktopMiniPopup.jsx for the matching TODOs.
+ *      sidebar primary CTA, and (MEH-1886) from every WhatsApp deep-link in
+ *      WhatsAppQuestionChips — a chat opened from a question chip is a real
+ *      conversation, and a composed question is a stronger signal than a bare
+ *      click. The in-page ANSWER disclosures in that component fire neither
+ *      helper: nothing was opened. The mobile sticky bar AND the /map WhatsApp
+ *      sites still deliberately omit this — see StickyContactBar.jsx and
+ *      DesktopMiniPopup.jsx for the matching TODOs.
  *
  * All helpers are fail-soft — every external surface is wrapped so a
  * failed beacon, fetch, or storage write cannot break the user flow.

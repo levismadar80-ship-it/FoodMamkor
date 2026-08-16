@@ -64,7 +64,11 @@ const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
 // twilio was STALE (WhatsApp ships via Meta Cloud API, services/whatsapp.py);
 // added resend (email.py), sentry (lib/api.js), clarity (ClarityScript.jsx,
 // consent-gated). Keep 1:1 with what actually runs.
-const THIRD_PARTY_ITEMS = ["cloudinary", "google", "anthropic", "meta", "resend", "sentry", "clarity", "infra"];
+// MEH-1981: `posthog` added after an Amendment-13 collection-point audit found
+// it was the one processor wired in code (`lib/analytics.js:10`) but absent
+// from this list. An enumeration that names eight and omits a live ninth is
+// worse than a general statement, because it presents itself as complete.
+const THIRD_PARTY_ITEMS = ["cloudinary", "google", "anthropic", "meta", "resend", "sentry", "clarity", "posthog", "infra"];
 const RIGHTS_ITEMS = ["access", "rectify", "erase", "object", "portability"];
 
 function MailLink({ email }) {

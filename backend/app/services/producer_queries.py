@@ -21,7 +21,7 @@ from app.models import (
     ProducerCategory,
     ProducerLocation,
 )
-from app.schemas.schemas import ProducerCreate
+from app.schemas.schemas import DeliveryAreaCreate, ProducerCreate
 
 logger = structlog.get_logger(__name__)
 
@@ -156,6 +156,15 @@ def attach_badge_fields(producer):
     producer.has_lactose_free_products = any(
         getattr(p, "is_lactose_free", False) for p in products
     )
+    # MEH-1934: plain single-flag aggregations. Deliberately NOT OR-ed with any
+    # other axis the way has_vegetarian_products folds in is_vegan — no existing
+    # flag implies "no added sugar" or "low carb".
+    producer.has_no_added_sugar_products = any(
+        getattr(p, "is_no_added_sugar", False) for p in products
+    )
+    producer.has_low_carb_products = any(
+        getattr(p, "is_low_carb", False) for p in products
+    )
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
@@ -165,6 +174,52 @@ def attach_badge_fields(producer):
             exc_info=True,
         )
         producer.delivery_count = 0
+    # MEH-2046: `delivers` / `offers_pickup` — the two fulfillment booleans the
+    # consumer surfaces read (schemas.py ProducerListOut). Each mirrors ONE
+    # listing predicate and must not drift from it:
+    #   delivers      ↔ producer_listing._has_delivery_condition()
+    #   offers_pickup ↔ producer_listing._pickup_condition() with no city
+    # The mirror is two forms of one rule (SQL for the filter, Python for the
+    # payload) because this module cannot import producer_listing — that module
+    # imports THIS one. What holds them together is not this comment: it is
+    # test_fulfillment_flags_match_filter_membership, which seeds the shape
+    # matrix and asserts, per shape, that the serialized boolean equals actual
+    # membership in the filtered result set. Change a predicate without changing
+    # its mirror and that test reds.
+    # Both are UNSCOPED (no city) — they describe the business, not the query.
+    try:
+        producer.delivers = bool(producer.offers_delivery) and (
+            producer.delivery_count > 0 or bool(producer.delivery_nationwide)
+        )
+    except Exception:
+        logger.debug(
+            "[producers] delivers computation failed, defaulting to False",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
+        producer.delivers = False
+    try:
+        producer.offers_pickup = any(
+            getattr(loc, "kind", None) in ("pickup", "market_stand")
+            for loc in (producer.locations or [])
+        )
+    except Exception:
+        logger.debug(
+            "[producers] locations lazy-load failed, offers_pickup defaulting to False",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
+        producer.offers_pickup = False
+    # MEH-2060: `pickup_points` was an independent Boolean column — the exact
+    # write-your-own-truth duplication MEH-1856 already closed the owner path
+    # for ("duplicates ProducerLocation.kind='pickup'"). It now mirrors
+    # `offers_pickup` instead of the stored column value, so every surface that
+    # still reads `producer.pickup_points` (DeliveryBlock.jsx, ProducerSections,
+    # ProducerDetail, AdminProducersTable) gets the SAME answer as the pickup
+    # filter with zero reader-side changes. The column itself is untouched in
+    # the DB (MEH-1259 keep-column pattern) — this only changes what gets
+    # serialized.
+    producer.pickup_points = producer.offers_pickup
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
         producer.days_since_created = max(0, delta.days)
@@ -214,6 +269,241 @@ def get_producer_or_404(db: Session, producer_id: UUID) -> Producer:
     return producer
 
 
+def persist_registration_delivery_areas(
+    db: Session, producer: Producer, areas: list[DeliveryAreaCreate] | None
+) -> None:
+    """MEH-1921 — write a signup payload's delivery areas AND the declaration.
+
+    Asking to be listed for these cities IS declaring that you deliver, so the
+    two are written together and by ONE owner. Every registration path used to
+    build the `DeliveryArea` rows inline and never touch `offers_delivery`,
+    leaving it at `default=False` (models.py:253) — and MEH-1848 conjoined that
+    flag into both delivery predicates (producer_listing.py:243,276), so the row
+    the owner had just created was precisely the one the filters exclude. She
+    typed her delivery cities in and the site answered "does not deliver".
+
+    The database cannot catch this and says so: models.py:463-466 records that
+    the pair "delivery_areas rows + offers_delivery=false" is enforced ONLY in
+    the query layer, the CHECK covering just `delivery_nationwide AND NOT
+    offers_delivery`.
+
+    This is the same semantics `tests/conftest.py:180-188` already gave the test
+    factory under MEH-1848 — "asking this factory for delivery areas means 'a
+    business that delivers to these cities', so it must also declare that it
+    delivers". The fixture was fixed then; the production write paths were not.
+
+    EDIT paths deliberately do NOT route through here: `producer_me.py:97,145`
+    and `admin.py:286` replace areas on an existing business whose owner or an
+    admin sets `offers_delivery` explicitly (producer_me.py:387-391), policed by
+    `delivery_validation.py:68-74`. Deriving the flag there would silently
+    override a deliberate choice — the opposite bug. Derive on CREATE, never on
+    EDIT, is the whole rule.
+
+    CLASSIFY BY CALLER, NOT BY CALL SITE. `admin.py`'s `_apply_delivery_cities`
+    (:103) is invoked by BOTH the PUT route (:286, edit) and the CREATE route
+    (:211) — so reading the helper as "an edit path" hides a create. That is a
+    mistake this change actually made and a second reviewer caught: admin-create
+    is the fifth create-from-payload site, it produces `status="approved"` rows
+    that are live immediately, and it is handled at its own call site (:211)
+    rather than here, because `ProducerAdminCreate` carries `offers_delivery`
+    and an explicitly-stated `false` must survive. This helper's callers are the
+    four paths whose payload CANNOT state the flag.
+
+    Never writes `False`: an empty list means "this payload said nothing about
+    delivery", not "this business does not deliver", and the column default
+    already covers the former.
+
+    MEH-1947: `delivery_fee` IS persisted now. It was not, and neither did the
+    three inline loops this replaced — `DeliveryAreaCreate` carries four fields
+    (`city`, `min_order`, `delivery_day`, `delivery_fee`) and three were written
+    — so a signup stating a per-area fee lost it silently and the area inherited
+    the producer-level rate. That was left open deliberately while the
+    reading end was still broken (MEH-1942, Zod stripped the same field before it
+    reached the page); fixing one side alone would have moved the bug rather than
+    closed it. With #2693 merged the pipe runs to the screen, so the source is
+    filled here.
+
+    Passed straight through, NOT coalesced. `0` and `None` are different facts:
+    `0` = "delivery to this city is free", `None` = "the owner stated nothing,
+    inherit the producer rate". `da.delivery_fee or None` would look equivalent
+    and would convert every free city back into an inheriting one — billing for
+    a delivery its owner declared free. Both ends are built on that distinction:
+    `schemas.py:870-873` states the three values on the field itself, and
+    `DeliveryBlock.jsx:320` repeats them for the renderer, which resolves the
+    inheritance at `:417-430`.
+    """
+    wrote_any = False
+    for da in areas or []:
+        db.add(
+            DeliveryArea(
+                producer_id=producer.id,
+                city=da.city,
+                min_order=da.min_order,
+                delivery_day=da.delivery_day,
+                delivery_fee=da.delivery_fee,
+            )
+        )
+        wrote_any = True
+    if wrote_any:
+        producer.offers_delivery = True
+
+
+def create_primary_branch_location(
+    db: Session, producer: Producer
+) -> ProducerLocation | None:
+    """MEH-1939 (MEH-1938 chunk 1) — the registration half of the dual-write.
+
+    Every path that creates a producer from a signup payload also creates ONE
+    `producer_locations` row for it: `kind='branch'`, `is_primary=True`. The
+    `Producer.city/lat/lng` columns keep being written exactly as before — this
+    is Expand, not replacement, and nothing reads the new row yet.
+
+    Why this exists at all: `haversine_min_km` below already COALESCEs to
+    `Producer.lat/lng` and its comment (`:75-95`) says the fallback becomes
+    dead weight "once chunk 4 dual-writes a primary location on create".
+    MEH-1421 shipped only the dashboard write path, so that create never
+    happened and the fallback has been carrying the gap since.
+
+    Returns None — and adds nothing — when either coordinate is missing. That
+    is the CONDITION, not an edge case: a location row without coordinates is
+    invisible to `producerPoints()` and to the geo query alike, so it would be
+    a row that exists only to be skipped, while still counting as "this
+    producer has locations" for anything that tests the collection's length.
+    A delivery-only business legitimately has no point (MEH-213).
+
+    Does NOT commit. Callers add this to their own open transaction, the same
+    way they already do for ProducerCategory and DeliveryArea, so a failure
+    anywhere in registration rolls the location back with everything else.
+
+    Takes the flushed `Producer` rather than its five fields: the row this
+    writes is a MIRROR of those columns, so reading them off the instance is
+    what makes the two physically unable to drift. It also keeps the signature
+    at two parameters, which is the arity `PLR0913` / ESLint `max-params` are
+    both asking for (`.claude/rules/code-execution.md:53-55`). Callers must
+    have flushed — `producer.id` is read here.
+
+    # DO NOT add a backfill for existing producers here — that is chunk 2, and
+    # it is an Alembic data migration, not application code.
+    """
+    if producer.lat is None or producer.lng is None:
+        return None
+
+    location = ProducerLocation(
+        producer_id=producer.id,
+        kind="branch",
+        is_primary=True,
+        city=producer.city,
+        address=producer.address,
+        lat=producer.lat,
+        lng=producer.lng,
+        # Coordinates on a signup payload come from AddressSearch's geocode
+        # (MEH-1808), so the point is a real street-level fix. The
+        # `approximate` case is a town with no address, which by the guard
+        # above produces no row at all.
+        location_precision="exact",
+    )
+    db.add(location)
+    return location
+
+
+def _demote_other_primaries(db: Session, producer_id, keep_id) -> None:
+    """Enforce the single-primary invariant in application code.
+
+    There is NO database constraint behind this — `producer_locations` has no
+    partial unique index on `is_primary` (models.py:848-858 declares only the
+    two CHECKs, and a9f4c2e7b1d3 creates only the plain city/producer indexes).
+    The invariant is upheld by every writer, so a writer that skips it corrupts
+    it silently. `producer_me.py:1827` (`_clear_other_primaries`) is the owner
+    path's copy of this; a service cannot import a router's private, so the
+    logic is restated rather than shared.
+
+    Rows are mutated through the ORM rather than a bulk `.update()` so the
+    identity map stays consistent for anything already loaded in this session.
+    """
+    stale = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+            ProducerLocation.id != keep_id,
+        )
+        .all()
+    )
+    for row in stale:
+        row.is_primary = False
+
+
+def upsert_primary_branch_location(
+    db: Session, producer: Producer
+) -> ProducerLocation | None:
+    """MEH-2059 (MEH-1938 chunk 4b) — the ADMIN half of the dual-write.
+
+    `create_primary_branch_location` above covers creation-from-signup. This
+    covers the admin EDIT path, where the producer may already own a primary
+    row (registration wrote one, or the owner made one in the dashboard).
+
+    Why it exists at all: the epic's §"הבעיה / הקשר" left `admin.py` writing
+    `lat/lng` directly on the grounds that "admin+import are covered by the
+    backfill". That backfill was MEH-2056, CANCELED 14/08 after its entry
+    condition measured 0 rows, so the coverage the epic assumed does not
+    exist. Harmless while there are no real businesses, but the next producer
+    an admin creates would be born with coordinates and no location row.
+
+    Three cases, and the third is a judgement call recorded here because the
+    ruling did not settle it:
+
+    1. No primary row yet  → delegate to `create_primary_branch_location`,
+       which itself declines when a coordinate is missing. Identical contract,
+       one implementation.
+    2. Primary row exists  → UPDATE it in place. Never insert a second one;
+       that is what makes a repeated save idempotent.
+    3. Coordinates cleared → mirror the clear onto the row (lat/lng → NULL)
+       and KEEP the row. Chosen over deleting it: `ProducerLocation` also
+       carries owner-authored `label`, `opening_hours` and `phone` that no
+       admin coordinate edit should destroy, and both columns are nullable so
+       the cleared state is representable. A coordinate-less row is invisible
+       to `producerPoints()` and to the geo query alike — the same end state
+       as case 1's "no row" — so nothing is left pointing at a stale point.
+       The alternative, leaving the old coordinates behind, is precisely the
+       drift this epic exists to remove.
+
+    `location_precision` is set only on creation (by the helper above, to
+    "exact"). An existing row keeps whatever it has: the owner may have
+    downgraded it to "approximate" deliberately, and an admin editing
+    coordinates is not a statement about precision.
+
+    `city` and `address` ARE re-mirrored, because coordinates that move
+    without their address are the drift case again. This can overwrite an
+    address the owner typed in the dashboard — accepted, and the reason the
+    caller only fires this when the admin payload actually touches lat/lng.
+
+    Does NOT commit — same contract as its sibling; the caller owns the
+    transaction.
+
+    # DO NOT widen this to `kind='pickup'` rows — `offers_pickup`
+    # (producer_queries.py:202-205) keys on kind in ('pickup','market_stand'),
+    # so a branch row must never masquerade as one (MEH-2060).
+    """
+    existing = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .order_by(ProducerLocation.created_at.asc())
+        .first()
+    )
+    if existing is None:
+        return create_primary_branch_location(db, producer)
+
+    existing.city = producer.city
+    existing.address = producer.address
+    existing.lat = producer.lat
+    existing.lng = producer.lng
+    _demote_other_primaries(db, producer.id, keep_id=existing.id)
+    return existing
+
+
 def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
     """Create a pending producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
@@ -248,15 +538,13 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
     for pos, cid in enumerate(data.category_ids):
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid, position=pos))
 
-    for da in data.delivery_areas:
-        db.add(
-            DeliveryArea(
-                producer_id=producer.id,
-                city=da.city,
-                min_order=da.min_order,
-                delivery_day=da.delivery_day,
-            )
-        )
+    # MEH-1921: areas + the offers_delivery declaration, written together.
+    persist_registration_delivery_areas(db, producer, data.delivery_areas)
+
+    # MEH-1939: the dual-write. `ProducerCreate` carries no `address` field
+    # (schemas.py:1324-1338), so `producer.address` is None here — the row gets
+    # city + coordinates only, and `ProducerLocation.address` is nullable.
+    create_primary_branch_location(db, producer)
 
     db.commit()
     db.refresh(producer)

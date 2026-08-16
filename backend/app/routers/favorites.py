@@ -8,6 +8,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, Producer, User
 from app.schemas.schemas import FavoriteOut
+from app.services.producer_queries import attach_badge_fields, attach_favorites_counts
 
 router = APIRouter(prefix="/users/me/favorites", tags=["favorites"])
 
@@ -21,13 +22,34 @@ def get_favorites(
     # migration, or a historical hard-delete that bypassed the cascade)
     # is silently dropped from the response instead of 500'ing when
     # FavoriteOut tries to serialize a null producer.
-    return (
+    favorites = (
         db.query(Favorite)
         .join(Producer, Favorite.producer_id == Producer.id)
-        .options(joinedload(Favorite.producer).joinedload(Producer.categories))
+        .options(
+            joinedload(Favorite.producer).joinedload(Producer.categories),
+            # MEH-1660: products + delivery_areas must be eager-loaded so the
+            # enrichment loop below stays N+1-free (mirrors the list query in
+            # producer_listing.py:126-127). MEH-2060: locations joins the same
+            # reasoning — attach_badge_fields now reads it for every producer
+            # to derive pickup_points/offers_pickup, so it was already an N+1
+            # here (silently, since MEH-2046 added that read without this line).
+            joinedload(Favorite.producer).selectinload(Producer.products),
+            joinedload(Favorite.producer).selectinload(Producer.delivery_areas),
+            joinedload(Favorite.producer).selectinload(Producer.locations),
+        )
         .filter(Favorite.user_id == user.id)
         .all()
     )
+    # MEH-1660: ProducerListOut serialises computed badge fields
+    # (days_since_created, has_producer_license, has_*_products,
+    # delivery_count, favorites_count). Without this enrichment the nested
+    # producer payload silently drops every badge on /favorites cards.
+    # REUSES: backend/app/services/producer_listing.py:476-479
+    producers = [f.producer for f in favorites]
+    for producer in producers:
+        attach_badge_fields(producer)
+    attach_favorites_counts(producers, db)
+    return favorites
 
 
 @router.post("/{producer_id}", status_code=201)

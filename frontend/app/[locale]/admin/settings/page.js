@@ -143,43 +143,16 @@ export default function AdminSettingsPage() {
     <div className="space-y-6 max-w-2xl">
       <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
 
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">{t("settings.sections.notifications")}</h2>
-        {/* MEH-1128 Wave C: single-line fields via ui/Input; Field stays
-            for the holiday select below. */}
-        <Input
-          type="email"
-          dir="ltr"
-          label={t("settings.fields.admin_email")}
-          value={settings.admin_email || ""}
-          onChange={(event) => update("admin_email", event.target.value)}
-          placeholder="admin@mehamakor.co.il"
-        />
-        <Input
-          label={t("settings.fields.admin_whatsapp")}
-          value={settings.admin_whatsapp || ""}
-          onChange={(event) => update("admin_whatsapp", event.target.value)}
-          placeholder="+972501234567"
-        />
-      </div>
+      {/* MEH-1566: the notifications section (admin_email / admin_whatsapp)
+          was removed — both inputs wrote admin_settings keys that nothing ever
+          read. The real admin notification recipients are the env vars
+          `settings.admin_email` + `settings.admin_whatsapp_to`
+          (backend/app/config.py:85,64). */}
 
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">{t("settings.sections.freemium")}</h2>
-        <Input
-          type="number"
-          label={t("settings.fields.premium_price")}
-          value={settings.freemium_premium_price || ""}
-          onChange={(event) => update("freemium_premium_price", event.target.value)}
-          placeholder="49"
-        />
-        <Input
-          type="number"
-          label={t("settings.fields.free_image_limit")}
-          value={settings.freemium_free_image_limit || ""}
-          onChange={(event) => update("freemium_free_image_limit", event.target.value)}
-          placeholder="3"
-        />
-      </div>
+      {/* MEH-1555: the Freemium section (מחיר חודשי לפרמיום / מספר תמונות
+          בחבילת חינם) was removed — both inputs wrote admin_settings keys that
+          nothing ever read. The real gallery cap is the hardcoded `>= 3` in
+          backend/app/routers/upload.py:101. */}
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">

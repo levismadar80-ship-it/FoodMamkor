@@ -8,6 +8,7 @@ import {
   resolveCategoryId,
 } from "@/lib/map-chips";
 import { haversineKm } from "@/lib/distance";
+import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's
@@ -30,10 +31,15 @@ import { haversineKm } from "@/lib/distance";
 export function sortProducers(list, sortBy, userLoc) {
   if (!Array.isArray(list) || list.length < 2) return list ?? [];
   if (sortBy === "nearest" && userLoc) {
-    const dist = (p) =>
-      typeof p.lat === "number" && typeof p.lng === "number"
-        ? haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng)
+    // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
+    // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx /
+    // the backend's haversine_min_km COALESCE).
+    const dist = (p) => {
+      const pts = producerPoints(p);
+      return pts.length > 0
+        ? Math.min(...pts.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng)))
         : Infinity;
+    };
     return [...list].sort((a, b) => dist(a) - dist(b));
   }
   if (sortBy === "rating") {
@@ -82,6 +88,10 @@ export function useMapFilters({
   userCity,
   setUserCity,
   setShowCityPicker,
+  // MEH-1670: the pickup/market_stand layer toggle, owned by MapClient. The
+  // viewport filter needs it so the list drops a business at the same moment
+  // the map does — a producer whose only points are hidden pickups is off both.
+  showSecondaryLayer = true,
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -114,6 +124,7 @@ export function useMapFilters({
     categoryKeys: [],
     organic: false,
     has_delivery: false,
+    pickup_points: false,  // MEH-2046
     verified: false,
     kosher: false,
     grass_fed: false,
@@ -159,45 +170,53 @@ export function useMapFilters({
     setActiveProducerId(null);
   };
 
-  const onToggleChipClick = (key) => {
-    if (key === "has_delivery" && !chipState.has_delivery && !userCity) {
-      setShowCityPicker(true);
-      return;
-    }
-    cancelPendingSheetFetch();
+  // MEH-2046 (Option C — non-blocking). The משלוח chip used to return EARLY
+  // here: no state change, no fetch, chip visibly dead until a city was picked.
+  // On /map that was its primary flow, so the chip's own `?has_delivery=true`
+  // never reached the API — and, because the modal then sent `delivery_city`,
+  // the parameter was discarded by the service ladder anyway.
+  // Now the toggle always applies first and the modal is offered AFTER, as an
+  // optional refinement. Dismissing it (MapClient.jsx `onClose` only clears
+  // `showCityPicker`) therefore leaves the chip ON and unscoped — "delivers
+  // anywhere" — which is a real, useful answer rather than a dead end.
+  const applyToggle = (key, { fetch }) => {
     const next = { ...chipState, [key]: !chipState[key] };
     setChipState(next);
-    loadProducers(buildParams(next));
+    fetch(next);
     setCommittedBounds(null);
     setMapMoved(false);
     setSelectedProducer(null);
     setActiveProducerId(null);
+    if (key === "has_delivery" && next.has_delivery && !userCity) {
+      setShowCityPicker(true);
+    }
+  };
+
+  const onToggleChipClick = (key) => {
+    cancelPendingSheetFetch();
+    applyToggle(key, { fetch: (next) => loadProducers(buildParams(next)) });
   };
 
   // MEH-1075: sheet-originated toggles — chipState updates IMMEDIATELY (one
   // shared state; the quick chips sync live) but the refetch is debounced so
   // ticking several chips in the open sheet fires one request, not one per
   // click. Quick-chip clicks outside the sheet keep the instant fetch above.
-  // has_delivery still routes through onToggleChipClick's CityPickerModal
-  // guard shape — duplicated here because the fetch path differs.
+  // MEH-2046: both entry points now share `applyToggle`, so the Option C
+  // behaviour cannot drift between the chip row and the sheet — the previous
+  // shape duplicated the guard in two places and relied on both being edited
+  // together. Only the fetch differs: instant here, debounced there.
   const SHEET_FETCH_DEBOUNCE_MS = 300;
 
   const onSheetToggleChip = (key) => {
-    if (key === "has_delivery" && !chipState.has_delivery && !userCity) {
-      setShowCityPicker(true);
-      return;
-    }
-    const next = { ...chipState, [key]: !chipState[key] };
-    setChipState(next);
-    clearTimeout(sheetFetchTimer.current);
-    sheetFetchTimer.current = setTimeout(
-      () => loadProducers(buildParams(next)),
-      SHEET_FETCH_DEBOUNCE_MS,
-    );
-    setCommittedBounds(null);
-    setMapMoved(false);
-    setSelectedProducer(null);
-    setActiveProducerId(null);
+    applyToggle(key, {
+      fetch: (next) => {
+        clearTimeout(sheetFetchTimer.current);
+        sheetFetchTimer.current = setTimeout(
+          () => loadProducers(buildParams(next)),
+          SHEET_FETCH_DEBOUNCE_MS,
+        );
+      },
+    });
   };
 
   // MEH-1075: "ניקוי הכל" inside FilterSheet — resets the 7 toggles only.
@@ -210,6 +229,7 @@ export function useMapFilters({
       ...chipState,
       organic: false,
       has_delivery: false,
+      pickup_points: false,  // MEH-2046
       verified: false,
       kosher: false,
       grass_fed: false,
@@ -243,6 +263,7 @@ export function useMapFilters({
       categoryKeys: [],
       organic: false,
       has_delivery: false,
+      pickup_points: false,  // MEH-2046
       verified: false,
       kosher: false,
       grass_fed: false,
@@ -302,16 +323,14 @@ export function useMapFilters({
   // show everything.
   const visibleProducers = useMemo(() => {
     if (!committedBounds) return filteredByCategory;
-    return filteredByCategory.filter((p) => {
-      if (typeof p.lat !== "number" || typeof p.lng !== "number") return false;
-      return (
-        p.lat >= committedBounds.south &&
-        p.lat <= committedBounds.north &&
-        p.lng >= committedBounds.west &&
-        p.lng <= committedBounds.east
-      );
-    });
-  }, [filteredByCategory, committedBounds]);
+    // MEH-1670: was a direct Producer.lat/lng comparison, which dropped a
+    // delivery-only business (coords NULL, MEH-1402) out of the list while its
+    // pickup pin sat on screen. producerInBounds derives points the same way the
+    // marker layer does, so map and list agree by construction.
+    return filteredByCategory.filter((p) =>
+      producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
+    );
+  }, [filteredByCategory, committedBounds, showSecondaryLayer]);
 
   // MEH-722: per-category producer counts for the CURRENT viewport, computed
   // PRE category filter (from allProducers ∩ committedBounds, NOT visibleProducers
@@ -321,14 +340,10 @@ export function useMapFilters({
   const viewportCategoryCounts = useMemo(() => {
     const inView = !committedBounds
       ? allProducers
-      : allProducers.filter(
-          (p) =>
-            typeof p.lat === "number" &&
-            typeof p.lng === "number" &&
-            p.lat >= committedBounds.south &&
-            p.lat <= committedBounds.north &&
-            p.lng >= committedBounds.west &&
-            p.lng <= committedBounds.east,
+      // MEH-1670: same derivation as the list above — otherwise a chip could
+      // read 0 while its card is visible in the list.
+      : allProducers.filter((p) =>
+          producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
         );
     const counts = {};
     for (const p of inView) {
@@ -336,7 +351,7 @@ export function useMapFilters({
       if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
     }
     return counts;
-  }, [allProducers, committedBounds]);
+  }, [allProducers, committedBounds, showSecondaryLayer]);
 
   // Category chips visible in the current DB (hidden if no matching category loaded yet)
   const visibleCategoryChips = useMemo(
