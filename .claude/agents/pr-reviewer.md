@@ -63,7 +63,7 @@ None — PR ready for human review.
 - File:line evidence required for every gap. No vague "missing test"
   — must cite which test file/line was expected.
 - Caveman follow-up: keywords + values only, no filler. 5–8 lines max.
-- Documented sandbox limits (e.g. MEH-360 Railway egress block, static-only
+- Documented sandbox limits (e.g. MEH-2090 Railway/Vercel egress block, static-only
   verification when API unreachable) are NOT gaps if CHANGELOG/HANDOFF
   acknowledges them.
 - Do NOT modify any files.
