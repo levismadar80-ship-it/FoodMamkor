@@ -236,9 +236,14 @@ missing element, not "the network never idled".
 > **The ban rests on the observed behaviour above, not on a settled cause.** The
 > working diagnosis — that Cloudinary returns 401 for every image on the CI runner —
 > is **not established, and carries no owning card**; do not restate it as fact from
-> this file. (It previously read "owned by MEH-1948"; that identifier does not exist
-> in Linear — checked 2026-08-12. The nearest real card, MEH-1925, is the *production*
-> Cloudinary 401 incident, which is a different surface.) What justifies the ban is
+> this file. **(This passage previously read "that identifier does not exist in Linear
+> — checked 2026-08-12". That is false, and the correction is itself an instance of
+> this section: MEH-1948 resolves via `get_issue` — Done, `archivedAt`
+> 2026-08-11T14:21:49Z, i.e. archived the day BEFORE that check. A lookup that
+> excludes archived issues returns "not found", which is indistinguishable from
+> "never existed" at the call site. Re-measured 2026-08-15, MEH-2090.)** MEH-1925 is
+> a different surface — the *production* Cloudinary 401 incident — and that part
+> stands. What justifies the ban is
 > only the measured symptom: the network does not idle on CI, and it does locally.
 >
 > **A second failure class, now with its own card — MEH-2029:**
@@ -353,6 +358,13 @@ comments recording that `networkidle` is not layout-idle for them
 > know.** A probe validated on a known case can be trusted in both directions; an
 > unvalidated one can be trusted in neither, and its *red* is worth exactly as little
 > as its green.
+>
+> **A rules file must cite an identifier that resolves, and a citation is checkable —
+> `get_issue` either returns it or does not, so check it rather than inheriting it.**
+> Both directions have now bitten: `MEH-360` is cited in 30 files and has never
+> existed, while `MEH-1948` was declared non-existent from a lookup that silently
+> excluded archived issues (both measured 2026-08-15, MEH-2090). No linter for this —
+> one call, at the moment you write the citation.
 >
 > ### Instance nine — the one where the answer was simply published
 >
