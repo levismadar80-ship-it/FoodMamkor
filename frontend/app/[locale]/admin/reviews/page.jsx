@@ -278,7 +278,7 @@ export default function AdminReviewsPage() {
 
       {/* Confirmation modal — mirrors content/page.js category-delete dialog (MEH-1023 Ch.B) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
           <div
             role="dialog"
             aria-modal="true"
