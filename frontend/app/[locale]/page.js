@@ -16,13 +16,20 @@ import { serverFetch } from "@/lib/server-fetch";
 import { API_URL } from "@/lib/env";
 import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
 
-// MEH-1832: the server renders the FIRST VIEWPORT only — PAGE_SIZE rows, the
-// same count use-home-page starts at. It deliberately does NOT try to honour a
-// restored `home_visible_count`: that value lives in sessionStorage, which the
-// server cannot read, so rendering it here would make the server HTML and the
-// client's first render disagree. The restore runs in an effect (after
-// hydration) and expands the grid then — an ordinary update, not a mismatch.
-const FIRST_PAINT_LIMIT = 8;
+// MEH-1832: the server fetches the SAME feed the client used to — deliberately
+// unlimited, matching the old `loadProducers({})` call exactly.
+//
+// It is tempting to fetch only the 8 rows the first viewport paints. That is
+// what shipped first, and it was a regression: `producers` never grows on a
+// plain load any more (the client fetch is skipped), so an 8-row payload made
+// `hasMore = visibleCount < producers.length` permanently FALSE and the
+// "load more" button vanished. `selectFeaturedProducer` likewise scans the
+// whole array, so it would have chosen from 8 rows instead of the catalog.
+//
+// The first-viewport contract is honoured by `visibleCount` (PAGE_SIZE = 8),
+// which slices what is RENDERED — not by truncating what is FETCHED. Trimming
+// the payload is real, and it is MEH-1834's ticket, which stopped for exactly
+// this reason: section presence depends on rows far down the array.
 
 /**
  * Both fetches fail soft to `null`, which is the signal use-home-page reads as
@@ -41,7 +48,7 @@ async function fetchFirstPaint() {
     }
   };
   const [producers, categories] = await Promise.all([
-    get(`/producers?limit=${FIRST_PAINT_LIMIT}`),
+    get("/producers"),
     get("/categories"),
   ]);
   return { producers, categories };
