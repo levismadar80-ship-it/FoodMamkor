@@ -1634,6 +1634,16 @@ def submit_for_review(
     # tz-aware — the column is DateTime(timezone=True) and a naive utcnow here
     # would be silently wrong by the local offset (repo-wide constraint).
     producer.submitted_for_review_at = datetime.now(timezone.utc)
+
+    # Snapshot BEFORE the commit, matching auth.py's two registration paths.
+    # Reading producer.name/.city after commit() works — the attributes are
+    # expired and lazily reloaded through the still-open request session — but
+    # it reads as a different pattern from its siblings for no reason, and the
+    # next person comparing them has to work out which one is deliberate.
+    # (CI reviewer, #2979.) Same values either way; this is legibility, not a
+    # bug fix.
+    p_name = producer.name
+    p_city = producer.city
     db.commit()
 
     # REUSES: backend/app/routers/auth.py:632 — the same admin notification
@@ -1642,7 +1652,7 @@ def submit_for_review(
     # a Resend/Meta outage must never turn the owner's successful submission
     # into an error, and post-commit placement mirrors _maybe_fire_review_ready
     # so the admin is never pinged about a transition that failed to persist.
-    background_tasks.add_task(notify_admin_new_producer, producer.name, producer.city)
+    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
     return {"detail": "הפרופיל נשלח לבדיקה"}
 
 
