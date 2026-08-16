@@ -99,8 +99,13 @@ describe("pending-producers queue — the four branches (MEH-2096)", () => {
 
 describe("no fail-open catch survives under admin/ (MEH-2096)", () => {
   const ADMIN = path.resolve(__dirname, "..", "app", "[locale]", "admin");
+  // `\(\w*\)` and not `\(\)`: the catch may name its error param. The first
+  // version of this regex matched only `() =>`, so `.catch((err) => setX([]))`
+  // walked straight past a guard whose docstring promised to catch "a NEW
+  // fail-open added later" — the assertion claimed more coverage than it had.
+  // Caught by the CI reviewer on this PR; the control below now pins both forms.
   const FAIL_OPEN =
-    /\.catch\(\(\)\s*=>\s*set[A-Za-z]+\(\[\]\)\)|\.catch\(\(\)\s*=>\s*set[A-Za-z]+\(null\)\)|\.catch\(\(\)\s*=>\s*\[\]\)|\.catch\(\(\)\s*=>\s*null\)/;
+    /\.catch\(\(\w*\)\s*=>\s*set[A-Za-z]+\(\[\]\)\)|\.catch\(\(\w*\)\s*=>\s*set[A-Za-z]+\(null\)\)|\.catch\(\(\w*\)\s*=>\s*\[\]\)|\.catch\(\(\w*\)\s*=>\s*null\)/;
 
   const files = [];
   (function walk(dir) {
@@ -117,6 +122,11 @@ describe("no fail-open catch survives under admin/ (MEH-2096)", () => {
     expect(FAIL_OPEN.test(".catch(() => setUsers([]))")).toBe(true);
     expect(FAIL_OPEN.test(".catch(() => setProducer(null))")).toBe(true);
     expect(FAIL_OPEN.test(".catch(() => [])")).toBe(true);
+    // The named-error-param form is the same defect wearing a different shape,
+    // and it is the one the first version of this regex let through.
+    expect(FAIL_OPEN.test(".catch((err) => setReports([]))")).toBe(true);
+    expect(FAIL_OPEN.test(".catch((e) => setProducer(null))")).toBe(true);
+    expect(FAIL_OPEN.test(".catch((error) => [])")).toBe(true);
     // ...and does not fire on the shape that replaced them.
     expect(FAIL_OPEN.test(".catch(() => setLoadError(true))")).toBe(false);
     expect(files.length).toBeGreaterThan(10);
