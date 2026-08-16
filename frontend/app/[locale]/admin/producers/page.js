@@ -169,6 +169,8 @@ function ProducersAdminPage() {
 
       <AdminProducersTable
         rows={h.pagedVisible}
+        loadError={h.loadError}
+        onRetryLoad={() => h.loadAllProducers()}
         incompleteOnly={h.incompleteOnly}
         storyCardOpenId={h.storyCardOpenId}
         onSetStoryCardOpenId={h.setStoryCardOpenId}
