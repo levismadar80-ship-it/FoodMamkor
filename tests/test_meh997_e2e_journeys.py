@@ -295,7 +295,10 @@ class TestJourney2ProducerRegistration:
         producer = (
             db.query(Producer).filter_by(name=payload["producer_name"]).one()
         )
-        assert producer.status in ("pending", "pending_whatsapp")
+        # MEH-2100: registration lands in draft. The rest of this journey is
+        # unchanged — a draft is just as invisible publicly as a pending one,
+        # and the admin approve path does not require the queue statuses.
+        assert producer.status == "draft"
 
         # Hop — pending producer NOT in public list
         names = [p["name"] for p in client.get("/producers").json()]

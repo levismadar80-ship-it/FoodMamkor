@@ -55,9 +55,11 @@ from app.schemas.schemas import (
     ProductUpdate,
 )
 from app.services.auth_notifications import (
+    notify_admin_new_producer,
     notify_admin_producer_review_ready,
     notify_admin_producer_sensitive_edit,
 )
+from app.services.submission_gate import submission_missing_items
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -1562,6 +1564,86 @@ def request_producer_review(
         notify_admin_producer_resubmit, producer.name, producer.city
     )
     return {"detail": "נשלח לבדיקה חוזרת"}
+
+
+# ---------------------------------------------------------------------------
+# MEH-2100: draft → submit for review
+# ---------------------------------------------------------------------------
+
+
+@router.post("/submit-for-review", status_code=200)
+@limiter.limit("5/hour")
+def submit_for_review(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """The owner declares her profile ready and hands it to the admin queue.
+
+    This is the ONLY transition out of `draft` (MEH-2100). All three producer
+    creation sites now write `draft`, so before this call the business is
+    invisible to the review queue by construction — and the "בסקירה" banner
+    plus the 3-business-day SLA both start HERE rather than at signup, which
+    is the whole point of the ticket.
+
+    Draft-only, mirroring the MEH-1236 request-review 409 directly above: a
+    business already `pending` is in the queue (nothing to do), and one that
+    is approved / rejected / inactive has been decided. A silent 200 on those
+    would tell the owner something happened when nothing did.
+
+    The gate is SERVER-SIDE and reads the SAME helper the dashboard checklist
+    and the MEH-1818 nudge read (`submission_missing_items`), so the three can
+    never drift into different definitions of "ready". A client that ignores
+    the disabled CTA still gets 422 — the button state is an affordance, not
+    the rule.
+
+    The 422 body uses the MEH-1943 `{code, message, params}` shape, which buys
+    two things at once: `detailToMessage` (frontend/lib/errors.js:151) renders
+    `message` with no client change, and `params.missing` carries the
+    machine-readable codes the checklist highlights.
+
+    NOT gated here, deliberately: the producer LICENSE (MEH-971's
+    license_pending path must still be able to reach the queue with a NULL
+    license — it is an approve-time question) and OPENING HOURS (recommended,
+    not required — Google precedent). Both remain enforced where they belong;
+    see submission_gate.py's "Does NOT" header.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    if producer.status != "draft":
+        raise HTTPException(
+            status_code=409,
+            detail="אפשר לשלוח לבדיקה רק בית עסק שנמצא בטיוטה",
+        )
+
+    missing = submission_missing_items(producer)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "submit_gate_incomplete",
+                "message": "עוד לא הכול מוכן — יש להשלים את פריטי החובה לפני שליחה לבדיקה",
+                "params": {"missing": missing},
+            },
+        )
+
+    producer.status = "pending"
+    # tz-aware — the column is DateTime(timezone=True) and a naive utcnow here
+    # would be silently wrong by the local offset (repo-wide constraint).
+    producer.submitted_for_review_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # REUSES: backend/app/routers/auth.py:632 — the same admin notification
+    # registration fires, now ALSO fired at the moment it is actually
+    # actionable. Post-commit BackgroundTask, fail-open (MEH-1051 / MEH-977):
+    # a Resend/Meta outage must never turn the owner's successful submission
+    # into an error, and post-commit placement mirrors _maybe_fire_review_ready
+    # so the admin is never pinged about a transition that failed to persist.
+    background_tasks.add_task(notify_admin_new_producer, producer.name, producer.city)
+    return {"detail": "הפרופיל נשלח לבדיקה"}
 
 
 # ---------------------------------------------------------------------------

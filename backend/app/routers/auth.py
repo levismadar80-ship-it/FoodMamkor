@@ -543,7 +543,23 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
-            status="pending_whatsapp",
+            # MEH-2100: registration creates a DRAFT, not a queue entry. The
+            # business is invisible to the admin review queue until the owner
+            # presses "שליחה לבדיקה" (POST /producers/me/submit-for-review),
+            # which is also where the 3-business-day SLA starts.
+            #
+            # This is the UPGRADE branch, and it is the one every OAuth signup
+            # lands on, so it is one of THREE creation sites that had to move
+            # together — the others are the new-email branch below and
+            # producer_queries.create_producer_with_relations (POST /producers).
+            # Any site left writing a queue status would be a hole straight
+            # past the submit gate.
+            #
+            # `pending_whatsapp` is NOT deleted (Expand-Contract, ADR-007): it
+            # stays a legal value that existing rows may hold and that
+            # confirm_phone_otp still advances, it is simply no longer
+            # reachable for a new registration. Contract phase is a later card.
+            status="draft",
             # MEH-1838 chunk A: delivery shape, previously never captured at
             # registration — every producer landed on the column defaults
             # (physical-only) regardless of what the business actually is.
@@ -738,7 +754,11 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
-            status="pending_whatsapp",
+            # MEH-2100: see the upgrade branch above — same value, same reason.
+            # These two branches are the only Producer writers on this route
+            # and both had to move; a fix to one alone would have left the
+            # other registration path bypassing the submit gate entirely.
+            status="draft",
             # MEH-1838 chunk A: see the upgrade branch above — same fields,
             # same reason (delivery_cities NOT written — see the note there).
             has_physical_location=data.has_physical_location,
