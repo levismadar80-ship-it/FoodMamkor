@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-16 — MEH-1838 chunk B (#2966 מוזג) + MEH-2021 (#2963 פתוח)
+
+**מוזג:** #2966 — ציר משלוח בהרשמה (chunk B). **פתוח:** #2963 — docstring של טווח ה-slug (MEH-2021).
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏#2963 פתוח, ו-auto-merge נדרך עליו שלוש פעמים ע"י actor מקביל — כל שלוש הפעמים עם `merge_method: merge`, לא squash.** פורק שלוש פעמים (10:08:27 · 10:18:25 · 10:27:11), ואומת בכל פעם ש-`merged: false`. ‏**`mergeable_state: behind`** — הבסיס שלו הוא `77ac9dc1` בעוד staging ב-`6401bfff`, ולכן צריך סנכרון לפני כל מיזוג. **אל תניחי שהוא נשאר מפורק:** "לא-דרוך" הוא מצב, לא נעילה — #2966 הוכיח את זה כשנדרך ומוזג תוך שתי דקות. אם צריך חסם אמיתי, ‏`do-not-merge` label הוא הכלי, והוא של ספיר לנקות (כלל 30).
+2. **‏#2966 מוזג בזמן ש-E2E עדיין רץ.** שני השערים ה**נדרשים** ירוקים, ‏`E2E gate` אינו ב-required set — המנגנון תקין, התוצאה היא שהקוד המוזג לא נבדק ב-E2E לפני המיזוג. **המסקנה המעשית:** על PR שאכפת לך מ-E2E שלו, אל תדרכי auto-merge — זה הדבר היחיד שבאמת מחזיק (מתועד ב-testing.md, MEH-1907).
+3. **הטענה "אין רגרסיה מ-MEH-1838" נשענת על השוואת סטים, לא על ריצה ירוקה.** ‏`31940881900` (post) מול `31936868057` (pre): 11 כשלים משותפים, 5 חדשים, 2 שהתאוששו. חמשת החדשים בספקים שהדיף **לא יכול להגיע אליהם** (favourites / admin / map / login-redirect), ו-`29-register-journey-a` עבר. **לא אוששתי ב-re-run** — אם מישהי רוצה ודאות, `rerun_failed_jobs` על אותה ריצה הוא הצעד הזול.
+4. **‏29 דילוגים בהרצה הזאת, ושניים מהם הם ספקי הרשמה** (`22-register-personas:75`, `:242`). דילוג אינו ירוק — חלק מכיסוי ההרשמה לא אומת ב-`6401bfff`.
+5. **‏E2E מלא לא רץ מ-CC, וזה מבני ולא תקלה:** `e2e.yml:139` מפנה `/api` ל-Railway staging + סודות `DEMO_*`. נמדד חי: `api.github.com → 200`, `railway.app → 000`. כל בקשה "תריצי E2E" נענית דרך CI, לא מקומית.
+6. **‏חוב פתוח, קטן:** ‏`frontend/scripts/qa-meh1838-delivery-axis.mjs:74` מכיל `isVisible().catch(() => {})` שתוצאתו נזרקת — שורה מתה שה-CI reviewer תפס. **לא יכולה לרכוב על PR ה-docs הזה:** ‏`changelog-branch-guard` מסווג כל נתיב מקונן שאינו `docs/**` · `.claude/**` · `.ai/**` · `HANDOFF.md` כ-code, ו-PR שנושא CHANGELOG יחד עם קוד נופל (כלל 31). צריך PR נפרד.
+
+### מה שכן הוכח ב-chunk B
+
+- ‏`delivery_cities` ב-payload חי; העמודה באותו שם מתה. שני דברים, שם אחד — ראו CHANGELOG.
+- ה-i18n נקרא `admin.producers.form.fields.*` ולא `producers.form.fields.*`; ההבדל הוא `useTranslations("admin")` בטופס האדמין. אימות ה-JSON בטסט הוא הדבר היחיד שתופס את זה — ה-mock של next-intl מחזיר את נתיב המפתח לכל מפתח, אמיתי או לא.
+- self-QA: 8 צילומים ב-`qa-artifacts/MEH-1838/` (‏375 + 1440, ארבע צורות), 971KB → 168KB. הצילומים **נפתחו ונקראו**, לא נספרו.
+
+---
+
 ## 2026-08-15 — Lane G batch sweep + day-wide backfill (carrier MEH-2091)
 
 **מוזג היום (6):** #2952 (אודיט 175 כרטיסים) · #2954 (פער EN) · #2955 (ניגודיות a11y) · #2956 (כלל 34) · #2957 (patch doc ל-railway.json) · #2958 (tier C false-green).
