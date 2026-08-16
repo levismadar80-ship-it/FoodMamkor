@@ -341,7 +341,8 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
 @router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(
     status: str | None = Query(
-        None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"
+        None,
+        pattern="^(draft|pending|pending_whatsapp|approved|rejected|inactive|all)$",
     ),
     search: str | None = None,
     user: User = Depends(require_admin),
@@ -356,11 +357,28 @@ def list_producers(
         # joinedload here would widen the existing 3-way cartesian.
         selectinload(Producer.locations),
     )
-    if status and status != "all":
+    # MEH-2100: three-way, and the DEFAULT (no `status` param) is the one that
+    # changed. The admin toolbar sends no param for its "כל הסטטוסים" option
+    # (use-admin-producers.js omits it when the selection is "all"), so that
+    # default IS the review queue the admin actually looks at — and drafts must
+    # not be in it. A draft is a business that has not asked to be reviewed;
+    # showing it is the queue-noise this ticket exists to remove.
+    #
+    #   no param      -> everything EXCEPT draft  (the working queue)
+    #   ?status=all   -> genuinely everything, drafts included (the escape
+    #                    hatch — "all" must not quietly mean "all but one")
+    #   ?status=draft -> drafts only (the new "טיוטות" option, visibility only)
+    #
+    # `?status=pending` still groups pending + pending_whatsapp, unchanged.
+    if status == "all":
+        pass  # no status filter at all — the only view that shows drafts
+    elif status:
         if status == "pending":
             q = q.filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         else:
             q = q.filter(Producer.status == status)
+    else:
+        q = q.filter(Producer.status != "draft")
     if search:
         # F13 (MEH-1188): escape LIKE metacharacters so a user-supplied % / _
         # matches literally instead of acting as a wildcard (same class as F1).
