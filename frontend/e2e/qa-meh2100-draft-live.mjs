@@ -24,7 +24,14 @@ const BASE = "http://127.0.0.1:3000";
 const EXE = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const OUT = "qa-artifacts/MEH-2100";
 const EMAIL = "qa-meh2100-live@example.com";
-const PASSWORD = "Qa!Meh2100Strong9";
+// Read from the env, with an obviously-fake default. The literal that used to
+// sit here tripped secrets-scan-guard and reddened Repo guards -> CI gate, so
+// the PR could not have merged even after approval. It was never a live
+// credential — a throwaway account on a local, disposable Postgres — but a
+// scanner cannot tell that from a real one, and neither can the next reader.
+// Rotation is not applicable for the same reason; the fix is to stop shipping
+// a string that LOOKS like a credential.
+const PASSWORD = process.env.QA_LOCAL_PASSWORD || "changeme-local-example";
 
 const WIDTHS = [
   { name: "375", width: 375, height: 900 },
