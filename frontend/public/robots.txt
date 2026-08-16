@@ -21,6 +21,19 @@ Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 
+# MEH-2099: /ref/[code] is a marketing endpoint, not content. Measured on
+# production 16/08: every code serves 200 with `index, follow` (inherited from
+# app/[locale]/layout.js:106-109) over a page whose component returns null —
+# an unbounded family of indexable empty URLs.
+# The meta-robots half of the fix is NOT available in that file: the page is
+# `"use client"` (ref/[code]/page.js:1) and Next.js forbids a metadata export
+# from a client component, so the tag needs a new sibling file. robots.txt is
+# the half that ships today; the meta tag stays open on the card.
+# Safe to Disallow: the sitemap emits no /ref path (app/sitemap.js — static
+# list :51-66, dynamic entries are producers/recipes/events), so this creates
+# none of the sitemap-vs-robots contradiction the MEH-1955 note above records.
+Disallow: /ref/
+
 # AI / bulk crawlers — full disallow (MEH-1045)
 User-agent: GPTBot
 Disallow: /
