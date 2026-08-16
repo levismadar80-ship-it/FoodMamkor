@@ -1,6 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import { test, expect, type Page } from "./_cloudinary-stub";
 
 /**
@@ -69,16 +66,6 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  */
 
 const SUBMIT_URL = "**/producers/me/submit-for-review";
-
-/**
- * The review banner carries no data-testid, so this spec matches its heading
- * text — read from he.json rather than retyped, so a copy change moves the
- * locator with it instead of silently disarming the assertion. (Adding a
- * testid would mean editing the dashboard page, which is outside this PR.)
- */
-const PENDING_TITLE: string = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "..", "..", "messages", "he.json"), "utf8"),
-).dashboard.producer.status.pending.title;
 
 /** A profile that fails every submission requirement. */
 const INCOMPLETE = {
@@ -175,7 +162,7 @@ async function stubDashboard(
 }
 
 const draftBanner = (page: Page) => page.getByTestId("draft-submit-banner");
-const reviewBanner = (page: Page) => page.getByText(PENDING_TITLE, { exact: true });
+const reviewBanner = (page: Page) => page.getByTestId("status-pending-banner");
 
 /**
  * The control. Every "X is absent" assertion below is worthless if the page
@@ -217,7 +204,7 @@ test.describe("MEH-2100 — draft → submit for review", () => {
 
     // MEH-2100 Phase 0's finding: without this mount phone_verified can never
     // flip for a draft, and the gate is impassable for every new business.
-    await expect(page.locator("#phone-verify")).toBeVisible();
+    await expect(page.getByTestId("draft-phone-verify")).toBeVisible();
   });
 
   test("B — completing the requirements sends it once, and the review banner takes over", async ({
