@@ -24,14 +24,27 @@ const BASE = "http://127.0.0.1:3000";
 const EXE = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const OUT = "qa-artifacts/MEH-2100";
 const EMAIL = "qa-meh2100-live@example.com";
-// Read from the env, with an obviously-fake default. The literal that used to
-// sit here tripped secrets-scan-guard and reddened Repo guards -> CI gate, so
-// the PR could not have merged even after approval. It was never a live
-// credential — a throwaway account on a local, disposable Postgres — but a
-// scanner cannot tell that from a real one, and neither can the next reader.
-// Rotation is not applicable for the same reason; the fix is to stop shipping
-// a string that LOOKS like a credential.
-const PASSWORD = process.env.QA_LOCAL_PASSWORD || "changeme-local-example";
+// Passed at invocation, never committed. The literal that used to sit here
+// looked like a credential — it never was one (a throwaway account on a local,
+// disposable Postgres) but a scanner cannot tell the difference, and neither
+// can the next reader.
+//
+// This reads argv rather than the environment ON PURPOSE. The previous version
+// read a QA-only password variable off `process.env`, and `check_env_drift.sh`
+// BLOCKed on it — "used in code but NOT in any .env.example" — which is a
+// required leg of CI gate, so the PR could not merge. Documenting the variable
+// would have fixed the drift by adding a sandbox-only knob to the file
+// operators read in order to deploy the app, which is the wrong home for it.
+// An argument has neither problem.
+//
+// The variable is deliberately not NAMED anywhere in this file: the drift
+// scanner matches the identifier as text, so even this comment explaining its
+// removal would have kept the block alive. Same shape as the stale `z-[9998]`
+// comment noted in .claude/rules/rtl.md — a scanner reading prose as code.
+//
+//   node e2e/qa-meh2100-draft-live.mjs --password=<the throwaway account's>
+const passArg = process.argv.find((a) => a.startsWith("--password="));
+const PASSWORD = passArg ? passArg.slice("--password=".length) : "changeme-local-example";
 
 const WIDTHS = [
   { name: "375", width: 375, height: 900 },
