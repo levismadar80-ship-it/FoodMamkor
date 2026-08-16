@@ -256,7 +256,10 @@ export default function CitiesAutocomplete({
           id={listboxId}
           role="listbox"
           // MEH-2102: z-index 1010, not 50 — the twin of the AddressSearch list.
-          // (Prose, not a token literal: the ledger audit greps class strings.)
+          // (Prose rather than a token literal, matching AddressSearch. This is
+          // convention and grep-hygiene only — ZTokenLedgerSync.test.js already
+          // skips `//` lines, verified by injecting a token here and watching it
+          // stay green, so the guard is not relying on this.)
           // 1010 clears Leaflet's panes (400) and its controls/attribution
           // (globals.css forces those to 1000/1001) and stays BELOW the global
           // header, which is its own stacking context and must keep winning.
