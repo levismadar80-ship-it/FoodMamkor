@@ -532,6 +532,145 @@ class TestAuth:
         assert producer is not None
         assert producer.status == "pending_whatsapp"
 
+    # --- MEH-1838 chunk A: delivery-shape fields on registration ---
+
+    def test_register_producer_omits_delivery_fields_defaults_to_physical_only(
+        self, client, db
+    ):
+        """Backward compat: a payload that omits the 4 new fields entirely
+        (every existing caller/test) must keep succeeding, landing on the
+        same defaults the Producer column defaults already carry."""
+        from app.models.models import Producer
+
+        resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
+        assert resp.status_code == 200
+        producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
+        assert producer.has_physical_location is True
+        assert producer.offers_delivery is False
+        assert producer.delivery_nationwide is False
+        assert producer.delivery_areas == []
+
+    def test_register_producer_neither_physical_nor_delivery_422(self, client):
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "has_physical_location": False,
+                "offers_delivery": False,
+            },
+        )
+        assert resp.status_code == 422
+
+    # A dedicated "explicit physical-only" case was deliberately NOT added
+    # here: has_physical_location=True/offers_delivery=False are also the
+    # Producer column defaults, so a payload asserting exactly that state is
+    # indistinguishable from "the fields don't exist and defaults applied" —
+    # proven non-discriminating (still passed with the pre-fix schema/router
+    # stashed out). test_register_producer_omits_delivery_fields_defaults_to_physical_only
+    # above already covers that state; this class of case is instead proven
+    # by the nationwide / city-list / upgrade-path tests below, none of
+    # which match a column default.
+
+    def test_register_producer_nationwide_persists_shape(self, client, db):
+        from app.models.models import Producer
+
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "has_physical_location": False,
+                "offers_delivery": True,
+                "delivery_nationwide": True,
+            },
+        )
+        assert resp.status_code == 200
+        producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
+        assert producer.has_physical_location is False
+        assert producer.offers_delivery is True
+        assert producer.delivery_nationwide is True
+        # MEH-1838 chunk A / Phase 0: delivery_cities is dead (MEH-903 A) —
+        # a nationwide registration correctly leaves it untouched too.
+        assert producer.delivery_areas == []
+
+    def test_register_producer_city_list_persists_shape(self, client, db):
+        """The flat city list must land as delivery_areas rows — the ONLY
+        store producer_listing.py's delivery-city match reads
+        (producer_listing.py:258) — not the dead delivery_cities column
+        (Phase 0, MEH-903 A)."""
+        from app.models.models import Producer
+
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "has_physical_location": False,
+                "offers_delivery": True,
+                "delivery_nationwide": False,
+                "delivery_cities": ["חיפה", "ירושלים"],
+            },
+        )
+        assert resp.status_code == 200
+        producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
+        assert producer.offers_delivery is True
+        assert producer.delivery_nationwide is False
+        # The dead column stays empty — proves the write did NOT go there.
+        assert producer.delivery_cities == []
+        assert {da.city for da in producer.delivery_areas} == {"חיפה", "ירושלים"}
+
+    def test_register_producer_nationwide_and_city_list_both_set_422(self, client):
+        """Mirrors the DB CHECK delivery_nationwide_xor_cities — mutually
+        exclusive, blocked client-side before it ever reaches the CHECK."""
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "has_physical_location": False,
+                "offers_delivery": True,
+                "delivery_nationwide": True,
+                "delivery_cities": ["חיפה"],
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_register_producer_nationwide_without_offers_delivery_422(self, client):
+        """delivery_nationwide=True with offers_delivery left False is the
+        MEH-1879 contradiction (models.py:466's producer_nationwide_requires_delivery
+        CHECK) — both fields carry defaults, so a payload naming only
+        delivery_nationwide would otherwise reach the DB and 500."""
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "has_physical_location": True,
+                "delivery_nationwide": True,
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_register_producer_upgrade_path_persists_delivery_shape(self, client, db):
+        """The upgrade (authenticated) branch is a separate Producer(...)
+        constructor from the new-email branch above — both must wire the
+        same 4 fields, or an authenticated business owner silently loses
+        the shape she just selected."""
+        from app.models.models import Producer
+
+        u = make_user(db, email="upgrade_delivery@test.com")
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._upgrade_reg(
+                has_physical_location=False,
+                offers_delivery=True,
+                delivery_nationwide=True,
+            ),
+            headers=auth_header(u),
+        )
+        assert resp.status_code == 200
+        db.refresh(u)
+        producer = db.query(Producer).filter(Producer.id == u.producer_id).first()
+        assert producer.has_physical_location is False
+        assert producer.offers_delivery is True
+        assert producer.delivery_nationwide is True
+
     def test_register_producer_duplicate_email_returns_identical_ack(self, client, db):
         """MEH-328 Chunk B: existing email must NOT 409 (legacy leaked
         existence). Returns the same RegisterAck as the new-email path,
