@@ -810,9 +810,6 @@ class TestAuth:
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
-            "app.routers.auth.notify_admin_new_producer", lambda *a, **kw: None
-        )
-        monkeypatch.setattr(
             "app.routers.auth.notify_producer_registered", lambda *a, **kw: None
         )
         make_user(db, email="prod_ident_pw@test.com")
@@ -1037,10 +1034,6 @@ class TestRegisterPerEmailRateLimit:
         )
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda *a, **kw: None,
-        )
-        monkeypatch.setattr(
-            "app.routers.auth.notify_admin_new_producer",
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
@@ -1492,7 +1485,6 @@ class TestRegisterPerIpRateLimit:
             "_send_verify_email",
             "_send_welcome_email",
             "_send_duplicate_attempt_email",
-            "notify_admin_new_producer",
             "notify_producer_registered",
             "score_producer",
         ):
@@ -1999,10 +1991,12 @@ class TestAdminFlows:
 class TestMeh56WhatsAppOnboarding:
     """Registration produces pending_whatsapp status; admin sees it as pending."""
 
-    def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
-        # Stub out Twilio and email so no network calls
+    def test_register_producer_creates_draft(self, client, db, monkeypatch):
+        # Stub out Twilio and email so no network calls.
+        # MEH-2100: notify_admin_new_producer is no longer imported by
+        # auth.py — the admin ping moved to submit-for-review — so there is
+        # nothing to stub for it here.
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 

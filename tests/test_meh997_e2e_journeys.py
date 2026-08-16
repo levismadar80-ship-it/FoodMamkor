@@ -258,13 +258,26 @@ class TestJourney2ProducerRegistration:
     def test_registration_fires_admin_and_producer_notifications(
         self, client, monkeypatch
     ):
-        """MEH-977 class — fire-and-forget must be observable. Captures
-        that BOTH notifications are scheduled with expected recipients."""
+        """MEH-977 class — fire-and-forget must be observable.
+
+        MEH-2100: registration now schedules exactly ONE notification, to the
+        OWNER. The admin ping moved to submit-for-review, because a fresh
+        registration is a draft and "בית עסק חדש — לאישור: /admin" would send
+        the admin to a queue the business is not in.
+
+        Asserted in both directions on purpose: the owner one fires, and the
+        admin one is GONE from this module. Dropping the admin half instead
+        of inverting it would have left the move unpinned — nothing would
+        notice it coming back.
+        """
         import app.routers.auth as auth_mod
 
-        admin_notify = MagicMock()
+        assert not hasattr(auth_mod, "notify_admin_new_producer"), (
+            "the admin ping must not be reachable from the registration "
+            "module — it belongs to submit-for-review now (MEH-2100)"
+        )
+
         producer_notify = MagicMock()
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", admin_notify)
         monkeypatch.setattr(auth_mod, "notify_producer_registered", producer_notify)
 
         payload = valid_producer_register_payload() | {
@@ -275,10 +288,7 @@ class TestJourney2ProducerRegistration:
         assert resp.status_code in (200, 201)
 
         # TestClient runs BackgroundTasks synchronously after the response.
-        admin_notify.assert_called_once()
         producer_notify.assert_called_once()
-        # notify_admin_new_producer(name, city)
-        assert admin_notify.call_args.args[0] == payload["producer_name"]
         # notify_producer_registered(name, phone)
         assert producer_notify.call_args.args[0] == payload["producer_name"]
 

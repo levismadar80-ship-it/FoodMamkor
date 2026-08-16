@@ -72,13 +72,27 @@ MAX_OUTPUT_TOKENS = 400
 #   - specific timeframe: עסק = "עד 3 ימי עסקים" (MEH-1347 — unified
 #     with the registration-success screen + dashboard review banner)
 #
-# The two canonical Q&As (register as business / find nearby) are also
-# hardcoded client-side in ChatWidget.jsx's HARDCODED_ANSWERS map —
-# clicking a suggested prompt short-circuits the API call and returns
-# the exact copy below without going through Claude. This prompt still
-# drives freeform questions and the other suggested prompts that don't
-# have hardcoded answers, so the knowledge base here MUST stay
-# consistent with the hardcoded copy.
+# The two canonical Q&As (register as business / find nearby) are ALSO
+# answered client-side without an API call — clicking a suggested prompt
+# short-circuits to canned copy. This prompt still drives freeform
+# questions, so the knowledge base here MUST stay consistent with it.
+#
+# MEH-2100 — WHERE that canned copy lives, corrected: this comment used to
+# say "ChatWidget.jsx's HARDCODED_ANSWERS map". That map no longer exists.
+# MEH-1617 deleted it (a text-keyed lookup silently missed on /en) and moved
+# the copy into i18n; ChatWidget now holds only an id SET
+# (ANSWERED_PROMPT_IDS) and renders t(`answers.<id>`). The real twin of the
+# paragraph below is therefore `chat.answers.register` in
+# frontend/messages/he.json (+ the en.json twin), and that is the file to
+# edit in lockstep with this one.
+#
+# MEH-2100 — and NO EMOJI in either. This line carried a 🎉 that he.json
+# could not match, because NoEmojiInMessages.test.js (MEH-1661) reds vitest
+# on any emoji in messages/*.json outside a 5-entry allowlist of outbound
+# wa.me/share payloads — and this string is UI chrome, not an outbound
+# payload. So the two surfaces could never be byte-identical while the emoji
+# stood. Sapir's call, 16/08: drop it from both rather than widen the
+# allowlist. Do not re-add it here without changing that guard first.
 SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור — האתר שלנו מרכז בתי עסק מקומיים לאוכל אמיתי, כולם במקום אחד.
 
 המשימה שלך: לענות לגולשים שאלות על השימוש באתר. ענה בעברית יומיומית ופשוטה — כמו להסביר לחבר, לא כמו מדריך טכני. 2-3 משפטים קצרים, טון חם ונעים, ופני אל הגולשים בלשון רבים ניטרלית (לא נקבה יחיד). אל תשתמשי במונחים טכניים כמו "מודרציה" או "פרופיל" — במקום זה פשוט אמרי "בדיקה" או "אישור", ו"העסק שלך". תמיד הבהירי מה בדיוק מאושר (העסק שלך). אל תמציאי תשובות שאינך בטוחה בהן. כשגולשים שואלים אחת מהשאלות המכוסות למטה, השתמשי בניסוח שנמצא שם כבסיס לתשובה שלך — הוא כתוב בדיוק בסגנון הזה.
@@ -92,7 +106,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 כן, לגמרי חינם — גם לגולשים שמחפשים אוכל, וגם לבתי עסק שרוצים להירשם ולהופיע באתר. אין עמלות על עסקאות. הדף הבסיסי חינם — תמיד. — הלקוחות פונים ישירות לבית העסק, והתשלום עובר ביניהם בלבד.
 
 **איך נרשמים כבית עסק**
-נרשמים דרך טופס קצר — חינם לגמרי! 🎉 אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק שלך עד 3 ימי עסקים, ואז הוא מופיע באתר.
+נרשמים דרך טופס קצר — חינם לגמרי! אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק שלך עד 3 ימי עסקים, ואז הוא מופיע באתר.
 
 **איך נרשמים כלקוחות**
 - לקוחות נרשמים חינם בדף ההרשמה (אימייל + סיסמה, או Google/Apple).

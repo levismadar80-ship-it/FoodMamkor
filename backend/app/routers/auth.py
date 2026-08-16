@@ -38,7 +38,6 @@ from app.services.auth_emails import (
     send_welcome_email as _send_welcome_email,
 )
 from app.services.auth_notifications import (
-    notify_admin_new_producer,
     notify_producer_registered,
 )
 from app.services.producer_risk import score_producer
@@ -642,10 +641,18 @@ async def register_producer(
         # attributes are expired after commit, and FastAPI closes the session
         # before background tasks run.
         p_name = producer.name
-        p_city = producer.city
         p_phone = producer.phone
         p_id = producer.id
-        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
+        # now creates a draft, which is absent from the admin's default queue
+        # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
+        # business is not in. The identical call now lives in
+        # producer_me.submit_for_review, i.e. at the moment it is true.
+        # Sapir's call, 16/08, after the CI reviewer raised the double-ping.
+        #
+        # notify_producer_registered (to the OWNER) stays: "we got your
+        # registration" is still accurate, and it is the message that tells
+        # her to go finish the profile.
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
@@ -825,10 +832,18 @@ async def register_producer(
         db.refresh(user)
 
         p_name = producer.name
-        p_city = producer.city
         p_phone = producer.phone
         p_id = producer.id
-        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
+        # now creates a draft, which is absent from the admin's default queue
+        # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
+        # business is not in. The identical call now lives in
+        # producer_me.submit_for_review, i.e. at the moment it is true.
+        # Sapir's call, 16/08, after the CI reviewer raised the double-ping.
+        #
+        # notify_producer_registered (to the OWNER) stays: "we got your
+        # registration" is still accurate, and it is the message that tells
+        # her to go finish the profile.
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
