@@ -3,6 +3,23 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-16 — Lane 2: מוצר מוביל מרשימה + ניקוי en.json ושער parity דו-כיווני
+
+**מוזג:** ‏#2971 (`bef92e0c`) · #2980 (`e7448a23`) — שניהם squash (parent count 1, אומת).
+**ענפים:** `feature/meh-2094-top-product-from-list` · `feature/meh-2095-en-dead-keys-parity`, כל אחד מ-`origin/staging` טרי.
+**נבדק:** build exit 0 · vitest 3,065/3 skipped · rtl-scan 0 · repo-guards 15 (1 WARN קיים מראש) · שני כיווני parity ירוקים. self-QA ב-375 ו-1440, ארבע תמונות **נפתחו ונצפו**.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏E2E אדום על staging מסיבה שאינה שלנו — היה כך בסוף הסשן.** ה-backend של staging החזיר **500 לכל `/producers/by-slug/*`**, וזה הפיל 13 ספקים (אדמין ×6, התחברות C2 ×2, ‏OAuth B1 ×2, מפה VRT ×2). **הוכח על ענף הבסיס**: ריצה `31944239719` על `staging` עצמו (`f8e0e502`, אפס קוד שלנו) נכשלה זהה, בעוד ריצת staging ב-11:01 עברה. השבירה בין 11:01 ל-11:06. **לא תוקן — מחוץ להיקף שני הכרטיסים, ושווה כרטיס.** אל תאבחנו PR חדש כשבור לפני שבודקים אם staging אדום.
+2. **‏grep על מפתח i18n מנוקד מלא לא יכול להוכיח מוות.** ‏`next-intl` מפצל namespace מ-leaf, אז 0 התאמות הוא גם מה שמקבלים על מפתח **חי**. אומת: כל 16 המועמדים החזירו 0, כולל שני החיים. **חפשו namespace** (`useTranslations("x.y")`) ואז את ה-leaf. זה גם ה-control: אם הפרוב לא מסמן את החי, אל תסמכו על ה-null שלו.
+3. **השער החדש `en→he` אינו סימטרי ל-`he→en`, בכוונה.** ‏`he.json` הוא מקור האמת: מפתח he-only הוא צבר תרגום ⇒ BASELINE מוקפא. מפתח en-only הוא משקל מת או משטח אנגלי מכוון ⇒ **allowlist שחייב נימוק** (`frontend/__tests__/en-only-allowlist.json`), ו-assertion שלישית דוחה נימוק זניח. הוספת מפתח en-only בלי רישום = CI אדום.
+4. **‏`PricingCard` לא שולח `top_product_name` — לא כערך ולא כ-null.** ‏`producer_me.py:577` מחיל `model_dump(exclude_unset=True)`: מפתח **נעדר** לא נכתב, מפתח שנשלח כ-null **נכתב כ-NULL**. שליחת null הייתה מנקה את המוצר המוביל בכל שמירת מחיר. יש טסט ששומר על זה (`Object.keys(payload)` בדיוק `["price_range"]`).
+5. **‏`ProductsSection` מקבל את המוצר המוביל כ-prop ולא מחזיק אותו ב-state.** ‏`edit/page.js` הוא הבעלים (`profile`), וה-checklist שלו קורא את אותו שדה. אם מוסיפים mount שני — להעביר `topProductName` **וגם** `onTopProductChange`, אחרת הכוכב וההסבר שלו לא ירונדרו כלל (מכוון: פקד שלא יכול לפעול לא נמשך).
+6. **הטוגל הוא single-flight.** עמודה אחת ⇒ שתי כתיבות חופפות מתנגשות, וה-revert של הראשונה דורס את השנייה. אל "תשפרו" ל-disabled פר-שורה.
+7. **‏`CityProfileBridge.test.jsx` נפל פעם אחת ולא שוחזר.** אותו עץ בדיוק עבר בריצה הבאה, עובר בבידוד, ו-staging נקי עבר גם הוא. **לא נגרם מ-Lane 2** ולא מוסבר — לא מסווג כ-flaky, פשוט נצפה. אם חוזר, יש כאן נקודת פתיחה.
+8. **‏Vercel preview במצב `Ignored` בכל ה-PRs** — זו התנהגות ה-`ignoreCommand` המוגדרת (preview רק עם `[preview]` בהודעת ה-commit), לא תקלה ולא rate-limit.
+
 ## 2026-08-16 — שכבות z + fail-open באדמין (4 PRs, Lane 1)
 
 **מוזג:** ‏#2970 · #2972 · #2973 · #2974. **ענף:** ארבעה ענפי `feature/*`, כל אחד מ-`origin/staging` טרי.
