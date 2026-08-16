@@ -16,6 +16,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
@@ -398,6 +399,28 @@ export default function ProducerDashboardPage() {
           request-changes is pending — the specific "נשאר להשלים" banner above
           IS the message, and "awaiting approval" would contradict it (the ball
           is in the owner's court). Both otherwise stack on a pending producer. */}
+      {/* MEH-2100: a business in `draft` has NOT asked to be reviewed, so it
+          gets the completion banner instead of "הפרופיל שלך בסקירה". This is
+          the REPLACEMENT the ticket asks for — the pending banner below is
+          keyed on status === "pending" and therefore cannot co-render.
+          On success the local status flips to "pending" with no reload, so
+          the existing review banner takes over immediately. */}
+      {producer.status === "draft" && (
+        <DraftSubmitBanner
+          producer={profile}
+          onSubmitted={() =>
+            setData((prev) =>
+              prev
+                ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                : prev,
+            )
+          }
+          onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
+        />
+      )}
+
       {producer.status === "pending" && !profile?.requested_changes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
@@ -476,16 +499,21 @@ export default function ProducerDashboardPage() {
             {t("status.pending_whatsapp.body")}
           </p>
           {/* MEH-745: the OTP card replaces the old dead /settings CTA — a
-              successful confirm flips status to pending without a reload. */}
-          <PhoneVerifyCard
-            onVerified={() =>
-              setData((prev) =>
-                prev
-                  ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                  : prev,
-              )
-            }
-          />
+              successful confirm flips status to pending without a reload.
+              MEH-2100: the id is the completeness checklist's "אימות וואטסאפ"
+              target, shared with the draft banner's mount — mutually exclusive
+              by status, so the two never coexist. */}
+          <div id="phone-verify">
+            <PhoneVerifyCard
+              onVerified={() =>
+                setData((prev) =>
+                  prev
+                    ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                    : prev,
+                )
+              }
+            />
+          </div>
         </div>
       )}
 
