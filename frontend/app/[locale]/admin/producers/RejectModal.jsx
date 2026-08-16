@@ -67,7 +67,7 @@ export default function RejectModal({
   const canSubmit = Boolean(presetKey) && (presetKey !== OTHER || trimmed);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
       <div
         role="dialog"
         aria-modal="true"
