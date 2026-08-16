@@ -19,11 +19,16 @@ const S_EN = en.auth.register.producer.success;
 
 describe("MEH-1814 — locked post-submit success copy", () => {
   it("Hebrew matches the locked strings verbatim", () => {
-    expect(S_HE.title).toBe("הבקשה נשלחה — העסק שלך בבדיקה");
-    // MEH-2100: re-locked. Registration no longer puts the business in
-    // review — it creates a draft — so the old "we approve within 3 business
-    // days" promise was false the moment it was shown. New string approved
-    // verbatim by Sapir in the MEH-2100 spec.
+    // MEH-2100: re-locked. The old title — "הבקשה נשלחה — העסק שלך בבדיקה" —
+    // asserted two things registration no longer does: that a request was
+    // SENT, and that the business is IN REVIEW. Under the draft machine
+    // neither is true until the owner presses "שליחה לבדיקה" herself, so the
+    // screen was telling her the queue had her when nothing had been
+    // submitted. Approved verbatim, 16/08.
+    expect(S_HE.title).toBe("ברוכים הבאים למהמקור");
+    // Same correction, one line down: registration no longer puts the
+    // business in review, so the old "we approve within 3 business days"
+    // promise was false the moment it was shown.
     expect(S_HE.body).toBe(
       "נרשמתם! השלב הבא: השלמת הפרופיל בלוח הבקרה ושליחה לבדיקה.",
     );
@@ -34,7 +39,7 @@ describe("MEH-1814 — locked post-submit success copy", () => {
   });
 
   it("English matches the locked strings verbatim", () => {
-    expect(S_EN.title).toBe("Request sent — your business is in review");
+    expect(S_EN.title).toBe("Welcome to Mehamakor");
     expect(S_EN.body).toBe(
       "You're registered! Next step: complete your profile in the dashboard and send it for review.",
     );
