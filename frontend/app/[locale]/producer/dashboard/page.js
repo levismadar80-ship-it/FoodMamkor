@@ -111,7 +111,7 @@ function StatusSupportModal({ onClose }) {
   const t = useTranslations("dashboard.producer.status.support");
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}

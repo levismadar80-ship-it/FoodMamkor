@@ -26,7 +26,7 @@ export default function RequestChangesModal({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
       <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
         <h2 className="font-headline-md text-xl font-bold text-text mb-2">
           {t("producers.request_changes.modal_title")}
