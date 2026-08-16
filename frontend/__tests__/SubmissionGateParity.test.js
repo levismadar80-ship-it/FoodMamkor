@@ -68,12 +68,25 @@ describe("MEH-2100 submit-gate parity — client codes match the server", () => 
     // declares it in SUBMISSION_REQUIREMENTS and the banner renders in the
     // client's order. Different orders would not break anything, but they
     // would make the email and the dashboard disagree about what to do first.
-    const tuple = source
-      .split("SUBMISSION_REQUIREMENTS: tuple[str, ...] = (")[1]
-      .split(")")[0];
+    // Guarded parse. Without this, a reformatted annotation (or a dropped
+    // type hint) makes split()[1] undefined and the next .split() throws an
+    // uncaught TypeError — a stack trace instead of a legible "the parser
+    // stopped matching" failure. Same class as the self-test above: a probe
+    // that silently stops seeing its subject must say so. (CI reviewer, #2987.)
+    const [, afterMarker] = source.split(/SUBMISSION_REQUIREMENTS[^=]*=\s*\(/);
+    expect(
+      afterMarker,
+      "could not locate SUBMISSION_REQUIREMENTS in the backend module — the " +
+        "parser has stopped matching, so this file is no longer checking parity",
+    ).toBeDefined();
+    const tuple = afterMarker.split(")")[0];
     const serverOrder = [...tuple.matchAll(/MISSING_([A-Z_]+)/g)].map((m) =>
       m[1].toLowerCase(),
     );
+    expect(
+      serverOrder.length,
+      "parsed zero codes from the tuple — a vacuous pass",
+    ).toBeGreaterThan(0);
     expect(serverOrder.length).toBe(SUBMISSION_REQUIREMENTS.length);
     expect(serverOrder).toEqual(SUBMISSION_REQUIREMENTS);
   });
