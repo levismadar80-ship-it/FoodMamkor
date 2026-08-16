@@ -111,9 +111,59 @@ cases, always use logical properties.
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
-global header/nav (+ account dropdown):1050 →
-cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 → chat FAB:9999
+address suggestions:1010 → global header/nav (+ account dropdown):1050 →
+cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 →
+modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999
 ```
+
+### The full live table (MEH-2093 chunk C)
+
+**Every `z-[N]` that appears in a className under `frontend/app` +
+`frontend/components`.** The chain above is the mental model; this is the
+inventory. `frontend/__tests__/ZTokenLedgerSync.test.js` fails if code and this
+table disagree in either direction, so the "mirrors it" claim below is now
+mechanically true rather than aspirational.
+
+| token | n | representative owner | what it is |
+|---|---|---|---|
+| `z-[10000]` | 1 | `app/[locale]/layout.js:231` | skip-to-content link, on focus only |
+| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:64` | tooltips. ChatWidget's FAB shares the value via inline `zIndex: 9999` (`ChatWidget.jsx:212,220`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
+| `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
+| `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
+| `z-[9000]` | 20 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50` |
+| `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
+| `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
+| `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |
+| `z-[1150]` | 2 | `components/MiniMap.jsx:531` · `FavoritesClient.jsx:76` | MiniMap fullscreen |
+| `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
+| `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
+| `z-[1050]` | 2 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context** |
+| `z-[1010]` | 1 | `components/AddressSearch.jsx:266` | address suggestion list. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. MEH-2093 chunk A |
+| `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
+| `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
+| `z-[1000]` | 14 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls |
+| `z-[900]` | 2 | `components/OnboardingTip.jsx:39` | onboarding tip |
+| `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
+| `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |
+| `z-[598]` | 1 | `producer/[id]/components/StickyContactBar.jsx:71` | sticky contact bar — just under the sheet |
+| `z-[50]` | 2 | `app/[locale]/map/MapClient.jsx:769` | map-local, inside a stacking context |
+| `z-[2]` | 1 | `app/[locale]/dev/components/page.jsx:154` | dev playground |
+| `z-[1]` | 2 | `app/[locale]/about/AboutClient.jsx:624` | decorative layering |
+
+**23 live tokens.** Counts are occurrence counts, not file counts.
+
+> **`z-[9998]` is NOT in this table on purpose.** It appears exactly once in the
+> repo — a prose comment at `map/components/CityPickerModal.jsx:16` calling it
+> "the cookie token". The cookie banner is `z-[1100]` and has been for some time,
+> so that comment is stale and `9998` is live nowhere. Recorded here so the next
+> reader who greps `z-[9998]` and finds a hit does not add a row for a value that
+> does not exist. The guard counts className occurrences, not comments, which is
+> why it does not demand a row for it.
+
+**Two ways a grep undercounts this table, both load-bearing:** an inline
+`style={{ zIndex: N }}` (ChatWidget) carries no Tailwind token at all, and a bare
+Tailwind `z-50` / `z-10` is not an arbitrary value so `z-\[` never matches it. A
+z-index audit that only greps `z-\[[0-9]+\]` will miss both.
 
 Code is the source of truth; this ledger mirrors it — update the table
 when a component's z-index changes (grep'd MEH-861: `BottomNav.jsx:152`
