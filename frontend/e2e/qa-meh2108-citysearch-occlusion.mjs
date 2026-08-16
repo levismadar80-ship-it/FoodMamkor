@@ -694,6 +694,13 @@ const run = async () => {
     }
     measured += 1;
     if (!occ.length) console.log("  => nothing in the contested band overlaps the list: change is INERT on this route");
+    // The committed absence-* artifacts were originally captured by an ad-hoc
+    // inline script, so re-running this harness could not regenerate them — their
+    // as-of was unrecoverable from the committed code alone. That is precisely the
+    // defect this PR exists to correct in #2989's probe, reproduced here in the
+    // supporting evidence rather than the primary. Caught by the CI reviewer.
+    const slug = path.replace(/\W+/g, "") || "root";
+    await page.screenshot({ path: `${OUT}/absence-${slug}-${w}-${LABEL}.png` });
     await page.close();
   };
 
