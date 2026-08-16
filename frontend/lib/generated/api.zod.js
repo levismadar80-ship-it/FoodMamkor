@@ -2834,13 +2834,20 @@ export const ListProducersProducersGetResponse = /*#__PURE__*/ zod.array(ListPro
 
 
 /**
- * Create a pending producer row.
+ * Create a DRAFT producer row.
  *
  * SECURITY: this endpoint was historically public, which meant anyone
  * could create pending producers with no audit trail. It's now
  * authenticated — any logged-in user can create, but anonymous callers
  * get 401. The public "become a producer" signup flow lives at
  * POST /auth/register/producer (see routers/auth.py) and is unaffected.
+ *
+ * MEH-2100: the row lands in `draft`, so "any logged-in user can create"
+ * no longer means "any logged-in user can put a row in front of the
+ * admin". Reaching the review queue now requires
+ * POST /producers/me/submit-for-review, which is owner-scoped and gated
+ * on a complete profile. Deepens the audit-trail fix above rather than
+ * replacing it.
  * @summary Create Producer
  */
 export const createProducerProducersPostResponseAmbassadorDefault = false;
@@ -4068,6 +4075,41 @@ export const UpdateMyRecipeProducersMeRecipesRecipeIdPatchResponse = /*#__PURE__
  * @summary Request Producer Review
  */
 export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The owner declares her profile ready and hands it to the admin queue.
+ *
+ * This is the ONLY transition out of `draft` (MEH-2100). All three producer
+ * creation sites now write `draft`, so before this call the business is
+ * invisible to the review queue by construction — and the "בסקירה" banner
+ * plus the 3-business-day SLA both start HERE rather than at signup, which
+ * is the whole point of the ticket.
+ *
+ * Draft-only, mirroring the MEH-1236 request-review 409 directly above: a
+ * business already `pending` is in the queue (nothing to do), and one that
+ * is approved / rejected / inactive has been decided. A silent 200 on those
+ * would tell the owner something happened when nothing did.
+ *
+ * The gate is SERVER-SIDE and reads the SAME helper the dashboard checklist
+ * and the MEH-1818 nudge read (`submission_missing_items`), so the three can
+ * never drift into different definitions of "ready". A client that ignores
+ * the disabled CTA still gets 422 — the button state is an affordance, not
+ * the rule.
+ *
+ * The 422 body uses the MEH-1943 `{code, message, params}` shape, which buys
+ * two things at once: `detailToMessage` (frontend/lib/errors.js:151) renders
+ * `message` with no client change, and `params.missing` carries the
+ * machine-readable codes the checklist highlights.
+ *
+ * NOT gated here, deliberately: the producer LICENSE (MEH-971's
+ * license_pending path must still be able to reach the queue with a NULL
+ * license — it is an approve-time question) and OPENING HOURS (recommended,
+ * not required — Google precedent). Both remain enforced where they belong;
+ * see submission_gate.py's "Does NOT" header.
+ * @summary Submit For Review
+ */
+export const SubmitForReviewProducersMeSubmitForReviewPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**

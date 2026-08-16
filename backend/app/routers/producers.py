@@ -521,13 +521,20 @@ def create_producer(
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
-    """Create a pending producer row.
+    """Create a DRAFT producer row.
 
     SECURITY: this endpoint was historically public, which meant anyone
     could create pending producers with no audit trail. It's now
     authenticated — any logged-in user can create, but anonymous callers
     get 401. The public "become a producer" signup flow lives at
     POST /auth/register/producer (see routers/auth.py) and is unaffected.
+
+    MEH-2100: the row lands in `draft`, so "any logged-in user can create"
+    no longer means "any logged-in user can put a row in front of the
+    admin". Reaching the review queue now requires
+    POST /producers/me/submit-for-review, which is owner-scoped and gated
+    on a complete profile. Deepens the audit-trail fix above rather than
+    replacing it.
     """
     # MEH-530: 422s when a license-required category is selected without
     # a `producer_license_number`. Format check is intentionally absent
