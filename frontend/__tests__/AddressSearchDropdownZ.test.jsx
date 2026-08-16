@@ -30,8 +30,22 @@ vi.mock("@/lib/places", () => ({
 
 const ROOT = path.resolve(__dirname, "..");
 
-/** Highest z-index Leaflet can put on screen inside one of our maps. */
-const LEAFLET_CEILING = 1001; // globals.css — attribution, `z-index: 1001 !important`
+/**
+ * Highest z-index Leaflet can put on screen inside one of our maps.
+ *
+ * Derived from globals.css rather than written down. The CI reviewer on the
+ * chunk A PR caught that hardcoding it left one half of this test stale-able:
+ * the header bound was read from source, so an edit to `globals.css`'s
+ * attribution rule would silently leave the listbox buried under the
+ * attribution while `1010 > 1001` kept the test green. Both bounds now move
+ * with the code they describe.
+ */
+function leafletCeilingFromSource() {
+  const css = fs.readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
+  const zs = [...css.matchAll(/z-index:\s*(\d+)\s*!important/g)].map((m) => Number(m[1]));
+  if (zs.length === 0) throw new Error("globals.css: no forced Leaflet z-index found");
+  return Math.max(...zs);
+}
 
 /** The header's own token, read from source so this test tracks the real value. */
 function headerZFromSource() {
@@ -81,7 +95,7 @@ describe("AddressSearch suggestion list — stacking (MEH-2093 chunk A)", () => 
     const z = listboxZ(await openListbox());
     // Fails at the original z-50 (50 > 1001 is false) — this is the assertion
     // that encodes the bug Sapir screenshotted on 16/08.
-    expect(z).toBeGreaterThan(LEAFLET_CEILING);
+    expect(z).toBeGreaterThan(leafletCeilingFromSource());
   });
 
   it("stays below the global header, which must keep winning", async () => {
