@@ -835,7 +835,7 @@ export default function ProductsSection({
           aria-modal, Escape closes, buttons disabled while busy, failure keeps
           the dialog open with the error shown. */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
           <div
             role="dialog"
             aria-modal="true"

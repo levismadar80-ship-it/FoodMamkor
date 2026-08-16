@@ -128,7 +128,7 @@ export default function AdminReportsPage() {
 
       {/* MEH-1266: dismiss-all confirm dialog (content/page.js precedent) */}
       {dismissTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
           <div
             role="dialog"
             aria-modal="true"
