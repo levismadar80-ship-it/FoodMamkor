@@ -461,8 +461,7 @@
     "stats": {
       "businesses": "businesses joined so far",
       "categories": "categories",
-      "countrywide": "across Israel",
-      "fallback": "Starting now · across Israel"
+      "countrywide": "across Israel"
     },
     "trust": {
       "lead": "No middleman in between · pickup or delivery, straight from the business",
@@ -517,10 +516,6 @@
       "geo_empty": "No businesses found nearby — showing all businesses",
       "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
     },
-    "founder_quote": {
-      "text": "Real food, from real people, right next door.",
-      "attribution": "Sapir, founder of Mehamakor →"
-    },
     "recent": {
       "heading": "Recently viewed"
     },
@@ -545,21 +540,6 @@
       "heading": "Upcoming events",
       "all_events": "All events →",
       "free": "Free"
-    },
-    "marquee": {
-      "tag_unprocessed": "Unprocessed",
-      "tag_pasture": "Pasture-raised",
-      "tag_organic": "Organic",
-      "tag_sourdough": "Sourdough",
-      "tag_extra_virgin": "Extra virgin",
-      "tag_fresh_real": "Fresh and real",
-      "tag_verified": "Verified",
-      "tag_local": "Local"
-    },
-    "story_block": {
-      "founder_quote": "Once you know where to buy from — there's no going back.",
-      "founder_attribution": "— Sapir, founder of Mehamakor",
-      "seasonal_heading": "Every season — a different flavor"
     }
   },
   "common": {
@@ -4394,11 +4374,9 @@
         "save_error": "Save failed. Please try again."
       },
       "pricing": {
-        "heading": "Price & top product",
-        "subtitle": "Your starting price and top product — shown on your business card.",
-        "scope_helper": "Your top product is the one your business is best known for — it appears as a highlighted card at the top of the product list on your page, with the starting price beside it.",
-        "field_top_product": "Top product",
-        "top_product_placeholder": "e.g. spelt sourdough loaf",
+        "heading": "Starting price",
+        "subtitle": "Your starting price — shown on your business card.",
+        "scope_helper": "Your starting price appears on your page beside your top product. You choose the top product in the products list, using the star on the product's row.",
         "field_price_range": "Starting price",
         "price_range_placeholder": "e.g. from ₪30",
         "price_hint": "A short \"from\" price — not a price list.",
@@ -4824,7 +4802,8 @@
         "save_failed": "Save error",
         "delete_failed": "Delete error",
         "load_failed": "We couldn't load your products",
-        "image_autosave_failed": "The image uploaded but isn't saved yet — click Save to retry"
+        "image_autosave_failed": "The image uploaded but isn't saved yet — click Save to retry",
+        "top_product_failed": "We couldn't update your top product — please try again"
       },
       "load_retry_cta": "Try again",
       "empty": {
@@ -4877,7 +4856,10 @@
       "add_submitting": "Adding…",
       "card": {
         "edit_aria_template": "Edit {name}",
-        "delete_aria_template": "Delete {name}"
+        "delete_aria_template": "Delete {name}",
+        "top_product_badge": "Top product",
+        "top_product_mark_aria_template": "Mark {name} as the top product",
+        "top_product_unmark_aria_template": "Unmark {name} as the top product"
       },
       "toast_added": "Product added",
       "toast_updated": "Product updated",
@@ -4887,7 +4869,9 @@
         "body": "This action cannot be undone.",
         "confirm": "Delete",
         "cancel": "Cancel"
-      }
+      },
+      "top_product_hint": "Star one product to make it your top product — it appears as a highlighted card at the top of the product list on your page.",
+      "top_product_empty_hint": "Add a product to choose a top product."
     },
     "locations": {
       "section_heading": "Locations",
