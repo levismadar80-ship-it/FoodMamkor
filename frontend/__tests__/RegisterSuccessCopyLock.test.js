@@ -19,12 +19,6 @@ const S_EN = en.auth.register.producer.success;
 
 describe("MEH-1814 — locked post-submit success copy", () => {
   it("Hebrew matches the locked strings verbatim", () => {
-    // MEH-2100: re-locked. The old title — "הבקשה נשלחה — העסק שלך בבדיקה" —
-    // asserted two things registration no longer does: that a request was
-    // SENT, and that the business is IN REVIEW. Under the draft machine
-    // neither is true until the owner presses "שליחה לבדיקה" herself, so the
-    // screen was telling her the queue had her when nothing had been
-    // submitted. Approved verbatim, 16/08.
     // MEH-2100, Sapir 16/08. The screen used to read «הבקשה נשלחה — העסק שלך
     // בבדיקה», which asserted two things registration no longer does: that a
     // request was sent, and that it is in review.

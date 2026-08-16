@@ -499,16 +499,21 @@ export default function ProducerDashboardPage() {
             {t("status.pending_whatsapp.body")}
           </p>
           {/* MEH-745: the OTP card replaces the old dead /settings CTA — a
-              successful confirm flips status to pending without a reload. */}
-          <PhoneVerifyCard
-            onVerified={() =>
-              setData((prev) =>
-                prev
-                  ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                  : prev,
-              )
-            }
-          />
+              successful confirm flips status to pending without a reload.
+              MEH-2100: the id is the completeness checklist's "אימות וואטסאפ"
+              target, shared with the draft banner's mount — mutually exclusive
+              by status, so the two never coexist. */}
+          <div id="phone-verify">
+            <PhoneVerifyCard
+              onVerified={() =>
+                setData((prev) =>
+                  prev
+                    ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                    : prev,
+                )
+              }
+            />
+          </div>
         </div>
       )}
 

@@ -4226,6 +4226,7 @@
           "location": "Categories & location",
           "products": "First product in your catalog",
           "contact": "Contact details",
+          "phone_verified": "WhatsApp verification",
           "hours": "Opening hours"
         },
         "fields": {

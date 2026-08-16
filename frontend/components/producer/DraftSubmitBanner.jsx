@@ -124,7 +124,10 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
       {/* MEH-2100: the OTP card, reachable from draft. Without this mount
           phone_verified can never flip and the gate is impassable. */}
       {phoneUnverified && (
-        <div className="mt-4">
+        // The anchor the completeness checklist's "אימות וואטסאפ" row targets
+        // (MEH-2100). The pending_whatsapp banner carries the same id; only
+        // one of the two renders for any given status, so it never collides.
+        <div className="mt-4" id="phone-verify">
           <PhoneVerifyCard onVerified={() => {
             setServerMissing(null);
             onPhoneVerified?.();

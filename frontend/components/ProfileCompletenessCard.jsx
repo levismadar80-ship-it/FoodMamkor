@@ -205,6 +205,34 @@ function buildSteps(producer, missingLabels) {
       href: `${EDIT_HUB}#profile-products`,
     },
     { key: "contact", done: has("contact"), required: true, href: `${EDIT_HUB}#profile-contact` },
+    {
+      // MEH-2100, Sapir 16/08 — the SPLIT that resolves the contact/gate
+      // mismatch, and it is deliberately neither of the two options that were
+      // on the table.
+      //
+      // The problem: the submit gate blocks on `phone_verified`, while
+      // `has("contact")` is `p.phone || p.instagram`
+      // (producer-completeness.js:74). So a business with a typed-but-
+      // unverified number — or with Instagram and no phone at all — read
+      // «פרטי קשר ✓ חובה» here while the banner below still blocked her.
+      //
+      // Conjoining the two was rejected: `done` feeds doneCount, the
+      // percentage, the ring and the isComplete collapse, so it would have
+      // silently demoted every producer who had legitimately supplied contact
+      // details. Retitling the row was rejected too — it would have made an
+      // earned ✓ disappear. Both options paid for the fix by taking something
+      // away from a business that had done nothing wrong.
+      //
+      // Splitting costs nothing instead: presence keeps its ✓, verification
+      // gets its own row, and the two stop pretending to be one fact.
+      key: "phone_verified",
+      required: true,
+      done: !!producer?.phone_verified,
+      // The OTP card lives in the dashboard banner, not the edit hub — both
+      // the draft banner and the pending_whatsapp banner carry this anchor,
+      // and only one of them renders for any given status.
+      href: "#phone-verify",
+    },
     // MEH-1895: hours reads the SAME heuristic slug that mounts this card
     // (producer-completeness.js:91-92, MEH-1884) — no second condition to
     // drift. Anchor is the KEY_TO_ANCHOR value (edit/page.js:164), the form
