@@ -16,6 +16,10 @@ import {
   submissionMissingItems,
   SUBMISSION_REQUIREMENTS,
 } from "@/lib/submission-gate";
+// The REAL locale files — the point of the copy check below is that it reads
+// what ships, not what the next-intl mock echoes back.
+import heMessages from "@/messages/he.json";
+import enMessages from "@/messages/en.json";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
@@ -96,15 +100,31 @@ describe("DraftSubmitBanner — CTA enablement", () => {
     expect(screen.getByTestId(`draft-missing-${code}`)).toBeTruthy();
   });
 
-  it("every declared requirement has a rendered row (no unreachable code)", () => {
-    // Derived from the contract list, so adding a code without wiring copy or
-    // a row fails here instead of silently never rendering.
+  // REPLACED a tautology (CI reviewer, #2987, and they were right). The old
+  // version rendered a maximally-incomplete producer and asserted a row exists
+  // for every code in SUBMISSION_REQUIREMENTS — but the banner ITERATES that
+  // same list, so every declared code produces a row by construction. It could
+  // not distinguish "this code is wired" from "all five happen to be missing",
+  // and the `it.each` above already covers each code individually.
+  //
+  // Worse than useless: its comment claimed "adding a code without wiring copy
+  // fails here", which was false — `useTranslations` is mocked to return the
+  // key path, so a code with no he/en copy passed. An assertion that reads as
+  // coverage while being entailed by its own subject is the exact shape
+  // .claude/rules/testing.md warns about.
+  //
+  // This is the check that claim DESCRIBED, done against the real message
+  // files, where it is not entailed by anything the component does.
+  it("every declared requirement has real he + en copy", () => {
     for (const code of SUBMISSION_REQUIREMENTS) {
-      const { unmount } = render(
-        <DraftSubmitBanner producer={{ images: [], products: [], categories: [] }} />,
-      );
-      expect(screen.queryByTestId(`draft-missing-${code}`)).toBeTruthy();
-      unmount();
+      const heCopy = heMessages.dashboard.producer.draft.missing[code];
+      const enCopy = enMessages.dashboard.producer.draft.missing[code];
+      expect(heCopy, `he copy for "${code}"`).toBeTruthy();
+      expect(enCopy, `en copy for "${code}"`).toBeTruthy();
+      // Not the key path echoed back, and not the other locale's string.
+      expect(heCopy).not.toBe(code);
+      expect(enCopy).not.toBe(code);
+      expect(heCopy).not.toBe(enCopy);
     }
   });
 });
