@@ -20,25 +20,34 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.models.models import Producer, User
+from app.models.models import Category, Producer, ProducerCategory, Product, User
 from app.services import pending_nudge
 
 
 # Producer.status is a free String(20) with no enum and no DB CHECK
-# constraint. The authoritative enumeration is the admin filter pattern at
-# backend/app/routers/admin.py:112 —
-#     ^(pending|pending_whatsapp|approved|rejected|inactive|all)$
+# constraint. The authoritative enumeration is the admin filter pattern in
+# backend/app/routers/admin.py's list_producers —
+#     ^(draft|pending|pending_whatsapp|approved|rejected|inactive|all)$
 # ("all" is a query-filter sentinel, never a stored value). Every one of the
-# five real values is asserted below, so a status added to that pattern
+# six real values is asserted below, so a status added to that pattern
 # without a decision here shows up as an uncovered value in review.
+# (The old comment cited admin.py:112; that line number had drifted — the
+# pattern sits around :344. Cited by section now, MEH-2100.)
+#
+# MEH-2100: `draft` is where every new registration lands, so it is the
+# status the nudge most needs to reach. Deliberately re-declared here rather
+# than imported from pending_nudge: this list is an INDEPENDENT statement of
+# what should be nudgeable, and importing the module's own tuple would make
+# the test agree with the code by construction.
 _ALL_PRODUCER_STATUSES = [
+    "draft",
     "pending",
     "pending_whatsapp",
     "approved",
     "rejected",
     "inactive",
 ]
-_NUDGEABLE_STATUSES = {"pending", "pending_whatsapp"}
+_NUDGEABLE_STATUSES = {"draft", "pending", "pending_whatsapp"}
 
 
 @pytest.fixture
@@ -62,9 +71,24 @@ def _make_producer_user(
     hours_old: int = 25,
     name: str = "ספיר ניסוי",
     email_local: str | None = None,
+    phone_verified: bool = False,
+    with_product: bool = False,
+    with_category: bool = False,
 ) -> tuple[Producer, User]:
     """Create a Producer + linked User pair, backdated `hours_old` hours.
-    `images=None` means the no-photo state (the MEH-799 default)."""
+    `images=None` means the no-photo state (the MEH-799 default).
+
+    MEH-2100: three axes were added because the nudge now reads the SHARED
+    submit gate (`submission_gate.submission_missing_items`) instead of its own
+    two-item rule. Under the old rule "phone verified" was INFERRED from
+    `status != "pending_whatsapp"`; the gate reads the `phone_verified` column
+    directly, so a fixture that means "her number is verified" now has to say
+    so. Same for products and categories, which the old rule never looked at.
+
+    Defaults stay at the empty/unverified end so the no-photo cases below are
+    unchanged and every "complete" case has to state its completeness
+    explicitly — the fail-closed direction for a fixture.
+    """
     backdated = datetime.now(timezone.utc) - timedelta(hours=hours_old)
     producer = Producer(
         name="חוות הניסוי",
@@ -75,8 +99,18 @@ def _make_producer_user(
         status=status,
         images=images if images is not None else [],
         created_at=backdated,
+        phone_verified=phone_verified,
     )
     db.add(producer)
+    db.flush()
+
+    if with_category:
+        category = Category(name=f"קטגוריה {uuid.uuid4().hex[:6]}", emoji="🥬")
+        db.add(category)
+        db.flush()
+        db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
+    if with_product:
+        db.add(Product(producer_id=producer.id, name="מוצר ניסוי"))
     db.flush()
 
     user = User(
@@ -107,8 +141,21 @@ def test_pending_without_photo_gets_photo_item_only(db, sent_log):
 
     `pending` means the WhatsApp number is already verified, so naming phone
     verification here would be false.
+
+    MEH-2100: that verification is now STATED (`phone_verified=True`) rather
+    than inferred from the status value, and the product/category axes are
+    filled so the photo really is the only thing missing — otherwise this
+    would pass while the body also carried the product line, asserting less
+    than it appears to.
     """
-    producer, user = _make_producer_user(db, status="pending", images=None)
+    producer, user = _make_producer_user(
+        db,
+        status="pending",
+        images=None,
+        phone_verified=True,
+        with_product=True,
+        with_category=True,
+    )
 
     counts = pending_nudge.send_pending_nudges(db)
 
@@ -132,6 +179,10 @@ def test_pending_whatsapp_with_photo_gets_phone_item_only(db, sent_log):
         db,
         status="pending_whatsapp",
         images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        # phone_verified stays False — which is exactly what pending_whatsapp
+        # MEANS (MEH-745), so this cell's behaviour is unchanged by MEH-2100.
+        with_product=True,
+        with_category=True,
     )
 
     counts = pending_nudge.send_pending_nudges(db)
@@ -146,7 +197,11 @@ def test_pending_whatsapp_without_photo_gets_both_items(db, sent_log):
     """pending_whatsapp + no images → BOTH items in one email (not two
     emails)."""
     _producer, _user = _make_producer_user(
-        db, status="pending_whatsapp", images=None
+        db,
+        status="pending_whatsapp",
+        images=None,
+        with_product=True,
+        with_category=True,
     )
 
     counts = pending_nudge.send_pending_nudges(db)
@@ -169,6 +224,11 @@ def test_complete_but_unapproved_is_stamped_without_email(db, sent_log):
         db,
         status="pending",
         images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        # MEH-2100: "complete" is now the SUBMIT GATE's definition, not the old
+        # two-item one. A photo alone no longer means nothing is missing.
+        phone_verified=True,
+        with_product=True,
+        with_category=True,
     )
 
     counts = pending_nudge.send_pending_nudges(db)
@@ -266,6 +326,11 @@ def test_stamped_without_email_is_not_revisited_after_losing_photo(db, sent_log)
         db,
         status="pending",
         images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        # MEH-2100: complete by the submit gate's definition — see the sibling
+        # test above.
+        phone_verified=True,
+        with_product=True,
+        with_category=True,
     )
 
     assert pending_nudge.send_pending_nudges(db) == {

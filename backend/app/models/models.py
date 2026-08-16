@@ -75,12 +75,36 @@ class Producer(Base):
     facebook = Column(String(200), nullable=True)
     external_order_form = Column(String(500), nullable=True)
     # MEH-1612: free String(20) — no enum, no DB CHECK constraint. The
-    # authoritative enumeration is the admin filter pattern at
-    # routers/admin.py:112:
-    #   pending | pending_whatsapp | approved | rejected | inactive
-    # (pending_whatsapp is written at auth.py:509 and auth.py:624; an earlier
-    # version of this comment omitted it and misled MEH-1587's Phase 0.)
-    status = Column(String(20), default="pending")
+    # authoritative enumeration is the admin filter pattern in
+    # routers/admin.py's list_producers (`status` Query pattern):
+    #   draft | pending | pending_whatsapp | approved | rejected | inactive
+    # (An earlier version of this comment cited routers/admin.py:112,
+    # auth.py:509 and auth.py:624 — all three line numbers had drifted;
+    # the pattern lives around admin.py:344 and the writers around
+    # auth.py:546 / auth.py:741. Cited by section rather than by line here,
+    # since the line numbers are what rotted. Re-derived MEH-2100.)
+    #
+    # MEH-2100: `draft` is where every newly created producer starts, from
+    # all THREE creation sites (routers/auth.py's upgrade and new-email
+    # branches, plus producer_queries.create_producer_with_relations behind
+    # POST /producers). It leaves via POST /producers/me/submit-for-review
+    # and no other path. `pending_whatsapp` is retained but unreachable for
+    # new registrations (Expand-Contract, ADR-007) — existing rows keep it
+    # and confirm_phone_otp still advances them; removing the value is a
+    # later Contract-phase card.
+    #
+    # The DEFAULT moved "pending" -> "draft" with the same reasoning, and it is
+    # a fail-closed choice rather than a cosmetic one. Every one of the five
+    # Producer(...) constructors in app/ passes `status` explicitly (three
+    # write "draft"; admin-create and the Excel importer write "approved" —
+    # both pre-approved by definition), and a sweep of tests/ found nothing
+    # relying on the default either, so this changes no behaviour today. What
+    # it changes is the failure mode of a SIXTH creation site added later: on
+    # the old default, forgetting `status=` silently minted a live admin-queue
+    # entry — exactly the hole this ticket closes — whereas now it mints an
+    # invisible draft that simply never gets submitted. Loud and harmless
+    # instead of quiet and wrong.
+    status = Column(String(20), default="draft")
     # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
     # moved draft -> pending. That instant, NOT created_at, is when the
     # 3-business-day review SLA starts once the submit gate ships.

@@ -25,12 +25,15 @@ flowchart TD
     Choice -->|Business owner — multi-step| ProducerForm[/register/producer page.js<br/>4 steps: account → business → delivery → consents]
     ProducerForm --> PP[POST /auth/register/producer]
     PP --> TxBegin[DB transaction]
-    TxBegin --> CreateProducer[Create Producer<br/>status=pending]
+    TxBegin --> CreateProducer[Create Producer<br/>status=draft<br/>MEH-2100: NOT in the admin queue yet]
     CreateProducer --> CreateUser[Create User<br/>role=producer<br/>producer_id=new producer.id]
     CreateUser --> LinkCats[Link producer_categories + delivery_areas]
     LinkCats --> TxEnd[Commit tx]
     TxEnd --> NotifyAdmin[Optional: Twilio WhatsApp + SMTP<br/>admin notification<br/>fail-open on missing config]
     NotifyAdmin --> IssueJWTp[create_access_token user.id]
+    ReturnTokenP -.->|owner completes profile,<br/>then presses שליחה לבדיקה| SubmitReview[POST /producers/me/submit-for-review<br/>MEH-2100: draft-only, server-side gate<br/>image + product + category + location + phone_verified]
+    SubmitReview -->|gate passes| Pending[status=pending<br/>submitted_for_review_at stamped<br/>3-business-day SLA starts HERE]
+    SubmitReview -->|gate fails| Gate422[422 code=submit_gate_incomplete<br/>params.missing = the codes]
     IssueJWTp --> ReturnTokenP[Return Token<br/>access_token 15min +<br/>HttpOnly refresh cookie 14d]
 
     Choice -->|OAuth one-click| OAuthChoice{Google or Apple?}

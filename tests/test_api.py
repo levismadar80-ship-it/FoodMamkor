@@ -530,7 +530,9 @@ class TestAuth:
         assert user.is_producer is True  # MEH-143: durable flag set on new registration too
         producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
         assert producer is not None
-        assert producer.status == "pending_whatsapp"
+        # MEH-2100: registration creates a DRAFT — the business is NOT in the
+        # admin queue until she presses "שליחה לבדיקה".
+        assert producer.status == "draft"
 
     # --- MEH-1838 chunk A: delivery-shape fields on registration ---
 
@@ -808,9 +810,6 @@ class TestAuth:
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
-            "app.routers.auth.notify_admin_new_producer", lambda *a, **kw: None
-        )
-        monkeypatch.setattr(
             "app.routers.auth.notify_producer_registered", lambda *a, **kw: None
         )
         make_user(db, email="prod_ident_pw@test.com")
@@ -1035,10 +1034,6 @@ class TestRegisterPerEmailRateLimit:
         )
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda *a, **kw: None,
-        )
-        monkeypatch.setattr(
-            "app.routers.auth.notify_admin_new_producer",
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
@@ -1490,7 +1485,6 @@ class TestRegisterPerIpRateLimit:
             "_send_verify_email",
             "_send_welcome_email",
             "_send_duplicate_attempt_email",
-            "notify_admin_new_producer",
             "notify_producer_registered",
             "score_producer",
         ):
@@ -1759,9 +1753,12 @@ class TestProducers:
         )
         assert resp.status_code == 401
 
-    def test_post_producers_with_auth_creates_pending_producer(self, client, db):
-        """Authenticated user → 201, producer created with status=pending
-        (pre-existing behavior, now gated behind auth)."""
+    def test_post_producers_with_auth_creates_draft_producer(self, client, db):
+        """Authenticated user → 201, producer created with status=draft.
+
+        MEH-2100: was `pending`. This endpoint is reachable by ANY logged-in
+        verified user, so a `pending` row here was a route straight into the
+        admin queue past the submit gate."""
         user = make_user(db, email="creator@test.com")
         # MEH-1153: this path inserts ProducerCategory rows, so the category
         # must actually exist — override the placeholder id with a real one.
@@ -1775,11 +1772,11 @@ class TestProducers:
         assert resp.status_code == 201
         body = resp.json()
         assert body["name"] == "חוות הבדיקה"
-        assert body["status"] == "pending"
+        assert body["status"] == "draft"
         # DB row exists
         row = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
         assert row is not None
-        assert row.status == "pending"
+        assert row.status == "draft"
 
     def test_post_producers_overlong_name_returns_422(self, client, db):
         """MEH-229: name longer than the String(200) column → clean 422,
@@ -1994,10 +1991,12 @@ class TestAdminFlows:
 class TestMeh56WhatsAppOnboarding:
     """Registration produces pending_whatsapp status; admin sees it as pending."""
 
-    def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
-        # Stub out Twilio and email so no network calls
+    def test_register_producer_creates_draft(self, client, db, monkeypatch):
+        # Stub out Twilio and email so no network calls.
+        # MEH-2100: notify_admin_new_producer is no longer imported by
+        # auth.py — the admin ping moved to submit-for-review — so there is
+        # nothing to stub for it here.
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
@@ -2011,7 +2010,10 @@ class TestMeh56WhatsAppOnboarding:
         from app.models.models import Producer
         p = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
         assert p is not None
-        assert p.status == "pending_whatsapp"
+        # MEH-2100: the WhatsApp-onboarding path no longer parks a new
+        # registration in pending_whatsapp — it starts in draft, and phone
+        # verification is one item of the submit gate rather than a status.
+        assert p.status == "draft"
 
     def test_admin_pending_endpoint_includes_pending_whatsapp(self, client, db):
         make_producer(db, name="Classic Pending", status="pending")

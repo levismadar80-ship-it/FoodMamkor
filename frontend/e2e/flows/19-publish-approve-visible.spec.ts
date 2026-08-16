@@ -135,15 +135,27 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
         `publish failed (${regRes.status()}): ${await regRes.text()}`,
       ).toBeTruthy();
 
-      // ── 3) Lands in the admin queue as pending ──────────────────────────
-      // status=pending groups both "pending" and "pending_whatsapp" (admin.py).
+      // ── 3) Lands as a DRAFT, NOT in the review queue ────────────────────
+      // MEH-2100: registration no longer puts a business in front of the
+      // admin. It lands in `draft` and only reaches the queue via
+      // POST /producers/me/submit-for-review. Asserted in BOTH directions,
+      // because "not in the pending queue" alone would also be satisfied by
+      // the producer not existing at all.
+      const draftRes = await adminCtx.get("/api/admin/producers?status=draft");
+      expect(draftRes.ok(), `admin draft fetch failed (${draftRes.status()})`).toBeTruthy();
+      const drafts = (await draftRes.json()) as QueueProducer[];
+      const mine = drafts.find((p) => p.name === PRODUCER_NAME);
+      expect(mine, "registered producer not found in the draft list").toBeTruthy();
+      producerId = mine!.id;
+      expect(mine!.status).toBe("draft");
+
       const queueRes = await adminCtx.get("/api/admin/producers?status=pending");
       expect(queueRes.ok(), `admin queue fetch failed (${queueRes.status()})`).toBeTruthy();
       const queue = (await queueRes.json()) as QueueProducer[];
-      const mine = queue.find((p) => p.name === PRODUCER_NAME);
-      expect(mine, "published producer not found in the pending admin queue").toBeTruthy();
-      producerId = mine!.id;
-      expect(["pending", "pending_whatsapp"]).toContain(mine!.status);
+      expect(
+        queue.find((p) => p.id === producerId),
+        "a draft must NOT appear in the admin review queue",
+      ).toBeFalsy();
 
       // ── 3b) Not public yet — approval is what flips visibility ───────────
       const preList = (await (

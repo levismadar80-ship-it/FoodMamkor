@@ -39,22 +39,41 @@ from app.services.email import send_email
 # not violate the MEH-1587 freeze on that module's bodies/logic.
 from app.services.onboarding_followup import SITE_DOMAIN
 
+# MEH-2100: the single source of truth for "what is this business missing?",
+# shared with POST /producers/me/submit-for-review so the email and the gate
+# can never disagree. This module owns the COPY, not the decision.
+from app.services.submission_gate import (
+    MISSING_IMAGE,
+    MISSING_PHONE_VERIFIED,
+    MISSING_PRODUCT,
+    submission_missing_items,
+)
+
 logger = logging.getLogger(__name__)
 
 
-# MEH-1818: the two Producer.status values that may receive the nudge.
+# MEH-1818: the Producer.status values that may receive the nudge.
 #
-# Producer.status is a free String(20) (models.py:78) with no enum and no DB
-# CHECK constraint; the authoritative enumeration is the admin filter pattern
-# at routers/admin.py:112 — pending | pending_whatsapp | approved | rejected |
-# inactive. Membership in this tuple admits exactly two of the five, so a
-# status added later is excluded by DEFAULT (fail-closed) rather than silently
-# opted into an email that assumes "we are waiting on you".
+# Producer.status is a free String(20) with no enum and no DB CHECK
+# constraint; the authoritative enumeration is the admin filter pattern in
+# routers/admin.py's list_producers — draft | pending | pending_whatsapp |
+# approved | rejected | inactive. (This comment used to cite
+# routers/admin.py:112; that line number had drifted — the pattern sits around
+# :344. Cited by section now, MEH-2100.) Membership in this tuple admits three
+# of the six, so a status added later is excluded by DEFAULT (fail-closed)
+# rather than silently opted into an email that assumes "we are waiting on
+# you".
 #
 # This is the same fail-closed reasoning MEH-1587 used to pick a single `==`
 # for the approved-only sequence; the safe direction is that a new status
 # receives nothing until someone decides what it should receive.
-_NUDGEABLE_STATUSES = ("pending", "pending_whatsapp")
+#
+# MEH-2100: `draft` joins them, and it is now the MAIN case rather than an
+# edge one — under the submit gate a new registration lands in draft and stays
+# there until the owner acts, so "we are waiting on you" is most true exactly
+# there. `pending`/`pending_whatsapp` are retained because existing rows still
+# hold them.
+_NUDGEABLE_STATUSES = ("draft", "pending", "pending_whatsapp")
 
 # MEH-1818: a business is nudged one day after registering. Deliberately not
 # tunable via env (the ticket's constraint: no new env vars) — the activation
@@ -96,6 +115,29 @@ _MISSING_ITEM_PHOTO = (
 _MISSING_ITEM_PHONE = (
     "✅ אימות מספר הוואטסאפ — קוד קצר שמגיע בוואטסאפ, מאשרים אותו בלוח הבקרה."
 )
+# MEH-2100: the one addition to MEH-1818's locked copy, approved by Sapir as
+# part of that batch. Verbatim from the ticket.
+_MISSING_ITEM_PRODUCT = (
+    "🛒 מוצר ראשון בקטלוג — עמוד העסק מציג את המוצרים שלכם, "
+    "ובלי מוצר אחד לפחות אין ללקוחות מה לראות."
+)
+
+# MEH-2100: code → locked Hebrew line. The CODES come from the shared submit
+# gate; the COPY lives here, because copy is Sapir's (rule 22) and the gate is
+# not a copy module.
+#
+# Only three of the gate's five codes have approved copy, and that asymmetry is
+# deliberate rather than an oversight: MISSING_CATEGORY and MISSING_LOCATION
+# are REQUIRED WIZARD FIELDS at registration (ProducerRegister enforces >=1
+# category and a city server-side), so a registered business cannot be missing
+# them, and inventing Hebrew for an unreachable case would be exactly the
+# unapproved-copy move rule 22 forbids. They are still returned by the 422 for
+# the dashboard to highlight — the API surfaces all five, the email names three.
+_ITEM_COPY: dict[str, str] = {
+    MISSING_IMAGE: _MISSING_ITEM_PHOTO,
+    MISSING_PRODUCT: _MISSING_ITEM_PRODUCT,
+    MISSING_PHONE_VERIFIED: _MISSING_ITEM_PHONE,
+}
 
 
 # ---------- helpers ----------
@@ -115,24 +157,31 @@ def _greeting(first_name: str) -> str:
 
 
 def _missing_items(producer: Producer) -> list[str]:
-    """The list of things blocking this producer's approval, in the order
-    they are shown in the email.
+    """The email lines for what is blocking this producer, in gate order.
 
-    Photo: `Producer.images` is ARRAY(Text) with `default=[]` (models.py:79),
-    so an untouched row can be `[]` OR `None` depending on how it was
-    inserted — `or []` normalises both to "no photo". This is the MEH-799
-    gate: registration does not collect an image, so a brand-new business is
-    born un-approvable.
+    MEH-2100: the DECISION of what is missing is no longer made here — it is
+    `submission_gate.submission_missing_items`, the same helper the submit
+    endpoint 422s on and the dashboard checklist renders. Before this, the
+    nudge carried its own two-item definition of "not ready", which could (and
+    would) drift from whatever the submit gate decided; a business could be
+    told it was one photo away while the gate wanted three more things.
 
-    Phone: `pending_whatsapp` IS the unverified-number state (MEH-745), so
-    the status value alone is the signal — there is no separate flag to read.
+    This function is now only the CODE → COPY mapping, and it drops codes with
+    no Sapir-approved line (see `_ITEM_COPY`).
+
+    Phone: the signal is `phone_verified`, NOT `status == "pending_whatsapp"`
+    as it was before. That old form is unreachable under the draft machine — a
+    new registration never gets that status — so keeping it would have
+    reported every draft as phone-verified and silently dropped the phone line
+    from the one population that most needs it. Behaviour on legacy
+    `pending_whatsapp` rows is UNCHANGED, because `phone_verified` is False
+    exactly when that status applies.
     """
-    items: list[str] = []
-    if not (producer.images or []):
-        items.append(_MISSING_ITEM_PHOTO)
-    if producer.status == "pending_whatsapp":
-        items.append(_MISSING_ITEM_PHONE)
-    return items
+    return [
+        _ITEM_COPY[code]
+        for code in submission_missing_items(producer)
+        if code in _ITEM_COPY
+    ]
 
 
 def _build_email(first_name: str, items: list[str]) -> tuple[str, str]:
@@ -170,6 +219,22 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
     להשלים" with an empty list). Stamping it anyway takes it out of the
     candidate set permanently, so it cannot be re-evaluated and mailed on a
     later day if it happens to lose its photo.
+
+    MEH-2100 — a KNOWN GAP, stated rather than left to be discovered. For a
+    `pending` business "waiting on Sapir" is accurate. For a COMPLETE `draft`
+    it is not: that owner has finished everything and simply never pressed
+    "שליחה לבדיקה", so she is waiting on herself and receives nothing. The
+    skip-when-empty behaviour is what the ticket specifies, and a
+    draft-specific "you're done, now submit" nudge was explicitly ruled out of
+    this batch — so this is a deliberate omission with a known shape, not an
+    accident. If it turns out to matter, the fix is a new email, not a change
+    to this rule.
+
+    The empty check runs on the COPY list, not the gate's code list, and the
+    difference is load-bearing: a producer missing only a code with no
+    approved Hebrew (category / location) would otherwise be mailed a body
+    whose items block is blank. Skipping is the correct read of "there is
+    nothing we can tell her here".
 
     Per-producer fail-isolation: any exception inside one iteration is logged
     and the loop continues — the daily run never crashes on a bad row.

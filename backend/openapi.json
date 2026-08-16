@@ -11761,7 +11761,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "pattern": "^(pending|pending_whatsapp|approved|rejected|inactive|all)$",
+                  "pattern": "^(draft|pending|pending_whatsapp|approved|rejected|inactive|all)$",
                   "type": "string"
                 },
                 {
@@ -16038,7 +16038,7 @@
         ]
       },
       "post": {
-        "description": "Create a pending producer row.\n\nSECURITY: this endpoint was historically public, which meant anyone\ncould create pending producers with no audit trail. It's now\nauthenticated — any logged-in user can create, but anonymous callers\nget 401. The public \"become a producer\" signup flow lives at\nPOST /auth/register/producer (see routers/auth.py) and is unaffected.",
+        "description": "Create a DRAFT producer row.\n\nSECURITY: this endpoint was historically public, which meant anyone\ncould create pending producers with no audit trail. It's now\nauthenticated — any logged-in user can create, but anonymous callers\nget 401. The public \"become a producer\" signup flow lives at\nPOST /auth/register/producer (see routers/auth.py) and is unaffected.\n\nMEH-2100: the row lands in `draft`, so \"any logged-in user can create\"\nno longer means \"any logged-in user can put a row in front of the\nadmin\". Reaching the review queue now requires\nPOST /producers/me/submit-for-review, which is owner-scoped and gated\non a complete profile. Deepens the audit-trail fix above rather than\nreplacing it.",
         "operationId": "create_producer_producers_post",
         "requestBody": {
           "content": {
@@ -17188,6 +17188,31 @@
           }
         ],
         "summary": "Request Producer Review",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/submit-for-review": {
+      "post": {
+        "description": "The owner declares her profile ready and hands it to the admin queue.\n\nThis is the ONLY transition out of `draft` (MEH-2100). All three producer\ncreation sites now write `draft`, so before this call the business is\ninvisible to the review queue by construction — and the \"בסקירה\" banner\nplus the 3-business-day SLA both start HERE rather than at signup, which\nis the whole point of the ticket.\n\nDraft-only, mirroring the MEH-1236 request-review 409 directly above: a\nbusiness already `pending` is in the queue (nothing to do), and one that\nis approved / rejected / inactive has been decided. A silent 200 on those\nwould tell the owner something happened when nothing did.\n\nThe gate is SERVER-SIDE and reads the SAME helper the dashboard checklist\nand the MEH-1818 nudge read (`submission_missing_items`), so the three can\nnever drift into different definitions of \"ready\". A client that ignores\nthe disabled CTA still gets 422 — the button state is an affordance, not\nthe rule.\n\nThe 422 body uses the MEH-1943 `{code, message, params}` shape, which buys\ntwo things at once: `detailToMessage` (frontend/lib/errors.js:151) renders\n`message` with no client change, and `params.missing` carries the\nmachine-readable codes the checklist highlights.\n\nNOT gated here, deliberately: the producer LICENSE (MEH-971's\nlicense_pending path must still be able to reach the queue with a NULL\nlicense — it is an approve-time question) and OPENING HOURS (recommended,\nnot required — Google precedent). Both remain enforced where they belong;\nsee submission_gate.py's \"Does NOT\" header.",
+        "operationId": "submit_for_review_producers_me_submit_for_review_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Submit For Review",
         "tags": [
           "producer-management"
         ]
