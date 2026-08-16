@@ -248,7 +248,19 @@ export default function AddressSearch({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-50 mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
+          // MEH-2093: z-[1010], not z-50. Two consumers render this combobox as
+          // a direct sibling of an inline Leaflet map (RegisterProducerClient —
+          // register step 2, and LocationsEditor — dashboard locations). Neither
+          // this component's own wrapper (`relative`, z-auto) nor `.leaflet-container`
+          // (leaflet.css:17 — `overflow: hidden` only, no position/z-index) creates
+          // a stacking context, so the map's panes (leaflet.css:107, z-400) and its
+          // controls (globals.css:323-343, forced to z-1000/1001) compete with this
+          // list in the PAGE-level stacking context. At z-50 the list lost to all of
+          // them and was clipped at the map's top edge.
+          // 1010 clears panes:400, controls:1000 and the attribution:1001, and stays
+          // BELOW the global header (Header.jsx:321, z-[1050]) so the header still
+          // wins — matching the ledger in .claude/rules/rtl.md.
+          className="absolute z-[1010] mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
         >
           {suggestions.map((s, idx) => (
             <li
