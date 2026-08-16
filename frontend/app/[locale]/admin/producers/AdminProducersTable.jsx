@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
@@ -482,7 +483,7 @@ function EmptyRow({ incompleteOnly }) {
 }
 
 export default function AdminProducersTable({
-  rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
+  rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
   onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
   onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
@@ -499,7 +500,17 @@ export default function AdminProducersTable({
         <table className="w-full text-sm">
           <TableHead />
           <tbody>
-            {rows.length === 0 && <EmptyRow incompleteOnly={incompleteOnly} />}
+            {/* MEH-2096: a failed fetch must never reuse EmptyRow — "no
+                businesses awaiting approval" is the one message that must be
+                true, because manual approval has no automatic fallback. */}
+            {loadError && (
+              <tr>
+                <td colSpan={TABLE_COLUMN_COUNT} className="py-6">
+                  <AdminLoadError onRetry={onRetryLoad} testId="admin-producers-load-error" />
+                </td>
+              </tr>
+            )}
+            {!loadError && rows.length === 0 && <EmptyRow incompleteOnly={incompleteOnly} />}
             {rows.map((p) => (
               <AdminProducersRow
                 key={p.id}

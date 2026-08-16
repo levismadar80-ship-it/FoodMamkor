@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -67,20 +68,27 @@ export default function AdminOutreachPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [waLeadId, setWaLeadId] = useState(null);
+  // MEH-2096: both branches of the Promise.all swallowed their failure — the
+  // leads list fell back to [] ("no leads") and the metrics summary to null,
+  // which silently KEPT THE PREVIOUS numbers on screen. Two different lies.
+  const [loadError, setLoadError] = useState(false);
 
   const load = () => {
     setLoading(true);
     const params = {};
     if (cityFilter) params.city = cityFilter;
     if (statusFilter !== "all") params.status = statusFilter;
+    setLoadError(false);
     Promise.all([
-      api.get("/admin/outreach", { params }).then((r) => r.data).catch(() => []),
-      api.get("/admin/outreach/metrics/summary").then((r) => r.data).catch(() => null),
+      api.get("/admin/outreach", { params }).then((r) => r.data),
+      api.get("/admin/outreach/metrics/summary").then((r) => r.data),
     ])
       .then(([rows, m]) => {
         setLeads(Array.isArray(rows) ? rows : []);
         if (m) setMetrics(m);
+        setLoadError(false);
       })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   };
 
@@ -201,7 +209,14 @@ export default function AdminOutreachPage() {
                   </td>
                 </tr>
               )}
-              {!loading && leads.length === 0 && (
+              {!loading && loadError && (
+                <tr>
+                  <td colSpan={7} className="py-6">
+                    <AdminLoadError onRetry={load} testId="admin-outreach-load-error" />
+                  </td>
+                </tr>
+              )}
+              {!loading && !loadError && leads.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-muted">
                     {t("outreach.empty")}
