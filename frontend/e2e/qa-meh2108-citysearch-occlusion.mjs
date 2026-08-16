@@ -44,15 +44,19 @@
  * what stays valid in both states, and it is why the AFTER number here means
  * something.
  *
- * DISCRIMINATION. `--self-test` runs the classifier against three synthetic
- * layers (list on top / chrome on top / neither) plus one element lifted from
- * the real page, and asserts it sorts them correctly. It exits 1 if the
- * classifier cannot tell a covered list from a clear one. Run it FIRST: if the
- * instrument cannot fail, nothing it reports afterwards is worth reading.
+ * DISCRIMINATION. `--self-test` runs the classifier against synthetic layers
+ * (list on top / chrome on top / neither / dead point) AND reads a committed
+ * file from this repo — `components/MiniMap.jsx` — to assert the shape those
+ * synthetic cases are modelled on is still the shape the repo actually has.
+ * Synthetic fixtures only prove the probe works on shapes you invented
+ * (MEH-1909); the corpus-anchored case is what catches the repo moving. It
+ * exits 1 if the classifier cannot tell a covered list from a clear one. Run it
+ * FIRST: if the instrument cannot fail, nothing it reports afterwards is worth
+ * reading.
  *
  * Usage:
  *   node e2e/qa-meh2108-citysearch-occlusion.mjs --self-test
- *   node e2e/qa-meh2108-citysearch-occlusion.mjs [--surface=register|map|modal|absence] [--label=before]
+ *   node e2e/qa-meh2108-citysearch-occlusion.mjs [--surface=register|map|absence] [--label=before] [--force-z=1000]
  *
  * Needs `next start` on :3000.
  */
@@ -61,7 +65,13 @@ import fs from "node:fs";
 
 const BASE = "http://127.0.0.1:3000";
 const OUT = "qa-artifacts/MEH-2108";
+// Grid dimensions are DERIVED from SAMPLES so the constant actually controls the
+// sample count. Previously SAMPLES was 15 and the grid was a hardcoded 3x5, so
+// `slice(0, SAMPLES)` could never remove anything — a cap that read as a control
+// while being entailed by its own surroundings. (CI reviewer, PR #2990.)
 const SAMPLES = 15;
+const GRID_COLS = 5;
+const GRID_ROWS = Math.ceil(SAMPLES / GRID_COLS);
 
 // Enough matches to fill the list to its max-height (max-h-72 = 288px). A short
 // stub sizes the list to the stub and understates the band — the #2102 harness
@@ -95,6 +105,22 @@ const classify = (stack) => {
   if (top.inList) return "list";
   if (top.isChrome) return "chrome";
   return "other";
+};
+
+/**
+ * The DOM-side helpers below all used `document.querySelector(sel)` — the first
+ * match in DOM order — while `measure()` resolves the list with `firstVisible()`,
+ * the first RENDERED match. Where a selector matches more than once those are
+ * different elements, and the band would then be computed from one while
+ * occlusion was classified against another. Unique selectors hide it today.
+ *
+ * `markList` stamps the resolved element with a unique attribute and every
+ * helper selects by that attribute, so there is exactly one subject per run.
+ */
+const LIST_MARK = "data-qa-meh2108-list";
+const markList = async (page, listLocator) => {
+  await listLocator.evaluate((el, attr) => el.setAttribute(attr, "1"), LIST_MARK);
+  return `[${LIST_MARK}]`;
 };
 
 /** Read the element stack at a viewport point, tagged for the classifier. */
@@ -201,12 +227,20 @@ const findContestedOccluders = (page, listSelector) =>
       const ir = Math.min(lb.right, b.right);
       const ib = Math.min(lb.bottom, b.bottom);
       if (ir <= ix || ib <= iy) continue;
+      el.setAttribute("data-qa-occluder", String(out.length));
       out.push({
         z,
+        id: String(out.length),
         desc: `${el.tagName.toLowerCase()}.${String(el.className || "").slice(0, 48)}`,
         cx: (ix + ir) / 2,
         cy: (iy + ib) / 2,
-        inViewport: iy >= 0 && ib <= window.innerHeight && ix >= 0 && ir <= window.innerWidth,
+        // Only the CENTRE is hit-tested, so only the centre must be on-screen.
+        // Requiring the whole intersection dropped partly-below-fold occluders
+        // out of `lost` while leaving them in the denominator — a quiet nudge
+        // toward the reassuring answer.
+        inViewport:
+          (iy + ib) / 2 >= 0 && (iy + ib) / 2 <= window.innerHeight &&
+          (ix + ir) / 2 >= 0 && (ix + ir) / 2 <= window.innerWidth,
       });
     }
     return out;
@@ -272,17 +306,30 @@ const measure = async (page, listSelector, mapSelector, tag) => {
   for (const o of await findContestedOccluders(page, listSelector)) {
     if (!o.inViewport) { out.occluders.push({ ...o, winner: "off-screen" }); continue; }
     const stack = await stackAt(page, o.cx, o.cy, listSelector);
-    out.occluders.push({ ...o, winner: classify(stack), top: stack[0] || null });
+    let winner = classify(stack);
+    // "not the list" is NOT the same as "this occluder". A third element over
+    // the same point — the cookie banner (1100) or the header (1050), both
+    // on-screen at 375 — would otherwise be scored as this occluder winning,
+    // inflating `lost` with something the ledger band does not even contain.
+    if (winner !== "list") {
+      const isThisOne = await page.evaluate(
+        ([x, y, id]) =>
+          document.elementsFromPoint(x, y).some((e) => e.closest?.(`[data-qa-occluder="${id}"]`)),
+        [o.cx, o.cy, o.id]
+      );
+      if (!isThisOne) winner = "third-party";
+    }
+    out.occluders.push({ ...o, winner, top: stack[0] || null });
   }
-  out.lost = out.occluders.filter((o) => o.winner !== "list" && o.winner !== "off-screen").length;
+  out.lost = out.occluders.filter((o) => o.winner !== "list" && o.winner !== "off-screen" && o.winner !== "third-party").length;
 
   // Sample across the intersection band — a horizontal sweep at three heights,
   // so a control anchored at one corner cannot dominate the count.
   const pts = [];
-  for (let row = 0; row < 3; row += 1) {
-    const y = band.y + (band.height * (row + 0.5)) / 3;
-    for (let col = 0; col < 5; col += 1) {
-      pts.push([band.x + (band.width * (col + 0.5)) / 5, y]);
+  for (let row = 0; row < GRID_ROWS; row += 1) {
+    const y = band.y + (band.height * (row + 0.5)) / GRID_ROWS;
+    for (let col = 0; col < GRID_COLS; col += 1) {
+      pts.push([band.x + (band.width * (col + 0.5)) / GRID_COLS, y]);
     }
   }
   for (const [x, y] of pts.slice(0, SAMPLES)) {
@@ -317,7 +364,7 @@ const report = (m) => {
   console.log(`  contested band [1000..1009] overlapping the list: ${m.occluders.length} element(s)`);
   for (const o of m.occluders) {
     console.log(`      z=${o.z} ${o.desc}`);
-    console.log(`         at (${Math.round(o.cx)},${Math.round(o.cy)}) -> ${o.winner === "list" ? "LIST ON TOP" : o.winner.toUpperCase()}`);
+    console.log(`         at (${Math.round(o.cx)},${Math.round(o.cy)}) -> ${o.winner === "list" ? "LIST ON TOP" : o.winner === "third-party" ? "THIRD-PARTY on top (not this occluder — not counted)" : o.winner.toUpperCase()}`);
   }
   console.log(`  >>> OCCLUDING THE LIST: ${m.lost} / ${m.occluders.length}`);
   console.log(`  --- secondary grid sweep (aliasing-prone, kept for continuity) ---`);
@@ -343,16 +390,42 @@ const selfTest = () => {
     // Anchored to a real shape from this repo: the MiniMap fullscreen button is
     // OUTSIDE .leaflet-container, so a classifier keyed only on Leaflet internals
     // files it as "other" and undercounts. This case pins that it reads as chrome.
-    { name: "MiniMap fullscreen (real repo shape)", stack: [{ inList: false, isChrome: true, testid: "minimap-fullscreen" }], want: "chrome" },
+    { name: "MiniMap fullscreen (shape)", stack: [{ inList: false, isChrome: true, testid: "minimap-fullscreen" }], want: "chrome" },
   ];
   let failed = 0;
+  let ran = 0;
+
+  // CORPUS-ANCHORED CASE (MEH-1909). The synthetic cases above only prove the
+  // classifier sorts shapes I invented. This one reads a committed file and
+  // asserts the repo still HAS the shape they model: the MiniMap control sits in
+  // the contested band and carries no testid, which is exactly why membership is
+  // decided by computed z-index rather than by selector. If someone gives it a
+  // testid or moves it off 1000, this case fails and the reasoning above is stale.
+  try {
+    const mini = fs.readFileSync("components/MiniMap.jsx", "utf8");
+    const inBand = /MAP_BUTTON_STYLE[\s\S]{0,200}?z-\[1000\]/.test(mini);
+    const noTestId = !/MAP_BUTTON_STYLE[\s\S]{0,200}?data-testid/.test(mini);
+    const ok = inBand && noTestId;
+    ran += 1;
+    if (!ok) failed += 1;
+    console.log(`  ${ok ? "PASS" : "FAIL"}  MiniMap control is still z-[1000] and still has no testid (components/MiniMap.jsx)`);
+    console.log(`        in-band=${inBand} no-testid=${noTestId}`);
+  } catch (e) {
+    ran += 1;
+    failed += 1;
+    console.log(`  FAIL  could not read components/MiniMap.jsx — run from frontend/ (${e.code || e.message})`);
+  }
   for (const c of cases) {
     const got = classify(c.stack);
     const ok = got === c.want;
+    ran += 1;
     if (!ok) failed += 1;
     console.log(`  ${ok ? "PASS" : "FAIL"}  ${c.name}: want=${c.want} got=${got}`);
   }
-  console.log(`\n${cases.length} cases, ${failed} failed`);
+  // Derived from what actually ran. `cases.length` was wrong the moment the
+  // corpus-anchored check was added above — it reported 5 while 6 checks ran,
+  // which is the stated-vs-derived count defect this harness exists to avoid.
+  console.log(`\n${ran} checks, ${failed} failed`);
   if (failed) {
     console.error("SELF-TEST FAILED — classifier cannot discriminate; every number it reports is void.");
     process.exit(1);
@@ -366,6 +439,14 @@ if (process.argv.includes("--self-test")) selfTest();
 // ───────────────────────────────── surfaces ──────────────────────────────────
 const arg = (k, d) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || `--${k}=${d}`).split("=")[1];
 const SURFACE = arg("surface", "register");
+const KNOWN_SURFACES = ["register", "map", "absence"];
+if (!KNOWN_SURFACES.includes(SURFACE)) {
+  // Without this, a typo'd surface runs nothing, measures nothing, and still
+  // prints "=== RUN VALID ===" with exit 0 — a null wearing the reassuring
+  // answer, which is the exact failure this whole harness exists to prevent.
+  console.error(`unknown --surface=${SURFACE}. Known: ${KNOWN_SURFACES.join(" | ")}`);
+  process.exit(2);
+}
 const FORCE_Z = arg("force-z", "");
 const LABEL = arg("label", "run");
 
@@ -430,11 +511,21 @@ const clickIfPresent = async (page, id) => {
 
 const run = async () => {
   fs.mkdirSync(OUT, { recursive: true });
+  // The CC sandbox pins a Chromium build that Playwright's own resolver does not
+  // find; every other machine has the opposite problem. Hard-coding the sandbox
+  // path made this file crash for everyone else — which directly contradicted the
+  // reason it exists, that these numbers can be re-run and falsified by anyone.
+  // Prefer an explicit override, then the sandbox build IF PRESENT, else let
+  // Playwright resolve its own. (CI reviewer, PR #2990.)
+  const SANDBOX_CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+  const executablePath =
+    process.env.CHROMIUM_PATH || (fs.existsSync(SANDBOX_CHROME) ? SANDBOX_CHROME : undefined);
   const browser = await chromium.launch({
-    executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    ...(executablePath ? { executablePath } : {}),
     args: ["--ssl-version-max=tls1.2"],
   });
   let allOk = true;
+  let measured = 0;
 
   const doRegister = async (w, h) => {
     const page = await newPage(browser, w, h);
@@ -455,6 +546,7 @@ const run = async () => {
     await page.waitForTimeout(400);
     await assertForcedZ(page, "[data-testid=register-details-city] ul[role=listbox]");
     const m = await measure(page, "[data-testid=register-details-city] ul[role=listbox]", ".leaflet-container", `register @ ${w}x${h} [${LABEL}]`);
+    measured += 1;
     allOk = report(m) && allOk;
     await page.screenshot({ path: `${OUT}/${LABEL}-register-${w}.png` });
     await page.close();
@@ -473,6 +565,7 @@ const run = async () => {
     const listSel = `ul#map-city-search-${which}-listbox`;
     await assertForcedZ(page, listSel);
     const m = await measure(page, listSel, ".leaflet-container", `map ${which} @ ${w}x${h} [${LABEL}]`);
+    measured += 1;
     allOk = report(m) && allOk;
     // The stacking-context question this surface actually turns on.
     const ctx = await page.evaluate((s) => {
@@ -535,6 +628,7 @@ const run = async () => {
       const st = o.inViewport ? classify(await stackAt(page, o.cx, o.cy, listSel)) : "off-screen";
       console.log(`      z=${o.z} ${o.desc} -> ${st === "list" ? "LIST ON TOP" : st.toUpperCase()}`);
     }
+    measured += 1;
     if (!occ.length) console.log("  => nothing in the contested band overlaps the list: change is INERT on this route");
     await page.close();
   };
@@ -548,7 +642,11 @@ const run = async () => {
   }
 
   await browser.close();
-  console.log(`\n=== RUN ${allOk ? "VALID" : "VOID (a control failed)"} ===`);
+  if (measured === 0) {
+    console.error("\n=== RUN VOID — zero surfaces measured. Exit 0 here would be a null reporting as a pass. ===");
+    process.exit(3);
+  }
+  console.log(`\n=== RUN ${allOk ? "VALID" : "VOID (a control failed)"} === (${measured} surface measurement(s))`);
   process.exit(allOk ? 0 : 1);
 };
 
