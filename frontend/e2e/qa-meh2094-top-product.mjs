@@ -15,9 +15,12 @@
 // failure mode this file exists to avoid.
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
+import path from "node:path";
 
-const BASE = "http://localhost:3000";
-const OUT = "/home/user/FoodMamkor/qa-artifacts/MEH-2094";
+const BASE = process.env.QA_BASE_URL || "http://localhost:3000";
+// Resolved from the repo, not hardcoded to one checkout — this is run from
+// `frontend/`, so the artifacts dir is one level up.
+const OUT = path.resolve(process.cwd(), "..", "qa-artifacts", "MEH-2094");
 mkdirSync(OUT, { recursive: true });
 
 const USER = { id: 7, email: "owner@example.com", role: "producer", full_name: "בעלת עסק" };

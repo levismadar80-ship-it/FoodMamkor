@@ -172,11 +172,9 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
     expect(markBtn("חלה")).toBeInTheDocument();
   });
 
-  // Raised by the CI reviewer on PR #2971: the guard that hides the star when no
-  // handler is supplied did not also hide the copy that describes it, so a mount
-  // without the handler advertised a control that did not exist. The copy and the
-  // control must appear and disappear together — asserted in BOTH directions so
-  // hiding one without the other re-reds this.
+  // The hint and the star share one render condition: copy that describes a
+  // control must not outlive the control. Asserted in BOTH directions, so
+  // hiding either one without the other re-reds this.
   it("copy and control appear together, and vanish together", async () => {
     const { unmount } = renderSection();
     await screen.findByText("לחם מחמצת");
