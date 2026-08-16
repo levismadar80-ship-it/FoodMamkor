@@ -853,7 +853,16 @@ function EditPageInner() {
           {/* MEH-1306: back-link to the public products section — lives in the
               expanded body (the header is a <button>; no nested interactives). */}
           <ViewOnPageLink producerId={profile.id} anchor="section-products" />
-          <ProductsSection embedded onCountChange={setProductsCount} />
+          {/* MEH-2094: the top-product choice lives in the product row now.
+              Same onSave patch shape every other card here uses, so the
+              pricing completeness check (:627) and the accordion summary
+              (:866) see the new value on the same tick. */}
+          <ProductsSection
+            embedded
+            onCountChange={setProductsCount}
+            topProductName={profile.top_product_name}
+            onTopProductChange={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          />
         </EditAccordionCard>
 
         {/* MEH-1242 PR3 — price range + top product editor. MEH-1408: moved into

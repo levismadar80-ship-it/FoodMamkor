@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -14,6 +15,11 @@ export default function EditProducerPage() {
   const { id } = useParams();
   const [producer, setProducer] = useState(null);
   const [fetching, setFetching] = useState(true);
+  // MEH-2096: a catch that nulled the producer fell through to the "not found"
+  // branch, so a failed request told the admin the business does not exist.
+  // A 404 and an unreachable API are different facts and now render differently.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const t = useTranslations("admin");
 
   useEffect(() => {
@@ -22,17 +28,35 @@ export default function EditProducerPage() {
 
   useEffect(() => {
     if (!user || user.role !== "admin") return;
+    setFetching(true);
+    setLoadError(false);
     api
       .get(`/producers/${id}`)
-      .then((r) => setProducer(r.data))
-      .catch(() => setProducer(null))
+      .then((r) => { setProducer(r.data); setLoadError(false); })
+      .catch((err) => {
+        // A real 404 keeps the existing "not found" copy; anything else — network
+        // down, 500, timeout — is a load failure the admin can retry.
+        if (err?.response?.status === 404) setProducer(null);
+        else setLoadError(true);
+      })
       .finally(() => setFetching(false));
-  }, [id, user]);
+  }, [id, user, reloadKey]);
 
   if (loading || !user || fetching) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-muted">
         {t("common.loading")}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <AdminLoadError
+          onRetry={() => setReloadKey((k) => k + 1)}
+          testId="admin-producer-edit-load-error"
+        />
       </div>
     );
   }

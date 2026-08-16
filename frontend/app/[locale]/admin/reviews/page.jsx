@@ -7,6 +7,7 @@ import { Star, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -94,6 +95,9 @@ export default function AdminReviewsPage() {
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
   const [confirmDelete, setConfirmDelete] = useState(null);
+  // MEH-2096: setReviews([]) on failure rendered the same "no reviews" row as a
+  // genuinely empty moderation queue.
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     load();
@@ -101,10 +105,11 @@ export default function AdminReviewsPage() {
 
   const load = () => {
     setLoading(true);
+    setLoadError(false);
     api
       .get("/admin/reviews")
-      .then((r) => setReviews(r.data))
-      .catch(() => setReviews([]))
+      .then((r) => { setReviews(r.data); setLoadError(false); })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   };
 
@@ -217,7 +222,14 @@ export default function AdminReviewsPage() {
                   </td>
                 </tr>
               )}
-              {!loading && filtered.length === 0 && (
+              {!loading && loadError && (
+                <tr>
+                  <td colSpan={6} className="py-6">
+                    <AdminLoadError onRetry={load} testId="admin-reviews-load-error" />
+                  </td>
+                </tr>
+              )}
+              {!loading && !loadError && filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-muted">
                     {t("reviews.empty")}
