@@ -138,7 +138,7 @@ mechanically true rather than aspirational.
 | `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
 | `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
 | `z-[1050]` | 2 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context** |
-| `z-[1010]` | 1 | `components/AddressSearch.jsx:266` | address suggestion list. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. MEH-2093 chunk A |
+| `z-[1010]` | 2 | `components/AddressSearch.jsx:266` · `components/CitiesAutocomplete.jsx:273` | inline combobox suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. AddressSearch: MEH-2093 chunk A, fixing an observed clipping. CitiesAutocomplete: MEH-2102, **defensive alignment only** — measured 16/08, no current consumer places a map where that list can reach it |
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
 | `z-[1000]` | 14 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls |
