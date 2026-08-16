@@ -28,6 +28,7 @@ import pytest
 
 from app.models.models import (
     Category,
+    DeliveryArea,
     Producer,
     ProducerCategory,
     Product,
@@ -140,6 +141,79 @@ def test_every_requirement_code_is_reachable(db):
         assert code in submission_missing_items(producer), (
             f"degrading {code} must make the gate report {code}"
         )
+
+
+def test_delivery_only_producer_satisfies_the_location_requirement(db):
+    """A delivery-only business has NO lat/lng by design (MEH-213), and must
+    still clear the location requirement via its delivery declaration.
+
+    THE GAP THIS CLOSES (CI reviewer, #2979): every other MISSING_LOCATION
+    case in this file provokes the finding by clearing lat/lng, which only
+    ever exercises `_has_location`'s PHYSICAL branch. The delivery-only branch
+    — the one that reads delivery_nationwide / delivery_areas — had no test at
+    all. A bug in it would not have shown up as a failure here; it would have
+    shown up as every delivery-only business in the country getting a 422 at
+    submit with no indication why.
+
+    Asserted in three shapes because they are three different code paths:
+    a named delivery city, the nationwide flag, and neither (which must still
+    report MISSING_LOCATION, or the test proves nothing about the branch).
+    """
+    # (a) delivery-only with a named city row
+    producer, _user = _complete_draft(db)
+    producer.has_physical_location = False
+    producer.offers_delivery = True
+    producer.lat = None
+    producer.lng = None
+    db.add(DeliveryArea(producer_id=producer.id, city="חיפה"))
+    db.flush()
+    db.refresh(producer)
+    assert MISSING_LOCATION not in submission_missing_items(producer), (
+        "a delivery-only business with a delivery city HAS stated where it "
+        "operates — demanding coordinates from it makes submission unreachable"
+    )
+
+    # (b) delivery-only, nationwide, no city rows
+    nationwide, _ = _complete_draft(db)
+    nationwide.has_physical_location = False
+    nationwide.offers_delivery = True
+    nationwide.delivery_nationwide = True
+    nationwide.lat = None
+    nationwide.lng = None
+    db.flush()
+    db.refresh(nationwide)
+    assert MISSING_LOCATION not in submission_missing_items(nationwide)
+
+    # (c) delivery-only with NEITHER — the branch must still be able to fail,
+    # otherwise (a) and (b) would pass against a branch that returns True
+    # unconditionally.
+    neither, _ = _complete_draft(db)
+    neither.has_physical_location = False
+    neither.offers_delivery = True
+    neither.lat = None
+    neither.lng = None
+    db.flush()
+    db.refresh(neither)
+    assert MISSING_LOCATION in submission_missing_items(neither), (
+        "delivery-only with no nationwide flag and no city rows has told us "
+        "nothing about where it delivers"
+    )
+
+
+def test_delivery_only_producer_can_submit(client, db):
+    """End-to-end companion to the unit case above: the 422 must not fire."""
+    producer, user = _complete_draft(db)
+    producer.has_physical_location = False
+    producer.offers_delivery = True
+    producer.lat = None
+    producer.lng = None
+    db.add(DeliveryArea(producer_id=producer.id, city="חיפה"))
+    db.commit()
+
+    resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "pending"
 
 
 # --- 1. all three creation sites land on draft --------------------------------
