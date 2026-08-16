@@ -179,7 +179,25 @@ describe("DraftSubmitBanner — submitting", () => {
     fireEvent.click(screen.getByTestId("draft-submit-cta"));
     fireEvent.click(screen.getByTestId("draft-submit-confirm-no"));
     expect(post).not.toHaveBeenCalled();
-    expect(screen.getByTestId("draft-submit-cta")).toBeTruthy();
+    // Presence alone would pass on a CTA left stuck disabled after cancel —
+    // the state the owner would then be unable to escape. Assert enablement.
+    expect(screen.getByTestId("draft-submit-cta")).not.toBeDisabled();
+  });
+
+  it("confirm-yes is disabled when the profile stops being ready mid-confirm", () => {
+    // The void-click: handleSubmit early-returns on !ready, so a confirm
+    // button gated only on `submitting` would swallow the click with no
+    // request and no toast. Rendering the confirm step against a
+    // now-incomplete producer is the deterministic stand-in for the refetch
+    // that causes it in the wild.
+    const { rerender } = render(<DraftSubmitBanner producer={READY} />);
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    expect(screen.getByTestId("draft-submit-confirm-yes")).not.toBeDisabled();
+
+    rerender(<DraftSubmitBanner producer={{ ...READY, images: [] }} />);
+    expect(screen.getByTestId("draft-submit-confirm-yes")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("draft-submit-confirm-yes"));
+    expect(post).not.toHaveBeenCalled();
   });
 
   it("a 422 renders the SERVER's missing list, not the client's guess", async () => {

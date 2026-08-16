@@ -153,7 +153,14 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting}
+              // `!ready` matters as well as `submitting`: the profile can be
+              // refetched between opening this confirm and clicking it (a
+              // phone verification completing, an image being removed in
+              // another tab), and handleSubmit early-returns on !ready. Without
+              // it the owner clicks "yes, send it" into a void — no request, no
+              // toast, no explanation. The list above already says what is
+              // missing, so a disabled button points at the reason.
+              disabled={submitting || !ready}
               data-testid="draft-submit-confirm-yes"
               className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50"
             >
