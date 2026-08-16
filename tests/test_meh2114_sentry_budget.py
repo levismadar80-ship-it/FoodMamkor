@@ -289,6 +289,36 @@ def test_the_pair_collapses_to_exactly_one_report():
     assert reported[0] is exception_twin
 
 
+def test_unrelated_error_from_the_email_logger_is_kept():
+    """The drop is bound to the message it was written for, not to the module.
+
+    Matching on logger name alone would silently swallow any FUTURE
+    non-exception ERROR added to app.services.email — including one with no
+    paired capture_exception, which would then reach Sentry never. Raised by
+    the adversarial reviewer on PR #2994.
+    """
+    future = _log_event(message="[EMAIL] quota exceeded for provider %s")
+    assert _drop_reason(future) is None
+    assert before_send(future) is future
+    assert error_sampler(future) == 1.0
+
+
+def test_throttled_no_api_key_log_is_still_dropped():
+    """email.py:146 — the throttled branch of the _missing_key_reported latch.
+
+    Dropping it is correct and is the latch's own stated intent: Sentry was
+    already notified once per process by email.py:126. Before this filter,
+    LoggingIntegration captured this branch too, so the latch was emitting an
+    event per send — the opposite of what its comment claims.
+    """
+    throttled = _log_event(
+        message="[EMAIL] NOT SENT (no-api-key) to %s — subject=%r "
+        "(Sentry already notified once this process)"
+    )
+    assert _drop_reason(throttled) == "duplicate-log-twin"
+    assert before_send(throttled) is None
+
+
 def test_log_events_from_other_loggers_are_untouched():
     """The drop is keyed on ONE logger, not on log events in general."""
     other = _log_event(logger_name="app.routers.auth", message="something else")

@@ -68,9 +68,17 @@ NOISY_SAMPLE_RATE = 0.05
 #: 512 fingerprints * (40-char key + small tuple) stays well under 100 KB.
 MAX_TRACKED_FINGERPRINTS = 512
 
-#: Loggers whose stdlib-`logging` records are a DUPLICATE of an explicit
-#: capture_exception made at the same swallow point. See _drop_reason.
-_DUPLICATE_LOGGERS = frozenset({"app.services.email"})
+#: logger name -> required message prefix, for stdlib-`logging` records that
+#: duplicate an explicit capture_exception made at the same swallow point.
+#:
+#: Keyed on BOTH the logger and the message prefix, deliberately. Matching on
+#: the logger name alone would suppress every future non-exception ERROR added
+#: to that module — including one with no paired capture_exception, which would
+#: then be lost from Sentry entirely with nothing to indicate it. Binding the
+#: rule to the message it was written for keeps the blast radius equal to the
+#: documented case. Behaviour today is unchanged: both `logger.error` calls in
+#: email.py (`:104` and `:146`) carry this prefix.
+_DUPLICATE_LOG_PREFIXES = {"app.services.email": "[EMAIL] NOT SENT"}
 
 _burst_lock = threading.Lock()
 # fingerprint -> [window_start, count, noisy_until]
@@ -113,6 +121,15 @@ def _drop_reason(event: dict) -> str | None:
        The ERROR log line itself is untouched and still reaches Railway
        stdout; only its Sentry copy goes away.
 
+       This also closes a PRE-EXISTING leak in the same module. email.py's
+       ``_missing_key_reported`` latch (``email.py:44``) exists so a missing
+       RESEND_API_KEY reports to Sentry ONCE per process instead of once per
+       email — but the throttled branch still calls ``logger.error``
+       (``email.py:146``), which LoggingIntegration captured, so the latch was
+       emitting a Sentry event per send anyway. That branch's message carries
+       the same prefix, so it is covered here and the latch now does what its
+       own comment says it does.
+
     2. ``seed-data-integrity`` — the seed script's FK violation
        (``seed_data in seed``, 204 events) arrives via
        ``startup.py:171``'s ``capture_background_exception(task="db_init")``.
@@ -122,8 +139,12 @@ def _drop_reason(event: dict) -> str | None:
     """
     values = _exception_values(event)
 
-    if event.get("logger") in _DUPLICATE_LOGGERS and not values:
-        return "duplicate-log-twin"
+    prefix = _DUPLICATE_LOG_PREFIXES.get(event.get("logger"))
+    if prefix is not None and not values:
+        logentry = event.get("logentry") or {}
+        message = str(logentry.get("message") or event.get("message") or "")
+        if message.startswith(prefix):
+            return "duplicate-log-twin"
 
     for value in values:
         if not str(value.get("type") or "").endswith("IntegrityError"):
@@ -244,6 +265,12 @@ def _is_noisy(fingerprint: str, now: float | None = None) -> bool:
     per-fingerprint ceiling is still BURST_LIMIT per window, and the sampler
     can only ever reduce volume further — never raise it.
     """
+    # Lock-free read, DELIBERATELY — not an oversight. Under CPython the GIL
+    # makes `dict.get` and a list index read atomic, the bucket list is only
+    # ever mutated in place (never resized), and a bucket evicted concurrently
+    # stays alive through this local reference. The worst outcome is reading a
+    # value one event stale, which shifts a SAMPLE RATE and can never affect
+    # the hard budget — all of that lives in _burst_allow, under the lock.
     now = time.monotonic() if now is None else now
     bucket = _burst_state.get(fingerprint)
     return bucket is not None and now < bucket[2]
