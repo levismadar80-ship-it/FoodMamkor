@@ -309,7 +309,7 @@
           "license_optional_label": "מספר רישיון יצרן",
           "referral_source": {
             "label": "מאיפה שמעת עלינו?",
-            "placeholder": "בחר אפשרות",
+            "placeholder": "בחרי אפשרות",
             "other_placeholder": "ספרי לנו איפה",
             "options": {
               "business_referral": "המלצה מבית עסק אחר",
