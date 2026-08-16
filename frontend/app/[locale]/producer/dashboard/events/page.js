@@ -8,9 +8,8 @@
  * Create is reachable from the header CTA.
  */
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { CalendarPlus, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -18,6 +17,11 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import { detailToMessage } from "@/lib/errors";
+// MEH-999: the empty list was a bare <p> — now the shared EmptyState, same as
+// the recipes manage list (recipes/page.js:25).
+import EmptyState from "@/components/ui/EmptyState";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
@@ -72,23 +76,39 @@ export default function ManageEventsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between gap-3 mb-6">
+      {/* MEH-999: the list pages had NO back link at all — entered from the
+          Tools tab (tools/page.js:72), so back goes to Tools. */}
+      <BackLink href="/producer/dashboard/tools" label={t("back_to_tools")} />
+      {/* MEH-1655: min-h pins the row at CTA height so the h1 doesn't grow
+          when the button unmounts. */}
+      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-[44px]">
         <h1 className="font-headline-lg text-3xl font-bold text-text">{t("heading")}</h1>
-        <Link
-          href="/producer/dashboard/events/new"
-          className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
-        >
-          <CalendarPlus size={18} weight="bold" aria-hidden="true" />
-          {t("create_cta")}
-        </Link>
+        {/* MEH-999: single-CTA pattern (MEH-1097 F14 / MEH-1420) — the header
+            CTA hides while the list is empty so the EmptyState's own CTA is the
+            only "create" button. MEH-1655: also hidden while loading
+            (items === null) — it used to render then jump to the EmptyState
+            CTA on an empty result. */}
+        {Array.isArray(items) && items.length > 0 && (
+          <Link
+            href="/producer/dashboard/events/new"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+          >
+            <CalendarPlus size={18} weight="bold" aria-hidden="true" />
+            {t("create_cta")}
+          </Link>
+        )}
       </div>
 
       {items === null ? (
         <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-6 text-center">
-          {t("empty")}
-        </p>
+        <EmptyState
+          icon={CalendarPlus}
+          title={t("empty_title")}
+          description={t("empty_description")}
+          ctaLabel={t("empty_cta")}
+          ctaHref="/producer/dashboard/events/new"
+        />
       ) : (
         <ul className="space-y-3">
           {items.map((ev) => (

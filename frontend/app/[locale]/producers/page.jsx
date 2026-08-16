@@ -6,6 +6,7 @@ import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
+import { RATING_SORT_THRESHOLD, isRatingSortEnabled } from "@/lib/rating-gate";
 
 /**
  * Public paginated index (MEH-23). Server-rendered so crawlers can
@@ -19,12 +20,22 @@ import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
 
 const PER_PAGE = 24;
 
+// MEH-1876: the second of two stacked cache layers. This number is NOT
+// independent — it composes with the backend's `_PUBLIC_CATALOG_CACHE`
+// (backend/app/routers/producers.py:88) as
+//     revalidate + s-maxage + stale-while-revalidate = worst-case staleness
+// because each refetch may be served a response the edge already held. At
+// 30/30/30 that is 90s, the bound MEH-1876 was opened to restore; the old
+// 60 + 60 + 300 measured ~6 minutes on staging, during which a removed offer
+// stayed publicly visible. Changing either side alone re-opens the gap.
+const CATALOG_REVALIDATE_SECONDS = 30;
+
 async function fetchPage(page) {
   const offset = (page - 1) * PER_PAGE;
   try {
     const res = await fetch(
       `${API_URL}/producers?limit=${PER_PAGE}&offset=${offset}`,
-      { next: { revalidate: 60 } },
+      { next: { revalidate: CATALOG_REVALIDATE_SECONDS } },
     );
     if (!res.ok) return { items: [], total: 0 };
     const total = Number(res.headers.get("x-total-count") || 0);
@@ -32,6 +43,33 @@ async function fetchPage(page) {
     return { items: Array.isArray(items) ? items : [], total };
   } catch {
     return { items: [], total: 0 };
+  }
+}
+
+/**
+ * MEH-1864: is a sort-by-rating control worth offering at all?
+ *
+ * One extra SSR request against the SAME endpoint, cached for
+ * CATALOG_REVALIDATE_SECONDS alongside the page fetch (MEH-1876 moved this off
+ * a hardcoded 60) — no new backend surface, no client-side cost. `?sort=rating`
+ * orders reviewed businesses strictly above unreviewed ones, so counting the
+ * reviewed rows inside a RATING_SORT_THRESHOLD-sized window answers
+ * "are there >= threshold reviewed businesses?" exactly (see lib/rating-gate.js).
+ *
+ * Fail-closed: any network/parse error hides the rating sort rather than
+ * offering an ordering we could not verify has data behind it.
+ */
+async function fetchRatingSortEnabled() {
+  try {
+    const res = await fetch(
+      `${API_URL}/producers?sort=rating&limit=${RATING_SORT_THRESHOLD}&offset=0`,
+      { next: { revalidate: CATALOG_REVALIDATE_SECONDS } },
+    );
+    if (!res.ok) return false;
+    const items = await res.json();
+    return isRatingSortEnabled(items);
+  } catch {
+    return false;
   }
 }
 
@@ -103,7 +141,10 @@ export async function generateMetadata(props) {
 export default async function ProducersIndexPage(props) {
   const searchParams = await props.searchParams;
   const requestedPage = Math.max(1, Math.floor(Number(searchParams?.page) || 1));
-  const { items, total } = await fetchPage(requestedPage);
+  const [{ items, total }, ratingSortEnabled] = await Promise.all([
+    fetchPage(requestedPage),
+    fetchRatingSortEnabled(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const page = clampPage(requestedPage, totalPages);
 
@@ -116,6 +157,7 @@ export default async function ProducersIndexPage(props) {
           initialPage={page}
           totalPages={totalPages}
           perPage={PER_PAGE}
+          ratingSortEnabled={ratingSortEnabled}
         />
       </Suspense>
     </div>

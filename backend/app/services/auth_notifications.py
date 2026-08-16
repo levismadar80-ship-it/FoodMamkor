@@ -356,6 +356,76 @@ def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> 
         logger.error(f"[NOTIFY] Admin review-ready email FAILED for '{safe_name}': {e}")
 
 
+# MEH-2073: Hebrew labels for the sensitive fields, so the admin message names
+# what changed in her language rather than leaking a column name. Lives beside
+# the sender because it is message copy, not domain state — the SENSITIVE_FIELDS
+# set that decides WHEN to ping lives in producer_me.py with the write path.
+SENSITIVE_FIELD_LABELS: dict[str, str] = {
+    "city": "עיר",
+    "phone": "טלפון",
+    "vegan_scope": "הצהרת טבעונות",
+    "vegetarian_scope": "הצהרת צמחונות",
+    "gluten_free_facility": "הצהרת ללא גלוטן",
+}
+
+
+def notify_admin_producer_sensitive_edit(
+    producer_name: str, changed_fields: list[str]
+) -> None:
+    """Ping admin (WhatsApp + email) that an APPROVED producer edited a field
+    that carries identity or trust.
+
+    MEH-2073 — notification only. The manual-approval promise is made once, at
+    approval; every field in SENSITIVE_FIELDS goes live immediately afterwards
+    with no signal, so an owner could pass the MEH-1508 dietary cross-check and
+    change `vegan_scope` the next day. This closes the observability gap
+    WITHOUT touching the save: no status flip, no re-moderation, no schema.
+
+    REUSES: notify_admin_producer_resubmit above 1:1 — same free-text send_text
+    to settings.admin_whatsapp_to + email to settings.admin_email, per-channel
+    try blocks (a WhatsApp raise must not skip the email), fire-and-forget as a
+    BackgroundTask. Fail-open per MEH-1051/977: a Meta/Resend outage is logged,
+    never surfaced to the owner who already got her 200.
+
+    An unknown key degrades to the raw key rather than being dropped — a field
+    added to SENSITIVE_FIELDS without a label here should read oddly in the
+    admin message, not vanish from it.
+    """
+    safe_name = _sanitize_wa_param(producer_name)
+    fields = ", ".join(
+        SENSITIVE_FIELD_LABELS.get(field, field) for field in changed_fields
+    )
+    message = f"🔎 עסק מאושר עדכן פרטים רגישים: {safe_name} — {fields}"
+
+    try:
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Sensitive-edit notification sent to admin")
+            else:
+                logger.warning(
+                    "[WHATSAPP] Sensitive-edit notification NOT delivered for "
+                    f"'{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin sensitive-edit WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - {safe_name} עדכן פרטים רגישים",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin sensitive-edit email FAILED for '{safe_name}': {e}"
+        )
+
+
 def notify_admin_new_category_request(
     requested_name: str, producer_name: str | None
 ) -> None:

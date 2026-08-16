@@ -21,7 +21,7 @@ const TIER_CLASSNAME = {
   5: "bg-state-selected/10 text-state-selected border-state-selected/20",
 };
 
-export default function TrustBadge({ tier, compact = false }) {
+export default function TrustBadge({ tier, compact = false, avoidRef = null }) {
   const t = useTranslations("trust");
   // < 4 → nothing (tiers 2/3 verification live in BadgeRow/ADR-022 now).
   if (!tier || tier < 4) return null;
@@ -37,7 +37,15 @@ export default function TrustBadge({ tier, compact = false }) {
     // narrow 2-col mobile card — a centered w-52 bubble was clipped horizontally
     // by the card's overflow-hidden. Recognition-only render (tiers 4/5) is
     // unchanged.
-    <Tooltip content={tooltip} position="bottom-start">
+    // MEH-1593: on the card surface ProducerCard passes the badge strip as
+    // `avoidRef`, which switches the bubble to overlay mode (portal + fixed).
+    // MEH-1459 chose "bottom-start" + a responsive width to stop the bubble
+    // being CLIPPED by the card's overflow-hidden — measured 27/07, that did
+    // stop the clipping but the bubble still landed ON the card title and
+    // rating row (2 intersections at both 375px and 1440px). Overlay clears
+    // the whole strip instead. `position` is kept for the non-overlay callers,
+    // which are unchanged.
+    <Tooltip content={tooltip} position="bottom-start" overlay={Boolean(avoidRef)} avoidRef={avoidRef}>
       <span
         className={[
           "inline-flex items-center rounded-full border font-medium",

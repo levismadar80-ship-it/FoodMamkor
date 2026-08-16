@@ -108,6 +108,7 @@ Forbidden: "It might be X" / "probably caused by Y" without file:line evidence.
 - Repro steps no longer trigger the bug
 - Existing tests still pass: pytest + npm run build
 - Add ONE regression test covering this exact scenario
+- Conditional UI? declare 0/1/many + open/closed states.
 - Mobile manual test of repro flow
 - preview URL sent
 </acceptance_criteria>

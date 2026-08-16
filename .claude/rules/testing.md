@@ -45,6 +45,600 @@ swapped to `GET /auth/me` (a real route, not in `SKIP_REFRESH`)._
 
 ---
 
+## Every new guard test must be shown failing (MEH-1619)
+
+A guard test that has never been observed failing is not evidence — it is a green light
+of unknown wiring. Any new or strengthened assertion (unit, e2e, or QA harness) ships
+with a **demonstrated failing-by-construction run**: break the thing it guards, show it
+goes red, restore, show it goes green. Put the two outcomes in the PR body.
+
+**The construction has to discriminate.** This is the part that is easy to get wrong.
+Showing "I broke it and the suite went red" proves nothing about *your change* if the
+**previous** version of the assertion also went red on that same construction. Before
+citing a failing run as justification, ask: would the old assertion have passed this?
+If you can't answer yes, the run is not evidence for the change.
+
+_MEH-1619, C-1: reintroducing a known-broken CSS form turned the suite red — and the old,
+weaker assertion failed on it too, because by sample time the library had already undone
+the broken state. The construction couldn't tell the two apart. What did: a **self-test**
+feeding the real classifier three synthetic inputs (correct / regression-shaped / neutral)
+and asserting how it sorts them. Deterministic — no animation, no timing — and it isolates
+exactly the changed condition._
+
+**Where the assertion is a classifier, ship the self-test.** Run it **first**: if the
+classifier can't tell a correct state from a broken one, nothing it reports afterwards is
+worth reading. Exercise the **real** implementation, never a copy — a second copy is free
+to drift from the one that matters. Repo precedent: `.claude/scripts/audit-skills.sh
+--self-test`, which CI asserts must exit 1.
+
+**A self-test built only from synthetic fixtures proves the probe works on shapes you
+invented. Anchor at least one case to a real file from this repo (MEH-1909).** Synthetic
+cases are still the right way to cover the *edges* — you cannot always find a repo file
+that is broken in the exact way you need. What they cannot establish is that the probe
+recognises the shape the repo **actually uses**, and that is the assumption that silently
+fails.
+
+_Proven on the release-#2 migration audit. An `ast`-based probe carried four synthetic
+cases with known answers — DROP in `upgrade()`, DROP in `downgrade()`, DROP in a helper
+called from `upgrade()`, a docstring that must not shadow a real assignment — and passed
+all four. Run against the 14 real revisions it reported `revision = None` for **every
+one**. The revisions use **annotated** assignments (`revision: str = "…"` → `ast.AnnAssign`)
+while every synthetic case used the plain `ast.Assign` form. The probe was green against a
+shape that does not occur in this repo, and would have reported an empty chain as a healthy
+one — on a release gate. Adding one case lifted verbatim from a real revision file closed
+it._
+
+**The cheap version of this rule:** after the synthetic cases pass, run the probe over the
+real corpus once and **look at the output**, not just the exit code. A column of `None` is
+not a pass, and it is exactly what an exit code hides. Where practical, assert it — a case
+that reads a committed file and requires a non-empty parse cannot regress the way a
+fixture-only suite can.
+
+Same family as "validate a probe on a case whose answer you already know", one level up:
+here the answer you already know is *what the repo's own files look like*.
+
+**Watch the shape of the pass condition.** An `||` between two cues lets either one carry
+the assertion, so losing the other is undetectable — that is how a probe signs off on a
+broken state. Prefer `&&`, or split into separate named checks so the failure message says
+which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
+
+**An assertion entailed by the lines above it is not a check.** A final-state assertion
+must be **falsifiable by the change under test** — assert the COUNT (exactly N, not N+1),
+never a sum of literals you just wrote. Same class as the presence-only failure below: a
+line that reads like a measurement while being derivable from its own surroundings.
+
+The cheap test, before adding any assertion: **is this entailed by what is already
+asserted, or by its own filter?** If yes, it is decoration that reads as coverage — delete
+it rather than reformulate it, because the reformulation tends to be entailed too.
+
+_Source: 2026-08-11, one session, **three** instances, none caught by their author:_
+
+```
+assert step_0 + 1 == 1        # `step_0 == 0` two lines above   ⇒  1 == 1
+assert step_0 + step_2 == 2   # both asserted above             ⇒  2 == 2
+census test                   # creates a PENDING producer, then counts
+                              # status=="approved" AND slug IS NULL  ⇒  always 0
+```
+
+The second is the instructive one: it was written **to replace the first**, carried a
+comment claiming the correction, and had the identical defect — in a file whose whole
+subject is numeric final-state assertions. The third is the worst: a "census" that never
+called the endpoint it censused, so it passed in a world where the entire fix was deleted,
+while being counted as one of six covering tests. The CI reviewer caught the first two, the
+adversarial reviewer the third.
+
+**Lifting a quarantine is not the fix.** A `count()===0` skip reports green against a
+control that does not exist — proven on MEH-1698, where the old spec skipped past a
+completely missing element with only `test.fixme` lifted.
+
+That last clause is the whole rule, and it is why "un-quarantine it" is the wrong first
+move on any silent spec. The MEH-1698 file carried **two** disablers stacked — a
+`test.fixme` and, under it, `if ((await toggle.count()) === 0) test.skip(...)`. The
+obvious reading is that the quarantine was the problem. It was not: run the spec with the
+`fixme` removed and the skip intact, against a Header from which the control had been
+deleted entirely, and it still reports **skipped — exit 0**. The quarantine was decoration
+on top of a guard that could never have failed.
+
+The defect class is a guard that **consults its own subject**. `count()` on the element
+under test, `length === 0 → skip`, `if (!el) return` — each reads as defensive
+hygiene and each converts "the thing is gone" (the exact condition worth failing on) into
+"nothing to check". Gate on something the product cannot move instead: a static project
+identity (`test.skip(testInfo.project.name !== "desktop")`, as
+`e2e/visual/parity.spec.ts:585` does), an env var, a fixture file's presence.
+_(Citation re-derived 2026-08-03 — this read `:522`, which is now a comment; the
+pattern lives at `:585`, with siblings at `:615` and `:648`.)_
+
+**The review question:** if the element vanished entirely, does this test go red — or
+green? If you cannot answer from reading it, run it against a build with the element
+deleted. That two-run control is the only thing that distinguishes a guard from a
+decoration, and it is cheap.
+
+**A green VRT is not evidence that the frame is unchanged — read the text in it (MEH-1765).**
+`playwright.config.ts:61` sets `maxDiffPixelRatio: 0.02` (citation re-derived
+2026-08-03, MEH-1861 — accurate, unchanged). On the mobile project (Pixel 5,
+393×851, no `fullPage`) that is a **6,688 px** budget; on desktop (1440×900), **25,920 px**.
+Both are large enough to swallow a complete copy change or the loss of a navigation control.
+Measured on 29/07: the `home` hero label went `«מחפשות עכשיו:»` → `«פופולרי עכשיו:»` (~2,800 px
+of ink) and VRT stayed green; the MEH-1390 producer-detail tab bar went from **4 tabs to 2**
+(~3,100 px) and a scoped regen reported *"Baselines unchanged — nothing to commit."*
+
+The second-order effect is what makes this dangerous rather than merely loose: because
+`--update-snapshots` rewrites only a **failing** snapshot, a passing comparison produces **no
+new PNG** — so there is nothing for the eye pass to review, and the change leaves no trace in
+the diff at all. *"Baselines unchanged"* means **"under tolerance"**, never **"the frame is the
+same."** Any baseline review must therefore read the rendered strings, and any claim that a
+surface is unaffected needs a source other than a green VRT. Whether 2% is the right number is
+MEH-1765 — do not change `playwright.config.ts` under another ticket.
+
+**Requesting a regen by label instead of by dispatch:**
+[docs/ci/vrt-label-trigger.patch.md](../../docs/ci/vrt-label-trigger.patch.md) (MEH-1764,
+staged for Sapir — `.github/workflows/**` is CC-deny). That doc also records, with run ids,
+that CC's GitHub App **does** hold `actions: write`: `vrt-update.yml:15`'s claim to the
+contrary is false, and the label path is a deliberate narrowing of a permission CC holds —
+not a workaround for one it lacks.
+
+**Restoring an old artifact is not ratification.** A runner-generated image carries
+**credibility, not currency** — restoring it returns the first and not the second, and the
+file name looks identical either way. Before restoring any baseline, count the commits
+touching that surface since the blob was captured; if the answer is not zero, take a fresh
+capture instead.
+
+_Proven on `10ed80d7`, which restored a 3.5-day-old `home-mobile` blob across **36
+unmeasured home-render commits** — in a PR that cited the MEH-1552 candidate-baseline
+lesson while committing the same error in the one disguise that lesson doesn't name._
+
+**The class is wider than VRT: inheriting an artifact's authority without its currency.**
+Every instance has the same three parts — an artifact that was rigorously produced, a gap
+during which the world moved, and a reuse that carries the rigour forward while silently
+dropping the as-of. The artifact is not wrong; it is *stale*, and staleness has no visual
+tell. Same shape, different surfaces:
+
+- a **lockfile hash** or dependency pin re-pointed at a previously-audited version
+- a **cached CI layer** or fixture reused because it was built from a clean tree — once
+- an **audit verdict** (`approved` in `skills-allowlist.json`) carried across a content
+  change, which is exactly why MEH-420 made the hash the trust anchor and not the verdict
+- a **benchmark or perf number** requoted after the workload changed
+- a **screenshot in a ticket** used as current evidence of a live surface
+
+**The question that detects all of them:** *as of when was this true, and what has changed
+since?* If the answer needs a count and nobody has counted, the artifact is a claim about
+the past being presented as a claim about the present. **Reproduce, don't restore** — and
+where reproduction is expensive, record the as-of next to the artifact so the next reader
+can do the subtraction. An artifact whose as-of is unrecoverable cannot be ratified at all,
+only replaced.
+
+Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/audits/silent-failure-audit.md).
+
+---
+
+## `networkidle` is banned in specs (MEH-215)
+
+> **A spec must never make its outcome depend on the network going quiet.**
+> **Unbounded** `page.waitForLoadState("networkidle")` and
+> `goto(…, { waitUntil: "networkidle" })` are forbidden in anything under
+> `e2e/flows/**` or `e2e/visual/**` — the two globs `playwright.config.ts:35`
+> actually runs.
+>
+> **The one sanctioned form is a bounded, caught wait** whose timeout is far above a
+> healthy settle, so it changes nothing on a good run and only caps the pathological
+> one: `e2e/visual/parity.spec.ts:246` is the exemplar, and the comment above it at
+> `:239` records the bound as deliberate. Do not "fix" it, and do not write a guard
+> that greps for the bare word.
+
+**Why, concretely.** On the CI runner the page issues image requests that do not
+settle, the Next image optimizer retries them, and the network therefore never
+reaches the idle threshold. An unbounded `waitForLoadState("networkidle")` then falls
+back to the default navigation timeout and burns the whole test budget. Locally the
+same call settles in milliseconds. Every occurrence is therefore a latent
+**green-local / red-CI**, and the failure names the wrong thing — the test reports a
+missing element, not "the network never idled".
+
+> **The ban rests on the observed behaviour above, not on a settled cause.** The
+> working diagnosis — that Cloudinary returns 401 for every image on the CI runner —
+> is **not established, and carries no owning card**; do not restate it as fact from
+> this file. (It previously read "owned by MEH-1948"; that identifier does not exist
+> in Linear — checked 2026-08-12. The nearest real card, MEH-1925, is the *production*
+> Cloudinary 401 incident, which is a different surface.) What justifies the ban is
+> only the measured symptom: the network does not idle on CI, and it does locally.
+>
+> **A second failure class, now with its own card — MEH-2029:**
+> `next/font/google` build-time fetches failing on the runner with
+> `Module not found: @vercel/turbopack-next/internal/font/google/font`. Measured
+> 2026-08-12 across three PRs — `frank_ruhl_libre` (#2790, 12:27Z), `dm_sans`
+> (#2747, 14:33Z), and on **#2811 twice with two passes interleaved on the same
+> commit `a68779a`**: pr-checks failed 14:07 (`frank_ruhl_libre`), the E2E build
+> succeeded 14:10, a re-run succeeded ~14:14, the E2E re-run failed 14:20
+> (`cormorant_garamond`). Same SHA, no push between, a different font named each
+> time, and `npm run build` on that commit exits 0 locally. So it is
+> **non-deterministic and per-build, not commit-shaped** — and a passing re-run is
+> not evidence it is fixed. Both classes are **external asset
+> fetches from the CI runner**. That they share a cause is a **hypothesis**, recorded
+> so the next reader can test it — not a conclusion, and not a reason to widen this
+> ban until MEH-1948 reports.
+
+_Measured on MEH-215 chunk C: the wrong-credentials spec passed 16/16 locally and the
+E2E job went red. A `.catch(() => {})` on its own does **not** fix this — it makes the
+wait non-fatal, not cheap; the time is still spent. **The `timeout` is the operative
+half**, and that is the difference between the banned form and the sanctioned one
+above: a bound caps the cost, the catch only stops the cap from failing the test._
+
+**The replacement, when you need to prove something did NOT happen** — an inverted
+bounded wait. Await the *unwanted* event and require that it times out:
+
+```js
+const strayed = await page
+  .waitForURL((u) => new URL(u).pathname !== "/login", { timeout: 3_000 })
+  .then(() => true)
+  .catch(() => false);
+expect(strayed, "a failed login must not navigate anywhere").toBe(false);
+```
+
+With the bug this resolves the instant the event lands; without it, it reports
+`false` after the bound. **Deterministic in both worlds and dependent on no network
+condition.** Note it is not a fixed pause either — the happy path pays the bound only
+when the answer is genuinely "it did not happen", which is the case you are asserting.
+
+For "wait until the thing I care about is ready", gate on **that thing** — a
+`data-testid`, a response, a URL — never on global quiet.
+
+### Sweep result (2026-08-09) — where this actually bites
+
+`grep -rn networkidle frontend/` returns ~110 hits. **Two were in files CI runs**, and
+the distinction is `playwright.config.ts:35`:
+
+```
+testMatch: ["e2e/flows/**/*.spec.ts", "e2e/visual/**/*.spec.ts"]
+```
+
+| Occurrence | Runs in CI? | Verdict |
+|---|---|---|
+| `e2e/visual/parity.spec.ts:239` | **yes** (`visual/`) | **converted** — bounded to 5s. Far above a normal settle, so a healthy run is byte-identical and **no baseline moves**; it only caps the pathological case. |
+| `e2e/screenshots.spec.ts:178` | **no** — root-level, matched by neither glob | **ticketed, not converted.** Unbounded *and* inside a `Promise.all` with no `.catch()`, so it would hang outright — but it is dead code today. |
+| ~108 others | no | `qa-meh*.mjs` / `scripts/qa-*.mjs` one-off probes, run by hand against a local server. Out of scope: not specs, not gates. |
+
+**Do not "fix" the probe scripts in bulk.** They are disposable, several already carry
+comments recording that `networkidle` is not layout-idle for them
+(`qa-meh1875-order-window-schedule.mjs:94`, `qa-meh1852-admin-kashrut-labels.mjs:107`,
+`qa-meh1919-register-success.mjs:92`), and one already refuses it outright
+(`qa-meh215-header-discovery.mjs:52`). A sweep there is churn with no gate behind it.
+
+---
+
+## A green that has two possible causes is not a signal
+
+> ### An instrument you have not checked produces conclusions indistinguishable from verified ones. Check the instrument before the claim, not after the objection.
+>
+> This is the general form of everything in this section. Each item below is one
+> instrument — a probe, a query, a ref, an API call, a rules file — that returned a
+> confident, well-formed, **wrong** answer, and nothing in the output said so.
+>
+> The defect is never in the reasoning that follows the reading; that part is usually
+> sound. It is that the reading was trusted without asking **what this instrument
+> cannot see, and what else would produce exactly this output.** By the time an
+> objection arrives, the conclusion has normally been written into a ticket, a PR body
+> or a rule — where the next reader inherits it as fact, with the uncertainty stripped.
+>
+> **The cost is asymmetric, which is why the check is worth its price.** Verifying an
+> instrument costs one command. Not verifying it costs a false claim in a rules file,
+> and rule files are trusted over direct observation by every session that loads them.
+>
+> Measured instances, all of them a confident answer from an unexamined instrument:
+> a `pkill -f` that matched its own shell · a `grep` that reported every Tailwind class
+> missing · an `addInitScript` probe reporting clean zeros because `documentElement`
+> was `null` and `observe()` threw · a `comm` comparison silently truncated at 15
+> chars · an `enable_auto_merge` call that no-op'd without error · a shallow clone
+> reporting the graft commit as every file's origin (workflow.md § *Provenance*) · a
+> `git diff A...B` against a **stale** `origin/staging`, which nearly produced a
+> scope-creep report against the session's own branch · and a rules-file claim about
+> Linear auto-close asserted twice into PR bodies as certain, then measured false
+> (workflow.md rule 29 § *branch name*).
+>
+> **A CI aggregator is the same instrument, one level up (MEH-1742).** `needs.<job>.result`
+> collapses to one of `success|failure|cancelled|skipped` — GitHub Actions does not
+> expose *why* a job skipped. `e2e-gate`'s `ok() { case "$1" in success|skipped) ... }`
+> therefore reads a docs-only PR's *intended* skip and a frontend PR's *unintended* one
+> (a job condition suppressing `e2e` for a reason unrelated to scope) as the identical
+> token, and passes both. Same shape as the `check`/`check_ran` split MEH-1582 already
+> landed on `pr-checks.yml` for exactly this reason on other required jobs — a skip
+> the gate is actively enforcing must have *run*, not just returned a token that also
+> means "nothing to check." Fix staged at
+> [`docs/ci/e2e-gate-strict-skip.patch.md`](../../docs/ci/e2e-gate-strict-skip.patch.md)
+> (`.github/workflows/**` is CC-deny; discrimination proven in
+> `scripts/e2e-gate-selftest.sh` before the patch is even applied).
+>
+> **Three of those happened in one session (2026-08-11), to a session that had this
+> very section loaded the whole time.** Knowing the rule is not the same as running
+> the check — so the practical form is a habit, not a principle: **before a claim
+> rests on a tool's output, run that tool once against a case whose answer you already
+> know.** A probe validated on a known case can be trusted in both directions; an
+> unvalidated one can be trusted in neither, and its *red* is worth exactly as little
+> as its green.
+>
+> ### Instance nine — the one where the answer was simply published
+>
+> **Before inferring a mechanism's rule from its observed behaviour, check whether the
+> mechanism documents its rule. An n=1 experiment against a documented system is a
+> slower and weaker instrument than reading the spec. This one was characterised from
+> five observations when the vendor states the condition outright.**
+>
+> The Linear auto-close condition (workflow.md rule 29 § *branch name*) was worked out
+> from five merges and their `stateHistory` timestamps, carefully excluding actor, date
+> and card state, and was written up as a **candidate hypothesis at n=1**. Linear
+> **documents** the answer: a class of non-closing magic words (`ref`, `references`,
+> `part of`, `related to`, `contributes to`, `towards`) that link without automating
+> status. One page of vendor documentation was strictly better evidence than the five
+> measurements, and it was available the entire time.
+>
+> **This one is different from the eight above, and that is why it is worth its own
+> heading.** Those were instruments that returned a *wrong* answer. Here the
+> measurements were all *correct* — and still the wrong instrument, because a
+> controlled experiment against a documented system buys a weaker conclusion at higher
+> cost than reading the spec. Being rigorous about the wrong instrument does not
+> upgrade it.
+>
+> **So the ordering is: read the spec, then measure — and measure to confirm the spec
+> or to find where the system departs from it.** Measurement stays essential where no
+> spec exists, where the spec is silent, or where behaviour contradicts it (this repo
+> has such cases: `vrt-update.yml:15`'s false claim about `actions: write`). What it
+> must not do is *substitute* for a documentation lookup nobody attempted.
+>
+> The residue is instructive too: the docs list `ref` and `references`, and this repo
+> writes **`Refs`** — a plural the published list does not contain. Reading the spec
+> did not just answer the question faster, it exposed a gap the five measurements had
+> silently papered over.
+
+> **A check that can be green for two opposite reasons is not a check.
+> Before trusting a green, ask what else would produce it.**
+
+The discrimination rule above asks whether an assertion goes red when the thing it guards
+breaks. This one asks the mirror question, and it is the one that keeps getting skipped:
+**when the check is green, is "the code is correct" the only explanation?** A green with two
+possible causes carries no information, and it is indistinguishable from a real pass at the
+moment you read it — which is why it survives review.
+
+The failure is not exotic. It happened **four times in a single day** (2026-07-28), across
+four different surfaces, to a session that had the discrimination rule loaded the whole time.
+
+| # | The green | What else produced it |
+|---|---|---|
+| 1 | **VRT `about` + `login` passing** for days | Webfonts were CORS-blocked (MEH-1727) in **both** the baseline capture and the PR run. Both sides were wrong *in the same way*, so the comparison matched. The fix (`35ce2619`) made the runs correct, the baselines stayed wrong, and all three specs went red **within minutes of the bug being fixed**. |
+| 2 | **`size` fallback guard passing** | The probe used `size="enormous"`, which is absent from `Object.prototype` too — so `CIRCLE_SIZES[size] \|\| …` and `Object.hasOwn(…)` behave identically on it. The assertion passed against the implementation it existed to reject. Only `constructor` / `toString` / `valueOf` / `__proto__` separate them. |
+| 3 | **`E2E gate (required)` = success** | `Playwright E2E` was `skipped`, and a skipped leg passes the aggregator. The green meant *nothing ran*, not *nothing failed*. Same mechanic as the draft-PR and docs-only cases already documented under "Required status checks", and the subject of MEH-1582. |
+| 4 | **`DashboardEmptyStateFormExclusive` passing** | Its mock producer carries no `status` field, so `notApproved` is never true and the gated branch is unreachable. It passed identically on the broken and the fixed page. The file list said the page was covered; the state matrix said otherwise. |
+
+**What they share:** in every case a *second* fault, a *skip*, or an *unreachable branch*
+supplied the green, and the reviewer read it as evidence of the first thing they thought of.
+Cases 1 and 4 are the dangerous shape — **symmetric** wrongness, where the reference and the
+subject drift together. Nothing in the output distinguishes that from agreement.
+
+**The practical test**, cheap enough to apply every time:
+
+1. Name at least one *other* world in which this check is green. If you can name one, the
+   check does not yet discriminate.
+2. For any comparison against a stored reference (VRT baseline, golden file, recorded
+   fixture, cached hash), ask whether the reference and the subject could be wrong
+   **together**. They share a generator far more often than anyone expects.
+3. Treat a green that appears the moment a *bug is fixed elsewhere* as a defect report about
+   the check, not as new breakage. Case 1 inverted: three specs went red because an unrelated
+   fix landed, which is what finally exposed years-shaped staleness in the baselines.
+
+**The inverse is worth one line, because it cost time the same day.** A *red* from an
+unvalidated probe is the same error wearing the opposite sign: a malformed `grep` reported
+every Tailwind class missing from the built CSS — including `w-16`, which is used site-wide.
+The build was fine; the probe was broken. **Validate a probe on a case whose answer you
+already know before you trust either its red or its green** — and report the retraction, since
+a withdrawn finding is evidence the probe was checked and a silent one is not.
+
+**The purest form of the class: a probe that matches its own invocation (MEH-215,
+2026-08-09).** Diagnosing an all-red local suite, `pgrep -f next-server` reported **2**
+processes, which read as "duplicate servers serving mismatched builds" — a tidy
+explanation that fit the symptom. It was an artifact: `pgrep -f` matches the full command
+line, and the shell running the `pgrep` **contains the string `next-server`**, so the probe
+counted itself. Re-running it a third time reported `3`, each new "server" being the next
+invocation. The count could never reach 0 and no `kill` would ever appear to work.
+
+This one is worth naming because it defeats the usual defence. There was no selector to
+get wrong and no fixture to mis-build — the command is correct, it just answers a question
+about **itself** rather than about the world. What settled it was moving to an instrument
+that cannot include the observer: `ss -ltn | grep ':3000'`, which reported **nothing
+listening** at the moment `pgrep` claimed two. The real cause was then found from the
+Playwright snapshot — the page was rendering the `משהו השתבש` error boundary — and
+confirmed by freeing the port, rebuilding, and starting exactly one server.
+
+**The generalisation:** any `ps`/`pgrep`/`grep`-over-process-list, any log scan run from
+inside the log's own writer, any search whose corpus includes the searcher. Ask **"could
+this probe be counting itself?"** — and prefer an instrument on the other side of the thing
+measured (a socket, a PID file, an exit code) over one that shares a namespace with the
+tool doing the measuring.
+
+**A probe whose corpus includes the searcher has a destructive twin, and it is worse than
+the miscount (MEH-2009).** `pkill -f "<pattern>"` matches every command line containing the
+pattern — **and the shell running the `pkill` is one of them**. Measured 2026-08-11 on
+`pkill -f "next start"`: the invoking shell was killed (**exit 144**) and the server it was
+aimed at **survived**. A self-matching *reporting* probe returns a wrong number you can
+sanity-check against something else; a self-matching *killing* probe destroys the observer
+mid-command and leaves the symptom exactly where it was, so the operator sees a failed
+command rather than a wrong answer.
+
+**Match the child's process name, not the command string.** The server's own process is
+`next-server (v16.3.0)`, which does not contain `next start` — and that is precisely what
+the CI runner's cleanup targets (`Terminate orphan process: pid (2523) (next-server …)`).
+**Better still: do not reach for a kill at all** — start long-running processes through the
+harness's `run_in_background` so they carry a task id, instead of detaching with `&` and
+hunting them afterwards.
+
+**The commands, because naming the target without them ships a principle and leaves the
+reflex implementation intact — and the reflex implementation of *this* principle is the
+bug.** A reader who takes "match the process name" and reaches for the tool they already
+know writes `pgrep -f "next-server"`, which is still a command-line match and still
+self-matches. Measured 2026-08-11: it returned the invoking shell — the *reporting* twin
+firing during the check for the destructive one.
+
+```
+WRONG (any pattern):  pgrep -f "…"    ·    pkill -f "…"
+RIGHT:                ps -eo pid,comm | grep -iE "node|next"
+RIGHT (≤15 chars):    pgrep -x next-server        # safe HERE because "next-server" is 11
+CONTROL:              ps -eo pid,comm | wc -l
+```
+
+`-f` matches the whole command line, so the searcher is inside the corpus no matter how
+precise the pattern is; `-x` matches the process *name* exactly, and `comm` is the name
+column. The fix is the flag, not a better string.
+
+**`pgrep -x` is not generally safe, and the second RIGHT line above carries a condition
+rather than a caveat.** `comm` caps the process name at **15 characters**, so `pgrep -x`
+against any longer name returns **zero matches** — and zero-matches is indistinguishable
+from *no such process* at the exit code. That is this section's own failure mode: a null
+that is also the reassuring answer. Measured 2026-08-11, a 24-char binary:
+
+| Probe | Result |
+|---|---|
+| `ps -eo pid,comm \| grep -i next` | found it — `6265 next-server-pro` (name capped at 15) |
+| `pgrep -x next-server-probe-canary` | **zero matches** |
+| `pgrep -x next-server-pro` (15 chars) | `6265` |
+
+So `pgrep -x next-server` is safe **because `next-server` is 11 characters**, not because
+the idiom is sound. Applied to a longer name it fails silently, in the exact shape this
+file spends two sections warning about. **`ps -eo pid,comm | grep` is listed first for that
+reason** — a substring match against the already-capped name has no ceiling to trip over,
+so it is the form to reach for by default and `-x` is the special case. (This `pgrep`
+happens to warn on stderr about the limit, but that is version-dependent and stdout is
+empty either way — do not build on the warning.)
+
+**Run the control first, and read it.** `ps -eo pid,comm | wc -l` on any live system is a
+number in the tens — if it comes back empty or `0`, `ps` itself is not reporting and every
+null in that run is void, including the reassuring one. This is the rule in the next
+section applied to its own worked example: an empty process list is exactly a null that is
+also the answer you were hoping for.
+
+Excluding `$$` and `$PPID` from a `-f` match is a **last resort, not the recommendation**:
+it is fragile (it leaves every other shell in the tree matchable, and a subshell changes
+`$$` under you) and it treats the symptom rather than the flag that caused it.
+
+**And check what the writer actually is before killing anything — the diagnosis that
+justified the `pkill` above was itself wrong.** The symptom was a generated file
+(`frontend/next-env.d.ts`) that kept reappearing as modified after `git checkout --`, which
+reads exactly like a live writer racing the revert. It was attributed to a detached
+`next start` left running from an earlier reproduction. Measured afterwards: **nothing was
+listening on the port and no `next` process existed at all**, yet the file was still being
+rewritten. The writer was `next build`, re-run by the Stop hook at the end of every turn
+(`.claude/settings.json`), which skips only when `node_modules` is absent — so installing
+dependencies silently armed it. Proven by running one build on a clean tree with no server
+up and watching the same one-line drift reappear.
+
+So the kill was aimed at a process that was never there, and the only thing its pattern
+could match was the shell that issued it. **The two failures compound:** an unverified
+cause produced a destructive remedy, and the remedy's self-match then destroyed the
+observer that would have disproved the cause. Either mistake alone is recoverable; together
+they read as "the cleanup didn't work" and send you round again.
+
+### A probe whose null output is also its reassuring output is not evidence
+
+`(none)`, `0 findings`, and `no rows` are produced by **two** different worlds: *nothing to
+report*, and *the probe never ran*. Nothing in the output distinguishes them, and one of the
+two is the answer everybody wants — which is why this survives review. A probe is not the
+deliverable, so nobody checks the probe; its output gets quoted as fact.
+
+**Such a probe ships with a control that exercises a path known to produce output, and the
+control fails loudly — with a message stating that every null elsewhere in the run is void if
+the control is silent.** Run the control first. If the probe cannot see the thing it is aimed
+at, nothing it reports afterwards is worth reading.
+
+**Three instances, so this reads as a family rather than one session's lesson:**
+
+| Instance | The null that lied |
+|---|---|
+| **Presence-only tests** | A suite that only asserts things are present cannot detect a removal that never happened — the assertion passes identically whether the guard works or the case was never constructed. Same shape as the `count()===0 → skip` quarantine above, one level up. |
+| **MEH-1844** — the CI reviewer's no-op | `num_turns: 1` / `total_cost_usd: 0` / sub-second is produced by **three distinct causes** (missing credential, upstream breaking change, and whatever is actually happening now — the first two are eliminated). **The shape never distinguished them**, and this file asserted a cause from that shape twice, in opposite directions, and was wrong both times. |
+| **The nav-event recorder** (`2f36666`, MEH-215 chunk C) | An empty event log means either "the client issued no navigation" — the finding — or "the listener never attached". It ships with a control that drives a navigation the suite already proves works, and whose failure message says every `(none)` elsewhere is worthless. Precedent it was built from: an `addInitScript` sampler that reported clean zeros because `document.documentElement` is `null` there, so `observe()` threw and the sampler died silently. |
+
+**The review question:** if this probe were completely dead, what would it print? If the answer
+is the same thing it prints on success, it needs a control before anyone acts on it.
+
+Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
+"Required status checks + docs-only merge" documents the skip-green mechanic for the
+aggregators; MEH-1582 tracks the bypass itself. Recorded under MEH-1732's pipeline-reliability
+scope — not a separate ticket.
+
+---
+
+## The artifact that asserts coverage is the one least likely to be checked
+
+> **A docstring, a count in a log line, a test-case name — each reads as
+> verification; none is one. Derive counts rather than stating them. Show a
+> guard failing against the old code before claiming it guards.**
+
+The sections above are about *outputs* that mislead — a green with two causes, a
+null that means "never ran". This one is about the **claim of coverage itself**.
+It is a different surface and it fails more quietly, because the claim is never
+the deliverable: nobody reviews a docstring, nobody re-counts a summary line,
+and a test case named `traversal` is read as proof that traversal is handled.
+
+**Four instances from one PR (#2780, MEH-1976), all found by the CI reviewer and
+none by me:**
+
+| The artifact | What it asserted | What was true |
+|---|---|---|
+| Docstring | *"an interrupted run costs only what it had not yet fetched"* | The skip condition required a prior manifest entry, and the manifest is written **once, at the end** — so an interrupted **first** run re-downloaded everything it had just pulled. The property was claimed and absent. |
+| A self-test case named `traversal` | that path traversal is guarded | `public_id` was sanitised; `resource_type` and `format` were interpolated into the same path **raw**. One of three inputs. The case name made the other two invisible. |
+| Explicit `encoding="utf-8"` | that the file's own docstring rule was applied | Applied at **two of three** I/O sites, in a file whose docstring explains why it is mandatory. Fixing the two sites a reviewer names is not fixing the class. |
+| `"14 assertions"` in the pass line | the size of the suite | It was **15**. The rate-limit block appended to `failures` without going through `check()`, so it was never counted — and a passing run misreported its own coverage. |
+
+**The remedies are mechanical, which is the point — none of them depends on
+remembering:**
+
+- **Derive counts, never state them.** `len(ran)` cannot go stale; `"14"` goes
+  stale the moment a case is added. Prove the derivation by adding a case and
+  watching the number move.
+- **Name a test case after the input it covers, not the class it belongs to.**
+  `traversal/resource_type` cannot pretend to cover `format`.
+- **When a reviewer names two sites, grep for the third.** A finding is a
+  sample, not an inventory.
+- **Show the guard failing against the old code before claiming it guards** —
+  the MEH-1619 discrimination rule, applied to the *claim* rather than the test.
+
+### Corollary — the control itself is an artifact, and it lies the same way
+
+Both of these happened on 11/08, while demonstrating the rules above:
+
+- **A control that fails for the wrong reason.** The new self-test was run
+  against the old implementation from **outside the repo**, so `ROOT` resolved
+  elsewhere, the fixtures were missing, and it exited `2` — an *invocation*
+  error. A red is not evidence of discrimination just because it is red. Re-run
+  from the repo root, it failed on the assertions themselves, which is the only
+  version that proves anything.
+- **A no-op that reads as confirmation.** A `sed` meant to inject a 16th case
+  silently did not match. The count stayed 15 — *exactly what a working derived
+  count would print if nothing had been added* — and that was briefly read as
+  the proof. Verified by grepping the generated file for the injected token
+  before trusting the number.
+
+**The question that catches both:** *did the thing I am using as evidence
+actually run, and did it run against what I think it ran against?*
+
+### Why this is stated as a rule and not an anecdote — the count is the argument
+
+**This is the eighth instance of the family this week**, across four different
+surfaces and two languages:
+
+1. **MEH-1909** — an `ast` probe passed four synthetic cases and returned
+   `revision = None` for **all 14 real revisions**; the repo uses annotated
+   assignments and every fixture used the plain form.
+2. **ORDERS §3.0 (10/08)** — a DNS probe reported "no SPF" while its own control
+   query (`google.com TXT`) also returned zero.
+3. **ORDERS §3.0 (10/08)** — a routes inventory reported 74 public routes by
+   **guessing** auth dependencies, and its self-test passed because it was built
+   from the same wrong assumption.
+4. **#2786 (11/08)** — a capture harness wrote six PNGs, logged six successes and
+   exited `0`, having photographed an error boundary.
+5–8. **#2780** — the four rows in the table above.
+
+Eight in one week is not a run of bad luck; it is the base rate for a class
+nobody checks. That is the argument for making the remedies mechanical rather
+than adding another line telling the next session to be careful.
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files. Fix every REFEREE
@@ -102,10 +696,11 @@ ruleset only ever gated on the 2 aggregators). Full mechanism:
 
 **`Playwright E2E (Vercel preview)` (mobile Pixel 5 + VRT parity) runs on every
 PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
-`staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
-MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
+`staging` (`e2e.yml:36-40`, re-derived 2026-08-03 — this read `:33-37`, which is
+now the trailing comment block — the old `deployment_status` trigger was dropped
+when MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
 wired into the required-check set — the sanctioned way to make it block merge is
-the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+the `E2E gate` aggregator (job id `e2e-gate`, `always()` +
 `needs: [filter, e2e]`) whose YAML is staged in
 [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
 (`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
@@ -113,25 +708,69 @@ ruleset was tried on 2026-07-13 and reverted the same day because it re-introduc
 MEH-892 (a skipped-but-directly-required job reads as `Expected` → blocks
 docs-only).
 
-> **⚠️ `e2e.yml`'s paths-filter does NOT currently skip docs-only** — proven by
-> MEH-1201's own CI (PR #1741, a docs-only diff, run `29283974004`): the `filter`
-> job emitted `frontend = true` for 5 `.md` files and the full suite ran (and was
-> red). Root cause: `e2e.yml`'s filter uses `predicate-quantifier: some` with
-> negation patterns (`!**/*.md`, `!docs/**`, …), under which each negation is an
-> additive OR that matches nearly everything — so the MEH-499 "docs-skip" never
-> worked. (`pr-checks.yml`'s `changes` job has **no** negations and correctly
-> skips docs — which is why the 2 required aggregators stayed green.) **Therefore
-> the E2E gate must NOT be added to the ruleset until (A) the `e2e.yml` filter is
-> fixed to actually skip docs-only, and (B) the suite is green.** Both fixes +
-> evidence are in [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
-> ("תנאי מוקדם A/B").
+> **✅ Precondition A is now MET — `e2e.yml`'s paths-filter DOES skip docs-only.**
+> This note previously said the opposite; that was true when written and is not
+> true now. The filter (`e2e.yml:74-78`, re-verified 2026-08-03 — the citation
+> read `:62-70`, which is now the `filter` job's `steps:`) is **positive-only** today —
+> `frontend/**`, `public/**`, `package.json`, `package-lock.json` — with **no**
+> negation patterns and **no** `predicate-quantifier`, which is exactly the
+> replacement block `e2e-gate.patch.md` prescribed for precondition A.
+> **Empirical proof** (MEH-999, 26/07): run `30220080416`, the docs-only staging
+> push `80d5c62` — the `Playwright E2E (Vercel preview)` job reported `skipped`.
+> The history that produced the old note is still accurate for its date: under
+> `predicate-quantifier: some`, each negation (`!**/*.md`, `!docs/**`, …) is an
+> additive OR matching nearly everything, so MEH-499's "docs-skip" never worked
+> and PR #1741 (run `29283974004`) ran the full suite on 5 `.md` files. The
+> negations are simply gone now. (The exact commit that removed them is not
+> recoverable — squash-merge flattened `e2e.yml`'s history — so this rests on the
+> live file plus the run above, not on a blame line.)
+>
+> **Precondition B — STALE, re-measured 2026-08-03 (MEH-1861).** This paragraph
+> read *"The suite is not green: 2 VRT `parity.spec.ts` failures (`map` desktop,
+> `home` mobile) as of run `30220096957`."* **That has not been true since at
+> least 2026-08-02.** Measured: the eight most recent `e2e.yml` runs (through
+> `30793569028`, 2026-08-03T07:24:58Z) all report `conclusion: success`,
+> including on `staging` (`30770303168`); and the QA bot on PR #2542 reported
+> **192 tests executed, 32 skipped, all green with `--fail-on-flaky-tests`
+> on** (run `30767398989`).
+>
+> **So both preconditions now look met** — A since 26/07, B as of 02–03/08. What
+> still blocks the gate is not a red suite: applying `e2e-gate.patch.md` edits
+> `.github/workflows/**` (CC-deny, MEH-671) and adding the context to ruleset
+> 15240090 is a GitHub-settings change. **Both are Sapir's**, and neither is
+> something a green suite makes automatic. See
+> [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
+> ("תנאי מוקדם A/B"). Re-measure before acting — this line is itself an
+> empirical claim with an as-of date, and one green window is not a trend.
+>
+> **Not to be confused with the *other* e2e.yml problem:** the filter skipping
+> docs-only is correct, but combined with the collapsed staging concurrency group
+> it silently destroys post-merge coverage — a docs push cancels the previous
+> code push's run and puts nothing in its place. That is MEH-1601, and its fix is
+> [docs/ci/e2e-concurrency.patch.md](../../docs/ci/e2e-concurrency.patch.md).
 
 Governance + gate matrix:
 [ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
 amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
-aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
+
+**Consequence of the above, made explicit (MEH-1907):** with auto-merge armed,
+a PR lands the instant `CI gate` and `Deploy gate` report `success` —
+regardless of any verbal or written instruction like "wait for two
+consecutive green E2E runs first." `E2E gate` carries no vote in what merges
+today, so that kind of instruction is not enforced by the merge machinery at
+all; it is enforced only by **not arming auto-merge** until the condition is
+checked by hand. Measured directly: PR #2592 merged on one green E2E run
+though the orchestrator's instruction required two consecutive ones — the
+mechanism did exactly what its required-context set says it will do, which is
+ignore E2E either way. Not a compliance failure on CC's part; a property of
+which contexts `protect-staging` (ruleset 15240090) actually requires. See
+[docs/ci/pr-checks-cancelled-not-failure.patch.md](../../docs/ci/pr-checks-cancelled-not-failure.patch.md)
+for the sibling MEH-1907 fix (a cancelled required job must not read as a
+failed one — same aggregator, opposite direction from the skip-green fix
+above).
 
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then

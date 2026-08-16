@@ -14,7 +14,10 @@ Covers:
 All tests are written BEFORE the implementation (TDD, per workflow rule 5).
 They use the shared pytest fixtures in conftest.py.
 """
+import itertools
 from datetime import datetime, timedelta
+
+import pytest
 
 from app.models.models import (
     Event,
@@ -36,7 +39,27 @@ from conftest import auth_header, make_category, make_producer, make_user
 # assert window queries without going through the HTTP tracker.
 # ============================================================
 
-def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash="a" * 64):
+_view_seq = itertools.count()
+
+
+def _distinct_hash():
+    """MEH-160: a fresh 64-char hash per seeded view.
+
+    The default used to be a single shared `"a" * 64`, which meant every
+    view in this file came from *one* visitor. That was invisible while
+    `producer_page_views` was counted raw, and became wrong the moment the
+    dashboard started deduping per visitor per day: `test_search_appearances`
+    seeded two same-day search views and asserted 2, and got 1.
+
+    Every assertion in this file was written as "N views = N visitors", so
+    the honest fix is to make the default say that. A test that means to
+    exercise the dedupe passes `ip_hash=` explicitly.
+    """
+    return f"{next(_view_seq):064d}"
+
+
+def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash=None):
+    ip_hash = _distinct_hash() if ip_hash is None else ip_hash
     ts = datetime.utcnow() - timedelta(days=days_ago)
     row = ProducerPageView(
         producer_id=producer_id,
@@ -97,6 +120,46 @@ class TestProducerViewTracking:
         assert r.status_code == 200
         row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
         assert row.referrer == "search"
+
+    # MEH-1558: `from_` is read straight off the query string, so the
+    # allowlist in services/analytics.py is the only thing bounding the
+    # column. These two tests pin both halves of that contract — every
+    # sanctioned value round-trips verbatim, and anything else becomes
+    # NULL rather than being stored. `producers-index` / `similar` /
+    # `nearby` are the three the frontend had been sending all along
+    # while the backend silently discarded them.
+    @pytest.mark.parametrize(
+        "referrer",
+        [
+            "search",
+            "map",
+            "category",
+            "home",
+            "favorites",
+            "follow",
+            "producers-index",
+            "similar",
+            "nearby",
+        ],
+    )
+    def test_allowlisted_referrer_is_stored_verbatim(self, client, db, referrer):
+        p = make_producer(db)
+        r = client.get(f"/producers/{p.id}?from={referrer}")
+        assert r.status_code == 200
+        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        assert row.referrer == referrer
+
+    @pytest.mark.parametrize(
+        "referrer",
+        ["garbage", "SEARCH", "similar-businesses", "", "home; DROP TABLE"],
+    )
+    def test_unknown_referrer_is_stored_as_null(self, client, db, referrer):
+        p = make_producer(db)
+        r = client.get(f"/producers/{p.id}", params={"from": referrer})
+        assert r.status_code == 200
+        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        assert row.producer_id == p.id
+        assert row.referrer is None
 
     def test_get_producer_skips_bots_by_user_agent(self, client, db):
         p = make_producer(db)

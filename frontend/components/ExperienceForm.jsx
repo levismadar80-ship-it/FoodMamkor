@@ -7,12 +7,21 @@
  *           on create, PUT /experiences/{id} on edit). Extracted from
  *           experiences/new/NewExperienceClient.jsx for MEH-1405 so the manage
  *           edit page reuses the exact fields + validation.
- * Touches:  POST /experiences/validate (live verdict), POST|PUT /experiences.
+ * Touches:  POST /experiences/validate (live verdict), POST|PUT /experiences,
+ *           POST /upload/image (cover image).
  * Does NOT: own page chrome (breadcrumb/heading) or post-success navigation —
  *           the consuming page passes onSuccess and renders the surrounding UI.
  * Related:  experiences/new/NewExperienceClient.jsx (create wrapper),
  *           producer/dashboard/experiences/[id]/edit/page.js (edit wrapper).
- * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here).
+ * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
+ *           MEH-1809 (all required/range checks evaluated together and rendered
+ *           inline per field + focus to the first invalid one — replaced the
+ *           one-at-a-time `return setServerError(...)` chain; the banner now
+ *           carries server/moderation errors only);
+ *           MEH-2012 (image_url became a file upload against POST /upload/image
+ *           — this was the LAST surface still asking an owner to paste a
+ *           Cloudinary URL; the client-side URL validation went with it, because
+ *           the endpoint can legitimately answer with a relative path).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -42,7 +51,10 @@ const EMPTY = {
   event_date: "",
   event_time: "",
   duration_minutes: "",
-  location_type: "home",
+  // MEH-2013: no preselection. "סוג מיקום *" is marked required, and a pill
+  // row has no visible "unchosen" state — so a default meant the field passed
+  // without the owner ever deciding, and always toward "בבית פרטי".
+  location_type: "",
   city: "",
   address: "",
   lat: null,
@@ -65,7 +77,10 @@ function seed(initial) {
     event_date: initial.event_date ?? "",
     event_time: initial.event_time ? String(initial.event_time).slice(0, 5) : "",
     duration_minutes: str(initial.duration_minutes),
-    location_type: initial.location_type ?? "home",
+    // MEH-2013: a legacy row with a NULL location_type seeds unselected and
+    // has to be chosen before save, rather than being silently recorded as
+    // "home" on the next edit.
+    location_type: initial.location_type ?? "",
     city: initial.city ?? "",
     address: initial.address ?? "",
     lat: initial.lat ?? null,
@@ -76,6 +91,86 @@ function seed(initial) {
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
   };
+}
+
+// MEH-1809: every required/range rule in one place. The three length/date
+// checks were already here as sequential early-returns; the duration/price/
+// participant bounds were enforced only by native `min`/`max` attributes, which
+// the form's new `noValidate` turns off — so they move here unchanged rather
+// than disappearing. Order = DOM order, so "first invalid" means topmost.
+// MEH-2013: location_type + city join the list in DOM order (they sit between
+// the duration and price inputs), so "first invalid" still means topmost.
+const EXPERIENCE_FIELD_ORDER = [
+  "title",
+  "description",
+  "image_url",
+  "event_date",
+  "duration_minutes",
+  "location_type",
+  "city",
+  "price_per_person",
+  "max_participants",
+];
+
+const EXPERIENCE_FIELD_ID = {
+  title: "experience-title",
+  description: "experience-description",
+  image_url: "experience-image",
+  event_date: "experience-date",
+  duration_minutes: "experience-duration",
+  // The pill row has no single control to focus — the first pill is the entry
+  // point, matching how a radio group focuses its first option.
+  location_type: "experience-location-type",
+  city: "experience-city",
+  price_per_person: "experience-price",
+  max_participants: "experience-max-participants",
+};
+
+// MEH-2012: the `isNativeValidUrl` guard that lived here was REMOVED with the
+// free-text URL field it validated, not merely left unused — and removing it
+// was required, not tidying.
+//
+// image_url is no longer typed by anyone: it is whatever POST /upload/image
+// returned. That endpoint answers with a **relative** path when Cloudinary is
+// unconfigured — `/placeholder-image.png?name=…` (upload.py:115) — and
+// `new URL("/placeholder-image.png")` THROWS. Keeping the check would have
+// rejected the server's own successful response on every environment without
+// Cloudinary credentials, blocking submit with "start with https://" on a form
+// the owner filled in correctly. Server-side `_image_url_validator` (MEH-1222)
+// still governs what the API accepts.
+
+const isWholeNumber = (value) => Number.isInteger(Number(value));
+
+function validateExperienceForm(f, t) {
+  const errors = {};
+  if (f.title.trim().length < 4) errors.title = t("error_title_short");
+  if (f.description.trim().length < 20) errors.description = t("error_description_short");
+  // MEH-2012: no image_url check — see the note above isWholeNumber. The value
+  // comes from our own upload endpoint now, and an upload failure sets
+  // fieldErrors.image_url directly from handleImageUpload.
+  if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-2013: both are labelled `*` and neither was enforced anywhere. city
+  // additionally gates /experiences' city filter, so a city-less experience
+  // is invisible on the main discovery axis.
+  if (!f.location_type) errors.location_type = t("error_location_type_required");
+  if (f.city.trim() === "") errors.city = t("error_city_required");
+  if (f.duration_minutes !== "") {
+    const d = Number(f.duration_minutes);
+    // ExperienceCreate.duration_minutes is `int` with ge=15/le=1440.
+    if (d < 15 || d > 1440) errors.duration_minutes = t("error_duration_range");
+    else if (!isWholeNumber(d)) errors.duration_minutes = t("error_whole_number");
+  }
+  // price_per_person is a Decimal server-side, so fractions are legitimate here
+  // — only the lower bound needs restoring (the schema carries no `ge`).
+  if (f.price_per_person !== "" && Number(f.price_per_person) < 0) {
+    errors.price_per_person = t("error_price_negative");
+  }
+  if (f.max_participants !== "") {
+    const m = Number(f.max_participants);
+    if (m < 1) errors.max_participants = t("error_max_participants_min");
+    else if (!isWholeNumber(m)) errors.max_participants = t("error_whole_number");
+  }
+  return errors;
 }
 
 /**
@@ -92,18 +187,71 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [unverified, setUnverified] = useState(false);
+  // MEH-2012: an upload is in flight. Gates submit — a form posted mid-upload
+  // would save the PREVIOUS image_url while the owner is watching a new one
+  // upload, which reads as the upload having been ignored.
+  const [uploading, setUploading] = useState(false);
   const debounceRef = useRef(null);
   const isEdit = mode === "edit";
 
   const setField = (name) => (e) => {
     const value = e?.target?.type === "checkbox" ? e.target.checked : e?.target?.value;
     setForm((f) => ({ ...f, [name]: value }));
+    // A field being corrected stops shouting at the owner (GOV.UK).
+    setFieldErrors((errs) => (errs[name] ? { ...errs, [name]: undefined } : errs));
   };
 
   const setCityField = useCallback((value) => {
     setForm((f) => ({ ...f, city: value }));
+    // Same "a field being corrected stops shouting" rule as setField — city
+    // does not go through it because CitySearch reports a value, not an event.
+    setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
   }, []);
+
+  const setLocationType = useCallback((value) => {
+    setForm((f) => ({ ...f, location_type: value }));
+    setFieldErrors((errs) => (errs.location_type ? { ...errs, location_type: undefined } : errs));
+  }, []);
+
+  // MEH-2012: click-to-upload replaces the raw Cloudinary-URL input. Experiences
+  // were the LAST surface still asking a business owner to paste a CDN URL she
+  // has no way to produce — every other one (products, avatar, owner photo,
+  // kashrut cert, events) already posts to /upload/image.
+  //
+  // REUSES: components/EventForm.jsx:158-173 (handleImageUpload). Two deliberate
+  // departures from it, both because this form is the MEH-1809 inline-error one:
+  //   1. failure renders inline on the field, not as a toast, so it lands where
+  //      the eye already is and matches every other error in this form;
+  //   2. the previous image_url survives a failed retry — `setForm` is never
+  //      touched on the error path, so a re-upload that fails does not silently
+  //      strip an image the owner had already attached.
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setFieldErrors((errs) => (errs.image_url ? { ...errs, image_url: undefined } : errs));
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await api.post("/upload/image", formData);
+      setForm((f) => ({ ...f, image_url: res.data.url }));
+    } catch (err) {
+      // The endpoint's own Hebrew detail when it has one (the free-plan 3-image
+      // cap, upload.py:105, is a real sentence the owner needs) — otherwise ours.
+      const detail = err?.response?.data?.detail;
+      setFieldErrors((errs) => ({
+        ...errs,
+        image_url: typeof detail === "string" && detail ? detail : t("error_image_upload"),
+      }));
+    } finally {
+      setUploading(false);
+      // Let the same file be re-picked after a failure; without this the input
+      // holds the old value and onChange never fires again.
+      e.target.value = "";
+    }
+  };
 
   // Debounced real-time moderation check (create + edit both re-validate).
   const checkContent = useMemo(
@@ -134,7 +282,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       description: form.description,
       category: form.category || undefined,
       city: form.city || undefined,
-      location_type: form.location_type,
+      // MEH-2013: omit rather than send "" now that the form starts unselected
+      // — matching how category/city above are already sent.
+      location_type: form.location_type || undefined,
       price_per_person: form.price_per_person ? Number(form.price_per_person) : undefined,
       max_participants: form.max_participants ? Number(form.max_participants) : undefined,
     });
@@ -154,9 +304,19 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     setServerError("");
     setUnverified(false);
 
-    if (form.title.trim().length < 4) return setServerError(t("error_title_short"));
-    if (form.description.trim().length < 20) return setServerError(t("error_description_short"));
-    if (!form.event_date) return setServerError(t("error_date_required"));
+    const errors = validateExperienceForm(form, t);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstInvalid = EXPERIENCE_FIELD_ORDER.find((field) => errors[field]);
+      const el = document.getElementById(EXPERIENCE_FIELD_ID[firstInvalid]);
+      el?.focus();
+      el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setFieldErrors({});
+
+    // Not a field error: the moderation verdict belongs to the whole submission
+    // and already has its own block above, so it stays in the banner.
     if (verdict?.status === "REJECTED") return setServerError(verdict.reason || t("rejected_fallback"));
 
     const payload = {
@@ -167,8 +327,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       event_date: form.event_date,
       event_time: form.event_time || null,
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
-      location_type: form.location_type,
-      city: form.city || null,
+      // MEH-2013: `|| null` is defence in depth, not a live path.
+      // validateExperienceForm has already rejected an empty location_type
+      // and an empty/whitespace city by the time we get here, so neither can
+      // be "" — but building the payload so it does not DEPEND on that is
+      // free, and it mirrors the create-side `|| undefined` a few lines up.
+      // Without it, relaxing a client rule later would silently start sending
+      // `location_type: ""` (422 against ExperienceUpdate's pattern) and
+      // `city: ""` (accepted, quietly converting a legacy NULL to an empty
+      // string). Guarded by ExperienceFormLegacyRowEdit.test.jsx.
+      location_type: form.location_type || null,
+      city: form.city.trim() || null,
       address: form.address || null,
       lat: form.lat ?? null,
       lng: form.lng ?? null,
@@ -197,29 +366,37 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   };
 
   return (
-    <form onSubmit={submit} className="bg-background border border-border rounded-[16px] p-6 space-y-5">
+    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-[16px] p-6 space-y-5">
       {unverified && <UnverifiedEmailNotice />}
       {serverError && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{serverError}</div>
       )}
 
       <Input
+        id="experience-title"
         label={t("field_title")}
         type="text"
         value={form.title}
         onChange={setField("title")}
         placeholder={t("field_title_placeholder")}
         required
+        error={fieldErrors.title}
       />
 
-      <Field label={t("field_description")}>
+      <Field id="experience-description" label={t("field_description")} required error={fieldErrors.description}>
         <textarea
+          id="experience-description"
+          aria-required={true}
           value={form.description}
           onChange={setField("description")}
           rows={5}
           placeholder={t("field_description_placeholder")}
-          className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          className={`w-full border rounded-[12px] px-3 py-2 bg-white ${
+            fieldErrors.description ? "border-error" : "border-border"
+          }`}
           required
+          aria-invalid={fieldErrors.description ? true : undefined}
+          aria-describedby={fieldErrors.description ? "experience-description-error" : undefined}
         />
       </Field>
 
@@ -256,21 +433,120 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         </select>
       </Field>
 
-      <Input
-        label={t("field_image")}
-        type="url"
-        dir="ltr"
-        value={form.image_url}
-        onChange={setField("image_url")}
-        placeholder="https://res.cloudinary.com/..."
-      />
+      {/* MEH-2012: was a free-text `type="url"` input asking for a Cloudinary
+          address. REUSES: components/EventForm.jsx:364-399 (markup + states).
+          Preview seeds from initial.image_url in edit mode for free, because
+          `seed()` already puts it in form state. */}
+      <div>
+        {/* The field name is a <label htmlFor> only while the input it names is
+            on screen. In the preview branch there is no `experience-image`
+            element, so a `htmlFor` there would point at nothing — a dangling
+            association reads to AT as a labelled control that does not exist.
+            A <span> carries the same visible copy with no such claim.
+            (CI reviewer, PR #2814.) */}
+        {form.image_url ? (
+          <span className="block text-sm font-medium text-text mb-1">
+            {t("field_image")}
+          </span>
+        ) : (
+          <label
+            htmlFor="experience-image"
+            className="block text-sm font-medium text-text mb-1"
+          >
+            {t("field_image")}
+          </label>
+        )}
+        {form.image_url ? (
+          <div className="flex items-center gap-3">
+            {/* raw img: upload preview. `form.image_url` is whatever POST
+                /upload/image returned — a Cloudinary secure_url OR the local
+                /placeholder-image.png fallback (upload.py:115). Mixed
+                provenance, authenticated form chrome, 96px. */}
+            {/* NOT alt="" (decorative). A successful upload has no live region,
+                so this preview appearing IS the success state — and with an
+                empty alt a screen-reader user is told nothing at all, inferring
+                it only from a "הסרת תמונה" button materialising nearby. The
+                field label is reused rather than inventing copy, so there is no
+                new key and the en twin already exists. EventForm.jsx has the
+                same alt="" gap; not touched from here, noted on the PR.
+                (CI reviewer, PR #2814.) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={form.image_url}
+              alt={t("field_image")}
+              className="w-24 h-24 object-cover rounded-[8px] border border-border"
+            />
+            {/* No aria-label: it carried "הסרת התמונה" while the visible text
+                is "הסרת תמונה", and WCAG 2.5.3 (Label in Name) requires the
+                accessible name to CONTAIN the visible text — the definite ה
+                breaks the substring, so a voice-control user saying what she
+                reads would not match the control. The visible text is already
+                a complete description, so the fix is to delete the override
+                rather than to reword it. (EventForm.jsx:380 has the same
+                mismatch; not touched from here — noted on the PR.)
+                data-testid, not the Hebrew string, is what the QA harness
+                targets, so a copy change cannot silently unhook it. */}
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
+              data-testid="experience-image-remove"
+              className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
+            >
+              <XCircle size={14} weight="bold" aria-hidden="true" />
+              {t("field_image_remove")}
+            </button>
+          </div>
+        ) : (
+          /* `sr-only`, NOT `hidden`. `hidden` is display:none, which removes the
+             input from the tab order — and the wrapping <label> is not natively
+             focusable, so the whole upload control became unreachable by
+             keyboard. That is a regression this PR would have introduced: the
+             field it replaces was a text <Input>, which was reachable. sr-only
+             keeps the input focusable while invisible, and `focus-within` on the
+             wrapper renders the focus ring the sighted keyboard user needs —
+             the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
+             EventForm.jsx has the original `hidden`; not touched from here, noted
+             on the PR. (CI reviewer, PR #2814.) */
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+            <input
+              id="experience-image"
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              disabled={uploading}
+              onChange={handleImageUpload}
+              aria-invalid={fieldErrors.image_url ? true : undefined}
+              aria-describedby={fieldErrors.image_url ? "experience-image-error" : undefined}
+            />
+            {uploading ? (
+              <span>{t("field_image_uploading")}</span>
+            ) : (
+              <span>{t("field_image_upload_hint")}</span>
+            )}
+          </label>
+        )}
+        {fieldErrors.image_url && (
+          <span id="experience-image-error" role="alert" className="mt-1 block text-sm text-red-600">
+            {fieldErrors.image_url}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input label={t("field_date")} type="date" value={form.event_date} onChange={setField("event_date")} required />
+        <Input
+          id="experience-date"
+          label={t("field_date")}
+          type="date"
+          value={form.event_date}
+          onChange={setField("event_date")}
+          required
+          error={fieldErrors.event_date}
+        />
         <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
       </div>
 
       <Input
+        id="experience-duration"
         label={t("field_duration")}
         type="number"
         min="15"
@@ -278,15 +554,45 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         value={form.duration_minutes}
         onChange={setField("duration_minutes")}
         placeholder={t("field_duration_placeholder")}
+        error={fieldErrors.duration_minutes}
       />
 
-      <Field label={t("field_location_type")}>
-        <div className="flex flex-wrap gap-2">
-          {LOCATION_TYPE_KEYS.map((lt) => (
+      {/* MEH-2013: this block does NOT use <Field>, deliberately. Field's label
+          carries `htmlFor`, and a <button> IS a labelable element — so pointing
+          it at the first pill would make a click on the words "סוג מיקום"
+          *select* "בבית פרטי". A <span> + aria-labelledby names the group with
+          no such side effect, and aria-describedby wires the error the way
+          MEH-1809 wires every other field in this form.
+          `aria-pressed` was optional while one pill was always preselected and
+          the colour carried the state; with a genuinely unselected initial
+          state, colour alone leaves a screen-reader user with no answer. */}
+      <div>
+        <span id="experience-location-type-label" className="block text-sm font-medium text-text mb-1">
+          {t("field_location_type")}{" "}
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
+          {/* MEH-2015 chunk B: the asterisk above is aria-hidden and this is a
+              button group (no native `required` to announce), so screen
+              readers heard nothing marking it required. sr-only text picked up
+              by aria-labelledby below carries it instead of `aria-required` on
+              role="group" (invalid target per axe-core's aria-allowed-attr —
+              that attribute is radiogroup-only). */}
+          <span className="sr-only">{t("required_sr")}</span>
+        </span>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-labelledby="experience-location-type-label"
+          aria-describedby={fieldErrors.location_type ? "experience-location-type-error" : undefined}
+        >
+          {LOCATION_TYPE_KEYS.map((lt, i) => (
             <button
               key={lt.value}
+              id={i === 0 ? EXPERIENCE_FIELD_ID.location_type : undefined}
               type="button"
-              onClick={() => setForm((f) => ({ ...f, location_type: lt.value }))}
+              aria-pressed={form.location_type === lt.value}
+              onClick={() => setLocationType(lt.value)}
               className={`px-4 py-2 rounded-full text-sm transition ${
                 form.location_type === lt.value
                   ? "bg-primary text-white"
@@ -297,11 +603,28 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             </button>
           ))}
         </div>
-      </Field>
+        {fieldErrors.location_type && (
+          <span id="experience-location-type-error" className="text-xs text-error mt-1 block">
+            {fieldErrors.location_type}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label={t("field_city")}>
-          <CitySearch id="experience-city" value={form.city} onChange={setCityField} placeholder={t("field_city_placeholder")} />
+        {/* MEH-2013: `id` on Field associates its <label> with CitySearch's
+            input (CitySearch renders its own label only when passed one). */}
+        <Field id={EXPERIENCE_FIELD_ID.city} label={t("field_city")} required error={fieldErrors.city}>
+          <CitySearch
+            id={EXPERIENCE_FIELD_ID.city}
+            required
+            value={form.city}
+            onChange={setCityField}
+            placeholder={t("field_city_placeholder")}
+            // MEH-2022: Field renders the error as `${id}-error`; point the
+            // input at it only while the error exists.
+            aria-describedby={fieldErrors.city ? `${EXPERIENCE_FIELD_ID.city}-error` : undefined}
+            aria-invalid={fieldErrors.city ? true : undefined}
+          />
         </Field>
         <div>
           <label htmlFor="experience-address" className="block text-sm font-medium text-text mb-1">
@@ -329,6 +652,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
+          id="experience-price"
           label={t("field_price")}
           type="number"
           min="0"
@@ -336,14 +660,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           value={form.price_per_person}
           onChange={setField("price_per_person")}
           placeholder={t("field_price_placeholder")}
+          error={fieldErrors.price_per_person}
         />
         <Input
+          id="experience-max-participants"
           label={t("field_max_participants")}
           type="number"
           min="1"
           value={form.max_participants}
           onChange={setField("max_participants")}
           placeholder={t("field_max_participants_placeholder")}
+          error={fieldErrors.max_participants}
         />
       </div>
 
@@ -381,27 +708,51 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         </Link>
         <button
           type="submit"
-          disabled={submitting || verdict?.status === "REJECTED"}
+          // MEH-2012: `uploading` joins the gate. Submitting mid-upload would
+          // save the PREVIOUS image_url while the owner watches a new one
+          // upload — which reads as the upload having been ignored.
+          disabled={submitting || uploading || verdict?.status === "REJECTED"}
           className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
             ? t("submitting")
-            : verdict?.status === "REJECTED"
-              ? t("cannot_publish")
-              : isEdit
-                ? t("save_cta")
-                : t("submit_cta")}
+            : uploading
+              ? t("field_image_uploading")
+              : verdict?.status === "REJECTED"
+                ? t("cannot_publish")
+                : isEdit
+                  ? t("save_cta")
+                  : t("submit_cta")}
         </button>
       </div>
     </form>
   );
 }
 
-function Field({ label, children }) {
+// MEH-1809: `id` associates the label with its control and `error` renders the
+// message under it, matching ui/Input's error slot (text-xs text-error). Both
+// are optional, so the callers that pass neither render exactly as before —
+// this is the textarea/select path that ui/Input, an <input>-only primitive,
+// cannot cover.
+// MEH-2015: `required` mirrors ui/Input's marker — the ONE asterisk mechanism.
+// The span is aria-hidden; the hosted control carries aria-required itself.
+function Field({ id, label, required, error, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-text mb-1">{label}</label>
+      <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
+        {label}
+        {required && (
+          <span className="text-error" aria-hidden="true">
+            {" *"}
+          </span>
+        )}
+      </label>
       {children}
+      {error && (
+        <span id={id ? `${id}-error` : undefined} className="text-xs text-error mt-1 block">
+          {error}
+        </span>
+      )}
     </div>
   );
 }

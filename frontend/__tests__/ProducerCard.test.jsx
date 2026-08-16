@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
+// MEH-1847: the overflow explanation lines are asserted against the config
+// itself, never against copied literals — a paraphrase in the component would
+// satisfy a hardcoded string but not an equality with the source.
+import { BADGE_CONFIG } from "@/lib/badges";
 
 // MEH-473: ProducerCard now reads useTranslations() from next-intl
 // (Wave 3 i18n cutover). Mocked here following the Header.test.jsx
@@ -16,7 +20,9 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "משלוחים בלבד",
-      "producer.card.badges.available_today": "🛒 מגיעה היום",
+      "producer.card.badges.available_today": "מגיעה היום",
+      // MEH-1547: +N overflow disclosure aria.
+      "producer.card.badges.overflow_aria": `הצגת עוד ${values.count} תגיות`,
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
       verified_label: "מאומת",
       declared_label: "מוצהר",
@@ -30,6 +36,11 @@ vi.mock("next-intl", () => ({
       // Match the HE plural rendering for `{count} שמרו` (one/two/other).
       return `${values.count} שמרו`;
     }
+    // MEH-1678: mirrors the real he.json shape ("משלוח: {amount}") so the
+    // component's AMOUNT_SENTINEL split behaves identically under test —
+    // interpolating the sentinel here, not returning a pre-split literal.
+    if (key === "group_buys.delivery.fee") return `משלוח: ${values.amount}`;
+    if (key === "group_buys.delivery.fee_free") return "משלוח חינם";
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
@@ -182,6 +193,7 @@ beforeEach(() => {
   enqueueSpy.mockClear();
   favCache.ids = new Set();
   window.sessionStorage.clear();
+  window.localStorage.clear();
 });
 
 describe("ProducerCard — Phase B anatomy", () => {
@@ -280,6 +292,19 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
   });
 
+  // MEH-1864: the zero-review case stated explicitly. The `< 3` case above
+  // covers it arithmetically, but "a card with no reviews renders no rating
+  // block at all — no stars, no 0, no filler" is the acceptance criterion, so
+  // it gets its own named assertion rather than being inferred.
+  it("renders no rating block at all when reviews_count is 0", () => {
+    const { container } = render(
+      <ProducerCard producer={{ ...fullProducer, reviews_count: 0, avg_rating: 0 }} />,
+    );
+    expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
+    expect(container.querySelectorAll('[data-testid="icon-star"]')).toHaveLength(0);
+    expect(container.textContent).not.toMatch(/0\.0/);
+  });
+
   it("hides rating when avg_rating is null even if reviews_count is high", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, reviews_count: 10, avg_rating: null }} />,
@@ -333,7 +358,7 @@ describe("ProducerCard — Phase B anatomy", () => {
   });
 
   it("renders distance inline in the location line when coords exist on both sides", () => {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "user_location",
       JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
     );
@@ -347,6 +372,29 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(distance.textContent).not.toContain("km");
     // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
     expect(distance).not.toHaveAttribute("dir");
+  });
+
+  // MEH-1938 chunk 3 — the discriminating case: distance now reads through
+  // producerPoints(), so a producer whose only coordinates live in a
+  // producer_locations row (no Producer.lat/lng) still shows a distance.
+  // This would render nothing against the pre-chunk-3 direct p.lat/p.lng read.
+  it("renders distance from a locations[] row when Producer.lat/lng are both null", () => {
+    window.localStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          lat: null,
+          lng: null,
+          locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
+    );
+    const distance = screen.getByTestId("distance-pill");
+    expect(distance.textContent).toMatch(/ק"מ$/);
   });
 
   it("prefers short_description over top_product_name", () => {
@@ -395,7 +443,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /מומלץ/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /בחירת העורכת/ })).toBeInTheDocument(); // MEH-1492
     expect(screen.queryByRole("button", { name: /^חדש/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
@@ -473,6 +521,37 @@ describe("ProducerCard — Phase B anatomy", () => {
     const article = container.querySelector("article");
     expect(article.className).toMatch(/ring-primary/);
     expect(article.className).toMatch(/border-primary/);
+  });
+});
+
+// MEH-1678: producer-level delivery_fee row. Three states — a positive fee,
+// the fee=0 "free delivery" value, and the null/absent case — because 0 is a
+// value here and not an absence (same distinction DeliveryBlock.jsx and
+// MEH-1942 already pin for the per-area field); a truthiness check would
+// silently render the free case as "nothing to show".
+describe("ProducerCard — delivery fee row (MEH-1678)", () => {
+  it("renders the fee amount when delivery_fee is a positive number", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 15 }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח: 15₪");
+  });
+
+  it("renders 'free delivery' — not '0₪' — when delivery_fee is exactly 0", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 0 }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם");
+    expect(row).not.toHaveTextContent("0₪");
+  });
+
+  it("renders no row at all when delivery_fee is null (not stated)", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null }} />);
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+
+  it("renders no row at all when delivery_fee is undefined (field absent from the payload)", () => {
+    const { delivery_fee: _omit, ...withoutFee } = { ...fullProducer, delivery_fee: 15 };
+    render(<ProducerCard producer={withoutFee} />);
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
   });
 });
 
@@ -573,7 +652,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
           kashrut_verified_at: "2026-01-01T00:00:00Z",
           grass_fed: true,
           has_gluten_free_products: true,
-          has_delivery: true,
+          // MEH-2046: the delivery badge reads `delivers` (the server-computed
+          // predicate result), not the legacy `has_delivery` column.
+          delivers: true,
         }}
       />,
     );
@@ -589,5 +670,116 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       />,
     );
     expect(screen.queryByTestId("badge-overflow")).not.toBeInTheDocument();
+  });
+
+  // MEH-1547: the +N counter is a Popover trigger disclosing the HIDDEN
+  // badges. Fixture earns 4 badges (priority: grass_fed > gluten_free >
+  // kosher > delivery) → visible = grass_fed + gluten_free, hidden = kosher
+  // + delivery. The pre-1547 markup (static <span>) fails all three cases.
+  const overflowProducer = {
+    ...minimalProducer,
+    kashrut_verified_at: "2026-01-01T00:00:00Z",
+    grass_fed: true,
+    has_gluten_free_products: true,
+    // MEH-2046: see the note on the fixture above — `delivers`, not the
+    // legacy column, is what earns the delivery badge.
+    delivers: true,
+  };
+
+  it("+N is an interactive disclosure button (MEH-1547)", () => {
+    render(<ProducerCard producer={overflowProducer} />);
+    const chip = screen.getByTestId("badge-overflow");
+    expect(chip.tagName).toBe("BUTTON");
+    expect(chip).toHaveAttribute("aria-haspopup");
+    expect(chip).toHaveAttribute("aria-expanded", "false");
+    expect(chip).toHaveAttribute("aria-label", "הצגת עוד 2 תגיות");
+  });
+
+  it("tapping +N opens a popover listing ONLY the hidden badge labels (MEH-1547)", () => {
+    render(<ProducerCard producer={overflowProducer} />);
+    expect(screen.queryByTestId("badge-overflow-popover")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("badge-overflow"));
+    const panel = screen.getByTestId("badge-overflow-popover");
+    // Hidden badges (positions 3+): kosher + delivery.
+    expect(panel).toHaveTextContent("כשר");
+    expect(panel).toHaveTextContent("משלוח");
+    // The 2 visible badges must NOT be duplicated inside the disclosure.
+    expect(panel).not.toHaveTextContent("גראס פד");
+    expect(panel).not.toHaveTextContent("ללא גלוטן");
+  });
+
+  it("tapping +N does not navigate the card (MEH-1547)", () => {
+    const onClick = vi.fn();
+    render(<ProducerCard producer={overflowProducer} onClick={onClick} />);
+    fireEvent.click(screen.getByTestId("badge-overflow"));
+    expect(onClick).not.toHaveBeenCalled();
+    // Card root click elsewhere still works (guard is scoped to the button).
+    fireEvent.click(screen.getByTestId("producer-card"));
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  // MEH-1847: each overflow row carries a muted explanation line taken
+  // VERBATIM from BADGE_CONFIG[key].tooltip. Against the pre-1847 markup all
+  // three cases below fail — the panel rendered bare labels and no tooltip
+  // text at all.
+  describe("overflow rows carry an explanation line (MEH-1847)", () => {
+    it("renders the BADGE_CONFIG tooltip under each hidden badge's label", () => {
+      render(<ProducerCard producer={overflowProducer} />);
+      fireEvent.click(screen.getByTestId("badge-overflow"));
+      const panel = screen.getByTestId("badge-overflow-popover");
+      // Hidden badges are kosher + delivery. Label AND description for both.
+      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
+      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.tooltip);
+      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+      // Asserted against the config rather than a copied literal: a paraphrase
+      // in the component would pass a hardcoded string but not this.
+      expect(BADGE_CONFIG.delivery.tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
+    });
+
+    it("renders label only — no empty line — for a badge with no tooltip", () => {
+      // No badge ships without a tooltip today, so the defensive branch is
+      // unreachable from any fixture. Removing one for the duration of this
+      // test is what makes it testable at all; restored in finally so the
+      // shared config cannot leak into another case.
+      const original = BADGE_CONFIG.delivery.tooltip;
+      try {
+        delete BADGE_CONFIG.delivery.tooltip;
+        render(<ProducerCard producer={overflowProducer} />);
+        fireEvent.click(screen.getByTestId("badge-overflow"));
+        const panel = screen.getByTestId("badge-overflow-popover");
+        expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
+        expect(panel).not.toHaveTextContent(original);
+        // POSITIVE CONTROL, and it is the whole reason this case discriminates.
+        // Without it the assertions above pass on a panel that renders NO
+        // descriptions at all — i.e. on the pre-MEH-1847 markup — so the test
+        // would have been green for the wrong reason. The sibling row still
+        // having its own description is what proves the omission is the
+        // conditional doing its job rather than the feature being absent.
+        expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+        // The row itself is still there — a missing tooltip must not drop the
+        // badge, only its description.
+        const rows = panel.querySelectorAll('[role="listitem"]');
+        expect(rows).toHaveLength(2);
+      } finally {
+        BADGE_CONFIG.delivery.tooltip = original;
+      }
+    });
+
+    it("keeps the resolver-passed kashrut label, not the generic fallback", () => {
+      // One code → resolveBadgeLabel returns the certification's own label.
+      // The flat next-intl mock echoes the key, so seeing the key here proves
+      // the resolver ran; the raw config label would mean it did not.
+      render(
+        <ProducerCard
+          producer={{ ...overflowProducer, kashrut_badges: ["chalak"] }}
+        />,
+      );
+      fireEvent.click(screen.getByTestId("badge-overflow"));
+      const panel = screen.getByTestId("badge-overflow-popover");
+      expect(panel).toHaveTextContent("badges.chalak.label");
+      expect(panel).not.toHaveTextContent(BADGE_CONFIG.kosher.label);
+      // ...and the description is still the kosher tooltip.
+      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+    });
   });
 });

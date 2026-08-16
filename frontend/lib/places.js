@@ -15,11 +15,43 @@
  *           in components/AddressSearch.jsx (mints per autocomplete session,
  *           consumes on select).
  * Related:  components/AddressSearch.jsx (sole consumer).
- * History:  MEH-1234 (creation — Wolt-style Google Places + Nominatim fallback).
+ * History:  MEH-1234 (creation — Wolt-style Google Places + Nominatim fallback);
+ *           MEH-1766 (throw ProviderError on a rejected lookup instead of
+ *           returning [] — "provider said no" and "no such address" were
+ *           indistinguishable, so a disabled API key looked like a real
+ *           zero-result search on every surface).
  *
  * Suggestion = { id, primary, secondary, provider, raw }.
  * Place      = { street, neighborhood, city, postcode, lat, lng, displayName }.
  */
+
+/**
+ * A lookup the provider actively rejected (HTTP non-2xx) — as opposed to a
+ * successful lookup that legitimately matched nothing.
+ *
+ * MEH-1766: both cases used to `return []`, which is why a Places API (New)
+ * key that is present but not enabled for the endpoint (403 PERMISSION_DENIED)
+ * renders exactly like "דרך שרה matched nothing". The caller needs to tell
+ * them apart to log something actionable.
+ */
+export class ProviderError extends Error {
+  constructor(provider, status, detail) {
+    super(`${provider} address lookup rejected (HTTP ${status})`);
+    this.name = "ProviderError";
+    this.provider = provider;
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+/** Read a failed response's body for the log line, never throwing itself. */
+async function rejectionDetail(res) {
+  try {
+    return (await res.text()).slice(0, 300);
+  } catch {
+    return "";
+  }
+}
 
 // Read the NEXT_PUBLIC_* literal at call time (not module load) so Next inlines
 // it in the browser bundle AND vitest can toggle it via vi.stubEnv.
@@ -93,7 +125,10 @@ async function nominatimAutocomplete(query, { signal } = {}) {
     headers: { "Accept-Language": "he,en;q=0.8" },
     signal,
   });
-  if (!res.ok) return [];
+  // MEH-1766: reject loudly. An empty array here means "matched nothing".
+  if (!res.ok) {
+    throw new ProviderError("nominatim", res.status, await rejectionDetail(res));
+  }
   const data = await res.json();
   const rows = Array.isArray(data) ? data : [];
   const suggestions = rows.map((r, idx) => {
@@ -130,7 +165,13 @@ async function googleAutocomplete(query, { signal, sessionToken } = {}) {
       }),
     },
   );
-  if (!res.ok) return [];
+  // MEH-1766: a present-but-unauthorized key (Places API (New) not enabled on
+  // the project, or an HTTP-referrer restriction that misses the deployment
+  // domain) answers 403 here. Returning [] made that indistinguishable from a
+  // genuine no-match — throw so the caller can log which one it was.
+  if (!res.ok) {
+    throw new ProviderError("google", res.status, await rejectionDetail(res));
+  }
   const data = await res.json();
   const preds = (data.suggestions || [])
     .map((s) => s.placePrediction)
@@ -207,4 +248,45 @@ export async function autocompleteAddresses(query, opts = {}) {
 export async function resolveSuggestion(suggestion, opts = {}) {
   if (suggestion?.provider === "google") return googleResolve(suggestion, opts);
   return suggestion?.raw ?? null;
+}
+
+/**
+ * City name → {lat, lng}, or null when nothing resolved (MEH-2014 PR 2).
+ *
+ * /map lets a user who denied GPS pick a city as the origin for the "מרחק"
+ * sort, and a city name is the only input available — the frontend has no
+ * city→coordinate table (`data/cities.js` is names only) and `GET /cities`
+ * returns names, even though the backend `cities` table does carry seeded
+ * lat/lng. Rather than teach the map about providers, this reuses the same
+ * two-step the address field uses.
+ *
+ * Deliberately returns null instead of throwing on a no-match: the caller's
+ * failure copy is identical for "no such city" and "provider said no", and a
+ * failed origin lookup must never take down the city FILTER that shares the
+ * same click.
+ *
+ * A provider rejection (ProviderError) is **re-thrown rather than folded into
+ * that null**, so the two stay distinguishable at the boundary — MEH-1766
+ * exists because collapsing them made a disabled API key look like a real
+ * zero-result search. Today's only caller (/map) catches both and shows one
+ * toast; it does not log, so the distinction is currently available and
+ * unused. Stated plainly rather than claimed as a benefit this code delivers.
+ */
+export async function geocodeCity(name, opts = {}) {
+  const query = String(name ?? "").trim();
+  if (!query) return null;
+  const suggestions = await autocompleteAddresses(query, opts);
+  const first = Array.isArray(suggestions) ? suggestions[0] : null;
+  if (!first) return null;
+  const place = await resolveSuggestion(first, opts);
+  // `== null` FIRST, and it is load-bearing: normalizeNominatim yields
+  // `lat: null` for a row without coordinates, and `Number(null)` is **0**, not
+  // NaN. A bare Number.isFinite check therefore accepts null as the valid
+  // origin (0, 0) — the Gulf of Guinea — and every producer sorts by distance
+  // from there, silently. Found by the geocodeCity unit test, not by review.
+  if (place?.lat == null || place?.lng == null) return null;
+  const lat = Number(place.lat);
+  const lng = Number(place.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
 }

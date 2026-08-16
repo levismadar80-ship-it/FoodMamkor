@@ -8,9 +8,17 @@ import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
+import { geocodeCity } from "@/lib/places";
+import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
+import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation, setUserLocation } from "@/lib/user-location";
+import {
+  useUserLocationOrigin,
+  setUserLocation,
+  clearUserLocation,
+  SOURCE_CITY,
+} from "@/lib/user-location";
 
 import CityPickerModal from "./components/CityPickerModal";
 import FilterChipsBar from "./components/FilterChipsBar";
@@ -77,11 +85,30 @@ export default function MapPage() {
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
-  // useUserLocation (sessionStorage) — the same source the cards use for their
-  // distance labels, so "מרחק" orders by exactly what the user sees.
+  // useUserLocation (localStorage since MEH-2014) — the same source the cards
+  // use for their distance labels, so "מרחק" orders by exactly what the user
+  // sees.
   const [sortBy, setSortBy] = useState(null);
-  const userLoc = useUserLocation();
-  const effectiveSort = sortBy ?? (userLoc ? "nearest" : "newest");
+  // MEH-2014: "מרחק" is a trigger now, so there is a window between picking it
+  // and having a fix. The select stays on its previous value throughout — the
+  // pending flag exists to disable it and to force the re-render that snaps the
+  // native <select> back after a failed attempt.
+  const [geoSortPending, setGeoSortPending] = useState(false);
+  // MEH-2014 PR 2: the origin carries WHERE it came from, because the UI has to
+  // say which of the two is active. sortProducers and every distance label read
+  // only .lat/.lng, so the extra fields are inert everywhere except the label.
+  const userLoc = useUserLocationOrigin();
+  // Separate from geoSortPending: a city lookup is a network round-trip on a
+  // path where the previous origin must keep working until the new one lands.
+  const [cityOriginPending, setCityOriginPending] = useState(false);
+  // Monotonic id of the newest city lookup — see handleMapCitySelected.
+  const cityOriginRequestRef = useRef(0);
+  // MEH-1864: the auto default is now read from two places (here and the
+  // rating-data fallback below), so it is named once instead of spelled twice.
+  const autoSort = userLoc ? "nearest" : "newest";
+  // The requested axis, before the rating-data gate below (the gate needs
+  // `feed`, which is established further down).
+  const requestedSort = sortBy ?? autoSort;
 
   // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
   // bottom strip of the full-bleed map and clips a marker there. Reserve that
@@ -233,6 +260,17 @@ export default function MapPage() {
   }, []);
 
   const feed = useProducersFeed();
+  // MEH-1864: "לפי דירוג" is offered only once RATING_SORT_THRESHOLD businesses
+  // carry >= 1 review. /map holds the whole feed client-side, so the count is
+  // read straight off it — no extra request. An axis already selected when the
+  // feed drops below the threshold falls back to the auto default rather than
+  // leaving the <select> on a value it no longer renders.
+  const ratingSortEnabled = useMemo(
+    () => isRatingSortEnabled(feed.allProducers),
+    [feed.allProducers],
+  );
+  const effectiveSort =
+    requestedSort === "rating" && !ratingSortEnabled ? autoSort : requestedSort;
   const filters = useMapFilters({
     allProducers: feed.allProducers,
     categories: feed.categories,
@@ -240,6 +278,9 @@ export default function MapPage() {
     userCity: userCityCtx.city,
     setUserCity: userCityCtx.setCity,
     setShowCityPicker,
+    // MEH-1670: the viewport filter derives points the same way the marker layer
+    // does, so it needs the same layer-toggle state.
+    showSecondaryLayer,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
@@ -273,7 +314,48 @@ export default function MapPage() {
     // the producer list by delivery_city, it doesn't pan the map. Users who
     // want to zoom into their city use the "קרוב אליי" (goToMyLocation)
     // button or pan manually.
-  }, [userCityCtx, filters, feed]);
+
+    // MEH-2014 PR 2: the chosen city also becomes the sort origin, which is
+    // what makes "מרחק" usable with GPS denied. This is LocationModal's
+    // onSelectCity and LocationModal is the "where are you?" modal — every
+    // path that opens it (the crosshair's denial, the sort trigger's denial,
+    // the near-me pill's denial) is a user establishing her location, so
+    // treating the pick as an origin is the same intent, not a second meaning.
+    //
+    // The filter above is deliberately NOT awaited on this: a geocode failure
+    // must leave the city filter working exactly as it did before PR 2.
+    // Stale-resolution guard: the modal closes on pick, so a second pick needs
+    // another denial — but that is a user action, not a lock, and a slow first
+    // lookup can land AFTER a fast second one. Without the token the stored
+    // origin would be the city the user replaced while the filter shows the one
+    // she chose, and the label would confidently name the wrong one. Only the
+    // newest request may write.
+    const token = ++cityOriginRequestRef.current;
+    setCityOriginPending(true);
+    geocodeCity(city)
+      .then((coords) => {
+        if (token !== cityOriginRequestRef.current) return;
+        if (!coords) {
+          showToast.info(t("map.client.sort.city_origin_failed"));
+          return;
+        }
+        // Replaces any GPS fix — one key, so mutual exclusion is structural.
+        setUserLocation(coords.lat, coords.lng, { source: SOURCE_CITY, city });
+        setSortBy("nearest");
+      })
+      .catch(() => {
+        if (token !== cityOriginRequestRef.current) return;
+        // ProviderError (MEH-1766) or a network failure. Same user-facing
+        // outcome: no origin, and the copy says a city could not be located
+        // rather than blaming the city the user picked.
+        showToast.info(t("map.client.sort.city_origin_failed"));
+      })
+      .finally(() => {
+        // The pending flag belongs to the newest request only; an outrun
+        // lookup must not clear the spinner the live one is showing.
+        if (token === cityOriginRequestRef.current) setCityOriginPending(false);
+      });
+  }, [userCityCtx, filters, feed, t]);
 
   // Was MapClient.jsx:430-455 — handleGpsClick
   const handleGpsClick = useCallback(() => {
@@ -312,6 +394,70 @@ export default function MapPage() {
     );
   }, [gpsLoading, sync.mapApiRef]);
 
+  // MEH-2014: "מרחק" used to be <option disabled> whenever no fix was cached,
+  // and the ONLY writer of a fix was a button on another page — so landing
+  // straight on /map (link, search, share) showed a grey option that never
+  // said why. NN/g: a disabled control that gives no feedback reads as broken.
+  // It is a trigger now. The request is in-context, never on page load
+  // (Lighthouse geolocation-on-start), and every failure names the manual way.
+  const handleSortChange = useCallback(
+    (value) => {
+      if (value !== "nearest" || userLoc) {
+        setSortBy(value);
+        return;
+      }
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        showToast.error(t("map.client.errors.no_gps"));
+        return;
+      }
+      setGeoSortPending(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGeoSortPending(false);
+          const { latitude: lat, longitude: lng } = pos.coords || {};
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            showToast.error(t("map.client.sort.geo_unknown"));
+            return;
+          }
+          setUserLocation(lat, lng);
+          setSortBy("nearest");
+        },
+        (err) => {
+          setGeoSortPending(false);
+          // NEVER surface GeolocationPositionError.message — it is English-only
+          // and developer-facing per the W3C Geolocation spec. Map err.code to
+          // our own Hebrew strings, each pointing at choosing a city instead.
+          const msgs = {
+            1: t("map.client.sort.geo_denied"),
+            2: t("map.client.sort.geo_unavailable"),
+            3: t("map.client.sort.geo_timeout"),
+          };
+          showToast.info(msgs[err?.code] ?? t("map.client.sort.geo_unknown"));
+          // Denial is the one failure with an alternative available right now,
+          // so offer it — the same fallback handleGpsClick uses for code 1.
+          if (err?.code === 1) setLocationModalOpen(true);
+          // sortBy is deliberately NOT set: `value={effectiveSort}` is
+          // unchanged, so this re-render snaps the native <select> back to
+          // whatever it displayed before the attempt.
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    },
+    [userLoc, t]
+  );
+
+  // MEH-2014: the counterpart to persisting the fix across tab close. Without
+  // a way out, a stored location would be permanent — session scope used to
+  // be the (invisible) exit, and this is the visible one that replaces it.
+  const handleClearLocation = useCallback(() => {
+    clearUserLocation();
+    // Drop an explicit "nearest" too. Leaving it would sort by a location that
+    // no longer exists, which sortProducers renders as the unchanged input
+    // order — a list that silently stops meaning what its label says. `null`
+    // returns the select to auto, which is "newest" once the fix is gone.
+    setSortBy((prev) => (prev === "nearest" ? null : prev));
+  }, []);
+
   // MEH-970 chunk 2-lite: single near-me invoker shared by the labeled
   // "קרוב אליי" pill (mobile) and the existing filter-bar crosshair. Reuses
   // the EXISTING goToMyLocation imperative path (MapComponent) — no second
@@ -323,11 +469,14 @@ export default function MapPage() {
     sync.mapApiRef.current?.goToMyLocation(
       () => setLocationModalOpen(true),
       ({ lat, lng }) => {
-        const hasNearby = feed.allProducers.some(
-          (p) =>
-            Number.isFinite(p.lat) &&
-            Number.isFinite(p.lng) &&
-            haversineKm(lat, lng, p.lat, p.lng) <= NEAR_ME_RADIUS_KM
+        // MEH-1938 chunk 3: read through producerPoints() instead of
+        // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
+        // citation (MapClient.jsx:348-350) had already drifted to this site
+        // by the time this chunk landed; re-verified live via grep.
+        const hasNearby = feed.allProducers.some((p) =>
+          producerPoints(p).some(
+            (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
+          )
         );
         if (!hasNearby) {
           showToast.info(t("map.near_me_pill.empty"));
@@ -344,30 +493,59 @@ export default function MapPage() {
   // with no blocking location gate. LocationModal remains reachable only as
   // the geolocation permission-denied fallback (handleGpsClick, err.code 1).
 
-  // Was MapClient.jsx:196-215 — focusProducer deep-link effect.
-  useEffect(() => {
-    if (feed.allProducers.length === 0) return;
-    let focus;
-    try {
-      const raw = sessionStorage.getItem("focusProducer");
-      if (!raw) return;
-      focus = JSON.parse(raw);
-      sessionStorage.removeItem("focusProducer");
-    } catch {
-      return;
-    }
-    if (!focus?.id) return;
-    filters.setActiveProducerId(focus.id);
-
-    // Give the map a tick to mount + markers to register before flying
-    const t = setTimeout(() => {
-      sync.mapApiRef.current?.focusProducer(focus.id);
-    }, 400);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feed.allProducers]);
+  // MEH-1576: the sessionStorage deep-link effect that used to live here was
+  // removed — it had no writer. Its only one was the producer-page "show on
+  // map" button, deleted with ActionRow.jsx in MEH-1146 PR #1670; that ticket
+  // replaced the affordance with the inline MiniMap + Waze/Google nav
+  // (ProducerSections.jsx:514), so the reader sat orphaned for two weeks.
+  // DO NOT reintroduce a sessionStorage hand-off here — if producer → map
+  // focus is ever wanted again, it belongs in the URL, not in session state.
 
   // ============================================================
+
+  // MEH-2014: ONE clear affordance, rendered in both shells. The sort <select>
+  // lives in the desktop sidebar only (`hidden lg:grid`), but a mobile visitor
+  // CAN set a location — the NearMePill writes one. Shipping the clear button
+  // beside the select alone would have left every mobile user with a fix that
+  // now outlives the tab and no way to remove it, which is strictly worse than
+  // the session-scoped behaviour this ticket replaced. Defined once rather than
+  // copied into both shells (workflow.md → Smell #1: two mechanisms, one job).
+  //
+  // MEH-2014 PR 2 turned this into an ORIGIN control rather than a bare clear
+  // button. With two possible origins, "clear" alone left the user unable to
+  // tell what the distances were measured from — and after a city pick the
+  // card labels change meaning silently (MEH-1307 dropped the "ממך" suffix, so
+  // a label is a bare magnitude). Naming the active origin is what keeps the
+  // numbers readable; the clear button is unchanged beneath it.
+  const clearLocationControl =
+    cityOriginPending || (userLoc && !geoSortPending) ? (
+      <div
+        className="flex flex-wrap items-center gap-x-2 gap-y-1"
+        data-testid="sort-origin"
+      >
+        {cityOriginPending ? (
+          <span role="status" className="text-xs text-fg-muted">
+            {t("map.client.sort.locating_city")}
+          </span>
+        ) : (
+          <>
+            <span className="text-xs text-fg-muted" data-testid="sort-origin-label">
+              {userLoc.source === SOURCE_CITY
+                ? t("map.client.sort.origin_city", { city: userLoc.city })
+                : t("map.client.sort.origin_gps")}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearLocation}
+              data-testid="clear-user-location"
+              className="text-xs text-fg-muted underline underline-offset-2 hover:text-primary min-h-[44px]"
+            >
+              {t("map.client.sort.clear_location")}
+            </button>
+          </>
+        )}
+      </div>
+    ) : null;
 
   const filterChipsBar = (
     <FilterChipsBar
@@ -381,7 +559,24 @@ export default function MapPage() {
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
       activeAttributeCount={filters.activeAttributeCount}
+      cityFilter={filters.cityFilter}
     />
+  );
+
+  // MEH-1611: focus-on-select. Keyed on selectedProducer, NOT activeProducerId —
+  // the selected card's onClose (below) clears only selectedProducer, and
+  // "close the card → every pin back to normal" is a hard acceptance criterion.
+  // selectedProducer is also the state both selection paths agree on
+  // (useMapSync handleCardClick + handleMarkerClick set it together).
+  const focusedProducerId = filters.selectedProducer?.id ?? null;
+
+  // MEH-2046: is the layer toggle currently costing the user businesses? Read
+  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
+  // never claim something the visible map contradicts. Short-circuits while the
+  // layer is on, which is the default and the common case.
+  const secondaryHidden = useMemo(
+    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
+    [showSecondaryLayer, filters.filteredByCategory],
   );
 
   const mapPane = (
@@ -397,6 +592,8 @@ export default function MapPage() {
       visitedIds={hints.visitedIds}
       showSecondaryLayer={showSecondaryLayer}
       onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
+      secondaryHidden={secondaryHidden}
+      focusedProducerId={focusedProducerId}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
@@ -424,6 +621,11 @@ export default function MapPage() {
 
   const cardList = (
     <MapCardList
+      // MEH-1671: closes the desktop-sidebar empty-state flash. The mobile
+      // sheet already gates one level up (:801, MEH-1054); passing it here
+      // too is a no-op there (the sheet swaps children for its own skeleton
+      // while loading) and makes the sidebar mount safe.
+      loading={feed.loading}
       visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
@@ -498,14 +700,22 @@ export default function MapPage() {
                 <span className="text-sm text-fg-muted" aria-hidden="true">{t("map.client.sort.label")}</span>
                 <select
                   value={effectiveSort}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
-                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                  aria-busy={geoSortPending || undefined}
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
                 >
-                  {/* "מרחק" needs a GPS fix to mean anything — disabled without one
-                      (the auto default then falls back to newest). */}
-                  <option value="nearest" disabled={!userLoc}>{t("map.client.sort.nearest")}</option>
-                  <option value="rating">{t("map.client.sort.top_rated")}</option>
+                  {/* MEH-2014: never `disabled`. Choosing it without a known
+                      location ASKS for one (handleSortChange) instead of
+                      sitting grey with no explanation. */}
+                  <option value="nearest">{t("map.client.sort.nearest")}</option>
+                  {/* MEH-1864: rating axis only once enough businesses carry a
+                      review — otherwise it orders the list on data almost
+                      nobody has. nearest + newest remain, so the control stays. */}
+                  {ratingSortEnabled && (
+                    <option value="rating">{t("map.client.sort.top_rated")}</option>
+                  )}
                   <option value="newest">{t("map.client.sort.newest")}</option>
                 </select>
                 <CaretDown
@@ -516,6 +726,16 @@ export default function MapPage() {
                 />
               </div>
             </div>
+            {/* MEH-2014: the fix now outlives the tab, so it needs a visible
+                way out. Shown only when there is something to clear, and it
+                announces the pending state for screen readers, which cannot
+                see the greyed <select>. */}
+            {geoSortPending && (
+              <p role="status" className="text-xs text-fg-muted mb-3">
+                {t("map.client.sort.locating")}
+              </p>
+            )}
+            {clearLocationControl && <div className="mb-3">{clearLocationControl}</div>}
             {cardList}
           </div>
         </div>
@@ -556,6 +776,11 @@ export default function MapPage() {
           <div className="mb-2">
             <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
+          {/* MEH-2014: the mobile half of the clear affordance. There is no sort
+              <select> on this shell, but the NearMePill writes a location here,
+              and a persisted fix with no way out is the failure this ticket's
+              "explicit clear" requirement exists to prevent. */}
+          {clearLocationControl && <div className="mb-2">{clearLocationControl}</div>}
           {filterChipsBar}
         </div>
 
@@ -565,7 +790,8 @@ export default function MapPage() {
             overlap regardless of the tags row appearing/disappearing (which also
             kills the documented ~10px spill the old 174 hack carried).
             MEH-945: while the cookie banner shows, reserve its footprint at the
-            bottom — its own offset (safe-area + 80px, mirroring CookieBanner.jsx:68)
+            bottom — its own offset (MEH-1950: derived nav-clearance + 8px gap,
+            ≈ safe-area + 80px at the default pill height — CookieBanner.jsx)
             plus its live --cookie-banner-h, plus a 16px clearance — so the banner
             no longer overlays the canvas. The map's own `min-h-[500px]`
             (MapComponent.jsx) would otherwise spill back under the banner on short

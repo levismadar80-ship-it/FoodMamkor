@@ -82,7 +82,26 @@ const securityHeaders = [
       "default-src 'self'",
       `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com${vercelLiveStyle}`,
+      // MEH-1831: fonts.googleapis.com dropped from style-src — next/font
+      // self-hosts every family, so no Google stylesheet is fetched any more
+      // (neither the <link> in layout.js nor the @import that headed
+      // globals.css).
+      `style-src 'self' 'unsafe-inline' https://accounts.google.com${vercelLiveStyle}`,
+      // MEH-1831 kept fonts.gstatic.com here because StoryCardCanvas.jsx
+      // (the admin Instagram story-card generator) built its FontFace objects
+      // from a live Google URL at runtime — the one remaining consumer, since
+      // MEH-1831 already moved the page's own fonts off the network.
+      // MEH-2043 repointed that component at the same locally self-hosted
+      // .woff2 files app/fonts.js feeds next/font/local, via a direct static
+      // import (a URL under this origin, not through next/font/local itself
+      // — Canvas 2D's `font` property needs a FontFace it can load, not a CSS
+      // variable). font-src 'self' now covers it. Dropping this entry is left
+      // to a deliberate follow-up (MEH-2043 DoD item 4) rather than done in
+      // the same PR as the component fix — CSP-hardening ahead of the
+      // component landing would have silently broken it (rejected load,
+      // caught exception, wrong-typeface fallback with nothing failing); the
+      // same risk applies to un-hardening on unverified footing, so it stays
+      // deferred until the fix has been checked with the network blocked.
       `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
       `connect-src 'self' https://accounts.google.com https://places.googleapis.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,

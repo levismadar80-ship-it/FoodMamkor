@@ -10,20 +10,49 @@ import {
 describe("BADGE_PRIORITY", () => {
   it("matches the Phase B fold order", () => {
     // MEH-1259: "organic" removed from the priority list (badge hidden).
+    // MEH-1492: recommended drops below license (fact before opinion).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
       "grass_fed",
       "gluten_free",
       "vegetarian",
       "vegan",
       "lactose_free",
+      // MEH-1934: the new diet badge joins the diet run, after lactose_free —
+      // where every other diet badge already sits relative to kosher/delivery.
+      // Only the top 2 reach a card, so position is load-bearing and is pinned
+      // deliberately. (MEH-2047 withdrew its low_carb sibling from this run.)
+      "no_added_sugar",
       "kosher",
       "delivery",
-      "products",
     ]);
+  });
+
+  // MEH-1846: absence assertion. The array check above would still pass if
+  // "products" were reintroduced at a position this test happens not to pin,
+  // and it says nothing about BADGE_CONFIG. These two do, and they are the
+  // pair that fails if the key comes back through either door.
+  it("carries no products key, in either structure (MEH-1846)", () => {
+    expect(BADGE_PRIORITY).not.toContain("products");
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("products");
+    // MEH-1934: 11 → 13 (no_added_sugar + low_carb); MEH-2047: 13 → 12, low_carb
+    // withdrawn as an undefined nutrition claim. Both numbers move together
+    // on purpose — allBadges() iterates BADGE_PRIORITY while the tooltips live
+    // in BADGE_CONFIG, so a badge present in one and absent from the other is
+    // either never rendered or rendered undefined. This pin caught exactly that
+    // during MEH-1934, when BADGE_PRIORITY was left un-updated.
+    expect(BADGE_PRIORITY).toHaveLength(12);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(12);
+    // MEH-2047: absence in BOTH structures, the same pair-check the products
+    // removal above uses — a count alone would pass if something else were
+    // added in the same commit that removed this.
+    expect(BADGE_PRIORITY).not.toContain("low_carb");
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("low_carb");
+    // Stronger than either count: the two arrays must describe the SAME set.
+    expect([...BADGE_PRIORITY].sort()).toEqual(Object.keys(BADGE_CONFIG).sort());
   });
 });
 
@@ -221,26 +250,144 @@ describe("allBadges", () => {
     ).toEqual(["kosher"]);
   });
 
-  it("delivery — via delivery_count > 0", () => {
-    expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
+  // MEH-2046: the badge reads the server-computed `delivers` — the result of
+  // producer_listing._has_delivery_condition() — instead of the old
+  // `has_delivery || delivery_count > 0` heuristic. These three replace the
+  // two that asserted the heuristic's operands directly.
+  it("delivery — via the server-computed delivers flag", () => {
+    expect(allBadges({ delivers: true }).map((b) => b.key)).toEqual(["delivery"]);
   });
 
-  it("delivery — via has_delivery flag when delivery_count is 0", () => {
-    expect(allBadges({ delivery_count: 0, has_delivery: true }).map((b) => b.key)).toEqual(
-      ["delivery"],
-    );
+  it("delivery — the MEH-1836 nationwide case now earns the badge", () => {
+    // A business that delivers everywhere holds ZERO delivery_areas rows under
+    // the XOR data model, and the legacy column is not set. Both old operands
+    // are therefore falsy while the business genuinely delivers — it passed the
+    // ?has_delivery filter and rendered no delivery badge. That is the exact
+    // divergence this ticket closes, so it is pinned here as a payload shape.
+    expect(
+      allBadges({ delivers: true, has_delivery: false, delivery_count: 0 }).map(
+        (b) => b.key,
+      ),
+    ).toEqual(["delivery"]);
   });
 
-  it("products — when products_count >= 3", () => {
-    expect(allBadges({ products_count: 3 }).map((b) => b.key)).toEqual(["products"]);
-    expect(allBadges({ products_count: 10 }).map((b) => b.key)).toEqual(["products"]);
-    expect(allBadges({ products_count: 2 }).map((b) => b.key)).toEqual([]);
+  it("delivery — the legacy operands alone no longer earn it", () => {
+    // The inverse pin. `has_delivery` is a column no backend delivery predicate
+    // consults, and `delivery_count` counts delivery_areas rows — neither is
+    // the filter's answer, so neither may light the badge on its own. Without
+    // this, quietly restoring either as a fallback would go unnoticed and
+    // reintroduce the drift.
+    expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({ has_delivery: true }).map((b) => b.key)).toEqual([]);
+    expect(
+      allBadges({ has_delivery: true, delivery_count: 9 }).map((b) => b.key),
+    ).toEqual([]);
+  });
+
+  // MEH-1841 — specific supersedes generic. ProducerCard renders its own
+  // "משלוחים בלבד" pill for a delivery-only business; the generic "משלוח"
+  // badge alongside it was a second chip for the same fact. Suppression lives
+  // in lib/badges.js so every consumer (card top-2, `+N` overflow popover,
+  // badgeCount) agrees.
+  describe("delivery — delivery-only suppression (MEH-1841)", () => {
+    const deliveryOnly = {
+      has_physical_location: false,
+      offers_delivery: true,
+      // MEH-2046: `delivers` is what earns the badge now, so the suppression
+      // below is only meaningful against a payload that would otherwise earn
+      // it. The legacy operands are kept alongside to prove they are inert:
+      // with suppression lifted it is `delivers` doing the work, not these.
+      delivers: true,
+      has_delivery: true,
+      delivery_count: 4,
+    };
+
+    it("delivery-only producer earns NO generic delivery badge", () => {
+      expect(allBadges(deliveryOnly).map((b) => b.key)).not.toContain("delivery");
+      expect(allBadges(deliveryOnly)).toEqual([]);
+    });
+
+    it("suppression holds for a nationwide delivery-only business", () => {
+      // MEH-2046: the old form of this case set `delivery_count: 4`, which a
+      // nationwide business never has. Expressed through `delivers`, the
+      // suppression now covers the shape that previously slipped past the
+      // badge entirely.
+      expect(
+        allBadges({
+          has_physical_location: false,
+          offers_delivery: true,
+          delivers: true,
+          delivery_count: 0,
+        }).map((b) => b.key),
+      ).toEqual([]);
+    });
+
+    it("physical + delivery business KEEPS the generic delivery badge", () => {
+      expect(
+        allBadges({
+          has_physical_location: true,
+          offers_delivery: true,
+          delivers: true,
+        }).map((b) => b.key),
+      ).toContain("delivery");
+    });
+
+    it("a payload without has_physical_location keeps the badge", () => {
+      // Backend defaults has_physical_location to True (schemas/schemas.py:1772);
+      // only an explicit `false` suppresses. A partial payload must not silently
+      // lose its delivery indication.
+      expect(allBadges({ delivers: true }).map((b) => b.key)).toContain(
+        "delivery",
+      );
+      expect(
+        allBadges({ has_physical_location: null, delivers: true }).map(
+          (b) => b.key,
+        ),
+      ).toContain("delivery");
+    });
+
+    it("keeps the badge when the pill would NOT render (no offers_delivery)", () => {
+      // ProducerCard's pill needs BOTH fields. This combination is rejected by
+      // the owner form and the backend model, but a legacy row in this state
+      // must not end up with zero delivery indication.
+      expect(
+        allBadges({
+          has_physical_location: false,
+          offers_delivery: false,
+          delivers: true,
+        }).map((b) => b.key),
+      ).toContain("delivery");
+    });
+
+    it("badgeCount and topBadges agree with the suppression", () => {
+      // The `+N` overflow indicator on ProducerCard is driven by badgeCount,
+      // so a stale count would re-surface the badge in the popover.
+      // MEH-1846: the second earned badge was "products" until it was removed;
+      // "new" replaces it so this still asserts a MULTI-badge producer (a
+      // single-badge fixture could not detect a stale count at all).
+      const p = {
+        ...deliveryOnly,
+        verification_tier: "verified",
+        days_since_created: 3,
+      };
+      expect(badgeCount(p)).toBe(2);
+      expect(topBadges(p, 5).map((b) => b.key)).toEqual(["verified", "new"]);
+    });
+  });
+
+  // MEH-1846: replaces the old "products — when products_count >= 3" case.
+  // Asserting the BEHAVIOUR (no badge at any count) rather than the absence of
+  // a line of code: a reintroduced badge fails this whatever it is keyed on.
+  it("products_count earns NO badge at any value (MEH-1846)", () => {
+    for (const products_count of [0, 2, 3, 10, 999]) {
+      expect(allBadges({ products_count }).map((b) => b.key)).toEqual([]);
+    }
   });
 
   it("returns badges in priority order regardless of field order", () => {
     const badges = allBadges({
       products_count: 10,
-      has_delivery: true,
+      delivers: true,
       kashrut_verified_at: "2026-01-01T00:00:00Z",
       grass_fed: true,
       has_gluten_free_products: true,
@@ -253,10 +400,11 @@ describe("allBadges", () => {
       verification_tier: "verified",
     });
     // MEH-1259: organic_certified is set but earns no badge — absent from order.
+    // MEH-1492: license now precedes recommended.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
       "grass_fed",
       "gluten_free",
@@ -264,7 +412,6 @@ describe("allBadges", () => {
       "lactose_free",
       "kosher",
       "delivery",
-      "products",
     ]);
   });
 
@@ -280,7 +427,7 @@ describe("topBadges", () => {
     verification_tier: "verified",
     is_recommended: true,
     days_since_created: 10,
-    has_delivery: true,
+    delivers: true,
     products_count: 5,
   };
 
@@ -315,15 +462,15 @@ describe("topBadges", () => {
     const p = {
       verification_tier: "verified",
       grass_fed: true,
-      has_delivery: true,
+      delivers: true,
     };
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
-  // MEH-531: license sits between recommended and new.
+  // MEH-1492: license now sits between verified and recommended (fact > opinion).
   // MEH-1162: fixture must be verified-tier — an unverified license no longer
   // earns the chip, so the verified badge (priority 0) leads the expectation.
-  it("license priority — sits between recommended and new", () => {
+  it("license priority — sits between verified and recommended", () => {
     const p = {
       verification_tier: "verified",
       is_recommended: true,
@@ -332,15 +479,15 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 4).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
     ]);
-    // limit=3 → verified + recommended + license, new gets truncated
+    // limit=3 → verified + license + recommended, new gets truncated
     expect(topBadges(p, 3).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
     ]);
   });
 });
@@ -380,15 +527,17 @@ describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
 
 describe("badgeCount", () => {
   it("counts all earned badges", () => {
+    // MEH-1846: was 5 with the products badge; products_count is left on the
+    // fixture on purpose, so this also asserts it contributes nothing.
     expect(
       badgeCount({
         verification_tier: "verified",
         is_recommended: true,
         days_since_created: 5,
-        has_delivery: true,
+        delivers: true,
         products_count: 7,
       }),
-    ).toBe(5);
+    ).toBe(4);
   });
 
   it("counts the new Phase B badges (organic no longer counts — MEH-1259)", () => {

@@ -77,8 +77,7 @@ pg_restore --no-owner --no-acl -d "$DRILL_URL" mehamakor_YYYYMMDD_HHMMSS.dump
 ```
 
 **אימות א' — ספירת טבלאות.** חייבת להתאים ל-`EXPECTED_TABLES` שב-CI gate
-(`.github/workflows/pr-checks.yml`, job "Verify alembic schema"). **נכון לכתיבת
-המסמך: 38.** ה-CI gate הוא ה-source of truth — אם הוא עודכן (נוספה/נמחקה
+(`.github/workflows/pr-checks.yml`, job "Verify alembic schema"). **נכון ל-14/08/2026: 40** (נמדד מ-`pr-checks.yml:360`). ה-CI gate הוא ה-source of truth — אם הוא עודכן (נוספה/נמחקה
 טבלה), עדכני את המספר כאן לפי הערך שם, לא להיפך.
 
 ```bash
@@ -87,7 +86,7 @@ psql "$DRILL_URL" -tAc \
    WHERE table_schema='public'
      AND table_type='BASE TABLE'
      AND table_name <> 'alembic_version';"
-# מצופה: 38 (או הערך הנוכחי של EXPECTED_TABLES ב-pr-checks.yml)
+# מצופה: 40 (או הערך הנוכחי של EXPECTED_TABLES ב-pr-checks.yml)
 ```
 
 **אימות ב' — data אמיתי קיים.** הטבלאות המרכזיות חייבות להחזיר count > 0

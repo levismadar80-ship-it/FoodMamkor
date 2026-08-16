@@ -19,7 +19,6 @@ vi.mock("next-intl", () => ({
 vi.mock("@/lib/api", () => ({ default: { get: () => Promise.resolve({ data: { reviews: [] } }) } }));
 
 // Stub the child components + Phosphor icons ProducerHeader composes.
-vi.mock("@/components/AvailabilityBadge", () => ({ default: () => <div data-testid="availability" /> }));
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge-row" /> }));
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span data-testid="cat" /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div data-testid="kashrut" /> }));
@@ -30,6 +29,21 @@ vi.mock("@phosphor-icons/react", () => ({
   Star: () => <span data-testid="star" />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
+  // MEH-1609: the alerts re-entry control's glyph.
+  Bell: () => <span />,
+}));
+// MEH-1609: the header now reads auth + the favorites-cache to decide whether
+// to offer the alerts re-entry control. This suite is about the trust strip,
+// so it stays logged-out (control absent) — the control's own states are
+// covered in ProducerHeaderAlertsReentry.test.jsx.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
+vi.mock("@/lib/favorites-cache", () => ({
+  ensureFavoritesLoaded: () => Promise.resolve(),
+  isFavorited: () => false,
+  subscribeFavorites: () => () => {},
+}));
+vi.mock("@/components/AlertPrefsPanel", () => ({
+  default: () => <div data-testid="alert-prefs-panel" />,
 }));
 // MEH-1334: the quiet-actions row children are separately tested — stub them
 // so this suite stays focused on the header's own render logic.
@@ -75,13 +89,16 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  // MEH-1168 P1: availability moved OUT of the header logistics line into the
-  // contact-card status line / vacation+slow-response banners — it must not
-  // render in the header anymore (closes the calibration-review coverage gap).
-  it("does not render the availability badge in the header", () => {
-    render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
-    expect(screen.queryByTestId("availability")).not.toBeInTheDocument();
-  });
+  // MEH-1168 P1 moved availability OUT of the header logistics line into the
+  // contact-card status line / vacation+slow-response banners. The test that
+  // guarded that ("does not render the availability badge in the header",
+  // asserting queryByTestId("availability") is absent) was DELETED under
+  // MEH-1860, not merely un-mocked: `data-testid="availability"` was produced
+  // ONLY by the vi.mock factory in this file, so once the mock went the
+  // assertion could never fail — it passed in every possible world, the
+  // "decoration, not a guard" shape in .claude/rules/testing.md. The
+  // regression it watched for is unreachable now anyway: AvailabilityBadge no
+  // longer exists, so nothing can put it back in the header.
 });
 
 // MEH-1170: the removed BadgeRow "מוצהר" chip's tooltip was the only surface of
@@ -169,5 +186,54 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
       />,
     );
     expect(screen.getByTestId("new-mark")).toBeInTheDocument();
+  });
+});
+
+// MEH-1508 ch2 Phase B: the gluten production-facility line — plain text, three
+// states. The next-intl mock echoes the key, so we assert on the key path.
+const SHARED_KEY = "producer.detail.header.gluten_facility.shared";
+const DEDICATED_KEY = "producer.detail.header.gluten_facility.dedicated";
+
+describe("ProducerHeader gluten facility line (MEH-1508 ch2)", () => {
+  it("renders the shared line (only) when gluten_free_facility === 'shared'", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, gluten_free_facility: "shared" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByText(SHARED_KEY)).toBeInTheDocument();
+    expect(screen.queryByText(DEDICATED_KEY)).not.toBeInTheDocument();
+  });
+
+  it("renders the dedicated line (only) when gluten_free_facility === 'dedicated'", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, gluten_free_facility: "dedicated" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByText(DEDICATED_KEY)).toBeInTheDocument();
+    expect(screen.queryByText(SHARED_KEY)).not.toBeInTheDocument();
+  });
+
+  it("renders NOTHING for 'unknown' (the render-nothing case)", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, gluten_free_facility: "unknown" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.queryByText(SHARED_KEY)).not.toBeInTheDocument();
+    expect(screen.queryByText(DEDICATED_KEY)).not.toBeInTheDocument();
+  });
+
+  it("renders nothing when the field is absent (older payloads)", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
+    expect(screen.queryByText(SHARED_KEY)).not.toBeInTheDocument();
+    expect(screen.queryByText(DEDICATED_KEY)).not.toBeInTheDocument();
   });
 });

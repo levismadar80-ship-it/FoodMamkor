@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 // MEH-822: the /producers in-page free-text search (added in MEH-820). Smokes
 // the three states of the search box: submit writes ?q= + shows the active

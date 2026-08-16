@@ -247,7 +247,15 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
     return True
 
 
-def send_duplicate_attempt_email(email: str, name: str, provider: str) -> None:
+# MEH-1815: the frontend route the producer duplicate-attempt email points at.
+# Named rather than inlined so a route rename has something to grep for — an
+# email already in someone's inbox cannot be corrected after the fact.
+_PRODUCER_REGISTER_PATH = "/register/producer"
+
+
+def send_duplicate_attempt_email(
+    email: str, name: str, provider: str, flow: str = "consumer"
+) -> None:
     """MEH-328: notify an existing account that someone tried to register
     with their email. Triggered from the anti-enumeration branch in
     POST /auth/register where the response body is identical to the
@@ -255,9 +263,48 @@ def send_duplicate_attempt_email(email: str, name: str, provider: str) -> None:
     owner receives. `provider` selects body copy:
       - "password" → "את כבר רשומה אצלנו עם סיסמה"
       - "google"/"apple" → "את כבר רשומה אצלנו דרך {Google|Apple}"
+
+    MEH-1815: `flow` selects which registration surface was attempted.
+    The producer collision branch discards the entire Producer payload
+    (categories, delivery areas, the lot) with no DB write, so the
+    consumer copy — which says only "you already have an account" — left
+    the owner believing her business was registered. The producer variant
+    states plainly that the details were NOT saved and points at the exact
+    next step. This is the out-of-band channel MEH-328 explicitly reserves
+    for it; the response bytes are untouched.
     Fail-open via send_email (no Resend key → silent skip).
     """
     login_url = f"{settings.frontend_url}/login"
+    if flow == "producer":
+        # Frontend route, embedded in an email body. Named so a rename has a
+        # grep surface here — already-sent mail cannot be fixed retroactively.
+        producer_register_path = _PRODUCER_REGISTER_PATH
+        if provider == "password":
+            identity = (
+                "את כבר רשומה אצלנו עם סיסמה — אם זו את, שימי לב: "
+                "פרטי העסק שמולאו בטופס לא נשמרו."
+            )
+            closing = "אם זה לא את — סיסמתך לא נחשפה ולא דרושה פעולה."
+        else:
+            provider_label = "Google" if provider == "google" else "Apple"
+            identity = (
+                f"את כבר רשומה אצלנו דרך {provider_label} — אם זו את, שימי לב: "
+                f"פרטי העסק שמולאו בטופס לא נשמרו."
+            )
+            closing = "אם זה לא את — חשבונך לא נפגע ולא דרושה פעולה."
+        body = (
+            f"היי {name},\n"
+            f"מישהו ניסה לרשום בית עסק במהמקור עם הכתובת שלך.\n"
+            f"{identity}\n"
+            f"כדי לרשום את העסק, היכנסי לחשבון ומלאי את הטופס — "
+            f"הפרטים ששמרנו בדפדפן ימתינו לך:\n"
+            f"{login_url}?redirect={producer_register_path}\n\n"
+            f"{closing}\n"
+            f"בברכה,\n"
+            f"צוות מהמקור"
+        )
+        send_email(email, "ניסיון רישום עסק במהמקור — יש לך כבר חשבון", body)
+        return
     subject = "ניסיון רישום במהמקור — את כבר רשומה"
     if provider == "password":
         body = (
@@ -288,7 +335,13 @@ def send_deletion_email(email: str, name: str) -> None:
         f"שלום {name},\n\n"
         f"החשבון שלך במהמקור נמחק בהצלחה.\n"
         f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
-        f"אם לא ביקשת למחוק את החשבון, צור איתנו קשר מיידית.\n\n"
+        # MEH-1965: was "צור" — pure masculine imperative addressed to the
+        # reader, which docs/BRAND.md §4 forbids on every surface ("פנייה
+        # זכרית לקוראת", ADR-024). The same sentence already ended in the
+        # feminine "מיידית", and every other imperative in this module is
+        # feminine (לחצי / העתיקי / אמתי / השיבי), so this was a slip, not a
+        # voice choice. BRAND.md names "צרי" as the feminine example verbatim.
+        f"אם לא ביקשת למחוק את החשבון, צרי איתנו קשר מיידית.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     send_email(email, "מהמקור - החשבון שלך נמחק", body)

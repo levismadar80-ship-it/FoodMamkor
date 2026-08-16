@@ -19,6 +19,7 @@ graph LR
     App[FastAPI app] --> Auth[auth.router<br/>/auth/*]
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router<br/>/producers/me/*]
+    App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
@@ -31,6 +32,7 @@ graph LR
     App --> Admin[admin.router<br/>/admin/producers/*]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
+    App --> Health[health.router<br/>/health, /health/liveness, /health/readiness]
 ```
 
 <!-- MEH-587: recipes.router removed (chunk 0/4) ahead of producer-recipes feature. -->
@@ -50,6 +52,7 @@ graph TD
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
+    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks]
 
@@ -106,6 +109,7 @@ graph TD
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
+    Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
 ```
 
 ## 5. Admin surface (role=admin)
@@ -116,7 +120,8 @@ graph TD
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
-    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️]
+    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit]
+    Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
@@ -164,4 +169,18 @@ graph LR
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]
 
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
+```
+
+## 7. Health probes (no page — platform + operators)
+
+Undocumented here since MEH-483 shipped them; added in MEH-1598 with the
+MEH-1596 version block. Full response shapes: `docs/DATA.md` → "Health".
+
+```mermaid
+graph LR
+    Platform[Railway healthcheck<br/>+ operators/curl] --> Liveness[GET/HEAD /health/liveness<br/>🌐 status:alive<br/>always 200 while the worker is up<br/>no DB call]
+
+    Platform --> Readiness[GET/HEAD /health/readiness<br/>🌐 200 ready · 503 not_ready<br/>reason: db_unreachable / db_init_failed / db_init_pending<br/>503 = boot init failed or pending, NOT service down<br/>migrations: unknown when alembic_version absent<br/>MEH-1530 Chunk 2 points the healthcheck here]
+
+    Platform --> HealthAlias[GET/HEAD /health<br/>🌐 ALWAYS 200 — never signals failure by status<br/>status, db_init, version<br/>version = EXACTLY 4 fields MEH-1596:<br/>git_sha · git_branch · alembic_head · booted_at<br/>any may be 'unknown' — a known state, not a bug]
 ```

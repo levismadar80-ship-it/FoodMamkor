@@ -1,4 +1,5 @@
 import "../globals.css";
+import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
@@ -25,6 +26,17 @@ import {
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
+
+// MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
+// files committed in this repo, and the build makes no network request for
+// them. The loader lives in app/fonts.js — next/font calls have to sit in a
+// module of their own here, because Turbopack's SWC transform serialises their
+// arguments statically and the declarations are long enough to bury this file.
+// Read app/fonts.js before changing any font: it carries the ordering rule that
+// keeps a fallback face from swallowing Hebrew, and the reason each weight
+// repeats the same path.
+// DO NOT add @font-face blocks for these families — next/font owns their
+// hosting, and a hand-written face would resolve to a different file.
 
 const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
 const SITE_DESCRIPTION =
@@ -124,8 +136,9 @@ export async function generateMetadata({ params }) {
   // their own override. The 17 public routes in PR 3b2 scope all set their
   // own alternates (per-page URLs), which shallow-merge to replace these
   // root values. Routes still relying on this fallback: /, /en (locale
-  // roots), /login, /register, /favorites, /settings, /search, /upgrade,
-  // /reset-password, /verify-email. SEO impact on those is minimal — most
+  // roots), /login, /register, /favorites, /settings, /search,
+  // /reset-password, /verify-email. (MEH-1555 removed /upgrade from this
+  // list along with the route.) SEO impact on those is minimal — most
   // are auth chrome, not SEO surfaces.
   //
   // Q6 hybrid: openGraph.siteName + appleWebApp.title stay BRAND_NAME
@@ -188,21 +201,33 @@ export default async function LocaleLayout({ children, params }) {
   const dir = locale === "he" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir}>
+    <html lang={locale} dir={dir} className={FONT_VARIABLES}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* MEH-1831: the fonts.googleapis/gstatic preconnects and the Google
+            Fonts stylesheet that used to sit here are gone — next/font serves
+            every family from our own origin, so there is nothing left to
+            preconnect to. */}
+        {/* MEH-1834: res.cloudinary.com serves every producer photo, including
+            the LCP image on the home grid and producer pages — it had no
+            preconnect while unsplash and the three OSM shards did. */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
         <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
       </head>
-      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-20 md:pb-0">
+      {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
+          NOTHING else, so the cookie banner — which floats in its own band
+          starting ABOVE that one (CookieBanner.jsx — MEH-1950: bottom derives
+          from --bottom-nav-clearance + 8px, ≈ safe-area+80px at default height)
+          — covered whatever in-flow content sat at the end of the scroll. On
+          /register/producer step 2 that was the «הבא» button: a WCAG 2.2 AA
+          failure (SC 2.4.11, W3C failure F110), not a cosmetic one.
+          `--bottom-inset` (globals.css, under `html`) now owns that sum. It
+          still evaluates to exactly 5rem when the banner is absent, which is
+          what the old class said — so this is a superset, not a re-spacing. */}
+      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>

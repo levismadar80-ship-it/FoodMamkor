@@ -2,8 +2,11 @@
 
 SECURITY FIX #2 (docs/SECURITY.md): brute-force protection via slowapi.
 Limits are applied per-real-client-IP. The limiter is registered on
-the FastAPI app in main.py (`app.state.limiter = limiter` + the
-exception handler). Each router that wants to protect an endpoint
+the FastAPI app in `middleware.py:207-208` (`app.state.limiter = limiter`
++ `add_exception_handler(RateLimitExceeded, …)`), with `SlowAPIMiddleware`
+installed at `:182`. _(This said "main.py" until MEH-1979 — measured wrong:
+`main.py` is 16 lines and contains no reference to the limiter at all, so a
+reader following it found nothing.)_ Each router that wants to protect an endpoint
 imports `limiter` from here and adds
 `@limiter.limit("N/timeframe")` under the `@router.post(...)`.
 

@@ -1,6 +1,6 @@
-# 📋 Template 06 — Linear Issue (v2.1)
+# 📋 Template 06 — Linear Issue (v2.3)
 
-למשימה מלאה ב-Linear (1-10 שעות). גרסה 2.1 — יולי 2026 (מיגרציית 3 anti-pattern deltas מה-project instructions, MEH-1248; בסיס גרסה 2.0 — אפריל 2026).
+למשימה מלאה ב-Linear (1-10 שעות). גרסה 2.3 — 3 באוגוסט 2026 (MEH-1882: שני standing rules — absence assertions רצות על `git grep`, וממצא של ה-CI reviewer מאומת מול הקוד ולא מול מספר השורה). גרסה 2.2 — 31 ביולי 2026 (MEH-1782: ה-DoD פוצל לפי סוג ה-diff כך שלא יורה על צירוף ש-rule 31 חוסם, + anti-pattern מתאים). גרסה 2.1 — יולי 2026 (מיגרציית 3 anti-pattern deltas מה-project instructions, MEH-1248; בסיס גרסה 2.0 — אפריל 2026).
 
 ---
 
@@ -66,6 +66,11 @@
 ## הקשר / הבעיה (אם רלוונטי)
 [מה לא עובד היום, עם דוגמאות ספציפיות]
 
+**Anchor חובה:** כרטיס שמזכיר קומפוננטה / קובץ / קבוע / מחרוזת קיימים —
+חייב anchor אחד לפחות בפורמט `path/to/file.jsx:NN`, מאומת מול staging ולא
+משוחזר מהזיכרון. אם לא נמצא anchor: זה סימן שהכרטיס מתאר משהו שלא קיים —
+לעצור ולברר לפני יצירה.
+
 ---
 
 ## Model + Effort + Thinking
@@ -90,8 +95,12 @@
 - [ ] build ירוק (npm run build + pytest)
 - [ ] preview URL נשלח
 - [ ] נבדק בנייד (iOS Safari + Chrome)
-- [ ] CHANGELOG עודכן (אם שינוי משמעותי)
-- [ ] HANDOFF.md עודכן
+- [ ] CHANGELOG + HANDOFF.md עודכנו — **ב-PR הנכון לפי סוג ה-diff (rule 31):**
+  - **PR שנוגע בקוד → ב-PR docs-only נפרד.** `scripts/checks/changelog-branch-guard.sh`
+    (תחת ה-job הנדרש *Repo guards*) מאדים כל diff שנוגע גם בקוד וגם ב-`docs/CHANGELOG.md`
+    או `HANDOFF.md`. הכרטיס חייב לומר זאת מפורשות, אחרת ה-DoD שלו חוסם את המיזוג שהוא מאשר.
+  - **PR docs-only → מותר באותו PR.** ה-guard מאדים רק את הערבוב; backfill של docs
+    בלבד הוא בדיוק המסלול שהוא קיים כדי לאפשר.
 
 ---
 
@@ -140,6 +149,68 @@
 1. Scope-match plan against live Linear description
 2. Surface gaps explicitly
 3. Never assume scope reduction is implicit
+
+### Rule — Every new AdminSetting key / feature flag names its reader (מ-MEH-1555)
+
+**כל מפתח `AdminSetting` חדש או feature flag חדש — ה-acceptance_criteria
+חייב לנקוב ב-(א) ה-reader שלו (נתיב קובץ) ו-(ב) תנאי המחיקה שלו.**
+
+Writer-only key = surface מת מהיום הראשון. הוא נראה חי (אדמינית מקלידה ערך,
+הוא נשמר, הוא חוזר בטעינה הבאה) ולכן אף מסך לא מראה שגיאה — בדיוק אותו
+smell של "שני מנגנונים לאותה עבודה" מ-MEH-271, רק בכיוון ההפוך: **אפס**
+מנגנונים צורכים את הערך.
+
+- ❌ `- AdminSetting חדש: freemium_premium_price`
+- ✅ `- AdminSetting חדש: freemium_premium_price — reader: backend/app/routers/upload.py (מחליף את התקרה הקשיחה >= 3); removal condition: אם מודל התמחור לא נסגר עד ההשקה, למחוק את המפתח + הסקשן`
+
+אין reader ידוע עדיין? זה לא פוטר — כותבים `reader: NONE YET` + תאריך/תנאי
+מפורש, וזה הופך לפריט שניתן לגריעה במקום לחוב סמוי.
+
+_מקור: MEH-1555 — `freemium_premium_price` ו-`freemium_free_image_limit`
+נוספו ל-`DEFAULT_SETTINGS` עם UI מלא ואפס קוראים, ושרדו עד ש-sweep ייעודי
+מצא אותם. באותו סבב: `admin_email` / `admin_whatsapp` ב-`admin_settings`
+מוצללים ע"י env vars באותם שמות — אותה משפחה בדיוק._
+
+### Rule — כל absence assertion ב-`<verification_step>` רצה על `git grep` (מ-MEH-1877)
+
+**כל טענת היעדר — "הסימבול נמחק", "אפס מופעים", "בדיוק N ולא N+1" — נכתבת עם
+`git grep`, כך שהיא נמדדת על קבצים מעוקבים בלבד.**
+
+`grep -r` על ספריית פרויקט סורק גם את מה שאינו בריפו: `node_modules/`,
+`.next/`, `dist/`, `coverage/`. תוצאה אחת משתיים: או שהקריטריון נכשל לנצח על
+build output שאיש לא committed, או — הגרוע יותר — שהוא מייצר לחץ "לנקות" קבצים
+שאינם בגרסה בכלל.
+
+- ❌ `grep -rn "LAST_MINUTE_OF_DAY" frontend/ → 0`
+- ✅ `git grep -n "LAST_MINUTE_OF_DAY" -- frontend/ → 0`
+
+**והנקודה החדה, שהיא הסיבה שזה כלל ולא טיפ: absence assertion שאי אפשר לספק
+גרועה מאין.** קריטריון שאין דרך לצבוע אותו ירוק מלמד את מי שמבצעת להתעלם
+מקריטריונים — ואת זה היא לוקחת אִתה לכרטיס הבא, שבו הקריטריון כן היה חשוב.
+הכלל הקיים — כל removal spec דורשת absence assertion **מספרית** — נשאר בתוקף;
+מה שנוסף עליו הוא ש**ה-assertion עצמה חייבת להיות ניתנת לסיפוק**.
+
+_מקור: MEH-1877 (03/08) — הכרטיס דרש `grep -rn … frontend/ → 0`. הפקודה החזירה
+מאות תוצאות, כולן ב-`frontend/.next/`: source maps מ-build לוקאלי קודם. הסימבול
+אכן נמחק, ו-`git grep` הראה 0. CC דיווחה את הפער במקום את המספר שהכרטיס ביקש._
+
+### Rule — ממצא של ה-CI reviewer מאומת מול הקוד, לא מול מספר השורה (מ-MEH-1869/1870/1877)
+
+**קוראים את הממצא, מחפשים את הסימבול, ועורכים במקום שבו הוא באמת יושב.**
+
+הדוח של ה-CI adversarial reviewer אמין בתוכן ולא במיקום. שלושה מופעים ברצף
+ביום אחד (03/08): `hours-serialize.js:31` כשהקבוע יושב ב-`:45`;
+`HoursEditorRanges.test.jsx:155` בקובץ בן **134 שורות**. **בשלושת המקרים הממצא
+עצמו היה נכון** — רק המיקום שגוי.
+
+זה מסוכן דווקא **משום** שהדוח אמין: מי שעורכת לפי מספר השורה משנה שורה לא
+קשורה, רואה diff סביר, ומדווחת שטיפלה בממצא. הממצא נשאר, ונוספה לו רגרסיה.
+
+- ❌ "הסוקר אמר `:31` — עורכת את שורה 31"
+- ✅ `git grep -n "<symbol>" -- <path>` → עורכת את מה שחוזר
+
+ציטוט שורה שגוי **אינו** עילה לפסול את הממצא, ו**אינו** עילה לסמוך עליו. שתי
+הקביעות נפרדות: המיקום נבדק ב-grep, התוכן נבדק מול הקוד.
 
 ---
 
@@ -190,6 +261,8 @@ Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
 - ReviewCard component (rating, comment, date, badge)
 - ProducerDetail integration (after description, before similar_producers)
 - pytest: happy path + invalid token + duplicate + expired token
+- Conditional UI? declare 0/1/many + open/closed states.
+- New AdminSetting key / feature flag? name its reader (file path) + removal condition.
 - npm run build + mobile preview
 </acceptance_criteria>
 
@@ -257,8 +330,8 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 - [ ] Hebrew copy matches brand voice
 - [ ] Mobile preview: full flow tested on iOS Safari
 - [ ] preview URL sent
-- [ ] CHANGELOG updated
-- [ ] HANDOFF.md updated
+- [ ] CHANGELOG + HANDOFF.md updated **in a separate docs-only PR** — this ticket
+      ships code, so rule 31 / `changelog-branch-guard.sh` reds them here
 - [ ] PR description includes acceptance_criteria checklist
 
 ---
@@ -286,6 +359,11 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 
 ❌ **Prompt בלי file_locations** — Opus 4.8 literal interpretation, ה-context הזה קריטי.
 
+❌ **כרטיס על קומפוננטה קיימת בלי anchor `file:line` מאומת** — ב-batch של 03/08
+שלושה מארבעה כרטיסים עצרו ב-Phase 0 כי תיארו עולם שאינו הקוד: `SocialProofBar`
+שלא קיים, צ'יפ «מגיע עד הבית» שכבר קיים כ-`CHIPS_CONFIG[5]`, ו-`/events` שהוא
+שתי טאבים ולא אחת. כולם נכתבו מ-screenshot בלי anchor אחד.
+
 ❌ **DoD ללא observable outcomes** — "feature works" ≠ DoD. צריך bullet points מדידים.
 
 ❌ **תלויות שלא מצוינות** — Claude Code יתחיל בלי ההקשר הקריטי.
@@ -299,6 +377,14 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 ❌ **Heavy persona embellishment ב-`<role>`** — Wharton 2025: לא משפר accuracy.
 
 ❌ **Pre-fill** — דורות אחרונים הסירו תמיכה.
+
+❌ **"עדכן CHANGELOG באותו PR" בתוך prompt או DoD של כרטיס קוד** — מתנגש ב-rule 31.
+`changelog-branch-guard.sh` (job נדרש *Repo guards*) מאדים כל diff שנוגע גם בקוד וגם
+ב-`docs/CHANGELOG.md`/`HANDOFF.md`, כך שהכרטיס מורה על הצירוף שחוסם את המיזוג שהוא
+עצמו מאשר. **הוכח ב-MEH-1771:** ה-`verification_step` שם דרש "אותו PR", CC נאלצה לפצל
+לפי Truth Hierarchy (`.claude/rules/` גובר על תיאור כרטיס), והלוגים ירדו ל-PR #2435.
+בכרטיס קוד כתבי **"CHANGELOG + HANDOFF ב-PR docs-only נפרד"**; בכרטיס docs-only, אותו
+PR מותר.
 
 ---
 

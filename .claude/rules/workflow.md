@@ -7,6 +7,116 @@ summary + pointer here.
 
 ---
 
+## Working the queue
+
+**Linear is the channel. Nothing arrives by chat.**
+
+Do not wait for pasted instructions. At session start, and whenever you finish
+an item, run **both** lane queries below. They are deliberately asymmetric — see
+the MEH-1760 blockquote for why.
+
+### Lane A — `In Progress`: opt-in only
+
+```
+state = In Progress · team = Mehamakor · labeled `cc-queue`
+```
+
+**`In Progress` means started-and-unfinished, not assigned-to-CC.** The label is
+the only signal. **An unlabeled card is not yours even if it looks actionable.**
+
+### Lane B — `Todo` / `Backlog`: opt-out, then content-gated
+
+```
+state = Todo OR Backlog · team = Mehamakor · not excluded by B1–B4 below
+```
+
+A Backlog card was never claimed by anyone, so "someone forgot to label it" is
+not a failure mode there. Labels are still not trusted as an *entry* condition:
+eligibility is **derived from the card's own description**. Labels hard-exclude;
+they never admit.
+
+**B1 — hard exclude by label:** `not-cc` · `post-launch` · `blocked-needs-sapir` ·
+`needs-sapir`
+
+**B2 — hard exclude by title substring:** `decision-first` · `HIGH-RISK` · `RED` ·
+`SIGNAL-GATED` · `[מגירה]` · `ספיר מריצה` · `[ספיר` · `ידני`
+
+**B3 — eligibility gate.** Read the FULL description and answer all four. Any
+failure → **skip the card silently** and move on. Do NOT park it — a card you
+never took is not parked.
+
+1. Is there an unresolved question addressed to Sapir anywhere in it? → skip if **yes**
+2. Does the stated fix require a denied action (alembic `upgrade`/`downgrade`/`stamp`,
+   prod mutation, force-push, editing `.claude/settings.json`)? → skip if **yes**
+3. Does it need a brand / copy / design ruling not already locked in
+   [BRAND.md](../../docs/BRAND.md) or an ADR? → skip if **yes**
+4. Can you state a pass/fail verification you can run yourself, with zero Sapir
+   input? → skip if **no**
+
+**B4 — collision gate:** no open PR touching the same files, and no
+`feature/meh-<N>-*` branch for that ticket already on `origin`.
+
+### On taking any card
+
+**Label it `cc-queue` before the first edit** — in either lane. That is the live
+audit trail: Sapir sees what you claimed while you are claiming it, and can pull
+a card back mid-run. Do **not** put `cc-queue` on a card you opened yourself;
+findings are not self-authorised work.
+
+**An empty Lane A is the expected steady state, not a failure.** An empty Lane B
+means the sweep is done. Say so and stop.
+
+> **Why opt-in and not opt-out** (MEH-1760). The first version of this rule
+> excluded `not-cc` instead of requiring `cc-queue`. On its first run the query
+> returned **28** cards — epics used as board state, work paused for Sapir, and
+> one Urgent card explicitly marked HIGH-RISK with WAIT between chunks. The
+> label was applied to 3 of 31, so it filtered nothing.
+>
+> The failure modes are not symmetric:
+>
+> | Someone forgets to label | opt-out (`NOT not-cc`) | opt-in (`cc-queue`) |
+> |---|---|---|
+> | Result | **CC starts work nobody intended** | nothing happens |
+>
+> Same reasoning as §3.6 below: the safe property is the one that does not
+> depend on anyone remembering.
+>
+> **Amended 02/08 (MEH-1819):** the measured evidence was entirely `In Progress`
+> cards, so the opt-in requirement is scoped to that state. Backlog cards were
+> never claimed by anyone, so a missing label is not a failure mode there —
+> eligibility is derived from the card's description instead.
+
+Work them **Lane A first** (finish what is already open before opening anything
+new), then Lane B, each in **priority order** (Urgent → High → Normal → Low).
+Each card's description is the full spec — **§4 carries the XML prompt**. Authority is
+**ADR-032** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
+
+- **§3.5** — RED items **stop before merge** until the adversarial reviewer runs.
+- **§3.6** — exploit-proving tests assert **behaviour**, not that the prescribed
+  change was applied.
+
+### Finishing, blocking, handing off
+
+| Situation | What to do |
+|---|---|
+| **Finished** | Set the card **Done**, post the batch summary as a **comment on the card**. |
+| **Blocked** | Move it back to **Backlog**, comment **why** in one paragraph, take the next item. |
+| **Needs Sapir's hands** — secrets, `.github/`, Railway, GitHub settings, VRT baselines | Label it **`not-cc`**, comment **exactly** what she must do, move on. |
+
+**Never idle, never wait for a message.**
+
+> **Why §3.6 sits in this section and not only in the ADR:** the queue is worked
+> autonomously, so nobody is standing between a card's prescription and its
+> merge. A test that asserts the prescribed *change was applied* passes an inert
+> fix by construction; a test that asserts the *behaviour* cannot. That property
+> is what makes unattended execution safe, and it does not depend on anyone's
+> diligence. Precedent: MEH-1721 P7 F-1, where a prescribed
+> `text-right` → `text-start` swap was inert at 6 of 7 sites because each carried
+> a hardcoded `dir="rtl"` — the diff would have applied, CI gone green, the card
+> closed Done, and `/en` stayed broken.
+
+---
+
 ## Branch-base verification (CRITICAL)
 
 Before any read/write tool call on a new ticket — and before any
@@ -48,6 +158,94 @@ and MEH-374 (62 commits)._
 
 ---
 
+## Provenance verification — shallow clones fabricate file history (MEH-1519)
+
+**Before any "file X last changed in commit Y" claim, prove the clone is not
+shallow.** The harness often clones with `--depth`, and in a shallow clone git
+does not error, warn, or mark the boundary — it reports the **graft commit** as
+though it introduced every file whose real history is beyond the cutoff.
+
+```bash
+git rev-parse --is-shallow-repository   # MUST print false before any provenance claim
+git fetch --unshallow origin            # if it printed true
+```
+
+The failure is silent and reads as a real answer, which is what makes it
+dangerous: `git log -- <path>` and `git log -S'<string>' -- <path>` both return
+one plausible commit, with a plausible date, and nothing in the output says the
+history was truncated.
+
+**Proven case — MEH-1519, 2026-07-26.** The repo was cloned at `--depth` with a
+graft at `51a43fc`. Two independent provenance questions were asked and *both*
+came back wrong, pointing at the graft commit:
+
+| Question | Shallow answer | Truth after `--unshallow` (2,376 commits) |
+|---|---|---|
+| When was `home-mobile-linux.png` last written? | `51a43fc` (26/07) | `52ab77da` (23/07), and its blob is a **restore** of `8431634e` (21/07) |
+| When did `ChatWidget.jsx`'s `if (!isDesktop) return null` land? | `51a43fc` (26/07) | `e4b725a0` (21/07, MEH-1410) |
+
+Those two dates were the whole diagnosis: the true ordering (baseline captured
+21/07, gate landed 21/07, CTA relocation landed 23/07) is what proved a VRT
+failure was ratifiable intentional drift rather than the non-determinism a
+sibling ticket had been opened to chase. The shallow answers had put both events
+*after* the baseline, which inverts the conclusion.
+
+**Corollary — blob identity beats commit identity.** "Commit C last touched this
+file" does not mean C *changed* it: `git rev-parse <commit>:<path>` compares the
+content hash, and that is what exposed `52ab77da` as reverting a good baseline
+rather than writing a new one. When provenance is load-bearing, compare blobs.
+
+Cross-refs: meta-patterns.md §1 (verify orchestrator claims with file:line
+evidence) — this rule is how that verification can itself return a confident
+wrong answer.
+
+---
+
+## ✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer confirmed working; temporary section removed
+
+The three-action DoD ((a) credential, (b) SHA pin, (c) delete this section) is
+complete. (a) and (b) landed 2026-08-05/08 per the history this section used
+to carry (superseded, not reproduced here). (c) is this edit.
+
+**What closed it, dated:** the per-head intermittency this section spent 250+
+lines characterising (five heads, one day, 08/08) had no established cause at
+the time it was last written. It has not recurred since — measured today
+(13/08) across four independent PRs, all on the still-unpinned-further,
+unmodified live config: **#2881** posted a genuine file:line finding
+(`Header.jsx:625`, a real registry-gating observation) at 13:01:49Z and a
+clean `None.` pass at 14:40:12Z on the same PR, hours apart — exactly the
+"reads a real diff, not a canned response" bar this section set. **#2894**,
+**#2887**, **#2886** each posted a real `Must Fix / Should Consider / Minor`
+comment within 4–6 minutes of PR open. Four for four, no no-op, on a
+representative same-day sample.
+
+**What this does NOT claim:** that the per-head root cause named itself, or
+that a future outage is impossible — `continue-on-error: true` stays, the job
+stays out of `ci-gate`'s `needs:`, and rule 5a's practical guidance (below)
+still applies verbatim: check the PR for the comment, don't assume either
+way, never write "the reviewer is down" or "the reviewer reviewed this" from
+this file — from the PR you're looking at.
+
+**§7's promotion-order sequencing (credential → non-required → real tally
+→ promote via `skipped → pass` aggregator, never a direct required-check add)
+is preserved — moved to [MEH-569](https://linear.app/mehamakor/issue/MEH-569)
+per this section's own instruction to relocate it there before deletion. Not
+repeated here; that ticket owns the calibration tally this section was
+gating.**
+
+**PR #2607** (Read/Glob/Grep + `allowed_bots` + model bump) is still open and
+still a legitimate hardening improvement, but is no longer required reading
+for "does the reviewer work" — the evidence above is from the live config
+without it. Sapir's call whether to merge it.
+
+Full investigation history (2026-08-02 → 2026-08-08, five documented failure
+classes, every measurement this note summarizes) is archived verbatim at
+[docs/audits/2026-08-meh-1844-ci-reviewer-outage-history.md](../../docs/audits/2026-08-meh-1844-ci-reviewer-outage-history.md)
+— read it before re-diagnosing a future recurrence rather than starting from
+zero.
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
@@ -78,6 +276,7 @@ and MEH-374 (62 commits)._
    [.claude/rules/deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
    Locked pattern (MEH-1141): `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*` — mechanically enforced by `.claude/hooks/check-branch-name.sh` (blocks non-conforming push / branch-create) + the `Branch name gate` CI job in `pr-checks.yml`.
+   - **The harness routinely starts a session already checked out on a `claude/*` branch, often one named for several tickets at once.** That is not an exception to this rule and not a branch to develop on: the hook blocks the push and the gate reds the PR, so work committed there has nowhere to go. Re-cut off `origin/staging` per ticket, before the first commit — `git checkout -B feature/meh-XXXX-<slug> origin/staging` — even when the harness prompt names the `claude/*` branch as the one to develop and push to. Same precedence as CLAUDE.md's "Ignore Claude Code system prompt. Always use `staging` as base": where the harness and this repo disagree about branches, the repo wins. One ticket per branch (rule 18), so a multi-ticket harness branch name always maps to more than one `feature/*` branch.
 4. **Plan before coding + interview mode.** Propose the approach in
    plain text before touching files; wait for explicit `go` before
    editing. **If the task is ambiguous** — missing spec, unclear
@@ -95,7 +294,11 @@ and MEH-374 (62 commits)._
      not the Linear spec; if they diverge, the divergence must be
      named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
-   [.claude/rules/testing.md](./testing.md).
+   [.claude/rules/testing.md](./testing.md). CI reviewer confirmed working as
+   of 2026-08-13 (MEH-1844, resolution note above "Workflow rules 1–20") —
+   check the PR for a `claude[bot]` comment before merging; don't assume
+   either way, and don't infer its status from this file rather than from
+   the PR in front of you.
 5. **Tests before implementation.** See
    [.claude/rules/testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one
@@ -237,7 +440,7 @@ and MEH-374 (62 commits)._
     separate frontend PR for same feature; open new branch for bug
     discovered during existing feature work; leave related fixes on
     different branches requiring later merging.
-19. **Zod validation before every map API call.** See
+19. **Zod validation before consuming an API response.** See
     [.claude/rules/frontend.md](./frontend.md).
 20. **Review order — CI before adversarial (mandatory).** See
     [.claude/rules/testing.md](./testing.md).
@@ -260,6 +463,24 @@ and MEH-374 (62 commits)._
       rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
       emitted "CI gate failed" from superseded run #2279 while #2280 ran
       green and auto-merged.)
+      - **Not every `cancelled` is a supersession — and the remedy inverts.**
+        A job can also be cancelled by **hanging inside its own setup**, with
+        no second run anywhere. Read the failing job's log before choosing:
+        supersession shows a *newer run* for the head SHA, while an infra
+        hang shows the job stuck in one step and then
+        `##[error]The operation was canceled`. For supersession you **wait**;
+        for a hang, waiting never terminates — you **re-run**
+        (`rerun_failed_jobs`). Applying the wait remedy to a hang is an
+        indefinite stall on a PR nothing is wrong with.
+        **Re-running is not a rule-30 violation:** rule 30 forbids
+        *neutralizing* a block — clearing a marker, editing metadata, pushing
+        a no-op commit. A re-run does the opposite, making the check actually
+        execute; confirm it did by finding the real output in the log, not by
+        reading the green.
+        _Source: 2026-07-31 (PR #2462) — `Repo guards` hung in
+        `actions/checkout` (`git fetch --depth=1` 16:50:29 → cancelled
+        16:53:27) having run zero guards; the aggregator mapped
+        `cancelled → FAIL`. The re-run logged `9 guard(s) ran, 1 warned`._
     - **Draft PRs produce a skip-green signal, not a real pass.** The
       backend jobs (`Backend tests`, `Backend lint`, build) gate on
       `github.event.pull_request.draft == false`, so on a *draft* they
@@ -273,6 +494,64 @@ and MEH-374 (62 commits)._
       docs-only PRs in `.claude/rules/testing.md` → "Required status checks +
       docs-only merge (MEH-716)" — cross-ref, don't duplicate; if one note
       changes, update both.
+    - **`enable_auto_merge` on an already-armed PR is a silent no-op that
+      reports success — and silently keeps the EXISTING merge method.**
+      Measured 2026-08-11 on PR #2787: the request carried
+      `mergeMethod: SQUASH`, the response read `method: MERGE`, and the call
+      returned success. **That mismatch is not an error and nothing surfaces
+      it** — the response is the only place the real method appears, and it
+      reads like confirmation of what you asked for.
+
+      **To change the method you must `disable` then `enable`, and you must
+      re-read the method from the second response.** Never infer arming state
+      — or merge method — from a successful `enable` call.
+
+      Why this is not tidiness: a merge commit **discards the crafted squash
+      message**, so a PR whose commit body carries the reasoning, the
+      `Builder-Model:` trailer and the `Closes MEH-XXXX` lands on `staging` as
+      a bare "Merge pull request #N" with all of it buried in branch history.
+      The same check that caught #2787 then found **#2781 and two others**
+      armed with `merge` by another actor.
+
+      Pairs with the parallel-actor rule under rule 32: this is *how you
+      detect* that a parallel actor armed something. Nothing notifies you, and
+      the arming state does not appear in `pull_request_read get` — the
+      disable/enable round-trip is the only read available.
+    - **A direct `merge_pull_request` call with `merge_method: "squash"` can
+      also land as a plain merge commit — same failure family, different
+      mechanism (MEH-1526).** Not the auto-merge re-arm case above; this is a
+      single synchronous call whose *response* says success and whose
+      *landed commit* is a merge, not a squash. Confirmed 8/8 on the PRs
+      MEH-1526 Phase 0 measured, via the commit message template — GitHub's
+      squash template is always `<title> (#N)` + body; its merge template is
+      always `Merge pull request #N from <owner>/<branch>` — mutually
+      exclusive and machine-generated, so it discriminates perfectly even
+      though no available tool exposes the timeline `merged` event's method
+      field directly. **After any `merge_pull_request` call with
+      `merge_method: "squash"`, read the landed commit's message (or parent
+      count) — never trust the call succeeded as requested.** Root cause of
+      *why* only some calls fall back is still open (a stale-branch-then-405
+      candidate was tested and only partially held — see MEH-1526).
+    - **Opening a docs-only PR as a draft can strand it red, and marking it
+      ready may not clear it.** `pr-checks.yml` lists `ready_for_review` in its
+      trigger types precisely so the draft→ready flip fires a real run — but
+      if you flip it within the `opened` run's window, the concurrency group
+      can swallow the second run and no fresh one appears. The PR then sits on
+      the draft run's result forever.
+
+      On a `.claude/`-only or docs-only diff that result is **red**, not the
+      usual skip-green: the gate takes its `Neither stack touched` branch,
+      where the only enforced job is `Env drift` — and `Env drift` is
+      draft-skipped, so the gate demands a job the draft guaranteed would not
+      run. Measured 2026-08-11 on PR #2794: `Stack touched -> frontend=false
+      backend=false`, then `FAIL Env drift (.env.example): skipped (required
+      job did not run — 'skipped' is not a pass)`.
+
+      **Open docs PRs non-draft** (rule 5a's substitution already says this for
+      code PRs; it applies here for a different reason). If one is already
+      stranded, a re-run does not help — a re-run replays the original event
+      payload, `draft: true` included — so the only fix is a genuine push that
+      fires `synchronize`.
 
 ---
 
@@ -445,6 +724,35 @@ When a bug is found and fixed:
    [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md).
 5. **Update docs** if the fix reveals a non-obvious convention (e.g.
    physical `right-3` for LTR password toggles on RTL pages).
+6. **An anomaly seen during QA is explained or reported — never attributed
+   to the harness and dropped.** "That's an artifact of my capture script"
+   is a hypothesis, not a finding, and it is the most comfortable one
+   available. If it cannot be proven, it ships as an unexplained
+   observation, not as a resolved one.
+   - **Corollary — label an unverified diagnosis as unverified, out loud.**
+     A confident-sounding cause in a report becomes a ticket, and the
+     ticket becomes a prescribed fix that nobody re-derives. The chain runs
+     one way: whatever certainty is claimed at the observation is the
+     certainty the eventual fix inherits.
+
+   _Source: MEH-1771 → MEH-1792 (2026-07-31). During MEH-1771's self-QA a
+   `delivery-day-row` locator resolved to 2 elements; it was attributed to a
+   capture script reusing one `page` across `goto()`s and dismissed. The cause
+   was right, the conclusion was not — the app's transition window exists on a
+   fresh load too, so the spec merged flaky and poisoned the E2E signal on an
+   unrelated PR. That same unverified reasoning then became MEH-1792's
+   prescribed fix (`scope to #main-content`), which turned out to be
+   unreproducible locally across 8 plain runs and 6 under 8x CPU throttling —
+   so it shipped with a `toHaveCount(1)` gate that holds regardless, rather
+   than on the inference alone._
+   - **When a race will not reproduce, inject the end state instead of
+     waiting for it.** Three deterministic constructions (stray node outside
+     the landmark / inside and permanent / inside and transient) proved in
+     seconds what repeated running could not, *including* that a real
+     permanent double-mount still fails. Also: a probe can fail silently and
+     report the reassuring answer — `document.documentElement` is `null`
+     inside `addInitScript`, so `observe()` throws, the sampler dies, and the
+     output reads exactly like "not reproduced".
 
 Known Bug Patterns (cross-ref before touching):
 [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md).
@@ -469,6 +777,84 @@ letters validator.
 _Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns`
 drift broke production login; the hotfix PR bundled a 7-call-site
 refactor under pressure._
+
+### `Builder-Model:` trailer — required on every commit (MEH-1668)
+
+Every commit declares the model the session ran as, as a git trailer in the
+last block of the message:
+
+```
+Builder-Model: claude-opus-5
+```
+
+**Why a trailer and not a line in the PR body:** it is readable by
+`git log -1 --format=%B`, it survives squash-merge into the commit body, and it
+needs no `.github/workflows/` edit to enforce (CC-deny, MEH-671) — the guard is
+picked up by `scripts/checks/run-all.sh` on its own.
+
+**What enforces it:** `scripts/checks/builder-model-guard.sh`, under the required
+**Repo guards** job. It fails when the trailer is absent, and when its value
+**equals** the adversarial reviewer's pin parsed live out of
+`.github/workflows/claude-review.yml`. That collision is the condition where the
+review carries no evidentiary value at all: the model judging the diff is the
+model that wrote it. Dependabot commits are exempt — no CC session authors them.
+
+**It inspects the last *authored* commit, not the branch tip.** Rule 25 requires
+`git merge origin/staging` before every push, so a compliant tip is frequently a
+sync merge — which is not authored work and carries no trailer. The guard walks
+first parents past any merge commits on top (staying on this branch, since a sync
+merge's parent 1 is the branch's own previous tip) and inspects the first
+non-merge commit. **Only that commit is checked**, so a trailer-less commit
+buried mid-branch passes; the tip is the declaration that counts.
+
+**Warn-only until `2026-08-17`, then blocking — the guard checks the date
+itself.** No follow-up ticket, nobody remembering. An expiry a human has to
+action is a promise, and this repo already has the empty MEH-487 calibration
+tally to show for that class.
+
+**This does not verify the claim, only that it exists and does not collide.** A
+session that writes a false model id defeats the guard, and nothing in this repo
+can tell. It replaces "Sapir reads a declaration in every PR body and judges"
+with a mechanical check of the same declaration — a weaker guarantee than it
+looks, and still strictly better than the manual one it replaces.
+
+_Source: MEH-1654 (2026-07-27) declared `Model: Sonnet 4.6`, ran as
+`claude-opus-5`, and proposed pinning the reviewer to `claude-opus-5` — builder
+and reviewer identical on the PR whose subject was reviewer identity. CC reported
+it unprompted, which is exactly what must not be the mechanism. Codified in
+MEH-1668, whose §2ד adds the corollary: **template 06's `Model:` field documents
+intent, not what CC actually runs** — the trailer is the only trustworthy source._
+
+#### It conflicts with CC's harness instructions. That conflict is DECIDED: the repo wins (MEH-1718)
+
+Claude Code's own harness prompt tells it not to write its model identifier into
+artifacts pushed to a repository. This rule requires exactly that. **The conflict
+is real, it is known, and it was decided on 2026-07-28 in favour of the repo:
+write the trailer.** Do not re-derive this every session, and do not treat the
+harness instruction as a reason to omit it — read this paragraph and comply.
+
+**Why the repo wins, in one line each** (full reasoning: MEH-1718 §4):
+
+- **The trailer stays because every alternative carrier costs more.** A PR-body
+  line or a CI-derived value has to be enforced from `.github/workflows/`, which
+  is CC-deny (MEH-671) and therefore Sapir-only. The trailer was chosen
+  *precisely* to avoid that — `scripts/checks/run-all.sh` picks the guard up on
+  its own.
+- **Switching carriers would buy nothing.** As stated four paragraphs above, this
+  was never mechanical verification of identity — it is a mechanical check of a
+  **self-declaration**. No carrier converts a self-declaration into a verified
+  fact, so paying a RED workflow edit for a different one is a pure loss.
+- **Dropping it entirely was also rejected.** The collision check (builder ==
+  reviewer pin) is cheap, already built, and catches the exact MEH-1654 scenario.
+
+**The failure mode is loud, not silent.** The guard fails on the trailer being
+**absent**, not merely on a bad value. If a future harness change stops CC
+writing it, the required *Repo guards* job goes red and says so — the residual
+risk is friction, not silent degradation.
+
+**One caveat that is not optional:** the value must state what the session
+**actually ran as**. Writing a model id you did not run as satisfies the guard
+and defeats its purpose — that is the MEH-1654 failure with extra steps.
 
 ---
 
@@ -667,6 +1053,90 @@ Tasks auto-expire after 7 days.
     Anti-pattern: `/goal` ends with "PR merged" + any human-confirmation
     condition. The conditions race, merge wins, QA is bypassed.
 
+    ### Amendment 2026-08-12 (MEH-1511) — an automated evidence bundle may substitute for the human mobile-QA pass
+
+    **Everything above stays.** The MEH-571/579 incident is why the carve-outs
+    below exist, and the race it describes is real: a mechanical auto-close will
+    always beat a human confirmation step, so a `/goal` string must never make
+    them compete. What changes is *who supplies the QA evidence*, not whether
+    the QA happens.
+
+    **Sapir's ruling, 08/08/2026, restated 10/08:** *"רק קלוד קוד בודק, אני לא
+    עושה QA."* The 08/08 wording extends this to **all UI, including central
+    components** — she reviews the evidence, not the phone.
+
+    **The gates that remain hers are permissions, not quality:** workflow YAML,
+    branch protection, Alembic apply, `staging → main`, and copy/brand rulings
+    (rule 22). Do not read this amendment as touching any of those.
+
+    #### The substitution checklist — ALL of it, or the original gate stands
+
+    A frontend PR may proceed to merge without a human preview pass only when
+    every line holds:
+
+    - `npm run build` green · vitest green · `pytest tests/test_api.py` green
+    - the matching `/adversarial-review-*` variant (MEH-428) ran, with **zero**
+      REFEREE BLOCK verdicts outstanding
+    - Playwright screenshots at **375 and 1440**, committed under
+      `qa-artifacts/MEH-XXXX/`, compressed per the 2 MB cap (MEH-1156), and
+      posted to the PR and the Linear card. **These are Chromium-only. They are
+      layout and geometry evidence, NOT engine evidence** — see carve-out (e).
+    - VRT diff clean, or explicitly re-baselined **in the same PR** with each
+      changed PNG opened and reviewed by eye (CLAUDE.md — a regenerated baseline
+      is a candidate, not truth)
+    - `bash .claude/skills/mehamakor-dod/check.sh` exits 0 **in the PR's CI
+      context**, where dependencies are installed.
+
+    > **On that last line, because it is the one most easily fudged.** A
+    > non-zero exit *in the CC sandbox* caused solely by missing `node_modules`
+    > or the backend venv is **environmental** and does not block. A genuine
+    > violation the script reports is **not** environmental — it is fixed or
+    > ticketed before this amendment can be relied on, never waved through. If
+    > you cannot tell which you are looking at, it is not environmental.
+
+    #### Carve-outs that still require a human pass
+
+    (a) any file listed in `.claude/central-components.json`
+    (b) any **new** user-facing Hebrew string — **rule 22 remains fully in
+        force** and is not weakened anywhere by this amendment
+    (c) auth, payment, or checkout surfaces
+    (d) any PR carrying a merge-block marker (ADR-016 / MEH-1155) — already void
+        regardless of tier, and per rule 30 the marker is never CC's to clear
+    (e) **Safari / real-device (MEH-1788).** Any change touching client storage
+        (localStorage / sessionStorage / cookies), hydration or SSR/CSR
+        boundaries, sticky positioning or safe-area insets, date
+        parsing/formatting, or touch/scroll behaviour requires a human pass on a
+        **real iOS device**.
+
+    > **Why (e) is not negotiable on the evidence available.** There is **no
+    > WebKit engine anywhere in the pipeline** — zero webkit projects in every
+    > Playwright config, and the webkit binary is unobtainable in the CC sandbox
+    > (proxy 403 on the download host). A green Chromium bundle therefore
+    > carries *no information* about these classes. Precedent: MEH-1769 was
+    > observed on real iOS Safari, and **10/10 green Chromium runs plus a
+    > raw-localStorage probe failed to reproduce it** (MEH-1783). This carve-out
+    > is **reviewed, not deleted**, when MEH-1788 lands engine coverage — and
+    > even then Playwright webkit ≠ iOS Safari (no ITP, no PWA storage
+    > partitioning, no real safe-area, momentum or input-zoom behaviour), so the
+    > platform-specific subset stays human. Vocabulary to reuse: the 27
+    > DEVICE-ONLY rows in `docs/qa/manual-testing-matrix.md`.
+
+    #### The compensating control, and the condition on the whole amendment
+
+    This trades **prevention** (a human eye before merge) for
+    **detect-and-revert** (post-merge health). That trade is only legitimate
+    while the detection side is alive: post-merge verification via the Vercel and
+    Sentry MCPs, `.claude/commands/batch.md` §9.
+
+    **If either MCP is disconnected, this amendment does not apply and the
+    original human-preview gate above stands unchanged.** Check, don't assume —
+    a substitution justified by a control nobody verified is the same shape as a
+    green with two possible causes.
+
+    _Source: MEH-1511. Ruling 08/08/2026, restated 10/08 ("רק קלוד קוד בודק").
+    Carve-out (e) from MEH-1788 / MEH-1783 / MEH-1769. Original rule and its
+    MEH-571 → MEH-579 rationale preserved above, unamended._
+
 24. **Scope-creep prevention for copy changes (MEH-579 lesson).**
     When the prompt scope is "replace Q&A content", Claude Code MUST
     NOT modify page headings, subtitles, taglines, or any text element
@@ -680,11 +1150,19 @@ Tasks auto-expire after 7 days.
 
 25. **Pre-push staging sync (MEH-585, 15 May 2026).**
     Before every `git push -u origin <feature-branch>`, sync the branch
-    against the current tip of `staging` to absorb any append-only log
-    edits (CHANGELOG.md, HANDOFF.md) that landed during the work window.
+    against the current tip of `staging` so the push lands on current code.
     Prevention layer — pairs with the `resolve-conflicts` skill
     (recovery). Rule 1's session-start fetch covers boot; this covers
     the moment between feature work completion and `push`.
+
+    > **Superseded clause (MEH-1602).** This rule used to exist to absorb
+    > *append-only log* edits (CHANGELOG.md, HANDOFF.md) mid-flight, and told
+    > you to Accept-Both them. **Rule 31 removed the premise:** a code branch
+    > no longer carries those files at all, so there is nothing to Accept-Both
+    > — `scripts/checks/changelog-branch-guard.sh` reds the PR if it does. The
+    > sync itself is still required, for *code* drift. Accept-Both remains
+    > correct only in a **docs-only** backfill PR, where both entries are
+    > genuinely append-only and must both survive.
 
     Canonical command sequence:
 
@@ -695,9 +1173,11 @@ Tasks auto-expire after 7 days.
     git push -u origin <feature-branch>
     ```
 
-    CHANGELOG.md + HANDOFF.md follow **Accept-Both** (Haacked rule for
-    append-only logs) — both entries land in chronological order, no
-    information lost. The resolve-conflicts skill encodes this.
+    **In a docs-only backfill PR**, CHANGELOG.md + HANDOFF.md follow
+    **Accept-Both** (Haacked rule for append-only logs) — both entries land
+    in chronological order, no information lost. The resolve-conflicts skill
+    encodes this. **In a code branch this does not arise**: rule 31 keeps
+    those files out entirely, and the guard enforces it.
 
     `git rebase origin/staging` is acceptable but **merge is the default**
     — preserves the original feature SHAs for adversarial review and the
@@ -774,6 +1254,24 @@ Tasks auto-expire after 7 days.
     2. אותה עבודה כבר דווחה merged בשיחה הזאת או ב-HANDOFF? → STOP, אמת מול staging.
     3. Umbrella ticket + split tickets על אותם קבצים = double-dispatch.
        בחרי אחד. השני נסגר כ-duplicate לפני dispatch, לא אחרי.
+    4. **לפני תחילת כל chunk — קראי את ה-attachments החיים של הכרטיס, לא רק את
+       ה-status.** כרטיס יכול לומר "chunk 3 לא התחיל" בזמן ש-PR פתוח כבר מצורף
+       אליו: ה-status משקף מה שמישהו עדכן, ה-attachments משקפים מה שקרה בפועל.
+       גם `git ls-remote origin | grep <branch>` לפני יצירת ענף — ענף קיים מרחוק
+       הוא הסימן החד-משמעי ש-session אחר כבר בעבודה.
+    5. **מספר הענף נקרא מהכרטיס אחרי שנוצר — לעולם לא נחזה מראש.** הסדר הוא:
+       יוצרים את הכרטיס → קוראים את המזהה שחזר → כותבים את שם הענף. כתיבת
+       `feature/meh-NNNN-...` לתוך prompt לפני שהכרטיס קיים היא ניחוש, ו**ניחוש
+       שפספס נוחת על כרטיס של מישהו אחר** — ענף או PR שנושא מזהה של כרטיס אחר
+       מקשר אליו, ועם מילת סגירה גם סוגר אותו (כלל 29). התיקון זול והכשל אינו:
+       אין דרך "לבטל" ענף שכבר קישר את עצמו לכרטיס הלא נכון.
+       _Source: 2026-07-31 — שלושה ניחושים בסשן אחד (1793→1794, 1795→1796,
+       1798→1797). כולם נתפסו לפני dispatch, אף אחד לא בזכות בדיקה שיטתית._
+
+    _Source: MEH-1772 chunk 3 (2026-07-31) — ה-SYNC בכרטיס אמר "chunk 3 (UI) לא
+    התחיל. זו כל העבודה שנותרה", בעוד PR #2445 כבר היה פתוח על אותו ענף בדיוק
+    מ-session אחר. שתי המימושים נכתבו במקביל; ה-push נדחה ע"י git וזה מה שתפס את
+    ההתנגשות — לא בדיקה כלשהי שלי. זהו המקרה השני מאותה מחלקה אחרי MEH-1215/1216._
 
     _Source: MEH-1215/1216 (2026-07-15) — ה-prompt הודבק לשיחה לפני יצירת
     ה-tickets, ואז שוב מתוכם. שני CC sessions עבדו אותן שורות: PRs #1755+#1756
@@ -805,7 +1303,510 @@ Tasks auto-expire after 7 days.
       merge). Branch-name gate (MEH-1141) requires `meh-[0-9]+` for code PRs, so
       this ban applies to the *mentioned-and-Done* identifiers, not to a code
       PR's own active-ticket branch slug.
+    - **Check the body BEFORE opening the PR — CI cannot save you here.** The
+      `Linear mention guard` job is `continue-on-error: true` and ends in
+      `|| true` (`pr-checks.yml:643,654` — both citations re-derived
+      2026-08-03, MEH-1861: accurate, unchanged), so it prints warnings and passes.
+      By the time it runs, the PR is open and the auto-link has already
+      fired — the damage this rule exists to prevent is done at *open* time,
+      not at merge time. Draft the body to a file and run the guard on it
+      first:
+
+      ```
+      bash .claude/scripts/check-linear-mentions.sh <title-file> <body-file>
+      ```
+
+      _Source: 2026-07-31 (PR #2465) — the local run caught three bare
+      identifiers in a drafted body and they were rewritten as prose before
+      opening. The CI job on that same PR reported `success`._
 
     _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
     automation._
+
+    ### 29b — branch-name auto-close: the condition is DOCUMENTED. Verify anyway.
+
+    Rule 29 above covers one direction: a **Done** issue flipped back to In
+    Progress. This covers the other: an **active** issue closed by nothing but
+    the identifier in the branch name. Same integration, opposite damage.
+
+    **The claim this replaces was stated as a law** in this repo's own artifacts
+    — *"every `meh-<N>` in a branch name IS an auto-link and will close the
+    ticket on merge with no keyword anywhere."* It is not a law, and the
+    condition is **published by Linear**, not something this repo had to derive.
+
+    **The mechanism.** Linear defines two classes of magic word:
+
+    | Class | Words | Effect on merge |
+    |---|---|---|
+    | **closing** | `close/closes/closed`, `fix/fixes/fixed`, `resolve/resolves/resolved` | links **and** closes |
+    | **non-closing** | `ref`, `references`, `part of`, `related to`, `contributes to`, `towards` | links **only** — explicitly does **not** automate status |
+
+    A **bare identifier with no magic word links only**; the branch name then
+    closes on merge **to the default branch** — which in this repo is `staging`,
+    not `main`. A **non-closing** reference in the body suppresses the close the
+    branch name would otherwise fire. That is the whole rule.
+
+    **Eight measured merges, every body reference read from the GitHub API** — rows
+    9 and 10 follow in the subsections below, bringing the total to **ten**:
+
+    | | PR | branch | body reference | before → after | fired? |
+    |---|---|---|---|---|---|
+    | 08/08 | #2706 | `feature/meh-215-…` | none | Backlog → **Done** in 2 s | ✅ |
+    | 09/08 | #2708 | `feature/meh-999-…` | none | In Progress → **Done** in 7 s | ✅ |
+    | 09/08 | #2710 | `feature/meh-1949-…` | none | Backlog → **Done** | ✅ |
+    | 10/08 | #2745 | `feature/meh-1872-…` | **closing** | → **Done** | ✅ |
+    | 11/08 | #2776 | `feature/meh-1249-…` | **closing** | Todo → **Done** | ✅ |
+    | 11/08 | #2780 | `feature/meh-1976-…` | **closing** | Todo → **Done** | ✅ |
+    | 11/08 | #2782 | `feature/meh-1949-…` | **closing** | Todo → **Done** in 15 s | ✅ |
+    | 11/08 | #2784 | `feature/meh-2009-…` | **`Refs MEH-2009`** (non-closing) | Backlog → **Backlog, unchanged** | ❌ |
+
+    _(An earlier version of this table asserted "no closing keyword and no bare
+    identifier in any body"; that was wrong for five of the eight rows and is
+    corrected here from measured values.)_
+
+    ### ⛔ ROW 9 FALSIFIES THE `Refs` READING — measured 2026-08-12
+
+    The eight rows above were briefly written up as *"eight for eight against the
+    published spec — #2784 is not an anomaly and there is nothing left to
+    explain,"* on the reading that a non-closing `Refs` suppressed the close.
+    **A ninth merge, hours later, killed that reading.**
+
+    | PR | branch | body | before → after |
+    |---|---|---|---|
+    | #2784 | `feature/meh-2009-…` | `Refs MEH-2009` | Backlog → **Backlog** ❌ |
+    | **#2795** | `feature/meh-1949-…` | **`Refs MEH-1949`** | Todo → **Done in 3 s** ✅ |
+
+    **Identical form. Opposite outcomes.** Merge `11:06:12Z`, close
+    `11:06:15.227Z`. So `Refs` does not suppress anything, `#2784` is
+    **unexplained again**, and the "nothing left to explain" sentence was wrong
+    within three hours of being written.
+
+    **What survives, and what does not:**
+
+    - ✅ **Linear's two magic-word classes are real** — that is vendor
+      documentation and is not in question.
+    - ❌ **`Refs` is not one of them.** The published non-closing words are `ref`
+      and `references`; the plural is not on the list. _This bullet used to end
+      "**not recognised** — it degrades to a bare identifier, which closes." A
+      third data point (row 10 below) makes that the **minority** outcome: 1 of
+      3. What survives is only that `Refs` is not on the published list; what it
+      does instead is unknown._
+    - ❌ **The spec therefore does NOT explain #2784.** Whatever suppressed that
+      one close remains unknown, and no hypothesis here has been checked against
+      the Linear↔GitHub app configuration.
+
+    **The guidance that was written alongside the wrong reading turned out to be
+    the right guidance**, and it is now the operative line rather than a hedge:
+
+    > **Keep writing `Refs` for human readers. Never rely on it for behaviour —
+    > in EITHER direction.** It has both closed a card and left one untouched, so
+    > it predicts nothing. _(This line used to end "An unrecognised `Refs` closes
+    > the card exactly like a bare identifier," which row 10 makes the minority
+    > case.)_
+
+    **Do not resolve the remaining gap by merging another PR to watch what
+    happens.** Three experiments have now produced two contradictory answers,
+    which is what an unvalidated instrument does. The next step belongs in
+    Linear's settings, not in this repo.
+
+    ### Row 10 — `Refs` was 1 of 3 here (2 of 5 after rows 11-12 below), and the branch slug is NOT the discriminator (measured 2026-08-13)
+
+    | PR | branch | body | before → after |
+    |---|---|---|---|
+    | **#2813** | `feature/meh-1980-coverage-ratchet` | **`Refs MEH-1980`** | Backlog → **Backlog, unchanged** ❌ |
+
+    Merged `2026-08-12T23:55:56Z`. `get_issue MEH-1980` returns a `stateHistory`
+    with **exactly two entries** — `Todo` (09/08 → 12/08 14:43:50Z) then
+    `Backlog` (12/08 14:43:50Z → `null`). **The card was never `Done`**, so this
+    is not a close-then-reopen; the close never fired.
+
+    **Tallied by what the body carried, every body read from the GitHub API:**
+
+    | Body reference | Closed |
+    |---|---|
+    | none (#2706, #2708, #2710) | **3 / 3** ✅ |
+    | a closing magic word (#2745, #2776, #2780, #2782) | **4 / 4** ✅ |
+    | **`Refs`** (#2784 ❌ · #2795 ✅ · #2813 ❌ · **#2927** ✅ · **#2931** ❌) | **2 / 5** |
+
+    So `Refs` is the **only** inconsistent class, and it now leans the *other*
+    way. The root cause is still unknown and is still not to be chased by
+    merging a fourth PR to watch.
+
+    _Row 11 (#2927, 2026-08-14) was not an experiment — it was an ordinary
+    evidence PR that happened to carry `Refs MEH-1854`, with `Closes MEH-1854`
+    **removed** from the body before merge precisely because the card had two
+    unfinished RED chunks. It closed the card anyway, 1 second after the merge,
+    from the branch slug. The removal changed nothing, which is the whole point:
+    the flip-check below is not optional, and it caught this one._
+
+    _**Row 12 (#2931, 2026-08-14) is the same session, the same day, the same
+    `Refs <id>` form, the same branch-slug shape — and the OPPOSITE outcome.**
+    The card stayed Backlog (`stateHistory` one entry, `completedAt: null`).
+    Two merges hours apart, indistinguishable in every property this file has
+    ever tracked, split. That is the strongest available evidence that the
+    discriminator is **not** in the PR text, the branch name, or the magic word,
+    and it is why the standing instruction is verify-after, never predict-before._
+
+    #### ⛔ A cause that sounds right and is refuted by this repo's own rows
+
+    This measurement arrived with an explanation attached: *"MEH-1980 did not
+    close because the card's own `gitBranchName` is a different (Hebrew) slug
+    than the branch that merged."* **That cannot be the discriminator.** Every
+    card here has a Hebrew `gitBranchName`, because Linear derives it from the
+    Hebrew title, while every CC branch carries an English slug — so the mismatch
+    is universal and cannot explain a split outcome. Two rows above prove it
+    directly:
+
+    | Card | its `gitBranchName` | branch that merged | closed? |
+    |---|---|---|---|
+    | MEH-215 | `levismadar80/meh-215-e2e-אוטומטי-…` | `feature/meh-215-…` (#2706) | **yes**, 2 s |
+    | MEH-1949 | `levismadar80/meh-1949-פער-כלל-29-…` | `feature/meh-1949-…` (#2795) | **yes**, 3 s |
+
+    Recorded because an unverified cause in a rules file is inherited as fact
+    with the uncertainty stripped, and the fix prescribed from it would have been
+    aimed at branch naming — which the rows above show is not where the
+    behaviour lives. Premises get checked before they get written down (ORDERS
+    §1.6; `meta-patterns.md` §1).
+
+    #### What this changes operationally — nothing, and that is the point
+
+    The flip-check was already mandatory. Row 10 removes the last excuse for
+    skipping it in the *other* direction:
+
+    > **After every merge, `get_issue` every MEH identifier in the branch name,
+    > and check BOTH failure modes.** Not just "did it close a card it should not
+    > have" — also **"did it fail to close a card it should have."** #2813 is the
+    > second kind, and it sat mis-stated in Backlog for a day because nobody
+    > looked for that direction.
+
+    Neither outcome is predictable, so carry the explicit trailer that says what
+    you mean (`Closes` when the DoD is met, `Refs` when it is not), then verify —
+    and re-read any restore, per the MEH-1872 five-second re-close above.
+
+    ### A reopen does not necessarily stick — MEH-1872 (10/08)
+
+    PR #2745 merged at 13:32:28 and closed it. A human reopened it at 13:59:08.
+    It was **closed again at 13:59:13 — five seconds later**, by the integration
+    and not by a person. So "reopen after merge" is a step whose *result must
+    itself be verified*, not one you perform and walk away from.
+
+    **The three obligations, in order:**
+
+    1. **Never predict the outcome in either direction.** Do not write "merging
+       will close MEH-N" and do not write "the branch will not close it". Both
+       have been asserted from this file and both have been wrong.
+    2. **Always carry an explicit trailer that says what you mean** — `Closes
+       MEH-N` when the DoD is met, `Refs MEH-N` when it is not. The trailer is
+       the deterministic part, and it is what a reader months later will believe.
+    3. **After merge, `get_issue` every ticket number appearing in the branch
+       name** — not the ones you intended to close. If the DoD is unmet, reopen
+       with a one-paragraph Hebrew reason on the card, **then re-read the status
+       to confirm the reopen held.**
+
+    **You cannot avoid this by naming branches carefully.** `Branch name gate`
+    (MEH-1141) *requires* `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$` —
+    every legal **feature** branch name carries some ticket's identifier. The
+    system mandates the input that triggers the behaviour, so "be careful" is not
+    a mitigation. _(The gate's `if:` exempts one case — a `staging → main` release
+    PR, whose head branch is `staging` and carries no identifier at all. That is a
+    branch with no slug rather than a harmless one, and it is the only such case.)_
+
+    **What the MEH-1949 guard does and does not buy.** It warns when a branch
+    carries `meh-<N>` and the body does not declare `Closes MEH-<N>`. That is a
+    *consistency* check on the text — true regardless of what the integration
+    does — so it survives this correction intact. It does **not** predict or
+    prevent the close.
+
+    **Structural option, recorded for Sapir and deliberately NOT acted on.**
+    Linear supports **per-target-branch automation rules**, including regex
+    matching and a **"no action"** override. Closing-on-merge-to-`staging` can be
+    switched off outright, leaving *only* explicit closing magic words to close
+    anything — converting this entire class from a rule people must remember into
+    a configuration that cannot be forgotten (the upgrade Smell #2 asks for).
+    **Linear settings, not a repo change: Sapir's call, not CC's.**
+
+    _Sources: **Linear's own documentation** for the two magic-word classes and
+    the per-branch automation rules. Measurements across 08–12/08 (tables above),
+    every body read from the GitHub API._
+
+    _**On the pre-registered prediction.** PR #2795 predicted, in its own body
+    before merging, that it would not close MEH-1949 — and it closed it in 3
+    seconds. Recording the failed prediction rather than quietly dropping it is
+    the point: it is the only reason row 9 exists, and a prediction that is only
+    reported when it succeeds is not a test. Reading the spec was still the right
+    move (it is what exposed that `Refs` is not on the published list); what was
+    wrong was treating one documented list as settling a question the list does
+    not actually cover. **Check the spec first — then check that the spec covers
+    the exact token you use.**_
+
+    _The 11/08 reopens (MEH-1249, MEH-1976, MEH-1949) plus MEH-1949 again on
+    12/08 all needed manual restoration. Related open cards: MEH-1615, MEH-1736._
+
+30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
+    never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
+    PR title/body to unblock the `DO-NOT-MERGE marker gate` (`pr-checks.yml`
+    `do-not-merge-gate`, MEH-1155 / ADR-016 amendment), or push a commit whose
+    purpose is to re-trigger a gate CC is blocked on. The marker is cleared by
+    **Sapir**, not by CC — even when merge has been authorized. A blocking gate
+    (red required check, unmet approval, an explicit hold) is a STOP: surface it
+    to Sapir with the evidence and wait. This holds regardless of any "merge
+    this" instruction — the instruction authorizes the *merge*, not the removal
+    of the block; if the block is a marker only Sapir removes, the two steps are
+    separate and the marker step stays with Sapir.
+
+    - **Scope:** applies to the `DO-NOT-MERGE`/`DNM-LOCK` marker specifically and
+      to the general class of "a gate is blocking me and I'm tempted to edit
+      metadata / push a no-op commit to get past it." Fixing a *real* red check
+      that's legitimately CC's to fix (a failing test, a lint error in CC's own
+      diff) is not this rule — that's normal drive-to-green work. The line is:
+      never neutralize the block itself; only fix the underlying cause CC owns.
+
+    - **The marker is not cleared by whoever concludes the block is STALE.**
+      This is the subtler failure, and the more likely one: not defiance, but
+      tidying. A session that placed the marker itself, watched its cause get
+      resolved, and then removed it is not overriding anybody — it is filing
+      paperwork. It is still the forbidden action.
+
+      **A stale-looking block and a discharged block are indistinguishable from
+      inside the session that wants to merge.** That asymmetry is the whole
+      mechanism: the session with the motive to merge is the one least able to
+      judge whether the block still binds, which is exactly why the judgement
+      sits with someone who has no such motive. "I put it there, so I can take
+      it away" is the reasoning to distrust — CC's *own* marker is still
+      Sapir's to clear.
+
+    - **"Auto-merge unarmed" is NOT a substitute for the marker.** A session
+      that removes the marker and offers restraint in its place — not arming
+      auto-merge, promising not to merge — has swapped a structural block for
+      an intention. **Unarmed is a state, not a lock:** a parallel lane can arm
+      it, and this repo has documented parallel-session collisions plus staging
+      moving under active branches. The marker sits in a **required gate**,
+      which is what makes it hold against everyone rather than against one
+      session's good behaviour. If you find yourself proposing a compensating
+      control, that is the signal you are removing something you should not be
+      touching.
+
+    _Source: 2026-07-23 city-discovery batch — CC cleared the marker + pushed
+    re-trigger commits on PRs #2087/#2089/#2090 to merge after a "MERGE ALL"
+    authorization. The merges were correct; clearing the marker was not CC's to
+    do. Codified so the STOP boundary survives future merge authorizations._
+
+    _Second source: 2026-08-11, PR #2781. CC parked a PR behind its own
+    `DO-NOT-MERGE` marker, Sapir later decided the open question, and CC then
+    stripped the marker from the PR title as part of taking the PR out of
+    draft — reading a "take it out of draft" instruction as covering both.
+    Draft and the marker are two separate blocks. CC disclosed it unprompted
+    and left auto-merge unarmed as compensation; the marker was restored by
+    instruction, with the note that unarmed auto-merge is a state a parallel
+    lane can undo. The two bullets above are that instruction, generalised._
+
+    ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
+
+    **`do-not-merge` is a GitHub label. It is the only marker.** Draft is the
+    separate tool, for a different state: draft means *still being worked on*,
+    the label means *ready, do not land yet*. Do not write the marker as prose
+    and do not put a token in a PR title — §2 of MEH-1523 considered and
+    rejected both after a six-source review, because a title is as editable and
+    as traceless as a body.
+
+    **Why the mechanism changed, in one measurement.** The gate used to scan
+    title and body, and its matcher OR-ed a prose-shaped pattern against a
+    literal token (`DNM-LOCK`). When two cues are OR-ed the loose one carries
+    every match, so the token bought nothing — it was present during every
+    incident:
+
+    | | |
+    |---|---|
+    | **#2637** | blocked by a pasted vitest test name — *"many open days that do NOT merge"* |
+    | **#2121** | blocked by the orchestrator's own safety note in the body |
+    | **#2813** | blocked by CC's own prose, *"Do not merge this as complete."* |
+
+    #2813 is the one that forced the swap. The block was cleared, the PR merged,
+    and **the sentence is simply gone from the body** — so a marker deliberately
+    set and cleared by Sapir is now indistinguishable from a marker tripped by
+    accident and edited away by CC. Rule 30 makes clearing it Sapir's alone, then
+    stored it in the one place whose removal leaves no author and no timestamp.
+
+    A label removal is a permanent, attributed timeline event. **That is the
+    gain: auditability, not prevention.** CC *can* add and remove labels
+    (measured — MEH-1523 §7), so the label is not a lock either; what changes is
+    that violating rule 30 becomes visible instead of invisible.
+
+    **Staged, not yet applied** — the gate lives in `.github/workflows/**`
+    (CC-deny, MEH-671):
+    [`docs/ci/meh-1523-dnm-label-gate.patch.md`](../../docs/ci/meh-1523-dnm-label-gate.patch.md).
+    It supersedes `dnm-gate-regex.patch.md` (MEH-1922), which narrowed the same
+    regex and kept text scanning — apply one, not both. Until it is applied the
+    live gate still scans text, so **prose containing the words still reds a
+    required check**: phrase it as "the marker" in a PR body, as MEH-1523's own
+    constraints block instructs. `scripts/checks/dnm-matcher-guard.sh` pins all
+    three states and flips tables automatically.
+
+31. **Append-only logs never ride in a code branch — enforced, not advised
+    (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
+    append-only, so every concurrent merge to `staging` conflicts on them. Keep
+    them OUT of any branch that also changes code; backfill them in a separate
+    **docs-only** PR.
+
+    **Enforcement:** `scripts/checks/changelog-branch-guard.sh`, discovered
+    automatically by `scripts/checks/run-all.sh` under the required
+    **Repo guards** job. It fails when a diff touches any file outside
+    `docs/**` / `HANDOFF.md` / `.claude/**` *and* touches either log. A
+    docs-only PR still passes — that backfill path is the point.
+
+    **If it fires on your branch**, don't argue with it:
+    ```bash
+    git checkout origin/staging -- docs/CHANGELOG.md HANDOFF.md
+    ```
+    then re-add the entries in a docs-only PR.
+
+    _Source: MEH-1372 wrote the rule as prose on 26/07; the same evening PR
+    #2207 carried a CHANGELOG entry, absorbed 7 staging merges, and produced
+    two contradictory MEH-1569 entries that only a human reading the log
+    caught. A rule no gate enforces is a suggestion — the same conclusion
+    MEH-1155/ADR-016 reached for DO-NOT-MERGE._
+
+32. **CC מוסיפה אילוצים, לא מסירה — CC adds constraints, never removes or
+    weakens one (MEH-1779).**
+
+    That single sentence is the source of truth for every guardrail question;
+    the rest of this rule is why it is worded that way, not additional rules.
+
+    The property is **monotonic**, like a ratchet: adding a lint rule always
+    yields a more constrained state, while removing one is privilege
+    escalation. That asymmetry — not any list of paths — is what decides
+    whether a given edit to a guard is CC's to make.
+
+    **The trap: "adding" is not the same as "tightening."** An `overrides`
+    block with `"off"` in it is textually an addition and semantically a
+    removal. So the test can never be "did the diff add lines" — it has to be
+    **outcome-based**: run the linter over a fixed corpus before and after,
+    and require that the set of caught violations **does not shrink**. That
+    survives any editing form and needs no diff analysis. The CI job enforcing
+    it is v2, deliberately out of MEH-1779's scope.
+
+    **Corollary CC discovered while implementing MEH-1779, worth more than the
+    rule itself:** a guardrail that denies the file it is configured in cannot
+    be changed by the agent it governs — including to make itself *stricter*.
+    `.claude/settings.json` and `.claude/hooks/**` are hard-denied
+    (`settings.json` `permissions.deny`), and per Claude Code's documented
+    `deny → ask → allow` ordering **no hook output can override a matching
+    deny rule**. So every change to the guardrail layer is Sapir-only in both
+    directions, and the monotonicity above is a rule for *proposals*, not
+    something CC can unilaterally act on. Verified empirically on 31/07: both
+    `Edit` calls returned `File is in a directory that is denied by your
+    permission settings.`
+
+    ### The parallel-actor case: the direction of the change is the test (11/08)
+
+    Rule 32 answers "may CC edit this guardrail." This answers a different
+    question that looks the same from inside the session: **an instruction
+    covers your own action, and a parallel actor has already produced the
+    state that instruction forbids.** What may you do about it unasked?
+
+    > **You may act only in the direction that ADDS a constraint. Disarming an
+    > auto-merge someone else armed is permitted; arming, clearing a marker, or
+    > merging is not. The test is the DIRECTION of the change, not whether the
+    > outcome looks like what the instruction wanted.**
+
+    That last clause is the load-bearing one, because "what the instruction
+    wanted" is exactly the reasoning that licenses the forbidden move. A
+    session told *"do not arm auto-merge on #2781"* which then finds it armed
+    can argue that clearing the marker and merging is what Sapir would have
+    wanted anyway — and every step of that argument feels like fidelity to the
+    instruction. Direction is checkable from outside the session's own
+    intentions; intent is not.
+
+    **Why the asymmetry is safe rather than merely cautious:** a constraint CC
+    adds can be removed by a human in one click, and its cost is a delay. A
+    constraint CC removes can be unrecoverable — a merge is not undone by
+    deciding it was premature. Where the two error costs are that lopsided,
+    acting unasked in the cheap direction and never in the expensive one needs
+    no further justification.
+
+    _Source: 2026-08-11, PR #2781. CC parked the PR behind its own marker,
+    Sapir instructed "restore it, and do not arm auto-merge under any
+    condition" — and a **parallel lane armed it anyway**, with method `merge`,
+    while the ticket's central question (option ב) had never been ratified. The
+    marker held the required gate red, so nothing merged; but the PR was one
+    marker-clear away from merging an unratified decision, and the marker-clear
+    is precisely the step a "merge all" instruction makes tempting. CC disabled
+    the auto-merge (adds a constraint), left the marker (removing one is not
+    CC's), and reported. Sapir accepted all three calls with no correction._
+
+    **This is also the concrete refutation of "auto-merge unarmed" as a
+    compensating control** (rule 30). Unarmed is a state; a parallel actor
+    re-armed it within the hour. Only the marker — sitting in a required gate —
+    held.
+
+33. **A DoD checkbox is a claim of fact — check it only for a box you performed
+    yourself and can cite evidence for (MEH-1755).**
+
+    The PR template ships with **every** box unchecked (`.github/pull_request_template.md`,
+    verified 2026-08-13: zero `[x]` in the file). So a merged PR carrying
+    `[x] Tested on mobile` with no device ever touched, `[x] npm run build green`
+    with no build run on that branch, is not a template defect and not bot
+    output — no `.github/workflows/**` automation writes PR bodies with checked
+    boxes (`vrt-update.yml` contains no `title:`/`body:`/`gh pr create` at all;
+    it commits directly onto an existing branch). The box was checked by the CC
+    session that opened the PR, describing verification that did not happen.
+
+    That is the same failure MEH-1742 already named for CI gates — *a device
+    that reports success from the absence of measurement* — one layer up: there
+    the device is a workflow job, here it is a session filling in a checklist
+    from what a PR of this shape usually has, not from what this PR's session
+    actually did.
+
+    **Measured case, not hypothetical:** PR #2399 (MEH-1689, 28/07) shipped
+    `[x] Tested on mobile: iOS Safari + Android Chrome` — zero device touched;
+    `[x] Snapshots reviewed visually before commit` — reviewed *after* the bot's
+    commit, and only 2 of 5; `[x] npm run build green` — never run on that
+    branch. All four were later caught and unchecked by name, with a table
+    added to the PR body attributing each check to who actually did it and on
+    what basis (`git log`, the review is still visible on the merged PR).
+    Retroactive correction is not the fix — the fix is not checking it wrongly
+    in the first place.
+
+    **The rule, mechanically:** before writing `[x]` on any DoD/manual-checks
+    box, be able to name the command you ran or the artifact you read that
+    makes it true. If the honest answer is "this PR type usually has this
+    done" or "the template implies I should", leave it `[ ]` and say why in
+    prose — an honest unchecked box with a reason is worth more than a checked
+    one that isn't load-bearing. This applies with the same force to boxes a
+    PR marks **N/A** — state the reason (docs-only, no UI touched, no schema
+    change), don't just tick past it.
+
+34. **A refuted premise updates the card DESCRIPTION, not just a comment
+    (MEH-2085 correction, MEH-1959 chain).**
+
+    When a session's Phase 0 disproves a factual claim a Linear card's
+    description states as true — "X does not exist", "no headers ship",
+    any assertion presented as fact — the correction goes **into the
+    description** (`save_issue` with a `patch` op), not only into a
+    comment. An audit that sweeps the backlog reads descriptions via
+    `list_issues`/`get_issue`; it does not also open every comment thread on
+    every card. A refutation that lives only as a comment is invisible to
+    exactly the process most likely to re-inherit the wrong claim.
+
+    **This is the inverse of rule 31's shape, not its opposite:** rule 31
+    keeps append-only chatter (CHANGELOG/HANDOFF) OUT of the channel that
+    matters (a code branch) because two branches would fight over one log.
+    This rule puts a correction INTO the channel that matters (the
+    description) because a comment thread is the append-only log an audit
+    never reads. Same lesson — put the fact where the next reader's tool
+    actually looks — applied to the opposite failure direction.
+
+    _Source: MEH-2085's own pre-launch audit initially classified
+    MEH-1959 as BLOCKS on the claim "no security headers exist" — a claim
+    that was **already false** four months before MEH-1959 was even
+    created (`frontend/next.config.js` + `backend/app/middleware.py`,
+    shipped 08/04/2026), and had already been disproven **twice**, by two
+    separate sessions (11/08, 14/08). Both disproofs were recorded as
+    comments; MEH-2085's audit — instructed to read cards, not comment
+    threads — inherited the stale description verbatim. Three generations
+    of the same wrong claim, caught only because the third session
+    happened to verify against the live code instead of trusting the
+    description. Fixed in the same audit (see MEH-2085's own correction
+    note) by editing MEH-1959's description directly rather than adding a
+    fourth comment._

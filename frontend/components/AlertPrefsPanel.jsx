@@ -243,7 +243,8 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 type="tel"
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value)}
-                placeholder="050-1234567"
+                // MEH-1617: value moved to sweep_tail.alert_prefs.phone_placeholder.
+                placeholder={t("phone_placeholder")}
                 dir="ltr"
                 aria-label={t("phone_required_prompt")}
                 className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"

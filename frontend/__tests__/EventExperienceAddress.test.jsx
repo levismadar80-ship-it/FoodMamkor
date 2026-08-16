@@ -19,10 +19,20 @@ const PICK = { street: "הרצל 1", lat: 32.1, lng: 34.8, city: "תל אביב"
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), post: vi.fn() },
 }));
+// MEH-1639: the dashboard pages import Link/useRouter from the locale-aware
+// wrapper now, so the mock has to live on @/i18n/navigation. The
+// next/navigation mock below stays for useParams/useSearchParams, which
+// createNavigation does not export.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
   useParams: () => ({}),
   useSearchParams: () => new URLSearchParams(),
+}));
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>
+  ),
 }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: { id: "u1", role: "producer" }, loading: false }),
@@ -70,6 +80,10 @@ describe("MEH-1404 — event create form sends lat/lng", () => {
 
     fireEvent.change(container.querySelector("#title"), { target: { value: "סדנת אפייה" } });
     fireEvent.change(container.querySelector("#event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + category are required now. Fixture only — the subject
+    // here is still lat/lng.
+    fireEvent.change(container.querySelector("#category"), { target: { value: "שוק" } });
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("pick-location"));
     fireEvent.click(container.querySelector('button[type="submit"]'));
 
@@ -88,6 +102,10 @@ describe("MEH-1404 — event create form sends lat/lng", () => {
 
     fireEvent.change(container.querySelector("#title"), { target: { value: "סדנת אפייה" } });
     fireEvent.change(container.querySelector("#event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + category are required now. Fixture only — the subject
+    // here is still lat/lng.
+    fireEvent.change(container.querySelector("#category"), { target: { value: "שוק" } });
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
     fireEvent.click(container.querySelector('button[type="submit"]'));
 
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/events", expect.anything()));
@@ -105,11 +123,15 @@ describe("MEH-1404 — experience create form sends lat/lng", () => {
     const N = he.experiences.new;
     wrap(<NewExperienceClient />);
 
-    fireEvent.change(screen.getByLabelText(N.field_title), { target: { value: "סדנת בישול קהילתית" } });
+    fireEvent.change(screen.getByLabelText(new RegExp(N.field_title)), { target: { value: "סדנת בישול קהילתית" } });
     fireEvent.change(screen.getByPlaceholderText(N.field_description_placeholder), {
       target: { value: "תיאור מפורט של הסדנה שלנו שנמשך יותר מעשרים תווים בדיוק" },
     });
-    fireEvent.change(screen.getByLabelText(N.field_date), { target: { value: "2026-09-01" } });
+    fireEvent.change(screen.getByLabelText(new RegExp(N.field_date)), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + location_type are required now, so the form no longer
+    // submits without them. Fixture only — the subject here is still lat/lng.
+    fireEvent.click(screen.getByRole("button", { name: N.location_home }));
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("pick-experience-address"));
     fireEvent.click(screen.getByRole("button", { name: N.submit_cta }));
 

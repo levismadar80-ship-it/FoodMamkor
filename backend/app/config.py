@@ -97,6 +97,16 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-4-6"
 
+    # MEH-1490: server-side Google Maps Platform key for the quiet Google-rating
+    # trust line (Places API New, Enterprise SKU: rating/userRatingCount).
+    # SERVER-SIDE ONLY — never sent to the client (distinct from the frontend
+    # NEXT_PUBLIC_GOOGLE_MAPS_API_KEY used for address autocomplete). Empty by
+    # default: routers/google_rating.py fail-quiets to 204 when unset, so the
+    # feature is dormant (and free) until an operator sets GOOGLE_PLACES_API_KEY
+    # in Railway. ⚠️ Adding the value in Railway needs explicit sign-off (new
+    # env var + billed Enterprise SKU).
+    google_places_api_key: str = ""
+
     # MEH-54: VAPID keys for Web Push notifications. Generate with:
     #   python -c "from py_vapid import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem().decode()); print(v.public_key.public_bytes_raw().hex())"
     # Leave empty to disable push (fail-open — alerts still send via WhatsApp if opted in).

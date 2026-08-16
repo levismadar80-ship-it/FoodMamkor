@@ -19,7 +19,9 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models import Category, DeliveryArea, Producer, ProducerCategory
+from app.models import Category, Producer, ProducerCategory
+from app.schemas.schemas import DeliveryAreaCreate
+from app.services.producer_queries import persist_registration_delivery_areas
 from app.slug_utils import RESERVED_SLUGS
 
 # U+00D7 (×, multiplication sign) and U+00F8 (ø) appear when Hebrew UTF-8
@@ -66,17 +68,54 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id=None) -> str:
         counter += 1
 
 
-def _get_or_create_category(db: Session, name: str) -> Category | None:
+def _lookup_category(db: Session, name: str) -> Category | None:
+    """Look up a category by exact name. NEVER creates one (MEH-1534).
+
+    Returns ``None`` for a blank name (column I is optional — ``parse_row``
+    already records a warning) and for an unknown name. Callers must validate
+    unknown names via ``_known_category_names`` BEFORE reaching this, so an
+    unknown value is reported as a row error rather than silently dropped.
+
+    # DO NOT reintroduce get-or-create here — a spreadsheet typo must not
+    # become a taxonomy row (MEH-1534). It widened the curated 18-item
+    # taxonomy, wrote a hardcoded emoji in violation of the Emoji LOCK, and
+    # was an undocumented source of the category id drift that broke the seed
+    # (MEH-1530). Deliberate creation stays in admin_extra.create_category.
+    """
     name = (name or "").strip()
     if not name:
         return None
-    cat = db.query(Category).filter(Category.name == name).first()
-    if cat:
-        return cat
-    cat = Category(name=name, emoji="🌿")
-    db.add(cat)
-    db.flush()
-    return cat
+    return db.query(Category).filter(Category.name == name).first()
+
+
+def _known_category_names(db: Session) -> list[str]:
+    """Canonical category names, read from the live table — never a second
+    hardcoded copy of the seed list (which would drift out of sync)."""
+    return [row[0] for row in db.query(Category.name).order_by(Category.name).all()]
+
+
+def _flag_unknown_categories(db: Session, parsed_rows: list[RowResult]) -> None:
+    """MEH-1534: record a row error for any category name not in the taxonomy.
+
+    Runs as a pre-pass over ALL parsed rows (one query for the batch) so the
+    error lands in ``RowResult.errors`` — the channel that already exists — and
+    is therefore handled by the existing ``if parsed.errors`` branch in
+    ``import_rows``. That branch sits ABOVE the ``dry_run`` early-return, which
+    is what makes ``dry_run=true`` surface these errors too: previously dry_run
+    returned before the category was ever looked at, so a bad sheet passed the
+    preview and only surfaced on the real run — by silently creating the row.
+
+    A blank category is acceptable (column I is optional — ``parse_row`` already
+    records a warning), so "" is folded into the known set.
+    """
+    known_names = _known_category_names(db)
+    known = set(known_names) | {""}
+    for parsed in parsed_rows:
+        name = (parsed.data["category_name"] or "").strip()
+        if name not in known:
+            parsed.errors.append(
+                f"קטגוריה לא מוכרת: '{name}'. קטגוריות מותרות: {', '.join(known_names)}"
+            )
 
 
 def _coerce_float(v: Any) -> float | None:
@@ -195,6 +234,12 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
     results: list[RowResult] = []
     imported = skipped = errors = 0
 
+    # MEH-1534: reject unknown categories instead of creating them. Runs before
+    # the loop so the error lands in parsed.errors and is picked up by the
+    # existing `if parsed.errors` branch below — which sits above the dry_run
+    # early-return, so dry_run surfaces these errors too.
+    _flag_unknown_categories(db, all_parsed)
+
     for parsed in all_parsed:
         if not parsed.data["name"]:
             skipped += 1
@@ -239,6 +284,19 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             grass_fed=parsed.data["grass_fed"],
             organic_certified=parsed.data["organic_certified"],
             has_delivery=parsed.data["has_delivery"],
+            # MEH-2060: deliberately KEPT, unlike admin.py's two writers. Every
+            # consumer surface now derives "offers pickup" from a
+            # ProducerLocation(kind="pickup"/"market_stand") row — but this
+            # importer creates no such row (no ProducerLocation import in this
+            # module at all). Popping this write, the way admin.py's PUT does,
+            # would silently make column J ("pickup=yes" in the sheet)
+            # unrepresentable for every future import — a real data-loss
+            # regression, not a documented no-op, since there is no reader-side
+            # evidence to back the "no-op" branch of this ticket's DoD. Left
+            # writing the (now-unread) column so the raw intent survives in the
+            # DB even though nothing displays it; follow-up: teach this
+            # importer to also create the location row (mirrors
+            # persist_registration_delivery_areas below for delivery_areas).
             pickup_points=parsed.data["pickup_points"],
             kosher=parsed.data["kosher"],
             admin_notes=parsed.data["admin_notes"],
@@ -248,7 +306,7 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
         db.add(producer)
         db.flush()
 
-        cat = _get_or_create_category(db, parsed.data["category_name"])
+        cat = _lookup_category(db, parsed.data["category_name"])
         if cat:
             # MEH-1297: import assigns exactly one category → primary (position 0).
             db.add(
@@ -257,8 +315,33 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
                 )
             )
 
-        for city in parsed.data["delivery_area_cities"]:
-            db.add(DeliveryArea(producer_id=producer.id, city=city))
+        # MEH-1921: the CSV importer had the same defect as the two registration
+        # branches — it wrote DeliveryArea rows and left `offers_delivery` at its
+        # False default, which the MEH-1848 conjunct then excludes from the
+        # משלוח chip. Sharper here than at signup, because these rows are created
+        # `status="approved"` (above) and so are live on the site immediately.
+        #
+        # Column K ("has_delivery", :163) does NOT cover it: that writes the
+        # legacy `has_delivery` column, which no delivery predicate consults
+        # (MEH-1849, and MEH-1850 exists to drop it). An admin marking a business
+        # as delivering in the sheet got a business that does not appear under
+        # the delivery filter.
+        #
+        # Routed through the one owner rather than assigning the flag inline —
+        # three inline copies is how this drifted in the first place. The cities
+        # are bare strings here, so each becomes a DeliveryAreaCreate carrying
+        # only `city`; every other field defaults to None, which is byte-identical
+        # to the `DeliveryArea(producer_id=…, city=city)` this replaces. The
+        # parser already strips and drops empties (:164-168), so no value here
+        # can fail the schema.
+        persist_registration_delivery_areas(
+            db,
+            producer,
+            [
+                DeliveryAreaCreate(city=city)
+                for city in parsed.data["delivery_area_cities"]
+            ],
+        )
 
         parsed.saved = True
         results.append(parsed)

@@ -30,8 +30,8 @@ import { CATEGORY_ICONS } from "@/lib/category-registry";
 // in both locales for now — DB category names are Hebrew-only). The other 12
 // categories surface via search with a Leaf fallback, name-only.
 // MEH-927: "בשר ודגים" split into "בשר" (kept here on the meat glyph) + "דגים".
-// "דגים" is intentionally NOT in POPULAR — it uses the Leaf fallback like the
-// other rest-categories until MEH-683 gives it a dedicated fish glyph.
+// "דגים" is intentionally NOT in POPULAR — it resolves its own FishSimple glyph
+// via CATEGORY_ICONS like every other non-popular card (MEH-683; see :203-206).
 const POPULAR = [
   { name: "חלב וגבינות", glyph: "dairy" },
   { name: "לחמים ואפייה", glyph: "bread" },
@@ -136,10 +136,21 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
     : shown.map((c) => ({ cat: c }));
 
   return (
-    <div role="group" aria-label={t("label")}>
+    <div role="group" aria-label={`${t("label")} ${t("required_sr")}`}>
       <div className="flex items-center justify-between mb-1">
         <p className="font-medium text-sm">
-          {t("label")} <span className="text-red-700">*</span>
+          {t("label")}{" "}
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
+          {/* MEH-2015 chunk B: screen readers never heard "required" — the
+              asterisk above is aria-hidden and a button-group has no native
+              `required` attribute to announce. sr-only text carries it instead
+              of `aria-required` on role="group" (invalid target per axe-core's
+              aria-allowed-attr — that attribute is radiogroup-only). Mirrored
+              onto the group's aria-label above so it survives regardless of
+              which the screen reader announces on entry. */}
+          <span className="sr-only">{t("required_sr")}</span>
         </p>
         {/* MEH-1297: live N/3 counter */}
         <span className="text-xs text-fg-muted tabular-nums" data-testid="category-counter">

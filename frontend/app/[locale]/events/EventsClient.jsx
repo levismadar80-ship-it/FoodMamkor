@@ -373,9 +373,6 @@ export default function EventsPage() {
           chips={chips}
           activeKey={activeChipKey}
           onChipClick={onChipClick}
-          // brand cream — shared ChipScrollRow fade API, matches
-          // ProducersClient.jsx:264 + HomeProducersGrid.jsx:70.
-          fadeBg="#F5F0E8"
         />
       </div>
 
@@ -425,7 +422,11 @@ function EntryRow({ entry, freeLabel }) {
   const Icon = CATEGORY_ICON[entry.category] ?? CalendarBlank;
   const accentText = isExp ? "text-accent" : "text-primary";
   const tickBg = isExp ? "bg-accent" : "bg-primary";
-  const catChip = isExp ? "bg-accent/10 text-accent" : "bg-green-50 text-primary";
+  // MEH-2069: bg-accent/10 on the page background (cream, #f5f0e8) computed
+  // 4.07:1 — AA fail for text-xs (12px). Same usage-level fix already applied
+  // twice (MEH-2025/#2825, MEH-2032/#2909): solid bg-surface-card gets
+  // text-accent to 5.19:1.
+  const catChip = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
@@ -533,7 +534,11 @@ function EmptyState({ tab, t, onReset }) {
 // on hydrate. Cream-toned (opacity-on-cream per ADR-019), not gray blocks.
 function SkeletonRows({ srLabel }) {
   return (
-    <div aria-busy="true" aria-label={srLabel}>
+    // MEH-1957: role="status" is what makes aria-label permitted here. Without
+    // a role this is a generic div, and aria-label on one is `aria-prohibited-attr`
+    // (serious) — only reachable while the skeleton is on screen, so warm loads
+    // never showed it. Mirrors app/[locale]/loading.js:8-12.
+    <div role="status" aria-busy="true" aria-label={srLabel}>
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border">
           <div className="py-5 grid justify-items-center content-start gap-2">

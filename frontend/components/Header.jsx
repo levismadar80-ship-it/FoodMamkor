@@ -9,8 +9,41 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
-// MEH-896 polish: LanguageToggle removed from the nav until the EN i18n wave
-// (MEH-472). The component file is unchanged; only its nav entry is gone.
+import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { itemsForSurface } from "@/lib/nav-registry";
+import LanguageToggle from "@/components/LanguageToggle";
+
+/**
+ * MEH-1703 chunk 2 — ORDER stays here, identity comes from the registry.
+ *
+ * This is the chunk 0 finding made concrete: the Header renders
+ * home → map → experiences → about while the BottomNav renders
+ * home → map → about, so no single declaration order can describe both.
+ * Deriving order from the registry would itself be a visual change. The
+ * registry supplies each item's `href` and its per-surface `labelKey`; these
+ * two arrays supply the sequence, and stay shell-local by design.
+ *
+ * An id listed here that the registry does not declare for this surface is
+ * simply dropped — but it cannot go unnoticed, because
+ * __tests__/NavRegistryParity.test.jsx compares the rendered link set against
+ * the registry for every auth state.
+ */
+const HEADER_NAV_ORDER = ["home", "map", "experiences", "about"];
+const HEADER_MENU_ORDER = [
+  "producerDashboard",
+  "producerPublicPage",
+  "favorites",
+  "settings",
+  "admin",
+];
+
+/** Order a surface's registry entries by an explicit shell-local sequence. */
+function orderedForSurface(surface, state, order) {
+  const byId = new Map(
+    itemsForSurface(surface, state).map((entry) => [entry.item.id, entry]),
+  );
+  return order.map((id) => byId.get(id)).filter(Boolean);
+}
 
 /**
  * Header — MEH-643 (S3 chunk 4) floating-pill navbar. Global chrome,
@@ -171,15 +204,42 @@ export default function Header() {
   // MEH-643: navbar uses nav.explore (not nav.discover). MEH-732: both keys
   // de-masculinized to "גלו" (ADR-014 plural-voice for nav chrome) — nav.explore
   // here, nav.discover on the BottomNav home tab.
-  const NAV_ITEMS = [
-    { href: "/", label: t("nav.explore") },
-    { href: "/map", label: t("nav.map") },
-    { href: "/about", label: t("nav.about") },
-  ];
+  // MEH-1918: the experiences link is data-gated — it joins the desktop nav
+  // only once /experiences has real supply, and is absent (not disabled, not
+  // greyed) below the threshold. Mirrors the existing items exactly; no
+  // redesign, no count badge.
+  // MEH-1703 chunk 2: the list is now DERIVED from lib/nav-registry rather than
+  // written out here. Same four items, same order, same keys — `nav.explore`
+  // still comes from the registry's `header` surface and `nav.discover` stays
+  // the BottomNav's, which is exactly why the registry keeps a separate record
+  // per surface instead of one canonical labelKey.
+  const showExperiences = useExperiencesNavGate();
+  const NAV_ITEMS = orderedForSurface(
+    "header",
+    { signedIn: !!user, role: user?.role ?? null },
+    HEADER_NAV_ORDER,
+  )
+    // The data gate stays here: the registry records THAT experiences is gated
+    // on supply, not what the current supply is.
+    .filter(({ item }) => item.dataGate !== "experiences-supply" || showExperiences)
+    .map(({ item, surface }) => ({ href: item.href, label: t(surface.labelKey) }));
 
   const isHomepage = pathname === "/";
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
   const isLoginPage = pathname === "/login";
+  // MEH-1964: same idea for the register link — no CTA pointing at the page
+  // you are already on. Both /register (consumer) and /register/producer
+  // count: the producer wizard opens from /register, so offering "הרשמה"
+  // mid-wizard would send an owner back to the top of her own flow.
+  // MEH-1971: segment boundary, not a string prefix. A bare
+  // `startsWith("/register")` also matches a PRODUCER whose slug happens to
+  // begin with those letters — `lib/slug.js` reserves the exact word
+  // `register` (`RESERVED.has(s)`, not a prefix test), so `register-cafe` is a
+  // legal slug and a legal `/[slug]` match. On that business's own page the
+  // הרשמה link would silently vanish. Caught in review, before any such
+  // business existed.
+  const isRegisterPage =
+    pathname === "/register" || (pathname || "").startsWith("/register/");
   const transparent = isHomepage && !scrolled;
   // MEH-896: trust strip render gate (JS-level — desktop-only is enforced
   // by the strip's own `hidden md:flex` below; pill top-padding compensates
@@ -391,8 +451,16 @@ export default function Header() {
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
-            {/* MEH-896 polish: LanguageToggle removed from the nav until the
-                EN i18n wave (MEH-472). Import dropped at :12. */}
+            {/* MEH-1698: desktop language toggle restored. MEH-896 (b7919b39,
+                21/06) removed it "until the EN i18n wave (MEH-472)"; MEH-472
+                never reinstated it, so for 5 weeks the ONLY mount was the
+                AccountSheet mobile row (AccountSheet.jsx:191, variant="bare")
+                and /en was a one-way door on desktop. `variant="default"` is
+                the standalone 36px circle chip (LanguageToggle.jsx:75-77) —
+                the bare variant belongs to the menu row, not to the pill. */}
+            <span className="hidden md:inline-flex">
+              <LanguageToggle variant="default" />
+            </span>
 
             {user ? (
               <UserMenu
@@ -404,9 +472,21 @@ export default function Header() {
               />
             ) : (
               // MEH-732: quiet text link, hidden on /login.
-              !isLoginPage && (
-                <LoginAccount label={t("nav.login")} />
-              )
+              // MEH-1964: registration now has a header entry too. Before this
+              // there was NO path to /register from any chrome — a visitor
+              // reached it only through /login or by typing the URL, which is
+              // the one thing a marketplace header must never do (Baymard:
+              // the primary signup action stays reachable from every page).
+              // Deliberately a quiet text link and NOT a pill: MEH-907 removed
+              // the header CTA pill on purpose to leave search as the single
+              // bold action, and that decision stands — this restores
+              // reachability without re-opening the real estate it freed.
+              <>
+                {!isLoginPage && <LoginAccount label={t("nav.login")} />}
+                {!isRegisterPage && (
+                  <RegisterAccount label={t("nav.register")} />
+                )}
+              </>
             )}
 
             {/* MEH-907: add-business CTA pill removed from the Header. The
@@ -473,6 +553,31 @@ function LoginAccount({ label }) {
   return (
     <Link
       href="/login"
+      // MEH-215 journey C: locator for the header-discovery assertion. The
+      // `hidden md:inline-flex` above is the whole point — this link exists on
+      // desktop and NOT on mobile, and the spec asserts both halves rather
+      // than only the one that happens to be present.
+      data-testid="header-login-link"
+      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
+    >
+      {label}
+    </Link>
+  );
+}
+
+/**
+ * MEH-1964 — quiet "הרשמה" link for guests, the twin of LoginAccount above.
+ * Same geometry and the same quiet treatment (no fill, no border, ink shift on
+ * hover) so the pair reads as one unit rather than as a CTA competing with
+ * search. Hidden on /register* (gated at the call site via isRegisterPage).
+ * Desktop-only, matching LoginAccount: on mobile the AccountSheet owns the
+ * account entries and the BottomNav owns navigation.
+ */
+function RegisterAccount({ label }) {
+  return (
+    <Link
+      href="/register"
+      data-testid="header-register-link"
       className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}
@@ -490,8 +595,6 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
   const hasAvatar = !!user.avatar_url;
-  const isProducer = user.role === "producer";
-  const isAdmin = user.role === "admin";
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -502,24 +605,33 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   // profile row is dropped entirely — their menu is settings → logout.
   // Settings drops the ?tab param to land on the same /settings as the
   // mobile AccountSheet.
-  const items = [
-    ...(isProducer
-      ? [
-          { href: "/producer/dashboard", label: t("account.menu.dashboard") },
-          ...(user.producer_id
-            ? [{ href: `/producer/${user.producer_id}`, label: t("account.menu.profile") }]
-            : []),
-        ]
-      : []),
-    // MEH-1310: favorites row for EVERY logged-in role — desktop parity with
-    // the mobile AccountSheet, which already links /favorites via the SAME
-    // nav.favorites key (AccountSheet.jsx:148-151). Without it /favorites was
-    // orphaned on desktop (reachable only by typing the URL). No icon — the
-    // existing dropdown rows are text-only, so this matches their anatomy.
-    { href: "/favorites", label: t("nav.favorites") },
-    { href: "/settings", label: t("account.menu.settings") },
-    ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
-  ];
+  //
+  // MEH-1703 chunk 2: the role gating that used to be spelled out here as
+  // `isProducer` / `isAdmin` ternaries now lives on the registry records as
+  // `audience`, and `itemsForSurface` applies it. Both local booleans were
+  // removed because those ternaries were their only readers. The producer-id
+  // guard stays here — the registry records THAT the row needs a linked id
+  // (`dataGate`), not whether this particular user has one.
+  const items = orderedForSurface(
+    "headerMenu",
+    { signedIn: true, role: user.role },
+    HEADER_MENU_ORDER,
+  )
+    .filter(
+      ({ item }) =>
+        item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
+    )
+    .map(({ item, surface }) => ({
+      href: item.href.replace(":producerId", user.producer_id ?? ""),
+      label: t(surface.labelKey),
+    }));
+
+  // MEH-1310 (why the favorites row exists at all, preserved from the list this
+  // replaced): desktop parity with the mobile AccountSheet, which links
+  // /favorites via the SAME nav.favorites key. Without it /favorites was
+  // orphaned on desktop, reachable only by typing the URL — the first of the
+  // three incidents that motivated MEH-1703. It carries no icon because the
+  // dropdown rows are text-only; that stays shell-local, in the JSX below.
 
   return (
     // MEH-789: desktop-only — the bottom-pill account tab + AccountSheet own
@@ -535,6 +647,8 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         className={`w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-ring ${hasAvatar ? "" : "bg-primary"}`}
       >
         {hasAvatar ? (
+          // raw img: OAuth provider avatar — host not in remotePatterns
+          // (frozen this ticket). Same class as BottomNav/AccountSheet.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
         ) : (

@@ -1,0 +1,15 @@
+[375] filled-primary controls in hero zone: ["hero-search-submit"]
+[375] filled-primary COUNT (expect 1): 1
+[375] chips row: {"discoverOccurrences":0,"underlinedLinks":0,"chipCount":2,"chipRadii":["9999px","9999px"],"prefix":"מחפשות עכשיו:"}
+[375] pill + submit geometry: {"pillRadius":"9999px","pillBg":"rgb(255, 255, 255)","submitRadius":"9999px","submitSize":{"w":44,"h":44},"submitBg":"rgb(46, 104, 83)"}
+[375] trust line: {"text":"כל בית עסק נבדק ואושר ידנית","iconFill":"rgb(137, 103, 20)","svgCount":1}
+[375] autocomplete dropdown vs pill: {"open":true,"zIndex":"1000","leftDelta":7,"rightDelta":7,"belowPill":1}
+[1440] filled-primary controls in hero zone: ["hero-search-submit"]
+[1440] filled-primary COUNT (expect 1): 1
+[1440] chips row: {"discoverOccurrences":0,"underlinedLinks":0,"chipCount":2,"chipRadii":["9999px","9999px"],"prefix":"מחפשות עכשיו:"}
+[1440] pill + submit geometry: {"pillRadius":"9999px","pillBg":"rgb(255, 255, 255)","submitRadius":"9999px","submitSize":{"w":44,"h":44},"submitBg":"rgb(46, 104, 83)"}
+[1440] trust line: {"text":"כל בית עסק נבדק ואושר ידנית","iconFill":"rgb(137, 103, 20)","svgCount":1}
+[1440] autocomplete dropdown vs pill: {"open":true,"zIndex":"1000","leftDelta":7,"rightDelta":7,"belowPill":1}
+rotation: swaps while idle: {"first":"לחם מחמצת","afterTick":"ביצים אורגניות","changed":true}
+rotation: PAUSED while focused: {"atFocus":"ביצים אורגניות","afterFocusWait":"ביצים אורגניות","frozen":true}
+rotation: STATIC under prefers-reduced-motion: {"first":"לחם מחמצת","later":"לחם מחמצת","frozen":true}

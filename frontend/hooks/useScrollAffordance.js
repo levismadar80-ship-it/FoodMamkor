@@ -5,19 +5,26 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 
 /**
  * Module:   useScrollAffordance
- * Purpose:  Shared desktop scroll-affordance state for horizontal RTL
- *           strips — per-direction can-scroll flags, an ~80%-width pager,
- *           and the fine-pointer gate — plus the matching <ScrollArrows>
- *           pair so the three consumers can't drift visually.
- * Does NOT: own edge fades — ChipScrollRow's fades stay on their own IO
- *           sentinels (they also feed scrollIntoView clearance). Does not
- *           handle wheel→horizontal translation — that stays in
- *           ChipScrollRow (its scroller only).
+ * Purpose:  THE single source of truth for horizontal scroll affordance on
+ *           RTL strips — per-direction can-scroll flags, an overall
+ *           has-overflow flag, an ~80%-width pager, and the fine-pointer
+ *           gate — plus the matching <ScrollArrows> pair so the consumers
+ *           can't drift visually.
+ * Does NOT: paint anything except the arrows. Consumers decide what to do
+ *           with the flags (ChipScrollRow drives its mask-image fades and
+ *           its end spacer from them). Does not handle wheel→horizontal
+ *           translation — that stays in ChipScrollRow (its scroller only).
  * Related:  components/ChipScrollRow.jsx (source of the extracted logic);
  *           components/FridayDeliveryStrip.jsx, app/[locale]/home/
  *           HomeStaticBlocks.jsx (consumers).
  * History:  MEH-1383 (logic shipped inline in ChipScrollRow);
- *           MEH-1391 (extraction + card-strip adoption).
+ *           MEH-1391 (extraction + card-strip adoption);
+ *           MEH-1545 (trailingFillerPx — phantom-arrow fix);
+ *           MEH-1572 (single authority: flags now compute on EVERY device,
+ *             not just fine-pointer, because ChipScrollRow's fades read
+ *             them too; `hasOverflow` exposed for the conditional spacer.
+ *             This retires the MEH-1391 two-authority trade — the IO
+ *             sentinels that used to own the fades are gone).
  */
 
 // Arrow click / scrollByAmount pages ~80% of the visible strip per press.
@@ -33,10 +40,20 @@ const DESKTOP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
 const EDGE_EPSILON_PX = 16;
 
 /**
+ * @param {{ trailingFillerPx?: number }} [options]
+ *   trailingFillerPx — px of NON-CONTENT scroll extent at the strip's
+ *   inline-end (spacer/sentinel flex children that exist for fade
+ *   clearance, not to be seen). MEH-1545: ChipScrollRow's w-12 spacer +
+ *   w-px sentinel inflate scrollWidth by ~65px, so at viewport widths
+ *   where every chip already fits, maxScroll lands at ~50px > the 16px
+ *   epsilon and a lone arrow rendered over the empty end of the row —
+ *   clicking it revealed blank space (Sapir QA 26/07). Arrows now
+ *   require the hidden extent to exceed this filler before rendering.
  * @returns {{
  *   scrollRef: import("react").MutableRefObject<HTMLElement|null>,
  *   canScrollStart: boolean,  // content hidden past the inline-start edge
  *   canScrollEnd: boolean,    // content hidden past the inline-end edge
+ *   hasOverflow: boolean,     // real (filler-discounted) content overflow
  *   scrollByAmount: (towardEnd: boolean) => void,
  *   showArrows: boolean,      // fine-pointer device (matchMedia-gated)
  * }}
@@ -50,11 +67,15 @@ function isRtlContext(el) {
   return (el.closest("[dir]")?.getAttribute("dir") || "rtl") !== "ltr";
 }
 
-export default function useScrollAffordance() {
+export default function useScrollAffordance({ trailingFillerPx = 0 } = {}) {
   const scrollRef = useRef(null);
   const [showArrows, setShowArrows] = useState(false);
   const [canScrollStart, setCanScrollStart] = useState(false);
   const [canScrollEnd, setCanScrollEnd] = useState(false);
+  // MEH-1572: overall "this strip really overflows" — ChipScrollRow renders
+  // its end spacer only when true, so a row whose chips all fit carries no
+  // trailing dead space.
+  const [hasOverflow, setHasOverflow] = useState(false);
   // MEH-1391 review fix: /en renders dir="ltr" — HomeRecentlyViewed
   // follows the page direction, so sign and carets can't be hardcoded
   // RTL. True until the element reports otherwise (RTL-first app).
@@ -83,21 +104,30 @@ export default function useScrollAffordance() {
     if (!el) return;
     const maxScroll = el.scrollWidth - el.clientWidth;
     const scrolled = Math.abs(el.scrollLeft);
-    setCanScrollStart(maxScroll > 0 && scrolled > EDGE_EPSILON_PX);
-    setCanScrollEnd(maxScroll > 0 && scrolled < maxScroll - EDGE_EPSILON_PX);
+    // MEH-1545: a strip whose only hidden extent is its own trailing
+    // filler is not really scrollable — an arrow paging ~80% of the
+    // container would just reveal blank spacer. With the default 0 the
+    // condition reduces to the previous maxScroll>0 && ±epsilon checks
+    // (scrolled > 16 already implied maxScroll > 16).
+    const realOverflow = maxScroll > trailingFillerPx + EDGE_EPSILON_PX;
+    setHasOverflow(realOverflow);
+    setCanScrollStart(realOverflow && scrolled > EDGE_EPSILON_PX);
+    setCanScrollEnd(realOverflow && scrolled < maxScroll - EDGE_EPSILON_PX);
     setRtl(isRtlContext(el));
   }
 
-  // Scroll listener + ResizeObserver, attached only on fine-pointer
-  // devices (touch pays zero). NO dependency array on purpose: async
-  // consumers (FridayDeliveryStrip fetches its cards) grow scrollWidth
-  // without any scroll or container-resize event firing, so the flags
-  // must re-derive after every commit. Same-value setState bails out,
-  // so this cannot render-loop; re-attaching the two listeners per
-  // commit is cheap and rules out stale closures.
+  // Scroll listener + ResizeObserver. MEH-1572: attached on EVERY device,
+  // not just fine-pointer. `showArrows` still gates whether ARROWS render,
+  // but ChipScrollRow's edge fades and its conditional end spacer now read
+  // these same flags, and both must be correct on touch. NO dependency
+  // array on purpose: async consumers (FridayDeliveryStrip fetches its
+  // cards) grow scrollWidth without any scroll or container-resize event
+  // firing, so the flags must re-derive after every commit. Same-value
+  // setState bails out, so this cannot render-loop; re-attaching the two
+  // listeners per commit is cheap and rules out stale closures.
   useEffect(() => {
     const el = scrollRef.current;
-    if (!showArrows || !el) return;
+    if (!el) return;
     recompute();
     el.addEventListener("scroll", recompute, { passive: true });
     let ro;
@@ -125,7 +155,15 @@ export default function useScrollAffordance() {
     });
   }
 
-  return { scrollRef, canScrollStart, canScrollEnd, scrollByAmount, showArrows, rtl };
+  return {
+    scrollRef,
+    canScrollStart,
+    canScrollEnd,
+    hasOverflow,
+    scrollByAmount,
+    showArrows,
+    rtl,
+  };
 }
 
 /**

@@ -289,6 +289,9 @@ class TestPersona2OAuthProducer:
             json={
                 "producer_name": "בשריית הבדיקה",
                 "phone": VALID_PHONE,
+                # MEH-2015 chunk B: city is now required on both ProducerRegister
+                # paths (this is the MEH-143 upgrade path under test here).
+                "city": "תל אביב",
                 "primary_contact_method": "whatsapp",
                 "category_ids": [meat.id],
                 "declaration_accepted": True,

@@ -14,7 +14,7 @@ describe("unified attribute labels (MEH-1082)", () => {
     for (const key of SHARED) {
       const chip = CHIPS_CONFIG.find((c) => c.key === key);
       expect(chip, `CHIPS_CONFIG missing ${key}`).toBeDefined();
-      expect(chip.label).toBe(ATTRIBUTE_LABELS[key]);
+      expect(chip.label).toBe(ATTRIBUTE_LABELS[key].label);
     }
   });
 
@@ -22,7 +22,7 @@ describe("unified attribute labels (MEH-1082)", () => {
     for (const key of SHARED) {
       const chip = TOGGLE_CHIPS.find((c) => c.key === key);
       expect(chip, `TOGGLE_CHIPS missing ${key}`).toBeDefined();
-      expect(chip.label).toBe(ATTRIBUTE_LABELS[key]);
+      expect(chip.label).toBe(ATTRIBUTE_LABELS[key].label);
     }
   });
 
@@ -35,14 +35,14 @@ describe("unified attribute labels (MEH-1082)", () => {
   });
 
   it("MEH-1418: verified label names WHAT was verified (was the vague 'מאומתים')", () => {
-    expect(ATTRIBUTE_LABELS.verified).toBe("רישוי מאומת");
+    expect(ATTRIBUTE_LABELS.verified.label).toBe("רישוי מאומת");
     expect(CHIPS_CONFIG.find((c) => c.key === "verified")?.label).toBe("רישוי מאומת");
     expect(TOGGLE_CHIPS.find((c) => c.key === "verified")?.label).toBe("רישוי מאומת");
   });
 
   it("MEH-1418: kosher label unified across surfaces (Sapir-LOCKED, MEH-1087)", () => {
     // kosher joined the shared map — /producers + /map now read identically.
-    expect(ATTRIBUTE_LABELS.kosher).toBe("כשרות מאומתת");
+    expect(ATTRIBUTE_LABELS.kosher.label).toBe("כשרות מאומתת");
     expect(CHIPS_CONFIG.find((c) => c.key === "kosher")?.label).toBe("כשרות מאומתת");
     expect(TOGGLE_CHIPS.find((c) => c.key === "kosher")?.label).toBe("כשרות מאומתת");
   });
@@ -54,8 +54,9 @@ describe("unified attribute labels (MEH-1082)", () => {
 
   it("the unified attribute labels carry no emoji/glyph (MEH-657)", () => {
     // Text-only invariant: no chars outside the Hebrew block + spaces.
-    for (const label of Object.values(ATTRIBUTE_LABELS)) {
-      expect(label).toMatch(/^[֐-׿ ]+$/);
+    // MEH-1507: entries are objects now — assert on the `label` field.
+    for (const entry of Object.values(ATTRIBUTE_LABELS)) {
+      expect(entry.label).toMatch(/^[֐-׿ ]+$/);
     }
   });
 });

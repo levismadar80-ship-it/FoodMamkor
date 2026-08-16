@@ -72,3 +72,45 @@ PRODUCER_LICENSE_MAX_LENGTH: int = 20
 #     commitment wording ("פועל כדין… ההצהרה תישאר נכונה כל עוד העסק
 #     מופיע במהמקור…") + conditional farmer line. New wording = new version.
 DECLARATION_VERSION: str = "2026-06-v2"
+
+# MEH-1995: the version string stamped into users.terms_version when a user
+# ticks the terms checkbox at registration. Same reasoning as
+# DECLARATION_VERSION directly above — a timestamp alone proves *that* someone
+# agreed, not *to what*. Pairing it with the exact wording version is what
+# makes the record evidence rather than a bare assertion, and it is what lets
+# us answer "which text did she accept?" after the terms are edited.
+#
+# This is the Amendment-13 exposure made concrete (MEH-1981): the statutory
+# damages provision allows a claim without proof of damage, and the defence
+# against "no terms were ever shown to me" is a row in the database.
+#
+# Bump this whenever the terms text materially changes, so existing rows stay
+# attributable to the version actually accepted. Must stay within the
+# VARCHAR(10) users.terms_version column.
+#   v1 ("2026-08-v1") — the terms/privacy wording live at MEH-1995 (2026-08-09).
+TERMS_VERSION: str = "2026-08-v1"
+
+# MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
+# self-reported attribution captured at the final registration step). English
+# keys are stored in the DB; the Hebrew labels are rendered from i18n
+# (frontend/messages/*.json → auth.register.producer.fields.referral_source.*).
+# Fixed order mirrors the dropdown. Validated at the API boundary
+# (ProducerRegister._validate_referral_source → 422 on an unknown value); there
+# is NO DB CHECK/enum, matching the app-layer enforcement of availability_state /
+# verification_doc_type. "prefer_not_to_say" is a first-class choice so the field
+# can be a required dropdown without forcing a channel disclosure.
+#
+# DO NOT reorder or rename a key without updating the i18n label mirrors
+#        (he.json/en.json auth.register.producer.fields.referral_source.options)
+#        AND the REFERRAL_SOURCE_KEYS array in RegisterProducerClient.jsx — the
+#        DB stores these exact strings.
+REFERRAL_SOURCE_KEYS: tuple[str, ...] = (
+    "business_referral",
+    "friends_family",
+    "instagram",
+    "facebook",
+    "google",
+    "whatsapp_group",
+    "other",
+    "prefer_not_to_say",
+)

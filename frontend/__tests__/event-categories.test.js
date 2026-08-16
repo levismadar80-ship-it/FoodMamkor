@@ -9,10 +9,35 @@ import {
 // rows (events + experiences). A regression here silently breaks every filter.
 describe("event-categories", () => {
   it("ships the expected base set sizes (no 'all')", () => {
-    expect(EVENT_CATEGORIES).toHaveLength(6);
+    // MEH-1657: events went 6 → 4 when סדנה/סיור moved to the experiences side
+    // of the locked axis. Experiences stayed at 7 — they ARE workshops/tours.
+    expect(EVENT_CATEGORIES).toHaveLength(4);
     expect(EXPERIENCE_CATEGORIES).toHaveLength(7);
     expect(EVENT_CATEGORIES.every((c) => c.key !== "")).toBe(true);
     expect(EXPERIENCE_CATEGORIES.every((c) => c.key !== "")).toBe(true);
+  });
+
+  // MEH-1657: the axis, asserted in both directions. Dropping the words from
+  // the event set is the fix; keeping them in the experience set is the scope
+  // guard — a later global sweep that removed both would break the axis the
+  // other way and nothing else here would catch it.
+  it("keeps workshop/tour out of events and in experiences", () => {
+    const eventKeys = EVENT_CATEGORIES.map((c) => c.key);
+    expect(eventKeys).not.toContain("סדנה");
+    expect(eventKeys).not.toContain("סיור");
+    expect(eventKeys).toEqual(["שוק", "קטיף", "טעימות", "אחר"]);
+
+    const experienceKeys = EXPERIENCE_CATEGORIES.map((c) => c.key);
+    expect(experienceKeys).toContain("סדנה");
+    expect(experienceKeys).toContain("סיור אוכל");
+  });
+
+  it("mirrors the backend event enum exactly", () => {
+    // backend/app/routers/events.py VALID_CATEGORIES — a wire-format contract.
+    // Drift here means the form offers a category the API rejects with 400.
+    expect(new Set(EVENT_CATEGORIES.map((c) => c.key))).toEqual(
+      new Set(["שוק", "קטיף", "טעימות", "אחר"]),
+    );
   });
 
   it("withAll() prepends exactly one empty-key 'all' entry", () => {

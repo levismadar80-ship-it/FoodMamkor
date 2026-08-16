@@ -21,7 +21,37 @@ from datetime import date, time, timedelta
 from decimal import Decimal
 
 from app.models.models import Experience, User
-from conftest import auth_header, make_user
+from app.utils.clock import israel_today
+from conftest import auth_header, make_producer, make_user
+
+
+def _make_host(db, *, producer_status: str = "approved", **user_kwargs) -> User:
+    """A host whose business is approved.
+
+    MEH-1749 gated the public read paths on the host's business status, so a
+    plain `make_user(db)` host is no longer publicly visible — its experiences
+    are correctly filtered out. Public-visibility tests therefore build their
+    host through here; owner/admin tests keep using `make_user` directly,
+    because those paths bypass the gate by design.
+
+    "Public read path" is the whole test, not just its subject. A test whose
+    *subject* is cancellation or pin privacy still asserts through
+    `GET /experiences` — so it needs a host with a business even though the
+    business is not what it is testing. Six such tests were missed on the first
+    sweep and only CI caught them; the criterion is **does this test read a
+    public path**, never **is this test about visibility**.
+
+    `**user_kwargs` forwards to `make_user` (e.g. `email=`) for tests that pin
+    explicit addresses to keep two actors apart.
+
+    Pass `producer_status="pending"` / `"rejected"` to exercise the gate.
+    """
+    host = make_user(db, **user_kwargs)
+    producer = make_producer(db, status=producer_status)
+    host.producer_id = producer.id
+    db.commit()
+    db.refresh(host)
+    return host
 
 
 # ---------- helpers ----------
@@ -203,6 +233,61 @@ class TestExperienceSubmission:
         )
         assert resp.status_code == 422
 
+    # MEH-2013: the form labels both "עיר *" and "סוג מיקום *", and the client
+    # now blocks each — but MEH-1153's precedent is that a direct POST must be
+    # blocked too, not just the browser. These four assert the write boundary.
+    def test_missing_city_rejected(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        payload = _payload()
+        del payload["city"]
+        resp = client.post(
+            "/experiences", json=payload, headers=auth_header(user)
+        )
+        assert resp.status_code == 422
+        assert db.query(Experience).count() == 0
+
+    def test_blank_city_rejected(self, client, db, monkeypatch):
+        """min_length=1 alone would accept "   " — which is city-less by the
+        only meaning that matters, since the /experiences city filter would
+        still never match it."""
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        resp = client.post(
+            "/experiences",
+            json=_payload(city="   "),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+        # Stated, not implied: a 422 that still wrote a row would be the worse
+        # bug of the two, and only this line would catch it.
+        assert db.query(Experience).count() == 0
+
+    def test_missing_location_type_rejected(self, client, db, monkeypatch):
+        """Previously defaulted to "home" server-side, which silently framed
+        every direct submission as taking place in a private residence — the
+        branch that hides lat/lng (experiences.py:309)."""
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        payload = _payload()
+        del payload["location_type"]
+        resp = client.post(
+            "/experiences", json=payload, headers=auth_header(user)
+        )
+        assert resp.status_code == 422
+        assert db.query(Experience).count() == 0
+
+    def test_city_is_stored_stripped(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        resp = client.post(
+            "/experiences",
+            json=_payload(city="  תל אביב  "),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        assert db.query(Experience).one().city == "תל אביב"
+
 
 # ---------- Real-time validate endpoint ----------
 
@@ -236,12 +321,136 @@ class TestExperienceValidate:
         assert db.query(Experience).count() == 0
 
 
+# ---------- Public count (MEH-1918) ----------
+
+
+class TestExperienceCount:
+    """GET /experiences/count — the number the nav gates the link on.
+
+    Every case here asserts the count against the SAME fixture the listing
+    tests use for the equivalent exclusion, because a count that disagrees
+    with the list it advertises is the whole failure mode: the nav would
+    promise a page that renders empty.
+    """
+
+    def test_counts_only_publicly_listed(self, client, db):
+        host = _make_host(db)
+        _make_experience(db, host, title="Live", status="approved")
+        _make_experience(db, host, title="Wait", status="pending")
+        _make_experience(db, host, title="Dead", status="rejected")
+        _make_experience(db, host, title="Edit", status="changes_requested")
+
+        resp = client.get("/experiences/count")
+        assert resp.status_code == 200
+        assert resp.json() == {"count": 1}
+
+    def test_past_experiences_are_not_counted(self, client, db):
+        host = _make_host(db)
+        _make_experience(
+            db,
+            host,
+            title="Old",
+            status="approved",
+            event_date=date.today() - timedelta(days=2),
+        )
+        _make_experience(
+            db,
+            host,
+            title="Soon",
+            status="approved",
+            event_date=date.today() + timedelta(days=2),
+        )
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_today_still_counts(self, client, db):
+        """The boundary the filter is `>=`, not `>` — an experience happening
+        today is still orderable and must not vanish from the count at
+        midnight.
+
+        MEH-1918: seed with `israel_today()`, NOT `date.today()`. The route
+        filters on `event_date >= israel_today()` and the CI runner is UTC, so
+        between 21:00 and 24:00 UTC (Israel is UTC+3 in summer) Israel has
+        already rolled over and a row dated UTC-today is in the PAST. This
+        test asserted the exact boundary using the wrong clock and duly went
+        red at 23:39 UTC with `{'count': 0} == {'count': 1}` — the very
+        midnight vanishing it exists to forbid.
+
+        Only the exact-today case is fragile: the other offsets in this file
+        (±2, ±7, ±14 days) carry days of slack that a 3-hour skew cannot flip,
+        which is why this is a one-line fix and not a sweep. `app/utils/clock.py`
+        names the window in its own docstring: "UTC Fri 22:00 is already Sat in
+        Israel."
+        """
+        host = _make_host(db)
+        _make_experience(
+            db, host, title="Today", status="approved", event_date=israel_today()
+        )
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_cancelled_experiences_are_not_counted(self, client, db):
+        host = _make_host(db)
+        _make_experience(db, host, title="On", status="approved", is_active=True)
+        _make_experience(db, host, title="Off", status="approved", is_active=False)
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_unapproved_business_is_not_counted(self, client, db):
+        """MEH-1749's gate: approved experience, unapproved host business."""
+        pending_host = _make_host(db, producer_status="pending", email="pend@example.com")
+        _make_experience(db, pending_host, title="Hidden", status="approved")
+        assert client.get("/experiences/count").json() == {"count": 0}
+
+        approved_host = _make_host(db, email="ok@example.com")
+        _make_experience(db, approved_host, title="Shown", status="approved")
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_count_matches_the_listing_length_exactly(self, client, db):
+        """The invariant the nav actually depends on. Built from a mixed bag so
+        every exclusion above is exercised at once — if any filter drifts
+        between the two callers, these two numbers stop agreeing."""
+        host = _make_host(db)
+        other = _make_host(db, producer_status="rejected", email="rej@example.com")
+        _make_experience(db, host, title="A", status="approved")
+        _make_experience(db, host, title="B", status="approved")
+        _make_experience(db, host, title="C", status="pending")
+        _make_experience(db, host, title="D", status="approved", is_active=False)
+        _make_experience(
+            db,
+            host,
+            title="E",
+            status="approved",
+            event_date=date.today() - timedelta(days=1),
+        )
+        _make_experience(db, other, title="F", status="approved")
+
+        listing = client.get("/experiences").json()
+        count = client.get("/experiences/count").json()["count"]
+        assert count == len(listing) == 2
+
+    def test_empty_database_returns_zero(self, client, db):
+        assert client.get("/experiences/count").json() == {"count": 0}
+
+    def test_is_public_no_auth_required(self, client, db):
+        """No Authorization header anywhere in this class — asserted once,
+        explicitly, so the route cannot quietly acquire a dependency."""
+        resp = client.get("/experiences/count")
+        assert resp.status_code == 200
+        assert set(resp.json()) == {"count"}
+
+    def test_count_is_not_swallowed_by_the_detail_route(self, client, db):
+        """Route ORDER, not behaviour: declared after `/{experience_id}` the
+        path would arrive as an id of "count". A 422/404 here means the
+        catch-all won."""
+        resp = client.get("/experiences/count")
+        assert resp.status_code == 200, resp.text
+        assert isinstance(resp.json().get("count"), int)
+
+
 # ---------- Public listing ----------
 
 
 class TestExperienceListing:
     def test_lists_only_approved(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(db, host, title="Live", status="approved")
         _make_experience(db, host, title="Wait", status="pending")
         _make_experience(db, host, title="Dead", status="rejected")
@@ -254,7 +463,7 @@ class TestExperienceListing:
         assert titles == ["Live"]
 
     def test_filter_by_category(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db, host, title="Cook", category="בישול", status="approved"
         )
@@ -265,7 +474,7 @@ class TestExperienceListing:
         assert [e["title"] for e in resp.json()] == ["Cook"]
 
     def test_filter_by_city(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(db, host, title="TLV", city="תל אביב", status="approved")
         _make_experience(db, host, title="JLM", city="ירושלים", status="approved")
         resp = client.get("/experiences", params={"city": "תל אביב"})
@@ -273,7 +482,7 @@ class TestExperienceListing:
 
     def test_public_listing_hides_private_address(self, client, db):
         """Address is stored on the row but must not leak in the public list."""
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db,
             host,
@@ -288,7 +497,7 @@ class TestExperienceListing:
         assert "address" not in body or body["address"] is None
 
     def test_spots_left_computed(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db,
             host,
@@ -301,7 +510,7 @@ class TestExperienceListing:
         assert resp.json()[0]["spots_left"] == 3
 
     def test_past_experiences_are_excluded(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db,
             host,
@@ -332,7 +541,7 @@ class TestExperienceDetail:
         assert resp.status_code == 404
 
     def test_stranger_cannot_see_pending(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(db, host, status="pending")
         resp = client.get(f"/experiences/{ex.id}")
         assert resp.status_code == 404
@@ -356,7 +565,7 @@ class TestExperienceDetail:
         assert resp.status_code == 200
 
     def test_approved_visible_publicly(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(db, host, status="approved")
         resp = client.get(f"/experiences/{ex.id}")
         assert resp.status_code == 200
@@ -371,6 +580,86 @@ class TestExperienceDetail:
             f"/experiences/{ex.id}", headers=auth_header(host)
         )
         assert resp.json().get("address") == "רחוב הגפן 5"
+
+
+class TestPublicVisibilityRequiresApprovedBusiness:
+    """MEH-1749 — LOCK (בעלי עסק מורשים בלבד): an experience reaches the
+    public only when the business behind its host is approved.
+
+    Experiences were the only content surface without this gate. Because
+    `Experience.host_user_id` points at a User rather than a Producer, a host
+    whose business was rejected — for missing a licence, say — could still
+    publish publicly through her user account.
+
+    These assert BEHAVIOUR (what a stranger receives), never that a particular
+    filter was added. A test that checked for the filter would pass against an
+    inert change; this one cannot.
+    """
+
+    def test_pending_business_experience_absent_from_listing(self, client, db):
+        host = _make_host(db, producer_status="pending")
+        _make_experience(db, host, title="TooEarly", status="approved")
+        resp = client.get("/experiences")
+        assert resp.status_code == 200
+        assert [e["title"] for e in resp.json()] == []
+
+    def test_rejected_business_experience_absent_from_listing(self, client, db):
+        host = _make_host(db, producer_status="rejected")
+        _make_experience(db, host, title="Rejected", status="approved")
+        assert [e["title"] for e in client.get("/experiences").json()] == []
+
+    def test_host_with_no_business_at_all_is_absent(self, client, db):
+        """The INNER JOIN case: producer_id IS NULL. A plain consumer account
+        can still submit; it just doesn't get a public surface."""
+        host = make_user(db)
+        _make_experience(db, host, title="NoBusiness", status="approved")
+        assert [e["title"] for e in client.get("/experiences").json()] == []
+
+    def test_pending_business_experience_404s_on_detail(self, client, db):
+        """404 rather than 403 — same convention as events.py:167, so the UUID
+        cannot be used to enumerate which businesses are awaiting approval."""
+        host = _make_host(db, producer_status="pending")
+        ex = _make_experience(db, host, status="approved")
+        resp = client.get(f"/experiences/{ex.id}")
+        assert resp.status_code == 404
+
+    def test_detail_404_also_starves_the_seo_metadata_fetch(self, client, db):
+        """The generateMetadata path, asserted at its real boundary.
+
+        `frontend/app/[locale]/experiences/[id]/page.js:14` server-fetches THIS
+        endpoint with no auth and falls back when the response is not ok. So
+        the title of a pending business's experience stays out of <head>
+        precisely because this request 404s — there is no separate frontend
+        gate to test, and adding one would be a second copy (MEH-1740).
+        """
+        host = _make_host(db, producer_status="rejected")
+        ex = _make_experience(db, host, status="approved")
+        unauthenticated = client.get(f"/experiences/{ex.id}")
+        assert unauthenticated.status_code == 404
+        assert "title" not in unauthenticated.json()
+
+    def test_owner_still_sees_her_own_while_business_pending(self, client, db):
+        """The gate must not hide the host's work from the host."""
+        host = _make_host(db, producer_status="pending")
+        ex = _make_experience(db, host, status="approved")
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(host))
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(ex.id)
+
+    def test_admin_still_sees_it_while_business_pending(self, client, db):
+        host = _make_host(db, producer_status="pending")
+        admin = make_user(db, role="admin", email="admin-1749@test.com")
+        ex = _make_experience(db, host, status="approved")
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(admin))
+        assert resp.status_code == 200
+
+    def test_approved_business_is_visible_on_both_paths(self, client, db):
+        """The other half of the discrimination: the gate must not hide
+        legitimate content. Without this, filtering everything would pass."""
+        host = _make_host(db, producer_status="approved")
+        ex = _make_experience(db, host, title="Legit", status="approved")
+        assert [e["title"] for e in client.get("/experiences").json()] == ["Legit"]
+        assert client.get(f"/experiences/{ex.id}").status_code == 200
 
 
 # ---------- Admin moderation ----------
@@ -511,7 +800,7 @@ class TestAdminExperienceFlows:
         self, client, db, monkeypatch
     ):
         _mock_moderation(monkeypatch)
-        host = make_user(db, email="host@t.com")
+        host = _make_host(db, email="host@t.com")
         admin = make_user(db, role="admin")
         ex = _make_experience(db, host, title="GoLive", status="pending")
 
@@ -544,6 +833,38 @@ class TestExperienceEdit:
         )
         # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
         assert resp.status_code == 404
+
+    # MEH-2013: ExperienceUpdate.city stays Optional on purpose. Making it
+    # required would 422 every edit of a row written before the create-side
+    # rule existed — the owner would be locked out of her own experience by a
+    # field she never had the chance to fill.
+    def test_editing_a_row_that_predates_the_city_rule_still_works(
+        self, client, db, monkeypatch
+    ):
+        _mock_moderation(monkeypatch)
+        host = make_user(db)
+        ex = _make_experience(db, host, city=None, status="approved")
+
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"title": "כותרת מעודכנת לסדנה"},
+            headers=auth_header(host),
+        )
+
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.city is None  # untouched, not backfilled
+
+    def test_a_legacy_null_city_row_still_renders(self, client, db):
+        """The read paths must not 500 on the rows the old create path let
+        through — ExperienceListOut.city is `str | None`, and it stays so."""
+        host = _make_host(db)
+        _make_experience(db, host, city=None, status="approved")
+
+        resp = client.get("/experiences")
+
+        assert resp.status_code == 200
+        assert [e["city"] for e in resp.json()] == [None]
 
     def test_non_owner_cannot_delete(self, client, db):
         host = make_user(db, email="a@t.com")
@@ -597,7 +918,7 @@ class TestExperienceCancelToggle:
     moderation (an approved experience stays approved)."""
 
     def test_public_list_hides_cancelled(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(db, host, title="Live", status="approved", is_active=True)
         _make_experience(db, host, title="Off", status="approved", is_active=False)
         resp = client.get("/experiences")
@@ -616,7 +937,7 @@ class TestExperienceCancelToggle:
 
     def test_owner_can_cancel_and_reactivate(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="APPROVED")
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(db, host, title="Toggle", status="approved")
 
         # Cancel → drops from public feed
@@ -688,7 +1009,7 @@ class TestExperiencePinPrivacy:
     def test_stranger_home_experience_hides_coords_and_address(
         self, client, db
     ):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(
             db,
             host,
@@ -704,7 +1025,7 @@ class TestExperiencePinPrivacy:
         assert body["lng"] is None
 
     def test_stranger_public_experience_keeps_coords(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(
             db,
             host,

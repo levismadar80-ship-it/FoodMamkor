@@ -21,6 +21,34 @@ updates:
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
     open-pull-requests-limit: 3
+    # MEH-2078: pip grouping RELEASED — mirrors npm-minor-patch /
+    # github-actions-minor-patch. The MEH-1518 freeze here read "intentionally
+    # NO pip group … blocked on MEH-1527 Chunk 2b"; that block is gone. Strict
+    # `require branches to be up to date` is ON (05/08) and the post-merge
+    # `uv lock --check` net is live and green on staging (09/08), so a grouped
+    # PR that drifts the lock is now caught at the gate before merge and by the
+    # net after it.
+    #
+    # What did NOT change: dependabot still does not regenerate uv.lock in this
+    # repo (it edits pyproject.toml only — MEH-1332/1527/#1531). Grouping does
+    # not fix that; it reduces the number of drifting PRs from N to 1. Fix flow
+    # for any grouped pip PR: run `uv lock` on the PR branch before merging —
+    # the CI gate enforces it, so an un-regenerated lock cannot land.
+    #
+    # Majors stay individual PRs (they need human review anyway).
+    groups:
+      pip-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # schemathesis 4.24 slows the fuzz suite past the pytest job timeout
+      # (MEH-1529). Dev-only test tool, no CVE — hold minor/patch bumps.
+      - dependency-name: "schemathesis"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
     labels:
       - "dependencies"
       - "meh-330"
@@ -45,6 +73,20 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # eslint 9->10 major is a tracked MANUAL migration (MEH-893). A fork does
+      # not inherit the `@dependabot ignore this major version` comment command,
+      # which is why #1703 reappeared — declare it here so it survives the fork.
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
+      # react 18->19 major deferred post-launch (MEH-1522).
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/react"
+        update-types:
+          - "version-update:semver-major"
     labels:
       - "dependencies"
       - "meh-330"
@@ -61,6 +103,15 @@ updates:
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
     open-pull-requests-limit: 3
+    # MEH-1518: mirror npm-minor-patch — one grouped PR for all minor+patch
+    # action bumps. Majors stay individual (they need human review — see the
+    # setup-node/checkout/github-script majors #1700/#1701/#1964).
+    groups:
+      github-actions-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "ci"

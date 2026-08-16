@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
+import { itemsForSurface } from "@/lib/nav-registry";
 
 /**
  * Module:   AccountSheet
@@ -27,16 +28,40 @@ import LanguageToggle from "@/components/LanguageToggle";
  *           MEH-908 (logout copy → gerund "התנתקות" via shared
  *           account.menu.logout; deduped language row — dropped redundant
  *           leading Globe + "שפה" label, LanguageToggle is the single control).
+ *           MEH-1703 chunk 3 (rows are derived from lib/nav-registry — which
+ *           row exists, its href and its i18n key now have ONE declaration;
+ *           order, icons and markup stay here because they genuinely differ
+ *           per shell. The `showBiz` prop is gone: it was a second owner of
+ *           the MEH-669 gate that the registry spells as audience "consumer").
  */
-export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
+export default function AccountSheet({ open, onClose, user, logout }) {
   const t = useTranslations();
   const panelRef = useRef(null);
   const isIn = !!user;
-  // MEH-1228: producers get a dashboard entry from the sheet (mobile parity
-  // with the desktop UserMenu, where "לוח הבקרה שלי" leads — MEH-1226).
-  const isProducer = user?.role === "producer";
   const hasAvatar = !!user?.avatar_url;
   const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
+
+  // MEH-1703 chunk 3: which rows this sheet offers, and their hrefs/i18n keys,
+  // come from the registry — the shell no longer restates them. `row(id)`
+  // returns the record when the current audience earns it and undefined
+  // otherwise, so each <li> below reads as an existence question.
+  //
+  // Order is NOT derived: the sequence is the JSX order below, because the
+  // sheet's order differs from the desktop dropdown's and no single
+  // declaration order describes both (the chunk-0 finding — see
+  // lib/nav-registry.js's SHAPE NOTE). Icons and markup stay here for the
+  // same reason.
+  //
+  // MEH-669's producer/admin exclusion is the registry's audience "consumer"
+  // (nav-registry.js:76-77), which is why `showBiz` no longer crosses the
+  // prop boundary — one owner, not two.
+  const byId = new Map(
+    itemsForSurface("accountSheet", {
+      signedIn: isIn,
+      role: user?.role ?? null,
+    }).map((entry) => [entry.item.id, entry]),
+  );
+  const row = (id) => byId.get(id);
 
   // Modal a11y: Escape closes, Tab is trapped inside the panel, and focus
   // returns to the trigger (the account tab) on close.
@@ -104,6 +129,8 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
               hasAvatar ? (
+                // raw img: OAuth provider avatar — host not in remotePatterns
+                // (frozen this ticket).
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -125,44 +152,52 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
 
         {/* Secondary rows */}
         <ul className="list-none m-0 pt-1">
-          {!isIn && (
+          {row("login") && (
             <li className={liCls}>
-              <Link href="/login" onClick={onClose} className={rowCls}>
+              <Link href={row("login").item.href} onClick={onClose} className={rowCls}>
                 <SignIn size={19} weight="regular" className={iconCls} aria-hidden="true" />
-                {t("nav.login")}
+                {t(row("login").surface.labelKey)}
               </Link>
             </li>
           )}
           {/* MEH-1228: producer dashboard entry — first row (above favorites),
               mirroring the desktop UserMenu order. Guest/consumer sheets are
-              unchanged (isProducer is false). */}
-          {isProducer && (
+              unchanged (the registry gives this row audience "producer"). */}
+          {row("producerDashboard") && (
             <li className={liCls}>
-              <Link href="/producer/dashboard" onClick={onClose} className={rowCls}>
+              <Link href={row("producerDashboard").item.href} onClick={onClose} className={rowCls}>
                 <Gauge size={19} weight="regular" className={iconCls} aria-hidden="true" />
-                {t("account.menu.dashboard")}
+                {t(row("producerDashboard").surface.labelKey)}
               </Link>
             </li>
           )}
-          <li className={liCls}>
-            <Link href="/favorites" onClick={onClose} className={rowCls}>
-              <Heart size={19} weight="regular" className={iconCls} aria-hidden="true" />
-              {t("nav.favorites")}
-            </Link>
-          </li>
-          <li className={liCls}>
-            <Link href="/settings" onClick={onClose} className={rowCls}>
-              <Gear size={19} weight="regular" className={iconCls} aria-hidden="true" />
-              {t("account.menu.settings")}
-            </Link>
-          </li>
-          {showBiz && (
+          {/* Ungated on purpose — a signed-out mobile reader sees both rows,
+              while the desktop dropdown auth-gates them. The asymmetry is
+              recorded on the records themselves (nav-registry.js:213-227) and
+              is NOT changed here; MEH-1703 is a refactor. */}
+          {row("favorites") && (
+            <li className={liCls}>
+              <Link href={row("favorites").item.href} onClick={onClose} className={rowCls}>
+                <Heart size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                {t(row("favorites").surface.labelKey)}
+              </Link>
+            </li>
+          )}
+          {row("settings") && (
+            <li className={liCls}>
+              <Link href={row("settings").item.href} onClick={onClose} className={rowCls}>
+                <Gear size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                {t(row("settings").surface.labelKey)}
+              </Link>
+            </li>
+          )}
+          {row("registerProducer") && (
             <li className={liCls}>
               {/* Quiet "for businesses" entry — gold icon + outbound arrow. MEH-669-gated. */}
-              <Link href="/register/producer" onClick={onClose} className={rowCls}>
+              <Link href={row("registerProducer").item.href} onClick={onClose} className={rowCls}>
                 {/* MEH-730: gold-on-dark token replaces the amber-200 stopgap. */}
                 <Storefront size={19} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
-                {t("account.sheet.biz_cta")}
+                {t(row("registerProducer").surface.labelKey)}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (RTL-correct
                     onward diagonal; ms-auto pins it to the row end).
                     MEH-877: KEPT (not bidi-flipped) — design intent is a diagonal
@@ -187,17 +222,23 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               full-row tap target (≥44px). "עב / EN" moves inside as the visible
               affordance label (aria-hidden — the button's aria-label already
               names the switch action). */}
-          <li className={liCls}>
-            <LanguageToggle
-              variant="bare"
-              className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
-            >
-              <span className="font-english" dir="ltr" aria-hidden="true">
-                עב / EN
-              </span>
-            </LanguageToggle>
-          </li>
-          {isIn && (
+          {row("language") && (
+            <li className={liCls}>
+              <LanguageToggle
+                variant={row("language").surface.variant}
+                className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
+              >
+                {/* MEH-1542: full native language names replace the "עב / EN"
+                    abbreviation — W3C / NN/g best practice (language named in its
+                    own script, no flags). Text-only change; dir="ltr" keeps the
+                    Hebrew-then-English visual order and order logic is untouched. */}
+                <span className="font-english" dir="ltr" aria-hidden="true">
+                  עברית / English
+                </span>
+              </LanguageToggle>
+            </li>
+          )}
+          {row("logout") && (
             <li className={liCls}>
               <button
                 type="button"
@@ -212,7 +253,7 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
                     account.menu.logout key — neutral, aligns with the
                     noun-based sheet items, and fixes desktop UserMenu in one
                     place (both surfaces read the same key). */}
-                {t("account.menu.logout")}
+                {t(row("logout").surface.labelKey)}
               </button>
             </li>
           )}

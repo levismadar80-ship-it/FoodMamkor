@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 test.describe("Homepage", () => {
   test("renders h1 and hero search input", async ({ page }) => {

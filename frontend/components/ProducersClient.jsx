@@ -3,16 +3,37 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, MapPin, Plant, Leaf, CaretDown } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { CATEGORY_ICONS, CATEGORY_STYLES } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
+// MEH-1825: day axis on the canonical listing surface — same component home
+// mounts, and the same whitelist the backend validates delivery_day against.
+import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
-import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
+import {
+  buildChipParams,
+  OPEN_NOW_CHIP_MIN,
+  visibleGatedDietKeys,  // MEH-1934
+  GATED_DIET_KEYS,       // MEH-1934
+  // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
+  // CHIPS_DEFAULT are SHARED with the home grid (HomeProducersGrid.jsx:70), so
+  // importing those here and appending to them leaks the open-now chip onto a
+  // surface this ticket does not touch.
+  PRODUCERS_CHIPS_CONFIG as CHIPS_CONFIG,
+  PRODUCERS_CHIPS_DEFAULT as CHIPS_DEFAULT,
+  withChipGroups,        // MEH-1862
+} from "@/lib/producer-filters";
+// MEH-1862: the same sheet /map mounts (FilterChipsBar.jsx:96), now given this
+// surface's own axes. A second copy would be the two-mechanisms smell the
+// workflow rules name — /map and /producers are both discovery surfaces and
+// their filter IA should not diverge again.
+import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
 import { trackEvent } from "@/lib/analytics";
@@ -29,9 +50,18 @@ const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
 // nulls-last ordering. Two options only (over-engineering guard).
 const SORT_DEFAULT = "newest";
 const SORT_VALUES = ["newest", "rating"];
-function initSortFromParams(searchParams) {
+// MEH-1864: "rating" is only a legal axis once the catalog actually has
+// reviewed businesses (RATING_SORT_THRESHOLD, lib/rating-gate.js). Below the
+// threshold the option is not rendered, and a hand-typed ?sort=rating degrades
+// to the default here — the backend still answers that URL with 200, the
+// frontend just doesn't present an ordering with no data behind it.
+function sortValuesFor(ratingSortEnabled) {
+  return ratingSortEnabled ? SORT_VALUES : [SORT_DEFAULT];
+}
+function initSortFromParams(searchParams, ratingSortEnabled) {
   const s = searchParams.get("sort");
-  return SORT_VALUES.includes(s) ? s : SORT_DEFAULT; // unknown → default
+  // unknown (or gated-off) → default
+  return sortValuesFor(ratingSortEnabled).includes(s) ? s : SORT_DEFAULT;
 }
 
 // Display axis = i18n key for the translated label.
@@ -61,6 +91,9 @@ export default function ProducersClient({
   initialPage,
   totalPages,
   perPage,
+  // MEH-1864: server-computed rating-data gate. Defaults to false so any caller
+  // that has not measured the catalog gets the conservative (hidden) state.
+  ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
   const searchParams = useSearchParams();
@@ -71,12 +104,40 @@ export default function ProducersClient({
 
   const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
+  // MEH-1825: delivery-day axis. Two guards on hydration, both from the
+  // acceptance criteria: an unknown ?delivery_day= value is dropped against
+  // the DELIVERY_DAYS whitelist (so a hand-edited URL never reaches the API
+  // and 422s), and a day WITHOUT a city is dropped because the backend
+  // semantics are same-row EXISTS over (delivery_city, delivery_day) — a day
+  // alone filters nothing meaningful. `dayFilterRef` mirrors the state for
+  // the same reason `sortOrderRef` does: syncUrl/fetchFiltered are
+  // useCallback([]) and must read the current value without being recreated
+  // or growing a parameter at every existing call site. Set synchronously in
+  // the handlers below, before any callback that reads it fires.
+  // MEH-2036: the axis is a SET. Hydration reads the plural first and falls
+  // back to the legacy singular, so an old shared ?delivery_day= deep-link
+  // keeps working verbatim. Unknown and duplicate members are dropped rather
+  // than 422'd (the MEH-1645 asymmetry: untrusted at the API, recoverable typo
+  // in the browser), and the whole set still requires a city.
+  const [dayFilters, setDayFilters] = useState(() => {
+    if (!searchParams.get("city")) return [];
+    const raw = searchParams.getAll("delivery_days");
+    const legacy = searchParams.get("delivery_day");
+    const values = raw.length ? raw : legacy ? [legacy] : [];
+    return values
+      .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
+      .slice(0, DELIVERY_DAYS.length);
+  });
+  const dayFilterRef = useRef(dayFilters);
+  useEffect(() => { dayFilterRef.current = dayFilters; }, [dayFilters]);
   const [filteredItems, setFilteredItems] = useState(null);
   // MEH-1483: sort axis. `sortOrderRef` mirrors it so the stable-identity
   // callbacks (syncUrl / fetchFiltered / loadNextPage, all useCallback([])) can
   // read the current value without being recreated on every sort change; the
   // ref is set synchronously in handleSortChange (before any callback fires).
-  const [sortOrder, setSortOrder] = useState(() => initSortFromParams(searchParams));
+  const [sortOrder, setSortOrder] = useState(() =>
+    initSortFromParams(searchParams, ratingSortEnabled),
+  );
   const sortOrderRef = useRef(sortOrder);
   useEffect(() => { sortOrderRef.current = sortOrder; }, [sortOrder]);
   // Unfiltered-mode base list: the SSR page by default; replaced with a freshly
@@ -85,7 +146,16 @@ export default function ProducersClient({
   const [baseItems, setBaseItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const { setCity: setUserCity } = useUserCity();
+  // MEH-1862: the attribute sheet's open state. Per-instance, like /map's.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // Stable identity on purpose (PR #1565 review, carried over from /map): an
+  // inline arrow would be a new function every render, and `chips` changes on
+  // every toggle — that would tear down and re-arm FilterSheet's [open, onClose]
+  // keydown effect mid-interaction and yank focus back to the first row.
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
+  // MEH-1503: read the saved city too (not just the setter) — the "בעיר שלי"
+  // chip consults it (post-MEH-1485 it's seeded from the profile on login).
+  const { city: savedUserCity, setCity: setUserCity } = useUserCity();
   const mountFetched = useRef(false);
 
   // Infinite scroll state (unfiltered mode only)
@@ -150,6 +220,13 @@ export default function ProducersClient({
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
       if (city) params.set("city", city);
+      // MEH-1825: the day rides the URL only alongside a city — the same
+      // precondition the ghost row states, enforced here so a shared link can
+      // never carry a day that the page would then ignore on load.
+      // MEH-2036: repeated ?delivery_days= keys, matching the api
+      // paramsSerializer and the category loop above. The legacy singular is
+      // READ on hydration but never written back — one canonical serialization.
+      if (city) for (const d of dayFilterRef.current) params.append("delivery_days", d);
       if (q) params.set("q", q);
       // MEH-1483: mirror the active sort to ?sort= (omitted at the default so
       // the plain /producers URL is unchanged). Read from the ref so this
@@ -179,6 +256,9 @@ export default function ProducersClient({
   const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
+    // MEH-1825: same precondition as syncUrl — delivery_day is only sent with
+    // a delivery_city (MEH-1645 same-row EXISTS semantics).
+    if (city && dayFilterRef.current.length) params.delivery_days = dayFilterRef.current;
     if (q) params.q = q;
     // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
     if (category?.length) params.category = category;
@@ -324,6 +404,19 @@ export default function ProducersClient({
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
+  // MEH-1862: "ניקוי הכל" INSIDE the attribute sheet clears the attribute axes
+  // only — never the category, city, day or search. Those are picked elsewhere
+  // on the page, and wiping them from a panel that does not show them would be
+  // a destructive surprise. The page-level `clearAll` (which does clear
+  // everything) is unchanged and still sits beside the results counter.
+  // Mirrors useMapFilters.js:208, where the sheet's clear resets the toggles only.
+  const clearAttributeChips = () => {
+    setChips(CHIPS_DEFAULT);
+    syncUrl(CHIPS_DEFAULT, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(CHIPS_DEFAULT, cityFilter, searchQ, categoryFilter);
+    trackEvent("producers_chips_clear");
+  };
+
   // MEH-1465: multi-select OR. "הכל" ("all") is ChipScrollRow's reset sentinel →
   // clears the whole set; re-tapping a selected category removes it; any other
   // category is added to the union.
@@ -347,7 +440,9 @@ export default function ProducersClient({
   // unfiltered base), and refetch the filtered list in place when filters are
   // active so the visible results re-order immediately.
   const handleSortChange = (e) => {
-    const next = SORT_VALUES.includes(e.target.value) ? e.target.value : SORT_DEFAULT;
+    const next = sortValuesFor(ratingSortEnabled).includes(e.target.value)
+      ? e.target.value
+      : SORT_DEFAULT;
     if (next === sortOrder) return;
     sortOrderRef.current = next;
     setSortOrder(next);
@@ -360,8 +455,20 @@ export default function ProducersClient({
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
+        // MEH-1825: the day cannot outlive its city — drop it in the same
+        // action, or re-picking a city later would silently restore a filter
+        // the user never re-selected.
+        dayFilterRef.current = [];
+        setDayFilters([]);
         syncUrl(chips, null, searchQ, categoryFilter);
         fetchFiltered(chips, null, searchQ, categoryFilter);
+      } else if (savedUserCity) {
+        // MEH-1503: a saved city (localStorage user_city — seeded from the
+        // profile on login by MEH-1485) filters instantly, no modal. Reuse
+        // handleCitySelected so the apply path is identical to a modal pick
+        // (setCityFilter + setUserCity → MEH-1485 write-back + syncUrl +
+        // fetchFiltered + trackEvent).
+        handleCitySelected(savedUserCity);
       } else {
         setLocationModalOpen(true);
       }
@@ -379,6 +486,31 @@ export default function ProducersClient({
     trackEvent("producers_city_filter", { city });
   };
 
+  // MEH-1825: mirrors useHomePage.handleDaySelected. Without a city the row
+  // is a ghost and the tap is a discovery affordance, not a filter — it opens
+  // the LocationModal this page already mounts, which is exactly what the
+  // hint tells the user to do. With a city, tapping an active day removes it.
+  //
+  // MEH-2036: SET-TOGGLE, same semantics as home — a tap adds or removes ONE
+  // day and leaves the rest of the selection standing. The ref is set
+  // synchronously before syncUrl/fetchFiltered because both are useCallback([])
+  // and read the ref, not the state (which has not committed yet).
+  const handleDaySelected = (day) => {
+    if (!cityFilter) {
+      setLocationModalOpen(true);
+      return;
+    }
+    const current = dayFilterRef.current;
+    const next = current.includes(day)
+      ? current.filter((d) => d !== day)
+      : [...current, day].slice(0, DELIVERY_DAYS.length);
+    dayFilterRef.current = next;
+    setDayFilters(next);
+    syncUrl(chips, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    trackEvent("delivery_days_filter", { count: next.length });
+  };
+
   // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
@@ -392,6 +524,9 @@ export default function ProducersClient({
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
+    // MEH-1825: day is part of "everything".
+    dayFilterRef.current = [];
+    setDayFilters([]);
     setSearchQ("");
     setCategoryFilter([]);
     setFilteredItems(null);
@@ -402,7 +537,6 @@ export default function ProducersClient({
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
   // MEH-1418: Phosphor leading icons on the attribute chips; the city chip has
   // no icon entry, so it passes through text-only (byte-identical).
-  const allChips = withChipIcons([...CHIPS_CONFIG, cityChip]);
   const activeKeys = { ...chips, city: !!cityFilter };
   // MEH-1088 Part A: hide dead-end category chips — a category with 0 approved
   // producers is not rendered (fewer chips > disabled chips at this catalog
@@ -413,12 +547,63 @@ export default function ProducersClient({
   // is filtered until then. "הכל" always shows; a category active via the URL
   // stays visible even at 0 so its active-tag + clear flow keep working.
   const loadedCategoryIds = new Set();
+  // MEH-1881: order-window coverage, counted in the same pass and from the same
+  // source as the category set above — the UNFILTERED loaded catalog. Counting
+  // it from the filtered result would be circular: switch the chip on and
+  // coverage instantly reads 100%, so the gate could never close again.
+  let openWindowCount = 0;
   // MEH-1483: derive from the same source as displayItems (baseItems is the SSR
   // page, or the sorted page 1 when a non-default sort is active) so the
   // MEH-1088 dead-end-category hiding stays consistent with what's rendered.
-  for (const p of [...baseItems, ...appendItems]) {
+  // MEH-1934: hoisted so the diet gate below counts from the SAME unfiltered
+  // source, for the same anti-circularity reason spelled out above.
+  const loadedCatalog = [...baseItems, ...appendItems];
+  for (const p of loadedCatalog) {
     for (const c of p?.categories ?? []) loadedCategoryIds.add(String(c.id));
+    if (p?.order_window) openWindowCount += 1;
   }
+
+  // MEH-1881: below the coverage threshold the open-now chip is ABSENT, not
+  // disabled — zero trace in the DOM, so nothing hints at a filter that would
+  // return an empty list today.
+  //
+  // The `|| chips.open_for_orders_now` is not a convenience: an active filter
+  // must keep its chip even under the gate, or a deep-linked
+  // ?open_for_orders_now=1 strands the visitor with a filter she can see the
+  // effect of and cannot switch off. Same carve-out MEH-1088 makes two blocks
+  // below for a URL-active category at zero results.
+  const showOpenNowChip =
+    openWindowCount >= OPEN_NOW_CHIP_MIN || chips.open_for_orders_now;
+  // MEH-1934: the two new diet chips are gated on the same principle — absent,
+  // not disabled, until DIET_CHIP_MIN businesses carry the marking. Computed
+  // over the loaded producers, so the chips turn themselves on when the
+  // catalog arrives with nobody flipping a flag.
+  const shownDietKeys = visibleGatedDietKeys(loadedCatalog, chips);
+  const hiddenDietKeys = GATED_DIET_KEYS.filter(
+    (k) => !shownDietKeys.includes(k),
+  );
+  const visibleChipDefs = (
+    showOpenNowChip
+      ? CHIPS_CONFIG
+      : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now")
+  ).filter((c) => !hiddenDietKeys.includes(c.key));
+  // MEH-1862: the row and the sheet split what used to be one array.
+  //
+  // The CITY chip stays INLINE and is deliberately not filed into the sheet. It
+  // is not an attribute: tapping it opens the LocationModal (or applies a saved
+  // city) rather than toggling a boolean, and "where do you deliver to me" is
+  // the common criterion the Baymard/Airbnb pattern keeps visible while the
+  // long tail moves behind a panel. Burying it would also strand the day row
+  // below, which is a ghost until a city is chosen (MEH-1825).
+  //
+  // `visibleChipDefs` is the ALREADY-GATED attribute list, so MEH-1881's
+  // open-now gate and MEH-1934's diet gates still decide what exists — this
+  // ticket changes WHERE a chip renders, never WHETHER it is offered.
+  const cityRowChips = withChipIcons([cityChip]);
+  const sheetChips = withChipGroups(visibleChipDefs);
+  // Attribute filters only — the badge must not count the city chip, which
+  // sits outside the sheet and carries its own visible active state.
+  const activeAttributeCount = activeChipDefs.length;
   const catalogFullyLoaded = !hasMore;
   const visibleCategories = categories.filter(
     (c) =>
@@ -529,28 +714,78 @@ export default function ProducersClient({
           selection) vs the toggle row below (attribute filtering). */}
       {categories.length > 0 && (
         <div className="mb-3">
-          <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.category_label")}</p>
+          <p className="text-xs text-fg-muted mb-1">{t("filters.category_label")}</p>
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
             activeKeys={new Set(categoryFilter)}
             onChipClick={handleCategorySelect}
-            fadeBg="#F5F0E8"
           />
         </div>
       )}
 
-      {/* Toggle/attribute chip row — MEH-1186 micro-label "סינון". */}
-      <div className="mb-3">
-        <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.filter_label")}</p>
+      {/* MEH-1862: the attribute chips moved into the FilterSheet behind a
+          "סינון" button — the IA /map has run since MEH-1368
+          (FilterChipsBar.jsx:60-100), now shared rather than diverging. What
+          stays on the surface is the city chip plus one button with a live
+          count; the ~8-chip attribute row is gone.
+
+          NO inventory threshold. The card specced hiding the row below 15
+          approved businesses, which would have deleted seven working filters at
+          today's catalog size and contradicted the decision recorded at
+          producer-filters.js:70-72 ("existing ones are never retro-gated").
+          Relocating achieves the card's §1 goal — fewer chips on the surface —
+          without removing a single capability. Full rationale on MEH-1862.
+
+          The MEH-1186 micro-label is retired here: it read "סינון" above the
+          row, and the button it now sits beside says "סינון" too. */}
+      <div className="mb-3 flex items-center gap-2 min-w-0">
         <ChipScrollRow
           variant="toggle"
-          chips={allChips}
+          chips={cityRowChips}
           activeKeys={activeKeys}
           onChipClick={handleChipClick}
-          fadeBg="#F5F0E8"
+          className="flex-1"
         />
+        {/* Anchor wrapper — the sheet's lg+ panel positions off this `relative`
+            parent, exactly as on /map. */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setSheetOpen((v) => !v)}
+            aria-expanded={sheetOpen}
+            aria-controls="filter-sheet-panel"
+            data-testid="producers-filters-button"
+            // REUSES: frontend/app/[locale]/map/components/FilterChipsBar.jsx:80-96
+            // — same trigger, same inactive chip visuals, same inline count.
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+          >
+            <Faders size={16} aria-hidden="true" />
+            {t("filters.filter_label")}
+            {activeAttributeCount > 0 && (
+              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            )}
+          </button>
+          <FilterSheet
+            open={sheetOpen}
+            onClose={closeSheet}
+            chips={sheetChips}
+            chipState={chips}
+            onToggleChip={toggleChip}
+            resultCount={displayItems.length}
+            onClearAll={clearAttributeChips}
+          />
+        </div>
       </div>
+
+      {/* MEH-1825: day refinement on the canonical listing surface. Same
+          component home mounts; without a city it self-renders the muted
+          ghost row + hint and a tap opens the LocationModal below. */}
+      <DeliveryDayRow
+        cityActive={cityFilter}
+        daysActive={dayFilters}
+        onSelectDay={handleDaySelected}
+      />
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (category ×, toggle ×, city ×, search ×) and
@@ -624,7 +859,14 @@ export default function ProducersClient({
           {/* MEH-1483: backend-driven sort — pushed to the inline-end. Changing
               it re-syncs ?sort=, resets pagination, and refetches (both the
               filtered fetch and infinite-scroll pages). Mirrors the /map sort
-              control shape (MapClient.jsx). */}
+              control shape (MapClient.jsx).
+              MEH-1864: this axis has exactly two values, so gating "rating" off
+              would leave a select whose only option is the value already
+              applied — a dead affordance. The whole control goes with it; it
+              returns intact the moment the catalog crosses the threshold.
+              (/map keeps its control below the threshold: it still has
+              nearest + newest to switch between.) */}
+          {ratingSortEnabled && (
           <div className="relative inline-flex items-center shrink-0 ms-auto">
             <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
             <select
@@ -644,6 +886,7 @@ export default function ProducersClient({
               className="pointer-events-none absolute end-1 text-primary"
             />
           </div>
+          )}
         </div>
       )}
 
@@ -784,8 +1027,14 @@ function CatalogEmptyState() {
             {t("add_cta")}
           </Link>
         )}
+        {/* MEH-1963: was `/about#newsletter` — a dead anchor. /about has no
+            element with that id (its sections are #contact / #editors-pick /
+            #verification), so the link navigated away and landed at the top of
+            an unrelated page. The newsletter signup this CTA promises lives in
+            the Footer, which renders on THIS page too, so the fix is a
+            same-page jump rather than a cross-page hop. */}
         <Link
-          href="/about#newsletter"
+          href="#newsletter"
           className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}

@@ -23,7 +23,8 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, cast, func, or_
+from sqlalchemy.dialects.postgresql import JSONPATH
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import (
@@ -35,14 +36,57 @@ from app.models import (
     Product,
     SearchQuery,
 )
+from app.schemas.schemas import DELIVERY_DAYS
+from app.services.availability_validation import ON_VACATION
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
     haversine_min_km,
 )
+from app.utils.clock import israel_now
+from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
+
+
+def catalog_default_availability_condition():
+    """The catalog's default-hide rule, as a reusable SQLAlchemy condition.
+
+    MEH-1986 — this rule used to live only inside ``build_producers_query``
+    (the listing + its X-Total-Count), while four sibling endpoints answered
+    the same question filtering on ``status == "approved"`` alone. Measured
+    09/08 against production: ``/producers`` said 4, ``/producers/count`` and
+    ``/producers/cities`` said 5. A rule converted in one reader and left raw
+    in the others is not a smaller version of the change — it is a live
+    disagreement, and it ships looking finished.
+
+    Every reader that answers "how many businesses does the catalog show"
+    composes THIS function, so the five can no longer drift apart:
+
+      - ``build_producers_query``            (the listing + X-Total-Count)
+      - ``GET /producers/count``             (routers/producers.py)
+      - ``GET /producers/cities``            (routers/producers.py)
+      - ``GET /producers/random``            (routers/producers.py)
+      - ``GET /stats``.producers_count       (routers/marketing.py)
+
+    Deliberately NOT applied to intent-driven lookups — direct slug, favorites,
+    free-text search, and an explicit ``?availability_state=on_vacation`` — all
+    of which MEH-291 preserved on purpose. Hiding is a browse-surface default,
+    never a removal from the site.
+
+    NULL-safety: ``producers.availability_state`` is ``nullable=False`` with
+    ``server_default 'accepting_orders'`` (models.py:221, migration
+    2a74fa41ceb1), so no row can hold NULL and the ``!=`` cannot silently drop
+    one the way it would on a nullable column.
+
+    The state name is imported rather than re-spelt: ``availability_validation``
+    owns that literal for every write path, and its own docstring already says
+    it does not decide listing exclusion — which is this function's job. One
+    owner for the value, one owner for the decision.
+    """
+    return Producer.availability_state != ON_VACATION
+
 
 # (key in filters dict, attribute on Producer model) — covers the simple
 # `if v is not None: q = q.filter(Producer.<attr> == v)` pattern. The
@@ -72,6 +116,10 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
     ("gluten_free", "is_gluten_free"),
     ("vegan", "is_vegan"),
     ("lactose_free", "is_lactose_free"),
+    # MEH-1934: single-column axes, so they belong in this table rather than
+    # beside the vegetarian special case below (which is a two-column OR).
+    ("no_added_sugar", "is_no_added_sugar"),
+    ("low_carb", "is_low_carb"),
 ]
 
 
@@ -127,6 +175,9 @@ def _build_base_queries(
                 selectinload(Producer.delivery_areas),
                 # MEH-1402 — serialize locations[] on ProducerListOut w/o N+1.
                 selectinload(Producer.locations),
+                # MEH-1823: active_offer reads this collection — eager-load it here
+                # or the property fires one query per producer on every list page.
+                selectinload(Producer.offers),
             )
             .filter(Producer.status == "approved")
         )
@@ -182,6 +233,9 @@ def _build_base_queries(
             selectinload(Producer.delivery_areas),
             # MEH-1402 — locations[] on ProducerListOut (LIST/DETAIL shape parity).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.status == "approved")
         .order_by(*order)
@@ -206,6 +260,15 @@ def _delivery_city_condition(city: str):
 
     Shared by the single `delivery_city` filter and the `delivery_cities`
     region-fallback OR-list (MEH-1487) so the two matching paths never drift.
+
+    MEH-1848: scope alone is not a delivery promise. `offers_delivery` is the
+    owner's own declaration, and nothing in the schema ties it to the scope
+    columns — the only CHECK is `has_physical_location OR offers_delivery`
+    (models.py:388), which says nothing about delivery_nationwide or about
+    delivery_areas rows. So a business that switched delivery off while stale
+    scope rows (or the nationwide flag) remained behind matched this filter and
+    was offered to a consumer as a delivering business. The flag is now a
+    conjunct on BOTH delivery predicates.
     """
     area_match = Producer.delivery_areas.any(
         func.lower(DeliveryArea.city) == city.lower()
@@ -214,7 +277,141 @@ def _delivery_city_condition(city: str):
         Producer.delivery_nationwide.is_(True),
         ~Producer.delivery_excluded_cities.any(city),
     )
-    return or_(area_match, nationwide_match)
+    # `.is_(True)` and not a bare truthiness check: the column is NOT NULL today
+    # (models.py:234) so the two agree, but `.is_(True)` keeps a future NULL
+    # from silently matching rather than relying on that staying true.
+    return and_(
+        Producer.offers_delivery.is_(True),
+        or_(area_match, nationwide_match),
+    )
+
+
+def _has_delivery_condition():
+    """MEH-1836 — "delivers at all": an explicit delivery_areas row OR the
+    nationwide flag.
+
+    The XOR data model (models.py:392 `delivery_nationwide_xor_cities`) means a
+    nationwide producer typically holds ZERO delivery_areas rows, so the
+    original bare `Producer.delivery_areas.any()` made exactly the businesses
+    that deliver *furthest* invisible to the משלוח chip.
+
+    delivery_excluded_cities is deliberately NOT consulted here. This filter
+    asks "does this business deliver?", not "does it deliver to city X" — a
+    nationwide producer with a non-empty exclusion list still delivers, so it
+    still matches. That single conjunct is the whole difference from
+    _delivery_city_condition (:204), which IS city-scoped and must honour the
+    exclusions. Do not "align" the two.
+
+    Both operands are EXISTS/flag predicates rather than a JOIN, so a producer
+    holding a nationwide flag AND area rows still yields exactly one row (the
+    CHECK constraint only bars nationwide + the legacy delivery_cities array,
+    not delivery_areas rows). # REUSES: _delivery_city_condition:214 —
+    nationwide predicate shape.
+
+    MEH-1848: `offers_delivery` is conjoined here too. Note what did NOT change
+    — the exclusion asymmetry above still holds. Both predicates now agree on
+    "the owner says they deliver"; they still disagree, deliberately, on
+    whether delivery_excluded_cities applies.
+    """
+    return and_(
+        Producer.offers_delivery.is_(True),
+        or_(
+            Producer.delivery_areas.any(),
+            Producer.delivery_nationwide.is_(True),
+        ),
+    )
+
+
+def _pickup_condition(cities: list[str] | None = None):
+    """MEH-2046 — "offers self-pickup": at least one pickup / market_stand
+    location row. Covers market stands deliberately, per the ticket.
+
+    The `pickup_points` COLUMN is deliberately NOT consulted. MEH-1856 closed
+    the owner write path because the column duplicates
+    ProducerLocation.kind='pickup', so only admin.py and producer_import.py
+    write it, while every consumer surface reads the ROWS — the map layer
+    (frontend/lib/producerPoints.js), DeliveryBlock, and the pinnable predicate
+    at :197-202. Filtering the column would hide a business whose owner added a
+    pickup point in LocationsEditor, which is the only pickup editor that
+    exists. Sapir measured zero businesses holding the column with no matching
+    row on staging (13/08), so ignoring it loses no row.
+
+    `cities` scopes the arm when a delivery city is active. The kind test and
+    the city test must hold on the SAME row (one EXISTS) — otherwise a business
+    with a pickup point in one city would match a query for another city on the
+    strength of an unrelated row. Same same-row reasoning as
+    _delivery_day_condition below. Without a city the arm is unscoped:
+    "has pickup anywhere".
+
+    ProducerLocation.city is NULLABLE (models.py:820), and a NULL city does NOT
+    match a city-scoped query: `lower(NULL) IN (...)` is NULL, which is not
+    true, so the row drops out. That is the intended reading — a pickup point
+    whose city nobody filled in is a point we cannot place, and claiming it
+    serves the queried city would be an invention. The business still matches
+    the UNSCOPED chip. Pinned by test_pickup_row_without_a_city_is_not_placed.
+
+    # REUSES: _build_base_queries:197-202 — the kind IN (...) EXISTS shape.
+    """
+    conds = [ProducerLocation.kind.in_(("pickup", "market_stand"))]
+    if cities:
+        # `.lower()` on both sides mirrors _delivery_city_condition:274 so the
+        # two city axes match case-identically.
+        conds.append(func.lower(ProducerLocation.city).in_([c.lower() for c in cities]))
+    return Producer.locations.any(and_(*conds))
+
+
+# MEH-2036: the OR-list cap for ?delivery_days=. Unlike _MAX_DELIVERY_CITIES
+# (40, headroom over the largest region) this bound is EXACT: the vocabulary is
+# closed at seven, so a longer list can only be duplicates or junk.
+_MAX_DELIVERY_DAYS = len(DELIVERY_DAYS)
+
+
+def _normalize_delivery_days(days, day: str | None = None) -> list[str]:
+    """MEH-2036: fold the plural `delivery_days` and the legacy singular
+    `delivery_day` into one de-duplicated, bounded list.
+
+    Precedence: `delivery_days` WINS when both are sent. Note this is the
+    OPPOSITE winner to MEH-1487's delivery_city/delivery_cities pair, where the
+    SINGULAR wins — there the plural is an internal region-fallback widening
+    that must never override a user's explicit city, while here the plural IS
+    the user's explicit multi-select and the singular is only a back-compat
+    deep-link. Same shape of rule, deliberately inverted; do not "align" them.
+
+    Order is preserved (first occurrence wins) so the generated SQL is stable
+    for a given URL. Empty/blank entries are stripped, matching the
+    delivery_cities guard at :511.
+    """
+    raw = days if days else ([day] if day else [])
+    seen: list[str] = []
+    for value in raw:
+        if value and value.strip() and value not in seen:
+            seen.append(value)
+    return seen[:_MAX_DELIVERY_DAYS]
+
+
+def _delivery_day_condition(days: list[str], city: str | None = None):
+    """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
+    producers and day-less rows ("בתיאום מראש") are excluded from day
+    filtering; the integrity of "משלוח ביום X" beats recall.
+
+    With a city, the city AND the day must match on the SAME delivery_areas
+    row (one EXISTS). Two separate EXISTS would wrongly match a producer
+    whose חיפה row is day-less while its עכו row is on שישי — the day
+    promise would be attributed to the wrong city.
+
+    MEH-2036: `days` is now a LIST and the day test is an IN — OR within the
+    days, still AND-ed with the city inside the SAME single EXISTS, so the
+    same-row guarantee above is unchanged. Selecting all seven days is NOT
+    equivalent to clearing the filter: the predicate stays literal, so
+    nationwide and day-less rows remain excluded. That is deliberate (the
+    ticket's "literal semantics" decision) — a business that never named a day
+    has made no day promise, whatever the caller selected.
+    """
+    # REUSES: the category block below — Category.id.in_ inside an EXISTS.
+    conds = [DeliveryArea.delivery_day.in_(days)]
+    if city:
+        conds.append(func.lower(DeliveryArea.city) == city.lower())
+    return Producer.delivery_areas.any(and_(*conds))
 
 
 def _kosher_condition(kosher: bool):
@@ -242,6 +439,67 @@ def _kosher_condition(kosher: bool):
             Producer.kashrut_expires_at <= datetime.utcnow(),
         ),
     )
+
+
+# MEH-1881: the Israel weekday names `order_window` is keyed by. Index-aligned
+# with schemas._ORDER_WINDOW_DAYS and with lib/orderWindow.js ORDER_DAY_KEYS, so
+# index 0 means Sunday on every axis in the codebase.
+_ORDER_DAY_KEYS = (
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+)
+
+# MEH-1881: "is this business inside a declared ordering range right now?".
+#
+# `[*]` is what makes this work against BOTH stored shapes. `order_window[day]`
+# is a LIST of ranges since MEH-1869, but rows written before that cutover still
+# hold a single dict, and `_order_window_validator` only normalises on WRITE —
+# so a row never re-saved is still the old shape. In jsonpath's default LAX mode
+# `[*]` auto-wraps a non-array, so one expression covers both. That is measured,
+# not assumed: against `{"sunday":{"open":"09:00","close":"13:00"}}` this returns
+# true at 10:00 and false at 13:00, identically to the list form.
+#
+# Boundaries are `open <= now < close`: a business is open AT its opening minute
+# and closed AT its closing minute. Zero-padded "HH:MM" compares correctly as
+# plain text, which is why the value is passed as a string and not parsed.
+#
+# The time and day are passed as jsonpath VARIABLES, never interpolated into the
+# expression — the expression itself is a constant.
+_OPEN_NOW_JSONPATH = "$.%s[*] ? (@.open <= $now && @.close > $now)"
+
+
+def _open_for_orders_now_condition(open_now: bool):
+    """MEH-1881: match on the DECLARED ordering window, not on opening_hours.
+
+    The two are different facts (`opening_hours` is when the shop is staffed;
+    `order_window` is when the owner said she takes orders) and this product's
+    conversion event is a WhatsApp message, not a visit.
+
+    A producer with `order_window IS NULL` has declared nothing, so it can be
+    neither open nor closed by this filter. `jsonb_path_exists(NULL, ...)` is
+    NULL rather than false, so both branches use `IS TRUE` / `IS NOT TRUE`
+    instead of `== True` / `!= True` — with a bare boolean comparison the NULL
+    rows would silently vanish from BOTH sides of the filter.
+    """
+    # `israel_now` is the codebase's canonical Asia/Jerusalem primitive, and
+    # going through it rather than building a datetime here is what makes the
+    # filter testable: a test freezes it with
+    # `monkeypatch.setattr(producer_listing, "israel_now", ...)`, the same
+    # idiom test_availability_validation.py uses for `israel_today`.
+    now = israel_now()
+    # weekday() is Monday=0; order_window is keyed Sunday-first.
+    day_key = _ORDER_DAY_KEYS[(now.weekday() + 1) % 7]
+    matches = func.jsonb_path_exists(
+        Producer.order_window,
+        cast(_OPEN_NOW_JSONPATH % day_key, JSONPATH),
+        func.jsonb_build_object("now", now.strftime("%H:%M")),
+    )
+    return matches.is_(True) if open_now else matches.isnot(True)
 
 
 def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, PLR0915  # 15 boolean filter pairs by design (MEH-1438 added the vegetarian OR-branch) — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (vegetarian / kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
@@ -289,9 +547,14 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     # the default listing (still reachable via direct slug / favorites / an
     # explicit ?availability_state=on_vacation). User-visible behavior shift
     # bundled with the Phase 3 frontend per Q2a.
+    # MEH-1986: the condition itself moved to catalog_default_availability_condition()
+    # above so the four sibling count/city/random endpoints apply the same rule
+    # rather than re-deriving it. The `is None` gate stays HERE — it is this
+    # function's opt-out (an explicit ?availability_state), and the siblings
+    # take no such parameter.
     if filters.get("availability_state") is None:
-        q = q.filter(Producer.availability_state != "on_vacation")
-        count_q = count_q.filter(Producer.availability_state != "on_vacation")
+        q = q.filter(catalog_default_availability_condition())
+        count_q = count_q.filter(catalog_default_availability_condition())
 
     # MEH-986 ch3b + MEH-1260: verified-only kosher filter with expiry
     # enforcement — extracted to _kosher_condition (PLR0915 headroom).
@@ -300,6 +563,16 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         kosher_cond = _kosher_condition(kosher)
         q = q.filter(kosher_cond)
         count_q = count_q.filter(kosher_cond)
+
+    # MEH-1881: opt-in "open for orders now". Absent → not referenced at all, so
+    # the default listing is byte-identical. # REUSES: the kosher block above —
+    # presence/absence pattern, filter BOTH q and count_q (a filter applied to
+    # only one makes the page and its x-total-count disagree).
+    open_for_orders_now = filters.get("open_for_orders_now")
+    if open_for_orders_now is not None:
+        open_now_cond = _open_for_orders_now_condition(open_for_orders_now)
+        q = q.filter(open_now_cond)
+        count_q = count_q.filter(open_now_cond)
 
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —
@@ -331,27 +604,77 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     delivery_city = filters.get("delivery_city")
     delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
+    pickup_points = filters.get("pickup_points")  # MEH-2046
+    # MEH-1645: single canonical day (router 422s anything else). When a city
+    # is present the combined condition REPLACES _delivery_city_condition —
+    # v1 deliberately drops the nationwide OR-branch (no explicit day row =
+    # no day promise), so the shared MEH-1487 helper is untouched.
+    # MEH-2036: one normalized list feeds every branch below — the plural
+    # ?delivery_days= wins over the legacy singular ?delivery_day=, which keeps
+    # working for old shared deep-links. An empty result (no days sent, or only
+    # blanks) falls through to the plain city path, so `.in_([])` — which is a
+    # false predicate and would blank the grid — is never constructed.
+    delivery_days = _normalize_delivery_days(
+        filters.get("delivery_days"), filters.get("delivery_day")
+    )
+    # MEH-2046: the four delivery axes below still resolve to AT MOST ONE
+    # condition — their precedence ladder is unchanged — but that result is now
+    # held rather than applied, because pickup is a PEER of the whole ladder,
+    # not another rung on it. Both arms are OR-ed and applied once at the end.
+    # Two consequences, both deliberate:
+    #   - `?pickup_points=true` can no longer be swallowed by a city/day filter
+    #     the way `has_delivery` silently was (it was the last elif).
+    #   - with pickup absent, exactly one condition is applied and the emitted
+    #     SQL is byte-identical to the pre-2046 chain.
+    delivery_scope_cond = None
+    # The cities that scope the pickup arm (MEH-2046 decision 4). `city`
+    # (Producer.city) is deliberately NOT one of them: that axis is AND-ed
+    # separately below and says where the business IS, not where it serves.
+    scope_cities = None
     if delivery_city:
-        # MEH-1255: nationwide producers now match any delivery_city EXCEPT
-        # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used so
-        # the OR branch isn't swallowed by join semantics; for area-based
-        # producers the result set is identical. Extracted to
-        # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
-        city_cond = _delivery_city_condition(delivery_city)
-        q = q.filter(city_cond)
-        count_q = count_q.filter(city_cond)
+        scope_cities = [delivery_city]
+        if delivery_days:
+            delivery_scope_cond = _delivery_day_condition(delivery_days, delivery_city)
+        else:
+            # MEH-1255: nationwide producers now match any delivery_city EXCEPT
+            # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used
+            # so the OR branch isn't swallowed by join semantics; for area-based
+            # producers the result set is identical. Extracted to
+            # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
+            delivery_scope_cond = _delivery_city_condition(delivery_city)
+    elif delivery_days:
+        # Day(s) without a city — every explicit row on any selected day, any city.
+        delivery_scope_cond = _delivery_day_condition(delivery_days)
     elif delivery_cities:
         # MEH-1487: region fallback — OR the SAME per-city condition across
         # the region's cities (nationwide-minus-excluded honoured per city).
+        # MEH-2036: the day axis is deliberately NOT threaded here. The fallback
+        # is an editorial "businesses that reach your area" discovery section,
+        # not a delivery-eligibility check (see the frontend note at
+        # use-home-page.js), so narrowing it by day would shrink a list whose
+        # whole purpose is to be a wider net after the strict query returned 0.
         # Cap + empty-strip guard bound a hostile / malformed list.
         cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
         if cities:
-            city_cond = or_(*[_delivery_city_condition(c) for c in cities])
-            q = q.filter(city_cond)
-            count_q = count_q.filter(city_cond)
+            scope_cities = cities
+            delivery_scope_cond = or_(*[_delivery_city_condition(c) for c in cities])
     elif has_delivery:
-        q = q.filter(Producer.delivery_areas.any())
-        count_q = count_q.filter(Producer.delivery_areas.any())
+        # MEH-1836: was a bare delivery_areas.any(), which nationwide producers
+        # can never satisfy — see _has_delivery_condition for why the exclusion
+        # list is not consulted on this axis.
+        delivery_scope_cond = _has_delivery_condition()
+
+    pickup_cond = _pickup_condition(scope_cities) if pickup_points else None
+    service_conds = [c for c in (delivery_scope_cond, pickup_cond) if c is not None]
+    if service_conds:
+        # or_() over a single clause would render it unchanged, but the explicit
+        # branch keeps "one filter sent → pre-2046 SQL" true by construction
+        # rather than by trusting a library detail.
+        service_group = (
+            or_(*service_conds) if len(service_conds) > 1 else service_conds[0]
+        )
+        q = q.filter(service_group)
+        count_q = count_q.filter(service_group)
 
     city = filters.get("city")
     if city:
@@ -361,38 +684,44 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     return q, count_q
 
 
-def _apply_search_filter(
-    db: Session, q, count_q, search_q: str | None, *, geo_search: bool
-):
-    """MEH-99 cross-field search: name · description · city · category names · product names · delivery cities.
+def _token_search_filter(db: Session, token: str):
+    """MEH-1664 — the match condition for ONE search token.
 
-    Adds relevance ordering in non-geo mode (exact-match first, then
-    prefix, then rating, then created_at) — geo mode keeps distance ASC.
+    OR across the six searchable sources; within each source, OR across the
+    token's variants. The caller AND-s one of these per token.
 
-    MEH-1488: the search also matches a business's delivery_areas.city, so
-    `q=<city>` surfaces a producer that DELIVERS to that city even when its
-    own Producer.city differs (the city the owner typed under "אזורי משלוח").
+    Every pattern comes from token_patterns (escape_like-escaped); the
+    escape=LIKE_ESCAPE below is the other half of that contract (MEH-1176).
     """
-    if not (search_q and search_q.strip()):
-        return q, count_q
+    patterns = token_patterns(token)
 
-    clean = search_q.strip()
-    like = f"%{escape_like(clean)}%"
+    def _any(*columns):
+        return or_(
+            *[
+                column.ilike(pattern, escape=LIKE_ESCAPE)
+                for pattern in patterns
+                for column in columns
+            ]
+        )
 
     has_category = (
         db.query(ProducerCategory)
         .join(Category, Category.id == ProducerCategory.category_id)
         .filter(
             ProducerCategory.producer_id == Producer.id,
-            Category.name.ilike(like, escape=LIKE_ESCAPE),
+            _any(Category.name),
         )
         .exists()
     )
+    # MEH-1664: description joins name here. /search has always matched a
+    # product on either column (search.py products sub-query); this path only
+    # matched the name, so a producer whose catalog mentioned the term only in
+    # a product description was reachable from /search but not /producers?q=.
     has_product = (
         db.query(Product)
         .filter(
             Product.producer_id == Producer.id,
-            Product.name.ilike(like, escape=LIKE_ESCAPE),
+            _any(Product.name, Product.description),
         )
         .exists()
     )
@@ -404,20 +733,48 @@ def _apply_search_filter(
         db.query(DeliveryArea)
         .filter(
             DeliveryArea.producer_id == Producer.id,
-            DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE),
+            _any(DeliveryArea.city),
         )
         .exists()
     )
-    search_filter = (
-        Producer.name.ilike(like, escape=LIKE_ESCAPE)
-        | Producer.description.ilike(like, escape=LIKE_ESCAPE)
-        | Producer.city.ilike(like, escape=LIKE_ESCAPE)
+    return (
+        _any(Producer.name, Producer.description, Producer.city)
         | has_category
         | has_product
         | has_delivery_city
     )
-    q = q.filter(search_filter)
-    count_q = count_q.filter(search_filter)
+
+
+def _apply_search_filter(
+    db: Session, q, count_q, search_q: str | None, *, geo_search: bool
+):
+    """MEH-99 cross-field search: name · description · city · category names · product names + descriptions · delivery cities.
+
+    Adds relevance ordering in non-geo mode (exact-match first, then
+    prefix, then rating, then created_at) — geo mode keeps distance ASC.
+
+    MEH-1488: the search also matches a business's delivery_areas.city, so
+    `q=<city>` surfaces a producer that DELIVERS to that city even when its
+    own Producer.city differs (the city the owner typed under "אזורי משלוח").
+
+    MEH-1664: matching is per token, not one literal substring. Each token
+    contributes its own OR-over-all-six-sources condition and the tokens are
+    AND-ed, so "גבינה עיזים" matches a product named "גבינת עיזים" in either
+    word order while "גבינה חיפה" does NOT match a Tel-Aviv cheese business.
+    The has_product EXISTS also covers Product.description now, so this path
+    and /search agree on what a product match is.
+    """
+    if not (search_q and search_q.strip()):
+        return q, count_q
+
+    clean = search_q.strip()
+
+    for token in tokenize(clean):
+        token_filter = _token_search_filter(db, token)
+        # Both queries, always — a filter on q that misses count_q reopens the
+        # Postgres 500 / count-mismatch trap in _build_base_queries' docstring.
+        q = q.filter(token_filter)
+        count_q = count_q.filter(token_filter)
 
     if not geo_search:
         q = q.order_by(False).order_by(
@@ -487,9 +844,12 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
-    category, delivery_city, delivery_cities, has_delivery, verified, kosher, city,
-    is_available_today, grass_fed, gluten_free, vegan, lactose_free,
-    sort, search_q, limit, offset, exclude.
+    category, delivery_city, delivery_cities, delivery_day (MEH-1645 — one
+    canonical Hebrew day; explicit-row matching only), delivery_days (MEH-2036 —
+    OR-list of the same vocabulary; WINS over delivery_day when both are
+    present), has_delivery, verified, kosher, city,
+    is_available_today, grass_fed, gluten_free, vegan, vegetarian, lactose_free,
+    no_added_sugar, low_carb (MEH-1934), sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)
     (MEH-1282: `require_physical` — geo-only opt-in for the has_physical_location
     filter; default False so delivery-only producers appear in geo results.)

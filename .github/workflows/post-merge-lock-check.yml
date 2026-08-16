@@ -1,0 +1,45 @@
+# MEH-1527 Chunk 2a — post-merge lock-drift safety net.
+#
+# staging's backend/uv.lock has drifted from pyproject.toml three times in six
+# days (MEH-1332, MEH-1527, PR #1531): dependabot's pip bumps change
+# pyproject.toml WITHOUT regenerating uv.lock. The per-PR "Lock consistency"
+# CI step (lines 441-442 of the PR-checks workflow) catches this per-PR, but an
+# admin-bypass merge skips required checks entirely — branch protection cannot
+# cover that path.
+#
+# This workflow re-runs the same `uv lock --check` on the MERGED commit on
+# staging, so drift is caught loudly on the branch itself no matter how it got
+# there. Same command as the per-PR step, new trigger; adds no change to the
+# existing CI workflow.
+name: Post-merge lock check
+
+on:
+  push:
+    branches: [staging]
+
+permissions:
+  contents: read
+
+jobs:
+  lock-check:
+    name: Lock consistency (post-merge, staging)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: uv lock --check (fail loudly on drift)
+        working-directory: backend
+        run: |
+          if ! uv lock --check; then
+            echo "::error::backend/uv.lock has drifted from pyproject.toml on staging. A dependabot pip bump likely changed pyproject.toml without regenerating the lock (MEH-1527 class). Fix: cd backend && uv lock, then commit the updated lock."
+            exit 1
+          fi
+          echo "uv.lock is consistent with pyproject.toml."

@@ -1,5 +1,7 @@
 """Seed the database with initial categories and sample producers."""
 
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
 from app.auth import hash_password
 from app.config import settings
 from app.database import SessionLocal
@@ -34,8 +36,14 @@ CATEGORIES = [
     ("תבלינים וצמחי תיבול", "🌶️"),
     ("שוקולד וממתקים בוטיק", "🍫"),
     # MEH-743: honey split off from "שמנים ודבש" — dedicated license regime
-    # (צו הפיקוח, תשל"ז-1977). Appended at end so existing seed-id slots
-    # (1-18) stay stable; downstream sample-producer category_ids unchanged.
+    # (צו הפיקוח, תשל"ז-1977). Appended at end.
+    #
+    # MEH-2081: the original note here said it was appended "so existing seed-id
+    # slots (1-18) stay stable; downstream sample-producer category_ids
+    # unchanged." That contract NO LONGER EXISTS and must not be restored:
+    # PRODUCERS now references categories by NAME, and this list's order is a
+    # presentation detail. Rows are inserted without explicit ids, so position
+    # here has never guaranteed the id anyway — that mismatch is the bug.
     ("דבש", "🍯"),
     # MEH-927: "דגים" split off from "בשר ודגים" (now standalone "בשר").
     # Appended at end so mid-list seed-ids stay stable; sample producers
@@ -55,7 +63,7 @@ PRODUCERS = [
         "lng": 35.3035,
         "phone": "050-1234567",
         "instagram": "@galil_farm",
-        "category_ids": [1],  # בשר (MEH-927: was "בשר ודגים")
+        "category_names": ["בשר"],  # MEH-927: was "בשר ודגים"
         "products": [
             {"name": "סטייק אנטריקוט", "price_range": '120-180₪/ק"ג'},
             {"name": "בשר טחון", "price_range": '70-90₪/ק"ג'},
@@ -79,15 +87,36 @@ PRODUCERS = [
         "phone": "052-9876543",
         "instagram": "@golan_cheese",
         "website": "https://golan-cheese.co.il",
-        "category_ids": [2],  # חלב וגבינות
+        "category_names": ["חלב וגבינות"],
         "products": [
             {"name": "גבינת עיזים מיושנת", "price_range": "65₪/יח'"},
             {"name": "לאבנה ביתית", "price_range": "35₪/יח'"},
             {"name": "חמאה טבעית", "price_range": "40₪/יח'"},
         ],
+        # MEH-1577: business-wide default rate — the value ירושלים below
+        # inherits because it states no override of its own.
+        "delivery_fee": 35,
+        # MEH-1772 chunk 3: the per-area override demo. Three rows on purpose,
+        # one per branch of the display logic, so the variance path is
+        # reachable in preview without hand-editing the DB:
+        #   תל אביב  → explicit 20 (override, cheaper than the default)
+        #   חיפה     → explicit 40 (override, dearer than the default)
+        #   ירושלים  → no key    (NULL → inherits the 35 above)
+        # Effective set {20, 40, 35} has 2+ distinct values, so the public page
+        # renders "משלוח מ-20₪" on the top line and a fee on every area row.
         "delivery_areas": [
-            {"city": "תל אביב", "min_order": 300, "delivery_day": "חמישי"},
-            {"city": "חיפה", "min_order": 250, "delivery_day": "רביעי"},
+            {
+                "city": "תל אביב",
+                "min_order": 300,
+                "delivery_day": "חמישי",
+                "delivery_fee": 20,
+            },
+            {
+                "city": "חיפה",
+                "min_order": 250,
+                "delivery_day": "רביעי",
+                "delivery_fee": 40,
+            },
             {"city": "ירושלים", "min_order": 300, "delivery_day": "חמישי"},
         ],
     },
@@ -102,7 +131,7 @@ PRODUCERS = [
         "lng": 34.7818,
         "phone": "054-5551234",
         "instagram": "@dana_sourdough",
-        "category_ids": [4],  # לחמים ואפייה
+        "category_names": ["לחמים ואפייה"],
         "products": [
             {"name": "לחם מחמצת כוסמין", "price_range": "45₪"},
             {"name": "פוקאצ'ה זעתר", "price_range": "35₪"},
@@ -125,7 +154,7 @@ PRODUCERS = [
         "lng": 35.2137,
         "phone": "050-7778899",
         "instagram": "@tases_ferments",
-        "category_ids": [8],  # מותססים וכבושים
+        "category_names": ["מותססים וכבושים"],
         "products": [
             {"name": "קימצ'י קוריאני מסורתי", "price_range": "45₪/צנצנת"},
             {"name": "כרוב כבוש קלאסי", "price_range": "35₪/צנצנת"},
@@ -149,7 +178,7 @@ PRODUCERS = [
         "phone": "053-3334455",
         "instagram": "@teva_pure",
         "website": "https://tevapure.co.il",
-        "category_ids": [11, 12],  # סבונים + קוסמטיקה טבעית
+        "category_names": ["סבונים טבעיים", "קוסמטיקה טבעית"],
         "products": [
             {"name": "סבון שמן זית ולבנדר", "price_range": "35₪"},
             {"name": "קרם פנים אלוורה", "price_range": "85₪"},
@@ -240,61 +269,124 @@ def _seed_golan_recipe(db):
     db.commit()
 
 
+# MEH-1530: the column that identifies an existing category for conflict
+# detection. MEH-1456 (move to a stable slug key) changes this ONE line to
+# "slug" once that column exists — nothing else in seed_categories names the
+# identity column, so the Expand step needs no restructuring here.
+CATEGORY_CONFLICT_KEY = "name"
+
+
 def seed_categories(db):
-    """Idempotently upsert the category taxonomy, keyed by stable id/position.
+    """Insert missing categories. Never renames, never deletes — insert-only.
 
-    MEH-1107 (root cause of the MEH-1104 duplicate): the old loop checked
-    existence by ``Category.name``. When a category is renamed in ``CATEGORIES``
-    (e.g. MEH-1098's "קרמים ושמנים" → "קוסמטיקה טבעית"), the name query finds
-    nothing, so a re-seed INSERTS a second row with the new name while the
-    old-named row survives — a duplicate that then breaks the production
-    ``UPDATE ... SET name`` on the unique ``categories.name`` constraint.
+    Seeding bootstraps a fresh database; it is NOT a reconciler. Renames and
+    deletions are the exclusive responsibility of Alembic migrations — the MEH-927
+    revision is the worked example: it re-keys rows by name inside a reviewed,
+    reversible revision with a fail-loud FK guard. A boot-time seed has none of
+    that safety and must not mutate rows a human or a migration already owns.
 
-    The stable identity is the position in ``CATEGORIES`` == the row id (the
-    list order is deliberately append-only so seed ids 1..N stay fixed — see
-    the MEH-743/MEH-927 notes above). Keying on id updates the row in place on
-    rename (no duplicate, no unique-constraint collision). Missing rows are
-    inserted WITHOUT an explicit id so autoincrement keeps advancing the
-    Postgres sequence — ``admin_extra.py`` creates categories at runtime and
-    would collide on a stranded sequence. Running this twice yields identical
-    table state (same row count, same ids).
+    Why both previous designs failed, so neither is reintroduced:
 
-    Observability: id-keying is what makes a rename update in place, but it
-    also means that if ``CATEGORIES`` ever grows and an admin-created row
-    (``admin_extra.py``) already occupies the new positional id, this would
-    silently overwrite that row's name — a drift the old name-keyed loop could
-    not cause. We can't cleanly distinguish "rename" from "collision" at seed
-    time, so any in-place name change is logged (renames are rare + reviewed;
-    an unexpected line here flags the collision case for a human).
+    - **Name-keyed UPDATE (pre-MEH-1107)** checked existence by ``Category.name``.
+      A rename in ``CATEGORIES`` matched nothing, so the re-seed INSERTed a second
+      row while the old-named row survived — the MEH-1104 duplicate.
+    - **Id-keyed UPDATE (MEH-1107, replaced here)** mapped list position to primary
+      key (``cat_id = idx + 1``) and renamed whichever row sat at that id. That
+      assumption was false: ``admin_extra.py`` and the MEH-927 migration both create
+      rows at autoincrement ids, so the id sequence has holes. On staging (holes at
+      ids 1, 5, 13, 15) the first iteration looked up id 1, found nothing, and
+      INSERTed 'בשר' — a name already live on id 22 — violating
+      ``categories_name_key`` and rolling back the WHOLE transaction on every boot.
+      That rollback was the only thing preventing four categories from being
+      silently renamed (MEH-1530).
+
+    This version is immune to both: it issues no UPDATE at all, so id holes are
+    irrelevant and a rename in ``CATEGORIES`` is simply a no-op here (land renames
+    as a migration). Idempotence comes from the database via the existing UNIQUE
+    constraint on ``categories.name``, not from a read-then-write race:
+    ``ON CONFLICT DO NOTHING`` makes a re-run a no-op, so two consecutive calls
+    leave the table byte-identical — same row count, same ids, same names. Rows are
+    inserted without an explicit id so autoincrement keeps advancing the sequence
+    (``admin_extra.py`` creates categories at runtime and would collide on a
+    stranded sequence).
+
+    Expected result against current staging data: all 18 rows conflict, zero rows
+    change. A non-zero row delta means the taxonomy genuinely drifted and wants a
+    migration — not a seed change.
     """
-    for idx, (name, emoji) in enumerate(CATEGORIES):
-        cat_id = idx + 1
-        existing = db.get(Category, cat_id)
-        if existing:
-            if existing.name != name:
-                # Surfaces both an intended rename and an accidental overwrite
-                # of an admin-created row at this id (MEH-1107 review note).
-                print(
-                    f"seed_categories: category id={cat_id} name "
-                    f"{existing.name!r} -> {name!r} (in-place update)"
-                )
-            existing.name = name
-            existing.emoji = emoji
-        else:
-            db.add(Category(name=name, emoji=emoji))
+    # DO NOT reintroduce an UPDATE here — name-keyed was MEH-1104, id-keyed was
+    # MEH-1530. Renames/deletes belong in an Alembic revision (MEH-927 pattern).
+    db.execute(
+        pg_insert(Category)
+        .values([{"name": name, "emoji": emoji} for name, emoji in CATEGORIES])
+        .on_conflict_do_nothing(index_elements=[CATEGORY_CONFLICT_KEY])
+    )
     db.commit()
 
 
 def seed():
+    """Bootstrap a fresh database. Idempotent, insert-only, never a reconciler.
+
+    Identity is the STABLE key, never the display value. Every existence check
+    below matches on a column the product does not let a human edit for
+    presentation reasons — ``producers.slug`` (unique, part of the public URL),
+    ``categories.name`` via the DB UNIQUE constraint in ``seed_categories``,
+    ``users.email``. Display columns (``name``, ``title``, labels) are MUTABLE:
+    an admin renames one at runtime (``admin_extra.py`` for categories,
+    ``admin.py`` / ``producer_me.py`` for producers) and any seed keyed on that
+    value stops matching its own row on the next boot — it then INSERTs a
+    second copy instead of skipping.
+
+    Renames and deletions belong in an Alembic migration, not here. A migration
+    is reviewed, reversible, and can carry an FK guard; a boot-time seed has
+    none of that. Changing a display value in ``PRODUCERS`` / ``CATEGORIES`` is
+    deliberately a no-op against an already-seeded database.
+
+    History: MEH-1104 (name-keyed category UPDATE duplicated a row),
+    MEH-1107 (id-keyed replacement crashed on staging id holes),
+    MEH-1530 (categories → insert-only; producers → slug-keyed here).
+    """
     db = SessionLocal()
     try:
-        # Seed categories — idempotent upsert by stable id (MEH-1107).
+        # Seed categories — insert-only; renames/deletes are migrations (MEH-1530).
         seed_categories(db)
 
-        # Seed producers
+        # MEH-2081: resolve category ids BY NAME, from the database, after the
+        # categories exist. NEVER hardcode a category id in PRODUCERS.
+        #
+        # seed_categories inserts without an explicit id (autoincrement), and its
+        # own docstring records that staging's id sequence has HOLES (1, 5, 13,
+        # 15) with 'בשר' living at id 22. MEH-1530 removed the `id = index + 1`
+        # assumption from that function — but PRODUCERS kept the same assumption
+        # as literals (`"category_ids": [1]`), so seeding a producer raised a
+        # ForeignKeyViolation on a category id that does not exist. That
+        # exception is caught in startup.py:167 and latches
+        # db_init_status="failed" for the life of the process (startup.py:193).
+        #
+        # DO NOT reintroduce a positional id here, and do not "keep ids stable"
+        # by appending to CATEGORIES — the ordering of that list is now a
+        # presentation detail, not an identity contract.
+        categories_by_name = {
+            name: cid for name, cid in db.query(Category.name, Category.id)
+        }
+        seeded_names = {n for p in PRODUCERS for n in p["category_names"]}
+        missing = sorted(seeded_names - categories_by_name.keys())
+        if missing:
+            raise ValueError(
+                "seed(): PRODUCERS references category names absent from the "
+                f"categories table: {missing}. Add them to CATEGORIES, or land a "
+                "rename as an Alembic migration — do not silently skip the link."
+            )
+
+        # Seed producers. Keyed by slug — the stable identity column (unique,
+        # public URL). DO NOT key this on Producer.name: name is display text an
+        # admin can edit at runtime, and a rename would make this lookup miss its
+        # own row and INSERT a duplicate — the MEH-1104 failure, one table over.
+        # producers.name carries NO unique constraint, so nothing downstream
+        # would catch the duplicate.
         for p_data in PRODUCERS:
             existing = (
-                db.query(Producer).filter(Producer.name == p_data["name"]).first()
+                db.query(Producer).filter(Producer.slug == p_data["slug"]).first()
             )
             if existing:
                 continue
@@ -311,14 +403,23 @@ def seed():
                 slug=p_data.get("slug"),
                 top_product_name=p_data.get("top_product_name"),
                 starting_price_label=p_data.get("starting_price_label"),
+                # MEH-1772 chunk 3: .get() so the producers that state no rate
+                # keep NULL ("cost not stated") rather than becoming 0 ("free").
+                delivery_fee=p_data.get("delivery_fee"),
                 status="approved",
                 # MEH-766 ch3: seed no longer sets is_verified (column default False).
             )
             db.add(producer)
             db.flush()
 
-            for cid in p_data["category_ids"]:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+            # MEH-2081: name → id, resolved above from the DB. Never a literal.
+            for cname in p_data["category_names"]:
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id,
+                        category_id=categories_by_name[cname],
+                    )
+                )
 
             for prod in p_data["products"]:
                 db.add(
@@ -336,6 +437,10 @@ def seed():
                         city=da["city"],
                         min_order=da["min_order"],
                         delivery_day=da["delivery_day"],
+                        # MEH-1772 chunk 3: .get() — a row without the key
+                        # inherits the producer-level rate (NULL), which is
+                        # every seeded row except the two demo overrides.
+                        delivery_fee=da.get("delivery_fee"),
                     )
                 )
 

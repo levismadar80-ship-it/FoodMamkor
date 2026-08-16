@@ -68,17 +68,64 @@ export const CATEGORY_CHIPS = [
 // never the free-text Producer.kosher. A FREE-TEXT kosher chip stays forbidden
 // (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — MEH-1418 sourced it
 // from the shared ATTRIBUTE_LABELS.kosher so /producers + /map read identically.
+// MEH-1507: grass_fed is /map-only, so its scope×evidence object stays LOCAL
+// (never entered the shared ATTRIBUTE_LABELS). It is a producer-level boolean
+// column (models.py:111 `grass_fed`), owner-declared → business scope,
+// self-declared evidence. Subtext LOCKED per MEH-1507 §hebrew_copy. Shape
+// matches an ATTRIBUTE_LABELS entry so the contract guard treats it uniformly.
+// MEH-2046: pickup is /map-only for now, so its object stays LOCAL — the same
+// call MEH-1507 made for grass_fed below, and for the same mechanical reason:
+// ATTRIBUTE_LABELS is the CROSS-SURFACE contract (attributeLabels.test.js
+// derives `SHARED` from its keys and requires every one to exist in BOTH
+// /producers' CHIPS_CONFIG and /map's TOGGLE_CHIPS). Putting it there would
+// have forced a /producers chip this ticket explicitly scopes out — the test
+// caught exactly that.
+// Label is MEH-1461's locked consumer string, reused verbatim, not re-worded.
+// scope=business: the predicate is an EXISTS over the business's own pickup /
+// market_stand location rows, so it describes the whole business, not a
+// product. evidence=self-declared: the owner creates those rows in
+// LocationsEditor and nobody verifies them.
+// The subtext is load-bearing, not decoration — the predicate covers market
+// stands too, which "איסוף עצמי" alone does not tell a reader, and stopping
+// that kind of quiet over-claim is what the Label Scope Contract is for.
+const PICKUP_POINTS_LABEL = {
+  label: "איסוף עצמי",
+  scope: "business",
+  evidence: "self-declared",
+  subtext: "עסקים עם נקודת איסוף עצמי או דוכן בשוק",
+};
+
+const GRASS_FED_LABEL = {
+  label: "גראס פד",
+  scope: "business",
+  evidence: "self-declared",
+  subtext: "לפי הצהרת בית העסק",
+};
+
+// MEH-1507: each entry spreads its {label, scope, evidence, subtext} object so
+// `chip.label` stays a plain string (chip row unchanged) while every entry
+// carries the scope+evidence the contract guard (LabelScopeContract.test.js)
+// requires. `group` stays a TOGGLE_CHIPS-local field.
 export const TOGGLE_CHIPS = [
-  { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
-  { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
+  { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery,  group: "service" },
+  // MEH-2046: the pickup axis joins the service group. Appended AFTER
+  // has_delivery so the MEH-1934 diet order below is untouched; FilterSheet's
+  // own SERVICE_ORDER (FilterSheet.jsx) decides presentation order, not this.
+  { key: "pickup_points", ...PICKUP_POINTS_LABEL,           group: "service" },
+  { key: "verified",      ...ATTRIBUTE_LABELS.verified,      group: "service" },
   // MEH-1259: organic chip removed — self-declared organic is no longer a
   // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
-  { key: "kosher",        label: ATTRIBUTE_LABELS.kosher,        group: "quality" },
-  { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
-  { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
-  { key: "vegetarian",    label: ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
-  { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
-  { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
+  { key: "kosher",        ...ATTRIBUTE_LABELS.kosher,        group: "quality" },
+  { key: "grass_fed",     ...GRASS_FED_LABEL,                group: "quality" },
+  { key: "vegan",         ...ATTRIBUTE_LABELS.vegan,         group: "diet" },
+  { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
+  { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
+  { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
+  // MEH-1934: appended AFTER lactose_free so the MEH-1438 diet order
+  // (טבעוני · צמחוני · ללא גלוטן · ללא לקטוז) does not shift.
+  // MEH-2047: "דל פחמימות" removed from this row — undefined claim, column and
+  // stored values kept. Same treatment organic got in MEH-1259 above.
+  { key: "no_added_sugar", ...ATTRIBUTE_LABELS.no_added_sugar, group: "diet" },
 ];
 
 // MEH-1468: QUICK_CHIP_KEYS + countActiveSheetOnlyFilters were removed here.
@@ -139,6 +186,11 @@ export function chipStateToParams(state, dbCategories) {
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   if (state.has_delivery) params.has_delivery = true;
+  // MEH-2046: OR-ed with the delivery axes server-side (the service group in
+  // producer_listing._apply_scalar_filters), so both chips on = union, never
+  // intersection. The param keeps the column's name; the predicate behind it
+  // reads pickup/market_stand location rows.
+  if (state.pickup_points) params.pickup_points = true;
   if (state.verified) params.verified = true;
   // MEH-1087: verified-only kosher — backend maps ?kosher=true to
   // kashrut_verified_at only (producer_listing.py:153).

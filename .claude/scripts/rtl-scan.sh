@@ -56,7 +56,7 @@ awk '
 RTL_RAW=$(mktemp)
 grep -rEn '\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]' \
   "$REPO_ROOT/frontend/components" "$REPO_ROOT/frontend/app" 2>/dev/null \
-  | grep -v -f "$PATH_PAT" > "$RTL_RAW" || true
+  | grep -vFf "$PATH_PAT" > "$RTL_RAW" || true
 
 RTL_FILE=$(mktemp)
 awk -F: '

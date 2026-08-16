@@ -50,21 +50,3 @@ export function getVacationReturnDate(producer, locale) {
   }
 }
 
-export function buildShowOnMapHandler(producer, router) {
-  return () => {
-    try {
-      sessionStorage.setItem(
-        "focusProducer",
-        JSON.stringify({
-          id: producer.id,
-          lat: producer.lat,
-          lng: producer.lng,
-          name: producer.name,
-        }),
-      );
-    } catch {
-      // private mode — map will still open, just without highlight
-    }
-    router.push("/map");
-  };
-}

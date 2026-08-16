@@ -35,22 +35,25 @@ import { BADGE_CONFIG } from "@/lib/badges";
  *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched);
  *           MEH-1481 (desktop-only density: rows+pills min-h 36px, 13px labels,
  *           tighter gaps + capped scroll body + sticky footer — all lg:-gated,
- *           mobile byte-identical).
+ *           mobile byte-identical); MEH-1507 (Label Scope Contract: diet group
+ *           reverts from the MEH-1478 pill grid to full-width rows so every diet
+ *           term shows its scope-explicit subtext; subtext source moved from the
+ *           SUBTEXT_KEYS/BADGE_CONFIG narrowing to per-chip contract metadata).
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
 const GROUP_ORDER = ["diet", "quality", "service"];
 
-// MEH-1423: keep the muted explainer for ONLY the 3 trust-loaded / loanword
-// terms (kosher · verified · grass_fed). The other 4 toggles (vegan ·
-// gluten_free · lactose_free · has_delivery) are everyday vocabulary where a
-// dictionary line is noise (Baymard "Always Explain Industry-Specific Filters",
-// research 21/07). Copy is UNCHANGED — still the BADGE_CONFIG tooltips MEH-1418
-// wired (SoT, no new strings, ADR-022 / MEH-1087 locks); this only narrows
-// WHICH rows render it. All 3 keys own a BADGE_CONFIG entry, so no key remap.
-const SUBTEXT_KEYS = new Set(["kosher", "verified", "grass_fed"]);
-function chipSubtext(key) {
-  return SUBTEXT_KEYS.has(key) ? BADGE_CONFIG[key]?.tooltip ?? null : null;
+// MEH-1507 — Label Scope Contract: each chip carries its own scope-explicit
+// `subtext` (attribute-labels.js, and the /map-local grass_fed object). The diet
+// rows now render the LOCKED "עסקים עם מוצרים … בקטלוג" copy that names the
+// any-product scope MEH-293 introduced; grass_fed reads "לפי הצהרת בית העסק". The
+// trust rows (kosher · verified) have no contract subtext of their own, so they
+// fall back to the BADGE_CONFIG tooltip MEH-1418 wired (has_delivery has neither
+// → no subtext, unchanged). This REVERSES the MEH-1423/1478 narrowing to 3 rows:
+// every diet term now explains its scope in-component (Baymard).
+function chipSubtext(chip) {
+  return chip.subtext ?? BADGE_CONFIG[chip.key]?.tooltip ?? null;
 }
 
 // MEH-1478: within-group render order. Default = TOGGLE_CHIPS array order; the
@@ -58,14 +61,41 @@ function chipSubtext(key) {
 // (has_delivery) per spec — a FilterSheet-LOCAL presentation reorder that leaves
 // lib/map-chips.js TOGGLE_CHIPS untouched (scope lock: the array order there
 // still drives /producers + every other consumer).
+// MEH-2046: pickup_points appended AFTER has_delivery, so the MEH-1478 order
+// above (verified leads, משלוח trails) is extended rather than disturbed — and
+// the sheet's service group now mirrors the promoted row's pairing
+// (משלוח then איסוף עצמי) instead of splitting the two apart.
 const GROUP_CHIP_ORDER = {
-  service: ["verified", "has_delivery"],
+  service: ["verified", "has_delivery", "pickup_points"],
 };
-function chipsForGroup(group) {
-  const chips = TOGGLE_CHIPS.filter((chip) => chip.group === group);
+// MEH-1862: the chip SET is now a parameter, so /producers can mount this sheet
+// with its own axes. `source` defaults to TOGGLE_CHIPS, which is what /map has
+// always passed implicitly — that surface is unchanged in behaviour and output.
+//
+// A key absent from GROUP_CHIP_ORDER sorts AFTER every enumerated one, keeping
+// array order among themselves — so a surface-specific chip appended to a group
+// this map does not enumerate (/producers' open_for_orders_now in `service`)
+// lands last instead of jumping the explicit verified → has_delivery order.
+//
+// `order.length`, not a raw `indexOf`. The first version of this used the bare
+// difference and a comment asserting that -1 was "a stable tie": that is only
+// true when BOTH keys are missing. With one present, `-1 - 0 = -1` sorts the
+// UNTRACKED key FIRST — the exact inverse of the intent. Measured on the built
+// app before the fix: the service group rendered open_for_orders_now ahead of
+// verified and has_delivery, contradicting producer-filters.js:118-120, which
+// puts that chip last on purpose ("it reads as a refinement of the durable
+// attributes above rather than as a peer of them"). Infinity is not used
+// either — `Infinity - Infinity` is NaN, which is an invalid comparator the
+// moment a group has two untracked keys.
+function chipsForGroup(group, source) {
+  const chips = source.filter((chip) => chip.group === group);
   const order = GROUP_CHIP_ORDER[group];
   if (!order) return chips;
-  return [...chips].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  const rank = (key) => {
+    const i = order.indexOf(key);
+    return i === -1 ? order.length : i;
+  };
+  return [...chips].sort((a, b) => rank(a.key) - rank(b.key));
 }
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
@@ -80,6 +110,9 @@ export default function FilterSheet({
   onToggleChip,
   resultCount,
   onClearAll,
+  // MEH-1862: which axes this mount offers. Defaults to the /map set so the
+  // existing call site (FilterChipsBar.jsx:96) is unchanged.
+  chips = TOGGLE_CHIPS,
 }) {
   const t = useTranslations();
   const panelRef = useRef(null);
@@ -173,7 +206,18 @@ export default function FilterSheet({
         aria-modal="true"
         aria-labelledby="filter-sheet-title"
         dir="rtl"
-        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))]"
+        // MEH-1945: the panel's bottom padding moves ONTO the sticky footer
+        // below. `position: sticky; bottom-0` resolves against the scrollport —
+        // the container's PADDING box — so a padding-bottom here parks the
+        // footer that many px above the sheet's edge, with body content
+        // scrolling through the gap. Measured at 390×844 rather than reasoned:
+        // with the container's pb restored to 32px the footer's bottom lands at
+        // 812 against a 844 viewport and a 844 panel edge; at pb-0 it lands at
+        // 844, flush. The safe-area inset still has to be paid — it is paid by
+        // the footer's own pb, where it sits UNDER the footer instead of under
+        // a scrolling body. lg: restores the container pad: the anchored
+        // desktop panel has no safe-area to clear and no notch to sit in.
+        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4"
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -189,114 +233,111 @@ export default function FilterSheet({
           {t("filters.sheet.title")}
         </h2>
 
-        {GROUP_ORDER.map((group) => (
+        {GROUP_ORDER.map((group) => {
+          const groupChips = chipsForGroup(group, chips);
+          // MEH-1862 (5-state rule, 0 items): a group with no chips renders
+          // NOTHING — not a bare heading. This is reachable, not defensive
+          // padding: /producers has no grass_fed, and its diet axes are
+          // runtime-gated (DIET_CHIP_MIN, MEH-1934), so a group can empty out
+          // on real data. On /map every group is populated, so this branch
+          // never fires there and that surface is unchanged.
+          if (!groupChips.length) return null;
+          return (
           <div key={group}>
             {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
                 (mobile mt-4/mb-1 byte-identical). */}
             <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1 lg:mt-3 lg:mb-0.5">
               {t(`filters.sheet.group_${group}`)}
             </h3>
-            {group === "diet" ? (
-              /* MEH-1478: the 4 diet toggles render as a 2-column pill GRID
-                 (grid-template-columns: repeat(2, minmax(0,1fr)), gap 8px)
-                 instead of full-width rows — they are everyday, self-evident
-                 vocabulary (no subtext, MEH-1423) so a compact multi-select grid
-                 keeps the whole sheet on one 375px screen. Each pill is a toggle
-                 BUTTON with aria-pressed that writes the SHARED chipState
-                 immediately via onToggleChip (no draft), exactly like the rows;
-                 multi-select is unchanged. Selected = solid primary fill (matches
-                 the sibling rows' Switch-on colour at :bg-primary), default =
-                 white surface + hairline border. Icon (aria-hidden) + label
-                 centred; label stays the accessible name. */
-              <div className="grid grid-cols-2 gap-2 mt-1 lg:mt-0.5">
-                {chipsForGroup(group).map((chip) => {
-                  const active = !!chipState[chip.key];
-                  const icon = chipIcon(chip.key);
-                  return (
+            {/* MEH-1507: ALL groups (incl. diet) render as full-width ROWS —
+                leading icon + label at the inline-start, a Switch at the
+                inline-end, hairline divider between rows (divide-y), and a
+                scope-explicit subtext BELOW the button (outside its accessible
+                name). The MEH-1478 2-col diet pill GRID is retired: its rationale
+                was "everyday terms, no subtext", but the Label Scope Contract now
+                gives every diet term a subtext, so the row form (which carries a
+                subtext line) is the fit. Each row is ONE role="switch" button
+                (min-h 44px tap target); multi-select is unchanged. MEH-1478
+                service reorder (רישוי מאומת → משלוח) still applies via
+                chipsForGroup. MEH-1481 desktop density preserved.
+                REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 — label+icon
+                at start, role="switch" pill at end, knob start-1(off)→end-1(on)
+                via logical insets (RTL-safe). */}
+            <div className="divide-y divide-border">
+              {groupChips.map((chip) => {
+                const active = !!chipState[chip.key];
+                const icon = chipIcon(chip.key);
+                const subtext = chipSubtext(chip);
+                return (
+                  <div key={chip.key} className="py-1 lg:py-0.5">
                     <button
-                      key={chip.key}
                       type="button"
-                      aria-pressed={active}
+                      role="switch"
+                      aria-checked={active}
+                      // MEH-1862: same locator ChipScrollRow's consumers already
+                      // query (docs/E2E-LOCATORS.md). A chip that moves from the
+                      // row into this sheet keeps its handle, so a spec asserting
+                      // on it only has to open the sheet — it does not have to be
+                      // rewritten around a different query.
+                      data-testid={`chip-${chip.key}`}
                       onClick={() => onToggleChip(chip.key)}
-                      /* MEH-1481: desktop density — min-h 44→36 (≥24px WCAG
-                         2.5.8), label 14→13px, tighter padding on lg+ only. */
-                      className={`flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-full border px-3 py-2 lg:py-1 text-sm lg:text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                        active
-                          ? "bg-primary text-white border-primary"
-                          : "bg-surface text-text border-border hover:border-primary"
-                      }`}
+                      className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
-                      {icon && <span aria-hidden="true">{icon}</span>}
-                      {chip.label}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              /* MEH-1423: each toggle is a full-width ROW — leading icon + label
-                 at the inline-start, a Switch at the inline-end — with a hairline
-                 divider between rows (divide-y). The whole row is ONE
-                 role="switch" button (min-h 44px tap target), so the entire row
-                 is the hit area; the visual track/knob is aria-hidden and the
-                 label stays the accessible name. Subtext (3 rows only) sits BELOW
-                 the button, outside its accessible name. MEH-1478: service group
-                 reordered רישוי מאומת → משלוח via chipsForGroup. */
-              <div className="divide-y divide-border">
-                {chipsForGroup(group).map((chip) => {
-                  const active = !!chipState[chip.key];
-                  const icon = chipIcon(chip.key);
-                  const subtext = chipSubtext(chip.key);
-                  return (
-                    <div key={chip.key} className="py-1 lg:py-0.5">
-                      {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
-                          label+icon at start, role="switch" pill at end, knob
-                          start-1(off)→end-1(on) via logical insets (RTL-safe).
-                          MEH-1481: desktop density — min-h 44→36, tighter
-                          padding + 13px label on lg+ only. */}
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={active}
-                        onClick={() => onToggleChip(chip.key)}
-                        className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
+                        {icon && <span aria-hidden="true">{icon}</span>}
+                        {chip.label}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
+                          active ? "bg-primary" : "bg-border"
+                        }`}
                       >
-                        <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
-                          {icon && <span aria-hidden="true">{icon}</span>}
-                          {chip.label}
-                        </span>
                         <span
-                          aria-hidden="true"
-                          className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
-                            active ? "bg-primary" : "bg-border"
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                            active ? "end-1" : "start-1"
                           }`}
-                        >
-                          <span
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                              active ? "end-1" : "start-1"
-                            }`}
-                          />
-                        </span>
-                      </button>
-                      {subtext && (
-                        <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                        />
+                      </span>
+                    </button>
+                    {subtext && (
+                      <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* Apply = close (state is shared + already applied live); count is the
             live client-side visibleProducers.length passed by the caller.
             Zero state keeps apply enabled — the clear link sits beside it.
-            MEH-1481: on lg+ the footer is STICKY to the bottom of this
-            overflow-y-auto panel so apply + ניקוי הכל stay visible when the
-            (capped) body scrolls — an opaque bg + top hairline hide the content
-            scrolling under it. No structural change: the panel div is already
-            the scroll container. Mobile footer (mt-6, non-sticky) unchanged. */}
-        <div className="mt-6 flex items-center gap-3 lg:sticky lg:bottom-0 lg:mt-4 lg:-mx-4 lg:px-4 lg:pt-3 lg:pb-1 lg:bg-background lg:border-t lg:border-border">
+            MEH-1481: the footer is STICKY to the bottom of this overflow-y-auto
+            panel so apply + ניקוי הכל stay visible when the (capped) body
+            scrolls — an opaque bg + top hairline hide the content scrolling
+            under it. No structural change: the panel div is already the scroll
+            container.
+            MEH-1481 gated all of that behind lg: because its card scoped it to
+            desktop — scope, not a product call. MEH-1945 un-gates it: mobile
+            has the same Apply-visibility bug and worse, measured on #2690 at
+            390×844 (scrollHeight 749 > clientHeight 674, footer at y=859 — off
+            the viewport, reachable only by scrolling). Only the density values
+            stay lg:-gated. `pb` carries the safe-area inset the panel gave up:
+            the footer is the bottommost painted element now, so the notch
+            clearance belongs to it. */}
+        <div
+          // MEH-1945: the guards for this footer (the vitest tripwires and
+          // e2e/qa-meh1945-sticky-apply.mjs) used to reach it as the panel's
+          // lastElementChild. That is a POSITIONAL handle: append anything
+          // after this div and both silently start asserting about a different
+          // element — still green, no longer measuring the footer. Anchored to
+          // identity instead, per docs/E2E-LOCATORS.md. Raised by the CI
+          // adversarial reviewer on PR #2695.
+          data-testid="filter-sheet-apply-footer"
+          className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+8px)] lg:mt-4 lg:pb-1"
+        >
           <button
             type="button"
             onClick={onClose}

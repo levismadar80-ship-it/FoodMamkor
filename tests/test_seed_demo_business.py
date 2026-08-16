@@ -103,6 +103,12 @@ def test_seed_creates_complete_listing(db, seed_mod, bakery_category):
     # Login gates on email_verified (auth.py) — seed accounts get no email.
     assert owner.email_verified is True
 
+    # MEH-1528 — QA admin login exists, role=admin, NOT bound to a producer.
+    admin = db.query(User).filter(User.email == seed_mod.DEMO_ADMIN_EMAIL).one()
+    assert admin.role == "admin"
+    assert admin.producer_id is None
+    assert admin.email_verified is True
+
 
 def test_seed_skips_when_exists(db, seed_mod, bakery_category):
     assert seed_mod.seed_demo_business(db) is not None
@@ -120,6 +126,50 @@ def test_refresh_recreates_without_duplicates(db, seed_mod, bakery_category):
     assert db.query(User).filter(User.email.in_(reviewer_emails)).count() == len(
         reviewer_emails
     )
+
+
+# ── MEH-1528 — dietary-scope demo producers (Component B) ────────────────────
+def test_dietary_scope_demos_cover_all_states(db, seed_mod, bakery_category):
+    inserted = seed_mod.seed_dietary_scope_demos(db)
+    assert inserted == len(seed_mod.DIETARY_SCOPE_DEMOS) == 3
+
+    rows = {
+        p.slug: p
+        for p in db.query(Producer).filter(Producer.slug.like("demo-diet-%")).all()
+    }
+    assert set(rows) == {"demo-diet-dedicated", "demo-diet-shared", "demo-diet-unknown"}
+    # Every producer is approved + public (auth-free QA — B1/B2).
+    assert all(p.status == "approved" for p in rows.values())
+
+    # gluten_free_facility: one producer for EACH state (B1).
+    assert {p.gluten_free_facility for p in rows.values()} == {
+        "unknown",
+        "shared",
+        "dedicated",
+    }
+    # vegan_scope + vegetarian_scope: at least one 'all' AND one 'some' (B2).
+    assert {"all", "some"} <= {p.vegan_scope for p in rows.values()}
+    assert {"all", "some"} <= {p.vegetarian_scope for p in rows.values()}
+
+
+def test_dietary_scope_demos_idempotent(db, seed_mod, bakery_category):
+    assert seed_mod.seed_dietary_scope_demos(db) == 3
+    # Second run inserts nothing and creates no duplicate slugs (B3).
+    assert seed_mod.seed_dietary_scope_demos(db) == 0
+    for spec in seed_mod.DIETARY_SCOPE_DEMOS:
+        assert db.query(Producer).filter(Producer.slug == spec["slug"]).count() == 1
+
+
+def test_refresh_sweeps_dietary_demos(db, seed_mod, bakery_category):
+    """--refresh (_delete_existing) removes the dietary demos so a re-seed
+    recreates them exactly once (no orphan, no duplicate)."""
+    seed_mod.seed_demo_business(db)
+    seed_mod.seed_dietary_scope_demos(db)
+    seed_mod.seed_demo_business(db, refresh=True)  # _delete_existing sweeps them
+    assert (
+        db.query(Producer).filter(Producer.slug.like("demo-diet-%")).count() == 0
+    )
+    assert seed_mod.seed_dietary_scope_demos(db) == 3
 
 
 class _StubEngine:
