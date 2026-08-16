@@ -1,5 +1,6 @@
 """Seed the database with initial categories and sample producers."""
 
+import structlog
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.auth import hash_password
@@ -14,6 +15,10 @@ from app.models import (
     Product,
 )
 from app.models.models import User
+
+# Same logger family as app/startup.py:13, which is what invokes seed() at boot —
+# so the skip line below lands in the Railway boot log next to "[bg 2/2] seed OK".
+log = structlog.get_logger("mehamakor.seed")
 
 CATEGORIES = [
     # MEH-927: split from the combined "בשר ודגים"; "דגים" appended at end.
@@ -324,6 +329,116 @@ def seed_categories(db):
     db.commit()
 
 
+def _seed_demo_producers(db):
+    """Insert the demo/fixture producers in ``PRODUCERS``. NON-PRODUCTION ONLY.
+
+    MEH-2092: these five rows are development fixtures, not reference data.
+    They are inserted with ``status="approved"``, so on production every boot
+    re-created them and silently undid the admin's suspend/approve decisions
+    (measured 16/08/2026: five fixtures suspended via the admin panel at ~08:15
+    UTC were back in the public catalogue after the 08:45 boot, «טבע פור»
+    carrying a brand-new UUID). The existence check below is presence-by-slug:
+    it cannot distinguish "never seeded" from "deliberately removed", so it
+    cannot be the thing that protects an admin decision — only not running in
+    production can.
+
+    Callers gate this on ``settings.env``. Categories and the admin user are
+    reference data and stay environment-agnostic — see ``seed()``.
+    """
+    # MEH-2081: resolve category ids BY NAME, from the database, after the
+    # categories exist. NEVER hardcode a category id in PRODUCERS.
+    #
+    # seed_categories inserts without an explicit id (autoincrement), and its
+    # own docstring records that staging's id sequence has HOLES (1, 5, 13,
+    # 15) with 'בשר' living at id 22. MEH-1530 removed the `id = index + 1`
+    # assumption from that function — but PRODUCERS kept the same assumption
+    # as literals (`"category_ids": [1]`), so seeding a producer raised a
+    # ForeignKeyViolation on a category id that does not exist. That
+    # exception is caught in startup.py:167 and latches
+    # db_init_status="failed" for the life of the process (startup.py:193).
+    #
+    # DO NOT reintroduce a positional id here, and do not "keep ids stable"
+    # by appending to CATEGORIES — the ordering of that list is now a
+    # presentation detail, not an identity contract.
+    categories_by_name = {
+        name: cid for name, cid in db.query(Category.name, Category.id)
+    }
+    seeded_names = {n for p in PRODUCERS for n in p["category_names"]}
+    missing = sorted(seeded_names - categories_by_name.keys())
+    if missing:
+        raise ValueError(
+            "seed(): PRODUCERS references category names absent from the "
+            f"categories table: {missing}. Add them to CATEGORIES, or land a "
+            "rename as an Alembic migration — do not silently skip the link."
+        )
+
+    # Seed producers. Keyed by slug — the stable identity column (unique,
+    # public URL). DO NOT key this on Producer.name: name is display text an
+    # admin can edit at runtime, and a rename would make this lookup miss its
+    # own row and INSERT a duplicate — the MEH-1104 failure, one table over.
+    # producers.name carries NO unique constraint, so nothing downstream
+    # would catch the duplicate.
+    for p_data in PRODUCERS:
+        existing = db.query(Producer).filter(Producer.slug == p_data["slug"]).first()
+        if existing:
+            continue
+
+        producer = Producer(
+            name=p_data["name"],
+            description=p_data["description"],
+            city=p_data["city"],
+            lat=p_data["lat"],
+            lng=p_data["lng"],
+            phone=p_data.get("phone"),
+            instagram=p_data.get("instagram"),
+            website=p_data.get("website"),
+            slug=p_data.get("slug"),
+            top_product_name=p_data.get("top_product_name"),
+            starting_price_label=p_data.get("starting_price_label"),
+            # MEH-1772 chunk 3: .get() so the producers that state no rate
+            # keep NULL ("cost not stated") rather than becoming 0 ("free").
+            delivery_fee=p_data.get("delivery_fee"),
+            status="approved",
+            # MEH-766 ch3: seed no longer sets is_verified (column default False).
+        )
+        db.add(producer)
+        db.flush()
+
+        # MEH-2081: name → id, resolved above from the DB. Never a literal.
+        for cname in p_data["category_names"]:
+            db.add(
+                ProducerCategory(
+                    producer_id=producer.id,
+                    category_id=categories_by_name[cname],
+                )
+            )
+
+        for prod in p_data["products"]:
+            db.add(
+                Product(
+                    producer_id=producer.id,
+                    name=prod["name"],
+                    price_range=prod["price_range"],
+                )
+            )
+
+        for da in p_data["delivery_areas"]:
+            db.add(
+                DeliveryArea(
+                    producer_id=producer.id,
+                    city=da["city"],
+                    min_order=da["min_order"],
+                    delivery_day=da["delivery_day"],
+                    # MEH-1772 chunk 3: .get() — a row without the key
+                    # inherits the producer-level rate (NULL), which is
+                    # every seeded row except the two demo overrides.
+                    delivery_fee=da.get("delivery_fee"),
+                )
+            )
+
+    db.commit()
+
+
 def seed():
     """Bootstrap a fresh database. Idempotent, insert-only, never a reconciler.
 
@@ -351,104 +466,25 @@ def seed():
         # Seed categories — insert-only; renames/deletes are migrations (MEH-1530).
         seed_categories(db)
 
-        # MEH-2081: resolve category ids BY NAME, from the database, after the
-        # categories exist. NEVER hardcode a category id in PRODUCERS.
+        # MEH-2092: demo producers are fixtures, NOT reference data. On
+        # production they are never seeded — the block is insert-only and
+        # keyed on slug, so a boot would resurrect any fixture an admin had
+        # deleted and re-approve any she had suspended. Categories and the
+        # admin user stay environment-agnostic by design.
         #
-        # seed_categories inserts without an explicit id (autoincrement), and its
-        # own docstring records that staging's id sequence has HOLES (1, 5, 13,
-        # 15) with 'בשר' living at id 22. MEH-1530 removed the `id = index + 1`
-        # assumption from that function — but PRODUCERS kept the same assumption
-        # as literals (`"category_ids": [1]`), so seeding a producer raised a
-        # ForeignKeyViolation on a category id that does not exist. That
-        # exception is caught in startup.py:167 and latches
-        # db_init_status="failed" for the life of the process (startup.py:193).
-        #
-        # DO NOT reintroduce a positional id here, and do not "keep ids stable"
-        # by appending to CATEGORIES — the ordering of that list is now a
-        # presentation detail, not an identity contract.
-        categories_by_name = {
-            name: cid for name, cid in db.query(Category.name, Category.id)
-        }
-        seeded_names = {n for p in PRODUCERS for n in p["category_names"]}
-        missing = sorted(seeded_names - categories_by_name.keys())
-        if missing:
-            raise ValueError(
-                "seed(): PRODUCERS references category names absent from the "
-                f"categories table: {missing}. Add them to CATEGORIES, or land a "
-                "rename as an Alembic migration — do not silently skip the link."
-            )
+        # DO NOT swap this for a new env var: the value read here is the same
+        # settings.env (config.py:39) that already selects the database URL
+        # (config.py:147-152), so the gate and the database it protects cannot
+        # disagree.
+        if settings.env.lower() != "production":
+            _seed_demo_producers(db)
 
-        # Seed producers. Keyed by slug — the stable identity column (unique,
-        # public URL). DO NOT key this on Producer.name: name is display text an
-        # admin can edit at runtime, and a rename would make this lookup miss its
-        # own row and INSERT a duplicate — the MEH-1104 failure, one table over.
-        # producers.name carries NO unique constraint, so nothing downstream
-        # would catch the duplicate.
-        for p_data in PRODUCERS:
-            existing = (
-                db.query(Producer).filter(Producer.slug == p_data["slug"]).first()
-            )
-            if existing:
-                continue
-
-            producer = Producer(
-                name=p_data["name"],
-                description=p_data["description"],
-                city=p_data["city"],
-                lat=p_data["lat"],
-                lng=p_data["lng"],
-                phone=p_data.get("phone"),
-                instagram=p_data.get("instagram"),
-                website=p_data.get("website"),
-                slug=p_data.get("slug"),
-                top_product_name=p_data.get("top_product_name"),
-                starting_price_label=p_data.get("starting_price_label"),
-                # MEH-1772 chunk 3: .get() so the producers that state no rate
-                # keep NULL ("cost not stated") rather than becoming 0 ("free").
-                delivery_fee=p_data.get("delivery_fee"),
-                status="approved",
-                # MEH-766 ch3: seed no longer sets is_verified (column default False).
-            )
-            db.add(producer)
-            db.flush()
-
-            # MEH-2081: name → id, resolved above from the DB. Never a literal.
-            for cname in p_data["category_names"]:
-                db.add(
-                    ProducerCategory(
-                        producer_id=producer.id,
-                        category_id=categories_by_name[cname],
-                    )
-                )
-
-            for prod in p_data["products"]:
-                db.add(
-                    Product(
-                        producer_id=producer.id,
-                        name=prod["name"],
-                        price_range=prod["price_range"],
-                    )
-                )
-
-            for da in p_data["delivery_areas"]:
-                db.add(
-                    DeliveryArea(
-                        producer_id=producer.id,
-                        city=da["city"],
-                        min_order=da["min_order"],
-                        delivery_day=da["delivery_day"],
-                        # MEH-1772 chunk 3: .get() — a row without the key
-                        # inherits the producer-level rate (NULL), which is
-                        # every seeded row except the two demo overrides.
-                        delivery_fee=da.get("delivery_fee"),
-                    )
-                )
-
-        db.commit()
-
-        # MEH-906: seed one approved+published recipe for golan-cheese so its
-        # producer page renders a populated recipes section.
-        _seed_golan_recipe(db)
+            # MEH-906: seed one approved+published recipe for golan-cheese so
+            # its producer page renders a populated recipes section. Depends on
+            # the golan-cheese fixture above, so it is gated with it.
+            _seed_golan_recipe(db)
+        else:
+            log.info("seed: demo producers skipped (ENV=production)")
 
         # Seed admin user from env vars.
         # Both ADMIN_EMAIL and ADMIN_PASSWORD must be set; otherwise we
