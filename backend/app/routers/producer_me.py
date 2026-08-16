@@ -1646,9 +1646,15 @@ def submit_for_review(
     p_city = producer.city
     db.commit()
 
-    # REUSES: backend/app/routers/auth.py:632 — the same admin notification
-    # registration fires, now ALSO fired at the moment it is actually
-    # actionable. Post-commit BackgroundTask, fail-open (MEH-1051 / MEH-977):
+    # notify_admin_new_producer lives in services/auth_notifications.py. It
+    # used to ALSO fire from auth.py at registration; MEH-2100 removed it from
+    # there, because a fresh registration is a draft and the ping's own
+    # "לאישור: /admin" link pointed at a queue the business was not in. This
+    # is now its ONLY caller — the moment the ping is actually actionable.
+    # (The comment here previously cited auth.py:632, which the same diff had
+    # already deleted — a REUSES pointer to code that no longer exists. CI
+    # reviewer, #2979.)
+    # Post-commit BackgroundTask, fail-open (MEH-1051 / MEH-977):
     # a Resend/Meta outage must never turn the owner's successful submission
     # into an error, and post-commit placement mirrors _maybe_fire_review_ready
     # so the admin is never pinged about a transition that failed to persist.
