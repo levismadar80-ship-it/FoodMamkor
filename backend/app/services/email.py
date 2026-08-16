@@ -95,9 +95,14 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         # records at ERROR as events, so this line was ALSO reaching Sentry as a
         # second, stack-trace-less copy of the same failure (group
         # MEHAMAKOR-BACKEND-M, 670 events — an exact twin of the count above).
-        # The twin is now dropped in `sentry.py:_drop_reason` ("duplicate-log-twin",
-        # keyed on logger name `app.services.email` + absence of an exception
-        # payload), which keeps the trace-bearing report and removes the copy.
+        # The twin is now dropped in `sentry.py:_drop_reason` ("duplicate-log-twin"),
+        # which keeps the trace-bearing report and removes the copy. It requires
+        # ALL THREE of: logger name `app.services.email`, no exception payload on
+        # the event, AND a message starting with "[EMAIL] NOT SENT". That third
+        # condition is deliberate — see `_DUPLICATE_LOG_PREFIXES` — so a future
+        # `logger.error` here with a different message is NOT suppressed. If you
+        # add one that duplicates an explicit capture, give it this prefix or
+        # extend that mapping; otherwise it reports to Sentry on its own.
         # The line below is untouched on purpose: it is the ONLY record of the
         # failure in Railway stdout, and MEH-1613 exists because this module used
         # to be silent there.
