@@ -46,8 +46,19 @@ vi.mock("@/lib/toast", () => ({
 // PhoneVerifyCard owns its own endpoints; this suite is about the banner, so
 // it is stubbed to a marker we can assert the PRESENCE of. That presence is
 // the whole point of MEH-2100's blocking defect — see the mount test below.
+//
+// The stub also EXPOSES onVerified as a clickable control. A stub that only
+// renders a marker makes the banner's own callback untestable, and an
+// untestable callback is where `setServerMissing(null)` can be dropped in a
+// refactor with nothing going red — the CTA would then stay disabled on stale
+// server codes after a successful OTP, which is the gate closing behind a
+// business that just satisfied it.
 vi.mock("@/components/PhoneVerifyCard", () => ({
-  default: () => <div data-testid="phone-verify-card" />,
+  default: ({ onVerified }) => (
+    <button type="button" data-testid="phone-verify-card" onClick={onVerified}>
+      verify
+    </button>
+  ),
 }));
 
 const READY = {
@@ -154,6 +165,51 @@ describe("DraftSubmitBanner — the PhoneVerifyCard mount (MEH-2100 blocking def
   // draft never reaches — so phone_verified could never flip and the gate
   // could never be passed by anyone. If a refactor drops this mount, the two
   // assertions above go red rather than the feature silently dead-ending.
+
+  // The mount alone is not enough: verifying has to CLEAR the codes the server
+  // sent on a previous rejection. `serverMissing` is rendered in preference to
+  // the local computation, so a stale list survives a successful OTP and the
+  // CTA stays disabled — the gate closing behind a business that just
+  // satisfied it, with the banner still naming an item she has completed.
+  //
+  // Reaching that state honestly matters: `serverMissing` is internal, so the
+  // test provokes a real 422 first rather than injecting the state. That also
+  // makes this the only case covering the full round trip
+  // reject → verify → recover.
+  it("verifying clears the SERVER's stale codes and re-enables the CTA", async () => {
+    post.mockRejectedValue({
+      response: {
+        data: {
+          detail: {
+            code: "submit_gate_incomplete",
+            message: "חסר משהו",
+            params: { missing: ["phone_verified"] },
+          },
+        },
+      },
+    });
+    // The client thinks this producer is complete; only the server disagrees.
+    const onPhoneVerified = vi.fn();
+    render(
+      <DraftSubmitBanner producer={READY} onPhoneVerified={onPhoneVerified} />,
+    );
+
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    fireEvent.click(screen.getByTestId("draft-submit-confirm-yes"));
+
+    // Rejected: the server's code is now displayed and the CTA is blocked.
+    await waitFor(() =>
+      expect(screen.getByTestId("draft-missing-phone_verified")).toBeTruthy(),
+    );
+    expect(screen.getByTestId("draft-submit-cta")).toBeDisabled();
+
+    // The OTP card is reachable precisely because the server flagged it.
+    fireEvent.click(screen.getByTestId("phone-verify-card"));
+
+    expect(onPhoneVerified).toHaveBeenCalled();
+    expect(screen.queryByTestId("draft-missing-phone_verified")).toBeNull();
+    expect(screen.getByTestId("draft-submit-cta")).not.toBeDisabled();
+  });
 });
 
 describe("DraftSubmitBanner — submitting", () => {

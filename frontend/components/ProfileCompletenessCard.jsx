@@ -154,9 +154,35 @@ function buildSteps(producer, missingLabels) {
   // (backend/app/services/submission_gate.py), as distinct from the ones that
   // only move the completeness ring. Opening hours are the single recommended
   // step — Google precedent, Sapir 16/08 — and a business can be sent for
-  // review without them. Contact counts as required because a verified
-  // WhatsApp number is a gate item and there is nothing to verify without a
-  // phone.
+  // review without them.
+  //
+  // CONTACT IS REQUIRED, BUT `has("contact")` IS NOT THE GATE'S CONDITION.
+  // This comment previously justified the flag with "there is nothing to
+  // verify without a phone" — true, and not what the gate checks. The gate
+  // blocks on `phone_verified`; `has("contact")` is
+  // `p.phone || p.instagram` (producer-completeness.js:74), so an
+  // Instagram-only business satisfies it with no phone at all, and a business
+  // that typed a phone but never ran the OTP satisfies it too.
+  //
+  // The consequence is a real one and it is NOT fixed here: a business that
+  // typed a phone but never ran the OTP reads «פרטי קשר ✓ חובה» in this
+  // checklist while the banner below it still blocks on «אימות וואטסאפ». Two
+  // surfaces on one page, disagreeing about whether a required item is done.
+  //
+  // Conjoining this row's done-signal with `phone_verified` was tried and
+  // REVERTED, because it is not the small fix it looks like: `done` feeds
+  // `doneCount`, the percentage, the ring, and the `isComplete` collapse, so
+  // the change lowers the completeness score of every producer with an
+  // unverified phone and reddened 12 existing assertions in
+  // ProfileCompletenessCard.test.jsx. That is a product decision about what
+  // the ring measures, which MEH-2100 has no mandate over — and rewriting a
+  // dozen fixtures to match would have hidden it.
+  //
+  // The alternative, retitling the step so it stops implying gate-readiness,
+  // is user-facing copy and belongs to Sapir (workflow rule 22). Raised on
+  // the PR with both options rather than silently picking one.
+  // .claude/rules/labels.md is the frame: a label must not over-claim, and
+  // this one currently does.
   return [
     { key: "image", done: has("image"), required: true, href: `${EDIT_HUB}#profile-images` },
     {

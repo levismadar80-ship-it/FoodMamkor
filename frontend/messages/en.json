@@ -4646,7 +4646,6 @@
         "body": "When every required item is ready, send it for review — our team checks and approves within 3 business days.",
         "submit_cta": "Send for review",
         "chip_required": "Required",
-        "chip_recommended": "Recommended",
         "cta_disabled_hint": "You can send for review once every required item is ready.",
         "confirm_question": "Send your profile for review?",
         "confirm_yes": "Yes, send it",
