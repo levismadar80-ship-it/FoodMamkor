@@ -493,9 +493,9 @@
       "hint_favorites": "לחצו על הלב כדי לשמור בתי עסק שאהבתם",
       "filter_showing": "מציג:",
       "clear_filter": "נקה סינון",
-      "empty_heading": "לא מצאנו עסקים באזור הזה — עדיין",
+      "empty_heading": "לא מצאנו בתי עסק באזור הזה — עדיין",
       "empty_subtext": "נסו לשנות את הסינון, או גלו בתי עסק על המפה",
-      "empty_heading_category": "לא מצאנו עסקים בקטגוריה הזו — עדיין",
+      "empty_heading_category": "לא מצאנו בתי עסק בקטגוריה הזו — עדיין",
       "empty_subtext_category": "נסו קטגוריה אחרת, או נקו את הסינון כדי לראות את כל העסקים",
       "clear_category_cta": "נקו את הסינון",
       "explore_map": "גלו על המפה",
@@ -513,7 +513,7 @@
       "day_empty_suggestion": "אין כרגע עסקים עם משלוח ביום {day} ל{city} — אולי בימים אחרים",
       "day_empty_clear_cta": "הסרת סינון היום",
       "clear_location_filter": "הסרת סינון מיקום",
-      "geo_empty": "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק",
+      "geo_empty": "לא מצאנו בתי עסק קרובים — מציגים את כל בתי העסק",
       "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:"
     },
     "recent": {
