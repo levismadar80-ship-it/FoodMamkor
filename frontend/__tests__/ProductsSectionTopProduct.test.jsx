@@ -195,6 +195,34 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
     ).not.toBeInTheDocument();
   });
 
+  // Single-flight. One column means two overlapping writes race: the second
+  // click would capture the OPTIMISTIC value as its `previous`, so a failure of
+  // the FIRST would revert on top of the second's committed write — the UI
+  // ending on null while the server holds a product. Asserted as "the second
+  // write never starts", which is the property, rather than as "the button has
+  // an attribute", which is the mechanism.
+  it("a toggle in flight blocks a second toggle — no revert can clobber a newer write", async () => {
+    let releaseFirst;
+    api.put.mockImplementationOnce(
+      () => new Promise((_, reject) => { releaseFirst = () => reject({ response: { status: 500, data: {} } }); }),
+    );
+    const { onTopProductChange } = renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fireEvent.click(markBtn("לחם מחמצת"));   // A — in flight, will fail
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(markBtn("חלה"));          // B — must not start
+    expect(api.put).toHaveBeenCalledTimes(1);
+    expect(onTopProductChange).toHaveBeenCalledTimes(1);
+
+    releaseFirst();
+    // A's revert lands on the value A itself replaced, never on top of a B.
+    await waitFor(() => expect(onTopProductChange).toHaveBeenCalledTimes(2));
+    expect(onTopProductChange.mock.calls[1][0]).toEqual({ top_product_name: null });
+    expect(api.put).toHaveBeenCalledTimes(1);
+  });
+
   it("matches on trimmed name, mirroring the public page's exact-string join", async () => {
     renderSection({ initialTop: "  לחם מחמצת  " });
     await screen.findByText("לחם מחמצת");

@@ -178,6 +178,11 @@ export default function ProductsSection({
   // the already-marked row clears it to null.
   const handleToggleTop = async (product) => {
     if (!onTopProductChange) return;
+    // Single-flight. The `disabled` attribute below already blocks this in the
+    // UI; the guard is here too because `disabled` is a rendering concern and
+    // this is a correctness one — a second write must not start while the
+    // first can still revert on top of it.
+    if (topSavingId !== null) return;
     const previous = topProductName ?? null;
     const next = isTopProduct(product) ? null : product.name;
     setError("");
@@ -679,7 +684,13 @@ export default function ProductsSection({
                 <button
                   type="button"
                   onClick={() => handleToggleTop(product)}
-                  disabled={topSavingId === product.id}
+                  // MEH-2094: EVERY star is disabled while ANY toggle is in
+                  // flight, not just this row's. There is one column, so two
+                  // overlapping writes race: the second click would capture the
+                  // OPTIMISTIC value as its `previous`, and a failure of the
+                  // first would then revert on top of the second's committed
+                  // write — UI showing null while the server holds a product.
+                  disabled={topSavingId !== null}
                   aria-pressed={isTopProduct(product)}
                   aria-label={t(
                     isTopProduct(product)
