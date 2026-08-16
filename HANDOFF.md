@@ -3,6 +3,22 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-16 — שכבות z + fail-open באדמין (4 PRs, Lane 1)
+
+**מוזג:** ‏#2970 · #2972 · #2973 · #2974. **ענף:** ארבעה ענפי `feature/*`, כל אחד מ-`origin/staging` טרי.
+**נבדק:** ‏vitest 3054 · build exit 0 · rtl-scan 0 · repo-guards 15/0 בכל PR. ‏Playwright self-QA ב-375 ו-1440 עם צילומים ש**נפתחו ונצפו**.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`elementFromPoint` לא יכול לראות את ה-header ואת ה-BottomNav.** שניהם `pointer-events-none` (‏`Header.jsx:321`, `BottomNav.jsx:359`), אז hit-testing שקוף להם. פרוב שבנוי עליהם מחזיר "המודל למעלה" בכל מצב — **ירוק ואדום שווי-ערך חסרי-מידע**. אם צריך למדוד סדר ציור מול אחד מהם: **מדדו luma** לפני/אחרי פתיחת overlay, לא hit-test.
+2. **‏`next start` מגיש את ה-manifest שהיה בזמן ה-boot.** אם בונים אחריו, הדפדפן מבקש נכסים שכבר לא קיימים → 404 → `משהו השתבש`, שנראה בדיוק כמו fixture שגוי. **אחרי כל `npm run build` — להרים מחדש את השרת.** לספור תהליכים עם `ps -eo pid,comm | grep -i next` ולא עם `pgrep -f`, שסופר את עצמו.
+3. **טבלת ה-z-index ב-`.claude/rules/rtl.md` נאכפת עכשיו.** `frontend/__tests__/ZTokenLedgerSync.test.js` בודק **שלושה** דברים: ערך בקוד שאינו בטבלה, שורה בטבלה שאין לה שימוש, ו**ספירת המופעים בכל שורה**. הוספת `z-[N]` חדש בלי שורה בטבלה = CI אדום. זה מכוון: הטבלה הכריזה שהיא משקפת את הקוד בזמן ש-7 ערכים חיים חסרו בה.
+4. **`z-[9998]` חי בשום מקום.** המופע היחיד הוא הערה ב-`CityPickerModal.jsx:16` שקוראת לו "טוקן העוגייה"; ה-cookie banner הוא `z-[1100]`. אל תוסיפו לו שורה כשה-grep מוצא אותו.
+5. **‏grep על `z-\[N\]` מחסיר מבנית.** ‏`ChatWidget` קובע `zIndex: 9999` **inline**, ו-`z-50`/`z-10` של סולם Tailwind אינם arbitrary values. אודיט שסורק רק `z-\[[0-9]+\]` מפספס את שניהם.
+6. **‏`admin/settings/page.js:45` נשאר `catch {}` בכוונה.** הוא עוטף `localStorage`, לא fetch; כשל ה-fetch כבר מטופל ב-`:49`. אל "תתקנו" אותו כדי ליישר ספירה.
+7. **פער QA פתוח:** מצבי השגיאה החדשים באדמין **לא נבדקו בנייד** — כולם דורשים API שנופל, מה שה-sandbox לא יכול להפיק מול backend אמיתי, ו-mock היה מוכיח רק שה-mock החזיר 500. מכוסים ב-unit tests. **שווה מעבר אנושי על מסך אדמין אחד עם רשת במצב offline.**
+8. **ממצא שלא תוקן, מחוץ להיקף:** ‏`CitiesAutocomplete.jsx:258` הוא `absolute z-50` באותה צורה בדיוק של הבאג שתוקן ב-`AddressSearch`, והוא נצרך באותו עמוד הרשמה שבו יושבת ה-MiniMap. ראוי לכרטיס.
+
 ## 2026-08-16 — Release #2 + Release #3 לפרודקשן (MEH-1909 · MEH-2092)
 
 **מוזג:** ‏#2964 (שער ה-seed) · #2965 (Release #3, ‏`staging→main`). **Release #2** (‏#2480) נחת ב-08:02Z.
