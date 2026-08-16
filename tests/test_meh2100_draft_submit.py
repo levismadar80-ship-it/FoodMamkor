@@ -182,7 +182,11 @@ def test_delivery_only_producer_satisfies_the_location_requirement(db):
     nationwide.lng = None
     db.flush()
     db.refresh(nationwide)
-    assert MISSING_LOCATION not in submission_missing_items(nationwide)
+    assert MISSING_LOCATION not in submission_missing_items(nationwide), (
+        "a nationwide delivery business has stated where it operates — "
+        "everywhere — so it must clear the location requirement without "
+        "coordinates and without any delivery_areas row"
+    )
 
     # (c) delivery-only with NEITHER — the branch must still be able to fail,
     # otherwise (a) and (b) would pass against a branch that returns True
