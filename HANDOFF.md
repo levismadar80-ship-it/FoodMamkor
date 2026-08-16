@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-16 — שני תיקוני קופי סדרתיים ב-`he.json` (#2983 · #2985)
+
+**מוזג:** ‏#2983 (`7f7541b7`) · #2985 (`d0ad922e`) — שניהם squash (תבנית `<title> (#N)`, אומת).
+**ענפים:** `feature/meh-2106-referral-placeholder-voice` · `feature/meh-2098-empty-state-copy`, השני נחתך מ-`origin/staging` **אחרי** שהראשון נחת.
+**נבדק:** build exit 0 בשניהם · שני קבצי locale פרסרים · צילומי 375px על ה-build המקומי (‏STORY step · home empty state) · ה-CI reviewer החזיר `None` בשלוש הקטגוריות על שני ה-PRs.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`en.json` לא נערך באף אחד מהשניים — וזו מדידה, לא עצלות.** כל ארבעת התאומים כבר קיימים ונכונים באנגלית קצרה. **אל תניחי שתיקון קופי עברי גורר עריכת EN**: כאן ה-EN היה עקבי מלכתחילה בעוד העברית לא, וכל עריכה שם הייתה רגרסיה.
+2. **‏27 מופעי «עסקים» נותרו ב-`he.json` בכוונה** — כולל **שניים בתוך אותו בלוק JSON** של המפתחות שכן תוקנו: `home.producers.empty_subtext_category` ו-`home.producers.day_empty_suggestion`. הם נראים בדיף של #2985 כהקשר לא-משתנה. אם את פותחת את הקובץ ורואה אותם — **הם לא פספוס**, הם אודיט post-launch נפרד.
+3. **המתנה בין PRs סדרתיים: תבססי על תוכן, לא על סטטוס.** ‏squash משנה SHA, ולכן `git merge-base --is-ancestor` על ה-commit של הענף **לא יעבוד** אחרי מיזוג. מה שכן עבד: `git show origin/staging:frontend/messages/he.json | grep -q "<המחרוזת החדשה>"` בלולאה. זהו סיגנל שאי אפשר לזייף.
+4. **⚠️ `pkill -f` הפיל את השרשרת שלי היום.** ‏`pkill -f "next-server" ; git add … && git commit …` → ה-shell התאים לדפוס, נהרג (`exit 144`), ו**שום פקודת git לא רצה**. לא אבדה עבודה (ה-commit פשוט לא קרה, העריכה נשארה ב-working tree), אבל שימי לב לצורת הכשל: הפקודה **נראית** כאילו רצה חלקית. הכלל קיים ב-`testing.md` §MEH-2009 ואני חטפתי אותו בכל זאת. הצורה הבטוחה: `ps -eo pid,comm | grep`, או להריץ שרתים דרך `run_in_background` מלכתחילה ולעצור עם TaskStop.
+5. **‏`Backend tests (pytest)` הופיע `skipped` בשני ה-PRs — וזה תקין כאן.** זה ה-paths-filter (אין קובץ backend בדיף), **לא** ה-skip-green של draft: שני ה-PRs נפתחו non-draft בכוונה. אל תקראי את השניים כאותו דבר.
+6. **‏Vercel `Ignored` בשניהם** — אין `[preview]` בהודעת ה-commit; התנהגות מוגדרת ב-`vercel.json`, לא תקלה. אין preview URL להעביר.
+
+### פתוח / לא נגעתי
+
+- **‏MEH-1906 (‏by-slug 500 ב-staging)** — לא נגעתי, לא דיבאגתי. ה-E2E gate אדום ממנו כרונית.
+- **ענף `feature/meh-1906-sentry-burst-cap` מקומי בלבד, `8b4a9b51`, לא נדחף.** נושא `before_send` חלקי ל-cap של פרצי Sentry (‏budget per fingerprint, ראשון תמיד נשלח, מונה suppression ל-stdout ב-WARNING ולא ERROR). **חסר:** חיווט ל-`sentry_sdk.init()` והטסט של 500 שגיאות. אל תמזגי כמו שהוא.
+
+---
+
 ## 2026-08-16 — Lane 2: מוצר מוביל מרשימה + ניקוי en.json ושער parity דו-כיווני
 
 **מוזג:** ‏#2971 (`bef92e0c`) · #2980 (`e7448a23`) — שניהם squash (parent count 1, אומת).
