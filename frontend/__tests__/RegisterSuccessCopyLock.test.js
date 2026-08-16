@@ -20,8 +20,12 @@ const S_EN = en.auth.register.producer.success;
 describe("MEH-1814 — locked post-submit success copy", () => {
   it("Hebrew matches the locked strings verbatim", () => {
     expect(S_HE.title).toBe("הבקשה נשלחה — העסק שלך בבדיקה");
+    // MEH-2100: re-locked. Registration no longer puts the business in
+    // review — it creates a draft — so the old "we approve within 3 business
+    // days" promise was false the moment it was shown. New string approved
+    // verbatim by Sapir in the MEH-2100 spec.
     expect(S_HE.body).toBe(
-      "קיבלנו את הפרטים. הצוות שלנו בודק ומאשר את העסק שלך בדרך כלל עד 3 ימי עסקים.",
+      "נרשמתם! השלב הבא: השלמת הפרופיל בלוח הבקרה ושליחה לבדיקה.",
     );
     expect(S_HE.next).toBe(
       "שני צעדים קצרים בלוח הבקרה מזרזים את האישור: אימות מספר הוואטסאפ בקוד קצר, והעלאת תמונה ראשונה של העסק.",
@@ -32,7 +36,7 @@ describe("MEH-1814 — locked post-submit success copy", () => {
   it("English matches the locked strings verbatim", () => {
     expect(S_EN.title).toBe("Request sent — your business is in review");
     expect(S_EN.body).toBe(
-      "We received your details. Our team reviews and approves new businesses, usually within 3 business days.",
+      "You're registered! Next step: complete your profile in the dashboard and send it for review.",
     );
     expect(S_EN.next).toBe(
       "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
@@ -42,11 +46,30 @@ describe("MEH-1814 — locked post-submit success copy", () => {
 
   // MEH-1347 unified the approval-time promise to this exact phrase across every
   // surface. Asserted separately from the full-string check above so a future
-  // rewording of the sentence still fails loudly on the phrase itself, naming
-  // the cross-ticket constraint rather than looking like an unrelated typo.
-  it("keeps the MEH-1347 approval-time phrase verbatim", () => {
-    expect(S_HE.body).toContain("עד 3 ימי עסקים");
-    expect(S_EN.body).toContain("3 business days");
+  // rewording still fails loudly on the phrase itself, naming the cross-ticket
+  // constraint rather than looking like an unrelated typo.
+  //
+  // MEH-2100 MOVED the promise; it did not retire it. The 3-business-day clock
+  // now starts at SUBMISSION, not registration, so the phrase left the success
+  // screen and belongs to the two surfaces that make the promise honestly: the
+  // draft banner (before sending) and the post-submit toast (after). Asserting
+  // it THERE keeps MEH-1347's constraint alive — deleting this test instead
+  // would have retired a cross-ticket guarantee as a side effect of moving one
+  // sentence, which is exactly the silent loss it was written to prevent.
+  it("keeps the MEH-1347 approval-time phrase verbatim, on its new surfaces", () => {
+    const D_HE = he.dashboard.producer.draft;
+    const D_EN = en.dashboard.producer.draft;
+    expect(D_HE.body).toContain("עד 3 ימי עסקים");
+    expect(D_HE.toast_submitted).toContain("עד 3 ימי עסקים");
+    expect(D_EN.body).toContain("3 business days");
+    expect(D_EN.toast_submitted).toContain("3 business days");
+  });
+
+  // And it must be GONE from the registration success screen, which is the
+  // half that makes the move real rather than additive.
+  it("no longer promises approval at registration time (MEH-2100)", () => {
+    expect(S_HE.body).not.toContain("עד 3 ימי עסקים");
+    expect(S_EN.body).not.toContain("3 business days");
   });
 
   // The four keys must exist in BOTH locales — a he-only addition renders the

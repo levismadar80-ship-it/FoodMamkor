@@ -150,10 +150,18 @@ function buildSteps(producer, missingLabels) {
 
   const has = (slug) => !missingLabels.has(COMPLETENESS_FIELDS[slug]);
 
+  // MEH-2100: `required` marks the items the SUBMIT GATE blocks on
+  // (backend/app/services/submission_gate.py), as distinct from the ones that
+  // only move the completeness ring. Opening hours are the single recommended
+  // step — Google precedent, Sapir 16/08 — and a business can be sent for
+  // review without them. Contact counts as required because a verified
+  // WhatsApp number is a gate item and there is nothing to verify without a
+  // phone.
   return [
-    { key: "image", done: has("image"), href: `${EDIT_HUB}#profile-images` },
+    { key: "image", done: has("image"), required: true, href: `${EDIT_HUB}#profile-images` },
     {
       key: "location",
+      required: true,
       // "Categories + location" = category filled AND the location pair
       // (city + coords/delivery) filled.
       done: has("category") && has("city") && has(locationSlug),
@@ -166,15 +174,16 @@ function buildSteps(producer, missingLabels) {
     },
     {
       key: "products",
+      required: true,
       done: productsCount >= CHECKLIST_PRODUCTS_MIN,
       href: `${EDIT_HUB}#profile-products`,
     },
-    { key: "contact", done: has("contact"), href: `${EDIT_HUB}#profile-contact` },
+    { key: "contact", done: has("contact"), required: true, href: `${EDIT_HUB}#profile-contact` },
     // MEH-1895: hours reads the SAME heuristic slug that mounts this card
     // (producer-completeness.js:91-92, MEH-1884) — no second condition to
     // drift. Anchor is the KEY_TO_ANCHOR value (edit/page.js:164), the form
     // MEH-1165 established for the location row.
-    { key: "hours", done: has("hours"), href: `${EDIT_HUB}#hours` },
+    { key: "hours", done: has("hours"), required: false, href: `${EDIT_HUB}#hours` },
   ];
 }
 
@@ -250,6 +259,20 @@ export default function ProfileCompletenessCard({ producer }) {
                   </span>
                   <span className={s.done ? "text-text" : "text-fg-muted"}>
                     {t(`steps.${s.key}`)}
+                  </span>
+                  {/* MEH-2100: חובה / מומלץ. Rendered for EVERY row, done or
+                      not — the owner needs to know which items gate the
+                      submit button before she finishes them, and a chip that
+                      appears only while incomplete tells her that too late. */}
+                  <span
+                    data-testid={`completeness-chip-${s.key}`}
+                    className={`shrink-0 rounded-full px-2 text-xs ${
+                      s.required
+                        ? "bg-primary/10 text-primary"
+                        : "bg-border/60 text-fg-muted"
+                    }`}
+                  >
+                    {s.required ? t("chip_required") : t("chip_recommended")}
                   </span>
                   <span className="sr-only">
                     {s.done ? t("checklist_done") : t("checklist_todo")}

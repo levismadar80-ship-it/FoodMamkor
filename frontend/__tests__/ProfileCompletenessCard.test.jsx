@@ -264,7 +264,15 @@ describe("MEH-1895 — hours is the fifth step", () => {
     const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
     const labels = within(list)
       .getAllByRole("listitem")
-      .map((li) => li.textContent.replace(/הושלם|עדיין חסר/g, "").trim());
+      // MEH-2100: the חובה/מומלץ chip is part of every row now, so it is
+      // stripped alongside the sr-only done/todo text. This test is about
+      // ORDER and LABELS; which rows are required is asserted separately
+      // below, by testid, so stripping here loses no coverage.
+      .map((li) =>
+        li.textContent
+          .replace(/הושלם|עדיין חסר|chip_required|chip_recommended/g, "")
+          .trim(),
+      );
 
     expect(labels).toEqual([
       "תמונה ראשית",
@@ -273,6 +281,23 @@ describe("MEH-1895 — hours is the fifth step", () => {
       "פרטי קשר",
       "שעות פתיחה",
     ]);
+  });
+
+  it("chips mark the four gate items required and hours recommended (MEH-2100)", () => {
+    // The submit gate blocks on image / products / category+location /
+    // contact; opening hours is the one recommended step (Sapir 16/08). A
+    // chip on the wrong row would tell the owner she can skip something the
+    // server will 422 on, so each of the five is asserted by name rather
+    // than counting how many carry each chip.
+    render(<ProfileCompletenessCard producer={noHours} />);
+    for (const key of ["image", "location", "products", "contact"]) {
+      expect(
+        screen.getByTestId(`completeness-chip-${key}`).textContent,
+      ).toBe("chip_required");
+    }
+    expect(screen.getByTestId("completeness-chip-hours").textContent).toBe(
+      "chip_recommended",
+    );
   });
 
   it("the ring divisor follows the array, so 5 done reads 100 and never over", () => {
