@@ -138,10 +138,10 @@ mechanically true rather than aspirational.
 | `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
 | `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
 | `z-[1050]` | 2 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context** |
-| `z-[1010]` | 1 | `components/AddressSearch.jsx:266` | address suggestion list. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. MEH-2093 chunk A |
+| `z-[1010]` | 2 | `components/AddressSearch.jsx:266` · `components/CitySearch.jsx:206` | autocomplete suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. MEH-2093 chunk A; CitySearch joined in MEH-2108 — at 1000 it tied with the Leaflet controls *and* the MiniMap fullscreen button (`MiniMap.jsx:56`), and DOM order handed the band to the map |
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
-| `z-[1000]` | 14 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls |
+| `z-[1000]` | 13 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010 |
 | `z-[900]` | 2 | `components/OnboardingTip.jsx:39` | onboarding tip |
 | `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
 | `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |
