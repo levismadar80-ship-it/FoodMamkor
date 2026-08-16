@@ -1667,6 +1667,44 @@ Tasks auto-expire after 7 days.
     caught. A rule no gate enforces is a suggestion — the same conclusion
     MEH-1155/ADR-016 reached for DO-NOT-MERGE._
 
+    ### 31b — separating the FILES did not separate the ORDER (MEH-2103)
+
+    Rule 31 moved the logs into their own PR. That PR is **docs-only, therefore
+    always green, therefore the most likely of a batch to merge first** — so the
+    split it created has a second failure mode built into it: **the documentation
+    can land ahead of the code it documents.**
+
+    **Do not arm auto-merge on a docs PR until every PR it describes has actually
+    merged.** That is the whole mitigation and it needs no tooling. The failure
+    is not a race you lose occasionally; it is the default ordering, because
+    docs PRs have no shared files and no rebase pressure to hold them back.
+
+    _Measured: on 16/08 five PRs were armed in parallel. #2974 stalled behind
+    staging while the docs PR #2975 landed, and `82b4382` put "מוזג: … #2974"
+    into HANDOFF.md and CHANGELOG.md while `AdminLoadError.jsx` did not exist on
+    staging at all — 67 minutes of a HANDOFF that actively lied. **HANDOFF.md is
+    what every new session reads to orient itself**, so this contaminates the
+    truth layer, not one PR. Base rate is 2 of the last 30 merged docs-only PRs
+    (6.7%) — the other being #2912 → #2877 on 14/08, unreported until MEH-2103
+    went looking._
+
+    **Optional declaration, checked when present:** a `Describes-PRs: #N, #M`
+    trailer in the PR body. `scripts/checks/docs-ordering-guard.sh` (same
+    dispatcher, same **Repo guards** job) reports any declared PR not yet on the
+    base branch. It is **warn-only** — the damage self-heals when the code lands,
+    and a blocking gate here would need Sapir to release it (rule 30).
+
+    **Two things it deliberately does NOT do**, so nobody reads more into a green
+    than is there:
+    - It does not parse loose `#NNNN` out of the diff. That mechanism measured
+      **95.9% false positives** (47 of 49) — CHANGELOG is full of historical PR
+      numbers, and telling "declares merged" from "reports still open" needs a
+      Hebrew verb read. **An undeclared docs PR is therefore unchecked**, which
+      is the accepted cost.
+    - It does not verify the prose is *true*. It checks one reference
+      relationship. Same limit, and same honesty about it, as the
+      `Builder-Model:` trailer above.
+
 32. **CC מוסיפה אילוצים, לא מסירה — CC adds constraints, never removes or
     weakens one (MEH-1779).**
 
