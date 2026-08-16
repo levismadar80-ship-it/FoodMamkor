@@ -9,9 +9,11 @@
  *
  * CONTROL (read this before trusting any "no overlap" below): the script asserts
  * the map box and each dropdown box are non-null and non-zero BEFORE comparing.
- * A dropdown that never opened has no box, and "no box" would otherwise print as
- * "no overlap" — the reassuring answer from a dead probe. If a control line says
- * MISSING, every verdict in that run is void.
+ * A dropdown that never opened has no box — and a collapsed one has a zero-sized
+ * box — either of which would otherwise print as "no overlap", the reassuring
+ * answer from a dead probe. Every box is also re-read at the moment it is
+ * compared, because boundingBox() is viewport-relative and clicks auto-scroll.
+ * If the control line says CONTROL FAILED, every verdict in that run is void.
  *
  * Usage: node e2e/qa-meh2102-dropdown-vs-map.mjs   (needs `next start` on :3000)
  */
@@ -20,7 +22,14 @@ import fs from "node:fs";
 
 const BASE = "http://127.0.0.1:3000";
 const OUT = "qa-artifacts/MEH-2102";
-const CITIES = ["תל אביב-יפו", "תל מונד","רמת גן", "גבעתיים", "הרצליה", "רעננה"];
+// Enough matches to fill the list to its max-height. A 2-item stub understates
+// the box and would let a reachable overlap read as clearance — the list is
+// capped (max-h-72 = 288px on CitySearch, max-h-48 = 192px here), not sized to
+// the stub. Every entry contains "תל" so the component's own filter keeps them.
+const CITIES = [
+  "תל אביב-יפו", "תל מונד", "תל ציון", "תל עדשים", "כפר תלמים", "בית תלמה",
+  "נתל", "תל שבע", "גבעת תל", "תל חי", "מתלול", "תל יוסף",
+];
 
 const rect = (b) => (b ? `x=${Math.round(b.x)} y=${Math.round(b.y)} w=${Math.round(b.width)} h=${Math.round(b.height)}` : "MISSING");
 const overlaps = (a, b) =>
@@ -98,6 +107,12 @@ const run = async () => {
   const csList = page.getByTestId("register-details-city").locator("ul[role=listbox]");
   await csList.waitFor({ timeout: 10_000 }).catch(() => {});
   const csBox = await csList.boundingBox().catch(() => null);
+  // Re-read the map HERE, not before the click. boundingBox() is viewport-relative
+  // and Playwright auto-scrolls on click, so a box captured before the click and
+  // one captured after can sit in different coordinate spaces — comparing them
+  // would be arithmetic on two different origins, and it would still print a
+  // confident verdict.
+  const mapBoxAtCs = await map.boundingBox();
   results.push({ name: "CitySearch (z-[1000], RegisterProducerClient:1080)", box: csBox });
   await page.screenshot({ path: `${OUT}/375-citysearch-open.png` });
   await page.keyboard.press("Escape");
@@ -123,16 +138,18 @@ const run = async () => {
   await page.screenshot({ path: `${OUT}/375-citiesautocomplete-open.png` });
 
   console.log("\n=== CONTROL ===");
-  console.log(`map (.leaflet-container) @ CitySearch time : ${rect(mapBox)}`);
+  console.log(`map (.leaflet-container) @ CitySearch time : ${rect(mapBoxAtCs)}`);
   console.log(`map (.leaflet-container) @ delivery time   : ${rect(mapBoxNow)}`);
   for (const r of results) console.log(`${r.name}\n    box: ${rect(r.box)}`);
-  const dead = !mapBox || results.some((r) => !r.box);
+  const live = (b) => Boolean(b) && b.width > 0 && b.height > 0;
+  const dead = !live(mapBox) || !live(mapBoxAtCs) || !live(mapBoxNow) ||
+    results.some((r) => !live(r.box));
   console.log(dead
     ? "\n!! CONTROL FAILED — a box is MISSING. Every verdict below is void."
     : "\n control OK — map and both dropdowns rendered with non-zero boxes.");
 
   console.log("\n=== VERDICT (geometric intersection with the map) ===");
-  console.log(`CitySearch        vs map: ${overlaps(csBox, mapBox) ? "OVERLAPS" : "no overlap"}`);
+  console.log(`CitySearch        vs map: ${overlaps(csBox, mapBoxAtCs) ? "OVERLAPS" : "no overlap"}`);
   console.log(`CitiesAutocomplete vs map: ${overlaps(caBox, mapBoxNow) ? "OVERLAPS" : "no overlap"}`);
 
   await browser.close();
