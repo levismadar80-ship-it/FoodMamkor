@@ -255,29 +255,18 @@ export default function CitiesAutocomplete({
           ref={listRef}
           id={listboxId}
           role="listbox"
-          // MEH-2102: z-index 1010, not 50 — matching AddressSearch.jsx:266.
-          // (Written in prose deliberately; a token literal here is counted by
-          // the grep-based ledger audit, which reads class strings.)
-          // This is the twin of the AddressSearch list fixed in MEH-2093 chunk A,
-          // and it is aligned DEFENSIVELY, not on a reproduced clipping: on every
-          // current consumer the list cannot in fact meet a Leaflet map. Measured
-          // 16/08 — register step DETAILS renders the MiniMap
-          // (RegisterProducerClient.jsx:1206) ABOVE this field (:1343) with no
-          // reordering CSS, and the list only ever opens downward (mt-1, no flip);
-          // the dashboard's CitiesAutocomplete (edit/cards.jsx:1841,1943) and the
-          // LocationsEditor MiniMap sit in different EditAccordionCards, and the
-          // page keeps one open at a time (page.js:310 openKey), the closed body
-          // being `hidden` ⇒ display:none; admin/ProducerForm.jsx:874,889 mounts
-          // no map at all. So this value buys consistency for a shared component,
-          // not a fixed screenshot — do not cite it as evidence of a repaired bug.
-          // Were they ever to overlap, the bump would work: nothing between them
-          // creates a stacking context (this component's own wrapper is
-          // `relative` at :178, z-auto; the step wrapper is a bare `space-y-4`),
-          // so the list, Leaflet's panes (400) and its controls (globals.css:323-343,
-          // forced to 1000/1001) all compete in the PAGE-level stacking context.
-          // 1010 clears all three and stays BELOW the global header
-          // (Header.jsx:321, 1050), which is its own stacking context and must
-          // keep winning — matching the ledger in .claude/rules/rtl.md.
+          // MEH-2102: z-index 1010, not 50 — the twin of the AddressSearch list.
+          // (Prose, not a token literal: the ledger audit greps class strings.)
+          // 1010 clears Leaflet's panes (400) and its controls/attribution
+          // (globals.css forces those to 1000/1001) and stays BELOW the global
+          // header, which is its own stacking context and must keep winning.
+          // Nothing between this list and an inline map creates a stacking
+          // context, so all three compete at page level.
+          // DEFENSIVE alignment, NOT a reproduced clipping — measured 16/08, no
+          // current consumer places a map where this list can reach it. Do not
+          // cite this value as evidence of a repaired bug. The measurement is
+          // runnable rather than recited here, because file:line citations rot
+          // and it does not: e2e/qa-meh2102-dropdown-vs-map.mjs.
           className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-md shadow-md text-sm"
         >
           {suggestions.map((city, i) => (
