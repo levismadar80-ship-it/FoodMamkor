@@ -21,6 +21,7 @@
     "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
+    "trust_strip": "A real conversation with every business",
     "menu_close": "Close menu",
     "menu_open": "Open menu",
     "lang_switch_to_en": "Switch to English",
@@ -174,6 +175,7 @@
     },
     "register": {
       "consumer": {
+        "eyebrow": "Join Mehamakor",
         "heading": "Join the community",
         "subtitle": "Welcome to מהמקור",
         "email_hint": "A verification email will be sent after signup",
@@ -286,11 +288,14 @@
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
+          "address_map_privacy_hint": "Your full address isn't published. It only appears on the map if you choose to show it.",
           "address_optional_hint": "No exact address? The town is enough.",
           "address_confirmed": "Location found: {location}",
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
           "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
+          "tagline_label": "In one sentence",
+          "tagline_placeholder": "The most important thing to know about you",
           "description_label": "Tell us about your business",
           "description_hint": "A 100-300 word story — how did you start? What makes you special? What's closest to your heart?",
           "phone": "0501234567",
@@ -298,6 +303,9 @@
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "license_required_label": "Producer license number (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
+          "license_what_is_it": "A producer license is issued by the Ministry of Health for food businesses.",
+          "license_pending_optin_label": "I don't have a license number yet",
+          "license_pending_optin_hint": "You can complete registration now. Your business will be approved and go live only after we receive your license number.",
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
@@ -315,6 +323,11 @@
             }
           }
         },
+        "story_card": {
+          "title": "Your story becomes your business page",
+          "body": "What you write here becomes your business page on Mehamakor — the place where customers meet you before they meet what you sell. Not a product description. A story."
+        },
+        "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
         "validation": {
           "all_required": "Please fill all required fields",
@@ -330,6 +343,7 @@
           "declaration_required": "Please confirm the declaration before joining",
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
+          "license_required": "A producer license number is required for this category",
           "referral_source_required": "Please select where you heard about us",
           "cross_step_notice": "Some details are missing — we took you to the field",
           "cross_step_summary": "A few details are missing — we took you to the first one:"
@@ -1131,6 +1145,7 @@
       "view_public": "View public page →",
       "form": {
         "heading": "New group buy",
+        "concept_intro": "A group buy: once enough customers join, everyone gets the wholesale price.",
         "title_label": "Title",
         "title_placeholder": "e.g. Organic vegetable box from the farm",
         "description_label": "Description",
@@ -1141,12 +1156,14 @@
         "unit_placeholder": "e.g. box / kg / jar",
         "price_regular_label": "Regular price (₪)",
         "price_group_label": "Group price (₪)",
+        "price_helper": "The group price must be lower than the regular price.",
         "min_label": "Minimum participants",
         "min_placeholder": "e.g. 5",
         "min_tooltip": "Number of orders required to close the group. If the minimum isn't met by the deadline — no one pays and you aren't obligated to fulfill.",
         "max_label": "Maximum participants",
         "max_placeholder": "Optional — leave empty for no limit",
         "deadline_label": "Deadline",
+        "deadline_helper": "The last day to join, in Israel time.",
         "city_label": "City",
         "fulfillment_label": "When and how do buyers receive the products?",
         "fulfillment_placeholder": "e.g. Pickup from the farm on Friday after the group closes, or home delivery within 3 days",
@@ -1351,6 +1368,10 @@
     "chip_scroll": {
       "category_aria": "Filter by category",
       "attribute_aria": "Filter by attribute"
+    },
+    "near_me_pill": {
+      "aria": "Show businesses near my location",
+      "empty": "No businesses near you yet — here are the closest ones"
     }
   },
   "admin": {
@@ -2185,6 +2206,25 @@
         "reject": "Reject",
         "merge": "Merge",
         "reset": "Reset"
+      }
+    },
+    "whatsapp_failures": {
+      "title": "Undelivered WhatsApp messages",
+      "subtitle": "Last 7 days — customers who didn't receive the message",
+      "empty": "No undelivered messages in the last 7 days — great",
+      "load_error": "Error loading messages",
+      "columns": {
+        "phone": "Recipient",
+        "kind": "Message type",
+        "status": "Status",
+        "error_code": "Error code",
+        "error_message": "Error details",
+        "sent_at": "Sent",
+        "updated_at": "Updated"
+      },
+      "status": {
+        "failed": "Failed",
+        "window_expired": "24-hour window closed"
       }
     },
     "group_buys": {

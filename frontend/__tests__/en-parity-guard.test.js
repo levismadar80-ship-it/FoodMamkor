@@ -24,45 +24,22 @@ import he from "../messages/he.json";
 const BASELINE = new Set([
   // MEH-997: admin.layout.nav.whatsapp_failures translated (sidebar rendered
   // the raw key in /en) — removed from the baseline per the honesty test.
-  "admin.whatsapp_failures.columns.error_code",
-  "admin.whatsapp_failures.columns.error_message",
-  "admin.whatsapp_failures.columns.kind",
-  "admin.whatsapp_failures.columns.phone",
-  "admin.whatsapp_failures.columns.sent_at",
-  "admin.whatsapp_failures.columns.status",
-  "admin.whatsapp_failures.columns.updated_at",
-  "admin.whatsapp_failures.empty",
-  "admin.whatsapp_failures.load_error",
-  "admin.whatsapp_failures.status.failed",
-  "admin.whatsapp_failures.status.window_expired",
-  "admin.whatsapp_failures.subtitle",
-  "admin.whatsapp_failures.title",
-  "auth.register.consumer.eyebrow",
-  "auth.register.producer.account_reassurance",
-  "auth.register.producer.fields.address_map_privacy_hint",
   // MEH-1127: auth.register.producer.fields.city translated to en (placeholder
   // "e.g. Zikhron Ya'akov") — removed from the baseline per the honesty test.
   // MEH-2015 chunk B: city_required_marker deleted outright (the copy it held
   // was the anti-pattern the ticket revoked) — removed from the baseline per
   // the honesty test, same as MEH-1127 above.
-  "auth.register.producer.fields.license_pending_optin_hint",
-  "auth.register.producer.fields.license_pending_optin_label",
-  "auth.register.producer.fields.license_what_is_it",
-  "auth.register.producer.fields.tagline_label",
-  "auth.register.producer.fields.tagline_placeholder",
-  "auth.register.producer.story_card.body",
-  "auth.register.producer.story_card.title",
-  "auth.register.producer.validation.license_required",
   // MEH-1106: completeness.checklist_aria/done/todo translated to en (the
   // 4-step checklist renders in both locales — the he-only gate is gone).
-  // MEH-992 — group-buy form clarity copy (he-first per ADR-024; en wave under MEH-472).
-  "group_buys.dashboard.form.concept_intro",
-  "group_buys.dashboard.form.price_helper",
-  "group_buys.dashboard.form.deadline_helper",
-  "map.near_me_pill.aria",
-  "map.near_me_pill.empty",
   // MEH-1194: the near-me label key was deleted (pill → icon-only button).
-  "nav.trust_strip",
+  // MEH-1702: the entire remaining 30-key EN gap (admin.whatsapp_failures.*,
+  // auth.register.consumer.eyebrow, auth.register.producer.{account_reassurance,
+  // fields.address_map_privacy_hint/license_pending_optin_hint/
+  // license_pending_optin_label/license_what_is_it/tagline_label/
+  // tagline_placeholder, story_card.*, validation.license_required},
+  // group_buys.dashboard.form.{concept_intro,price_helper,deadline_helper},
+  // map.near_me_pill.{aria,empty}, nav.trust_strip) translated to en.json —
+  // removed from the baseline per the honesty test.
 ]);
 
 function leafKeys(obj, prefix = "") {
