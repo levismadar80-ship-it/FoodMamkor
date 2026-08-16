@@ -172,6 +172,31 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
     expect(markBtn("חלה")).toBeInTheDocument();
   });
 
+  // Raised by the CI reviewer on PR #2971: the guard that hides the star when no
+  // handler is supplied did not also hide the copy that describes it, so a mount
+  // without the handler advertised a control that did not exist. The copy and the
+  // control must appear and disappear together — asserted in BOTH directions so
+  // hiding one without the other re-reds this.
+  it("copy and control appear together, and vanish together", async () => {
+    const { unmount } = renderSection();
+    await screen.findByText("לחם מחמצת");
+    expect(screen.getByTestId("top-product-hint")).toBeInTheDocument();
+    expect(markBtn("לחם מחמצת")).toBeInTheDocument();
+    unmount();
+
+    api.get.mockResolvedValue({ data: PRODUCTS });
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductsSection />
+      </NextIntlClientProvider>,
+    );
+    await screen.findByText("לחם מחמצת");
+    expect(screen.queryByTestId("top-product-hint")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(C.top_product_mark_aria_template.replace("{name}", "לחם מחמצת")),
+    ).not.toBeInTheDocument();
+  });
+
   it("matches on trimmed name, mirroring the public page's exact-string join", async () => {
     renderSection({ initialTop: "  לחם מחמצת  " });
     await screen.findByText("לחם מחמצת");

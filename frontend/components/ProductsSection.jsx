@@ -448,7 +448,7 @@ export default function ProductsSection({
           dashboard field states what it is AND where it appears). With zero
           products there is nothing to mark, so the affordance says what to do
           first instead of rendering a control that cannot act. */}
-      {products !== null && !loadError && (
+      {onTopProductChange && products !== null && !loadError && (
         <p className="text-xs text-fg-muted mb-3" data-testid="top-product-hint">
           {t(products.length === 0 ? "top_product_empty_hint" : "top_product_hint")}
         </p>
@@ -676,29 +676,29 @@ export default function ProductsSection({
                   that cannot persist anything is a dead control, the same thing
                   the zero-products branch above exists to avoid. */}
               {onTopProductChange && (
-              <button
-                type="button"
-                onClick={() => handleToggleTop(product)}
-                disabled={topSavingId === product.id}
-                aria-pressed={isTopProduct(product)}
-                aria-label={t(
-                  isTopProduct(product)
-                    ? "card.top_product_unmark_aria_template"
-                    : "card.top_product_mark_aria_template",
-                  { name: product.name },
-                )}
-                className={`p-1.5 rounded-[6px] transition disabled:opacity-40 ${
-                  isTopProduct(product)
-                    ? "text-primary hover:bg-primary/10"
-                    : "text-fg-muted hover:text-primary hover:bg-primary/5"
-                }`}
-              >
-                <Star
-                  size={16}
-                  weight={isTopProduct(product) ? "fill" : "regular"}
-                  aria-hidden="true"
-                />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTop(product)}
+                  disabled={topSavingId === product.id}
+                  aria-pressed={isTopProduct(product)}
+                  aria-label={t(
+                    isTopProduct(product)
+                      ? "card.top_product_unmark_aria_template"
+                      : "card.top_product_mark_aria_template",
+                    { name: product.name },
+                  )}
+                  className={`p-1.5 rounded-[6px] transition disabled:opacity-40 ${
+                    isTopProduct(product)
+                      ? "text-primary hover:bg-primary/10"
+                      : "text-fg-muted hover:text-primary hover:bg-primary/5"
+                  }`}
+                >
+                  <Star
+                    size={16}
+                    weight={isTopProduct(product) ? "fill" : "regular"}
+                    aria-hidden="true"
+                  />
+                </button>
               )}
               <button
                 onClick={() => startEdit(product)}
