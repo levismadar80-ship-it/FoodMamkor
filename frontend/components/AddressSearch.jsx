@@ -248,7 +248,10 @@ export default function AddressSearch({
         <ul
           id={listboxId}
           role="listbox"
-          // MEH-2093: z-[1010], not z-50. Two consumers render this combobox as
+          // MEH-2093: z-index 1010, not 50. (Written in prose deliberately — a
+          // token literal here would be counted twice by the grep-based ledger
+          // audit in chunk C, which reads class strings, not comments.)
+          // Two consumers render this combobox as
           // a direct sibling of an inline Leaflet map (RegisterProducerClient —
           // register step 2, and LocationsEditor — dashboard locations). Neither
           // this component's own wrapper (`relative`, z-auto) nor `.leaflet-container`
