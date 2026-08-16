@@ -93,7 +93,21 @@ def test_corpus_covers_both_outcomes() -> None:
     agreeing = [row for row in CORPUS if not row[2]]
     assert diverging, "corpus must contain inputs where the range changes the result"
     assert agreeing, "corpus must contain inputs where it does not, or divergence is meaningless"
-    assert len(CORPUS) == len(diverging) + len(agreeing)
+
+    # `assert len(CORPUS) == len(diverging) + len(agreeing)` stood here and was
+    # removed: truthy/falsy partitions the corpus exhaustively, so the sum is
+    # always len(CORPUS) and the line could never fail. Entailed by its own
+    # setup — decoration, not a check (testing.md).
+    #
+    # This replaces it with something that CAN fail. The risk is not a row
+    # landing in "neither bucket" — truthiness always places it somewhere — it
+    # is a row landing in the WRONG one while reading correctly: a third element
+    # of "no" is truthy and would be counted as diverging, "" or 0 as agreeing.
+    # Requiring a real bool is what makes the two lists mean what their names say.
+    assert all(isinstance(row[2], bool) for row in CORPUS), (
+        "every corpus row's third element must be a real bool — a truthy string "
+        "like 'no' would be silently counted as diverging"
+    )
 
 
 @pytest.mark.parametrize("label,text,must_diverge", CORPUS, ids=[c[0] for c in CORPUS])
