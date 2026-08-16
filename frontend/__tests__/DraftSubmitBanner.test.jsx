@@ -116,9 +116,18 @@ describe("DraftSubmitBanner — CTA enablement", () => {
   // This is the check that claim DESCRIBED, done against the real message
   // files, where it is not entailed by anything the component does.
   it("every declared requirement has real he + en copy", () => {
+    // Guard the key path before indexing it. Without this a renamed namespace
+    // throws "Cannot read properties of undefined" from inside the loop, which
+    // says nothing about WHICH locale key moved — the same legibility problem
+    // the parity parser had.
+    const heMissing = heMessages?.dashboard?.producer?.draft?.missing;
+    const enMissing = enMessages?.dashboard?.producer?.draft?.missing;
+    expect(heMissing, "he.json dashboard.producer.draft.missing").toBeTruthy();
+    expect(enMissing, "en.json dashboard.producer.draft.missing").toBeTruthy();
+
     for (const code of SUBMISSION_REQUIREMENTS) {
-      const heCopy = heMessages.dashboard.producer.draft.missing[code];
-      const enCopy = enMessages.dashboard.producer.draft.missing[code];
+      const heCopy = heMissing[code];
+      const enCopy = enMissing[code];
       expect(heCopy, `he copy for "${code}"`).toBeTruthy();
       expect(enCopy, `en copy for "${code}"`).toBeTruthy();
       // Not the key path echoed back, and not the other locale's string.
