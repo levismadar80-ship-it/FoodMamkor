@@ -111,7 +111,8 @@ describe("DraftSubmitBanner — CTA enablement", () => {
     expect(screen.getByTestId(`draft-missing-${code}`)).toBeTruthy();
   });
 
-  // REPLACED a tautology (CI reviewer, #2987, and they were right). The old
+  // REPLACED a tautology (adversarial review, MEH-2100/#2987 — and they were
+  // right). The old
   // version rendered a maximally-incomplete producer and asserted a row exists
   // for every code in SUBMISSION_REQUIREMENTS — but the banner ITERATES that
   // same list, so every declared code produces a row by construction. It could

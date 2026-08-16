@@ -72,7 +72,8 @@ describe("MEH-2100 submit-gate parity — client codes match the server", () => 
     // type hint) makes split()[1] undefined and the next .split() throws an
     // uncaught TypeError — a stack trace instead of a legible "the parser
     // stopped matching" failure. Same class as the self-test above: a probe
-    // that silently stops seeing its subject must say so. (CI reviewer, #2987.)
+    // that silently stops seeing its subject must say so.
+    // (adversarial review, MEH-2100/#2987.)
     const [, afterMarker] = source.split(/SUBMISSION_REQUIREMENTS[^=]*=\s*\(/);
     expect(
       afterMarker,
