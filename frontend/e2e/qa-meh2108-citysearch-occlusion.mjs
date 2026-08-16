@@ -65,13 +65,16 @@ import fs from "node:fs";
 
 const BASE = "http://127.0.0.1:3000";
 const OUT = "qa-artifacts/MEH-2108";
-// Grid dimensions are DERIVED from SAMPLES so the constant actually controls the
-// sample count. Previously SAMPLES was 15 and the grid was a hardcoded 3x5, so
-// `slice(0, SAMPLES)` could never remove anything — a cap that read as a control
-// while being entailed by its own surroundings. (CI reviewer, PR #2990.)
-const SAMPLES = 15;
+// The grid IS the sample count — SAMPLES is derived from it, not a cap on it.
+// Two rounds got this wrong in the same way: first a hardcoded 3x5 with
+// `slice(0, SAMPLES)`, then GRID_ROWS = ceil(SAMPLES/GRID_COLS), which still
+// yields exactly SAMPLES points whenever SAMPLES is a multiple of GRID_COLS —
+// i.e. still entailed at the values actually shipped. A cap that can never
+// remove anything reads as a control and is not one, so there is now no cap:
+// change the grid to change the count. (CI reviewer, PR #2990, twice.)
 const GRID_COLS = 5;
-const GRID_ROWS = Math.ceil(SAMPLES / GRID_COLS);
+const GRID_ROWS = 3;
+const SAMPLES = GRID_ROWS * GRID_COLS;
 
 // Enough matches to fill the list to its max-height (max-h-72 = 288px). A short
 // stub sizes the list to the stub and understates the band — the #2102 harness
@@ -247,6 +250,29 @@ const findContestedOccluders = (page, listSelector) =>
   }, listSelector);
 
 /**
+ * A list that never OPENED produces `band: null`, which report() prints as
+ * "NO INTERSECTION — nothing to occlude" and scores as a valid run.
+ *
+ * That is not a hypothetical: `/map` desktop legitimately reports exactly that
+ * string, because its list pane really is a sibling column beside the map. So a
+ * broken run on any surface is character-for-character identical to a real
+ * finding this PR reports. The whole file exists to not do this.
+ *
+ * Every surface therefore proves the list is open BEFORE measuring, and a
+ * failure to open is loud and non-zero rather than a quiet "nothing here".
+ * (CI reviewer, PR #2990 — doAbsence already had this guard; the other two
+ * surfaces did not.)
+ */
+const assertListOpen = async (page, listSelector, tag) => {
+  const box = await (await firstVisible(page, listSelector)).boundingBox().catch(() => null);
+  if (live(box)) return true;
+  console.log(`\n──────── ${tag} ────────`);
+  console.log("  !! THE LIST NEVER OPENED — no measurement is possible here.");
+  console.log("     This is NOT 'nothing to occlude'. Nothing was measured at all.");
+  return false;
+};
+
+/**
  * Pick the first match that is actually RENDERED.
  *
  * `/map` keeps BOTH shells in the DOM and hides one per breakpoint, so
@@ -336,7 +362,7 @@ const measure = async (page, listSelector, mapSelector, tag) => {
       pts.push([band.x + (band.width * (col + 0.5)) / GRID_COLS, y]);
     }
   }
-  for (const [x, y] of pts.slice(0, SAMPLES)) {
+  for (const [x, y] of pts) {
     const stack = await stackAt(page, x, y, listSelector);
     const verdict = classify(stack);
     out.samples.push({ x: Math.round(x), y: Math.round(y), verdict, top: stack[0] || null });
@@ -353,7 +379,7 @@ const measure = async (page, listSelector, mapSelector, tag) => {
   const c1Outside = !mapBox || c1y < mapBox.y;
   out.controls.C1 = c1Outside ? classify(await stackAt(page, c1x, c1y, listSelector)) === "list" : "n/a";
   // C2 — with the list hidden, the same points must reveal map chrome.
-  out.chromeUnderneath = await chromeUnderneath(page, listSelector, pts.slice(0, SAMPLES));
+  out.chromeUnderneath = await chromeUnderneath(page, listSelector, pts);
   out.controls.C2 = out.chromeUnderneath > 0;
   return out;
 };
@@ -560,7 +586,13 @@ const run = async () => {
     await input.fill("תל");
     await field.locator("ul[role=listbox]").waitFor({ timeout: 10_000 }).catch(() => {});
     await page.waitForTimeout(400);
-    await assertForcedZ(page, "[data-testid=register-details-city] ul[role=listbox]");
+    const REG_SEL = "[data-testid=register-details-city] ul[role=listbox]";
+    if (!(await assertListOpen(page, REG_SEL, `register @ ${w}x${h} [${LABEL}]`))) {
+      allOk = false;
+      await page.close();
+      return;
+    }
+    await assertForcedZ(page, REG_SEL);
     const m = await measure(page, "[data-testid=register-details-city] ul[role=listbox]", ".leaflet-container", `register @ ${w}x${h} [${LABEL}]`);
     measured += 1;
     allOk = report(m) && allOk;
@@ -577,8 +609,17 @@ const run = async () => {
     const input = page.locator(`${sel} input, input#map-city-search-${which}`).first();
     await input.click({ timeout: 10_000 }).catch(() => {});
     await input.fill("תל").catch(() => {});
-    await page.waitForTimeout(600);
     const listSel = `ul#map-city-search-${which}-listbox`;
+    // A fixed 600ms delay was the only thing standing in for "the list opened".
+    // Wait on the element, then PROVE it rendered — a swallowed timeout here used
+    // to flow straight into a void measure() that printed a clean-looking verdict.
+    await page.locator(listSel).first().waitFor({ timeout: 10_000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    if (!(await assertListOpen(page, listSel, `map ${which} @ ${w}x${h} [${LABEL}]`))) {
+      allOk = false;
+      await page.close();
+      return;
+    }
     await assertForcedZ(page, listSel);
     const m = await measure(page, listSel, ".leaflet-container", `map ${which} @ ${w}x${h} [${LABEL}]`);
     measured += 1;
