@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-16 — Release #2 + Release #3 לפרודקשן (MEH-1909 · MEH-2092)
+
+**מוזג:** ‏#2964 (שער ה-seed) · #2965 (Release #3, ‏`staging→main`). **Release #2** (‏#2480) נחת ב-08:02Z.
+**ספיר ביצעה:** הפריסות לפרודקשן, תיקון ה-webhook, ושינוי ה-ruleset. הפריטים הראנטיים למטה נמדדו בסביבה שלה — ‏Railway חסום מה-sandbox ולא אומתו על ידי CC.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **⚠️ ‏`railway redeploy` דיווח success בזמן שפרס את ה-commit הקודם.** ‏Release #2 (`7f0a7703`, ‏1,822 commits · 2,093 files · 19 revisions · head `97669fe803f5`) מוזג, אבל Railway **מעולם לא קיבל את ה-webhook**. הצעד ב-`deploy.yml` רץ, החזיר ירוק, ופרס את `857ea5bc` — ה-parent הראשון של commit המיזוג, כלומר main **הישן**. מה שחשף את זה היה **`release=857ea5bc` ב-Sentry**, לא ה-CI. **תוקן ע"י Disconnect+Connect על הענף.**
+   - **זו בדיוק "ירוק משתי סיבות":** צעד פריסה שמדווח הצלחה על פריסת הגרסה הקודמת אינו ניתן להבחנה מהצלחה אמיתית בלוג ה-CI. **אחרי כל release — לאמת את ה-SHA שרץ בפועל** (‏Sentry `release`, או `/health` שמחזיר commit), לא את מסקנת ה-job.
+2. **Release #3 (`16a38b22`, PR #2965) נושא את שער ה-seed.** ‏`seed_data.py:479` — ‏`if settings.env.lower() != "production":` — חוסם את בלוק עסקי הדמו. **אומת בשני boots רצופים: קטלוג 0 בשניהם**, ו-`smoke_production.py` החזיר **0 FAIL**. שני ה-boots הם העיקר: boot אחד מוכיח שלא נוצרו, שניים מוכיחים שגם לא **חוזרים**, וזה הבאג שהכרטיס נפתח בגללו.
+3. **`db_init_failed` נפתר בפרודקשן.** השורש היה MEH-2081 (‏FK על category ids קשיחים), ‏MEH-1905 עודכן בהתאם. אין יותר latching של `db_init_status="failed"` על boot.
+4. **`protect-main` עבר מ-6 בדיקות נפרדות לשני aggregators** — ‏`CI gate` + `Deploy gate` — ו-**"require branches to be up to date" כובה**. הסיבה: בדיקות נדרשות שמדלגות (skipped) נשארו `Expected` וחסמו **כל** release, שוב ושוב. זו הראיה של MEH-1603, וזה השינוי שמאפשר ל-release PR להיסגר בלי override.
+5. **‏3 פערים פתוחים, לא חוסמים — רשומים על MEH-2092:**
+   - **נתיב Cloudinary לא אומת** בפרודקשן.
+   - **‏structlog שקט בפרודקשן** — השורה `seed: demo producers skipped (ENV=production)` נכתבת דרך structlog; אם היא לא מופיעה בלוג, **זו אינה ראיה שהשער לא רץ**. השתמשי בספירת הקטלוג כראיה, לא בהיעדר/נוכחות השורה.
+   - **`staging-smoke.yml:103` מריץ `DELETE FROM producers` מול DB חי.** מוגבל ל-`workflow_dispatch` + טוקן staging, והמחיקה מגיעה רק דרך `users.producer_id` של משתמשי `smoke+%` — ל-fixtures אין שורת בעלים, ולכן הוא מוחק מהם אפס. **נשלל כגורם למחיקה של 16/08, אבל הוא עדיין DELETE מול סביבה חיה.**
+6. **⚠️ מה שמחק את חמש השורות המקוריות בחלון 08:15–08:45 — עדיין לא ידוע מהקוד.** תשעה נתיבים נשללו עם file:line (‏`seed()` · `create_all` · drop_all של הטסטים · backup-cron · ה-workflow לעיל · cascade מקטגוריה/משתמש · מיגרציות · jobs מתוזמנים). מה שנשאר: `DELETE /admin/producers/{id}` (`admin.py:618`), הנתיב היחיד שתואם את מה שנצפה — **האם הוא נקרא בפועל היא שאלה ראנטיים**. **השער עוצר את ההחייאה, לא את המחיקה.** ראיות שיכריעו: לוגי HTTP של Railway בחלון · `pg_stat_user_tables.n_tup_del` · היסטוריית volume.
+7. **‏release PR הוא ענף חי — ה-audit בגוף שלו מתיישן תוך דקות.** ‏#2965 נפתח על 15 commits / 8 קבצים, וב-25 דקות גדל ל-**20 / 19** כשה-#2966 נחת על staging. ה-SHA שהוצמד בגוף כבר לא תיאר את מה שנמזג. **לפני מיזוג release — להשוות את ה-SHA המוצמד מול `staging` ולמדוד מחדש אם זזו.**
+8. **‏קריטריון ה-audit של `delivery_cities` הפוך, ולא תוקן בקוד.** הבריף ביקש לאמת שהעמודה **נעדרת**. היא **חיה** (`models.py:256`), נוצרה ב-baseline, ו**אף revision מעולם לא הסיר אותה**; ‏Chunk C של MEH-903 — זה שיסיר אותה — עדיין פתוח ומתויג `post-launch`, וספיר מחילה. **הנכס שצריך לשמור הוא "חייבת להישאר נוכחת"**: ‏DDL הרסני נגדה בתוך טווח release פירושו שה-chunk הפוסט-השקתי דלף לפריסה מוקדם. לתקן את הקריטריון לפני ה-release הבא, אחרת audit עתידי יקרא דליפה כעמידה בדרישה.
+
+---
 ## 2026-08-16 — MEH-1838 chunk B (#2966 מוזג) + MEH-2021 (#2963 פתוח)
 
 **מוזג:** #2966 — ציר משלוח בהרשמה (chunk B). **פתוח:** #2963 — docstring של טווח ה-slug (MEH-2021).
