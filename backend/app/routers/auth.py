@@ -38,7 +38,6 @@ from app.services.auth_emails import (
     send_welcome_email as _send_welcome_email,
 )
 from app.services.auth_notifications import (
-    notify_admin_new_producer,
     notify_producer_registered,
 )
 from app.services.producer_risk import score_producer
@@ -543,7 +542,23 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
-            status="pending_whatsapp",
+            # MEH-2100: registration creates a DRAFT, not a queue entry. The
+            # business is invisible to the admin review queue until the owner
+            # presses "שליחה לבדיקה" (POST /producers/me/submit-for-review),
+            # which is also where the 3-business-day SLA starts.
+            #
+            # This is the UPGRADE branch, and it is the one every OAuth signup
+            # lands on, so it is one of THREE creation sites that had to move
+            # together — the others are the new-email branch below and
+            # producer_queries.create_producer_with_relations (POST /producers).
+            # Any site left writing a queue status would be a hole straight
+            # past the submit gate.
+            #
+            # `pending_whatsapp` is NOT deleted (Expand-Contract, ADR-007): it
+            # stays a legal value that existing rows may hold and that
+            # confirm_phone_otp still advances, it is simply no longer
+            # reachable for a new registration. Contract phase is a later card.
+            status="draft",
             # MEH-1838 chunk A: delivery shape, previously never captured at
             # registration — every producer landed on the column defaults
             # (physical-only) regardless of what the business actually is.
@@ -626,10 +641,18 @@ async def register_producer(
         # attributes are expired after commit, and FastAPI closes the session
         # before background tasks run.
         p_name = producer.name
-        p_city = producer.city
         p_phone = producer.phone
         p_id = producer.id
-        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
+        # now creates a draft, which is absent from the admin's default queue
+        # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
+        # business is not in. The identical call now lives in
+        # producer_me.submit_for_review, i.e. at the moment it is true.
+        # Sapir's call, 16/08, after the CI reviewer raised the double-ping.
+        #
+        # notify_producer_registered (to the OWNER) stays: "we got your
+        # registration" is still accurate, and it is the message that tells
+        # her to go finish the profile.
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
@@ -738,7 +761,11 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
-            status="pending_whatsapp",
+            # MEH-2100: see the upgrade branch above — same value, same reason.
+            # These two branches are the only Producer writers on this route
+            # and both had to move; a fix to one alone would have left the
+            # other registration path bypassing the submit gate entirely.
+            status="draft",
             # MEH-1838 chunk A: see the upgrade branch above — same fields,
             # same reason (delivery_cities NOT written — see the note there).
             has_physical_location=data.has_physical_location,
@@ -805,10 +832,18 @@ async def register_producer(
         db.refresh(user)
 
         p_name = producer.name
-        p_city = producer.city
         p_phone = producer.phone
         p_id = producer.id
-        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
+        # now creates a draft, which is absent from the admin's default queue
+        # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
+        # business is not in. The identical call now lives in
+        # producer_me.submit_for_review, i.e. at the moment it is true.
+        # Sapir's call, 16/08, after the CI reviewer raised the double-ping.
+        #
+        # notify_producer_registered (to the OWNER) stays: "we got your
+        # registration" is still accurate, and it is the message that tells
+        # her to go finish the profile.
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.

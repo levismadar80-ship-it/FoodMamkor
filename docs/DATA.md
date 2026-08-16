@@ -107,7 +107,7 @@ producers (
   name, description, short_description,
   city, lat float, lng float,
   phone, instagram, website, whatsapp_group, facebook, external_order_form,
-  status: pending|approved|rejected|inactive,
+  status: draft|pending|pending_whatsapp|approved|rejected|inactive,   -- MEH-2100: draft is where every new producer starts
   images text[],
   plan: free|premium,
   slug text unique,
@@ -580,6 +580,7 @@ PATCH  /admin/name-change-requests/{id}          admin     — {status: approved
                                                request — re-approving would move the public name from a decision already
                                                taken. No "merged" status: unlike a category, a rename has no third outcome
 POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending/pending_whatsapp only (else 409), 3/hr; notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open) — NO DB write, requested_changes stays admin-owned
+POST   /producers/me/submit-for-review           producer  — MEH-2100 draft→pending: DRAFT ONLY (else 409), 5/hr. Server-side completeness gate via services/submission_gate.submission_missing_items — image>=1 · product>=1 · category>=1 · location · phone_verified. On failure 422 with detail={code:"submit_gate_incomplete", message, params:{missing:[codes]}} (MEH-1943 shape, so detailToMessage renders `message` unchanged). On success: status="pending", submitted_for_review_at=now(tz-aware), admin ping via notify_admin_new_producer (post-commit BackgroundTask, fail-open). License is deliberately NOT gated (MEH-971 license_pending must still reach the queue); opening hours are recommended, not required.
 POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
 POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
 POST   /producers/me/availability-state            producer  — MEH-291 unified 4-value enum

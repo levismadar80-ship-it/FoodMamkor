@@ -308,7 +308,7 @@ class TestPersona2OAuthProducer:
         assert user.role == "producer"
         assert user.producer_id is not None
         producer = db.query(Producer).filter(Producer.id == user.producer_id).one()
-        assert producer.status == "pending_whatsapp"
+        assert producer.status == "draft"  # MEH-2100: registration → draft
         # license_pending honoured — NULL license accepted into the queue.
         assert producer.producer_license_number is None
         rows = (

@@ -505,13 +505,22 @@ def upsert_primary_branch_location(
 
 
 def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
-    """Create a pending producer row plus its category and delivery-area
+    """Create a DRAFT producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
 
-    Mirrors the pre-refactor body of the POST /producers endpoint
-    verbatim: status defaults to 'pending', category_ids and
-    delivery_areas are persisted as ProducerCategory / DeliveryArea
-    rows, then the producer is committed and refreshed.
+    Mirrors the pre-refactor body of the POST /producers endpoint:
+    category_ids and delivery_areas are persisted as ProducerCategory /
+    DeliveryArea rows, then the producer is committed and refreshed.
+
+    MEH-2100: status is `draft`, not `pending`. This is the THIRD producer
+    creation site — the two in routers/auth.py are the self-registration
+    ones — and it is the least obvious, which is exactly why it matters:
+    `POST /producers` (routers/producers.py) is authenticated by
+    `require_verified_email`, so ANY logged-in user can reach it. Left on
+    `pending` it would have been an open route straight into the admin
+    review queue, bypassing the submit gate that the whole draft state
+    machine exists to enforce. The row now has to go through
+    `POST /producers/me/submit-for-review` like every other business.
     """
     producer = Producer(
         name=data.name,
@@ -529,7 +538,8 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         # required-vs-optional is gated by the router-level helper before
         # this function is called.
         producer_license_number=data.producer_license_number,
-        status="pending",
+        # MEH-2100: draft, not pending — see the docstring above.
+        status="draft",
     )
     db.add(producer)
     db.flush()
