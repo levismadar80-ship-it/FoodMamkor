@@ -127,7 +127,14 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
         // The anchor the completeness checklist's "אימות וואטסאפ" row targets
         // (MEH-2100). The pending_whatsapp banner carries the same id; only
         // one of the two renders for any given status, so it never collides.
-        <div className="mt-4" id="phone-verify">
+        // The `id` is the scroll anchor; the `data-testid` is how E2E finds it
+        // (docs/E2E-LOCATORS.md — an id selector is not a sanctioned locator).
+        // Both on one element, added with the spec that uses it rather than
+        // sprinkled preemptively. Named for the WRAPPER, not the card: the
+        // vitest suite's PhoneVerifyCard stub already owns `phone-verify-card`,
+        // and reusing it here made `getByTestId` ambiguous — caught by that
+        // suite going red, which is the whole reason it holds the name.
+        <div className="mt-4" id="phone-verify" data-testid="draft-phone-verify">
           <PhoneVerifyCard onVerified={() => {
             setServerMissing(null);
             onPhoneVerified?.();

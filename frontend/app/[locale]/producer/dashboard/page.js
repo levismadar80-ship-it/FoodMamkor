@@ -422,7 +422,15 @@ export default function ProducerDashboardPage() {
       )}
 
       {producer.status === "pending" && !profile?.requested_changes && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
+        // data-testid added with the MEH-2100 E2E spec that reads it — the
+        // draft→pending transition needs to assert WHICH banner won, and a
+        // Hebrew-text locator is the anti-pattern docs/E2E-LOCATORS.md names.
+        // Opportunistic conversion, per that file's migration policy.
+        <div
+          className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm"
+          role="status"
+          data-testid="status-pending-banner"
+        >
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
           {/* MEH-1347: informational only — the completeness card below owns
               the single "השלימו פרופיל" CTA (audit found two clashing CTAs
