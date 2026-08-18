@@ -64,7 +64,9 @@ import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
 const BASE = "http://127.0.0.1:3000";
-const OUT = "qa-artifacts/MEH-2108";
+// Output dir is overridable so a later ticket's artifacts do not land in the
+// folder of the ticket that first wrote this harness (--out=qa-artifacts/MEH-2115).
+const OUT = (process.argv.find((a) => a.startsWith("--out=")) || "--out=qa-artifacts/MEH-2108").split("=")[1];
 // The grid IS the sample count — SAMPLES is derived from it, not a cap on it.
 // Two rounds got this wrong in the same way: first a hardcoded 3x5 with
 // `slice(0, SAMPLES)`, then GRID_ROWS = ceil(SAMPLES/GRID_COLS), which still
@@ -469,7 +471,7 @@ if (process.argv.includes("--self-test")) selfTest();
 // ───────────────────────────────── surfaces ──────────────────────────────────
 const arg = (k, d) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || `--${k}=${d}`).split("=")[1];
 const SURFACE = arg("surface", "register");
-const KNOWN_SURFACES = ["register", "map", "absence"];
+const KNOWN_SURFACES = ["register", "map", "absence", "confinement"];
 if (!KNOWN_SURFACES.includes(SURFACE)) {
   // Without this, a typo'd surface runs nothing, measures nothing, and still
   // prints "=== RUN VALID ===" with exit 0 — a null wearing the reassuring
@@ -478,6 +480,11 @@ if (!KNOWN_SURFACES.includes(SURFACE)) {
   process.exit(2);
 }
 const FORCE_Z = arg("force-z", "");
+// MEH-2115: reconstruct the PRE-FIX state on the fixed build by putting the
+// stacking context back on the mobile filter bar. This is how a before/after
+// pair is produced from ONE build — the alternative is comparing two builds and
+// hoping nothing else moved between them.
+const SIM_BAR_Z = arg("sim-bar-z", "");
 const LABEL = arg("label", "run");
 
 const newPage = async (browser, w, h) => {
@@ -488,6 +495,17 @@ const newPage = async (browser, w, h) => {
     r.fulfill({ contentType: "application/json", body: JSON.stringify([{ id: 1, name: "מאפים" }]) }));
   await page.route("**/api/auth/me**", (r) =>
     r.fulfill({ contentType: "application/json", body: JSON.stringify({ id: 1, email: "qa@mehamakor.test", name: "בדיקה", role: "user" }) }));
+  if (SIM_BAR_Z) {
+    await page.addInitScript((z) => {
+      const apply = () => {
+        const el = document.querySelector("div.absolute.top-0.inset-x-0");
+        if (el) el.style.setProperty("z-index", z, "important");
+      };
+      document.addEventListener("DOMContentLoaded", apply);
+      setTimeout(apply, 1500);
+      setTimeout(apply, 3000);
+    }, SIM_BAR_Z);
+  }
   if (FORCE_Z) {
     await page.addStyleTag({
       content: `ul[role="listbox"]{z-index:${FORCE_Z} !important;}`,
@@ -519,6 +537,24 @@ const seedRegistrationDraft = (page) =>
  * run reproduces the AFTER numbers and reads as "the change made no difference"
  * — a no-op that looks exactly like a finding. Fail loudly instead.
  */
+/**
+ * Prove --sim-bar-z landed. Without this, a failed injection reproduces the
+ * AFTER numbers and reads as "the fix made no difference" — a no-op wearing the
+ * shape of a finding, which is the exact class this harness exists to refuse.
+ */
+const assertSimBarZ = async (page) => {
+  if (!SIM_BAR_Z) return;
+  const got = await page.evaluate(() => {
+    const el = document.querySelector("div.absolute.top-0.inset-x-0");
+    return el ? getComputedStyle(el).zIndex : "bar-not-found";
+  });
+  if (String(got) !== String(SIM_BAR_Z)) {
+    console.error(`!! --sim-bar-z=${SIM_BAR_Z} DID NOT APPLY (bar z-index=${got}). Run is void.`);
+    process.exit(2);
+  }
+  console.log(`  [sim-bar-z] pre-fix state reconstructed: bar z-index = ${got}`);
+};
+
 const assertForcedZ = async (page, listSelector) => {
   if (!FORCE_Z) return;
   const got = await page.evaluate(
@@ -620,6 +656,7 @@ const run = async () => {
       await page.close();
       return;
     }
+    await assertSimBarZ(page);
     await assertForcedZ(page, listSel);
     const m = await measure(page, listSel, ".leaflet-container", `map ${which} @ ${w}x${h} [${LABEL}]`);
     measured += 1;
@@ -709,6 +746,46 @@ const run = async () => {
   if (SURFACE === "absence") {
     for (const path of ["/events", "/experiences", "/group-buys"]) {
       await doAbsence(path, 375, 812);
+    }
+  }
+
+  /**
+   * MEH-2115 absence assertion. The diff removes a z token from ONE JSX element,
+   * `MapClient.jsx:770`, the mobile /map filter bar. A consumer that never
+   * renders that element cannot be affected by the change — so the assertion
+   * that actually discriminates is: is the changed node PRESENT on this route?
+   *
+   * That is a positive, falsifiable claim. "Screenshots look the same" is not:
+   * at a 2% VRT tolerance it would swallow the whole list. Present + unchanged
+   * owners, or absent — either is a pass; anything else is a STOP.
+   */
+  const doConfinement = async (route, w, h) => {
+    const page = await newPage(browser, w, h);
+    let ok = true;
+    try {
+      const resp = await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForTimeout(2000);
+      const status = resp ? resp.status() : 0;
+      const bars = await page.locator("div.absolute.top-0.inset-x-0").count();
+      const hasCity = await page.locator("input[role=combobox], [data-testid*=city] input, #map-city-search-mobile").count();
+      const verdict = bars === 0 ? "CHANGED NODE ABSENT — cannot be affected" : `changed node PRESENT x${bars}`;
+      console.log(`  ${String(route).padEnd(34)} http=${status} citySearch=${hasCity > 0 ? "yes" : "no "} ${verdict}`);
+      if (bars > 0 && route !== "/map") { console.log("     !! STOP — the changed node appears on a route other than /map"); ok = false; }
+    } catch (e) {
+      console.log(`  ${String(route).padEnd(34)} UNREACHABLE (${String(e.message).slice(0, 60)})`);
+    }
+    await page.close();
+    return ok;
+  };
+
+  if (SURFACE === "confinement") {
+    console.log("\n──── MEH-2115 confinement: is the changed node (MapClient.jsx:770 bar) on this route? ────");
+    for (const route of [
+      "/map", "/events", "/experiences", "/group-buys", "/register/producer",
+      "/settings", "/producer/dashboard/edit", "/producer/dashboard/group-buys",
+    ]) {
+      allOk = (await doConfinement(route, 375, 812)) && allOk;
+      measured += 1;
     }
   }
 
