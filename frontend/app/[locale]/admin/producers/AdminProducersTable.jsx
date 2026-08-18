@@ -51,6 +51,58 @@ export function AwaitingCompletionBadge({ producer }) {
   );
 }
 
+// MEH-2110: business-days-waiting badge. The count is computed SERVER-side
+// (routers/admin.py via utils/clock.business_days_waiting) — this component
+// only colours it, so the badge and the queue's sort order can never disagree
+// about how old a row is.
+//
+// WHICH ROWS GET SLA COLOURS, and why it is not "every row": the promise this
+// escalates against ("עד 3 ימי עסקים") is made only to a business that has
+// asked to be reviewed. A draft has made no such request, so it shows its age
+// in plain grey — the ticket's "no SLA colors" rule. Approved / rejected /
+// inactive rows render nothing at all: they are in the default view (which is
+// `status != draft`, not the pending pair) but they are not waiting for
+// anything, and a "ממתין 0" on every live business would be pure noise.
+const SLA_STATUSES = ["pending", "pending_whatsapp"];
+
+export function WaitingBadge({ producer }) {
+  const t = useTranslations("admin");
+  const p = producer || {};
+  const isQueued = SLA_STATUSES.includes(p.status);
+  const isDraft = p.status === "draft";
+  if (!isQueued && !isDraft) return null;
+
+  const days = p.business_days_waiting ?? 0;
+  // 0–1 neutral · 2 amber · >=3 red. Thresholds live here and in
+  // __tests__/AdminQueueWaitingBadge.test.jsx, which pins each boundary.
+  let cls = "bg-gray-100 text-gray-600";
+  if (isQueued && days >= 3) cls = "bg-red-100 text-red-800";
+  else if (isQueued && days === 2) cls = "bg-amber-100 text-amber-800";
+
+  // The tooltip names WHICH timestamp it is showing rather than presenting a
+  // creation date as if it were a submission — a pre-MEH-2100 row and every
+  // draft have no stamp, and silently substituting one would misreport when
+  // the clock started.
+  const stamp = p.submitted_for_review_at || p.created_at;
+  const when = stamp ? new Date(stamp).toLocaleString("he-IL") : null;
+  const title = when
+    ? p.submitted_for_review_at
+      ? t("producers.table.waiting_tooltip_submitted", { when })
+      : t("producers.table.waiting_tooltip_created", { when })
+    : undefined;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cls}`}
+      data-testid="waiting-badge"
+      data-days={days}
+      title={title}
+    >
+      {t("producers.table.waiting_badge", { days })}
+    </span>
+  );
+}
+
 // MEH-509 PR3: Anthropic-Haiku-backed risk score badge.
 // score=null → grey "אין מידע" (NULL = "not scored yet OR Anthropic call failed").
 // score ≤ 30 → green "סיכון נמוך", 31-70 → yellow "סיכון בינוני", >70 → red "סיכון גבוה".
@@ -399,6 +451,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
           <div className="flex flex-col items-start gap-1">
             <StatusBadge status={p.status} />
             <AwaitingCompletionBadge producer={p} />
+            <WaitingBadge producer={p} />
           </div>
         </td>
         <td className="px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
