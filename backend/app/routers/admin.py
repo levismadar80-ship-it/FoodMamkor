@@ -5,11 +5,12 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
+from app.utils.clock import business_days_waiting
 from app.config import settings
 from app.services.auth_notifications import (
     notify_producer_approved,
@@ -338,6 +339,28 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
         db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
+def _attach_aging(producer) -> None:
+    """MEH-2110 — hydrate `business_days_waiting` for an admin list row.
+
+    The server is the single source of truth for aging: one implementation,
+    covered by tests/test_admin_queue_sla_aging.py, instead of a date
+    calculation duplicated per client and drifting.
+
+    A draft measures from `created_at` because it has no submission to measure
+    from. Everything else uses the same COALESCE the queue ordering uses, so
+    the badge and the sort can never disagree about which row is oldest.
+
+    Called by BOTH admin list routes. `ProducerAdminOut` declares the field, so
+    a route that returned rows without calling this would serialise a silent
+    `0` on every row — a number that looks measured and is not.
+    """
+    producer.business_days_waiting = business_days_waiting(
+        producer.created_at
+        if producer.status == "draft"
+        else (producer.submitted_for_review_at or producer.created_at)
+    )
+
+
 @router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(
     status: str | None = Query(
@@ -387,7 +410,30 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
-    results = q.order_by(Producer.created_at.desc()).all()
+    # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
+    # עסקים" promise starts at submission and a business that has waited longest
+    # is the one closest to breaking it. Newest-first (the old default) let an
+    # old row sink under fresh arrivals and the promise break silently.
+    #
+    # WHICH VIEWS SORT ASC, and why it is not just `?status=pending`: the
+    # admin's working view is the DEFAULT (no param), which this file's filter
+    # above resolves to `status != "draft"` — NOT to pending/pending_whatsapp.
+    # The ticket's wording assumed those were the same view; they are not, so
+    # sorting only the explicit pending filter would have left the screen the
+    # admin actually opens completely unchanged. Explicit approved/rejected/
+    # inactive/draft filters keep the existing newest-first order, where recency
+    # is the useful axis and there is no SLA to track.
+    queue_view = status is None or status == "pending"
+    if queue_view:
+        # COALESCE, not submitted_for_review_at alone: rows seeded before
+        # MEH-2100 (and every draft) have a NULL stamp, and a bare column sort
+        # would bunch them all at one end regardless of real age.
+        order_key = func.coalesce(
+            Producer.submitted_for_review_at, Producer.created_at
+        ).asc()
+    else:
+        order_key = Producer.created_at.desc()
+    results = q.order_by(order_key).all()
     # MEH-2060: this endpoint never called attach_badge_fields before, so
     # pickup_points (and every other computed badge field) silently defaulted
     # to Pydantic's False/0 in this response — a pre-existing gap, not
@@ -396,6 +442,7 @@ def list_producers(
     # consumer surface instead of reading a raw, no-longer-authoritative column.
     for p in results:
         attach_badge_fields(p)
+        _attach_aging(p)
     return results
 
 
@@ -781,11 +828,17 @@ def pending_producers(
             selectinload(Producer.locations),
         )
         .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        # NOTE (MEH-2110): deliberately still newest-first. This route has no
+        # frontend consumer today, and re-ordering it is a behaviour change the
+        # ticket does not ask for. The aging field below IS attached, because
+        # ProducerAdminOut declares it and serialising a structural `0` here
+        # would misreport rather than merely omit.
         .order_by(Producer.created_at.desc())
         .all()
     )
     for p in results:
         attach_badge_fields(p)
+        _attach_aging(p)
     return results
 
 
