@@ -1577,7 +1577,10 @@
         },
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again.",
-        "deleting": "Deleting…"
+        "deleting": "Deleting…",
+        "waiting_badge": "Waiting {days} business days",
+        "waiting_tooltip_submitted": "Submitted for review: {when}",
+        "waiting_tooltip_created": "Created: {when}"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."

@@ -1577,7 +1577,10 @@
         },
         "confirm_delete": "למחוק את \"{name}\"? פעולה זו אינה הפיכה.",
         "delete_error": "מחיקת בית העסק נכשלה. נסו שוב.",
-        "deleting": "מוחקים…"
+        "deleting": "מוחקים…",
+        "waiting_badge": "ממתין {days} ימי עסקים",
+        "waiting_tooltip_submitted": "נשלח לבדיקה: {when}",
+        "waiting_tooltip_created": "נוצר: {when}"
       },
       "toggle": {
         "invalid_transition": "לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך כפתורי האישור/דחייה."
