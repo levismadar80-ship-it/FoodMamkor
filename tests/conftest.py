@@ -305,6 +305,7 @@ def make_producer(
     delivery_cities: list[str] | None = None,
     category: Category | None = None,
     images: list[str] | None = None,
+    phone_verified: bool = False,
 ) -> Producer:
     producer = Producer(
         name=name,
@@ -316,6 +317,14 @@ def make_producer(
         # MEH-799: approve gate requires >=1 image; default stays imageless
         # so the gate's own tests exercise the 422 path explicitly.
         images=images or [],
+        # MEH-2121: the approve gate also requires a verified WhatsApp number.
+        # The default stays False — the COLUMN's default (models.py:340) — for
+        # the same reason `images` stays empty: a factory that quietly satisfied
+        # the gates would let a gate test pass without exercising anything, and
+        # several suites (submission_gate, pending_nudge) depend on an
+        # unverified row to produce the `phone_verified` missing-item at all.
+        # Tests whose subject is "approval succeeds" opt in explicitly.
+        phone_verified=phone_verified,
         # MEH-1848: asking this factory for delivery areas means "a business
         # that delivers to these cities", so it must also declare that it
         # delivers. Without this the factory minted a self-contradictory row —

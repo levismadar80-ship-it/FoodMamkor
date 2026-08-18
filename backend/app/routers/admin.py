@@ -1,6 +1,7 @@
 import logging
 import re
 from datetime import datetime, timezone
+from typing import NamedTuple
 from uuid import UUID
 
 import httpx
@@ -189,10 +190,29 @@ def _apply_approval_state(producer: Producer) -> None:
     producer.changes_requested_at = None
 
 
+class ApprovalOverrides(NamedTuple):
+    """The admin's explicit "yes, I have checked this out-of-band" flags.
+
+    MEH-2121. Bundled rather than threaded as two more booleans because
+    `_persist_approval` already takes five arguments and `max-args = 5` is
+    enforced on this file (`backend/pyproject.toml:116`; admin.py carries no
+    per-file-ignore, unlike producers.py / auth.py). A sixth positional would
+    have to be paid for by widening that ignore list, which is the wrong
+    direction — so the bundle keeps both signatures at their current width and
+    a third override, if one ever arrives, costs nothing.
+
+    Both default False: the guards are ON unless an admin explicitly asks for
+    the door, which is the MEH-971 property this mirrors.
+    """
+
+    without_license: bool = False
+    unverified_phone: bool = False
+
+
 def _assert_approvable(
-    db: Session, producer: Producer, allow_without_license: bool, admin_id
+    db: Session, producer: Producer, overrides: ApprovalOverrides, admin_id
 ) -> None:
-    """Both approval gates, in one owner, run against the row being written.
+    """The approval gates, in one owner, run against the row being written.
 
     MEH-2017. These lived inline in `approve_producer` and therefore ran only
     against the object fetched at the top of that handler. `_persist_approval`'s
@@ -222,15 +242,41 @@ def _assert_approvable(
     category_ids = [c.id for c in producer.categories]
     license_missing = not (producer.producer_license_number or "").strip()
     needs_license = categories_require_license(db, category_ids) and license_missing
-    if needs_license and not allow_without_license:
+    if needs_license and not overrides.without_license:
         raise HTTPException(
             status_code=422,
             detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
         )
-    if needs_license and allow_without_license:
+    if needs_license and overrides.without_license:
         # Audit trail: an admin bypassed the license guard — visible in Railway logs.
         logger.warning(
             "approve_producer: license-pending override for producer %s by admin %s",
+            producer.id,
+            admin_id,
+        )
+
+    # MEH-2121: the WhatsApp number is the channel every customer contact runs
+    # through, so approving an unverified one publishes a page whose only CTA
+    # may go nowhere. submission_gate makes the same argument for the owner's
+    # submit gate; this is the approve-time mirror, for the older/bypassing
+    # routes that reach approval without having passed it.
+    #
+    # ⚠️ 409 here is the TICKET'S choice and deviates from the two gates above,
+    # which are 422 — this file's convention is 422 for approve-time content
+    # gates and 409 for status transitions (see the MEH-971 comment above and
+    # request_producer_changes' guard). Flagged to Sapir in the PR rather than
+    # silently normalised; do NOT "fix" it to 422 without a ruling, and do not
+    # copy 409 to a new content gate on the strength of this line alone.
+    if not producer.phone_verified and not overrides.unverified_phone:
+        raise HTTPException(
+            status_code=409,
+            detail="לא ניתן לאשר בית עסק ללא אימות מספר הוואטסאפ. בקשי מבעלת העסק לאמת את המספר, או אשרי עם דריסה מפורשת.",
+        )
+    if not producer.phone_verified and overrides.unverified_phone:
+        # Same audit shape as the license override directly above — a log line,
+        # deliberately, because that is the mechanism this repo already uses.
+        logger.warning(
+            "approve_producer: unverified-phone override for producer %s by admin %s",
             producer.id,
             admin_id,
         )
@@ -271,7 +317,7 @@ def _persist_approval(
     db: Session,
     producer_id: UUID,
     producer: Producer,
-    allow_without_license: bool,
+    overrides: ApprovalOverrides,
     admin_id,
 ) -> Producer:
     """Mint the slug and commit, retrying once on a unique-slug collision.
@@ -314,7 +360,7 @@ def _persist_approval(
     # trusted from the pre-collision fetch — if another transaction stripped the
     # images or the license number inside the rollback window, this raises 422
     # exactly as the main path would have. One owner, called twice.
-    _assert_approvable(db, producer, allow_without_license, admin_id)
+    _assert_approvable(db, producer, overrides, admin_id)
     _apply_approval_state(producer)
     _mint_slug_if_absent(db, producer)
     db.commit()
@@ -849,24 +895,47 @@ def approve_producer(
     # below. Defaults False so the guard is on by default; an admin who has
     # verified a license out-of-band passes ?allow_without_license=true.
     allow_without_license: bool = Query(default=False),
+    # MEH-2121: the same shape, for the WhatsApp-verification gate. Default
+    # False, so an admin has to ask for the door in the URL.
+    allow_unverified_phone: bool = Query(default=False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2017: both approval gates (MEH-799 photo, MEH-971 license) live in
-    # _assert_approvable, which _persist_approval also calls after its re-read
-    # so the retry path cannot approve a row this path would have rejected.
-    _assert_approvable(db, producer, allow_without_license, user.id)
+    # MEH-2121: a draft never asked to be reviewed. Approving one publishes a
+    # business that skipped the whole machine and leaves
+    # `submitted_for_review_at` NULL, which is the column MEH-2110's SLA badge
+    # counts from — so the queue would carry a row it cannot age. No override:
+    # unlike the license and phone gates below, there is no legitimate reason to
+    # approve something that was never submitted; the owner presses the button.
+    #
+    # Handler-only, and that is sufficient rather than an oversight: the retry
+    # path re-reads the row, but nothing in the codebase moves an existing
+    # producer BACK to draft — all three `status="draft"` writes are at creation
+    # (auth.py:561, auth.py:768, producer_queries.py:542). A row that was not
+    # draft when this line ran cannot be draft when the retry reads it.
+    if producer.status == "draft":
+        raise HTTPException(
+            status_code=409,
+            detail="העסק עדיין בטיוטה — טרם נשלח לבדיקה",
+        )
+    overrides = ApprovalOverrides(
+        without_license=allow_without_license,
+        unverified_phone=allow_unverified_phone,
+    )
+    # MEH-2017: the approval gates (MEH-799 photo, MEH-971 license, MEH-2121
+    # phone) live in _assert_approvable, which _persist_approval also calls
+    # after its re-read so the retry path cannot approve a row this path would
+    # have rejected.
+    _assert_approvable(db, producer, overrides, user.id)
     # MEH-1817: the approval column writes live in _apply_approval_state so the
     # retry path below can re-apply exactly the same set after a rollback.
     _apply_approval_state(producer)
     # MEH-1817: slug mint + commit, extracted so this handler stays under the
     # C901 ceiling. See _persist_approval for why the commit is retried.
-    producer = _persist_approval(
-        db, producer_id, producer, allow_without_license, user.id
-    )
+    producer = _persist_approval(db, producer_id, producer, overrides, user.id)
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
@@ -979,6 +1048,15 @@ def reject_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2121: symmetric with approve. Rejecting a draft emails the owner that
+    # her application was turned down for an application she never made — the
+    # rejection mail and the `rejection_reason` banner both fire on a request
+    # that does not exist. No override, same reasoning as approve.
+    if producer.status == "draft":
+        raise HTTPException(
+            status_code=409,
+            detail="אי אפשר לדחות עסק שטרם נשלח לבדיקה",
+        )
     composed_reason = _compose_rejection_reason(preset_key, reason)
     producer.status = "rejected"
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
@@ -1047,7 +1125,12 @@ def request_producer_changes(
     # (approved / rejected / inactive) would leave an incoherent record
     # (e.g. approved + non-null requested_changes, which the "ממתין להשלמה"
     # badge keys off). 409 mirrors toggle-status's invalid-transition guard
-    # (MEH-769). reject_producer needs no such guard — it transitions status.
+    # (MEH-769).
+    #
+    # MEH-2121 correction: this line used to end "reject_producer needs no such
+    # guard — it transitions status." That was true before the draft state
+    # existed, when every status was a coherent thing to reject. It is false
+    # now — reject_producer carries its own `draft` 409 for exactly that reason.
     if producer.status not in ("pending", "pending_whatsapp"):
         raise HTTPException(
             status_code=409,

@@ -48,6 +48,12 @@ def _pending(db, **kwargs):
     """A business awaiting approval, image included so the MEH-799 gate passes."""
     kwargs.setdefault("images", [IMAGE])
     kwargs.setdefault("status", "pending")
+    # MEH-2121: approve now also requires a verified WhatsApp number. This
+    # file's subject is slug minting, not the gates, so its fixtures
+    # satisfy them — a 409 here would stop every test short of the behaviour it
+    # is actually about. setdefault, so a case that wants the unverified state
+    # can still ask for it.
+    kwargs.setdefault("phone_verified", True)
     return make_producer(db, **kwargs)
 
 

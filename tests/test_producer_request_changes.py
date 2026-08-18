@@ -179,7 +179,11 @@ def test_approve_clears_requested_changes(client, db, monkeypatch):
         admin_module, "notify_producer_approved", lambda *a, **k: None
     )
     admin = _admin(db)
-    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    # MEH-2121: this test's subject is that approve CLEARS the request-changes
+    # trail, so the producer has to be approvable — phone gate included.
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=True
+    )
     # seed a prior request-changes
     resp = _request_changes(client, producer.id, admin)
     assert resp.status_code == 200, resp.text
