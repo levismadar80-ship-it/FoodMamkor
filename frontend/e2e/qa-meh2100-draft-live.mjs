@@ -85,6 +85,13 @@ const EMAIL = "qa-meh2100-live@example.com";
 const passArg = process.argv.find((a) => a.startsWith("--password="));
 const PASSWORD = passArg ? passArg.slice("--password=".length) : "changeme-local-example";
 
+// Measured on staging 2026-08-18: the story frame carries exactly two consent
+// checkboxes (ToS/privacy + the licensing declaration). The third act the
+// comment at RegisterProducerClient.jsx:1775 describes — the grower declaration
+// — is conditional and did not render for «סבונים טבעיים». If this number moves,
+// the harness says so instead of ticking the new box and carrying on.
+const EXPECTED_CONSENT_BOXES = 2;
+
 const WIDTHS = [
   { name: "375", width: 375, height: 900 },
   { name: "1440", width: 1440, height: 1000 },
@@ -222,6 +229,9 @@ async function registerFirst(page, vp) {
     if (await el.count().then((n) => n > 0).catch(() => false)) {
       await el.first().click({ timeout: 10000 }).catch(() => {});
       // NOT a redundant settle. This guards the NEXT iteration's `count()`,
+      // and 1200ms is a conservative bound, NOT a calibrated one — the frame
+      // transition was never timed. It is deliberately far above anything
+      // observed rather than fitted to a measurement that does not exist.
       // and `count()` does not auto-wait — it answers immediately, which is
       // exactly how the first version of this loop skipped the preflight. The
       // `waitFor` above runs BEFORE the loop and cannot cover a frame that only
@@ -324,6 +334,22 @@ async function registerFirst(page, vp) {
   // licensing declaration, and the conditional grower declaration).
   const boxes = page.locator('[data-testid="register-frame-story"] input[type=checkbox]');
   const nBoxes = await boxes.count();
+
+  // ASSERT THE COUNT BEFORE TICKING. Ticking "every unchecked box" without this
+  // silently absorbs a product change: add a newsletter opt-in or expand the
+  // grower declaration and the harness dutifully checks it, registration still
+  // succeeds, and the new requirement is never tested. That is the same
+  // swallow-the-failure shape this whole file exists to have removed — the
+  // pre-existing anon walk turned a stalled wizard into a "not obtained" pass.
+  // A change here should be LOUD.
+  check(
+    nBoxes === EXPECTED_CONSENT_BOXES,
+    `${vp.name}: story frame has ${nBoxes} consent checkbox(es), expected ${EXPECTED_CONSENT_BOXES}` +
+      (nBoxes === EXPECTED_CONSENT_BOXES
+        ? ""
+        : " — the consent surface changed; re-read RegisterProducerClient and decide whether the new box needs its own assertion rather than being ticked blind"),
+  );
+
   for (let i = 0; i < nBoxes; i++) {
     const b = boxes.nth(i);
     if (!(await b.isChecked().catch(() => true))) await b.check().catch(() => {});
