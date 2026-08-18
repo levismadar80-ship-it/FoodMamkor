@@ -1543,6 +1543,21 @@ def request_producer_review(
     request only makes sense while the producer is still in the approval queue,
     so an already-decided producer (approved/rejected/inactive) → 409.
 
+    MEH-2120 — THE COMPLETENESS GATE, added after Sapir hit this live. This
+    endpoint predates the shared gate, so it pinged the admin regardless of
+    whether the profile could be approved at all: her test business, with no
+    photo and no product, pressed "סיימתי להשלים" and was told "נשלח לבדיקה".
+    The admin then gets "please look again" on a profile the MEH-799 photo gate
+    will refuse — exactly the queue noise MEH-2100 removed from the FRONT door,
+    arriving through the side one.
+
+    The gate below is a verbatim copy of `submit_for_review`'s, in this same
+    file: same helper, same 422 status, same `code`, same message, same
+    `params.missing`. That sameness is the feature, not laziness — the client
+    renders both through one path (`detailToMessage`, frontend/lib/errors.js:151)
+    and the checklist highlights `params.missing` without knowing which door
+    the owner used. A variant here would be a second definition of "ready".
+
     The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
     MEH-977): a Meta/Resend outage or missing admin config must never affect
     the 200 the owner sees.
@@ -1554,6 +1569,20 @@ def request_producer_review(
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+
+    # MEH-2120: ordered AFTER the status check, matching submit_for_review — an
+    # approved business asking for re-review is answered "you are already
+    # decided" (409), not handed a completeness list it has no use for.
+    missing = submission_missing_items(producer)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "submit_gate_incomplete",
+                "message": "עוד לא הכול מוכן — יש להשלים את פריטי החובה לפני שליחה לבדיקה",
+                "params": {"missing": missing},
+            },
         )
 
     # REUSES: app/services/auth_notifications.py notify_admin_new_recipe pattern

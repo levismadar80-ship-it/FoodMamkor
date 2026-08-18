@@ -4081,6 +4081,21 @@ export const UpdateMyRecipeProducersMeRecipesRecipeIdPatchResponse = /*#__PURE__
  * request only makes sense while the producer is still in the approval queue,
  * so an already-decided producer (approved/rejected/inactive) → 409.
  *
+ * MEH-2120 — THE COMPLETENESS GATE, added after Sapir hit this live. This
+ * endpoint predates the shared gate, so it pinged the admin regardless of
+ * whether the profile could be approved at all: her test business, with no
+ * photo and no product, pressed "סיימתי להשלים" and was told "נשלח לבדיקה".
+ * The admin then gets "please look again" on a profile the MEH-799 photo gate
+ * will refuse — exactly the queue noise MEH-2100 removed from the FRONT door,
+ * arriving through the side one.
+ *
+ * The gate below is a verbatim copy of `submit_for_review`'s, in this same
+ * file: same helper, same 422 status, same `code`, same message, same
+ * `params.missing`. That sameness is the feature, not laziness — the client
+ * renders both through one path (`detailToMessage`, frontend/lib/errors.js:151)
+ * and the checklist highlights `params.missing` without knowing which door
+ * the owner used. A variant here would be a second definition of "ready".
+ *
  * The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
  * MEH-977): a Meta/Resend outage or missing admin config must never affect
  * the 200 the owner sees.
