@@ -485,6 +485,14 @@ const FORCE_Z = arg("force-z", "");
 // pair is produced from ONE build — the alternative is comparing two builds and
 // hoping nothing else moved between them.
 const SIM_BAR_Z = arg("sim-bar-z", "");
+
+if (SIM_BAR_Z && SURFACE !== "map") {
+  // The injection is wired into newPage (every surface) but only validated on
+  // the map surface, so anywhere else it would apply silently and unverified.
+  // An unverified injection is exactly what this harness refuses to report from.
+  console.error(`--sim-bar-z only has a validated effect on --surface=map (got --surface=${SURFACE}).`);
+  process.exit(2);
+}
 const LABEL = arg("label", "run");
 
 const newPage = async (browser, w, h) => {
@@ -784,7 +792,14 @@ const run = async () => {
         ok = false;
       }
     } catch (e) {
+      // An unreachable route is not an absent node. Leaving ok=true here meant a
+      // dead server produced eight UNREACHABLE lines and a clean exit — the
+      // confinement claim resting on a run where nothing was ever checked. Same
+      // null-as-pass shape as the stale selector above, one layer out.
+      // (CI reviewer, PR #3002.)
       console.log(`  ${String(route).padEnd(34)} UNREACHABLE (${String(e.message).slice(0, 60)})`);
+      console.log("     !! this route was NOT checked — it is not evidence of absence");
+      ok = false;
     }
     await page.close();
     return ok;
