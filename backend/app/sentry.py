@@ -16,6 +16,7 @@ Verify-on-staging contract: dashboard receipt is verified manually
 Sentry's ingest host (MEH-2090).
 """
 
+import contextlib
 import hashlib
 import logging
 import os
@@ -79,6 +80,56 @@ MAX_TRACKED_FINGERPRINTS = 512
 #: documented case. Behaviour today is unchanged: both `logger.error` calls in
 #: email.py (`:104` and `:146`) carry this prefix.
 _DUPLICATE_LOG_PREFIXES = {"app.services.email": "[EMAIL] NOT SENT"}
+
+#: MEH-2116 — thread-local re-entrancy latch for the two SDK hooks.
+#:
+#: The loop this closes was MEASURED, not theorised: forcing the fail-open
+#: branch below gives a ``logging.Logger.handle`` nesting depth of 40 at
+#: ``recursionlimit=600`` and 134 at 2000 — LINEAR in the limit, i.e. bounded
+#: only by stack exhaustion. The driver is not this module; it is sentry-sdk's
+#: patched ``callHandlers``:
+#:
+#:     logger.exception (here)
+#:       -> sentry_patched_callhandlers   integrations/logging.py:191
+#:       -> _handle_record                integrations/logging.py:143
+#:       -> emit -> capture_event -> _prepare_event
+#:       -> before_send                   client.py:878
+#:       -> logger.exception (here)       <- closes the cycle
+#:
+#: ``callHandlers`` is patched in a ``finally``, so it runs whatever the record's
+#: level is. Lowering the level (layer 3) narrows the blast radius but cannot
+#: break the cycle on its own, and neither can the burst cap — the nested event
+#: is a DIFFERENT fingerprint each time it carries a new traceback.
+#:
+#: Layer 1 (``ignore_logger`` in ``init_sentry``) stops the capture at the
+#: source. This latch is layer 2: it holds even when layer 1 is absent — an SDK
+#: too old to expose ``ignore_logger``, or an ``init_sentry`` that raised before
+#: reaching it. Both layers are cheap; neither is sufficient alone.
+_hook_reentry = threading.local()
+
+
+@contextlib.contextmanager
+def _hook_guard():
+    """Yield True on first entry, False if this thread is already inside a hook.
+
+    Thread-local by construction: a re-entrant call can only arrive on the SAME
+    thread, because it is driven by a logging call made inside the hook itself.
+    A lock would be wrong here — it would deadlock on exactly that path.
+    """
+    if getattr(_hook_reentry, "active", False):
+        yield False
+        return
+    _hook_reentry.active = True
+    try:
+        yield True
+    finally:
+        _hook_reentry.active = False
+
+
+def _reset_hook_reentry() -> None:
+    """Test seam — clear the latch. Not called in production."""
+    _hook_reentry.active = False
+
 
 _burst_lock = threading.Lock()
 # fingerprint -> [window_start, count, noisy_until]
@@ -284,16 +335,34 @@ def before_send(event: dict, hint: dict | None = None) -> dict | None:
     no signal whatsoever. The entire body is therefore wrapped, and any
     internal failure returns the event UNCHANGED. A broken suppressor must
     degrade to "Sentry as it was before MEH-2114", never to "no Sentry".
+
+    TRAP 2 — RE-ENTRANCY (MEH-2116). The ``logger`` call in the handler below
+    is itself captured by sentry-sdk's default ``LoggingIntegration``, which
+    calls straight back into this hook. See ``_hook_guard`` for the measured
+    cycle. The guard is entered BEFORE the try block so it is still held while
+    the fail-open handler logs — that is the only moment re-entry can occur.
     """
-    try:
-        if _drop_reason(event) is not None:
-            return None
-        if _burst_allow(_event_fingerprint(event)):
+    with _hook_guard() as first_entry:
+        if not first_entry:
+            # Already inside a hook on this thread: return the event UNCHANGED.
+            # Consistent with TRAP 1 — degrade to "Sentry as it was before
+            # MEH-2114", never to "no Sentry".
             return event
-        return None
-    except Exception:  # noqa: BLE001 — see TRAP 1 above
-        logger.exception("Sentry before_send failed; passing event through")
-        return event
+        try:
+            if _drop_reason(event) is not None:
+                return None
+            if _burst_allow(_event_fingerprint(event)):
+                return event
+            return None
+        except Exception:  # noqa: BLE001 — see TRAP 1 above
+            # Layer 3: WARNING, not ERROR. sentry-sdk's DEFAULT_EVENT_LEVEL is
+            # ERROR (integrations/logging.py:29), so a WARNING becomes a
+            # breadcrumb rather than a new event. `exc_info=True` keeps the
+            # traceback that `.exception()` would have given us.
+            logger.warning(
+                "Sentry before_send failed; passing event through", exc_info=True
+            )
+            return event
 
 
 def error_sampler(event: dict, hint: dict | None = None) -> float:
@@ -311,16 +380,25 @@ def error_sampler(event: dict, hint: dict | None = None) -> float:
       * unconditional-drop classes -> 0.0
 
     Fails open at 1.0 for the same reason ``before_send`` does.
+
+    Re-entrancy: same latch as ``before_send`` — see ``_hook_guard`` (MEH-2116).
     """
-    try:
-        if _drop_reason(event) is not None:
-            return 0.0
-        if _is_noisy(_event_fingerprint(event)):
-            return NOISY_SAMPLE_RATE
-        return 1.0
-    except Exception:  # noqa: BLE001 — fail open: report rather than lose
-        logger.exception("Sentry error_sampler failed; sampling at 1.0")
-        return 1.0
+    with _hook_guard() as first_entry:
+        if not first_entry:
+            # Already inside a hook on this thread: fail open at 1.0.
+            return 1.0
+        try:
+            if _drop_reason(event) is not None:
+                return 0.0
+            if _is_noisy(_event_fingerprint(event)):
+                return NOISY_SAMPLE_RATE
+            return 1.0
+        except Exception:  # noqa: BLE001 — fail open: report rather than lose
+            # Layer 3 — see the matching note in before_send.
+            logger.warning(
+                "Sentry error_sampler failed; sampling at 1.0", exc_info=True
+            )
+            return 1.0
 
 
 def init_sentry() -> None:
@@ -348,6 +426,43 @@ def init_sentry() -> None:
     try:
         import sentry_sdk
         from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+        # MEH-2116 layer 1 — stop the loop at the source.
+        #
+        # sentry-sdk's default LoggingIntegration captures every stdlib ERROR
+        # as an event, INCLUDING the ones this module emits from its own
+        # fail-open handlers — which calls straight back into before_send.
+        # `_IGNORED_LOGGERS` (integrations/logging.py:61-63) ships with
+        # sentry's own loggers only: {"sentry_sdk.errors",
+        # "urllib3.connectionpool", "urllib3.connection"}. Every application
+        # logger is unprotected by default.
+        #
+        # The name is DERIVED (`logger.name` == "app.sentry", asserted in
+        # tests) rather than written as a literal, because the matching is a
+        # flat set-membership test (integrations/logging.py:174,177) — NOT
+        # hierarchical (getsentry/sentry-python#511). Naming a parent such as
+        # "app" would silently do nothing, and a literal would rot if this
+        # module ever moved.
+        #
+        # Deliberately BEFORE `sentry_sdk.init(...)`: the `logger.exception`
+        # in this function's own except handler must already be covered, and
+        # `_IGNORED_LOGGERS` is a module-level set read live on each record,
+        # so registering it pre-init is effective and persists.
+        #
+        # Isolated in its own try: an SDK too old to expose `ignore_logger`
+        # must not fall through to the outer handler and disable Sentry
+        # ENTIRELY — that is the same TRAP 1 failure MEH-2114 forbids. The
+        # `_hook_guard` latch (layer 2) still holds if this is skipped.
+        try:
+            from sentry_sdk.integrations.logging import ignore_logger
+
+            ignore_logger(logger.name)
+        except (ImportError, AttributeError):  # pragma: no cover — old SDK only
+            logger.warning(
+                "Sentry ignore_logger unavailable for %s — "
+                "re-entrancy guard (_hook_guard) still applies",
+                logger.name,
+            )
 
         init_kwargs = {
             "dsn": dsn,
@@ -385,6 +500,14 @@ def init_sentry() -> None:
             NOISY_SAMPLE_RATE,
         )
     except Exception:
+        # MEH-2116 assessment — KEPT as `.exception()` at ERROR, deliberately.
+        # This is a one-hop amplifier, not a cycle: the cycle in before_send
+        # exists because the record it emits re-enters THE SAME function. This
+        # record reaches before_send (guarded) and stops there — it cannot
+        # re-enter init_sentry, which runs once per process at boot and is not
+        # reachable from event processing. A boot-time Sentry failure is also
+        # exactly the event that must stay at ERROR and keep its traceback.
+        # Layer 1 above already suppresses its capture in the common case.
         logger.exception("Sentry init failed (continuing without Sentry)")
 
 
@@ -443,4 +566,16 @@ def capture_background_exception(exc: BaseException, *, task: str) -> None:
             scope.set_tag(BACKGROUND_TASK_TAG, task)
             sentry_sdk.capture_exception(exc)
     except Exception:  # pragma: no cover — reporting must never raise
+        # MEH-2116 assessment — IN SCOPE (this runs at request time, not only
+        # at boot: marketing.py:270 and admin_kashrut.py:224 call it inside
+        # request handlers). KEPT as `.exception()` at ERROR anyway, for the
+        # same structural reason as init_sentry above: one hop, not a cycle.
+        # The record it emits is handed to before_send, which is now latched;
+        # nothing routes it back into capture_background_exception, so no
+        # self-sustaining loop exists here. What DID make it costly — one
+        # Sentry event per failed capture — is closed by layer 1, since this
+        # record is emitted on the same `app.sentry` logger now ignored.
+        # Downgrading it would lose the traceback on the one path that reports
+        # otherwise-invisible background failures (MEH-1533), which is a real
+        # loss against no measured gain.
         logger.exception("Sentry capture_background_exception failed for task=%s", task)
