@@ -789,10 +789,21 @@ export default function MapPage() {
             added inside this bar that expects to be capped by it must now create
             its own stacking context (`isolation: isolate`, or its own positioned
             + z-index wrapper). At the time of the change the bar contained
-            exactly two z-carrying elements — CitySearch's `×` clear button
-            (z-20) and its suggestion list (z-1010) — and NOTHING outside the bar
-            with a z-index overlapped the bar's box (0 of 24, measured at 375px).
-            That is why removing it was safe; it is not a standing guarantee. */}
+            exactly two z-carrying elements, measured in the browser with the
+            list open — the CitySearch suggestion list (z-1010) and a round
+            h-8/w-8 scroll-arrow button in the filter-chips row (z-20) — and
+            NOTHING outside the bar with a z-index overlapped the bar's box
+            (0 of 24, measured at 375px). That is why removing it was safe; it is
+            not a standing guarantee.
+
+            On that z-20 button, because a wrong attribution here would send the
+            next reader to the wrong file: it is NOT CitySearch's `×` clear
+            control, which carries no z-index at all (CitySearch.jsx:181-188).
+            Its class string does not appear in any source file under app/ or
+            components/ — it is composed at runtime — so it is described here by
+            what was measured rather than by a file:line that could not be
+            confirmed. (An earlier revision of this comment did attribute it to
+            the `×` button; the CI reviewer on PR #3002 caught that.) */}
         <div ref={mobileBarRef} className="absolute top-0 inset-x-0 px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
