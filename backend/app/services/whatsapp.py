@@ -154,7 +154,15 @@ def _log_result(kind: str, to: str, result: WhatsAppSendResult) -> None:
             result.http_status,
         )
     else:
-        logger.warning(
+        # MEH-2122: ERROR, not WARNING (Chunk A). Two consumers depend on the
+        # level: Railway logs, where ERROR is filterable and WARNING is not
+        # distinguishable from routine chatter; and Sentry, whose default
+        # LoggingIntegration has event_level=ERROR (sentry.py:110), so a
+        # WARNING here is a breadcrumb and never becomes an issue. The same
+        # failure class in app/services/email.py is loud in production for
+        # exactly that reason. Success stays INFO on purpose — raising the
+        # whole function would bury failures under every successful send.
+        logger.error(
             "[WHATSAPP] %s outcome=%s err_code=%s err=%s to=%s http=%s",
             kind,
             result.outcome,
