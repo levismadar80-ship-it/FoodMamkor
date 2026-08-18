@@ -25,7 +25,7 @@ bounces. Every send therefore sets an explicit reply-to (ruling 18/08), which
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.services.email import send_email
 from app.utils.clock import ISRAEL_TZ
@@ -63,8 +63,6 @@ def _format_date(submitted_at: datetime) -> str:
     a raise here would be a fail-open promise broken over a formatting detail.
     """
     if submitted_at.tzinfo is None:
-        from datetime import timezone
-
         submitted_at = submitted_at.replace(tzinfo=timezone.utc)
     return submitted_at.astimezone(ISRAEL_TZ).strftime("%d/%m/%Y")
 

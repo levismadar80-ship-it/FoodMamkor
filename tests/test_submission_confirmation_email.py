@@ -12,6 +12,7 @@ real contract lives inside send_email (it swallows every transport failure),
 so that is the layer these tests exercise: a raising Resend must not escape
 send_submission_confirmation.
 """
+
 import uuid
 from datetime import datetime, timezone
 
@@ -22,15 +23,16 @@ from app.services.submission_confirmation import (
     build_submission_confirmation,
     send_submission_confirmation,
 )
-from conftest import auth_header
-from test_meh2100_draft_submit import _complete_draft
+from conftest import auth_header, make_submit_ready_producer
 
 
 # --- the copy, verbatim ------------------------------------------------------
 
 
 def test_subject_is_the_approved_string():
-    subject, _ = build_submission_confirmation("מאפיית שקד", datetime(2026, 8, 18, 9, 0, tzinfo=timezone.utc))
+    subject, _ = build_submission_confirmation(
+        "מאפיית שקד", datetime(2026, 8, 18, 9, 0, tzinfo=timezone.utc)
+    )
     assert subject == "קיבלנו את הפרופיל — תשובה עד 3 ימי עסקים"
 
 
@@ -158,7 +160,7 @@ def test_sent_on_successful_submit(client, db, monkeypatch):
         "app.routers.producer_me.send_submission_confirmation",
         lambda to, name, when: calls.append((to, name, when)),
     )
-    producer, user = _complete_draft(db)
+    producer, user = make_submit_ready_producer(db)
     resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))
 
     assert resp.status_code == 200, resp.text
@@ -175,7 +177,7 @@ def test_not_sent_when_the_gate_rejects_422(client, db, monkeypatch):
         "app.routers.producer_me.send_submission_confirmation",
         lambda *a: calls.append(a),
     )
-    producer, user = _complete_draft(db)
+    producer, user = make_submit_ready_producer(db)
     producer.images = []  # break exactly one requirement
     db.commit()
 
@@ -191,7 +193,7 @@ def test_not_sent_on_409_non_draft(client, db, monkeypatch, status):
         "app.routers.producer_me.send_submission_confirmation",
         lambda *a: calls.append(a),
     )
-    producer, user = _complete_draft(db, status=status)
+    producer, user = make_submit_ready_producer(db, status=status)
     resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))
     assert resp.status_code == 409, resp.text
     assert calls == [], f"no confirmation for a {status} business"
