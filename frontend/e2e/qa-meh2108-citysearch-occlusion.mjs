@@ -771,6 +771,18 @@ const run = async () => {
       const verdict = bars === 0 ? "CHANGED NODE ABSENT — cannot be affected" : `changed node PRESENT x${bars}`;
       console.log(`  ${String(route).padEnd(34)} http=${status} citySearch=${hasCity > 0 ? "yes" : "no "} ${verdict}`);
       if (bars > 0 && route !== "/map") { console.log("     !! STOP — the changed node appears on a route other than /map"); ok = false; }
+      // /map is this sweep's POSITIVE CONTROL and the assertion is worthless
+      // without it. If the selector ever goes stale — the bar gains or loses a
+      // class — every route would report "CHANGED NODE ABSENT" and the surface
+      // would exit clean: a sweep that proves confinement by finding nothing
+      // anywhere, which is the null-as-pass shape this file's header forbids.
+      // The expected state must be falsifiable in BOTH directions: present on
+      // /map, absent everywhere else. (CI reviewer, PR #3002.)
+      if (bars === 0 && route === "/map") {
+        console.log("     !! STOP — the changed node was NOT found on /map. The selector is stale;");
+        console.log("        every 'ABSENT' in this run is the probe failing, not a finding. VOID.");
+        ok = false;
+      }
     } catch (e) {
       console.log(`  ${String(route).padEnd(34)} UNREACHABLE (${String(e.message).slice(0, 60)})`);
     }
