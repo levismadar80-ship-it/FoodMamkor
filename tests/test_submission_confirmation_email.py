@@ -15,6 +15,7 @@ send_submission_confirmation.
 
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +25,8 @@ from app.services.submission_confirmation import (
     send_submission_confirmation,
 )
 from conftest import auth_header, make_submit_ready_producer
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 # --- the copy, verbatim ------------------------------------------------------
@@ -87,6 +90,29 @@ def test_send_sets_an_explicit_reply_to(monkeypatch):
     assert captured["to"] == "owner@example.com"
     assert captured.get("reply_to") == SUPPORT_REPLY_TO
     assert "noreply" not in captured.get("reply_to", "")
+
+
+def test_reply_to_is_an_address_the_site_actually_publishes():
+    """MEH-2113 rider — the closing line of the body ("אפשר פשוט להשיב למייל
+    הזה") is a promise that a human reads the reply. It is only true if the
+    address is a real inbox, so pin it against the address the SITE publishes
+    rather than against a literal only this file knows about.
+
+    The three assertions below are deliberately different in kind: the literal
+    catches a silent edit here, the messages-file read catches the two surfaces
+    drifting apart, and the control catches this test reading nothing at all —
+    a missing file would otherwise make the substring check vacuously... absent,
+    which is the reassuring null this repo keeps getting caught by.
+    """
+    assert SUPPORT_REPLY_TO == "contact@mehamakor.co.il"
+
+    messages = ROOT / "frontend" / "messages" / "he.json"
+    raw = messages.read_text(encoding="utf-8")  # missing file -> loud, not skipped
+    assert "item_email" in raw, "control: the contact-page copy key is gone"
+    assert SUPPORT_REPLY_TO in raw, (
+        "the reply-to address is not published anywhere in he.json — "
+        "a reply would land in an inbox no page promises"
+    )
 
 
 def test_reply_to_is_omitted_when_unset_so_existing_senders_are_unchanged(monkeypatch):

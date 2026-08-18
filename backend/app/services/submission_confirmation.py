@@ -12,15 +12,28 @@ Does NOT: decide whether the submission was valid (submission_gate.py owns
 Related:  app/routers/producer_me.py submit_for_review (the only caller),
           app/utils/clock.py (Israel-local date), MEH-2110's badge — the same
           promise, rendered on the admin's side of the queue.
-History:  MEH-2112 (creation).
+History:  MEH-2112 (creation); MEH-2113 (reply-to moved to the published
+          contact address after a delivery test).
 
 ON THE REPLY-TO, because the copy depends on it and the default sender cannot
 honour it. The body invites the owner to "פשוט להשיב למייל הזה", but
-`settings.email_from_address` is `מהמקור <noreply@mehamakor.online>`
+`settings.email_from_address` defaults to `מהמקור <noreply@mehamakor.online>`
 (config.py:81) and Phase 0 found NO reply-to configured anywhere in the
 backend. Sending this copy from that address would promise a channel that
 bounces. Every send therefore sets an explicit reply-to (ruling 18/08), which
 `send_email` gained an optional parameter for.
+
+MEH-2112 shipped that reply-to as `support@mehamakor.online` — an address
+chosen to match the dashboard's support modal, which was itself promising the
+same unverified inbox. Ruling 18/08: use the address the site already publishes
+on its contact page and which Sapir delivery-tested, `contact@mehamakor.co.il`,
+and fix the dashboard's two occurrences in the same change rather than leave a
+second promise pointing at a domain nobody receives mail on.
+
+NOT touched here, deliberately: the `config.py` sender defaults. Sapir
+confirmed (18/08) that Railway overrides `EMAIL_FROM_ADDRESS` in the deployed
+environments, so those `.online` defaults are inert there; flipping them is
+MEH-2123, not this change.
 """
 
 from __future__ import annotations
@@ -30,14 +43,17 @@ from datetime import datetime, timezone
 from app.services.email import send_email
 from app.utils.clock import ISRAEL_TZ
 
-# The producer-facing support inbox. Same address the dashboard's support modal
-# offers (frontend .../producer/dashboard/page.js:137), so a reply lands where
-# a business owner asking for help would already have been sent.
+# MEH-2113: the address the site ALREADY promises publicly — the contact page
+# renders it (frontend/messages/he.json "item_email") and the dashboard's
+# support modal offers it (frontend .../producer/dashboard/page.js:137). The
+# body's closing line ("יש שאלה? אפשר פשוט להשיב למייל הזה") is a promise that
+# a human reads the reply, so this must be an inbox that exists on the canonical
+# domain — not a plausible-looking address on a domain nobody receives mail on.
 #
 # Deliberately a module constant and NOT a new env var: regression rule 8
 # requires env additions to be listed and confirmed first, and this address is
-# already hardcoded on the surface it mirrors.
-SUPPORT_REPLY_TO = "support@mehamakor.online"
+# already hardcoded on the two surfaces it mirrors.
+SUPPORT_REPLY_TO = "contact@mehamakor.co.il"
 
 # Copy is Sapir-approved (17/08) and reproduced VERBATIM. Rule 22 makes
 # user-facing copy her gate — do not reword, re-punctuate or "improve" it here.

@@ -250,3 +250,48 @@ def test_approve_non_license_category_no_license_succeeds(client, db, monkeypatc
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.status == "approved"
+
+
+# --- MEH-2113: the approval email carries the celebratory headline ----------
+
+
+def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch):
+    """The subject of the approval email is «ברוכים הבאים למהמקור» — verbatim,
+    Sapir-approved (16/08).
+
+    The headline was REJECTED for the registration screen (MEH-2100 item 9)
+    because onboarding was not complete there; at approval it is — the
+    business is live. This is the one surface where the celebration is true,
+    and the test asserts it end-to-end through the real approve route so a
+    refactor of the email call site cannot silently drop it.
+
+    Asserted through capture, not by re-declaring the string next to the code
+    it tests — the recipient and body are checked as presence (owner's email,
+    body untouched by MEH-2113), the subject as exact equality because the
+    subject IS the change.
+    """
+    sent: list[tuple[str, str, str]] = []
+    monkeypatch.setattr(
+        admin_module,
+        "_send_notification_email",
+        lambda to, subject, body: sent.append((to, subject, body)),
+    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
+
+    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    owner = make_user(db, role="producer")
+    owner.producer_id = producer.id
+    db.commit()
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+
+    assert len(sent) == 1, "approval must email the owner exactly once"
+    to, subject, body = sent[0]
+    assert to == owner.email
+    assert subject == "ברוכים הבאים למהמקור"
+    # The body is deliberately NOT the change: MEH-2113 swaps the subject only.
+    assert producer.name in body
+    assert "אושר במהמקור" in body

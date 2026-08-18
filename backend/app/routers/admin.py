@@ -880,7 +880,12 @@ def approve_producer(
     if producer_user:
         _send_notification_email(
             producer_user.email,
-            f'מהמקור - העסק "{p_name}" אושר!',
+            # MEH-2113: the celebratory headline, in the one place it is TRUE.
+            # It was rejected for the registration screen (MEH-2100 item 9)
+            # precisely because onboarding was not complete there; at approval
+            # it is — the business is live on the site. Sapir-approved copy,
+            # verbatim (16/08). The body below is deliberately untouched.
+            "ברוכים הבאים למהמקור",
             _producer_approved_body(p_name),
         )
 
