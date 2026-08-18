@@ -3999,6 +3999,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "business_days_waiting": {
+            "default": 0,
+            "title": "Business Days Waiting",
+            "type": "integer"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -4666,6 +4671,18 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "submitted_for_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted For Review At"
           },
           "top_product_name": {
             "anyOf": [
