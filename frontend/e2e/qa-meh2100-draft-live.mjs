@@ -199,18 +199,19 @@ async function registerFirst(page, vp) {
   await assertRendered(page, "register");
 
   // PREFLIGHT — «לפני שמתחילים». The wizard does NOT open on the account frame:
-  // a preflight screen (register-preflight) stands in front of it, and the
-  // ACCOUNT fields do not exist in the DOM until its start button is clicked.
-  // This is why the pre-existing anon walk in this file always "stalled" and
-  // swallowed the failure into a not-obtained pass — it filled straight at
-  // register-account-name, which was never there. Both clicks are conditional
-  // because neither frame is guaranteed: the draft banner only appears when a
-  // stored draft has content.
-  // The preflight mounts CLIENT-SIDE, so it does not exist at domcontentloaded.
-  // The first version of this loop queried immediately and found count()===0 for
-  // every id — it then skipped both clicks silently and died 20s later at
-  // register-account-name, blaming the wrong element. Gate on whichever frame
-  // arrives rather than on a fixed pause.
+  // a preflight screen stands in front of it, and the ACCOUNT fields do not
+  // exist in the DOM until its start button is clicked. This is why the
+  // pre-existing anon walk in this file always "stalled" and swallowed the
+  // failure into a not-obtained pass — it filled straight at
+  // register-account-name, which was never there.
+  //
+  // It also mounts CLIENT-SIDE, so it is absent at domcontentloaded. The first
+  // version of this loop queried immediately, found count()===0 for every id,
+  // skipped both clicks SILENTLY, and died 20s later blaming the wrong element.
+  // Hence the gate below: wait for whichever frame actually arrives.
+  //
+  // Both clicks stay conditional because neither frame is guaranteed — the
+  // draft banner only appears when a stored draft has content.
   await page
     .locator('[data-testid="register-preflight-start"], [data-testid="register-account-name"]')
     .first()
@@ -220,6 +221,11 @@ async function registerFirst(page, vp) {
     const el = page.locator(`[data-testid="${id}"]`);
     if (await el.count().then((n) => n > 0).catch(() => false)) {
       await el.first().click({ timeout: 10000 }).catch(() => {});
+      // NOT a redundant settle. This guards the NEXT iteration's `count()`,
+      // and `count()` does not auto-wait — it answers immediately, which is
+      // exactly how the first version of this loop skipped the preflight. The
+      // `waitFor` above runs BEFORE the loop and cannot cover a frame that only
+      // mounts in response to this click.
       await page.waitForTimeout(1200);
       console.log(`  reg   clicked ${id}`);
     }
