@@ -828,6 +828,40 @@ gate: `.github/workflows/**` is CC-deny (MEH-671) and collides with MEH-787 on
 
 ---
 
+## Driving Playwright against staging from the CC sandbox — TLS **and** the protection bypass
+
+> **Re-confirmed 2026-08-18 (MEH-2118). Both halves are STANDING requirements, not
+> one-offs — a harness pointed at staging needs each of them or it measures nothing.**
+>
+> **1. `--ssl-version-max=tls1.2`.** Without it every `page.goto` against
+> `staging.mehamakor.online` dies on `ERR_CONNECTION_RESET`, which reads exactly like
+> "the site is down" while the site is fine and only the handshake failed. Measured
+> again on MEH-2118: identical symptom, identical fix.
+>
+> **2. The Vercel Deployment Protection headers.** Staging 302s to
+> `vercel.com/sso-api` for **every** path — including `/api/*`, because the Next
+> `rewrites()` proxy sits behind the same edge. Send both:
+>
+> ```js
+> extraHTTPHeaders: {
+>   "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+>   "x-vercel-set-bypass-cookie": "true",
+> }
+> ```
+>
+> `VERCEL_AUTOMATION_BYPASS_SECRET` is already provisioned in the CC sandbox (it is
+> the name the E2E job uses). **Control that proves it is the headers doing the work,
+> not something else:** `/he` → **200** with them, **302 → `vercel.com/sso-api`**
+> without. Never write the secret to a file, a commit, a PR body or a log line.
+>
+> **A corollary worth its own line: `*.up.railway.app` being unreachable from the
+> sandbox does NOT mean the backend is down.** The proxy returns
+> `CONNECT tunnel failed, response 403` and curl surfaces that as `000`, which is
+> indistinguishable from an outage at the call site and was misread as one. The
+> browser never talks to Railway anyway — `lib/api.js` uses `baseURL: "/api"` and
+> `next.config.js` `rewrites()` proxies it **server-side**. Probe the backend
+> through `staging.mehamakor.online/api/…`, the path the app actually uses.
+
 ## Driving Playwright against staging from the CC sandbox (TLS workaround)
 
 When you launch Playwright/Chromium against the **live** staging URL
