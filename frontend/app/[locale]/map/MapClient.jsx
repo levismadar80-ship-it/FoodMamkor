@@ -766,8 +766,45 @@ export default function MapPage() {
             bleed-through behind the category chips read as the chips "floating"
             over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
             the bar is a solid band the map starts cleanly below (the blur becomes
-            moot once nothing shows through). z-[50] unchanged (ledger-neutral). */}
-        <div ref={mobileBarRef} className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background border-b border-border">
+            moot once nothing shows through).
+
+            MEH-2115: this bar deliberately does NOT create a stacking context.
+            It carried a z-50 token, and `position:absolute` + an integer z-index is
+            exactly the pair that opens one — which imprisoned everything inside
+            it. CitySearch renders here (:777), so its suggestion list resolved
+            only against its siblings in this bar while the bar as a whole was
+            painted at 50 against the page. The Leaflet controls (1000) therefore
+            won, and MEASURED 3 of 3 contested elements painted over the open
+            list. No z-index on the LIST could ever have fixed that; MEH-2108's
+            z-1010 was capped at 50 here and changed nothing (3/3 before and
+            after). Dropping the token is the fix, verified 3/3 -> 0/3.
+
+            (Token names appear here WITHOUT brackets on purpose. The guard in
+            __tests__/ZTokenLedgerSync.test.js treats a bracketed token as a live
+            usage unless the line starts with `*`, `//` or `{/*` — and a
+            continuation line of this block does not. Writing the bracket form in
+            this prose silently adds a phantom owner to that token's ledger row.)
+
+            ⚠️ THE CONSEQUENCE, because it is not obvious from the diff: anything
+            added inside this bar that expects to be capped by it must now create
+            its own stacking context (`isolation: isolate`, or its own positioned
+            + z-index wrapper). At the time of the change the bar contained
+            exactly two z-carrying elements, measured in the browser with the
+            list open — the CitySearch suggestion list (z-1010) and a round
+            h-8/w-8 scroll-arrow button in the filter-chips row (z-20) — and
+            NOTHING outside the bar with a z-index overlapped the bar's box
+            (0 of 24, measured at 375px). That is why removing it was safe; it is
+            not a standing guarantee.
+
+            On that z-20 button, because a wrong attribution here would send the
+            next reader to the wrong file: it is NOT CitySearch's `×` clear
+            control, which carries no z-index at all (CitySearch.jsx:181-188).
+            Its class string does not appear in any source file under app/ or
+            components/ — it is composed at runtime — so it is described here by
+            what was measured rather than by a file:line that could not be
+            confirmed. (An earlier revision of this comment did attribute it to
+            the `×` button; the CI reviewer on PR #3002 caught that.) */}
+        <div ref={mobileBarRef} className="absolute top-0 inset-x-0 px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
               map below) is now the SINGLE mobile near-me control. City search

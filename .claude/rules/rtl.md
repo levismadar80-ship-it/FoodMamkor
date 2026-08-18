@@ -146,11 +146,26 @@ mechanically true rather than aspirational.
 | `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
 | `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |
 | `z-[598]` | 1 | `producer/[id]/components/StickyContactBar.jsx:71` | sticky contact bar — just under the sheet |
-| `z-[50]` | 2 | `app/[locale]/map/MapClient.jsx:769` | map-local, inside a stacking context |
 | `z-[2]` | 1 | `app/[locale]/dev/components/page.jsx:154` | dev playground |
 | `z-[1]` | 2 | `app/[locale]/about/AboutClient.jsx:624` | decorative layering |
 
-**23 live tokens.** Counts are occurrence counts, not file counts.
+**22 live tokens.** Counts are occurrence counts, not file counts.
+
+> **`z-[50]` is gone as of MEH-2115, and the row it leaves behind is instructive.**
+> The row read **n=2** while only ONE line was a real className
+> (`MapClient.jsx:770`); the other, `:769`, was the tail of a `{/* … */}` block
+> whose text happens to contain the token. `isComment()` in
+> `__tests__/ZTokenLedgerSync.test.js:27-29` only recognises a line that *starts*
+> with `*`, `//`, `/*` or `{/*` — a continuation line of a block comment starts
+> with prose, so it counts as live. **The ledger and the guard agreed with each
+> other and both disagreed with reality.** Consequence when writing prose about a
+> token: spell it without brackets (`z-1010`, not the bracketed form) unless the
+> line starts with a comment marker, or you add a phantom owner to that row. The
+> MEH-2115 comment at `MapClient.jsx:770` is written that way and says so.
+>
+> The bar itself now carries **no** z token by design — see that comment: it must
+> not create a stacking context, because doing so imprisoned the CitySearch
+> suggestion list rendered inside it (measured 3/3 occluded; 0/3 after).
 
 > **`z-[9998]` is NOT in this table on purpose.** It appears exactly once in the
 > repo — a prose comment at `map/components/CityPickerModal.jsx:16` calling it

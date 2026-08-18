@@ -1,0 +1,14 @@
+# Same convention as qa-artifacts/MEH-2108/.gitignore, and for the same reason:
+# the harness writes PNG, scripts/compress-qa-screenshots.mjs converts each to
+# the .webp committed beside it, so every PNG here duplicates tracked evidence
+# and a full sweep's PNGs would breach the 2 MB "qa-artifacts size cap" required
+# job (MEH-1156).
+*.png
+
+# Control-demo and re-verification output, deliberately NOT part of the evidence
+# set. probe-* came from deliberately breaking a control to show it fails;
+# recheck-* is a repeat of a measurement already represented by before-/after-.
+# Committing either invites a later reader to treat a broken-on-purpose run as a
+# finding.
+probe-*
+recheck-*
