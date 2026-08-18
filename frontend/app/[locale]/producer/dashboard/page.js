@@ -134,13 +134,13 @@ function StatusSupportModal({ onClose }) {
           </div>
         </a>
         <a
-          href="mailto:support@mehamakor.online"
+          href="mailto:contact@mehamakor.co.il"
           className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
+            <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
           </div>
         </a>
         <button
