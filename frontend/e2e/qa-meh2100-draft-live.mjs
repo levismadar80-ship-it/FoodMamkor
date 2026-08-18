@@ -87,9 +87,10 @@ const PASSWORD = passArg ? passArg.slice("--password=".length) : "changeme-local
 
 // Measured on staging 2026-08-18: the story frame carries exactly two consent
 // checkboxes (ToS/privacy + the licensing declaration). The third act the
-// comment at RegisterProducerClient.jsx:1775 describes — the grower declaration
-// — is conditional and did not render for «סבונים טבעיים». If this number moves,
-// the harness says so instead of ticking the new box and carrying on.
+// `MEH-759 Chunk C` comment in RegisterProducerClient describes — the grower
+// declaration, rendered under `farmerDeclarationRequired` — is conditional and
+// did not render for «סבונים טבעיים». If this number moves, the harness says so
+// instead of ticking the new box and carrying on.
 const EXPECTED_CONSENT_BOXES = 2;
 
 const WIDTHS = [
@@ -326,12 +327,16 @@ async function registerFirst(page, vp) {
       console.log(`  reg   referral source selected`);
     }
   }
-  // The consent checkboxes carry NO data-testid (RegisterProducerClient.jsx:1780
-  // — a bare input[type=checkbox] inside a <label>), so they cannot be targeted
-  // the way docs/E2E-LOCATORS.md prescribes. Worth fixing in the product; here
-  // the harness ticks every unchecked box in the story frame, which covers all
-  // three affirmative acts the comment at :1775 describes (ToS/privacy, the
+  // The consent checkboxes carry NO data-testid — in RegisterProducerClient they
+  // are bare input[type=checkbox] bound to `agreedToTerms`, `declarationConfirmed`
+  // and `farmerConfirmed`, each inside a <label> — so they cannot be targeted the
+  // way docs/E2E-LOCATORS.md prescribes. Worth fixing in the product; here the
+  // harness ticks every unchecked box in the story frame, which covers all three
+  // affirmative acts the `MEH-759 Chunk C` comment describes (ToS/privacy, the
   // licensing declaration, and the conditional grower declaration).
+  // Anchors are state-variable and sentinel names on purpose: a line number in a
+  // 1,965-line file silently drifts under any insertion above it, and this
+  // comment's own previous ":1775" had already stopped pointing at the block.
   const boxes = page.locator('[data-testid="register-frame-story"] input[type=checkbox]');
   const nBoxes = await boxes.count();
 
