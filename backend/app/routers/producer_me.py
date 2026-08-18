@@ -59,6 +59,7 @@ from app.services.auth_notifications import (
     notify_admin_producer_review_ready,
     notify_admin_producer_sensitive_edit,
 )
+from app.services.submission_confirmation import send_submission_confirmation
 from app.services.submission_gate import submission_missing_items
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
@@ -1644,6 +1645,12 @@ def submit_for_review(
     # bug fix.
     p_name = producer.name
     p_city = producer.city
+    # MEH-2112: the owner's confirmation needs her address and the stamp that
+    # was just written. Snapshotted here with the two above, for the same
+    # reason — post-commit these attributes are expired and lazily reloaded,
+    # which works but reads as a different pattern from its siblings.
+    owner_email = user.email
+    submitted_at = producer.submitted_for_review_at
     db.commit()
 
     # notify_admin_new_producer lives in services/auth_notifications.py. It
@@ -1659,6 +1666,18 @@ def submit_for_review(
     # into an error, and post-commit placement mirrors _maybe_fire_review_ready
     # so the admin is never pinged about a transition that failed to persist.
     background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    # MEH-2112: the owner-facing half of the same moment. Post-commit and
+    # fail-open on the identical grounds as the admin ping above — she has
+    # already been told on screen that the profile was sent, and a Resend
+    # outage must not retract that.
+    #
+    # Placed AFTER the 409/422 raises above, which is what keeps the promise
+    # honest: this fires only on the real draft→pending transition, never on a
+    # rejected re-submit and never on MEH-1236's request-review ping (a
+    # different endpoint entirely, untouched).
+    background_tasks.add_task(
+        send_submission_confirmation, owner_email, p_name, submitted_at
+    )
     return {"detail": "הפרופיל נשלח לבדיקה"}
 
 

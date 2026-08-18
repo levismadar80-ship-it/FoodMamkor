@@ -118,8 +118,25 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         pass
 
 
-def send_email(to: str, subject: str, body: str, html: str | None = None) -> None:
-    """Send a plain-text (+ optional HTML) email via Resend. Always fail-open."""
+def send_email(
+    to: str,
+    subject: str,
+    body: str,
+    html: str | None = None,
+    reply_to: str | None = None,
+) -> None:
+    """Send a plain-text (+ optional HTML) email via Resend. Always fail-open.
+
+    MEH-2112: `reply_to` is OPTIONAL and defaults to None, so all 20 existing
+    call sites keep their exact current behaviour — nothing is added to the
+    Resend payload unless a caller asks for it.
+
+    It exists because the sender is `noreply@mehamakor.online`
+    (config.py:81). Any email whose copy invites a reply — as the submission
+    confirmation's "אפשר פשוט להשיב למייל הזה" does — is making a promise the
+    default sender cannot keep, and a bounced reply from a business owner is
+    worse than never having invited one.
+    """
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
     # trace anywhere. Almost always a config or caller bug, so it is reported
@@ -165,6 +182,11 @@ def send_email(to: str, subject: str, body: str, html: str | None = None) -> Non
             "subject": subject,
             "text": body,
         }
+        # MEH-2112: omitted entirely when unset, rather than sent as None —
+        # the key's absence is what keeps every pre-existing caller's payload
+        # byte-identical to what it sent before this parameter existed.
+        if reply_to:
+            params["reply_to"] = reply_to
         if html:
             params["html"] = html
             # MEH-331 attempt #2: ask Resend's MTA to use base64 (not the
