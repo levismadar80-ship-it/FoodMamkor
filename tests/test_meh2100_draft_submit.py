@@ -44,47 +44,25 @@ from app.services.submission_gate import (
     submission_missing_items,
 )
 
-from conftest import auth_header, make_user, valid_producer_register_payload
+from conftest import (
+    auth_header,
+    make_submit_ready_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 
 _IMAGE = "https://res.cloudinary.com/demo/image/upload/x.jpg"
 
 
 def _complete_draft(db, *, status: str = "draft") -> tuple[Producer, User]:
     """A draft that satisfies every submit requirement. The baseline each
-    gate case degrades by exactly one field."""
-    producer = Producer(
-        name="חוות הניסוי",
-        description="Test producer",
-        city="תל אביב",
-        lat=32.0853,
-        lng=34.7818,
-        status=status,
-        images=[_IMAGE],
-        phone_verified=True,
-    )
-    db.add(producer)
-    db.flush()
+    gate case degrades by exactly one field.
 
-    category = Category(name=f"קטגוריה {uuid.uuid4().hex[:6]}", emoji="🥬")
-    db.add(category)
-    db.flush()
-    db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
-    db.add(Product(producer_id=producer.id, name="מוצר ניסוי"))
-
-    user = User(
-        email=f"{uuid.uuid4().hex[:8]}@example.com",
-        name="ספיר ניסוי",
-        password_hash="$2b$12$placeholder",
-        role="producer",
-        producer_id=producer.id,
-        is_producer=True,
-        email_verified=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(producer)
-    db.refresh(user)
-    return producer, user
+    Thin alias over conftest.make_submit_ready_producer — the body moved there
+    (CI reviewer, #3004) once a second and third suite needed it. Kept as a
+    local name so this file's many call sites read unchanged.
+    """
+    return make_submit_ready_producer(db, status=status)
 
 
 # --- 0. the baseline is genuinely complete (MEH-1619 self-test) ---------------
@@ -232,7 +210,9 @@ def test_register_new_email_creates_draft(client, db):
     resp = client.post("/auth/register/producer", json=payload)
     assert resp.status_code == 200, resp.text
 
-    producer = db.query(Producer).filter(Producer.name == payload["producer_name"]).first()
+    producer = (
+        db.query(Producer).filter(Producer.name == payload["producer_name"]).first()
+    )
     assert producer is not None
     assert producer.status == "draft"
     assert producer.submitted_for_review_at is None, (
