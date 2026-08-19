@@ -1308,7 +1308,9 @@ def send_phone_otp(
 def confirm_phone_otp(
     request: Request,
     body: OtpConfirmIn,
-    background_tasks: BackgroundTasks,
+    # MEH-2125: `background_tasks` is gone from this signature — the removed
+    # `_maybe_fire_review_ready` call was its only consumer. FastAPI injects it
+    # per-handler, so dropping it affects nothing else.
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -1323,8 +1325,8 @@ def confirm_phone_otp(
     # statements, so under READ COMMITTED (Postgres' default) two overlapping
     # confirms could both find the same token before either committed — and
     # both would then run the status transition that lived below (removed in
-    # MEH-2124) and fire the "ready for review" admin ping. Damage was noise,
-    # not data: a duplicate admin notification.
+    # MEH-2124) and fire the "ready for review" admin ping (removed in
+    # MEH-2125). Damage was noise, not data: a duplicate admin notification.
     #
     # `.update()` returns the affected-row count, and that count IS the lock:
     # the second request blocks on the first's row lock, re-evaluates the
@@ -1341,10 +1343,11 @@ def confirm_phone_otp(
     # NOT a reason, and stated here because the first draft of this comment
     # claimed it was: the two forms hold the row lock for exactly the same
     # span. A Postgres row-level write lock lives until the TRANSACTION ends,
-    # not until the statement returns, so the lock taken here is still held
-    # through `_pending_and_approvable` and the status flip below, right up to
-    # `db.commit()`. Anything slow added between here and that commit widens
-    # the window in which a concurrent confirm for the same token blocks.
+    # not until the statement returns, so the row lock taken here is held
+    # right up to `db.commit()`. Anything slow added between here and that
+    # commit widens the window in which a concurrent confirm for the same
+    # token blocks. (It used to name `_pending_and_approvable` and the status
+    # flip as what sat in that span; both are gone — MEH-2124, MEH-2125.)
     #
     # The loser gets the SAME 400 as a wrong or expired code. That is
     # deliberate: from the caller's side a lost race and a stale code are the
@@ -1363,109 +1366,30 @@ def confirm_phone_otp(
     if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
-    # MEH-2051: serialize against a concurrent PUT /producers/me, which WAS the
-    # OTHER handler able to complete the review-ready transition. Without this
-    # the two computed the same false→true edge independently and the admin was
-    # pinged twice for one flip — measured on origin/staging.
+    # MEH-2125: this handler is now a pure `phone_verified` writer, and three
+    # things were removed from between the claim above and the commit below —
+    # the MEH-2051 advisory lock + its `db.expire`, the MEH-1816 `was_approvable`
+    # snapshot, and the `_maybe_fire_review_ready` call. All three were
+    # MEASURED unreachable, not judged so: `_pending_and_approvable` (:293)
+    # reads status/photos/licence and never `phone_verified`, so once MEH-2124
+    # deleted the status flip the snapshot and the post-commit re-read
+    # evaluated the same predicate over an unchanged row and the ping's
+    # `not X and X` was False for every input. The concurrency test reported
+    # `fired 0 times` before its assertion was touched.
     #
-    # MEH-2124: that race is now structurally impossible, because this handler
-    # no longer produces the edge at all (see the note further down). Its guard
-    # file, tests/test_otp_put_ping_race.py, was deleted with it — so this lock
-    # is UNGUARDED and, on the evidence below, unreachable-by-need. It is left
-    # in place rather than removed because taking a concurrency guard out is a
-    # separate decision from removing a dead status value, and this card's
-    # scope is the latter. Flagged on the PR for a follow-up ruling.
+    # `_pending_and_approvable`, `_lock_producer_updates` and
+    # `_maybe_fire_review_ready` all REMAIN — PUT /producers/me is the live
+    # caller of each, and that path still produces a genuine false→true edge.
+    # What went is only this handler's use of them.
     #
-    # WHY HERE AND NOT AT THE TOP OF THE HANDLER, which is where the helper's
-    # own docstring points: taking it before the producer load would make a
-    # rival confirm block HERE instead of on the token row lock inside the
-    # conditional UPDATE above. That was not reasoned about and left at that —
-    # it was BUILT and MEASURED, twice, because the failure it causes is the
-    # kind that reads as success:
-    #
-    #   lock at top + atomic claim intact  -> codes == [200, 200]
-    #   lock at top + atomic claim REVERTED -> codes == [200, 200]
-    #
-    # Byte-identical. Under that placement the loser hits the `phone_verified`
-    # early-return before ever reaching the UPDATE, so MEH-1820's test reports
-    # the SAME thing whether its guard works or not — it stops being a guard.
-    # Both runs are red today, which sounds safe; the trap is that the obvious
-    # way to clear that red is to relax the assertion to [200, 200], and doing
-    # so would permanently blind the atomic claim with nothing announcing it.
-    # It also changes the API: the loser would return 200 "כבר מאומת" instead
-    # of the 400 MEH-1820 deliberately chose, a contract change smuggled in as
-    # a concurrency fix.
-    #
-    # With the lock HERE, that same reverted-claim run still reports
-    # [200, 200] vs the required [200, 400] — the guard keeps discriminating.
-    # That is the measurement this placement rests on, not the argument above.
-    #
-    # WHY THE EXPIRE IS LOAD-BEARING, not tidiness: `producer` was loaded above,
-    # possibly before the PUT we are now waiting behind committed. `expire`
-    # forces the snapshot below to be computed on a row read *under* this lock —
-    # without it the loser evaluates a stale row, concludes the edge is still
-    # ahead of it, and fires the duplicate ping anyway. That is precisely the
-    # "same bug wearing a lock" the helper warns about.
-    #
-    # NO DEADLOCK: the only lock ordering here is token row → advisory key. The
-    # PUT takes the advisory key alone and never touches phone_otp_tokens, so
-    # there is no cycle. Two confirms for different tokens of one producer take
-    # different rows and then serialize on the key, which is plain waiting.
-    _lock_producer_updates(db, producer.id)
-    db.expire(producer)
-
+    # MEH-1820's guard is unaffected in substance but its SEAM moved: the
+    # barrier in tests/test_otp_confirm_concurrency.py used to be planted on
+    # `_pending_and_approvable` because that was the one call between the claim
+    # and the commit. There is no such call now, so the test instruments the
+    # request session's `commit` instead. If you add anything here that a rival
+    # confirm can reach, re-read that test's docstring first.
     producer.phone_verified = True
-    # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
-    # PUT /producers/me does at :259 — this is the SECOND mutation site able to
-    # complete the review-ready transition, and MEH-1351 only covered the first.
-    # A business that uploaded its image before its status reached the queue
-    # crossed the threshold here, so a ping owned by one site alone got
-    # swallowed. (That path is gone since MEH-2124 — see the note below.)
-    # The snapshot is also what keeps the already-pending path silent: such a
-    # producer is approvable before the call, so the false→true edge is absent.
-    #
-    # MEH-1820 — REORDERING THIS LINE BREAKS A TEST IN A SILENT WAY. The
-    # concurrency guard in tests/test_otp_confirm_concurrency.py patches a
-    # barrier over `_pending_and_approvable` precisely because it is the one
-    # call between the token claim above and the commit below. If some other
-    # call moves into that gap, the barrier stops marking "inside the claim
-    # window" and the test degrades into either a no-op that passes on broken
-    # code or a five-second timeout — neither of which announces itself. Move
-    # this and re-read that test's docstring.
-    #
-    # MEH-2051 added the lock+expire pair above INTO that gap, so the warning
-    # deserves its worked example rather than being quietly falsified. It is
-    # safe for one specific reason, and the reason is not "a lock is cheap":
-    # in the OTP-vs-OTP race the rival confirm never gets past the conditional
-    # UPDATE, so it never reaches either the new lock or this barrier, and the
-    # barrier still marks exactly what its docstring says it marks. That was
-    # verified by re-running MEH-1820's test with the atomic claim reverted and
-    # confirming it still goes red. Anything added here that a RIVAL CONFIRM
-    # can actually reach would break that property — the test is what tells
-    # you, and only if you re-run it against the broken claim.
-    was_approvable = _pending_and_approvable(db, producer)
-    # MEH-2124: the status flip that used to live here is GONE. MEH-745 parked
-    # self-registered producers in a `pending_whatsapp` state and a successful
-    # confirm released them into `pending`; MEH-2100 made every creation site
-    # write `draft` instead, so nothing entered that state and this branch
-    # became its only exit with no entrance. The value was removed here.
-    #
-    # CONSEQUENCE, stated because it is not obvious and no test now covers it:
-    # `_maybe_fire_review_ready` below can no longer fire FROM THIS HANDLER.
-    # `_pending_and_approvable` (:293) reads `status` and the photo/licence
-    # state — never `phone_verified` — so the flip was the only thing on this
-    # path able to move `was_approvable` false→true. It is also moot in
-    # practice: reaching `pending` requires passing the submit gate, which
-    # requires `phone_verified`, so a `pending` producer early-returns at the
-    # top of this handler. The call, the snapshot and the MEH-2051 lock are
-    # left in place deliberately — they belong to MEH-1816/2051/1820, not to
-    # this card, and removing concurrency guards is out of its scope. The
-    # sibling site (PUT /producers/me, :472) is unaffected and still fires.
     db.commit()
-    # REUSES: backend/app/routers/producer_me.py:413 — same helper, same
-    # post-commit position, so an admin is never pinged about a transition that
-    # failed to persist.
-    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     return {"detail": "הטלפון אומת בהצלחה"}
 
 
