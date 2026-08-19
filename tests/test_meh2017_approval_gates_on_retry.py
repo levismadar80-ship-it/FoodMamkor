@@ -199,7 +199,7 @@ def test_retry_path_re_runs_the_phone_gate(client, db, monkeypatch):
         "un-verification was never injected — this test asserts nothing"
     )
 
-    assert resp.status_code == 409, (
+    assert resp.status_code == 422, (
         "the retry approved a producer whose WhatsApp verification was revoked "
         "inside the rollback window — the phone gate ran only on the main "
         "path. Response: " + resp.text

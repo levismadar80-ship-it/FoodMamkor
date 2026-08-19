@@ -261,15 +261,19 @@ def _assert_approvable(
     # submit gate; this is the approve-time mirror, for the older/bypassing
     # routes that reach approval without having passed it.
     #
-    # ⚠️ 409 here is the TICKET'S choice and deviates from the two gates above,
-    # which are 422 — this file's convention is 422 for approve-time content
-    # gates and 409 for status transitions (see the MEH-971 comment above and
-    # request_producer_changes' guard). Flagged to Sapir in the PR rather than
-    # silently normalised; do NOT "fix" it to 422 without a ruling, and do not
-    # copy 409 to a new content gate on the strength of this line alone.
+    # 422, matching the photo and licence gates directly above — this is an
+    # approve-time CONTENT gate, and this file's split is 422 for those, 409 for
+    # status transitions (the draft blocks in the two handlers, MEH-769's
+    # toggle guard, request_producer_changes').
+    #
+    # RULED by Sapir 18/08, and recorded because the ticket said otherwise: the
+    # MEH-2121 AC specified 409 here. That was a spec error, caught
+    # independently by this PR's Phase 0 and by the CI reviewer, and corrected
+    # before merge rather than after a client had branched on it. The card's
+    # description now matches. Do not "restore" 409.
     if not producer.phone_verified and not overrides.unverified_phone:
         raise HTTPException(
-            status_code=409,
+            status_code=422,
             detail="לא ניתן לאשר בית עסק ללא אימות מספר הוואטסאפ. בקשי מבעלת העסק לאמת את המספר, או אשרי עם דריסה מפורשת.",
         )
     if not producer.phone_verified and overrides.unverified_phone:

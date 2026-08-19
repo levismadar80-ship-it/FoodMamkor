@@ -415,7 +415,9 @@ def test_approve_unverified_phone_is_blocked(client, db, monkeypatch):
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
 
-    assert resp.status_code == 409, resp.text
+    # 422, not 409: an approve-time CONTENT gate, like the photo and licence
+    # gates it sits beside. Ruled 18/08 — the ticket's AC said 409.
+    assert resp.status_code == 422, resp.text
     db.refresh(producer)
     assert producer.status == "pending"
     assert calls == [], "a blocked approve must not fire producer_approved_v1"
