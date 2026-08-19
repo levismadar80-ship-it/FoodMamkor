@@ -205,6 +205,9 @@ describe("MEH-2130 — param names are declared once per surface", () => {
     expect(buildChipParams({ vegan: false })).toEqual({});
   });
 
+  // 🔴 MEH-2133 PIN SITE 3 of 3 — the test that holds the defect in place.
+  // MEH-2133 flips this case to assert the CORRECT behaviour; it is not deleted
+  // (a removed test is a removed guarantee, and the axis still needs one).
   // 🔴 PINNED DEFECT, not a design choice. Full reasoning on the axis in
   // lib/filter-taxonomy.js: /map lists no_added_sugar as a chip and renders it
   // in FilterSheet, but chipStateToParams never emitted its param — so toggling

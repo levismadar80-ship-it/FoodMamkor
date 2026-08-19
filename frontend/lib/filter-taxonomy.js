@@ -221,7 +221,9 @@ export const FILTER_AXES = {
   // "מתאים לסוכרתיים" stays banned everywhere — a medical claim on top of a
   // self-declaration about a product.
   //
-  // 🔴 mapParam: false records a MEASURED DEFECT, not an intention.
+  // 🔴 MEH-2133 PIN SITE 1 of 3. mapParam: false records a MEASURED DEFECT,
+  // not an intention. Grep `MEH-2133` to find every pin; removing all of them
+  // IS the fix, and MEH-2133's acceptance criterion is that the grep returns 0.
   //
   // Before MEH-2130, map-chips.js chipStateToParams carried nine hand-written
   // `if (state.<key>)` lines and `no_added_sugar` was not among them, while
@@ -237,6 +239,8 @@ export const FILTER_AXES = {
   // instead of an invisible gap between two lists, and
   // `filterTaxonomy.test.js` pins it so removing this line is a conscious act.
   no_added_sugar: {
+    // MEH-2133: see the pin note above — this axis is offered on /map and its
+    // param is suppressed there. That is the defect, deliberately preserved.
     label: "ללא סוכר מוסף",
     scope: "any-product",
     evidence: "self-declared",
