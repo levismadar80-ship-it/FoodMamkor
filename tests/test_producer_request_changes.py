@@ -134,14 +134,10 @@ def test_request_changes_on_approved_producer_is_409(client, db):
     assert producer.status == "approved", "guard must not change status"
 
 
-def test_request_changes_on_pending_whatsapp_is_allowed(client, db):
-    """pending_whatsapp is still a pre-approval state → allowed."""
-    producer = make_producer(db, status="pending_whatsapp")
-    resp = _request_changes(client, producer.id, _admin(db))
-    assert resp.status_code == 200, resp.text
-    db.refresh(producer)
-    assert producer.requested_changes == FEEDBACK
-    assert producer.status == "pending_whatsapp"
+# A case here asserted request-changes on a `pending_whatsapp` producer, the
+# second pre-approval state the guard used to admit. That status was removed in
+# MEH-2124 and the guard is now `status != "pending"`, so the case was deleted
+# rather than retargeted — the pending case is asserted above.
 
 
 # --- email fires to the producer's own address ------------------------------

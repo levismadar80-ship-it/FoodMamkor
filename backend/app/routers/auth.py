@@ -554,10 +554,10 @@ async def register_producer(
             # Any site left writing a queue status would be a hole straight
             # past the submit gate.
             #
-            # `pending_whatsapp` is NOT deleted (Expand-Contract, ADR-007): it
-            # stays a legal value that existing rows may hold and that
-            # confirm_phone_otp still advances, it is simply no longer
-            # reachable for a new registration. Contract phase is a later card.
+            # The queue status this branch used to write, `pending_whatsapp`,
+            # was kept alive through the Expand phase (ADR-007) and then
+            # removed in MEH-2124 — the Contract phase — once it was confirmed
+            # that no row had ever held it.
             status="draft",
             # MEH-1838 chunk A: delivery shape, previously never captured at
             # registration — every producer landed on the column defaults

@@ -148,11 +148,12 @@ def submission_missing_items(producer: Producer) -> list[str]:
     # MEH-745: the WhatsApp number is the channel every customer contact runs
     # through, so an unverified one makes an approved page useless.
     #
-    # `phone_verified` is the signal, NOT `status == "pending_whatsapp"` which
-    # is what pending_nudge read before this module existed. Under the draft
-    # state machine that status is no longer reachable for a new registration,
-    # so keying on it would report every draft as phone-verified and open the
-    # gate for nobody's benefit. The column is written by
+    # `phone_verified` is the signal, NOT a status value — pending_nudge read
+    # `status == "pending_whatsapp"` before this module existed, and under the
+    # draft state machine that status stopped being reachable for a new
+    # registration (it was removed outright in MEH-2124), so keying on it would
+    # have reported every draft as phone-verified and opened the gate for
+    # nobody's benefit. The column is written by
     # producer_me.py:confirm_phone_otp independently of status, which is what
     # makes it correct for a draft.
     if not producer.phone_verified:
