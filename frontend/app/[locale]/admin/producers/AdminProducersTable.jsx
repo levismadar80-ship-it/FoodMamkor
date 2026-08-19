@@ -498,15 +498,23 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
 
 function TableHead() {
   const t = useTranslations("admin");
+  // MEH-2126: the legend documents what each status VALUE means, so it has to
+  // match the values the backend can actually emit. It previously listed
+  // `suspended`, which admin.py emits zero times, and omitted `draft`, which
+  // is where every new registration starts (MEH-2100) — the legend defined a
+  // status that does not exist while leaving out the most common one. Read in
+  // machine order now: draft -> pending -> approved/rejected/inactive.
   const statusTooltip = (
     <>
+      {t("producers.table.status_tooltip_draft")}
+      <br />
       {t("producers.table.status_tooltip_pending")}
       <br />
       {t("producers.table.status_tooltip_approved")}
       <br />
       {t("producers.table.status_tooltip_rejected")}
       <br />
-      {t("producers.table.status_tooltip_suspended")}
+      {t("producers.table.status_tooltip_inactive")}
     </>
   );
   return (
