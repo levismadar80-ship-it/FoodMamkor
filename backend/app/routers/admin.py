@@ -714,7 +714,7 @@ def admin_update_producer(
 
 # MEH-769 (HOT-002): the toggle is purely the visibility switch for an
 # already-decided business — approved ⇄ inactive only. Any other source
-# status (pending / rejected) must go through the real
+# status (draft / pending / rejected) must go through the real
 # approve_producer flow, which fires the MEH-509 side-effects (approval
 # email, producer_approved_v1 WhatsApp, admin WhatsApp). Before this guard
 # the bare `else` branch silently force-approved a REJECTED producer onto
@@ -1407,8 +1407,8 @@ def _producer_rejected_body(name: str, reason: str) -> str:
     בלוח הבקרה" rather than the retired "הגישי שוב מהדף האישי" because the
     resubmit flow does not exist for a rejected business —
     `producer_me.py`'s `request_producer_review` gates POST
-    /producers/me/request-review to `pending`, so a rejected owner gets 409. Editing, by
-    contrast, IS open to her, which is what licenses this wording:
+    /producers/me/request-review to `pending`, so a rejected owner gets 409.
+    Editing, by contrast, IS open to her, which is what licenses this wording:
 
       * `auth.py:363-368` — `require_producer` gates on role only, no status
       * `producer_me.py:379-381` — `update_my_producer` 404s on a missing
