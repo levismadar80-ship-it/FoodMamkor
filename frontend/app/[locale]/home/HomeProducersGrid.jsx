@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
@@ -16,7 +16,12 @@ import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 // CHIPS_CONFIG is shared with /producers, so a chip added there appears on
 // this row automatically — gating only at /producers would leave the home
 // row deep-linking to a listing that returns nothing.
-import { CHIPS_CONFIG, GATED_DIET_KEYS, visibleGatedDietKeys } from "@/lib/producer-filters";
+import {
+  CHIPS_CONFIG,
+  GATED_DIET_KEYS,
+  openNowChipVisible,   // MEH-2131
+  visibleGatedDietKeys,
+} from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
@@ -80,11 +85,47 @@ export function HomeProducersGrid({
   // MEH-1934: recomputed when the loaded set changes — the gate turns the chips
   // on by itself once the catalog carries the markings, with nobody flipping a
   // flag. An ACTIVE chip always survives the gate (see visibleGatedDietKeys).
+  // MEH-2131: same clock discipline as /producers — null through the SSR pass
+  // and the first client render, filled in afterwards. The chip's PRESENCE
+  // depends on it, so reading `new Date()` during render would make the server
+  // and client DOM disagree (lib/orderWindow.js header).
+  const [openNowClock, setOpenNowClock] = useState(null);
+  useEffect(() => {
+    setOpenNowClock(new Date());
+  }, []);
   const chipsWithIcons = useMemo(() => {
     const shown = visibleGatedDietKeys(visibleProducers, chips);
     const hidden = GATED_DIET_KEYS.filter((k) => !shown.includes(k));
-    return withChipIcons(CHIPS_CONFIG.filter((c) => !hidden.includes(c.key)));
-  }, [visibleProducers, chips]);
+    // MEH-2131: the open-now axis reaches the home row via the unified config,
+    // so it needs the home row's copy of the gate. Gating only at /producers
+    // would leave this row deep-linking to a listing that returns nothing —
+    // the same reasoning MEH-1934 used for the diet gates.
+    //
+    // `catalogFullyLoaded: true`, and the distinction is load-bearing rather
+    // than a shortcut. Home's `hasMore` is `visibleCount < producers.length`
+    // (use-home-page.js:819) — a DISPLAY collapse behind "עוד בתי עסק", not
+    // "more pages unfetched". `producers` already holds everything home
+    // fetched, so it is the complete catalog from the guard's point of view.
+    //
+    // Passing `!hasMore` here was the first version of this line, and it was
+    // wrong in the way that matters: with more than one screenful of results
+    // `hasMore` is true, the zero-result half never ran, and the chip rendered
+    // at 3am exactly as before. The self-QA harness caught it (case B), which
+    // is the entire reason that harness asserts the withheld case and not only
+    // the visible one.
+    const openNowHidden =
+      !openNowChipVisible({
+        producers,
+        active: chips.open_for_orders_now,
+        catalogFullyLoaded: true,
+        now: openNowClock,
+      }) && "open_for_orders_now";
+    return withChipIcons(
+      CHIPS_CONFIG.filter(
+        (c) => !hidden.includes(c.key) && c.key !== openNowHidden,
+      ),
+    );
+  }, [visibleProducers, chips, producers, openNowClock]);
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
   // is selected OR the id hasn't resolved against the loaded list yet, so
