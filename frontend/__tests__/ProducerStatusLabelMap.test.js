@@ -25,6 +25,7 @@ import {
   PRODUCER_STATUS_COLORS,
   getProducerStatusLabel,
   getProducerStatusColor,
+  UNKNOWN_STATUS_COLOR,
 } from "@/lib/producer-status";
 
 // Independently declared — see the docstring. `pending_whatsapp` is absent
@@ -42,7 +43,7 @@ describe("MEH-2126 — producer status label map covers the whole machine", () =
 
   it.each(DB_STATUSES)("%s has its own colour, not the unknown fallback", (status) => {
     expect(PRODUCER_STATUS_COLORS[status]).toBeTruthy();
-    expect(getProducerStatusColor(status)).not.toBe("bg-gray-100");
+    expect(getProducerStatusColor(status)).not.toBe(UNKNOWN_STATUS_COLOR);
   });
 
   it("draft is visually distinct from inactive", () => {
@@ -56,7 +57,7 @@ describe("MEH-2126 — producer status label map covers the whole machine", () =
     // The fallback is not being removed — it is the net for a status added to
     // the backend before this map catches up. It must stay non-crashing.
     expect(getProducerStatusLabel("some_future_status")).toBe("some_future_status");
-    expect(getProducerStatusColor("some_future_status")).toBe("bg-gray-100");
+    expect(getProducerStatusColor("some_future_status")).toBe(UNKNOWN_STATUS_COLOR);
   });
 
   it("declares no label for a status the backend cannot emit", () => {

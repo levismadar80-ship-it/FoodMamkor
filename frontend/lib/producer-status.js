@@ -37,6 +37,13 @@ export function getProducerStatusLabel(status) {
   return PRODUCER_STATUS_LABELS[status] ?? status;
 }
 
+// The colour a status the map does not know falls back to. Named and exported
+// because ProducerStatusLabelMap.test.js asserts that every KNOWN status
+// resolves to something else — with the value hardcoded there, changing this
+// fallback would leave the test green even if a known status started falling
+// through to the new value. (CI review, MEH-2126.)
+export const UNKNOWN_STATUS_COLOR = "bg-gray-100";
+
 export function getProducerStatusColor(status) {
-  return PRODUCER_STATUS_COLORS[status] ?? "bg-gray-100";
+  return PRODUCER_STATUS_COLORS[status] ?? UNKNOWN_STATUS_COLOR;
 }
