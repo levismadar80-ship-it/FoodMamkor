@@ -568,6 +568,25 @@ _ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
 # that a 5 MB+ file is legitimate.
 _MAX_CERT_BYTES = 8 * 1024 * 1024
 
+# MEH-2128: the exact media types `_sniff_image_type` (upload.py:47-61) accepts
+# at upload time — jpeg / png / webp / gif, plus the HEIC/HEIF ISO-BMFF brands
+# it folds into one label. A `startswith("image/")` gate served ANY image/*,
+# `image/svg+xml` included: an SVG proxied from our own origin renders as a
+# top-level document and executes embedded <script>, i.e. stored XSS on
+# mehamakor. What cannot enter through upload must not leave through the proxy,
+# so the serve-side set is a membership test against exactly that set — never
+# wider (no image/avif, no image/svg+xml).
+_ALLOWED_CERT_CONTENT_TYPES = frozenset(
+    {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+        "image/heic",
+        "image/heif",
+    }
+)
+
 
 # MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
 # Both call sites use it — the serializer that lists which badges have a cert,
@@ -662,13 +681,22 @@ def get_kashrut_cert(
             if upstream.status_code != 200:
                 raise HTTPException(status_code=404, detail="לא נמצא")
 
-            content_type = upstream.headers.get(
-                "content-type", "application/octet-stream"
+            # MEH-2128: normalise before comparing — an upstream may send
+            # `IMAGE/JPEG; charset=utf-8`, and a raw compare would reject a
+            # legitimate cert while a raw pass-through would echo the
+            # requester-influenced string straight into the response header.
+            content_type = (
+                upstream.headers.get("content-type", "application/octet-stream")
+                .split(";")[0]
+                .strip()
+                .lower()
             )
             # Only ever serve an image — the upload route sniffs magic bytes,
             # but the column is plain text, so this is the second lock
-            # rather than the first.
-            if not content_type.startswith("image/"):
+            # rather than the first. Membership, not a prefix: `image/svg+xml`
+            # passes `startswith("image/")` and executes script when opened
+            # as a top-level document from our own origin (MEH-2128).
+            if content_type not in _ALLOWED_CERT_CONTENT_TYPES:
                 raise HTTPException(status_code=404, detail="לא נמצא")
 
             # Adversarial review: httpx.get().content buffers the WHOLE body
