@@ -69,7 +69,12 @@ export function sortProducers(list, sortBy, userLoc) {
  * Shape of the state machine (preserved from source):
  *   - `chipState.categoryKeys` ⊆ CATEGORY_CHIPS keys (MEH-1465 multi-select OR;
  *     `[]` = "all"/nothing selected — the reset sentinel)
- *   - `chipState.organic / has_delivery / verified / grass_fed` independent toggles
+ *   - `chipState.<attribute keys>` — independent toggles, one per axis whose
+ *     `surfaces` includes "map" (lib/filter-taxonomy.js). Named individually
+ *     here until MEH-2131: the list said `organic / has_delivery / verified /
+ *     grass_fed`, which had been wrong since MEH-1259 removed `organic` and
+ *     omitted every diet axis added after it. A docblock enumerating a derived
+ *     set is a fourth copy of it, so this one describes the rule instead.
  *   - `cityFilter` is the city-search input (text)
  *   - `committedBounds` is the bounds the LIST is filtered by — set
  *     either by chip changes (cleared) or by the "search this area"
@@ -232,18 +237,19 @@ export function useMapFilters({
   // fetch is instant, and any pending debounced sheet fetch is superseded.
   const clearSheetFilters = () => {
     cancelPendingSheetFetch();
-    const next = {
-      ...chipState,
-      organic: false,
-      has_delivery: false,
-      pickup_points: false,  // MEH-2046
-      verified: false,
-      kosher: false,
-      grass_fed: false,
-      vegan: false,
-      gluten_free: false,
-      lactose_free: false,
-    };
+    // MEH-2131 follow-up: derived, for the same reason the chipState default
+    // above is. This was the file's SECOND hand-written key list and it had
+    // drifted the same way — it still cleared the long-removed `organic`
+    // (MEH-1259) and did NOT clear `vegetarian` (MEH-1438) or `no_added_sugar`
+    // (MEH-1934), so "ניקוי הכל" in /map's FilterSheet left those two toggles
+    // standing while clearing everything around them. Adding
+    // `open_for_orders_now` to it by hand would have made a fourth omission
+    // inevitable; deriving fixes all three and cannot drift again.
+    //
+    // `categoryKeys` is deliberately untouched: MEH-1368's tag-strip rule keeps
+    // a category SELECTION out of this control — its exit affordance is the
+    // "כל" chip, and `resetAllFilters` is what clears both dimensions.
+    const next = { ...chipState, ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)) };
     setChipState(next);
     loadProducers(buildParams(next));
     setCommittedBounds(null);
@@ -266,17 +272,23 @@ export function useMapFilters({
 
   const resetAllFilters = () => {
     cancelPendingSheetFetch();
+    // MEH-2131 follow-up: the THIRD hand-written key list in this file, found
+    // by grepping for it after the CI reviewer named the second — a finding is
+    // a sample, not an inventory.
+    //
+    // Its omissions bite harder than clearSheetFilters' did, because this one
+    // REPLACES chipState instead of spreading it: any key missing here does not
+    // merely survive the reset, it becomes `undefined`. That is precisely the
+    // `!undefined` toggling state MEH-1075 wrote these literals to eliminate,
+    // reintroduced for `vegetarian` (MEH-1438), `no_added_sugar` (MEH-1934) and
+    // — before this fix — `open_for_orders_now`.
+    //
+    // Same shape as the default and the sheet-clear above, so the same
+    // derivation. `categoryKeys: []` stays explicit: it is not an attribute
+    // axis, and unlike clearSheetFilters this control DOES clear it.
     const next = {
       categoryKeys: [],
-      organic: false,
-      has_delivery: false,
-      pickup_points: false,  // MEH-2046
-      verified: false,
-      kosher: false,
-      grass_fed: false,
-      vegan: false,
-      gluten_free: false,
-      lactose_free: false,
+      ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
     };
     setChipState(next);
     loadProducers(buildParams(next));
