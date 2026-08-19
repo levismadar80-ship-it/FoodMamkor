@@ -37,14 +37,28 @@
  * Surface-specific keys stay OUT of this map — and after MEH-2130 that is a
  * CONSEQUENCE of their `surfaces` field rather than a second thing to remember:
  *   - `grass_fed` — /map only (`surfaces: ["map"]`).
- *   - `open_for_orders_now` — /producers only (`surfaces: ["producers"]`,
- *     MEH-1881). It was briefly added to this map by hand and the
- *     attributeLabels parity test caught it: membership here is a promise that
- *     EVERY surface renders it.
  *   - `pickup_points` — WAS /map-only under MEH-2046 and is now cross-surface,
  *     so it appears here. That promotion is the substance of MEH-2130: the
  *     backend filter `?pickup_points=true` is public and global, so nothing but
  *     config placement kept "איסוף עצמי" off the listing surfaces.
+ *   - `open_for_orders_now` — WAS /producers-only under MEH-1881 and is now
+ *     cross-surface (MEH-2131), so it appears here too. Same shape as
+ *     `pickup_points` above: the backend has answered
+ *     `?open_for_orders_now=true` since MEH-1881, and only config placement
+ *     kept the chip off home and /map.
+ *
+ * That two of the three bullets here have now flipped from "surface-local" to
+ * "cross-surface" is the argument for deriving this map rather than writing it:
+ * each flip was ONE `surfaces` edit, and the parity test turned membership into
+ * a gate that the promotion had to satisfy on every surface at once. Before
+ * MEH-2130 the same change meant editing three lists and hoping they agreed.
+ *
+ * The bullet for `open_for_orders_now` said the opposite until MEH-2131, having
+ * been written one ticket earlier and falsified by the next — which is why it
+ * is worth saying plainly that a comment describing membership is a SECOND
+ * statement of a fact the code already derives, and will go stale exactly this
+ * way again. The runtime answer is `SHARED_AXIS_KEYS`; this block is a reading
+ * aid and loses to it. Caught by the CI reviewer on MEH-2131, not by a gate.
  *
  * MEH-1418: labels stay text-only (Emoji-LOCK v2 forbids emoji literals). The
  * chips carry Phosphor LEADING ICONS via lib/chip-icons.js — aria-hidden
