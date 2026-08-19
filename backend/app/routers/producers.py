@@ -568,9 +568,11 @@ _ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
 # that a 5 MB+ file is legitimate.
 _MAX_CERT_BYTES = 8 * 1024 * 1024
 
-# MEH-2128: the exact media types `_sniff_image_type` (upload.py:47-61) accepts
-# at upload time — jpeg / png / webp / gif, plus the HEIC/HEIF ISO-BMFF brands
-# it folds into one label. A `startswith("image/")` gate served ANY image/*,
+# MEH-2128: the media types Cloudinary may report for a file that
+# `_sniff_image_type` (upload.py:47-61) accepts at upload time — jpeg / png /
+# webp / gif, plus HEIC and HEIF, whose ISO-BMFF brands that function folds
+# into the single label "heic" while Cloudinary still distinguishes the two on
+# delivery. A `startswith("image/")` gate served ANY image/*,
 # `image/svg+xml` included: an SVG proxied from our own origin renders as a
 # top-level document and executes embedded <script>, i.e. stored XSS on
 # mehamakor. What cannot enter through upload must not leave through the proxy,
