@@ -193,16 +193,40 @@ describe("CertModal dialog contract (MEH-2039)", () => {
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
     // This modal's panel holds exactly one focusable (the close button), so
-    // the trap's correct behaviour is to hold focus ON it in both directions.
+    // first === last === that button and the trap's correct behaviour is to
+    // hold focus ON it in both directions.
     expect(focusables.length).toBe(1);
     const only = focusables[0];
 
+    // WHY NOT `expect(document.activeElement).toBe(only)`: with a single
+    // focusable that assertion is TRUE IN BOTH WORLDS and therefore not a
+    // check at all. jsdom never moves focus on a synthetic Tab, so focus stays
+    // on `only` whether the trap ran or not — the LocationModal analogue only
+    // discriminates because it has 2+ focusables and can assert last -> first.
+    //
+    // What DOES discriminate here is the side effect the handler alone can
+    // produce: it calls preventDefault(), and fireEvent returns false when a
+    // listener did. A neutered trap returns true. Plus a spy on .focus(),
+    // which nothing else in the render calls at this point.
+    const focusSpy = vi.spyOn(only, "focus");
     only.focus();
-    fireEvent.keyDown(document, { key: "Tab" });
+    focusSpy.mockClear();
+
+    const forwardNotPrevented = fireEvent.keyDown(document, { key: "Tab" });
+    expect(forwardNotPrevented).toBe(false);
+    expect(focusSpy).toHaveBeenCalled();
     expect(document.activeElement).toBe(only);
 
-    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    focusSpy.mockClear();
+    const backNotPrevented = fireEvent.keyDown(document, {
+      key: "Tab",
+      shiftKey: true,
+    });
+    expect(backNotPrevented).toBe(false);
+    expect(focusSpy).toHaveBeenCalled();
     expect(document.activeElement).toBe(only);
+
+    focusSpy.mockRestore();
   });
 
   it("locks body scroll while open and restores it on close", () => {
