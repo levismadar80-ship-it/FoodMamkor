@@ -120,21 +120,37 @@ export const FILTER_AXES = {
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
-  // MEH-1881: /producers-only. A by-the-hour operational state, not a durable
-  // attribute — its ticket scoped it to the canonical listing surface, and it
-  // is additionally runtime-gated (OPEN_NOW_CHIP_MIN). Kept off `home` and
-  // `map` here, which is what keeps it out of ATTRIBUTE_LABELS.
+  // MEH-1881 wired the backend filter and put the chip on /producers only,
+  // because that ticket scoped the other two surfaces out. MEH-2131 widens it:
+  // "open now" is the highest-intent filter a directory has (HappyCow, Google
+  // Maps), the predicate has been public and correct since MEH-1881, and after
+  // MEH-2130 exposing it everywhere is one field rather than three edits.
+  //
+  // Copy is Sapir-LOCKED 19/08 (MEH-2131) and is the PLURAL form — it changed
+  // from MEH-1881's singular "פתוח להזמנות עכשיו", matching how every other
+  // chip in the row reads as a property of the businesses being listed rather
+  // than of one business. Do not revert it to the singular.
   //
   // The subtext says "שהגדירו" and not "זמינים עכשיו" because nobody checks
   // that she actually answers (MEH-1652 copy-honesty: describe the declared
-  // mechanic, never promise on the business's behalf).
+  // mechanic, never promise on the business's behalf). That distinction is the
+  // whole axis: `order_window` is when the owner said she takes WhatsApp
+  // orders, NOT when a shop is staffed — `opening_hours` is the other fact and
+  // this filter deliberately ignores it (producer_listing.py
+  // _open_for_orders_now_condition).
+  //
+  // The window is evaluated SERVER-side in Asia/Jerusalem (`israel_now()`), so
+  // a visitor abroad gets the same answer a local does and the frontend never
+  // sends a time — only the boolean. See lib/producer-filters.js
+  // `openNowChipVisible` for the one place the client looks at a clock, and
+  // why that is a visibility decision rather than a second filter.
   open_for_orders_now: {
-    label: "פתוח להזמנות עכשיו",
+    label: "פתוחים להזמנות עכשיו",
     scope: "business",
     evidence: "self-declared",
     subtext: "עסקים שחלון ההזמנות שהגדירו פתוח ברגע זה",
     group: "service",
-    surfaces: ["producers"],
+    surfaces: ["home", "producers", "map"],
   },
 
   // ── quality ────────────────────────────────────────────────────────────
@@ -252,6 +268,11 @@ export const MAP_CHIP_ORDER = [
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
+  // MEH-2131: last in the /map array. FilterSheet's own GROUP_CHIP_ORDER
+  // decides where it sits inside the service section (it is unenumerated
+  // there, so it sorts after verified/has_delivery/pickup_points) — this
+  // position only has to exist and be stable.
+  "open_for_orders_now",
 ];
 
 /**
@@ -274,8 +295,9 @@ export const LISTING_CHIP_ORDER = [
   "verified",
   // MEH-1881: last in the row on purpose — the only axis whose answer changes
   // by the hour, so it reads as a refinement of the durable attributes above
-  // rather than as a peer of them. /producers-only; `surfaces` is what keeps it
-  // off the home row, not this array.
+  // rather than as a peer of them. MEH-2131 widened its `surfaces` to all
+  // three; this position is unchanged, and `surfaces` remains the only thing
+  // that decides which surfaces render it.
   "open_for_orders_now",
 ];
 

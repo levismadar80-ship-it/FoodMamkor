@@ -7,6 +7,10 @@ import {
   chipStateToParams,
   resolveCategoryId,
 } from "@/lib/map-chips";
+// MEH-2131: the chip-state default is derived from the taxonomy — see the
+// useState below for the three-way drift that made a hand-written copy a bad
+// idea, and for why `categoryKeys` stays out of it.
+import { defaultsForKeys } from "@/lib/filter-taxonomy";
 import { haversineKm } from "@/lib/distance";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
@@ -115,22 +119,25 @@ export function useMapFilters({
     return () => document.body.classList.remove("sheet-open");
   }, [selectedProducer]);
 
-  // MEH-14: chip state per the new spec. MEH-1465: categoryKeys is a multi-select
-  // OR array (`[]` = "all"/nothing selected); organic + has_delivery are
-  // independent toggles on top of that.
-  // MEH-1075: state completed to all 7 TOGGLE_CHIPS keys — the diet
-  // toggles previously worked only via dynamic `!undefined` toggling.
+  // MEH-14: chip state per the new spec. MEH-1465: categoryKeys is a
+  // multi-select OR array (`[]` = "all"/nothing selected); the attribute
+  // toggles are independent of it.
+  //
+  // MEH-1075 completed this to "all TOGGLE_CHIPS keys" by hand, and by MEH-2131
+  // the hand-written copy had drifted three ways: it still carried `organic`
+  // (the chip and its backend filter were removed in MEH-1259), and it was
+  // MISSING `vegetarian` (MEH-1438) and `no_added_sugar` (MEH-1934). Those two
+  // worked only through `!undefined` toggling — the exact defect MEH-1075 wrote
+  // this literal to fix, reintroduced by the next two axes to land.
+  //
+  // MEH-2131: derived from the taxonomy instead, so it cannot drift again and
+  // `open_for_orders_now` arrives without a fourth hand edit. Behaviour is
+  // unchanged for the two missing keys (`undefined` and `false` are both falsy
+  // to `chipStateToParams`) and for the dead one (nothing reads `organic`).
+  // `categoryKeys` stays explicit — it is not an attribute axis.
   const [chipState, setChipState] = useState({
     categoryKeys: [],
-    organic: false,
-    has_delivery: false,
-    pickup_points: false,  // MEH-2046
-    verified: false,
-    kosher: false,
-    grass_fed: false,
-    vegan: false,
-    gluten_free: false,
-    lactose_free: false,
+    ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
   });
 
   // MEH-14: build the backend params from the current chip state +
