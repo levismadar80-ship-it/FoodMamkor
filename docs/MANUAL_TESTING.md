@@ -461,7 +461,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 | פרסונה | תרחיש register-phase | תוצאה מצופה | מה הופעל אחרי ההרשמה | מה נבדק שלא קרה | אוטומציה |
 |---|---|---|---|---|---|
-| **P1** אשף מלא | מילוי 5 מסכי האשף → submit → admin approve → דף ציבורי → login → דשבורד | נוצר `pending_whatsapp`; אחרי אישור: מופיע בדף הציבורי + הדשבורד ב-`data-state-approved="true"` + לינק "צפייה בעמוד" | אישור אדמין → login → דשבורד → «צפייה בעמוד» בדף הציבורי | לא נשארת שורה יתומה — ה-spec מוחק את העסק ב-`finally` בכל תוצאה | `frontend/e2e/flows/22-register-personas.spec.ts` (P1, real-backend, TEST_URL=staging) |
+| **P1** אשף מלא | מילוי 5 מסכי האשף → submit → admin approve → דף ציבורי → login → דשבורד | נוצר `draft` (היה `pending_whatsapp` עד MEH-2124); אחרי אישור: מופיע בדף הציבורי + הדשבורד ב-`data-state-approved="true"` + לינק "צפייה בעמוד" | אישור אדמין → login → דשבורד → «צפייה בעמוד» בדף הציבורי | לא נשארת שורה יתומה — ה-spec מוחק את העסק ב-`finally` בכל תוצאה | `frontend/e2e/flows/22-register-personas.spec.ts` (P1, real-backend, TEST_URL=staging) |
 | **P2** OAuth | Google Step-0 → upgrade עם `license_pending` | נוצר יצרן ללא מספר רישיון (NULL) בתור ההמתנה; 409 עם toast אם כבר יש עסק | — (נשאר בתור ההמתנה) | לא נוצר עסק שני לאותו חשבון (409); הרישיון נשאר NULL — לא הומצא ערך | backend: `tests/test_register_personas.py::TestPersona2OAuthProducer` · UI 409: spec 22 (P2, GSI-stub) |
 | **P3** רב-קטגוריה | בחירת בשר+דגים (name→id) | 2 שורות `producer_categories`; דורש מספר רישיון (שתיהן license-required) אחרת 422 | — | לא נוצרת שורה ללא מספר רישיון (422 לפני יצירה) | `tests/test_register_personas.py::TestPersona3MultiCategory` |
 | **P4** אימייל+סיסמה | טלפון ריק + whatsapp; קטגוריות ריקות; אימייל כפול; double-submit; upgrade כפול; שדות עריכת-בעלים בגוף | 422 / 422 / RegisterAck זהה בייט-לבייט ללא token / אין שורה כפולה / 409 / שדות עריכת-בעלים **מתעלמים** (לא 422) | — | אין token ב-RegisterAck; אין שורה כפולה (double-submit); אין חשבון שני על מייל כפול | `tests/test_register_personas.py::TestPersona4PasswordEdgeCases` |
@@ -1236,7 +1236,7 @@ What the automation asserts (and what to check manually if it's down):
 
 ב-`/admin/producers` (desktop; סריקה מהירה בנייד מספיקה — admin surface).
 
-- [ ] **תמונות מרונדרות בשורה ממתינה** — פתחי את תור האישורים עם בית עסק בסטטוס `pending` / `pending_whatsapp` שיש לו תמונות — **תוצאה מצופה:** מתחת לשורה מופיעה רצועת thumbnails (עד 4 + "+N" אם יש יותר) לפני לחיצת "אשרי".
+- [ ] **תמונות מרונדרות בשורה ממתינה** — פתחי את תור האישורים עם בית עסק בסטטוס `pending` שיש לו תמונות — **תוצאה מצופה:** מתחת לשורה מופיעה רצועת thumbnails (עד 4 + "+N" אם יש יותר) לפני לחיצת "אשרי".
 - [ ] **URL שבור מסומן ⚠** — בית עסק ממתין עם תמונה שבורה (למשל `https://bread.jpg`) — **תוצאה מצופה:** ה-thumbnail מוחלף בסמן ⚠ אדום (לא תמונה ריקה), כך שאפשר לראות במבט אחד שהתמונה שבורה.
 - [ ] **קליק פותח את התמונה המלאה** — לחצי על thumbnail תקין — **תוצאה מצופה:** התמונה המקורית (לא החתוכה) נפתחת בטאב חדש.
 - [ ] **רק לממתינים** — בית עסק `approved` — **תוצאה מצופה:** אין רצועת thumbnails (הרצועה מיועדת לתור האישורים בלבד; כרטיס הסטורי של המאושרים ללא שינוי).
@@ -1315,13 +1315,15 @@ DELETE FROM producers WHERE id = '$PID';
 By design pre-fix admins now have `role='producer'`, which makes them indistinguishable from real producers. The narrowest filter that catches the bug class:
 
 ```sql
--- Producers with status=pending_whatsapp whose linked user was created
--- BEFORE the producer row (= upgrade path, not new signup).
+-- Producers awaiting review whose linked user was created BEFORE the
+-- producer row (= upgrade path, not new signup). The status here was
+-- 'pending_whatsapp' until it was removed in MEH-2124; a row from that era
+-- would now read 'draft' or 'pending'.
 SELECT u.id, u.email, u.role, u.created_at AS user_created,
        p.id AS producer_id, p.created_at AS producer_created
 FROM users u
 JOIN producers p ON u.producer_id = p.id
-WHERE p.status = 'pending_whatsapp'
+WHERE p.status IN ('draft', 'pending')
   AND u.created_at < p.created_at;
 ```
 
@@ -1726,13 +1728,12 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Render-only Hebrew labels for `producer.status`. DB values unchanged (intentional per MEH-56). Source of truth: `frontend/lib/producer-status.js`.
 
-- [ ] Admin chip — `pending_whatsapp` — איך לבדוק: `/admin/producers`, סנני לפי `pending_whatsapp`; **תוצאה מצופה:** chip קורא "ממתינה לאימות WhatsApp" עם רקע `bg-orange-100`.
 - [ ] Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`.
 - [ ] Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
 - [ ] Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
 - [ ] Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`.
 - [ ] Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(label מתורגם)` ולא קוד גולמי.
-- [ ] Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending_whatsapp` → `/producer/dashboard`; **תוצאה מצופה:** מתחת לכפתור "השלימי פרופיל ←" מופיעה שורה "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"; "עריכת פרופיל" הוא link ל-`/settings`.
+- [ ] Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending` → `/producer/dashboard`; **תוצאה מצופה:** מתחת לכפתור "השלימי פרופיל ←" מופיעה שורה "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"; "עריכת פרופיל" הוא link ל-`/settings`.
 - [ ] Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד הגולמי (לא `undefined`, לא קריסה).
 
 ---
@@ -3294,7 +3295,7 @@ CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**�
 - [ ] אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
 - [ ] אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
 
-לפני MEH-2100 הכרטיס הזה היה תלוי בסטטוס `pending_whatsapp` בלבד, שטיוטה לעולם לא מגיעה אליו. כלומר `phone_verified` לא יכול היה להתהפך אף פעם, והשער היה **בלתי עביר לכל בית עסק באתר**. אם הכרטיס לא מופיע כאן — הפיצ'ר מת, ואין לזה סימן אחר.
+לפני MEH-2100 הכרטיס הזה היה תלוי בסטטוס `pending_whatsapp` בלבד (סטטוס שהוסר ב-MEH-2124), שטיוטה לעולם לא הגיעה אליו. כלומר `phone_verified` לא יכול היה להתהפך אף פעם, והשער היה **בלתי עביר לכל בית עסק באתר**. אם הכרטיס לא מופיע כאן — הפיצ'ר מת, ואין לזה סימן אחר.
 
 ### מסך ההרשמה
 

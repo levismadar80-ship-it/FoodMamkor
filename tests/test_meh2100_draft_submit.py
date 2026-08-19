@@ -291,8 +291,13 @@ def test_no_creation_site_writes_a_queue_status():
         ]
         body = "\n".join(code_lines)
         assert 'status="pending"' not in body, f"{path.name} still creates pending"
+        # `pending_whatsapp` was removed in MEH-2124, from the codebase
+        # entirely. This assertion is KEPT rather than deleted with it: it is now the
+        # guard that a creation site cannot re-introduce it, which is exactly
+        # what a Contract phase needs to hold. It reads as trivially true only
+        # for as long as the removal holds.
         assert 'status="pending_whatsapp"' not in body, (
-            f"{path.name} still creates pending_whatsapp"
+            f"{path.name} creates a status removed in MEH-2124"
         )
         assert 'status="draft"' in body, f"{path.name} lost its draft write"
 
@@ -380,7 +385,7 @@ def test_submit_pings_the_admin_with_the_business_identity(client, db, monkeypat
 
 
 @pytest.mark.parametrize(
-    "status", ["pending", "pending_whatsapp", "approved", "rejected", "inactive"]
+    "status", ["pending", "approved", "rejected", "inactive"]
 )
 def test_submit_409_on_every_non_draft_status(client, db, status):
     producer, user = _complete_draft(db, status=status)

@@ -415,7 +415,7 @@ def _attach_aging(producer) -> None:
 def list_producers(
     status: str | None = Query(
         None,
-        pattern="^(draft|pending|pending_whatsapp|approved|rejected|inactive|all)$",
+        pattern="^(draft|pending|approved|rejected|inactive|all)$",
     ),
     search: str | None = None,
     user: User = Depends(require_admin),
@@ -442,14 +442,14 @@ def list_producers(
     #                    hatch — "all" must not quietly mean "all but one")
     #   ?status=draft -> drafts only (the new "טיוטות" option, visibility only)
     #
-    # `?status=pending` still groups pending + pending_whatsapp, unchanged.
+    # `?status=pending` used to group two values, pending + pending_whatsapp;
+    # the second was removed in MEH-2124 along with the state itself, so the
+    # filter is a plain equality now and the branch that special-cased it is
+    # gone.
     if status == "all":
         pass  # no status filter at all — the only view that shows drafts
     elif status:
-        if status == "pending":
-            q = q.filter(Producer.status.in_(["pending", "pending_whatsapp"]))
-        else:
-            q = q.filter(Producer.status == status)
+        q = q.filter(Producer.status == status)
     else:
         q = q.filter(Producer.status != "draft")
     if search:
@@ -467,7 +467,7 @@ def list_producers(
     #
     # WHICH VIEWS SORT ASC, and why it is not just `?status=pending`: the
     # admin's working view is the DEFAULT (no param), which this file's filter
-    # above resolves to `status != "draft"` — NOT to pending/pending_whatsapp.
+    # above resolves to `status != "draft"` — NOT to the pending filter.
     # The ticket's wording assumed those were the same view; they are not, so
     # sorting only the explicit pending filter would have left the screen the
     # admin actually opens completely unchanged. Explicit approved/rejected/
@@ -714,7 +714,7 @@ def admin_update_producer(
 
 # MEH-769 (HOT-002): the toggle is purely the visibility switch for an
 # already-decided business — approved ⇄ inactive only. Any other source
-# status (pending / pending_whatsapp / rejected) must go through the real
+# status (pending / rejected) must go through the real
 # approve_producer flow, which fires the MEH-509 side-effects (approval
 # email, producer_approved_v1 WhatsApp, admin WhatsApp). Before this guard
 # the bare `else` branch silently force-approved a REJECTED producer onto
@@ -877,7 +877,7 @@ def pending_producers(
             # MEH-2060: see list_producers above — same derivation, same reason.
             selectinload(Producer.locations),
         )
-        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .filter(Producer.status == "pending")
         # NOTE (MEH-2110): deliberately still newest-first. This route has no
         # frontend consumer today, and re-ordering it is a behaviour change the
         # ticket does not ask for. The aging field below IS attached, because
@@ -1135,7 +1135,7 @@ def request_producer_changes(
     # guard — it transitions status." That was true before the draft state
     # existed, when every status was a coherent thing to reject. It is false
     # now — reject_producer carries its own `draft` 409 for exactly that reason.
-    if producer.status not in ("pending", "pending_whatsapp"):
+    if producer.status != "pending":
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח בקשת השלמה רק לבית עסק בהמתנה לאישור",
@@ -1144,7 +1144,7 @@ def request_producer_changes(
     producer.requested_changes = feedback
     # tz-aware (MEH-762 D1, mirrors grant_verified) — the column is TIMESTAMPTZ.
     producer.changes_requested_at = datetime.now(timezone.utc)
-    # status intentionally unchanged — stays "pending"/"pending_whatsapp".
+    # status intentionally unchanged — stays "pending".
     db.commit()
 
     p_name = producer.name
@@ -1308,7 +1308,7 @@ def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)
     return {
         "total_producers": db.query(Producer).count(),
         "pending_producers": db.query(Producer)
-        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .filter(Producer.status == "pending")
         .count(),
         "approved_producers": db.query(Producer)
         .filter(Producer.status == "approved")
@@ -1406,8 +1406,8 @@ def _producer_rejected_body(name: str, reason: str) -> str:
     The recovery line is the conditional half of that ruling. It reads "תקני
     בלוח הבקרה" rather than the retired "הגישי שוב מהדף האישי" because the
     resubmit flow does not exist for a rejected business —
-    `producer_me.py:1392` gates POST /producers/me/request-review to
-    pending/pending_whatsapp, so a rejected owner gets 409. Editing, by
+    `producer_me.py`'s `request_producer_review` gates POST
+    /producers/me/request-review to `pending`, so a rejected owner gets 409. Editing, by
     contrast, IS open to her, which is what licenses this wording:
 
       * `auth.py:363-368` — `require_producer` gates on role only, no status

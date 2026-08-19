@@ -21,7 +21,9 @@ import { authedContext, fixtureExists } from "../auth-fixture";
  *
  * Design notes (Phase 0, MEH-216):
  * - The producer row is born from the *real* public publish endpoint
- *   (POST /auth/register/producer → status="pending_whatsapp"). That endpoint
+ *   (POST /auth/register/producer → status="draft"; it wrote
+ *   "pending_whatsapp" when this note was written, a status removed in
+ *   MEH-2124). That endpoint
  *   gates the producer's own login behind email verification and returns no
  *   token (anti-enumeration RegisterAck), so the rest of the lifecycle can't
  *   be driven by clicks on staging. Everything after publish is therefore

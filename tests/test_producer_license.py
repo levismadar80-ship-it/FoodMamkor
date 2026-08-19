@@ -267,8 +267,9 @@ class TestRegisterProducerLicensePending:
     requires status=="approved" (producer_listing.py) — so a license_pending
     producer can never publish.
 
-    MEH-2100: the resulting row is now `draft`, not `pending_whatsapp`, and it
-    is not in the review queue at all until the owner submits. The license is
+    MEH-2100: the resulting row is now `draft` — it used to be a
+    `pending_whatsapp`, a status removed in MEH-2124 — and it is not in the
+    review queue at all until the owner submits. The license is
     deliberately NOT part of the submit gate, so this MEH-971 path still
     reaches the queue with a NULL license exactly as before — the gate moved,
     the licence rule did not.

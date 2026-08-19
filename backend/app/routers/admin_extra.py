@@ -619,7 +619,7 @@ def get_dashboard(
     # available for the alert cards.
     pending_producers = (
         db.query(func.count(Producer.id))
-        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .filter(Producer.status == "pending")
         .scalar()
         or 0
     )
@@ -704,7 +704,7 @@ def get_dashboard(
 
     pending = (
         db.query(Producer)
-        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .filter(Producer.status == "pending")
         .order_by(Producer.created_at.desc())
         .limit(5)
         .all()
