@@ -18,6 +18,8 @@
  * which re-declares the list instead of importing `_NUDGEABLE_STATUSES`.
  */
 import { describe, it, expect } from "vitest";
+import he from "@/messages/he.json";
+import en from "@/messages/en.json";
 import {
   PRODUCER_STATUS_LABELS,
   PRODUCER_STATUS_COLORS,
@@ -63,5 +65,36 @@ describe("MEH-2126 — producer status label map covers the whole machine", () =
     for (const key of Object.keys(PRODUCER_STATUS_LABELS)) {
       expect(DB_STATUSES).toContain(key);
     }
+  });
+});
+
+describe("MEH-2126 — the admin status legend matches the machine", () => {
+  // The legend (`status_tooltip_*`, rendered in AdminProducersTable's
+  // TableHead) is the admin's reference for what each status VALUE means. It
+  // drifted twice over: it documented `suspended`, which the backend emits
+  // zero times, and omitted `draft`, the status every new registration starts
+  // in. Both directions are asserted, because only checking for presence would
+  // have left the phantom entry in place.
+  const LEGEND = (m) =>
+    Object.keys(m.admin.producers.table)
+      .filter((k) => k.startsWith("status_tooltip_") && k !== "status_tooltip_label")
+      .map((k) => k.replace("status_tooltip_", ""));
+
+  it.each([["he", he], ["en", en]])("%s documents every status the backend emits", (_lang, m) => {
+    expect(LEGEND(m).sort()).toEqual([...DB_STATUSES].sort());
+  });
+
+  it.each([["he", he], ["en", en]])("%s legend lines name their own status value", (_lang, m) => {
+    // Format is "<value> = <meaning>", so the value must lead the string —
+    // that is what makes the legend readable against a raw DB dump.
+    for (const status of DB_STATUSES) {
+      expect(m.admin.producers.table[`status_tooltip_${status}`]).toMatch(
+        new RegExp(`^${status}\\s*=`),
+      );
+    }
+  });
+
+  it("he and en describe the same set of statuses", () => {
+    expect(LEGEND(he).sort()).toEqual(LEGEND(en).sort());
   });
 });
