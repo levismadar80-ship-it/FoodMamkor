@@ -305,18 +305,31 @@ class TestJourney2ProducerRegistration:
         producer = (
             db.query(Producer).filter_by(name=payload["producer_name"]).one()
         )
-        # MEH-2100: registration lands in draft. The rest of this journey is
-        # unchanged — a draft is just as invisible publicly as a pending one,
-        # and the admin approve path does not require the queue statuses.
+        # MEH-2100: registration lands in draft.
         assert producer.status == "draft"
 
-        # Hop — pending producer NOT in public list
+        # Hop — an unapproved producer is NOT in the public list
         names = [p["name"] for p in client.get("/producers").json()]
         assert payload["producer_name"] not in names
 
-        # Admin approves (MEH-799 gate: needs >=1 image first)
+        # MEH-2121 CORRECTION. This block used to end "...and the admin approve
+        # path does not require the queue statuses", and approved the draft
+        # directly. That sentence described a hole rather than a design: a
+        # business could go public without ever having been submitted, leaving
+        # `submitted_for_review_at` NULL under the queue's SLA badge. Approve
+        # now 409s on a draft, so this journey moves through the state machine
+        # like a real one.
+        #
+        # The transition is applied directly rather than through
+        # POST /producers/me/submit-for-review because the anonymous
+        # registration path returns an ack, not a token, so this test has no
+        # owner session to call it with — and the submit gate has its own suite
+        # (tests/test_meh2100_draft_submit.py). What this journey is about is
+        # public visibility before and after approval, which is unchanged.
         admin = make_user(db, role="admin", email=f"a{uuid4().hex[:6]}@t.com")
+        producer.status = "pending"
         producer.images = ["https://res.cloudinary.com/demo/image/upload/p.jpg"]
+        producer.phone_verified = True
         db.commit()
         ok = client.post(
             f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)

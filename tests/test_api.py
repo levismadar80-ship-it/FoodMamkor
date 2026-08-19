@@ -1833,10 +1833,12 @@ class TestAdminFlows:
     def test_approve_pending_producer(self, client, db):
         admin = make_user(db, role="admin")
         # MEH-799: approve gate requires >=1 image
+        # MEH-2121: ...and a verified WhatsApp number.
         p = make_producer(
             db,
             status="pending",
             images=["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"],
+            phone_verified=True,
         )
         resp = client.post(
             f"/admin/producers/{p.id}/approve", headers=auth_header(admin)

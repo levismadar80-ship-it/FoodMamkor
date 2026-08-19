@@ -114,7 +114,9 @@ def test_legit_approve_from_rejected_fires_hook_once(client, db, monkeypatch):
     )
     # MEH-799: the approve gate requires an image — give it one so this
     # test keeps exercising the hook-count contract, not the image gate.
-    producer = make_producer(db, status="rejected", images=[TEST_IMAGE])
+    producer = make_producer(
+        db, status="rejected", images=[TEST_IMAGE], phone_verified=True
+    )
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
@@ -152,7 +154,9 @@ def test_approve_with_image_succeeds(client, db, monkeypatch):
     monkeypatch.setattr(
         admin_module, "notify_producer_approved", lambda *a, **k: None
     )
-    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=True
+    )
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
@@ -188,7 +192,7 @@ def test_approve_license_required_no_license_is_blocked(client, db, monkeypatch)
     )
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
     producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
+        db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )  # producer_license_number defaults to NULL
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
@@ -206,7 +210,7 @@ def test_approve_license_required_with_override_succeeds(client, db, monkeypatch
     )
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
     producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
+        db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )
     resp = client.post(
         f"/admin/producers/{producer.id}/approve?allow_without_license=true",
@@ -224,7 +228,7 @@ def test_approve_license_required_with_license_succeeds(client, db, monkeypatch)
     )
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
     producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
+        db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )
     _set_license(db, producer, "1234567")
     resp = client.post(
@@ -242,7 +246,7 @@ def test_approve_non_license_category_no_license_succeeds(client, db, monkeypatc
     )
     cat = make_category(db, name="ירקות", emoji="🥬")  # not license-required
     producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
+        db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
@@ -278,7 +282,9 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
     )
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
 
-    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=True
+    )
     owner = make_user(db, role="producer")
     owner.producer_id = producer.id
     db.commit()
@@ -295,3 +301,208 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
     # The body is deliberately NOT the change: MEH-2113 swaps the subject only.
     assert producer.name in body
     assert "אושר במהמקור" in body
+
+
+# --- MEH-2121: the admin side of the draft state machine ---------------------
+#
+# Two guards with no override (draft is simply not in the queue) and one with
+# an explicit one (an unverified WhatsApp number is a judgement call the admin
+# is allowed to make, the way the licence already is).
+
+
+def test_approve_draft_is_blocked(client, db, monkeypatch):
+    """A draft never asked to be reviewed.
+
+    Approving one publishes a business that skipped the machine and leaves
+    `submitted_for_review_at` NULL — the column MEH-2110's SLA badge counts
+    from, so the queue would carry a row it cannot age.
+    """
+    calls = []
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: calls.append(a)
+    )
+    # Otherwise fully approvable: the ONLY thing wrong is the status, so a 409
+    # here cannot be some other gate firing.
+    producer = make_producer(
+        db, status="draft", images=[TEST_IMAGE], phone_verified=True
+    )
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+
+    assert resp.status_code == 409, resp.text
+    db.refresh(producer)
+    assert producer.status == "draft", "a blocked approve must not change status"
+    assert calls == [], "a blocked approve must not fire producer_approved_v1"
+
+
+def test_approve_draft_has_no_override(client, db, monkeypatch):
+    """The licence and phone gates have doors; this one does not.
+
+    Passing BOTH override flags must still 409 — there is no legitimate reason
+    to approve something that was never submitted, and the owner pressing the
+    button is the only thing that should move it.
+    """
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    producer = make_producer(
+        db, status="draft", images=[TEST_IMAGE], phone_verified=True
+    )
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve"
+        "?allow_without_license=true&allow_unverified_phone=true",
+        headers=auth_header(_admin(db)),
+    )
+
+    assert resp.status_code == 409, resp.text
+    db.refresh(producer)
+    assert producer.status == "draft"
+
+
+def test_reject_draft_is_blocked(client, db):
+    """Rejecting a draft emails the owner that an application she never made
+    was turned down, and writes a `rejection_reason` her dashboard renders."""
+    producer = make_producer(db, status="draft", images=[TEST_IMAGE])
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/reject",
+        json={"reason": "לא מתאים"},
+        headers=auth_header(_admin(db)),
+    )
+
+    assert resp.status_code == 409, resp.text
+    db.refresh(producer)
+    assert producer.status == "draft", "a blocked reject must not change status"
+    assert producer.rejection_reason is None, (
+        "a blocked reject must not write a reason the owner's banner would show"
+    )
+
+
+def test_reject_pending_still_works(client, db):
+    """The other side of the boundary — every non-draft status keeps today's
+    behaviour. A guard asserted only on its refusing side passes just as well
+    when it refuses everything."""
+    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/reject",
+        json={"reason": "לא מתאים"},
+        headers=auth_header(_admin(db)),
+    )
+
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "rejected"
+
+
+def test_approve_unverified_phone_is_blocked(client, db, monkeypatch):
+    """The WhatsApp number is the channel every customer contact runs through,
+    so an approved page carrying an unverified one has a CTA that may go
+    nowhere."""
+    calls = []
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: calls.append(a)
+    )
+    # Degraded by exactly one field against the passing case below.
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=False
+    )
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+
+    # 422, not 409: an approve-time CONTENT gate, like the photo and licence
+    # gates it sits beside. Ruled 18/08 — the ticket's AC said 409.
+    assert resp.status_code == 422, resp.text
+    db.refresh(producer)
+    assert producer.status == "pending"
+    assert calls == [], "a blocked approve must not fire producer_approved_v1"
+
+
+def test_approve_unverified_phone_with_override_succeeds(client, db, monkeypatch):
+    """?allow_unverified_phone=true — the same explicit door the licence guard
+    has had since MEH-971."""
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=False
+    )
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
+        headers=auth_header(_admin(db)),
+    )
+
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "approved"
+
+
+def test_the_phone_override_is_audited_like_the_license_one(
+    client, db, monkeypatch, caplog
+):
+    """The override leaves a trail, and it is the SAME trail the licence
+    override leaves — a `logger.warning` naming the producer and the admin.
+
+    Phase 0 found that mechanism (`admin.py` `_assert_approvable`) and this
+    mirrors it rather than inventing a second one. Asserted because an
+    un-audited override is indistinguishable from no guard at all after the
+    fact: the row ends up approved either way, and nothing records that a human
+    chose it.
+    """
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    admin = _admin(db)
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=False
+    )
+
+    with caplog.at_level("WARNING", logger="app.routers.admin"):
+        resp = client.post(
+            f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
+            headers=auth_header(admin),
+        )
+    assert resp.status_code == 200, resp.text
+
+    overrides = [
+        r for r in caplog.records if "unverified-phone override" in r.getMessage()
+    ]
+    assert len(overrides) == 1, (
+        "expected exactly one audit line for the override, got "
+        f"{[r.getMessage() for r in caplog.records]}"
+    )
+    logged = overrides[0].getMessage()
+    assert str(producer.id) in logged, "the audit line must name the producer"
+    assert str(admin.id) in logged, "the audit line must name the admin who chose"
+
+
+def test_no_audit_line_when_the_override_is_not_needed(client, db, monkeypatch, caplog):
+    """The control for the test above.
+
+    A verified producer approved WITH the flag set must not log an override —
+    otherwise the audit trail fills with lines recording overrides that never
+    happened, and the signal it exists to carry is gone.
+    """
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=True
+    )
+
+    with caplog.at_level("WARNING", logger="app.routers.admin"):
+        resp = client.post(
+            f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
+            headers=auth_header(_admin(db)),
+        )
+    assert resp.status_code == 200, resp.text
+
+    assert not [
+        r for r in caplog.records if "unverified-phone override" in r.getMessage()
+    ], "an override was audited although the gate would have passed anyway"
