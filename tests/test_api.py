@@ -14,6 +14,7 @@ from conftest import (
     auth_header,
     make_category,
     make_producer,
+    make_submit_ready_producer,
     make_user,
     valid_producer_register_payload,
     valid_review_payload,
@@ -2105,9 +2106,16 @@ class TestMeh56BioGenerator:
 class TestMeh1236RequestReview:
     """POST /producers/me/request-review — resubmit-for-review ping.
 
-    Notification-only (no schema change): pending producer → 200 + admin ping
-    fired; already-decided producer → 409; non-producer → 403; unauth → 401;
-    over the 3/hour limit → 429.
+    Notification-only (no schema change): COMPLETE pending producer → 200 +
+    admin ping fired; already-decided producer → 409; non-producer → 403;
+    unauth → 401; over the 3/hour limit → 429.
+
+    MEH-2120: the success-path fixtures moved from `make_producer` to
+    `make_submit_ready_producer`, because the endpoint now refuses an
+    incomplete profile. That is not a cosmetic fixture swap — before the gate,
+    all three of these passed with a producer that had no photo and no product,
+    which is precisely the bug Sapir reported. The gapped cases are asserted in
+    TestMeh2120RequestReviewGate below.
     """
 
     def _producer_owner(self, db, status, email):
@@ -2126,7 +2134,7 @@ class TestMeh1236RequestReview:
             called["args"] = (name, city)
 
         monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
-        p, user = self._producer_owner(db, "pending", "resub1@example.com")
+        p, user = make_submit_ready_producer(db, status="pending")
 
         resp = client.post("/producers/me/request-review", headers=auth_header(user))
         assert resp.status_code == 200
@@ -2135,7 +2143,7 @@ class TestMeh1236RequestReview:
         assert called["args"] == (p.name, p.city)
 
     def test_pending_whatsapp_producer_allowed(self, client, db):
-        _, user = self._producer_owner(db, "pending_whatsapp", "resub2@example.com")
+        _, user = make_submit_ready_producer(db, status="pending_whatsapp")
         resp = client.post("/producers/me/request-review", headers=auth_header(user))
         assert resp.status_code == 200
 
@@ -2159,7 +2167,9 @@ class TestMeh1236RequestReview:
         assert resp.status_code == 401
 
     def test_rate_limited_after_three_per_hour(self, client, db):
-        _, user = self._producer_owner(db, "pending", "resub4@example.com")
+        # MEH-2120: must be a COMPLETE producer, or the first three calls
+        # 422 and this asserts nothing about the limiter.
+        _, user = make_submit_ready_producer(db, status="pending")
         headers = auth_header(user)
         statuses = [
             client.post("/producers/me/request-review", headers=headers).status_code
@@ -2167,6 +2177,122 @@ class TestMeh1236RequestReview:
         ]
         assert statuses[:3] == [200, 200, 200]
         assert statuses[3] == 429
+
+
+class TestMeh2120RequestReviewGate:
+    """MEH-2120 — the resubmit side door now runs the same completeness gate as
+    the front one.
+
+    The bug this closes was reported live: a pending business with no photo and
+    no product pressed "סיימתי להשלים — שלחו לבדיקה" and was told "נשלח
+    לבדיקה". The admin then received "please look again" on a profile the
+    MEH-799 photo gate cannot approve.
+
+    Every case here degrades a COMPLETE producer by exactly one field, so a
+    passing assertion names the one thing that caused it rather than passing on
+    a producer that was missing four things anyway.
+    """
+
+    # (requirement code, mutation that removes exactly that requirement).
+    # Location is expressed as lat+lng because make_submit_ready_producer gives
+    # the producer a physical location, and `submission_gate._has_location`
+    # reads coordinates — NOT `city`, which the producer keeps either way.
+    _DEGRADATIONS = [
+        ("image", lambda p: setattr(p, "images", [])),
+        ("product", lambda p: p.products.clear()),
+        ("category", lambda p: p.categories.clear()),
+        ("location", lambda p: (setattr(p, "lat", None), setattr(p, "lng", None))),
+        ("phone_verified", lambda p: setattr(p, "phone_verified", False)),
+    ]
+
+    @pytest.mark.parametrize(
+        "code,degrade", _DEGRADATIONS, ids=[c for c, _ in _DEGRADATIONS]
+    )
+    def test_each_missing_requirement_returns_422_naming_itself(
+        self, client, db, code, degrade
+    ):
+        producer, user = make_submit_ready_producer(db, status="pending")
+        degrade(producer)
+        db.commit()
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["code"] == "submit_gate_incomplete"
+        # The named code is present AND it is the only one — the producer was
+        # complete before the single degradation above, so a longer list would
+        # mean the fixture, not the endpoint, decided the outcome.
+        assert detail["params"]["missing"] == [code]
+
+    def test_no_admin_ping_fires_when_the_gate_refuses(self, client, db, monkeypatch):
+        """The point of the ticket is the admin's queue, not the status code.
+
+        A 422 that still pinged the admin would satisfy every other assertion
+        in this class and fix nothing.
+        """
+        called = []
+        import app.services.auth_notifications as an
+
+        monkeypatch.setattr(
+            an, "notify_admin_producer_resubmit", lambda *a: called.append(a)
+        )
+        producer, user = make_submit_ready_producer(db, status="pending")
+        producer.images = []
+        db.commit()
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+
+        assert resp.status_code == 422
+        assert called == [], "the admin must not be pinged about a refused resubmit"
+
+    def test_complete_pending_producer_is_unaffected(self, client, db):
+        """The other side of the boundary. A gate asserted only on its refusing
+        side passes just as well when it refuses everything."""
+        _, user = make_submit_ready_producer(db, status="pending")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_status_guard_still_wins_over_the_gate(self, client, db):
+        """An approved business asking for re-review gets 409, not a
+        completeness list. Ordering matters: telling a decided producer what it
+        is "missing" would be answering a question nobody asked."""
+        producer, user = make_submit_ready_producer(db, status="approved")
+        producer.images = []
+        db.commit()
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 409
+
+    def test_422_body_is_identical_to_submit_for_review(self, client, db):
+        """The shared-client-path requirement, proven by comparing the two REAL
+        responses rather than by asserting a literal twice.
+
+        Two producers, identical except for status, each missing only a photo.
+        `detailToMessage` renders whichever it receives with no branch, and the
+        checklist reads `params.missing` without knowing which door was used —
+        so these payloads must be equal, not merely similar. A hand-written
+        literal in each test would pass while the two endpoints drifted.
+        """
+        gapped_pending, pending_user = make_submit_ready_producer(
+            db, status="pending", name="עסק בהמתנה"
+        )
+        gapped_pending.images = []
+        gapped_draft, draft_user = make_submit_ready_producer(
+            db, status="draft", name="עסק בטיוטה"
+        )
+        gapped_draft.images = []
+        db.commit()
+
+        side_door = client.post(
+            "/producers/me/request-review", headers=auth_header(pending_user)
+        )
+        front_door = client.post(
+            "/producers/me/submit-for-review", headers=auth_header(draft_user)
+        )
+
+        assert side_door.status_code == front_door.status_code == 422
+        assert side_door.json()["detail"] == front_door.json()["detail"]
 
 
 # ---------- Contact ----------
