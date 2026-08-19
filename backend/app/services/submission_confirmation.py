@@ -17,8 +17,9 @@ History:  MEH-2112 (creation); MEH-2113 (reply-to moved to the published
 
 ON THE REPLY-TO, because the copy depends on it and the default sender cannot
 honour it. The body invites the owner to "פשוט להשיב למייל הזה", but
-`settings.email_from_address` defaults to `מהמקור <noreply@mehamakor.online>`
-(config.py:81) and Phase 0 found NO reply-to configured anywhere in the
+`settings.email_from_address` defaults to `מהמקור <noreply@mehamakor.co.il>`
+(config.py:88 — `.online` until MEH-2123; either way it is a `noreply` mailbox,
+which is what makes the point) and Phase 0 found NO reply-to configured in the
 backend. Sending this copy from that address would promise a channel that
 bounces. Every send therefore sets an explicit reply-to (ruling 18/08), which
 `send_email` gained an optional parameter for.

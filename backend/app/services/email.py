@@ -131,8 +131,9 @@ def send_email(
     call sites keep their exact current behaviour — nothing is added to the
     Resend payload unless a caller asks for it.
 
-    It exists because the sender is `noreply@mehamakor.online`
-    (config.py:81). Any email whose copy invites a reply — as the submission
+    It exists because the sender is a `noreply@` address
+    (config.py:88 — `.co.il` since MEH-2123; the TLD is not the point, the
+    `noreply` mailbox is). Any email whose copy invites a reply — as the submission
     confirmation's "אפשר פשוט להשיב למייל הזה" does — is making a promise the
     default sender cannot keep, and a bounced reply from a business owner is
     worse than never having invited one.
