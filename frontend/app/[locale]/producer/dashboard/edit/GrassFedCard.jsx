@@ -16,14 +16,17 @@ import { detailToMessage } from "@/lib/errors";
  *           was gated behind an admin round-trip that buys no verification —
  *           labels.md already records this attribute's evidence as
  *           `self-declared`.
- * Does NOT: change the label's scope/evidence metadata (map-chips.js
- *           GRASS_FED_LABEL is Sapir-LOCKED per MEH-1507 and is read-only from
- *           here); touch the admin write path; render the public chip (that is
- *           /map's, via ?grass_fed=true → producer_listing.py:65).
+ * Does NOT: change the label's scope/evidence metadata (the `grass_fed` axis
+ *           in lib/filter-taxonomy.js is Sapir-LOCKED per MEH-1507 and is
+ *           read-only from here); touch the admin write path; render the
+ *           public chip (that is /map's, via ?grass_fed=true →
+ *           producer_listing.py:65).
  * Related:  DietaryScopeCard.jsx (same own-file + PricingCard-save-chrome
- *           shape); frontend/lib/map-chips.js GRASS_FED_LABEL (the consumer
+ *           shape); frontend/lib/filter-taxonomy.js `grass_fed` (the consumer
  *           string this card must not contradict).
- * History:  MEH-1851 row 23 (creation).
+ * History:  MEH-1851 row 23 (creation); MEH-2130 (citation retargeted — the
+ *           label moved from map-chips.js GRASS_FED_LABEL into the taxonomy;
+ *           the string and its scope/evidence are unchanged).
  */
 export default function GrassFedCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.grassFed");

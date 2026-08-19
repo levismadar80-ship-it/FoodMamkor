@@ -1,12 +1,23 @@
 /**
  * MEH-1082 [T-C]: single source of truth for shared attribute chip labels.
  *
+ * MEH-2130 — this map is now DERIVED, not declared. The axis definitions moved
+ * to lib/filter-taxonomy.js (one object per axis: label, scope, evidence,
+ * subtext, group, surfaces, param names), and `ATTRIBUTE_LABELS` is the
+ * cross-surface projection of it: exactly those axes whose `surfaces` covers
+ * home AND /producers AND /map. Everything below still holds — what changed is
+ * that membership is computed from one declaration instead of maintained by
+ * hand in parallel with CHIPS_CONFIG and TOGGLE_CHIPS.
+ *
+ * The import surface is unchanged on purpose: `ATTRIBUTE_LABELS.vegan.label`
+ * reads exactly as before, so no consumer and no test needed rewriting.
+ *
  * Both the /producers filter row (`producer-filters.js` CHIPS_CONFIG) and the
  * /map filter chips (`map-chips.js` TOGGLE_CHIPS) render these, so the taxonomy
- * reads identically on both surfaces ("רישוי מאומת" / "משלוח").
+ * reads identically on every surface ("רישוי מאומת" / "משלוח").
  *
- * MEH-1507 — Label Scope Contract: every entry is now an OBJECT carrying the
- * label PLUS its scope×evidence metadata and (where it applies) an in-component
+ * MEH-1507 — Label Scope Contract: every entry is an OBJECT carrying the label
+ * PLUS its scope×evidence metadata and (where it applies) an in-component
  * explanatory subtext. This closes the class of bugs where a consumer-facing
  * label silently over-claimed — a product-level filter reading as a whole-
  * business property (MEH-1439 diet tooltips), a self-declaration reading as a
@@ -21,105 +32,31 @@
  *
  * NOTE — `label` stays a plain string on every consumer: CHIPS_CONFIG /
  * TOGGLE_CHIPS spread these objects, so `chip.label` is unchanged and the chip
- * ROW renders byte-identical (no visual change). Only the FilterSheet subtext
- * and the /producers applied-filter framing are new.
+ * ROW renders byte-identical.
  *
- * MEH-1418: `verified` → "רישוי מאומת" (was "מאומתים") — names WHAT was verified
- * (a license or exemption document checked against the Ministry of Health
- * registry; badges.js verified tooltip, ADR-022), the industry "Verified
- * License" pattern. `kosher` joined this shared map with the Sapir-LOCKED
- * "כשרות מאומתת" (MEH-1087) so /producers and /map read alike.
- *
- * Surface-specific keys stay LOCAL, on purpose — they are NOT in this map:
- *   - `grass_fed` — /map only (its own scope×evidence object lives in map-chips.js).
- *   - `open_for_orders_now` — /producers only (MEH-1881; its object lives in
- *     producer-filters.js). It was briefly added here and the attributeLabels
- *     parity test caught it: a key in this map is a promise that BOTH surfaces
- *     render it, and /map was explicitly out of that ticket's scope.
+ * Surface-specific keys stay OUT of this map — and after MEH-2130 that is a
+ * CONSEQUENCE of their `surfaces` field rather than a second thing to remember:
+ *   - `grass_fed` — /map only (`surfaces: ["map"]`).
+ *   - `open_for_orders_now` — /producers only (`surfaces: ["producers"]`,
+ *     MEH-1881). It was briefly added to this map by hand and the
+ *     attributeLabels parity test caught it: membership here is a promise that
+ *     EVERY surface renders it.
+ *   - `pickup_points` — WAS /map-only under MEH-2046 and is now cross-surface,
+ *     so it appears here. That promotion is the substance of MEH-2130: the
+ *     backend filter `?pickup_points=true` is public and global, so nothing but
+ *     config placement kept "איסוף עצמי" off the listing surfaces.
  *
  * MEH-1418: labels stay text-only (Emoji-LOCK v2 forbids emoji literals). The
- * chips now carry Phosphor LEADING ICONS via lib/chip-icons.js — aria-hidden
+ * chips carry Phosphor LEADING ICONS via lib/chip-icons.js — aria-hidden
  * glyphs, the approved substitute (MEH-990 precedent), NOT part of the label.
  */
-export const ATTRIBUTE_LABELS = {
-  // Whole-business license, checked by an admin against the Ministry of Health
-  // registry (ADR-022) — business scope, admin-verified evidence.
-  verified: {
-    label: "רישוי מאומת",
-    scope: "business",
-    evidence: "admin-verified",
-    subtext: null, // FilterSheet uses BADGE_CONFIG.verified.tooltip
-  },
-  // Owner-toggled business property; no external check.
-  has_delivery: {
-    label: "משלוח",
-    scope: "business",
-    evidence: "self-declared",
-    subtext: null,
-  },
-  // MEH-1418: verified-only kosher label, unified across surfaces (was the
-  // /producers-local "כשר"). Sapir-LOCKED wording per MEH-1087 — do not
-  // paraphrase. Backend maps ?kosher=true to kashrut_verified_at only, so this
-  // is admin-verified at business scope (never the free-text Producer.kosher).
-  kosher: {
-    label: "כשרות מאומתת",
-    scope: "business",
-    evidence: "admin-verified",
-    subtext: null, // FilterSheet uses BADGE_CONFIG.kosher.tooltip
-  },
-  // MEH-1259: `organic` label removed — the public organic chip/badge/filter is
-  // gone (self-declared organic, חוק תוצרת אורגנית 2005). Removed from the SoT so
-  // it can't be re-surfaced accidentally before an admin-verified flow exists.
-  //
-  // MEH-293: the diet filters are EXISTS-subqueries over products (at least one
-  // matching product in the catalog), so their scope is any-product, NOT the
-  // whole business — the exact over-claim MEH-1507 makes explicit. Subtext copy
-  // LOCKED (MEH-1507 §hebrew_copy).
-  vegan: {
-    label: "טבעוני",
-    scope: "any-product",
-    evidence: "self-declared",
-    subtext: "עסקים עם מוצרים טבעוניים בקטלוג",
-  },
-  // MEH-1438: vegetarian axis. A vegan product counts as vegetarian (the
-  // ?vegetarian filter matches is_vegetarian OR is_vegan) — see badges.js.
-  vegetarian: {
-    label: "צמחוני",
-    scope: "any-product",
-    evidence: "self-declared",
-    subtext: "עסקים עם מוצרים צמחוניים בקטלוג",
-  },
-  gluten_free: {
-    label: "ללא גלוטן",
-    scope: "any-product",
-    evidence: "self-declared",
-    subtext: "עסקים עם מוצרים ללא גלוטן בקטלוג",
-  },
-  lactose_free: {
-    label: "ללא לקטוז",
-    scope: "any-product",
-    evidence: "self-declared",
-    subtext: "עסקים עם מוצרים ללא לקטוז בקטלוג",
-  },
-  // MEH-1934: fifth diet axis (a sixth, low_carb, was withdrawn — see below).
-  // Same any-product / self-declared shape as the four above — an EXISTS
-  // subquery over products, never a whole-business property. Copy is
-  // Sapir-LOCKED (MEH-1934 §hebrew_copy): do not paraphrase.
-  //
-  // "מתאים לסוכרתיים" stays banned on every surface — it is a medical claim,
-  // and this label is a self-declaration about a product, which is the exact
-  // over-claim the MEH-1507 contract exists to prevent.
-  no_added_sugar: {
-    label: "ללא סוכר מוסף",
-    scope: "any-product",
-    evidence: "self-declared",
-    subtext: "עסקים עם מוצרים ללא סוכר מוסף בקטלוג",
-  },
-  // MEH-2047: "דל פחמימות" removed — unlike every label above it, no standard
-  // defines it. EU/UK 1924/2006 does not permit a "low carb" claim at all and
-  // ת"י 1145 regulates ללא/דל/מופחת only for named nutrients, carbohydrates not
-  // among them. A scope+evidence pair cannot rescue a term with no referent:
-  // "self-declared" would have described who said it while leaving what they
-  // said undefined. Column + stored values kept, exactly as MEH-1259 did for
-  // organic.
-};
+import { FILTER_AXES, SHARED_AXIS_KEYS } from "@/lib/filter-taxonomy";
+
+export const ATTRIBUTE_LABELS = Object.fromEntries(
+  SHARED_AXIS_KEYS.map((key) => {
+    const { label, scope, evidence, subtext } = FILTER_AXES[key];
+    // `group` is deliberately not projected: it is FilterSheet wiring, and this
+    // map's shape ({label, scope, evidence, subtext}) is what MEH-1507 pinned.
+    return [key, { label, scope, evidence, subtext }];
+  }),
+);

@@ -56,6 +56,8 @@ export function HomeProducersGrid({
   onboardDismiss,
   onAdvanceFromStep0,
   onChipNavigate,
+  // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
+  onRemoveChip,
   onClearCategory,
   onClearLocation,
   onLoadMore,
@@ -141,18 +143,49 @@ export function HomeProducersGrid({
       {(chipsActive || activeCategory) && (
         <div className="mb-6 flex flex-wrap items-center gap-2" aria-live="polite">
           <span className="text-xs text-fg-muted">{t("home.producers.filter_prefix")}</span>
-          {chipsActive && (
-            <span className="text-xs text-fg-muted">
-              {CHIPS_CONFIG.filter((c) => chips[c.key])
-                .map((c) => c.label)
-                .join(" · ")}
-            </span>
-          )}
+          {/* MEH-2130: each active attribute is now a REMOVABLE tag, matching
+              /producers (ProducersClient.jsx) and /map (useMapFilters
+              activeFilterTags) — one applied-filter pattern across all three
+              discovery surfaces instead of two removable strips and one
+              read-only string. Before this, home joined the active labels into
+              a static "משלוח · טבעוני" span: a filter arriving from a shared
+              link was visible with no way to switch it off short of editing the
+              URL.
+              REUSES: frontend/components/ProducersClient.jsx — same pill
+              geometry, same leading "×" glyph (U+00D7, not an emoji), same
+              colours. The aria-label is the one addition: the /producers pill's
+              accessible name is just "× {label}", which does not say what the
+              button does. It reuses an existing key, so no new i18n twin. */}
+          {chipsActive &&
+            CHIPS_CONFIG.filter((c) => chips[c.key]).map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => onRemoveChip(chip.key)}
+                // The label MUST carry the chip name. `aria-label` overrides the
+                // computed accessible name outright, so a bare "נקה סינון" here
+                // both makes every tag announce identically AND hides chip.label
+                // from a screen reader — strictly worse than /producers, which
+                // has no aria-label and so announces "× משלוח". Interpolating
+                // keeps the existing i18n key (no new he/en twin) while giving
+                // each button a distinct name. Caught by the CI reviewer.
+                aria-label={`${t("home.producers.clear_filter")} ${chip.label}`}
+                data-testid={`home-active-filter-${chip.key}`}
+                className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+              >
+                <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+                {chip.label}
+              </button>
+            ))}
           {activeCategory && (
             <button
               type="button"
               onClick={onClearCategory}
-              aria-label={t("home.producers.clear_filter")}
+              // Same override as the attribute tags above (pre-existing, from
+              // the MEH-1174 summary row): the category name lives in a child
+              // span that the bare aria-label suppresses, so with an attribute
+              // tag also active the two buttons were indistinguishable by name.
+              aria-label={`${t("home.producers.clear_filter")} ${activeCategory.name}`}
               className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span>{activeCategory.name}</span>
