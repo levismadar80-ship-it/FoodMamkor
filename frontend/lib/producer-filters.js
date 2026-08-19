@@ -29,6 +29,10 @@ import {
   chipsForKeys,
   defaultsForKeys,
 } from "@/lib/filter-taxonomy";
+// MEH-2131: the SHIPPED Asia/Jerusalem order-window evaluator (MEH-1546), not
+// a second one written for this ticket. See openNowChipVisible below for why
+// the client is allowed to read a clock here at all.
+import { getOrderWindowStatus } from "@/lib/orderWindow";
 
 // The HOME row. MEH-2130: `pickup_points` joins it here — the pair
 // משלוח + איסוף עצמי now reads the same on home, /producers and /map.
@@ -75,6 +79,82 @@ export const OPEN_NOW_CHIP_MIN = 5;
 // would hide a filter that already works on /map.
 export const DIET_CHIP_MIN = 5;
 export const GATED_DIET_KEYS = ["no_added_sugar"];
+
+/**
+ * MEH-2131 — should the "פתוחים להזמנות עכשיו" chip render at all?
+ *
+ * TWO conditions, both required, and they are different questions:
+ *
+ *   1. COVERAGE (MEH-1881, `OPEN_NOW_CHIP_MIN`) — have enough businesses
+ *      declared a window for the axis to be worth offering? Unchanged, and
+ *      deliberately NOT replaced: it is a shipped guard, and removing one to
+ *      install another is the move workflow rule 32 forbids.
+ *   2. ZERO-RESULT (this ticket) — would applying it *right now* return an
+ *      empty list? A filter that lands the visitor on "no results" is a dead
+ *      end (Baymard), and this axis is the one that can go empty at 3am
+ *      through nobody's fault.
+ *
+ * ── Why the client may look at a clock here, when the filter must not ──
+ *
+ * The FILTER stays server-side and unconditionally so: the frontend sends
+ * `?open_for_orders_now=true` and the backend evaluates `order_window` against
+ * `israel_now()`. Nothing here changes that, and no time is ever sent.
+ *
+ * This is a VISIBILITY decision — "is this chip worth rendering" — and it is
+ * answered from data the listing already holds (`order_window` rides on
+ * ProducerListOut since MEH-1880) using `getOrderWindowStatus`, the evaluator
+ * ProducerCard and the producer page have used since MEH-1546. Reusing it is
+ * the point: writing a second Asia/Jerusalem evaluator for this would be the
+ * two-parallel-mechanisms smell the workflow rules name.
+ *
+ * **It is an ESTIMATE, and treating it as anything more would be wrong.** It
+ * sees only the loaded page, and it is a second implementation of a predicate
+ * the server owns, so the two can in principle disagree at a boundary minute.
+ * That is tolerable *only* because of the direction of the error: the worst
+ * case is a chip that renders and returns few results, or one that hides while
+ * a match exists — never a wrong result set, because the server still decides
+ * what the filter returns.
+ *
+ * @param producers  the loaded, UNFILTERED catalog (counting the filtered list
+ *                   would be circular — switch the chip on and the count is
+ *                   whatever the filter returned).
+ * @param active     is the filter currently on? An active filter ALWAYS keeps
+ *                   its chip, or a deep-linked `?open_for_orders_now=1` strands
+ *                   the visitor with a filter she can see the effect of and
+ *                   cannot switch off. Same carve-out MEH-1088 makes.
+ * @param catalogFullyLoaded  `!hasMore`. While pages are unfetched, a match may
+ *                   sit on a later page, so the zero-result half does not run.
+ * @param now        `Date`, or `null` when the clock is not yet readable — the
+ *                   SSR pass and the FIRST client render must agree, and
+ *                   `getOrderWindowStatus` is time-dependent (orderWindow.js
+ *                   says so at the top). `null` ⇒ coverage gate only, which is
+ *                   exactly the pre-MEH-2131 answer, so hydration cannot
+ *                   mismatch; the caller supplies a real Date after mount.
+ */
+export function openNowChipVisible({
+  producers = [],
+  active = false,
+  catalogFullyLoaded = false,
+  now = null,
+} = {}) {
+  if (active) return true;
+
+  const declared = producers.filter((p) => p?.order_window).length;
+  if (declared < OPEN_NOW_CHIP_MIN) return false;
+
+  // Coverage passed. Zero-result only applies once the catalog is fully loaded
+  // AND the clock is readable — otherwise fall through to "visible", which is
+  // the MEH-1881 behaviour this ticket tightens rather than replaces.
+  if (!catalogFullyLoaded || now === null) return true;
+
+  return producers.some((p) => {
+    const status = getOrderWindowStatus(p?.order_window, now);
+    // "closing_soon" is still OPEN — it is a warning band, not a state change
+    // (orderWindow.js CLOSING_SOON_MINUTES). Excluding it would hide the chip
+    // in the last hour of every window, which is the hour it matters most.
+    return status?.state === "open" || status?.state === "closing_soon";
+  });
+}
 
 /**
  * Which gated diet chips have earned their place, given the loaded producers.

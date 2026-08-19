@@ -90,15 +90,23 @@ describe("homepage attribute chips → /producers deep-link (MEH-1774)", () => {
     // a data gate here would hide a filter that already works one surface over.
     // The MEH-1934 gate exists for axes whose catalog coverage is genuinely
     // unknown; that is not this one.
-    expect(CHIPS_CONFIG).toHaveLength(9);
+    expect(CHIPS_CONFIG).toHaveLength(10);
     const UNGATED = [
       "kosher", "vegan", "vegetarian", "gluten_free",
       "lactose_free", "has_delivery", "verified",
       "pickup_points",  // MEH-2130 — see the note above
     ];
+    // MEH-2131: `open_for_orders_now` reaches the home row and IS gated — but
+    // by its own guard (`openNowChipVisible`, coverage + zero-result), not by
+    // GATED_DIET_KEYS, which is the diet-coverage list. Listing it here would
+    // claim it is ungated, which is false; the exemption is named instead so
+    // the leak detector still fails on a genuinely ungated new chip.
+    const GATED_ELSEWHERE = ["open_for_orders_now"];
     for (const chip of CHIPS_CONFIG) {
       expect(
-        UNGATED.includes(chip.key) || GATED_DIET_KEYS.includes(chip.key),
+        UNGATED.includes(chip.key) ||
+          GATED_DIET_KEYS.includes(chip.key) ||
+          GATED_ELSEWHERE.includes(chip.key),
         `${chip.key} is on the shared home row but is neither a pre-MEH-1934 chip nor gated`,
       ).toBe(true);
     }
@@ -240,7 +248,7 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
     expect(params.get("city")).toBe("ירושלים");
   });
 
-  it("context rides along for ALL 9 chip keys, not just משלוח", () => {
+  it("context rides along for ALL 10 chip keys, not just משלוח", () => {
     withContext("חיפה", "שלישי");
     const { result } = renderHook(() => useHomePage());
 
@@ -252,6 +260,6 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
       expect(params.get("city")).toBe("חיפה");
       expect(params.getAll("delivery_days")).toEqual(["שלישי"]);
     }
-    expect(CHIPS_CONFIG).toHaveLength(9);  // MEH-1934, MEH-2047, MEH-2130
+    expect(CHIPS_CONFIG).toHaveLength(10);  // MEH-1934, MEH-2047, MEH-2130, MEH-2131
   });
 });
