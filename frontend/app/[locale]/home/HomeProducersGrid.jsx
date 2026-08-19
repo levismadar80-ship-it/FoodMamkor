@@ -162,7 +162,14 @@ export function HomeProducersGrid({
                 key={chip.key}
                 type="button"
                 onClick={() => onRemoveChip(chip.key)}
-                aria-label={t("home.producers.clear_filter")}
+                // The label MUST carry the chip name. `aria-label` overrides the
+                // computed accessible name outright, so a bare "נקה סינון" here
+                // both makes every tag announce identically AND hides chip.label
+                // from a screen reader — strictly worse than /producers, which
+                // has no aria-label and so announces "× משלוח". Interpolating
+                // keeps the existing i18n key (no new he/en twin) while giving
+                // each button a distinct name. Caught by the CI reviewer.
+                aria-label={`${t("home.producers.clear_filter")} ${chip.label}`}
                 data-testid={`home-active-filter-${chip.key}`}
                 className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
               >
@@ -174,7 +181,11 @@ export function HomeProducersGrid({
             <button
               type="button"
               onClick={onClearCategory}
-              aria-label={t("home.producers.clear_filter")}
+              // Same override as the attribute tags above (pre-existing, from
+              // the MEH-1174 summary row): the category name lives in a child
+              // span that the bare aria-label suppresses, so with an attribute
+              // tag also active the two buttons were indistinguishable by name.
+              aria-label={`${t("home.producers.clear_filter")} ${activeCategory.name}`}
               className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span>{activeCategory.name}</span>

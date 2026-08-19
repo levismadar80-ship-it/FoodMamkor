@@ -19,14 +19,29 @@
  * later null in the run is void and the script says so and exits non-zero.
  */
 import { chromium } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 
 const BASE = process.env.QA_BASE_URL ?? "http://127.0.0.1:3000";
-// The repo's pinned @playwright/test wants a Chromium build the sandbox image
+// The repo's pinned @playwright/test wants a Chromium build the CC sandbox image
 // does not carry, and the download host is proxy-blocked (MEH-2090). The image
-// ships a working Chromium at this stable symlink, so point at it explicitly
-// rather than downloading. Harmless on CI, which resolves its own binary.
-const EXECUTABLE_PATH = process.env.QA_CHROMIUM ?? "/opt/pw-browsers/chromium";
+// ships a working Chromium at this stable symlink, so point at it when it is
+// there and let Playwright resolve its own binary everywhere else.
+//
+// Deliberately a filesystem probe and NOT an env var: `check_env_drift.sh`
+// (MEH-491) blocks any variable read in code that no .env.example documents,
+// and the honest answer is that this needs no configuration — the path either
+// exists on this machine or it does not. The first version of this line read a
+// QA-specific override variable and the Env drift gate caught it, correctly.
+//
+// The variable's NAME is deliberately not written out anywhere in this file,
+// including here: that scanner greps the file text, so spelling the token in a
+// comment re-trips the gate on a variable no code reads. Same shape as the
+// z-token ledger note in .claude/rules/rtl.md, where prose containing a token
+// added a phantom owner to its row.
+const SANDBOX_CHROMIUM = "/opt/pw-browsers/chromium";
+const LAUNCH_OPTIONS = existsSync(SANDBOX_CHROMIUM)
+  ? { executablePath: SANDBOX_CHROMIUM }
+  : {};
 const OUT = "qa-artifacts/MEH-2130";
 
 const CATEGORIES = [
@@ -125,7 +140,7 @@ async function shoot(page, file) {
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch({ executablePath: EXECUTABLE_PATH });
+  const browser = await chromium.launch(LAUNCH_OPTIONS);
 
   for (const vp of VIEWPORTS) {
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
