@@ -90,10 +90,30 @@ class Producer(Base):
     # and no other path.
     #
     # MEH-2124: a sixth value, `pending_whatsapp`, was retained through the
-    # Expand phase and removed in MEH-2124 once it was confirmed unreachable
-    # (nothing wrote it after MEH-2100) and confirmed to have held zero rows,
-    # ever. No migration was needed — the column is a free String with no
-    # enum and no CHECK constraint, so removing a VALUE is code-only.
+    # Expand phase and removed in MEH-2124. No migration was needed — the
+    # column is a free String with no enum and no CHECK constraint, so
+    # removing a VALUE is code-only.
+    #
+    # THE TWO PREMISES, with their sources, because a future reader inherits
+    # them as fact otherwise and they are what makes the removal safe:
+    #
+    #   1. UNREACHABLE — CC-verified, mechanically. `grep -rn 'status =
+    #      "pending_whatsapp"' backend/app/` returns nothing, so no writer
+    #      exists; the OTP flip in producer_me.py was its only EXIT. Still
+    #      checkable today, and `tests/test_meh2100_draft_submit.py` asserts
+    #      no creation site can re-introduce it.
+    #   2. ZERO ROWS, EVER — **Sapir's confirmation, 16/08/2026, on the
+    #      MEH-2124 card. NOT measured by CC and not measurable from a CC
+    #      session**: the production database URL is deny-listed for Claude
+    #      Code (.claude/rules/security.md) and `*.up.railway.app` is
+    #      egress-blocked from the sandbox (MEH-2090). It is a human
+    #      attestation about data, recorded as one rather than dressed up as
+    #      a query result.
+    #
+    # If premise 2 were ever wrong, a surviving row would go quiet rather than
+    # loud: `?status=pending` and the pending counters would omit it, and the
+    # toggle / request-changes / request-review guards would answer 409. That
+    # asymmetry is why the attestation is cited here instead of assumed.
     #
     # The DEFAULT moved "pending" -> "draft" with the same reasoning, and it is
     # a fail-closed choice rather than a cosmetic one. Every one of the five
