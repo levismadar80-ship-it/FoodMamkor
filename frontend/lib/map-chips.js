@@ -141,6 +141,7 @@ export function chipStateToParams(state, dbCategories) {
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   //
+  // 🔴 MEH-2133 PIN SITE 2 of 3 — the surface where the defect is observable.
   // MEH-2130: one loop over the /map axes replaces nine hand-written lines. The
   // emitted set is UNCHANGED, including the one axis that emits nothing:
   // `no_added_sugar` is a /map chip whose param was never wired (measured on
