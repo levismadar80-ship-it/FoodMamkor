@@ -1,57 +1,54 @@
-// MEH-1418: attribute chips now carry Phosphor LEADING ICONS (lib/chip-icons.js,
-// threaded at the render call site via withChipIcons). Labels stay text-only —
-// Emoji LOCK v2 forbids emoji literals; aria-hidden Phosphor glyphs are the
-// approved substitute (MEH-990 precedent).
-// MEH-1082: shared attribute labels come from ATTRIBUTE_LABELS (unified with the
-// /map TOGGLE_CHIPS). MEH-1418: `kosher` joined the shared map ("כשרות מאומתת",
-// MEH-1087) — the /producers "כשר" label is retired.
-// MEH-1507: each ATTRIBUTE_LABELS entry is now an object {label, scope, evidence,
-// subtext}; spreading it into a chip keeps `chip.label` a string (chip row
-// unchanged) while carrying the scope×evidence metadata the contract guard
-// (LabelScopeContract.test.js) requires on every entry.
-import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+/**
+ * The home + /producers filter config, DERIVED from lib/filter-taxonomy.js.
+ *
+ * MEH-2130: this module used to hand-declare three things that the taxonomy now
+ * owns — which axes each surface offers (CHIPS_CONFIG / PRODUCERS_CHIPS_CONFIG),
+ * which FilterSheet group each belongs to (PRODUCERS_CHIP_GROUPS), and which
+ * query param each emits (buildChipParams). All three are computed here from
+ * ONE declaration, so /map and the listing surfaces cannot drift apart again.
+ * The exported names and shapes are unchanged — every consumer and test reads
+ * exactly what it read before.
+ *
+ * What is NOT derived, on purpose: the runtime DATA GATES below
+ * (OPEN_NOW_CHIP_MIN / DIET_CHIP_MIN / GATED_DIET_KEYS). A gate is about how
+ * much data the catalog carries today, not about what the axis IS — it turns
+ * itself off when the data arrives — so it is listing-surface policy, not
+ * taxonomy.
+ *
+ * MEH-1418: attribute chips carry Phosphor LEADING ICONS (lib/chip-icons.js,
+ * threaded at the render call site via withChipIcons). Labels stay text-only —
+ * Emoji LOCK v2 forbids emoji literals; aria-hidden Phosphor glyphs are the
+ * approved substitute (MEH-990 precedent).
+ * MEH-1507: each chip carries {label, scope, evidence, subtext}; `chip.label`
+ * stays a string (chip row unchanged) while the scope×evidence metadata the
+ * contract guard (LabelScopeContract.test.js) requires rides along.
+ */
+import {
+  LISTING_CHIP_ORDER,
+  axisKeysFor,
+  chipsForKeys,
+  defaultsForKeys,
+} from "@/lib/filter-taxonomy";
 
-// MEH-1881: /producers-local, mirroring how map-chips.js:76 keeps its /map-only
-// `grass_fed` object out of the shared map. ATTRIBUTE_LABELS is for keys BOTH
-// surfaces render, and /map is explicitly out of this ticket's scope — putting
-// it there breaks the attributeLabels parity test, which is exactly the promise
-// that map is supposed to enforce.
-//
-// business scope — the window belongs to the whole business, not to a product
-// or a facility. self-declared evidence — nobody checks that she actually
-// answers, which is why the subtext says "שהגדירו" and not "זמינים עכשיו"
-// (MEH-1652 copy-honesty: describe the declared mechanic, never promise on the
-// business's behalf).
-const OPEN_NOW_LABEL = {
-  label: "פתוח להזמנות עכשיו",
-  scope: "business",
-  evidence: "self-declared",
-  subtext: "עסקים שחלון ההזמנות שהגדירו פתוח ברגע זה",
-};
+// The HOME row. MEH-2130: `pickup_points` joins it here — the pair
+// משלוח + איסוף עצמי now reads the same on home, /producers and /map.
+// Shared with /producers, which renders a superset (see PRODUCERS_* below).
+const HOME_KEYS = axisKeysFor("home", LISTING_CHIP_ORDER);
+const PRODUCERS_KEYS = axisKeysFor("producers", LISTING_CHIP_ORDER);
 
-export const CHIPS_CONFIG = [
-  { key: "kosher",        ...ATTRIBUTE_LABELS.kosher },
-  // MEH-1259: organic chip removed — self-declared organic is no longer a
-  // public filter/badge (חוק תוצרת אורגנית 2005). Field + owner toggle kept.
-  // MEH-1438: diet-group order locked to טבעוני · צמחוני · ללא גלוטן · ללא לקטוז
-  // (vegetarian sits next to vegan — a vegan product is vegetarian by definition).
-  { key: "vegan",         ...ATTRIBUTE_LABELS.vegan },
-  { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian },
-  { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free },
-  { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free },
-  // MEH-1934: peer of the four diet chips above, so it lives in the SHARED
-  // array like its siblings — and ATTRIBUTE_LABELS membership is precisely
-  // the promise that the shared row renders them (attributeLabels.test.js).
-  // Unlike open_for_orders_now (MEH-1881), which is a by-the-hour operational
-  // state its ticket scoped to /producers only, these are durable product
-  // attributes and belong wherever the other diet chips are.
-  //
-  // Because this array IS the home grid's row, both are gated at EVERY render
-  // site via visibleGatedDietKeys — see DIET_CHIP_MIN below.
-  { key: "no_added_sugar", ...ATTRIBUTE_LABELS.no_added_sugar },
-  { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery },
-  { key: "verified",      ...ATTRIBUTE_LABELS.verified },
-];
+export const CHIPS_CONFIG = chipsForKeys(HOME_KEYS);
+
+// MEH-1881: /producers renders one axis home does not (open_for_orders_now).
+// Pre-MEH-2130 that superset was built by spreading CHIPS_CONFIG and appending
+// a locally-declared chip — the arrangement that made it easy to append to the
+// SHARED array by mistake and leak a chip onto home (which is exactly what
+// happened while writing MEH-1934, caught only by a toHaveLength pin). Both
+// arrays are now projections of the same declaration filtered by `surfaces`,
+// so an axis lands on a surface only by being declared for it.
+export const PRODUCERS_CHIPS_CONFIG = chipsForKeys(PRODUCERS_KEYS);
+
+export const CHIPS_DEFAULT = defaultsForKeys(HOME_KEYS);
+export const PRODUCERS_CHIPS_DEFAULT = defaultsForKeys(PRODUCERS_KEYS);
 
 // MEH-1881: the chip stays out of the DOM until at least this many loaded
 // producers have declared a window. A filter that returns an empty list
@@ -70,6 +67,12 @@ export const OPEN_NOW_CHIP_MIN = 5;
 // Deliberately NOT applied to the four older axes: they already have data and
 // gating them now would REMOVE working filters. New axes start gated; existing
 // ones are never retro-gated.
+//
+// MEH-2130 deliberately does NOT gate `pickup_points`: its data comes from the
+// location rows owners already create in LocationsEditor (the same rows the
+// /map layer has been drawing since MEH-2046), so it is an existing axis being
+// exposed on more surfaces — not a new axis awaiting data. Retro-gating it here
+// would hide a filter that already works on /map.
 export const DIET_CHIP_MIN = 5;
 export const GATED_DIET_KEYS = ["no_added_sugar"];
 
@@ -94,91 +97,50 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
   });
 }
 
-export const CHIPS_DEFAULT = {
-  kosher: false,
-  vegan: false,
-  vegetarian: false,
-  gluten_free: false,
-  lactose_free: false,
-  no_added_sugar: false,  // MEH-1934
-  has_delivery: false,
-  verified: false,
-};
-
-// MEH-1881: /producers gets an EIGHTH chip; the home grid does not.
-//
-// `CHIPS_CONFIG` is shared — HomeProducersGrid.jsx:70 renders the same array —
-// so appending there put the chip on the home page too, ungated, on a surface
-// this ticket puts explicitly out of scope. The `toHaveLength(7)` pin in
-// useHomePageDietChipsUrl.test.js is what caught it; without that one number
-// the leak would have shipped looking like a feature.
-//
-// Last in the row on purpose: it is the only chip whose answer changes by the
-// hour, so it reads as a refinement of the durable attributes above rather than
-// as a peer of them.
-export const PRODUCERS_CHIPS_CONFIG = [
-  ...CHIPS_CONFIG,
-  { key: "open_for_orders_now", ...OPEN_NOW_LABEL },
-];
-
-export const PRODUCERS_CHIPS_DEFAULT = {
-  ...CHIPS_DEFAULT,
-  open_for_orders_now: false,
-};
-
-// MEH-1862: which FilterSheet section each /producers axis belongs to.
-//
-// Kept as an explicit key→group map rather than a `group` field on
-// PRODUCERS_CHIPS_CONFIG, because that array spreads the SHARED CHIPS_CONFIG —
-// the same array the home grid renders (HomeProducersGrid.jsx:70) — and a field
-// added there travels to a surface this ticket does not touch. Same reasoning
-// MEH-1881 used to justify the PRODUCERS_* pair existing at all.
-//
-// It is NOT derived from TOGGLE_CHIPS at runtime: /producers importing a module
-// named for /map would invert the dependency for a handful of string constants.
-// The drift risk that buys is covered by a test instead — producerSheetChips
-// asserts every /producers key has a group AND that every key shared with
-// TOGGLE_CHIPS is filed under the SAME group on both surfaces, so the two
-// cannot disagree silently.
-const PRODUCERS_CHIP_GROUPS = {
-  kosher: "quality",
-  vegan: "diet",
-  vegetarian: "diet",
-  gluten_free: "diet",
-  lactose_free: "diet",
-  no_added_sugar: "diet",
-  has_delivery: "service",
-  verified: "service",
-  open_for_orders_now: "service",  // MEH-1881 — /producers-only
-};
-
 /**
  * Attach FilterSheet group metadata to a /producers chip list (MEH-1862).
  *
+ * MEH-2130: the group now RIDES ON the chip (it comes from the axis
+ * declaration), so this is a passthrough with a fallback rather than a lookup
+ * into a second hand-written key→group map. That map was the drift risk
+ * MEH-1862 covered with a test — /producers and /map filing a shared key under
+ * different groups. It cannot happen now: both surfaces read the same field.
+ *
+ * The function is kept (rather than inlined at the call site) because it is the
+ * documented seam where sheet metadata is attached, and ProducersFilterSheet's
+ * suite exercises it directly.
+ *
  * Takes the ALREADY-GATED list, so the MEH-1881 open-now and MEH-1934 diet
  * gates keep deciding what exists — moving the chips into a sheet changes where
- * they render, never whether they are offered. A key with no group entry falls
- * back to "service" so it stays reachable rather than vanishing; the test above
- * is what stops that fallback from ever being the answer in practice.
+ * they render, never whether they are offered. A chip with no group falls back
+ * to "service" so it stays reachable rather than vanishing; the test above is
+ * what stops that fallback from ever being the answer in practice.
  */
 export function withChipGroups(chips = []) {
   return chips.map((chip) => ({
     ...chip,
-    group: PRODUCERS_CHIP_GROUPS[chip.key] ?? "service",
+    group: chip.group ?? "service",
   }));
 }
 
+/**
+ * The GET /producers query params for an active chip state.
+ *
+ * MEH-2130: derived from the /producers axis list instead of nine hand-written
+ * `if` lines. Every axis param name IS its key on this surface, which is what
+ * lets ProducersClient hydrate `?<key>=1` back out of the URL by iterating the
+ * same array — the round-trip holds by construction rather than by two lists
+ * agreeing. `pickup_points` is emitted for the first time here; the backend has
+ * accepted it globally since MEH-2046 (producers.py:136).
+ *
+ * A state object missing a key (home passes its own, smaller chip state) yields
+ * `undefined` → falsy → no param, exactly as the hand-written version did.
+ */
 export function buildChipParams(chips, overrides = {}) {
   const c = { ...chips, ...overrides };
   const p = {};
-  if (c.kosher) p.kosher = true;
-  if (c.gluten_free) p.gluten_free = true;
-  if (c.vegan) p.vegan = true;
-  if (c.vegetarian) p.vegetarian = true;  // MEH-1438
-  if (c.lactose_free) p.lactose_free = true;
-  if (c.no_added_sugar) p.no_added_sugar = true;  // MEH-1934
-  if (c.has_delivery) p.has_delivery = true;
-  if (c.verified) p.verified = true;
-  if (c.open_for_orders_now) p.open_for_orders_now = true;  // MEH-1881
+  for (const key of PRODUCERS_KEYS) {
+    if (c[key]) p[key] = true;
+  }
   return p;
 }
