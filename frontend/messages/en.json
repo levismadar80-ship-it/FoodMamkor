@@ -1506,10 +1506,11 @@
         }
       },
       "table": {
+        "status_tooltip_draft": "draft = not yet submitted for review",
         "status_tooltip_pending": "pending = awaiting initial approval",
         "status_tooltip_approved": "approved = approved and shown on site",
         "status_tooltip_rejected": "rejected = denied, hidden",
-        "status_tooltip_suspended": "suspended = temporarily suspended",
+        "status_tooltip_inactive": "inactive = deactivated",
         "status_tooltip_label": "Business status values info",
         "referral": {
           "label": "Heard via"
