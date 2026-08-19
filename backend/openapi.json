@@ -11778,7 +11778,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "pattern": "^(draft|pending|pending_whatsapp|approved|rejected|inactive|all)$",
+                  "pattern": "^(draft|pending|approved|rejected|inactive|all)$",
                   "type": "string"
                 },
                 {

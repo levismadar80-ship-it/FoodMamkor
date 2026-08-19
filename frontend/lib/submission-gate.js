@@ -113,9 +113,10 @@ export function submissionMissingItems(producer) {
 
   // MEH-745: the WhatsApp number is the channel every customer contact runs
   // through. Read from the `phone_verified` column, NOT inferred from a status
-  // value — under the draft machine `pending_whatsapp` is unreachable for a
-  // new registration, so a status-based read would report every draft as
-  // verified.
+  // value — the status this was once inferred from (`pending_whatsapp`) stopped
+  // being reachable for a new registration under the draft machine and was
+  // removed in MEH-2124; a status-based read would have reported every draft
+  // as verified.
   if (!producer.phone_verified) missing.push(MISSING_PHONE_VERIFIED);
 
   return missing;

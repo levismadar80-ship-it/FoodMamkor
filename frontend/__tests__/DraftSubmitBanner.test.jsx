@@ -162,9 +162,10 @@ describe("DraftSubmitBanner — the PhoneVerifyCard mount (MEH-2100 blocking def
   });
 
   // This is the regression that would make the whole feature unusable: before
-  // MEH-2100 the card existed only inside the pending_whatsapp banner, which a
-  // draft never reaches — so phone_verified could never flip and the gate
-  // could never be passed by anyone. If a refactor drops this mount, the two
+  // MEH-2100 the card existed only inside the `pending_whatsapp` banner, which
+  // a draft never reaches — so phone_verified could never flip and the gate
+  // could never be passed by anyone. That banner and its status were removed
+  // in MEH-2124, which makes this mount the only one. If a refactor drops it, the two
   // assertions above go red rather than the feature silently dead-ending.
 
   // The mount alone is not enough: verifying has to CLEAR the codes the server

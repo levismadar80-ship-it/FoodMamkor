@@ -61,11 +61,11 @@ logger = logging.getLogger(__name__)
 #
 # Producer.status is a free String(20) with no enum and no DB CHECK
 # constraint; the authoritative enumeration is the admin filter pattern in
-# routers/admin.py's list_producers — draft | pending | pending_whatsapp |
-# approved | rejected | inactive. (This comment used to cite
-# routers/admin.py:112; that line number had drifted — the pattern sits around
-# :344. Cited by section now, MEH-2100.) Membership in this tuple admits three
-# of the six, so a status added later is excluded by DEFAULT (fail-closed)
+# routers/admin.py's list_producers — draft | pending | approved | rejected |
+# inactive. (This comment used to cite routers/admin.py:112; that line number
+# had drifted — the pattern sits around :418. Cited by section now, MEH-2100.)
+# Membership in this tuple admits two of the five, so a status added later is
+# excluded by DEFAULT (fail-closed)
 # rather than silently opted into an email that assumes "we are waiting on
 # you".
 #
@@ -76,9 +76,13 @@ logger = logging.getLogger(__name__)
 # MEH-2100: `draft` joins them, and it is now the MAIN case rather than an
 # edge one — under the submit gate a new registration lands in draft and stays
 # there until the owner acts, so "we are waiting on you" is most true exactly
-# there. `pending`/`pending_whatsapp` are retained because existing rows still
-# hold them.
-_NUDGEABLE_STATUSES = ("draft", "pending", "pending_whatsapp")
+# there. `pending` is retained because a business awaiting the admin can still
+# be missing something the admin will bounce it for.
+#
+# `pending_whatsapp` was removed in MEH-2124, along with the value itself.
+# It was already inert here — the tuple is an ALLOW-list, and no row
+# has ever carried that status, so dropping it changes no send.
+_NUDGEABLE_STATUSES = ("draft", "pending")
 
 # MEH-1818: a business is nudged one day after registering. Deliberately not
 # tunable via env (the ticket's constraint: no new env vars) — the activation
@@ -230,13 +234,12 @@ def _missing_items(producer: Producer) -> list[str]:
     This function is now only the CODE → COPY mapping, and it drops codes with
     no Sapir-approved line (see `_ITEM_COPY`).
 
-    Phone: the signal is `phone_verified`, NOT `status == "pending_whatsapp"`
-    as it was before. That old form is unreachable under the draft machine — a
-    new registration never gets that status — so keeping it would have
-    reported every draft as phone-verified and silently dropped the phone line
-    from the one population that most needs it. Behaviour on legacy
-    `pending_whatsapp` rows is UNCHANGED, because `phone_verified` is False
-    exactly when that status applies.
+    Phone: the signal is `phone_verified`, NOT a status value, as it was
+    before. The old form keyed off a status that a new registration never got
+    under the draft machine, so keeping it would have reported every draft as
+    phone-verified and silently dropped the phone line from the one population
+    that most needs it. (That status was `pending_whatsapp`, removed entirely
+    in MEH-2124; the column has been the signal since MEH-2111 either way.)
     """
     return [
         _ITEM_COPY[code]
@@ -347,8 +350,8 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
     rest of this function is unchanged mechanics.
 
     What did NOT change: the stamp is still the only send-tracking state, there
-    is still no new column, and a `pending` / `pending_whatsapp` business still
-    receives exactly one email ever. For those statuses `_due_mark` offers only
+    is still no new column, and a `pending` business still receives exactly one
+    email ever. For that status `_due_mark` offers only
     mark 1, and a stamped row can never satisfy `sent < created + 1 day`, so
     the old "stamped means finished, permanently" property is preserved by
     construction rather than by a second condition.

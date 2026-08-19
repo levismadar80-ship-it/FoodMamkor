@@ -9,7 +9,8 @@
  * DEFERRED, not silently skipped — each with why, so a reader doesn't mistake
  * "not in this file" for "not needed":
  *
- * - **§2C quick-approve.** Needs a producer in `pending`/`pending_whatsapp`.
+ * - **§2C quick-approve.** Needs a producer in `pending` (the second waiting
+ *   status this line used to name, `pending_whatsapp`, was removed in MEH-2124).
  *   `backend/scripts/seed_demo_producers.py` seeds nothing but `status="approved"`
  *   (verified via `grep -n 'status=' backend/scripts/seed_demo_producers.py`,
  *   13/08) — there is no seeded fixture to approve. This is exactly the gap

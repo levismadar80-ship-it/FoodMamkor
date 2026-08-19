@@ -14,7 +14,6 @@ import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
-import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
@@ -497,31 +496,6 @@ export default function ProducerDashboardPage() {
           >
             {t("status.inactive.support_cta")}
           </button>
-        </div>
-      )}
-
-      {producer.status === "pending_whatsapp" && (
-        <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
-          <p className="font-semibold text-primary mb-1">{t("status.pending_whatsapp.title")}</p>
-          <p className="text-fg-muted">
-            {t("status.pending_whatsapp.body")}
-          </p>
-          {/* MEH-745: the OTP card replaces the old dead /settings CTA — a
-              successful confirm flips status to pending without a reload.
-              MEH-2100: the id is the completeness checklist's "אימות וואטסאפ"
-              target, shared with the draft banner's mount — mutually exclusive
-              by status, so the two never coexist. */}
-          <div id="phone-verify">
-            <PhoneVerifyCard
-              onVerified={() =>
-                setData((prev) =>
-                  prev
-                    ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                    : prev,
-                )
-              }
-            />
-          </div>
         </div>
       )}
 

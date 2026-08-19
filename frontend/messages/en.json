@@ -4066,10 +4066,6 @@
           "tip_address": "Check that the business address is correct",
           "support_cta": "Talk to us →"
         },
-        "pending_whatsapp": {
-          "title": "Welcome! Almost there.",
-          "body": "To send your business for team review, verify your business phone number via WhatsApp."
-        },
         "inactive": {
           "title": "Your account is currently inactive",
           "body": "Your business is hidden from the site. Contact us to reactivate it.",
