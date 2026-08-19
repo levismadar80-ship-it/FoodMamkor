@@ -618,9 +618,7 @@ def get_dashboard(
     # six queues (MEH-997 added recipes). Individual counts stay
     # available for the alert cards.
     pending_producers = (
-        db.query(func.count(Producer.id))
-        .filter(Producer.status == "pending")
-        .scalar()
+        db.query(func.count(Producer.id)).filter(Producer.status == "pending").scalar()
         or 0
     )
     # MEH-1266: count OPEN reports only (status != resolved|dismissed) so the
