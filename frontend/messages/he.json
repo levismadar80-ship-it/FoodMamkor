@@ -1506,10 +1506,11 @@
         }
       },
       "table": {
+        "status_tooltip_draft": "draft = טיוטה שטרם נשלחה לבדיקה",
         "status_tooltip_pending": "pending = ממתין לאישור ראשוני",
         "status_tooltip_approved": "approved = מאושר ומוצג באתר",
         "status_tooltip_rejected": "rejected = נדחה, מוסתר",
-        "status_tooltip_suspended": "suspended = הושעה זמנית",
+        "status_tooltip_inactive": "inactive = מושבת",
         "status_tooltip_label": "מידע על ערכי סטטוס עסק",
         "referral": {
           "label": "מאיפה שמעו"

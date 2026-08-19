@@ -1728,6 +1728,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Render-only Hebrew labels for `producer.status`. DB values unchanged (intentional per MEH-56). Source of truth: `frontend/lib/producer-status.js`.
 
+- [ ] Admin chip — `draft` — איך לבדוק: `/admin/producers`, שורה של עסק שנרשם ולא שלח לבדיקה; **תוצאה מצופה:** chip קורא "טיוטה" ברקע `bg-slate-100` — **לא** המילה האנגלית `draft` ולא אפור זהה ל"לא פעילה" (MEH-2126).
 - [ ] Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`.
 - [ ] Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
 - [ ] Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
