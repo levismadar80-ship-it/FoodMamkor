@@ -13,8 +13,8 @@ Contract:
 | approved        | sensitive           | ONE, listing every changed field |
 | approved        | sensitive, no-op    | none — value compared, not key presence |
 | approved        | non-sensitive       | none |
+| draft           | sensitive           | none |
 | pending         | sensitive           | none |
-| pending_whatsapp| sensitive           | none |
 | inactive        | sensitive           | none |
 | approved        | notify() raises     | none — 200 still returned (fail-open) |
 
@@ -116,7 +116,8 @@ def test_non_sensitive_edit_does_not_ping(client, db):
     ping.assert_not_called()
 
 
-@pytest.mark.parametrize("status", ["pending", "pending_whatsapp", "inactive"])
+# `pending_whatsapp` was a fourth case here until it was removed in MEH-2124.
+@pytest.mark.parametrize("status", ["draft", "pending", "inactive"])
 def test_non_approved_producer_does_not_ping(client, db, status):
     """The ping means "a business the admin already vetted changed something".
     A pending producer has not been vetted yet — its edits are the normal

@@ -35,10 +35,10 @@ import {
  * WHY PhoneVerifyCard IS MOUNTED HERE, and why the feature is dead without it.
  * Before MEH-2100 that card existed at exactly one mount point: inside the
  * `pending_whatsapp` banner. Under the draft machine a new registration never
- * reaches `pending_whatsapp`, so the card became unreachable — and
- * `phone_verified` is one of the five submit requirements. The result would
- * have been a gate no business on the site could ever pass. Found in Phase 0;
- * this mount is the fix.
+ * reached that status, so the card became unreachable — and `phone_verified`
+ * is one of the five submit requirements. The result would have been a gate no
+ * business on the site could ever pass. Found in Phase 0; this mount is the
+ * fix, and since that status was removed in MEH-2124 it is the ONLY mount.
  *
  * The CTA's disabled state is an AFFORDANCE, not the rule. The server re-checks
  * every requirement and 422s regardless, so a client that ignores the button
@@ -125,8 +125,9 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
           phone_verified can never flip and the gate is impassable. */}
       {phoneUnverified && (
         // The anchor the completeness checklist's "אימות וואטסאפ" row targets
-        // (MEH-2100). The pending_whatsapp banner carries the same id; only
-        // one of the two renders for any given status, so it never collides.
+        // (MEH-2100). A second banner used to carry the same id; it went with
+        // the `pending_whatsapp` status, removed in MEH-2124, so this is now
+        // the only element on the page bearing it.
         // The `id` is the scroll anchor; the `data-testid` is how E2E finds it
         // (docs/E2E-LOCATORS.md — an id selector is not a sanctioned locator).
         // Both on one element, added with the spec that uses it rather than

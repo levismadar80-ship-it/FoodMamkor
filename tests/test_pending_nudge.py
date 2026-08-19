@@ -3,8 +3,8 @@ MEH-1818 — day-1 pending-nudge email.
 
 Tests the public entry point app.services.pending_nudge.send_pending_nudges:
   1. Missing-items matrix: which items appear for which (status × images) cell.
-  2. Status eligibility: one case per Producer.status value — pending and
-     pending_whatsapp are candidates, the other three never are.
+  2. Status eligibility: one case per Producer.status value — draft and
+     pending are candidates, the other three never are.
   3. Once-only: a stamped producer is not re-sent, including the
      complete-but-unapproved producer that was stamped WITHOUT an email.
   4. The 24h floor.
@@ -28,12 +28,13 @@ from app.services import pending_nudge
 # Producer.status is a free String(20) with no enum and no DB CHECK
 # constraint. The authoritative enumeration is the admin filter pattern in
 # backend/app/routers/admin.py's list_producers —
-#     ^(draft|pending|pending_whatsapp|approved|rejected|inactive|all)$
+#     ^(draft|pending|approved|rejected|inactive|all)$
 # ("all" is a query-filter sentinel, never a stored value). Every one of the
-# six real values is asserted below, so a status added to that pattern
+# five real values is asserted below, so a status added to that pattern
 # without a decision here shows up as an uncovered value in review.
 # (The old comment cited admin.py:112; that line number had drifted — the
-# pattern sits around :344. Cited by section now, MEH-2100.)
+# pattern sits around :418. Cited by section now, MEH-2100. A sixth value,
+# `pending_whatsapp`, was removed in MEH-2124.)
 #
 # MEH-2100: `draft` is where every new registration lands, so it is the
 # status the nudge most needs to reach. Deliberately re-declared here rather
@@ -43,12 +44,11 @@ from app.services import pending_nudge
 _ALL_PRODUCER_STATUSES = [
     "draft",
     "pending",
-    "pending_whatsapp",
     "approved",
     "rejected",
     "inactive",
 ]
-_NUDGEABLE_STATUSES = {"draft", "pending", "pending_whatsapp"}
+_NUDGEABLE_STATUSES = {"draft", "pending"}
 
 
 @pytest.fixture
@@ -81,10 +81,11 @@ def _make_producer_user(
 
     MEH-2100: three axes were added because the nudge now reads the SHARED
     submit gate (`submission_gate.submission_missing_items`) instead of its own
-    two-item rule. Under the old rule "phone verified" was INFERRED from
-    `status != "pending_whatsapp"`; the gate reads the `phone_verified` column
-    directly, so a fixture that means "her number is verified" now has to say
-    so. Same for products and categories, which the old rule never looked at.
+    two-item rule. Under the old rule "phone verified" was INFERRED from a
+    status value (`pending_whatsapp`, removed in MEH-2124); the gate reads the
+    `phone_verified` column directly, so a fixture that means "her number is
+    verified" now has to say so. Same for products and categories, which the
+    old rule never looked at.
 
     Defaults stay at the empty/unverified end so the no-photo cases below are
     unchanged and every "complete" case has to state its completeness
@@ -173,15 +174,21 @@ def test_pending_without_photo_gets_photo_item_only(db, sent_log):
     assert producer.email_pending_nudge_sent_at is not None
 
 
-def test_pending_whatsapp_with_photo_gets_phone_item_only(db, sent_log):
-    """pending_whatsapp + images present → the phone item, and NOT the photo
-    item."""
+def test_unverified_phone_with_photo_gets_phone_item_only(db, sent_log):
+    """Unverified phone + images present → the phone item, and NOT the photo
+    item.
+
+    MEH-2124: this cell used to be expressed as `status="pending_whatsapp"`,
+    which MEANT an unverified phone (MEH-745). That status was removed, so the
+    cell is now stated the way the gate has read it since MEH-2100 — on the
+    `phone_verified` column — which is strictly more direct.
+    """
     _producer, _user = _make_producer_user(
         db,
-        status="pending_whatsapp",
+        status="pending",
         images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
-        # phone_verified stays False — which is exactly what pending_whatsapp
-        # MEANS (MEH-745), so this cell's behaviour is unchanged by MEH-2100.
+        # phone_verified stays False (the fixture default) — the whole point
+        # of this cell.
         with_product=True,
         with_category=True,
     )
@@ -194,12 +201,12 @@ def test_pending_whatsapp_with_photo_gets_phone_item_only(db, sent_log):
     assert pending_nudge._MISSING_ITEM_PHOTO not in body
 
 
-def test_pending_whatsapp_without_photo_gets_both_items(db, sent_log):
-    """pending_whatsapp + no images → BOTH items in one email (not two
-    emails)."""
+def test_unverified_phone_without_photo_gets_both_items(db, sent_log):
+    """Unverified phone + no images → BOTH items in one email (not two
+    emails). Same MEH-2124 restatement as the case above."""
     _producer, _user = _make_producer_user(
         db,
-        status="pending_whatsapp",
+        status="pending",
         images=None,
         with_product=True,
         with_category=True,

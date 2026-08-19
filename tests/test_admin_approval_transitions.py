@@ -15,7 +15,6 @@ Transition matrix enforced by these tests:
 | approved          | → inactive (200)      | → approved (no-op)   |
 | inactive          | → approved (200)      | → approved           |
 | pending           | 409 (use approve flow)| → approved + hooks   |
-| pending_whatsapp  | 409                   | → approved + hooks   |
 | rejected          | 409                   | → approved + hooks   |
 
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py. The
@@ -61,7 +60,7 @@ def test_toggle_inactive_to_approved(client, db):
     assert producer.status == "approved"
 
 
-# --- forbidden transitions: pending / pending_whatsapp / rejected → 409 -----
+# --- forbidden transitions: pending / rejected → 409 ------------------------
 
 
 def test_toggle_rejected_is_blocked(client, db):
@@ -80,12 +79,9 @@ def test_toggle_pending_is_blocked(client, db):
     assert producer.status == "pending"
 
 
-def test_toggle_pending_whatsapp_is_blocked(client, db):
-    producer = make_producer(db, status="pending_whatsapp")
-    resp = _toggle(client, producer.id, _admin(db))
-    assert resp.status_code == 409, resp.text
-    db.refresh(producer)
-    assert producer.status == "pending_whatsapp"
+# A third blocked-source case here used `pending_whatsapp`; that status was
+# removed in MEH-2124, so the case was deleted rather than retargeted — the
+# `pending` case above already covers the only waiting status that exists.
 
 
 def test_blocked_toggle_fires_no_approval_hook(client, db, monkeypatch):

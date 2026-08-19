@@ -1322,9 +1322,9 @@ def confirm_phone_otp(
     # The previous form read `used == False` and assigned `used = True` as two
     # statements, so under READ COMMITTED (Postgres' default) two overlapping
     # confirms could both find the same token before either committed — and
-    # both would then run the pending_whatsapp → pending transition and fire
-    # the "ready for review" admin ping. Damage was noise, not data: a
-    # duplicate admin notification.
+    # both would then run the status transition that lived below (removed in
+    # MEH-2124) and fire the "ready for review" admin ping. Damage was noise,
+    # not data: a duplicate admin notification.
     #
     # `.update()` returns the affected-row count, and that count IS the lock:
     # the second request blocks on the first's row lock, re-evaluates the
@@ -1363,11 +1363,18 @@ def confirm_phone_otp(
     if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
-    # MEH-2051: serialize against a concurrent PUT /producers/me, which is the
+    # MEH-2051: serialize against a concurrent PUT /producers/me, which WAS the
     # OTHER handler able to complete the review-ready transition. Without this
-    # the two compute the same false→true edge independently and the admin is
-    # pinged twice for one flip — measured on origin/staging, guarded by
-    # tests/test_otp_put_ping_race.py.
+    # the two computed the same false→true edge independently and the admin was
+    # pinged twice for one flip — measured on origin/staging.
+    #
+    # MEH-2124: that race is now structurally impossible, because this handler
+    # no longer produces the edge at all (see the note further down). Its guard
+    # file, tests/test_otp_put_ping_race.py, was deleted with it — so this lock
+    # is UNGUARDED and, on the evidence below, unreachable-by-need. It is left
+    # in place rather than removed because taking a concurrency guard out is a
+    # separate decision from removing a dead status value, and this card's
+    # scope is the latter. Flagged on the PR for a follow-up ruling.
     #
     # WHY HERE AND NOT AT THE TOP OF THE HANDLER, which is where the helper's
     # own docstring points: taking it before the producer load would make a
@@ -1411,8 +1418,9 @@ def confirm_phone_otp(
     # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
     # PUT /producers/me does at :259 — this is the SECOND mutation site able to
     # complete the review-ready transition, and MEH-1351 only covered the first.
-    # A business that uploaded its image while still pending_whatsapp crosses
-    # the threshold here, so a ping owned by one site alone gets swallowed.
+    # A business that uploaded its image before its status reached the queue
+    # crossed the threshold here, so a ping owned by one site alone got
+    # swallowed. (That path is gone since MEH-2124 — see the note below.)
     # The snapshot is also what keeps the already-pending path silent: such a
     # producer is approvable before the call, so the false→true edge is absent.
     #
@@ -1436,12 +1444,23 @@ def confirm_phone_otp(
     # can actually reach would break that property — the test is what tells
     # you, and only if you re-run it against the broken claim.
     was_approvable = _pending_and_approvable(db, producer)
-    # MEH-745: self-registered producers wait in pending_whatsapp until the
-    # business phone is verified; a successful OTP confirm is the gate that
-    # releases them into the normal admin-review queue (pending). Only advance
-    # from pending_whatsapp — never touch approved / rejected / inactive.
-    if producer.status == "pending_whatsapp":
-        producer.status = "pending"
+    # MEH-2124: the status flip that used to live here is GONE. MEH-745 parked
+    # self-registered producers in a `pending_whatsapp` state and a successful
+    # confirm released them into `pending`; MEH-2100 made every creation site
+    # write `draft` instead, so nothing entered that state and this branch
+    # became its only exit with no entrance. The value was removed here.
+    #
+    # CONSEQUENCE, stated because it is not obvious and no test now covers it:
+    # `_maybe_fire_review_ready` below can no longer fire FROM THIS HANDLER.
+    # `_pending_and_approvable` (:293) reads `status` and the photo/licence
+    # state — never `phone_verified` — so the flip was the only thing on this
+    # path able to move `was_approvable` false→true. It is also moot in
+    # practice: reaching `pending` requires passing the submit gate, which
+    # requires `phone_verified`, so a `pending` producer early-returns at the
+    # top of this handler. The call, the snapshot and the MEH-2051 lock are
+    # left in place deliberately — they belong to MEH-1816/2051/1820, not to
+    # this card, and removing concurrency guards is out of its scope. The
+    # sibling site (PUT /producers/me, :472) is unaffected and still fires.
     db.commit()
     # REUSES: backend/app/routers/producer_me.py:413 — same helper, same
     # post-commit position, so an admin is never pinged about a transition that
@@ -1565,7 +1584,7 @@ def request_producer_review(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    if producer.status not in ("pending", "pending_whatsapp"):
+    if producer.status != "pending":
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",

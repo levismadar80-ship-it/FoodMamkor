@@ -41,10 +41,9 @@ describe("MEH-2110 — waiting badge colour thresholds", () => {
     expect(badge.getAttribute("data-days")).toBe(String(days));
   });
 
-  it("pending_whatsapp escalates the same as pending", () => {
-    const badge = renderBadge(queued(4, { status: "pending_whatsapp" }));
-    expect(badge.className).toContain("bg-red-100");
-  });
+  // A case here asserted that `pending_whatsapp` escalates the same as
+  // `pending`; that status was removed in MEH-2124, so it was deleted rather
+  // than retargeted — every row above is already a `pending` row.
 });
 
 describe("MEH-2110 — which rows carry SLA colour at all", () => {

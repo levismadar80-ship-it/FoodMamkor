@@ -938,7 +938,7 @@ class TestAuth:
         user = make_user(db, email="already@producer.com", role="producer")
         # Give the user a linked producer
         from app.models.models import Producer
-        producer = Producer(name="קיים", status="pending_whatsapp")
+        producer = Producer(name="קיים", status="draft")
         db.add(producer)
         db.flush()
         user.producer_id = producer.id
@@ -1992,7 +1992,12 @@ class TestAdminFlows:
 # ---------- MEH-56: WhatsApp onboarding + bio ----------
 
 class TestMeh56WhatsAppOnboarding:
-    """Registration produces pending_whatsapp status; admin sees it as pending."""
+    """Registration produces a draft; the admin queue is pending-only.
+
+    The class name is MEH-56's: registration used to produce a
+    `pending_whatsapp` status, which MEH-2100 replaced with `draft`; the old
+    value was removed in MEH-2124.
+    """
 
     def test_register_producer_creates_draft(self, client, db, monkeypatch):
         # Stub out Twilio and email so no network calls.
@@ -2014,28 +2019,36 @@ class TestMeh56WhatsAppOnboarding:
         p = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
         assert p is not None
         # MEH-2100: the WhatsApp-onboarding path no longer parks a new
-        # registration in pending_whatsapp — it starts in draft, and phone
-        # verification is one item of the submit gate rather than a status.
+        # registration in a status of its own — it starts in draft, and phone
+        # verification is one item of the submit gate. (That status was
+        # `pending_whatsapp`, removed in MEH-2124.)
         assert p.status == "draft"
 
-    def test_admin_pending_endpoint_includes_pending_whatsapp(self, client, db):
+    # These two cases asserted that the admin queue GROUPED `pending` with
+    # `pending_whatsapp`; the second value was removed in MEH-2124, so what is
+    # left to assert is the inverse — that the queue is pending-only and a
+    # draft does not leak into it. That is the property MEH-2100 introduced
+    # and the one a future regression would break.
+    def test_admin_pending_endpoint_is_pending_only(self, client, db):
         make_producer(db, name="Classic Pending", status="pending")
-        make_producer(db, name="WA Pending", status="pending_whatsapp")
+        make_producer(db, name="Still A Draft", status="draft")
         from conftest import make_user
         admin = make_user(db, email="admin56@test.com", role="admin")
         resp = client.get("/admin/producers/pending", headers=auth_header(admin))
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "Classic Pending" in names
-        assert "WA Pending" in names
+        assert "Still A Draft" not in names
 
-    def test_admin_list_pending_filter_includes_pending_whatsapp(self, client, db):
-        make_producer(db, name="WA2", status="pending_whatsapp")
+    def test_admin_list_pending_filter_is_pending_only(self, client, db):
+        make_producer(db, name="WA2", status="pending")
+        make_producer(db, name="Draft2", status="draft")
         admin = make_user(db, email="admin56b@test.com", role="admin")
         resp = client.get("/admin/producers", params={"status": "pending"}, headers=auth_header(admin))
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "WA2" in names
+        assert "Draft2" not in names
 
 
 class TestMeh56BioGenerator:
@@ -2144,10 +2157,11 @@ class TestMeh1236RequestReview:
         # with the producer's own name + city, fail-open at the service layer.
         assert called["args"] == (p.name, p.city)
 
-    def test_pending_whatsapp_producer_allowed(self, client, db):
-        _, user = make_submit_ready_producer(db, status="pending_whatsapp")
-        resp = client.post("/producers/me/request-review", headers=auth_header(user))
-        assert resp.status_code == 200
+    # A case here asserted that a `pending_whatsapp` producer may ask for
+    # re-review — the second status the guard used to admit. It was removed in
+    # MEH-2124 and the guard is now `status != "pending"`, so the case was
+    # deleted rather than retargeted; the pending case is asserted above and
+    # the 409 cases below cover every other status.
 
     def test_approved_producer_conflict(self, client, db):
         # Re-review only makes sense in the pending queue (mirrors
@@ -3831,7 +3845,9 @@ class TestGetProducersMeRouteOrder:
         """MEH-321 regression — GET /producers/me must return 200 immediately
         after a brand-new producer registration (Pydantic schema mismatch fix)."""
         # MEH-321 regression: GET /producers/me returns 200 with valid Pydantic
-        # shape for a producer in pending_whatsapp state.
+        # shape for a producer that has not been approved yet. (The fixture
+        # carried `pending_whatsapp` until that status was removed in
+        # MEH-2124; the NULL-field shape is what this guards, not the status.)
         #
         # NOTE: Post-MEH-328 (anti-enum refactor removed access_token from
         # /auth/register/producer non-upgrade response), this test no longer
@@ -3860,7 +3876,7 @@ class TestGetProducersMeRouteOrder:
             website=None,
             primary_contact_method="whatsapp",
             contact_email=None,
-            status="pending_whatsapp",
+            status="draft",
         )
         db.add(producer)
         db.flush()
@@ -3873,7 +3889,7 @@ class TestGetProducersMeRouteOrder:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["name"] == "חוות מה-321"
-        assert body["status"] == "pending_whatsapp"
+        assert body["status"] == "draft"
 
     def test_get_me_with_null_created_at_returns_200(self, client, db):
         """MEH-321: created_at is nullable=True in DB — NULL must not crash serialization."""

@@ -61,9 +61,13 @@ export function AwaitingCompletionBadge({ producer }) {
 // asked to be reviewed. A draft has made no such request, so it shows its age
 // in plain grey — the ticket's "no SLA colors" rule. Approved / rejected /
 // inactive rows render nothing at all: they are in the default view (which is
-// `status != draft`, not the pending pair) but they are not waiting for
+// `status != draft`, not the pending filter) but they are not waiting for
 // anything, and a "ממתין 0" on every live business would be pure noise.
-const SLA_STATUSES = ["pending", "pending_whatsapp"];
+//
+// One entry since `pending_whatsapp` was removed in MEH-2124. Kept as an array
+// rather than collapsed to an equality: `isQueued` reads as a set membership
+// question, and a second waiting state is a plausible future addition.
+const SLA_STATUSES = ["pending"];
 
 export function WaitingBadge({ producer }) {
   const t = useTranslations("admin");
@@ -245,12 +249,11 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
   // may be undefined if a caller doesn't pass it — default to never-busy.
   const busy = isBusy || (() => false);
-  const isPending = ["pending", "pending_whatsapp"].includes(p.status);
+  const isPending = p.status === "pending";
   return (
     <div className="flex gap-3 flex-wrap">
-      {/* MEH-745: self-registered producers sit in pending_whatsapp; the
-          approve endpoint has no status guard, so surface approve for both
-          waiting states (admin fallback alongside the OTP self-serve path).
+      {/* MEH-745 surfaced approve for two waiting states, `pending` and
+          `pending_whatsapp`; the second was removed in MEH-2124, leaving one.
           MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
           can open request-changes prefilled with the gate-matched chip. */}
       {isPending && (
@@ -343,7 +346,7 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
 // MEH-1232: pending-approval photo preview. Statuses whose gallery the admin
 // must eyeball BEFORE approving (photo-quality gate at manual approval — the
 // MEH-799 gate only checks images is non-empty, not that they render).
-const PENDING_PHOTO_STATUSES = ["pending", "pending_whatsapp"];
+const PENDING_PHOTO_STATUSES = ["pending"];
 // Max thumbnails before collapsing the rest into a "+N" indicator.
 const PENDING_THUMB_MAX = 4;
 // Rendered thumbnail box (px). Small on purpose — the admin judges quality at a

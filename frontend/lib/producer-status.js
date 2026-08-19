@@ -1,12 +1,12 @@
 // Producer status — render-only labels and color tokens.
-// DB emits raw codes (pending_whatsapp / pending / approved / rejected /
-// inactive — see backend/app/models/models.py:62). This module wraps
-// rendering so UI never shows a raw code. Never mutate DB values here.
+// DB emits raw codes (draft / pending / approved / rejected / inactive — see
+// backend/app/models/models.py). A sixth code, pending_whatsapp, was removed
+// in MEH-2124. This module wraps rendering so UI never shows a raw code.
+// Never mutate DB values here.
 //
 // Hebrew נקבה. Voice = warm + factual (not punitive); see CLAUDE.md.
 
 export const PRODUCER_STATUS_LABELS = {
-  pending_whatsapp: "ממתינה לאימות WhatsApp",
   pending: "ממתינה לאישור האדמין",
   approved: "מאושר",
   rejected: "נדחה",
@@ -18,7 +18,6 @@ export const PRODUCER_STATUS_LABELS = {
 export const PRODUCER_STATUS_COLORS = {
   approved: "bg-primary text-white",
   pending: "bg-yellow-100 text-yellow-800",
-  pending_whatsapp: "bg-orange-100 text-orange-800",
   rejected: "bg-red-100 text-red-700",
   inactive: "bg-gray-200 text-gray-700",
 };

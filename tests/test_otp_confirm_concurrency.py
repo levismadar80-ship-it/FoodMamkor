@@ -2,11 +2,17 @@
 
 `confirm_phone_otp` used to read `used == False` and assign `used = True` as
 two separate statements. Under READ COMMITTED (Postgres' default) two requests
-could both find the same token before either committed, and both would run the
-`pending_whatsapp → pending` transition and fire the "ready for review" admin
-ping. Damage is noise rather than data — a duplicate admin notification — but
-the missing atomicity guarded the status transition too, so the fix closes a
-class rather than a symptom.
+could both find the same token before either committed, and both would run a
+status transition (`pending_whatsapp → pending`, removed in MEH-2124) and fire
+the "ready for review" admin ping. Damage is noise rather than data — a
+duplicate admin notification — but the missing atomicity guarded the status
+transition too, so the fix closes a class rather than a symptom.
+
+MEH-2124 note: neither of those two effects survives. The transition is gone
+with its status, and `_maybe_fire_review_ready` can no longer fire from this
+handler (see the note in `confirm_phone_otp`). What this file still guards is
+the property that outlives both — EXACTLY ONE caller may claim a token — and
+that is asserted directly on the two response codes, never on the ping.
 
 WHY THIS TEST IS NOT A SEQUENTIAL ONE, which is the part the card warns about:
 running two confirms back to back proves nothing, because the second is caught
@@ -59,10 +65,17 @@ _BARRIER_TIMEOUT = 5.0
 
 
 def _setup(db):
-    """A producer one OTP away from being review-ready, so the ping would fire."""
+    """A producer in the queue with a photo — the shape the ping used to fire on.
+
+    The status here was `pending_whatsapp`, removed in MEH-2124; it is
+    `pending` now. The fixture is kept rich (category + image) rather than
+    minimised because the barrier below is planted on `_pending_and_approvable`, which walks the
+    categories to answer the licence question. A bare producer would still
+    exercise the token claim, but it would stop exercising that walk.
+    """
     cat = make_category(db)
     producer = make_producer(
-        db, name="חוות המרוץ", status="pending_whatsapp", images=[IMAGE], category=cat
+        db, name="חוות המרוץ", status="pending", images=[IMAGE], category=cat
     )
     producer.phone = "0501234570"
     db.commit()
@@ -82,9 +95,19 @@ def _setup(db):
 
 
 def test_two_concurrent_confirms_claim_the_token_once(client, db):
-    """Exactly one 200, exactly one 400, exactly one ping.
+    """Exactly one 200 and exactly one 400. Fails pre-fix with two 200s.
 
-    Fails pre-fix with two 200s and two pings.
+    MEH-2124 — WHY THE PING ASSERTION INVERTED. This used to also require
+    exactly one ping, and pre-fix it saw two. It now requires ZERO, and that is
+    a statement about the handler rather than a weakened test: with the status
+    flip removed, `was_approvable` and the post-commit re-read evaluate the
+    SAME predicate over an unchanged row, so `_maybe_fire_review_ready`'s
+    `not X and X` is False for every input. Measured before the assertion was
+    changed — the run reported "fired 0 times", which is the analytic result.
+
+    The `== 0` form is deliberate over deleting the line: it is what would go
+    red if a future change re-introduced a status transition here, which is the
+    regression the removal creates room for.
     """
     producer, user = _setup(db)
 
@@ -139,8 +162,10 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
 
     codes = sorted(results.values())
     assert codes == [200, 400], f"expected one winner and one loser, got {codes}"
-    assert ping.call_count == 1, (
-        f"the review-ready ping fired {ping.call_count} times for one token"
+    assert ping.call_count == 0, (
+        f"the review-ready ping fired {ping.call_count} times — this handler "
+        "has had no approvability edge to fire on since MEH-2124 removed the "
+        "status flip, so any fire means a transition was re-introduced"
     )
 
     db.expire_all()
@@ -162,6 +187,8 @@ def test_a_second_confirm_after_the_first_completes_is_still_idempotent(client, 
     "already verified" message rather than a 400. Passes in both worlds by
     design: a fix that turned this into a 400 would be a user-visible
     regression dressed as a concurrency fix.
+
+    The ping count is 0 rather than 1 since MEH-2124 — see the race test above.
     """
     producer, user = _setup(db)
 
@@ -180,7 +207,7 @@ def test_a_second_confirm_after_the_first_completes_is_still_idempotent(client, 
     assert first.status_code == 200, first.text
     assert second.status_code == 200, second.text
     assert second.json()["detail"] == "הטלפון כבר מאומת"
-    assert ping.call_count == 1
+    assert ping.call_count == 0
 
 
 def test_a_wrong_code_still_returns_the_same_400(client, db):

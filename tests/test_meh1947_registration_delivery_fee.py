@@ -54,7 +54,7 @@ PHONE_UPGRADE = "0571234567"
 
 
 def _approve(db, producer_name):
-    """Registration lands on `pending_whatsapp`. Approving is what puts the row
+    """Registration lands on `draft`. Approving is what puts the row
     in front of a consumer; it is not part of the fix."""
     from app.models.models import Producer
 

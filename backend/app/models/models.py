@@ -77,21 +77,43 @@ class Producer(Base):
     # MEH-1612: free String(20) — no enum, no DB CHECK constraint. The
     # authoritative enumeration is the admin filter pattern in
     # routers/admin.py's list_producers (`status` Query pattern):
-    #   draft | pending | pending_whatsapp | approved | rejected | inactive
+    #   draft | pending | approved | rejected | inactive
     # (An earlier version of this comment cited routers/admin.py:112,
-    # auth.py:509 and auth.py:624 — all three line numbers had drifted;
-    # the pattern lives around admin.py:344 and the writers around
-    # auth.py:546 / auth.py:741. Cited by section rather than by line here,
-    # since the line numbers are what rotted. Re-derived MEH-2100.)
+    # auth.py:509 and auth.py:624 — all three line numbers had drifted.
+    # Cited by section rather than by line here, since the line numbers are
+    # what rotted. Re-derived MEH-2100.)
     #
     # MEH-2100: `draft` is where every newly created producer starts, from
     # all THREE creation sites (routers/auth.py's upgrade and new-email
     # branches, plus producer_queries.create_producer_with_relations behind
     # POST /producers). It leaves via POST /producers/me/submit-for-review
-    # and no other path. `pending_whatsapp` is retained but unreachable for
-    # new registrations (Expand-Contract, ADR-007) — existing rows keep it
-    # and confirm_phone_otp still advances them; removing the value is a
-    # later Contract-phase card.
+    # and no other path.
+    #
+    # MEH-2124: a sixth value, `pending_whatsapp`, was retained through the
+    # Expand phase and removed in MEH-2124. No migration was needed — the
+    # column is a free String with no enum and no CHECK constraint, so
+    # removing a VALUE is code-only.
+    #
+    # THE TWO PREMISES, with their sources, because a future reader inherits
+    # them as fact otherwise and they are what makes the removal safe:
+    #
+    #   1. UNREACHABLE — CC-verified, mechanically. `grep -rn 'status =
+    #      "pending_whatsapp"' backend/app/` returns nothing, so no writer
+    #      exists; the OTP flip in producer_me.py was its only EXIT. Still
+    #      checkable today, and `tests/test_meh2100_draft_submit.py` asserts
+    #      no creation site can re-introduce it.
+    #   2. ZERO ROWS, EVER — **Sapir's confirmation, 16/08/2026, on the
+    #      MEH-2124 card. NOT measured by CC and not measurable from a CC
+    #      session**: the production database URL is deny-listed for Claude
+    #      Code (.claude/rules/security.md) and `*.up.railway.app` is
+    #      egress-blocked from the sandbox (MEH-2090). It is a human
+    #      attestation about data, recorded as one rather than dressed up as
+    #      a query result.
+    #
+    # If premise 2 were ever wrong, a surviving row would go quiet rather than
+    # loud: `?status=pending` and the pending counters would omit it, and the
+    # toggle / request-changes / request-review guards would answer 409. That
+    # asymmetry is why the attestation is cited here instead of assumed.
     #
     # The DEFAULT moved "pending" -> "draft" with the same reasoning, and it is
     # a fail-closed choice rather than a cosmetic one. Every one of the five
@@ -367,7 +389,7 @@ class Producer(Base):
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-1818: day-1 nudge for a business still awaiting approval (status
-    # pending / pending_whatsapp). Same NULL-means-not-sent contract as the
+    # draft / pending). Same NULL-means-not-sent contract as the
     # MEH-539 columns above, and the same fail-open caveat. Stamped even when
     # nothing was actually missing (nothing to nudge → stamp, no email), so
     # the column means "this producer has been through the nudge pass once",

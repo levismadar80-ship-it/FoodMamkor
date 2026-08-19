@@ -669,7 +669,7 @@ class ProducerRegister(BaseModel):
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
-    # license number and land in the pending queue (status="pending_whatsapp").
+    # license number and land in the pending queue.
     # NOT a security control: the licensed-only rule is still enforced
     # downstream — chunk-4 approval guard (admin.py) refuses to approve a
     # license-required producer with NULL license, and publication requires

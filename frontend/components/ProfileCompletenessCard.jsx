@@ -228,9 +228,9 @@ function buildSteps(producer, missingLabels) {
       key: "phone_verified",
       required: true,
       done: !!producer?.phone_verified,
-      // The OTP card lives in the dashboard banner, not the edit hub — both
-      // the draft banner and the pending_whatsapp banner carry this anchor,
-      // and only one of them renders for any given status.
+      // The OTP card lives in the dashboard banner, not the edit hub. The
+      // draft banner is the only carrier of this anchor since the second one
+      // went with the `pending_whatsapp` status, removed in MEH-2124.
       href: "#phone-verify",
     },
     // MEH-1895: hours reads the SAME heuristic slug that mounts this card
