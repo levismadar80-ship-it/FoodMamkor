@@ -60,10 +60,16 @@ describe("MEH-2126 — producer status label map covers the whole machine", () =
     expect(getProducerStatusColor("some_future_status")).toBe(UNKNOWN_STATUS_COLOR);
   });
 
-  it("declares no label for a status the backend cannot emit", () => {
-    // The inverse direction: a stale entry left behind after a Contract phase
-    // is how `pending_whatsapp` would have survived MEH-2124 unnoticed.
-    for (const key of Object.keys(PRODUCER_STATUS_LABELS)) {
+  // The inverse direction: a stale entry left behind after a Contract phase is
+  // how `pending_whatsapp` would have survived MEH-2124 unnoticed. BOTH maps
+  // get this, not just the labels — a retired status whose colour entry stayed
+  // behind is the same defect wearing the other map, and the first version of
+  // this file checked only one of them (CI review, MEH-2126).
+  it.each([
+    ["PRODUCER_STATUS_LABELS", PRODUCER_STATUS_LABELS],
+    ["PRODUCER_STATUS_COLORS", PRODUCER_STATUS_COLORS],
+  ])("%s declares nothing for a status the backend cannot emit", (_name, map) => {
+    for (const key of Object.keys(map)) {
       expect(DB_STATUSES).toContain(key);
     }
   });
