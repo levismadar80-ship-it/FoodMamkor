@@ -46,10 +46,12 @@ def _pending(db, **kwargs):
     kwargs.setdefault("images", [IMAGE])
     kwargs.setdefault("status", "pending")
     # MEH-2121: approve now also requires a verified WhatsApp number. This
-    # file's subject is the retry-path gates, not the gates, so its fixtures
-    # satisfy them — a 409 here would stop every test short of the behaviour it
-    # is actually about. setdefault, so a case that wants the unverified state
-    # can still ask for it.
+    # file's subject is WHETHER the gates re-run after a rollback, not any one
+    # gate's own logic — so the fixture satisfies all of them and each test
+    # revokes exactly the one it is about, inside the retry window. A producer
+    # that arrived here already failing a gate would 422 on the main path and
+    # never reach the retry at all. setdefault, so a case that wants the
+    # unverified state can still ask for it.
     kwargs.setdefault("phone_verified", True)
     return make_producer(db, **kwargs)
 
