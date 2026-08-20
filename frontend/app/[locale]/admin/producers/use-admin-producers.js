@@ -29,6 +29,11 @@ function useProducersData() {
   const initialStatus = searchParams.get("status") || "all";
 
   const [producers, setProducers] = useState([]);
+  // MEH-2096: THE priority case. Manual approval of every business is a locked
+  // product invariant (docs/CONTEXT.md §2), so a catch that emptied the list
+  // rendered "no businesses awaiting approval" when the API was down — real
+  // businesses waiting, and nobody able to tell.
+  const [loadError, setLoadError] = useState(false);
   const [producerSearch, setProducerSearch] = useState("");
   const [producerStatus, setProducerStatus] = useState(initialStatus);
   const [incompleteOnly, setIncompleteOnly] = useState(false);
@@ -42,7 +47,11 @@ function useProducersData() {
     const params = {};
     if (producerStatus && producerStatus !== "all") params.status = producerStatus;
     if (search) params.search = search;
-    api.get("/admin/producers", { params }).then((r) => setProducers(r.data)).catch(() => setProducers([]));
+    setLoadError(false);
+    api
+      .get("/admin/producers", { params })
+      .then((r) => { setProducers(r.data); setLoadError(false); })
+      .catch(() => setLoadError(true));
   };
 
   useEffect(() => {
@@ -52,6 +61,7 @@ function useProducersData() {
 
   return {
     producers, setProducers,
+    loadError,
     producerSearch, setProducerSearch,
     producerStatus, setProducerStatus,
     incompleteOnly, setIncompleteOnly,

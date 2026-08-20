@@ -2,11 +2,17 @@
 
 `confirm_phone_otp` used to read `used == False` and assign `used = True` as
 two separate statements. Under READ COMMITTED (Postgres' default) two requests
-could both find the same token before either committed, and both would run the
-`pending_whatsapp → pending` transition and fire the "ready for review" admin
-ping. Damage is noise rather than data — a duplicate admin notification — but
-the missing atomicity guarded the status transition too, so the fix closes a
-class rather than a symptom.
+could both find the same token before either committed, and both would run a
+status transition (`pending_whatsapp → pending`, removed in MEH-2124) and fire
+the "ready for review" admin ping. Damage is noise rather than data — a
+duplicate admin notification — but the missing atomicity guarded the status
+transition too, so the fix closes a class rather than a symptom.
+
+MEH-2124 note: neither of those two effects survives. The transition is gone
+with its status, and `_maybe_fire_review_ready` can no longer fire from this
+handler (see the note in `confirm_phone_otp`). What this file still guards is
+the property that outlives both — EXACTLY ONE caller may claim a token — and
+that is asserted directly on the two response codes, never on the ping.
 
 WHY THIS TEST IS NOT A SEQUENTIAL ONE, which is the part the card warns about:
 running two confirms back to back proves nothing, because the second is caught
@@ -14,18 +20,26 @@ by the `phone_verified` early-return at `producer_me.py:1153` and returns 200
 with "כבר מאומת" without ever reaching the token query. The race needs the two
 requests to be *inside* the handler at the same time, so this file drives two
 real threads through the real endpoint and forces the interleaving with a
-barrier planted at the one point that sits between the token claim and the
-commit.
+barrier planted between the token claim and the commit.
+
+WHERE THE BARRIER LIVES, and why it moved (MEH-2125). It used to wrap
+`_pending_and_approvable`, which was then the only call in that span. MEH-2125
+removed the last of the dead review-ready machinery from the handler, so the
+span now contains no function call at all — only `phone_verified = True` and
+`db.commit()`. The barrier therefore instruments **the request session's own
+`commit`**, via a `get_db` dependency override scoped to this one test. That is
+the same position in the sequence (last thing inside the claim window) and adds
+no production code; what changed is which object carries the seam.
 
 THE BARRIER, and why it is deterministic in both worlds:
 
-    thread A   claims the token → reaches _pending_and_approvable
+    thread A   claims the token → reaches its commit
                → signals `a_inside` → waits for `b_inside` (bounded)
     thread B   enters the handler and tries to claim the same token
 
     pre-fix    B's SELECT sees used=False (A has not committed), B reaches
-               _pending_and_approvable, signals `b_inside`, A wakes
-               immediately → BOTH proceed → two 200s, two pings
+               its own commit, signals `b_inside`, A wakes immediately
+               → BOTH proceed → two 200s
     post-fix   B blocks on A's row lock inside the conditional UPDATE and
                never reaches the barrier. A's wait expires, A commits and
                releases the lock, B's UPDATE matches zero rows → 400
@@ -41,12 +55,11 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-import app.routers.producer_me as pm
+from app.database import SessionLocal, get_db
 from app.models.models import PhoneOtpToken
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
 PING_TARGET = "app.routers.producer_me.notify_admin_producer_review_ready"
-APPROVABLE_TARGET = "app.routers.producer_me._pending_and_approvable"
 
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/otp.jpg"
 CODE = "123456"
@@ -59,10 +72,17 @@ _BARRIER_TIMEOUT = 5.0
 
 
 def _setup(db):
-    """A producer one OTP away from being review-ready, so the ping would fire."""
+    """A producer in the queue with a photo — the shape the ping used to fire on.
+
+    The status here was `pending_whatsapp`, removed in MEH-2124; it is
+    `pending` now. The fixture is kept rich (category + image) rather than
+    minimised because the barrier below is planted on `_pending_and_approvable`, which walks the
+    categories to answer the licence question. A bare producer would still
+    exercise the token claim, but it would stop exercising that walk.
+    """
     cat = make_category(db)
     producer = make_producer(
-        db, name="חוות המרוץ", status="pending_whatsapp", images=[IMAGE], category=cat
+        db, name="חוות המרוץ", status="pending", images=[IMAGE], category=cat
     )
     producer.phone = "0501234570"
     db.commit()
@@ -82,30 +102,58 @@ def _setup(db):
 
 
 def test_two_concurrent_confirms_claim_the_token_once(client, db):
-    """Exactly one 200, exactly one 400, exactly one ping.
+    """Exactly one 200 and exactly one 400. Fails pre-fix with two 200s.
 
-    Fails pre-fix with two 200s and two pings.
+    WHY THE PING ASSERTION IS ZERO. MEH-2124 removed the status flip, which
+    made the ping unreachable from here — `was_approvable` and the post-commit
+    re-read evaluated the same predicate over an unchanged row, so
+    `not X and X` was False for every input. That was MEASURED (the run
+    reported "fired 0 times") before the assertion was changed. MEH-2125 then
+    removed the snapshot and the call outright, so it is now zero by
+    construction rather than by arithmetic.
+
+    The `== 0` form is deliberate over deleting the line: it is what goes red
+    if a future change re-introduces the review-ready machinery here, which is
+    the regression the removal creates room for.
     """
     producer, user = _setup(db)
 
     a_inside = threading.Event()
     b_inside = threading.Event()
-    real_approvable = None
     results: dict[str, int] = {}
 
-    def barriered(db_, producer_):
-        """Stand-in for _pending_and_approvable that forces the overlap.
+    def barriered_get_db():
+        """Yield a session whose FIRST commit blocks, forcing the overlap.
 
-        Delegates to the real implementation — the point is the timing, not
-        the verdict, and faking the verdict would make the ping assertion
-        meaningless.
+        The wrap is on the INSTANCE, not on `Session.commit`, so it is scoped
+        to the requests this override serves and cannot leak into the shared
+        `db` fixture or any other test.
+
+        `armed` makes only the first commit of a given request block. Nothing
+        in this handler commits twice today, but a future second commit inside
+        the window would otherwise re-enter the barrier and deadlock the run
+        rather than fail it — and a hang is the least informative outcome a
+        concurrency test can produce.
         """
-        if not a_inside.is_set():
-            a_inside.set()
-            b_inside.wait(_BARRIER_TIMEOUT)
-        else:
-            b_inside.set()
-        return real_approvable(db_, producer_)
+        session = SessionLocal()
+        real_commit = session.commit
+        armed = {"yes": True}
+
+        def barriered_commit(*a, **kw):
+            if armed["yes"]:
+                armed["yes"] = False
+                if not a_inside.is_set():
+                    a_inside.set()
+                    b_inside.wait(_BARRIER_TIMEOUT)
+                else:
+                    b_inside.set()
+            return real_commit(*a, **kw)
+
+        session.commit = barriered_commit
+        try:
+            yield session
+        finally:
+            session.close()
 
     def confirm(tag):
         # One TestClient PER THREAD, not the shared fixture. `httpx.Client`
@@ -124,23 +172,29 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
             headers=auth_header(user),
         ).status_code
 
-    real_approvable = pm._pending_and_approvable
-
-    with patch(PING_TARGET) as ping, patch(APPROVABLE_TARGET, side_effect=barriered):
-        ta = threading.Thread(target=confirm, args=("a",))
-        tb = threading.Thread(target=confirm, args=("b",))
-        ta.start()
-        a_inside.wait(_BARRIER_TIMEOUT)  # let A get inside first
-        tb.start()
-        ta.join(timeout=30)
-        tb.join(timeout=30)
+    client.app.dependency_overrides[get_db] = barriered_get_db
+    try:
+        with patch(PING_TARGET) as ping:
+            ta = threading.Thread(target=confirm, args=("a",))
+            tb = threading.Thread(target=confirm, args=("b",))
+            ta.start()
+            a_inside.wait(_BARRIER_TIMEOUT)  # let A get inside first
+            tb.start()
+            ta.join(timeout=30)
+            tb.join(timeout=30)
+    finally:
+        # Restore even on failure — a leaked override would hand every later
+        # test in the session a barriered commit.
+        client.app.dependency_overrides.pop(get_db, None)
 
     assert not ta.is_alive() and not tb.is_alive(), "a confirm thread hung"
 
     codes = sorted(results.values())
     assert codes == [200, 400], f"expected one winner and one loser, got {codes}"
-    assert ping.call_count == 1, (
-        f"the review-ready ping fired {ping.call_count} times for one token"
+    assert ping.call_count == 0, (
+        f"the review-ready ping fired {ping.call_count} times — this handler "
+        "cannot fire it at all since MEH-2125 removed the call, so any fire "
+        "means the review-ready machinery was re-introduced here"
     )
 
     db.expire_all()
@@ -162,6 +216,8 @@ def test_a_second_confirm_after_the_first_completes_is_still_idempotent(client, 
     "already verified" message rather than a 400. Passes in both worlds by
     design: a fix that turned this into a 400 would be a user-visible
     regression dressed as a concurrency fix.
+
+    The ping count is 0 rather than 1 since MEH-2124 — see the race test above.
     """
     producer, user = _setup(db)
 
@@ -180,7 +236,7 @@ def test_a_second_confirm_after_the_first_completes_is_still_idempotent(client, 
     assert first.status_code == 200, first.text
     assert second.status_code == 200, second.text
     assert second.json()["detail"] == "הטלפון כבר מאומת"
-    assert ping.call_count == 1
+    assert ping.call_count == 0
 
 
 def test_a_wrong_code_still_returns_the_same_400(client, db):

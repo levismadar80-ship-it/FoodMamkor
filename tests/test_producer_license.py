@@ -261,11 +261,18 @@ class TestRegisterProducerHoneyLicense:
 class TestRegisterProducerLicensePending:
     """MEH-971 chunk 2 — license_pending opt-in skips the register-time 422.
 
-    The licensed-only rule is NOT weakened: license_pending only lands the
-    producer in the pending queue (status="pending_whatsapp") with a NULL
-    license. The chunk-4 approval guard (admin.py) still blocks approval
-    without a license, and publication requires status=="approved"
-    (producer_listing.py) — so a license_pending producer can never publish.
+    The licensed-only rule is NOT weakened: license_pending only lets
+    registration succeed with a NULL license. The chunk-4 approval guard
+    (admin.py) still blocks approval without a license, and publication
+    requires status=="approved" (producer_listing.py) — so a license_pending
+    producer can never publish.
+
+    MEH-2100: the resulting row is now `draft` — it used to be a
+    `pending_whatsapp`, a status removed in MEH-2124 — and it is not in the
+    review queue at all until the owner submits. The license is
+    deliberately NOT part of the submit gate, so this MEH-971 path still
+    reaches the queue with a NULL license exactly as before — the gate moved,
+    the licence rule did not.
     """
 
     def _created_producer(self, db):
@@ -292,7 +299,7 @@ class TestRegisterProducerLicensePending:
         producer = self._created_producer(db)
         assert producer is not None
         assert producer.producer_license_number is None
-        assert producer.status == "pending_whatsapp"
+        assert producer.status == "draft"  # MEH-2100
 
     def test_b_license_required_no_license_default_still_422(self, client, db):
         """(b) pending omitted (default False) → existing 422 unchanged."""
@@ -361,7 +368,7 @@ class TestRegisterProducerLicensePending:
         producer = self._created_producer(db)
         assert producer is not None
         assert producer.producer_license_number is None
-        assert producer.status == "pending_whatsapp"
+        assert producer.status == "draft"  # MEH-2100
 
 
 class TestAdminLicensePendingFlag:

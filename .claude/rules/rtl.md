@@ -111,9 +111,74 @@ cases, always use logical properties.
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
-global header/nav (+ account dropdown):1050 →
-cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 → chat FAB:9999
+address suggestions:1010 → global header/nav (+ account dropdown):1050 →
+cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 →
+modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999
 ```
+
+### The full live table (MEH-2093 chunk C)
+
+**Every `z-[N]` that appears in a className under `frontend/app` +
+`frontend/components`.** The chain above is the mental model; this is the
+inventory. `frontend/__tests__/ZTokenLedgerSync.test.js` fails if code and this
+table disagree in either direction, so the "mirrors it" claim below is now
+mechanically true rather than aspirational.
+
+| token | n | representative owner | what it is |
+|---|---|---|---|
+| `z-[10000]` | 1 | `app/[locale]/layout.js:231` | skip-to-content link, on focus only |
+| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:64` | tooltips. ChatWidget's FAB shares the value via inline `zIndex: 9999` (`ChatWidget.jsx:212,220`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
+| `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
+| `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
+| `z-[9000]` | 20 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50` |
+| `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
+| `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
+| `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |
+| `z-[1150]` | 2 | `components/MiniMap.jsx:531` · `FavoritesClient.jsx:76` | MiniMap fullscreen |
+| `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
+| `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
+| `z-[1050]` | 2 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context** |
+| `z-[1010]` | 3 | `components/AddressSearch.jsx:266` · `components/CitiesAutocomplete.jsx:273` · `components/CitySearch.jsx:206` | autocomplete / combobox suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. **AddressSearch:** MEH-2093 chunk A, fixing an observed clipping. **CitiesAutocomplete:** MEH-2102, *defensive alignment only* — measured 16/08, no current consumer places a map where that list can reach it. **CitySearch:** MEH-2108, an observed occlusion — at 1000 it tied with the Leaflet controls *and* the MiniMap fullscreen button (`MiniMap.jsx:56`), and DOM order handed the band to the map (9 of 15 hit-test samples inside the 72px band were painted by map chrome; 0 after) |
+| `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
+| `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
+| `z-[1000]` | 13 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010 |
+| `z-[900]` | 2 | `components/OnboardingTip.jsx:39` | onboarding tip |
+| `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
+| `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |
+| `z-[598]` | 1 | `producer/[id]/components/StickyContactBar.jsx:71` | sticky contact bar — just under the sheet |
+| `z-[2]` | 1 | `app/[locale]/dev/components/page.jsx:154` | dev playground |
+| `z-[1]` | 2 | `app/[locale]/about/AboutClient.jsx:624` | decorative layering |
+
+**22 live tokens.** Counts are occurrence counts, not file counts.
+
+> **`z-[50]` is gone as of MEH-2115, and the row it leaves behind is instructive.**
+> The row read **n=2** while only ONE line was a real className
+> (`MapClient.jsx:770`); the other, `:769`, was the tail of a `{/* … */}` block
+> whose text happens to contain the token. `isComment()` in
+> `__tests__/ZTokenLedgerSync.test.js:27-29` only recognises a line that *starts*
+> with `*`, `//`, `/*` or `{/*` — a continuation line of a block comment starts
+> with prose, so it counts as live. **The ledger and the guard agreed with each
+> other and both disagreed with reality.** Consequence when writing prose about a
+> token: spell it without brackets (`z-1010`, not the bracketed form) unless the
+> line starts with a comment marker, or you add a phantom owner to that row. The
+> MEH-2115 comment at `MapClient.jsx:770` is written that way and says so.
+>
+> The bar itself now carries **no** z token by design — see that comment: it must
+> not create a stacking context, because doing so imprisoned the CitySearch
+> suggestion list rendered inside it (measured 3/3 occluded; 0/3 after).
+
+> **`z-[9998]` is NOT in this table on purpose.** It appears exactly once in the
+> repo — a prose comment at `map/components/CityPickerModal.jsx:16` calling it
+> "the cookie token". The cookie banner is `z-[1100]` and has been for some time,
+> so that comment is stale and `9998` is live nowhere. Recorded here so the next
+> reader who greps `z-[9998]` and finds a hit does not add a row for a value that
+> does not exist. The guard counts className occurrences, not comments, which is
+> why it does not demand a row for it.
+
+**Two ways a grep undercounts this table, both load-bearing:** an inline
+`style={{ zIndex: N }}` (ChatWidget) carries no Tailwind token at all, and a bare
+Tailwind `z-50` / `z-10` is not an arbitrary value so `z-\[` never matches it. A
+z-index audit that only greps `z-\[[0-9]+\]` will miss both.
 
 Code is the source of truth; this ledger mirrors it — update the table
 when a component's z-index changes (grep'd MEH-861: `BottomNav.jsx:152`

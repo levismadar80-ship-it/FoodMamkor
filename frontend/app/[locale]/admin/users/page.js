@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useAdminAction } from "@/lib/use-admin-action";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
@@ -20,6 +21,9 @@ export default function AdminUsersPage() {
   // MEH-1656: the page had no loading state at all, so the "אין משתמשים" row
   // flashed during every fetch. Gated like admin/reviews/page.jsx (!loading &&).
   const [loading, setLoading] = useState(true);
+  // MEH-2096: a failed fetch used to call setUsers([]), which renders the very
+  // same "no users" row as a genuinely empty result. The two are now distinct.
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [expanded, setExpanded] = useState(null);
@@ -43,9 +47,10 @@ export default function AdminUsersPage() {
     if (search) params.search = search;
     if (role !== "all") params.role = role;
     setLoading(true);
+    setLoadError(false);
     api.get("/admin/users", { params })
-      .then((r) => setUsers(r.data))
-      .catch(() => setUsers([]))
+      .then((r) => { setUsers(r.data); setLoadError(false); })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   };
 
@@ -150,7 +155,14 @@ export default function AdminUsersPage() {
                   <td colSpan={7} className="text-center py-8 text-muted">{t("common.loading_f")}</td>
                 </tr>
               )}
-              {!loading && users.length === 0 && (
+              {!loading && loadError && (
+                <tr>
+                  <td colSpan={7} className="py-6">
+                    <AdminLoadError onRetry={load} testId="admin-users-load-error" />
+                  </td>
+                </tr>
+              )}
+              {!loading && !loadError && users.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-muted">{t("users.empty")}</td>
                 </tr>
@@ -309,7 +321,7 @@ export default function AdminUsersPage() {
 
       {/* Confirmation modal */}
       {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
           {/* MEH-1023: text-start aligns the Hebrew dialog copy to the start edge in RTL */}
           <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4">
             <p className="font-medium text-base">

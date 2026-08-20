@@ -55,9 +55,12 @@ from app.schemas.schemas import (
     ProductUpdate,
 )
 from app.services.auth_notifications import (
+    notify_admin_new_producer,
     notify_admin_producer_review_ready,
     notify_admin_producer_sensitive_edit,
 )
+from app.services.submission_confirmation import send_submission_confirmation
+from app.services.submission_gate import submission_missing_items
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -1305,7 +1308,9 @@ def send_phone_otp(
 def confirm_phone_otp(
     request: Request,
     body: OtpConfirmIn,
-    background_tasks: BackgroundTasks,
+    # MEH-2125: `background_tasks` is gone from this signature — the removed
+    # `_maybe_fire_review_ready` call was its only consumer. FastAPI injects it
+    # per-handler, so dropping it affects nothing else.
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -1319,9 +1324,9 @@ def confirm_phone_otp(
     # The previous form read `used == False` and assigned `used = True` as two
     # statements, so under READ COMMITTED (Postgres' default) two overlapping
     # confirms could both find the same token before either committed — and
-    # both would then run the pending_whatsapp → pending transition and fire
-    # the "ready for review" admin ping. Damage was noise, not data: a
-    # duplicate admin notification.
+    # both would then run the status transition that lived below (removed in
+    # MEH-2124) and fire the "ready for review" admin ping (removed in
+    # MEH-2125). Damage was noise, not data: a duplicate admin notification.
     #
     # `.update()` returns the affected-row count, and that count IS the lock:
     # the second request blocks on the first's row lock, re-evaluates the
@@ -1338,10 +1343,11 @@ def confirm_phone_otp(
     # NOT a reason, and stated here because the first draft of this comment
     # claimed it was: the two forms hold the row lock for exactly the same
     # span. A Postgres row-level write lock lives until the TRANSACTION ends,
-    # not until the statement returns, so the lock taken here is still held
-    # through `_pending_and_approvable` and the status flip below, right up to
-    # `db.commit()`. Anything slow added between here and that commit widens
-    # the window in which a concurrent confirm for the same token blocks.
+    # not until the statement returns, so the row lock taken here is held
+    # right up to `db.commit()`. Anything slow added between here and that
+    # commit widens the window in which a concurrent confirm for the same
+    # token blocks. (It used to name `_pending_and_approvable` and the status
+    # flip as what sat in that span; both are gone — MEH-2124, MEH-2125.)
     #
     # The loser gets the SAME 400 as a wrong or expired code. That is
     # deliberate: from the caller's side a lost race and a stale code are the
@@ -1360,90 +1366,30 @@ def confirm_phone_otp(
     if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
-    # MEH-2051: serialize against a concurrent PUT /producers/me, which is the
-    # OTHER handler able to complete the review-ready transition. Without this
-    # the two compute the same false→true edge independently and the admin is
-    # pinged twice for one flip — measured on origin/staging, guarded by
-    # tests/test_otp_put_ping_race.py.
+    # MEH-2125: this handler is now a pure `phone_verified` writer, and three
+    # things were removed from between the claim above and the commit below —
+    # the MEH-2051 advisory lock + its `db.expire`, the MEH-1816 `was_approvable`
+    # snapshot, and the `_maybe_fire_review_ready` call. All three were
+    # MEASURED unreachable, not judged so: `_pending_and_approvable` (:293)
+    # reads status/photos/licence and never `phone_verified`, so once MEH-2124
+    # deleted the status flip the snapshot and the post-commit re-read
+    # evaluated the same predicate over an unchanged row and the ping's
+    # `not X and X` was False for every input. The concurrency test reported
+    # `fired 0 times` before its assertion was touched.
     #
-    # WHY HERE AND NOT AT THE TOP OF THE HANDLER, which is where the helper's
-    # own docstring points: taking it before the producer load would make a
-    # rival confirm block HERE instead of on the token row lock inside the
-    # conditional UPDATE above. That was not reasoned about and left at that —
-    # it was BUILT and MEASURED, twice, because the failure it causes is the
-    # kind that reads as success:
+    # `_pending_and_approvable`, `_lock_producer_updates` and
+    # `_maybe_fire_review_ready` all REMAIN — PUT /producers/me is the live
+    # caller of each, and that path still produces a genuine false→true edge.
+    # What went is only this handler's use of them.
     #
-    #   lock at top + atomic claim intact  -> codes == [200, 200]
-    #   lock at top + atomic claim REVERTED -> codes == [200, 200]
-    #
-    # Byte-identical. Under that placement the loser hits the `phone_verified`
-    # early-return before ever reaching the UPDATE, so MEH-1820's test reports
-    # the SAME thing whether its guard works or not — it stops being a guard.
-    # Both runs are red today, which sounds safe; the trap is that the obvious
-    # way to clear that red is to relax the assertion to [200, 200], and doing
-    # so would permanently blind the atomic claim with nothing announcing it.
-    # It also changes the API: the loser would return 200 "כבר מאומת" instead
-    # of the 400 MEH-1820 deliberately chose, a contract change smuggled in as
-    # a concurrency fix.
-    #
-    # With the lock HERE, that same reverted-claim run still reports
-    # [200, 200] vs the required [200, 400] — the guard keeps discriminating.
-    # That is the measurement this placement rests on, not the argument above.
-    #
-    # WHY THE EXPIRE IS LOAD-BEARING, not tidiness: `producer` was loaded above,
-    # possibly before the PUT we are now waiting behind committed. `expire`
-    # forces the snapshot below to be computed on a row read *under* this lock —
-    # without it the loser evaluates a stale row, concludes the edge is still
-    # ahead of it, and fires the duplicate ping anyway. That is precisely the
-    # "same bug wearing a lock" the helper warns about.
-    #
-    # NO DEADLOCK: the only lock ordering here is token row → advisory key. The
-    # PUT takes the advisory key alone and never touches phone_otp_tokens, so
-    # there is no cycle. Two confirms for different tokens of one producer take
-    # different rows and then serialize on the key, which is plain waiting.
-    _lock_producer_updates(db, producer.id)
-    db.expire(producer)
-
+    # MEH-1820's guard is unaffected in substance but its SEAM moved: the
+    # barrier in tests/test_otp_confirm_concurrency.py used to be planted on
+    # `_pending_and_approvable` because that was the one call between the claim
+    # and the commit. There is no such call now, so the test instruments the
+    # request session's `commit` instead. If you add anything here that a rival
+    # confirm can reach, re-read that test's docstring first.
     producer.phone_verified = True
-    # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
-    # PUT /producers/me does at :259 — this is the SECOND mutation site able to
-    # complete the review-ready transition, and MEH-1351 only covered the first.
-    # A business that uploaded its image while still pending_whatsapp crosses
-    # the threshold here, so a ping owned by one site alone gets swallowed.
-    # The snapshot is also what keeps the already-pending path silent: such a
-    # producer is approvable before the call, so the false→true edge is absent.
-    #
-    # MEH-1820 — REORDERING THIS LINE BREAKS A TEST IN A SILENT WAY. The
-    # concurrency guard in tests/test_otp_confirm_concurrency.py patches a
-    # barrier over `_pending_and_approvable` precisely because it is the one
-    # call between the token claim above and the commit below. If some other
-    # call moves into that gap, the barrier stops marking "inside the claim
-    # window" and the test degrades into either a no-op that passes on broken
-    # code or a five-second timeout — neither of which announces itself. Move
-    # this and re-read that test's docstring.
-    #
-    # MEH-2051 added the lock+expire pair above INTO that gap, so the warning
-    # deserves its worked example rather than being quietly falsified. It is
-    # safe for one specific reason, and the reason is not "a lock is cheap":
-    # in the OTP-vs-OTP race the rival confirm never gets past the conditional
-    # UPDATE, so it never reaches either the new lock or this barrier, and the
-    # barrier still marks exactly what its docstring says it marks. That was
-    # verified by re-running MEH-1820's test with the atomic claim reverted and
-    # confirming it still goes red. Anything added here that a RIVAL CONFIRM
-    # can actually reach would break that property — the test is what tells
-    # you, and only if you re-run it against the broken claim.
-    was_approvable = _pending_and_approvable(db, producer)
-    # MEH-745: self-registered producers wait in pending_whatsapp until the
-    # business phone is verified; a successful OTP confirm is the gate that
-    # releases them into the normal admin-review queue (pending). Only advance
-    # from pending_whatsapp — never touch approved / rejected / inactive.
-    if producer.status == "pending_whatsapp":
-        producer.status = "pending"
     db.commit()
-    # REUSES: backend/app/routers/producer_me.py:413 — same helper, same
-    # post-commit position, so an admin is never pinged about a transition that
-    # failed to persist.
-    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     return {"detail": "הטלפון אומת בהצלחה"}
 
 
@@ -1540,6 +1486,21 @@ def request_producer_review(
     request only makes sense while the producer is still in the approval queue,
     so an already-decided producer (approved/rejected/inactive) → 409.
 
+    MEH-2120 — THE COMPLETENESS GATE, added after Sapir hit this live. This
+    endpoint predates the shared gate, so it pinged the admin regardless of
+    whether the profile could be approved at all: her test business, with no
+    photo and no product, pressed "סיימתי להשלים" and was told "נשלח לבדיקה".
+    The admin then gets "please look again" on a profile the MEH-799 photo gate
+    will refuse — exactly the queue noise MEH-2100 removed from the FRONT door,
+    arriving through the side one.
+
+    The gate below is a verbatim copy of `submit_for_review`'s, in this same
+    file: same helper, same 422 status, same `code`, same message, same
+    `params.missing`. That sameness is the feature, not laziness — the client
+    renders both through one path (`detailToMessage`, frontend/lib/errors.js:151)
+    and the checklist highlights `params.missing` without knowing which door
+    the owner used. A variant here would be a second definition of "ready".
+
     The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
     MEH-977): a Meta/Resend outage or missing admin config must never affect
     the 200 the owner sees.
@@ -1547,10 +1508,24 @@ def request_producer_review(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    if producer.status not in ("pending", "pending_whatsapp"):
+    if producer.status != "pending":
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+
+    # MEH-2120: ordered AFTER the status check, matching submit_for_review — an
+    # approved business asking for re-review is answered "you are already
+    # decided" (409), not handed a completeness list it has no use for.
+    missing = submission_missing_items(producer)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "submit_gate_incomplete",
+                "message": "עוד לא הכול מוכן — יש להשלים את פריטי החובה לפני שליחה לבדיקה",
+                "params": {"missing": missing},
+            },
         )
 
     # REUSES: app/services/auth_notifications.py notify_admin_new_recipe pattern
@@ -1562,6 +1537,120 @@ def request_producer_review(
         notify_admin_producer_resubmit, producer.name, producer.city
     )
     return {"detail": "נשלח לבדיקה חוזרת"}
+
+
+# ---------------------------------------------------------------------------
+# MEH-2100: draft → submit for review
+# ---------------------------------------------------------------------------
+
+
+@router.post("/submit-for-review", status_code=200)
+@limiter.limit("5/hour")
+def submit_for_review(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """The owner declares her profile ready and hands it to the admin queue.
+
+    This is the ONLY transition out of `draft` (MEH-2100). All three producer
+    creation sites now write `draft`, so before this call the business is
+    invisible to the review queue by construction — and the "בסקירה" banner
+    plus the 3-business-day SLA both start HERE rather than at signup, which
+    is the whole point of the ticket.
+
+    Draft-only, mirroring the MEH-1236 request-review 409 directly above: a
+    business already `pending` is in the queue (nothing to do), and one that
+    is approved / rejected / inactive has been decided. A silent 200 on those
+    would tell the owner something happened when nothing did.
+
+    The gate is SERVER-SIDE and reads the SAME helper the dashboard checklist
+    and the MEH-1818 nudge read (`submission_missing_items`), so the three can
+    never drift into different definitions of "ready". A client that ignores
+    the disabled CTA still gets 422 — the button state is an affordance, not
+    the rule.
+
+    The 422 body uses the MEH-1943 `{code, message, params}` shape, which buys
+    two things at once: `detailToMessage` (frontend/lib/errors.js:151) renders
+    `message` with no client change, and `params.missing` carries the
+    machine-readable codes the checklist highlights.
+
+    NOT gated here, deliberately: the producer LICENSE (MEH-971's
+    license_pending path must still be able to reach the queue with a NULL
+    license — it is an approve-time question) and OPENING HOURS (recommended,
+    not required — Google precedent). Both remain enforced where they belong;
+    see submission_gate.py's "Does NOT" header.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    if producer.status != "draft":
+        raise HTTPException(
+            status_code=409,
+            detail="אפשר לשלוח לבדיקה רק בית עסק שנמצא בטיוטה",
+        )
+
+    missing = submission_missing_items(producer)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "submit_gate_incomplete",
+                "message": "עוד לא הכול מוכן — יש להשלים את פריטי החובה לפני שליחה לבדיקה",
+                "params": {"missing": missing},
+            },
+        )
+
+    producer.status = "pending"
+    # tz-aware — the column is DateTime(timezone=True) and a naive utcnow here
+    # would be silently wrong by the local offset (repo-wide constraint).
+    producer.submitted_for_review_at = datetime.now(timezone.utc)
+
+    # Snapshot BEFORE the commit, matching auth.py's two registration paths.
+    # Reading producer.name/.city after commit() works — the attributes are
+    # expired and lazily reloaded through the still-open request session — but
+    # it reads as a different pattern from its siblings for no reason, and the
+    # next person comparing them has to work out which one is deliberate.
+    # (CI reviewer, #2979.) Same values either way; this is legibility, not a
+    # bug fix.
+    p_name = producer.name
+    p_city = producer.city
+    # MEH-2112: the owner's confirmation needs her address and the stamp that
+    # was just written. Snapshotted here with the two above, for the same
+    # reason — post-commit these attributes are expired and lazily reloaded,
+    # which works but reads as a different pattern from its siblings.
+    owner_email = user.email
+    submitted_at = producer.submitted_for_review_at
+    db.commit()
+
+    # notify_admin_new_producer lives in services/auth_notifications.py. It
+    # used to ALSO fire from auth.py at registration; MEH-2100 removed it from
+    # there, because a fresh registration is a draft and the ping's own
+    # "לאישור: /admin" link pointed at a queue the business was not in. This
+    # is now its ONLY caller — the moment the ping is actually actionable.
+    # (The comment here previously cited auth.py:632, which the same diff had
+    # already deleted — a REUSES pointer to code that no longer exists. CI
+    # reviewer, #2979.)
+    # Post-commit BackgroundTask, fail-open (MEH-1051 / MEH-977):
+    # a Resend/Meta outage must never turn the owner's successful submission
+    # into an error, and post-commit placement mirrors _maybe_fire_review_ready
+    # so the admin is never pinged about a transition that failed to persist.
+    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    # MEH-2112: the owner-facing half of the same moment. Post-commit and
+    # fail-open on the identical grounds as the admin ping above — she has
+    # already been told on screen that the profile was sent, and a Resend
+    # outage must not retract that.
+    #
+    # Placed AFTER the 409/422 raises above, which is what keeps the promise
+    # honest: this fires only on the real draft→pending transition, never on a
+    # rejected re-submit and never on MEH-1236's request-review ping (a
+    # different endpoint entirely, untouched).
+    background_tasks.add_task(
+        send_submission_confirmation, owner_email, p_name, submitted_at
+    )
+    return {"detail": "הפרופיל נשלח לבדיקה"}
 
 
 # ---------------------------------------------------------------------------

@@ -117,11 +117,35 @@ def test_returns_none_and_never_raises_on_every_swallow_point(
 
 
 def test_signature_is_unchanged(monkeypatch, captures):
-    """Guards the ticket's hard constraint — no caller may need editing."""
+    """Guards the ticket's hard constraint — no caller may need editing.
+
+    MEH-2112 widened this from `== ["to", "subject", "body", "html"]` to the
+    invariant that list was standing in for. The stated constraint is that no
+    CALLER needs editing; freezing the parameter list is stricter than that and
+    would reject a backwards-compatible addition, which is what `reply_to`
+    (optional, default None) is.
+
+    So the guard now asserts the two things that actually protect the 20 call
+    sites, and it is STRICTER than the old form in one respect: it rejects a
+    new REQUIRED parameter, which the old equality check would also have
+    rejected but which nothing else in this file covered.
+    """
     import inspect
 
     sig = inspect.signature(email_mod.send_email)
-    assert list(sig.parameters) == ["to", "subject", "body", "html"]
+    params = list(sig.parameters)
+
+    # 1. The original four are still there, still first, still in order —
+    #    every existing caller passes them positionally.
+    assert params[:4] == ["to", "subject", "body", "html"], params
+
+    # 2. Anything added since must be OPTIONAL, or a caller would break.
+    for name in params[4:]:
+        assert sig.parameters[name].default is not inspect.Parameter.empty, (
+            f"{name} was added without a default — every existing call site "
+            f"would have to be edited, which is the constraint this guards"
+        )
+
     assert sig.return_annotation in (None, "None")
 
 

@@ -255,7 +255,22 @@ export default function CitiesAutocomplete({
           ref={listRef}
           id={listboxId}
           role="listbox"
-          className="absolute z-50 start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-md shadow-md text-sm"
+          // MEH-2102: z-index 1010, not 50 — the twin of the AddressSearch list.
+          // (Prose rather than a token literal, matching AddressSearch. This is
+          // convention and grep-hygiene only — ZTokenLedgerSync.test.js already
+          // skips `//` lines, verified by injecting a token here and watching it
+          // stay green, so the guard is not relying on this.)
+          // 1010 clears Leaflet's panes (400) and its controls/attribution
+          // (globals.css forces those to 1000/1001) and stays BELOW the global
+          // header, which is its own stacking context and must keep winning.
+          // Nothing between this list and an inline map creates a stacking
+          // context, so all three compete at page level.
+          // DEFENSIVE alignment, NOT a reproduced clipping — measured 16/08, no
+          // current consumer places a map where this list can reach it. Do not
+          // cite this value as evidence of a repaired bug. The measurement is
+          // runnable rather than recited here, because file:line citations rot
+          // and it does not: e2e/qa-meh2102-dropdown-vs-map.mjs.
+          className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-md shadow-md text-sm"
         >
           {suggestions.map((city, i) => (
             <li

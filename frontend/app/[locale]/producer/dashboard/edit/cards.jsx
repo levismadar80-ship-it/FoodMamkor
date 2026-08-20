@@ -1020,26 +1020,34 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
-// MEH-1242 PR3: producer-facing price-range + top-product editor.
+// MEH-1242 PR3: producer-facing price-range editor.
 // Frontend-only gap: the owner whitelist (_PRODUCER_WRITABLE_FIELDS,
 // producer_me.py) already accepts `price_range` + `top_product_name` — there
 // was just no UI in the edit tab. Mirrors LocationCard's card/save/dirty/
 // inline-error contract; persists via PUT /producers/me.
+//
+// MEH-2094: the top-product TEXT INPUT that stood beside the price is gone.
+// The same column is now written from the product row that owns the name
+// (components/ProductsSection.jsx), which is what makes the public page's
+// exact-string match (ProducerSections.jsx:174-177) reliable instead of a
+// coin flip on stray whitespace. This card is price-only and no longer sends
+// `top_product_name` at all.
+// DO NOT re-add a free-text top-product field here — it would reintroduce the
+// double-entry the ticket removed, and a mismatch silently duplicates the
+// product on the public page (MEH-1233 B4 dedup stops firing).
 // REUSES: edit/cards.jsx LocationCard (save/dirty/reportDirty contract).
 // ============================================================
 
 // Exported for isolation tests (EditTabPricingCard.test.jsx).
 export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.pricing");
-  const seedTop = profile?.top_product_name ?? "";
   const seedPrice = profile?.price_range ?? "";
-  const [topProduct, setTopProduct] = useState(seedTop);
   const [priceRange, setPriceRange] = useState(seedPrice);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const dirty = topProduct !== seedTop || priceRange !== seedPrice;
+  const dirty = priceRange !== seedPrice;
   // MEH-1100: lift to the page-level unsaved-changes aggregate.
   useEffect(() => {
     reportDirty("pricing", dirty);
@@ -1051,10 +1059,12 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
     setSaved(false);
     setErrorMsg(null);
     try {
-      const payload = {
-        top_product_name: topProduct.trim() || null,
-        price_range: priceRange.trim() || null,
-      };
+      // MEH-2094: price only. `top_product_name` is deliberately ABSENT rather
+      // than sent as null — producer_me.py:577 applies model_dump(exclude_unset)
+      // and :612-614 setattrs only what is present, so an omitted field is left
+      // untouched. Sending null here would silently CLEAR the owner's signature
+      // product every time she saved a price.
+      const payload = { price_range: priceRange.trim() || null };
       await api.put("/producers/me", payload);
       onSave(payload);
       setSaved(true);
@@ -1074,14 +1084,6 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
 
       <div className="space-y-3">
-        <Input
-          type="text"
-          label={t("field_top_product")}
-          value={topProduct}
-          maxLength={80}
-          onChange={(e) => setTopProduct(e.target.value)}
-          placeholder={t("top_product_placeholder")}
-        />
         <Input
           type="text"
           label={t("field_price_range")}

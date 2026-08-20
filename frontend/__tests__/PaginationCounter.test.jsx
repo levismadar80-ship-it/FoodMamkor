@@ -71,6 +71,12 @@ vi.mock("@/lib/producer-filters", () => ({
   // specs chip-agnostic; the helper returns [] to match.
   GATED_DIET_KEYS: [],
   visibleGatedDietKeys: () => [],
+  // MEH-2131: same rule again — a partial vi.mock throws on any export the
+  // component imports. `false` (chip hidden) rather than `true` on purpose:
+  // these specs are chip-agnostic, and the pre-MEH-2131 stub above
+  // (`CHIPS_CONFIG: []`) already rendered no attribute chips, so hiding keeps
+  // them measuring exactly what they measured before.
+  openNowChipVisible: () => false,
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn() }),

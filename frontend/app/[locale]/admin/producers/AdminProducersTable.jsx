@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
@@ -46,6 +47,62 @@ export function AwaitingCompletionBadge({ producer }) {
     >
       {t("producers.table.awaiting_completion")}
       {date && <span dir="ltr" className="tabular-nums">{date}</span>}
+    </span>
+  );
+}
+
+// MEH-2110: business-days-waiting badge. The count is computed SERVER-side
+// (routers/admin.py via utils/clock.business_days_waiting) — this component
+// only colours it, so the badge and the queue's sort order can never disagree
+// about how old a row is.
+//
+// WHICH ROWS GET SLA COLOURS, and why it is not "every row": the promise this
+// escalates against ("עד 3 ימי עסקים") is made only to a business that has
+// asked to be reviewed. A draft has made no such request, so it shows its age
+// in plain grey — the ticket's "no SLA colors" rule. Approved / rejected /
+// inactive rows render nothing at all: they are in the default view (which is
+// `status != draft`, not the pending filter) but they are not waiting for
+// anything, and a "ממתין 0" on every live business would be pure noise.
+//
+// One entry since `pending_whatsapp` was removed in MEH-2124. Kept as an array
+// rather than collapsed to an equality: `isQueued` reads as a set membership
+// question, and a second waiting state is a plausible future addition.
+const SLA_STATUSES = ["pending"];
+
+export function WaitingBadge({ producer }) {
+  const t = useTranslations("admin");
+  const p = producer || {};
+  const isQueued = SLA_STATUSES.includes(p.status);
+  const isDraft = p.status === "draft";
+  if (!isQueued && !isDraft) return null;
+
+  const days = p.business_days_waiting ?? 0;
+  // 0–1 neutral · 2 amber · >=3 red. Thresholds live here and in
+  // __tests__/AdminQueueWaitingBadge.test.jsx, which pins each boundary.
+  let cls = "bg-gray-100 text-gray-600";
+  if (isQueued && days >= 3) cls = "bg-red-100 text-red-800";
+  else if (isQueued && days === 2) cls = "bg-amber-100 text-amber-800";
+
+  // The tooltip names WHICH timestamp it is showing rather than presenting a
+  // creation date as if it were a submission — a pre-MEH-2100 row and every
+  // draft have no stamp, and silently substituting one would misreport when
+  // the clock started.
+  const stamp = p.submitted_for_review_at || p.created_at;
+  const when = stamp ? new Date(stamp).toLocaleString("he-IL") : null;
+  const title = when
+    ? p.submitted_for_review_at
+      ? t("producers.table.waiting_tooltip_submitted", { when })
+      : t("producers.table.waiting_tooltip_created", { when })
+    : undefined;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cls}`}
+      data-testid="waiting-badge"
+      data-days={days}
+      title={title}
+    >
+      {t("producers.table.waiting_badge", { days })}
     </span>
   );
 }
@@ -192,12 +249,11 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
   // may be undefined if a caller doesn't pass it — default to never-busy.
   const busy = isBusy || (() => false);
-  const isPending = ["pending", "pending_whatsapp"].includes(p.status);
+  const isPending = p.status === "pending";
   return (
     <div className="flex gap-3 flex-wrap">
-      {/* MEH-745: self-registered producers sit in pending_whatsapp; the
-          approve endpoint has no status guard, so surface approve for both
-          waiting states (admin fallback alongside the OTP self-serve path).
+      {/* MEH-745 surfaced approve for two waiting states, `pending` and
+          `pending_whatsapp`; the second was removed in MEH-2124, leaving one.
           MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
           can open request-changes prefilled with the gate-matched chip. */}
       {isPending && (
@@ -290,7 +346,7 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
 // MEH-1232: pending-approval photo preview. Statuses whose gallery the admin
 // must eyeball BEFORE approving (photo-quality gate at manual approval — the
 // MEH-799 gate only checks images is non-empty, not that they render).
-const PENDING_PHOTO_STATUSES = ["pending", "pending_whatsapp"];
+const PENDING_PHOTO_STATUSES = ["pending"];
 // Max thumbnails before collapsing the rest into a "+N" indicator.
 const PENDING_THUMB_MAX = 4;
 // Rendered thumbnail box (px). Small on purpose — the admin judges quality at a
@@ -398,6 +454,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
           <div className="flex flex-col items-start gap-1">
             <StatusBadge status={p.status} />
             <AwaitingCompletionBadge producer={p} />
+            <WaitingBadge producer={p} />
           </div>
         </td>
         <td className="px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
@@ -441,15 +498,23 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
 
 function TableHead() {
   const t = useTranslations("admin");
+  // MEH-2126: the legend documents what each status VALUE means, so it has to
+  // match the values the backend can actually emit. It previously listed
+  // `suspended`, which admin.py emits zero times, and omitted `draft`, which
+  // is where every new registration starts (MEH-2100) — the legend defined a
+  // status that does not exist while leaving out the most common one. Read in
+  // machine order now: draft -> pending -> approved/rejected/inactive.
   const statusTooltip = (
     <>
+      {t("producers.table.status_tooltip_draft")}
+      <br />
       {t("producers.table.status_tooltip_pending")}
       <br />
       {t("producers.table.status_tooltip_approved")}
       <br />
       {t("producers.table.status_tooltip_rejected")}
       <br />
-      {t("producers.table.status_tooltip_suspended")}
+      {t("producers.table.status_tooltip_inactive")}
     </>
   );
   return (
@@ -482,7 +547,7 @@ function EmptyRow({ incompleteOnly }) {
 }
 
 export default function AdminProducersTable({
-  rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
+  rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
   onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
   onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
@@ -499,7 +564,17 @@ export default function AdminProducersTable({
         <table className="w-full text-sm">
           <TableHead />
           <tbody>
-            {rows.length === 0 && <EmptyRow incompleteOnly={incompleteOnly} />}
+            {/* MEH-2096: a failed fetch must never reuse EmptyRow — "no
+                businesses awaiting approval" is the one message that must be
+                true, because manual approval has no automatic fallback. */}
+            {loadError && (
+              <tr>
+                <td colSpan={TABLE_COLUMN_COUNT} className="py-6">
+                  <AdminLoadError onRetry={onRetryLoad} testId="admin-producers-load-error" />
+                </td>
+              </tr>
+            )}
+            {!loadError && rows.length === 0 && <EmptyRow incompleteOnly={incompleteOnly} />}
             {rows.map((p) => (
               <AdminProducersRow
                 key={p.id}

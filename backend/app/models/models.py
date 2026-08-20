@@ -75,12 +75,78 @@ class Producer(Base):
     facebook = Column(String(200), nullable=True)
     external_order_form = Column(String(500), nullable=True)
     # MEH-1612: free String(20) — no enum, no DB CHECK constraint. The
-    # authoritative enumeration is the admin filter pattern at
-    # routers/admin.py:112:
-    #   pending | pending_whatsapp | approved | rejected | inactive
-    # (pending_whatsapp is written at auth.py:509 and auth.py:624; an earlier
-    # version of this comment omitted it and misled MEH-1587's Phase 0.)
-    status = Column(String(20), default="pending")
+    # authoritative enumeration is the admin filter pattern in
+    # routers/admin.py's list_producers (`status` Query pattern):
+    #   draft | pending | approved | rejected | inactive
+    # (An earlier version of this comment cited routers/admin.py:112,
+    # auth.py:509 and auth.py:624 — all three line numbers had drifted.
+    # Cited by section rather than by line here, since the line numbers are
+    # what rotted. Re-derived MEH-2100.)
+    #
+    # MEH-2100: `draft` is where every newly created producer starts, from
+    # all THREE creation sites (routers/auth.py's upgrade and new-email
+    # branches, plus producer_queries.create_producer_with_relations behind
+    # POST /producers). It leaves via POST /producers/me/submit-for-review
+    # and no other path.
+    #
+    # MEH-2124: a sixth value, `pending_whatsapp`, was retained through the
+    # Expand phase and removed in MEH-2124. No migration was needed — the
+    # column is a free String with no enum and no CHECK constraint, so
+    # removing a VALUE is code-only.
+    #
+    # THE TWO PREMISES, with their sources, because a future reader inherits
+    # them as fact otherwise and they are what makes the removal safe:
+    #
+    #   1. UNREACHABLE — CC-verified, mechanically. `grep -rn 'status =
+    #      "pending_whatsapp"' backend/app/` returns nothing, so no writer
+    #      exists; the OTP flip in producer_me.py was its only EXIT. Still
+    #      checkable today, and `tests/test_meh2100_draft_submit.py` asserts
+    #      no creation site can re-introduce it.
+    #   2. ZERO ROWS, EVER — **Sapir's confirmation, 16/08/2026, on the
+    #      MEH-2124 card. NOT measured by CC and not measurable from a CC
+    #      session**: the production database URL is deny-listed for Claude
+    #      Code (.claude/rules/security.md) and `*.up.railway.app` is
+    #      egress-blocked from the sandbox (MEH-2090). It is a human
+    #      attestation about data, recorded as one rather than dressed up as
+    #      a query result.
+    #
+    # If premise 2 were ever wrong, a surviving row would go quiet rather than
+    # loud: `?status=pending` and the pending counters would omit it, and the
+    # toggle / request-changes / request-review guards would answer 409. That
+    # asymmetry is why the attestation is cited here instead of assumed.
+    #
+    # The DEFAULT moved "pending" -> "draft" with the same reasoning, and it is
+    # a fail-closed choice rather than a cosmetic one. Every one of the five
+    # Producer(...) constructors in app/ passes `status` explicitly (three
+    # write "draft"; admin-create and the Excel importer write "approved" —
+    # both pre-approved by definition), and a sweep of tests/ found nothing
+    # relying on the default either, so this changes no behaviour today. What
+    # it changes is the failure mode of a SIXTH creation site added later: on
+    # the old default, forgetting `status=` silently minted a live admin-queue
+    # entry — exactly the hole this ticket closes — whereas now it mints an
+    # invisible draft that simply never gets submitted. Loud and harmless
+    # instead of quiet and wrong.
+    status = Column(String(20), default="draft")
+    # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
+    # moved draft -> pending. That instant, NOT created_at, is when the
+    # 3-business-day review SLA starts once the submit gate ships.
+    #
+    # Nullable, NO default, NO server_default, NO backfill — an HONEST NULL
+    # in the MEH-762 verified_at / MEH-1291 updated_at sense: the column
+    # stays NULL until a real submission writes it, so "never submitted" is
+    # representable and is not silently rendered as "submitted at signup".
+    # Two populations carry NULL legitimately and permanently: a producer
+    # still in draft, and any row seeded before revision e2a7c9d41b06
+    # (staging fixtures — production had no businesses, Sapir 16/08).
+    #
+    # Readers that need a submission instant use
+    # `submitted_for_review_at or created_at`; that fallback is what makes a
+    # backfill unnecessary rather than merely deferred.
+    #
+    # tz-aware (DateTime(timezone=True)), written with
+    # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
+    # Paired migration: e2a7c9d41b06.
+    submitted_for_review_at = Column(DateTime(timezone=True), nullable=True)
     images = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
@@ -323,7 +389,7 @@ class Producer(Base):
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-1818: day-1 nudge for a business still awaiting approval (status
-    # pending / pending_whatsapp). Same NULL-means-not-sent contract as the
+    # draft / pending). Same NULL-means-not-sent contract as the
     # MEH-539 columns above, and the same fail-open caveat. Stamped even when
     # nothing was actually missing (nothing to nudge → stamp, no email), so
     # the column means "this producer has been through the nudge pass once",

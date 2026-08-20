@@ -37,11 +37,14 @@ costs nothing — neither outcome depends on thread scheduling luck.
 Touches:  producers table only, via the standard test session. No Cloudinary
           (the destroy step at producer_me.py:540 is post-commit and the
           gallery only grows here), no Resend/WhatsApp (the ping is mocked).
-Does NOT: cover a PUT racing `confirm_phone_otp`. That race is real and was
-          measured — it is now CLOSED by MEH-2051 and guarded by
-          tests/test_otp_put_ping_race.py. This file covers PUT-vs-PUT only.
+Does NOT: cover a PUT racing `confirm_phone_otp`. That race was real, was
+          measured, and was CLOSED by MEH-2051 — and it stopped being
+          *possible* in MEH-2124, which removed the status flip that gave the
+          confirm handler a ping to fire. Its guard file went with it. This
+          file covers PUT-vs-PUT only, which is unaffected.
 History:  MEH-2007 (creation); MEH-2051 (the OTP-vs-PUT hole below was closed —
-          this docstring's own request, answered).
+          this docstring's own request, answered); MEH-2124 (that race is now
+          structurally impossible; see the ⚠️ block).
 
 ⚠️ WHAT THIS FILE DOES NOT CLOSE, stated because the first version of this
 docstring claimed the opposite. It read "that is the sibling site, closed by
@@ -52,16 +55,18 @@ MEH-1820" — which conflates two different races:
                   guarded by tests/test_otp_confirm_concurrency.py.
     OTP-vs-PUT    a PUT and a confirm each computing the SAME snapshot
                   independently. CLOSED by MEH-2051's advisory lock in
-                  `confirm_phone_otp`; guarded by
-                  tests/test_otp_put_ping_race.py. Still not covered HERE — the
-                  three races have three files, deliberately.
+                  `confirm_phone_otp`, then made impossible by MEH-2124. Never
+                  covered HERE — the races had a file each, deliberately.
 
-The second one reproduced deterministically. A producer sitting in
-`pending_whatsapp` WITH an image is already `_is_approvable`; the only thing
-missing is the status flip that the OTP confirm performs. A PUT touching an
-unrelated field snapshots `was_approvable=False`, the confirm commits the flip
-and fires, and the PUT's post-commit re-check then sees the committed flip and
-fires a SECOND ping for a transition it played no part in.
+The second one reproduced deterministically, and reading how is the fastest way
+to see why it cannot recur. A producer sitting in `pending_whatsapp` WITH an
+image was already `_is_approvable`; the only thing missing was the status flip
+that the OTP confirm performed. A PUT touching an unrelated field snapshotted
+`was_approvable=False`, the confirm committed the flip and fired, and the PUT's
+post-commit re-check then saw the committed flip and fired a SECOND ping for a
+transition it played no part in. The flip was the whole mechanism, and it was
+removed in MEH-2124 — `confirm_phone_otp` no longer changes status, so it has
+no edge to fire on and nothing for a PUT to race.
 
 Measured when this file was written: **2 pings**, and — the part that mattered
 for reading it correctly — **2 pings on `origin/staging` too**. It was a

@@ -14,8 +14,8 @@ import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
-import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
@@ -111,7 +111,7 @@ function StatusSupportModal({ onClose }) {
   const t = useTranslations("dashboard.producer.status.support");
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}
@@ -133,13 +133,13 @@ function StatusSupportModal({ onClose }) {
           </div>
         </a>
         <a
-          href="mailto:support@mehamakor.online"
+          href="mailto:contact@mehamakor.co.il"
           className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
+            <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
           </div>
         </a>
         <button
@@ -398,8 +398,38 @@ export default function ProducerDashboardPage() {
           request-changes is pending — the specific "נשאר להשלים" banner above
           IS the message, and "awaiting approval" would contradict it (the ball
           is in the owner's court). Both otherwise stack on a pending producer. */}
+      {/* MEH-2100: a business in `draft` has NOT asked to be reviewed, so it
+          gets the completion banner instead of "הפרופיל שלך בסקירה". This is
+          the REPLACEMENT the ticket asks for — the pending banner below is
+          keyed on status === "pending" and therefore cannot co-render.
+          On success the local status flips to "pending" with no reload, so
+          the existing review banner takes over immediately. */}
+      {producer.status === "draft" && (
+        <DraftSubmitBanner
+          producer={profile}
+          onSubmitted={() =>
+            setData((prev) =>
+              prev
+                ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                : prev,
+            )
+          }
+          onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
+        />
+      )}
+
       {producer.status === "pending" && !profile?.requested_changes && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
+        // data-testid added with the MEH-2100 E2E spec that reads it — the
+        // draft→pending transition needs to assert WHICH banner won, and a
+        // Hebrew-text locator is the anti-pattern docs/E2E-LOCATORS.md names.
+        // Opportunistic conversion, per that file's migration policy.
+        <div
+          className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm"
+          role="status"
+          data-testid="status-pending-banner"
+        >
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
           {/* MEH-1347: informational only — the completeness card below owns
               the single "השלימו פרופיל" CTA (audit found two clashing CTAs
@@ -466,26 +496,6 @@ export default function ProducerDashboardPage() {
           >
             {t("status.inactive.support_cta")}
           </button>
-        </div>
-      )}
-
-      {producer.status === "pending_whatsapp" && (
-        <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
-          <p className="font-semibold text-primary mb-1">{t("status.pending_whatsapp.title")}</p>
-          <p className="text-fg-muted">
-            {t("status.pending_whatsapp.body")}
-          </p>
-          {/* MEH-745: the OTP card replaces the old dead /settings CTA — a
-              successful confirm flips status to pending without a reload. */}
-          <PhoneVerifyCard
-            onVerified={() =>
-              setData((prev) =>
-                prev
-                  ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                  : prev,
-              )
-            }
-          />
         </div>
       )}
 

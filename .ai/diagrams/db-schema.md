@@ -82,6 +82,7 @@ erDiagram
         string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
         string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
         timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
+        timestamp submitted_for_review_at "nullable — MEH-2100, tz-aware; stamped when the owner submits for review (draft→pending). NULL = never submitted, and stays NULL for a draft. No backfill: readers use submitted_for_review_at or created_at"
     }
 
     categories {

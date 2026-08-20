@@ -465,7 +465,7 @@ Design: `design-reference/dashboard/` (frame + app/overview/sections/ui jsx, RTL
 | DASH-05 | Preview row + takeover ("ככה הלקוחות רואות אותך") | Absent (grep 0) | 1-tap trust loop missing | 2 | |
 | DASH-06 | CompletenessCard: always-on 6-item checklist + next-highlight + field-specific CTA | Checklist only yellow>70 + he; generic CTA | Partial | 2 | Field parity DONE (6 incl. short_desc) |
 | DASH-07 | Placement first under greeting; slims to dismissible pc-slim when live | Mid-page; never slims | Diverges | 2 | Green state collapse = closest analog |
-| DASH-08 | PhoneVerify standalone gold card + inline OTP | Only inside pending_whatsapp banner | Coupling differs | 1 | OTP dir=ltr matches rtl.md exception |
+| DASH-08 | PhoneVerify standalone gold card + inline OTP | Only inside the draft submit banner (was the pending_whatsapp banner until MEH-2124) | Coupling differs | 1 | OTP dir=ltr matches rtl.md exception |
 | DASH-09 | AvailabilityCard 4 states + pre-approval lock | Enum matches; no locked branch | Lock missing (1D scope) | 2 | |
 | DASH-10 | LaunchPath 3-step ladder w/ share locked until approved | Absent; VanityLinkCard shares regardless | Contradiction | 2 | |
 | DASH-11 | SpokeGrid hub cards | Absent (tab-bar-only nav) | Secondary launchpad missing | 1 | Design notes tabs canonical |

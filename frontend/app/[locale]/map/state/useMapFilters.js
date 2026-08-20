@@ -7,6 +7,10 @@ import {
   chipStateToParams,
   resolveCategoryId,
 } from "@/lib/map-chips";
+// MEH-2131: the chip-state default is derived from the taxonomy — see the
+// useState below for the three-way drift that made a hand-written copy a bad
+// idea, and for why `categoryKeys` stays out of it.
+import { defaultsForKeys } from "@/lib/filter-taxonomy";
 import { haversineKm } from "@/lib/distance";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
@@ -65,7 +69,12 @@ export function sortProducers(list, sortBy, userLoc) {
  * Shape of the state machine (preserved from source):
  *   - `chipState.categoryKeys` ⊆ CATEGORY_CHIPS keys (MEH-1465 multi-select OR;
  *     `[]` = "all"/nothing selected — the reset sentinel)
- *   - `chipState.organic / has_delivery / verified / grass_fed` independent toggles
+ *   - `chipState.<attribute keys>` — independent toggles, one per axis whose
+ *     `surfaces` includes "map" (lib/filter-taxonomy.js). Named individually
+ *     here until MEH-2131: the list said `organic / has_delivery / verified /
+ *     grass_fed`, which had been wrong since MEH-1259 removed `organic` and
+ *     omitted every diet axis added after it. A docblock enumerating a derived
+ *     set is a fourth copy of it, so this one describes the rule instead.
  *   - `cityFilter` is the city-search input (text)
  *   - `committedBounds` is the bounds the LIST is filtered by — set
  *     either by chip changes (cleared) or by the "search this area"
@@ -115,22 +124,25 @@ export function useMapFilters({
     return () => document.body.classList.remove("sheet-open");
   }, [selectedProducer]);
 
-  // MEH-14: chip state per the new spec. MEH-1465: categoryKeys is a multi-select
-  // OR array (`[]` = "all"/nothing selected); organic + has_delivery are
-  // independent toggles on top of that.
-  // MEH-1075: state completed to all 7 TOGGLE_CHIPS keys — the diet
-  // toggles previously worked only via dynamic `!undefined` toggling.
+  // MEH-14: chip state per the new spec. MEH-1465: categoryKeys is a
+  // multi-select OR array (`[]` = "all"/nothing selected); the attribute
+  // toggles are independent of it.
+  //
+  // MEH-1075 completed this to "all TOGGLE_CHIPS keys" by hand, and by MEH-2131
+  // the hand-written copy had drifted three ways: it still carried `organic`
+  // (the chip and its backend filter were removed in MEH-1259), and it was
+  // MISSING `vegetarian` (MEH-1438) and `no_added_sugar` (MEH-1934). Those two
+  // worked only through `!undefined` toggling — the exact defect MEH-1075 wrote
+  // this literal to fix, reintroduced by the next two axes to land.
+  //
+  // MEH-2131: derived from the taxonomy instead, so it cannot drift again and
+  // `open_for_orders_now` arrives without a fourth hand edit. Behaviour is
+  // unchanged for the two missing keys (`undefined` and `false` are both falsy
+  // to `chipStateToParams`) and for the dead one (nothing reads `organic`).
+  // `categoryKeys` stays explicit — it is not an attribute axis.
   const [chipState, setChipState] = useState({
     categoryKeys: [],
-    organic: false,
-    has_delivery: false,
-    pickup_points: false,  // MEH-2046
-    verified: false,
-    kosher: false,
-    grass_fed: false,
-    vegan: false,
-    gluten_free: false,
-    lactose_free: false,
+    ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
   });
 
   // MEH-14: build the backend params from the current chip state +
@@ -225,18 +237,19 @@ export function useMapFilters({
   // fetch is instant, and any pending debounced sheet fetch is superseded.
   const clearSheetFilters = () => {
     cancelPendingSheetFetch();
-    const next = {
-      ...chipState,
-      organic: false,
-      has_delivery: false,
-      pickup_points: false,  // MEH-2046
-      verified: false,
-      kosher: false,
-      grass_fed: false,
-      vegan: false,
-      gluten_free: false,
-      lactose_free: false,
-    };
+    // MEH-2131 follow-up: derived, for the same reason the chipState default
+    // above is. This was the file's SECOND hand-written key list and it had
+    // drifted the same way — it still cleared the long-removed `organic`
+    // (MEH-1259) and did NOT clear `vegetarian` (MEH-1438) or `no_added_sugar`
+    // (MEH-1934), so "ניקוי הכל" in /map's FilterSheet left those two toggles
+    // standing while clearing everything around them. Adding
+    // `open_for_orders_now` to it by hand would have made a fourth omission
+    // inevitable; deriving fixes all three and cannot drift again.
+    //
+    // `categoryKeys` is deliberately untouched: MEH-1368's tag-strip rule keeps
+    // a category SELECTION out of this control — its exit affordance is the
+    // "כל" chip, and `resetAllFilters` is what clears both dimensions.
+    const next = { ...chipState, ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)) };
     setChipState(next);
     loadProducers(buildParams(next));
     setCommittedBounds(null);
@@ -259,17 +272,23 @@ export function useMapFilters({
 
   const resetAllFilters = () => {
     cancelPendingSheetFetch();
+    // MEH-2131 follow-up: the THIRD hand-written key list in this file, found
+    // by grepping for it after the CI reviewer named the second — a finding is
+    // a sample, not an inventory.
+    //
+    // Its omissions bite harder than clearSheetFilters' did, because this one
+    // REPLACES chipState instead of spreading it: any key missing here does not
+    // merely survive the reset, it becomes `undefined`. That is precisely the
+    // `!undefined` toggling state MEH-1075 wrote these literals to eliminate,
+    // reintroduced for `vegetarian` (MEH-1438), `no_added_sugar` (MEH-1934) and
+    // — before this fix — `open_for_orders_now`.
+    //
+    // Same shape as the default and the sheet-clear above, so the same
+    // derivation. `categoryKeys: []` stays explicit: it is not an attribute
+    // axis, and unlike clearSheetFilters this control DOES clear it.
     const next = {
       categoryKeys: [],
-      organic: false,
-      has_delivery: false,
-      pickup_points: false,  // MEH-2046
-      verified: false,
-      kosher: false,
-      grass_fed: false,
-      vegan: false,
-      gluten_free: false,
-      lactose_free: false,
+      ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
     };
     setChipState(next);
     loadProducers(buildParams(next));

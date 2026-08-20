@@ -87,7 +87,25 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
     failure into a loud outage, which is strictly worse than the bug.
     """
     try:
+        # MEH-2114: THIS call is the report that carries the stack trace
+        # (Sentry group MEHAMAKOR-BACKEND-N, 670 events, culprit /auth/register).
         capture_background_exception(exc, task=_SENTRY_TASK)
+        # MEH-2114 — DO NOT remove this log line to fix the double-report.
+        # sentry-sdk's default LoggingIntegration captures stdlib `logging`
+        # records at ERROR as events, so this line was ALSO reaching Sentry as a
+        # second, stack-trace-less copy of the same failure (group
+        # MEHAMAKOR-BACKEND-M, 670 events — an exact twin of the count above).
+        # The twin is now dropped in `sentry.py:_drop_reason` ("duplicate-log-twin"),
+        # which keeps the trace-bearing report and removes the copy. It requires
+        # ALL THREE of: logger name `app.services.email`, no exception payload on
+        # the event, AND a message starting with "[EMAIL] NOT SENT". That third
+        # condition is deliberate — see `_DUPLICATE_LOG_PREFIXES` — so a future
+        # `logger.error` here with a different message is NOT suppressed. If you
+        # add one that duplicates an explicit capture, give it this prefix or
+        # extend that mapping; otherwise it reports to Sentry on its own.
+        # The line below is untouched on purpose: it is the ONLY record of the
+        # failure in Railway stdout, and MEH-1613 exists because this module used
+        # to be silent there.
         logger.error(
             "[EMAIL] NOT SENT (%s) to %s — subject=%r — %s: %s",
             stage,
@@ -100,8 +118,26 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         pass
 
 
-def send_email(to: str, subject: str, body: str, html: str | None = None) -> None:
-    """Send a plain-text (+ optional HTML) email via Resend. Always fail-open."""
+def send_email(
+    to: str,
+    subject: str,
+    body: str,
+    html: str | None = None,
+    reply_to: str | None = None,
+) -> None:
+    """Send a plain-text (+ optional HTML) email via Resend. Always fail-open.
+
+    MEH-2112: `reply_to` is OPTIONAL and defaults to None, so all 20 existing
+    call sites keep their exact current behaviour — nothing is added to the
+    Resend payload unless a caller asks for it.
+
+    It exists because the sender is a `noreply@` address
+    (config.py:88 — `.co.il` since MEH-2123; the TLD is not the point, the
+    `noreply` mailbox is). Any email whose copy invites a reply — as the submission
+    confirmation's "אפשר פשוט להשיב למייל הזה" does — is making a promise the
+    default sender cannot keep, and a bounced reply from a business owner is
+    worse than never having invited one.
+    """
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
     # trace anywhere. Almost always a config or caller bug, so it is reported
@@ -147,6 +183,11 @@ def send_email(to: str, subject: str, body: str, html: str | None = None) -> Non
             "subject": subject,
             "text": body,
         }
+        # MEH-2112: omitted entirely when unset, rather than sent as None —
+        # the key's absence is what keeps every pre-existing caller's payload
+        # byte-identical to what it sent before this parameter existed.
+        if reply_to:
+            params["reply_to"] = reply_to
         if html:
             params["html"] = html
             # MEH-331 attempt #2: ask Resend's MTA to use base64 (not the
