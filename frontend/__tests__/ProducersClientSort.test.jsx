@@ -21,6 +21,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
+  // here, the whole suite dies at import with "No \"Clock\" export is defined".
+  Clock: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
@@ -73,6 +76,12 @@ vi.mock("@/lib/producer-filters", () => ({
   // MEH-1934: a partial vi.mock throws on any export the component imports.
   GATED_DIET_KEYS: [],
   visibleGatedDietKeys: () => [],
+  // MEH-2131: same rule again — a partial vi.mock throws on any export the
+  // component imports. `false` (chip hidden) rather than `true` on purpose:
+  // these specs are chip-agnostic, and the pre-MEH-2131 stub above
+  // (`CHIPS_CONFIG: []`) already rendered no attribute chips, so hiding keeps
+  // them measuring exactly what they measured before.
+  openNowChipVisible: () => false,
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),

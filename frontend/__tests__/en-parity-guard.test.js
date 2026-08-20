@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import en from "../messages/en.json";
 import he from "../messages/he.json";
+import enOnlyAllowlist from "./en-only-allowlist.json";
 
 // MEH-978 — key-presence parity guard, the opposite direction of the MEH-840
 // en-locale guard. MEH-840 catches Hebrew leaking INTO en.json; this catches a
@@ -52,6 +53,10 @@ function leafKeys(obj, prefix = "") {
   return out;
 }
 
+// MEH-2095: the en-only allowlist. Keys deliberately English-only, each with a
+// reason. `$comment` is documentation inside the JSON, not a key — strip it.
+const EN_ONLY = new Set(Object.keys(enOnlyAllowlist).filter((k) => k !== "$comment"));
+
 describe("en-parity guard (MEH-978)", () => {
   const enKeys = new Set(leafKeys(en));
   const missing = leafKeys(he).filter((k) => !enKeys.has(k));
@@ -65,5 +70,37 @@ describe("en-parity guard (MEH-978)", () => {
     const missingSet = new Set(missing);
     const stale = [...BASELINE].filter((k) => !missingSet.has(k));
     expect(stale).toEqual([]);
+  });
+});
+
+// MEH-2095 — the OTHER direction. The guard above was he→en only, so a key
+// present in en.json and absent from he.json was invisible to it. That is how
+// 14 keys survived the MEH-883 homepage removal: their Hebrew twins were
+// deleted correctly, the English ones were not, and no gate could see it.
+//
+// This half is not symmetric with the half above, deliberately. he.json is the
+// source of truth (every code-referenced key lands there first), so a he-only
+// key is a translation BACKLOG — hence the frozen BASELINE. An en-only key is
+// the opposite: either dead weight or an intentional English-only surface.
+// There is no backlog to grandfather, so there is no baseline here — only an
+// allowlist that must state WHY each key has no twin.
+describe("en-parity guard, en→he direction (MEH-2095)", () => {
+  const heKeys = new Set(leafKeys(he));
+  const enOnly = leafKeys(en).filter((k) => !heKeys.has(k));
+
+  it("has no en.json key missing from he.json outside the explicit allowlist", () => {
+    expect(enOnly.filter((k) => !EN_ONLY.has(k))).toEqual([]);
+  });
+
+  it("allowlist stays honest — every allowlisted key is still en-only (else remove it)", () => {
+    const enOnlySet = new Set(enOnly);
+    expect([...EN_ONLY].filter((k) => !enOnlySet.has(k))).toEqual([]);
+  });
+
+  it("every allowlist entry carries a non-trivial reason", () => {
+    const unexplained = [...EN_ONLY].filter(
+      (k) => typeof enOnlyAllowlist[k] !== "string" || enOnlyAllowlist[k].trim().length < 20,
+    );
+    expect(unexplained).toEqual([]);
   });
 });

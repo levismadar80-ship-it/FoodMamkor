@@ -573,6 +573,7 @@ export const listProducersAdminProducersGetResponseAmbassadorDefault = false;
 export const listProducersAdminProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const listProducersAdminProducersGetResponseAvailabilityStatusDefault = `available`;
 export const listProducersAdminProducersGetResponseAvgRatingDefault = 0;
+export const listProducersAdminProducersGetResponseBusinessDaysWaitingDefault = 0;
 export const listProducersAdminProducersGetResponseCategoriesDefault = [];
 export const listProducersAdminProducersGetResponseDeliversDefault = false;
 export const listProducersAdminProducersGetResponseDeliveryAreasDefault = [];
@@ -639,6 +640,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStateDefault),
   "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersAdminProducersGetResponseAvgRatingDefault),
+  "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -758,6 +760,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "starting_price_label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseTrustTierDefault),
   "updated_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -781,6 +784,7 @@ export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = fa
 export const adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminCreateProducerAdminProducersPostResponseAvailabilityStatusDefault = `available`;
 export const adminCreateProducerAdminProducersPostResponseAvgRatingDefault = 0;
+export const adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseCategoriesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDeliversDefault = false;
 export const adminCreateProducerAdminProducersPostResponseDeliveryAreasDefault = [];
@@ -847,6 +851,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault),
   "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminCreateProducerAdminProducersPostResponseAvgRatingDefault),
+  "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -966,6 +971,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "starting_price_label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseTrustTierDefault),
   "updated_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -994,6 +1000,7 @@ export const pendingProducersAdminProducersPendingGetResponseAmbassadorDefault =
 export const pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const pendingProducersAdminProducersPendingGetResponseAvailabilityStatusDefault = `available`;
 export const pendingProducersAdminProducersPendingGetResponseAvgRatingDefault = 0;
+export const pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDeliversDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseDeliveryAreasDefault = [];
@@ -1060,6 +1067,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault),
   "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), pendingProducersAdminProducersPendingGetResponseAvgRatingDefault),
+  "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -1179,6 +1187,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "starting_price_label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseTrustTierDefault),
   "updated_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1220,6 +1229,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDef
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStatusDefault = `available`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault = 0;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliversDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryAreasDefault = [];
@@ -1286,6 +1296,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault),
   "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault),
+  "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -1405,6 +1416,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "starting_price_label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseTrustTierDefault),
   "updated_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -2834,13 +2846,20 @@ export const ListProducersProducersGetResponse = /*#__PURE__*/ zod.array(ListPro
 
 
 /**
- * Create a pending producer row.
+ * Create a DRAFT producer row.
  *
  * SECURITY: this endpoint was historically public, which meant anyone
  * could create pending producers with no audit trail. It's now
  * authenticated — any logged-in user can create, but anonymous callers
  * get 401. The public "become a producer" signup flow lives at
  * POST /auth/register/producer (see routers/auth.py) and is unaffected.
+ *
+ * MEH-2100: the row lands in `draft`, so "any logged-in user can create"
+ * no longer means "any logged-in user can put a row in front of the
+ * admin". Reaching the review queue now requires
+ * POST /producers/me/submit-for-review, which is owner-scoped and gated
+ * on a complete profile. Deepens the audit-trail fix above rather than
+ * replacing it.
  * @summary Create Producer
  */
 export const createProducerProducersPostResponseAmbassadorDefault = false;
@@ -4062,12 +4081,62 @@ export const UpdateMyRecipeProducersMeRecipesRecipeIdPatchResponse = /*#__PURE__
  * request only makes sense while the producer is still in the approval queue,
  * so an already-decided producer (approved/rejected/inactive) → 409.
  *
+ * MEH-2120 — THE COMPLETENESS GATE, added after Sapir hit this live. This
+ * endpoint predates the shared gate, so it pinged the admin regardless of
+ * whether the profile could be approved at all: her test business, with no
+ * photo and no product, pressed "סיימתי להשלים" and was told "נשלח לבדיקה".
+ * The admin then gets "please look again" on a profile the MEH-799 photo gate
+ * will refuse — exactly the queue noise MEH-2100 removed from the FRONT door,
+ * arriving through the side one.
+ *
+ * The gate below is a verbatim copy of `submit_for_review`'s, in this same
+ * file: same helper, same 422 status, same `code`, same message, same
+ * `params.missing`. That sameness is the feature, not laziness — the client
+ * renders both through one path (`detailToMessage`, frontend/lib/errors.js:151)
+ * and the checklist highlights `params.missing` without knowing which door
+ * the owner used. A variant here would be a second definition of "ready".
+ *
  * The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
  * MEH-977): a Meta/Resend outage or missing admin config must never affect
  * the 200 the owner sees.
  * @summary Request Producer Review
  */
 export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The owner declares her profile ready and hands it to the admin queue.
+ *
+ * This is the ONLY transition out of `draft` (MEH-2100). All three producer
+ * creation sites now write `draft`, so before this call the business is
+ * invisible to the review queue by construction — and the "בסקירה" banner
+ * plus the 3-business-day SLA both start HERE rather than at signup, which
+ * is the whole point of the ticket.
+ *
+ * Draft-only, mirroring the MEH-1236 request-review 409 directly above: a
+ * business already `pending` is in the queue (nothing to do), and one that
+ * is approved / rejected / inactive has been decided. A silent 200 on those
+ * would tell the owner something happened when nothing did.
+ *
+ * The gate is SERVER-SIDE and reads the SAME helper the dashboard checklist
+ * and the MEH-1818 nudge read (`submission_missing_items`), so the three can
+ * never drift into different definitions of "ready". A client that ignores
+ * the disabled CTA still gets 422 — the button state is an affordance, not
+ * the rule.
+ *
+ * The 422 body uses the MEH-1943 `{code, message, params}` shape, which buys
+ * two things at once: `detailToMessage` (frontend/lib/errors.js:151) renders
+ * `message` with no client change, and `params.missing` carries the
+ * machine-readable codes the checklist highlights.
+ *
+ * NOT gated here, deliberately: the producer LICENSE (MEH-971's
+ * license_pending path must still be able to reach the queue with a NULL
+ * license — it is an approve-time question) and OPENING HOURS (recommended,
+ * not required — Google precedent). Both remain enforced where they belong;
+ * see submission_gate.py's "Does NOT" header.
+ * @summary Submit For Review
+ */
+export const SubmitForReviewProducersMeSubmitForReviewPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**

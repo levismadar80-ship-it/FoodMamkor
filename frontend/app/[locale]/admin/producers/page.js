@@ -53,7 +53,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
 
   if (!confirmDelete) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
       <div
         role="dialog"
         aria-modal="true"
@@ -100,7 +100,7 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
 
   if (!approveConfirm) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
       <div
         role="dialog"
         aria-modal="true"
@@ -169,6 +169,8 @@ function ProducersAdminPage() {
 
       <AdminProducersTable
         rows={h.pagedVisible}
+        loadError={h.loadError}
+        onRetryLoad={() => h.loadAllProducers()}
         incompleteOnly={h.incompleteOnly}
         storyCardOpenId={h.storyCardOpenId}
         onSetStoryCardOpenId={h.setStoryCardOpenId}

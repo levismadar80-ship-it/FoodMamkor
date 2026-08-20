@@ -183,7 +183,7 @@ def test_db_level_failure_in_pass_one_does_not_poison_pass_two(
         scheduler_spies["nudge_called"] = True
         # Reaches the DB. Raises on a poisoned session; succeeds on a clean one.
         session.query(Producer).filter(
-            Producer.status.in_(("pending", "pending_whatsapp"))
+            Producer.status.in_(("draft", "pending"))
         ).all()
         scheduler_spies["nudge_query_ok"] = True
         return {"sent": 0, "stamped_nothing_missing": 0}

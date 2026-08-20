@@ -45,6 +45,14 @@ def _approve(client, db, producer):
 def _pending(db, **kwargs):
     kwargs.setdefault("images", [IMAGE])
     kwargs.setdefault("status", "pending")
+    # MEH-2121: approve now also requires a verified WhatsApp number. This
+    # file's subject is WHETHER the gates re-run after a rollback, not any one
+    # gate's own logic — so the fixture satisfies all of them and each test
+    # revokes exactly the one it is about, inside the retry window. A producer
+    # that arrived here already failing a gate would 422 on the main path and
+    # never reach the retry at all. setdefault, so a case that wants the
+    # unverified state can still ask for it.
+    kwargs.setdefault("phone_verified", True)
     return make_producer(db, **kwargs)
 
 
@@ -133,4 +141,74 @@ def test_retry_path_re_runs_the_photo_gate(client, db, monkeypatch):
     reread = db.query(Producer).filter(Producer.id == loser_id).first()
     assert reread.status != "approved", (
         "the producer was left approved with an empty images array"
+    )
+
+
+def test_retry_path_re_runs_the_phone_gate(client, db, monkeypatch):
+    """MEH-2121's phone gate inherits the MEH-2017 property, and this proves it
+    rather than assuming it follows from living in `_assert_approvable`.
+
+    That assumption is the thing worth testing. The gate is in the right
+    function today, so it does run on both paths — but "it is in the shared
+    helper" is a claim about the code's shape, and the retry path is the one
+    place in the codebase that could approve without passing a gate. A future
+    refactor that hoists the phone check up into the handler for readability
+    would keep every other test in this repo green and silently re-open exactly
+    the hole this file exists to close.
+
+    Same harness as the photo case above, same control: `stripped["done"]`
+    proves the collision fired and the retry was entered. Only the mutation
+    differs — the verification is revoked inside the rollback window instead of
+    the photos.
+    """
+    winner = _pending(db, name="מאפיית התאומות", status="approved")
+    winner.slug = "מאפיית-התאומות"
+    db.commit()
+
+    loser = _pending(db, name="מאפיית התאומות")
+    db.commit()
+    loser_id = loser.id
+
+    real_ensure = admin_module._ensure_unique_slug
+    calls = {"n": 0}
+
+    def racing_ensure(session, base_slug):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return "מאפיית-התאומות"
+        return real_ensure(session, base_slug)
+
+    monkeypatch.setattr(admin_module, "_ensure_unique_slug", racing_ensure)
+
+    real_is_collision = admin_module._is_slug_collision
+    stripped = {"done": False}
+
+    def unverifying_is_collision(exc):
+        verdict = real_is_collision(exc)
+        if verdict and not stripped["done"]:
+            row = db.query(Producer).filter(Producer.id == loser_id).first()
+            row.phone_verified = False
+            db.commit()
+            stripped["done"] = True
+        return verdict
+
+    monkeypatch.setattr(admin_module, "_is_slug_collision", unverifying_is_collision)
+
+    resp = _approve(client, db, loser)
+
+    assert stripped["done"], (
+        "the slug collision never fired, so the retry path never ran and the "
+        "un-verification was never injected — this test asserts nothing"
+    )
+
+    assert resp.status_code == 422, (
+        "the retry approved a producer whose WhatsApp verification was revoked "
+        "inside the rollback window — the phone gate ran only on the main "
+        "path. Response: " + resp.text
+    )
+
+    db.expire_all()
+    reread = db.query(Producer).filter(Producer.id == loser_id).first()
+    assert reread.status != "approved", (
+        "the row was left approved despite the retry being refused"
     )

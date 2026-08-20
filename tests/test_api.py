@@ -14,6 +14,7 @@ from conftest import (
     auth_header,
     make_category,
     make_producer,
+    make_submit_ready_producer,
     make_user,
     valid_producer_register_payload,
     valid_review_payload,
@@ -530,7 +531,9 @@ class TestAuth:
         assert user.is_producer is True  # MEH-143: durable flag set on new registration too
         producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
         assert producer is not None
-        assert producer.status == "pending_whatsapp"
+        # MEH-2100: registration creates a DRAFT — the business is NOT in the
+        # admin queue until she presses "שליחה לבדיקה".
+        assert producer.status == "draft"
 
     # --- MEH-1838 chunk A: delivery-shape fields on registration ---
 
@@ -808,9 +811,6 @@ class TestAuth:
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
-            "app.routers.auth.notify_admin_new_producer", lambda *a, **kw: None
-        )
-        monkeypatch.setattr(
             "app.routers.auth.notify_producer_registered", lambda *a, **kw: None
         )
         make_user(db, email="prod_ident_pw@test.com")
@@ -938,7 +938,7 @@ class TestAuth:
         user = make_user(db, email="already@producer.com", role="producer")
         # Give the user a linked producer
         from app.models.models import Producer
-        producer = Producer(name="קיים", status="pending_whatsapp")
+        producer = Producer(name="קיים", status="draft")
         db.add(producer)
         db.flush()
         user.producer_id = producer.id
@@ -1035,10 +1035,6 @@ class TestRegisterPerEmailRateLimit:
         )
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda *a, **kw: None,
-        )
-        monkeypatch.setattr(
-            "app.routers.auth.notify_admin_new_producer",
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
@@ -1490,7 +1486,6 @@ class TestRegisterPerIpRateLimit:
             "_send_verify_email",
             "_send_welcome_email",
             "_send_duplicate_attempt_email",
-            "notify_admin_new_producer",
             "notify_producer_registered",
             "score_producer",
         ):
@@ -1759,9 +1754,12 @@ class TestProducers:
         )
         assert resp.status_code == 401
 
-    def test_post_producers_with_auth_creates_pending_producer(self, client, db):
-        """Authenticated user → 201, producer created with status=pending
-        (pre-existing behavior, now gated behind auth)."""
+    def test_post_producers_with_auth_creates_draft_producer(self, client, db):
+        """Authenticated user → 201, producer created with status=draft.
+
+        MEH-2100: was `pending`. This endpoint is reachable by ANY logged-in
+        verified user, so a `pending` row here was a route straight into the
+        admin queue past the submit gate."""
         user = make_user(db, email="creator@test.com")
         # MEH-1153: this path inserts ProducerCategory rows, so the category
         # must actually exist — override the placeholder id with a real one.
@@ -1775,11 +1773,11 @@ class TestProducers:
         assert resp.status_code == 201
         body = resp.json()
         assert body["name"] == "חוות הבדיקה"
-        assert body["status"] == "pending"
+        assert body["status"] == "draft"
         # DB row exists
         row = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
         assert row is not None
-        assert row.status == "pending"
+        assert row.status == "draft"
 
     def test_post_producers_overlong_name_returns_422(self, client, db):
         """MEH-229: name longer than the String(200) column → clean 422,
@@ -1835,10 +1833,12 @@ class TestAdminFlows:
     def test_approve_pending_producer(self, client, db):
         admin = make_user(db, role="admin")
         # MEH-799: approve gate requires >=1 image
+        # MEH-2121: ...and a verified WhatsApp number.
         p = make_producer(
             db,
             status="pending",
             images=["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"],
+            phone_verified=True,
         )
         resp = client.post(
             f"/admin/producers/{p.id}/approve", headers=auth_header(admin)
@@ -1992,12 +1992,19 @@ class TestAdminFlows:
 # ---------- MEH-56: WhatsApp onboarding + bio ----------
 
 class TestMeh56WhatsAppOnboarding:
-    """Registration produces pending_whatsapp status; admin sees it as pending."""
+    """Registration produces a draft; the admin queue is pending-only.
 
-    def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
-        # Stub out Twilio and email so no network calls
+    The class name is MEH-56's: registration used to produce a
+    `pending_whatsapp` status, which MEH-2100 replaced with `draft`; the old
+    value was removed in MEH-2124.
+    """
+
+    def test_register_producer_creates_draft(self, client, db, monkeypatch):
+        # Stub out Twilio and email so no network calls.
+        # MEH-2100: notify_admin_new_producer is no longer imported by
+        # auth.py — the admin ping moved to submit-for-review — so there is
+        # nothing to stub for it here.
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
@@ -2011,26 +2018,37 @@ class TestMeh56WhatsAppOnboarding:
         from app.models.models import Producer
         p = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
         assert p is not None
-        assert p.status == "pending_whatsapp"
+        # MEH-2100: the WhatsApp-onboarding path no longer parks a new
+        # registration in a status of its own — it starts in draft, and phone
+        # verification is one item of the submit gate. (That status was
+        # `pending_whatsapp`, removed in MEH-2124.)
+        assert p.status == "draft"
 
-    def test_admin_pending_endpoint_includes_pending_whatsapp(self, client, db):
+    # These two cases asserted that the admin queue GROUPED `pending` with
+    # `pending_whatsapp`; the second value was removed in MEH-2124, so what is
+    # left to assert is the inverse — that the queue is pending-only and a
+    # draft does not leak into it. That is the property MEH-2100 introduced
+    # and the one a future regression would break.
+    def test_admin_pending_endpoint_is_pending_only(self, client, db):
         make_producer(db, name="Classic Pending", status="pending")
-        make_producer(db, name="WA Pending", status="pending_whatsapp")
+        make_producer(db, name="Still A Draft", status="draft")
         from conftest import make_user
         admin = make_user(db, email="admin56@test.com", role="admin")
         resp = client.get("/admin/producers/pending", headers=auth_header(admin))
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "Classic Pending" in names
-        assert "WA Pending" in names
+        assert "Still A Draft" not in names
 
-    def test_admin_list_pending_filter_includes_pending_whatsapp(self, client, db):
-        make_producer(db, name="WA2", status="pending_whatsapp")
+    def test_admin_list_pending_filter_is_pending_only(self, client, db):
+        make_producer(db, name="WA2", status="pending")
+        make_producer(db, name="Draft2", status="draft")
         admin = make_user(db, email="admin56b@test.com", role="admin")
         resp = client.get("/admin/producers", params={"status": "pending"}, headers=auth_header(admin))
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "WA2" in names
+        assert "Draft2" not in names
 
 
 class TestMeh56BioGenerator:
@@ -2103,9 +2121,16 @@ class TestMeh56BioGenerator:
 class TestMeh1236RequestReview:
     """POST /producers/me/request-review — resubmit-for-review ping.
 
-    Notification-only (no schema change): pending producer → 200 + admin ping
-    fired; already-decided producer → 409; non-producer → 403; unauth → 401;
-    over the 3/hour limit → 429.
+    Notification-only (no schema change): COMPLETE pending producer → 200 +
+    admin ping fired; already-decided producer → 409; non-producer → 403;
+    unauth → 401; over the 3/hour limit → 429.
+
+    MEH-2120: the success-path fixtures moved from `make_producer` to
+    `make_submit_ready_producer`, because the endpoint now refuses an
+    incomplete profile. That is not a cosmetic fixture swap — before the gate,
+    all three of these passed with a producer that had no photo and no product,
+    which is precisely the bug Sapir reported. The gapped cases are asserted in
+    TestMeh2120RequestReviewGate below.
     """
 
     def _producer_owner(self, db, status, email):
@@ -2124,7 +2149,7 @@ class TestMeh1236RequestReview:
             called["args"] = (name, city)
 
         monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
-        p, user = self._producer_owner(db, "pending", "resub1@example.com")
+        p, user = make_submit_ready_producer(db, status="pending")
 
         resp = client.post("/producers/me/request-review", headers=auth_header(user))
         assert resp.status_code == 200
@@ -2132,10 +2157,11 @@ class TestMeh1236RequestReview:
         # with the producer's own name + city, fail-open at the service layer.
         assert called["args"] == (p.name, p.city)
 
-    def test_pending_whatsapp_producer_allowed(self, client, db):
-        _, user = self._producer_owner(db, "pending_whatsapp", "resub2@example.com")
-        resp = client.post("/producers/me/request-review", headers=auth_header(user))
-        assert resp.status_code == 200
+    # A case here asserted that a `pending_whatsapp` producer may ask for
+    # re-review — the second status the guard used to admit. It was removed in
+    # MEH-2124 and the guard is now `status != "pending"`, so the case was
+    # deleted rather than retargeted; the pending case is asserted above and
+    # the 409 cases below cover every other status.
 
     def test_approved_producer_conflict(self, client, db):
         # Re-review only makes sense in the pending queue (mirrors
@@ -2157,7 +2183,9 @@ class TestMeh1236RequestReview:
         assert resp.status_code == 401
 
     def test_rate_limited_after_three_per_hour(self, client, db):
-        _, user = self._producer_owner(db, "pending", "resub4@example.com")
+        # MEH-2120: must be a COMPLETE producer, or the first three calls
+        # 422 and this asserts nothing about the limiter.
+        _, user = make_submit_ready_producer(db, status="pending")
         headers = auth_header(user)
         statuses = [
             client.post("/producers/me/request-review", headers=headers).status_code
@@ -2165,6 +2193,122 @@ class TestMeh1236RequestReview:
         ]
         assert statuses[:3] == [200, 200, 200]
         assert statuses[3] == 429
+
+
+class TestMeh2120RequestReviewGate:
+    """MEH-2120 — the resubmit side door now runs the same completeness gate as
+    the front one.
+
+    The bug this closes was reported live: a pending business with no photo and
+    no product pressed "סיימתי להשלים — שלחו לבדיקה" and was told "נשלח
+    לבדיקה". The admin then received "please look again" on a profile the
+    MEH-799 photo gate cannot approve.
+
+    Every case here degrades a COMPLETE producer by exactly one field, so a
+    passing assertion names the one thing that caused it rather than passing on
+    a producer that was missing four things anyway.
+    """
+
+    # (requirement code, mutation that removes exactly that requirement).
+    # Location is expressed as lat+lng because make_submit_ready_producer gives
+    # the producer a physical location, and `submission_gate._has_location`
+    # reads coordinates — NOT `city`, which the producer keeps either way.
+    _DEGRADATIONS = [
+        ("image", lambda p: setattr(p, "images", [])),
+        ("product", lambda p: p.products.clear()),
+        ("category", lambda p: p.categories.clear()),
+        ("location", lambda p: (setattr(p, "lat", None), setattr(p, "lng", None))),
+        ("phone_verified", lambda p: setattr(p, "phone_verified", False)),
+    ]
+
+    @pytest.mark.parametrize(
+        "code,degrade", _DEGRADATIONS, ids=[c for c, _ in _DEGRADATIONS]
+    )
+    def test_each_missing_requirement_returns_422_naming_itself(
+        self, client, db, code, degrade
+    ):
+        producer, user = make_submit_ready_producer(db, status="pending")
+        degrade(producer)
+        db.commit()
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["code"] == "submit_gate_incomplete"
+        # The named code is present AND it is the only one — the producer was
+        # complete before the single degradation above, so a longer list would
+        # mean the fixture, not the endpoint, decided the outcome.
+        assert detail["params"]["missing"] == [code]
+
+    def test_no_admin_ping_fires_when_the_gate_refuses(self, client, db, monkeypatch):
+        """The point of the ticket is the admin's queue, not the status code.
+
+        A 422 that still pinged the admin would satisfy every other assertion
+        in this class and fix nothing.
+        """
+        called = []
+        import app.services.auth_notifications as an
+
+        monkeypatch.setattr(
+            an, "notify_admin_producer_resubmit", lambda *a: called.append(a)
+        )
+        producer, user = make_submit_ready_producer(db, status="pending")
+        producer.images = []
+        db.commit()
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+
+        assert resp.status_code == 422
+        assert called == [], "the admin must not be pinged about a refused resubmit"
+
+    def test_complete_pending_producer_is_unaffected(self, client, db):
+        """The other side of the boundary. A gate asserted only on its refusing
+        side passes just as well when it refuses everything."""
+        _, user = make_submit_ready_producer(db, status="pending")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_status_guard_still_wins_over_the_gate(self, client, db):
+        """An approved business asking for re-review gets 409, not a
+        completeness list. Ordering matters: telling a decided producer what it
+        is "missing" would be answering a question nobody asked."""
+        producer, user = make_submit_ready_producer(db, status="approved")
+        producer.images = []
+        db.commit()
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 409
+
+    def test_422_body_is_identical_to_submit_for_review(self, client, db):
+        """The shared-client-path requirement, proven by comparing the two REAL
+        responses rather than by asserting a literal twice.
+
+        Two producers, identical except for status, each missing only a photo.
+        `detailToMessage` renders whichever it receives with no branch, and the
+        checklist reads `params.missing` without knowing which door was used —
+        so these payloads must be equal, not merely similar. A hand-written
+        literal in each test would pass while the two endpoints drifted.
+        """
+        gapped_pending, pending_user = make_submit_ready_producer(
+            db, status="pending", name="עסק בהמתנה"
+        )
+        gapped_pending.images = []
+        gapped_draft, draft_user = make_submit_ready_producer(
+            db, status="draft", name="עסק בטיוטה"
+        )
+        gapped_draft.images = []
+        db.commit()
+
+        side_door = client.post(
+            "/producers/me/request-review", headers=auth_header(pending_user)
+        )
+        front_door = client.post(
+            "/producers/me/submit-for-review", headers=auth_header(draft_user)
+        )
+
+        assert side_door.status_code == front_door.status_code == 422
+        assert side_door.json()["detail"] == front_door.json()["detail"]
 
 
 # ---------- Contact ----------
@@ -3701,7 +3845,9 @@ class TestGetProducersMeRouteOrder:
         """MEH-321 regression — GET /producers/me must return 200 immediately
         after a brand-new producer registration (Pydantic schema mismatch fix)."""
         # MEH-321 regression: GET /producers/me returns 200 with valid Pydantic
-        # shape for a producer in pending_whatsapp state.
+        # shape for a producer that has not been approved yet. (The fixture
+        # carried `pending_whatsapp` until that status was removed in
+        # MEH-2124; the NULL-field shape is what this guards, not the status.)
         #
         # NOTE: Post-MEH-328 (anti-enum refactor removed access_token from
         # /auth/register/producer non-upgrade response), this test no longer
@@ -3730,7 +3876,7 @@ class TestGetProducersMeRouteOrder:
             website=None,
             primary_contact_method="whatsapp",
             contact_email=None,
-            status="pending_whatsapp",
+            status="draft",
         )
         db.add(producer)
         db.flush()
@@ -3743,7 +3889,7 @@ class TestGetProducersMeRouteOrder:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["name"] == "חוות מה-321"
-        assert body["status"] == "pending_whatsapp"
+        assert body["status"] == "draft"
 
     def test_get_me_with_null_created_at_returns_200(self, client, db):
         """MEH-321: created_at is nullable=True in DB — NULL must not crash serialization."""

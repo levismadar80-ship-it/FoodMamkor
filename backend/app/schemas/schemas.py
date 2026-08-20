@@ -669,7 +669,7 @@ class ProducerRegister(BaseModel):
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
-    # license number and land in the pending queue (status="pending_whatsapp").
+    # license number and land in the pending queue.
     # NOT a security control: the licensed-only rule is still enforced
     # downstream — chunk-4 approval guard (admin.py) refuses to approve a
     # license-required producer with NULL license, and publication requires
@@ -2381,6 +2381,20 @@ class GoogleRatingOut(BaseModel):
 # by /admin/producers/* and producer_me self endpoints so admins and
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
+    # MEH-2110: the review queue's SLA surface. Both fields are admin-only —
+    # deliberately NOT on ProducerDetailOut/ListOut, matching the
+    # producer_license_number privacy precedent (MEH-530): when a business was
+    # sent for review, and how long it has waited, are internal operations
+    # data and nobody's business but the admin's.
+    #
+    # `submitted_for_review_at` is NULL for every row created before MEH-2100
+    # and for every draft; the admin table renders the tooltip from
+    # created_at in that case rather than showing an empty timestamp.
+    submitted_for_review_at: datetime | None = None
+    # Computed server-side (routers/admin.py) rather than derived per client,
+    # so the badge and the queue ordering can never disagree about age.
+    # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
+    business_days_waiting: int = 0
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None

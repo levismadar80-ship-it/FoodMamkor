@@ -98,6 +98,7 @@ graph TD
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending-only 409, 3/hr,<br/>notification-only, no DB write]
+    Dashboard --> SubmitReview[POST /producers/me/submit-for-review<br/>👤 MEH-2100 draft→pending — draft-only 409, 5/hr,<br/>server-side completeness gate → 422 with params.missing,<br/>stamps submitted_for_review_at + pings admin]
 
     NeighborList[/neighbor + create home product] --> HPCreate[POST /home-products<br/>🔑 Claude Opus moderation on write]
     NeighborList --> HPList[GET /home-products<br/>🌐 city/category filter]
