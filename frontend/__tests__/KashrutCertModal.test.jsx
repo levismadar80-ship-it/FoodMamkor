@@ -117,6 +117,128 @@ describe("KashrutBadgeStrip certificate viewer — chips variant (MEH-1672)", ()
   });
 });
 
+/**
+ * MEH-2129 — initial focus must fire once per OPEN, never once per render.
+ *
+ * Both call sites pass `onClose` as an inline arrow (`KashrutBadgeStrip.jsx`
+ * :220 and :277), so its identity changes on every parent render. While the
+ * `.focus()` call shared the `[onClose]` effect, each of those renders tore the
+ * effect down and rebuilt it, re-firing `.focus()` and dragging focus back to
+ * the close button out from under whoever had tabbed into the modal.
+ *
+ * The test discriminates by construction: with the old single effect it fails
+ * (focus returns to the close button); with the split mount-only effect it
+ * passes. jsdom moves focus only when something calls `.focus()` explicitly,
+ * so nothing else in the render can produce this result.
+ */
+describe("CertModal initial focus is mount-only (MEH-2129)", () => {
+  const props = {
+    badges: ["badatz", "rabanut"],
+    verified_at: "2027-01-01T00:00:00Z",
+    expires_at: FUTURE,
+    certs: [{ badge_code: "badatz" }],
+    producerId: "123",
+  };
+
+  it("moves initial focus to the close button when the modal opens", () => {
+    render(<KashrutBadgeStrip {...props} />);
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+    expect(document.activeElement).toBe(screen.getByTestId("kashrut-cert-close"));
+  });
+
+  it("a parent re-render while the modal is open does NOT steal focus back", () => {
+    const { rerender } = render(<KashrutBadgeStrip {...props} />);
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+
+    // Stand in for "the visitor tabbed somewhere". A real element, so the
+    // assertion below distinguishes "focus stayed put" from "focus was lost".
+    const elsewhere = document.createElement("button");
+    document.body.appendChild(elsewhere);
+    elsewhere.focus();
+    expect(document.activeElement).toBe(elsewhere);
+
+    // Any parent render at all — the modal stays open across it.
+    rerender(<KashrutBadgeStrip {...props} />);
+
+    expect(screen.getByTestId("kashrut-cert-modal")).toBeTruthy();
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+
+  it("re-opening after a close focuses the close button again", () => {
+    render(<KashrutBadgeStrip {...props} />);
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+    fireEvent.click(screen.getByTestId("kashrut-cert-close"));
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+    expect(document.activeElement).toBe(screen.getByTestId("kashrut-cert-close"));
+  });
+});
+
+/**
+ * MEH-2039 — the Tab trap and the scroll lock, guarded at the vitest gate.
+ *
+ * Added under MEH-2129 because this file carried ZERO focus or Tab assertions
+ * (measured: `grep -c` returned 0 for both) — the only evidence for this
+ * modal's trap lived in frontend/e2e/qa-meh2039-modal-a11y.mjs, a hand-run
+ * script no CI job executes. The MEH-2129 diff edits that very effect, so
+ * "the trap still works" needed a gate rather than a claim. Same three
+ * assertions as LocationModal.test.jsx:115-140.
+ */
+describe("CertModal dialog contract (MEH-2039)", () => {
+  it("traps Tab inside the panel", () => {
+    setup();
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+    const panel = screen.getByTestId("kashrut-cert-close").closest("div");
+    const focusables = panel.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    // This modal's panel holds exactly one focusable (the close button), so
+    // first === last === that button and the trap's correct behaviour is to
+    // hold focus ON it in both directions.
+    expect(focusables.length).toBe(1);
+    const only = focusables[0];
+
+    // WHY NOT `expect(document.activeElement).toBe(only)`: with a single
+    // focusable that assertion is TRUE IN BOTH WORLDS and therefore not a
+    // check at all. jsdom never moves focus on a synthetic Tab, so focus stays
+    // on `only` whether the trap ran or not — the LocationModal analogue only
+    // discriminates because it has 2+ focusables and can assert last -> first.
+    //
+    // What DOES discriminate here is the side effect the handler alone can
+    // produce: it calls preventDefault(), and fireEvent returns false when a
+    // listener did. A neutered trap returns true. Plus a spy on .focus(),
+    // which nothing else in the render calls at this point.
+    const focusSpy = vi.spyOn(only, "focus");
+    only.focus();
+    focusSpy.mockClear();
+
+    const forwardNotPrevented = fireEvent.keyDown(document, { key: "Tab" });
+    expect(forwardNotPrevented).toBe(false);
+    expect(focusSpy).toHaveBeenCalled();
+    expect(document.activeElement).toBe(only);
+
+    focusSpy.mockClear();
+    const backNotPrevented = fireEvent.keyDown(document, {
+      key: "Tab",
+      shiftKey: true,
+    });
+    expect(backNotPrevented).toBe(false);
+    expect(focusSpy).toHaveBeenCalled();
+    expect(document.activeElement).toBe(only);
+
+    focusSpy.mockRestore();
+  });
+
+  it("locks body scroll while open and restores it on close", () => {
+    document.body.style.overflow = "auto";
+    setup();
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+    expect(document.body.style.overflow).toBe("hidden");
+    fireEvent.click(screen.getByTestId("kashrut-cert-close"));
+    expect(document.body.style.overflow).toBe("auto");
+  });
+});
+
 describe("KashrutBadgeStrip certificate viewer — quiet variant", () => {
   it("only the certified label is a button; the rest of the line is unchanged", () => {
     setup({ variant: "quiet" });
