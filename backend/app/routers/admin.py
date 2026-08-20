@@ -1434,7 +1434,11 @@ def _producer_approved_body(name: str) -> str:
     merge before the link exists in Railway (Phase C). Falsy-guard pattern
     mirrors `settings.admin_whatsapp_to` at :971.
     """
-    invite_url = settings.whatsapp_community_invite_url
+    # `.strip()` before the guard, not after: a Railway value of "  " is
+    # truthy, so the raw read would emit the paragraph above an empty line —
+    # the dangling-label failure this function exists to avoid, reached by the
+    # one input nobody types deliberately.
+    invite_url = settings.whatsapp_community_invite_url.strip()
     community = f"\n{_APPROVED_COMMUNITY_BLOCK}\n{invite_url}\n" if invite_url else ""
     return (
         f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '

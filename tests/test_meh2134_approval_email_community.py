@@ -95,6 +95,25 @@ def test_body_omits_the_whole_block_when_url_is_empty(invite_url):
     assert "צוות מהמקור" not in body
 
 
+def test_whitespace_only_url_is_treated_as_unset(invite_url):
+    """A spaces-only Railway value must degrade like an empty one.
+
+    `"  "` is truthy, so an unstripped read would print the paragraph above a
+    blank line — the dangling label the empty case is written to prevent,
+    reached by the one input nobody sets deliberately. Asserted as full-string
+    equality against the empty-variable body so the two states cannot drift.
+    """
+    invite_url("   ")
+    spaces = _producer_approved_body("מאפיית שקד")
+
+    invite_url("")
+    empty = _producer_approved_body("מאפיית שקד")
+
+    assert spaces == empty
+    assert "וואטסאפ" not in spaces
+    assert "\n\n\n" not in spaces
+
+
 def test_sibling_bodies_never_carry_the_invite(invite_url):
     """The invite belongs to the approval moment only.
 
