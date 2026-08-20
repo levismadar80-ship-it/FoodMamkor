@@ -150,6 +150,31 @@ def test_non_image_upstream_is_refused(client, db, monkeypatch):
     assert _fetch(client, producer).status_code == 404
 
 
+def test_svg_upstream_is_refused(client, db, monkeypatch):
+    """MEH-2128: `image/svg+xml` passes `startswith("image/")`. Served from our
+    own origin, a direct navigation to the proxy URL renders the SVG as a
+    top-level document and executes any embedded <script> — stored XSS on
+    mehamakor. The serve-side set is exactly what `_sniff_image_type`
+    (upload.py:47-61) accepts at upload time, and SVG is not in it."""
+    _stub_upstream(monkeypatch, _FakeStream(content_type="image/svg+xml"))
+    producer = _certified(db)
+    assert _fetch(client, producer).status_code == 404
+
+
+def test_content_type_is_normalised_before_the_check_and_on_the_way_out(
+    client, db, monkeypatch
+):
+    """MEH-2128: a real upstream may send a charset parameter and mixed case.
+    That must still serve (the allowlist compares the normalised value), and
+    the header we emit must be the NORMALISED value, not the raw upstream
+    string echoed back."""
+    _stub_upstream(monkeypatch, _FakeStream(content_type="IMAGE/JPEG; charset=utf-8"))
+    producer = _certified(db)
+    resp = _fetch(client, producer)
+    assert resp.status_code == 200, resp.text
+    assert resp.headers["content-type"] == "image/jpeg"
+
+
 def test_a_non_cloudinary_cert_url_is_refused_before_any_fetch(client, db, monkeypatch):
     """Adversarial review (SSRF): cert_url is producer-submitted and only
     validated as https://, so the proxy must never fetch an off-host address —
