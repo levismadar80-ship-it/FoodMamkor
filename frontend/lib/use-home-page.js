@@ -12,7 +12,19 @@ import { useUserCity } from "@/lib/use-user-city";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { getUserLocation, setUserLocation } from "@/lib/user-location";
 import { showToast } from "@/lib/toast";
-import { buildChipParams } from "@/lib/producer-filters";
+import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
+// MEH-2130: home's URL param name per axis comes from the taxonomy — the one
+// place `has_delivery ⇄ ?delivery=1` is declared.
+import { homeParamFor } from "@/lib/filter-taxonomy";
+
+// MEH-2130: the axes home's chip row renders, hydrates and serializes — ONE
+// list, derived from the taxonomy via CHIPS_CONFIG (the same array
+// HomeProducersGrid renders). Before this, the row read CHIPS_CONFIG while
+// hydration and updateURL each carried their own hand-written key list, and
+// they had already drifted: `no_added_sugar` (MEH-1934) reached the row but
+// neither serializer, so its URL state could not round-trip — the identical
+// omission MEH-1083 fixed once for the diet keys. Deriving removes the class.
+const HOME_CHIP_KEYS = CHIPS_CONFIG.map((c) => c.key);
 // MEH-1774: attribute chips deep-link to /producers instead of filtering here.
 // The LOCALE-AWARE router is required, not the next/navigation one imported
 // above: under localePrefix "as-needed" a bare push("/producers?…") drops an
@@ -168,7 +180,10 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   const [geoEmptyNotice, setGeoEmptyNotice] = useState(false);
   // MEH-1259: organic chip removed from the home filter row (self-declared
   // organic is no longer a public filter — חוק תוצרת אורגנית 2005).
-  const [chips, setChips] = useState({ kosher: false, has_delivery: false, verified: false });
+  // MEH-2130: the full default rather than a three-key subset. Replaced on
+  // mount by the URL hydration below either way, but a partial initial state
+  // meant `chips` briefly disagreed with the row being rendered from it.
+  const [chips, setChips] = useState(CHIPS_DEFAULT);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -222,19 +237,16 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       // asymmetry is deliberate and inherited from MEH-1645.
       delivery_days: p.get("city") ? normalizeDays(p.getAll("day")) : [],
     };
-    // MEH-1083: hydrate all 7 CHIPS_CONFIG keys — gluten_free/vegan/
+    // MEH-1083: hydrate EVERY key the home row renders — gluten_free/vegan/
     // lactose_free filtered results without surviving refresh/share
     // (MEH-1077 DISC-02).
-    const initChips = {
-      kosher: p.get("kosher") === "1",
-      // MEH-1259: organic no longer hydrated — chip + filter removed.
-      gluten_free: p.get("gluten_free") === "1",
-      vegan: p.get("vegan") === "1",
-      vegetarian: p.get("vegetarian") === "1",  // MEH-1438
-      lactose_free: p.get("lactose_free") === "1",
-      has_delivery: p.get("delivery") === "1",
-      verified: p.get("verified") === "1",
-    };
+    // MEH-2130: iterate the row's own key list instead of restating it. The
+    // hand-written version had fallen one key behind the row (no_added_sugar),
+    // and would have fallen a second behind the moment pickup_points joined.
+    // MEH-1259: organic no longer hydrated — chip + filter removed.
+    const initChips = Object.fromEntries(
+      HOME_CHIP_KEYS.map((key) => [key, p.get(homeParamFor(key)) === "1"]),
+    );
     const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
     // MEH-1387: clamp a restored count to the cap — sessions saved before the
     // cap existed (or tampered values) must not restore an over-cap grid.
@@ -358,16 +370,16 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     // MEH-2036: append (not set) so the set round-trips as repeated ?day= keys
     // — the same shape the hydration above reads with getAll.
     if (f.delivery_city) (f.delivery_days || []).forEach((d) => p.append("day", d));
-    if (c.kosher) p.set("kosher", "1");
     // MEH-1259: organic param no longer written — chip + filter removed.
     // MEH-1083: diet keys were missing from the serializer — param names
-    // match the chip keys (delivery stays the legacy short name).
-    if (c.gluten_free) p.set("gluten_free", "1");
-    if (c.vegan) p.set("vegan", "1");
-    if (c.vegetarian) p.set("vegetarian", "1");  // MEH-1438
-    if (c.lactose_free) p.set("lactose_free", "1");
-    if (c.has_delivery) p.set("delivery", "1");
-    if (c.verified) p.set("verified", "1");
+    // match the chip keys (delivery stays the legacy short name, declared once
+    // as `homeParam` on the has_delivery axis).
+    // MEH-2130: the exact mirror of the hydration loop above, over the same
+    // key list — so a URL home writes is a URL home can read back, by
+    // construction rather than by two lists happening to agree.
+    for (const key of HOME_CHIP_KEYS) {
+      if (c[key]) p.set(homeParamFor(key), "1");
+    }
     const qs = p.toString();
     // MEH-1293: mirror to the URL via the shallow History API, NOT router.replace.
     // A router.replace — even to the SAME URL (geo lat/lng are intentionally NOT
@@ -729,6 +741,39 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     loadProducers(params);
   };
 
+  // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
+  //
+  // The strip on home used to render the active labels as a joined, read-only
+  // string ("משלוח · טבעוני") — visible but with no exit. /producers and /map
+  // both render each active attribute as a removable × tag, so home was the
+  // odd surface out: a filter arriving from a shared link could be seen and not
+  // switched off without editing the URL.
+  //
+  // This is a REFINEMENT of the home grid, not the MEH-1774 navigation path —
+  // tapping a CHIP still deep-links to /producers, unchanged. Removing a tag
+  // acts on the state home already holds and already fetches with, which is why
+  // it belongs here rather than as another navigation hop.
+  const handleRemoveChip = (key) => {
+    // MEH-1282: a filter action clears the geo-empty notice, so a later
+    // back-navigation doesn't land on a stale near-me message.
+    setGeoEmptyNotice(false);
+    const next = { ...chips, [key]: false };
+    setChips(next);
+    updateURL(filters, next);
+    // Same param assembly handleCitySelected uses — the category / city / day
+    // context survives removing an attribute (MEH-1470's lesson on /producers:
+    // clearing one axis must not silently drop the others).
+    const params = buildChipParams(next);
+    if (filters.category) params.category = filters.category;
+    if (filters.delivery_city) {
+      params.delivery_city = filters.delivery_city;
+      // MEH-2036: repeated bare keys via api.js's paramsSerializer; omitted
+      // entirely when empty so no valueless `?delivery_days=` reaches the API.
+      if (filters.delivery_days?.length) params.delivery_days = filters.delivery_days;
+    }
+    loadProducers(params);
+  };
+
   // Adapters for the producers-grid component (avoids passing the full
   // setFilters/updateURL/loadProducers/buildChipParams quartet).
   const handleClearCategory = () => {
@@ -864,6 +909,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     handleWhatsAppClick,
     scrollToProducers,
     navigateToChip,
+    handleRemoveChip,
     handleClearCategory,
     handleLoadMore,
     handleAdvanceFromStep0,

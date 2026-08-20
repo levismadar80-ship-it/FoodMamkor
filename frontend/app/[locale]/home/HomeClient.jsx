@@ -66,7 +66,7 @@ export default function HomeClient({ initialProducers = null, initialCategories 
     // filled "גלו בתי עסק" button was its only consumer on this page and the
     // search pill replaced it. The helper itself still lives in use-home-page
     // (it fires after a near-me / city apply); only the prop pass-through went.
-    handleWhatsAppClick, navigateToChip,
+    handleWhatsAppClick, navigateToChip, handleRemoveChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage({ initialProducers, initialCategories });
 
@@ -227,6 +227,7 @@ export default function HomeClient({ initialProducers = null, initialCategories 
         onboardDismiss={onboardDismiss}
         onAdvanceFromStep0={handleAdvanceFromStep0}
         onChipNavigate={navigateToChip}
+        onRemoveChip={handleRemoveChip}
         onClearCategory={handleClearCategory}
         onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}

@@ -127,15 +127,40 @@ describe("pickup_points wiring (MEH-2046)", () => {
     );
   });
 
-  it("stays /map-LOCAL — it must not leak into the cross-surface contract", () => {
-    // ATTRIBUTE_LABELS is the SHARED taxonomy: attributeLabels.test.js derives
-    // its key list and requires every key to exist in BOTH /producers'
-    // CHIPS_CONFIG and /map's TOGGLE_CHIPS. Adding pickup there would silently
-    // conscript /producers into growing a chip this ticket scopes out — which
-    // is exactly what happened on the first attempt, and what that suite
-    // caught. Same call MEH-1507 made for grass_fed.
-    expect(ATTRIBUTE_LABELS.pickup_points).toBeUndefined();
-    expect(CHIPS_CONFIG.some((c) => c.key === "pickup_points")).toBe(false);
+  // ⚠️ INVERTED BY MEH-2130 — read this before "restoring" it.
+  //
+  // This case used to assert the OPPOSITE: `ATTRIBUTE_LABELS.pickup_points` is
+  // undefined and CHIPS_CONFIG does not carry the key. That was CORRECT for its
+  // date and for the reason it gave — ATTRIBUTE_LABELS is the cross-surface
+  // contract (attributeLabels.test.js requires every key in it to exist on
+  // BOTH /producers and /map), so putting pickup there under MEH-2046 would
+  // have conscripted /producers into growing a chip that ticket scoped out. The
+  // suite caught exactly that on MEH-2046's first attempt.
+  //
+  // MEH-2130 is the ticket that deliberately widens the scope: `?pickup_points`
+  // has always been a public, global backend filter, so nothing but config
+  // placement kept "איסוף עצמי" off the listing surfaces. Membership is now
+  // declared once, as `surfaces: ["home","producers","map"]` on the axis.
+  //
+  // What survives from the original is the invariant that actually mattered and
+  // is NOT about scope: the promoted row and the marker LAYER toggle are
+  // distinct things. That half is asserted here and in mapChips.test.js.
+  it("MEH-2130: pickup is now cross-surface, and is still not the layer toggle", () => {
+    // Cross-surface, by one declaration rather than by three lists agreeing.
+    expect(ATTRIBUTE_LABELS.pickup_points).toBeDefined();
+    expect(ATTRIBUTE_LABELS.pickup_points.label).toBe("איסוף עצמי");
+    expect(CHIPS_CONFIG.some((c) => c.key === "pickup_points")).toBe(true);
+    expect(TOGGLE_CHIPS.some((c) => c.key === "pickup_points")).toBe(true);
+
+    // ...and the /map row still promotes exactly TWO chips. This is the part
+    // that would go quietly wrong if the taxonomy widened the wrong axis: a
+    // third key acquiring `group: "service"` must not silently join the
+    // promoted row, because SERVICE_KEYS in ServiceChipRow is a fixed pair.
+    render(<ServiceChipRow chipState={{}} onToggleChip={() => {}} />);
+    expect(screen.getAllByRole("button").map((b) => b.textContent.trim())).toEqual([
+      "משלוח",
+      "איסוף עצמי",
+    ]);
   });
 
   it("sends ?pickup_points=true, and both chips send both params (OR union)", () => {

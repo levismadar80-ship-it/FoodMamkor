@@ -34,6 +34,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
+  // here, the whole suite dies at import with "No \"Clock\" export is defined".
+  Clock: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
@@ -97,13 +100,40 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-const WINDOW = { sunday: [{ open: "09:00", close: "13:00" }] };
+// MEH-2131: an ALWAYS-OPEN window (every day, all day) rather than the original
+// `{ sunday: 09:00-13:00 }`.
+//
+// This suite's subject is the COVERAGE gate (MEH-1881: are there enough
+// declared windows to offer the filter?). MEH-2131 added a second, independent
+// condition — is anything open right now — and with a Sunday-only fixture the
+// coverage cases started passing or failing according to the day the suite ran
+// on. That is a spec whose result depends on the wall clock, which is not a
+// property anyone chose. An always-open window holds the new condition constant
+// so these cases measure only the thing they are named for.
+//
+// The zero-result condition gets its own deterministic fixture below, and its
+// injected-clock coverage lives in OpenNowChipGate.test.js.
+const WINDOW = {
+  sunday: [{ open: "00:00", close: "23:59" }],
+  monday: [{ open: "00:00", close: "23:59" }],
+  tuesday: [{ open: "00:00", close: "23:59" }],
+  wednesday: [{ open: "00:00", close: "23:59" }],
+  thursday: [{ open: "00:00", close: "23:59" }],
+  friday: [{ open: "00:00", close: "23:59" }],
+  saturday: [{ open: "00:00", close: "23:59" }],
+};
+
+// Declared, but open on no day at all. `{}` is truthy, so it PASSES the
+// coverage count — which is exactly what makes it the discriminating fixture
+// for the zero-result half: the only thing that can hide the chip here is the
+// MEH-2131 condition, never the MEH-1881 one.
+const NEVER_OPEN_WINDOW = {};
 
 /** `n` producers carrying a declared window, plus `extra` carrying none. */
-function items(n, extra = 0) {
+function items(n, extra = 0, window = WINDOW) {
   const rows = [];
   for (let i = 0; i < n; i += 1) {
-    rows.push({ id: `w${i}`, name: `עם חלון ${i}`, categories: [], order_window: WINDOW });
+    rows.push({ id: `w${i}`, name: `עם חלון ${i}`, categories: [], order_window: window });
   }
   for (let i = 0; i < extra; i += 1) {
     rows.push({ id: `n${i}`, name: `בלי חלון ${i}`, categories: [], order_window: null });
@@ -165,7 +195,8 @@ describe("MEH-1881 — open-now chip data gate", () => {
   it("renders the chip once coverage reaches the threshold", () => {
     render(<ProducersClient {...props(items(OPEN_NOW_CHIP_MIN))} />);
     expect(CHIP()).toBeTruthy();
-    expect(CHIP().textContent).toContain("פתוח להזמנות עכשיו");
+    // MEH-2131: the Sapir-LOCKED plural copy (was MEH-1881's singular).
+    expect(CHIP().textContent).toContain("פתוחים להזמנות עכשיו");
   });
 
   it("keeps the chip OUT of the DOM one below the threshold — the discriminating case", () => {
@@ -188,6 +219,40 @@ describe("MEH-1881 — open-now chip data gate", () => {
     // filter whose effect she can see and whose control she cannot reach.
     params = { open_for_orders_now: "1" };
     render(<ProducersClient {...props(items(1))} />);
+    expect(CHIP()).toBeTruthy();
+  });
+
+  // ── MEH-2131: the zero-result half of the gate, at component level ──
+  //
+  // The unit-level proof with injected clocks is OpenNowChipGate.test.js; this
+  // pair exists because the guard has to be WIRED for any of that to matter,
+  // and a helper nobody calls is the classic way a green suite covers nothing.
+  it("MEH-2131: hides the chip when coverage passes but nothing is open", () => {
+    // Well past the coverage threshold, every one of them declaring a window —
+    // so MEH-1881's gate would show the chip here, and only the zero-result
+    // condition can hide it.
+    render(
+      <ProducersClient
+        {...props(items(OPEN_NOW_CHIP_MIN + 5, 0, NEVER_OPEN_WINDOW))}
+      />,
+    );
+    expect(CHIP()).toBeNull();
+    // Still a gate on ONE chip, not a collapse of the row.
+    expect(screen.getByTestId("chip-kosher")).toBeTruthy();
+  });
+
+  it("MEH-2131: a URL-active filter keeps its chip even with nothing open", () => {
+    // Without this carve-out a deep-linked ?open_for_orders_now=1 strands the
+    // visitor with a filter she can see the effect of and cannot switch off.
+    // This suite mocks useSearchParams over the `params` object (reset in
+    // beforeEach), so a deep link is expressed by seeding it — the same way
+    // ProducersClient.initChipsFromParams reads it: `get(key) === "1"`.
+    params.open_for_orders_now = "1";
+    render(
+      <ProducersClient
+        {...props(items(OPEN_NOW_CHIP_MIN + 5, 0, NEVER_OPEN_WINDOW))}
+      />,
+    );
     expect(CHIP()).toBeTruthy();
   });
 
