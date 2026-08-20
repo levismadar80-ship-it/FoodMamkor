@@ -288,7 +288,9 @@
       "mcp__linear__save_comment",
       "mcp__linear__save_issue",
       "mcp__linear__search_documentation",
-      "RemoteTrigger"
+      "RemoteTrigger",
+      "Read(./.env.example)",
+      "Edit(./.env.example)"
     ],
     "deny": [
       "Bash(git push --force:*)",
