@@ -22,6 +22,10 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.email import send_email
+
+# MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
+# never re-declare the literal.
+from app.services.onboarding_followup import SITE_DOMAIN
 from app.services.whatsapp import send_text
 from app.database import get_db
 from app.models import (
@@ -1392,11 +1396,51 @@ def _rejection_reason_suffix(reason: str) -> str:
     return f"\nהסיבה: {reason}" if reason else ""
 
 
+# MEH-2134: LOCKED copy, approved by Sapir 20/08/2026, shipped verbatim.
+_APPROVED_COMMUNITY_BLOCK = (
+    "פתחנו קבוצת עדכונים בוואטסאפ לבתי עסק שאושרו במהמקור — שווקים ואירועים "
+    "לפני כולם, ומה חדש באתר. פעם-פעמיים בחודש, רק אנחנו כותבות שם, ואפשר "
+    "לצאת בכל רגע:"
+)
+
+
 def _producer_approved_body(name: str) -> str:
+    """MEH-2134: copy approved by Sapir 20/08/2026, shipped verbatim.
+
+    Signed `ספיר שנפ | מייסדת` in the first person, matching
+    `pending_nudge.py:149` and all four `onboarding_followup.py` steps —
+    one mailbox, one sender. `_producer_rejected_body` deliberately keeps the
+    institutional sign-off: an institutional "no" is kinder than a personal
+    one, and that asymmetry is a decision, not an oversight. (The literal is
+    spelled out nowhere in this docstring so that the sign-off census below
+    counts signatures, not prose.)
+
+    Census of the institutional sign-off in this file: **2** — the rejection
+    body and the changes-requested body, both untouched here. MEH-2134's DoD
+    predicted 2 → 1, which is wrong twice over: the pre-change count was 3
+    (this body plus those two, verified on `origin/staging`), and 1 is
+    unreachable because the same ticket requires `_producer_changes_requested_body`
+    byte-identical. This function is the only one MEH-2134 moves off it.
+
+    The community invite rides in THIS email rather than the registration
+    form (just-in-time beats upfront, and the group is for *approved*
+    businesses) and rather than the `producer_approved_v1` WhatsApp template
+    (Meta approved it with one parameter and no buttons; adding a URL button
+    means re-approval — MEH-509 PR1 got a 400 for exactly that).
+
+    An unset `whatsapp_community_invite_url` drops the paragraph AND the URL
+    line together, so the body degrades to greeting → approval → signature
+    with no dangling label and no blank-line artifact. That is what lets this
+    merge before the link exists in Railway (Phase C). Falsy-guard pattern
+    mirrors `settings.admin_whatsapp_to` at :971.
+    """
+    invite_url = settings.whatsapp_community_invite_url
+    community = f"\n{_APPROVED_COMMUNITY_BLOCK}\n{invite_url}\n" if invite_url else ""
     return (
-        f'שלום,\n\nהעסק שלך "{name}" אושר במהמקור!\n'
-        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
-        f"בברכה,\nצוות מהמקור"
+        f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
+        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"{community}"
+        f"\nספיר שנפ\nמייסדת | מהמקור\n{SITE_DOMAIN}"
     )
 
 
