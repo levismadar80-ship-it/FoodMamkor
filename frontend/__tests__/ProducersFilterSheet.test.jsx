@@ -44,6 +44,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
+  // here, the whole suite dies at import with "No \"Clock\" export is defined".
+  Clock: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,

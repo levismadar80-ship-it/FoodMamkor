@@ -14,10 +14,19 @@
  * exist without throwing.
  */
 
-// MEH-1082: shared attribute labels come from ATTRIBUTE_LABELS (unified with the
-// /producers CHIPS_CONFIG); `grass_fed` is /map-only so its label stays local.
-// MEH-1418: `kosher` moved into the shared ATTRIBUTE_LABELS map ("כשרות מאומתת").
-import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+// MEH-2130: the toggle chips are DERIVED from lib/filter-taxonomy.js — one
+// declaration per axis, filtered to the axes whose `surfaces` includes "map".
+// This replaces the hand-written TOGGLE_CHIPS array plus the two /map-local
+// label objects (PICKUP_POINTS_LABEL, GRASS_FED_LABEL) that used to sit here.
+// `grass_fed` stays /map-only because its declaration says so, not because a
+// second list keeps it out. The rendered row is byte-identical (same keys, same
+// order, same labels, same groups) — asserted by mapChips.test.js.
+import {
+  MAP_CHIP_ORDER,
+  axisKeysFor,
+  chipsForKeys,
+  mapEmitsParam,
+} from "@/lib/filter-taxonomy";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
@@ -55,78 +64,24 @@ export const CATEGORY_CHIPS = [
 // (is_available_today field does not exist on producers).
 // MEH-1418: toggle chips carry Phosphor LEADING ICONS (lib/chip-icons.js,
 // threaded via withChipIcons at the render call site).
-// MEH-1441: category chips now also carry a 16px LEADING GLYPH — from
-// CATEGORY_ICONS via the `iconName` key above (built at the render site;
-// "כל" stays iconless). Labels stay text-only — Emoji LOCK v2 forbids emoji
-// literals, aria-hidden Phosphor glyphs are the approved substitute (MEH-990).
 // MEH-1075: `group` drives the FilterSheet sections (diet | quality | service).
 // Within-group render order = array order (diet order per spec, MEH-1438:
 // טבעוני · צמחוני · ללא גלוטן · ללא לקטוז).
-// MEH-1087: a VERIFIED-ONLY kosher chip ("כשרות מאומתת") IS now allowed — it
-// filters ?kosher=true, which the backend maps to kashrut_verified_at ONLY
-// (producer_listing.py:153 _kosher_condition, MEH-986 ch3b + MEH-1260 expiry),
-// never the free-text Producer.kosher. A FREE-TEXT kosher chip stays forbidden
-// (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — MEH-1418 sourced it
-// from the shared ATTRIBUTE_LABELS.kosher so /producers + /map read identically.
-// MEH-1507: grass_fed is /map-only, so its scope×evidence object stays LOCAL
-// (never entered the shared ATTRIBUTE_LABELS). It is a producer-level boolean
-// column (models.py:111 `grass_fed`), owner-declared → business scope,
-// self-declared evidence. Subtext LOCKED per MEH-1507 §hebrew_copy. Shape
-// matches an ATTRIBUTE_LABELS entry so the contract guard treats it uniformly.
-// MEH-2046: pickup is /map-only for now, so its object stays LOCAL — the same
-// call MEH-1507 made for grass_fed below, and for the same mechanical reason:
-// ATTRIBUTE_LABELS is the CROSS-SURFACE contract (attributeLabels.test.js
-// derives `SHARED` from its keys and requires every one to exist in BOTH
-// /producers' CHIPS_CONFIG and /map's TOGGLE_CHIPS). Putting it there would
-// have forced a /producers chip this ticket explicitly scopes out — the test
-// caught exactly that.
-// Label is MEH-1461's locked consumer string, reused verbatim, not re-worded.
-// scope=business: the predicate is an EXISTS over the business's own pickup /
-// market_stand location rows, so it describes the whole business, not a
-// product. evidence=self-declared: the owner creates those rows in
-// LocationsEditor and nobody verifies them.
-// The subtext is load-bearing, not decoration — the predicate covers market
-// stands too, which "איסוף עצמי" alone does not tell a reader, and stopping
-// that kind of quiet over-claim is what the Label Scope Contract is for.
-const PICKUP_POINTS_LABEL = {
-  label: "איסוף עצמי",
-  scope: "business",
-  evidence: "self-declared",
-  subtext: "עסקים עם נקודת איסוף עצמי או דוכן בשוק",
-};
+// MEH-1507: each entry carries {label, scope, evidence, subtext} so `chip.label`
+// stays a plain string (chip row unchanged) while every entry carries the
+// scope+evidence the contract guard (LabelScopeContract.test.js) requires.
+//
+// MEH-2130: the array is now a projection of FILTER_AXES in MAP_CHIP_ORDER.
+// Every rationale that used to live inline here moved WITH its axis into
+// lib/filter-taxonomy.js and is unchanged there — the MEH-1087 verified-only
+// kosher argument (חוק איסור הונאה בכשרות / MEH-986), MEH-1507's grass_fed
+// scope×evidence note, MEH-2046's pickup predicate, MEH-1259's removed organic
+// and MEH-2047's removed "דל פחמימות". Read the taxonomy for any of them.
+export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
 
-const GRASS_FED_LABEL = {
-  label: "גראס פד",
-  scope: "business",
-  evidence: "self-declared",
-  subtext: "לפי הצהרת בית העסק",
-};
-
-// MEH-1507: each entry spreads its {label, scope, evidence, subtext} object so
-// `chip.label` stays a plain string (chip row unchanged) while every entry
-// carries the scope+evidence the contract guard (LabelScopeContract.test.js)
-// requires. `group` stays a TOGGLE_CHIPS-local field.
-export const TOGGLE_CHIPS = [
-  { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery,  group: "service" },
-  // MEH-2046: the pickup axis joins the service group. Appended AFTER
-  // has_delivery so the MEH-1934 diet order below is untouched; FilterSheet's
-  // own SERVICE_ORDER (FilterSheet.jsx) decides presentation order, not this.
-  { key: "pickup_points", ...PICKUP_POINTS_LABEL,           group: "service" },
-  { key: "verified",      ...ATTRIBUTE_LABELS.verified,      group: "service" },
-  // MEH-1259: organic chip removed — self-declared organic is no longer a
-  // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
-  { key: "kosher",        ...ATTRIBUTE_LABELS.kosher,        group: "quality" },
-  { key: "grass_fed",     ...GRASS_FED_LABEL,                group: "quality" },
-  { key: "vegan",         ...ATTRIBUTE_LABELS.vegan,         group: "diet" },
-  { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
-  { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
-  { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
-  // MEH-1934: appended AFTER lactose_free so the MEH-1438 diet order
-  // (טבעוני · צמחוני · ללא גלוטן · ללא לקטוז) does not shift.
-  // MEH-2047: "דל פחמימות" removed from this row — undefined claim, column and
-  // stored values kept. Same treatment organic got in MEH-1259 above.
-  { key: "no_added_sugar", ...ATTRIBUTE_LABELS.no_added_sugar, group: "diet" },
-];
+// The /map axes that actually emit a query param. See the note in
+// chipStateToParams and the `mapParam` field in lib/filter-taxonomy.js.
+const MAP_PARAM_KEYS = TOGGLE_CHIPS.map((c) => c.key).filter(mapEmitsParam);
 
 // MEH-1468: QUICK_CHIP_KEYS + countActiveSheetOnlyFilters were removed here.
 // The inline quick-chip toggle row was retired in MEH-1368 (every attribute
@@ -185,21 +140,25 @@ export function chipStateToParams(state, dbCategories) {
     if (ids.size > 0) params.category = [...ids];
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
-  if (state.has_delivery) params.has_delivery = true;
-  // MEH-2046: OR-ed with the delivery axes server-side (the service group in
-  // producer_listing._apply_scalar_filters), so both chips on = union, never
-  // intersection. The param keeps the column's name; the predicate behind it
-  // reads pickup/market_stand location rows.
-  if (state.pickup_points) params.pickup_points = true;
-  if (state.verified) params.verified = true;
-  // MEH-1087: verified-only kosher — backend maps ?kosher=true to
-  // kashrut_verified_at only (producer_listing.py:153).
-  if (state.kosher) params.kosher = true;
-  if (state.grass_fed) params.grass_fed = true;
-  if (state.gluten_free) params.gluten_free = true;
-  if (state.vegan) params.vegan = true;
-  if (state.vegetarian) params.vegetarian = true;  // MEH-1438
-  if (state.lactose_free) params.lactose_free = true;
+  //
+  // 🔴 MEH-2133 PIN SITE 2 of 3 — the surface where the defect is observable.
+  // MEH-2130: one loop over the /map axes replaces nine hand-written lines. The
+  // emitted set is UNCHANGED, including the one axis that emits nothing:
+  // `no_added_sugar` is a /map chip whose param was never wired (measured on
+  // staging — TOGGLE_CHIPS listed it, FilterSheet rendered it, and toggling it
+  // returned the unfiltered set). That gap is now DECLARED as `mapParam: false`
+  // in lib/filter-taxonomy.js with the full reasoning, rather than being an
+  // invisible absence from a list. It is preserved and not fixed here because
+  // MEH-2130 must leave /map result sets identical; repairing it changes what
+  // an existing control returns and needs its own ticket and QA.
+  //
+  // Per-axis notes that used to sit on these lines live on the axes now:
+  // MEH-1087 (verified-only kosher → kashrut_verified_at), MEH-2046 (pickup is
+  // OR-ed with the delivery axes server-side, so both chips on = union), and
+  // MEH-1438 (vegetarian).
+  for (const key of MAP_PARAM_KEYS) {
+    if (state[key]) params[key] = true;
+  }
   return params;
 }
 

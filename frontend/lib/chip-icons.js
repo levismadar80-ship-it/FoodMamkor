@@ -29,6 +29,7 @@ import {
   GrainsSlash,
   Barn,
   DropSlash,
+  Clock,
 } from "@phosphor-icons/react";
 
 // key → Phosphor icon component. Keys mirror the attribute chip keys in
@@ -43,6 +44,7 @@ const CHIP_ICON_COMPONENTS = {
   gluten_free: GrainsSlash,
   grass_fed: Barn,
   lactose_free: DropSlash,
+  open_for_orders_now: Clock,  // MEH-2131
 };
 
 const CHIP_ICON_SIZE = 16;
