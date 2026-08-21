@@ -385,6 +385,27 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
         # either coordinate is missing (columns R/S blank), so there is no
         # condition to restate here.
         #
+        # ACCEPTED INACCURACY, stated because it is invisible at the call site:
+        # the helper hardcodes `location_precision="exact"` on the reasoning
+        # that a signup's coordinates come from AddressSearch's geocode. THAT
+        # REASONING DOES NOT HOLD HERE. Columns R/S are whatever the admin
+        # typed into the sheet, which may be a town centroid rather than a
+        # street-level fix, so an imported row can be labelled "exact" while
+        # being approximate.
+        #
+        # Accepted rather than fixed, deliberately: `location_precision` is
+        # written in exactly one place and read by NO query — grepped across
+        # backend/app/services/ and backend/app/routers/, the only two hits are
+        # the assignment itself and a comment about it. There is no live bug,
+        # and adding a `precision` parameter would change a helper this ticket
+        # scopes as read-only and that two other call sites depend on.
+        #
+        # # DO NOT introduce precision-based filtering (a "show me exact pins
+        # #        only" toggle, a distance query that trusts the label) without
+        # #        first giving this call site a real value. On the day such a
+        # #        reader lands, every imported row silently claims a precision
+        # #        nobody verified. Raised by the CI reviewer on PR #3030.
+        #
         # Idempotency needs no upsert on this path: `import_rows` SKIPS a row
         # whose name already exists (:272-279, warning «עסק עם שם זה כבר קיים
         # — דולג») rather than updating it, so a re-import of the same sheet

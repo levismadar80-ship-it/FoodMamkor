@@ -47,9 +47,22 @@ def _row(
 ):
     """A row shaped as openpyxl delivers it.
 
-    Indices are the ones `parse_row` reads (producer_import.py:167-197):
-    0=A name · 7=H city · 8=I category · 9=J pickup · 16=Q slug ·
-    17=R lat · 18=S lng.
+    EVERY slot this helper occupies, so a future author adding a column can see
+    what is already taken. Indices are the ones `parse_row` reads
+    (producer_import.py:167-197):
+
+        0  = A  name              1  = B  contact_name
+        2  = C  phone             7  = H  city
+        8  = I  category          9  = J  pickup_points
+        13 = N  description       16 = Q  slug
+        17 = R  lat               18 = S  lng
+
+    The remaining 13 of the 23 cells stay None. The list is written out in full
+    rather than summarised because the earlier version of this docstring named
+    SEVEN slots while the body set TEN — a docstring that reads as an inventory
+    and is not one. Counted with a regex over the body rather than by eye, since
+    miscounting here is the exact defect being fixed. Raised by the CI reviewer
+    on PR #3030.
     """
     cells = [None] * 23
     cells[0] = name
