@@ -142,6 +142,18 @@ vi.mock("@/components/AddressSearch", () => ({
 }));
 
 const K = "auth.register.producer";
+
+// MEH-2138 chunk F: jsdom DEFINES `window.scrollTo`, but its body only logs
+// "Not implemented: Window's scrollTo() method" — so once STEP.CONFIRM scrolls
+// to the top, EVERY test in this file that reaches CONFIRM prints that error
+// (measured: 0 before the effect, 14 after). Replaced once, at module scope, so
+// no test stacks a spy on a spy; `vi.clearAllMocks()` in beforeEach resets its
+// history between tests. Environment shim, not a behavioural mock — the
+// MEH-729 class already established in __tests__/setup.js. Scoped to this file
+// rather than added to that setup because this is the only component that
+// calls it, and a global override could mask a future assertion elsewhere.
+const scrollToSpy = vi.fn();
+window.scrollTo = scrollToSpy;
 const ph = (key) => screen.getByPlaceholderText(`${K}.fields.${key}`);
 const nextBtn = () => screen.getByText(`${K}.actions.next`);
 
@@ -1216,5 +1228,75 @@ describe("RegisterProducerClient — resumed drafts land where they can finish (
     // Not merely hidden — gone. A stale draft holding a name, phone and address
     // must not sit on a shared machine because nobody came back for it.
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+});
+
+// MEH-2138 chunk F. The wizard is one long page, so CONFIRM mounts wherever the
+// seller left the scroll — measured at 1440 on staging: docH 1493, viewport 900,
+// scrollY 539, i.e. the success screen entirely above the fold.
+//
+// WHAT THIS LAYER CAN AND CANNOT SAY. jsdom does no layout, so "the heading is
+// inside the viewport" is unfalsifiable here — it passes against the broken code
+// too, which is exactly the trap the MEH-2148 harness fell into. This describe
+// therefore asserts only the CALL: that reaching CONFIRM asks the window to go
+// to the top, on BOTH confirm branches. The geometric claim is a browser
+// assertion and lives in e2e/flows/28-register-success-state.spec.ts at 1440.
+describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk F)", () => {
+  async function fillStoryAndSubmit() {
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+  }
+
+  /** The requirement, not the spelling of it. `behavior` is asserted as
+   *  "not smooth" rather than "=== instant" so swapping the literal for an
+   *  equally-instant one does not red this, while an animated ride to a screen
+   *  the user has never seen does. */
+  function expectScrolledToTop() {
+    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    const [arg] = scrollToSpy.mock.calls[0];
+    expect(arg).toMatchObject({ top: 0 });
+    expect(arg.behavior, "an animated approach to an unseen screen is the thing prefers-reduced-motion suppresses").not.toBe("smooth");
+  }
+
+  it("does NOT scroll while the seller is still filling the form", async () => {
+    // CONTROL, and it runs first on purpose. Every assertion below is "scrollTo
+    // was called"; if some unrelated mount already called it, all of them pass
+    // against a component with no CONFIRM effect at all. This pins the count at
+    // zero right up to the submit, so the later calls can only come from CONFIRM.
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(scrollToSpy).not.toHaveBeenCalled();
+  });
+
+  it("inbox-check branch (no access_token) scrolls to the top", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
+    expectScrolledToTop();
+  });
+
+  it("upgrade branch (access_token present) scrolls to the top", async () => {
+    // The second branch is not redundant with the first: CONFIRM renders two
+    // different screens, and a fix written inside one of them would leave the
+    // other exactly as broken while the suite went green.
+    authState.user = { email: "p@example.com" };
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
+    expectScrolledToTop();
   });
 });
