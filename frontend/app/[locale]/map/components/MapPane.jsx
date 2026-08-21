@@ -192,15 +192,21 @@ export default function MapPane({
           column spans the full width at `top-4`, so without it this strip would
           swallow drags and clicks on the map underneath across the whole pane.
           Same shield idiom as BottomNav.jsx:358 and the Header. */}
-      <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
-        {mapMoved && (
-          <div className="pointer-events-auto">
-            <button type="button" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
-              <MagnifyingGlass size={16} weight="bold" className="text-primary" />
-              {t("map.pane.search_this_area")}
-            </button>
-          </div>
-        )}
+      {/* MEH-2148: gated so the strip is absent from the DOM when neither child
+          renders, which is the common case. `pointer-events-none` already made
+          an empty wrapper harmless, but harmless is not absent -- a full-width
+          transparent element across the top of the pane is something a future
+          hit-test or a11y sweep would still have to reason about. */}
+      {(mapMoved || secondaryHidden) && (
+        <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
+          {mapMoved && (
+            <div className="pointer-events-auto">
+              <button type="button" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+                <MagnifyingGlass size={16} weight="bold" className="text-primary" />
+                {t("map.pane.search_this_area")}
+              </button>
+            </div>
+          )}
         {/* MEH-2046: the reminder, in the slot the pill vacated. A business whose
             only points are pickup rows yields NO points at all when the layer is
             off (producerPoints rule 3, deliberate) — so it does not fade or move,
@@ -208,16 +214,17 @@ export default function MapPane({
             prevent; it renders only while businesses are actually being hidden.
             MEH-2148: `self-start` keeps its original inline-start alignment
             inside the centred column — logical, so it follows the locale. */}
-        {secondaryHidden && (
-          <div
-            role="status"
-            data-testid="pickup-layer-hidden-notice"
-            className="pointer-events-auto self-start max-w-[240px] rounded-lg border border-border bg-surface-floating px-3 py-1.5 text-xs text-fg-muted shadow-md"
-          >
-            {t("map.pane.pickup_layer.hidden_notice")}
-          </div>
-        )}
-      </div>
+          {secondaryHidden && (
+            <div
+              role="status"
+              data-testid="pickup-layer-hidden-notice"
+              className="pointer-events-auto self-start max-w-[240px] rounded-lg border border-border bg-surface-floating px-3 py-1.5 text-xs text-fg-muted shadow-md"
+            >
+              {t("map.pane.pickup_layer.hidden_notice")}
+            </div>
+          )}
+        </div>
+      )}
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
