@@ -184,6 +184,17 @@ describe("MEH-2144 — editing never hides a value already set", () => {
     expect(isOpen()).toBe(true);
   });
 
+  it("opens seeded when the row has only a phone", async () => {
+    // The FOURTH trigger. It shares an `||` branch with label and hours, so it
+    // cannot regress on its own today — but the negative control below asserts
+    // the form stays shut given "none of the four", and that claim is only
+    // honest once all four have each been shown to open it alone. Testing
+    // three while naming four is the coverage the suite appeared to have.
+    // (CI reviewer, PR #3036 — LocationsEditor.jsx:561-568.)
+    await openEditForm(sibling({ label: "", phone: "052-1234567" }));
+    expect(isOpen()).toBe(true);
+  });
+
   it("opens seeded when the row has hours but no label", async () => {
     await openEditForm(sibling({ label: "", opening_hours: "Sun-Thu 09:00-17:00" }));
     expect(isOpen()).toBe(true);
