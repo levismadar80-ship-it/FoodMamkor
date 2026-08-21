@@ -1682,6 +1682,11 @@ class ProducerUpdate(BaseModel):
     # ≤300). No rating value is ever accepted or stored (live-fetch only).
     google_place_id: str | None = None
     top_product_name: SanitizedLabelField | None = None
+    # MEH-2137 switch: the owner now votes by IDENTITY. Ownership cannot be
+    # checked here — it needs the DB — so producer_me.py 422s a product that
+    # belongs to someone else, and syncs top_product_name from it. Sending
+    # `null` clears the vote.
+    top_product_id: UUID | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
     # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
@@ -2075,6 +2080,10 @@ class ProducerListOut(BaseModel):
     # surface is verification_tier/verified_at (ADR-022). Column drops in ch6.
     plan: str = "free"
     slug: str | None = None
+    # MEH-2137 switch: both fields ship. `top_product_id` is the authority;
+    # `top_product_name` stays in the contract so cards/map need zero changes,
+    # and is DERIVED from the FK in attach_badge_fields when the FK is set.
+    top_product_id: UUID | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
