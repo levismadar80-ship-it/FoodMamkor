@@ -1717,6 +1717,7 @@
         }
       },
       "toast_approved": "העסק אושר",
+      "queue_summary": "{count} ממתינים · הוותיק: {days} ימי עסקים",
       "toast_status_updated": "הסטטוס עודכן",
       "reject": {
         "modal_title": "דחיית בקשת בית עסק",
