@@ -35,6 +35,11 @@ const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const LOCATION_HOURS = "Sun-Thu 08:00-16:00";
 const LEGACY_HOURS = "Sun-Thu 09:00-18:00";
+// Deliberately a FRIDAY range: today is what the collapsed store-hours card
+// shows, so a pickup row carrying a different day proves this text comes from
+// the pickup row and not from the store-hours card above it.
+const PICKUP_HOURS = "Fri 07:00-12:00";
+const PICKUP_PHONE = "0521234567";
 
 const USER = { id: 7, email: "demo-owner@example.com", role: "producer", name: "דנה" };
 
@@ -57,22 +62,55 @@ const BASE_PRODUCER = {
   order_window: null,
 };
 
-function producerWith({ locationHours, legacyHours }) {
+function producerWith({ locationHours, legacyHours, pickup = false }) {
+  const locations = [
+    {
+      kind: "branch",
+      is_primary: true,
+      city: "חיפה",
+      lat: 32.794,
+      lng: 34.9896,
+      opening_hours: locationHours,
+      phone: null,
+      precision: "exact",
+    },
+  ];
+  // State 4 (added after the CI reviewer's note on PR #3032): DeliveryBlock is
+  // a THIRD surface, and the schema fix in this PR gives it live data for the
+  // first time since MEH-1509 — `opening_hours` and `phone` on a pickup row
+  // were being stripped by the Zod parse, so PickupRow's two conditional lines
+  // never rendered. Not covered by the other five screenshots, and a surface
+  // that starts receiving data for the first time is exactly where a QA pass
+  // is worth its cost.
+  if (pickup) {
+    // `pickup_points` must be true alongside the row, and this is NOT the
+    // harness taking a shortcut — it mirrors the serializer. MEH-2060 made the
+    // boolean DERIVED: `producer.pickup_points = producer.offers_pickup`
+    // (producer_queries.py:222), which is EXISTS(kind in pickup/market_stand).
+    // So the API can never serve a pickup row with the flag false.
+    //
+    // It matters because ProducerSections.jsx:584-586 mounts DeliveryBlock only
+    // when `offers_delivery || delivery_areas.length || pickup_points`. The
+    // first run of this state left the flag unset, the block never mounted, and
+    // the CONTROL caught it — which is the only reason this is recorded as a
+    // fixture that did not match reality rather than reported as a gate bug.
+    locations.push({
+      kind: "pickup",
+      label: "הדוכן בשוק",
+      is_primary: false,
+      city: "חיפה",
+      lat: 32.81,
+      lng: 34.99,
+      opening_hours: PICKUP_HOURS,
+      phone: PICKUP_PHONE,
+      precision: "exact",
+    });
+  }
   return {
     ...BASE_PRODUCER,
     opening_hours: legacyHours,
-    locations: [
-      {
-        kind: "branch",
-        is_primary: true,
-        city: "חיפה",
-        lat: 32.794,
-        lng: 34.9896,
-        opening_hours: locationHours,
-        phone: null,
-        precision: "exact",
-      },
-    ],
+    locations,
+    ...(pickup ? { pickup_points: true } : {}),
   };
 }
 
@@ -109,7 +147,7 @@ async function dismissCookies(page) {
 }
 
 /** Business page in one viewport, with a given hours arrangement. */
-async function openBusinessPage(browser, width, height, arrangement) {
+async function openBusinessPage(browser, width, height, arrangement, opts = {}) {
   const ctx = await newCtx(browser, width, height);
   const producer = producerWith(arrangement);
   await routeApi(ctx, (path) =>
@@ -138,10 +176,12 @@ async function openBusinessPage(browser, width, height, arrangement) {
   //
   // Expanding also makes the screenshot worth reviewing: the whole week is the
   // thing a reader needs to see to tell the two states apart.
-  const toggle = page.getByTestId("hours-toggle");
-  if ((await toggle.count()) > 0) {
-    await toggle.first().click();
-    await page.waitForTimeout(300);
+  if (!opts.skipExpand) {
+    const toggle = page.getByTestId("hours-toggle");
+    if ((await toggle.count()) > 0) {
+      await toggle.first().click();
+      await page.waitForTimeout(300);
+    }
   }
   return { ctx, page };
 }
@@ -240,6 +280,55 @@ async function main() {
       );
       await page.screenshot({
         path: `${OUT}/business-page-${label}-2-fallback.png`,
+        fullPage: false,
+      });
+      await ctx.close();
+    }
+
+    // ---- State 4: a pickup row's own hours + phone (the re-activated surface) ----
+    {
+      const { ctx, page } = await openBusinessPage(
+        browser,
+        width,
+        height,
+        { locationHours: LOCATION_HOURS, legacyHours: LEGACY_HOURS, pickup: true },
+        { skipExpand: true },
+      );
+      const text = await page.locator("body").innerText();
+      check(
+        `[${label}] CONTROL: the pickup row rendered at all`,
+        text.includes("הדוכן בשוק"),
+        "if this fails, ignore the two readings below",
+      );
+      check(
+        `[${label}] the pickup row shows its OWN hours`,
+        text.includes(PICKUP_HOURS),
+        "dead since MEH-1509 — the Zod parse stripped the field",
+      );
+      // NO phone assertion here, and the reason is a correction worth keeping:
+      // `PickupRow` (DeliveryBlock.jsx:231-260) renders heading, city, hours,
+      // "free" and a Waze link — it never renders `phone`. Grepped: the ONLY
+      // consumer of a location's phone anywhere is LocationsEditor.jsx:112,
+      // the owner's own form, which reads ProducerLocationOwnerOut (a
+      // different schema that already declared it).
+      //
+      // So of the two fields the parse was stripping, only `opening_hours` had
+      // a live public renderer. `phone` is declared alongside it because the
+      // backend serves it and a public field the parse silently drops is the
+      // same trap either way — but it is a LATENT gap, not a repaired feature,
+      // and asserting a phone on screen here would have been a false claim.
+      // Found by this assertion failing, which is why it is documented rather
+      // than deleted.
+      // DeliveryBlock carries no wrapper testid, so scroll to the pickup row's
+      // own heading — the thing being photographed — rather than to a selector
+      // that does not exist and would silently no-op.
+      const pickupHeading = page.getByText("הדוכן בשוק").first();
+      if ((await pickupHeading.count()) > 0) {
+        await pickupHeading.scrollIntoViewIfNeeded().catch(() => {});
+        await page.waitForTimeout(300);
+      }
+      await page.screenshot({
+        path: `${OUT}/business-page-${label}-4-pickup-own-hours.png`,
         fullPage: false,
       });
       await ctx.close();

@@ -184,9 +184,13 @@ const KEY_TO_ANCHOR = {
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
 // keys and anchor contract above are UNCHANGED — this only assigns each card to
 // one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
-// pricing → profile; delivery + hours → location; license + kashrut → the one
-// unified "trust" card. (MEH-2142 removed the hours card; the sentence is left
-// as written because it records the 21/07 SYNC decision, not today's layout.)
+// pricing → profile; delivery → location; license + kashrut → the one
+// unified "trust" card.
+// MEH-2142: the 21/07 SYNC also assigned `hours` to the location group. That
+// card no longer exists — store hours became a per-location fact — so the
+// membership line above is written as it stands TODAY rather than as the SYNC
+// recorded it. Noted rather than left contradicting the registries below,
+// which is what a reader checks it against.
 const GROUP_KEYS = ["profile", "trust", "location", "contact"];
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub

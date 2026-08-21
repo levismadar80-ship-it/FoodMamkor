@@ -9,8 +9,15 @@
  *   * `resolveStoreHours` — the primary-location preference this ticket ships.
  *     It degraded to "always the legacy column" with every unit test green,
  *     because those call the resolver with UNPARSED objects.
- *   * `DeliveryBlock.jsx:242` / the click-to-call link — MEH-1509's pickup
- *     "where and when", dead on the detail page since it shipped.
+ *   * `DeliveryBlock.jsx:242` — MEH-1509's pickup "where and when", dead on
+ *     the detail page since it shipped. Confirmed by screenshot after the fix.
+ *
+ * The two fields are NOT symmetric. `phone` has NO public renderer at all —
+ * grepped, its only consumer is LocationsEditor.jsx:112 (the owner's form,
+ * reading a different schema that already declared it). It is asserted here
+ * because the backend serves it publicly and a dropped field is the same trap
+ * either way, but it is a LATENT gap rather than a repaired feature. Measured,
+ * after a QA assertion that claimed a rendered phone failed and was wrong.
  *
  * The `.loose()` case is the subtle one and has its own test below: `.loose()`
  * on the OUTER object permits unknown top-level keys and does NOT reach into

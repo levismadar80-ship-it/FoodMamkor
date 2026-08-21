@@ -154,6 +154,17 @@ export const ProducerListSchema = z.object({
     //     points and market stands. That has been dead on this page since
     //     MEH-1509 shipped. Reported, not silently absorbed.
     //
+    // The two fields are NOT symmetric, and the difference was measured rather
+    // than assumed: `opening_hours` had a live public renderer (above), while
+    // `phone` has NONE — grepped, the only consumer anywhere is
+    // LocationsEditor.jsx:112, the owner's form, which reads
+    // ProducerLocationOwnerOut and already declared it. MEH-1509's backend
+    // comment describes a public click-to-call that was never built. `phone`
+    // is declared here anyway because the backend serves it publicly and a
+    // served field the parse silently drops is the same trap either way — but
+    // it is a LATENT gap, not a repaired feature. Stated so nobody inherits
+    // "we fixed click-to-call" from this comment.
+    //
     // Permissive per field, like every sibling above: a partial row must never
     // drop a whole producer from the all-or-nothing parse.
     opening_hours: z.string().nullable().optional(),
