@@ -198,9 +198,17 @@ def test_admin_serializer_does_expose_license_expires_at(client, db):
     tests green while the feature does nothing.
     """
     producer = _with_expiry(db, 10, name="חוות אדמין")
-    # GET /admin/producers (the list) — there is no per-id admin GET; the only
-    # other ProducerAdminOut read path is /admin/producers/pending, which this
-    # approved row would not appear in.
+    # The LIST serializer specifically, deliberately — `ProducerAdminOut` is
+    # returned by more than one route and they are separate exposure surfaces.
+    # `test_admin_get_producer_returns_admin_shape` covers the per-id route this
+    # PR adds; this one covers the list, so removing the field from either is
+    # caught by a named test rather than by whichever happened to be checked.
+    #
+    # (This comment previously read "there is no per-id admin GET", which was
+    # true when it was written and stopped being true inside this same PR — the
+    # scope extension added `GET /admin/producers/{id}`. Caught by the CI
+    # reviewer. Same defect class as the ProducerForm comment that hid the
+    # original bug: a comment describing a world the code no longer lives in.)
     resp = client.get("/admin/producers", headers=auth_header(_admin(db)))
     assert resp.status_code == 200, resp.text
     row = next(r for r in resp.json() if r["name"] == "חוות אדמין")
