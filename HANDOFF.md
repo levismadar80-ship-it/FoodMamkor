@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-21 — MEH-2134 מוזג (מייל האישור) + תיעוד; שער `.env.example` חסום ל-CC
+
+**מוזג:** ‏#3026 (MEH-2134) — squash `05cf3726`, ‏21/08. אומת כ-squash לפי **הורה יחיד** ותבנית `<title> (#N)`, לא הונח שהבקשה כובדה (MEH-1526). הכרטיס **Done**, ‏`completedAt` 03:31:47Z — נקרא אחרי המיזוג, לא נחזה (כלל 29b).
+**פתוח (לא מוזג — ספיר ממזגת):** ה-PR הזה, docs-only.
+**ענף:** ‏`feature/meh-2146-docs-and-env-comment` מ-`origin/staging` טרי.
+**Phase C בוצע:** ‏`WHATSAPP_COMMUNITY_INVITE_URL` הוגדר ב-Railway ע"י ספיר, ‏21/08. עד אז הבלוק פשוט לא נשלח — זו ברירת המחדל הריקה כ-fail-safe, ולכן #3026 היה בטוח למיזוג לפני שהלינק היה קיים.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`.env.example` חסום ל-CC, ו-restart לא יפתור את זה — ההיתר קיים ומבוטל ע"י deny.** ‏`settings.json:292-293` מכיל `Read(./.env.example)` + `Edit(./.env.example)` ב-`allow`, אבל `:311` מכיל `Read(./.env.*)` ב-`deny`, ו-Claude Code פותר **deny → ask → allow** — deny מנצח תמיד. ‏`Write(.env*)` ב-`:368` חוסם גם את מסלול הכתיבה. **המסקנה המעשית:** סעיף ההערה של MEH-2146 (עברית→אנגלית ב-`.env.example:51-52`) **אינו בר-ביצוע ע"י CC** בשום סשן; הוא דורש או יד של ספיר או שינוי ב-`.claude/settings.json`, שהוא CC-deny בשני הכיוונים (כלל 32). הטענה בכרטיס ש"סשן חדש נדרש" נבדקה ונמדדה **שגויה**.
+
+2. **‏ולמזלנו — הוצאת `.env.example` מה-PR הזה היא גם מה שמכשיר אותו.** ‏`changelog-branch-guard` מגדיר `DOCS = docs/** · .claude/** · .ai/** · HANDOFF.md · root-level *.md`. ‏`.env.example` הוא root-level אבל **לא** `.md`, כלומר מחוץ ל-DOCS — ו-PR שנושא אותו **יחד עם** CHANGELOG/HANDOFF נופל בכלל 31. שלושת הקבצים ב-PR אחד, כפי שהכרטיס ביקש, היו מאדימים שער נדרש.
+
+3. **‏MEH-2147 בוטל — הפרמיסה הופרכה ב-Phase 0.** הטענה: `WHATSAPP_APP_SECRET`/`WHATSAPP_VERIFY_TOKEN` חסרים מ-`.env.example` ולכן `Env drift` שבור. **נמדד:** ‏`scripts/check_env_drift.sh` משווה מול **איחוד שלושה** קבצים — `.env.example` (compose), `backend/.env.example` (Railway), `frontend/.env.example` (Vercel) — והכרטיס גרפף רק את הראשון. שני המשתנים ב-`backend/.env.example:177-178`. הרצת השער בפועל: `✅ no missing vars`, exit 0. **המכשיר מאומת בשני הכיוונים על אותה משפחת משתנים:** ב-#3026 הוא היה אדום על `WHATSAPP_COMMUNITY_INVITE_URL` והתהפך לירוק כשנוסף — כלומר השתיקה שלו כאן היא שלילה אמיתית, לא probe שלא רץ.
+
+4. **הכרעה: השורה נשארת ב-`.env.example` השורשי, לא עוברת ל-backend.** הקובץ השורשי כבר מתעד `CLOUDINARY_*`, `GOOGLE_CLIENT_ID` ו-`ANTHROPIC_*` — הוא לא "לא-backend", הוא "מה ש-compose צריך". ‏`COMMUNITY_INVITE_URL` אופציונלי ומתדרדר בחן, בדיוק כמותם. ‏`APP_SECRET` הוא webhook credential ולכן שייך ל-backend בלבד. (ספיר, 21/08.)
+
+5. **פתוח — בדיקת "Show original" חיה אחרי הדפלוי.** ‏`tests/CLAUDE.md` מזהיר שבאגי transport ב-Resend (קידוד, MIME) עוברים ירוקים ב-pytest כי הטסטים ממוקים ברמת ה-router. גוף המייל הזה הוא עברית + `—` + `|` — בדיוק הפרופיל שנשבר בקידוד שגוי. **לא ניתן לבדיקה מהסנדבוקס.**
+
 ## 2026-08-19 (מאוחר) — שני תיקונים עצמאיים + פורנזיקה על שני ענפים ישנים
 
 **פתוח (לא מוזג — ספיר ממזגת):** ‏#3018 (MEH-2128, backend) · #3019 (MEH-2129, frontend) · ה-PR הזה (docs-only).
