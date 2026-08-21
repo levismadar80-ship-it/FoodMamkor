@@ -1,17 +1,27 @@
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
-from app.utils.clock import business_days_waiting
+from app.utils.clock import business_days_waiting, israel_today
+from app.utils.pii import mask_phone
 from app.config import settings
 from app.services.auth_notifications import (
     notify_producer_approved,
@@ -28,6 +38,7 @@ from app.services.email import send_email
 from app.services.onboarding_followup import SITE_DOMAIN
 from app.services.whatsapp import send_text
 from app.database import get_db
+from app.rate_limit import limiter
 from app.models import (
     DeliveryArea,
     HomeProduct,
@@ -38,6 +49,8 @@ from app.models import (
 )
 from app.schemas.schemas import (
     GrantVerifiedIn,
+    LicenseExpiryReminderOut,
+    LicenseExpiryReminderRow,
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerRejectIn,
@@ -607,6 +620,99 @@ def admin_create_producer(
     return producer
 
 
+# MEH-2072: how far ahead the licence reminder looks. One constant, not a query
+# param — mirroring EXPIRY_REMINDER_WINDOW_DAYS in admin_kashrut.py:31 and for
+# the same reason recorded there: a caller-chosen window lets a mistyped value
+# sweep in every business on file, and the ticket scopes this to 30 days.
+LICENSE_EXPIRY_REMINDER_WINDOW_DAYS = 30
+
+
+@router.get("/license-expiry-reminders", response_model=LicenseExpiryReminderOut)
+@limiter.limit("60/minute")
+def license_expiry_reminders(
+    request: Request,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2072: approved businesses whose licence expires within 30 days.
+
+    Read-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1
+    policy is capture + remind, and the admin pulls this list herself. That is
+    why this is a GET with no `dry_run` flag, unlike its kashrut sibling
+    (admin_kashrut.py:154) which POSTs because it dispatches WhatsApp. Push is a
+    future ticket.
+
+    Selection, and every clause is load-bearing:
+
+    * `license_expires_at IS NOT NULL` — NULL means "not captured yet", never
+      "no expiry". Without this clause every producer predating MEH-2072 would
+      appear in the reminder list forever, which is the failure that would get
+      the whole feature switched off.
+    * `>= israel_today()` — an already-lapsed licence is deliberately EXCLUDED.
+      This mirrors the kashrut endpoint's reasoning: the list exists to catch a
+      licence before it lapses. A lapsed one is a different problem needing a
+      different action (that is the future enforcement decision), and letting it
+      sit here would grow an unactionable backlog that buries the live rows.
+    * `<= horizon` — the 30-day window.
+    * `status == "approved"` — a pending business is already in the review
+      queue, where the admin sees the licence anyway.
+
+    Israel's calendar day, not UTC's: `license_expires_at` is a DATE column, and
+    `israel_today()` is what makes the comparison calendar-day against
+    calendar-day with no zone arithmetic (see the migration docstring).
+
+    `60/minute`, matching the read-only `list_kashrut_requests`
+    (admin_kashrut.py:36) rather than the `10/hour` its expiry-reminder sibling
+    carries — that one is throttled hard because it DISPATCHES WhatsApp, and a
+    read has no outbound side effect to ration.
+
+    Note this is the first `@limiter.limit` in this module: `admin.py` currently
+    has none at all. That is a pre-existing gap, not a local convention to copy
+    — `backend/app/routers/CLAUDE.md` states the per-route limiter stack is
+    mandatory here, so the new route follows the documented rule rather than the
+    surrounding silence. Retro-fitting the rest of the module is out of scope.
+    """
+    today = israel_today()
+    horizon = today + timedelta(days=LICENSE_EXPIRY_REMINDER_WINDOW_DAYS)
+    producers = (
+        db.query(Producer)
+        .filter(
+            Producer.license_expires_at.isnot(None),
+            Producer.license_expires_at >= today,
+            Producer.license_expires_at <= horizon,
+            Producer.status == "approved",
+        )
+        .order_by(Producer.license_expires_at.asc())
+        .all()
+    )
+
+    rows = [
+        LicenseExpiryReminderRow(
+            producer_id=producer.id,
+            name=producer.name,
+            # mask_phone handles the missing-phone case; unlike the kashrut
+            # endpoint there is no `phone IS NOT NULL` filter, because a
+            # business with no phone on file still needs its licence chased —
+            # the admin just reaches it another way. Filtering it out would hide
+            # the row entirely, which is the opposite of what this list is for.
+            phone_masked=mask_phone(producer.phone),
+            expires_at=producer.license_expires_at,
+            # Computed here, not per client: same reasoning as
+            # business_days_waiting on ProducerAdminOut — the number the admin
+            # reads and the order the rows arrive in must come from one clock.
+            days_remaining=(producer.license_expires_at - today).days,
+            producer_license_number=producer.producer_license_number,
+        )
+        for producer in producers
+    ]
+
+    return LicenseExpiryReminderOut(
+        window_days=LICENSE_EXPIRY_REMINDER_WINDOW_DAYS,
+        total=len(rows),
+        rows=rows,
+    )
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -1032,6 +1138,79 @@ def list_rejection_presets(user: User = Depends(require_admin)):
         {"key": key, "label": label}
         for key, label in PRODUCER_REJECTION_PRESETS.items()
     ]
+
+
+@router.get("/producers/{producer_id}", response_model=ProducerAdminOut)
+@limiter.limit("60/minute")
+def admin_get_producer(
+    request: Request,
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2072: the single-producer admin read. There was none before, and the
+    admin EDIT PAGE was loading the PUBLIC serializer instead.
+
+    ## The bug this closes, measured rather than reasoned
+
+    `app/[locale]/admin/producers/[id]/edit/page.js` fetched `GET /producers/{id}`
+    -> `ProducerDetailOut`. That shape carries no admin-only field, by design.
+    So `ProducerForm` hydrated every one of them as `""` (its `initial.X ?? ""`
+    idiom), and because the form POSTs its whole state back, saving ANY edit
+    wrote those blanks over the stored values:
+
+        producer_license_number  '1234567'  ->  ''
+        address                  'הרצל 1'   ->  None
+
+    Silent, on every admin save, including a save that only changed the name.
+    `producer_license_number` is the regulatory field the whole "licensed
+    businesses only" promise rests on, so this was live data loss on the one
+    column the promise depends on.
+
+    Two things made it invisible. The form's own comment asserted that the page
+    called `GET /admin/producers/{id}` "which exposes the raw
+    producer_license_number" — describing this route, which did not exist and
+    returned **405**. And the failure has no error surface: the PUT succeeds,
+    the page redirects, and the value is simply gone.
+
+    ## Why a new route rather than widening the public one
+
+    Widening `ProducerDetailOut` would publish licence numbers and street
+    addresses to every visitor — the exact inversion of the MEH-530 privacy
+    precedent. The admin needs a different SHAPE, not more public data.
+
+    ## Route ordering is load-bearing
+
+    Declared AFTER `/producers/pending` (:977) and `/producers/rejection-presets`
+    (:1132). FastAPI matches in declaration order, so registering this above
+    either of them would swallow both literals into `{producer_id}` and answer
+    them with a UUID-parse 422. Do not move it up.
+
+    Mirrors the list endpoint's post-query enrichment exactly — `attach_badge_fields`
+    then `_attach_aging` — because a single-row read that skipped them would
+    serialise a silent `0` for `business_days_waiting` and default badges, which
+    is the "looks measured and is not" failure `_attach_aging`'s own docstring
+    warns about.
+    """
+    producer = (
+        db.query(Producer)
+        .options(
+            joinedload(Producer.categories),
+            joinedload(Producer.products),
+            joinedload(Producer.delivery_areas),
+            # selectinload, matching the list endpoint (:448) — a 4th collection
+            # joinedload would widen the existing 3-way cartesian. Needed by
+            # attach_badge_fields' pickup_points/offers_pickup derivation.
+            selectinload(Producer.locations),
+        )
+        .filter(Producer.id == producer_id)
+        .first()
+    )
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    attach_badge_fields(producer)
+    _attach_aging(producer)
+    return producer
 
 
 @router.post("/producers/{producer_id}/reject")

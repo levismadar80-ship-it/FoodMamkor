@@ -1685,6 +1685,8 @@
           "license_format_warning": "Producer license number is 7-10 digits",
           "license_registry_link": "Check the Ministry of Health registry",
           "license_optional_toggle": "I have a producer license ↓",
+          "license_expires_at": "License valid until (from the document)",
+          "license_expires_at_hint": "The date printed on the license document. Businesses whose license expires within 30 days appear in the reminder list.",
           "has_physical_location": "Physical store (welcomes customers)",
           "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
