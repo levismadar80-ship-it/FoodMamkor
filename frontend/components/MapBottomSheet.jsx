@@ -208,9 +208,11 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
       style={{
         height: `${heightVh}vh`,
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",
-        // MEH-2148: was a flat "64px" -- a static twin of a nav band that has
-        // not been 64px since the pill redesign. The live clearance is 72-106px,
-        // so the last rows of the list sat UNDER the pill. Unlike the other
+        // MEH-2148: was a flat 64-pixel literal -- a static twin of a nav band
+        // that has not been that tall since the pill redesign. The live
+        // clearance is 72-106px, so the last rows of the list sat UNDER the
+        // pill -- measured with the sheet open and scrolled to the end, the last
+        // row's bottom edge landed exactly on the pill's top. Unlike the other
         // consumers in this PR this is not a parity swap: it is +16px at the
         // fallback, and that difference is the bug being fixed.
         paddingBottom: "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px)",
