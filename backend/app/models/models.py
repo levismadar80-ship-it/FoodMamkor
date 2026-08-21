@@ -2285,6 +2285,11 @@ class ProducerReviewCheck(Base):
         UUID(as_uuid=True),
         ForeignKey("admin_checklist_items.id", ondelete="RESTRICT"),
         nullable=False,
+        # Indexed in its own right. The unique constraint in __table_args__ is
+        # (producer_id, item_id) and leads with producer_id, so it cannot serve
+        # the item_id-only lookup Postgres performs to enforce the RESTRICT on
+        # every DELETE against admin_checklist_items.
+        index=True,
     )
     label_snapshot = Column(Text, nullable=False)
     checked_by = Column(

@@ -19,6 +19,10 @@ REUSES: tests/test_admin_approval_transitions.py:29 (`_admin`),
 tests/test_producer_me_delivery_fields.py:27 (owner wiring).
 """
 
+from uuid import UUID
+
+from app.models.models import ProducerReviewCheck
+from app.routers.admin_checklist import router as admin_checklist_router
 from conftest import auth_header, make_producer, make_user
 
 ITEMS = "/admin/checklist-items"
@@ -308,24 +312,141 @@ def test_ticks_do_not_gate_approval(client, db):
     assert producer.status == "approved"
 
 
+# --- concurrency ---------------------------------------------------------
+#
+# Two admins on the same business is the ordinary case, and the handler's read
+# of "what is already ticked" is a check-then-act. Racing two real sessions is
+# non-deterministic, so both tests below INJECT the end state instead: they make
+# that read return a deliberately stale answer while the database holds the
+# state a competing session would have committed. Deterministic, and it drives
+# the exact branch the race would.
+
+
+def test_concurrent_tick_of_same_item_does_not_500(client, db, monkeypatch):
+    """A racing session already ticked this item -> still 200, still one row.
+
+    Against a plain INSERT this is an unhandled IntegrityError on the unique
+    constraint, i.e. a 500 on a request whose desired end state had already
+    been reached. It also pins the no-restamp rule across the race: the FIRST
+    attestation survives.
+    """
+    admin = _admin(db)
+    items = _seed_items(client, db, admin)
+    producer = make_producer(db, status="pending")
+
+    first = client.put(
+        _checks_url(producer.id),
+        json={"item_ids": [items[0]["id"]]},
+        headers=auth_header(admin),
+    )
+    assert first.status_code == 200, first.text
+    original_checked_at = first.json()["checks"][0]["checked_at"]
+
+    # The competing session's row is already committed; this one's read predates
+    # it and therefore sees nothing ticked.
+    monkeypatch.setattr(
+        "app.routers.admin_checklist._ticked_item_ids",
+        lambda db, producer_id: set(),
+    )
+
+    resp = client.put(
+        _checks_url(producer.id),
+        json={"item_ids": [items[0]["id"], items[1]["id"]]},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+
+    checks = {c["item_id"]: c for c in resp.json()["checks"]}
+    assert len(checks) == 2, checks
+    assert checks[items[0]["id"]]["checked_at"] == original_checked_at
+
+
+def test_untick_of_row_another_session_removed_does_not_500(client, db, monkeypatch):
+    """A racing session already removed the row this one is un-ticking.
+
+    An ORM `db.delete(row)` on a row that is gone raises StaleDataError
+    ("expected to delete 1 row(s); 0 were matched"); a DELETE ... WHERE that
+    matches nothing is a no-op, which is the right answer — the end state the
+    request asked for is the end state that already holds.
+    """
+    admin = _admin(db)
+    items = _seed_items(client, db, admin)
+    producer = make_producer(db, status="pending")
+    item_id = items[0]["id"]
+
+    assert (
+        client.put(
+            _checks_url(producer.id),
+            json={"item_ids": [item_id]},
+            headers=auth_header(admin),
+        ).status_code
+        == 200
+    )
+
+    # The competing session's untick, already committed.
+    db.query(ProducerReviewCheck).filter(
+        ProducerReviewCheck.producer_id == producer.id
+    ).delete(synchronize_session=False)
+    db.commit()
+
+    # ...while this session still believes the row is there.
+    monkeypatch.setattr(
+        "app.routers.admin_checklist._ticked_item_ids",
+        lambda db, producer_id: {UUID(item_id)},
+    )
+
+    resp = client.put(
+        _checks_url(producer.id),
+        json={"item_ids": []},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["checks"] == []
+
+
 # --- auth ----------------------------------------------------------------
 
 
 def test_all_routes_require_admin(client, db):
+    """Every route this router declares rejects a non-admin.
+
+    The count is DERIVED from the router, not stated: a fifth route added to
+    admin_checklist.py without a line here reds this test rather than silently
+    shrinking the coverage the name claims. An earlier version asserted 3 of 4
+    and left the WRITE path — the one that creates audit rows — unguarded.
+    """
     owner_producer = make_producer(db, name="לא אדמין")
     owner = make_user(db, role="producer")
     owner.producer_id = owner_producer.id
     db.commit()
 
-    assert client.get(ITEMS, headers=auth_header(owner)).status_code == 403
-    assert (
-        client.put(ITEMS, json={"items": []}, headers=auth_header(owner)).status_code
-        == 403
-    )
-    assert (
-        client.get(
-            _checks_url(owner_producer.id), headers=auth_header(owner)
-        ).status_code
-        == 403
-    )
+    checks = _checks_url(owner_producer.id)
+    cases = [
+        ("get", ITEMS, None),
+        ("put", ITEMS, {"items": []}),
+        ("get", checks, None),
+        ("put", checks, {"item_ids": []}),
+    ]
+
+    for method, url, payload in cases:
+        call = getattr(client, method)
+        resp = (
+            call(url, headers=auth_header(owner))
+            if payload is None
+            else call(url, json=payload, headers=auth_header(owner))
+        )
+        assert resp.status_code == 403, f"{method.upper()} {url} -> {resp.status_code}"
+
+    # Anonymous, not merely under-privileged.
     assert client.get(ITEMS).status_code in (401, 403)
+
+    # The completeness half. `covered` is what the loop above actually
+    # exercised; `declared` is read off the router, so the two cannot drift.
+    covered = {(method.upper(), url) for method, url, _ in cases}
+    declared = {
+        (verb, route.path.replace("{producer_id}", str(owner_producer.id)))
+        for route in admin_checklist_router.routes
+        for verb in route.methods
+        if verb != "HEAD"
+    }
+    assert covered == declared, f"uncovered: {declared - covered}"

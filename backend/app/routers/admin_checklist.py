@@ -16,9 +16,10 @@ Related:  frontend/lib/admin-review-checklist.js (the Phase 1 constant this
 History:  MEH-1399 (creation; Phase 2 of MEH-1396).
 """
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
@@ -40,6 +41,21 @@ router = APIRouter(prefix="/admin", tags=["admin-checklist"])
 # two items does not have to renumber the rest. The migration seeds 10..70 and
 # this keeps that convention on every save.
 _POSITION_STEP = 10
+
+
+def _ticked_item_ids(db: Session, producer_id: UUID) -> set[UUID]:
+    """The item ids currently ticked for this producer.
+
+    Its own function so a test can make it return a deliberately STALE answer
+    and drive the concurrent-write paths in `save_review_checks` without racing
+    two real sessions — injecting the end state rather than waiting for it.
+    """
+    return {
+        row.item_id
+        for row in db.query(ProducerReviewCheck.item_id).filter(
+            ProducerReviewCheck.producer_id == producer_id
+        )
+    }
 
 
 @router.get("/checklist-items", response_model=list[AdminChecklistItemOut])
@@ -236,24 +252,53 @@ def save_review_checks(
     else:
         found = {}
 
-    current = {
-        row.item_id: row
-        for row in db.query(ProducerReviewCheck)
-        .filter(ProducerReviewCheck.producer_id == producer_id)
-        .all()
-    }
+    current = _ticked_item_ids(db, producer_id)
 
-    for item_id in set(current) - wanted:
-        db.delete(current[item_id])
+    # Both halves below are written as set-based statements rather than ORM
+    # add/delete, and that is a concurrency decision, not a style one. Two
+    # admins reviewing the same business is the ordinary case here, and the
+    # read above is a check-then-act: whatever it saw can be stale by the time
+    # the write lands.
+    #
+    #   * insert -> ON CONFLICT DO NOTHING. A racing session that already
+    #     inserted the same (producer, item) trips the unique constraint, which
+    #     as a plain INSERT is an unhandled IntegrityError, i.e. a 500 on a
+    #     request whose desired end state had ALREADY been reached. Skipping is
+    #     also exactly the "re-ticking does not restamp" rule in the docstring:
+    #     the first attestation stands.
+    #   * delete -> one bulk DELETE ... WHERE. An ORM delete of a row a racing
+    #     session already removed raises StaleDataError ("expected to delete 1
+    #     row(s); 0 were matched"); a WHERE that matches nothing is a no-op.
+    #
+    # Neither needs a retry, so there is no loop that can fail a second time.
+    stale = current - wanted
+    if stale:
+        db.query(ProducerReviewCheck).filter(
+            ProducerReviewCheck.producer_id == producer_id,
+            ProducerReviewCheck.item_id.in_(stale),
+        ).delete(synchronize_session=False)
 
-    for item_id in wanted - set(current):
-        db.add(
-            ProducerReviewCheck(
-                producer_id=producer_id,
-                item_id=item_id,
-                # Snapshot at tick time — see the docstring.
-                label_snapshot=found[item_id].label,
-                checked_by=user.id,
+    fresh = wanted - current
+    if fresh:
+        db.execute(
+            pg_insert(ProducerReviewCheck.__table__)
+            .values(
+                [
+                    {
+                        # Explicit: a Python-side column default is not reliably
+                        # applied to every row of a multi-VALUES core insert.
+                        "id": uuid4(),
+                        "producer_id": producer_id,
+                        "item_id": item_id,
+                        # Snapshot at tick time — see the docstring.
+                        "label_snapshot": found[item_id].label,
+                        "checked_by": user.id,
+                    }
+                    for item_id in fresh
+                ]
+            )
+            .on_conflict_do_nothing(
+                constraint="uq_producer_review_checks_producer_item"
             )
         )
 

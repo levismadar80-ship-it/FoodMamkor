@@ -183,10 +183,25 @@ def upgrade() -> None:
         'producer_review_checks',
         ['producer_id'],
     )
+    # item_id needs its OWN index, and the unique constraint above does not
+    # provide it: (producer_id, item_id) leads with producer_id, so it cannot
+    # serve a lookup keyed on item_id alone. Postgres enforces the RESTRICT on
+    # every DELETE against admin_checklist_items by scanning for referencing
+    # rows — unindexed, that is a sequential scan of the whole checks table.
+    # The RESTRICT is the point of the design, so the index that makes it cheap
+    # is not optional. (CI reviewer, MEH-1399.)
+    op.create_index(
+        'ix_producer_review_checks_item_id',
+        'producer_review_checks',
+        ['item_id'],
+    )
 
 
 def downgrade() -> None:
     # Children first — producer_review_checks holds the FK into the items table.
+    op.drop_index(
+        'ix_producer_review_checks_item_id', table_name='producer_review_checks'
+    )
     op.drop_index(
         'ix_producer_review_checks_producer_id', table_name='producer_review_checks'
     )
