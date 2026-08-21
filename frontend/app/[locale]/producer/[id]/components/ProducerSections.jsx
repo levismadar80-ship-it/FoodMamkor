@@ -181,15 +181,24 @@ export default function ProducerSections({
   // match `.find()` returned whichever duplicate came first in the array, so
   // two products sharing a name made the featured slot depend on row order.
   // The name branch stays live for producers whose backfill left the FK NULL.
+  //
+  // The fallback is gated on `top_product_id == null` — NOT on the id lookup
+  // failing. Those are different conditions and an `||` chain conflates them:
+  // when the id is SET but its product is gone (deleted), `||` would fall
+  // through to the name and feature a *surviving* product that happens to
+  // share the deleted one's `top_product_name` — reintroducing exactly the
+  // wrong-row bug this chunk exists to kill, on the surface where a buyer
+  // sees it. The dashboard's `isTopProduct` already reads `!= null` and marks
+  // nothing in that case; this now agrees with it, so a row featured here is
+  // still exactly a row marked there. (Reviewer finding on PR #3048.)
   const signatureProduct =
-    (producer.top_product_id
-      ? (producer.products || []).find((p) => p.id === producer.top_product_id)
-      : null) ||
-    (producer.top_product_name
-      ? (producer.products || []).find(
-          (p) => p.name?.trim() === producer.top_product_name.trim(),
-        )
-      : null);
+    producer.top_product_id != null
+      ? (producer.products || []).find((p) => p.id === producer.top_product_id) || null
+      : producer.top_product_name
+        ? (producer.products || []).find(
+            (p) => p.name?.trim() === producer.top_product_name.trim(),
+          ) || null
+        : null;
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
     : null;

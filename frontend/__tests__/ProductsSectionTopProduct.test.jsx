@@ -367,10 +367,11 @@ describe("ProductsSection — soft duplicate-name confirm (MEH-2137)", () => {
     fireEvent.change(spin[0], { target: { value: "30" } });
   };
 
+  const openDialog = () => screen.queryByText(PRODUCTS_NS.duplicate_name_confirm.title);
+
   it("CONTROL: a NON-duplicate name never asks — the prompt is not unconditional", async () => {
-    // Without this, "confirm was called" below proves nothing about duplicate
-    // DETECTION: a confirm fired on every create would satisfy that too.
-    const spy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    // Without this, "the dialog appeared" below proves nothing about duplicate
+    // DETECTION: a dialog shown on every create would satisfy that too.
     api.post.mockResolvedValue({ data: { id: 9, name: "עוגה", price_min: 30 } });
     renderSection();
     await screen.findByText("לחם מחמצת");
@@ -379,11 +380,69 @@ describe("ProductsSection — soft duplicate-name confirm (MEH-2137)", () => {
     fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
 
     await waitFor(() => expect(api.post).toHaveBeenCalled());
-    expect(spy).not.toHaveBeenCalled();
-    spy.mockRestore();
+    expect(openDialog()).toBeNull();
   });
 
-  it("a duplicate name asks, and CONFIRMING still creates it — never a block", async () => {
+  it("a duplicate name asks — and nothing is sent until the owner answers", async () => {
+    // The gate has to hold the request, not race it: a dialog that appears
+    // AFTER the POST is decoration. Asserting both in one test is what makes
+    // that distinguishable.
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("לחם מחמצת");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+
+    expect(openDialog()).not.toBeNull();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("CONFIRMING still creates it — never a block", async () => {
+    api.post.mockResolvedValue({
+      data: { id: 9, name: "לחם מחמצת", price_min: 30 },
+    });
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("לחם מחמצת");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+    fireEvent.click(screen.getByTestId("duplicate-confirm"));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(api.post.mock.calls[0][1]).toMatchObject({ name: "לחם מחמצת" });
+    await waitFor(() => expect(openDialog()).toBeNull());
+  });
+
+  it("declining sends nothing at all, and leaves the name to be edited", async () => {
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("לחם מחמצת");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+    fireEvent.click(screen.getByTestId("duplicate-cancel"));
+
+    expect(api.post).not.toHaveBeenCalled();
+    expect(openDialog()).toBeNull();
+    // The form is still filled — declining is "let me rename it", not "start over".
+    expect(screen.getAllByRole("textbox")[0]).toHaveValue("לחם מחמצת");
+  });
+
+  it("Escape declines too — the dialog cannot trap the owner", async () => {
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("לחם מחמצת");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(openDialog()).toBeNull();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("no native confirm survives this path — the suppressible dialog is gone", async () => {
+    // The reviewer finding this replaces (#3048): window.confirm can be
+    // suppressed, and a suppressed confirm on a CREATE returns false and
+    // silently drops the product. If anyone reintroduces it, this goes red.
     const spy = vi.spyOn(window, "confirm").mockReturnValue(true);
     api.post.mockResolvedValue({
       data: { id: 9, name: "לחם מחמצת", price_min: 30 },
@@ -393,22 +452,10 @@ describe("ProductsSection — soft duplicate-name confirm (MEH-2137)", () => {
 
     fillForm("לחם מחמצת");
     fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+    fireEvent.click(screen.getByTestId("duplicate-confirm"));
 
     await waitFor(() => expect(api.post).toHaveBeenCalled());
-    expect(spy).toHaveBeenCalledWith(PRODUCTS_NS.duplicate_name_confirm);
-    spy.mockRestore();
-  });
-
-  it("declining sends nothing at all", async () => {
-    const spy = vi.spyOn(window, "confirm").mockReturnValue(false);
-    renderSection();
-    await screen.findByText("לחם מחמצת");
-
-    fillForm("לחם מחמצת");
-    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
-
-    expect(spy).toHaveBeenCalled();
-    expect(api.post).not.toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
   });
 });

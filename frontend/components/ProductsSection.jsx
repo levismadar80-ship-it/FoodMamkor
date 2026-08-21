@@ -149,6 +149,13 @@ export default function ProductsSection({
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // MEH-1447: { id, name } | null
+  // MEH-2137 chunk 3: the duplicate-name confirm, as a state flag rather than
+  // `window.confirm`. The native dialog is suppressible — and this one gates a
+  // CREATE, so a suppressed dialog returns false and the product silently is
+  // never added. Every other `window.confirm` in this app guards a DELETE,
+  // where false is the safe answer; here it is the destructive one. Same
+  // direction MEH-1250 already took in GroupBuyDetailClient.
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
   const [editUploading, setEditUploading] = useState(false);
   // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
   // renders a distinct error card + retry instead of the "no products yet"
@@ -295,8 +302,17 @@ export default function ProductsSection({
     const dupe = (products || []).some(
       (p) => (p.name || "").trim() === form.name.trim(),
     );
-    if (dupe && !window.confirm(t("duplicate_name_confirm"))) return;
+    if (dupe) {
+      setConfirmDuplicate(true);
+      return;
+    }
+    await submitAdd();
+  };
 
+  // The half of the create that runs once the name question is settled — called
+  // directly when the name is unique, and from the dialog's confirm when it is
+  // not. Validation already ran in `handleAdd`; this never re-gates.
+  const submitAdd = async () => {
     const minNum = Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
     setSaving(true);
@@ -461,6 +477,18 @@ export default function ProductsSection({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [confirmDelete, deletingId]);
+
+  // MEH-2137 chunk 3: same Escape contract for the duplicate-name dialog.
+  // Escape means "let me rename it", so it declines — the form stays filled
+  // and nothing is sent, exactly as declining the old native confirm did.
+  useEffect(() => {
+    if (!confirmDuplicate) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !saving) setConfirmDuplicate(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDuplicate, saving]);
 
   if (loading) return null;
 
@@ -914,6 +942,48 @@ export default function ProductsSection({
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("delete_confirm.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MEH-2137 chunk 3: SOFT duplicate-name confirm — same dialog contract as
+          the delete one above (aria-modal, Escape closes, buttons disabled while
+          busy). Confirming adds the product as-is; declining sends nothing and
+          leaves the form filled so the name can be changed. */}
+      {confirmDuplicate && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-duplicate-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+          >
+            <p id="product-duplicate-title" className="font-medium text-base text-text">
+              {t("duplicate_name_confirm.title")}
+            </p>
+            <div className="flex gap-3 justify-start pt-1">
+              <button
+                type="button"
+                data-testid="duplicate-confirm"
+                disabled={saving}
+                onClick={() => {
+                  setConfirmDuplicate(false);
+                  submitAdd();
+                }}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90 disabled:opacity-50"
+              >
+                {t("duplicate_name_confirm.confirm")}
+              </button>
+              <button
+                type="button"
+                data-testid="duplicate-cancel"
+                disabled={saving}
+                onClick={() => setConfirmDuplicate(false)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("duplicate_name_confirm.cancel")}
               </button>
             </div>
           </div>

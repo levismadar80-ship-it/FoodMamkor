@@ -4869,7 +4869,11 @@
       },
       "top_product_hint": "Star one product to make it your top product — it appears as a highlighted card at the top of the product list on your page.",
       "top_product_empty_hint": "Add a product to choose a top product.",
-      "duplicate_name_confirm": "A product with this name already exists. Continue?"
+      "duplicate_name_confirm": {
+        "title": "A product with this name already exists. Continue?",
+        "confirm": "Add product",
+        "cancel": "Cancel"
+      }
     },
     "locations": {
       "section_heading": "Locations",
