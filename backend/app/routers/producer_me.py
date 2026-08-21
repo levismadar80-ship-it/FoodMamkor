@@ -553,7 +553,22 @@ def update_my_producer(
         # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
-        "opening_hours",
+        # MEH-2142 (MEH-1938 batch B3): `opening_hours` was REMOVED from this
+        # set. Same disposition and the same standing rule as the two blocks
+        # below — the column stays, `admin.py` / `producer_import.py` / the
+        # seeds are untouched, and only the owner PUT path is closed. Do not
+        # re-add it without shipping its editor in the same PR:
+        #   opening_hours        → the business-level hours editor was removed
+        #                          from the dashboard in this PR. Store hours
+        #                          are now a PER-LOCATION fact: the owner edits
+        #                          `ProducerLocation.opening_hours` in
+        #                          LocationsEditor, and the public page prefers
+        #                          the primary location's value, falling back to
+        #                          this column for businesses that have not
+        #                          filled one in yet. Readers-first Parallel
+        #                          Change — the fallback read carries
+        #                          LEGACY(2026-10-01, MEH-1938) and its removal
+        #                          is the contract step.
         # MEH-1543: owner-editable weekly order-acceptance window. Validated in
         # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
         # body clears it (present-but-None flows through model_dump(exclude_unset)
