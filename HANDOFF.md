@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-21 — MEH-2150: שתי הערות Minor מה-batch נסגרו (PR #3049)
+
+**מוזג:** ‏#3049 `ad2fb75c` — אומת כ-squash לפי **הורה יחיד** ותבנית `<title> (#N)` (MEH-1526).
+**פתוח (לא מוזג):** ה-PR הזה, docs-only.
+**ענף:** ‏`feature/meh-2150-docs-backfill` מ-`origin/staging` טרי.
+
+**מה נעשה.** שתי הערות Minor של ה-CI reviewer מסוף ה-batch של 21/08, שתיהן בקוד טסטים:
+(א) מקרה **phone-only** לטריגר ה-seed של טופס המיקום — ב-vitest וגם ב-harness של `qa-meh2144`;
+(ב) הודעת שגיאה שמתארת **annotation-without-assignment** ב-`tests/whitelist_source.py` במקום השגיאה הגנרית "no longer a set literal".
+אפס שינוי בקוד פרודקשן (grep proof ב-גוף ה-PR).
+
+**Phase 0 — שתי ההערות היו חיות.** ההערה של #3036 היא התגובה האחרונה שם, שנכתבה **אחרי** תגובת התיקון של הממצא הקודם; ההערה של #3043 היא התגובה האחרונה שם. ‏`git log` על שני קבצי היעד מראה רק את שני ה-PRs המקוריים (`9463eb2c`, `419bbdb2`) — אף follow-up לא נגע בהם.
+
+**🔴 הלקח המרכזי: הכרטיס ייחס את הפער לקובץ הלא נכון.** הכרטיס אמר ש-`qa-meh2144-location-disclosure.mjs` מכסה 3/4 טריגרים. נמדד — ה-vitest מכסה 3/4 וה-`.mjs` מכסה **0/4**. הערת ה-reviewer מכוונת ל-vitest, ולכן "לתקן את מה שהכרטיס ביקש" היה משאיר את ההערה עצמה פתוחה. **שני הקבצים כוסו**, והתיאור של הכרטיס תוקן במקום (כלל 34) ולא בתגובה בלבד.
+
+**ראיות דיסקרימינציה (לא הנחות).** מחיקת `phone` מתנאי ה-seed → vitest 1/19 נכשל, harness 2/30 נכשלו, וכל הבדיקות שקדמו לשינוי עוברות תחת אותה מוטציה. עבור (ב): הטסט אדום מול ה-parser הקודם ושלושת טסטי הבקרה עוברים מול **שני** ה-parsers.
+
+**מה שנשאר פתוח ואינו שלי.** ‏`Playwright E2E` אדום — אבל אדום גם על `2c573d3f`, ה-base המדויק של ה-PR, לפני שהוא נוצר; ה-backend של staging מחזיר 500 ל-`/producers/by-slug/*`. **זה טעון מבט נפרד** — לא נפתח כרטיס במסגרת האצווה הזאת.
+
+**משימה הבאה:** אין המשך ישיר ל-MEH-2150. אם ה-500 של staging נמשך — זו נקודת ההתחלה.
+
 ## 2026-08-21 — MEH-2148 chrome נייד מקצה לקצה: חמישה PRs מוזגו
 
 **מוזג (סדר מיזוג בפועל):** ‏#3038 `bfcba7c3` · #3040 `342a06e0` · #3041 `364ebed2` · #3042 `38bdc89a` · #3044 `9c8026e5`. כל החמישה אומתו כ-squash לפי **הורה יחיד** ותבנית `<title> (#N)` (MEH-1526).
