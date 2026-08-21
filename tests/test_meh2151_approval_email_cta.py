@@ -34,6 +34,7 @@ assertion that goes red if the call site regresses, and it is why the file's
 count of covering tests is honest.
 """
 
+import inspect
 import re
 
 import pytest
@@ -385,3 +386,77 @@ def test_the_approval_endpoint_sends_both_parts_with_the_real_slug(
         )
         assert DASHBOARD_URL in sent[part_name]
     assert 'dir="rtl"' in sent["html"]
+
+
+# --- the escaping invariant, checked rather than claimed ---------------------
+#
+# Added on the MEH-2151 follow-up. The CI reviewer on PR #3054 found that
+# `_producer_approved_html`'s docstring guaranteed "EVERY interpolated value
+# goes through escape()" while three constants were interpolated raw. The
+# sentence was the only thing asserting the property, and a docstring is the
+# artifact least likely to be re-read — `.claude/rules/testing.md`, "the
+# artifact that asserts coverage is the one least likely to be checked".
+#
+# So the property is parsed out of the real function's source instead. Escaping
+# the three sites fixes today; this fixes the class.
+
+
+def _raw_interpolation_sites(source: str) -> list[str]:
+    """Every `{...}` in an f-string that is NOT wrapped in `_html_escape(...)`.
+
+    Extracted so the self-test below can run it against inputs whose answers are
+    known, without mutating the shipped function. The self-test and the real
+    check call THIS function, never a copy — a second copy is free to drift from
+    the one that matters.
+
+    Locals holding already-escaped fragments (`button`, `community`) and the
+    pre-escaped `safe_name` are allowed by name: they are built above the return
+    from values this same rule already covers, so requiring a second escape
+    would double-encode them.
+    """
+    allowed_locals = {"button", "community", "safe_name"}
+    return [
+        site
+        for site in re.findall(r"\{([^{}]+)\}", source)
+        if not site.startswith("_html_escape(") and site not in allowed_locals
+    ]
+
+
+def test_escape_probe_discriminates():
+    """Run the classifier FIRST, on three inputs whose answers are known.
+
+    If it cannot tell a wrapped interpolation from a raw one, nothing it reports
+    about the real function afterwards is worth reading — and its reassuring
+    output (an empty list) is exactly what a dead probe returns.
+    """
+    wrapped = 'f"{_html_escape(SITE_DOMAIN)}</p>"'
+    raw = 'f"{SITE_DOMAIN}</p>"'
+    allowed = 'f"{button}\\n{community}"'
+
+    assert _raw_interpolation_sites(wrapped) == []
+    assert _raw_interpolation_sites(raw) == ["SITE_DOMAIN"]
+    assert _raw_interpolation_sites(allowed) == []
+    # Anchored to a real file from this repo, not only to synthetic strings
+    # (MEH-1909): a probe proven on shapes I invented has not been shown to
+    # recognise the shape this repo actually uses.
+    real = inspect.getsource(_producer_approved_html)
+    assert re.search(r"\{[^{}]+\}", real), (
+        "the real function carries no interpolation at all — the check below "
+        "would be vacuously green"
+    )
+
+
+def test_every_interpolation_in_the_html_builder_is_escaped():
+    """The docstring's "EVERY interpolated value" claim, made falsifiable.
+
+    Un-wrap any one site and this goes red naming it. Proven by construction on
+    the follow-up: against the pre-fix source it reported exactly the three the
+    CI reviewer found — `_APPROVED_HTML_BUTTON_LABEL`,
+    `_APPROVED_HTML_DASHBOARD_LABEL`, `SITE_DOMAIN`.
+    """
+    raw = _raw_interpolation_sites(inspect.getsource(_producer_approved_html))
+    assert raw == [], (
+        f"unescaped interpolation(s) in _producer_approved_html: {raw}. Every "
+        f"value reaching the markup goes through _html_escape() — the "
+        f"docstring says so, and this is what makes that true."
+    )
