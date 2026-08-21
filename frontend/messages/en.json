@@ -4903,6 +4903,7 @@
         "place_hint_approximate": "Only the city is shown. The full address won't appear on your page or in navigation.",
         "lat_label": "Latitude",
         "lng_label": "Longitude",
+        "more_summary": "More details — label, phone, hours",
         "coords_summary": "Manual coordinates",
         "coords_hint": "Optional. Fill these in only if the map pin isn't sitting in the right place.",
         "hours_label": "Hours",
