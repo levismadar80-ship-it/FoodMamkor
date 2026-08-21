@@ -42,6 +42,7 @@ from app.schemas.schemas import (
     VacationModeState,
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
+from app.services.category_slug import resolve_unique_slug
 from app.services.vacation_state import read_vacation_state
 from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
@@ -215,7 +216,17 @@ def create_category(
 ):
     if db.query(Category).filter(Category.name == data.name).first():
         raise HTTPException(status_code=400, detail="קטגוריה בשם זה כבר קיימת")
-    cat = Category(name=data.name, emoji=data.emoji)
+    # MEH-2139 chunk 2: the column default (models.py) already derives a slug
+    # from the name, so this line would work without the argument. It is passed
+    # explicitly HERE because this is the one writer whose input is arbitrary
+    # user text — the default cannot query the session to dodge a collision, and
+    # a collision would surface as a 500 from the UNIQUE constraint instead of a
+    # category that simply got `-2` appended.
+    cat = Category(
+        name=data.name,
+        emoji=data.emoji,
+        slug=resolve_unique_slug(db, data.name),
+    )
     db.add(cat)
     db.commit()
     db.refresh(cat)

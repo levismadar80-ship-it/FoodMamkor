@@ -23,6 +23,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 
+# MEH-2139: imported under its own name so the column definition below reads as
+# a declaration rather than a call into a service.
+from app.services.category_slug import _column_default as _category_slug_default
+
 from app.database import Base
 
 # MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
@@ -801,7 +805,15 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
-    slug = Column(String(50), nullable=True)
+    # MEH-2139 chunk 2: the default covers every ORM writer — the nine
+    # `Category(name=…, emoji=…)` sites under tests/ and anything added later —
+    # so NOT NULL does not depend on each of them remembering the column.
+    # It does NOT cover a multi-row CORE insert: `seed_data.py`'s `pg_insert`
+    # evaluates this default once per statement and raises
+    # `KeyError: 'categories.name_m0'`, so that one writer passes slug itself.
+    # Measured, and written down in services/category_slug._column_default so
+    # nobody "simplifies" the explicit value back out.
+    slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
 
     producers = relationship(

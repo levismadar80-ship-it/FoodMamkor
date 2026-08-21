@@ -934,6 +934,13 @@ class ProducerOAuthSignupResponse(Token):
 class CategoryOut(BaseModel):
     id: int
     name: str
+    # MEH-2139: the STABLE identity. ADR-006 R1 — a new non-internal column
+    # belongs in the matching *Out, and nullable here matches the column's
+    # current DDL (NOT NULL is deferred to the switch step, see revision
+    # a7c3e91d5f28). Serving it now is backward-compatible with every existing
+    # consumer and means the switch step is a frontend-only change rather than
+    # a contract change plus a frontend change.
+    slug: str | None = None
     emoji: str | None = None
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
@@ -3911,6 +3918,11 @@ class ProductHit(BaseModel):
 class CategoryHit(BaseModel):
     id: int
     name: str
+    # MEH-2139: same reasoning as CategoryOut. Added in the SAME PR on purpose —
+    # a second serializer of the same entity is exactly the edit that gets
+    # forgotten, and then the switch step finds one surface carrying the slug
+    # and one silently dropping it.
+    slug: str | None = None
     emoji: str | None = None
 
 
