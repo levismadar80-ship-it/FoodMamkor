@@ -17,6 +17,7 @@ import OfferBadge from "@/components/OfferBadge";
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
+import { resolveStoreHours } from "@/lib/hours";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
@@ -124,6 +125,11 @@ export default function ProducerSections({
   const t = useTranslations();
   const format = useFormatter();
   const locale = useLocale();
+  // MEH-2142: which store-hours string this page shows — the primary
+  // location's, falling back to the legacy business-level column. Resolved
+  // ONCE, here, because the location section both gates on it and renders it,
+  // and two call sites would be two chances to disagree.
+  const storeHours = resolveStoreHours(producer);
   const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
@@ -672,7 +678,12 @@ export default function ProducerSections({
           MiniMap (never a Google embed) with brand nav buttons. The owner
           pencil (MEH-1306) moved inline beside the heading, matching the
           bio/products idiom. */}
-      {(parseHasLocation(producer) || producer.opening_hours) && (
+      {/* MEH-2142: the gate reads the RESOLVED hours, not the legacy column.
+          Both halves have to move together — gating on `producer.opening_hours`
+          while rendering the resolved value would hide the whole section from a
+          business whose hours live only on her primary location row, which is
+          exactly the business this change is for. */}
+      {(parseHasLocation(producer) || storeHours) && (
         <section
           id="section-location"
           className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
@@ -690,7 +701,10 @@ export default function ProducerSections({
               {producer.city}
             </p>
           )}
-          <OpeningHours opening_hours={producer.opening_hours} />
+          {/* MEH-2142: primary location's hours, falling back to the legacy
+              business-level column. One resolver so the gate above and this
+              render can never disagree. */}
+          <OpeningHours opening_hours={storeHours} />
           {/* MEH-1611 chunk 2: the map now shows every point this business has
               — its branch plus each pickup / market stand — not just the primary
               pin. Complements the textual pickup list DeliveryBlock renders

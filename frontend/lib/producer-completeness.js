@@ -13,6 +13,11 @@
 // read red by mistake. producerPoints() still falls back to Producer.lat/lng
 // when there is no usable location row, so today's producers are unaffected.
 import { producerPoints } from "./producerPoints.js";
+// MEH-2142: the same resolver the public page uses, so "does she have hours?"
+// and "which hours do we show?" cannot answer differently. Reading the column
+// alone here would mark every business whose hours live on her primary
+// location row as permanently missing them.
+import { resolveStoreHours } from "./hours.js";
 
 // MEH-831: the canonical Hebrew field labels this heuristic emits in `missing`.
 // Single source of truth — ProfileCompletenessCard imports these to build its
@@ -98,7 +103,12 @@ export function producerCompleteness(p) {
   // DO NOT add order_window here: it is a per-cycle ordering window, not a
   // standing profile field, so an owner who runs no order cycles would read as
   // permanently incomplete. Deliberately excluded (MEH-1884).
-  const noHours = !(p.opening_hours || "").trim();
+  //
+  // MEH-2142: resolved, not read off the column. Store hours became a
+  // per-location fact; a business that filled them in on her primary location
+  // HAS hours, and the old check would have kept telling her she did not —
+  // while pointing at an editor this change removed.
+  const noHours = !resolveStoreHours(p);
   if (noHours) missing.push(COMPLETENESS_FIELDS.hours);
 
   let priority = "green";
