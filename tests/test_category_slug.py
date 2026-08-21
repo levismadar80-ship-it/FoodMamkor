@@ -106,21 +106,39 @@ def test_sha1_fallback_is_stable_ACROSS_PROCESSES():
     Measured while writing the module: three `hash("!!!")` runs returned
     47676004 / 50954049 / 13075338.
     """
-    # The `app` package lives under backend/, not at the repo root.
-    backend = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"
+    # Load the module BY FILE PATH rather than importing `app.services…`.
+    # The module imports only `hashlib` and `re` — it does not need the `app`
+    # package — so a package import would drag FastAPI and SQLAlchemy into two
+    # fresh interpreters for nothing. That is not merely slow: it is CPU
+    # contention, and `TestLoginTimingEqualization` (test_api.py) is a p95
+    # latency assertion whose own docstring says a contended runner invalidates
+    # the measurement. Measured on this machine: with the package-import form
+    # in the same run, that test needed 1 rerun; with it absent, 0. Loading by
+    # path also isolates the subject — the child cannot pass or fail for a
+    # reason living in app startup.
+    module_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "backend",
+        "app",
+        "services",
+        "category_slug.py",
     )
     code = (
-        f"import sys; sys.path.insert(0, {backend!r});"
-        "from app.services.category_slug import slug_for_name;"
-        "print(slug_for_name('!!!'))"
+        "import importlib.util as u;"
+        f"spec = u.spec_from_file_location('category_slug_child', {module_path!r});"
+        "mod = u.module_from_spec(spec); spec.loader.exec_module(mod);"
+        "print(mod.slug_for_name('!!!'))"
     )
 
     outs = []
     for seed in ("1", "999999"):
         env = {**os.environ, "PYTHONHASHSEED": seed}
         r = subprocess.run(
-            [sys.executable, "-c", code], capture_output=True, text=True, env=env, timeout=120
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=120,
         )
         # CONTROL: a non-zero exit means the child never reached the function,
         # and two empty strings compare equal — a green that proves nothing.
@@ -187,7 +205,9 @@ def test_fixed_table_matches_the_revision_copy():
     )
     # CONTROL: a renamed or deleted revision file makes `text` empty, and an
     # empty corpus satisfies every "is in" check below vacuously.
-    assert len(matches) == 1, f"expected exactly 1 chunk-1 revision, found {len(matches)}"
+    assert len(matches) == 1, (
+        f"expected exactly 1 chunk-1 revision, found {len(matches)}"
+    )
     text = matches[0].read_text(encoding="utf-8")
     assert len(text) > 500, "revision file read back suspiciously short"
 
