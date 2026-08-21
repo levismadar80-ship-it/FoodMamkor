@@ -4,13 +4,16 @@
  * Drives the REAL /producer/dashboard/edit page in Chromium against a
  * `next start` server, with every /api/** call fulfilled from fixtures (the CC
  * sandbox has no backend — CLAUDE.md "Known Bug Patterns"). Captures 375 + 1440
- * in the three states the DoD names:
+ * in the states the DoD names:
  *
  *   1-collapsed  — a FIRST location: kind + city + address + map visible,
  *                  "פרטים נוספים" shut, and no "מיקום ראשי" checkbox
  *   2-expanded   — the same form with the section opened
  *   3-clash      — a SECOND location in a town the business already uses:
  *                  the section reveals itself and תווית takes focus
+ *   4-seed       — EDITING a saved row whose only detail value is a phone:
+ *                  the section is seeded open, and the same row without it
+ *                  stays shut (MEH-2150)
  *
  * CONTROLS — run first and read them. The AC is largely about things being
  * ABSENT (a shut section, a hidden checkbox), and absence is satisfied just as
@@ -58,7 +61,25 @@ const EXISTING = {
   is_primary: true,
 };
 
-async function openEditor(browser, width, height, locations) {
+// A saved row whose ONLY populated detail field is the phone. label is blank,
+// hours are null and precision is the default, so the seed condition
+// (LocationsEditor.jsx:561-568) can only be satisfied by `phone` — which is
+// what makes state 4 a test of that trigger rather than of "edit forms open".
+const PHONE_ONLY = {
+  ...EXISTING,
+  id: "22222222-2222-2222-2222-222222222222",
+  label: "",
+  phone: "052-1234567",
+  opening_hours: null,
+  location_precision: "exact",
+};
+
+// The same row with the phone cleared: none of the four triggers set. This is
+// the negative half — without it "seeded open" is satisfied just as well by an
+// edit form that is unconditionally open.
+const NO_TRIGGERS = { ...PHONE_ONLY, phone: null };
+
+async function openEditor(browser, width, height, locations, { edit = false } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height },
     locale: "he-IL",
@@ -109,12 +130,16 @@ async function openEditor(browser, width, height, locations) {
     await card.click();
     await page.waitForTimeout(500);
   }
-  const addCta =
-    locations.length === 0
+  // `edit: true` opens the pencil on the FIRST saved row instead of the add
+  // form — seeding is a property of an existing row, so it cannot be observed
+  // on a blank create form (LocationsEditor.jsx:462, aria-label).
+  const cta = edit
+    ? page.getByLabel("ערכו מיקום").first()
+    : locations.length === 0
       ? page.getByRole("button", { name: /הוספת מיקום|הוסיפי מיקום|מיקום/ }).last()
       : page.getByTestId("locations-add");
-  if ((await addCta.count()) > 0) {
-    await addCta.click().catch(() => {});
+  if ((await cta.count()) > 0) {
+    await cta.click().catch(() => {});
     await page.waitForTimeout(600);
   }
   return { ctx, page };
@@ -248,6 +273,71 @@ async function main() {
         fullPage: false,
       });
       await ctx.close();
+    }
+
+    // ---- State 4: the phone-only SEED trigger, with its negative half ----
+    // The seed condition has four triggers (label || phone || hours ||
+    // precision). This harness measured none of them before MEH-2150; the
+    // vitest suite measured three, and named the fourth only in its negative
+    // control. phone is the one that had never been shown to open the section
+    // on its own. (CI reviewer, PR #3036.)
+    const seedOpen = async (rows) => {
+      const { ctx, page } = await openEditor(browser, width, height, rows, {
+        edit: true,
+      });
+      const formCount = await page.getByTestId("location-form").count();
+      const phoneValue = await page
+        .getByPlaceholder("למשל: 050-1234567")
+        .inputValue()
+        .catch(() => null);
+      const open = await page
+        .getByTestId("location-details")
+        .evaluate((el) => el.hasAttribute("open"))
+        .catch(() => null);
+      return { ctx, page, formCount, phoneValue, open };
+    };
+
+    {
+      const r = await seedOpen([PHONE_ONLY]);
+      check(
+        `[${label}] CONTROL: the EDIT form is open`,
+        r.formCount > 0,
+        "if this fails, ignore the seed results below",
+      );
+      // Proves the fixture actually reached the form. Without it, an "open"
+      // reading could come from a form that never received the row — the
+      // null-that-is-also-the-answer this repo keeps getting bitten by.
+      check(
+        `[${label}] CONTROL: the row's phone is IN the form`,
+        (r.phoneValue || "").replace(/\D/g, "") === "0521234567",
+        `read ${JSON.stringify(r.phoneValue)}`,
+      );
+      check(`[${label}] a phone-only row seeds the section OPEN`, r.open === true);
+      await r.page.getByTestId("location-form").scrollIntoViewIfNeeded().catch(() => {});
+      await r.page.waitForTimeout(200);
+      await r.page.screenshot({
+        path: `${OUT}/location-form-${label}-4-phone-only-seeds-open.png`,
+        fullPage: false,
+      });
+      await r.ctx.close();
+    }
+
+    {
+      // The discriminating half: the SAME row with the phone cleared. Without
+      // this, "seeded open" is satisfied just as well by an edit form that is
+      // unconditionally open, and the assertion above would be vacuous.
+      const r = await seedOpen([NO_TRIGGERS]);
+      check(
+        `[${label}] CONTROL: the EDIT form is open (no-trigger row)`,
+        r.formCount > 0,
+        "if this fails, the SHUT result below is void",
+      );
+      check(
+        `[${label}] the same row with NO trigger stays SHUT`,
+        r.open === false,
+        `open=${r.open}`,
+      );
+      await r.ctx.close();
     }
   }
 

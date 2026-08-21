@@ -130,7 +130,7 @@ mechanically true rather than aspirational.
 | `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:64` | tooltips. ChatWidget's FAB shares the value via inline `zIndex: 9999` (`ChatWidget.jsx:212,220`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
 | `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
 | `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
-| `z-[9000]` | 20 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50` |
+| `z-[9000]` | 21 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm |
 | `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
 | `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
 | `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |

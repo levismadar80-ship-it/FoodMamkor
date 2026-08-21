@@ -4870,7 +4870,12 @@
         "cancel": "Cancel"
       },
       "top_product_hint": "Star one product to make it your top product — it appears as a highlighted card at the top of the product list on your page.",
-      "top_product_empty_hint": "Add a product to choose a top product."
+      "top_product_empty_hint": "Add a product to choose a top product.",
+      "duplicate_name_confirm": {
+        "title": "A product with this name already exists. Continue?",
+        "confirm": "Add product",
+        "cancel": "Cancel"
+      }
     },
     "locations": {
       "section_heading": "Locations",
@@ -5114,7 +5119,7 @@
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
     "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
-    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip."
+    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",
