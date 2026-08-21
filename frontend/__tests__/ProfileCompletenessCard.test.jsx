@@ -145,7 +145,11 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
         `${EDIT}#locations`,
         `${EDIT}#profile-products`,
         `${EDIT}#profile-contact`,
-        `${EDIT}#hours`,
+        // MEH-2142: the hours row now points at #locations too — the
+        // business-level hours card was removed and store hours are edited per
+        // location. Both the location row and the hours row therefore land on
+        // the same editor, which is the point: one place to say where and when.
+        `${EDIT}#locations`,
       ]),
     );
   });
@@ -248,9 +252,12 @@ describe("MEH-1895 — hours is the fifth step", () => {
 
     // Hours is the only remaining step → it drives the next-step box + CTA.
     expect(screen.getAllByText("שעות פתיחה").length).toBeGreaterThanOrEqual(2);
+    // MEH-2142: → #locations, not #hours. The old target was deleted with the
+    // business-level card, and a CTA pointing at a card that no longer exists
+    // is the MEH-2058 failure repeated.
     expect(
       screen.getByRole("link", { name: "השלימו את הפרופיל שלך" }),
-    ).toHaveAttribute("href", `${EDIT}#hours`);
+    ).toHaveAttribute("href", `${EDIT}#locations`);
   });
 
   it("whitespace-only hours count as missing — the same trim the heuristic uses", () => {

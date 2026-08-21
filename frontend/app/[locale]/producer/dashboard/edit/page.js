@@ -77,7 +77,7 @@ import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -114,8 +114,11 @@ const ANCHOR_TO_KEY = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  hours: "hours",
-  // MEH-1544: weekly order-acceptance window (sibling of hours, same group).
+  // MEH-2142: `hours` is gone from all four registries below. The
+  // business-level opening-hours card was removed — store hours are a
+  // per-location fact now, edited in LocationsEditor. A stale #hours deep link
+  // (an old email, a bookmark) therefore falls through to the default group
+  // rather than resolving to a card that no longer exists.
   "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
@@ -170,7 +173,6 @@ const KEY_TO_ANCHOR = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  hours: "hours",
   orderWindow: "order-window",
   // MEH-1823: registered here so #offer deep-links resolve like every other
   // card. These three maps are a guarded registry — a card added to the JSX
@@ -183,7 +185,8 @@ const KEY_TO_ANCHOR = {
 // keys and anchor contract above are UNCHANGED — this only assigns each card to
 // one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
 // pricing → profile; delivery + hours → location; license + kashrut → the one
-// unified "trust" card.
+// unified "trust" card. (MEH-2142 removed the hours card; the sentence is left
+// as written because it records the 21/07 SYNC decision, not today's layout.)
 const GROUP_KEYS = ["profile", "trust", "location", "contact"];
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub
@@ -203,7 +206,6 @@ const KEY_TO_GROUP = {
   // registered here so a #locations deep link resolves to the right group.
   locations: "location",
   delivery: "location",
-  hours: "location",
   orderWindow: "location",
   // MEH-1823: the offer lives in the location group — it is read against the
   // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
@@ -238,7 +240,10 @@ const GROUP_MEMBERS = {
   // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
   // the group's only location-writing surface and isn't tracked here (see
   // MEH-1544's note above for why an opt-in-shaped field stays out of the count).
-  location: ["delivery", "hours"],
+  // MEH-2142: `hours` was a member until its card was removed. The count is
+  // now "{done}/1" for this group, which is correct — a member with no card
+  // would make the group permanently incompletable.
+  location: ["delivery"],
   contact: ["contact", "questions"],
 };
 
@@ -258,7 +263,7 @@ const GROUP_MEMBERS = {
 //
 // Allowlist, not denylist: a card key added later stays out of the hub until its
 // preview is shown to be short and fixed-shape. Keys with no preview node at all
-// (kashrut / delivery / hours / questions / ownerStory) are already filtered by
+// (kashrut / delivery / questions / ownerStory) are already filtered by
 // the `previews[k]` check below and are deliberately absent here.
 const HUB_PREVIEW_KEYS = new Set([
   "images", // PreviewThumbs — fixed 40px squares
@@ -633,7 +638,6 @@ function EditPageInner() {
     delivery:
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
-    hours: Boolean((profile.opening_hours || "").trim()),
     // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
     orderWindow: Object.keys(profile.order_window || {}).length > 0,
     contact: contactFilled,
@@ -678,13 +682,12 @@ function EditPageInner() {
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
-    hours: t("hours.heading"),
     orderWindow: t("order_window.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1021,7 +1024,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: location — locations, delivery, hours ===== */}
+      {/* ===== GROUP: location — locations, delivery, order window ===== */}
       <div
         hidden={group !== "location"}
         className="space-y-6"
@@ -1098,24 +1101,17 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
-        <EditAccordionCard
-          anchorId="hours"
-          title={t("hours.heading")}
-          summary={profile.opening_hours || tAcc("hours_empty")}
-          open={openKey === "hours"}
-          onToggle={() => toggleKey("hours")}
-        >
-          <HoursCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-2142 — the business-level opening-hours card stood here and was
+            REMOVED. Store hours are a per-location fact: the owner edits them
+            on each location in LocationsEditor (the "פרטים נוספים" section of
+            the locations card, same group), and the public page prefers her
+            primary location's value. Asking for the same fact twice, in two
+            cards, is what made owners fill it in twice and still not know which
+            one the site showed. `Producer.opening_hours` stays as a read
+            fallback and is no longer owner-writable (producer_me.py). */}
 
-        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in and separate from
-            the opening-hours card above: a business that never opens this
-            renders nothing on its public page. */}
+        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in, and the only
+            "when" card left in this group. */}
         <EditAccordionCard
           anchorId="order-window"
           title={t("order_window.heading")}
