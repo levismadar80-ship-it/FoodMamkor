@@ -18,14 +18,18 @@
  *           layer per the MEH-1539 standard — card intro, per-field hints,
  *           example placeholders, lat/lng behind a collapsed disclosure);
  *           MEH-1936 (CitySearch + AddressSearch + MiniMap confirmation —
- *           closes the geocoding gap MEH-1421 deferred).
+ *           closes the geocoding gap MEH-1421 deferred);
+ *           MEH-2144 (progressive disclosure on the new-location form — kind +
+ *           place + confirmation map up front, the four detail fields behind
+ *           "פרטים נוספים", GBP pattern).
  */
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import {
+  CaretDown,
   CheckCircle,
   MapPin,
   Pencil,
@@ -58,6 +62,12 @@ const ADDRESS_CONFIRM_ZOOM = 16;
 const ADDRESS_QUERY_FLOOR = 3;
 
 const KINDS = ["branch", "pickup", "market_stand"];
+
+// MEH-2144: mirrors SAME_CITY_NEEDS_LABEL_CODE (producer_me.py). A literal
+// rather than an import because there is no shared constants module across the
+// stack; `lib/errors.js:sameCityLabelParams` is what actually matches the wire
+// value, and this name is only used to label the state locally.
+const SAME_CITY_CODE = "location_same_city_needs_label";
 const EMPTY_FORM = {
   kind: "branch",
   label: "",
@@ -136,12 +146,18 @@ export default function LocationsEditor() {
   // Scope: FORM submissions only. Row actions (delete, set-primary) keep the
   // toast — there is no open form to put their message in.
   const [saveError, setSaveError] = useState(null);
+  // MEH-2144: the same message, plus WHICH error it was. The rendered string is
+  // localized prose and matching on it would be a locale-dependent guess; the
+  // backend's `code` is the stable, locale-independent discriminator (the whole
+  // reason MEH-1940 introduced it), and the form uses it to decide whether to
+  // reveal the תווית field.
+  const [saveErrorCode, setSaveErrorCode] = useState(null);
   // Cheap to call on every keystroke: returns the identical value when already
   // null, so React bails out of the re-render.
-  const clearSaveError = useCallback(
-    () => setSaveError((prev) => (prev ? null : prev)),
-    [],
-  );
+  const clearSaveError = useCallback(() => {
+    setSaveError((prev) => (prev ? null : prev));
+    setSaveErrorCode((prev) => (prev ? null : prev));
+  }, []);
 
   // MEH-1940: render the same-town error from he.json, keyed on the backend's
   // `code`. The old message invented label examples ("הדוכן בשוק") — which are
@@ -185,6 +201,14 @@ export default function LocationsEditor() {
     [sameCityMessage, t],
   );
 
+  // MEH-2144: true exactly when the server said `location_same_city_needs_label`
+  // — read off the same helper the message uses, so the two can never disagree
+  // about which error this was.
+  const isSameCityError = useCallback(
+    (err) => Boolean(sameCityLabelParams(err?.response?.data?.detail)),
+    [],
+  );
+
   useEffect(() => {
     setLoadError(false);
     api
@@ -208,7 +232,13 @@ export default function LocationsEditor() {
   const handleCreate = useCallback(
     async (form) => {
       const { data: body, error } = validate(form);
-      if (error) return setSaveError(error);
+      if (error) {
+        // A client-side validation failure is never the same-city error (that
+        // one only exists server-side), so the code is cleared rather than left
+        // pointing at a previous attempt.
+        setSaveErrorCode(null);
+        return setSaveError(error);
+      }
       setSaving(true);
       try {
         await api.post("/producers/me/locations", body);
@@ -217,17 +247,24 @@ export default function LocationsEditor() {
         reload();
       } catch (err) {
         setSaveError(saveErrorFrom(err));
+        setSaveErrorCode(isSameCityError(err) ? SAME_CITY_CODE : null);
       } finally {
         setSaving(false);
       }
     },
-    [validate, reload, saveErrorFrom],
+    [validate, reload, saveErrorFrom, isSameCityError],
   );
 
   const handleUpdate = useCallback(
     async (id, form) => {
       const { data: body, error } = validate(form);
-      if (error) return setSaveError(error);
+      if (error) {
+        // A client-side validation failure is never the same-city error (that
+        // one only exists server-side), so the code is cleared rather than left
+        // pointing at a previous attempt.
+        setSaveErrorCode(null);
+        return setSaveError(error);
+      }
       setSaving(true);
       try {
         await api.put(`/producers/me/locations/${id}`, body);
@@ -236,11 +273,12 @@ export default function LocationsEditor() {
         reload();
       } catch (err) {
         setSaveError(saveErrorFrom(err));
+        setSaveErrorCode(isSameCityError(err) ? SAME_CITY_CODE : null);
       } finally {
         setSaving(false);
       }
     },
-    [validate, reload, saveErrorFrom],
+    [validate, reload, saveErrorFrom, isSameCityError],
   );
 
   const handleSetPrimary = useCallback(
@@ -316,9 +354,16 @@ export default function LocationsEditor() {
             <li key={loc.id}>
               <LocationForm
                 heading={t("edit_heading")}
+                // MEH-2144: siblings EXCLUDING this row — the same-city check
+                // must not flag a location against itself, which is the
+                // `exclude_id` the server applies (producer_me.py
+                // `_reject_same_city_without_label`). Mirroring it here keeps
+                // the client hint and the server rule agreeing.
+                siblings={locations.filter((l) => l.id !== loc.id)}
                 initial={toEditForm(loc)}
                 saving={saving}
                 error={saveError}
+                errorCode={saveErrorCode}
                 onDirty={clearSaveError}
                 onSubmit={(form) => handleUpdate(loc.id, form)}
                 onCancel={() => {
@@ -349,9 +394,11 @@ export default function LocationsEditor() {
       {adding ? (
         <LocationForm
           heading={t("add_heading")}
+          siblings={locations}
           initial={EMPTY_FORM}
           saving={saving}
           error={saveError}
+          errorCode={saveErrorCode}
           onDirty={clearSaveError}
           onSubmit={handleCreate}
           onCancel={() => {
@@ -435,9 +482,11 @@ function LocationForm({
   initial,
   saving,
   error,
+  errorCode,
   onDirty,
   onSubmit,
   onCancel,
+  siblings = [],
 }) {
   const t = useTranslations("settings.locations");
   const tForm = useTranslations("settings.locations.form");
@@ -499,6 +548,79 @@ function LocationForm({
   // the editor.
   const [precisionTouched, setPrecisionTouched] = useState(false);
   const derivePrecision = (f, next) => (precisionTouched ? f.location_precision : next);
+
+  // MEH-2144 — progressive disclosure (Google Business Profile pattern: ask
+  // WHERE first, details after). Eight fields at once is the heaviest moment in
+  // the dashboard and it lands on a brand-new owner adding her first location.
+  //
+  // Seeded OPEN when the row already carries any of the four values, for the
+  // same reason MEH-1563 seeds the coordinates disclosure open: editing must
+  // never hide something the owner previously set. Seeded via useState so a
+  // re-render cannot reopen a section she just closed.
+  const [detailsOpen, setDetailsOpen] = useState(
+    () =>
+      Boolean(
+        (initial.label || "").trim() ||
+          (initial.phone || "").trim() ||
+          (initial.opening_hours || "").trim(),
+      ) || (initial.location_precision || "exact") !== "exact",
+  );
+  const labelRef = useRef(null);
+  // Reveal-and-focus is a one-shot per clash, not a latch: without this the
+  // effect would re-focus תווית on every keystroke while the error is still on
+  // screen, stealing the caret from whatever she is actually typing.
+  const revealedForError = useRef(false);
+
+  // The client-side half of the same-city rule. The server owns the invariant
+  // (`_reject_same_city_without_label`); this only decides whether to REVEAL a
+  // field, so a mismatch costs an open section, never a wrong save. Compared
+  // the same way the server compares — trimmed and case-insensitive — so the
+  // hint and the 422 agree about what "the same town" means.
+  const typedCity = (form.city || "").trim().toLowerCase();
+  const clashesWithSibling =
+    typedCity.length > 0 &&
+    siblings.some((l) => (l?.city || "").trim().toLowerCase() === typedCity);
+  // Only a clash WITHOUT a label needs the field: once she has typed one, the
+  // rule is satisfied and re-opening the section would be noise.
+  const needsLabel =
+    (errorCode === SAME_CITY_CODE || clashesWithSibling) &&
+    !(form.label || "").trim();
+
+  //
+  // REVEAL on both triggers; MOVE FOCUS on the server one only.
+  //
+  // The ticket asks for reveal-and-focus on both. Focus is narrowed to the 422
+  // deliberately, and the reason is a measurement rather than a preference. The
+  // client trigger fires WHILE SHE IS TYPING the town — and CitySearch, a
+  // combobox, keeps focus in its own input. Driving the two viewports showed
+  // exactly that split: at 375 the focus call landed on תווית, at 1440 the
+  // active element was still the city input a full 2s later. Same code, two
+  // answers, because the race is with a component that is legitimately holding
+  // the caret.
+  //
+  // Yanking the caret out of a field mid-word is hostile even when it wins the
+  // race, so the fix is not to win it harder. After the 422 there is no such
+  // conflict — she has submitted, nothing has focus — and focusing is both
+  // correct and deterministic.
+  //
+  // Net: the field is always REVEALED when it is needed, which is the part that
+  // makes the rule discoverable; focus follows only where it cannot steal.
+  useEffect(() => {
+    if (!needsLabel) {
+      // Re-arm once the clash is resolved, so a SECOND clash later in the same
+      // form still reveals.
+      revealedForError.current = false;
+      return;
+    }
+    if (revealedForError.current) return;
+    revealedForError.current = true;
+    setDetailsOpen(true);
+    if (errorCode !== SAME_CITY_CODE) return;
+    // The section has to be open before the input exists to receive focus. rAF
+    // rather than a timeout: one frame is exactly the wait, and it is not a
+    // duration anyone has to tune.
+    requestAnimationFrame(() => labelRef.current?.focus());
+  }, [needsLabel, errorCode]);
 
   // MEH-1936 / MEH-1808: coordinates are only trustworthy while they belong to
   // the text currently in the address field. Typing over a picked address
@@ -619,30 +741,6 @@ function LocationForm({
             ))}
           </select>
         </Field>
-        <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
-          <select
-            value={form.location_precision}
-            // MEH-1936: the manual select stays authoritative. One deliberate
-            // change here and the auto-derivation stops writing to this field
-            // for the rest of the form's life.
-            onChange={(e) => {
-              setPrecisionTouched(true);
-              set("location_precision")(e);
-            }}
-            className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
-            data-testid="location-precision"
-          >
-            <option value="exact">{tForm("precision_exact")}</option>
-            <option value="approximate">{tForm("precision_approximate")}</option>
-          </select>
-        </Field>
-        <Field label={tForm("label_label")} hint={tForm("label_hint")}>
-          <TextInput
-            value={form.label}
-            onChange={set("label")}
-            placeholder={tForm("label_placeholder")}
-          />
-        </Field>
         {/* MEH-1940: sits directly under the תווית field — the field the
             same-city 422 asks her to fill — instead of in the bottom strip
             shared by the cookie banner, the chat widget and the BottomNav.
@@ -698,32 +796,6 @@ function LocationForm({
           />
           <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
         </div>
-        <Field label={tForm("phone_label")}>
-          <TextInput
-            value={form.phone}
-            onChange={set("phone")}
-            type="tel"
-            placeholder={tForm("phone_placeholder")}
-          />
-        </Field>
-        <Field label={tForm("hours_label")}>
-          <TextInput
-            value={form.opening_hours}
-            onChange={set("opening_hours")}
-            placeholder={tForm("hours_placeholder")}
-          />
-        </Field>
-        <label className="flex items-center gap-2 self-end text-sm text-text">
-          <input
-            type="checkbox"
-            checked={!!form.is_primary}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, is_primary: e.target.checked }))
-            }
-            data-testid="location-primary"
-          />
-          {tForm("primary_label")}
-        </label>
       </div>
 
       {/* MEH-1936 — three mutually exclusive states, keyed on whether the text
@@ -745,6 +817,116 @@ function LocationForm({
         lng={form.lng}
         name={form.label || form.address || form.city}
       />
+
+      {/* MEH-2144 — "פרטים נוספים": תווית · טלפון · שעות · דיוק.
+          Google Business Profile asks WHERE first and details after; eight
+          fields at once is the heaviest moment in the dashboard and it lands on
+          a brand-new owner adding her first location.
+
+          A <details> like the coordinates disclosure below, but CONTROLLED —
+          `open` plus `onToggle` — because this one has to be openable from code
+          when a same-city clash needs תווית. The coordinates one is seeded once
+          and never reopened, so it stays uncontrolled.
+
+          The four inputs stay MOUNTED whether the section is open or shut
+          (that is what <details> does), so anything typed here survives a
+          collapse: the state lives in `form`, not in the DOM, and buildPayload
+          reads it either way. Asserted by a test rather than assumed.
+
+          Kept SEPARATE from the coordinates disclosure below rather than merged
+          into one: raw lat/lng is a different tier — an escape hatch for when
+          geocoding fails — and the AC names exactly these four fields. */}
+      <details
+        open={detailsOpen}
+        onToggle={(e) => setDetailsOpen(e.currentTarget.open)}
+        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        data-testid="location-details"
+      >
+        {/* 44px tap target and no `display` override — same two constraints
+            MEH-1595 established on the coordinates summary below. The caret is
+            rendered explicitly and the native marker hidden, so the icon can be
+            the Phosphor one the rest of the dashboard uses; `marker:hidden`
+            covers Firefox, `[&::-webkit-details-marker]:hidden` Safari/Chrome. */}
+        <summary
+          className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 py-3 text-xs font-medium text-fg-muted marker:hidden [&::-webkit-details-marker]:hidden"
+          data-testid="location-details-toggle"
+        >
+          <CaretDown
+            size={14}
+            weight="bold"
+            aria-hidden="true"
+            className={`shrink-0 transition-transform motion-reduce:transition-none ${
+              detailsOpen ? "rotate-180" : ""
+            }`}
+          />
+          {tForm("more_summary")}
+        </summary>
+
+        <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Field label={tForm("label_label")} hint={tForm("label_hint")}>
+            <TextInput
+              ref={labelRef}
+              value={form.label}
+              onChange={set("label")}
+              placeholder={tForm("label_placeholder")}
+              testid="location-label"
+            />
+          </Field>
+          <Field label={tForm("phone_label")}>
+            <TextInput
+              value={form.phone}
+              onChange={set("phone")}
+              type="tel"
+              placeholder={tForm("phone_placeholder")}
+            />
+          </Field>
+          <Field label={tForm("hours_label")}>
+            <TextInput
+              value={form.opening_hours}
+              onChange={set("opening_hours")}
+              placeholder={tForm("hours_placeholder")}
+            />
+          </Field>
+          <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
+            <select
+              value={form.location_precision}
+              // MEH-1936: the manual select stays authoritative. One deliberate
+              // change here and the auto-derivation stops writing to this field
+              // for the rest of the form's life. Unchanged by MEH-2144 — the
+              // field moved, its behaviour did not.
+              onChange={(e) => {
+                setPrecisionTouched(true);
+                set("location_precision")(e);
+              }}
+              className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+              data-testid="location-precision"
+            >
+              <option value="exact">{tForm("precision_exact")}</option>
+              <option value="approximate">{tForm("precision_approximate")}</option>
+            </select>
+          </Field>
+          {/* MEH-2144: hidden when the business has NO locations yet. The
+              server forces the first row primary regardless
+              (producer_me.py `create_my_location`: `if existing_count == 0`),
+              so the checkbox is a control whose only two states produce the
+              same result — the "conditional UI" the 5-state rule exists to
+              catch. Shown from the second location onward, where it decides
+              something. */}
+          {siblings.length > 0 ? (
+            <label className="flex items-center gap-2 self-end text-sm text-text">
+              <input
+                type="checkbox"
+                checked={!!form.is_primary}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, is_primary: e.target.checked }))
+                }
+                data-testid="location-primary"
+              />
+              {tForm("primary_label")}
+            </label>
+          ) : null}
+        </div>
+      </details>
 
       {/* MEH-1563: raw coordinates are an escape hatch, not a required field —
           collapsed by default so the form no longer opens on two unexplained
@@ -903,9 +1085,18 @@ function Field({ label, hint, children }) {
   );
 }
 
-function TextInput({ value, onChange, type = "text", inputMode, testid, placeholder }) {
+// MEH-2144: forwardRef so the same-city clash can focus תווית after revealing
+// the disclosure. React here is 18.3.1 (measured from node_modules, not from
+// the `^18.3.1` range) — `ref` is not a plain prop until 19, so forwardRef is
+// required rather than stylistic. Every existing call site passes no ref and is
+// unaffected.
+const TextInput = forwardRef(function TextInput(
+  { value, onChange, type = "text", inputMode, testid, placeholder },
+  ref,
+) {
   return (
     <input
+      ref={ref}
       type={type}
       inputMode={inputMode}
       value={value}
@@ -915,4 +1106,4 @@ function TextInput({ value, onChange, type = "text", inputMode, testid, placehol
       className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
     />
   );
-}
+});
