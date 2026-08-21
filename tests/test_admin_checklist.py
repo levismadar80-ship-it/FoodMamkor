@@ -21,7 +21,7 @@ tests/test_producer_me_delivery_fields.py:27 (owner wiring).
 
 from uuid import UUID
 
-from app.models.models import ProducerReviewCheck
+from app.models.models import AdminChecklistItem, ProducerReviewCheck
 from app.routers.admin_checklist import router as admin_checklist_router
 from conftest import auth_header, make_producer, make_user
 
@@ -34,6 +34,22 @@ def _admin(db):
 
 def _checks_url(producer_id):
     return f"/admin/producers/{producer_id}/review-checks"
+
+
+def _item_row(db, item_id):
+    """Read an item straight from the DB, bypassing the session's cache.
+
+    `expire_all()` matters: the request handler committed through a different
+    session, so a cached instance here would answer with the pre-edit value and
+    the assertion would fail for a reason that has nothing to do with the
+    column.
+    """
+    db.expire_all()
+    return (
+        db.query(AdminChecklistItem)
+        .filter(AdminChecklistItem.id == UUID(item_id))
+        .one()
+    )
 
 
 def _seed_items(client, db, admin, labels=("סעיף א", "סעיף ב")):
@@ -85,6 +101,32 @@ def test_reorder_follows_array_order_not_client_positions(client, db):
     )
     assert resp.status_code == 200, resp.text
     assert [r["label"] for r in resp.json()] == ["ב", "א"]
+
+
+def test_updated_at_advances_when_an_item_is_edited(client, db):
+    """`updated_at` tracks the last EDIT, not the insert.
+
+    The migration gives the column `server_default=now()`, which fires on
+    INSERT only — Postgres will not refresh it on its own. What refreshes it is
+    the ORM's `onupdate=func.now()`, and a claim that a column has an onupdate
+    is worth exactly as much as a run that shows the value moving. This asserts
+    the observable behaviour rather than the presence of the clause, so it
+    still holds if the mechanism is later swapped for a trigger.
+    """
+    admin = _admin(db)
+    rows = _seed_items(client, db, admin, labels=("לפני",))
+    item_id = rows[0]["id"]
+    before = _item_row(db, item_id).updated_at
+
+    resp = client.put(
+        ITEMS,
+        json={"items": [{"id": item_id, "label": "אחרי"}]},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+
+    after = _item_row(db, item_id).updated_at
+    assert after > before, f"{before} -> {after}"
 
 
 def test_inactive_items_hidden_by_default_and_shown_on_request(client, db):

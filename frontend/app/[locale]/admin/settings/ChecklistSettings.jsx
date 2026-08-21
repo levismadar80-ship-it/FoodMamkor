@@ -60,12 +60,22 @@ export default function ChecklistSettings() {
 
   useEffect(load, [load]);
 
-  const update = (index, patch) =>
+  // Every mutation clears the confirmation. "נשמר" is a claim about the list
+  // on screen, not about a save that happened at some point in the past — so
+  // the first keystroke after a save has to withdraw it, or the admin reads a
+  // tick next to unsaved work. Same defect class as a checked DoD box: an
+  // artifact asserting a state it is no longer describing.
+  const dirty = () => setSaved(false);
+
+  const update = (index, patch) => {
+    dirty();
     setItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, ...patch } : item)),
     );
+  };
 
-  const move = (index, delta) =>
+  const move = (index, delta) => {
+    dirty();
     setItems((prev) => {
       const target = index + delta;
       if (target < 0 || target >= prev.length) return prev;
@@ -73,6 +83,12 @@ export default function ChecklistSettings() {
       [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+  };
+
+  const addItem = () => {
+    dirty();
+    setItems((prev) => [...prev, blankItem()]);
+  };
 
   const save = async () => {
     setSaving(true);
@@ -206,7 +222,7 @@ export default function ChecklistSettings() {
       <div className="flex items-center gap-3 mt-4">
         <button
           type="button"
-          onClick={() => setItems((prev) => [...prev, blankItem()])}
+          onClick={addItem}
           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
         >
           <Plus size={ICON} weight="bold" aria-hidden="true" />
