@@ -176,12 +176,20 @@ export default function ProducerSections({
   // entry's photo in the highlight and DROP it from the grid below (fixes the
   // MEH-1146 chunk B duplicate — C4). Exact name match only; a free-text label
   // with no matching product just renders name + price on the leaf placeholder.
+  // MEH-2137 chunk 3: id first, name as the fallback — same ordering and same
+  // reasoning as the dashboard matcher (ProductsSection.jsx). Under the name
+  // match `.find()` returned whichever duplicate came first in the array, so
+  // two products sharing a name made the featured slot depend on row order.
+  // The name branch stays live for producers whose backfill left the FK NULL.
   const signatureProduct =
-    producer.top_product_name
+    (producer.top_product_id
+      ? (producer.products || []).find((p) => p.id === producer.top_product_id)
+      : null) ||
+    (producer.top_product_name
       ? (producer.products || []).find(
           (p) => p.name?.trim() === producer.top_product_name.trim(),
         )
-      : null;
+      : null);
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
     : null;

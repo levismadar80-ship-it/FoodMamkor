@@ -34,19 +34,31 @@ const PRODUCTS = [
 ];
 
 /**
- * Renders with a controlled `topProductName` so the prop→patch→prop round trip
- * the real mount site performs (edit/page.js setProfile) is actually exercised
- * — a test that passed a static prop could not see a revert.
+ * Renders with BOTH `topProductName` and `topProductId` controlled, so the
+ * prop→patch→prop round trip the real mount site performs (edit/page.js
+ * setProfile) is actually exercised — a test that passed a static prop could
+ * not see a revert.
+ *
+ * MEH-2137 chunk 3: `initialTopId` defaults to `null`, which is the LEGACY
+ * shape — a producer whose chunk-1 backfill refused to guess. Every test that
+ * does not pass it is therefore still exercising the name-fallback path, and
+ * that is deliberate: those producers exist in the data and must keep working.
  */
-function renderSection({ initialTop = null, products = PRODUCTS } = {}) {
+function renderSection({
+  initialTop = null,
+  initialTopId = null,
+  products = PRODUCTS,
+} = {}) {
   api.get.mockResolvedValue({ data: products });
   const onTopProductChange = vi.fn();
   let current = initialTop;
+  let currentId = initialTopId;
 
   const view = render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
       <ProductsSection
         topProductName={current}
+        topProductId={currentId}
         onTopProductChange={onTopProductChange}
       />
     </NextIntlClientProvider>,
@@ -55,11 +67,16 @@ function renderSection({ initialTop = null, products = PRODUCTS } = {}) {
   // Re-render with whatever the component last patched upward.
   const rerenderWithPatches = () => {
     const calls = onTopProductChange.mock.calls;
-    current = calls.length ? calls[calls.length - 1][0].top_product_name : current;
+    if (calls.length) {
+      const patch = calls[calls.length - 1][0];
+      current = patch.top_product_name;
+      currentId = patch.top_product_id;
+    }
     view.rerender(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
         <ProductsSection
           topProductName={current}
+          topProductId={currentId}
           onTopProductChange={onTopProductChange}
         />
       </NextIntlClientProvider>,
@@ -86,10 +103,13 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
 
     await waitFor(() =>
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
-        top_product_name: "לחם מחמצת",
+        top_product_id: 1,
       }),
     );
-    expect(onTopProductChange).toHaveBeenCalledWith({ top_product_name: "לחם מחמצת" });
+    expect(onTopProductChange).toHaveBeenCalledWith({
+      top_product_id: 1,
+      top_product_name: "לחם מחמצת",
+    });
   });
 
   it("radio semantics: marking B replaces A rather than adding a second", async () => {
@@ -102,9 +122,12 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
 
     fireEvent.click(markBtn("חלה"));
     await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith("/producers/me", { top_product_name: "חלה" }),
+      expect(api.put).toHaveBeenCalledWith("/producers/me", { top_product_id: 2 }),
     );
-    expect(onTopProductChange).toHaveBeenCalledWith({ top_product_name: "חלה" });
+    expect(onTopProductChange).toHaveBeenCalledWith({
+      top_product_id: 2,
+      top_product_name: "חלה",
+    });
 
     rerenderWithPatches();
     // Still exactly one marked row, and it is now B — A was replaced, not joined.
@@ -121,9 +144,12 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
 
     fireEvent.click(unmarkBtn("לחם מחמצת"));
     await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith("/producers/me", { top_product_name: null }),
+      expect(api.put).toHaveBeenCalledWith("/producers/me", { top_product_id: null }),
     );
-    expect(onTopProductChange).toHaveBeenCalledWith({ top_product_name: null });
+    expect(onTopProductChange).toHaveBeenCalledWith({
+      top_product_id: null,
+      top_product_name: null,
+    });
 
     rerenderWithPatches();
     expect(screen.queryAllByTestId("product-row-top")).toHaveLength(0);
@@ -138,8 +164,16 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
 
     // Optimistic patch first, then the revert to the previous value (null).
     await waitFor(() => expect(onTopProductChange).toHaveBeenCalledTimes(2));
-    expect(onTopProductChange.mock.calls[0][0]).toEqual({ top_product_name: "לחם מחמצת" });
-    expect(onTopProductChange.mock.calls[1][0]).toEqual({ top_product_name: null });
+    expect(onTopProductChange.mock.calls[0][0]).toEqual({
+      top_product_id: 1,
+      top_product_name: "לחם מחמצת",
+    });
+    // BOTH fields revert. Reverting one would leave the row and the
+    // completeness checklist disagreeing about which product is featured.
+    expect(onTopProductChange.mock.calls[1][0]).toEqual({
+      top_product_id: null,
+      top_product_name: null,
+    });
 
     expect(await screen.findByText(S.errors.top_product_failed)).toBeInTheDocument();
 
@@ -219,7 +253,10 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
     releaseFirst();
     // A's revert lands on the value A itself replaced, never on top of a B.
     await waitFor(() => expect(onTopProductChange).toHaveBeenCalledTimes(2));
-    expect(onTopProductChange.mock.calls[1][0]).toEqual({ top_product_name: null });
+    expect(onTopProductChange.mock.calls[1][0]).toEqual({
+      top_product_id: null,
+      top_product_name: null,
+    });
     expect(api.put).toHaveBeenCalledTimes(1);
   });
 
@@ -230,5 +267,148 @@ describe("ProductsSection — top-product toggle (MEH-2094)", () => {
     const marked = screen.getAllByTestId("product-row-top");
     expect(marked).toHaveLength(1);
     expect(marked[0].textContent).toContain("לחם מחמצת");
+  });
+});
+
+// Two products, ONE name. This is the reported defect, and under the string
+// vote none of these assertions could even be written — both rows matched
+// `top_product_name === "לחם"`, so "exactly one" was not expressible.
+const SAME_NAME = [
+  { id: 11, name: "לחם", price_min: 44, price_max: null, image_url: null },
+  { id: 12, name: "לחם", price_min: 57, price_max: null, image_url: null },
+];
+
+describe("ProductsSection — the vote is an identity (MEH-2137 chunk 3)", () => {
+  it("CONTROL: under the LEGACY name vote both same-named rows light up", async () => {
+    // Runs first and asserts the BUG, not the fix. If this ever goes green-by-
+    // passing-one, the fallback path stopped being exercised and every
+    // "exactly one" below is measuring a world that no longer has the problem.
+    renderSection({ initialTop: "לחם", initialTopId: null, products: SAME_NAME });
+    await screen.findAllByText("לחם");
+
+    expect(screen.getAllByTestId("product-row-top")).toHaveLength(2);
+  });
+
+  it("the ticket: with an id, exactly the chosen row is marked", async () => {
+    renderSection({ initialTop: "לחם", initialTopId: 12, products: SAME_NAME });
+    await screen.findAllByText("לחם");
+
+    const marked = screen.getAllByTestId("product-row-top");
+    expect(marked).toHaveLength(1);
+    // ₪57 is the one that was chosen; ₪44 must not be marked.
+    expect(marked[0].textContent).toContain("57");
+    expect(marked[0].textContent).not.toContain("44");
+  });
+
+  it("the id wins even when the legacy name points at the OTHER row", async () => {
+    // The strongest form: name and id disagree. Only an id-first matcher can
+    // pass this — a name-first one, or an OR of the two, marks both.
+    renderSection({ initialTop: "לחם", initialTopId: 11, products: SAME_NAME });
+    await screen.findAllByText("לחם");
+
+    const marked = screen.getAllByTestId("product-row-top");
+    expect(marked).toHaveLength(1);
+    expect(marked[0].textContent).toContain("44");
+  });
+
+  it("marking a row PUTs its id — not its name", async () => {
+    const { rerenderWithPatches, onTopProductChange } = renderSection({
+      products: SAME_NAME,
+    });
+    await screen.findAllByText("לחם");
+
+    // Both rows are unmarked, so both offer the mark control; take the second.
+    const markButtons = screen.getAllByLabelText(
+      C.top_product_mark_aria_template.replace("{name}", "לחם"),
+    );
+    expect(markButtons).toHaveLength(2);
+    fireEvent.click(markButtons[1]);
+
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", { top_product_id: 12 }),
+    );
+    // The legacy name rides along in the optimistic patch because the SERVER
+    // syncs it; the client is not a second writer of that column.
+    expect(onTopProductChange).toHaveBeenCalledWith({
+      top_product_id: 12,
+      top_product_name: "לחם",
+    });
+
+    rerenderWithPatches();
+    expect(screen.getAllByTestId("product-row-top")).toHaveLength(1);
+  });
+
+  it("a NULL id falls back to the name — those producers are not blanked", async () => {
+    // The backfill left the FK NULL wherever it refused to guess. Deleting the
+    // fallback would remove a badge those producers can currently see, which
+    // is a regression dressed as a cleanup.
+    renderSection({ initialTop: "חלה", initialTopId: null });
+    await screen.findByText("חלה");
+
+    const marked = screen.getAllByTestId("product-row-top");
+    expect(marked).toHaveLength(1);
+    expect(marked[0].textContent).toContain("חלה");
+  });
+});
+
+// `C` above is the `.card` subtree; these live one level up, next to the
+// existing `delete_confirm`.
+const PRODUCTS_NS = he.settings.products;
+
+describe("ProductsSection — soft duplicate-name confirm (MEH-2137)", () => {
+  // SOFT is the whole requirement: two products may legitimately share a name,
+  // which is exactly why the vote moved to an id in this ticket. A hard block
+  // would contradict the change it ships with.
+  const fillForm = (name) => {
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_cta));
+    const inputs = screen.getAllByRole("textbox");
+    fireEvent.change(inputs[0], { target: { value: name } });
+    const spin = screen.getAllByRole("spinbutton");
+    fireEvent.change(spin[0], { target: { value: "30" } });
+  };
+
+  it("CONTROL: a NON-duplicate name never asks — the prompt is not unconditional", async () => {
+    // Without this, "confirm was called" below proves nothing about duplicate
+    // DETECTION: a confirm fired on every create would satisfy that too.
+    const spy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.post.mockResolvedValue({ data: { id: 9, name: "עוגה", price_min: 30 } });
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("עוגה");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("a duplicate name asks, and CONFIRMING still creates it — never a block", async () => {
+    const spy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.post.mockResolvedValue({
+      data: { id: 9, name: "לחם מחמצת", price_min: 30 },
+    });
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("לחם מחמצת");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(spy).toHaveBeenCalledWith(PRODUCTS_NS.duplicate_name_confirm);
+    spy.mockRestore();
+  });
+
+  it("declining sends nothing at all", async () => {
+    const spy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderSection();
+    await screen.findByText("לחם מחמצת");
+
+    fillForm("לחם מחמצת");
+    fireEvent.click(screen.getByText(PRODUCTS_NS.add_submit_cta));
+
+    expect(spy).toHaveBeenCalled();
+    expect(api.post).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 });

@@ -868,6 +868,7 @@ function EditPageInner() {
             embedded
             onCountChange={setProductsCount}
             topProductName={profile.top_product_name}
+            topProductId={profile.top_product_id}
             onTopProductChange={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           />
         </EditAccordionCard>
