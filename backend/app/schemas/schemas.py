@@ -1714,6 +1714,19 @@ class ProducerUpdate(BaseModel):
     # whenever category_ids OR producer_license_number is in the body — see
     # routers/producer_me.py + routers/admin.py.
     producer_license_number: str | None = Field(default=None, max_length=20)
+    # MEH-2072: the licence expiry the admin reads off the document. Present on
+    # the shared ProducerUpdate schema but withheld from
+    # _PRODUCER_WRITABLE_FIELDS in routers/producer_me.py, so only the admin PUT
+    # (admin.py bulk setattr) can write it — exactly the google_place_id
+    # arrangement above, and for the same reason: this is a record of what the
+    # ADMIN verified against a document, so an owner-writable version would be
+    # self-certification. A test asserts the owner PUT cannot write it.
+    #
+    # Deliberately NO validator. A past date is legitimate input — capturing an
+    # already-lapsed licence during review is precisely the case this ticket
+    # exists to make visible — so vacation_until's "must not be in the past"
+    # rule would be actively wrong here. Explicit null clears the value.
+    license_expires_at: date | None = None
     admin_notes: str | None = None
     # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
     # setattr-loop can no longer write it (verification = grant-verified only).
@@ -2399,6 +2412,13 @@ class ProducerAdminOut(ProducerDetailOut):
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-2072: licence expiry captured at approval. Admin-only, riding the same
+    # privacy precedent as the licence number directly above it (MEH-530) — when
+    # a business's licence lapses is internal review data, and publishing it
+    # would hand every visitor a countdown on somebody's paperwork. NULL for
+    # every producer approved before this field existed; the admin table renders
+    # "—" rather than an empty date.
+    license_expires_at: date | None = None
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only —
     # NOT on the public ProducerDetailOut/ListOut (internal supply-side data,
     # MEH-530 privacy precedent). NULL for producers who registered before the
@@ -2532,6 +2552,44 @@ class KashrutExpiryReminderOut(BaseModel):
     sent_count: int = 0
     failed_count: int = 0
     rows: list[KashrutExpiryReminderRow] = []
+
+
+class LicenseExpiryReminderRow(BaseModel):
+    """One business whose licence expires inside the 30-day window.
+
+    MEH-2072 — the licence twin of KashrutExpiryReminderRow above, with two
+    deliberate differences:
+
+    * `expires_at` is a `date`, not a `datetime`. The column is DATE because a
+      licence is valid through a calendar day (see the migration docstring);
+      widening it to datetime here would reintroduce the timezone ambiguity the
+      column type exists to avoid.
+    * There is no `sent` / `error` pair. This endpoint only READS — the admin
+      pulls the list, nothing is dispatched — so a per-row send outcome would be
+      a field that is structurally always None. WhatsApp push is a future
+      ticket; when it lands it adds the fields, rather than them sitting here
+      unused and inviting the reader to think a send happened.
+
+    `days_remaining` is computed server-side against israel_today() so the badge
+    and the ordering can never disagree, and so a client in another timezone
+    cannot render a different number from the same payload.
+
+    `phone_masked` is deliberately the ONLY phone field, matching the kashrut
+    row: the admin needs enough to recognise the number, not the number itself.
+    """
+
+    producer_id: UUID
+    name: str
+    phone_masked: str
+    expires_at: date
+    days_remaining: int
+    producer_license_number: str | None = None
+
+
+class LicenseExpiryReminderOut(BaseModel):
+    window_days: int
+    total: int
+    rows: list[LicenseExpiryReminderRow] = []
 
 
 class KashrutApproveIn(BaseModel):

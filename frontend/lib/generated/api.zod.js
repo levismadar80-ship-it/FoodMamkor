@@ -386,6 +386,62 @@ export const RejectKashrutRequestAdminKashrutRequestIdRejectPostResponse = /*#__
 
 
 /**
+ * MEH-2072: approved businesses whose licence expires within 30 days.
+ *
+ * Read-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1
+ * policy is capture + remind, and the admin pulls this list herself. That is
+ * why this is a GET with no `dry_run` flag, unlike its kashrut sibling
+ * (admin_kashrut.py:154) which POSTs because it dispatches WhatsApp. Push is a
+ * future ticket.
+ *
+ * Selection, and every clause is load-bearing:
+ *
+ * * `license_expires_at IS NOT NULL` — NULL means "not captured yet", never
+ *   "no expiry". Without this clause every producer predating MEH-2072 would
+ *   appear in the reminder list forever, which is the failure that would get
+ *   the whole feature switched off.
+ * * `>= israel_today()` — an already-lapsed licence is deliberately EXCLUDED.
+ *   This mirrors the kashrut endpoint's reasoning: the list exists to catch a
+ *   licence before it lapses. A lapsed one is a different problem needing a
+ *   different action (that is the future enforcement decision), and letting it
+ *   sit here would grow an unactionable backlog that buries the live rows.
+ * * `<= horizon` — the 30-day window.
+ * * `status == "approved"` — a pending business is already in the review
+ *   queue, where the admin sees the licence anyway.
+ *
+ * Israel's calendar day, not UTC's: `license_expires_at` is a DATE column, and
+ * `israel_today()` is what makes the comparison calendar-day against
+ * calendar-day with no zone arithmetic (see the migration docstring).
+ *
+ * `60/minute`, matching the read-only `list_kashrut_requests`
+ * (admin_kashrut.py:36) rather than the `10/hour` its expiry-reminder sibling
+ * carries — that one is throttled hard because it DISPATCHES WhatsApp, and a
+ * read has no outbound side effect to ration.
+ *
+ * Note this is the first `@limiter.limit` in this module: `admin.py` currently
+ * has none at all. That is a pre-existing gap, not a local convention to copy
+ * — `backend/app/routers/CLAUDE.md` states the per-route limiter stack is
+ * mandatory here, so the new route follows the documented rule rather than the
+ * surrounding silence. Retro-fitting the rest of the module is out of scope.
+ * @summary License Expiry Reminders
+ */
+export const licenseExpiryRemindersAdminLicenseExpiryRemindersGetResponseRowsDefault = [];
+
+export const LicenseExpiryRemindersAdminLicenseExpiryRemindersGetResponse = /*#__PURE__*/ zod.object({
+  "rows": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "days_remaining": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.iso.date(),
+  "name": /*#__PURE__*/ zod.string(),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One business whose licence expires inside the 30-day window.\n\nMEH-2072 — the licence twin of KashrutExpiryReminderRow above, with two\ndeliberate differences:\n\n\* `expires_at` is a `date`, not a `datetime`. The column is DATE because a\n  licence is valid through a calendar day (see the migration docstring);\n  widening it to datetime here would reintroduce the timezone ambiguity the\n  column type exists to avoid.\n\* There is no `sent` \/ `error` pair. This endpoint only READS — the admin\n  pulls the list, nothing is dispatched — so a per-row send outcome would be\n  a field that is structurally always None. WhatsApp push is a future\n  ticket; when it lands it adds the fields, rather than them sitting here\n  unused and inviting the reader to think a send happened.\n\n`days_remaining` is computed server-side against israel_today() so the badge\nand the ordering can never disagree, and so a client in another timezone\ncannot render a different number from the same payload.\n\n`phone_masked` is deliberately the ONLY phone field, matching the kashrut\nrow: the admin needs enough to recognise the number, not the number itself.'))), licenseExpiryRemindersAdminLicenseExpiryRemindersGetResponseRowsDefault),
+  "total": /*#__PURE__*/ zod.int(),
+  "window_days": /*#__PURE__*/ zod.int()
+})
+
+
+/**
  * The admin queue. Old and new name travel together on every row.
  * @summary List Name Change Requests
  */
@@ -702,6 +758,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "license_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "license_pending": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseLicensePendingDefault),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "locations": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -913,6 +970,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "license_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "license_pending": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseLicensePendingDefault),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "locations": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1129,6 +1187,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "license_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "license_pending": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseLicensePendingDefault),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "locations": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1358,6 +1417,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "license_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "license_pending": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseLicensePendingDefault),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "locations": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
