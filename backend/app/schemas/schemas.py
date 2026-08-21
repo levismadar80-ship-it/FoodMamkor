@@ -287,6 +287,60 @@ def _url_scheme_validator(value: str | None) -> str | None:
     return stripped
 
 
+# MEH-2153: custom_questions guard, shared so every write schema carrying the
+# field enforces ONE definition (today that is ProducerUpdate alone — the other
+# three occurrences are response schemas; see the module note below).
+#
+# MEH-210 Phase 2 shipped the count + length caps inline on ProducerUpdate; this
+# lifts them out and adds the one rule they were missing — DEDUPE. Two identical
+# questions render as two identical chips on the public page, which reads as a
+# bug to the customer and costs the owner one of her five slots.
+#
+# DO NOT raise _CUSTOM_QUESTION_MAX_LEN without changing the editor input in the
+# same PR — `maxLength={80}` at
+# frontend/app/[locale]/producer/dashboard/edit/page.js:1272 is the other half
+# of this cap, and both landed together in MEH-210 Phase 2 (86eefcfd). A
+# server-side ceiling above the editor's is a value no UI can produce and no
+# reader expects.
+_MAX_CUSTOM_QUESTIONS = 5
+_CUSTOM_QUESTION_MAX_LEN = 80
+
+
+def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
+    """Normalise + cap the owner-authored WhatsApp question chips.
+
+    None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
+    indistinguishable to every reader measured (frontend
+    `getProducerQuestions`, lib/categoryQuestions.js:88, tests
+    `custom_questions?.length > 0`, so both fall through to the category
+    defaults), but collapsing them would still rewrite what the column stores
+    on a path this ticket has no reason to touch.
+
+    Order-preserving throughout: the owner's five inputs are positional in the
+    editor, so a reordering normalisation would silently shuffle her page.
+    """
+    if value is None:
+        return None
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, str):
+            # Let the declared `list[str]` type raise; don't mask it here.
+            return value
+        stripped = item.strip()
+        if not stripped:
+            continue
+        if len(stripped) > _CUSTOM_QUESTION_MAX_LEN:
+            raise ValueError(f"שאלה יכולה להכיל עד {_CUSTOM_QUESTION_MAX_LEN} תווים")
+        if stripped in seen:
+            continue
+        seen.add(stripped)
+        cleaned.append(stripped)
+    if len(cleaned) > _MAX_CUSTOM_QUESTIONS:
+        raise ValueError(f"אפשר עד {_MAX_CUSTOM_QUESTIONS} שאלות מותאמות")
+    return cleaned
+
+
 # MEH-1222: image-URL fields silently accepted garbage — "bread.jpg",
 # "http.ad.jpg", "https://bread.jpg" — which then 404-storm through
 # next/image. Stronger than _url_scheme_validator: besides the http(s)
@@ -1910,18 +1964,13 @@ class ProducerUpdate(BaseModel):
     def _validate_order_window(cls, v):
         return _order_window_validator(v)
 
+    # MEH-2153: delegates to the shared guard so the count/length/trim rules
+    # that MEH-210 Phase 2 wrote inline live in one place, and picks up the
+    # dedupe they were missing.
     @field_validator("custom_questions")
     @classmethod
     def _validate_custom_questions(cls, v):
-        if v is None:
-            return v
-        filtered = [q.strip() for q in v if q.strip()]
-        if len(filtered) > 5:
-            raise ValueError("מותר עד 5 שאלות")
-        for q in filtered:
-            if len(q) > 80:
-                raise ValueError("כל שאלה מוגבלת ל-80 תווים")
-        return filtered
+        return _custom_questions_validator(v)
 
     @field_validator("primary_contact_method")
     @classmethod
