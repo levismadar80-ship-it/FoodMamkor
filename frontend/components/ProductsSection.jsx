@@ -122,6 +122,11 @@ export default function ProductsSection({
   embedded = false,
   onCountChange,
   topProductName = null,
+  // MEH-2137 chunk 3: the vote by IDENTITY. Nullable on purpose — the chunk-1
+  // backfill deliberately left it NULL wherever the legacy name matched two
+  // products or none, so a producer whose data was ambiguous keeps the exact
+  // behaviour she has today rather than having one of her rows picked for her.
+  topProductId = null,
   onTopProductChange = null,
 } = {}) {
   const t = useTranslations("settings.products");
@@ -144,6 +149,13 @@ export default function ProductsSection({
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // MEH-1447: { id, name } | null
+  // MEH-2137 chunk 3: the duplicate-name confirm, as a state flag rather than
+  // `window.confirm`. The native dialog is suppressible — and this one gates a
+  // CREATE, so a suppressed dialog returns false and the product silently is
+  // never added. Every other `window.confirm` in this app guards a DELETE,
+  // where false is the safe answer; here it is the destructive one. Same
+  // direction MEH-1250 already took in GroupBuyDetailClient.
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
   const [editUploading, setEditUploading] = useState(false);
   // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
   // renders a distinct error card + retry instead of the "no products yet"
@@ -159,20 +171,30 @@ export default function ProductsSection({
   // MEH-1976 failedThumbs lesson applied to a different control).
   const [topSavingId, setTopSavingId] = useState(null);
 
-  // MEH-2094 LEGACY SAFETY — this is the single most important non-regression
-  // in the ticket. The match is exact-after-trim and read-only: a stored
-  // top_product_name that names NO current product simply marks no row. It is
-  // never cleared, never migrated, never auto-repaired, and no request is sent
-  // on render. That mirrors the public page's own matcher
-  // (app/[locale]/producer/[id]/components/ProducerSections.jsx:174-177), so a
-  // row marked here is exactly a row the public page will feature.
+  // MEH-2137 chunk 3 — the FK the MEH-2094 comment below was waiting for.
+  // ID FIRST, name only as a fallback, and the order is the whole fix:
+  // two products called «לחם» (₪44 and ₪57) BOTH lit up under the name match
+  // (observed by Sapir, 20/08) because a display string cannot distinguish
+  // them. An id can.
   //
-  // Two products with the SAME name both light up. That is inherent to a
-  // free-text column — MEH-1564's FK is what fixes it; do not add a tiebreak
-  // here (it would have to invent an ordering the column cannot store).
+  // The name branch is NOT dead code and must not be deleted: `top_product_id`
+  // is NULL for every row the chunk-1 backfill refused to guess at (two
+  // matches or none), and for those producers the legacy column is still the
+  // only signal there is. They keep exactly today's behaviour — including the
+  // double badge — until they re-pick, which now writes an id. Deleting the
+  // fallback would blank a badge those producers can currently see.
+  //
+  // MEH-2094 LEGACY SAFETY, still in force for that fallback path: the match
+  // is exact-after-trim and read-only. A stored top_product_name naming NO
+  // current product simply marks no row — never cleared, never migrated,
+  // never auto-repaired, and no request is sent on render. It mirrors the
+  // public page's matcher (ProducerSections.jsx), so a row marked here is
+  // exactly a row the public page features.
   const normalizedTop = (topProductName || "").trim();
   const isTopProduct = (product) =>
-    normalizedTop !== "" && (product.name || "").trim() === normalizedTop;
+    topProductId != null
+      ? product.id === topProductId
+      : normalizedTop !== "" && (product.name || "").trim() === normalizedTop;
 
   // Radio semantics: marking B replaces A (one column, one value), and marking
   // the already-marked row clears it to null.
@@ -183,19 +205,31 @@ export default function ProductsSection({
     // this is a correctness one — a second write must not start while the
     // first can still revert on top of it.
     if (topSavingId !== null) return;
-    const previous = topProductName ?? null;
-    const next = isTopProduct(product) ? null : product.name;
+    const previousName = topProductName ?? null;
+    const previousId = topProductId ?? null;
+    // MEH-2137 chunk 3: the request now carries the ID. The backend is the
+    // single writer of the legacy name (producer_me.py syncs it from the
+    // chosen product), so the optimistic patch mirrors what the server will
+    // do rather than inventing a second writer on the client.
+    const clearing = isTopProduct(product);
+    const nextId = clearing ? null : product.id;
+    const nextName = clearing ? null : product.name;
     setError("");
     setTopSavingId(product.id);
     // Optimistic: patch upward first so the row and the completeness checklist
     // both move immediately.
-    onTopProductChange({ top_product_name: next });
+    onTopProductChange({ top_product_id: nextId, top_product_name: nextName });
     try {
-      await api.put("/producers/me", { top_product_name: next });
+      await api.put("/producers/me", { top_product_id: nextId });
     } catch (err) {
       // MEH-1261 F1 family: never fail open. Put the previous value back AND
-      // say so — a toggle that silently snaps back reads as a UI bug.
-      onTopProductChange({ top_product_name: previous });
+      // say so — a toggle that silently snaps back reads as a UI bug. BOTH
+      // fields revert: reverting only one leaves the row and the checklist
+      // disagreeing about which product is featured.
+      onTopProductChange({
+        top_product_id: previousId,
+        top_product_name: previousName,
+      });
       setError(detailToMessage(err?.response?.data?.detail) || tErr("top_product_failed"));
     } finally {
       setTopSavingId(null);
@@ -257,6 +291,28 @@ export default function ProductsSection({
       return;
     }
     setFormErrors({});
+
+    // MEH-2137 chunk 3: SOFT duplicate-name confirm. Two products may
+    // legitimately share a name (מחמצת and כוסמין can both be «לחם»), which is
+    // precisely why the featured-product vote moved to an id in this ticket —
+    // so this must never BLOCK the create. It only makes the duplicate visible
+    // at the one moment the owner can still choose a clearer name, because a
+    // catalog of identical labels is confusing to a buyer even once the badge
+    // is unambiguous. Declining leaves the form filled, nothing is sent.
+    const dupe = (products || []).some(
+      (p) => (p.name || "").trim() === form.name.trim(),
+    );
+    if (dupe) {
+      setConfirmDuplicate(true);
+      return;
+    }
+    await submitAdd();
+  };
+
+  // The half of the create that runs once the name question is settled — called
+  // directly when the name is unique, and from the dialog's confirm when it is
+  // not. Validation already ran in `handleAdd`; this never re-gates.
+  const submitAdd = async () => {
     const minNum = Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
     setSaving(true);
@@ -421,6 +477,18 @@ export default function ProductsSection({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [confirmDelete, deletingId]);
+
+  // MEH-2137 chunk 3: same Escape contract for the duplicate-name dialog.
+  // Escape means "let me rename it", so it declines — the form stays filled
+  // and nothing is sent, exactly as declining the old native confirm did.
+  useEffect(() => {
+    if (!confirmDuplicate) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !saving) setConfirmDuplicate(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDuplicate, saving]);
 
   if (loading) return null;
 
@@ -874,6 +942,48 @@ export default function ProductsSection({
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("delete_confirm.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MEH-2137 chunk 3: SOFT duplicate-name confirm — same dialog contract as
+          the delete one above (aria-modal, Escape closes, buttons disabled while
+          busy). Confirming adds the product as-is; declining sends nothing and
+          leaves the form filled so the name can be changed. */}
+      {confirmDuplicate && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-duplicate-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+          >
+            <p id="product-duplicate-title" className="font-medium text-base text-text">
+              {t("duplicate_name_confirm.title")}
+            </p>
+            <div className="flex gap-3 justify-start pt-1">
+              <button
+                type="button"
+                data-testid="duplicate-confirm"
+                disabled={saving}
+                onClick={() => {
+                  setConfirmDuplicate(false);
+                  submitAdd();
+                }}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90 disabled:opacity-50"
+              >
+                {t("duplicate_name_confirm.confirm")}
+              </button>
+              <button
+                type="button"
+                data-testid="duplicate-cancel"
+                disabled={saving}
+                onClick={() => setConfirmDuplicate(false)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("duplicate_name_confirm.cancel")}
               </button>
             </div>
           </div>
