@@ -22,6 +22,9 @@ erDiagram
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
     producers ||--o{ producer_name_change_requests : "requests rename (max 1 PENDING)"
+    producers ||--o{ producer_review_checks : "was attested for (CASCADE — MEH-1399)"
+    admin_checklist_items ||--o{ producer_review_checks : "attested via (RESTRICT — an item that was ever ticked cannot be deleted)"
+    users ||--o{ producer_review_checks : "ticked by (SET NULL — deleting the admin must not delete the record)"
     categories ||--o{ producer_categories : ""
 
     users {
@@ -144,6 +147,24 @@ erDiagram
         text admin_notes "nullable, sanitized"
         timestamp created_at
         timestamp reviewed_at "nullable until decided"
+    }
+
+    admin_checklist_items {
+        uuid id PK
+        int position "indexed; written as index*10 by the router, never accepted from the client — a client-supplied position lets two items claim one slot"
+        text label "MEH-1399: editable without a deploy. Seeded with the 7 items frontend/lib/admin-review-checklist.js used to hardcode"
+        text hint "nullable"
+        boolean active "DEFAULT true. Retirement is active=false — there is no delete, see the RESTRICT below"
+        timestamp updated_at "DEFAULT now() + model-level onupdate. No created_at: the question anyone asks of a config row is when it last changed"
+    }
+
+    producer_review_checks {
+        uuid id PK
+        uuid producer_id FK "CASCADE, indexed — with the business gone there is nothing left to attest about"
+        uuid item_id FK "RESTRICT, indexed IN ITS OWN RIGHT (the composite unique leads with producer_id, so it cannot serve the item_id-only lookup Postgres runs to enforce the RESTRICT)"
+        text label_snapshot "what the item SAID when it was ticked. The FK says WHICH item; this says what it said — without it, rewording an item rewrites every historical attestation"
+        uuid checked_by FK "nullable, SET NULL. A null actor is a weaker record than a named one and a far better one than none"
+        timestamp checked_at "DEFAULT now(). Re-ticking does NOT restamp — the first attestation stands"
     }
 
     favorites {
