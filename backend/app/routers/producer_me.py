@@ -448,6 +448,53 @@ def _lock_producer_updates(db, producer_id) -> None:
     )
 
 
+def _resolve_top_product(db, producer, payload: dict) -> None:
+    """MEH-2137 switch — authorize the featured-product vote and sync the name.
+
+    The vote used to be a STRING, so any product whose name matched won the
+    badge: two products both called «לחם» both showed it (Sapir, 20/08). The
+    vote is an id now, and an id has to be checked — `top_product_id` is a
+    plain UUID in the payload, and nothing in Pydantic can know whether it
+    belongs to this producer.
+
+    Three cases, and the middle one is the whole point:
+
+      * key absent          → no change. Uses `in payload`, not truthiness: an
+                              unrelated dashboard save must not clear the vote.
+      * value is None       → clear BOTH columns. "No featured product" is one
+                              state, not two, and leaving the stale name behind
+                              would keep rendering a badge the owner just removed.
+      * value is a UUID     → must be a product of THIS producer, or 422. On
+                              success `top_product_name` is synced from it, so
+                              the legacy column stays truthful for every reader
+                              that has not switched yet.
+
+    Runs BEFORE the writable-field setattr loop, so a rejected id never lands.
+    """
+    if "top_product_id" not in payload:
+        return
+
+    new_id = payload["top_product_id"]
+    if new_id is None:
+        payload["top_product_name"] = None
+        return
+
+    product = (
+        db.query(Product)
+        .filter(Product.id == new_id, Product.producer_id == producer.id)
+        .first()
+    )
+    if product is None:
+        # Deliberately the same message whether the product does not exist or
+        # belongs to someone else — distinguishing them would let an owner probe
+        # for other producers' product ids.
+        raise HTTPException(
+            status_code=422,
+            detail="המוצר המוביל חייב להיות מוצר קיים של העסק שלך",
+        )
+    payload["top_product_name"] = product.name
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -475,6 +522,7 @@ def update_my_producer(
     # actual change from a form resubmitting an unchanged value.
     sensitive_before = _snapshot_sensitive(producer)
 
+    # MEH-2137 switch — see _resolve_top_product below the handler.
     _PRODUCER_WRITABLE_FIELDS = {
         "contact_name",
         "description",
@@ -491,6 +539,10 @@ def update_my_producer(
         "facebook",
         "external_order_form",
         "top_product_name",
+        # MEH-2137 switch: the vote by identity. Ownership is enforced by
+        # _resolve_top_product below BEFORE this loop runs — a product that is
+        # not this producer's never reaches the setattr.
+        "top_product_id",
         "price_range",
         # MEH-1335: owner story fields (public OwnerCard data path). Validated
         # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
@@ -597,6 +649,9 @@ def update_my_producer(
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
+
+    # MEH-2137 switch: resolve + authorize the featured-product vote.
+    _resolve_top_product(db, producer, payload)
 
     # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
     # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would

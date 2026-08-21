@@ -156,6 +156,12 @@ producers (
   kashrut_verified_at timestamp nullable,
   kashrut_expires_at timestamp nullable
 )
+  -- MEH-2137 SWITCH step: `PUT /producers/me` now accepts `top_product_id`
+  -- (422 unless the product belongs to the caller; writing it syncs
+  -- top_product_name from the product). ProducerListOut/DetailOut/AdminOut
+  -- expose BOTH: the id is the authority, and top_product_name is DERIVED
+  -- from the FK in attach_badge_fields when set, else the legacy column —
+  -- so a product renamed after the vote no longer strands the name.
 
 -- MEH-51: one-time WhatsApp OTP for phone verification
 phone_otp_tokens (

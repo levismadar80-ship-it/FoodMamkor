@@ -4684,6 +4684,18 @@
             ],
             "title": "Submitted For Review At"
           },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
+          },
           "top_product_name": {
             "anyOf": [
               {
@@ -5549,6 +5561,18 @@
             ],
             "title": "Story Card Url"
           },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
+          },
           "top_product_name": {
             "anyOf": [
               {
@@ -6212,6 +6236,18 @@
             "default": "pending",
             "title": "Status",
             "type": "string"
+          },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
           },
           "top_product_name": {
             "anyOf": [
@@ -7704,6 +7740,18 @@
             ],
             "title": "Story Card Url"
           },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
+          },
           "top_product_name": {
             "anyOf": [
               {
@@ -9079,6 +9127,18 @@
               }
             ],
             "title": "Status"
+          },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
           },
           "top_product_name": {
             "anyOf": [

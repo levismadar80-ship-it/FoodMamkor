@@ -143,6 +143,19 @@ def attach_badge_fields(producer):
     # use ProducerAdminOut which serialises the column directly.
     raw_license = getattr(producer, "producer_license_number", None)
     producer.has_producer_license = bool(raw_license and raw_license.strip())
+    # MEH-2137 switch: the vote is an id. The legacy name column is kept in
+    # sync by the writer, but a product renamed AFTER the vote was cast would
+    # leave it stale — and staleness there is the original bug wearing a
+    # different hat. Derive from the FK whenever it is set. `products` is
+    # already loaded above, so this is a list scan and not a query; a vote
+    # pointing at a product that is not in the collection (deleted mid-request,
+    # or a filtered load) falls through to the legacy column rather than
+    # blanking a name the caller can still use.
+    top_id = getattr(producer, "top_product_id", None)
+    if top_id is not None:
+        match = next((p for p in products if getattr(p, "id", None) == top_id), None)
+        if match is not None and getattr(match, "name", None):
+            producer.top_product_name = match.name
     producer.has_gluten_free_products = any(
         getattr(p, "is_gluten_free", False) for p in products
     )
