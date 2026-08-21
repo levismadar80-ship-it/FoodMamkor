@@ -33,26 +33,45 @@ describe("MEH-1814 — locked post-submit success copy", () => {
     // first real success moment is SUBMISSION, not registration.
     //
     // So the headline is progress framing, and it has to stay that way.
-    expect(S_HE.title).toBe("נרשמתם! נשאר צעד אחד");
+    //
+    // MEH-2136, Sapir 20/08 — re-locked. The progress framing above survives;
+    // what changed is that it stopped naming a NUMBER. Three counts contradicted
+    // each other on one journey: title said «נשאר צעד אחד», next said «שני
+    // צעדים», and the actual submit gate (MEH-2100,
+    // ProfileCompletenessCard.jsx:187-236) requires five items, of which three
+    // are still open for someone who has only just registered. The headline now
+    // says "a few short items" and `next` enumerates exactly those three, so the
+    // screen and the gate agree.
+    expect(S_HE.title).toBe("נרשמתם! נשארו כמה השלמות קצרות");
     // Same correction, one line down: registration no longer puts the
     // business in review, so the old "we approve within 3 business days"
     // promise was false the moment it was shown.
+    //
+    // MEH-2136 also dropped the leading «נרשמתם!» here — the title already says
+    // it, and the duplicate cost a line of the one block that has to carry the
+    // next action.
     expect(S_HE.body).toBe(
-      "נרשמתם! השלב הבא: השלמת הפרופיל בלוח הבקרה ושליחה לבדיקה.",
+      "השלב הבא: השלמת הפרופיל בלוח הבקרה ושליחה לבדיקה.",
     );
+    // MEH-2136: the three items are the ones the submit gate actually blocks on
+    // for a just-registered owner — photo, first product, WhatsApp verification.
+    // Location, category and contact are collected during registration, so they
+    // are already done and naming them here would re-open a settled step.
     expect(S_HE.next).toBe(
-      "שני צעדים קצרים בלוח הבקרה מזרזים את האישור: אימות מספר הוואטסאפ בקוד קצר, והעלאת תמונה ראשונה של העסק.",
+      "ההשלמות בלוח הבקרה פותחות את השליחה לבדיקה: תמונה של העסק, מוצר ראשון בקטלוג, ואימות מספר הוואטסאפ.",
     );
     expect(S_HE.cta).toBe("ללוח הבקרה");
   });
 
   it("English matches the locked strings verbatim", () => {
-    expect(S_EN.title).toBe("You're signed up — one step to go");
+    // MEH-2136: twins of the Hebrew above. The Hebrew is the approved copy; the
+    // English is a translation of it, not a separately-approved string.
+    expect(S_EN.title).toBe("You're signed up — a few short items left");
     expect(S_EN.body).toBe(
-      "You're registered! Next step: complete your profile in the dashboard and send it for review.",
+      "Next step: complete your profile in the dashboard and send it for review.",
     );
     expect(S_EN.next).toBe(
-      "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
+      "Completing these in your dashboard unlocks sending for review: a photo of your business, a first product in the catalogue, and verifying your WhatsApp number.",
     );
     expect(S_EN.cta).toBe("To my dashboard");
   });

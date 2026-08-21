@@ -448,6 +448,50 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(api.post).not.toHaveBeenCalled();
   });
 
+  // MEH-2136: the success screen's ACTION HIERARCHY, not merely its contents.
+  // Every assertion above passes on the pre-MEH-2136 markup too — they only ask
+  // whether the CTA exists, and it always did (as an outline button two blocks
+  // below the founder signature, tied in weight with the WhatsApp share). What
+  // Sapir hit was ordering and weight, so that is what this pins:
+  //   green next-box → dashboard CTA (primary solid) → share (secondary) →
+  //   signature → tier_trust
+  // Demonstrated failing against the old markup: `share before signature` and
+  // both class assertions go red (the old CTA was `border-2 … bg-transparent`
+  // and signature/tier_trust sat ABOVE the button row).
+  it("success screen puts the primary dashboard CTA directly under the next-steps box (MEH-2136)", async () => {
+    authState.user = { email: "p@example.com" };
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+    await screen.findByTestId("register-success-pending");
+
+    const nextBox = screen.getByText(`${K}.success.next`);
+    const cta = screen.getByTestId("register-success-dashboard-cta");
+    const share = screen.getByText(`${K}.success.share_cta`).closest("a");
+    const signature = screen.getByText(`${K}.success.signature`);
+    const tierTrust = screen.getByText(`${K}.success.tier_trust`);
+
+    // `a` precedes `b` in document order.
+    const precedes = (a, b) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    expect(precedes(nextBox, cta), "next-steps box before the dashboard CTA").toBe(true);
+    expect(precedes(cta, share), "dashboard CTA before the WhatsApp share").toBe(true);
+    expect(precedes(share, signature), "share before the founder signature").toBe(true);
+    expect(precedes(signature, tierTrust), "signature before the tier-trust line").toBe(true);
+
+    // Weight: the CTA is the only solid button; share stays outline.
+    expect(cta.className).toContain("bg-primary-dark");
+    expect(cta.className).toContain("text-white");
+    expect(cta.className).not.toContain("bg-transparent");
+    // Full-width on mobile (the stack is `flex-col`, capped at sm+).
+    expect(cta.className).toContain("w-full");
+    expect(share.className).toContain("btn-whatsapp-outline");
+    expect(share.className).toContain("w-full");
+  });
+
   it("authenticated user whose token lapsed server-side falls back to the inbox screen (response-shape guard)", async () => {
     authState.user = { email: "p@example.com" }; // frontend thinks upgrade…
     api.post.mockResolvedValue({ data: {} }); // …backend took the non-upgrade path
