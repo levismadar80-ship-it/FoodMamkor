@@ -38,14 +38,55 @@ function SheetListSkeleton({ label }) {
   );
 }
 
+// MEH-2148: gesture arbitration, extracted as a PURE function so the decision
+// can be unit-tested without a touch device. Before this existed the drag
+// listeners sat on the whole sheet with no arbitration at all, so every
+// touchmove inside the list ALSO dragged the sheet height: a finger swiping
+// down to read further collapsed the sheet to PEEK instead of scrolling.
+//
+// `dy` keeps the existing sign convention from the drag maths below
+// (`startY - clientY`), so POSITIVE means the finger moved UP.
+//
+// The three claims, in the order they are checked:
+//   1. the gesture did not start in the scroller (handle, header, count row)
+//      -> the sheet always drags; there is nothing else those areas could do.
+//   2. started in the scroller, sheet is at PEEK, finger up -> expand. At PEEK
+//      the list is a few pixels tall and expanding is the only useful reading
+//      of an upward swipe.
+//   3. started in the scroller, list already at the top, finger down -> collapse.
+//      This is the rubber-band position: there is no more content above, so the
+//      sheet takes the gesture.
+// Anything else belongs to the list, and the sheet must not call
+// preventDefault() on it — that is what makes native scrolling work again.
+export function sheetClaimsGesture({ startedInScroller, scrollTopAtStart, dy, snap }) {
+  if (!startedInScroller) return true;
+  if (snap === PEEK && dy > 0) return true;
+  if (scrollTopAtStart === 0 && dy < 0) return true;
+  return false;
+}
+
+// Direction is only meaningful once the finger has actually committed to one.
+// Deciding on the first touchmove would read the 1-2px of jitter that starts
+// every gesture and claim (or release) the sheet essentially at random.
+const GESTURE_SLOP_PX = 4;
+
 export default function MapBottomSheet({ snap, onSnapChange, children, count, loading = false }) {
   const t = useTranslations("map.bottom_sheet");
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
   const tSkeleton = useTranslations("common.skeleton");
   const sheetRef = useRef(null);
+  // MEH-2148: the scroller, so a touch can be attributed to the list or to the
+  // sheet chrome. `sheetRef` cannot answer that — it contains both.
+  const contentRef = useRef(null);
   const startY = useRef(0);
   const startSnap = useRef(snap);
   const dragging = useRef(false);
+  // MEH-2148: per-touch arbitration state. `claimed` is deliberately tri-state:
+  // undefined = not yet past the slop, true/false = decided ONCE for this touch
+  // and never revisited, so a gesture cannot change owner mid-swipe.
+  const startedInScroller = useRef(false);
+  const scrollTopAtStart = useRef(0);
+  const claimed = useRef(undefined);
   const [transient, setTransient] = useState(null);
 
   const heightVh = transient ?? snap;
@@ -85,19 +126,60 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
     startY.current = e.touches[0].clientY;
     startSnap.current = snap;
     dragging.current = true;
+    // MEH-2148: sampled at touchstart, not at touchmove. By the time the finger
+    // has moved, `scrollTop` may already have changed under a native scroll,
+    // and "was the list at the top when this gesture began" is the question
+    // the arbiter actually needs answered.
+    const scroller = contentRef.current;
+    startedInScroller.current = Boolean(scroller && scroller.contains(e.target));
+    scrollTopAtStart.current = scroller ? scroller.scrollTop : 0;
+    claimed.current = undefined;
   }, [snap]);
 
   const onTouchMove = useCallback((e) => {
     if (!dragging.current) return;
     const dy = startY.current - e.touches[0].clientY;
+
+    // MEH-2148: decide once, past the slop, then stop asking.
+    if (claimed.current === undefined) {
+      if (Math.abs(dy) < GESTURE_SLOP_PX) return;
+      claimed.current = sheetClaimsGesture({
+        startedInScroller: startedInScroller.current,
+        scrollTopAtStart: scrollTopAtStart.current,
+        dy,
+        // startSnap, not the live `snap` prop: the snap this gesture BEGAN at
+        // is what the user aimed from, and `snap` can change mid-drag.
+        snap: startSnap.current,
+      });
+      if (!claimed.current) {
+        // The list owns this touch. Do nothing at all — no preventDefault, no
+        // transient height — and stand down for the rest of it, so the native
+        // scroll runs exactly as if this component had no listeners.
+        dragging.current = false;
+        return;
+      }
+    }
+
+    // Claimed: suppress the native scroll/rubber-band for this gesture. The
+    // listener is registered non-passive precisely so this call is honoured;
+    // under the previous `{ passive: true }` it would have been a console
+    // warning and a no-op. `cancelable` is checked because a browser that has
+    // already committed to scrolling reports the event as non-cancelable.
+    if (e.cancelable) e.preventDefault();
     const dvh = (dy / window.innerHeight) * 100;
     const next = Math.max(PEEK, Math.min(HALF, startSnap.current + dvh));
     setTransient(next);
   }, []);
 
   const onTouchEnd = useCallback(() => {
+    const wasClaimed = claimed.current === true;
+    claimed.current = undefined;
     if (!dragging.current) return;
     dragging.current = false;
+    // MEH-2148: snap only for a gesture the sheet actually took. Without this,
+    // a plain list scroll would still land in closest() and re-snap the sheet
+    // on every finger lift -- the same bug one layer down.
+    if (!wasClaimed) return;
     const snapped = closest(transient ?? snap);
     setTransient(null);
     onSnapChange(snapped);
@@ -107,7 +189,10 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
     const el = sheetRef.current;
     if (!el) return;
     el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    // MEH-2148: NON-passive. preventDefault() inside a passive listener is
+    // ignored by the browser, so the arbitration above would decide correctly
+    // and then fail to act on it.
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd);
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
@@ -123,7 +208,14 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
       style={{
         height: `${heightVh}vh`,
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",
-        paddingBottom: "64px",
+        // MEH-2148: was a flat 64-pixel literal -- a static twin of a nav band
+        // that has not been that tall since the pill redesign. The live
+        // clearance is 72-106px, so the last rows of the list sat UNDER the
+        // pill -- measured with the sheet open and scrolled to the end, the last
+        // row's bottom edge landed exactly on the pill's top. Unlike the other
+        // consumers in this PR this is not a parity swap: it is +16px at the
+        // fallback, and that difference is the bug being fixed.
+        paddingBottom: "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px)",
       }}
     >
       {/* Drag handle — MEH-1029 (MAP-11): S5 chrome 44×5 (was 32×4). Warm tan
@@ -167,7 +259,15 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
           double-shift); iOS Safari's anchoring is weaker (so it would shift with
           no comp). Turning anchoring OFF makes the manual comp the single,
           consistent mechanism -> zero list shift everywhere. */}
-      <div className="flex-1 overflow-y-auto [overflow-anchor:none] px-4 pt-1">
+      {/* MEH-2148: `[overscroll-behavior-y:contain]` stops a scroll that reaches
+          either end of this list from chaining to the document underneath —
+          the effect visible in the 21/08 captures as the page itself moving
+          behind the sheet (RTL scrollbar, clipped chip row). `contain` and not
+          `none`: it blocks the chaining, keeps the local rubber-band. */}
+      <div
+        ref={contentRef}
+        className="flex-1 overflow-y-auto overscroll-y-contain [overflow-anchor:none] px-4 pt-1"
+      >
         {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}
       </div>
     </div>

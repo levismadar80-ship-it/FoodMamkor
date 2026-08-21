@@ -132,6 +132,43 @@ export const ProducerListSchema = z.object({
     lng: z.number().finite().nullable().optional(),
     is_primary: z.boolean().nullable().optional(),
     precision: z.string().nullable().optional(),
+    // MEH-2142: `opening_hours` + `phone` — the SIXTH instance of the exact
+    // mechanism the comment above enumerates five times, and the first one
+    // found by a QA harness rather than by a bug report.
+    //
+    // The backend has served both on the public `ProducerLocationOut` since
+    // MEH-1509 (schemas.py:1049-1050), added so the business page could render
+    // a pickup point's "where and when" and its click-to-call. Undeclared
+    // here, `z.object` STRIPPED them from every parsed payload — including the
+    // producer detail page, whose `.loose()` (useProducerData.js:26) permits
+    // unknown keys only at the TOP level and does not reach inside this
+    // nested object.
+    //
+    // Two consequences, one new and one pre-existing:
+    //   * `resolveStoreHours` (lib/hours.js) could never see a location's
+    //     hours, so the primary-over-legacy preference this ticket ships
+    //     silently degraded to "always the legacy column". Unit tests passed —
+    //     they call the resolver with unparsed objects. The dual-state
+    //     screenshot harness is what caught it.
+    //   * DeliveryBlock.jsx:242 renders `{loc.opening_hours && …}` for pickup
+    //     points and market stands. That has been dead on this page since
+    //     MEH-1509 shipped. Reported, not silently absorbed.
+    //
+    // The two fields are NOT symmetric, and the difference was measured rather
+    // than assumed: `opening_hours` had a live public renderer (above), while
+    // `phone` has NONE — grepped, the only consumer anywhere is
+    // LocationsEditor.jsx:112, the owner's form, which reads
+    // ProducerLocationOwnerOut and already declared it. MEH-1509's backend
+    // comment describes a public click-to-call that was never built. `phone`
+    // is declared here anyway because the backend serves it publicly and a
+    // served field the parse silently drops is the same trap either way — but
+    // it is a LATENT gap, not a repaired feature. Stated so nobody inherits
+    // "we fixed click-to-call" from this comment.
+    //
+    // Permissive per field, like every sibling above: a partial row must never
+    // drop a whole producer from the all-or-nothing parse.
+    opening_hours: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1823: the single active offer, or null. Declared for the same reason
   // as locations/delivery_areas above — an undeclared key is STRIPPED by
