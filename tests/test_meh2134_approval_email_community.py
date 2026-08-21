@@ -134,14 +134,25 @@ def test_sibling_bodies_never_carry_the_invite(invite_url):
         assert body.endswith("בברכה,\nצוות מהמקור")
 
 
-# The three tracked files MEH-2134 owns. The community invite can only be
+# The four tracked files MEH-2134 owns. The community invite can only be
 # leaked by being written into one of them, so this is the corpus the gate
 # scans — see the docstring below for why it is not the whole repo.
+#
+# `.env.example` joined the set when the variable was documented there for the
+# Env-drift gate. It is the highest-risk member: it is the one file whose whole
+# purpose is to name this variable, so it is where a future hand is most likely
+# to "helpfully" paste the real link.
 _OWNED_FILES = (
+    ".env.example",
     "backend/app/config.py",
     "backend/app/routers/admin.py",
     "tests/test_meh2134_approval_email_community.py",
 )
+
+# `.env.example` is a short template, not a source file, so it cannot clear the
+# same non-triviality floor as the others.
+_MIN_BYTES = {".env.example": 100}
+_DEFAULT_MIN_BYTES = 500
 
 
 def test_community_invite_is_never_committed_to_the_files_this_ticket_owns():
@@ -176,7 +187,10 @@ def test_community_invite_is_never_committed_to_the_files_this_ticket_owns():
         # Control: a renamed or moved file would make the check below
         # vacuously green — the reassuring answer from a probe aimed at
         # nothing. Require the file to exist and be non-trivial first.
-        assert len(text) > 500, f"{rel} is missing or truncated; its leak scan is void."
+        floor = _MIN_BYTES.get(rel, _DEFAULT_MIN_BYTES)
+        assert len(text) > floor, (
+            f"{rel} is missing or truncated; its leak scan is void."
+        )
         assert needle not in text, (
             f"WhatsApp invite link committed to a public repo in {rel}. "
             "The URL belongs in WHATSAPP_COMMUNITY_INVITE_URL on Railway, "
@@ -186,3 +200,60 @@ def test_community_invite_is_never_committed_to_the_files_this_ticket_owns():
     # The default must stay empty: a populated default IS the leak, even
     # without the literal host string above (a shortened or proxied link).
     assert type(settings).model_fields["whatsapp_community_invite_url"].default == ""
+
+
+def _invite_declaration_lines(text: str) -> list[str]:
+    """Every `WHATSAPP_COMMUNITY_INVITE_URL=` declaration line in an env file.
+
+    Extracted so the assertion below can be exercised against inputs whose
+    answer is known, without writing a fake link into the real `.env.example`
+    (it is a tracked file in a public repo — the exact thing this guards).
+    The self-test and the real-file test call THIS function, never a copy.
+    """
+    return [
+        line
+        for line in text.splitlines()
+        if line.strip().startswith("WHATSAPP_COMMUNITY_INVITE_URL=")
+    ]
+
+
+def test_invite_declaration_parser_discriminates():
+    """Self-test: run the classifier FIRST, on cases whose answers are known.
+
+    If it cannot tell a clean declaration from a leaked one, nothing it reports
+    about the real file afterwards is worth reading.
+    """
+    clean = "FOO=1\nWHATSAPP_COMMUNITY_INVITE_URL=\nBAR=2"
+    leaked = "FOO=1\nWHATSAPP_COMMUNITY_INVITE_URL=https://chat.example/AbCd\nBAR=2"
+    duplicated = "WHATSAPP_COMMUNITY_INVITE_URL=\nWHATSAPP_COMMUNITY_INVITE_URL="
+    absent = "FOO=1\n# WHATSAPP_COMMUNITY_INVITE_URL is documented elsewhere\nBAR=2"
+
+    assert _invite_declaration_lines(clean) == ["WHATSAPP_COMMUNITY_INVITE_URL="]
+    assert _invite_declaration_lines(leaked) != ["WHATSAPP_COMMUNITY_INVITE_URL="]
+    assert len(_invite_declaration_lines(duplicated)) == 2
+    # A commented-out mention is not a declaration — it must not satisfy the
+    # Env-drift half of the real assertion.
+    assert _invite_declaration_lines(absent) == []
+
+
+def test_env_example_documents_the_variable_with_an_empty_value():
+    """`.env.example` must NAME the variable and must never carry a value.
+
+    Two properties, and the second is the one with teeth. Naming it is what the
+    Env-drift gate wants. Leaving it empty is the leak gate for the one file
+    whose entire job is to advertise this variable to whoever sets up the app —
+    which makes it the likeliest place for a future hand to paste the real link
+    "so it's documented". A host-string scan would not catch a shortened or
+    proxied invite; requiring the value to be empty catches every form.
+    """
+    text = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
+
+    matches = _invite_declaration_lines(text)
+
+    # Exactly one: a second copy is its own bug (the Env-drift gate would still
+    # pass, and whichever line lost the race would silently stop mattering).
+    assert len(matches) == 1, f"expected exactly 1 declaration, found {matches}"
+    assert matches[0].strip() == "WHATSAPP_COMMUNITY_INVITE_URL=", (
+        "the invite URL must never be committed — the repo is public. "
+        f"Found: {matches[0]!r}"
+    )
