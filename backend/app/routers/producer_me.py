@@ -1935,6 +1935,93 @@ def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> Non
     ).update({ProducerLocation.is_primary: False})
 
 
+def _sync_producer_city_from_primary(db: Session, producer_id: UUID) -> None:
+    """MEH-2141 (MEH-1938 batch B2) — write `Producer.city` through from the
+    primary location, in the caller's open transaction.
+
+    ## Why this exists
+
+    Chunk 4 deleted the dashboard's "מיקום על המפה" card, which was the owner's
+    only editor for `Producer.city`. The CI reviewer flagged the gap on that
+    PR: an owner who moves her primary location to another town now has no way
+    to correct the city that the listing filter, the free-text search, the
+    `/producers/cities` aggregation, the admin search, `rank_in_city` and the
+    two admin notification emails all read. Fourteen readers, and none of them
+    has an equivalent in `producer_locations` — which is why the column stays
+    and is written THROUGH rather than dropped.
+
+    Interim derived, NOT Contract. Chunk 5 is what makes `city` fully derived,
+    and it is blocked on the release card. Nothing here removes a column,
+    changes a schema, or touches `lat`/`lng`.
+
+    ## Two things it deliberately does NOT do
+
+    **It never writes NULL.** If there is no primary row, or the primary row
+    carries no city, the column keeps its last value. A NULL here is not a
+    neutral "unknown" — it drops the business out of `?city=` filtering and
+    out of the region picker, and it renders as a blank line in the admin
+    emails. `ProducerLocation.city` is `str | None` (schemas.py:1090), so this
+    is a reachable state, not a theoretical one.
+
+    **It is not called on every mutation.** The callers below invoke it only
+    when the operation changed WHICH row is primary, or changed the primary
+    row's own city. That precision is what keeps admin authority intact —
+    see the precedence note below.
+
+    ## Precedence: admin wins, and nothing here contests it
+
+    `admin.py` writes `Producer.city` directly (the create path's explicit
+    `city=data.city`, and the PUT's `setattr` loop over `ProducerUpdate`).
+    That write is NOT wrapped, NOT mirrored and NOT reverted by this function.
+    The two paths coexist because they are triggered by different events: an
+    admin edit sets the column and no owner location changed, so this function
+    never runs; an owner moves her primary location and this function sets the
+    column from that row. The one ordering that overwrites an admin value is
+    an owner moving her primary AFTER the admin edit — which is the correct
+    outcome, because at that point the owner's own primary location is the
+    fresher statement of where the business is.
+
+    # DO NOT call this from a non-primary mutation. Doing so would re-derive
+    # the column on an edit that says nothing about it, and would silently
+    # revert an admin's `city` the next time an owner edited an unrelated
+    # pickup point's phone number.
+    """
+    # `SessionLocal` is built with autoflush=False (database.py:107), so a
+    # promotion the caller has only assigned on the ORM instance
+    # (`loc.is_primary = True`, `replacement.is_primary = True`) is NOT visible
+    # to the query below until it is flushed. Without this line the query finds
+    # NO primary at all — the previous one was demoted by a bulk UPDATE that
+    # did hit the database, the new one is still pending in the session — and
+    # the function returns early, leaving the city on the OLD location.
+    #
+    # That is not a hypothesis: the promote and delete-primary tests failed
+    # exactly this way before this flush was added, and they are the two that
+    # would have shipped the bug.
+    #
+    # Flushing here rather than at each call site keeps the helper correct
+    # regardless of what the caller has or has not flushed. The caller still
+    # owns the COMMIT.
+    db.flush()
+
+    primary = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .order_by(ProducerLocation.created_at.asc())
+        .first()
+    )
+    if primary is None:
+        return
+    if not primary.city or not primary.city.strip():
+        return
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return
+    producer.city = primary.city.strip()
+
+
 @router.get("/locations", response_model=list[ProducerLocationOwnerOut])
 def list_my_locations(
     user: User = Depends(require_producer),
@@ -1974,6 +2061,12 @@ def create_my_location(
     db.flush()  # assign loc.id before clearing siblings
     if loc.is_primary:
         _clear_other_primaries(db, user.producer_id, loc.id)
+        # MEH-2141: the primary changed (first location, or an explicit
+        # is_primary=true that just demoted the previous one), so the city the
+        # 14 readers see is re-derived from it. Gated on `is_primary` rather
+        # than run unconditionally: adding a SECOND, non-primary pickup point
+        # says nothing about where the business is.
+        _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()
     db.refresh(loc)
     return loc
@@ -2013,6 +2106,18 @@ def update_my_location(
         # owner promotes another location instead (which clears this one).
         raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
 
+    # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
+    # just PROMOTED to primary (the primary's identity changed), or this row is
+    # ALREADY primary and the patch carried a city (the primary's city changed).
+    #
+    # Read `loc.is_primary` AFTER the block above, not the pre-patch value: a
+    # promotion sets it two lines up, and the demotion arm raises rather than
+    # falling through. Every other edit — a phone on the primary, anything at
+    # all on a non-primary row — leaves the column alone, which is what keeps
+    # an admin-set city from being reverted by an unrelated owner edit.
+    if want_primary is True or (loc.is_primary and "city" in patch):
+        _sync_producer_city_from_primary(db, user.producer_id)
+
     db.commit()
     db.refresh(loc)
     return loc
@@ -2039,4 +2144,13 @@ def delete_my_location(
         )
         if replacement is not None:
             replacement.is_primary = True
+            # MEH-2141: a new row is primary, so the city follows it.
+            #
+            # The `replacement is not None` guard is load-bearing here and not
+            # just a null check: deleting the LAST location leaves no primary,
+            # and the column must then KEEP its last value rather than go NULL.
+            # The helper would decline anyway (it returns early on no primary),
+            # so this is belt and braces on the invariant the 14 readers depend
+            # on — stated twice on purpose, because a NULL city is silent.
+            _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()
