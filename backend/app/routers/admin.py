@@ -1708,7 +1708,11 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
     because Gmail strips both. No emoji, unlike that precedent: the text twin
     carries none and the two parts must read alike.
 
-    `escape()` on the interpolated values is not decoration. `name` is
+    EVERY interpolated value goes through `escape()`, including the LOCKED
+    community constant — which carries no HTML metacharacter today (measured),
+    and that is exactly why escaping it is not optional: a guarantee that holds
+    only because of a property of the current value is not a guarantee, and the
+    next approved copy edit is where it stops holding. `name` is
     owner-supplied free text that reaches this function unfiltered, so a
     business name containing `<` or `"` would break out of the markup it lands
     in — harmless in the text part, an injection in this one. `slug` is
@@ -1736,7 +1740,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
     )
     community = (
         f'<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
-        f'margin:0 0 24px;direction:rtl;">{_APPROVED_COMMUNITY_BLOCK}<br>'
+        f'margin:0 0 24px;direction:rtl;">'
+        f"{_html_escape(_APPROVED_COMMUNITY_BLOCK)}<br>"
         f'<a href="{_html_escape(invite_url)}" style="color:#2e6853;">'
         f"{_html_escape(invite_url)}</a></p>"
         if invite_url

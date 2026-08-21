@@ -107,7 +107,7 @@ def test_text_part_orders_the_blocks_greeting_to_signature():
     separate presence checks. Presence cannot see an ordering regression, which
     is the only thing this ticket changed about blocks that already existed.
     """
-    monkeypatched_body = _producer_approved_body(NAME, SLUG)
+    body = _producer_approved_body(NAME, SLUG)
 
     markers = [
         ("greeting", "היי,"),
@@ -121,7 +121,7 @@ def test_text_part_orders_the_blocks_greeting_to_signature():
 
     positions = []
     for label, needle in markers:
-        idx = monkeypatched_body.find(needle)
+        idx = body.find(needle)
         assert idx != -1, f"{label} ({needle!r}) missing from the text part"
         positions.append((label, idx))
 
@@ -220,7 +220,13 @@ def test_the_two_links_are_distinct_destinations():
     URL twice. This is the assertion that is falsifiable by that specific
     regression.
     """
-    assert PAGE_URL != DASHBOARD_URL
+    # `assert PAGE_URL != DASHBOARD_URL` stood here and was DELETED, not
+    # reformulated: both are module constants built from literals that cannot
+    # coincide for any value of `frontend_url`, so it was entailed by its own
+    # surroundings — decoration that reads as coverage
+    # (`.claude/rules/testing.md`). The two counts below are the falsifiable
+    # part: were `_approval_links` to return the dashboard URL twice, the first
+    # would read 0 and the second 2.
     text = _producer_approved_body(NAME, SLUG)
     assert text.count(DASHBOARD_URL) == 1
     assert text.count(PAGE_URL) == 1
@@ -257,7 +263,7 @@ def test_html_part_declares_rtl_on_the_document_and_in_css():
     )
 
 
-def test_html_part_carries_the_primary_button_with_the_brand_green():
+def test_html_part_carries_the_button_and_the_brand_background():
     """The button is a background colour on a container plus a white label —
     Gmail strips <style>, so both live inline or neither works."""
     html = _producer_approved_html(NAME, SLUG)
