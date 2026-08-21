@@ -97,6 +97,64 @@ export const ReviewCategoryRequestAdminCategoryRequestsRequestIdPatchResponse = 
 
 
 /**
+ * The checklist, ordered.
+ *
+ * `include_inactive` defaults to **False** because the review flow — the
+ * high-traffic caller — must never show a retired item to an admin working a
+ * business. The settings screen passes `true`, since editing a list you
+ * cannot see all of is not editing.
+ * @summary List Checklist Items
+ */
+export const ListChecklistItemsAdminChecklistItemsGetResponseItem = /*#__PURE__*/ zod.object({
+  "active": /*#__PURE__*/ zod.boolean(),
+  "hint": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "label": /*#__PURE__*/ zod.string(),
+  "position": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('MEH-1399: one review-checklist item as the admin surfaces read it.'))
+export const ListChecklistItemsAdminChecklistItemsGetResponse = /*#__PURE__*/ zod.array(ListChecklistItemsAdminChecklistItemsGetResponseItem)
+
+
+/**
+ * Replace the list: add, edit, reorder and retire in one request.
+ *
+ * ## Order comes from the array index, not from the client
+ *
+ * `position` is assigned as `index * 10` here rather than accepted from the
+ * payload. A client-supplied position lets two items claim the same slot and
+ * makes the rendered order depend on a tiebreak nobody specified; the array
+ * the admin actually sees IS the order, so it is the input.
+ *
+ * ## There is no delete, and that is enforced below the router
+ *
+ * An item absent from the payload is left ALONE, not removed. Retirement is
+ * `active: false`. This is not politeness toward the data: the FK from
+ * `producer_review_checks.item_id` is ON DELETE RESTRICT, so deleting a
+ * ticked item raises at the database — a delete endpoint could only ever
+ * 500 on exactly the items with history worth keeping.
+ *
+ * That does mean a mis-typed item can be created and then only deactivated,
+ * never removed. Accepted deliberately: an audit trail whose subjects can be
+ * erased is not an audit trail, and the cost is one greyed-out row.
+ *
+ * ## Unknown ids are rejected, not silently created
+ *
+ * An `id` that does not exist is a 404, not an insert. A stale tab saving
+ * against items another admin retired should be told, not have its old rows
+ * quietly resurrected under new ids.
+ * @summary Save Checklist Items
+ */
+export const SaveChecklistItemsAdminChecklistItemsPutResponseItem = /*#__PURE__*/ zod.object({
+  "active": /*#__PURE__*/ zod.boolean(),
+  "hint": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "label": /*#__PURE__*/ zod.string(),
+  "position": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('MEH-1399: one review-checklist item as the admin surfaces read it.'))
+export const SaveChecklistItemsAdminChecklistItemsPutResponse = /*#__PURE__*/ zod.array(SaveChecklistItemsAdminChecklistItemsPutResponseItem)
+
+
+/**
  * Single endpoint that returns everything the dashboard needs.
  * @summary Get Dashboard
  */
@@ -1792,6 +1850,72 @@ export const RejectProducerAdminProducersProducerIdRejectPostResponse = /*#__PUR
  * @summary Request Producer Changes
  */
 export const RequestProducerChangesAdminProducersProducerIdRequestChangesPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The ticks recorded for one producer.
+ *
+ * 404s on an unknown producer rather than returning an empty list: "this
+ * business has no ticks" and "this business does not exist" are different
+ * facts, and an empty list for the second would let the review flow render a
+ * clean checklist for a producer that is gone.
+ * @summary Get Review Checks
+ */
+export const getReviewChecksAdminProducersProducerIdReviewChecksGetResponseChecksDefault = [];
+
+export const GetReviewChecksAdminProducersProducerIdReviewChecksGetResponse = /*#__PURE__*/ zod.object({
+  "checks": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "checked_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "checked_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "label_snapshot": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One recorded tick, as the review flow reads it back.'))), getReviewChecksAdminProducersProducerIdReviewChecksGetResponseChecksDefault),
+  "producer_id": /*#__PURE__*/ zod.uuid()
+})
+
+
+/**
+ * Record the ticked set for a producer. Idempotent.
+ *
+ * ## Set semantics, and why not a diff
+ *
+ * What arrives IS the state afterwards: ids present are ticked, ids absent
+ * have their rows deleted. A diff API ("tick this one") requires the client
+ * to know what it previously sent, which is exactly the assumption that
+ * breaks with two admin tabs open on the same business.
+ *
+ * ## `label_snapshot` is written HERE, at tick time
+ *
+ * Not read back from the item at display time. That is the entire mechanism
+ * of the audit trail — an admin editing an item's wording next month must not
+ * retroactively change what a past admin attested to. The FK still says which
+ * item; the snapshot says what it said.
+ *
+ * ## Re-ticking does not restamp
+ *
+ * An item already ticked is left untouched — `checked_by` / `checked_at` keep
+ * the FIRST attestation. Re-saving an unchanged checklist (which the UI does
+ * on every autosave) would otherwise rewrite the audit trail to the most
+ * recent page load, which is the opposite of what it is for.
+ *
+ * ## Inactive items are still accepted
+ *
+ * Deliberately: an admin may be mid-review when another retires an item, and
+ * rejecting her save would lose the work over a race she cannot see. The
+ * review flow will stop OFFERING the item on the next load.
+ * @summary Save Review Checks
+ */
+export const saveReviewChecksAdminProducersProducerIdReviewChecksPutResponseChecksDefault = [];
+
+export const SaveReviewChecksAdminProducersProducerIdReviewChecksPutResponse = /*#__PURE__*/ zod.object({
+  "checks": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "checked_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "checked_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "label_snapshot": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One recorded tick, as the review flow reads it back.'))), saveReviewChecksAdminProducersProducerIdReviewChecksPutResponseChecksDefault),
+  "producer_id": /*#__PURE__*/ zod.uuid()
+})
 
 
 /**
