@@ -72,6 +72,7 @@ erDiagram
         string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
         timestamp verified_at "nullable — MEH-762, tz-aware; admin tier-1 document-check timestamp (public at date granularity)"
         string verification_doc_type "nullable — MEH-762, VARCHAR(20); license|exemption|cosmetics (S12 badge source)"
+        date license_expires_at "nullable — MEH-2072, DATE not TIMESTAMP (a licence is valid through a calendar day; compared against israel_today()); admin-only (ProducerAdminOut), never owner-writable; NULL = not captured yet, NEVER no-expiry; feeds GET /admin/license-expiry-reminders (30d window), no enforcement"
         text requested_changes "nullable — MEH-1011, admin completion-request feedback (non-terminal, status stays pending; cleared on approve)"
         timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
         timestamp created_at

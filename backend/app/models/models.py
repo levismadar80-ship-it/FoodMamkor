@@ -272,6 +272,29 @@ class Producer(Base):
     # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
+    # MEH-2072: the licence's expiry date, read off the document by the admin
+    # at approval. Without it the "licensed businesses only" promise is checked
+    # once, on day one, and never again — a lapsed licence is indistinguishable
+    # from a current one in the data.
+    #
+    # Date, NOT DateTime, and it deliberately diverges from the sibling
+    # kashrut_expires_at (:400) whose reminder pattern this mirrors: a licence
+    # is valid THROUGH a calendar day, not to an instant, so a timestamp would
+    # make "expires today" answer differently either side of 00:00 UTC — which
+    # in Israel falls inside the same working day. Paired with israel_today()
+    # (utils/clock.py:33) the comparison is calendar-day vs calendar-day.
+    #
+    # Nullable, Expand-only (ADR-007, no backfill): the date lives only on a
+    # document, so there is nothing to backfill from. NULL means "not captured
+    # yet", NEVER "no expiry" — the reminder query filters IS NOT NULL so a
+    # NULL row is never reminded about rather than treated as expired.
+    #
+    # Admin-owned (MEH-530 precedent): ProducerAdminOut only, never the public
+    # ProducerDetailOut/ListOut, and withheld from _PRODUCER_WRITABLE_FIELDS so
+    # PUT /producers/me cannot write it — same shape as google_place_id
+    # (MEH-1490). Tests assert both. No enforcement anywhere: v1 is capture +
+    # remind only. Paired migration: c3e9a1f7b204.
+    license_expires_at = Column(Date, nullable=True)
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
     # final registration step. `referral_source` holds an English key from
     # constants.REFERRAL_SOURCE_KEYS (validated at the API boundary — no DB
