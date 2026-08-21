@@ -38,7 +38,12 @@ from app.schemas.schemas import (
     ProducerListOut,
     ProducerRandomOut,
 )
-from app.services.analytics import ViewContext, hash_ip, track_producer_view
+from app.services.analytics import (
+    ViewContext,
+    hash_ip,
+    is_internal_viewer,
+    track_producer_view,
+)
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
     build_producers_query,
@@ -468,6 +473,18 @@ def record_whatsapp_click(
     """
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
+    # MEH-2156: the owner's own clicks (and any admin's) are not audience, so
+    # they are not logged. Placed AFTER the 404 check so a bogus producer_id
+    # still 404s for the owner, and the 200 body below is returned verbatim —
+    # nothing leaks through the status code or the body about whether the row
+    # was written. Rationale in full: services/analytics.is_internal_viewer.
+    #
+    # DO NOT move this explanation into the docstring above — a route
+    # handler's docstring IS the `description` field in backend/openapi.json,
+    # so editing it is a public-contract change that reds the committed-spec
+    # snapshot (tests/test_openapi_contract_snapshot.py).
+    if is_internal_viewer(current_user, producer_id):
+        return {"detail": "logged"}
     db.add(
         ProducerWhatsAppClick(
             producer_id=producer_id,
@@ -503,6 +520,12 @@ def record_contact_click(
         raise HTTPException(status_code=422, detail="method לא חוקי")
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
+    # MEH-2156: owner/admin clicks are not audience, so they are not logged.
+    # Placed AFTER the 422 and the 404 so validation is identical for the
+    # owner, and the 204 she receives is indistinguishable from a visitor's.
+    # (Kept out of the docstring deliberately — see record_whatsapp_click.)
+    if is_internal_viewer(current_user, producer_id):
+        return
     client_ip = request.client.host if request.client else None
     db.add(
         ContactClick(
