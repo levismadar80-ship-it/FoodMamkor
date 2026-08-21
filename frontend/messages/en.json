@@ -4294,7 +4294,8 @@
         "hub_group_location": "Location, delivery & hours",
         "hub_group_contact": "Contact & questions",
         "hub_trust_card": "Certifications & documents",
-        "hub_progress": "{done} of {total} completed"
+        "hub_progress": "{done} of {total} completed",
+        "questions_summary_defaults": "{count, plural, one {showing 1 default question} other {showing # default questions}}"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4478,7 +4479,21 @@
         "placeholder_5": "e.g. Can I arrange a tasting?",
         "save_cta": "Save questions",
         "saving": "Saving…",
-        "saved": "✓ Saved"
+        "saved": "✓ Saved",
+        "live_heading": "What your page shows right now",
+        "live_hint": "This is the live view. It is not editable here — it follows the details you filled in and the questions below.",
+        "live_answered": "answered automatically from your details",
+        "live_via": "opens {channel}",
+        "live_empty": "No questions are showing on your page right now — add a contact channel or fill in a question below.",
+        "live_channel": {
+          "whatsapp": "WhatsApp",
+          "phone": "phone",
+          "website": "your website",
+          "email": "email",
+          "instagram": "Instagram",
+          "facebook": "Facebook",
+          "external_order": "your order form"
+        }
       },
       "view_on_page": "View this section on your page",
       "description_card": {
