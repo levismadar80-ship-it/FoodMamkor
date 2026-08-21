@@ -4288,6 +4288,8 @@
         "owner_missing": "No photo and story yet",
         "kashrut_has": "Kosher badge active",
         "kashrut_none": "No kosher badge yet",
+        "chip_required": "Required",
+        "chip_optional": "Optional",
         "hub_title": "Edit business",
         "hub_back": "Back to all sections",
         "hub_group_profile": "Your profile",
