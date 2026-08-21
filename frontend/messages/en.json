@@ -3268,6 +3268,7 @@
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
       "escalation": "Another question? Send us a message",
+      "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "recipe_idea": "Can I share a recipe I made?",
       "recipe_idea_message": "Hi! I came from your page on Mehamakor — I made something with your products and I'd love to share the recipe:"

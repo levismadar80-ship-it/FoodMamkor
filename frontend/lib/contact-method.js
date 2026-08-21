@@ -106,6 +106,26 @@ export function getPrimaryContactLabel(producer) {
   }
 }
 
+/**
+ * True when the business DECLARED WhatsApp as its primary channel (MEH-2154).
+ *
+ * Lives here, beside getPrimaryMethod / isPrimaryExternal, because it is a
+ * statement about the contact channel and this module is the single owner of
+ * that fact — a second copy in a component is the "two parallel mechanisms"
+ * smell (workflow.md § Smell #1).
+ *
+ * DO NOT reimplement as `producer.primary_contact_method === "whatsapp"`. That
+ * strict form answers a different question: `primary_contact_method` is
+ * `Column(String(20), default="whatsapp")` (backend models.py:71), a
+ * Python-side default, so a row that predates the column or was written around
+ * the ORM reads NULL — and NULL has always BEHAVED as WhatsApp everywhere,
+ * because every consumer goes through getPrimaryMethod's fallback above. The
+ * strict comparison would silently strip the WhatsApp chips from those rows.
+ */
+export function isWhatsAppPrimary(producer) {
+  return getPrimaryMethod(producer) === "whatsapp";
+}
+
 /** True when the primary CTA will open in a new tab (not wa.me/tel/mailto). */
 export function isPrimaryExternal(producer) {
   // MEH-296: instagram/facebook/external_order also open in a new tab.

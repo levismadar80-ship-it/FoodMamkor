@@ -3264,6 +3264,7 @@
       "ordering_phone_prefix": "מתקשרים:",
       "ordering_link_label": "למעבר",
       "escalation": "שאלה אחרת? שלחו לנו הודעה",
+      "escalation_email_subject": "שאלה דרך מהמקור",
       "more_questions": "עוד שאלות",
       "recipe_idea": "אפשר לשתף מתכון שהכנתי?",
       "recipe_idea_message": "היי! הגעתי מהעמוד שלכם במהמקור — הכנתי משהו מהמוצרים שלכם ואשמח לשתף את המתכון:"
