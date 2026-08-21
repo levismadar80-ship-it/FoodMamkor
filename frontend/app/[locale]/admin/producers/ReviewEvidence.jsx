@@ -112,8 +112,13 @@ export default function ReviewEvidence({ producer }) {
   const thumbs = (images || []).slice(0, MAX_THUMBS);
   const badges = kashrutBadges || [];
 
+  // The small-screen cap below is measured, not chosen: at 375 a bare
+  // `max-w-xl` (576px) rendered 481px wide with 151px of it off-screen, so
+  // «מספר: …» and the expiry could only be read by scrolling the whole admin
+  // table sideways. `100vw - 3rem` subtracts the containing td's own `px-6`.
+  // max-width has no start/end side, so this is direction-neutral.
   return (
-    <div className="mt-3 border-t border-border pt-3 space-y-3 max-w-xl">
+    <div className="mt-3 border-t border-border pt-3 space-y-3 max-w-[calc(100vw-3rem)] sm:max-w-xl">
       <p className="text-xs font-semibold text-text">תיק בדיקה</p>
 
       <Section icon={IdentificationCard} title="רישיון">

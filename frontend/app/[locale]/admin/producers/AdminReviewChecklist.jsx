@@ -43,6 +43,14 @@ export default function AdminReviewChecklist({
   const doneCount = list.filter((item) => checked.has(item.id)).length;
   const Caret = open ? CaretDown : CaretRight;
   const loading = items === null;
+  // A producer's recorded ticks are fetched when its row is EXPANDED, so before
+  // that `checkedIds` is undefined — which is not the same as "nothing ticked".
+  // Rendering the difference matters because the counter is the closed state's
+  // only signal: a confident `0/7` on a business somebody already reviewed is
+  // exactly the shape this repo keeps getting caught by — an answer that is an
+  // artifact of what the query could not see. `?` says "open it and I will
+  // tell you", which is true.
+  const ticksKnown = checkedIds !== undefined;
 
   return (
     <div className="pt-1">
@@ -58,7 +66,11 @@ export default function AdminReviewChecklist({
         {/* The counter is the CLOSED state's only signal, so it has to be
             honest while loading rather than reading a confident 0/0. */}
         <span className="text-muted tabular-nums">
-          {loading ? "(…)" : `(${doneCount}/${list.length})`}
+          {loading
+            ? "(…)"
+            : ticksKnown
+              ? `(${doneCount}/${list.length})`
+              : `(?/${list.length})`}
         </span>
         {saving && <span className="text-[11px] text-muted">שומרת…</span>}
       </button>

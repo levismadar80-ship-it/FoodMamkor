@@ -139,6 +139,37 @@ describe("AdminReviewChecklist component", () => {
     expect(screen.queryByText("(0/0)")).not.toBeInTheDocument();
   });
 
+  // The sibling of the case above, one level down, and the one my own self-QA
+  // caught: a producer's ticks are fetched when the row is EXPANDED, so before
+  // that `checkedIds` is undefined. Rendering that as `0` is a confident answer
+  // that is an artifact of what was never queried — a business somebody already
+  // reviewed would read as untouched on the one signal the closed state has.
+  it("the collapsed counter does not claim 0 done before the ticks are fetched", () => {
+    const { rerender } = render(
+      <AdminReviewChecklist {...baseProps} open={false} checkedIds={undefined} />,
+    );
+    expect(screen.getByText(`(?/${ITEMS.length})`)).toBeInTheDocument();
+    expect(screen.queryByText(`(0/${ITEMS.length})`)).not.toBeInTheDocument();
+
+    // An EMPTY Set is a different fact — fetched, and nothing is ticked. That
+    // one is a real zero and must render as one.
+    rerender(
+      <AdminReviewChecklist {...baseProps} open={false} checkedIds={new Set()} />,
+    );
+    expect(screen.getByText(`(0/${ITEMS.length})`)).toBeInTheDocument();
+    expect(screen.queryByText(`(?/${ITEMS.length})`)).not.toBeInTheDocument();
+
+    // And a real count still renders.
+    rerender(
+      <AdminReviewChecklist
+        {...baseProps}
+        open={false}
+        checkedIds={new Set([ITEMS[0].id])}
+      />,
+    );
+    expect(screen.getByText(`(1/${ITEMS.length})`)).toBeInTheDocument();
+  });
+
   it("offers a retry when the item list failed to load", () => {
     const onReloadItems = vi.fn();
     render(
