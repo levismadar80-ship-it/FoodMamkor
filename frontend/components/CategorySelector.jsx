@@ -38,9 +38,21 @@ import { CATEGORY_ICONS } from "@/lib/category-registry";
 // simply skipped", and it burned once already when «קוסמטיקה טבעית» needed a
 // temporary alias to survive its own rename (MEH-1104).
 //
-// The slug and the glyph are the SAME token by construction: chunk 1 backfilled
-// the slugs from these very constants, which are also the i18n keys. That is why
-// `glyph` disappears here rather than sitting next to `slug` repeating it.
+// The slug and the I18N KEY are the same token by construction: chunk 1
+// backfilled the slugs from these very constants, which are also the copy keys.
+// That is why the old `glyph` field disappears here rather than sitting beside
+// `slug` repeating it.
+//
+// It is NOT the same token as the GLYPH, and an earlier version of this comment
+// said it was. `CATEGORY_ICONS` is still keyed by the Hebrew display name
+// (see :244), so the glyph is the one thing on this card that a rename still
+// drops — silently, to no glyph. Left that way on purpose: that map is shared
+// with three other surfaces (ProducersClient, HomeCategoryGrid, FilterChipsBar)
+// whose data carries no slug, and the frontend has no name-to-slug table to
+// derive a slug-keyed view from. Writing one would be a THIRD copy of
+// backend/app/services/category_slug.NAME_TO_SLUG — in a language the test that
+// pins the existing two cannot reach. The cost of the gap is a missing 46px
+// glyph; the cost of the third copy is a table that can drift unpinned.
 const POPULAR = [
   { slug: "dairy" },
   { slug: "bread" },
@@ -223,9 +235,12 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
               // MEH-683 #4: CATEGORY_ICONS is keyed by canonical DB name (was
-              // slug). EVERY card resolves its dedicated glyph; the Leaf
-              // fallback is now reached only by an unknown (admin-created)
-              // category with no row in CATEGORY_ICONS.
+              // slug). MEH-2139: every OTHER lookup in this file moved to
+              // `cat.slug`; this one did not, and that is the whole exception —
+              // see the note above POPULAR for why. So "every card resolves its
+              // glyph" holds only while the DB name still matches the seed: a
+              // renamed category, and an admin-created one, both resolve `null`
+              // and render no glyph.
               const Glyph = CATEGORY_ICONS[cat.name] || null;
               return (
                 <button

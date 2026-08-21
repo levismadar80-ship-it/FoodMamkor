@@ -788,15 +788,17 @@ class Category(Base):
     # staging and production (seed_data.py :296-308).
     # UNIQUE is applied by the paired revision AFTER its backfill, so it lands
     # on complete data — see a7c3e91d5f28.
-    # NOT NULL is DEFERRED to the switch step, deliberately, against the
-    # ticket's literal chunk split. Measured: 11 sites construct
-    # `Category(name=…, emoji=…)` with no slug — production
-    # `admin_extra.py:218` plus 9 tests — so a NOT NULL here fails them with
-    # `NotNullViolation: null value in column "slug"` (reproduced) for the
-    # whole window between this step and the one that teaches those writers to
-    # generate a slug. Nullable + UNIQUE loses nothing: Postgres allows many
-    # NULLs under UNIQUE, the backfill leaves none behind, and slug matching
-    # simply does not match a NULL. NOT NULL goes on once the writers do.
+    # NOT NULL was DEFERRED out of chunk 1, deliberately and against the
+    # ticket's literal chunk split, and chunk 2 (this state) applied it —
+    # `nullable=False` below, paired with revision c9f2a41e8b03. The reason for
+    # the deferral, kept because it explains the column default that follows:
+    # 11 sites construct `Category(name=…, emoji=…)` with no slug — production
+    # `admin_extra.py:218` plus 9 tests — so a NOT NULL in chunk 1 would have
+    # failed them with `NotNullViolation: null value in column "slug"`
+    # (reproduced) for the whole window before those writers learned to
+    # generate one. Nullable + UNIQUE cost nothing meanwhile: Postgres allows
+    # many NULLs under UNIQUE, the backfill left none behind, and slug matching
+    # does not match a NULL.
     # The constraint is NAMED here to match the revision exactly, so
     # `alembic check` compares like with like (same reason as the MEH-2137 FK).
     # DO NOT re-derive the slug from the name on rename: surviving a rename is
