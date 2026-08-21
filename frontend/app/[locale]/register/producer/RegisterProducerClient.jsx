@@ -369,6 +369,31 @@ function RegisterProducerPageBody() {
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
   }, [step, showPreflight]);
 
+  // MEH-2138 chunk F: the wizard is ONE long page, so submitting from STORY
+  // leaves the scroll position exactly where the seller left it. Measured at
+  // 1440 on staging: docH 1493, viewport 900, scrollY 539 — the success screen
+  // mounts entirely above the fold and she lands on the FOOTER, not on the
+  // thing she just earned. (It is why MEH-2136's hierarchy fix read as a no-op
+  // in the desktop before/after captures: the screen was correct and unseen.)
+  //
+  // One effect on STEP.CONFIRM, not a call inside each branch. CONFIRM renders
+  // two different screens — the upgrade path and the inbox-check path — and a
+  // third added later cannot forget this, the same DRY argument the effect
+  // above makes for the funnel event.
+  //
+  // `behavior: "instant"` is deliberate and is NOT the convention 20 lines
+  // below, which omits `behavior` to defer to the stylesheet. That call moves
+  // focus to an errored field mid-form, where a smooth ride is a sighted user
+  // tracking WHERE the page went; here there is nothing to track — the
+  // destination is a screen she has not seen yet, and an animated approach to
+  // it is precisely what prefers-reduced-motion exists to suppress. "instant"
+  // says that unconditionally instead of inheriting whatever `scroll-behavior`
+  // happens to be on <html>. Precedent for the literal: ChipScrollRow.jsx:158.
+  useEffect(() => {
+    if (step !== STEP.CONFIRM) return;
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [step]);
+
   // MEH-1807 (GOV.UK error-summary pattern): move focus to the offending field
   // so the seller lands ON it, not merely near it. The id is queried rather
   // than held in a ref because a cross-step bounce focuses a field that did not
@@ -381,7 +406,7 @@ function RegisterProducerPageBody() {
     if (el) {
       el.focus();
       // No explicit `behavior`: passing "smooth" here would override CSS
-      // scroll-behavior, including the `!important` reset globals.css:122 applies
+      // scroll-behavior, including the `!important` reset globals.css:145 applies
       // under prefers-reduced-motion. Omitting it defers to the stylesheet.
       el.scrollIntoView?.({ block: "center" });
     }
