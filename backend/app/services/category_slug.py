@@ -18,6 +18,20 @@ History:  MEH-2139 chunk 2 (creation).
 
 import hashlib
 import re
+from typing import TYPE_CHECKING
+
+# MEH-2139: the `Session` import is TYPE_CHECKING-only, and that is load-bearing
+# rather than stylistic. This module imports `hashlib` and `re` and nothing else,
+# which is what lets `test_sha1_fallback_is_stable_ACROSS_PROCESSES` load it BY
+# PATH in two fresh interpreters instead of importing the `app` package. A
+# runtime `from sqlalchemy.orm import Session` here would pull SQLAlchemy into
+# both children again — measured to cost ~46s and to push the p95 assertion in
+# `TestLoginTimingEqualization` into a rerun. Annotations are strings under
+# `from __future__`-less Python only when quoted, so they are quoted below.
+if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime
+    from collections.abc import Iterable
+
+    from sqlalchemy.orm import Session
 
 # The 18 seeded names, lifted from the same frontend constants the chunk-1
 # revision used (`POPULAR` glyphs + `REST_DESC_SLUGS`). Kept in sync with that
@@ -119,7 +133,7 @@ def slug_for_name(name: str) -> str:
     return f"category-{digest}"
 
 
-def resolve_unique_slug(db, name: str) -> str:
+def resolve_unique_slug(db: "Session", name: str) -> str:
     """`slug_for_name` plus a numeric suffix until the DB accepts it.
 
     The UNIQUE constraint is the real authority — this only avoids handing it a
@@ -169,7 +183,7 @@ def _column_default(context) -> str:
 #        follows the display name is the original bug with extra steps.
 
 
-def bulk_slugs(db, names) -> dict:
+def bulk_slugs(db: "Session", names: "Iterable[str]") -> dict[str, str]:
     """Slugs for a batch of names, each unique against the DB **and each other**.
 
     The seeder inserts 18 rows in ONE statement, so per-row `resolve_unique_slug`
