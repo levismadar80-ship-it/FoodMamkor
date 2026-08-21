@@ -371,9 +371,9 @@
           "generic": "Connection error — please try again."
         },
         "success": {
-          "title": "You're signed up — one step to go",
-          "body": "You're registered! Next step: complete your profile in the dashboard and send it for review.",
-          "next": "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
+          "title": "You're signed up — a few short items left",
+          "body": "Next step: complete your profile in the dashboard and send it for review.",
+          "next": "Completing these in your dashboard unlocks sending for review: a photo of your business, a first product in the catalogue, and verifying your WhatsApp number.",
           "cta": "To my dashboard",
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
