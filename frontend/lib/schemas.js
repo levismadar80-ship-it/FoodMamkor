@@ -223,6 +223,11 @@ export const ProducerListSchema = z.object({
   trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"/"שגרירת מהמקור"), ProducerCard.jsx:353-354 gate `>= 4`
   favorites_count: z.number().nullable().optional(),         // → heart counter seed, ProducerCard.jsx:161/:166
   short_description: z.string().nullable().optional(),       // → card description line, ProducerCard.jsx:202
+  // MEH-2137: the featured-product vote by IDENTITY. Declared even though no
+  // card reads it yet — z.object strips undeclared keys silently, so a field
+  // that arrives before its consumer would vanish and the chunk-3 component
+  // would debug a backend that is in fact serving it correctly (MEH-901 class).
+  top_product_id: z.string().nullable().optional(),          // → ProductsSection badge, chunk 3
   top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
   availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:36
   availability_status: z.string().nullable().optional(),     // → availability dot (legacy "vacation"), ProducerCard.jsx:37
