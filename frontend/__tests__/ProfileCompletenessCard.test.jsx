@@ -145,13 +145,20 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
         `${EDIT}#locations`,
         `${EDIT}#profile-products`,
         `${EDIT}#profile-contact`,
-        // MEH-2142: the hours row now points at #locations too — the
-        // business-level hours card was removed and store hours are edited per
-        // location. Both the location row and the hours row therefore land on
-        // the same editor, which is the point: one place to say where and when.
-        `${EDIT}#locations`,
       ]),
     );
+    // MEH-2142: the hours row now points at #locations too — the business-level
+    // hours card was removed and store hours are edited per location. Both the
+    // location row and the hours row land on the same editor, which is the
+    // point: one place to say where and when.
+    //
+    // Asserted as a COUNT, not as a second `${EDIT}#locations` entry inside the
+    // arrayContaining above. `arrayContaining` satisfies two identical expected
+    // values with ONE received match, so the duplicate read like coverage of
+    // both rows while passing on either alone — it would have stayed green with
+    // the hours row still pointing at #hours. The count cannot: it is 2 only
+    // when two rows actually target #locations.
+    expect(hrefs(container).filter((h) => h === `${EDIT}#locations`)).toHaveLength(2);
   });
 
   it("products signal falls back to products_count scalar when the array is absent", () => {
