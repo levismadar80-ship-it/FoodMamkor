@@ -115,6 +115,15 @@ producers (
   -- rating/userRatingCount are live-fetched (never persisted; ToS §3.2.3(b)).
   google_place_id varchar(300) nullable,
   contact_name, top_product_name,
+  -- MEH-2137 expand step: the featured-product vote by IDENTITY. top_product_name
+  -- is a free-text string, so the dashboard picked the featured product by name
+  -- and two products called «לחם» both got the badge. FK -> products.id,
+  -- ON DELETE SET NULL ("no featured product any more", which is true).
+  -- NULL is HONEST here and stays common after the backfill: a producer whose
+  -- name matched two products, or none, is deliberately left NULL rather than
+  -- guessed at. Readers fall back to top_product_name, which is unchanged and
+  -- still the only writer until the switch step. Revision f4b1c8e0a297.
+  top_product_id uuid nullable references products(id) on delete set null,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
