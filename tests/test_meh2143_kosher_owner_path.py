@@ -17,11 +17,8 @@ Related:  backend/app/routers/producer_me.py (_PRODUCER_WRITABLE_FIELDS) ·
 History:  MEH-2143 (creation), MEH-1938 batch B4.
 """
 
-import ast
-from pathlib import Path
-
 from app.models import Producer
-import app.routers.producer_me as producer_me_module
+from tests.whitelist_source import read_producer_writable_fields
 from tests.conftest import auth_header, make_producer, make_user
 
 SEEDED_KOSHER = "בהשגחת הרבנות המקומית"
@@ -122,28 +119,6 @@ def test_the_owner_can_still_READ_her_historical_value(client, db):
     assert resp.json()["kosher"] == SEEDED_KOSHER
 
 
-def _read_whitelist() -> set[str]:
-    """Parse `_PRODUCER_WRITABLE_FIELDS` out of the real source file.
-
-    REUSES: tests/test_meh1856_closed_write_paths.py:_read_whitelist — the set
-    is a local built at call time inside `update_my_producer`, so there is no
-    importable object, and `inspect.getfile` resolves to slowapi's wrapper.
-    """
-    source = Path(producer_me_module.__file__).read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-        if "_PRODUCER_WRITABLE_FIELDS" not in targets:
-            continue
-        assert isinstance(node.value, ast.Set), "whitelist is no longer a set literal"
-        return {
-            e.value
-            for e in node.value.elts
-            if isinstance(e, ast.Constant) and isinstance(e.value, str)
-        }
-    raise AssertionError("could not find _PRODUCER_WRITABLE_FIELDS in the source")
 
 
 def test_whitelist_does_not_contain_kosher():
@@ -153,7 +128,7 @@ def test_whitelist_does_not_contain_kosher():
     the absence check vacuously — the "null that is also the reassuring answer"
     shape .claude/rules/testing.md names.
     """
-    whitelist = _read_whitelist()
+    whitelist = read_producer_writable_fields()
 
     assert "kosher" not in whitelist, (
         "kosher is owner-writable again — re-adding it requires shipping an "
