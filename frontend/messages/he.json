@@ -4283,6 +4283,8 @@
         "owner_missing": "עוד אין תמונה וסיפור",
         "kashrut_has": "יש תג כשרות",
         "kashrut_none": "עוד אין תג כשרות",
+        "chip_required": "חובה",
+        "chip_optional": "רשות",
         "hub_title": "עריכת העסק",
         "hub_back": "חזרה לכל הסעיפים",
         "hub_group_profile": "הפרופיל שלך",
