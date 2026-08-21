@@ -184,6 +184,11 @@ class Producer(Base):
     # ≥20 reviews. Written admin-only (excluded from _PRODUCER_WRITABLE_FIELDS
     # in producer_me.py). Migration: a9f2c7d41b6e.
     google_place_id = Column(String(300), nullable=True)
+    # LEGACY(2026-09-20, MEH-2137) — superseded by top_product_id below as of
+    # the switch step. Still WRITTEN (producer_me.py syncs it from the chosen
+    # product) and still SERVED (ProducerListOut), so cards/map need no change;
+    # it is not dead and must not be dropped here. The drop is its own ticket in
+    # the MEH-2064 drop-after-soak pattern, opened at the switch — not this PR.
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
