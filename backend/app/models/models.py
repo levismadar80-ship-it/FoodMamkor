@@ -187,6 +187,40 @@ class Producer(Base):
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
+    # MEH-2137 expand step: the featured-product vote by IDENTITY, replacing
+    # the name comparison above. Two products legitimately named «לחם» both
+    # carried the badge (Sapir, 20/08) because the vote was a string.
+    # ON DELETE SET NULL: deleting the featured product means "there is no
+    # featured product", which is exactly what NULL says here — not a cascade
+    # to the producer, and not a dangling id.
+    # `use_alter` + an explicit name: producers.top_product_id and
+    # products.producer_id form a cycle, so the constraint is created by ALTER
+    # after both tables exist — the same order the revision uses, and the name
+    # is pinned so `alembic check` compares like with like.
+    # Paired revision: f4b1c8e0a297. top_product_name is NOT deprecated by this
+    # commit — it stays the sole writer and reader until the switch step.
+    #
+    # ADR-006 R2 — DELIBERATELY NOT in ProducerListOut / ProducerDetailOut yet.
+    # R2 wants every non-internal column in a `*Out` schema OR on an explicit
+    # allowlist, and the allowlist it names (`schemas/_parity.json`,
+    # docs/SCHEMA_PARITY_AUDIT.md:272) DOES NOT EXIST — measured, along with the
+    # per-domain parity test itself; ADR-006's own Mitigations list R2 as not
+    # yet shipped. So this comment is the citation, standing in for the row
+    # there is nowhere to write. Exposing the field is a CONTRACT change and
+    # belongs to the switch step, which adds it to `*Out` and wires the derived
+    # reader in one move; adding it here would ship a public field that is
+    # always null. Whoever builds the R2 parity test: this column is expected
+    # to be absent from `*Out` until that step, and is an orphan only until then.
+    top_product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "products.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_producers_top_product_id_products",
+        ),
+        nullable=True,
+    )
     # LEGACY(2026-09-01, MEH-1855)
     # MEH-1857: the alias below carried no date and no ticket, so nothing could
     # ever make it expire. Ownership is also INVERTED today — the public page
@@ -405,8 +439,18 @@ class Producer(Base):
         back_populates="producers",
         order_by="ProducerCategory.position",
     )
+    # MEH-2137: `foreign_keys` is now REQUIRED, not stylistic. Adding
+    # producers.top_product_id created a SECOND FK path between producers and
+    # products, and SQLAlchemy refuses to guess which one this collection
+    # joins on (`AmbiguousForeignKeysError` — measured, not anticipated: it
+    # broke 4 tests before the argument was added). The catalogue joins on the
+    # child's owner column; the featured-product FK points the other way and
+    # is a scalar, never a collection.
     products = relationship(
-        "Product", back_populates="producer", cascade="all, delete-orphan"
+        "Product",
+        back_populates="producer",
+        cascade="all, delete-orphan",
+        foreign_keys="Product.producer_id",
     )
     delivery_areas = relationship(
         "DeliveryArea", back_populates="producer", cascade="all, delete-orphan"
@@ -704,8 +748,32 @@ class StaticPage(Base):
 class Category(Base):
     __tablename__ = "categories"
 
+    # MEH-2139: `slug` is the STABLE identity; `name` is display text and `id`
+    # is environment-specific. CategorySelector matched popular/grouping on the
+    # Hebrew name, so a rename made a chip vanish silently (MEH-1104 needed a
+    # temporary alias to survive one). `id` is no better: it is autoincrement
+    # and this repo has measured holes in the sequence that differ between
+    # staging and production (seed_data.py :296-308).
+    # UNIQUE is applied by the paired revision AFTER its backfill, so it lands
+    # on complete data — see a7c3e91d5f28.
+    # NOT NULL is DEFERRED to the switch step, deliberately, against the
+    # ticket's literal chunk split. Measured: 11 sites construct
+    # `Category(name=…, emoji=…)` with no slug — production
+    # `admin_extra.py:218` plus 9 tests — so a NOT NULL here fails them with
+    # `NotNullViolation: null value in column "slug"` (reproduced) for the
+    # whole window between this step and the one that teaches those writers to
+    # generate a slug. Nullable + UNIQUE loses nothing: Postgres allows many
+    # NULLs under UNIQUE, the backfill leaves none behind, and slug matching
+    # simply does not match a NULL. NOT NULL goes on once the writers do.
+    # The constraint is NAMED here to match the revision exactly, so
+    # `alembic check` compares like with like (same reason as the MEH-2137 FK).
+    # DO NOT re-derive the slug from the name on rename: surviving a rename is
+    # the entire point.
+    __table_args__ = (UniqueConstraint("slug", name="uq_categories_slug"),)
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
+    slug = Column(String(50), nullable=True)
     emoji = Column(String(10))
 
     producers = relationship(
@@ -785,7 +853,11 @@ class Product(Base):
         Boolean, default=False, nullable=False, server_default=text("false")
     )
 
-    producer = relationship("Producer", back_populates="products")
+    # MEH-2137: the other half of the same disambiguation — see the comment on
+    # Producer.products. Without it this side raises the same error.
+    producer = relationship(
+        "Producer", back_populates="products", foreign_keys="Product.producer_id"
+    )
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
     # that promote it. `secondary` points to the link Table defined below.
     recipes = relationship(

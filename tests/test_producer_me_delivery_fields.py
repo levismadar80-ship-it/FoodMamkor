@@ -32,8 +32,22 @@ def _producer_user(db):
     return user, producer
 
 
-def test_owner_put_persists_opening_hours_and_location_mode(client, db):
+def test_owner_put_persists_location_mode(client, db):
+    """MEH-2142 renamed this and dropped its `opening_hours` assertion.
+
+    The field left `_PRODUCER_WRITABLE_FIELDS` when store hours became a
+    per-location fact — the owner edits `ProducerLocation.opening_hours` in
+    LocationsEditor now, and the business-level editor is gone. The payload
+    below still SENDS `opening_hours`, deliberately: the endpoint must keep
+    returning 200 and ignore it, rather than 422 on a field an older client
+    might still submit. That it is not persisted is asserted here and owned by
+    `tests/test_meh2142_hours_owner_path.py`.
+
+    Everything else about this test is unchanged — the location-mode half was
+    always the larger part of it.
+    """
     user, producer = _producer_user(db)
+    before_hours = producer.opening_hours
     resp = client.put(
         "/producers/me",
         json={
@@ -48,7 +62,10 @@ def test_owner_put_persists_opening_hours_and_location_mode(client, db):
     assert resp.status_code == 200, resp.text
 
     db.refresh(producer)
-    assert producer.opening_hours == "א'-ה' 9:00-17:00"
+    assert producer.opening_hours == before_hours, (
+        "opening_hours is no longer owner-writable (MEH-2142) — an ignored "
+        "field must stay ignored, not quietly come back"
+    )
     assert producer.has_physical_location is True
     assert producer.offers_delivery is True
     assert producer.delivery_nationwide is False

@@ -18,6 +18,7 @@ erDiagram
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
+    producers ||--o| products : "features (top_product_id, ON DELETE SET NULL — MEH-2137)"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
     producers ||--o{ producer_name_change_requests : "requests rename (max 1 PENDING)"
@@ -46,6 +47,7 @@ erDiagram
         string name
         string slug UK "nullable"
         string google_place_id "nullable — MEH-1490 admin map; only Google datum stored"
+        uuid top_product_id FK "nullable — MEH-2137, FK products.id ON DELETE SET NULL; featured-product vote by IDENTITY. NULL when the legacy top_product_name matched two products or none — deliberately not guessed"
         string description
         string city
         string address "nullable — MEH-829, VARCHAR(255); collected at register"
@@ -88,6 +90,7 @@ erDiagram
     categories {
         int id PK
         string name UK
+        string slug UK "nullable — MEH-2139, VARCHAR(50) UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. NOT NULL is deferred to the switch step, where the writers learn to produce one"
         string emoji
     }
 

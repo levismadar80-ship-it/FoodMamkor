@@ -553,13 +553,51 @@ def update_my_producer(
         # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
-        "opening_hours",
+        # MEH-2142 (MEH-1938 batch B3): `opening_hours` was REMOVED from this
+        # set. Same disposition and the same standing rule as the two blocks
+        # below — the column stays, `admin.py` / `producer_import.py` / the
+        # seeds are untouched, and only the owner PUT path is closed. Do not
+        # re-add it without shipping its editor in the same PR:
+        #   opening_hours        → the business-level hours editor was removed
+        #                          from the dashboard in this PR. Store hours
+        #                          are now a PER-LOCATION fact: the owner edits
+        #                          `ProducerLocation.opening_hours` in
+        #                          LocationsEditor, and the public page prefers
+        #                          the primary location's value, falling back to
+        #                          this column for businesses that have not
+        #                          filled one in yet. Readers-first Parallel
+        #                          Change — the fallback read carries
+        #                          LEGACY(2026-10-01, MEH-1938) and its removal
+        #                          is the contract step.
         # MEH-1543: owner-editable weekly order-acceptance window. Validated in
         # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
-        "kosher",
+        # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
+        # Same disposition and standing rule as the blocks above — the column
+        # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
+        # the seeds are untouched, and only the owner PUT path is closed. Do
+        # not re-add it without shipping its editor in the same PR:
+        #   kosher → free text that NO consumer surface has rendered since
+        #            MEH-986 removed unverified kashrut claims from every one
+        #            of them (חוק איסור הונאה בכשרות — an unverified claim is
+        #            a legal exposure, not a missing feature). The owner was
+        #            able to fill in a field nobody could ever see: the same
+        #            "I wrote it and it is not displayed" class as
+        #            starting_price_label.
+        #
+        #            The kashrut BADGE request flow is the only owner-facing
+        #            mechanism, by design (cards.jsx:1263-1264 says so at the
+        #            other end). There was never a dashboard editor for this
+        #            field to remove — grepped the whole owner dashboard: the
+        #            single reference is a READ at cards.jsx:1363, which shows
+        #            a hint when a legacy value exists WITHOUT a verified
+        #            certificate, explaining that the text drives nothing and
+        #            pointing at the certificate. That hint keeps working:
+        #            historical values still exist and are still served by
+        #            ProducerOwnerOut.kosher (schemas.py:2469), which this
+        #            change deliberately leaves in place.
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
         "images",
