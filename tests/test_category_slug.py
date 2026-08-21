@@ -162,7 +162,12 @@ def test_resolve_unique_slug_suffixes_only_on_a_real_collision(db):
 
     db.add(Category(name="חלב וגבינות", emoji="🧀", slug="dairy"))
     db.commit()
-    # A DIFFERENT name that maps to the same base must not be handed `dairy`.
+    # Asked AGAIN for the same name, now that `dairy` is taken, it must step
+    # over rather than hand out the taken value. (This comment previously said
+    # "a DIFFERENT name that maps to the same base" — the assertion was right,
+    # the description was not: the input below is the same name. Caught by the
+    # CI reviewer on PR #3052. The different-name case is a transliteration
+    # collision, which `resolve_unique_slug` reaches by the same code path.)
     assert resolve_unique_slug(db, "חלב וגבינות") == "dairy-2"
 
 
@@ -225,3 +230,51 @@ def test_blank_names_still_produce_a_slug(bad):
     the message names a constraint instead of the cause."""
     slug = slug_for_name(bad)
     assert slug and slug.startswith("category-")
+
+
+# ── the admin create path's race ─────────────────────────────────────────────
+
+
+def test_admin_create_category_returns_409_not_500_when_the_slug_is_taken(db):
+    """`resolve_unique_slug` is a SELECT and the commit is the INSERT.
+
+    Between them a concurrent create can take the slug, so the loser hits
+    `uq_categories_slug`. Before MEH-2139 handled it that was an unhandled
+    `IntegrityError` — a 500 carrying a psycopg2 message, indistinguishable
+    from the app being broken.
+
+    The race is forced deterministically rather than raced for: the resolver is
+    patched to hand back a slug the fixture already holds, which is exactly the
+    state a lost race produces at the commit. `raise_server_exceptions=False`
+    mirrors `test_admin_category_rename_guard`, so a regression surfaces as an
+    assertable 500 instead of an exception escaping the request cycle.
+    """
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+    from app.routers import admin_extra
+    from conftest import auth_header, make_user
+
+    admin = make_user(db, email="slug-race-admin@example.com", role="admin")
+    taken = Category(name="גבינות עזים", emoji="🐐", slug="goat-cheese")
+    db.add(taken)
+    db.commit()
+
+    original = admin_extra.resolve_unique_slug
+    admin_extra.resolve_unique_slug = lambda _db, _name: "goat-cheese"
+    try:
+        with TestClient(app, raise_server_exceptions=False) as c:
+            resp = c.post(
+                "/admin/categories",
+                json={"name": "גבינת כבשים", "emoji": "🐑"},
+                headers=auth_header(admin),
+            )
+    finally:
+        admin_extra.resolve_unique_slug = original
+
+    # CONTROL: 400 would mean the NAME pre-check refused first and the commit
+    # was never reached — the branch under test would be unexercised while the
+    # assertion below still passed on a non-500.
+    assert resp.status_code != 400, "the name pre-check fired; the race was never reached"
+    assert resp.status_code == 409, resp.text
+    assert "במקביל" in resp.json()["detail"]

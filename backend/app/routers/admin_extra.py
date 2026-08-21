@@ -11,6 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
@@ -228,7 +229,31 @@ def create_category(
         slug=resolve_unique_slug(db, data.name),
     )
     db.add(cat)
-    db.commit()
+    # MEH-2139: `resolve_unique_slug` above is a SELECT and this is the INSERT,
+    # so the two are not atomic — a concurrent create whose name transliterates
+    # to the same base slug can pass the same check and take the slug first.
+    # Both requests then insert the same value and the loser hits
+    # `uq_categories_slug` as an unhandled IntegrityError -> 500 with a psycopg2
+    # message. The window is small and the admin team is one person, so this is
+    # unlikely rather than impossible; it is handled because a 500 here is
+    # indistinguishable from the app being broken, while 409 says what happened.
+    #
+    # Deliberately NOT a retry loop: a second attempt would need a fresh
+    # `resolve_unique_slug` on a rolled-back session and could lose the race
+    # again, which trades a clear error for an unbounded one. The admin retries
+    # the request and `-2` is free by then.
+    #
+    # `rollback()` is required, not tidiness — the session is unusable after an
+    # IntegrityError, and returning without it poisons the next request that
+    # borrows this connection.
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="הקטגוריה נוצרה במקביל בבקשה אחרת. נסי שוב.",
+        ) from None
     db.refresh(cat)
     return cat
 
