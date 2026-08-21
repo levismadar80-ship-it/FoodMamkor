@@ -17,11 +17,8 @@ Related:  backend/app/routers/producer_me.py (_PRODUCER_WRITABLE_FIELDS) ·
 History:  MEH-2142 (creation), MEH-1938 batch B3.
 """
 
-import ast
-from pathlib import Path
-
 from app.models import Producer
-import app.routers.producer_me as producer_me_module
+from tests.whitelist_source import read_producer_writable_fields
 from tests.conftest import auth_header, make_producer, make_user
 
 SEEDED_HOURS = "Sun-Thu 09:00-18:00"
@@ -134,29 +131,6 @@ def test_the_owner_can_still_write_hours_on_a_location(client, db):
     assert created.json()["is_primary"] is True
 
 
-def _read_whitelist() -> set[str]:
-    """Parse `_PRODUCER_WRITABLE_FIELDS` out of the real source file.
-
-    REUSES: tests/test_meh1856_closed_write_paths.py:_read_whitelist — the set
-    is a local built at call time inside `update_my_producer`, so there is no
-    importable object; and `inspect.getfile` on the handler resolves to
-    slowapi's wrapper, not this module.
-    """
-    source = Path(producer_me_module.__file__).read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-        if "_PRODUCER_WRITABLE_FIELDS" not in targets:
-            continue
-        assert isinstance(node.value, ast.Set), "whitelist is no longer a set literal"
-        return {
-            e.value
-            for e in node.value.elts
-            if isinstance(e, ast.Constant) and isinstance(e.value, str)
-        }
-    raise AssertionError("could not find _PRODUCER_WRITABLE_FIELDS in the source")
 
 
 def test_whitelist_does_not_contain_opening_hours():
@@ -166,7 +140,7 @@ def test_whitelist_does_not_contain_opening_hours():
     satisfy the absence check vacuously, which is the exact shape
     .claude/rules/testing.md calls a null that is also the reassuring answer.
     """
-    whitelist = _read_whitelist()
+    whitelist = read_producer_writable_fields()
 
     assert "opening_hours" not in whitelist, (
         "opening_hours is owner-writable again — re-adding it requires shipping "
