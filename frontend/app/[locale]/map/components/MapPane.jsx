@@ -175,29 +175,49 @@ export default function MapPane({
         <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
       </button>
 
-      {/* MEH-2046: the reminder, in the slot the pill vacated. A business whose
-          only points are pickup rows yields NO points at all when the layer is
-          off (producerPoints rule 3, deliberate) — so it does not fade or move,
-          it disappears. Silence there is the failure mode this line exists to
-          prevent; it renders only while businesses are actually being hidden. */}
-      {secondaryHidden && (
-        <div
-          role="status"
-          data-testid="pickup-layer-hidden-notice"
-          className="absolute top-4 start-4 z-[1000] max-w-[240px] rounded-lg border border-border bg-surface-floating px-3 py-1.5 text-xs text-fg-muted shadow-md"
-        >
-          {t("map.pane.pickup_layer.hidden_notice")}
-        </div>
-      )}
-      {mapMoved && (
-        // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
-          <button type="button" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
-            <MagnifyingGlass size={16} weight="bold" className="text-primary" />
-            {t("map.pane.search_this_area")}
-          </button>
-        </div>
-      )}
+      {/* MEH-2148: ONE owner for the top-centre slot. Both of these used to be
+          their own `absolute top-4 z-[1000]` — the search-area pill centred, the
+          pickup notice at the inline start with `max-w-[240px]` — so at 375px
+          they were laid out at the same y with overlapping x and simply drew on
+          top of each other, and which one won was z-order tie-breaking by
+          document order rather than a decision.
+
+          This is the MEH-1187 rule from the GPS button below, applied to the
+          other end of the pane: one corner, one job. A flex column owns the
+          slot; whatever renders lands IN it, in order, and two things showing at
+          once stack instead of collide. Adding a third top-centre element means
+          adding a child here, not another `absolute`.
+
+          `pointer-events-none` on the stack with `-auto` on each child: the
+          column spans the full width at `top-4`, so without it this strip would
+          swallow drags and clicks on the map underneath across the whole pane.
+          Same shield idiom as BottomNav.jsx:358 and the Header. */}
+      <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
+        {mapMoved && (
+          <div className="pointer-events-auto">
+            <button type="button" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+              <MagnifyingGlass size={16} weight="bold" className="text-primary" />
+              {t("map.pane.search_this_area")}
+            </button>
+          </div>
+        )}
+        {/* MEH-2046: the reminder, in the slot the pill vacated. A business whose
+            only points are pickup rows yields NO points at all when the layer is
+            off (producerPoints rule 3, deliberate) — so it does not fade or move,
+            it disappears. Silence there is the failure mode this line exists to
+            prevent; it renders only while businesses are actually being hidden.
+            MEH-2148: `self-start` keeps its original inline-start alignment
+            inside the centred column — logical, so it follows the locale. */}
+        {secondaryHidden && (
+          <div
+            role="status"
+            data-testid="pickup-layer-hidden-notice"
+            className="pointer-events-auto self-start max-w-[240px] rounded-lg border border-border bg-surface-floating px-3 py-1.5 text-xs text-fg-muted shadow-md"
+          >
+            {t("map.pane.pickup_layer.hidden_notice")}
+          </div>
+        )}
+      </div>
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
