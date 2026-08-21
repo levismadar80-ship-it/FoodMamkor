@@ -73,6 +73,20 @@ class Settings(BaseSettings):
     whatsapp_app_secret: str = ""
     whatsapp_verify_token: str = ""
 
+    # MEH-2134 — invite link to the "מהמקור · עדכונים לבתי עסק" WhatsApp
+    # community, offered in the producer-approval email only.
+    #
+    # DO NOT hardcode the real URL here or anywhere else in the tree — the
+    # repo is public since June 2026, and an invite link in a tracked file is
+    # a link anyone can use to join without ever being approved as a
+    # business. Set via WHATSAPP_COMMUNITY_INVITE_URL in Railway.
+    #
+    # The empty default is the fail-safe, not a placeholder: an unset value
+    # drops the whole community block from the email (see
+    # `_producer_approved_body` in routers/admin.py), so this ships safely
+    # before the link exists.
+    whatsapp_community_invite_url: str = ""
+
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
     # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
     resend_api_key: str = ""
