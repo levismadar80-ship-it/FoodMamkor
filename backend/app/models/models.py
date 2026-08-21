@@ -748,8 +748,32 @@ class StaticPage(Base):
 class Category(Base):
     __tablename__ = "categories"
 
+    # MEH-2139: `slug` is the STABLE identity; `name` is display text and `id`
+    # is environment-specific. CategorySelector matched popular/grouping on the
+    # Hebrew name, so a rename made a chip vanish silently (MEH-1104 needed a
+    # temporary alias to survive one). `id` is no better: it is autoincrement
+    # and this repo has measured holes in the sequence that differ between
+    # staging and production (seed_data.py :296-308).
+    # UNIQUE is applied by the paired revision AFTER its backfill, so it lands
+    # on complete data — see a7c3e91d5f28.
+    # NOT NULL is DEFERRED to the switch step, deliberately, against the
+    # ticket's literal chunk split. Measured: 11 sites construct
+    # `Category(name=…, emoji=…)` with no slug — production
+    # `admin_extra.py:218` plus 9 tests — so a NOT NULL here fails them with
+    # `NotNullViolation: null value in column "slug"` (reproduced) for the
+    # whole window between this step and the one that teaches those writers to
+    # generate a slug. Nullable + UNIQUE loses nothing: Postgres allows many
+    # NULLs under UNIQUE, the backfill leaves none behind, and slug matching
+    # simply does not match a NULL. NOT NULL goes on once the writers do.
+    # The constraint is NAMED here to match the revision exactly, so
+    # `alembic check` compares like with like (same reason as the MEH-2137 FK).
+    # DO NOT re-derive the slug from the name on rename: surviving a rename is
+    # the entire point.
+    __table_args__ = (UniqueConstraint("slug", name="uq_categories_slug"),)
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
+    slug = Column(String(50), nullable=True)
     emoji = Column(String(10))
 
     producers = relationship(

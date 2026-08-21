@@ -90,6 +90,7 @@ erDiagram
     categories {
         int id PK
         string name UK
+        string slug UK "nullable — MEH-2139, VARCHAR(50) UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. NOT NULL is deferred to the switch step, where the writers learn to produce one"
         string emoji
     }
 
