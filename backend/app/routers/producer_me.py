@@ -559,7 +559,30 @@ def update_my_producer(
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
-        "kosher",
+        # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
+        # Same disposition and standing rule as the blocks above — the column
+        # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
+        # the seeds are untouched, and only the owner PUT path is closed. Do
+        # not re-add it without shipping its editor in the same PR:
+        #   kosher → free text that NO consumer surface has rendered since
+        #            MEH-986 removed unverified kashrut claims from every one
+        #            of them (חוק איסור הונאה בכשרות — an unverified claim is
+        #            a legal exposure, not a missing feature). The owner was
+        #            able to fill in a field nobody could ever see: the same
+        #            "I wrote it and it is not displayed" class as
+        #            starting_price_label.
+        #
+        #            The kashrut BADGE request flow is the only owner-facing
+        #            mechanism, by design (cards.jsx:1263-1264 says so at the
+        #            other end). There was never a dashboard editor for this
+        #            field to remove — grepped the whole owner dashboard: the
+        #            single reference is a READ at cards.jsx:1363, which shows
+        #            a hint when a legacy value exists WITHOUT a verified
+        #            certificate, explaining that the text drives nothing and
+        #            pointing at the certificate. That hint keeps working:
+        #            historical values still exist and are still served by
+        #            ProducerOwnerOut.kosher (schemas.py:2469), which this
+        #            change deliberately leaves in place.
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
         "images",
