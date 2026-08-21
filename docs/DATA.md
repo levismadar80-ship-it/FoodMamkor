@@ -185,7 +185,8 @@ users (
   created_at
 )
 
-categories     (id, name unique, emoji)
+categories     (id, name unique, emoji,
+                slug VARCHAR(50) NULL UNIQUE)      -- MEH-2139: stable ASCII identity; matching keys on this, not on `name`
 producer_categories (producer_id FK, category_id FK, PK(both),
                      position INT NOT NULL default 0)  -- MEH-1297: 0 = primary (first selected); categories ordered by it
 products       (id, producer_id FK, name, description,
