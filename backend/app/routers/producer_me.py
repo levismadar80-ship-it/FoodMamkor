@@ -522,7 +522,7 @@ def update_my_producer(
     # actual change from a form resubmitting an unchanged value.
     sensitive_before = _snapshot_sensitive(producer)
 
-    # MEH-2137 switch — see _resolve_top_product below the handler.
+    # MEH-2137 switch — see _resolve_top_product, defined above this handler.
     _PRODUCER_WRITABLE_FIELDS = {
         "contact_name",
         "description",
@@ -540,7 +540,7 @@ def update_my_producer(
         "external_order_form",
         "top_product_name",
         # MEH-2137 switch: the vote by identity. Ownership is enforced by
-        # _resolve_top_product below BEFORE this loop runs — a product that is
+        # _resolve_top_product (defined above) BEFORE this loop runs — a product
         # not this producer's never reaches the setattr.
         "top_product_id",
         "price_range",
