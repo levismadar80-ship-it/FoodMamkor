@@ -203,8 +203,11 @@ export default function ChatWidget() {
   // MEH-1410: mobile intentionally disabled — the `if (!isDesktop) return null`
   // gate above means this mobile value (and the `: MOBILE_LAUNCHER_BOTTOM`
   // branch in launcherStyle) is never reached; retained for a clean revert.
+  // MEH-2148: derived from the published clearance instead of restating 88px.
+  // 72 + 16 = 88 at the fallback, so this is exact parity. The safe-area term
+  // moved inside the fallback because the var already carries the inset.
   const MOBILE_LAUNCHER_BOTTOM =
-    "calc(env(safe-area-inset-bottom) + 88px + var(--cookie-banner-h, 0px))";
+    `calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 16px + var(--cookie-banner-h, 0px))`;
   // MEH-1135: logical inline-end (was physical `right`). Distances (16/24) and
   // the MEH-850 vertical calc are unchanged — only the horizontal axis flips
   // from physical to logical, so the FAB tracks the inline-END corner per locale.
