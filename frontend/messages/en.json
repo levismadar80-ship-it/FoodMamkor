@@ -1717,6 +1717,7 @@
         }
       },
       "toast_approved": "Business approved",
+      "queue_summary": "{count} waiting · oldest: {days} business days",
       "toast_status_updated": "Status updated",
       "reject": {
         "modal_title": "Reject business application",
