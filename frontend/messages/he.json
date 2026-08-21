@@ -1685,6 +1685,8 @@
           "license_format_warning": "מספר רישיון יצרן הוא 7-10 ספרות",
           "license_registry_link": "בדיקה במאגר משרד הבריאות",
           "license_optional_toggle": "יש לי רישיון יצרן ↓",
+          "license_expires_at": "תוקף רישיון (מהמסמך)",
+          "license_expires_at_hint": "התאריך שמופיע על מסמך הרישיון. עסקים שהרישיון שלהם פג בתוך 30 יום מופיעים ברשימת התזכורות.",
           "has_physical_location": "חנות פיזית (קבלת לקוחות)",
           "offers_delivery": "משלוחים",
           "type_validation": "חייב לסמן לפחות אחד מהשניים",
