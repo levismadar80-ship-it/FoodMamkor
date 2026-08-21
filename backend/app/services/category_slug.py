@@ -44,7 +44,11 @@ NAME_TO_SLUG = {
     "דגים": "fish",
 }
 
-# Fixed 22-letter table. Final forms map to the same latin as their base letter.
+# Fixed transliteration table: 27 entries — the 22 base letters plus the 5
+# final forms (ך ם ן ף ץ), each mapped to the same latin as its base letter.
+# The count is spelled out because «22-letter table» (the Hebrew-alphabet
+# shorthand this comment used to carry) disagrees with `len()` and sends
+# anyone auditing the table against the code looking for 5 missing rows.
 _HEBREW_TO_LATIN = {
     "א": "a",
     "ב": "b",
