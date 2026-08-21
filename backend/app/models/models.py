@@ -809,14 +809,23 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    # LEGACY(2026-09-01, MEH-1857)
-    # MEH-1857: the "MEH-295 follow-up" this line points at DOES NOT EXIST in
-    # Linear (checked 02/08) — the classic shape this guard exists to catch, a
-    # promise addressed to a ticket nobody opened. The marker references THIS
-    # ticket until a real removal ticket is created; whoever opens it should
-    # swap the id here. Separate instance from producers.starting_price_label
-    # above (MEH-1855) — same class, different column.
-    price_range = Column(String(50))  # legacy: removal tracked in MEH-295 follow-up
+    # LEGACY(2026-09-01, MEH-2064)
+    # MEH-2145: the swap MEH-1857 asked for. That marker pointed at ITSELF
+    # because the "MEH-295 follow-up" the line below promised had never been
+    # opened, and it said in as many words: "whoever opens it should swap the
+    # id here." MEH-2064 was opened on 13/08 and is the real removal ticket,
+    # so the marker now names it. **The DATE is unchanged** — swapping the
+    # owner is not an extension, and extending an expiry is Sapir's call made
+    # deliberately in a reviewed PR, never a side effect of re-pointing it.
+    #
+    # MEH-2064 is RED and carries its own entry conditions (a count of rows
+    # with price_range set and price_min NULL, and the removal of the frontend
+    # fallbacks) — naming it here records who removes this column, not that
+    # the removal is ready.
+    #
+    # Separate instance from producers.starting_price_label above (MEH-1855) —
+    # same class, different column.
+    price_range = Column(String(50))  # legacy: removal tracked in MEH-2064
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
     price_max = Column(Numeric(10, 2), nullable=True)
