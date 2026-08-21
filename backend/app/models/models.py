@@ -199,6 +199,18 @@ class Producer(Base):
     # is pinned so `alembic check` compares like with like.
     # Paired revision: f4b1c8e0a297. top_product_name is NOT deprecated by this
     # commit — it stays the sole writer and reader until the switch step.
+    #
+    # ADR-006 R2 — DELIBERATELY NOT in ProducerListOut / ProducerDetailOut yet.
+    # R2 wants every non-internal column in a `*Out` schema OR on an explicit
+    # allowlist, and the allowlist it names (`schemas/_parity.json`,
+    # docs/SCHEMA_PARITY_AUDIT.md:272) DOES NOT EXIST — measured, along with the
+    # per-domain parity test itself; ADR-006's own Mitigations list R2 as not
+    # yet shipped. So this comment is the citation, standing in for the row
+    # there is nowhere to write. Exposing the field is a CONTRACT change and
+    # belongs to the switch step, which adds it to `*Out` and wires the derived
+    # reader in one move; adding it here would ship a public field that is
+    # always null. Whoever builds the R2 parity test: this column is expected
+    # to be absent from `*Out` until that step, and is an orphan only until then.
     top_product_id = Column(
         UUID(as_uuid=True),
         ForeignKey(
