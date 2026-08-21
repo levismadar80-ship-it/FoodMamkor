@@ -1,6 +1,7 @@
 import logging
 import re
 from datetime import datetime, timedelta, timezone
+from html import escape as _html_escape
 from typing import NamedTuple
 from uuid import UUID
 
@@ -1067,9 +1068,15 @@ def approve_producer(
             # It was rejected for the registration screen (MEH-2100 item 9)
             # precisely because onboarding was not complete there; at approval
             # it is — the business is live on the site. Sapir-approved copy,
-            # verbatim (16/08). The body below is deliberately untouched.
+            # verbatim (16/08) and untouched by MEH-2151 — that ticket restructures
+            # the BODY (CTA links, HTML part), never this subject line.
             "ברוכים הבאים למהמקור",
-            _producer_approved_body(p_name),
+            # MEH-2151: p_slug is captured above (MEH-1817 mints it during this
+            # very approval), so both parts can carry the /p/{slug} link. A
+            # producer with no slug still gets a well-formed mail — both
+            # builders drop their view-page block whole.
+            _producer_approved_body(p_name, p_slug),
+            html=_producer_approved_html(p_name, p_slug),
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
@@ -1582,8 +1589,44 @@ _APPROVED_COMMUNITY_BLOCK = (
     "לצאת בכל רגע:"
 )
 
+# MEH-2151: LOCKED copy, approved by Sapir 21/08/2026, shipped verbatim.
+# Labels only — the URL is appended on its own line beneath each, mirroring
+# the community block's `label:\n{url}` shape so all three read alike.
+_APPROVED_VIEW_PAGE_LABEL = "ככה העמוד שלך נראה ללקוחות:"
+_APPROVED_DASHBOARD_LABEL = "לעדכון פרטים, תמונות ומוצרים — לוח הבקרה:"
+_APPROVED_HTML_BUTTON_LABEL = "לצפייה בעמוד העסק"
+_APPROVED_HTML_DASHBOARD_LABEL = "לוח הבקרה — עדכון פרטים ומוצרים"
 
-def _producer_approved_body(name: str) -> str:
+
+def _approval_links(slug: str | None) -> tuple[str, str]:
+    """The two absolute URLs the approval email carries: (page, dashboard).
+
+    Shared by the text and HTML builders deliberately. MEH-2151 requires BOTH
+    parts to carry BOTH links, so composing the URLs twice would create two
+    owners for one fact — the drift `workflow.md` Smell #1 names — and the
+    failure would be silent: an email whose button and whose text line point at
+    different places still renders, still sends, and still looks correct in a
+    diff. This is not a shared layout module (the over-engineering guard's
+    target); it returns two strings and knows nothing about either part's
+    markup.
+
+    The page URL is "" for a falsy or whitespace-only slug, which is what lets
+    each caller drop its view-page block whole. `.strip()` before the guard,
+    not after — same reasoning as the community invite below: a whitespace-only
+    value is truthy, so an unstripped read would emit a label above a URL of
+    "/p/   ". Mirrors the falsy-guard pattern already used for
+    `whatsapp_community_invite_url`.
+
+    Env-aware host (mirrors the changes-requested body's `dashboard_link`):
+    staging emails must point at staging, not production.
+    """
+    clean_slug = (slug or "").strip()
+    page_url = f"{settings.frontend_url}/p/{clean_slug}" if clean_slug else ""
+    dashboard_url = f"{settings.frontend_url}/producer/dashboard"
+    return page_url, dashboard_url
+
+
+def _producer_approved_body(name: str, slug: str | None) -> str:
     """MEH-2134: copy approved by Sapir 20/08/2026, shipped verbatim.
 
     Signed `ספיר שנפ | מייסדת` in the first person, matching
@@ -1608,10 +1651,22 @@ def _producer_approved_body(name: str) -> str:
     means re-approval — MEH-509 PR1 got a 400 for exactly that).
 
     An unset `whatsapp_community_invite_url` drops the paragraph AND the URL
-    line together, so the body degrades to greeting → approval → signature
-    with no dangling label and no blank-line artifact. That is what lets this
-    merge before the link exists in Railway (Phase C). Falsy-guard pattern
-    mirrors `settings.admin_whatsapp_to` at :971.
+    line together, with no dangling label and no blank-line artifact. That is
+    what lets this merge before the link exists in Railway (Phase C).
+    Falsy-guard pattern mirrors `settings.admin_whatsapp_to` at :971.
+
+    MEH-2151 added the two link blocks and the `slug` parameter. Order is
+    greeting → approval → view-page → dashboard → community → signature: the
+    community block moved BELOW the links because it is the secondary action,
+    and its text is byte-identical (MEH-2134 LOCKED — the census above is why
+    that matters). The mail previously announced "הפרופיל שלך כעת גלוי" and
+    then offered no way to look at it; the view-page link is that proof.
+
+    THREE optional blocks now share one shape, and the degradation is the
+    reason to keep it that way: with no slug AND no invite the body is
+    greeting → approval → dashboard → signature, still with no dangling label.
+    Only the dashboard block is unconditional — its URL needs no input beyond
+    `settings.frontend_url`, so there is no state in which it cannot be built.
     """
     # `.strip()` before the guard, not after: a Railway value of "  " is
     # truthy, so the raw read would emit the paragraph above an empty line —
@@ -1619,11 +1674,109 @@ def _producer_approved_body(name: str) -> str:
     # one input nobody types deliberately.
     invite_url = settings.whatsapp_community_invite_url.strip()
     community = f"\n{_APPROVED_COMMUNITY_BLOCK}\n{invite_url}\n" if invite_url else ""
+    page_url, dashboard_url = _approval_links(slug)
+    # Same `\n{label}\n{url}\n` shape as `community`, so each block that is
+    # present contributes exactly one blank line before it and the signature's
+    # own leading "\n" closes the last one — which is why an omitted block
+    # leaves no double blank line and no dangling label.
+    view_page = f"\n{_APPROVED_VIEW_PAGE_LABEL}\n{page_url}\n" if page_url else ""
+    dashboard = f"\n{_APPROVED_DASHBOARD_LABEL}\n{dashboard_url}\n"
     return (
         f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
         f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"{view_page}"
+        f"{dashboard}"
         f"{community}"
         f"\nספיר שנפ\nמייסדת | מהמקור\n{SITE_DOMAIN}"
+    )
+
+
+def _producer_approved_html(name: str, slug: str | None) -> str:
+    """MEH-2151: the HTML twin of `_producer_approved_body` — same copy, same order.
+
+    WHY AN HTML PART EXISTS AT ALL, since the text body was already readable:
+    Gmail does not infer direction from content, so a plain-text Hebrew line
+    ending in a period renders that period at the START of the line — observed
+    21/08 on a real approval mail (".גלוי"). `dir="rtl"` on the document plus
+    `direction:rtl` on the containing elements is the fix, and the copy contract
+    (`tests/test_meh1965_email_copy_contract.py`) asserts BOTH: the attribute
+    alone still leaves an inline BiDi run (a Latin business name mid-sentence)
+    to the client's guess.
+
+    Structure and palette follow `routers/marketing.py:_send_newsletter_welcome`
+    — table layout, inline CSS only, no <style> block and no external sheet,
+    because Gmail strips both. No emoji, unlike that precedent: the text twin
+    carries none and the two parts must read alike.
+
+    `escape()` on the interpolated values is not decoration. `name` is
+    owner-supplied free text that reaches this function unfiltered, so a
+    business name containing `<` or `"` would break out of the markup it lands
+    in — harmless in the text part, an injection in this one. `slug` is
+    system-minted (MEH-1817) and already URL-safe, but it is escaped on the same
+    line rather than trusted, so the guarantee lives here instead of depending
+    on a property enforced two modules away.
+
+    A falsy slug drops the primary button whole, exactly as the text twin drops
+    its view-page block: the mail then leads with the dashboard link rather than
+    showing a button that goes nowhere.
+    """
+    page_url, dashboard_url = _approval_links(slug)
+    safe_name = _html_escape(name)
+    invite_url = settings.whatsapp_community_invite_url.strip()
+
+    button = (
+        f'<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">'
+        f'<tr><td style="background:#2e6853;border-radius:8px;">'
+        f'<a href="{_html_escape(page_url)}" style="display:inline-block;'
+        f"padding:14px 32px;color:#ffffff;font-size:16px;font-weight:bold;"
+        f'text-decoration:none;direction:rtl;">'
+        f"{_APPROVED_HTML_BUTTON_LABEL}</a></td></tr></table>"
+        if page_url
+        else ""
+    )
+    community = (
+        f'<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        f'margin:0 0 24px;direction:rtl;">{_APPROVED_COMMUNITY_BLOCK}<br>'
+        f'<a href="{_html_escape(invite_url)}" style="color:#2e6853;">'
+        f"{_html_escape(invite_url)}</a></p>"
+        if invite_url
+        else ""
+    )
+
+    return (
+        "<!DOCTYPE html>\n"
+        '<html dir="rtl" lang="he">\n'
+        '<head><meta charset="UTF-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "</head>\n"
+        '<body style="margin:0;padding:0;background:#F5F0E8;'
+        'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
+        '<table width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#F5F0E8;padding:32px 0;"><tr><td align="center">\n'
+        '<table width="560" cellpadding="40" cellspacing="0" '
+        'style="background:#ffffff;border-radius:12px;text-align:right;'
+        'direction:rtl;max-width:560px;"><tr>\n'
+        '<td style="text-align:right;direction:rtl;">\n'
+        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        'margin:0 0 16px;direction:rtl;">היי,</p>\n'
+        '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
+        'margin:0 0 24px;direction:rtl;">'
+        f'העסק שלך "{safe_name}" אושר במהמקור! '
+        "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.</p>\n"
+        f"{button}\n"
+        '<p style="margin:0 0 24px;direction:rtl;">'
+        f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'
+        'font-size:15px;text-decoration:underline;direction:rtl;">'
+        f"{_APPROVED_HTML_DASHBOARD_LABEL}</a></p>\n"
+        f"{community}\n"
+        '<hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">\n'
+        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        'margin:0;direction:rtl;">'
+        f"ספיר שנפ<br>מייסדת | מהמקור<br>{SITE_DOMAIN}</p>\n"
+        "</td></tr></table>\n"
+        "</td></tr></table>\n"
+        "</body>\n"
+        "</html>"
     )
 
 
@@ -1670,8 +1823,19 @@ def _producer_changes_requested_body(
     )
 
 
-def _send_notification_email(to_email: str, subject: str, body: str):
-    send_email(to_email, subject, body)
+def _send_notification_email(
+    to_email: str, subject: str, body: str, html: str | None = None
+):
+    """MEH-2151: `html` is OPTIONAL and defaults to None.
+
+    That default is what keeps the three pre-existing callers (rejected,
+    changes-requested, and the approval site before this ticket) byte-identical
+    on the wire: `send_email` only adds `params["html"]` when the argument is
+    truthy (`services/email.py`), so an omitted argument produces the exact
+    payload it produced before this parameter existed. Same shape, and same
+    reasoning, as `reply_to` two parameters down in `send_email` (MEH-2112).
+    """
+    send_email(to_email, subject, body, html=html)
 
 
 def _send_whatsapp(to: str, body: str):
