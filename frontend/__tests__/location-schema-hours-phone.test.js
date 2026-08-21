@@ -21,6 +21,7 @@ import { describe, it, expect } from "vitest";
 
 import { ProducerSchema, ProducerDetailSchema } from "@/lib/schemas";
 import { resolveStoreHours } from "@/lib/hours";
+import { buildJsonLd } from "@/lib/seo";
 
 const HOURS = "Sun-Thu 08:00-16:00";
 const PHONE = "0521234567";
@@ -75,6 +76,27 @@ describe("locations[] keeps opening_hours + phone through the parse", () => {
     // together are what "loose does not reach inside" means.
     const topLevel = { ...payload(), some_future_field: "y" };
     expect(ProducerDetailSchema.loose().parse(topLevel).some_future_field).toBe("y");
+  });
+
+  it("the JSON-LD emits the LOCATION's hours, not the legacy column", () => {
+    // seo.js:307 is a PUBLIC reader of the same fact — MEH-1884 called
+    // opening_hours "the visibility currency" precisely because it feeds this
+    // block. Left on the column it would emit no hours at all for a business
+    // whose hours live on her primary location: no error, no failing test,
+    // structured data quietly one field short.
+    const graph = buildJsonLd({
+      ...payload(),
+      slug: "maafiat-sade",
+      opening_hours: "Sun-Thu 09:00-18:00",
+    });
+    const business = graph["@graph"].find((n) => n["@type"] === "FoodEstablishment");
+    expect(business, "no FoodEstablishment node in the graph").toBeTruthy();
+    const spec = business.openingHoursSpecification;
+    expect(spec, "no openingHoursSpecification emitted at all").toBeTruthy();
+    // 16:00 is the LOCATION's close; 18:00 only ever comes from the column.
+    const closes = spec.map((s2) => s2.closes);
+    expect(closes).toContain("16:00");
+    expect(closes).not.toContain("18:00");
   });
 
   it("end-to-end: the resolver reads the hours off a PARSED producer", () => {
