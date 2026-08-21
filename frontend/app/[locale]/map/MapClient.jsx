@@ -146,6 +146,33 @@ export default function MapPage() {
   // banner the measured offset is just the header band, so the no-banner
   // layout is unchanged — this also absorbs the pre-existing ~10px drift
   // between the real header (~74px) and the hardcoded 64 (the MEH-933 note).
+  // MEH-2148: lock the document while /map is mounted. The sheet's own
+  // `overscroll-y-contain` stops a scroll that STARTS in the list from chaining
+  // out, but it says nothing about the rest of the page: the map shell, the chip
+  // row and the filter bar are all still scrollable surfaces on a viewport this
+  // page sizes to exactly 100dvh, so a stray drag anywhere else still moved the
+  // document behind the sheet. That is the left-hand RTL scrollbar and the
+  // clipped chip row in the 21/08 captures.
+  //
+  // Saves and restores the EXACT prior inline values rather than assuming they
+  // were empty — another effect or a future modal may own them, and clearing to
+  // "" would silently take that ownership away on unmount. Empty string is the
+  // correct restore for "there was no inline value", which is what
+  // `style.overflow` reads as when unset, so the round-trip is faithful either
+  // way.
+  useEffect(() => {
+    const root = document.documentElement;
+    const { body } = document;
+    const prevRoot = root.style.overflow;
+    const prevBody = body.style.overflow;
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prevRoot;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
   const desktopShellRef = useRef(null);
   const [desktopTopOffset, setDesktopTopOffset] = useState(DESKTOP_HEADER_OFFSET_PX);
   useEffect(() => {

@@ -16,7 +16,7 @@
 // working unchanged.
 import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
-import { parseHours } from "./hours";
+import { parseHours, resolveStoreHours } from "./hours";
 import { producerPoints } from "./producerPoints.js";
 export { SITE_URL };
 
@@ -296,7 +296,15 @@ export function buildJsonLd(producer, locale = "he") {
 
   // MEH-452 Gap 1: openingHoursSpecification — omitted entirely when
   // opening_hours is null/empty/unparseable (no empty array emitted).
-  const openingHoursSpec = parseOpeningHoursSpec(producer.opening_hours);
+  //
+  // MEH-2142: resolved, not read off the column. Store hours became a
+  // per-location fact, and this is a PUBLIC reader of that fact — the same
+  // one MEH-1884 called "the visibility currency" precisely because it feeds
+  // this block. Left on `producer.opening_hours` it would emit no hours at all
+  // for exactly the businesses whose hours now live on their primary location,
+  // which is a silent SEO regression: no error, no failing test, and the
+  // structured data simply loses a field.
+  const openingHoursSpec = parseOpeningHoursSpec(resolveStoreHours(producer));
   if (openingHoursSpec) business.openingHoursSpecification = openingHoursSpec;
 
   // MEH-452 Gap 2: servesCuisine from the producer's categories. Omitted
