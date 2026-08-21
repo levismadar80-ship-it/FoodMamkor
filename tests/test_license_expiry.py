@@ -34,7 +34,7 @@ that would pass with any three of them:
 and day 30) that an off-by-one would silently drop.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.utils.clock import israel_today
 from conftest import auth_header, make_producer, make_user
@@ -349,6 +349,11 @@ def test_admin_get_producer_returns_admin_shape(client, db):
     """
     producer = _with_expiry(db, 10)
     producer.address = "הרצל 1"
+    # Exactly 7 calendar days back. ANY 7-day window contains exactly 5 Sun–Thu
+    # days, so the expected value is 5 whatever weekday the suite runs on —
+    # deterministic without mocking the clock, and NOT computed by calling the
+    # helper under test (which would be circular).
+    producer.submitted_for_review_at = datetime.now(timezone.utc) - timedelta(days=7)
     db.commit()
 
     resp = client.get(
@@ -359,6 +364,19 @@ def test_admin_get_producer_returns_admin_shape(client, db):
     assert body["producer_license_number"] == "12345"
     assert body["address"] == "הרצל 1"
     assert body["license_expires_at"] == producer.license_expires_at.isoformat()
+    # `business_days_waiting` is COMPUTED by _attach_aging, not stored. Dropping
+    # that call from this read path serialises Pydantic's default 0 — a number
+    # that looks measured and is not, which is exactly what the route's own
+    # docstring warns about while asserting nothing.
+    #
+    # Asserted as == 5, NOT >= 0. The CI reviewer proposed `>= 0`; that passes
+    # in both worlds, because 0 IS the failure value — a guard that cannot go
+    # red on the thing it guards. This is the discrimination rule applied to a
+    # suggested fix.
+    assert body["business_days_waiting"] == 5, (
+        "business_days_waiting must be computed by _attach_aging on this route; "
+        "a silent 0 means the enrichment was dropped"
+    )
 
 
 def test_admin_get_producer_requires_admin_and_404s_cleanly(client, db):
