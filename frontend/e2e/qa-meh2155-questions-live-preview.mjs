@@ -41,8 +41,14 @@ import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
 const BASE = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
-const EMAIL = process.env.QA_OWNER_EMAIL || "qa-owner@example.com";
-const PASSWORD = process.env.QA_OWNER_PASSWORD || "QaPassw0rd!2026";
+// Plain constants, deliberately NOT read from the environment.
+// `scripts/check_env_drift.sh` (the required "Env drift" job) BLOCKS on any
+// variable read in code and absent from a `.env.example` — and it is right to:
+// these are a throwaway local seed, not application configuration, so
+// documenting them there would add two fake credentials to the file every
+// contributor copies. Change them here if your local seed differs.
+const EMAIL = "qa-owner@example.com";
+const PASSWORD = "QaPassw0rd!2026";
 const OUT = "../qa-artifacts/MEH-2155";
 
 const VIEWPORTS = [
