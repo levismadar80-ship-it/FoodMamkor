@@ -1282,6 +1282,259 @@ export const AdminDeleteProducerAdminProducersProducerIdDeleteResponse = /*#__PU
 
 
 /**
+ * MEH-2072: the single-producer admin read. There was none before, and the
+ * admin EDIT PAGE was loading the PUBLIC serializer instead.
+ *
+ * ## The bug this closes, measured rather than reasoned
+ *
+ * `app/[locale]/admin/producers/[id]/edit/page.js` fetched `GET /producers/{id}`
+ * -> `ProducerDetailOut`. That shape carries no admin-only field, by design.
+ * So `ProducerForm` hydrated every one of them as `""` (its `initial.X ?? ""`
+ * idiom), and because the form POSTs its whole state back, saving ANY edit
+ * wrote those blanks over the stored values:
+ *
+ *     producer_license_number  '1234567'  ->  ''
+ *     address                  'הרצל 1'   ->  None
+ *
+ * Silent, on every admin save, including a save that only changed the name.
+ * `producer_license_number` is the regulatory field the whole "licensed
+ * businesses only" promise rests on, so this was live data loss on the one
+ * column the promise depends on.
+ *
+ * Two things made it invisible. The form's own comment asserted that the page
+ * called `GET /admin/producers/{id}` "which exposes the raw
+ * producer_license_number" — describing this route, which did not exist and
+ * returned **405**. And the failure has no error surface: the PUT succeeds,
+ * the page redirects, and the value is simply gone.
+ *
+ * ## Why a new route rather than widening the public one
+ *
+ * Widening `ProducerDetailOut` would publish licence numbers and street
+ * addresses to every visitor — the exact inversion of the MEH-530 privacy
+ * precedent. The admin needs a different SHAPE, not more public data.
+ *
+ * ## Route ordering is load-bearing
+ *
+ * Declared AFTER `/producers/pending` (:977) and `/producers/rejection-presets`
+ * (:1132). FastAPI matches in declaration order, so registering this above
+ * either of them would swallow both literals into `{producer_id}` and answer
+ * them with a UUID-parse 422. Do not move it up.
+ *
+ * Mirrors the list endpoint's post-query enrichment exactly — `attach_badge_fields`
+ * then `_attach_aging` — because a single-row read that skipped them would
+ * serialise a silent `0` for `business_days_waiting` and default badges, which
+ * is the "looks measured and is not" failure `_attach_aging`'s own docstring
+ * warns about.
+ * @summary Admin Get Producer
+ */
+export const adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
+export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStatusDefault = `available`;
+export const adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliversDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryAreasDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryCitiesDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryExcludedCitiesDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryNationwideDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseFavoritesCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseGlutenFreeFacilityDefault = `unknown`;
+export const adminGetProducerAdminProducersProducerIdGetResponseGrassFedDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasDeliveryDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasGlutenFreeProductsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasLactoseFreeProductsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasLowCarbProductsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasNoAddedSugarProductsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasPhysicalLocationDefault = true;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasProducerLicenseDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasVeganProductsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseHasVegetarianProductsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseImagesDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseIsAvailableTodayDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseKashrutCertsDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseLactoseFreeFacilityDefault = `unknown`;
+export const adminGetProducerAdminProducersProducerIdGetResponseLicensePendingDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseLocationsItemIsPrimaryDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseLocationsItemPrecisionDefault = `exact`;
+export const adminGetProducerAdminProducersProducerIdGetResponseLocationsDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseOffersDeliveryDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseOffersPickupDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseOrganicCertifiedDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponsePhoneVerifiedDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponsePickupPointsDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponsePlanDefault = `free`;
+export const adminGetProducerAdminProducersProducerIdGetResponsePrimaryContactMethodDefault = `whatsapp`;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsGlutenFreeDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLactoseFreeDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLowCarbDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseStatusDefault = `pending`;
+export const adminGetProducerAdminProducersProducerIdGetResponseTrustTierDefault = 1;
+export const adminGetProducerAdminProducersProducerIdGetResponseVeganScopeDefault = `unknown`;
+export const adminGetProducerAdminProducersProducerIdGetResponseVegetarianScopeDefault = `unknown`;
+
+export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/ zod.object({
+  "active_offer": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "expires_at": /*#__PURE__*/ zod.iso.date(),
+  "headline": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_type": /*#__PURE__*/ zod.string(),
+  "starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
+  "threshold_unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "threshold_value": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefault),
+  "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault),
+  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStatusDefault),
+  "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault),
+  "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault),
+  "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.int(),
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault),
+  "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "contact_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "contact_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "custom_questions": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "days_since_created": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "declaration_version": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "declared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "delivers": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDeliversDefault),
+  "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "city": /*#__PURE__*/ zod.string(),
+  "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminGetProducerAdminProducersProducerIdGetResponseDeliveryAreasDefault),
+  "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryCitiesDefault),
+  "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseDeliveryCountDefault),
+  "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryExcludedCitiesDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDeliveryNationwideDefault),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseFavoritesCountDefault),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "gluten_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseGlutenFreeFacilityDefault),
+  "google_place_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "grass_fed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseGrassFedDefault),
+  "has_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasDeliveryDefault),
+  "has_gluten_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasGlutenFreeProductsDefault),
+  "has_lactose_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasLactoseFreeProductsDefault),
+  "has_low_carb_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasLowCarbProductsDefault),
+  "has_no_added_sugar_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasNoAddedSugarProductsDefault),
+  "has_physical_location": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasPhysicalLocationDefault),
+  "has_producer_license": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasProducerLicenseDefault),
+  "has_vegan_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasVeganProductsDefault),
+  "has_vegetarian_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasVegetarianProductsDefault),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseImagesDefault),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseIsAvailableTodayDefault),
+  "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault),
+  "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault),
+  "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "badge_code": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), adminGetProducerAdminProducersProducerIdGetResponseKashrutCertsDefault),
+  "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseLactoseFreeFacilityDefault),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "license_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
+  "license_pending": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseLicensePendingDefault),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "locations": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_primary": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseLocationsItemIsPrimaryDefault),
+  "kind": /*#__PURE__*/ zod.string(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseLocationsItemPrecisionDefault)
+}).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch \/\npickup \/ market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Expand-phase serialization only; the\nProducer.lat\/lng column stays the primary mirror (chunk-3 map UI consumes\nthis array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin\/owner-only; the map pins on lat\/lng + city and\nnavigation is built from lat\/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup \/ market_stand rows — \"where and when\" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminGetProducerAdminProducersProducerIdGetResponseLocationsDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOffersDeliveryDefault),
+  "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOffersPickupDefault),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.looseObject({
+
+}),/*#__PURE__*/ zod.null()])),
+  "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOrganicCertifiedDefault),
+  "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponsePhoneVerifiedDefault),
+  "pickup_points": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponsePickupPointsDefault),
+  "plan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponsePlanDefault),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponsePrimaryContactMethodDefault),
+  "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})), adminGetProducerAdminProducersProducerIdGetResponseProductsDefault),
+  "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault),
+  "referral_source": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "referral_source_other": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault),
+  "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault),
+  "risk_reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "risk_score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "starting_price_label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseStatusDefault),
+  "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseTrustTierDefault),
+  "updated_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "vacation_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
+  "vegan_scope": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseVeganScopeDefault),
+  "vegetarian_scope": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseVegetarianScopeDefault),
+  "verification_doc_type": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['license', 'exemption', 'cosmetics']),/*#__PURE__*/ zod.null()])),
+  "verification_tier": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['verified', 'declared']),/*#__PURE__*/ zod.null()])),
+  "verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "whatsapp_group": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
  * @summary Admin Update Producer
  */
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDefault = false;

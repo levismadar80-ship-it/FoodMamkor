@@ -31,7 +31,13 @@ export default function EditProducerPage() {
     setFetching(true);
     setLoadError(false);
     api
-      .get(`/producers/${id}`)
+      // MEH-2072: the ADMIN shape, not the public one. This used to call
+      // `/producers/${id}` -> ProducerDetailOut, which by design carries no
+      // admin-only field — so ProducerForm hydrated producer_license_number,
+      // address, referral_source and license_expires_at as "" and then wrote
+      // those blanks back on save. Measured: a save that changed only the name
+      // wiped producer_license_number '1234567' -> '' and address -> NULL.
+      .get(`/admin/producers/${id}`)
       .then((r) => { setProducer(r.data); setLoadError(false); })
       .catch((err) => {
         // A real 404 keeps the existing "not found" copy; anything else — network

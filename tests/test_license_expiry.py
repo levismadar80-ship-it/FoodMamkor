@@ -321,3 +321,87 @@ def test_reminder_requires_admin(client, db):
 
     anon = client.get(REMINDERS)
     assert anon.status_code in (401, 403), anon.text
+
+
+# --- the admin edit page's read path (MEH-2072 scope extension) ------------
+#
+# These do not test license_expires_at specifically; they test the ROUTE the
+# admin edit page loads, because that route is what decides whether ANY
+# admin-only field survives a save. Found while wiring the form field: the page
+# was loading the PUBLIC serializer, so the form hydrated every admin-only
+# field as "" and wrote the blanks back. Three fields were already being wiped
+# this way before this ticket existed.
+
+
+def test_admin_get_producer_returns_admin_shape(client, db):
+    """The route the edit page loads must carry the admin-only fields.
+
+    Before MEH-2072 this route did not exist at all — `GET /admin/producers/{id}`
+    returned **405**, while ProducerForm's own comment claimed the page used it.
+    """
+    producer = _with_expiry(db, 10)
+    producer.address = "הרצל 1"
+    db.commit()
+
+    resp = client.get(
+        f"/admin/producers/{producer.id}", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["producer_license_number"] == "12345"
+    assert body["address"] == "הרצל 1"
+    assert body["license_expires_at"] == producer.license_expires_at.isoformat()
+
+
+def test_admin_get_producer_requires_admin_and_404s_cleanly(client, db):
+    user, producer = _producer_user(db, name="חוות לא-אדמין")
+    assert (
+        client.get(
+            f"/admin/producers/{producer.id}", headers=auth_header(user)
+        ).status_code
+        == 403
+    )
+    missing = client.get(
+        "/admin/producers/00000000-0000-0000-0000-000000000000",
+        headers=auth_header(_admin(db)),
+    )
+    assert missing.status_code == 404, missing.text
+
+
+def test_admin_edit_roundtrip_does_not_wipe_admin_only_fields(client, db):
+    """The regression that motivated the route — a save must not blank them.
+
+    Simulates the real edit flow end to end: load what the page loads, hydrate
+    the way ProducerForm hydrates (`initial.X ?? ""`), submit what it submits.
+    Renaming the business must leave the licence untouched.
+
+    Against the old read path (`GET /producers/{id}`) this fails on the first
+    assertion, because the hydration produces `""` — which is exactly how the
+    bug was measured.
+    """
+    producer = _with_expiry(db, 10, name="לפני")
+    producer.address = "הרצל 1"
+    db.commit()
+    expiry_before = producer.license_expires_at
+    admin = _admin(db)
+
+    loaded = client.get(
+        f"/admin/producers/{producer.id}", headers=auth_header(admin)
+    ).json()
+    # ProducerForm's hydration idiom, verbatim.
+    payload = {
+        "name": "אחרי",
+        "producer_license_number": loaded.get("producer_license_number") or "",
+        "address": loaded.get("address") or "",
+        "license_expires_at": loaded.get("license_expires_at") or None,
+    }
+    resp = client.put(
+        f"/admin/producers/{producer.id}", json=payload, headers=auth_header(admin)
+    )
+    assert resp.status_code == 200, resp.text
+
+    db.refresh(producer)
+    assert producer.name == "אחרי", "the edit itself must still apply"
+    assert producer.producer_license_number == "12345"
+    assert producer.address == "הרצל 1"
+    assert producer.license_expires_at == expiry_before

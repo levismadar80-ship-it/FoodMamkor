@@ -276,8 +276,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         category_ids: initial.categories?.map((c) => c.id) ?? [],
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
-        // MEH-530: admin GET /admin/producers/{id} returns ProducerAdminOut
-        // which exposes the raw producer_license_number; null becomes "".
+        // MEH-530: GET /admin/producers/{id} returns ProducerAdminOut, which
+        // exposes the raw producer_license_number; null becomes "".
+        //
+        // MEH-2072: that route did not exist when this comment was written —
+        // the edit page called the PUBLIC `/producers/{id}` and got 405 on the
+        // admin one. So every admin-only field below hydrated as "" and this
+        // form wrote the blanks back on save. The comment described the correct
+        // design and the code did something else; the route now exists and the
+        // page calls it. Do not point the edit page back at the public shape.
         producer_license_number: initial.producer_license_number ?? "",
         // MEH-2072: same ProducerAdminOut payload, admin-only like the number
         // above. Already an ISO "YYYY-MM-DD" string (the column is DATE), which

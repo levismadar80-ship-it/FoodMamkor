@@ -12176,6 +12176,53 @@
           "admin"
         ]
       },
+      "get": {
+        "description": "MEH-2072: the single-producer admin read. There was none before, and the\nadmin EDIT PAGE was loading the PUBLIC serializer instead.\n\n## The bug this closes, measured rather than reasoned\n\n`app/[locale]/admin/producers/[id]/edit/page.js` fetched `GET /producers/{id}`\n-> `ProducerDetailOut`. That shape carries no admin-only field, by design.\nSo `ProducerForm` hydrated every one of them as `\"\"` (its `initial.X ?? \"\"`\nidiom), and because the form POSTs its whole state back, saving ANY edit\nwrote those blanks over the stored values:\n\n    producer_license_number  '1234567'  ->  ''\n    address                  'הרצל 1'   ->  None\n\nSilent, on every admin save, including a save that only changed the name.\n`producer_license_number` is the regulatory field the whole \"licensed\nbusinesses only\" promise rests on, so this was live data loss on the one\ncolumn the promise depends on.\n\nTwo things made it invisible. The form's own comment asserted that the page\ncalled `GET /admin/producers/{id}` \"which exposes the raw\nproducer_license_number\" — describing this route, which did not exist and\nreturned **405**. And the failure has no error surface: the PUT succeeds,\nthe page redirects, and the value is simply gone.\n\n## Why a new route rather than widening the public one\n\nWidening `ProducerDetailOut` would publish licence numbers and street\naddresses to every visitor — the exact inversion of the MEH-530 privacy\nprecedent. The admin needs a different SHAPE, not more public data.\n\n## Route ordering is load-bearing\n\nDeclared AFTER `/producers/pending` (:977) and `/producers/rejection-presets`\n(:1132). FastAPI matches in declaration order, so registering this above\neither of them would swallow both literals into `{producer_id}` and answer\nthem with a UUID-parse 422. Do not move it up.\n\nMirrors the list endpoint's post-query enrichment exactly — `attach_badge_fields`\nthen `_attach_aging` — because a single-row read that skipped them would\nserialise a silent `0` for `business_days_waiting` and default badges, which\nis the \"looks measured and is not\" failure `_attach_aging`'s own docstring\nwarns about.",
+        "operationId": "admin_get_producer_admin_producers__producer_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerAdminOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Get Producer",
+        "tags": [
+          "admin"
+        ]
+      },
       "put": {
         "operationId": "admin_update_producer_admin_producers__producer_id__put",
         "parameters": [

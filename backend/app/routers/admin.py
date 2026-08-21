@@ -1140,6 +1140,79 @@ def list_rejection_presets(user: User = Depends(require_admin)):
     ]
 
 
+@router.get("/producers/{producer_id}", response_model=ProducerAdminOut)
+@limiter.limit("60/minute")
+def admin_get_producer(
+    request: Request,
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2072: the single-producer admin read. There was none before, and the
+    admin EDIT PAGE was loading the PUBLIC serializer instead.
+
+    ## The bug this closes, measured rather than reasoned
+
+    `app/[locale]/admin/producers/[id]/edit/page.js` fetched `GET /producers/{id}`
+    -> `ProducerDetailOut`. That shape carries no admin-only field, by design.
+    So `ProducerForm` hydrated every one of them as `""` (its `initial.X ?? ""`
+    idiom), and because the form POSTs its whole state back, saving ANY edit
+    wrote those blanks over the stored values:
+
+        producer_license_number  '1234567'  ->  ''
+        address                  'הרצל 1'   ->  None
+
+    Silent, on every admin save, including a save that only changed the name.
+    `producer_license_number` is the regulatory field the whole "licensed
+    businesses only" promise rests on, so this was live data loss on the one
+    column the promise depends on.
+
+    Two things made it invisible. The form's own comment asserted that the page
+    called `GET /admin/producers/{id}` "which exposes the raw
+    producer_license_number" — describing this route, which did not exist and
+    returned **405**. And the failure has no error surface: the PUT succeeds,
+    the page redirects, and the value is simply gone.
+
+    ## Why a new route rather than widening the public one
+
+    Widening `ProducerDetailOut` would publish licence numbers and street
+    addresses to every visitor — the exact inversion of the MEH-530 privacy
+    precedent. The admin needs a different SHAPE, not more public data.
+
+    ## Route ordering is load-bearing
+
+    Declared AFTER `/producers/pending` (:977) and `/producers/rejection-presets`
+    (:1132). FastAPI matches in declaration order, so registering this above
+    either of them would swallow both literals into `{producer_id}` and answer
+    them with a UUID-parse 422. Do not move it up.
+
+    Mirrors the list endpoint's post-query enrichment exactly — `attach_badge_fields`
+    then `_attach_aging` — because a single-row read that skipped them would
+    serialise a silent `0` for `business_days_waiting` and default badges, which
+    is the "looks measured and is not" failure `_attach_aging`'s own docstring
+    warns about.
+    """
+    producer = (
+        db.query(Producer)
+        .options(
+            joinedload(Producer.categories),
+            joinedload(Producer.products),
+            joinedload(Producer.delivery_areas),
+            # selectinload, matching the list endpoint (:448) — a 4th collection
+            # joinedload would widen the existing 3-way cartesian. Needed by
+            # attach_badge_fields' pickup_points/offers_pickup derivation.
+            selectinload(Producer.locations),
+        )
+        .filter(Producer.id == producer_id)
+        .first()
+    )
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    attach_badge_fields(producer)
+    _attach_aging(producer)
+    return producer
+
+
 @router.post("/producers/{producer_id}/reject")
 def reject_producer(
     producer_id: UUID,
