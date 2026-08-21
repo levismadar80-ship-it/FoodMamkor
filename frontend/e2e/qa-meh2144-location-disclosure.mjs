@@ -203,8 +203,13 @@ async function main() {
       const { ctx, page } = await openEditor(browser, width, height, [EXISTING]);
       check(
         `[${label}] CONTROL: the «מיקום ראשי» checkbox EXISTS with a sibling`,
-        (await page.getByTestId("location-primary").count()) > 0 ||
-          (await page.getByTestId("location-details").count()) > 0,
+        // NOT `|| location-details.count > 0`: that <details> renders
+        // unconditionally (LocationsEditor.jsx:843), so the OR made this
+        // control true whenever the form rendered at all — it could never
+        // catch the absent checkbox, which is the one thing it exists to
+        // pair with. (testing.md: an `||` lets either cue carry the
+        // assertion, so losing the other is undetectable.)
+        (await page.getByTestId("location-primary").count()) > 0,
         "pairs with state 1's absence assertion",
       );
       // Type the town the existing location already uses.
