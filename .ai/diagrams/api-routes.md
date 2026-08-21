@@ -129,6 +129,7 @@ graph TD
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
+    Producers --> LicenseExpiry[GET /admin/license-expiry-reminders<br/>🛡️ MEH-2072 approved producers whose licence expires within 30d; read-only, no send, no auto-hide; excludes NULL and already-lapsed]
 
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]

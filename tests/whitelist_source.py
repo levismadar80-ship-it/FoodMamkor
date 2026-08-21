@@ -60,6 +60,21 @@ def read_producer_writable_fields() -> set[str]:
             continue
         if WHITELIST_NAME not in names:
             continue
+        # An annotation with no assignment (`NAME: set[str]`) parses as an
+        # AnnAssign whose `.value` is None. It reached the set-literal assert
+        # below and failed as "no longer a set literal", which points the
+        # reader at the wrong edit: the declaration form is not the problem,
+        # the missing `= {...}` is. Named separately so the message describes
+        # the actual state of the source. Still fatal — a whitelist nobody
+        # assigns is not a whitelist, and silently skipping it would let a
+        # caller read an empty set as "nothing is writable" and pass, which is
+        # the exact silent miss this module's docstring exists to prevent.
+        if isinstance(node, ast.AnnAssign) and node.value is None:
+            raise AssertionError(
+                f"{WHITELIST_NAME} is annotated without an assignment "
+                f"({WHITELIST_NAME}: ... with no `= {{...}}`) — "
+                "there is no set literal to read"
+            )
         assert isinstance(node.value, ast.Set), (
             f"{WHITELIST_NAME} is no longer a set literal"
         )
