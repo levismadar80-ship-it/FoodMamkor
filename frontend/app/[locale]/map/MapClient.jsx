@@ -840,7 +840,13 @@ export default function MapPage() {
           style={{
             paddingTop: `${mobileBarHeight}px`,
             ...(cookieBannerVisible
-              ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" }
+              // MEH-2148: the 96px was CookieBanner's own offset (nav clearance
+              // + its 8px gap) plus 16px of breathing room, summed by hand. Now
+              // derived. The safe-area term moved INSIDE the fallback -- the var
+              // already includes the inset, so keeping it outside would
+              // double-count it on notched phones. Fallback total is byte-identical
+              // to the old value: 72 + 8 + 16 = 96.
+              ? { paddingBottom: "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px))" }
               : {}),
           }}
         >

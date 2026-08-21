@@ -50,8 +50,15 @@ export default function Toaster() {
       // `items-center` so the flex column does not stretch its child; the item
       // sizes itself via `w-fit min-w-[16rem] max-w-full` (below), so short toasts
       // stay snug at the 16rem floor and long ones fill up to 92vw/28rem (~2 lines).
+      // MEH-2148: the 5rem was a static copy of the nav clearance; derived now,
+      // with 5rem kept as the fallback so a pre-hydration or desktop render is
+      // byte-identical to before. `md:bottom-6` and the cookie term unchanged.
+      // NOTE the ordering: `eslint-disable-next-line` applies to the NEXT LINE
+      // only, so this note has to sit ABOVE it. Putting it in between detached
+      // the directive from the className and made it an unused-directive ERROR
+      // (eslint.config.mjs:15 reportUnusedDisableDirectives). Caught by lint.
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-[calc(5rem+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[92vw] max-w-[28rem] flex flex-col-reverse items-center gap-2 pointer-events-none"
+      className="fixed bottom-[calc(var(--bottom-nav-clearance,5rem)+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[92vw] max-w-[28rem] flex flex-col-reverse items-center gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"

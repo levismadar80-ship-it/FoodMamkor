@@ -71,9 +71,14 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // (z clears BottomNav:1000 + cookie:1100, below filter-sheet:1200).
         // sm+ → absolute, dropping from just below the bell (top-14 = the bell's
         // bottom edge). Either way the grid cell height is unaffected.
+        // MEH-2148: the mobile sheet cleared a 64px nav band that no longer
+        // exists at that height. Derived now; the sm+ branch is untouched and
+        // still wins via `sm:bottom-auto`, so this inline value only applies
+        // below sm where the pill actually is.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-16 z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          className="fixed inset-x-3 z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          style={{ bottom: `calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px)` }}
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}
