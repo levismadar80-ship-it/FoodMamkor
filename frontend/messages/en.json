@@ -4272,7 +4272,7 @@
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
-        "pricing_summary_empty": "No price or top product set yet",
+        "pricing_summary_empty": "Optional — price and signature product appear on your page once set",
         "delivery_mode_store": "Physical store",
         "delivery_mode_delivery": "Delivery",
         "delivery_none": "Not set yet",
