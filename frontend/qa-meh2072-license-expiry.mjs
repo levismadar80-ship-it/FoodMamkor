@@ -12,13 +12,19 @@
  * WHAT IT DOES NOT PROVE: that the column exists (no DB) or that a real save
  * round-trips (no backend). Those are pytest's job and Sapir's post-deploy check.
  *
+ * Both constants below are hardcoded on purpose. An earlier version read them
+ * from the environment, and the `Env drift` gate reds any variable a file reads
+ * that no .env.example documents — it scans the whole repo, QA harnesses
+ * included. Documenting a throwaway local knob in .env.example would be worse
+ * than the knob is worth, so the knob is gone. Do not reintroduce one here.
+ *
  * The controls are the point — every "not found" this harness could report is
  * paired with something that MUST be found, so a dead page cannot read as a pass.
  */
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.QA_BASE ?? "http://localhost:3100";
+const BASE = "http://localhost:3100";
 const CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const OUT = "qa-artifacts/MEH-2072";
 const PRODUCER_ID = "11111111-2222-3333-4444-555555555555";
@@ -74,7 +80,7 @@ async function run() {
   // @playwright/test pin resolves to a build revision the image does not carry,
   // and `playwright install` is forbidden here (the browsers are baked in).
   const browser = await chromium.launch({
-    executablePath: process.env.QA_CHROMIUM ?? CHROMIUM,
+    executablePath: CHROMIUM,
     args: ["--ssl-version-max=tls1.2"],
   });
 
