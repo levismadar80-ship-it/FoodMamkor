@@ -23,6 +23,8 @@
 
 import { CaretDown } from "@phosphor-icons/react";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import { useTranslations } from "next-intl";
+import { chipKeyFor } from "@/lib/edit-accordion-chips";
 
 // ============================================================
 // MEH-1158: header content-preview primitives. Presentational only — the
@@ -127,8 +129,15 @@ export default function EditAccordionCard({
   onToggle,
   children,
 }) {
+  const tChip = useTranslations("dashboard.producer.edit_accordion");
   const bodyId = `${anchorId}-panel`;
   const headerId = `${anchorId}-header`;
+  // MEH-2138 chunk C: «חובה» / «רשות» per card, derived from the submit gate
+  // (lib/edit-accordion-chips). Derived from `anchorId` rather than passed in
+  // by the page, so a card added to the JSX cannot ship without one — the
+  // registry-drift class .claude/rules/testing.md documents.
+  const chipKey = chipKeyFor(anchorId);
+  const required = chipKey === "chip_required";
   return (
     <section
       id={anchorId}
@@ -145,8 +154,26 @@ export default function EditAccordionCard({
           className="w-full min-h-[44px] flex items-center justify-between gap-3 p-5 text-start rounded-[16px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
         >
           <span className="min-w-0">
-            <span className="block text-base font-bold text-text">
-              {title}
+            <span className="flex items-center gap-2 text-base font-bold text-text">
+              <span className="min-w-0 truncate">{title}</span>
+              {/* Same pill idiom as the completeness checklist and the draft
+                  banner (ProfileCompletenessCard.jsx / DraftSubmitBanner.jsx):
+                  primary tint for required, muted for optional. Rendered on
+                  EVERY card, filled or empty — the owner needs to know which
+                  sections gate submission BEFORE she finishes them. */}
+              <span
+                // `section-chip-`, NOT `accordion-chip-`: EditHubNav.test.jsx
+                // enumerates cards with a PREFIX query,
+                // `[data-testid^="accordion-"]`, so a chip in that namespace
+                // joins the card list and breaks its ordering assertion. Caught
+                // by that test, which is doing exactly its job.
+                data-testid={`section-chip-${anchorId}`}
+                className={`shrink-0 rounded-full px-2 text-xs font-normal ${
+                  required ? "bg-primary/10 text-primary" : "bg-border/60 text-fg-muted"
+                }`}
+              >
+                {tChip(chipKey)}
+              </span>
               {marker}
             </span>
             {/* Live status summary — calm idiom (ADR-019): muted, never red. */}
