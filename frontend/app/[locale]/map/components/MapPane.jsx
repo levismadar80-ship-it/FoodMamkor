@@ -176,7 +176,7 @@ export default function MapPane({
       </button>
 
       {/* MEH-2148: ONE owner for the top-centre slot. Both of these used to be
-          their own `absolute top-4 z-[1000]` — the search-area pill centred, the
+          their own `absolute top-4 z-1000` — the search-area pill centred, the
           pickup notice at the inline start with `max-w-[240px]` — so at 375px
           they were laid out at the same y with overlapping x and simply drew on
           top of each other, and which one won was z-order tie-breaking by
