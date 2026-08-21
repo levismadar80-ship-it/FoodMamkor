@@ -9,6 +9,15 @@ Does NOT: exercise the approval endpoint or the WhatsApp template
 Related:  backend/app/routers/admin.py (_producer_approved_body),
           backend/app/config.py (whatsapp_community_invite_url).
 History:  MEH-2134 (creation, 2026-08-20).
+          MEH-2151 (2026-08-21) — the body gained a `slug` argument and two
+          link blocks ABOVE the community block, so every full-string
+          assertion below was re-derived from the new layout. What MEH-2134
+          owns is unchanged and still asserted verbatim: the community
+          paragraph's text, the founder signature, and the invite-absent
+          degradation. Only this file's copy of the SURROUNDING body moved.
+          It is updated here rather than in a new file because a byte-exact
+          expectation is a description of one layout — two files each holding
+          a stale half is the drift a single owner exists to prevent.
 
 The full body is asserted as ONE exact string in both states rather than by
 substring presence. A presence-only assertion cannot see a dangling label or a
@@ -33,6 +42,26 @@ from app.services.onboarding_followup import SITE_DOMAIN
 # one. `.invalid` is reserved by RFC 2606 and can never resolve.
 FAKE_INVITE_URL = "https://example.invalid/meh2134-fake-invite-not-a-real-link"
 
+# MEH-2151: the body now interpolates two absolute links. Both are built from
+# `settings.frontend_url`, so the expectations below read it rather than
+# hardcoding a host — otherwise these tests would assert the dev default and go
+# red the moment anything set FRONTEND_URL.
+SLUG = "maafiat-shaked"
+PAGE_URL = f"{settings.frontend_url}/p/{SLUG}"
+DASHBOARD_URL = f"{settings.frontend_url}/producer/dashboard"
+
+# The two MEH-2151 link blocks, in their shipped order. Spelled out here once
+# so each full-string expectation below stays readable and the three states
+# differ only in what they omit.
+_LINKS = (
+    "\n"
+    "ככה העמוד שלך נראה ללקוחות:\n"
+    f"{PAGE_URL}\n"
+    "\n"
+    "לעדכון פרטים, תמונות ומוצרים — לוח הבקרה:\n"
+    f"{DASHBOARD_URL}\n"
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -50,11 +79,12 @@ def invite_url(monkeypatch):
 def test_body_carries_community_block_and_link_when_url_is_set(invite_url):
     invite_url(FAKE_INVITE_URL)
 
-    assert _producer_approved_body("מאפיית שקד") == (
+    assert _producer_approved_body("מאפיית שקד", SLUG) == (
         "היי,\n"
         "\n"
         'העסק שלך "מאפיית שקד" אושר במהמקור! '
         "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"{_LINKS}"
         "\n"
         "פתחנו קבוצת עדכונים בוואטסאפ לבתי עסק שאושרו במהמקור — שווקים ואירועים "
         "לפני כולם, ומה חדש באתר. פעם-פעמיים בחודש, רק אנחנו כותבות שם, ואפשר "
@@ -75,13 +105,14 @@ def test_body_omits_the_whole_block_when_url_is_empty(invite_url):
     """
     invite_url("")
 
-    body = _producer_approved_body("מאפיית שקד")
+    body = _producer_approved_body("מאפיית שקד", SLUG)
 
     assert body == (
         "היי,\n"
         "\n"
         'העסק שלך "מאפיית שקד" אושר במהמקור! '
         "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"{_LINKS}"
         "\n"
         "ספיר שנפ\n"
         "מייסדת | מהמקור\n"
@@ -104,10 +135,10 @@ def test_whitespace_only_url_is_treated_as_unset(invite_url):
     equality against the empty-variable body so the two states cannot drift.
     """
     invite_url("   ")
-    spaces = _producer_approved_body("מאפיית שקד")
+    spaces = _producer_approved_body("מאפיית שקד", SLUG)
 
     invite_url("")
-    empty = _producer_approved_body("מאפיית שקד")
+    empty = _producer_approved_body("מאפיית שקד", SLUG)
 
     assert spaces == empty
     assert "וואטסאפ" not in spaces
