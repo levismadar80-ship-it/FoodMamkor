@@ -1919,14 +1919,16 @@ function RegisterProducerPageBody() {
             <div className="bg-green-50 rounded-lg p-5 text-start mb-6">
               <p className="text-sm text-text leading-relaxed">{t("auth.register.producer.success.next")}</p>
             </div>
-            {/* MEH-132: S7 06A founder sign-off */}
-            <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
-            <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {/* MEH-2136: the dashboard CTA sits directly under the green box that
+                names the dashboard, primary-solid, and outranks the share link.
+                Previously it was an outline button of equal weight to the share
+                button, two blocks further down — Sapir registered and could not
+                find the dashboard. */}
+            <div className="flex flex-col gap-3 items-stretch sm:items-center mb-6">
               <button
                 data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
-                className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+                className="w-full sm:w-auto bg-primary-dark text-white px-6 py-3 rounded-md hover:opacity-90 transition font-medium text-sm"
               >
                 {t("auth.register.producer.success.cta")}
               </button>
@@ -1934,12 +1936,15 @@ function RegisterProducerPageBody() {
                 href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-whatsapp-outline inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
+                className="btn-whatsapp-outline w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
               >
                 <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
                 {t("auth.register.producer.success.share_cta")}
               </a>
             </div>
+            {/* MEH-132: S7 06A founder sign-off */}
+            <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
+            <p className="text-xs text-fg-muted text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
           </div>
         )}
         {step === STEP.CONFIRM && !didUpgrade && (

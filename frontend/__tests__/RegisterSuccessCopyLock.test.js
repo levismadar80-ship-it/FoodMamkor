@@ -33,26 +33,40 @@ describe("MEH-1814 — locked post-submit success copy", () => {
     // first real success moment is SUBMISSION, not registration.
     //
     // So the headline is progress framing, and it has to stay that way.
-    expect(S_HE.title).toBe("נרשמתם! נשאר צעד אחד");
+    //
+    // MEH-2136, Sapir 20/08. Progress framing is UNCHANGED — what changed is
+    // the COUNT. The screen shipped three contradictory numbers for the same
+    // journey: the title said one step, `next` said two, and the real submit
+    // gate (MEH-2100, ProfileCompletenessCard.jsx:187-236) requires five items,
+    // of which three are still outstanding for someone who has just registered
+    // (photo, first product, WhatsApp verification — location, category and
+    // contact are collected during registration). The title now states no
+    // number at all rather than a wrong one, and `next` enumerates the actual
+    // three. Deleting the count is the fix; a celebration is still rejected for
+    // every reason the paragraphs above give.
+    expect(S_HE.title).toBe("נרשמתם! נשארו כמה השלמות קצרות");
     // Same correction, one line down: registration no longer puts the
     // business in review, so the old "we approve within 3 business days"
     // promise was false the moment it was shown.
     expect(S_HE.body).toBe(
-      "נרשמתם! השלב הבא: השלמת הפרופיל בלוח הבקרה ושליחה לבדיקה.",
+      "השלב הבא: השלמת הפרופיל בלוח הבקרה ושליחה לבדיקה.",
     );
+    // MEH-2136: was "שני צעדים קצרים … מזרזים את האישור" — wrong on both
+    // halves. It is three items, not two, and they do not "speed up" approval;
+    // they are the GATE that unlocks sending for review at all.
     expect(S_HE.next).toBe(
-      "שני צעדים קצרים בלוח הבקרה מזרזים את האישור: אימות מספר הוואטסאפ בקוד קצר, והעלאת תמונה ראשונה של העסק.",
+      "ההשלמות בלוח הבקרה פותחות את השליחה לבדיקה: תמונה של העסק, מוצר ראשון בקטלוג, ואימות מספר הוואטסאפ.",
     );
     expect(S_HE.cta).toBe("ללוח הבקרה");
   });
 
   it("English matches the locked strings verbatim", () => {
-    expect(S_EN.title).toBe("You're signed up — one step to go");
+    expect(S_EN.title).toBe("You're signed up — a few short steps left");
     expect(S_EN.body).toBe(
-      "You're registered! Next step: complete your profile in the dashboard and send it for review.",
+      "Next step: complete your profile in the dashboard and send it for review.",
     );
     expect(S_EN.next).toBe(
-      "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
+      "The steps in your dashboard unlock sending for review: a photo of your business, a first product in your catalogue, and verifying your WhatsApp number.",
     );
     expect(S_EN.cta).toBe("To my dashboard");
   });

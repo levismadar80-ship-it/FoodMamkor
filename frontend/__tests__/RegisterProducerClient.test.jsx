@@ -431,6 +431,66 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(screen.queryByText(`${K}.gate.producer_heading`)).not.toBeInTheDocument();
   });
 
+  // MEH-2136: the defect this ticket fixes is HIERARCHY, and nothing in the repo
+  // pinned it. The copy lock reads he.json values; 28-register-success-state.spec.ts
+  // asserts the CTA is *visible*; the two tests above assert it is *present*. All
+  // four pass identically on the broken layout, where the dashboard CTA was an
+  // outline button of the same visual weight as the WhatsApp share link, sitting
+  // two blocks BELOW the signature — so the only screen that names the dashboard
+  // buried the only control that reaches it. Sapir registered and could not find
+  // it; that is the evidence the ticket is built on.
+  //
+  // Asserted as ORDER + WEIGHT rather than an exact class string, so a restyle
+  // that keeps the hierarchy stays green while a revert to the old arrangement
+  // goes red.
+  it("dashboard CTA is primary-solid and outranks the share link (MEH-2136)", async () => {
+    authState.user = { email: "p@example.com" };
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    await screen.findByTestId("register-success-pending");
+    const cta = screen.getByTestId("register-success-dashboard-cta");
+    const nextBox = screen.getByText(`${K}.success.next`);
+    const share = screen.getByText(`${K}.success.share_cta`).closest("a");
+    const signature = screen.getByText(`${K}.success.signature`);
+
+    // WEIGHT — solid primary, not the outline it used to be.
+    expect(cta.className).toContain("bg-primary-dark");
+    expect(cta.className).not.toContain("bg-transparent");
+    // Full-width on mobile, auto from sm up.
+    expect(cta.className).toContain("w-full");
+
+    // ORDER — precedes() is `a comes before b in document order`.
+    const precedes = (a, b) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    expect(precedes(nextBox, cta), "CTA sits below the green next box").toBe(true);
+    expect(precedes(cta, share), "CTA outranks the share link").toBe(true);
+    expect(precedes(share, signature), "signature moves below both buttons").toBe(true);
+  });
+
+  // Self-test for the order predicate above. Without it, a `precedes` that always
+  // returned true would make all three ORDER assertions vacuous — the exact
+  // "green with two causes" shape .claude/rules/testing.md warns about. Runs
+  // against the same DOM API the assertions use, on a pair whose answer is known.
+  it("self-test: the order predicate reads document order in both directions", () => {
+    const { container } = render(
+      <div>
+        <span data-testid="ord-first">first</span>
+        <span data-testid="ord-second">second</span>
+      </div>,
+    );
+    const precedes = (a, b) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const first = container.querySelector('[data-testid="ord-first"]');
+    const second = container.querySelector('[data-testid="ord-second"]');
+    expect(precedes(first, second)).toBe(true);
+    expect(precedes(second, first)).toBe(false);
+  });
+
   // MEH-1814: the other half of the invariant — `submitted` must not disarm the
   // gate for a genuine mount-time visit. Without this, a fix that simply deleted
   // the gate would also pass the test above.
