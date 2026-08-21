@@ -234,10 +234,21 @@ function buildSteps(producer, missingLabels) {
       href: "#phone-verify",
     },
     // MEH-1895: hours reads the SAME heuristic slug that mounts this card
-    // (producer-completeness.js:91-92, MEH-1884) — no second condition to
-    // drift. Anchor is the KEY_TO_ANCHOR value (edit/page.js:164), the form
-    // MEH-1165 established for the location row.
-    { key: "hours", done: has("hours"), required: false, href: `${EDIT_HUB}#hours` },
+    // (producer-completeness.js, MEH-1884) — no second condition to drift.
+    //
+    // MEH-2142: the anchor moved from `#hours` to `#locations`. The
+    // business-level hours card was removed and store hours are edited per
+    // location now, so `#hours` no longer resolves to anything — it was
+    // dropped from ANCHOR_TO_KEY in the same change, and a CTA pointing at a
+    // deleted card is the MEH-2058 failure repeated. `#locations` is a
+    // registered anchor (edit/page.js) and lands on the editor that actually
+    // owns the field.
+    {
+      key: "hours",
+      done: has("hours"),
+      required: false,
+      href: `${EDIT_HUB}#locations`,
+    },
   ];
 }
 

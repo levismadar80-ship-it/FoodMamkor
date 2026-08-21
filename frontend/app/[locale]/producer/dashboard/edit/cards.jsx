@@ -45,7 +45,6 @@ import CategoryRequestModal from "@/components/CategoryRequestModal";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import HoursEditor from "./HoursEditor";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -1116,18 +1115,18 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
-// MEH-1276: producer-facing opening-hours editor. Was a free-text LTR field
-// (MEH-1242 PR5) that expected the machine format "Sun-Thu 09:00-18:00" and
-// silently dropped any deviation. Now a structured Hebrew editor (7 day rows +
-// toggle + time inputs) that serialises to the same canonical string — storage,
-// API, and lib/hours.parseHours are unchanged. Editor lives in HoursEditor.jsx
-// (cards.jsx is already >1200 lines); this stays a thin, test-exported wrapper.
+// MEH-2142: `HoursCard` — the thin wrapper around HoursEditor — stood here and
+// was REMOVED along with the editor it wrapped. Store hours moved to the
+// per-location field the owner already edits in LocationsEditor; the
+// business-level `Producer.opening_hours` is no longer owner-writable
+// (producer_me.py) and survives only as a public-page read fallback.
+//
+// `frontend/lib/hours-serialize.js` is deliberately LEFT in place even though
+// HoursEditor was its only UI consumer: it is a tested, reusable day-row
+// serializer that `lib/order-window.js` cites as the model for its own, and
+// deleting a library plus its suite is a cleanup this ticket has no AC for.
+// Knip will list it as unused — that is a warn-only signal and an accurate one.
 // ============================================================
-
-// Exported for isolation tests (EditTabDeliveryCard.test.jsx covers the pair).
-export function HoursCard({ profile, onSave, reportDirty = () => {} }) {
-  return <HoursEditor profile={profile} onSave={onSave} reportDirty={reportDirty} />;
-}
 
 // ============================================================
 // MEH-1258: producer-facing license-number editor — closes the "נשאר להשלים:
