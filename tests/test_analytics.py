@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from app.models.models import (
+    ContactClick,
     Event,
     Experience,
     Favorite,
@@ -76,6 +77,19 @@ def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash
 def _seed_whatsapp_click(db, producer_id, *, days_ago=0):
     ts = datetime.utcnow() - timedelta(days=days_ago)
     row = ProducerWhatsAppClick(producer_id=producer_id, clicked_at=ts)
+    db.add(row)
+    db.commit()
+    return row
+
+
+def _seed_contact_click(db, producer_id, *, method="phone", days_ago=0):
+    """MEH-2157: a non-WhatsApp contact click (phone/instagram/website/email).
+
+    Seeded directly, like the WhatsApp helper above, so the window arithmetic
+    can be asserted without going through the rate-limited HTTP tracker.
+    """
+    ts = datetime.utcnow() - timedelta(days=days_ago)
+    row = ContactClick(producer_id=producer_id, method=method, clicked_at=ts)
     db.add(row)
     db.commit()
     return row
@@ -420,6 +434,152 @@ class TestProducerAnalytics:
             "/producers/me/analytics", headers=auth_header(user)
         ).json()
         assert body["profile_strength"] == 0
+
+
+# ============================================================
+# MEH-2157 — conversion_rate counts every contact channel
+# ============================================================
+
+class TestConversionRateCountsEveryChannel:
+    """The numerator is whatsapp_clicks + contact_clicks, both over 30d.
+
+    Discrimination (MEH-1619) — MEASURED against the old numerator, not
+    predicted. Control run: `4 failed, 2 passed`.
+
+      RED on the old code (real evidence for the change), each naming the
+      value it returned there:
+        · phone_only ............ 0.0  vs 40.0
+        · mixed ................ 20.0  vs 60.0
+        · window ................ 0.0  vs 25.0
+        · per_channel_kpis ..... 100.0 vs 400.0
+
+      GREEN on BOTH implementations (regression pins — they are not evidence
+      that the change works, and are here so a future edit cannot quietly
+      move the untouched halves):
+        · whatsapp_only ........ 75.0
+        · zero_views ............ 0.0
+
+    This docstring first said only two tests discriminated; the control run
+    said four. The measurement is what stands.
+    """
+
+    @staticmethod
+    def _owner(db, email):
+        p = make_producer(db)
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = p.id
+        db.commit()
+        return p, user
+
+    def _analytics(self, client, user):
+        r = client.get("/producers/me/analytics", headers=auth_header(user))
+        assert r.status_code == 200
+        return r.json()
+
+    def test_whatsapp_only_producer_rate_is_unchanged(self, client, db):
+        """REGRESSION PIN — passes before and after. 3 clicks / 4 viewers."""
+        p, user = self._owner(db, "conv-wa@example.com")
+        for _ in range(4):
+            _seed_view(db, p.id, days_ago=1)
+        for _ in range(3):
+            _seed_whatsapp_click(db, p.id, days_ago=2)
+
+        body = self._analytics(client, user)
+        assert body["profile_views"]["last_30d"] == 4
+        assert body["whatsapp_clicks"]["last_30d"] == 3
+        assert body["contact_clicks"]["last_30d"] == 0
+        # Manual calc, both implementations: 3 / 4 × 100.
+        assert body["conversion_rate"] == 75.0
+
+    def test_phone_only_producer_is_no_longer_stuck_at_zero(self, client, db):
+        """RED against the old numerator, which returned 0.0 here forever.
+
+        This is the whole point of the ticket: a business that never receives
+        a WhatsApp tap had no path to a non-zero rate.
+        """
+        p, user = self._owner(db, "conv-phone@example.com")
+        for _ in range(5):
+            _seed_view(db, p.id, days_ago=1)
+        for _ in range(2):
+            _seed_contact_click(db, p.id, method="phone", days_ago=3)
+
+        body = self._analytics(client, user)
+        assert body["profile_views"]["last_30d"] == 5
+        assert body["whatsapp_clicks"]["last_30d"] == 0
+        assert body["contact_clicks"]["last_30d"] == 2
+        # 2 / 5 × 100. Old code: 0 / 5 × 100 = 0.0.
+        assert body["conversion_rate"] == 40.0
+
+    def test_mixed_producer_rate_sums_both_tables(self, client, db):
+        """RED against the old numerator, which saw only the 2 WhatsApp rows."""
+        p, user = self._owner(db, "conv-mixed@example.com")
+        for _ in range(10):
+            _seed_view(db, p.id, days_ago=1)
+        for _ in range(2):
+            _seed_whatsapp_click(db, p.id, days_ago=2)
+        for method in ("phone", "email", "website", "instagram"):
+            _seed_contact_click(db, p.id, method=method, days_ago=4)
+
+        body = self._analytics(client, user)
+        assert body["whatsapp_clicks"]["last_30d"] == 2
+        assert body["contact_clicks"]["last_30d"] == 4
+        # (2 + 4) / 10 × 100. Old code: 2 / 10 × 100 = 20.0.
+        assert body["conversion_rate"] == 60.0
+
+    def test_contact_clicks_use_the_same_30d_window_as_whatsapp(self, client, db):
+        """RED against the old numerator (0.0), which never read this table.
+
+        The boundary itself is structural — both arms run through the same
+        `windowed()` helper — so what this pins is that the new arm did not
+        widen it: a 40-day-old row of EITHER kind stays out of the numerator
+        while still counting in `total`.
+        """
+        p, user = self._owner(db, "conv-window@example.com")
+        for _ in range(4):
+            _seed_view(db, p.id, days_ago=1)
+        _seed_contact_click(db, p.id, method="phone", days_ago=2)
+        _seed_contact_click(db, p.id, method="phone", days_ago=40)
+        _seed_whatsapp_click(db, p.id, days_ago=40)
+
+        body = self._analytics(client, user)
+        assert body["contact_clicks"]["last_30d"] == 1
+        assert body["contact_clicks"]["total"] == 2
+        assert body["whatsapp_clicks"]["last_30d"] == 0
+        assert body["whatsapp_clicks"]["total"] == 1
+        # Only the in-window contact click counts: 1 / 4 × 100.
+        assert body["conversion_rate"] == 25.0
+
+    def test_zero_views_guard_is_unchanged(self, client, db):
+        """REGRESSION PIN — a widened numerator must not reach the division."""
+        p, user = self._owner(db, "conv-zero@example.com")
+        _seed_whatsapp_click(db, p.id, days_ago=1)
+        _seed_contact_click(db, p.id, method="email", days_ago=1)
+
+        body = self._analytics(client, user)
+        assert body["profile_views"]["last_30d"] == 0
+        assert body["whatsapp_clicks"]["last_30d"] == 1
+        assert body["contact_clicks"]["last_30d"] == 1
+        assert body["conversion_rate"] == 0.0
+
+    def test_per_channel_kpis_stay_separate_from_the_aggregate(self, client, db):
+        """The GBP breakdown property: summing into the headline must not
+        collapse the two per-channel counters the dashboard renders.
+
+        RED against the old numerator (100.0). Also the deliberate >100 case
+        — 4 actions from 1 unique viewer — which the MEH-160 contract note
+        says is a real reading, not a bug, and which widening the numerator
+        makes more likely.
+        """
+        p, user = self._owner(db, "conv-breakdown@example.com")
+        _seed_view(db, p.id, days_ago=1)
+        _seed_whatsapp_click(db, p.id, days_ago=1)
+        for _ in range(3):
+            _seed_contact_click(db, p.id, method="website", days_ago=1)
+
+        body = self._analytics(client, user)
+        assert body["whatsapp_clicks"]["last_7d"] == 1
+        assert body["contact_clicks"]["last_7d"] == 3
+        assert body["conversion_rate"] == 400.0
 
 
 # ============================================================
