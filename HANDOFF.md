@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-21 — אצוות MEH-2136 · 2137 · 2138 · 2139: שמונה PRs מוזגו, המיגרציה פתוחה
+
+**מוזג (עשרה PRs; כל SHA נגזר מ-`git log origin/staging | grep "(#NNNN)"`, לא מהזיכרון):** ‏MEH-2136 `49972774` #3027 · MEH-2137 `49290d4a` #3029 · `220447ac` #3039 · `8d46c0cc` #3048 · MEH-2138 `460748f8` #3028 · `f8bb01b0` #3037 · `05cd08b5` #3056 · `b85e1836` #3058 · `726d7f72` #3063 · MEH-2139 chunk 1 `1426fe21` #3033. **כולם אומתו כ-squash** (הורה יחיד + תבנית `<title> (#N)`, MEH-1526).
+**פתוח ולא חמוש:** ‏**#3052** — MEH-2139 chunk 2, המיגרציה שהופכת `categories.slug` ל-NOT NULL. שני השערים הנדרשים ירוקים (`Backend tests (pytest)` הצליח 20:25:57Z), ‏**E2E אדום והוא חוב קדם-קיים, לא נדרש**.
+**ענף:** ‏`feature/meh-2139-category-slug-switch`.
+**סמכות:** ה-dispatch של האצווה — מקצה לקצה לכל PR **פרט למיגרציה**. ‏«RED merges only on Sapir's explicit approved — silence is not approval».
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏שלוש פעמים באצווה הזאת כתבתי הערה שמזהירה בדיוק מהכשל שביצעתי מתחתיה.** הבולטת: מעל `CategoryHit` כתבתי ש«serializer שני של אותה ישות הוא בדיוק העריכה שנשכחת… משטח אחד נושא את ה-slug והשני מפיל אותו בשקט», ואז `search.py:175` הפיל אותו. השתיים האחרות: «EVERY card resolves its dedicated glyph» (שקר אחרי rename), ו-«NOT NULL is DEFERRED to the switch step» בקובץ שבו ה-switch step כבר קרה. **המסקנה המעשית: הערה שמצהירה על כיסוי היא בדיוק האַרטיפקט שאיש לא בודק — כולל אני, מיד אחרי שכתבתי אותה.** כל שלוש נתפסו ע"י ה-CI reviewer.
+
+2. **‏`str | None` הופך השמטה לשקט.** ‏`CategoryHit` נבנה ב-kwargs; `CategoryOut` הוא `response_model` מ-ORM ולכן מקבל כל שדה בחינם. **כשמוסיפים עמודה, `grep` על כל מחלקות ה-Out של אותה ישות ובדיקה מי מהן נבנית ידנית** — רק זו האחרונה יכולה להשמיט, והיא לא תזרוק.
+
+3. **‏🔴 תיקון של סוקר יכול לבטל שיפור שנמדד — בדקי לפני שאת מקבלת.** הבקשה ל-annotation על `db` נראית חסרת-סיכון; `from sqlalchemy.orm import Session` ב-runtime היה גורר את SQLAlchemy לשני האינטרפרטרים שהטסט החוצה-תהליכים מריץ בכוונה בלי ה-`app` package. **‏`TYPE_CHECKING` נותן את שני הדברים.** נמדד עם בקרה: הילד `(none)`, probe עם ייבוא runtime = **121** מודולים.
+
+4. **‏המרוץ שהתיקון שלי יצר.** ‏`resolve_unique_slug` הוא SELECT וה-commit הוא INSERT — לא אטומי. עכשיו 409 בעברית + `rollback()` (הסשן בלתי-שמיש אחרי IntegrityError). **הטסט כופה את המרוץ דטרמיניסטית** (patch לרזולבר) במקום לרוץ אחריו.
+
+5. **‏⛔ פער מוצהר שלא נסגר: קטגוריה ששמה שונה מאבדת את הגליף.** ‏`CATEGORY_ICONS` ממופתח בשם עברי ויש לו **ארבעה** צרכנים, שניים מהם מקבצים סטטיים בלי slug. מפה לפי slug הייתה טבלת name↔slug **שלישית** בפרונט. **מתועד בקוד כפער קוסמטי מוצהר.** אם מישהי סוגרת את זה: הבעלים היחיד צריך להיות ה-backend, לא עוד עותק.
+
+6. **‏🚩 ממצא שנחת בלי תיקון — דורש כרטיס משלו.** ‏`QueueSlaSummary.jsx` מגדיר `QUEUED_STATUSES = ["pending"]` בעוד `AdminProducersTable.jsx:70` מחזיק `SLA_STATUSES` — **אותה עובדה, שני בעלים**, ו-`SLA_STATUSES` אינו מיוצא. הסוקר העלה את זה פעמיים ו-#3058 מוזג לפני שתוקן. סטטוס חדש שיתווסף לאחד לא יגיע לשני. **לא פתחתי כרטיס — ממצא אינו עבודה שאני מאשרת לעצמי.**
+
+7. **‏🚩 שתי הערות MEH-2137 מיושנות ב-staging.** ‏`models.py` אומר על `top_product_name` ש«הוא הכותב והקורא היחיד עד ה-switch step» ושהחשיפה ב-`*Out` «שייכת ל-switch step» — **ה-switch כבר נחת** (`top_product_id` ב-schemas ב-staging). קדם-קיים, לא שלי, וכרטיס אחר. לא נגעתי.
+
+8. **‏Postgres לא עולה לבד אחרי restart של הקונטיינר.** ‏14 שגיאות `Connection refused` נראות בדיוק כמו suite שבור. `service postgresql start`.
+
 ## 2026-08-21 — אצוות MEH-2152…2155: ארבעה PRs מוזגו
 
 **מוזג (סדר מיזוג בפועל):** ‏#3053 `27a086f3` (MEH-2152) · #3055 `20cd5446` (MEH-2153) · #3059 `967aa700` (MEH-2154) · #3062 `039e418d` (MEH-2155). **כל הארבעה אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)` (MEH-1526), לא הונח שהבקשה כובדה.
