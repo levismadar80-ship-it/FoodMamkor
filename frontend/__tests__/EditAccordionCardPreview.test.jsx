@@ -8,6 +8,8 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import he from "../messages/he.json";
 import EditAccordionCard, {
   PreviewThumbs,
   PreviewChips,
@@ -20,8 +22,14 @@ vi.mock("@phosphor-icons/react", () => ({
 
 const CLOUD = "https://res.cloudinary.com/demo/image/upload/v1/";
 
+// MEH-2138 chunk C: EditAccordionCard now reads i18n for its «חובה»/«רשות»
+// header chip, so it needs a message provider. The assertions below are
+// unchanged — only the wrapper is new. In particular the "default-off: no
+// preview prop → no preview nodes" case still counts preview nodes only; the
+// chip is a sibling of the title, not a preview node.
 function renderCard(extra = {}) {
   return render(
+    <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
     <EditAccordionCard
       anchorId="images"
       title="תמונות"
@@ -31,7 +39,8 @@ function renderCard(extra = {}) {
       {...extra}
     >
       <div />
-    </EditAccordionCard>,
+    </EditAccordionCard>
+    </NextIntlClientProvider>,
   );
 }
 
