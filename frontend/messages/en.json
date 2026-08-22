@@ -1717,6 +1717,7 @@
         }
       },
       "toast_approved": "Business approved",
+      "queue_summary": "{count} waiting · oldest: {days} business days",
       "toast_status_updated": "Status updated",
       "reject": {
         "modal_title": "Reject business application",
@@ -3267,6 +3268,7 @@
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
       "escalation": "Another question? Send us a message",
+      "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "recipe_idea": "Can I share a recipe I made?",
       "recipe_idea_message": "Hi! I came from your page on Mehamakor — I made something with your products and I'd love to share the recipe:"
@@ -4286,6 +4288,8 @@
         "owner_missing": "No photo and story yet",
         "kashrut_has": "Kosher badge active",
         "kashrut_none": "No kosher badge yet",
+        "chip_required": "Required",
+        "chip_optional": "Optional",
         "hub_title": "Edit business",
         "hub_back": "Back to all sections",
         "hub_group_profile": "Your profile",
@@ -4293,7 +4297,8 @@
         "hub_group_location": "Location, delivery & hours",
         "hub_group_contact": "Contact & questions",
         "hub_trust_card": "Certifications & documents",
-        "hub_progress": "{done} of {total} completed"
+        "hub_progress": "{done} of {total} completed",
+        "questions_summary_defaults": "{count, plural, one {showing 1 default question} other {showing # default questions}}"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4477,7 +4482,21 @@
         "placeholder_5": "e.g. Can I arrange a tasting?",
         "save_cta": "Save questions",
         "saving": "Saving…",
-        "saved": "✓ Saved"
+        "saved": "✓ Saved",
+        "live_heading": "What your page shows right now",
+        "live_hint": "This is the live view. It is not editable here — it follows the details you filled in and the questions below.",
+        "live_answered": "answered automatically from your details",
+        "live_via": "opens {channel}",
+        "live_empty": "No questions are showing on your page right now — add a contact channel or fill in a question below.",
+        "live_channel": {
+          "whatsapp": "WhatsApp",
+          "phone": "phone",
+          "website": "your website",
+          "email": "email",
+          "instagram": "Instagram",
+          "facebook": "Facebook",
+          "external_order": "your order form"
+        }
       },
       "view_on_page": "View this section on your page",
       "description_card": {
@@ -5119,7 +5138,7 @@
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
     "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
-    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip."
+    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",
