@@ -1,7 +1,18 @@
 """meh1399_admin_review_checklist
 
 Revision ID: d4a9c31e6f82
-Revises: c3e9a1f7b204
+Revises: c9f2a41e8b03
+
+Re-parented from c3e9a1f7b204 to c9f2a41e8b03 (MEH-2139, category_slug NOT NULL)
+after that revision landed on staging off the SAME parent, forking the chain into
+two heads. Re-parented rather than merged because this revision has never been
+applied anywhere — it is not on staging, and CI builds its database from scratch
+on every run — so moving its parent rewrites nothing that exists. A merge revision
+would have been the answer had it ever run against a real database; here it would
+only add a permanent empty node to the chain.
+
+c9f2a41e8b03 adds no tables (constraint change only), so the EXPECTED_TABLES
+40 -> 42 bump this migration needs is unchanged by the re-parent.
 Create Date: 2026-08-21 17:00:00.000000+00:00
 
 MEH-1399 Phase 2: the pre-approval review checklist moves from a static
@@ -83,7 +94,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'd4a9c31e6f82'
-down_revision: Union[str, None] = 'c3e9a1f7b204'
+down_revision: Union[str, None] = 'c9f2a41e8b03'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

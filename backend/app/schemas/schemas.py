@@ -988,6 +988,22 @@ class ProducerOAuthSignupResponse(Token):
 class CategoryOut(BaseModel):
     id: int
     name: str
+    # MEH-2139: the STABLE identity. ADR-006 R1 — a new non-internal column
+    # belongs in the matching *Out.
+    #
+    # `str | None` is NOT a description of the DDL. The column is **NOT NULL**
+    # in the database as of revision c9f2a41e8b03 (chunk 2); a7c3e91d5f28
+    # (chunk 1) added it nullable, and the optional type here is left
+    # deliberately lenient for CONSUMERS — an older client, a cached response,
+    # or a fixture built before the backfill must not 500 on a missing key.
+    # Tightening this to `str` would buy nothing and would turn any such
+    # payload into a validation error at the serializer.
+    #
+    # (This comment read "NOT NULL is deferred to the switch step" until chunk
+    # 2, which IS that step — the future tense outlived the event it described
+    # and told the next reader the column was still nullable. Caught by the CI
+    # reviewer on PR #3052.)
+    slug: str | None = None
     emoji: str | None = None
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
@@ -4059,6 +4075,15 @@ class ProductHit(BaseModel):
 class CategoryHit(BaseModel):
     id: int
     name: str
+    # MEH-2139: same reasoning as CategoryOut, including why the type stays
+    # optional against a NOT NULL column. Added in the SAME PR as CategoryOut on
+    # purpose — a second serializer of the same entity is exactly the edit that
+    # gets forgotten, and the switch step would then have found one surface
+    # carrying the slug and one silently dropping it. (Past tense: chunk 2 is
+    # that step. The reviewer flagged the same stale tense on CategoryOut; this
+    # sibling carried it too and was found by grepping rather than by being
+    # named.)
+    slug: str | None = None
     emoji: str | None = None
 
 

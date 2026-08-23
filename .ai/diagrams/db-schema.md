@@ -94,7 +94,7 @@ erDiagram
     categories {
         int id PK
         string name UK
-        string slug UK "nullable — MEH-2139, VARCHAR(50) UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. NOT NULL is deferred to the switch step, where the writers learn to produce one"
+        string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
     }
 

@@ -82,6 +82,19 @@ def _seed_whatsapp_click(db, producer_id, *, days_ago=0):
     return row
 
 
+def _seed_contact_click(db, producer_id, *, method="phone", days_ago=0):
+    """MEH-2157: a non-WhatsApp contact click (phone/instagram/website/email).
+
+    Seeded directly, like the WhatsApp helper above, so the window arithmetic
+    can be asserted without going through the rate-limited HTTP tracker.
+    """
+    ts = datetime.utcnow() - timedelta(days=days_ago)
+    row = ContactClick(producer_id=producer_id, method=method, clicked_at=ts)
+    db.add(row)
+    db.commit()
+    return row
+
+
 # ============================================================
 # View tracking on GET /producers/{id}
 # ============================================================
@@ -569,6 +582,152 @@ class TestProducerAnalytics:
 
 
 # ============================================================
+# MEH-2157 — conversion_rate counts every contact channel
+# ============================================================
+
+class TestConversionRateCountsEveryChannel:
+    """The numerator is whatsapp_clicks + contact_clicks, both over 30d.
+
+    Discrimination (MEH-1619) — MEASURED against the old numerator, not
+    predicted. Control run: `4 failed, 2 passed`.
+
+      RED on the old code (real evidence for the change), each naming the
+      value it returned there:
+        · phone_only ............ 0.0  vs 40.0
+        · mixed ................ 20.0  vs 60.0
+        · window ................ 0.0  vs 25.0
+        · per_channel_kpis ..... 100.0 vs 400.0
+
+      GREEN on BOTH implementations (regression pins — they are not evidence
+      that the change works, and are here so a future edit cannot quietly
+      move the untouched halves):
+        · whatsapp_only ........ 75.0
+        · zero_views ............ 0.0
+
+    This docstring first said only two tests discriminated; the control run
+    said four. The measurement is what stands.
+    """
+
+    @staticmethod
+    def _owner(db, email):
+        p = make_producer(db)
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = p.id
+        db.commit()
+        return p, user
+
+    def _analytics(self, client, user):
+        r = client.get("/producers/me/analytics", headers=auth_header(user))
+        assert r.status_code == 200
+        return r.json()
+
+    def test_whatsapp_only_producer_rate_is_unchanged(self, client, db):
+        """REGRESSION PIN — passes before and after. 3 clicks / 4 viewers."""
+        p, user = self._owner(db, "conv-wa@example.com")
+        for _ in range(4):
+            _seed_view(db, p.id, days_ago=1)
+        for _ in range(3):
+            _seed_whatsapp_click(db, p.id, days_ago=2)
+
+        body = self._analytics(client, user)
+        assert body["profile_views"]["last_30d"] == 4
+        assert body["whatsapp_clicks"]["last_30d"] == 3
+        assert body["contact_clicks"]["last_30d"] == 0
+        # Manual calc, both implementations: 3 / 4 × 100.
+        assert body["conversion_rate"] == 75.0
+
+    def test_phone_only_producer_is_no_longer_stuck_at_zero(self, client, db):
+        """RED against the old numerator, which returned 0.0 here forever.
+
+        This is the whole point of the ticket: a business that never receives
+        a WhatsApp tap had no path to a non-zero rate.
+        """
+        p, user = self._owner(db, "conv-phone@example.com")
+        for _ in range(5):
+            _seed_view(db, p.id, days_ago=1)
+        for _ in range(2):
+            _seed_contact_click(db, p.id, method="phone", days_ago=3)
+
+        body = self._analytics(client, user)
+        assert body["profile_views"]["last_30d"] == 5
+        assert body["whatsapp_clicks"]["last_30d"] == 0
+        assert body["contact_clicks"]["last_30d"] == 2
+        # 2 / 5 × 100. Old code: 0 / 5 × 100 = 0.0.
+        assert body["conversion_rate"] == 40.0
+
+    def test_mixed_producer_rate_sums_both_tables(self, client, db):
+        """RED against the old numerator, which saw only the 2 WhatsApp rows."""
+        p, user = self._owner(db, "conv-mixed@example.com")
+        for _ in range(10):
+            _seed_view(db, p.id, days_ago=1)
+        for _ in range(2):
+            _seed_whatsapp_click(db, p.id, days_ago=2)
+        for method in ("phone", "email", "website", "instagram"):
+            _seed_contact_click(db, p.id, method=method, days_ago=4)
+
+        body = self._analytics(client, user)
+        assert body["whatsapp_clicks"]["last_30d"] == 2
+        assert body["contact_clicks"]["last_30d"] == 4
+        # (2 + 4) / 10 × 100. Old code: 2 / 10 × 100 = 20.0.
+        assert body["conversion_rate"] == 60.0
+
+    def test_contact_clicks_use_the_same_30d_window_as_whatsapp(self, client, db):
+        """RED against the old numerator (0.0), which never read this table.
+
+        The boundary itself is structural — both arms run through the same
+        `windowed()` helper — so what this pins is that the new arm did not
+        widen it: a 40-day-old row of EITHER kind stays out of the numerator
+        while still counting in `total`.
+        """
+        p, user = self._owner(db, "conv-window@example.com")
+        for _ in range(4):
+            _seed_view(db, p.id, days_ago=1)
+        _seed_contact_click(db, p.id, method="phone", days_ago=2)
+        _seed_contact_click(db, p.id, method="phone", days_ago=40)
+        _seed_whatsapp_click(db, p.id, days_ago=40)
+
+        body = self._analytics(client, user)
+        assert body["contact_clicks"]["last_30d"] == 1
+        assert body["contact_clicks"]["total"] == 2
+        assert body["whatsapp_clicks"]["last_30d"] == 0
+        assert body["whatsapp_clicks"]["total"] == 1
+        # Only the in-window contact click counts: 1 / 4 × 100.
+        assert body["conversion_rate"] == 25.0
+
+    def test_zero_views_guard_is_unchanged(self, client, db):
+        """REGRESSION PIN — a widened numerator must not reach the division."""
+        p, user = self._owner(db, "conv-zero@example.com")
+        _seed_whatsapp_click(db, p.id, days_ago=1)
+        _seed_contact_click(db, p.id, method="email", days_ago=1)
+
+        body = self._analytics(client, user)
+        assert body["profile_views"]["last_30d"] == 0
+        assert body["whatsapp_clicks"]["last_30d"] == 1
+        assert body["contact_clicks"]["last_30d"] == 1
+        assert body["conversion_rate"] == 0.0
+
+    def test_per_channel_kpis_stay_separate_from_the_aggregate(self, client, db):
+        """The GBP breakdown property: summing into the headline must not
+        collapse the two per-channel counters the dashboard renders.
+
+        RED against the old numerator (100.0). Also the deliberate >100 case
+        — 4 actions from 1 unique viewer — which the MEH-160 contract note
+        says is a real reading, not a bug, and which widening the numerator
+        makes more likely.
+        """
+        p, user = self._owner(db, "conv-breakdown@example.com")
+        _seed_view(db, p.id, days_ago=1)
+        _seed_whatsapp_click(db, p.id, days_ago=1)
+        for _ in range(3):
+            _seed_contact_click(db, p.id, method="website", days_ago=1)
+
+        body = self._analytics(client, user)
+        assert body["whatsapp_clicks"]["last_7d"] == 1
+        assert body["contact_clicks"]["last_7d"] == 3
+        assert body["conversion_rate"] == 400.0
+
+
+# ============================================================
 # Extended GET /admin/dashboard
 # ============================================================
 
@@ -642,3 +801,131 @@ class TestAdminDashboardAnalytics:
         consumer = make_user(db, email="c-only@test.com", role="consumer")
         r = client.get("/admin/dashboard", headers=auth_header(consumer))
         assert r.status_code in (401, 403)
+
+
+class TestViewerIpHashUsesRealClientIp:
+    """MEH-2158: viewer_ip_hash was derived from `request.client.host`.
+
+    On Railway that is the edge proxy (`100.64.0.X`, CGN range) — the same
+    value for every visitor. `unique_views_count` counts
+    `DISTINCT (israel_day, viewer_ip_hash)`, so a constant hash collapses a
+    whole day of traffic to **one** view. The dashboard was not inflating
+    the number, it was erasing it.
+
+    `get_real_client_ip` (MEH-256, `rate_limit.py:67`) already resolves this
+    correctly for the rate limiter; these tests pin that the analytics
+    writers now go through it too.
+
+    The discriminating property is DISTINCTNESS, not any particular hash
+    value: with the bug, two visitors behind the proxy produce one hash.
+    Every test therefore drives the endpoint twice and compares.
+    """
+
+    @staticmethod
+    def _hashes(db):
+        return [
+            v.viewer_ip_hash for v in db.query(ProducerPageView).all()
+        ]
+
+    def test_two_real_ips_produce_two_hashes(self, client, db, monkeypatch):
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p = make_producer(db)
+        client.get(f"/producers/{p.id}", headers={"X-Real-IP": "203.0.113.9"})
+        client.get(f"/producers/{p.id}", headers={"X-Real-IP": "198.51.100.4"})
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] != hashes[1], (
+            "two different visitors collapsed to one hash — "
+            "the proxy IP is still being hashed"
+        )
+        assert all(h is not None for h in hashes)
+
+    def test_same_real_ip_produces_same_hash(self, client, db, monkeypatch):
+        """The other half: dedupe must still recognise a repeat visitor."""
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p1 = make_producer(db)
+        p2 = make_producer(db)
+        client.get(f"/producers/{p1.id}", headers={"X-Real-IP": "203.0.113.9"})
+        client.get(f"/producers/{p2.id}", headers={"X-Real-IP": "203.0.113.9"})
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] == hashes[1]
+
+    def test_xff_second_to_last_entry_is_used(self, client, db, monkeypatch):
+        """No X-Real-IP → XFF[-2], per the MEH-256 resolution order.
+
+        Rightmost is Railway's own proxy; the entry before it is the caller.
+        Two callers arriving with different XFF[-2] must stay distinct.
+        """
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p = make_producer(db)
+        client.get(
+            f"/producers/{p.id}",
+            headers={"X-Forwarded-For": "203.0.113.9, 100.64.0.1"},
+        )
+        client.get(
+            f"/producers/{p.id}",
+            headers={"X-Forwarded-For": "198.51.100.4, 100.64.0.1"},
+        )
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] != hashes[1]
+
+    def test_trusted_proxy_unset_falls_back_without_crashing(
+        self, client, db, monkeypatch
+    ):
+        """Local/dev: TRUSTED_PROXY absent → get_remote_address, as today.
+
+        The headers are present and must be IGNORED — trusting them without
+        the flag would let any caller spoof another visitor's identity.
+        """
+        monkeypatch.delenv("TRUSTED_PROXY", raising=False)
+        p = make_producer(db)
+        r = client.get(
+            f"/producers/{p.id}", headers={"X-Real-IP": "203.0.113.9"}
+        )
+        assert r.status_code == 200
+        hashes = self._hashes(db)
+        assert len(hashes) == 1
+        assert hashes[0] is not None
+
+    def test_untrusted_xreal_ip_cannot_forge_distinct_identities(
+        self, client, db, monkeypatch
+    ):
+        """The spoofing control for the fallback path.
+
+        With TRUSTED_PROXY off, two callers sending DIFFERENT X-Real-IP
+        values are the same TestClient peer and must hash the same. If this
+        ever goes red, the resolver is trusting a client-supplied header
+        outside the trusted-proxy gate.
+        """
+        monkeypatch.delenv("TRUSTED_PROXY", raising=False)
+        p1 = make_producer(db)
+        p2 = make_producer(db)
+        client.get(f"/producers/{p1.id}", headers={"X-Real-IP": "203.0.113.9"})
+        client.get(f"/producers/{p2.id}", headers={"X-Real-IP": "198.51.100.4"})
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] == hashes[1]
+
+    def test_contact_click_ip_hash_also_uses_real_client_ip(
+        self, client, db, monkeypatch
+    ):
+        """The second call site — `record_contact_click`, not a page view."""
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p1 = make_producer(db)
+        p2 = make_producer(db)
+        client.post(
+            f"/producers/{p1.id}/contact-click",
+            json={"method": "phone"},
+            headers={"X-Real-IP": "203.0.113.9"},
+        )
+        client.post(
+            f"/producers/{p2.id}/contact-click",
+            json={"method": "phone"},
+            headers={"X-Real-IP": "198.51.100.4"},
+        )
+        rows = db.query(ContactClick).all()
+        assert len(rows) == 2, rows
+        assert rows[0].ip_hash != rows[1].ip_hash
+        assert all(r.ip_hash is not None for r in rows)
