@@ -460,3 +460,127 @@ def test_every_interpolation_in_the_html_builder_is_escaped():
         f"value reaching the markup goes through _html_escape() — the "
         f"docstring says so, and this is what makes that true."
     )
+
+
+# --- the mobile-width contract (MEH-2151 fix round, 22/08) -------------------
+#
+# The Visual QA on staging 88e9717f measured `scrollWidth=560` against
+# `innerWidth=375` and a button label clipped to «עסק». Cause: the HTML `width`
+# ATTRIBUTE beats the CSS `max-width` sitting beside it, so `width="560"` won,
+# and a shrink-to-fit client scaled the 46px button to ~31px physical — under
+# the 44px minimum.
+#
+# Anchored to the specific tag, exactly like the `<body>` direction:rtl
+# assertion above and for the same reason: a bare `'width="100%"' in html`
+# would be satisfied by the OUTER table, which already carried it before this
+# fix and would keep the check green with the card still at 560.
+
+
+def _card_table_tag(html: str) -> str:
+    """The card's own <table …> tag — the second one in the document.
+
+    Extracted so the self-test below can run it against inputs whose answer is
+    known. The real check calls THIS function, never a copy.
+    """
+    tags = re.findall(r"<table[^>]*>", html)
+    assert len(tags) >= 2, f"expected at least 2 <table> tags, found {len(tags)}"
+    return tags[1]
+
+
+def test_card_table_tag_probe_discriminates():
+    """Self-test first: if the extractor cannot pick the card out of the
+    document, everything it reports about widths afterwards is void — and its
+    reassuring output (a tag that happens to contain width="100%") is exactly
+    what a wrong pick would produce, because the OUTER table contains it too.
+    """
+    fake = '<table width="100%"><tr><td><table width="560" id="card"></table>'
+    assert 'id="card"' in _card_table_tag(fake), "picked the outer table, not the card"
+    assert 'width="560"' in _card_table_tag(fake)
+    # Anchored to the real repo artifact, not only to a synthetic string
+    # (MEH-1909): a probe proven on shapes I invented has not been shown to
+    # recognise the shape this builder actually emits.
+    assert _card_table_tag(_producer_approved_html(NAME, SLUG)).startswith("<table")
+
+
+def test_card_table_is_fluid_and_capped_not_fixed_width():
+    """`width="100%"` + `max-width:560px` on the CARD, and no `width="560"`
+    anywhere — the attribute would silently win over the cap.
+    """
+    html = _producer_approved_html(NAME, SLUG)
+    card = _card_table_tag(html)
+
+    assert 'width="100%"' in card, f"card table is not fluid: {card}"
+    assert "max-width:560px" in card, f"card table has no width cap: {card}"
+    assert 'width="560"' not in html, (
+        'width="560" is present — the HTML attribute overrides the CSS '
+        "max-width beside it, which is the whole defect this guards."
+    )
+
+
+def test_primary_button_is_centered_by_an_html_attribute():
+    """`align="center"` on the button's own table.
+
+    Not `margin:auto`: Outlook's Word engine ignores auto margins on a table
+    box, and the button sits in a `text-align:right` cell that does not move a
+    block-level table on its own.
+    """
+    html = _producer_approved_html(NAME, SLUG)
+    # Anchored to the button's IDENTITY — the table immediately wrapping its
+    # green cell — not to any style value. The first version of this finder
+    # keyed on "margin:0 0 24px", which is precisely the declaration the fix
+    # had to change, so the test broke itself: a locator must not depend on the
+    # thing under test.
+    m = re.search(r'(<table[^>]*>)<tr><td style="background:#2e6853', html)
+    assert m, "button table not found — the assertion below would be vacuous"
+    button_tag = m.group(1)
+    # TWO cues, asserted separately and never OR-ed. `align="center"` alone is
+    # green for two different reasons — genuinely centred, OR present-but-
+    # defeated — because the UA sheet implements the attribute as auto side
+    # margins and an inline `margin:0 0 24px` shorthand re-zeroes them and
+    # wins. That second world is not hypothetical: it is what this fix round
+    # measured on the first attempt (gapL=309.7, gapR=40, with the attribute
+    # already in place).
+    assert 'align="center"' in button_tag, (
+        f"button table lacks align=\"center\" — Outlook needs the attribute: "
+        f"{button_tag}"
+    )
+    assert "margin:0 auto" in button_tag, (
+        f"button table zeroes its horizontal margins, which overrides the auto "
+        f"margins align=\"center\" maps to — the attribute is then inert: "
+        f"{button_tag}"
+    )
+
+
+def test_invite_url_can_break_so_the_card_cannot_be_forced_wide():
+    """The card being fluid is not enough on its own.
+
+    With `width="100%"`, a table still cannot render narrower than its
+    min-content width, and the community invite URL is one unbreakable token.
+    Measured after the width fix alone: the URL is 349px, plus 2x40px cell
+    padding = 429px — exactly the `scrollWidth=429` the 375px viewport then
+    reported. `word-break` is what lets the token yield, and without it the
+    no-overflow property this ticket exists to deliver silently comes back.
+
+    The cost, recorded because it is a real trade and not a free win: at 375px
+    the URL now occupies two line boxes instead of one. It stays a single <a>,
+    so it stays one clickable link — and no-overflow was the axis with the user
+    -visible failure (a clipped button and a sub-44px tap target).
+    """
+    settings_url = "https://chat.whatsapp.com/BqR7xKm2ZvN4pLcT9wYdE1"
+    import app.routers.admin as admin_mod
+
+    original = admin_mod.settings.whatsapp_community_invite_url
+    try:
+        admin_mod.settings.whatsapp_community_invite_url = settings_url
+        html = _producer_approved_html(NAME, SLUG)
+    finally:
+        admin_mod.settings.whatsapp_community_invite_url = original
+
+    anchor = next(
+        (t for t in re.findall(r"<a [^>]*>", html) if settings_url in t), None
+    )
+    assert anchor, "invite anchor not rendered — the assertion below would be vacuous"
+    assert "word-break:break-all" in anchor, (
+        f"invite URL cannot break, so its min-content width sets the card floor "
+        f"and 375px overflows again: {anchor}"
+    )
