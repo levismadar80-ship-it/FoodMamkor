@@ -351,12 +351,13 @@ def _client_ip_of(request: object) -> Optional[str]:
     and a module-level import here would put that on the cold-import path of
     every consumer of this service.
     """
-    # A caller that already resolved the IP passes it through the shim; the
-    # resolver would otherwise re-derive it from headers this object lacks.
-    pre_resolved = getattr(request, "_ip", None)
-    if pre_resolved is not None:
-        return pre_resolved
-
+    # DO NOT reintroduce a pre-resolved-IP shortcut here. An earlier shape of
+    # this refactor kept one (`getattr(request, "_ip", None)`) as a leftover
+    # from the ViewContext adapter, and it was dead the moment that adapter
+    # was deleted — nothing sets the attribute. It was worse than dead: a
+    # private back door that let any future caller hand this function an IP
+    # and bypass the trusted-proxy resolver entirely. That is the second
+    # door this whole ticket exists to remove. Caught in review on the PR.
     from app.rate_limit import get_real_client_ip
 
     return get_real_client_ip(request)
