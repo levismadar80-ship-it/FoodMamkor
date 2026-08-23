@@ -1717,6 +1717,7 @@
         }
       },
       "toast_approved": "העסק אושר",
+      "queue_summary": "{count} ממתינים · הוותיק: {days} ימי עסקים",
       "toast_status_updated": "הסטטוס עודכן",
       "reject": {
         "modal_title": "דחיית בקשת בית עסק",
@@ -3263,6 +3264,7 @@
       "ordering_phone_prefix": "מתקשרים:",
       "ordering_link_label": "למעבר",
       "escalation": "שאלה אחרת? שלחו לנו הודעה",
+      "escalation_email_subject": "שאלה דרך מהמקור",
       "more_questions": "עוד שאלות",
       "recipe_idea": "אפשר לשתף מתכון שהכנתי?",
       "recipe_idea_message": "היי! הגעתי מהעמוד שלכם במהמקור — הכנתי משהו מהמוצרים שלכם ואשמח לשתף את המתכון:"
@@ -4282,6 +4284,8 @@
         "owner_missing": "עוד אין תמונה וסיפור",
         "kashrut_has": "יש תג כשרות",
         "kashrut_none": "עוד אין תג כשרות",
+        "chip_required": "חובה",
+        "chip_optional": "רשות",
         "hub_title": "עריכת העסק",
         "hub_back": "חזרה לכל הסעיפים",
         "hub_group_profile": "הפרופיל שלך",
@@ -4289,7 +4293,8 @@
         "hub_group_location": "מיקום, משלוחים ושעות",
         "hub_group_contact": "קשר ושאלות",
         "hub_trust_card": "אישורים ותעודות",
-        "hub_progress": "{done} מתוך {total} הושלמו"
+        "hub_progress": "{done} מתוך {total} הושלמו",
+        "questions_summary_defaults": "{count, plural, one {מוצגת שאלת ברירת מחדל אחת} two {מוצגות שתי שאלות ברירת מחדל} other {מוצגות # שאלות ברירת מחדל}}"
       },
       "contact_channels": {
         "heading": "ערוצי קשר",
@@ -4473,7 +4478,21 @@
         "placeholder_5": "לדוגמה: אפשר לתאם טעימה?",
         "save_cta": "שמירת שאלות",
         "saving": "בשמירה...",
-        "saved": "✓ נשמר"
+        "saved": "✓ נשמר",
+        "live_heading": "מה מוצג עכשיו בדף שלך",
+        "live_hint": "זו התצוגה החיה. אי אפשר לערוך אותה כאן — היא נגזרת מהפרטים שמילאתם ומהשאלות שלמטה.",
+        "live_answered": "נענית אוטומטית מהפרטים שלך",
+        "live_via": "נפתחת ב{channel}",
+        "live_empty": "כרגע לא מוצגות שאלות בדף — הוסיפו דרך קשר או מלאו שאלה למטה.",
+        "live_channel": {
+          "whatsapp": "וואטסאפ",
+          "phone": "טלפון",
+          "website": "אתר",
+          "email": "אימייל",
+          "instagram": "אינסטגרם",
+          "facebook": "פייסבוק",
+          "external_order": "טופס הזמנות"
+        }
       },
       "view_on_page": "צפייה בסקשן בדף שלך",
       "description_card": {

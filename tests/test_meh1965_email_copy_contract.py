@@ -42,6 +42,9 @@ Related:  docs/BRAND.md §4 (voice), docs/decisions/ADR-024-voice-surface-functi
 History:  MEH-1965 (creation) — the transactional-email audit.
           MEH-2027 — the three admin.py producer-facing bodies joined the
           corpus once they were extracted into pure module-level builders.
+          MEH-2151 — the producer-approval body gained CTA links and an HTML
+          twin, so it is the first admin.py entry rendered with an HTML part
+          and the first entered twice to cover both of its argument states.
 
 WHY THIS IS RENDERED RATHER THAN GREPPED
 ----------------------------------------
@@ -141,9 +144,21 @@ _CORPUS = [
     # the retired resubmit promise stays out, and that the recovery line it
     # replaced is actually true — are held by
     # tests/test_meh226_rejection_reason.py.
+    # MEH-2151 — the approval body gained a `slug` argument and an HTML twin,
+    # so this entry now renders BOTH parts through the same wrapper the handler
+    # uses. Entered TWICE, for the same reason `rejected` is: the slug selects
+    # between two different rendered bodies (with and without the view-page
+    # block), and a corpus carrying only the happy case would leave the
+    # no-slug body — the one a producer without a minted slug receives —
+    # unasserted while the file list said "approved is covered".
     ("producer-approved", admin, lambda: admin._send_notification_email(
         "her@example.com", "subject-not-asserted",
-        admin._producer_approved_body("חוות הבר"))),
+        admin._producer_approved_body("חוות הבר", "havat-habar"),
+        html=admin._producer_approved_html("חוות הבר", "havat-habar"))),
+    ("producer-approved-no-slug", admin, lambda: admin._send_notification_email(
+        "her@example.com", "subject-not-asserted",
+        admin._producer_approved_body("חוות הבר", None),
+        html=admin._producer_approved_html("חוות הבר", None))),
     ("producer-rejected-with-reason", admin, lambda: admin._send_notification_email(
         "her@example.com", "subject-not-asserted",
         admin._producer_rejected_body("מאפיית הדגן", "חסר רישיון עסק"))),
@@ -169,6 +184,12 @@ _EXPECT_HTML = {
     "verify-email",
     "welcome-consumer",
     "welcome-producer",
+    # MEH-2151. Both slug states are listed: the HTML part is unconditional —
+    # a missing slug drops the primary BUTTON, never the part itself — and
+    # listing only the happy case would turn a regression that silently
+    # dropped the whole HTML twin for slug-less producers into a green.
+    "producer-approved",
+    "producer-approved-no-slug",
 }
 
 

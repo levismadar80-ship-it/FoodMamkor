@@ -88,6 +88,9 @@ import GrassFedCard from "./GrassFedCard";
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
 import { isDefaultDescription } from "@/lib/producer-completeness";
+// MEH-2155: same resolution the public page runs, so the card can show the
+// live list instead of an empty state that contradicts it.
+import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
@@ -299,6 +302,10 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-2155: the public renderer's namespace — the accordion summary resolves
+  // the live question list, and must feed the resolver the same label strings
+  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
   // MEH-1823: the offer feature owns one namespace shared by the dashboard
@@ -647,6 +654,21 @@ function EditPageInner() {
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
+
+  // MEH-2155: the accordion header needs the same resolution the card body
+  // shows, so the collapsed summary and the open list can never disagree. Only
+  // the two counts are lifted — the header renders no labels, so it needs none.
+  const questionsSummary = (() => {
+    const { items, usesCustom, customCount } = resolveProducerQuestions(profile, {
+      deliveryQuestion: tChips("delivery_to_city", {
+        city: profile.city || tChips("my_area"),
+      }),
+      orderingQuestion: tChips("ordering_q"),
+      escalationQuestion: tChips("escalation"),
+      recipeQuestion: tChips("recipe_idea"),
+    });
+    return { usesCustom, customCount, liveCount: items.length };
+  })();
 
   // MEH-1408: hub-tile props per group — completion "{done}/{total}", the
   // next-step dot when the next step lands in this group, and up to two of the
@@ -1187,9 +1209,16 @@ function EditPageInner() {
         <EditAccordionCard
           anchorId="questions"
           title={t("custom_questions.heading")}
-          summary={tAcc("questions_summary", {
-            count: (profile.custom_questions || []).length,
-          })}
+          // MEH-2155: the summary used to read "עוד אין שאלות מותאמות" while
+          // the public page was serving a full set of category defaults —
+          // literally true about the custom field, and false about the page the
+          // card claims to describe. With no custom questions it now counts the
+          // items the page is ACTUALLY showing.
+          summary={
+            questionsSummary.usesCustom
+              ? tAcc("questions_summary", { count: questionsSummary.customCount })
+              : tAcc("questions_summary_defaults", { count: questionsSummary.liveCount })
+          }
           preview={previews.questions}
           open={openKey === "questions"}
           onToggle={() => toggleKey("questions")}
@@ -1207,13 +1236,56 @@ function EditPageInner() {
 
 // ============================================================
 // MEH-210 Phase 2: custom WhatsApp question chips
+// MEH-2155: the card now opens with the LIVE list — the same items the public
+// page is serving right now — because the card was titled "שאלות שמופיעות בדף
+// שלך" while showing "עוד אין שאלות מותאמות" over a page that was serving a
+// full set of category defaults. A new owner met questions she had never seen,
+// on a profile she had just written herself.
 // ============================================================
 
 const MAX_QUESTIONS = 5;
 
+/**
+ * Read-only mirror of the public page's question list.
+ *
+ * DO NOT turn these into inputs, and DO NOT seed the five inputs below with
+ * them (MEH-2155 constraint, and the reason the whole card is built this way).
+ * Saving a default as a custom question FREEZES it: the delivery and ordering
+ * rows are answered live from her own data and would become dumb WhatsApp chips
+ * the moment they were stored as custom text, and they would stop tracking the
+ * details she later edits.
+ */
+function LiveQuestionsPreview({ items, t }) {
+  if (items.length === 0) {
+    return (
+      <p data-testid="live-questions-empty" className="text-xs text-fg-muted">
+        {t("live_empty")}
+      </p>
+    );
+  }
+  return (
+    <ul data-testid="live-questions-list" className="space-y-1.5">
+      {items.map((item) => (
+        <li key={item.id} data-testid="live-question-item" className="text-sm text-text">
+          <span>{item.label}</span>{" "}
+          <span className="text-xs text-fg-muted">
+            {item.answered
+              ? `— ${t("live_answered")}`
+              : `— ${t("live_via", { channel: t(`live_channel.${item.channel}`) })}`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.custom_questions");
   const tRoot = useTranslations("dashboard.producer");
+  // Same namespace the public renderer reads, so the labels fed to the resolver
+  // are the exact strings WhatsAppQuestionChips resolves — see
+  // lib/resolvedQuestions.js § "why the labels are arguments".
+  const tChips = useTranslations("whatsapp.question_chips");
   const [questions, setQuestions] = useState(() => {
     const saved = profile?.custom_questions || [];
     return [...saved, ...Array(MAX_QUESTIONS - saved.length).fill("")].slice(0, MAX_QUESTIONS);
@@ -1229,6 +1301,24 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   const dirty =
     currentPayload.length !== savedQuestions.length ||
     currentPayload.some((q, i) => q !== savedQuestions[i]);
+
+  // MEH-2155: resolved from the SAVED profile, not from the in-progress inputs.
+  // The list answers "what is on my page right now", so it must not move while
+  // she types — it moves when she saves, which is also when the page moves.
+  const live = resolveProducerQuestions(profile, {
+    deliveryQuestion: tChips("delivery_to_city", {
+      city: profile?.city || tChips("my_area"),
+    }),
+    orderingQuestion: tChips("ordering_q"),
+    escalationQuestion: tChips("escalation"),
+    recipeQuestion: tChips("recipe_idea"),
+  });
+
+  // Nothing to save when every input is blank AND nothing is stored — the save
+  // would PUT an empty list over an empty list and flash "נשמר" at her for a
+  // no-op. With saved questions present an all-blank form is a real intent
+  // (clear them), so it stays enabled.
+  const nothingToSave = currentPayload.length === 0 && savedQuestions.length === 0;
   useEffect(() => {
     reportDirty("questions", dirty);
     return () => reportDirty("questions", false);
@@ -1254,6 +1344,18 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
     <div>
       {/* MEH-1116: chrome + heading live in the accordion header; the heading's
           InfoTooltip moved down to the subtitle so its content isn't lost. */}
+      {/* MEH-2155: the live list comes FIRST — it is the answer to the card's
+          own title. The editing affordance follows it. */}
+      <ViewOnPageLink
+        producerId={profile?.id}
+        anchor="section-contact"
+        testId="view-on-page-questions"
+      />
+      <div className="mb-4 rounded-[10px] border border-border bg-background-alt px-3 py-2.5">
+        <p className="text-sm font-medium text-text mb-1">{t("live_heading")}</p>
+        <p className="text-xs text-fg-muted mb-2">{t("live_hint")}</p>
+        <LiveQuestionsPreview items={live.items} t={t} />
+      </div>
       <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
@@ -1284,7 +1386,8 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || nothingToSave}
+        data-testid="questions-save"
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
