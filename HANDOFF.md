@@ -3,6 +3,46 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-23 — רצף אנליטיקה 2156 → 2158 → 2159 → 2160 (PRs #3061 · #3068 · #3076 · #3077)
+
+**מוזג:** ‏#3061 `88e9717f` · #3068 `852f0366` · #3076 `e2551465` · #3077 `289c988c`. ארבעה, כולם על staging, **כולם אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)` (MEH-1526).
+**מצב הכרטיסים:** ארבעתם `Done`. אומת אחרי כל merge בשני הכיוונים (כלל 29b) — גם «נסגר מה שצריך» וגם «לא נסגר מה שלא צריך».
+**פתוח (לא מוזג):** ה-PR הזה, docs-only.
+**ענף:** ‏`feature/meh-2161-analytics-batch-docs` מ-`origin/staging` טרי.
+
+### 🚨 חוסם — staging שבור, וזה לא מהרצף הזה
+
+**ה-E2E על `staging` עצמו אדום מאז `e2551465`.** הסיבה בלוג של הרנר:
+
+```
+[middleware/producerExists] backend answered 500 for
+  https://foodmamkor-staging.up.railway.app/producers/by-slug/<כל slug> — failing open
+⨯ Error: producer by-slug lookup failed: 500 Internal Server Error
+```
+
+**ההשערה, מסומנת כהשערה:** ה-backend על Railway מחזיר 500 לכל שאילתה שנוגעת ב-`categories`. ‏`get_producer_by_slug` עושה `joinedload(Producer.categories)`, ו-`GET /categories` נופל גם הוא — מה שמסביר את התסמין הנראה בטסטים (`category-chip-1` לא מופיע באשף ההרשמה). החשוד: מיגרציית `categories.slug` (‏`a7c3e91d5f28` שהוסיפה את העמודה, `c9f2a41e8b03` שמהדקת ל-NOT NULL) — אם שרשרת המיגרציות לא הוחלה על DB של staging, המודל מצהיר על עמודה שה-DB לא מכיר ⟹ `UndefinedColumn` ⟹ 500 בכל endpoint שנוגע בקטגוריות.
+
+**מה כן נמדד, ולא נוחש — זה **לא** מהרצף הזה:**
+- ‏`GET /producers/by-slug/...` מחזיר **200** על הקוד הזה מקומית (כולל 2159 ו-2160).
+- ה-diff של MEH-2159 נוגע ב-`get_producer_by_slug` **בשורת הערה אחת בלבד**.
+- ‏`get_producer_by_slug` קורא **אפס** פונקציות אנליטיקה.
+
+**מה שלא אומת ולמה:** לא ניתן להגיע ל-Railway מה-sandbox (‏`CONNECT tunnel failed, response 403`, MEH-2090), ו-`alembic upgrade` הוא deny-list. **זה של ספיר:** לבדוק את מצב המיגרציות על staging ולהחיל אם חסר.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **ה-grep של Phase 0 בכרטיס MEH-2160 החזיר אפס מול שלושה אתרי כתיבה אמיתיים.** שניים רב-שורתיים, אחד קשור לשם משתנה. **הכרטיס מזהיר על בדיוק המלכודת הזאת עבור טסט האכיפה, ונופל בה בשלב הגילוי של עצמו.** לקח כללי: כשכרטיס מכתיב AST לטסט, ה-grep שלו לגילוי חשוד באותה מידה.
+
+2. **בדיקה עצמית סינתטית עוברת ומשקרת. זו שקוראת קובץ אמיתי נפלה בריצה הראשונה.** שש עברו, השביעית — שקוראת את ה-choke point מהדיסק — תפסה שהסורק פותר משתנה למודל הראשון בלבד. אותה מחלקה כמו MEH-1909.
+
+3. **ה-endpoint החדש נולד עם enumeration oracle, וה-adversarial review תפס אותו — לא הכרטיס.** ‏`pending -> GET=404 POST=204 rows_written=1`. הכרטיס הכתיב `get_producer_or_404` לפני הרישום, וזה בדיוק מה שחידד את ההדלפה. **כשמוסיפים endpoint על משאב שיש לו שער סטטוס — השער צריך להישקף, לא להישכח.**
+
+4. **טסט יכול לעבור מהסיבה הלא נכונה גם *אחרי* שהוא נכתב נכון.** שלוש טענות MEH-2156 המשיכו לעבור אחרי MEH-2159 — כי «owner GET → 0 שורות» נעשה נכון טריוויאלית כשה-GET הפסיק לרשום לכולם. **אחרי כל שינוי שמסיר התנהגות, בדקי אילו טסטים נעשו ריקים — לא רק אילו נשברו.**
+
+5. **‏`services/analytics.py:250-254` טוען טענה שקרית ונשאר כך במכוון.** ‏MEH-1558 הרחיב allowlist עבור ערכים שלא יכלו להגיע — ההרחבה הייתה **inert**, וההערה מצהירה שהיא עבדה. ה-scope של MEH-2159 אסר לגעת בקובץ. **צריך כרטיס.**
+
+6. **‏`check_env_drift.sh` סורק הערות. שוב.** ההערה שמסבירה הסרת env var אסור שתנקוב בשם המשתנה.
+
 ## 2026-08-23 — MEH-2151 סבב תיקון: הכרטיס נזיל, הכפתור ממורכז (PRs #3072 · #3074)
 
 **מוזג:** ‏#3072 `c110e043` (‏`width="100%"` + `margin:0 auto` + `align="center"` + `word-break`) · #3074 `ce9e0be2` (‏`monkeypatch`). **שניהם אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)` (MEH-1526).
