@@ -11,6 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
@@ -42,6 +43,7 @@ from app.schemas.schemas import (
     VacationModeState,
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
+from app.services.category_slug import resolve_unique_slug
 from app.services.vacation_state import read_vacation_state
 from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
@@ -215,9 +217,43 @@ def create_category(
 ):
     if db.query(Category).filter(Category.name == data.name).first():
         raise HTTPException(status_code=400, detail="קטגוריה בשם זה כבר קיימת")
-    cat = Category(name=data.name, emoji=data.emoji)
+    # MEH-2139 chunk 2: the column default (models.py) already derives a slug
+    # from the name, so this line would work without the argument. It is passed
+    # explicitly HERE because this is the one writer whose input is arbitrary
+    # user text — the default cannot query the session to dodge a collision, and
+    # a collision would surface as a 500 from the UNIQUE constraint instead of a
+    # category that simply got `-2` appended.
+    cat = Category(
+        name=data.name,
+        emoji=data.emoji,
+        slug=resolve_unique_slug(db, data.name),
+    )
     db.add(cat)
-    db.commit()
+    # MEH-2139: `resolve_unique_slug` above is a SELECT and this is the INSERT,
+    # so the two are not atomic — a concurrent create whose name transliterates
+    # to the same base slug can pass the same check and take the slug first.
+    # Both requests then insert the same value and the loser hits
+    # `uq_categories_slug` as an unhandled IntegrityError -> 500 with a psycopg2
+    # message. The window is small and the admin team is one person, so this is
+    # unlikely rather than impossible; it is handled because a 500 here is
+    # indistinguishable from the app being broken, while 409 says what happened.
+    #
+    # Deliberately NOT a retry loop: a second attempt would need a fresh
+    # `resolve_unique_slug` on a rolled-back session and could lose the race
+    # again, which trades a clear error for an unbounded one. The admin retries
+    # the request and `-2` is free by then.
+    #
+    # `rollback()` is required, not tidiness — the session is unusable after an
+    # IntegrityError, and returning without it poisons the next request that
+    # borrows this connection.
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="הקטגוריה נוצרה במקביל בבקשה אחרת. נסי שוב.",
+        ) from None
     db.refresh(cat)
     return cat
 

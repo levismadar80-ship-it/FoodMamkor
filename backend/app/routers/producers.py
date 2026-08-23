@@ -23,7 +23,7 @@ from app.models import (
     Report,
     User,
 )
-from app.rate_limit import limiter
+from app.rate_limit import get_real_client_ip, limiter
 from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
@@ -435,7 +435,19 @@ def get_producer(
     # feature/producer-analytics: track the view. Best-effort; swallows
     # all exceptions so tracking glitches can never break the response.
     # Bot UAs are filtered inside track_producer_view.
-    client_ip = request.client.host if request.client else None
+    # MEH-2158: resolve the caller through the MEH-256 trusted-proxy
+    # resolver. The raw peer address on Railway is the edge proxy
+    # (100.64.0.X CGN), identical for every visitor, so hash_ip() gave one
+    # hash for the whole internet — and unique_views_count, which counts
+    # DISTINCT (israel_day, viewer_ip_hash), collapsed a day of traffic to 1.
+    # get_real_client_ip returns str and hash_ip accepts Optional[str], so
+    # the contract is unchanged.
+    #
+    # DO NOT name the raw-peer attribute in this comment. The DoD for this
+    # ticket greps the backend for it, and prose quoting the thing it
+    # forbids reds the check on its own explanation (repo precedent:
+    # check_env_drift.sh, docs/CHANGELOG.md).
+    client_ip = get_real_client_ip(request)
     track_producer_view(
         db,
         producer_id=producer_id,
@@ -528,7 +540,10 @@ def record_contact_click(
     # for the owner, and the 204 she receives is indistinguishable from a
     # visitor's. (Kept out of the docstring — see record_whatsapp_click.)
     if not is_internal_viewer(current_user, producer_id):
-        client_ip = request.client.host if request.client else None
+        # MEH-2158: same resolver as the page-view site above — see the
+        # comment there for why the raw peer address is the proxy and not
+        # the visitor. (MEH-256 built get_real_client_ip for this class.)
+        client_ip = get_real_client_ip(request)
         db.add(
             ContactClick(
                 producer_id=producer_id,
