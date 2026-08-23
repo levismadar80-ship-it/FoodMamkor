@@ -3792,12 +3792,14 @@ class TestContactClickTracking:
         db.commit()
         db.refresh(u)
 
-        # Record a click
-        client.post(
-            f"/producers/{p.id}/contact-click",
-            json={"method": "email"},
-            headers=auth_header(u),
-        )
+        # Record a click. MEH-2156: it must come from a VISITOR — this test
+        # used to fire it as `u`, the owner, purely because she was the
+        # authenticated user already on hand for the GET below. Owner clicks
+        # are no longer logged (they are not audience), so an owner-fired
+        # click now yields total=0 and says nothing about the reader this
+        # test actually covers. The subject is unchanged: the shape of
+        # `contact_clicks` on GET /producers/me/analytics.
+        client.post(f"/producers/{p.id}/contact-click", json={"method": "email"})
 
         resp = client.get("/producers/me/analytics", headers=auth_header(u))
         assert resp.status_code == 200

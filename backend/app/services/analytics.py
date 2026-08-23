@@ -163,6 +163,42 @@ def hash_ip(ip: Optional[str]) -> Optional[str]:
     return hashlib.sha256(f"{ip}|{salt}".encode("utf-8")).hexdigest()
 
 
+def is_internal_viewer(viewer: Optional[User], producer_id: UUID) -> bool:
+    """MEH-2156: True when the viewer is the producer's own owner, or an admin.
+
+    Analytics must measure the AUDIENCE, not the business owner checking her
+    own profile. Before this predicate every writer counted the owner: a
+    `pending` producer — which `producers.py:404-408` serves to nobody BUT
+    the owner and admins — still showed "1 profile view", and after approval
+    every self-check inflated the numbers. The first number an owner sees is
+    her first trust signal in the platform; a number she knows is false burns
+    it immediately.
+
+    Admins are skipped alongside owners by Sapir's 21/08 ruling — same logic,
+    less noise.
+
+    This is the extraction of the owner/admin shape already living inline at
+    `producers.py:405-406` (the MEH-254 gate). DO NOT invent a second form —
+    the two must agree, since the gate is what makes "any view of a
+    non-approved profile is necessarily the owner or an admin" true.
+
+    `viewer` is Optional because the two auth sources differ:
+    `get_current_user_optional` (GET) and `get_current_user_lenient` (POST)
+    both hand back None for an anonymous or expired-token caller. None is
+    never internal.
+    """
+    if viewer is None:
+        return False
+    if getattr(viewer, "role", None) == "admin":
+        return True
+    # bool() because `User.producer_id` is a declarative Column: on an ORM
+    # *instance* the comparison is a plain UUID == UUID, but mypy types the
+    # attribute as Column[...] and reads the result as ColumnElement[bool].
+    # The declared `-> bool` is the contract; make it true at the type level
+    # too rather than leaving a new error in the (warn-only) mypy output.
+    return bool(viewer.producer_id == producer_id)
+
+
 @dataclass
 class ViewContext:
     """MEH-447: bundle the per-request viewer context so track_producer_view
@@ -187,9 +223,18 @@ def track_producer_view(
     into the GET /producers/{id} response. Bot UAs are silently skipped.
     Called from `producers.get_producer()` after the response body is
     computed so a 404 doesn't leave a view behind.
+
+    MEH-2156: owner/admin views are skipped too. The check lives HERE and
+    not at the call site because `ctx` already carries both operands
+    (`viewer_user` and the `producer_id` argument) — putting it at the
+    caller would be one more rule a future writer has to remember.
     """
     try:
         if is_bot_user_agent(ctx.user_agent):
+            return
+
+        # MEH-2156: the owner's own visits are not audience.
+        if is_internal_viewer(ctx.viewer_user, producer_id):
             return
 
         city: Optional[str] = None
@@ -308,4 +353,5 @@ __all__ = [
     "server_health",
     "hash_ip",
     "is_bot_user_agent",
+    "is_internal_viewer",
 ]
