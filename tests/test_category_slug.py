@@ -197,10 +197,22 @@ def test_bulk_slugs_returns_one_entry_per_input_name(db):
 
 
 def test_fixed_table_matches_the_revision_copy():
-    """`a7c3e91d5f28` carries its own copy of NAME_TO_SLUG because a migration
-    must not import app code. That duplication is deliberate — this pins the
-    two copies together so a future edit to one is caught here rather than by a
-    category quietly falling out of the popular grid."""
+    """Every entry in the SERVICE table must also appear in `a7c3e91d5f28`.
+
+    That revision carries its own copy of NAME_TO_SLUG because a migration must
+    not import app code. The duplication is deliberate, and so is the direction
+    of this check: it asserts **service ⊆ revision**, one way only.
+
+    MEH-2162 — the wording, not the assertions. This docstring used to say it
+    "pins the two copies together", which implies symmetric coverage it does not
+    provide: an entry added to the revision's inline table and NOT to
+    `NAME_TO_SLUG` passes here unnoticed. That asymmetry is correct — a merged
+    revision is immutable, so the revision cannot gain entries, and only the
+    service table can drift — but the sentence claimed more than the code did.
+    Caught by the CI reviewer on PR #3052, and it is the same defect class the
+    assertions below exist to catch: a statement about coverage that nobody
+    re-checks against what runs.
+    """
     import pathlib
     import re
 
