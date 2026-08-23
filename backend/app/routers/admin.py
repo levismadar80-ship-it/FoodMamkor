@@ -1708,6 +1708,28 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
     because Gmail strips both. No emoji, unlike that precedent: the text twin
     carries none and the two parts must read alike.
 
+    THE CARD IS `width="100%"` CAPPED BY `max-width`, NEVER `width="560"`. The
+    HTML width ATTRIBUTE beats the CSS `max-width` beside it, so the two
+    together are not belt-and-braces — the attribute simply wins and the card
+    is 560px wide on a 375px screen. Measured with Playwright on staging
+    `88e9717f`: `scrollWidth=560` against `innerWidth=375`, the button label
+    clipped to «עסק». The second-order cost is the one that matters: a client
+    that shrink-to-fits instead of scrolling (Gmail's common behaviour) scales
+    560→375, and the 46px button lands at ~31px physical — under the 44px
+    minimum tap target it passes at CSS scale. `margin:0 auto` keeps it centred
+    once the width is fluid.
+
+    KNOWN LIMIT, stated rather than papered over: Outlook's Word engine ignores
+    `max-width`, so there the card renders full-width instead of capped. The
+    bulletproof fix is an `<!--[if mso]>` fixed-width wrapper, which this
+    ticket did not authorise and which the newsletter precedent does not carry
+    either. Gmail and Apple Mail — the ticket's smoke targets — honour it.
+
+    The primary button centres with `align="center"` on its own table: an HTML
+    attribute, chosen over `margin:auto` because Outlook ignores auto margins
+    on a table box. It sits inside a `text-align:right` cell, which does not
+    move a block-level table on its own.
+
     EVERY interpolated value goes through `escape()` — all 11 sites, including
     the LOCKED copy constants and `SITE_DOMAIN`, none of which carries an HTML
     metacharacter today (measured). That is exactly why escaping them is not
@@ -1738,7 +1760,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
     invite_url = settings.whatsapp_community_invite_url.strip()
 
     button = (
-        f'<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">'
+        f'<table align="center" cellpadding="0" cellspacing="0" '
+        f'style="margin:0 auto 24px;">'
         f'<tr><td style="background:#2e6853;border-radius:8px;">'
         f'<a href="{_html_escape(page_url)}" style="display:inline-block;'
         f"padding:14px 32px;color:#ffffff;font-size:16px;font-weight:bold;"
@@ -1751,7 +1774,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         f'<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         f'margin:0 0 24px;direction:rtl;">'
         f"{_html_escape(_APPROVED_COMMUNITY_BLOCK)}<br>"
-        f'<a href="{_html_escape(invite_url)}" style="color:#2e6853;">'
+        f'<a href="{_html_escape(invite_url)}" '
+        f'style="color:#2e6853;word-break:break-all;">'
         f"{_html_escape(invite_url)}</a></p>"
         if invite_url
         else ""
@@ -1767,9 +1791,9 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
         '<table width="100%" cellpadding="0" cellspacing="0" '
         'style="background:#F5F0E8;padding:32px 0;"><tr><td align="center">\n'
-        '<table width="560" cellpadding="40" cellspacing="0" '
+        '<table width="100%" cellpadding="40" cellspacing="0" '
         'style="background:#ffffff;border-radius:12px;text-align:right;'
-        'direction:rtl;max-width:560px;"><tr>\n'
+        'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         'margin:0 0 16px;direction:rtl;">היי,</p>\n'
