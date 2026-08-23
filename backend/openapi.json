@@ -18113,7 +18113,7 @@
     },
     "/producers/{producer_id}/view": {
       "post": {
-        "description": "Record one page view for the producer dashboard.\n\nThe browser reports this explicitly instead of it being a side effect of\nGET /producers/{id}. Auth optional; the owner's and admins' own views are\nskipped inside track_producer_view. Rate-limited 60/minute per IP —\nhigher than the click endpoints because one is expected per page load.",
+        "description": "Record one page view for the producer dashboard.\n\nThe browser reports this explicitly instead of it being a side effect of\nGET /producers/{id}. Auth optional; the owner's and admins' own views are\nskipped inside record_analytics_event. Rate-limited 60/minute per IP —\nhigher than the click endpoints because one is expected per page load.",
         "operationId": "record_producer_view_producers__producer_id__view_post",
         "parameters": [
           {

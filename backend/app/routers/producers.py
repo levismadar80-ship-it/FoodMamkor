@@ -16,14 +16,12 @@ from app.auth import (
 from app.database import get_db
 from app.models import (
     Category,
-    ContactClick,
     KashrutBadgeRequest,
     Producer,
-    ProducerWhatsAppClick,
     Report,
     User,
 )
-from app.rate_limit import get_real_client_ip, limiter
+from app.rate_limit import limiter
 from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
@@ -40,10 +38,9 @@ from app.schemas.schemas import (
     ProducerViewIn,
 )
 from app.services.analytics import (
-    ViewContext,
-    hash_ip,
+    EventContext,
     is_internal_viewer,
-    track_producer_view,
+    record_analytics_event,
 )
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
@@ -461,7 +458,7 @@ def record_producer_view(
 
     The browser reports this explicitly instead of it being a side effect of
     GET /producers/{id}. Auth optional; the owner's and admins' own views are
-    skipped inside track_producer_view. Rate-limited 60/minute per IP —
+    skipped inside record_analytics_event. Rate-limited 60/minute per IP —
     higher than the click endpoints because one is expected per page load.
     """
     # Existence check first, so a bogus id 404s rather than silently
@@ -488,15 +485,11 @@ def record_producer_view(
     ):
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
-    track_producer_view(
+    record_analytics_event(
         db,
+        event="page_view",
         producer_id=producer_id,
-        ctx=ViewContext(
-            viewer_ip=get_real_client_ip(request),
-            user_agent=request.headers.get("user-agent"),
-            viewer_user=current_user,
-            referrer=data.referrer,
-        ),
+        ctx=EventContext(request=request, viewer=current_user, referrer=data.referrer),
     )
 
 
@@ -536,14 +529,17 @@ def record_whatsapp_click(
     # handler's docstring IS the `description` field in backend/openapi.json,
     # so editing it is a public-contract change that reds the committed-spec
     # snapshot (tests/test_openapi_contract_snapshot.py).
-    if not is_internal_viewer(current_user, producer_id):
-        db.add(
-            ProducerWhatsAppClick(
-                producer_id=producer_id,
-                user_id=current_user.id if current_user else None,
-            )
-        )
-        db.commit()
+    # MEH-2160: the owner/admin skip is no longer decided here — it, the bot
+    # filter, the trusted-proxy IP and the fail-open write all live in
+    # record_analytics_event, which is the only place an analytics row is
+    # written. The gate stays OUT of this handler on purpose: a rule expressed
+    # at the call site is a rule the next writer has to remember.
+    record_analytics_event(
+        db,
+        event="whatsapp_click",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user),
+    )
     return {"detail": "logged"}
 
 
@@ -577,20 +573,14 @@ def record_contact_click(
     # the return. Placed after the 422 and the 404 so validation is identical
     # for the owner, and the 204 she receives is indistinguishable from a
     # visitor's. (Kept out of the docstring — see record_whatsapp_click.)
-    if not is_internal_viewer(current_user, producer_id):
-        # MEH-2158: same resolver as the page-view site above — see the
-        # comment there for why the raw peer address is the proxy and not
-        # the visitor. (MEH-256 built get_real_client_ip for this class.)
-        client_ip = get_real_client_ip(request)
-        db.add(
-            ContactClick(
-                producer_id=producer_id,
-                user_id=current_user.id if current_user else None,
-                method=data.method,
-                ip_hash=hash_ip(client_ip),
-            )
-        )
-        db.commit()
+    # MEH-2160: same as whatsapp-click above — every exclusion rule and the
+    # write itself live in record_analytics_event.
+    record_analytics_event(
+        db,
+        event="contact_click",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user, method=data.method),
+    )
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
