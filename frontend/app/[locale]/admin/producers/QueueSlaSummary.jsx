@@ -19,11 +19,12 @@
 
 import { useTranslations } from "next-intl";
 
-// The same set `WaitingBadge` colours. A business that has not asked to be
-// reviewed is not waiting on us, so it is not in the promise this line reports
-// against — counting drafts here would inflate the queue with work nobody has
-// requested.
-const QUEUED_STATUSES = ["pending"];
+// MEH-2161: the SAME constant `WaitingBadge` reads, imported rather than
+// copied. This file used to declare its own `QUEUED_STATUSES = ["pending"]`
+// because `SLA_STATUSES` was not exported, so the counter and the badges could
+// drift the moment a second waiting status was added — the counter would have
+// under-reported a queue the badges were already colouring, silently.
+import { SLA_STATUSES } from "./sla-statuses";
 
 /**
  * @param {{rows: Array<object>}} props `rows` must be the FULL filtered set,
@@ -34,7 +35,7 @@ const QUEUED_STATUSES = ["pending"];
  */
 export default function QueueSlaSummary({ rows }) {
   const t = useTranslations("admin");
-  const queued = (rows || []).filter((p) => QUEUED_STATUSES.includes(p?.status));
+  const queued = (rows || []).filter((p) => SLA_STATUSES.includes(p?.status));
 
   // Nothing waiting → render nothing. A «0 ממתינים» line is a permanent
   // fixture that says nothing on the day it matters, and the empty queue is
