@@ -4167,7 +4167,7 @@
           "views": "Views",
           "window_7d": "Last 7 days",
           "rating_sub": "{count} reviews",
-          "conversion_line": "{rate} WhatsApp clicks per 100 distinct visitors in the last 30 days. A click is not necessarily a message sent."
+          "conversion_line": "{rate} clicks on one of the contact buttons per 100 distinct visitors in the last 30 days. A click is not necessarily an inquiry sent."
         },
         "hero": {
           "views_week_label": "Views this week",

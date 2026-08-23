@@ -1249,18 +1249,38 @@ def producer_analytics(
 
     rank_in_city = _rank_in_city(db, producer, israel_day)
 
-    # MEH-57 ── conversion_rate: whatsapp clicks / profile views × 100 (30d).
-    # MEH-160 contract note: the denominator is now unique daily viewers,
-    # while `producer_whatsapp_clicks` carries NO viewer hash (models.py:1515
-    # — only a nullable user_id), so the numerator cannot be deduped to match
-    # without a schema change. The ratio is therefore "clicks per 100 unique
-    # daily viewers" and CAN exceed 100 legitimately: one viewer clicking
-    # twice in a day. The copy states that in both locales, and the display no
-    # longer clamps it — clamping hid a wrong contract behind a screen that
-    # looked fine. Alternative (Sapir's call, drafted on the card): add
-    # viewer_ip_hash to the clicks table and restore a bounded percentage.
+    # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
+    #
+    # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
+    # plus the non-WhatsApp contact clicks — not WhatsApp alone. A business
+    # whose primary_contact_method is phone/email/website/external_order used to
+    # read 0% forever, because the only table consulted was one it never writes
+    # to. Industry anchor: Google Business Profile's headline number is likewise
+    # the SUM of contact actions ("Interactions"), with the per-channel split
+    # kept as a breakdown — which is why `whatsapp_clicks` and `contact_clicks`
+    # are returned unchanged above and stay separate KPIs on the dashboard.
+    #
+    # The two tables CANNOT double-count one tap, and that is structural rather
+    # than a convention anyone has to maintain: they are written by two distinct
+    # endpoints (`producers.py:471` writes ProducerWhatsAppClick only,
+    # `producers.py:507` writes ContactClick only), and
+    # `_VALID_CONTACT_METHODS` (`producers.py:481`) has no "whatsapp" member, so
+    # a WhatsApp tap has no path into the contact table at all.
+    #
+    # MEH-160 contract note, still in force and now covering both arms: the
+    # denominator is unique daily viewers, while NEITHER click table is counted
+    # per-viewer here — `producer_whatsapp_clicks` carries no viewer hash at all
+    # (models.py:1722-1751 — only a nullable user_id), and although
+    # `producer_contact_clicks` does have one (`ip_hash`, models.py:1779) it is
+    # deliberately counted raw so both halves of the sum share one unit. The
+    # ratio therefore CAN exceed 100 legitimately — one viewer acting twice in a
+    # day — and widening the numerator makes that more likely, not less. The
+    # display does not clamp it; clamping hid a wrong contract behind a screen
+    # that looked fine. Alternative (Sapir's call, drafted on the MEH-160 card):
+    # hash the viewer on both tables and restore a bounded percentage.
+    contact_actions_30d = whatsapp_clicks["last_30d"] + contact_clicks["last_30d"]
     conversion_rate = (
-        round(whatsapp_clicks["last_30d"] / profile_views["last_30d"] * 100, 1)
+        round(contact_actions_30d / profile_views["last_30d"] * 100, 1)
         if profile_views["last_30d"] > 0
         else 0.0
     )
