@@ -4122,6 +4122,25 @@ class ContactClickIn(BaseModel):
     method: str
 
 
+class ProducerViewIn(BaseModel):
+    """MEH-2159: body of POST /producers/{id}/view.
+
+    `referrer` is the `?from=` value off the PAGE url (ProducerCard.jsx:205
+    builds `/{slug}?from={referrer}`). It reaches the API for the first time
+    here: before this endpoint the page-url query string was never forwarded
+    by either fetch, so `producer_page_views.referrer` was NULL for every row
+    ever written.
+
+    Deliberately unvalidated at the schema layer — `track_producer_view`
+    normalizes against its own allowlist and writes NULL for anything else
+    (services/analytics.py:265). A 422 here would turn a fire-and-forget
+    beacon into a client error for a value the writer would have discarded
+    anyway.
+    """
+
+    referrer: str | None = None
+
+
 # --- Referrals (referrals.py) ---
 # MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
 class ClaimReferralRequest(BaseModel):
