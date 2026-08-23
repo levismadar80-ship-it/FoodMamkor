@@ -558,7 +558,7 @@ def test_primary_button_is_centered_by_an_html_attribute():
     )
 
 
-def test_invite_url_can_break_so_the_card_cannot_be_forced_wide():
+def test_invite_url_can_break_so_the_card_cannot_be_forced_wide(monkeypatch):
     """The card being fluid is not enough on its own.
 
     With `width="100%"`, a table still cannot render narrower than its
@@ -574,14 +574,8 @@ def test_invite_url_can_break_so_the_card_cannot_be_forced_wide():
     -visible failure (a clipped button and a sub-44px tap target).
     """
     settings_url = "https://chat.whatsapp.com/BqR7xKm2ZvN4pLcT9wYdE1"
-    import app.routers.admin as admin_mod
-
-    original = admin_mod.settings.whatsapp_community_invite_url
-    try:
-        admin_mod.settings.whatsapp_community_invite_url = settings_url
-        html = _producer_approved_html(NAME, SLUG)
-    finally:
-        admin_mod.settings.whatsapp_community_invite_url = original
+    monkeypatch.setattr(settings, "whatsapp_community_invite_url", settings_url)
+    html = _producer_approved_html(NAME, SLUG)
 
     anchor = next(
         (t for t in re.findall(r"<a [^>]*>", html) if settings_url in t), None
