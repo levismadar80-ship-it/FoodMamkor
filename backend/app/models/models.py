@@ -2296,6 +2296,11 @@ class ProducerReviewCheck(Base):
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
+        # Same reasoning as item_id above, on the other FK: SET NULL makes
+        # Postgres find every referencing row on each admin-account DELETE, and
+        # unindexed that is a sequential scan of an append-only audit table.
+        # Rare operation, unbounded table — the index is cheap insurance.
+        index=True,
     )
     checked_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

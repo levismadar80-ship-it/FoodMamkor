@@ -195,10 +195,21 @@ def upgrade() -> None:
         'producer_review_checks',
         ['item_id'],
     )
+    # checked_by is ON DELETE SET NULL, which makes Postgres locate every
+    # referencing row on each admin-account DELETE — the same scan the RESTRICT
+    # forces above, on the other FK. (CI reviewer, MEH-1399.)
+    op.create_index(
+        'ix_producer_review_checks_checked_by',
+        'producer_review_checks',
+        ['checked_by'],
+    )
 
 
 def downgrade() -> None:
     # Children first — producer_review_checks holds the FK into the items table.
+    op.drop_index(
+        'ix_producer_review_checks_checked_by', table_name='producer_review_checks'
+    )
     op.drop_index(
         'ix_producer_review_checks_item_id', table_name='producer_review_checks'
     )

@@ -87,20 +87,20 @@ def test_reorder_follows_array_order_not_client_positions(client, db):
     `position` — two items could then claim the same slot.
     """
     admin = _admin(db)
-    rows = _seed_items(client, db, admin, labels=("א", "ב"))
+    rows = _seed_items(client, db, admin, labels=("ראשון", "שני"))
 
     resp = client.put(
         ITEMS,
         json={
             "items": [
-                {"id": rows[1]["id"], "label": "ב"},
-                {"id": rows[0]["id"], "label": "א"},
+                {"id": rows[1]["id"], "label": "שני"},
+                {"id": rows[0]["id"], "label": "ראשון"},
             ]
         },
         headers=auth_header(admin),
     )
     assert resp.status_code == 200, resp.text
-    assert [r["label"] for r in resp.json()] == ["ב", "א"]
+    assert [r["label"] for r in resp.json()] == ["שני", "ראשון"]
 
 
 def test_updated_at_advances_when_an_item_is_edited(client, db):
@@ -132,13 +132,13 @@ def test_updated_at_advances_when_an_item_is_edited(client, db):
 def test_inactive_items_hidden_by_default_and_shown_on_request(client, db):
     """The review flow must not offer a retired item; settings must still edit it."""
     admin = _admin(db)
-    rows = _seed_items(client, db, admin, labels=("חי", "פורש"))
+    rows = _seed_items(client, db, admin, labels=("פעיל", "פורש"))
 
     resp = client.put(
         ITEMS,
         json={
             "items": [
-                {"id": rows[0]["id"], "label": "חי", "active": True},
+                {"id": rows[0]["id"], "label": "פעיל", "active": True},
                 {"id": rows[1]["id"], "label": "פורש", "active": False},
             ]
         },
@@ -147,10 +147,10 @@ def test_inactive_items_hidden_by_default_and_shown_on_request(client, db):
     assert resp.status_code == 200, resp.text
 
     default = client.get(ITEMS, headers=auth_header(admin))
-    assert [r["label"] for r in default.json()] == ["חי"]
+    assert [r["label"] for r in default.json()] == ["פעיל"]
 
     full = client.get(f"{ITEMS}?include_inactive=true", headers=auth_header(admin))
-    assert [r["label"] for r in full.json()] == ["חי", "פורש"]
+    assert [r["label"] for r in full.json()] == ["פעיל", "פורש"]
 
 
 def test_unknown_item_id_is_rejected_not_silently_created(client, db):
@@ -352,6 +352,86 @@ def test_ticks_do_not_gate_approval(client, db):
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.status == "approved"
+
+
+def test_punctuation_only_label_is_rejected(client, db):
+    """MEH-555: a label needs >=3 letters, not merely a non-empty string.
+
+    This one is not cosmetic. The label is copied into
+    `producer_review_checks.label_snapshot` at tick time, so "???" would become
+    a permanent audit record of an admin attesting to nothing — and unlike a
+    display string, an audit row cannot be corrected later without destroying
+    the thing it records.
+    """
+    admin = _admin(db)
+
+    for bad in ("???", "!!!", "   ", "..."):
+        resp = client.put(
+            ITEMS,
+            json={"items": [{"label": bad}]},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 422, f"{bad!r} -> {resp.status_code}"
+
+    # Control: the guard rejects punctuation, not everything. Without this the
+    # test above passes just as well against a validator that refuses all input.
+    ok = client.put(
+        ITEMS,
+        json={"items": [{"label": "רישיון תקף"}]},
+        headers=auth_header(admin),
+    )
+    assert ok.status_code == 200, ok.text
+
+    # And `hint` is deliberately NOT gated — optional, and a terse legitimate
+    # hint can fall under three letters. Asserted so the asymmetry is a decision
+    # on the record rather than an oversight someone later "fixes".
+    hint_ok = client.put(
+        ITEMS,
+        json={"items": [{"label": "רישיון תקף", "hint": "ר'"}]},
+        headers=auth_header(admin),
+    )
+    assert hint_ok.status_code == 200, hint_ok.text
+
+
+def test_item_payload_exposes_updated_at(client, db):
+    """ADR-006 R2 — every non-internal column reaches the matching `*Out`.
+
+    Nothing in this repo mechanically enforces R2 (there is no general parity
+    test), so an omission is indistinguishable from drift to the next reader.
+    This is that enforcement for this one schema.
+    """
+    admin = _admin(db)
+    rows = _seed_items(client, db, admin, labels=("סעיף א",))
+    assert "updated_at" in rows[0], rows[0]
+    assert rows[0]["updated_at"], "present but empty is not exposure"
+
+
+def test_save_returns_the_full_list_including_a_concurrent_addition(client, db):
+    """A racing admin's new item must appear in this admin's save response.
+
+    The handler used to return only the rows the request submitted, so an item
+    added between page load and save was silently missing from the response —
+    the saving admin's UI would then be confidently short one row that exists
+    in the database. Injected rather than raced: the "other admin's" item is
+    committed directly, then a save is sent that does not mention it.
+    """
+    admin = _admin(db)
+    rows = _seed_items(client, db, admin, labels=("שלי",))
+
+    other = AdminChecklistItem(position=999, label="של מישהי אחרת", active=True)
+    db.add(other)
+    db.commit()
+
+    resp = client.put(
+        ITEMS,
+        json={"items": [{"id": rows[0]["id"], "label": "שלי, נערך"}]},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+
+    labels = [r["label"] for r in resp.json()]
+    assert "של מישהי אחרת" in labels, labels
+    assert "שלי, נערך" in labels, labels
 
 
 # --- concurrency ---------------------------------------------------------

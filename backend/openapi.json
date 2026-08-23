@@ -47,7 +47,7 @@
         "type": "object"
       },
       "AdminChecklistItemOut": {
-        "description": "MEH-1399: one review-checklist item as the admin surfaces read it.",
+        "description": "MEH-1399: one review-checklist item as the admin surfaces read it.\n\n`updated_at` is exposed rather than omitted — ADR-006 R2 asks every\nnon-internal ORM column to appear in the matching `*Out` or sit on an\nexplicit allowlist, and nothing in this repo mechanically enforces that\n(there is no general parity test), so an omission here would be\nindistinguishable from drift to the next reader. It is also the one\nquestion anyone asks of a config row: when did this last change.",
         "properties": {
           "active": {
             "title": "Active",
@@ -76,13 +76,19 @@
           "position": {
             "title": "Position",
             "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "position",
           "label",
-          "active"
+          "active",
+          "updated_at"
         ],
         "title": "AdminChecklistItemOut",
         "type": "object"

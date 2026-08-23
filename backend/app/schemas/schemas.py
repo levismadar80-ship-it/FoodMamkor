@@ -2564,13 +2564,22 @@ class KashrutExpiryReminderOut(BaseModel):
 
 
 class AdminChecklistItemOut(BaseModel):
-    """MEH-1399: one review-checklist item as the admin surfaces read it."""
+    """MEH-1399: one review-checklist item as the admin surfaces read it.
+
+    `updated_at` is exposed rather than omitted — ADR-006 R2 asks every
+    non-internal ORM column to appear in the matching `*Out` or sit on an
+    explicit allowlist, and nothing in this repo mechanically enforces that
+    (there is no general parity test), so an omission here would be
+    indistinguishable from drift to the next reader. It is also the one
+    question anyone asks of a config row: when did this last change.
+    """
 
     id: UUID
     position: int
     label: str
     hint: str | None = None
     active: bool
+    updated_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -2595,10 +2604,18 @@ class AdminChecklistItemIn(BaseModel):
     @field_validator("label")
     @classmethod
     def _strip_label(cls, v: str) -> str:
-        stripped = (v or "").strip()
-        if not stripped:
-            raise ValueError("סעיף חייב טקסט")
-        return stripped
+        # MEH-555: a non-empty check alone lets "???" through, and this string
+        # is not merely displayed — it is copied into
+        # `producer_review_checks.label_snapshot` at tick time, so a
+        # punctuation-only label becomes a permanent audit record of an
+        # attestation to nothing. The >=3-letter floor is the repo-wide rule for
+        # free-text a user or admin will read back.
+        #
+        # `hint` deliberately does NOT get this: it is optional, an empty hint
+        # is the normal way to say "no explanation needed", and a terse
+        # legitimate hint can fall under three letters. The asymmetry is the
+        # point — label is the attestation, hint is a note beside it.
+        return _min_letters_validator(v)
 
     @field_validator("hint")
     @classmethod

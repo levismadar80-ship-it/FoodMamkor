@@ -110,8 +110,9 @@ export const ListChecklistItemsAdminChecklistItemsGetResponseItem = /*#__PURE__*
   "hint": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "label": /*#__PURE__*/ zod.string(),
-  "position": /*#__PURE__*/ zod.int()
-}).check(/*#__PURE__*/ zod.describe('MEH-1399: one review-checklist item as the admin surfaces read it.'))
+  "position": /*#__PURE__*/ zod.int(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+}).check(/*#__PURE__*/ zod.describe('MEH-1399: one review-checklist item as the admin surfaces read it.\n\n`updated_at` is exposed rather than omitted — ADR-006 R2 asks every\nnon-internal ORM column to appear in the matching `\*Out` or sit on an\nexplicit allowlist, and nothing in this repo mechanically enforces that\n(there is no general parity test), so an omission here would be\nindistinguishable from drift to the next reader. It is also the one\nquestion anyone asks of a config row: when did this last change.'))
 export const ListChecklistItemsAdminChecklistItemsGetResponse = /*#__PURE__*/ zod.array(ListChecklistItemsAdminChecklistItemsGetResponseItem)
 
 
@@ -149,8 +150,9 @@ export const SaveChecklistItemsAdminChecklistItemsPutResponseItem = /*#__PURE__*
   "hint": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "label": /*#__PURE__*/ zod.string(),
-  "position": /*#__PURE__*/ zod.int()
-}).check(/*#__PURE__*/ zod.describe('MEH-1399: one review-checklist item as the admin surfaces read it.'))
+  "position": /*#__PURE__*/ zod.int(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+}).check(/*#__PURE__*/ zod.describe('MEH-1399: one review-checklist item as the admin surfaces read it.\n\n`updated_at` is exposed rather than omitted — ADR-006 R2 asks every\nnon-internal ORM column to appear in the matching `\*Out` or sit on an\nexplicit allowlist, and nothing in this repo mechanically enforces that\n(there is no general parity test), so an omission here would be\nindistinguishable from drift to the next reader. It is also the one\nquestion anyone asks of a config row: when did this last change.'))
 export const SaveChecklistItemsAdminChecklistItemsPutResponse = /*#__PURE__*/ zod.array(SaveChecklistItemsAdminChecklistItemsPutResponseItem)
 
 

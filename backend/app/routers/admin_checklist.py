@@ -138,9 +138,16 @@ def save_checklist_items(
         result.append(item)
 
     db.commit()
-    for item in result:
-        db.refresh(item)
-    return sorted(result, key=lambda i: i.position)
+    # Re-read the WHOLE table rather than returning `result`, which holds only
+    # the rows this request submitted. A second admin who added an item between
+    # this page's load and this save is otherwise absent from the response, so
+    # the saving admin's list silently loses a row that exists in the database —
+    # the same check-then-act window the tick endpoint below closes, on the
+    # read side instead of the write side. Costs one query; removes a state in
+    # which the UI is confidently wrong.
+    return (
+        db.query(AdminChecklistItem).order_by(AdminChecklistItem.position.asc()).all()
+    )
 
 
 @router.get(
