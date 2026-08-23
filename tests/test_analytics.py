@@ -642,3 +642,131 @@ class TestAdminDashboardAnalytics:
         consumer = make_user(db, email="c-only@test.com", role="consumer")
         r = client.get("/admin/dashboard", headers=auth_header(consumer))
         assert r.status_code in (401, 403)
+
+
+class TestViewerIpHashUsesRealClientIp:
+    """MEH-2158: viewer_ip_hash was derived from `request.client.host`.
+
+    On Railway that is the edge proxy (`100.64.0.X`, CGN range) — the same
+    value for every visitor. `unique_views_count` counts
+    `DISTINCT (israel_day, viewer_ip_hash)`, so a constant hash collapses a
+    whole day of traffic to **one** view. The dashboard was not inflating
+    the number, it was erasing it.
+
+    `get_real_client_ip` (MEH-256, `rate_limit.py:67`) already resolves this
+    correctly for the rate limiter; these tests pin that the analytics
+    writers now go through it too.
+
+    The discriminating property is DISTINCTNESS, not any particular hash
+    value: with the bug, two visitors behind the proxy produce one hash.
+    Every test therefore drives the endpoint twice and compares.
+    """
+
+    @staticmethod
+    def _hashes(db):
+        return [
+            v.viewer_ip_hash for v in db.query(ProducerPageView).all()
+        ]
+
+    def test_two_real_ips_produce_two_hashes(self, client, db, monkeypatch):
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p = make_producer(db)
+        client.get(f"/producers/{p.id}", headers={"X-Real-IP": "203.0.113.9"})
+        client.get(f"/producers/{p.id}", headers={"X-Real-IP": "198.51.100.4"})
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] != hashes[1], (
+            "two different visitors collapsed to one hash — "
+            "the proxy IP is still being hashed"
+        )
+        assert all(h is not None for h in hashes)
+
+    def test_same_real_ip_produces_same_hash(self, client, db, monkeypatch):
+        """The other half: dedupe must still recognise a repeat visitor."""
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p1 = make_producer(db)
+        p2 = make_producer(db)
+        client.get(f"/producers/{p1.id}", headers={"X-Real-IP": "203.0.113.9"})
+        client.get(f"/producers/{p2.id}", headers={"X-Real-IP": "203.0.113.9"})
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] == hashes[1]
+
+    def test_xff_second_to_last_entry_is_used(self, client, db, monkeypatch):
+        """No X-Real-IP → XFF[-2], per the MEH-256 resolution order.
+
+        Rightmost is Railway's own proxy; the entry before it is the caller.
+        Two callers arriving with different XFF[-2] must stay distinct.
+        """
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p = make_producer(db)
+        client.get(
+            f"/producers/{p.id}",
+            headers={"X-Forwarded-For": "203.0.113.9, 100.64.0.1"},
+        )
+        client.get(
+            f"/producers/{p.id}",
+            headers={"X-Forwarded-For": "198.51.100.4, 100.64.0.1"},
+        )
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] != hashes[1]
+
+    def test_trusted_proxy_unset_falls_back_without_crashing(
+        self, client, db, monkeypatch
+    ):
+        """Local/dev: TRUSTED_PROXY absent → get_remote_address, as today.
+
+        The headers are present and must be IGNORED — trusting them without
+        the flag would let any caller spoof another visitor's identity.
+        """
+        monkeypatch.delenv("TRUSTED_PROXY", raising=False)
+        p = make_producer(db)
+        r = client.get(
+            f"/producers/{p.id}", headers={"X-Real-IP": "203.0.113.9"}
+        )
+        assert r.status_code == 200
+        hashes = self._hashes(db)
+        assert len(hashes) == 1
+        assert hashes[0] is not None
+
+    def test_untrusted_xreal_ip_cannot_forge_distinct_identities(
+        self, client, db, monkeypatch
+    ):
+        """The spoofing control for the fallback path.
+
+        With TRUSTED_PROXY off, two callers sending DIFFERENT X-Real-IP
+        values are the same TestClient peer and must hash the same. If this
+        ever goes red, the resolver is trusting a client-supplied header
+        outside the trusted-proxy gate.
+        """
+        monkeypatch.delenv("TRUSTED_PROXY", raising=False)
+        p1 = make_producer(db)
+        p2 = make_producer(db)
+        client.get(f"/producers/{p1.id}", headers={"X-Real-IP": "203.0.113.9"})
+        client.get(f"/producers/{p2.id}", headers={"X-Real-IP": "198.51.100.4"})
+        hashes = self._hashes(db)
+        assert len(hashes) == 2, hashes
+        assert hashes[0] == hashes[1]
+
+    def test_contact_click_ip_hash_also_uses_real_client_ip(
+        self, client, db, monkeypatch
+    ):
+        """The second call site — `record_contact_click`, not a page view."""
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        p1 = make_producer(db)
+        p2 = make_producer(db)
+        client.post(
+            f"/producers/{p1.id}/contact-click",
+            json={"method": "phone"},
+            headers={"X-Real-IP": "203.0.113.9"},
+        )
+        client.post(
+            f"/producers/{p2.id}/contact-click",
+            json={"method": "phone"},
+            headers={"X-Real-IP": "198.51.100.4"},
+        )
+        rows = db.query(ContactClick).all()
+        assert len(rows) == 2, rows
+        assert rows[0].ip_hash != rows[1].ip_hash
+        assert all(r.ip_hash is not None for r in rows)
