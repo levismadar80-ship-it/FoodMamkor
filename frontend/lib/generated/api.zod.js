@@ -4838,7 +4838,7 @@ export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PUR
  *
  * The browser reports this explicitly instead of it being a side effect of
  * GET /producers/{id}. Auth optional; the owner's and admins' own views are
- * skipped inside track_producer_view. Rate-limited 60/minute per IP —
+ * skipped inside record_analytics_event. Rate-limited 60/minute per IP —
  * higher than the click endpoints because one is expected per page load.
  * @summary Record Producer View
  */
