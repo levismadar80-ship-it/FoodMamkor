@@ -222,6 +222,151 @@ class TestWhatsAppClickEndpoint:
 
 
 # ============================================================
+# MEH-2156 — owner/admin views are not audience
+# ============================================================
+
+
+def _owner_of(db, producer):
+    """A `producer`-role user wired to `producer` — i.e. its owner."""
+    user = make_user(db, role="producer")
+    user.producer_id = producer.id
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+class TestInternalViewerNotTracked:
+    """MEH-2156: three analytics writers counted the business owner herself.
+
+    The symptom that opened the ticket: a `pending` profile showing
+    "1 profile view" — which the MEH-254 gate (`producers.py:404-408`)
+    makes *necessarily* the owner, since nobody else can reach that row.
+
+    Every skip test below is paired with a control that must still record.
+    A suite that only asserts "0 rows" would pass identically against a
+    build where tracking is broken outright.
+    """
+
+    # ---------- GET /producers/{id} ----------
+
+    def test_owner_get_own_profile_records_no_view(self, client, db):
+        p = make_producer(db)
+        owner = _owner_of(db, p)
+        before = db.query(ProducerPageView).count()
+        r = client.get(f"/producers/{p.id}", headers=auth_header(owner))
+        assert r.status_code == 200
+        assert db.query(ProducerPageView).count() == before
+
+    def test_anonymous_get_still_records_view(self, client, db):
+        """Regression control — the skip must not have broken tracking."""
+        p = make_producer(db)
+        before = db.query(ProducerPageView).count()
+        r = client.get(f"/producers/{p.id}")
+        assert r.status_code == 200
+        assert db.query(ProducerPageView).count() == before + 1
+
+    def test_admin_get_foreign_profile_records_no_view(self, client, db):
+        p = make_producer(db)
+        admin = make_user(db, role="admin")
+        before = db.query(ProducerPageView).count()
+        r = client.get(f"/producers/{p.id}", headers=auth_header(admin))
+        assert r.status_code == 200
+        assert db.query(ProducerPageView).count() == before
+
+    def test_other_producers_owner_is_still_audience(self, client, db):
+        """The discriminating case: the predicate compares producer_id.
+
+        A `producer`-role user looking at SOMEONE ELSE's business is an
+        ordinary visitor. If this were implemented as `role == "producer"`
+        it would pass every other test in this class and silently erase a
+        whole segment of real traffic.
+        """
+        mine = make_producer(db, name="שלי")
+        theirs = make_producer(db, name="שלהם")
+        other_owner = _owner_of(db, mine)
+        before = db.query(ProducerPageView).count()
+        r = client.get(f"/producers/{theirs.id}", headers=auth_header(other_owner))
+        assert r.status_code == 200
+        assert db.query(ProducerPageView).count() == before + 1
+
+    def test_pending_profile_owner_view_is_not_counted(self, client, db):
+        """The literal symptom from the ticket: `pending` + owner = 0, not 1."""
+        p = make_producer(db, status="pending")
+        owner = _owner_of(db, p)
+        r = client.get(f"/producers/{p.id}", headers=auth_header(owner))
+        assert r.status_code == 200
+        assert db.query(ProducerPageView).count() == 0
+
+    # ---------- POST /producers/{id}/whatsapp-click ----------
+
+    def test_owner_whatsapp_click_same_response_zero_rows(self, client, db):
+        p = make_producer(db)
+        owner = _owner_of(db, p)
+        r = client.post(f"/producers/{p.id}/whatsapp-click", headers=auth_header(owner))
+        # Response contract is byte-identical to the tracked path — no
+        # information leaks through the status code or the body.
+        assert r.status_code == 200
+        assert r.json() == {"detail": "logged"}
+        assert db.query(ProducerWhatsAppClick).count() == 0
+
+    def test_anonymous_whatsapp_click_still_records(self, client, db):
+        p = make_producer(db)
+        r = client.post(f"/producers/{p.id}/whatsapp-click")
+        assert r.status_code == 200
+        assert r.json() == {"detail": "logged"}
+        assert db.query(ProducerWhatsAppClick).count() == 1
+
+    def test_admin_whatsapp_click_records_nothing(self, client, db):
+        p = make_producer(db)
+        admin = make_user(db, role="admin")
+        r = client.post(f"/producers/{p.id}/whatsapp-click", headers=auth_header(admin))
+        assert r.status_code == 200
+        assert db.query(ProducerWhatsAppClick).count() == 0
+
+    def test_owner_whatsapp_click_unknown_producer_still_404(self, client, db):
+        """The 404 is raised BEFORE the skip — it must survive for owners."""
+        p = make_producer(db)
+        owner = _owner_of(db, p)
+        r = client.post(
+            "/producers/00000000-0000-0000-0000-000000000000/whatsapp-click",
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 404
+
+    # ---------- POST /producers/{id}/contact-click ----------
+
+    def test_owner_contact_click_204_zero_rows(self, client, db):
+        p = make_producer(db)
+        owner = _owner_of(db, p)
+        r = client.post(
+            f"/producers/{p.id}/contact-click",
+            json={"method": "phone"},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 204
+        assert r.content == b""
+        assert db.query(ContactClick).count() == 0
+
+    def test_anonymous_contact_click_still_records(self, client, db):
+        p = make_producer(db)
+        r = client.post(f"/producers/{p.id}/contact-click", json={"method": "phone"})
+        assert r.status_code == 204
+        assert db.query(ContactClick).count() == 1
+
+    def test_owner_contact_click_invalid_method_still_422(self, client, db):
+        """422 is raised BEFORE the skip — validation is unchanged for owners."""
+        p = make_producer(db)
+        owner = _owner_of(db, p)
+        r = client.post(
+            f"/producers/{p.id}/contact-click",
+            json={"method": "carrier-pigeon"},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 422
+        assert db.query(ContactClick).count() == 0
+
+
+# ============================================================
 # GET /producers/me/analytics
 # ============================================================
 
