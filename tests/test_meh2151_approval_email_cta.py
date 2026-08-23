@@ -499,7 +499,14 @@ def test_card_table_tag_probe_discriminates():
     # Anchored to the real repo artifact, not only to a synthetic string
     # (MEH-1909): a probe proven on shapes I invented has not been shown to
     # recognise the shape this builder actually emits.
-    assert _card_table_tag(_producer_approved_html(NAME, SLUG)).startswith("<table")
+    # `.startswith("<table")` stood here and was too weak to be evidence: it is
+    # true of the OUTER table too, so it could not show the extractor picked the
+    # card. Caught by the CI reviewer on #3072. Anchored instead to the card's
+    # distinguishing attribute — the outer table is cellpadding="0".
+    real = _card_table_tag(_producer_approved_html(NAME, SLUG))
+    assert 'cellpadding="40"' in real, (
+        f"extractor did not return the card table (outer is cellpadding=0): {real}"
+    )
 
 
 def test_card_table_is_fluid_and_capped_not_fixed_width():
