@@ -38,7 +38,12 @@ from app.schemas.schemas import (
     ProducerListOut,
     ProducerRandomOut,
 )
-from app.services.analytics import ViewContext, hash_ip, track_producer_view
+from app.services.analytics import (
+    ViewContext,
+    hash_ip,
+    is_internal_viewer,
+    track_producer_view,
+)
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
     build_producers_query,
@@ -468,13 +473,27 @@ def record_whatsapp_click(
     """
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
-    db.add(
-        ProducerWhatsAppClick(
-            producer_id=producer_id,
-            user_id=current_user.id if current_user else None,
+    # MEH-2156: the owner's own clicks (and any admin's) are not audience, so
+    # they are not logged. The check gates the WRITE and not the return, so
+    # there is exactly one exit and the two paths cannot drift apart — an
+    # early `return {"detail": "logged"}` would duplicate the body literal,
+    # and this endpoint's guarantee is that an owner's response is
+    # indistinguishable from a visitor's. Placed after get_producer_or_404 so
+    # a bogus producer_id still 404s for the owner.
+    # Rationale in full: the predicate's docstring in services/analytics.py.
+    #
+    # DO NOT move this explanation into the docstring above — a route
+    # handler's docstring IS the `description` field in backend/openapi.json,
+    # so editing it is a public-contract change that reds the committed-spec
+    # snapshot (tests/test_openapi_contract_snapshot.py).
+    if not is_internal_viewer(current_user, producer_id):
+        db.add(
+            ProducerWhatsAppClick(
+                producer_id=producer_id,
+                user_id=current_user.id if current_user else None,
+            )
         )
-    )
-    db.commit()
+        db.commit()
     return {"detail": "logged"}
 
 
@@ -503,16 +522,22 @@ def record_contact_click(
         raise HTTPException(status_code=422, detail="method לא חוקי")
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
-    client_ip = request.client.host if request.client else None
-    db.add(
-        ContactClick(
-            producer_id=producer_id,
-            user_id=current_user.id if current_user else None,
-            method=data.method,
-            ip_hash=hash_ip(client_ip),
+    # MEH-2156: owner/admin clicks are not audience, so they are not logged.
+    # Same shape as record_whatsapp_click deliberately — gate the WRITE, not
+    # the return. Placed after the 422 and the 404 so validation is identical
+    # for the owner, and the 204 she receives is indistinguishable from a
+    # visitor's. (Kept out of the docstring — see record_whatsapp_click.)
+    if not is_internal_viewer(current_user, producer_id):
+        client_ip = request.client.host if request.client else None
+        db.add(
+            ContactClick(
+                producer_id=producer_id,
+                user_id=current_user.id if current_user else None,
+                method=data.method,
+                ip_hash=hash_ip(client_ip),
+            )
         )
-    )
-    db.commit()
+        db.commit()
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
