@@ -1708,11 +1708,20 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
     because Gmail strips both. No emoji, unlike that precedent: the text twin
     carries none and the two parts must read alike.
 
-    EVERY interpolated value goes through `escape()`, including the LOCKED
-    community constant — which carries no HTML metacharacter today (measured),
-    and that is exactly why escaping it is not optional: a guarantee that holds
-    only because of a property of the current value is not a guarantee, and the
-    next approved copy edit is where it stops holding. `name` is
+    EVERY interpolated value goes through `escape()` — all 11 sites, including
+    the LOCKED copy constants and `SITE_DOMAIN`, none of which carries an HTML
+    metacharacter today (measured). That is exactly why escaping them is not
+    optional: a guarantee that holds only because of a property of the current
+    value is not a guarantee, and the next approved copy edit is where it stops
+    holding.
+
+    That sentence was FALSE when first written — it claimed "every" while three
+    constants were interpolated raw, and the CI reviewer caught it on PR #3054.
+    A docstring asserting a property is the artifact least likely to be
+    re-checked (`.claude/rules/testing.md`), so the claim is no longer left on
+    its own: `test_meh2151_approval_email_cta.py` parses this function's source
+    and fails on any interpolation site that is not wrapped, which is what makes
+    the sentence above checkable instead of merely stated. `name` is
     owner-supplied free text that reaches this function unfiltered, so a
     business name containing `<` or `"` would break out of the markup it lands
     in — harmless in the text part, an injection in this one. `slug` is
@@ -1734,7 +1743,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         f'<a href="{_html_escape(page_url)}" style="display:inline-block;'
         f"padding:14px 32px;color:#ffffff;font-size:16px;font-weight:bold;"
         f'text-decoration:none;direction:rtl;">'
-        f"{_APPROVED_HTML_BUTTON_LABEL}</a></td></tr></table>"
+        f"{_html_escape(_APPROVED_HTML_BUTTON_LABEL)}</a></td></tr></table>"
         if page_url
         else ""
     )
@@ -1772,12 +1781,12 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         '<p style="margin:0 0 24px;direction:rtl;">'
         f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'
         'font-size:15px;text-decoration:underline;direction:rtl;">'
-        f"{_APPROVED_HTML_DASHBOARD_LABEL}</a></p>\n"
+        f"{_html_escape(_APPROVED_HTML_DASHBOARD_LABEL)}</a></p>\n"
         f"{community}\n"
         '<hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">\n'
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         'margin:0;direction:rtl;">'
-        f"ספיר שנפ<br>מייסדת | מהמקור<br>{SITE_DOMAIN}</p>\n"
+        f"ספיר שנפ<br>מייסדת | מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
         "</td></tr></table>\n"
         "</td></tr></table>\n"
         "</body>\n"
