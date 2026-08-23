@@ -3,6 +3,39 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-23 — conversion_rate סופר את כל ערוצי הקשר (PR #3067)
+
+**מוזג:** ‏#3067 `ccf31dae` — אומת כ-squash לפי **הורה יחיד** (`git rev-list --parents -n1` → שתי מילים) ותבנית `<title> (#N)`, ולא הונח שהבקשה כובדה (MEH-1526).
+**פתוח (לא מוזג):** ה-PR הזה, docs-only.
+**ענף:** ‏`feature/meh-2157-docs-backfill` מ-`origin/staging` טרי.
+
+**מה נעשה.** המונה של `conversion_rate` (‏`producer_me.py`) היה `producer_whatsapp_clicks` בלבד; עכשיו הוא `whatsapp_clicks + contact_clicks` ב-30 יום. המכנה, גבולות החלון, שם השדה ב-API ושני ה-KPIs הנפרדים — ללא שינוי. הקופי עבר channel-neutral ב-he+en. ‏4 קבצים בדיוק.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`vrt-baseline-sync-guard.sh` קורא את ה-`guard-ok` מהקומיט של מישהו אחר — באג חי, מדוד, לא תוקן.** ‏`hatch_commit()` (`:334-341`) בודק "האם `$c` הוא merge" עם `git rev-list --count --merges "$c" -1`. אבל `--merges` מסנן את הרשימה ו-`-1` חותך **אחרי** הסינון, ולכן הפקודה עונה **"האם קיים merge כלשהו באילן"**. נמדד: על HEAD שאינו merge היא מחזירה **`1`** (שגוי); האידיום הנכון `git rev-list --no-walk --merges HEAD --count` מחזיר `0`. הלולאה מטיילת עשרה first-parents אחורה ונחתה על **`38bdc89a`, קומיט ממוזג של מישהו אחר**. **שני הכיוונים שבורים:** הצהרה אמיתית לא נקראת, זרה כן. זה בדיוק התרחיש שהערת התכנון שלו (`:325-329`) אומרת שהיא מונעת. ‏warn-only, ולכן לא חוסם — וזו הסיבה שאיש לא שם לב.
+
+2. **‏CI reviewer ייצר שלושה "Must Fix" מ-two-dot diff, וכולם היו שקריים.** הוא טען שה-merge שלי החזיר את קריאות ה-`_html_escape()` ומחק שני טסטים. **הפרכה: blob זהה למרג'-בייס בכל ארבעת הקבצים המואשמים**, ו-`grep -c` על הקריאה במרג'-בייס = **0** — הקומיט שהוסיף אותן (`a6333435`) נחת על staging **אחרי** ההסתעפות. ‏`git diff origin/staging HEAD` (two-dot) מציג קומיטים שה-base צבר כאילו הענף מחק אותם; ‏`...` (three-dot) מחזיר 4 קבצים. **הסבב השני והשלישי של אותו reviewer, על ה-head המסונכרן, חזרו נקיים לגמרי.**
+
+3. **‏`E2E gate` אינו required — נמדד, לא הוסק.** ה-PR נמזג בזמן ש-`E2E gate` אדום. שני ה-gates החוסמים נושאים `(required)` בשם; `E2E gate` לא. מתאים ל-`testing.md`.
+
+4. **‏E2E אדום מסיבות שאינן ה-PR הזה.** ‏13 specs: login C2 · favorites D1 · Google OAuth B1 · admin producers tab §2A/§2B/§2D (×2 projects) · VRT `map` (20,585 px). שוחזר **זהה** על שני heads שונים (299 executed / 29 skipped בשניהם). ה-diff הוא אריתמטיקה בבקנד ומחרוזת אחת בדשבורד מאחורי auth — אין spec שמבקר שם ואין snapshot של dashboard.
+
+5. **הכרטיס ביקש קופי שלא ניתן לשלוח.** ‏`{rate}% מהצופות…` מאדים את `AnalyticsLabelDuplicates.test.js:159-160`, שמקבע שאף אחת מטבלאות הקליקים אינה מדודה פר-צופה ולכן היחס יכול לעבור 100 — **וההרחבה הזאת מגדילה את ההסתברות לכך** (טסט מדגים 400.0). הכרטיס גם הניח שהמחרוזת החיה נושאת את מסגרת «מהצופות»; היא הוחלפה מזמן. **תוקן ב-description של הכרטיס עצמו (כלל 34), לא רק בתגובה.** נשלח: אותה טרנספורמציה על המחרוזת שבאמת חיה.
+
+6. **דיסקרימינציה: ה-docstring שלי טען 2, הבקרה אמרה 4.** מול המונה הישן: `4 failed, 2 passed`. ‏`phone_only` 0.0→40.0 · `mixed` 20.0→60.0 · `window` 0.0→25.0 · `per_channel_kpis` 100.0→400.0 מפלים; `whatsapp_only` (75.0) ו-`zero_views` (0.0) עוברים על **שני** המימושים ומסומנים בקוד כ**לא ראיה**.
+
+7. **‏3043 errors שלא היו כשל קוד.** הרצת pytest אחת קרסה כשה-postgres של הסנדבוקס נפל; `3043` שם = מספר הטסטים שנאספו, כולם `Connection refused` ב-setup. אחרי הפעלה מחדש: **3043 passed**. המספר לא נכתב לשום מקום עד שההרצה החוזרת סיפקה אותו.
+
+### פערים פתוחים שדווחו ולא תוקנו (מחוץ ל-scope)
+
+- **‏`facebook` ו-`external_order` נשלחים ונדחים בשקט.** ‏`ContactCard.jsx:118-119` שולח אותם; `_VALID_CONTACT_METHODS` (`producers.py:481`) לא מכיל אותם → 422; הביקון fire-and-forget עם `.catch(() => {})` → **אף אחד לא רואה**. הקליקים לא קיימים בדאטה.
+- **ה-CTA הראשי מתועד רק כשהוא וואטסאפ** (`ContactCard.jsx:234-237`, `StickyContactBar.jsx:134-137`), וערוץ ה-primary מסונן החוצה משורת הערוצים (`:143`). לעסק phone-primary הכפתור הגדול לא נכתב לאף טבלה. **ההרחבה משפרת ולא סוגרת.**
+- **הערה שהפכה לשקר:** `dashboard/page.js:921-922` אומרת `conversion_rate (producer_me.py:634), whatsapp-only` — שני החצאים שגויים, והשורה הייתה מיושנת עוד לפני.
+- **‏drift ברשימת central-components:** `.github/pull_request_template.md:83-84` מונה את `routers/producers.py` ו-`routers/admin.py`; **אף אחד מהם אינו ב-`.claude/central-components.json`**, שהוא מה שהכלים קוראים.
+
+**משימה הבאה:** אין המשך ישיר. שני הפערים בביקונים (facebook/external_order · CTA ראשי לא-וואטסאפי) הם המועמדים הטבעיים הבאים בשרשרת.
+
 ## 2026-08-21 — אצוות MEH-2136 · 2137 · 2138 · 2139: שמונה PRs מוזגו, המיגרציה פתוחה
 
 **מוזג (עשרה PRs; כל SHA נגזר מ-`git log origin/staging | grep "(#NNNN)"`, לא מהזיכרון):** ‏MEH-2136 `49972774` #3027 · MEH-2137 `49290d4a` #3029 · `220447ac` #3039 · `8d46c0cc` #3048 · MEH-2138 `460748f8` #3028 · `f8bb01b0` #3037 · `05cd08b5` #3056 · `b85e1836` #3058 · `726d7f72` #3063 · MEH-2139 chunk 1 `1426fe21` #3033. **כולם אומתו כ-squash** (הורה יחיד + תבנית `<title> (#N)`, MEH-1526).
