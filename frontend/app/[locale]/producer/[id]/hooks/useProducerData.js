@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 
 import api from "@/lib/api";
 import { ProducerDetailSchema } from "@/lib/schemas";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import { trackProducerView } from "@/lib/contact-tracking";
 
 // MEH-1888: `.loose()` is MANDATORY here, not stylistic.
 //
@@ -82,6 +83,39 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
       })
       .finally(() => setLoading(false));
   }, [params.id, fetchPath, initialProducer]);
+
+  // MEH-2159: report the page view from the BROWSER, once per producer.
+  //
+  // Deliberately NOT gated on the fetch branch above. On /{slug} the server
+  // supplies `initialProducer` and that effect returns early ([slug]/page.js
+  // :115), so anything living inside it never runs on the route every catalog,
+  // search, map and home link actually points at — which is why that route
+  // recorded zero views. This effect keys off `producer?.id`, which is
+  // populated on both routes.
+  //
+  // The guard holds the last reported id, NOT a boolean. Two reasons, and the
+  // boolean fails both: StrictMode double-invokes effects in development, and
+  // [slug]/page.js:107-109 REUSES one ProducerDetail instance across slugs, so
+  // a boolean would latch after the first business and silently stop counting
+  // every one after it.
+  const reportedViewFor = useRef(null);
+  useEffect(() => {
+    if (!producer?.id) return;
+    if (reportedViewFor.current === producer.id) return;
+    reportedViewFor.current = producer.id;
+    // `?from=` lives on the PAGE url (ProducerCard.jsx:205). Read straight
+    // off window rather than via useSearchParams: this hook is called from a
+    // component with no Suspense boundary of its own, and useSearchParams
+    // opts the whole subtree into client-side bailout. The value is only
+    // ever read inside an effect, so there is no hydration mismatch to have.
+    let referrer = null;
+    try {
+      referrer = new URLSearchParams(window.location.search).get("from");
+    } catch {
+      // no window / malformed query — a missing referrer is a valid view
+    }
+    trackProducerView(producer.id, referrer);
+  }, [producer?.id]);
 
   // Task 13: save to recently viewed in localStorage. Storage shape +
   // 7-day TTL live in lib/recently-viewed.js (MEH-11) so the homepage
