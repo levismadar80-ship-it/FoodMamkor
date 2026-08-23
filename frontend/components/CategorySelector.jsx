@@ -32,16 +32,36 @@ import { CATEGORY_ICONS } from "@/lib/category-registry";
 // MEH-927: "בשר ודגים" split into "בשר" (kept here on the meat glyph) + "דגים".
 // "דגים" is intentionally NOT in POPULAR — it resolves its own FishSimple glyph
 // via CATEGORY_ICONS like every other non-popular card (MEH-683; see :203-206).
+// MEH-2139: keyed by `categories.slug`, not by the Hebrew display name. A
+// rename in the DB used to make the matching row vanish from this grid in
+// silence — the comment two paragraphs down still calls that "seed drift is
+// simply skipped", and it burned once already when «קוסמטיקה טבעית» needed a
+// temporary alias to survive its own rename (MEH-1104).
+//
+// The slug and the I18N KEY are the same token by construction: chunk 1
+// backfilled the slugs from these very constants, which are also the copy keys.
+// That is why the old `glyph` field disappears here rather than sitting beside
+// `slug` repeating it.
+//
+// It is NOT the same token as the GLYPH, and an earlier version of this comment
+// said it was. `CATEGORY_ICONS` is still keyed by the Hebrew display name
+// (see :244), so the glyph is the one thing on this card that a rename still
+// drops — silently, to no glyph. Left that way on purpose: that map is shared
+// with three other surfaces (ProducersClient, HomeCategoryGrid, FilterChipsBar)
+// whose data carries no slug, and the frontend has no name-to-slug table to
+// derive a slug-keyed view from. Writing one would be a THIRD copy of
+// backend/app/services/category_slug.NAME_TO_SLUG — in a language the test that
+// pins the existing two cannot reach. The cost of the gap is a missing 46px
+// glyph; the cost of the third copy is a table that can drift unpinned.
 const POPULAR = [
-  { name: "חלב וגבינות", glyph: "dairy" },
-  { name: "לחמים ואפייה", glyph: "bread" },
-  { name: "בשר", glyph: "meat" },
-  { name: "שמנים", glyph: "oil" },
-  { name: "ירקות", glyph: "veg" },
-  { name: "סבונים טבעיים", glyph: "care" },
+  { slug: "dairy" },
+  { slug: "bread" },
+  { slug: "meat" },
+  { slug: "oil" },
+  { slug: "veg" },
+  { slug: "care" },
 ];
-const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
-const POPULAR_NAMES = POPULAR.map((p) => p.name);
+const POPULAR_SLUGS = POPULAR.map((p) => p.slug);
 
 // MEH-1354: desc slugs for the 12 non-popular categories, so every card in
 // the expanded grid carries a short example line (and the search filter can
@@ -49,20 +69,25 @@ const POPULAR_NAMES = POPULAR.map((p) => p.name);
 // in backend/seed_data.py CATEGORIES verbatim; copy lives in
 // forms.category_selector.rest_descs (i18n). A future rename in the seed
 // must update this map in the same PR (same contract as POPULAR above).
-const REST_DESC_SLUGS = {
-  "ביצים": "eggs",
-  "פירות": "fruit",
-  "מותססים וכבושים": "ferments",
-  "מוצרים מוכנים": "prepared",
-  "צמחי מרפא ותוספים": "herbs",
-  "קוסמטיקה טבעית": "cosmetics",
-  "נרות וארומה": "candles",
-  "יין, בירה ומשקאות": "drinks",
-  "תבלינים וצמחי תיבול": "spices",
-  "שוקולד וממתקים בוטיק": "chocolate",
-  "דבש": "honey",
-  "דגים": "fish",
-};
+// MEH-2139: this used to be a Hebrew-name → slug map, which is now identity —
+// the slug IS the i18n key, because chunk 1 deliberately backfilled these exact
+// tokens. What remains is the SET of non-popular categories that have desc copy.
+// A category outside it (admin-created, or a future seed addition before its
+// copy lands) renders with no desc line, exactly as before.
+const REST_DESC_SLUGS = new Set([
+  "eggs",
+  "fruit",
+  "ferments",
+  "prepared",
+  "herbs",
+  "cosmetics",
+  "candles",
+  "drinks",
+  "spices",
+  "chocolate",
+  "honey",
+  "fish",
+]);
 
 // MEH-1098 (B1): the non-food (home & personal-care) categories. Names track the
 // DB values verbatim. They surface under a "בית וטיפוח" subheader in the expanded
@@ -70,11 +95,9 @@ const REST_DESC_SLUGS = {
 // selection contract (category_ids) is unchanged. MEH-1104 (contract phase,
 // ADR-007): the transitional pre-rename alias was removed after the production
 // rename to "קוסמטיקה טבעית" was confirmed.
-const HOME_CARE_NAMES = [
-  "סבונים טבעיים",
-  "קוסמטיקה טבעית",
-  "נרות וארומה",
-];
+// MEH-2139: by slug, same reason as POPULAR — renaming any of these three used
+// to silently drop it out of the «בית וטיפוח» group and back into «מזון».
+const HOME_CARE_SLUGS = ["care", "cosmetics", "candles"];
 
 // MEH-1297: a producer may pick at most 3 categories (Yelp model). The first
 // selected is the primary — it drives categories[0] on the card/map pin. The
@@ -91,17 +114,17 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   // Ordered universe: popular-6 first (in POPULAR order), then the rest in DB
   // order. A popular row missing from the API (seed drift) is simply skipped.
-  const popularCats = POPULAR.map((p) => categories.find((c) => c.name === p.name)).filter(Boolean);
-  const restCats = categories.filter((c) => !POPULAR_NAMES.includes(c.name));
+  const popularCats = POPULAR.map((p) => categories.find((c) => c.slug === p.slug)).filter(Boolean);
+  const restCats = categories.filter((c) => !POPULAR_SLUGS.includes(c.slug));
   const ordered = [...popularCats, ...restCats];
 
   const descFor = (c) => {
-    const p = POPULAR_BY_NAME[c.name];
-    if (p) return t(`popular_descs.${p.glyph}`);
+    if (POPULAR_SLUGS.includes(c.slug)) return t(`popular_descs.${c.slug}`);
     // MEH-1354: non-popular rows get their own desc line (uniform expanded
-    // grid + synonym search). Unknown name (admin-created category) → no desc.
-    const slug = REST_DESC_SLUGS[c.name];
-    return slug ? t(`rest_descs.${slug}`) : "";
+    // grid + synonym search). MEH-2139: keyed on the slug, so an admin-created
+    // category — whose slug is a transliteration with no copy behind it —
+    // renders no desc rather than a raw key path.
+    return REST_DESC_SLUGS.has(c.slug) ? t(`rest_descs.${c.slug}`) : "";
   };
   const isMatch = (c) => `${c.name} ${descFor(c)}`.toLowerCase().includes(q);
 
@@ -126,11 +149,11 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
     ? [
         { header: t("group_food"), key: "grp-food" },
         ...ordered
-          .filter((c) => !HOME_CARE_NAMES.includes(c.name))
+          .filter((c) => !HOME_CARE_SLUGS.includes(c.slug))
           .map((c) => ({ cat: c })),
         { header: t("group_home"), key: "grp-home" },
         ...ordered
-          .filter((c) => HOME_CARE_NAMES.includes(c.name))
+          .filter((c) => HOME_CARE_SLUGS.includes(c.slug))
           .map((c) => ({ cat: c })),
       ]
     : shown.map((c) => ({ cat: c }));
@@ -212,9 +235,12 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
               // MEH-683 #4: CATEGORY_ICONS is keyed by canonical DB name (was
-              // slug). EVERY card resolves its dedicated glyph; the Leaf
-              // fallback is now reached only by an unknown (admin-created)
-              // category with no row in CATEGORY_ICONS.
+              // slug). MEH-2139: every OTHER lookup in this file moved to
+              // `cat.slug`; this one did not, and that is the whole exception —
+              // see the note above POPULAR for why. So "every card resolves its
+              // glyph" holds only while the DB name still matches the seed: a
+              // renamed category, and an admin-created one, both resolve `null`
+              // and render no glyph.
               const Glyph = CATEGORY_ICONS[cat.name] || null;
               return (
                 <button

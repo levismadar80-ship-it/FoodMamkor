@@ -171,8 +171,16 @@ def smart_search(
         .limit(limit)
         .all()
     )
+    # MEH-2139: `slug` is passed EXPLICITLY. `CategoryOut` gets it for free —
+    # it is a `response_model` populated from the ORM object — but this hit is
+    # hand-built with keyword arguments, so a field omitted here serializes as
+    # `null` forever and nothing fails. That is the exact divergence the
+    # docstring on `CategoryHit` warns about, and this line is where it happened
+    # (found by the CI reviewer on PR #3052; `test_search_category_hit_carries_slug`
+    # is the guard that makes it fail loudly next time).
     categories = [
-        CategoryHit(id=c.id, name=c.name, emoji=c.emoji) for c in category_rows
+        CategoryHit(id=c.id, name=c.name, slug=c.slug, emoji=c.emoji)
+        for c in category_rows
     ]
 
     return SearchOut(

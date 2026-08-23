@@ -23,6 +23,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 
+# MEH-2139: imported under its own name so the column definition below reads as
+# a declaration rather than a call into a service.
+from app.services.category_slug import _column_default as _category_slug_default
+
 from app.database import Base
 
 # MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
@@ -784,15 +788,17 @@ class Category(Base):
     # staging and production (seed_data.py :296-308).
     # UNIQUE is applied by the paired revision AFTER its backfill, so it lands
     # on complete data — see a7c3e91d5f28.
-    # NOT NULL is DEFERRED to the switch step, deliberately, against the
-    # ticket's literal chunk split. Measured: 11 sites construct
-    # `Category(name=…, emoji=…)` with no slug — production
-    # `admin_extra.py:218` plus 9 tests — so a NOT NULL here fails them with
-    # `NotNullViolation: null value in column "slug"` (reproduced) for the
-    # whole window between this step and the one that teaches those writers to
-    # generate a slug. Nullable + UNIQUE loses nothing: Postgres allows many
-    # NULLs under UNIQUE, the backfill leaves none behind, and slug matching
-    # simply does not match a NULL. NOT NULL goes on once the writers do.
+    # NOT NULL was DEFERRED out of chunk 1, deliberately and against the
+    # ticket's literal chunk split, and chunk 2 (this state) applied it —
+    # `nullable=False` below, paired with revision c9f2a41e8b03. The reason for
+    # the deferral, kept because it explains the column default that follows:
+    # 11 sites construct `Category(name=…, emoji=…)` with no slug — production
+    # `admin_extra.py:218` plus 9 tests — so a NOT NULL in chunk 1 would have
+    # failed them with `NotNullViolation: null value in column "slug"`
+    # (reproduced) for the whole window before those writers learned to
+    # generate one. Nullable + UNIQUE cost nothing meanwhile: Postgres allows
+    # many NULLs under UNIQUE, the backfill left none behind, and slug matching
+    # does not match a NULL.
     # The constraint is NAMED here to match the revision exactly, so
     # `alembic check` compares like with like (same reason as the MEH-2137 FK).
     # DO NOT re-derive the slug from the name on rename: surviving a rename is
@@ -801,7 +807,15 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
-    slug = Column(String(50), nullable=True)
+    # MEH-2139 chunk 2: the default covers every ORM writer — the nine
+    # `Category(name=…, emoji=…)` sites under tests/ and anything added later —
+    # so NOT NULL does not depend on each of them remembering the column.
+    # It does NOT cover a multi-row CORE insert: `seed_data.py`'s `pg_insert`
+    # evaluates this default once per statement and raises
+    # `KeyError: 'categories.name_m0'`, so that one writer passes slug itself.
+    # Measured, and written down in services/category_slug._column_default so
+    # nobody "simplifies" the explicit value back out.
+    slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
 
     producers = relationship(

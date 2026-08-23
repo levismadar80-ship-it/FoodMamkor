@@ -194,7 +194,7 @@ users (
 )
 
 categories     (id, name unique, emoji,
-                slug VARCHAR(50) NULL UNIQUE)      -- MEH-2139: stable ASCII identity; matching keys on this, not on `name`
+                slug VARCHAR(50) NOT NULL UNIQUE)  -- MEH-2139: stable ASCII identity; matching keys on this, not on `name`. Added nullable in a7c3e91d5f28 (chunk 1), tightened to NOT NULL in c9f2a41e8b03 (chunk 2) once every writer produced one — the column default in models.py derives it from `name`, so no writer has to remember. Renaming a category does NOT re-derive its slug; surviving a rename is the point.
 producer_categories (producer_id FK, category_id FK, PK(both),
                      position INT NOT NULL default 0)  -- MEH-1297: 0 = primary (first selected); categories ordered by it
 products       (id, producer_id FK, name, description,
