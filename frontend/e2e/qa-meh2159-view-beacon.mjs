@@ -9,7 +9,7 @@
  * Run against a local stack (see the PR body for the exact commands):
  *   backend  uvicorn app.main:app --port 8000
  *   frontend next start -p 3000
- *   node e2e/qa-meh2159-view-beacon.mjs
+ *   node e2e/qa-meh2159-view-beacon.mjs   # flags: --base --id --slug --name --chromium
  *
  * ── Why this file has a CONTROL, and why it runs first ────────────────────
  * "0 POSTs to /view" is produced by two different worlds: the beacon is
@@ -25,11 +25,27 @@ import { chromium } from "@playwright/test";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const BASE = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
-const PRODUCER_ID =
-  process.env.QA_PRODUCER_ID || "79d66fb7-b4f3-49db-badb-229f1d9c30f9";
-const SLUG = process.env.QA_PRODUCER_SLUG || "meh2159-beacon-qa";
-const EXPECTED_NAME = process.env.QA_PRODUCER_NAME || "עסק בדיקת ביקון";
+// Fixture values come from argv, NOT from the environment.
+//
+// `scripts/check_env_drift.sh` greps frontend JS for env reads and BLOCKS on
+// any name missing from a committed .env.example — comments included, since
+// it is a plain grep with no comment stripping. These four are QA-harness
+// knobs for a locally seeded row, not application configuration, so
+// documenting them there would be wrong; argv keeps them out of that surface
+// entirely. (This repo already has one case on record where the comment
+// explaining such a removal re-tripped the gate by quoting the very form it
+// was removing — so this note names no variable.)
+//
+//   node e2e/qa-meh2159-view-beacon.mjs [--id UUID] [--slug S] [--name N] [--chromium PATH]
+function arg(flag, fallback) {
+  const i = process.argv.indexOf(flag);
+  return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
+}
+
+const BASE = arg("--base", "http://127.0.0.1:3000");
+const PRODUCER_ID = arg("--id", "79d66fb7-b4f3-49db-badb-229f1d9c30f9");
+const SLUG = arg("--slug", "meh2159-beacon-qa");
+const EXPECTED_NAME = arg("--name", "עסק בדיקת ביקון");
 const OUT = path.resolve(process.cwd(), "../qa-artifacts/MEH-2159");
 
 const VIEWPORTS = [
@@ -57,9 +73,10 @@ async function run() {
   // pins 1234, so the default resolution misses. Point at the pre-installed
   // binary rather than downloading one (the environment forbids
   // `playwright install`). CI is unaffected — it resolves normally.
-  const executablePath =
-    process.env.QA_CHROMIUM ||
-    "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+  const executablePath = arg(
+    "--chromium",
+    "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  );
   const browser = await chromium.launch({ executablePath });
 
   for (const vp of VIEWPORTS) {
