@@ -1770,7 +1770,10 @@ function RegisterProducerPageBody() {
               {/* MEH-2183: the field is optional now that the submit gate is
                   gone. Class recipe mirrors the address_optional_hint paragraph
                   (:1203) — the repo's established optional-field hint. */}
-              <p className="text-xs text-fg-muted mb-1 text-start">
+              <p
+                data-testid="register-referral-optional-hint"
+                className="text-xs text-fg-muted mb-1 text-start"
+              >
                 {t("auth.register.producer.fields.referral_source.optional_hint")}
               </p>
               <select

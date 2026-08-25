@@ -633,8 +633,8 @@ describe("RegisterProducerClient — referral source (MEH-1471)", () => {
     await fillAccountToDetails();
     await fillDetailsToStory();
     expect(
-      screen.getByText(`${K}.fields.referral_source.optional_hint`),
-    ).toBeInTheDocument();
+      screen.getByTestId("register-referral-optional-hint"),
+    ).toHaveTextContent(`${K}.fields.referral_source.optional_hint`);
     // The `required` attribute went with the gate — leaving it would announce
     // an optional field as required (IS-5568).
     expect(screen.getByTestId("register-referral-source")).not.toBeRequired();
