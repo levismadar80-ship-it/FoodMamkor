@@ -91,7 +91,7 @@ def report_producer_info(
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
     <tr>
       <td align="center">
-        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">דיווח על פרטים שגויים</h1>
