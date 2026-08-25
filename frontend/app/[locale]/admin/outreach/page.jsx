@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 
@@ -39,17 +40,6 @@ const STATUS_ORDER = ["new", "contacted", "replied", "registered", "declined"];
 // placeholders survive verbatim for client-side replaceAll.
 const WA_TEMPLATE_KEYS = [{ key: "warm" }, { key: "professional" }, { key: "short" }];
 
-// MEH-1616: "@"-only fallback for legacy rows — deliberately NOT a second
-// copy of the server's _normalize_instagram. The link is composed below, so a
-// stored "@handle" would render "@@handle" and link to an empty handle; this
-// strips that. URL-form legacy rows ("https://instagram.com/x") are OUT OF
-// SCOPE here and still render a doubled link until the row is re-saved — the
-// count query in MEH-1616 sizes them for a one-time backfill decision.
-// Porting the URL regex into JS would create two implementations of one rule
-// (CLAUDE.md "two parallel mechanisms" smell), so the server stays the single
-// normalizer and this stays the minimal render-time guard.
-// REUSES: frontend/app/[locale]/producer/[id]/components/ContactCard.jsx:107
-const instagramHandle = (raw) => (raw || "").trim().replace(/^@+/, "");
 
 export default function AdminOutreachPage() {
   const t = useTranslations("admin");
@@ -241,7 +231,7 @@ export default function AdminOutreachPage() {
                     <td className="px-3 py-3 text-muted" dir="ltr">
                       {instagramHandle(lead.instagram) ? (
                         <a
-                          href={`https://instagram.com/${instagramHandle(lead.instagram)}`}
+                          href={instagramUrl(lead.instagram)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary hover:underline"
