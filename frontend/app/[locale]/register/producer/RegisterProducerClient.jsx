@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, MapPin, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, MapPin, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
@@ -342,6 +342,16 @@ function RegisterProducerPageBody() {
   // "current: lat, lng" (MEH-1242); a seller cannot check her own shop against
   // a decimal pair, so the street + city she recognises is the whole point.
   const addressConfirmLabel = [form.address, form.address_city].filter(Boolean).join(", ");
+  // MEH-2181: the provider's own city for the PICKED address vs the canonical
+  // CitySearch value the seller chose. Only meaningful once a point is
+  // attached — before that `address_city` is "" and there is nothing to
+  // compare. Deliberately a soft signal: MEH-213 forbids a raw provider string
+  // from reaching `city`, so this can inform her and must never auto-correct.
+  const addressCityMismatch =
+    addressConfirmed &&
+    Boolean(form.address_city) &&
+    Boolean(form.city) &&
+    form.address_city !== form.city;
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
   // with no second piece of state to keep in sync.
@@ -1162,6 +1172,10 @@ function RegisterProducerPageBody() {
               <AddressSearch
                 id="producer-address"
                 inputTestId="register-details-address"
+                // MEH-2181: scope suggestions to the city already chosen above.
+                // Opt-in prop — the other four AddressSearch consumers omit it
+                // and compose their queries exactly as before.
+                city={form.city}
                 value={form.address}
                 // MEH-1808: free typing INVALIDATES a previously picked point —
                 // otherwise coordinates from an earlier selection would ride
@@ -1233,6 +1247,31 @@ function RegisterProducerPageBody() {
                       })}
                     </span>
                   </p>
+                  {/* MEH-2181: the picked address resolved to a different town
+                      than the one chosen above. NOT error-styled and NOT
+                      blocking — same reasoning as the pick-from-list nudge
+                      below: the address is optional, so a red blocker would be
+                      a lie about the form. Gold rather than red says "worth a
+                      look", which is exactly the claim being made.
+                      There is deliberately NO "use {found} instead" button:
+                      MEH-213 forbids a raw provider string from landing in
+                      `city`, which is CitySearch's canonical value. Correcting
+                      it stays the seller's action, in the field that owns it. */}
+                  {addressCityMismatch && (
+                    <p
+                      data-testid="register-address-city-mismatch"
+                      className="text-xs mt-2 inline-flex items-start gap-1.5 text-start"
+                      style={{ color: "#8B6914" }}
+                    >
+                      <Warning size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0" />
+                      <span>
+                        {t("auth.register.producer.fields.address_city_mismatch", {
+                          found: form.address_city,
+                          selected: form.city,
+                        })}
+                      </span>
+                    </p>
+                  )}
                   <div className="mt-2 overflow-hidden rounded-md">
                     {/* Confirmation only — no Waze/Google pills ("navigate to
                         your own address" means nothing mid-signup) and a street
