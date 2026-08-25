@@ -633,9 +633,10 @@ function RegisterProducerPageBody() {
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
-        // MEH-1471: self-reported attribution. referral_source is a required
-        // key from the CONFIRM-step dropdown; the free-text answer is sent only
-        // when "other" is chosen (empty otherwise → backend stores NULL).
+        // MEH-1471: self-reported attribution, from the STORY-step dropdown.
+        // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
+        // backend stores NULL. The free-text answer is sent only when "other"
+        // is chosen (empty otherwise → NULL as well).
         referral_source: form.referral_source,
         referral_source_other:
           form.referral_source === "other" ? form.referral_source_other : "",
@@ -920,6 +921,11 @@ function RegisterProducerPageBody() {
         {step === STEP.ACCOUNT && (
           <div className="space-y-4" data-testid="register-frame-account">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
+            {/* MEH-2183: step-top expectation line — names the time cost and
+                that the draft survives leaving (setAndSave already persists it). */}
+            <p data-testid="register-account-duration-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.steps.account.duration_hint")}
+            </p>
 
             {/* MEH-880 (S7 Chunk E1): copy-only reassurance card — mirrors the
                 Chunk-D story_card pattern (brand tokens only, no state-color). */}
@@ -1043,6 +1049,11 @@ function RegisterProducerPageBody() {
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
+            </p>
+            {/* MEH-2183: the no-cost promise, stated on the step where the
+                seller starts investing real effort. */}
+            <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.steps.business.free_hint")}
             </p>
 
             <Input
@@ -1636,6 +1647,14 @@ function RegisterProducerPageBody() {
         {step === STEP.STORY && (
           <div className="space-y-4" data-testid="register-frame-story">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
+            {/* MEH-2183: step-top expectation line — what we ask for AFTER
+                approval, so the photo is not a surprise on the dashboard.
+                NOTE: overlaps in substance with photo_disclosure further down
+                this same step (he.json:331). Both strings are Sapir-locked, so
+                neither was edited here — flagged for a copy ruling. */}
+            <p data-testid="register-story-photo-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.steps.story.photo_next_hint")}
+            </p>
             {/* MEH-860: frame-03 tagline (short_description) — the one-line
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
@@ -1735,11 +1754,12 @@ function RegisterProducerPageBody() {
               )}
             </div>
 
-            {/* MEH-1471: self-reported attribution — REQUIRED dropdown directly
-                above the ToS consent (final step). Default "בחר אפשרות" with no
-                preselection (Ruler Analytics speed-bias → first-option overcount);
-                the submit gate blocks while empty. Selecting "other" reveals an
-                optional free-text input. English keys stored; Hebrew from i18n. */}
+            {/* MEH-1471: self-reported attribution — dropdown directly above
+                the ToS consent (final step). Default "בחרי אפשרות" with no
+                preselection (Ruler Analytics speed-bias → first-option overcount).
+                Selecting "other" reveals an optional free-text input. English
+                keys stored; Hebrew from i18n.
+                MEH-2183: OPTIONAL — leaving it empty no longer blocks submit. */}
             <div data-testid="register-referral-source-block">
               <label
                 htmlFor="register-referral-source"
@@ -1747,6 +1767,15 @@ function RegisterProducerPageBody() {
               >
                 {t("auth.register.producer.fields.referral_source.label")}
               </label>
+              {/* MEH-2183: the field is optional now that the submit gate is
+                  gone. Class recipe mirrors the address_optional_hint paragraph
+                  (:1203) — the repo's established optional-field hint. */}
+              <p
+                data-testid="register-referral-optional-hint"
+                className="text-xs text-fg-muted mb-1 text-start"
+              >
+                {t("auth.register.producer.fields.referral_source.optional_hint")}
+              </p>
               <select
                 id="register-referral-source"
                 data-testid="register-referral-source"
@@ -1761,7 +1790,6 @@ function RegisterProducerPageBody() {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                required
                 className="w-full border rounded-md px-3 py-2 min-h-[44px] bg-white text-start"
               >
                 <option value="" disabled>
@@ -1849,6 +1877,15 @@ function RegisterProducerPageBody() {
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
             {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
 
+            {/* MEH-2183: what-happens-next, immediately above the submit button.
+                Phase 0 verified this was ABSENT from the STORY step — the only
+                comparable copy lives on the post-submit CONFIRM frame
+                (success.*, :1930+), which the seller cannot see while deciding
+                to press this button. */}
+            <p data-testid="register-submit-next-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.submit_next_hint")}
+            </p>
+
             <div className="flex gap-3">
               <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
@@ -1874,11 +1911,12 @@ function RegisterProducerPageBody() {
                     setStep(offenders[0].step);
                     return;
                   }
-                  // MEH-1471: required attribution — block submit while empty.
-                  if (!form.referral_source) {
-                    setError(t("auth.register.producer.validation.referral_source_required"));
-                    return;
-                  }
+                  // MEH-2183: the MEH-1471 attribution gate is REMOVED. The
+                  // field stays and still rides the payload — it is simply no
+                  // longer a submit blocker, so an empty value reaches the
+                  // backend as NULL (the MEH-1471 upgrade path already accepts
+                  // that). Registration must not be blocked by an analytics
+                  // question.
                   if (!agreedToTerms) {
                     setError(t("auth.register.producer.validation.terms_required"));
                     return;
