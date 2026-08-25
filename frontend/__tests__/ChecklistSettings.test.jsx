@@ -26,6 +26,7 @@ const ITEMS = [
 
 const SAVED = "נשמר ✓";
 const SAVE_BUTTON = "שמירת הרשימה";
+const TOO_SHORT = "תווית קצרה מדי — לפחות 3 אותיות";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -79,6 +80,15 @@ describe("ChecklistSettings", () => {
     expect(screen.queryByText(SAVED)).not.toBeInTheDocument();
   });
 
+  // --- MEH-2177 -----------------------------------------------------------
+  //
+  // ONE EXISTING ASSERTION WAS REWRITTEN, NOT REPAIRED TO PASS. This case used
+  // to end on `getByText("לכל סעיף חייב להיות טקסט.")` — a GLOBAL message under
+  // the button. That message is deliberately gone: with up to a dozen rows it
+  // said that something was wrong and never which row, which is the whole
+  // complaint MEH-2177 files. The block below asserts the same gate (save
+  // disabled) and the replacement signal (an error on the offending row).
+
   it("blocks saving while any item has an empty label", async () => {
     render(<ChecklistSettings />);
     await screen.findByDisplayValue("תמונות");
@@ -86,7 +96,71 @@ describe("ChecklistSettings", () => {
       target: { value: "   " },
     });
     expect(screen.getByText(SAVE_BUTTON)).toBeDisabled();
-    expect(screen.getByText("לכל סעיף חייב להיות טקסט.")).toBeInTheDocument();
+    expect(screen.getByText(TOO_SHORT)).toBeInTheDocument();
+  });
+
+  it("blocks a 2-letter label — the server rule is >=3 LETTERS, not >0 chars", async () => {
+    // The discriminating case. `"אב"` is non-empty, so the old
+    // `label.trim().length > 0` guard enabled the button and the admin got a
+    // 422 rendered as the generic «השמירה נכשלה» naming no item. Shown red
+    // against the pre-fix component on both assertions.
+    render(<ChecklistSettings />);
+    await screen.findByDisplayValue("תמונות");
+    fireEvent.change(screen.getByDisplayValue("תמונות"), {
+      target: { value: "אב" },
+    });
+
+    expect(screen.getByText(SAVE_BUTTON)).toBeDisabled();
+    expect(screen.getByText(TOO_SHORT)).toBeInTheDocument();
+  });
+
+  it("counts LETTERS, so digits and punctuation do not satisfy the floor", async () => {
+    // `_LETTER_REGEX` (schemas.py:21) strips everything outside [א-תa-zA-Z]
+    // before counting, so "א1234!" carries ONE letter. A client that mirrored
+    // the rule as "length >= 3" would pass this and still 422.
+    render(<ChecklistSettings />);
+    await screen.findByDisplayValue("תמונות");
+    fireEvent.change(screen.getByDisplayValue("תמונות"), {
+      target: { value: "א1234!" },
+    });
+
+    expect(screen.getByText(SAVE_BUTTON)).toBeDisabled();
+    expect(screen.getByText(TOO_SHORT)).toBeInTheDocument();
+  });
+
+  it("names the offending item rather than reporting a global failure", async () => {
+    // The point of the ticket: with two rows and one bad label, exactly ONE
+    // error is on screen, and it belongs to the row the admin broke. A global
+    // message passes "an error is shown" while failing this.
+    render(<ChecklistSettings />);
+    await screen.findByDisplayValue("תמונות");
+    fireEvent.change(screen.getByDisplayValue("תמונות"), {
+      target: { value: "אב" },
+    });
+
+    expect(screen.getAllByText(TOO_SHORT)).toHaveLength(1);
+    // aria-invalid is on the broken field and NOT on its neighbour.
+    expect(screen.getByDisplayValue("אב")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByDisplayValue("פרטים בסיסיים")).not.toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+  });
+
+  it("accepts a 3-letter label — the floor is met, not exceeded", async () => {
+    // The other side of the boundary. Without this, a guard that rejected
+    // everything would pass every case above.
+    render(<ChecklistSettings />);
+    await screen.findByDisplayValue("תמונות");
+    fireEvent.change(screen.getByDisplayValue("תמונות"), {
+      target: { value: "אבג" },
+    });
+
+    expect(screen.getByText(SAVE_BUTTON)).not.toBeDisabled();
+    expect(screen.queryByText(TOO_SHORT)).toBeNull();
   });
 
   it("tells the admin to refresh when the server 404s a retired item", async () => {
