@@ -342,10 +342,26 @@ try {
     // "not enabled" and would refuse the click, which would make the harness
     // report a failure the browser does not have.
     await pill.click({ force: true });
-    await page.waitForTimeout(700);
+    // BOUNDED WAIT on the thing being asserted, not a fixed sleep. The first
+    // version slept 700ms and then counted: that passed for several runs and
+    // then failed once at 1440 — a race with the modal's mount, not a product
+    // fault. Verified before changing anything: a standalone probe clicked the
+    // same pill on the same build 3/3 times and the dialog appeared every time,
+    // so the assertion was wrong, not the app.
+    //
+    // This form resolves the instant the dialog is visible and caps the
+    // pathological case at 5s, so it is deterministic in both worlds and the
+    // happy path pays nothing. Same reasoning `.claude/rules/testing.md` gives
+    // for bounded waits over `networkidle` and over fixed pauses.
+    const modalOpened = await page
+      .locator('[role="dialog"]')
+      .first()
+      .waitFor({ state: "visible", timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
     check(
       `[${vp.name}] ghost pill tap opens the LocationModal (MEH-1771 precondition)`,
-      (await page.locator('[role="dialog"]').count()) > 0,
+      modalOpened,
     );
     await page.screenshot({ path: `${OUT}/${LABEL}-${vp.name}-day-ghost-modal.png` });
 
