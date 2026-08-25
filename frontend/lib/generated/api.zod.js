@@ -4834,6 +4834,18 @@ export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PUR
 
 
 /**
+ * Record one page view for the producer dashboard.
+ *
+ * The browser reports this explicitly instead of it being a side effect of
+ * GET /producers/{id}. Auth optional; the owner's and admins' own views are
+ * skipped inside record_analytics_event. Rate-limited 60/minute per IP —
+ * higher than the click endpoints because one is expected per page load.
+ * @summary Record Producer View
+ */
+export const RecordProducerViewProducersProducerIdViewPostResponse = /*#__PURE__*/ zod.void()
+
+
+/**
  * Log a WhatsApp CTA click for the producer dashboard.
  *
  * Auth optional — JWT is accepted when present so the click can be
