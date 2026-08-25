@@ -152,8 +152,8 @@ def _send_newsletter_welcome(email: str) -> None:
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
     <tr>
       <td align="center">
-        <table width="560" cellpadding="40" cellspacing="0"
-               style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+        <table width="100%" cellpadding="40" cellspacing="0"
+               style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
               <p style="font-size:13px;color:#2e6853;margin:0 0 8px;font-weight:bold;">מהמקור 🌿</p>
