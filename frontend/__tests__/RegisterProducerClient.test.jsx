@@ -202,10 +202,10 @@ async function fillDetailsToStory() {
   await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`); // STORY marker
 }
 
-// MEH-1471: the attribution dropdown is a REQUIRED field on the STORY step —
-// every submit flow must pick a key or the submit gate blocks with
-// referral_source_required. The <select> stores English keys (labels come from
-// i18n, mocked to key paths), so change the value directly.
+// MEH-1471: the attribution dropdown on the STORY step. MEH-2183 made it
+// OPTIONAL (no submit gate), but the flows below still pick a key so they keep
+// asserting the populated payload. The <select> stores English keys (labels
+// come from i18n, mocked to key paths), so change the value directly.
 function selectReferral(value = "instagram") {
   fireEvent.change(screen.getByTestId("register-referral-source"), {
     target: { value },
@@ -558,25 +558,86 @@ describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", (
   });
 });
 
-// MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a REQUIRED dropdown
-// on the final (STORY) step, directly above the ToS checkbox. Default has no
-// preselection, so the submit gate blocks until a key is chosen; "other" reveals
-// an optional free-text input, and both values ride the submit body.
+// MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a dropdown on the
+// final (STORY) step, directly above the ToS checkbox. Default has no
+// preselection. MEH-2183 removed the submit gate, so leaving it empty submits;
+// "other" reveals an optional free-text input, and both values ride the body.
+// MEH-2183: four locked copy lines, one per wizard surface. These assert
+// PRESENCE at the right step — the VALUES are locked in he.json/en.json and
+// t() is mocked to the key path here, so this pins placement, not wording.
+describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
+  it("ACCOUNT carries the duration hint", async () => {
+    await renderWizard();
+    expect(screen.getByTestId("register-account-duration-hint")).toHaveTextContent(
+      `${K}.steps.account.duration_hint`,
+    );
+  });
+
+  it("DETAILS carries the free-forever hint", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(screen.getByTestId("register-details-free-hint")).toHaveTextContent(
+      `${K}.steps.business.free_hint`,
+    );
+  });
+
+  it("STORY carries the photo-next hint, and the submit hint sits above the button", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-story-photo-hint")).toHaveTextContent(
+      `${K}.steps.story.photo_next_hint`,
+    );
+    expect(screen.getByTestId("register-submit-next-hint")).toHaveTextContent(
+      `${K}.submit_next_hint`,
+    );
+  });
+
+  it("the submit hint is NOT on the earlier steps (no duplication)", async () => {
+    await renderWizard();
+    expect(screen.queryByTestId("register-submit-next-hint")).not.toBeInTheDocument();
+    await fillAccountToDetails();
+    expect(screen.queryByTestId("register-submit-next-hint")).not.toBeInTheDocument();
+  });
+});
+
 describe("RegisterProducerClient — referral source (MEH-1471)", () => {
-  it("blocks submit while no attribution is selected (required)", async () => {
+  // MEH-2183: this REPLACES the MEH-1471 "blocks submit while empty" test —
+  // the gate it asserted is gone, so the assertion is inverted rather than
+  // dropped. It discriminates: run it against the pre-MEH-2183 component and
+  // it fails on BOTH counts (api.post is never called, and a role="alert"
+  // carries the removed referral_source_required key).
+  it("submits with an EMPTY attribution — the field is optional (MEH-2183)", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
     fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
       target: { value: "הכי טרי שיש" },
     });
-    // consent boxes checked, but the attribution dropdown left empty
+    // consent boxes checked; the attribution dropdown is deliberately UNTOUCHED
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    expect(screen.getByTestId("register-referral-source")).toHaveValue("");
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      `${K}.validation.referral_source_required`,
-    );
-    expect(api.post).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    // The payload shape is UNCHANGED — the key still rides, carrying "" so the
+    // backend stores NULL (MEH-1471 upgrade path).
+    const [, body] = api.post.mock.calls[0];
+    expect(body).toMatchObject({ referral_source: "", referral_source_other: "" });
+    // ...and no blocking error was painted on the way.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("renders the optional hint under the attribution label (MEH-2183)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(
+      screen.getByTestId("register-referral-optional-hint"),
+    ).toHaveTextContent(`${K}.fields.referral_source.optional_hint`);
+    // The `required` attribute went with the gate — leaving it would announce
+    // an optional field as required (IS-5568).
+    expect(screen.getByTestId("register-referral-source")).not.toBeRequired();
   });
 
   it("selecting 'other' reveals the free-text input and submits both values", async () => {
