@@ -8,6 +8,7 @@
  */
 
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
+import { instagramUrl } from "@/lib/social-links";
 
 export const CONTACT_METHODS = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -60,12 +61,12 @@ export function getPrimaryContactHref(producer) {
       if (!email) return null;
       return `mailto:${email}`;
     }
-    case "instagram": {
-      // MEH-296: strip leading "@" (mirrors the ContactSidebar tile).
-      const handle = (producer.instagram || "").trim().replace(/^@+/, "");
-      if (!handle) return null;
-      return `https://instagram.com/${handle}`;
-    }
+    case "instagram":
+      // MEH-296 stripped the leading "@" here; MEH-2174 moved that rule into
+      // lib/social-links.js so this surface, ContactCard and the outreach
+      // table cannot drift apart. Returns null when there is no handle,
+      // exactly as the inline version did.
+      return instagramUrl(producer.instagram);
     case "facebook": {
       const raw = (producer.facebook || "").trim();
       if (!raw) return null;

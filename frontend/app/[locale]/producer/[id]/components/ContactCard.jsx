@@ -13,6 +13,7 @@ import {
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
+import { instagramUrl } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
@@ -100,14 +101,7 @@ function armMailtoFallback(email, t) {
 // method is filtered out so it never duplicates the big CTA.
 const CHANNELS = [
   { key: "phone", Icon: Phone, href: (p) => (p.phone ? `tel:${p.phone}` : null) },
-  {
-    key: "instagram",
-    Icon: InstagramLogo,
-    href: (p) => {
-      const handle = (p.instagram || "").trim().replace(/^@+/, "");
-      return handle ? `https://instagram.com/${handle}` : null;
-    },
-  },
+  { key: "instagram", Icon: InstagramLogo, href: (p) => instagramUrl(p.instagram) },
   // MEH-1525: the business-website tile carries referral UTM (rel drops
   // noreferrer at the render site below). Social / order tiles are untouched.
   { key: "website", Icon: Globe, href: (p) => withReferralParams(httpUrl(p.website)) },
