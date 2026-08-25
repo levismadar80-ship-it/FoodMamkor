@@ -256,17 +256,20 @@
         "steps": {
           "account": {
             "title": "1. Account details",
+            "duration_hint": "About 3 minutes. You can stop and continue later.",
             "email_section": "Sign up with email"
           },
           "business": {
             "title": "2. Business details",
-            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
+            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval.",
+            "free_hint": "Registration and your page — free. No commissions, ever."
           },
           "category": {
             "title": "3. Category"
           },
           "story": {
-            "title": "4. Your story"
+            "title": "4. Your story",
+            "photo_next_hint": "After approval we'll ask for one good photo of your business — that is what makes the page."
           }
         },
         "step_captions": {
@@ -309,6 +312,7 @@
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
+            "optional_hint": "Feel free to skip — the answer just helps us get to know you.",
             "placeholder": "Select an option",
             "other_placeholder": "Tell us where",
             "options": {
@@ -329,6 +333,7 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
+        "submit_next_hint": "We'll review your details and get back to you on WhatsApp within 3 business days.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -344,7 +349,6 @@
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
           "license_required": "A producer license number is required for this category",
-          "referral_source_required": "Please select where you heard about us",
           "cross_step_notice": "Some details are missing — we took you to the field",
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
