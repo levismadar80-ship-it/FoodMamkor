@@ -44,6 +44,10 @@ import {
  *     wrapper, so an existing Playwright `.fill()` locator keeps working when a
  *     raw <Input> is swapped for this component (MEH-1766). Omit it and nothing
  *     is rendered, so every pre-existing consumer is byte-identical.
+ *   - city (optional, MEH-2181) — scopes the provider query to a city the
+ *     caller already knows. OPT-IN: omit it and the query is composed exactly
+ *     as before, so all five existing consumers are byte-identical. Same
+ *     opt-in shape as MiniMap's zoom/showNavigation (MEH-1808).
  */
 export default function AddressSearch({
   id,
@@ -54,6 +58,7 @@ export default function AddressSearch({
   placeholder,
   className = "",
   inputTestId,
+  city,
 }) {
   const t = useTranslations("search.address_search");
   const inputPlaceholder = placeholder ?? t("placeholder");
@@ -94,6 +99,7 @@ export default function AddressSearch({
         const list = await autocompleteAddresses(q, {
           signal: controller.signal,
           sessionToken: sessionTokenRef.current,
+          city,
         });
         if (seq !== requestSeq.current) return; // stale
         setSuggestions(list);
@@ -132,7 +138,12 @@ export default function AddressSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [value]);
+    // MEH-2181: `city` belongs in the deps. Without it, a seller who corrects
+    // her city AFTER typing an address keeps getting suggestions scoped to the
+    // old one until she edits the address text again — a stale-closure bug the
+    // linter would not have caught, since the effect still reads the current
+    // `city` only when `value` happens to change.
+  }, [value, city]);
 
   // Close on outside click
   useEffect(() => {
