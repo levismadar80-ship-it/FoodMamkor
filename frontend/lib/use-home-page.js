@@ -184,6 +184,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // mount by the URL hydration below either way, but a partial initial state
   // meant `chips` briefly disagreed with the row being rendered from it.
   const [chips, setChips] = useState(CHIPS_DEFAULT);
+  // MEH-2173: the FilterSheet's open state. Per-instance, exactly like /map's
+  // (FilterChipsBar.jsx) and /producers' (ProducersClient.jsx:156).
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -753,16 +756,58 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // tapping a CHIP still deep-links to /producers, unchanged. Removing a tag
   // acts on the state home already holds and already fetches with, which is why
   // it belongs here rather than as another navigation hop.
-  const handleRemoveChip = (key) => {
+  //   ^ SUPERSEDED by MEH-2173: the middle clause is no longer true. Home's
+  //   chips do not deep-link any more — the promoted pair and the FilterSheet
+  //   both filter this grid in place through the function below. The rest of
+  //   the paragraph still holds and is why that function lives here. Corrected
+  //   rather than deleted: the reasoning is what a future reader needs, and a
+  //   stale sentence left standing is what would mislead them.
+  // MEH-2173: ONE apply path for every attribute-state change on home.
+  //
+  // Until this ticket, removal was the ONLY in-place attribute mutation home
+  // had — the row's chips NAVIGATED to /producers rather than filtering here
+  // (MEH-1774), so `handleRemoveChip` owned this body alone. The FilterSheet
+  // mounted by this ticket filters home IN PLACE, so the "on" direction now
+  // exists too; both directions share this function rather than growing two
+  // copies of the param assembly that would drift the first time one axis is
+  // added (the Smell #1 shape: two mechanisms owning one job).
+  //
+  // Every caller below differs ONLY in the chip state it computes. The body is
+  // byte-for-byte the MEH-2130 removal path, deliberately unchanged: the
+  // geo-empty clear, the URL write, and the category / city / day carry-over
+  // are all still exactly what a removal used to do.
+  //
+  // ⚠️ KNOWN GAP, inherited and now reachable from one more direction. This
+  // carries the category / city / day context but NOT an active GEO filter:
+  // `loadProducers(params)` has no lat/lng, so with "קרוב אליי" on the grid
+  // quietly reloads UNFILTERED while `geoFilter` stays set and ActiveFilterChip
+  // goes on claiming "עסקים ליד המיקום שלך".
+  //
+  // It is not introduced here — `handleRemoveChip` has done exactly this since
+  // MEH-2130, and removing a tag under an active geo filter is a shipped path.
+  // What MEH-2173 changes is that the ON direction can now reach it too, since
+  // switching a filter on no longer navigates away.
+  //
+  // NOT fixed in this card, deliberately — it has its own: MEH-2180. The fix
+  // is not a branch here: the
+  // geo fetch lives in `loadProducersGeo`, which builds its own params from
+  // the `chips` it closes over — i.e. the STALE state, one render behind the
+  // `setChips(next)` above — so routing through it means changing that
+  // function's signature, and it owns the radius-widening and toast behaviour
+  // that the whole near-me flow depends on. That is its own ticket with its own
+  // tests, not a side effect of a filter-row change. MEH-2180 also records the
+  // product question that has to be answered first: whether the radius-widening
+  // and the drop-to-unfiltered fallback should fire on an attribute change at
+  // all, or only on "קרוב אליי" itself.
+  const applyChips = (next) => {
     // MEH-1282: a filter action clears the geo-empty notice, so a later
     // back-navigation doesn't land on a stale near-me message.
     setGeoEmptyNotice(false);
-    const next = { ...chips, [key]: false };
     setChips(next);
     updateURL(filters, next);
     // Same param assembly handleCitySelected uses — the category / city / day
-    // context survives removing an attribute (MEH-1470's lesson on /producers:
-    // clearing one axis must not silently drop the others).
+    // context survives changing an attribute (MEH-1470's lesson on /producers:
+    // touching one axis must not silently drop the others).
     const params = buildChipParams(next);
     if (filters.category) params.category = filters.category;
     if (filters.delivery_city) {
@@ -773,6 +818,28 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     }
     loadProducers(params);
   };
+
+  const handleRemoveChip = (key) => applyChips({ ...chips, [key]: false });
+
+  // MEH-2173: the promoted chips on the surface and the switches inside the
+  // sheet are the SAME control over the same state — one toggle handler, so
+  // there is no way for the two to disagree about what "on" means.
+  const handleToggleChip = (key) => applyChips({ ...chips, [key]: !chips[key] });
+
+  // MEH-2173: "ניקוי הכל" inside the sheet clears the ATTRIBUTE axes only —
+  // never the category, city or day. Those are picked elsewhere on the page and
+  // wiping them from a panel that does not show them would be a destructive
+  // surprise. Mirrors ProducersClient.clearAttributeChips (:427) and
+  // useMapFilters.js:234, both of which reset their toggles and nothing else.
+  const handleClearChips = () => applyChips(CHIPS_DEFAULT);
+
+  // MEH-2173: STABLE identity on purpose, carried over from /map and
+  // /producers (ProducersClient.jsx:157-161 records the reasoning): an inline
+  // arrow would be a new function every render, and `chips` changes on every
+  // toggle — that tears down and re-arms FilterSheet's [open, onClose] keydown
+  // effect mid-interaction and yanks focus back to the first row.
+  const closeFilterSheet = useCallback(() => setFilterSheetOpen(false), []);
+  const toggleFilterSheet = useCallback(() => setFilterSheetOpen((v) => !v), []);
 
   // Adapters for the producers-grid component (avoids passing the full
   // setFilters/updateURL/loadProducers/buildChipParams quartet).
@@ -870,6 +937,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     categories,
     filters,
     chips,
+    filterSheetOpen,
     visibleCount,
     producersLoading,
     geoLoading,
@@ -908,8 +976,19 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     handleClearLocation,
     handleWhatsAppClick,
     scrollToProducers,
+    // MEH-1774's deep-link hop. MEH-2173 unwired it from the grid: the home
+    // attribute row now FILTERS in place (the sheet does, so the promoted chips
+    // beside it must, or the same axis would behave two ways on one row).
+    // Kept, not deleted — it is a correct, tested builder of a /producers URL
+    // carrying home's location context (MEH-1826), and deciding whether home
+    // ever deep-links again is a product call, not a side effect of this
+    // ticket. Its only consumer today is HomeDeliveryDayFilter.test.jsx.
     navigateToChip,
     handleRemoveChip,
+    handleToggleChip,
+    handleClearChips,
+    closeFilterSheet,
+    toggleFilterSheet,
     handleClearCategory,
     handleLoadMore,
     handleAdvanceFromStep0,

@@ -40,12 +40,35 @@ import {
   SealCheck,
 } from "@phosphor-icons/react";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
+import { instagramUrl } from "@/lib/social-links";
 
 const ICON = 14;
 const SECTION_ICON = 16;
 // Enough thumbnails to judge a gallery without turning the row into a contact
 // sheet; the rest are one click away on the business page.
 const MAX_THUMBS = 4;
+
+/**
+ * MEH-2174: the stored `website` is rendered as an `href` verbatim, so anything
+ * that is not http(s) has to be refused rather than linked. This MIRRORS the
+ * server rule and does not invent one — `_url_scheme_validator`
+ * (backend/app/schemas/schemas.py:285) tests
+ * `stripped.lower().startswith(("http://", "https://"))` and 422s otherwise.
+ *
+ * There is no proven exploit: that validator is wired to `website` on both
+ * current write paths, so every row written since it landed already complies.
+ * What this covers is rows that predate it, where the column could still hold
+ * a `javascript:` value that an admin click would execute on the admin origin.
+ *
+ * Deliberately NOT unified with ContactCard's `httpUrl`, which COERCES a
+ * protocol-less value to `https://`. That is a different rule for a different
+ * job (a public tile that should still work for a sloppy row), and folding the
+ * two together would silently change what the public page links to.
+ */
+function isHttpUrl(raw) {
+  const v = (raw || "").trim().toLowerCase();
+  return v.startsWith("http://") || v.startsWith("https://");
+}
 
 function ExternalLink({ href, children }) {
   return (
@@ -109,6 +132,14 @@ export default function ReviewEvidence({ producer }) {
     `"${name || ""}" ${city || ""}`.trim(),
   )}`;
 
+  // MEH-2174: both of these were the raw column value. `instagram` is stored as
+  // a BARE HANDLE by the server normalizer, so `href="someaccount"` resolved
+  // relative to /he/admin/producers and 404'd in a new tab — the link was born
+  // broken. `website` is guarded rather than rewritten: an unusable scheme
+  // renders as no link at all, which is the honest state.
+  const instagramHref = instagramUrl(instagram);
+  const websiteHref = isHttpUrl(website) ? website.trim() : null;
+
   const thumbs = (images || []).slice(0, MAX_THUMBS);
   const badges = kashrutBadges || [];
 
@@ -144,10 +175,12 @@ export default function ReviewEvidence({ producer }) {
       </Section>
 
       <Section icon={MagnifyingGlass} title="סימני חיים">
-        {website && <ExternalLink href={website}>אתר</ExternalLink>}
-        {instagram && <ExternalLink href={instagram}>אינסטגרם</ExternalLink>}
+        {websiteHref && <ExternalLink href={websiteHref}>אתר</ExternalLink>}
+        {instagramHref && (
+          <ExternalLink href={instagramHref}>אינסטגרם</ExternalLink>
+        )}
         <ExternalLink href={googleQuery}>חיפוש בגוגל</ExternalLink>
-        {!website && !instagram && (
+        {!websiteHref && !instagramHref && (
           <span className="text-xs text-muted">אין אתר או אינסטגרם</span>
         )}
       </Section>
