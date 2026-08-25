@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-25 — אצוות MEH-2174→2177 (triage של #3050): ארבעה מוזגו, ושני לקחים על מכשירים שלא נבדקו
+
+**מוזג:** ארבעה, כולם **אומתו כ-squash** (הורה יחיד + תבנית `<title> (#N)`, MEH-1526):
+`9e25798` #3090 · `cdfa63f` #3091 · `003002af` #3092 · `6da9e14` #3094.
+**סמכות:** grant מפורש של auto-merge לאצווה, וסדר מיזוג שנקבע — 2174 ראשון, וכך היה.
+**כרטיסים:** ארבעתם Done, **שני הכיוונים נבדקו** (כלל 29b) — אף אחד לא נסגר בטעות ואף אחד לא נשאר פתוח.
+**‏Preview:** אין לאף אחד. ‏Vercel דיווח `Ignored` — התנהגות ה-opt-in המוגדרת (MEH-1900), **לא** rate-limit.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏docstring של route ב-FastAPI מתפרסם כ-`description` ב-OpenAPI — ולכן תיקון docstring הוא שינוי artifact.** ‏#3092: תיקנתי משפט אחד ב-docstring, וזה הסיט את `backend/openapi.json` והפך את `frontend/lib/generated/` למעופש. ‏`openapi-codegen-drift-guard` צבע אדום. הריפוי: `bash scripts/checks/openapi-codegen-drift-guard.sh --write` ואז commit של spec + generated + manifest **יחד**. **התופעה השנייה חשובה יותר:** `lib/generated/` הוא נתיב frontend, ולכן זה **הפך PR של backend-בלבד לכזה שמריץ E2E** — ה-paths filter הפסיק לדלג. אם PR backend "פתאום" מריץ E2E, זו כנראה הסיבה.
+
+2. **‏החזקתי PR על סמך טענה שלא בדקתי, ותיקנתי רק אחרי ש-grep-תי.** אמרתי ש-`33-admin-producers-tab.spec.ts` מכסה "בדיוק את המשטח" של ה-hook ב-MEH-2175, ולכן ה-E2E האדום לא ניתן לפענוח. ‏`grep -n "checklist\|ReviewChecklist"` על אותו קובץ: **אפס התאמות**. הוא בודק ספירת שורות ועמודות, פילטר סטטוס, ודף עריכה — ולא נוגע ברשימה. החשיפה האמיתית היחידה: `/admin/producers` **מרכיב** את ה-hook, כך שקריסה ב-mount הייתה נתפסת — וזה מכוסה ב-24 טסטי vitest. **זו בדיוק המחלקה של `.claude/rules/testing.md`: טענה על מכשיר, בלי להריץ את המכשיר.**
+
+3. **‏קריטריון קבלה אחד ב-MEH-2175 נשלח בלי טסט שמבחין, וזה כתוב בגוף ה-PR.** הטסט "StrictMode → GET אחד לכל פתיחה" נכשל בבידוד ועבר בהרצת הקובץ המלא — פסיקה תלוית-סדר אינה שומר, אז הוא נזרק במקום להישלח כירוק עם שתי סיבות. ‏probe עצמאי אישר ש**ההתנהגות אמיתית** (2 GETs לפני התיקון). אם מישהי רוצה לסגור את הפער: צריך assertion דטרמיניסטי לטוהר ה-updater, לא עוד ריצת StrictMode.
+
+4. **‏🚩 ‏staging שבור ואינו קשור לאצווה — פתוח לספיר.** ‏`API contract probe (staging)` מדווח `164 of 164 probed routes (100%) returned 302` (בלשונו: "עובדה ברמת הסביבה, לא 164 routes שבורים"), וה-backend מחזיר **500** על `/producers/by-slug/*`. ‏E2E אדום על כל הארבעה מהסיבה הזאת. **הבקרה שהכריעה:** ל-#3091 ול-#3094 diffs שונים לגמרי ותוצאות זהות (299/29/27). ‏`E2E gate` אינו context נדרש ולכן לא חסם. ‏Railway/Vercel אינם של CC.
+
+5. **‏`frontend/lib/social-links.js` הוא עכשיו הבעלים היחיד של בניית קישור אינסטגרם.** ‏Phase 0 של MEH-2174 מצא **שלושה** מימושים קיימים ולא שניים (הכרטיס טעה) — כולל אחד שכבר ישב ב-`lib/contact-method.js`. ארבעת המשטחים עברו ל-helper אחד. **אל תוסיפי רביעי.** הוא לא מחליף את `_normalize_instagram` — השרת נשאר ה-normalizer היחיד.
+
+6. **‏ה-`result` המת ב-`admin_checklist.py` נמחק, אבל השאילתה החוזרת ב-`:148-150` נשארה בכוונה** — היא קיימת כדי שסעיף שאדמינית מקבילה הוסיפה לא ייעלם מהתשובה. אל תמחקי אותה "בניקיון".
+
 ## 2026-08-25 — MEH-2171: חמשת מיילי ה-560px, ולקח על מכשיר שהחזיר קריאה מעופשת
 
 **מוזג:** ‏#3088 — חמשת השולחים הנותרים (`auth_emails.py` ×4, `report_info.py` ×1) נזילים במקום `width="560"`. **נחת כ-merge commit ולא כ-squash** (`2f01644a`) — המופע השני של MEH-1526 היום. ה-trailer ו-`Closes` שרדו ב-`960c3c7c`.
