@@ -9514,6 +9514,24 @@
         "title": "ProducerUpdate",
         "type": "object"
       },
+      "ProducerViewIn": {
+        "description": "MEH-2159: body of POST /producers/{id}/view.\n\n`referrer` is the `?from=` value off the PAGE url (ProducerCard.jsx:205\nbuilds `/{slug}?from={referrer}`). It reaches the API for the first time\nhere: before this endpoint the page-url query string was never forwarded\nby either fetch, so `producer_page_views.referrer` was NULL for every row\never written.\n\nDeliberately unvalidated at the schema layer — `track_producer_view`\nnormalizes against its own allowlist and writes NULL for anything else\n(services/analytics.py:265). A 422 here would turn a fire-and-forget\nbeacon into a client error for a value the writer would have discarded\nanyway.",
+        "properties": {
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer"
+          }
+        },
+        "title": "ProducerViewIn",
+        "type": "object"
+      },
       "ProductCreate": {
         "properties": {
           "description": {
@@ -17993,22 +18011,6 @@
               "title": "Producer Id",
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "from",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "From"
-            }
           }
         ],
         "responses": {
@@ -18498,6 +18500,58 @@
         "summary": "Create Review Nested",
         "tags": [
           "reviews"
+        ]
+      }
+    },
+    "/producers/{producer_id}/view": {
+      "post": {
+        "description": "Record one page view for the producer dashboard.\n\nThe browser reports this explicitly instead of it being a side effect of\nGET /producers/{id}. Auth optional; the owner's and admins' own views are\nskipped inside record_analytics_event. Rate-limited 60/minute per IP —\nhigher than the click endpoints because one is expected per page load.",
+        "operationId": "record_producer_view_producers__producer_id__view_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerViewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Record Producer View",
+        "tags": [
+          "producers"
         ]
       }
     },

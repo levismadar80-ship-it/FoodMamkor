@@ -16,14 +16,12 @@ from app.auth import (
 from app.database import get_db
 from app.models import (
     Category,
-    ContactClick,
     KashrutBadgeRequest,
     Producer,
-    ProducerWhatsAppClick,
     Report,
     User,
 )
-from app.rate_limit import get_real_client_ip, limiter
+from app.rate_limit import limiter
 from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
@@ -37,12 +35,12 @@ from app.schemas.schemas import (
     ProducerDetailOut,
     ProducerListOut,
     ProducerRandomOut,
+    ProducerViewIn,
 )
 from app.services.analytics import (
-    ViewContext,
-    hash_ip,
+    EventContext,
     is_internal_viewer,
-    track_producer_view,
+    record_analytics_event,
 )
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
@@ -380,7 +378,6 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
 def get_producer(
     producer_id: UUID,
     request: Request,
-    from_: str | None = Query(None, alias="from"),
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
@@ -432,34 +429,68 @@ def get_producer(
         for c in _servable_kashrut_certs(db, producer)
     ]
 
-    # feature/producer-analytics: track the view. Best-effort; swallows
-    # all exceptions so tracking glitches can never break the response.
-    # Bot UAs are filtered inside track_producer_view.
-    # MEH-2158: resolve the caller through the MEH-256 trusted-proxy
-    # resolver. The raw peer address on Railway is the edge proxy
-    # (100.64.0.X CGN), identical for every visitor, so hash_ip() gave one
-    # hash for the whole internet — and unique_views_count, which counts
-    # DISTINCT (israel_day, viewer_ip_hash), collapsed a day of traffic to 1.
-    # get_real_client_ip returns str and hash_ip accepts Optional[str], so
-    # the contract is unchanged.
-    #
-    # DO NOT name the raw-peer attribute in this comment. The DoD for this
-    # ticket greps the backend for it, and prose quoting the thing it
-    # forbids reds the check on its own explanation (repo precedent:
-    # check_env_drift.sh, docs/CHANGELOG.md).
-    client_ip = get_real_client_ip(request)
-    track_producer_view(
-        db,
-        producer_id=producer_id,
-        ctx=ViewContext(
-            viewer_ip=client_ip,
-            user_agent=request.headers.get("user-agent"),
-            viewer_user=viewer,
-            referrer=from_,
-        ),
-    )
-
+    # MEH-2159: this GET no longer records a view. Counting inside a read
+    # made the row depend on WHICH endpoint happened to be called rather
+    # than on "someone opened the page", which produced three bugs at once:
+    # the /{slug} route recorded nothing (it calls get_producer_by_slug,
+    # which never tracked), the /producer/{uuid} route recorded twice (SSR
+    # plus client), and the SSR row carried no Authorization header — so
+    # is_internal_viewer saw viewer=None and the owner's own visit counted
+    # despite MEH-2156. The browser now reports the event explicitly via
+    # POST /producers/{id}/view, the same shape contact-click already uses.
     return result
+
+
+@router.post("/producers/{producer_id}/view", status_code=204)
+@limiter.limit("60/minute")
+def record_producer_view(
+    request: Request,
+    producer_id: UUID,
+    data: ProducerViewIn,
+    db: Session = Depends(get_db),
+    # MEH-2159: lenient, for the same reason as contact-click below — a
+    # keepalive beacon fired during navigation cannot retry, so an expired
+    # token must degrade to "anonymous view" and never to a 401 the page
+    # has already navigated away from.
+    current_user: User | None = Depends(get_current_user_lenient),
+):
+    """Record one page view for the producer dashboard.
+
+    The browser reports this explicitly instead of it being a side effect of
+    GET /producers/{id}. Auth optional; the owner's and admins' own views are
+    skipped inside record_analytics_event. Rate-limited 60/minute per IP —
+    higher than the click endpoints because one is expected per page load.
+    """
+    # Existence check first, so a bogus id 404s rather than silently
+    # recording nothing — same ordering as the two click endpoints.
+    producer = get_producer_or_404(db, producer_id)
+
+    # MEH-2159 + MEH-254: mirror the pending/rejected gate that guards
+    # GET /producers/{id} (producers.py:407-412). Without it this endpoint
+    # is an enumeration oracle for the moderation queue: the GET 404s a
+    # non-approved producer to a stranger, so answering 204 here would let
+    # anyone tell a real-but-unapproved UUID (204) from a nonexistent one
+    # (404) — the exact disclosure MEH-254 closed. Measured before the fix:
+    # pending -> GET=404 / POST=204 / 1 row written by the stranger.
+    #
+    # It also stops a stranger writing rows onto a pending business's
+    # counter, which is the number MEH-2156 exists to make trustworthy.
+    #
+    # DO NOT fork the condition — it must agree with the GET's gate, which
+    # is what makes "any view of a non-approved profile is necessarily the
+    # owner or an admin" true. is_internal_viewer is that same shape,
+    # extracted (services/analytics.py).
+    if producer.status != "approved" and not is_internal_viewer(
+        current_user, producer_id
+    ):
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    record_analytics_event(
+        db,
+        event="page_view",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user, referrer=data.referrer),
+    )
 
 
 @router.post("/producers/{producer_id}/whatsapp-click")
@@ -498,14 +529,17 @@ def record_whatsapp_click(
     # handler's docstring IS the `description` field in backend/openapi.json,
     # so editing it is a public-contract change that reds the committed-spec
     # snapshot (tests/test_openapi_contract_snapshot.py).
-    if not is_internal_viewer(current_user, producer_id):
-        db.add(
-            ProducerWhatsAppClick(
-                producer_id=producer_id,
-                user_id=current_user.id if current_user else None,
-            )
-        )
-        db.commit()
+    # MEH-2160: the owner/admin skip is no longer decided here — it, the bot
+    # filter, the trusted-proxy IP and the fail-open write all live in
+    # record_analytics_event, which is the only place an analytics row is
+    # written. The gate stays OUT of this handler on purpose: a rule expressed
+    # at the call site is a rule the next writer has to remember.
+    record_analytics_event(
+        db,
+        event="whatsapp_click",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user),
+    )
     return {"detail": "logged"}
 
 
@@ -539,20 +573,14 @@ def record_contact_click(
     # the return. Placed after the 422 and the 404 so validation is identical
     # for the owner, and the 204 she receives is indistinguishable from a
     # visitor's. (Kept out of the docstring — see record_whatsapp_click.)
-    if not is_internal_viewer(current_user, producer_id):
-        # MEH-2158: same resolver as the page-view site above — see the
-        # comment there for why the raw peer address is the proxy and not
-        # the visitor. (MEH-256 built get_real_client_ip for this class.)
-        client_ip = get_real_client_ip(request)
-        db.add(
-            ContactClick(
-                producer_id=producer_id,
-                user_id=current_user.id if current_user else None,
-                method=data.method,
-                ip_hash=hash_ip(client_ip),
-            )
-        )
-        db.commit()
+    # MEH-2160: same as whatsapp-click above — every exclusion rule and the
+    # write itself live in record_analytics_event.
+    record_analytics_event(
+        db,
+        event="contact_click",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user, method=data.method),
+    )
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
