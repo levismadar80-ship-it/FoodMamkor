@@ -31,7 +31,7 @@ any of those revisions; what keeps changing is which object carries the seam.
 THE RENDEZVOUS (MEH-2162 — this replaced a five-second budget that flaked):
 
     winner   issues the claim UPDATE → the row lock is now HELD
-             → signals `a_at_commit` → later, at commit, WAITS for `b_at_claim`
+             → signals `a_at_claim` → later, at commit, WAITS for `b_at_claim`
     main     ASSERTS the winner armed, then starts the second thread
     loser    reaches its own claim UPDATE → signals `b_at_claim` FIRST
              → issues it, and blocks on the winner's row lock
@@ -95,7 +95,7 @@ CODE = "123456"
 #
 # They used to be ONE five-second budget doing both jobs, and that was the
 # whole flake — see the module docstring.
-_ARM_TIMEOUT = 60.0  # main waits for A to reach its commit
+_ARM_TIMEOUT = 60.0  # main waits for A to reach its claim
 _CLAIM_TIMEOUT = 60.0  # A waits for B to reach the claim statement
 _JOIN_TIMEOUT = 60.0  # main waits for both threads to finish
 
@@ -164,7 +164,7 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
     """
     producer, user = _setup(db)
 
-    a_at_commit = threading.Event()  # the winner has claimed and holds the row lock
+    a_at_claim = threading.Event()  # the winner has claimed and holds the row lock
     b_at_claim = threading.Event()  # B is about to issue its claim UPDATE
     results: dict[str, int] = {}
     claim_seq = itertools.count()
@@ -179,8 +179,10 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
         simply ran unsynchronized — producing `[200, 200]`, which is also the
         pre-fix bug's signature. Now each side signals the other:
 
-            A (first session)   claims the token, reaches commit, sets
-                                `a_at_commit`, WAITS for `b_at_claim`
+            A (first session)   claims the token — the row lock is now HELD —
+                                and sets `a_at_claim` at that statement, not at
+                                its commit; later, AT commit, WAITS for
+                                `b_at_claim`
             B (second session)  reaches its claim UPDATE, sets `b_at_claim`,
                                 then issues it — and blocks on A's row lock
             A                   wakes IMMEDIATELY (not on a timeout), commits,
@@ -237,7 +239,7 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
                 result = real_execute(stmt, *a, **kw)
                 # Signal AFTER the statement returns: only then is the row lock
                 # actually held, which is the state main is waiting to observe.
-                a_at_commit.set()
+                a_at_claim.set()
                 return result
             # Signal BEFORE calling through: this call blocks on the winner's
             # row lock, so a signal placed after it would never be sent — which
@@ -282,9 +284,9 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
             # `phone_verified` early-return (producer_me.py:1413), which is the
             # SAME value the pre-fix bug produces. The suite could not tell a
             # regression from a busy machine, and reported the regression.
-            armed = a_at_commit.wait(_ARM_TIMEOUT)
+            armed = a_at_claim.wait(_ARM_TIMEOUT)
             assert armed, (
-                "thread A never reached its commit — the two requests were "
+                "thread A never reached its claim — the two requests were "
                 "never synchronised, so this run cannot distinguish the fix "
                 "from the bug. This is NOT evidence the claim is broken."
             )
