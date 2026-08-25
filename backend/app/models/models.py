@@ -2217,3 +2217,107 @@ class OutboundMessage(Base):
         server_default=text("now()"),
     )
     updated_at = Column(DateTime, nullable=True)
+
+
+class AdminChecklistItem(Base):
+    """MEH-1399: one row of the pre-approval review checklist, editable by the
+    admin without a deploy.
+
+    Phase 1 (MEH-1396) shipped these 7 items as a frozen frontend constant
+    (``frontend/lib/admin-review-checklist.js``). That file is now the SEED, not
+    the source: the migration copies its contents in, and every reader goes
+    through this table afterwards.
+
+    Rows are retired with ``active = False``, never deleted. That is not a
+    convention to remember — ``producer_review_checks.item_id`` is
+    ``ON DELETE RESTRICT``, so the database refuses to delete an item any admin
+    has ever ticked. Deleting one would orphan the audit trail's subject.
+
+    ``position`` orders the list; the seed spaces values 10 apart so an item can
+    be inserted between two others without renumbering the rest.
+    """
+
+    __tablename__ = "admin_checklist_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    position = Column(Integer, nullable=False, index=True)
+    label = Column(Text, nullable=False)
+    hint = Column(Text, nullable=True)
+    active = Column(Boolean, nullable=False, default=True, server_default=text("true"))
+    # Only `updated_at`, deliberately: the question anyone asks of a config row
+    # is when it last changed, not when it was first written. The audit surface
+    # is ProducerReviewCheck below.
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class ProducerReviewCheck(Base):
+    """MEH-1399: the audit record — this item was ticked for this producer, by
+    this admin, at this time.
+
+    Phase 1's ticks were session-local and evaporated on collapse, so nothing
+    recorded WHAT was verified before a business went live. One row per
+    (producer, item); the unique constraint makes the tick idempotent, so a
+    double-click cannot produce two conflicting attestations.
+
+    ``label_snapshot`` looks redundant next to ``item_id`` and is the opposite.
+    The FK says WHICH item was ticked; the snapshot says what that item SAID at
+    the moment of ticking. Without it, an admin editing an item's wording later
+    would silently rewrite the meaning of every historical attestation — the
+    audit trail would then describe a check nobody actually performed. Same
+    reasoning as ProducerNameChangeRequest.current_name.
+
+    ``checked_by`` is nullable with ON DELETE SET NULL: deleting an admin
+    account must not delete the record that a check happened. A null actor is a
+    weaker record than a named one and a far better one than none.
+
+    An UNCHECKED item is the ABSENCE of a row, not a row with a false flag —
+    which is why there is no `checked` boolean. "Never ticked" and "ticked then
+    un-ticked" are deliberately indistinguishable here; the ticket asks for a
+    record of what was verified, not a keystroke log.
+    """
+
+    __tablename__ = "producer_review_checks"
+    __table_args__ = (
+        UniqueConstraint(
+            "producer_id", "item_id", name="uq_producer_review_checks_producer_item"
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    item_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("admin_checklist_items.id", ondelete="RESTRICT"),
+        nullable=False,
+        # Indexed in its own right. The unique constraint in __table_args__ is
+        # (producer_id, item_id) and leads with producer_id, so it cannot serve
+        # the item_id-only lookup Postgres performs to enforce the RESTRICT on
+        # every DELETE against admin_checklist_items.
+        index=True,
+    )
+    label_snapshot = Column(Text, nullable=False)
+    checked_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        # Same reasoning as item_id above, on the other FK: SET NULL makes
+        # Postgres find every referencing row on each admin-account DELETE, and
+        # unindexed that is a sequential scan of an append-only audit table.
+        # Rare operation, unbounded table — the index is cheap insurance.
+        index=True,
+    )
+    checked_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    item = relationship("AdminChecklistItem")
