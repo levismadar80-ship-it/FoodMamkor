@@ -19,7 +19,8 @@
  * control line below prints FAIL, every image in this run is void.
  */
 import { chromium } from "playwright";
-import { existsSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 
 const OUT = "../qa-artifacts/MEH-2183";
 const BASE = "http://localhost:3000";
@@ -126,7 +127,19 @@ check(
   "referral <select> is no longer `required`",
   (await page.getByTestId("register-referral-source").getAttribute("required")) === null,
 );
-await page.screenshot({ path: `${OUT}/04-story-referral-hint-375.png` });
+// The hint carries its own testid as of the reviewer's MINOR finding; assert
+// the element, not an attribute a <p> could never have.
+check(
+  "optional hint is reachable by its own testid",
+  (await page.getByTestId("register-referral-optional-hint").count()) === 1,
+);
+// fullPage, deliberately. The previous version relied on
+// scrollIntoViewIfNeeded() to reframe — but that is a NO-OP when the target
+// already fits the viewport, so this shot came out a byte-identical blob to
+// shot 03 and evidenced nothing the earlier shot had not. Caught by the CI
+// reviewer, not by me: I noticed the two files had suspiciously equal sizes
+// and talked myself out of it instead of hashing them.
+await page.screenshot({ path: `${OUT}/04-story-referral-hint-375.png`, fullPage: true });
 
 await page.getByTestId("register-submit-next-hint").scrollIntoViewIfNeeded();
 await shot("05-story-submit-hint-375.png", "register-submit-next-hint");
@@ -150,6 +163,32 @@ check("empty attribution SUBMITS — CONFIRM frame reached", reached);
 await page.screenshot({ path: `${OUT}/06-confirm-after-empty-referral-375.png` });
 
 await browser.close();
+
+// CONTROL — distinctness. A duplicate capture is indistinguishable from real
+// coverage by filename alone, which is how the first version of this harness
+// shipped shot 04 as a copy of shot 03.
+const shots = [
+  "01-account-375.png",
+  "02-details-375.png",
+  "03-story-top-375.png",
+  "04-story-referral-hint-375.png",
+  "05-story-submit-hint-375.png",
+  "06-confirm-after-empty-referral-375.png",
+];
+const digests = new Map();
+for (const f of shots) {
+  const d = createHash("sha256").update(readFileSync(`${OUT}/${f}`)).digest("hex");
+  digests.set(f, d);
+}
+const dupes = [...digests.entries()].filter(
+  ([f, d]) => [...digests.values()].filter((x) => x === d).length > 1 && f,
+);
+check(
+  `all ${shots.length} captures are distinct images`,
+  dupes.length === 0,
+  dupes.length ? `duplicates: ${dupes.map(([f]) => f).join(", ")}` : "",
+);
+
 console.log(`\n${checks.length} assertions, ${failures} failed.`);
 if (failures) {
   console.log("!! Screenshots in this run are VOID — the control failed.");
