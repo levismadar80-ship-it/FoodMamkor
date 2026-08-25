@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { StrictMode } from "react";
 import {
   render,
   screen,
@@ -359,6 +360,102 @@ describe("useReviewChecklist — persistence + the soft approve gate", () => {
     act(() => result.current.attemptApprove({ id: "p3" }));
     act(() => result.current.confirmApprove());
     expect(approve).toHaveBeenCalledWith({ id: "p3" });
+    expect(result.current.approveConfirm).toBeNull();
+  });
+
+  // --- MEH-2175 -----------------------------------------------------------
+  //
+  // All four were shown RED against the pre-fix hook. Each names what the old
+  // code did, because a test that only asserts the new behaviour cannot tell a
+  // reader whether it ever discriminated.
+
+  it("fails CLOSED: a failed item fetch still shows the confirm", async () => {
+    // Pre-fix: the catch set items=[], so totalItems=0, so remaining=0, so
+    // `attemptApprove` took the else-branch and approved with NO dialog. The
+    // old code called approve() here and approveConfirm stayed null.
+    api.get.mockRejectedValueOnce(new Error("network"));
+    const approve = vi.fn();
+    const { result } = renderHook(() => useReviewChecklist(approve));
+    await waitFor(() => expect(result.current.itemsError).toBe(true));
+
+    act(() => result.current.attemptApprove({ id: "p1" }));
+
+    expect(approve).not.toHaveBeenCalled();
+    expect(result.current.approveConfirm).toEqual({
+      producer: { id: "p1" },
+      count: null,
+    });
+  });
+
+  it("fails CLOSED before the fetch resolves, too", async () => {
+    // The other half of the same ambiguity: `items === null` is also a falsy
+    // length. An admin who clicks approve while the list is in flight must not
+    // get a silent approval either.
+    let settle;
+    api.get.mockImplementationOnce(
+      () => new Promise((resolve) => (settle = resolve)),
+    );
+    const approve = vi.fn();
+    const { result } = renderHook(() => useReviewChecklist(approve));
+
+    act(() => result.current.attemptApprove({ id: "p1" }));
+
+    expect(approve).not.toHaveBeenCalled();
+    expect(result.current.approveConfirm?.count).toBeNull();
+    await act(async () => settle({ data: ITEMS }));
+  });
+
+  it("says the list is unavailable instead of reporting a count", () => {
+    // The copy has to branch, or the dialog reads "נשארו null סעיפים".
+    const unavailable = ADMIN_REVIEW_APPROVE_CONFIRM.message(null);
+    expect(unavailable).toBe(
+      "רשימת הבדיקה לא נטענה — לא ניתן לוודא שכל הסעיפים נבדקו.",
+    );
+    expect(unavailable).not.toMatch(/null|\d/);
+    // …and the counted case is untouched.
+    expect(ADMIN_REVIEW_APPROVE_CONFIRM.message(3)).toContain("3");
+  });
+
+  it("a double click still collapses, and costs ONE GET — not two", async () => {
+    // Guards the ref, and it is the reason the fix uses one. The obvious
+    // rewrite of `toggleOpen` reads the `openId` STATE instead: two clicks
+    // batched into a single React tick then both close over the same stale
+    // value, both take the open branch, and the row ends up expanded having
+    // fired two requests. Written against that rewrite this goes red on both
+    // assertions.
+    //
+    // Deterministic — it depends on React batching two calls in one act(),
+    // not on how many times React chooses to invoke an updater.
+    const { result } = renderHook(() => useReviewChecklist(vi.fn()));
+    await waitFor(() => expect(result.current.items).toHaveLength(3));
+    api.get.mockClear();
+
+    await act(async () => {
+      result.current.toggleOpen("p1");
+      result.current.toggleOpen("p1");
+    });
+
+    expect(result.current.openId).toBeNull();
+    const checkCalls = api.get.mock.calls.filter(([url]) =>
+      url.includes("/review-checks"),
+    );
+    expect(checkCalls).toHaveLength(1);
+  });
+
+  it("confirmApprove approves ONCE even under StrictMode", async () => {
+    // Sibling of the finding-4 defect, found by the Bug Protocol grep and not
+    // named in the ticket: approve() was called from inside the
+    // setApproveConfirm updater, so a double-invoke sent two approve requests.
+    const approve = vi.fn();
+    const { result } = renderHook(() => useReviewChecklist(approve), {
+      wrapper: ({ children }) => <StrictMode>{children}</StrictMode>,
+    });
+    await waitFor(() => expect(result.current.items).toHaveLength(3));
+
+    act(() => result.current.attemptApprove({ id: "p9" }));
+    act(() => result.current.confirmApprove());
+
+    expect(approve).toHaveBeenCalledTimes(1);
     expect(result.current.approveConfirm).toBeNull();
   });
 
