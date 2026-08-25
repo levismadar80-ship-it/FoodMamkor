@@ -103,6 +103,72 @@ def test_reorder_follows_array_order_not_client_positions(client, db):
     assert [r["label"] for r in resp.json()] == ["שני", "ראשון"]
 
 
+def test_partial_payload_cannot_collide_with_an_omitted_row(client, db):
+    """MEH-2176: an item left out of the payload keeps its position.
+
+    A(0) B(10) C(20) saved as [C, A] used to assign A the index-derived 10 —
+    the slot B still occupied — so two rows shared a position and the rendered
+    order fell back to a tiebreak nobody specified.
+
+    The assertion is on the COUNT of distinct positions across the whole table,
+    not on a literal list: a hardcoded expectation would be re-derivable from
+    the fix and would pass on any implementation that happened to produce those
+    numbers. `len(set(...)) == len(...)` is falsifiable by the bug and by any
+    future change that reintroduces it.
+    """
+    admin = _admin(db)
+    rows = _seed_items(client, db, admin, labels=("אלף", "בית", "גימל"))
+    assert [r["position"] for r in rows] == [0, 10, 20]
+
+    # B is omitted. The settings UI always sends the full list, so this is the
+    # defensive path — reachable by any other client, and by a future partial
+    # save.
+    resp = client.put(
+        ITEMS,
+        json={
+            "items": [
+                {"id": rows[2]["id"], "label": "גימל"},
+                {"id": rows[0]["id"], "label": "אלף"},
+            ]
+        },
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+
+    positions = [r["position"] for r in resp.json()]
+    assert len(set(positions)) == len(positions), (
+        f"two rows share a position: {positions}"
+    )
+
+    # The omitted row is still there and still untouched — the fix must not
+    # renumber a row this request never mentioned.
+    omitted = _item_row(db, rows[1]["id"])
+    assert omitted.position == 10
+    assert omitted.label == "בית"
+
+    # …and the two submitted items keep the order the admin sent them in.
+    submitted = {r["id"]: r["position"] for r in resp.json()}
+    assert submitted[rows[2]["id"]] < submitted[rows[0]["id"]]
+
+
+def test_full_payload_still_numbers_from_zero(client, db):
+    """The common path is unchanged: nothing omitted, nothing to skip.
+
+    Without this, the collision fix could have silently pushed every save's
+    numbering past a phantom `taken` set and no test would have noticed.
+    """
+    admin = _admin(db)
+    rows = _seed_items(client, db, admin, labels=("אלף", "בית", "גימל"))
+
+    resp = client.put(
+        ITEMS,
+        json={"items": [{"id": r["id"], "label": r["label"]} for r in rows]},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    assert [r["position"] for r in resp.json()] == [0, 10, 20]
+
+
 def test_updated_at_advances_when_an_item_is_edited(client, db):
     """`updated_at` tracks the last EDIT, not the insert.
 
