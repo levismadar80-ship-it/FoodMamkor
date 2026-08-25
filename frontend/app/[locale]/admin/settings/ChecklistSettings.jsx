@@ -15,6 +15,11 @@
  * The UI says «הפסקת שימוש» rather than offering a bin, so the affordance
  * matches what the database will actually allow.
  *
+ * MEH-2177: the save button mirrors the SERVER's label rule (≥3 letters), and
+ * an item that fails it says so on its own row. The previous guard was weaker
+ * than the server's, so a short label passed the button and returned a generic
+ * failure naming no item — see the LABEL_MIN_LETTERS note below.
+ *
  * Saves the WHOLE list in one PUT — order in the array is the order on screen,
  * and the server assigns `position` from the index. That is why reordering here
  * is local state plus one save, not a per-row API call.
@@ -26,6 +31,31 @@ import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 
 const ICON = 16;
+
+// MEH-2177: mirrors the server rule EXACTLY — it is not a second opinion about
+// what a good label looks like. `AdminChecklistItemIn._strip_label`
+// (backend/app/schemas/schemas.py:2669-2683) delegates to
+// `_min_letters_validator` (:121-131), which strips the value and then requires
+// at least `min_count` (default 3) characters surviving
+// `_LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")` (:21) — i.e. ≥3 Hebrew or Latin
+// letters. Digits, punctuation and emoji do not count.
+//
+// The button used to gate on `label.trim().length > 0`, which is a WEAKER rule,
+// so a two-letter label passed the button and came back as the generic
+// «השמירה נכשלה» that names no item. The 422 is correct; the client was simply
+// disagreeing with it and doing so silently.
+//
+// MEH-555 is why the floor exists at all: this string is copied into
+// `producer_review_checks.label_snapshot` at tick time, so a punctuation-only
+// label becomes a permanent audit record of an attestation to nothing.
+const LABEL_MIN_LETTERS = 3;
+const LABEL_LETTER_RE = /[א-תa-zA-Z]/g;
+const LABEL_TOO_SHORT = "תווית קצרה מדי — לפחות 3 אותיות";
+
+const labelLetterCount = (label) =>
+  ((label || "").trim().match(LABEL_LETTER_RE) || []).length;
+
+const labelIsValid = (label) => labelLetterCount(label) >= LABEL_MIN_LETTERS;
 
 // A row the admin has added but not yet saved has no server id. `null` is the
 // signal the API uses to mean "create this one", so the client never invents a
@@ -150,7 +180,7 @@ export default function ChecklistSettings() {
     );
   }
 
-  const canSave = items.every((item) => item.label.trim().length > 0);
+  const canSave = items.every((item) => labelIsValid(item.label));
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
@@ -197,6 +227,12 @@ export default function ChecklistSettings() {
                   value={item.label}
                   onChange={(e) => update(index, { label: e.target.value })}
                   maxLength={300}
+                  // Inline, on the row that is wrong, rather than one message
+                  // under the button: the admin edits a list of up to a dozen
+                  // items and «לכל סעיף חייב להיות טקסט» told her nothing about
+                  // WHICH one. Input wires `error` through aria-invalid +
+                  // aria-describedby, so this is announced, not merely red.
+                  error={labelIsValid(item.label) ? undefined : LABEL_TOO_SHORT}
                 />
                 <Input
                   label="הסבר (אופציונלי)"
@@ -239,11 +275,6 @@ export default function ChecklistSettings() {
         </button>
       </div>
 
-      {!canSave && (
-        <p className="text-xs text-error mt-2">
-          לכל סעיף חייב להיות טקסט.
-        </p>
-      )}
       {saveError && <p className="text-xs text-error mt-2">{saveError}</p>}
       {saved && !saveError && (
         <p className="text-xs text-primary mt-2">נשמר ✓</p>
