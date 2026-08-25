@@ -293,6 +293,7 @@
           "address_label": "כתובת",
           "address_map_privacy_hint": "הכתובת המלאה לא מתפרסמת. היא מופיעה במפה רק אם תבחרו להציג אותה.",
           "address_optional_hint": "אין כתובת מדויקת? היישוב מספיק.",
+          "address_city_mismatch": "הכתובת שנמצאה שייכת ל{found}, והיישוב שבחרת הוא {selected}. כדאי לבדוק את היישוב או לחפש כתובת אחרת.",
           "address_confirmed": "המיקום זוהה: {location}",
           "address_pick_from_list": "בחרו כתובת מהרשימה כדי שהעסק יופיע במפה.",
           "multi_location_label": "יש לך יותר מנקודת מכירה או איסוף אחת?",

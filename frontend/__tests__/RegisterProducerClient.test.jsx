@@ -97,8 +97,11 @@ vi.mock("@/components/MiniMap", () => ({
 // (onSelect with a full payload). The real component's network debounce is not
 // under test here; its contract is AddressSearch.jsx:39.
 vi.mock("@/components/AddressSearch", () => ({
-  default: ({ value, onChange, onSelect, inputTestId, id, placeholder }) => (
-    <div>
+  // MEH-2181: `city` is surfaced as a data attribute so a test can assert the
+  // wizard opts into city-scoped lookup. The real scoping is proven at the
+  // provider boundary in places.test.js; this only pins the wiring.
+  default: ({ value, onChange, onSelect, inputTestId, id, placeholder, city }) => (
+    <div data-testid="address-search-mock" data-city={city ?? ""}>
       <input
         id={id}
         data-testid={inputTestId}
@@ -1004,6 +1007,75 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
 // confirmation row, no map, and no lat/lng in the body. Drop the onChange
 // null-out and test 3 goes red, because stale coordinates would keep the
 // confirmation showing for an address the seller has typed over.
+// MEH-2181 — city-scoped address lookup + the soft mismatch notice.
+//
+// The notice is a SOFT signal by design: it never blocks, and it offers no
+// "use {found} instead" control, because MEH-213 forbids a raw provider string
+// from landing in `city` (CitySearch owns that value). These tests pin both
+// halves — that it appears when the towns disagree, and that it stays absent
+// in the three states where it would be noise.
+describe("RegisterProducerClient — address/city mismatch notice (MEH-2181)", () => {
+  async function reachDetails() {
+    await renderWizard();
+    await fillAccountToDetails();
+  }
+
+  it("opts AddressSearch into city-scoped lookup with the chosen city", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    expect(screen.getByTestId("address-search-mock").dataset.city).toBe("תל אביב");
+  });
+
+  it("shows the notice when the picked address resolves to a DIFFERENT town", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("address-pick-other-town")); // resolves חיפה
+    await screen.findByTestId("register-address-confirm");
+
+    const notice = screen.getByTestId("register-address-city-mismatch");
+    expect(notice).toHaveTextContent(`${K}.fields.address_city_mismatch`);
+    // Not error-styled: the gold token, never a red one.
+    expect(notice).toHaveStyle({ color: "#8B6914" });
+    // ...and no auto-correct affordance (MEH-213).
+    expect(notice.querySelector("button")).toBeNull();
+  });
+
+  it("stays absent when the picked address agrees with the chosen town", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "זכרון יעקב" } });
+    fireEvent.click(screen.getByTestId("address-pick")); // resolves זכרון יעקב
+    await screen.findByTestId("register-address-confirm");
+    expect(
+      screen.queryByTestId("register-address-city-mismatch"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("stays absent before any pick — a typed address has no resolved town to disagree with", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "דרך שרה 5" },
+    });
+    expect(
+      screen.queryByTestId("register-address-city-mismatch"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("disappears again once the seller types over the picked address", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("address-pick-other-town"));
+    await screen.findByTestId("register-address-city-mismatch");
+    // Typing invalidates the point (MEH-1808), so the notice loses its subject.
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "משהו אחר" },
+    });
+    expect(
+      screen.queryByTestId("register-address-city-mismatch"),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("RegisterProducerClient — address location confirmation (MEH-1808)", () => {
   async function reachDetails() {
     await renderWizard();
