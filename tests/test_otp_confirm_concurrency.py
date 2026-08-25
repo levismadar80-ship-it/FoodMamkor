@@ -95,7 +95,7 @@ CODE = "123456"
 #
 # They used to be ONE five-second budget doing both jobs, and that was the
 # whole flake — see the module docstring.
-_ARM_TIMEOUT = 60.0  # main waits for A to reach its commit
+_ARM_TIMEOUT = 60.0  # main waits for A to reach its claim
 _CLAIM_TIMEOUT = 60.0  # A waits for B to reach the claim statement
 _JOIN_TIMEOUT = 60.0  # main waits for both threads to finish
 
