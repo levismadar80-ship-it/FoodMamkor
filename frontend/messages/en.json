@@ -5126,6 +5126,7 @@
       "title": "Filters",
       "close_aria": "Close filters",
       "group_diet": "Diet",
+      "diet_scope": "Businesses that have such products in their catalog",
       "group_quality": "Source & quality",
       "group_service": "Service & trust",
       "apply": "Show {count} businesses",

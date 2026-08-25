@@ -5122,6 +5122,7 @@
       "title": "סינון",
       "close_aria": "סגירת הסינון",
       "group_diet": "תזונה",
+      "diet_scope": "עסקים שיש להם מוצרים כאלה בקטלוג",
       "group_quality": "מקור ואיכות",
       "group_service": "שירות ואמון",
       "apply": "הצגת {count} בתי עסק",

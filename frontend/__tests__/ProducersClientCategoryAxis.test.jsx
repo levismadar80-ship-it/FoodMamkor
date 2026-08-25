@@ -41,6 +41,12 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-2169: chip-icons.js gained vegetarian -> Carrot and
+  // no_added_sugar -> Cube. This mock enumerates exports by hand, so a new
+  // glyph in the registry kills the whole suite at import time with
+  // 'No "Carrot" export is defined' — not a failing assertion, a dead file.
+  Carrot: (p) => <span {...p} />,
+  Cube: (p) => <span {...p} />,
   CaretDown: (p) => <span {...p} />, // MEH-1483: sort-select caret
   // MEH-1418: chip leading icons (via lib/chip-icons.js).
   SealCheck: (p) => <span {...p} />,
