@@ -3,6 +3,21 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-25 — MEH-2171: חמשת מיילי ה-560px, ולקח על מכשיר שהחזיר קריאה מעופשת
+
+**מוזג:** ‏#3088 — חמשת השולחים הנותרים (`auth_emails.py` ×4, `report_info.py` ×1) נזילים במקום `width="560"`. **נחת כ-merge commit ולא כ-squash** (`2f01644a`) — המופע השני של MEH-1526 היום. ה-trailer ו-`Closes` שרדו ב-`960c3c7c`.
+**מיזגה:** בעלת החשבון ב-11:27:24, על שער ירוק אמיתי. אני לא מיזגתי.
+**‏MEH-2171:** Done, `completedAt` 11:27:26 — שתי שניות אחרי המיזוג, הכיוון הנכון (כלל 29b, נבדקו שני הכיוונים).
+**‏Preview:** אין. ‏Vercel דיווח `Ignored` — התנהגות ה-opt-in המוגדרת (MEH-1900), לא rate-limit.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`get_check_run` על job id יכול להגיש `in_progress` מעופש במשך עשרות דקות.** ניסיון 2 של pr-checks הסתיים `success` ב-10:56:52 — משך רגיל. `get_check_run` המשיך להחזיר `in_progress` הרבה אחרי, ואני דיווחתי "hang שני" כעובדה ובניתי עליו ניתוח שלם. **`get_workflow_run` ברמת ה-run החזיק את האמת כל הזמן.** אם job נראה תקוע הרבה מעבר ל-baseline — אמתי מול מכשיר שני ברמת הפשטה אחרת **לפני** שכותבים "תקוע". זו בדיוק המחלקה ש-`.claude/rules/testing.md` מוקדש לה, והיא תפסה אותי.
+2. **ניסיון 1 כן נתקע באמת** (~50 דק', בקשת `cancel` התקבלה ולא נכנסה לתוקף מיד). הביטול + `rerun_failed_jobs` היו ההכרעה הנכונה לפי כלל 21, וניסיון 2 רץ נקי תוך ~9 דקות. אז ה-remedy עבד; מה שנכשל היה הדיווח שלי על מה שקרה אחריו.
+3. **‏headless Chromium רוצף את רוחב החלון ל-500px.** כל מדידת viewport מתחת ל-500 חייבת iframe, אחרת `--window-size=375,900` מדווח `innerWidth=500` ומייצר טבלת מספרים שנראית כמו ראיה ל-375.
+4. **שני מספרים ב-DoD של MEH-2171 שגויים ותוקנו בגוף ה-PR** — `width="560"` לעולם לא יגיע ל-0 (פרוזה ב-`admin.py:1711`), ו-`max-width:560px` הוא 7 ולא 6. לא drift; אריתמטיקה של הכרטיס.
+
+
 ## 2026-08-25 — אצוות FilterSheet: #3086 מוזג, השני נעצר ב-Phase 0
 
 **מוזג:** ‏#3086 `8b183325` — ‏FilterSheet של /map במסך אחד. **אומת כ-squash** — הורה יחיד (`cb879750`) ותבנית `<title> (#N)` (MEH-1526), נקרא מהקומיט שנחת.
