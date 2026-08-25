@@ -104,7 +104,14 @@ export default function AddressSearch({
         if (seq !== requestSeq.current) return; // stale
         setSuggestions(list);
         setHighlight(0);
-        setIsOpen(true);
+        // MEH-2181: only pop the list open if the seller is actually IN this
+        // field. Adding `city` to the deps below means a lookup can now be
+        // triggered while she is typing somewhere else — correcting her town
+        // after the mismatch notice is exactly that flow — and an unbidden
+        // dropdown over a field she is not using is noise. The refreshed
+        // results are still stored, so they are correct the moment she
+        // returns. This guards every cause, not just the city one.
+        if (document.activeElement === inputRef.current) setIsOpen(true);
         // MEH-1766: a successful call that matched nothing. Distinct from the
         // rejection branch below both on screen (same hint) and in the log.
         setProviderIssue(list.length === 0 ? "empty" : null);
@@ -139,10 +146,14 @@ export default function AddressSearch({
       controller.abort();
     };
     // MEH-2181: `city` belongs in the deps. Without it, a seller who corrects
-    // her city AFTER typing an address keeps getting suggestions scoped to the
-    // old one until she edits the address text again — a stale-closure bug the
-    // linter would not have caught, since the effect still reads the current
-    // `city` only when `value` happens to change.
+    // her town AFTER typing an address keeps being shown results scoped to the
+    // OLD town until she happens to edit the address text again.
+    //
+    // Precisely: this is stale RESULTS, not a stale closure — the effect body
+    // is rebuilt every render, so it would read the current `city` whenever
+    // `value` changed. What it would not do is re-run when only `city` moved.
+    // (The first version of this comment said "stale-closure bug"; that was
+    // the wrong name for it.)
   }, [value, city]);
 
   // Close on outside click
