@@ -91,10 +91,18 @@ def save_checklist_items(
 
     ## Order comes from the array index, not from the client
 
-    `position` is assigned as `index * 10` here rather than accepted from the
-    payload. A client-supplied position lets two items claim the same slot and
-    makes the rendered order depend on a tiebreak nobody specified; the array
-    the admin actually sees IS the order, so it is the input.
+    `position` is assigned HERE rather than accepted from the payload: each
+    submitted item takes the next free slot, in array order, skipping any slot
+    still held by a row this request did not submit (see the note in the body
+    for why those are not ours to reuse). A client-supplied position lets two
+    items claim the same slot and makes the rendered order depend on a
+    tiebreak nobody specified; the array the admin actually sees IS the order,
+    so it is the input.
+
+    Until MEH-2176 this read "`position` is assigned as `index * 10`", which
+    stopped being true when the skip was added — the exact defect class this
+    module is otherwise careful about, and worth the two extra lines to keep
+    the docstring a description rather than a claim about a previous version.
 
     ## There is no delete, and that is enforced below the router
 
