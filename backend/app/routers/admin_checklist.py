@@ -91,10 +91,18 @@ def save_checklist_items(
 
     ## Order comes from the array index, not from the client
 
-    `position` is assigned as `index * 10` here rather than accepted from the
-    payload. A client-supplied position lets two items claim the same slot and
-    makes the rendered order depend on a tiebreak nobody specified; the array
-    the admin actually sees IS the order, so it is the input.
+    `position` is assigned HERE rather than accepted from the payload: each
+    submitted item takes the next free slot, in array order, skipping any slot
+    still held by a row this request did not submit (see the note in the body
+    for why those are not ours to reuse). A client-supplied position lets two
+    items claim the same slot and makes the rendered order depend on a
+    tiebreak nobody specified; the array the admin actually sees IS the order,
+    so it is the input.
+
+    Until MEH-2176 this read "`position` is assigned as `index * 10`", which
+    stopped being true when the skip was added — the exact defect class this
+    module is otherwise careful about, and worth the two extra lines to keep
+    the docstring a description rather than a claim about a previous version.
 
     ## There is no delete, and that is enforced below the router
 
@@ -115,10 +123,30 @@ def save_checklist_items(
     quietly resurrected under new ids.
     """
     existing = {item.id: item for item in db.query(AdminChecklistItem).all()}
-    result: list[AdminChecklistItem] = []
 
-    for index, payload in enumerate(data.items):
-        position = index * _POSITION_STEP
+    # MEH-2176: `index * _POSITION_STEP` is unique WITHIN one payload, which is
+    # not the same as unique in the table. An item omitted from the payload is
+    # left alone (see "There is no delete" above) and KEEPS its old position, so
+    # a save that drops one row can hand that row's slot to a different item:
+    # A(0) B(10) C(20), saved as [C, A], puts A at 10 where B still sits. The
+    # docstring's promise that "two items can never claim the same slot" was
+    # true of the payload and false of the table.
+    #
+    # The slots those untouched rows occupy are therefore not ours to reuse.
+    # Skipping them keeps the submitted items strictly increasing in the order
+    # the admin sees, without renumbering a row this request never mentioned —
+    # which would contradict "left ALONE" to fix a narrower problem.
+    submitted_ids = {p.id for p in data.items if p.id is not None}
+    taken = {
+        item.position
+        for item_id, item in existing.items()
+        if item_id not in submitted_ids
+    }
+
+    position = 0
+    for payload in data.items:
+        while position in taken:
+            position += _POSITION_STEP
         if payload.id is None:
             item = AdminChecklistItem(
                 position=position,
@@ -135,11 +163,11 @@ def save_checklist_items(
             item.label = payload.label
             item.hint = payload.hint
             item.active = payload.active
-        result.append(item)
+        position += _POSITION_STEP
 
     db.commit()
-    # Re-read the WHOLE table rather than returning `result`, which holds only
-    # the rows this request submitted. A second admin who added an item between
+    # Re-read the WHOLE table rather than returning the rows this request
+    # submitted. A second admin who added an item between
     # this page's load and this save is otherwise absent from the response, so
     # the saving admin's list silently loses a row that exists in the database —
     # the same check-then-act window the tick endpoint below closes, on the
