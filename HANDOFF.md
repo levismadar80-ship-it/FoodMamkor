@@ -3,6 +3,23 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-25 — ‏MEH-2164: כרטיס ה-newsletter נזיל (PR #3081)
+
+**מוזג:** ‏#3081 `058ae704`. **אומת כ-squash** — הורה יחיד (`a9af495d`) ותבנית `<title> (#N)`, לא הונח שהבקשה כובדה (MEH-1526).
+**מצב הכרטיס:** ‏MEH-2164 נשאר **`In Progress`**, `completedAt: null`, ‏`stateHistory` שני מעברים. ‏slug הענף נושא `meh-2164` ולא סגר אותו — נבדק בשני הכיוונים (כלל 29b), וזו התוצאה הנכונה כאן כי ה-smoke לא רץ.
+**מה נחת:** שתי שורות ב-`marketing.py:155-156` — `width="560"` → `width="100%"`, ‏`margin:0 auto` נוסף, ‏`max-width:560px` נשמר. מועתק מ-`admin.py:1792-1796`. ‏+ קובץ טסט חדש.
+**המדידה:** ‏375 → `scrollWidth` 560→375 · 1440 → ללא שינוי (כרטיס 560, פערים 440/440). חבילת ה-backend המלאה: `3212 passed, 390 skipped, 1 xfailed`.
+
+### 🔴 שלושה דברים ששווה לקחת לסשן הבא
+
+1. **הטענה בכרטיס «מופע יחיד — אומת ב-Phase 0» הייתה שגויה: יש שישה.** ‏`auth_emails.py` ×4, `report_info.py` ×1, ו-`marketing.py`. תוקן ב**תיאור** הכרטיס לפי כלל 34. **חמישה נשארו** לפי ה-scope — פתוח לספיר, ו-`auth_emails.py` (אימות מייל, איפוס סיסמה) הוא ה-touchpoint הכבד מביניהם.
+2. **בקרה שנכשלת מהסיבה הלא נכונה אינה בקרה.** ריצת ה-fail-by-construction הראשונה חזרה `ERROR` בשני הכיוונים כי postgres לא רץ — אדום שנראה כמו הוכחה. הפרופיל הנכון, אחרי התיקון: **1 מתוך 4 אדום**, והשלושה האחרים עוברים בשני הכיוונים במכוון.
+3. **`405: 2 of 2 required status checks are expected` = מאחור, לא אדום.** קרה פעמיים ב-PR הזה (staging זז ל-`861fbe9d` ואז ל-`5b708321`). ‏`update_pull_request_branch` צד-שרת; ‏**auto-merge אינו מעדכן ענף בעצמו**, ולכן ירוק-ומאחור נתקע.
+
+**‏🚩 נשאר לספיר:** ה-smoke — שליחה אמיתית ובדיקה בג'ימייל בנייד. המספרים למעלה הם Chromium, ולקוח מייל אינו דפדפן.
+
+---
+
 ## 2026-08-25 — ‏MEH-2166: שם האירוע במבחן ה-OTP concurrency (PR #3082)
 
 **מוזג:** ‏#3082 `5b708321`. **אומת כ-squash** — הורה יחיד (`861fbe9d`) ותבנית `<title> (#N)`, לא הונח שהבקשה כובדה (MEH-1526).
