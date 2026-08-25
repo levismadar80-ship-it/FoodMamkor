@@ -788,13 +788,17 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // What MEH-2173 changes is that the ON direction can now reach it too, since
   // switching a filter on no longer navigates away.
   //
-  // NOT fixed in this card, deliberately. The fix is not a branch here: the
+  // NOT fixed in this card, deliberately — it has its own: MEH-2180. The fix
+  // is not a branch here: the
   // geo fetch lives in `loadProducersGeo`, which builds its own params from
   // the `chips` it closes over — i.e. the STALE state, one render behind the
   // `setChips(next)` above — so routing through it means changing that
   // function's signature, and it owns the radius-widening and toast behaviour
   // that the whole near-me flow depends on. That is its own ticket with its own
-  // tests, not a side effect of a filter-row change.
+  // tests, not a side effect of a filter-row change. MEH-2180 also records the
+  // product question that has to be answered first: whether the radius-widening
+  // and the drop-to-unfiltered fallback should fire on an attribute change at
+  // all, or only on "קרוב אליי" itself.
   const applyChips = (next) => {
     // MEH-1282: a filter action clears the geo-empty notice, so a later
     // back-navigation doesn't land on a stale near-me message.
