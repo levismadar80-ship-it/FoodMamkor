@@ -5,6 +5,13 @@
  * Not a spec: a one-off capture harness, run by hand. Locators are the
  * data-testids added in this PR (docs/E2E-LOCATORS.md).
  *
+ * BEFORE COMMITTING: this writes raw PNGs (~1.3 MB). Run
+ *   node scripts/compress-qa-screenshots.mjs ../qa-artifacts/MEH-2183/
+ * and then DELETE the .png files — the helper writes .webp beside them, it
+ * does not remove the source. Committing both duplicates ~1.3 MB against the
+ * 2 MB per-PR cap. Every re-run of this script re-creates them, so the
+ * compress+delete is per-run, not once.
+ *
  * CONTROL (read this first): every shot is preceded by an assertion that the
  * expected string is actually IN the DOM. A screenshot proves a pixel was
  * painted, not that the right text was in it — and a harness that photographs
@@ -12,7 +19,7 @@
  * control line below prints FAIL, every image in this run is void.
  */
 import { chromium } from "playwright";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = "../qa-artifacts/MEH-2183";
 const BASE = "http://localhost:3000";
@@ -36,14 +43,16 @@ function check(name, ok, detail = "") {
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
-// Playwright's npm pin wants a Chromium build the sandbox does not have, and
-// the download host is proxy-denied, so point at the pre-installed binary.
-// Overridable: on a machine where `npx playwright install` has run, export
-// QA_CHROMIUM= (empty) and Playwright resolves its own browser as usual.
-const QA_CHROMIUM =
-  process.env.QA_CHROMIUM ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Playwright's npm pin wants a Chromium build this sandbox does not have, and
+// the download host is proxy-denied, so fall back to the pre-installed binary
+// when it is there. Probed on the filesystem rather than read from an env var:
+// scripts/check_env_drift.sh BLOCKS on any process.env name absent from
+// .env.example, and a throwaway QA harness is not a reason to add one.
+// Where `npx playwright install` has run, the path is absent and Playwright
+// resolves its own browser as usual.
+const SANDBOX_CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch(
-  QA_CHROMIUM ? { executablePath: QA_CHROMIUM } : {},
+  existsSync(SANDBOX_CHROMIUM) ? { executablePath: SANDBOX_CHROMIUM } : {},
 );
 const ctx = await browser.newContext({
   viewport: { width: 375, height: 900 },
