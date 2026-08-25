@@ -256,8 +256,8 @@
         "steps": {
           "account": {
             "title": "1. Account details",
-            "duration_hint": "About 3 minutes. You can stop and continue later.",
-            "email_section": "Sign up with email"
+            "email_section": "Sign up with email",
+            "duration_hint": "About 3 minutes. You can stop and continue later."
           },
           "business": {
             "title": "2. Business details",

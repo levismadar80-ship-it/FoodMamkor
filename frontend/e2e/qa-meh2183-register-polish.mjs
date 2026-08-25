@@ -36,11 +36,15 @@ function check(name, ok, detail = "") {
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
-// Playwright here pins build 1234; the sandbox ships 1194 and the download
-// host is proxy-denied, so point at the pre-installed binary explicitly.
-const browser = await chromium.launch({
-  executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-});
+// Playwright's npm pin wants a Chromium build the sandbox does not have, and
+// the download host is proxy-denied, so point at the pre-installed binary.
+// Overridable: on a machine where `npx playwright install` has run, export
+// QA_CHROMIUM= (empty) and Playwright resolves its own browser as usual.
+const QA_CHROMIUM =
+  process.env.QA_CHROMIUM ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const browser = await chromium.launch(
+  QA_CHROMIUM ? { executablePath: QA_CHROMIUM } : {},
+);
 const ctx = await browser.newContext({
   viewport: { width: 375, height: 900 },
   deviceScaleFactor: 2,
