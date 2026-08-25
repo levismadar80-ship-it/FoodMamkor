@@ -3,10 +3,10 @@
  *
  * Run against a LOCAL `next start` fed by qa-meh2173-mockapi.mjs:
  *
- *   node qa-meh2173-mockapi.mjs &
+ *   node qa-meh2173-mockapi.mjs &          # --port=8799 to move it
  *   NEXT_PUBLIC_API_URL=http://127.0.0.1:8799 npm run build
  *   NEXT_PUBLIC_API_URL=http://127.0.0.1:8799 npx next start -p 3311
- *   QA_LABEL=after node qa-meh2173-promoted-filters.mjs
+ *   node qa-meh2173-promoted-filters.mjs --label=after
  *
  * NEVER run `npm run build` while that server is up — a build that rewrites
  * `.next` underneath a live server voids every measurement in the same run
@@ -58,8 +58,23 @@
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const BASE = process.env.QA_BASE || "http://127.0.0.1:3311";
-const LABEL = process.env.QA_LABEL || "after";
+// CLI flags, deliberately NOT environment variables. `scripts/check_env_drift.sh`
+// BLOCKS any `process.env.X` that no `.env.example` documents, and it is right
+// to: these are knobs for a throwaway QA harness, so documenting them would tell
+// every developer to configure a variable the app never reads. The guard does
+// carry a SYSTEM_EXCLUDE list for exactly this class — but adding names to an
+// exclude list is textually an addition and semantically a REMOVAL of coverage,
+// which workflow rule 32 forbids CC from doing. Reading argv instead costs
+// nothing and leaves the guard's reach untouched.
+//
+//   node qa-meh2173-promoted-filters.mjs --label=before --base=http://...
+const flag = (name, fallback) => {
+  const hit = process.argv.slice(2).find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.slice(name.length + 3) : fallback;
+};
+
+const BASE = flag("base", "http://127.0.0.1:3311");
+const LABEL = flag("label", "after");
 const OUT = `qa-artifacts/meh-2173`;
 mkdirSync(OUT, { recursive: true });
 
@@ -151,7 +166,7 @@ const report = {};
 // The repo pins a Playwright whose bundled Chromium build is not the one
 // preinstalled in this sandbox, and the download host is blocked. Launch the
 // preinstalled binary — the environment's documented path for this mismatch.
-const EXECUTABLE = process.env.QA_CHROMIUM || "/opt/pw-browsers/chromium";
+const EXECUTABLE = flag("chromium", "/opt/pw-browsers/chromium");
 const browser = await chromium.launch({ executablePath: EXECUTABLE });
 
 const settle = async (page) => {

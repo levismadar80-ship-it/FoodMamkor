@@ -16,7 +16,11 @@
  */
 import { createServer } from "node:http";
 
-const PORT = Number(process.env.QA_MOCK_PORT || 8799);
+// A CLI flag, not an env var — see the note in qa-meh2173-promoted-filters.mjs:
+// check_env_drift.sh blocks undocumented `process.env` reads, and widening its
+// exclude list would remove coverage rather than add it (workflow rule 32).
+const portFlag = process.argv.slice(2).find((a) => a.startsWith("--port="));
+const PORT = Number(portFlag ? portFlag.slice(7) : 8799);
 
 // `emoji` is a STRING, never null. ProducerListSchema declares
 // categories[].emoji as a required string, and the client parse is
