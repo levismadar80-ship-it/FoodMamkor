@@ -3,6 +3,64 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-25 — אצוות FilterSheet: #3086 מוזג, השני נעצר ב-Phase 0
+
+**מוזג:** ‏#3086 `8b183325` — ‏FilterSheet של /map במסך אחד. **אומת כ-squash** — הורה יחיד (`cb879750`) ותבנית `<title> (#N)` (MEH-1526), נקרא מהקומיט שנחת.
+**סמכות:** ‏full-pipeline של ספיר לאצווה, 25/08. שני שערי החובה ירוקים (`CI gate`, `Deploy gate`); הסוקר האדוורסרי החזיר `Must Fix: None`.
+**נעצר:** ‏MEH-2170 — ‏Phase 0 בלבד, **אין branch ואין PR**. הנימוק המלא בתגובה על הכרטיס.
+**‏Preview:** אין. ‏Vercel דיווח `Ignored` — זו התנהגות ה-opt-in המוגדרת (`vercel.json`, ‏MEH-1900: בלי `[preview]` בהודעת הקומיט אין בנייה), **לא** rate-limit. כלל 9 לא נשמט; זה המצב, בשמו.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`components/InfoTooltip.jsx` לא נפתח בכלל — לא בהקשה ולא בקליק.** רצף האירועים הוא `mouseenter → pointerdown → mousedown → focus → click`, כך ש-`onMouseEnter` פותח ו-`onClick` מכבה מיד: `aria-expanded=false`, אפס `[role=tooltip]`. מדוד ב-Chromium ע"י האזנה לאלמנט האמיתי, זהה בהקשת מגע ובקליק עכבר. **בדפי האדמין זה בלתי-נראה כי עכבר מרחף לפני שהוא לוחץ** — ולכן זה חי שם בשקט. אם את מוסיפה ⓘ למשטח צרכני כלשהו, `ui/Popover` במצב anchored הוא הפרימיטיב; ‏`sheetOnMobile` יפתח focus trap שני מחוץ ל-trap של הדיאלוג המארח. **הרכיב עצמו לא תוקן — 8+ צרכני אדמין, טעון כרטיס.**
+
+2. **‏`e2e/qa-meh1945-sticky-apply.mjs` אדום עכשיו, וזה לא רגרסיה.** ‏GUARD 1 שלו נופל על `panel does NOT overflow` בשני המשטחים ב-0 פילטרים — הוא **דורש** גלישה כדי שבדיקת ה-stickiness תהיה בעלת משמעות, וזה בדיוק מה שהכרטיס ביטל. אומת בנפרד ב-**375×667**, שם עדיין יש 121px גלישה: `sticky`, על המסך ב-`scrollTop=0` וב-max, צמוד לתחתית. **לפני שמישהו "מתקן" את ה-footer — הוא תקין. ה-probe צריך viewport נמוך יותר ברשימת ה-TARGETS שלו.**
+
+3. **‏MEH-2170 חסום על הנחת יסוד, לא על scope.** ל-/map **אין קטלוג לא-מסונן** להאכיל בו את השער של /producers: ‏`allProducers` נטען מחדש עם פרמטרי הצ'יפים בכל טוגל (`useMapFilters.js:178,209,254,268,294`) ומוחלף בתוצאה מוגבלת-viewport ע"י «חפשי באזור זה» (`useMapSync.js:245-277`), ואין `hasMore` ולכן אין `catalogFullyLoaded`. ‏`visibleGatedDietKeys` ניתנת לייבוא — ה**קלט** שלה הוא שלא קיים. שלוש אפשרויות מוצעות בתגובה על הכרטיס; ההמלצה שלי היא כרטיס מקדים שייצר מקור אמת לא-מסונן ל-/map.
+
+4. **‏Phase 0 של MEH-2170 לא הפיק טבלת ספירות, ואני לא המצאתי אחת.** ‏staging חסום (MEH-2090), ו-production מחזיר `[]`. **ה-control הוא מה שתפס:** שאילתה בלי פילטר החזירה `0` — ואפס בלי פילטר אינו "הקטלוג ריק", הוא "המכשיר לא מודד". הפקודה להרצה מהטרמינל שלך נמצאת בתגובה על הכרטיס, עם ההוראה לקרוא את שורת ה-`<no filter>` ראשונה.
+
+5. **תיקון לטענה שכתבתי בגוף ה-PR: יש WebKit בצנרת.** כתבתי "אין מנוע WebKit" — שגוי. ‏`e2e.yml:432-524` מריץ `webkit-iphone13` כ-job צל (`continue-on-error: true`). ירשתי את זה מהערת ה-carve-out ב-`.claude/rules/workflow.md` (כלל 23, תיקון 12/08, סעיף ה) שהתיישנה. **המסקנה שלה עדיין נכונה** — ‏Playwright WebKit ≠ ‏iOS Safari אמיתי, ולכן מעבר מכשיר אמיתי נשאר שלך — אבל ההנחה שגויה והשורה טעונה תיקון בכרטיס משלה. תיקנתי את גוף ה-PR; את קובץ הכללים לא נגעתי.
+
+6. **‏`npm run lint:ratchet` אדום — וגם על `origin/staging` נקי.** ריצת control עם הענף ב-stash הפיקה את **אותם 6 הממצאים** (`app/fonts.js`, `lib/generated/api.zod.js`, `lib/hours-serialize.js`, `lib/submission-gate.js`, `lib/user-location.js`, `package.json`), אף אחד בקובץ שהענף נגע בו. קיים מלפני, לא מהשינוי.
+
+### מה שנשאר פתוח ואינו שלי
+
+- **‏`/api/categories` מחזיר 500 ב-production** (`mehamakor.co.il`), משוחזר 2/2, בזמן ש-`/api/health` מחזיר 200. לא בדקתי סיבה — לא הייתה לי דרך, ולא ניחשתי. **טעון כרטיס.**
+- **ההכרעה על MEH-2170** — שלוש אפשרויות בתגובה על הכרטיס; הכרטיס מסומן `decision-first` ולא בחרתי.
+- **‏InfoTooltip** ו-**שורת ה-carve-out ב-workflow.md** — שניהם לעיל, שניהם טעונים כרטיס.
+- **בדיקת מכשיר אמיתי ל-#3086** — ה-QA שלי הוא אמולציית Chromium ב-390×844 · 375×667 · 1440×900 (screenshots ב-`qa-artifacts/meh-2169/`, כולל צילומי «לפני» מ-`origin/staging`). זו עדות layout, לא עדות מנוע.
+- **‏E2E של #3086 לא הסתיים לפני המיזוג.** רץ 29+ דקות ועדיין `in_progress`. מוזג על שני שערי החובה, ש-`E2E gate` אינו אחד מהם. הרישום של 25/08 בקובץ הזה כבר מתעד שהסוויטה אדומה גם על ה-base.
+
+## 2026-08-25 — סגירת אצוות MEH-1399: #3050 ו-#3057 מוזגו
+
+**מוזג:** ‏#3050 `447a8985` (קוד) → #3057 `4e5e2e80` (docs), בסדר הזה. **שניהם אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)` (MEH-1526), נקרא מהקומיט שנחת ולא הונח מהצלחת הקריאה.
+**סמכות:** הרשאת merge מפורשת של ספיר, 25/08, עם שערי החובה ירוקים. ממצא fix-now הועלה והוכרע לטובת מיזוג — ראו §1.
+**ענף שלא נמחק:** ‏`feature/meh-1399-admin-checklist-db`. ה-hook של שם הענף מפרש את `--delete` כשם ענף וחוסם, ואין כלי MCP למחיקת ref. **טעון מחיקה ידנית.**
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`ReviewEvidence.jsx:148` נחת שבור, במודע.** ‏`_normalize_instagram` שומר handle **חשוף** (`schemas.py:247-259`), ו-`ExternalLink` מעביר `href` כמו שהוא ל-`<a target="_blank">` — כך ש-`href="someaccount"` נפתר יחסית ל-`/he/admin/producers` ופותח 404. סווג fix-now, ספיר הכריעה למזג. **התיקון: לבנות `https://instagram.com/{handle}`; ‏`instagramHandle` ב-`outreach/page.jsx:52` הוא module-local ואינו מיוצא** — צריך להרים אותו ל-`frontend/lib/` או לכתוב מקבילה. שבעה ממצאי follow-up נוספים עם ראיות: תגובה 5406657750 ב-#3050.
+
+2. **‏`builder-model-guard` בוחן את הקומיט המחובר האחרון ומדלג על merges — ולכן sync לא מנקה אותו.** קומיט web-UI של ספיר (`42a8b44a`) בלי trailer נעל את `Repo guards` על `1 of 16`, ושלושה sync merges רצופים נחתו עליו שוב. הפתרון המתועד הוא **קומיט ריק שמצהיר על עצמו** (`4f45e991`). זו גם הסיבה שתחזוקת drift אינה מקדימה החלטה של ספיר: אימתתי מקומית שה-merge אינו מנקה את השער לפני שדחפתי.
+
+3. **‏`codegen-manifest.json` הוא זוג hash — לעולם לא לפתור התנגשות בבחירת צד.** "קח שלי" מייצר קובץ עקבי-למראה שאינו תואם לאף אחד מהצדדים. ‏`openapi-codegen-drift-guard.sh --write`, ואז לאמת שה-run הקריא מדווח ש**גם tier B וגם tier C רצו** — ב-CI שניהם מדלגים בהיעדר הכלים, כך שהריצה המקומית חזקה יותר.
+
+4. **‏E2E: הדיאגנוזה הקודמת ב-HANDOFF הזה הייתה שגויה, ותוקנה.** ‏§4 של 21/08 תלה את זה ב-backend של staging שמחזיר 500; אני הצהרתי אחר כך שזה `timeout-minutes: 15` (`e2e.yml:86`) ו"אל תריצי מחדש". **שתיהן חלקיות.** הסוויטה רצה ~13-15 דקות מול תקרה של 15 ונופלת משני צדדיה: הריצה על `4f45e991` **הסתיימה** ב-13m21s עם כשל אמיתי — 299 טסטים רצו, 29 דולגו. ובנוסף: שמונה מ-12 הריצות ה"ירוקות" של staging ארכו **~25 שניות** — דילוג paths-filter, לא מעבר. **שמות ה-specs לא חולצו** (‏`get_job_logs` tail-only מול artifact של 161MB; ארבעה חלונות נכשלו). נשאר תצפית לא מוסברת. המדידה: MEH-2168.
+
+6. **‏PR של docs שנפתח כ-draft ננעל אדום — ו-re-run לא מחלץ אותו.** קרה ל-#3085 בדיוק: ה-CI gate לקח את ענף `Neither stack touched` שבו הבדיקה היחידה הנאכפת היא `Env drift`, ו-`Env drift` מדולג ב-draft. הפלט המדויק: `FAIL Env drift (.env.example): skipped (required job did not run — 'skipped' is not a pass)`. ההיפוך ל-ready ב-07:58:30 לא הועיל — קבוצת ה-concurrency בלעה את הריצה השנייה, וה-PR נשאר על תוצאת ריצת ה-draft. **‏re-run משחזר את ה-payload המקורי עם `draft: true`**, ולכן החילוץ היחיד הוא push אמיתי שמפעיל `synchronize` — ו**קומיט ריק לבעיטת CI אסור** (כלל 30). כלומר: או שפותחים docs PR כ-non-draft מלכתחילה, או שיש תוכן אמיתי להוסיף. **הכלל המעשי: לעולם אל תפתחו docs PR כ-draft.**
+
+5. **כלל 29b עובד בשני הכיוונים — בדקו את שניהם.** ‏`Closes MEH-1399` בגוף ה-squash **ו-**`meh-1399` בשם הענף, והכרטיס נשאר `Backlog` עם `completedAt: null` ו-`stateHistory` בן ערך יחיד. הכיוון הזה ("לא נסגר מה שהיה אמור") הוא זה ששכב יום שלם ב-#2813. כאן זה במקרה נכון — ה-DoD לא הושלם — אבל אף אחד לא החליט את זה.
+
+### מה שנשאר פתוח ואינו שלי
+
+- **המיגרציה על Railway.** ‏`alembic upgrade head` רץ ב-boot של ה-deploy. אחרי ש-staging מתפרס, להריץ ב-Railway Query tab (משפט יחיד, בלי נקודה-פסיק): `SELECT table_name FROM information_schema.tables WHERE table_name IN ('admin_checklist_items','producer_review_checks')` — **מצופות בדיוק 2 שורות**. פחות מזה = עצירה.
+- **בדיקת ה-`RESTRICT`** — ‏SQL ב-`docs/MANUAL_TESTING.md`, עטוף ב-`BEGIN`/`ROLLBACK` כי אם האילוץ **כן** שבור ה-DELETE יצליח, ובדיקה בלי גלגול לאחור מוחקת סעיף אמיתי בזמן שהיא מוכיחה שההגנה חסרה.
+- **מחיקת `feature/meh-1399-admin-checklist-db`** (ראו למעלה).
+- **תיקון האינסטגרם + שבעת ה-follow-ups** — תגובה 5406657750 ב-#3050.
+
+---
+
 ## 2026-08-21 — אצוות "מאשרת הכל": תוקף רישיון (PR #3047) + רשימת בדיקה כדאטה (PR #3050)
 
 **מוזג:** ‏#3047 `2c573d3f` — אומת כ-squash לפי **הורה יחיד** ותבנית `<title> (#N)` (MEH-1526).
