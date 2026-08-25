@@ -26,9 +26,11 @@ import {
   Package,
   Certificate,
   Leaf,
+  Carrot,
   GrainsSlash,
   Barn,
   DropSlash,
+  Cube,
   Clock,
 } from "@phosphor-icons/react";
 
@@ -41,9 +43,20 @@ const CHIP_ICON_COMPONENTS = {
   pickup_points: Package,  // MEH-2046
   kosher: Certificate,
   vegan: Leaf,
+  // MEH-2169: vegetarian + no_added_sugar had NO entry here, so both rendered
+  // text-only while their diet siblings carried a glyph. That was invisible while
+  // the diet group was a vertical row list; the 2-col pill grid this ticket
+  // restores puts the five pills side by side, where one iconless pill among
+  // iconed ones reads as a different KIND of control. Both names were verified
+  // present in @phosphor-icons/react 2.1.10 BEFORE being written here
+  // (dist/csr/Carrot.es.js, dist/csr/Cube.es.js), with SealCheck/Leaf as positive
+  // controls and a nonexistent name as the negative one — the card required a
+  // STOP if either were absent, so the probe had to be able to answer "absent".
+  vegetarian: Carrot,
   gluten_free: GrainsSlash,
   grass_fed: Barn,
   lactose_free: DropSlash,
+  no_added_sugar: Cube,
   open_for_orders_now: Clock,  // MEH-2131
 };
 
