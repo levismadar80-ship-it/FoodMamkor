@@ -3,6 +3,33 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-25 — סגירת אצוות MEH-1399: #3050 ו-#3057 מוזגו
+
+**מוזג:** ‏#3050 `447a8985` (קוד) → #3057 `4e5e2e80` (docs), בסדר הזה. **שניהם אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)` (MEH-1526), נקרא מהקומיט שנחת ולא הונח מהצלחת הקריאה.
+**סמכות:** הרשאת merge מפורשת של ספיר, 25/08, עם שערי החובה ירוקים. ממצא fix-now הועלה והוכרע לטובת מיזוג — ראו §1.
+**ענף שלא נמחק:** ‏`feature/meh-1399-admin-checklist-db`. ה-hook של שם הענף מפרש את `--delete` כשם ענף וחוסם, ואין כלי MCP למחיקת ref. **טעון מחיקה ידנית.**
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`ReviewEvidence.jsx:148` נחת שבור, במודע.** ‏`_normalize_instagram` שומר handle **חשוף** (`schemas.py:247-259`), ו-`ExternalLink` מעביר `href` כמו שהוא ל-`<a target="_blank">` — כך ש-`href="someaccount"` נפתר יחסית ל-`/he/admin/producers` ופותח 404. סווג fix-now, ספיר הכריעה למזג. **התיקון: לבנות `https://instagram.com/{handle}`; ‏`instagramHandle` ב-`outreach/page.jsx:52` הוא module-local ואינו מיוצא** — צריך להרים אותו ל-`frontend/lib/` או לכתוב מקבילה. שבעה ממצאי follow-up נוספים עם ראיות: תגובה 5406657750 ב-#3050.
+
+2. **‏`builder-model-guard` בוחן את הקומיט המחובר האחרון ומדלג על merges — ולכן sync לא מנקה אותו.** קומיט web-UI של ספיר (`42a8b44a`) בלי trailer נעל את `Repo guards` על `1 of 16`, ושלושה sync merges רצופים נחתו עליו שוב. הפתרון המתועד הוא **קומיט ריק שמצהיר על עצמו** (`4f45e991`). זו גם הסיבה שתחזוקת drift אינה מקדימה החלטה של ספיר: אימתתי מקומית שה-merge אינו מנקה את השער לפני שדחפתי.
+
+3. **‏`codegen-manifest.json` הוא זוג hash — לעולם לא לפתור התנגשות בבחירת צד.** "קח שלי" מייצר קובץ עקבי-למראה שאינו תואם לאף אחד מהצדדים. ‏`openapi-codegen-drift-guard.sh --write`, ואז לאמת שה-run הקריא מדווח ש**גם tier B וגם tier C רצו** — ב-CI שניהם מדלגים בהיעדר הכלים, כך שהריצה המקומית חזקה יותר.
+
+4. **‏E2E: הדיאגנוזה הקודמת ב-HANDOFF הזה הייתה שגויה, ותוקנה.** ‏§4 של 21/08 תלה את זה ב-backend של staging שמחזיר 500; אני הצהרתי אחר כך שזה `timeout-minutes: 15` (`e2e.yml:86`) ו"אל תריצי מחדש". **שתיהן חלקיות.** הסוויטה רצה ~13-15 דקות מול תקרה של 15 ונופלת משני צדדיה: הריצה על `4f45e991` **הסתיימה** ב-13m21s עם כשל אמיתי — 299 טסטים רצו, 29 דולגו. ובנוסף: שמונה מ-12 הריצות ה"ירוקות" של staging ארכו **~25 שניות** — דילוג paths-filter, לא מעבר. **שמות ה-specs לא חולצו** (‏`get_job_logs` tail-only מול artifact של 161MB; ארבעה חלונות נכשלו). נשאר תצפית לא מוסברת. המדידה: MEH-2168.
+
+5. **כלל 29b עובד בשני הכיוונים — בדקו את שניהם.** ‏`Closes MEH-1399` בגוף ה-squash **ו-**`meh-1399` בשם הענף, והכרטיס נשאר `Backlog` עם `completedAt: null` ו-`stateHistory` בן ערך יחיד. הכיוון הזה ("לא נסגר מה שהיה אמור") הוא זה ששכב יום שלם ב-#2813. כאן זה במקרה נכון — ה-DoD לא הושלם — אבל אף אחד לא החליט את זה.
+
+### מה שנשאר פתוח ואינו שלי
+
+- **המיגרציה על Railway.** ‏`alembic upgrade head` רץ ב-boot של ה-deploy. אחרי ש-staging מתפרס, להריץ ב-Railway Query tab (משפט יחיד, בלי נקודה-פסיק): `SELECT table_name FROM information_schema.tables WHERE table_name IN ('admin_checklist_items','producer_review_checks')` — **מצופות בדיוק 2 שורות**. פחות מזה = עצירה.
+- **בדיקת ה-`RESTRICT`** — ‏SQL ב-`docs/MANUAL_TESTING.md`, עטוף ב-`BEGIN`/`ROLLBACK` כי אם האילוץ **כן** שבור ה-DELETE יצליח, ובדיקה בלי גלגול לאחור מוחקת סעיף אמיתי בזמן שהיא מוכיחה שההגנה חסרה.
+- **מחיקת `feature/meh-1399-admin-checklist-db`** (ראו למעלה).
+- **תיקון האינסטגרם + שבעת ה-follow-ups** — תגובה 5406657750 ב-#3050.
+
+---
+
 ## 2026-08-21 — אצוות "מאשרת הכל": תוקף רישיון (PR #3047) + רשימת בדיקה כדאטה (PR #3050)
 
 **מוזג:** ‏#3047 `2c573d3f` — אומת כ-squash לפי **הורה יחיד** ותבנית `<title> (#N)` (MEH-1526).
