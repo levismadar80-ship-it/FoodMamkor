@@ -44,6 +44,13 @@ const DAY_HINT_ID = "delivery-day-hint";
  * "FilterSheet", but FilterSheet.jsx is mounted only by /map's
  * FilterChipsBar — and /map was out of that ticket's scope. The home has no
  * filter sheet; this row beside the ActiveFilterChip is the home equivalent.
+ * MEH-2173 UPDATE: the second half of that sentence is now false in both
+ * clauses — FilterSheet is mounted by /map, /producers AND home, and home
+ * therefore does have a filter sheet. The DECISION still stands and the day
+ * axis stays out of it: the sheet holds boolean ATTRIBUTE axes, while a day
+ * requires a city and routes through a modal when it has none. It is left
+ * here, corrected rather than deleted, because the reasoning is what a future
+ * reader needs and the stale premise is what would mislead them.
  *
  * ONE handler, not two (MEH-1825 deviation from the ticket's file_locations
  * note, which suggested a separate no-city tap prop). Both surfaces already
@@ -66,6 +73,10 @@ const DAY_HINT_ID = "delivery-day-hint";
  * Baymard: mutually-exclusive facet values are a top-15% filtering defect
  * because they force a reload between every comparison.
  *
+ * MEH-2173 — the ghost hint moved inline (see the block comment at the hint
+ * itself for what that measured). Behaviour is untouched: same key, same copy,
+ * same id, same aria-describedby, same city precondition, same modal route.
+ *
  * Does NOT: own filter state, fetching, or the modal — the mounting surface
  * does (useHomePage on home, ProducersClient on /producers). It also does not
  * de-duplicate or cap `daysActive`; the mounting surface normalizes on
@@ -82,6 +93,36 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay }) {
     <div className="mb-6" data-testid="delivery-day-row" data-ghost={ghost ? "true" : "false"}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-fg-muted">{t("home.producers.day_row_label")}</span>
+        {/* MEH-2173: the ghost hint moved INSIDE this flex-wrap row, directly
+            after the label, instead of sitting in its own <p> below the pills.
+            Copy, key, id and aria-describedby wiring are untouched.
+
+            Everything MEH-1771 established is preserved: the row still always
+            renders, the hint still appears only in the ghost state, it is still
+            the accessible description of every inert pill, and a pill tap still
+            routes into the surface's city-entry path.
+
+            It renders BEFORE the pills on purpose — the hint explains why the
+            controls that follow are inert, so a reader meets the reason before
+            the thing it explains. `m-0` because the old `mt-2` existed only to
+            separate it as a block; inside the row the `gap-2` spaces it.
+
+            WHAT THIS ACTUALLY BUYS, measured rather than assumed
+            (qa-meh2173-promoted-filters.mjs, before/after against a real
+            browser): at 1440 the day row goes 2 rendered lines -> 1. At 390 it
+            stays at 3 — the hint gives up its own line and a pill wraps into
+            the space, netting zero. That is not a placement mistake: the
+            alternative (hint AFTER the pills) was built and measured too and
+            came out identical, 390 6 bands / 1440 4 bands either way, because
+            7 pills plus a ~230px hint cannot share 358px of usable width
+            however they are ordered. Saving that line on mobile needs shorter
+            copy or fewer pills, both of which this card rules out. The literal
+            placement the card asked for was kept since the two tie. */}
+        {ghost && (
+          <p id={DAY_HINT_ID} data-testid="delivery-day-hint" className="m-0 text-sm text-fg-muted">
+            {t("home.producers.day_row_hint")}
+          </p>
+        )}
         {DELIVERY_DAYS.map((day) => {
           const active = !ghost && selected.includes(day);
           return (
@@ -107,11 +148,6 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay }) {
           );
         })}
       </div>
-      {ghost && (
-        <p id={DAY_HINT_ID} data-testid="delivery-day-hint" className="mt-2 text-sm text-fg-muted">
-          {t("home.producers.day_row_hint")}
-        </p>
-      )}
     </div>
   );
 }
