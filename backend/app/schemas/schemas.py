@@ -2628,6 +2628,105 @@ class KashrutExpiryReminderOut(BaseModel):
     rows: list[KashrutExpiryReminderRow] = []
 
 
+class AdminChecklistItemOut(BaseModel):
+    """MEH-1399: one review-checklist item as the admin surfaces read it.
+
+    `updated_at` is exposed rather than omitted — ADR-006 R2 asks every
+    non-internal ORM column to appear in the matching `*Out` or sit on an
+    explicit allowlist, and nothing in this repo mechanically enforces that
+    (there is no general parity test), so an omission here would be
+    indistinguishable from drift to the next reader. It is also the one
+    question anyone asks of a config row: when did this last change.
+    """
+
+    id: UUID
+    position: int
+    label: str
+    hint: str | None = None
+    active: bool
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AdminChecklistItemIn(BaseModel):
+    """One item in a full-list PUT.
+
+    `id` is optional: present = update that row, absent = create a new item.
+    That is what lets the settings screen add, edit and reorder in one request
+    without a separate POST — the admin drags three rows and saves once.
+
+    There is deliberately NO delete. Retirement is `active: false`, and the DB
+    enforces it (`producer_review_checks.item_id` is ON DELETE RESTRICT), so a
+    delete endpoint would only ever produce a 500 on any item with history.
+    """
+
+    id: UUID | None = None
+    label: str = Field(min_length=1, max_length=300)
+    hint: str | None = Field(default=None, max_length=300)
+    active: bool = True
+
+    @field_validator("label")
+    @classmethod
+    def _strip_label(cls, v: str) -> str:
+        # MEH-555: a non-empty check alone lets "???" through, and this string
+        # is not merely displayed — it is copied into
+        # `producer_review_checks.label_snapshot` at tick time, so a
+        # punctuation-only label becomes a permanent audit record of an
+        # attestation to nothing. The >=3-letter floor is the repo-wide rule for
+        # free-text a user or admin will read back.
+        #
+        # `hint` deliberately does NOT get this: it is optional, an empty hint
+        # is the normal way to say "no explanation needed", and a terse
+        # legitimate hint can fall under three letters. The asymmetry is the
+        # point — label is the attestation, hint is a note beside it.
+        return _min_letters_validator(v)
+
+    @field_validator("hint")
+    @classmethod
+    def _strip_hint(cls, v):
+        if v is None:
+            return None
+        stripped = v.strip()
+        # "" and "   " both mean "no hint" — normalise to NULL so the column has
+        # one representation of absent rather than two.
+        return stripped or None
+
+
+class AdminChecklistItemsIn(BaseModel):
+    """Full-list replace. Order in the array IS the order on screen — `position`
+    is assigned from the index server-side rather than sent by the client, so
+    two items can never claim the same slot."""
+
+    items: list[AdminChecklistItemIn]
+
+
+class ProducerReviewCheckOut(BaseModel):
+    """One recorded tick, as the review flow reads it back."""
+
+    item_id: UUID
+    label_snapshot: str
+    checked_by_name: str | None = None
+    checked_at: datetime
+
+
+class ProducerReviewChecksOut(BaseModel):
+    producer_id: UUID
+    checks: list[ProducerReviewCheckOut] = []
+
+
+class ProducerReviewChecksIn(BaseModel):
+    """The ticked item ids for a producer, as the whole set.
+
+    Set semantics, not a diff: what arrives IS the state afterwards, so an id
+    that was ticked and is now absent gets its row deleted. A diff API would
+    need the client to know what it previously sent, which is exactly the
+    assumption that breaks when two admin tabs are open on the same producer.
+    """
+
+    item_ids: list[UUID] = []
+
+
 class LicenseExpiryReminderRow(BaseModel):
     """One business whose licence expires inside the 30-day window.
 

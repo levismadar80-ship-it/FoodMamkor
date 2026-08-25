@@ -477,6 +477,13 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
               onToggleOpen={() => checklist.toggleOpen(p.id)}
               checkedIds={checklist.checked[p.id]}
               onToggleItem={(itemId) => checklist.toggleItem(p.id, itemId)}
+              items={checklist.items}
+              itemsError={checklist.itemsError}
+              onReloadItems={checklist.reloadItems}
+              saving={!!checklist.saving[p.id]}
+              /* MEH-1399 chunk 4: the evidence dossier reads this row's own
+                 ProducerAdminOut fields — no extra fetch. */
+              producer={p}
             />
           </td>
         </tr>
