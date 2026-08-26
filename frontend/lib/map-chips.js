@@ -141,16 +141,14 @@ export function chipStateToParams(state, dbCategories) {
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   //
-  // 🔴 MEH-2133 PIN SITE 2 of 3 — the surface where the defect is observable.
-  // MEH-2130: one loop over the /map axes replaces nine hand-written lines. The
-  // emitted set is UNCHANGED, including the one axis that emits nothing:
-  // `no_added_sugar` is a /map chip whose param was never wired (measured on
-  // staging — TOGGLE_CHIPS listed it, FilterSheet rendered it, and toggling it
-  // returned the unfiltered set). That gap is now DECLARED as `mapParam: false`
-  // in lib/filter-taxonomy.js with the full reasoning, rather than being an
-  // invisible absence from a list. It is preserved and not fixed here because
-  // MEH-2130 must leave /map result sets identical; repairing it changes what
-  // an existing control returns and needs its own ticket and QA.
+  // MEH-2130: one loop over the /map axes replaces nine hand-written lines, and
+  // the loop now emits for EVERY /map axis. The one that did not was
+  // `no_added_sugar` — a chip TOGGLE_CHIPS listed and FilterSheet rendered
+  // while chipStateToParams sent nothing, so toggling it returned the
+  // unfiltered set. MEH-2130 declared that gap as `mapParam: false` rather than
+  // closing it inside a refactor bound to leave /map result sets identical; its
+  // follow-up ticket removed the flag, which is the whole of the fix. Full
+  // history on the axis in lib/filter-taxonomy.js.
   //
   // Per-axis notes that used to sit on these lines live on the axes now:
   // MEH-1087 (verified-only kosher → kashrut_verified_at), MEH-2046 (pickup is

@@ -134,13 +134,20 @@ export default defineConfig({
       use: {
         ...devices["Pixel 5"],
         // MEH-1788: this project is Chromium by design and stays that way.
-        // Precise status of webkit, which this comment used to get wrong:
+        // Precise status of webkit, which this comment has now twice got wrong:
         //   sandbox — AVAILABLE, behind PW_WEBKIT=1 (see the projects below,
         //             and docs/qa/webkit-local.md for the install procedure)
-        //   CI      — NOT wired yet. That is step B and it is Sapir's: it
-        //             needs .github/workflows/**, which is CC-deny (MEH-671).
-        // Until step B lands, every "mobile QA" claim from CI or from a CC
-        // session that did not set the flag is a Chromium claim.
+        //   CI      — RUNS, as a NON-VOTING shadow job. Step B landed on
+        //             2026-08-03 in 323a1258: `e2e-webkit` (e2e.yml:432)
+        //             installs webkit and runs it under the same flag. It is
+        //             `continue-on-error: true` (:438) and absent from
+        //             `e2e-gate`'s `needs:` (:566), so it can neither red a
+        //             run nor block a merge. This comment said "NOT wired
+        //             yet" for three weeks after that; MEH-2187 corrected it.
+        // So a run that did not set the flag still yields a Chromium claim,
+        // and a green shadow run carries no vote. Playwright webkit is also
+        // not iOS Safari — Sapir's real-device pass stays required
+        // (.claude/rules/workflow.md rule 23, carve-out (e)).
         browserName: "chromium",
       },
     },
