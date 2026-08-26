@@ -112,10 +112,11 @@ export const BADGE_CONFIG = {
     // this: `has_producer_license` ALONE is self-declared and a producer
     // typing 000000000 earned the chip.
     //
-    // Flagged for Sapir: labels.md's table has no row named `license`. The
-    // value above is derived from the `verified` row rather than invented,
-    // because the two badges gate on one check — but it is a derivation, not a
-    // lookup, and it is the one cell in these twelve that is.
+    // MEH-2191 closed the flag this comment used to carry. labels.md now
+    // carries a `license` ruling of its own (§"The `license` ruling"), and it
+    // ruled business · admin-verified — the same pair #3113 had derived from
+    // the `verified` row. So the values below are unchanged and are now a
+    // lookup rather than the one derived cell of these twelve.
     scope: "business",
     evidence: "admin-verified",
     label: "רישיון יצרן",
