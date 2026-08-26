@@ -130,7 +130,6 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
     await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
   });
 
-
   it("is absent for a nationwide YES", async () => {
     setup({ nationwide: true, excluded: ["אילת"], areas: [] });
     commitCity("נתניה");
