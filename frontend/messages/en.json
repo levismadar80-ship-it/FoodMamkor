@@ -299,7 +299,7 @@
           "address_confirmed": "Location found: {location}",
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
-          "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
+          "multi_location_hint": "You can add all your points from the dashboard after signing up.",
           "tagline_label": "In one sentence",
           "tagline_placeholder": "The most important thing to know about you",
           "description_label": "Tell us about your business",
