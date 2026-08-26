@@ -184,6 +184,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // mount by the URL hydration below either way, but a partial initial state
   // meant `chips` briefly disagreed with the row being rendered from it.
   const [chips, setChips] = useState(CHIPS_DEFAULT);
+  // MEH-2173: the FilterSheet's open state. Per-instance, exactly like /map's
+  // (FilterChipsBar.jsx) and /producers' (ProducersClient.jsx:156).
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -533,10 +536,30 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // with a toast — the grid is never left blank without a message (mirrors the
   // MapClient.jsx MEH-970 never-blank philosophy). Owns producersLoading +
   // geoLoading for the whole sequence.
-  const loadProducersGeo = (lat, lng) => {
+  //
+  // MEH-2180 changes two things and nothing else.
+  //
+  // (1) `chipsState` is a PARAMETER. It used to read the `chips` this function
+  //     closes over, which is the state as of the last render — fine for the
+  //     near-me paths (nothing sets chips there), and wrong the moment
+  //     applyChips calls in, because `setChips(next)` has not landed yet. The
+  //     caller passes what it means; the default keeps the near-me call sites
+  //     honest rather than silently one render behind.
+  //
+  // (2) `allowExpansion` gates the radius widening, the drop-to-unfiltered
+  //     fallback and the toast — the whole "we found nothing nearby, here is
+  //     everything instead" sequence. That belongs to an explicit «קרוב אליי»
+  //     press, where the reader asked for proximity and an empty answer is
+  //     useless to her. It does NOT belong to an attribute toggle under an
+  //     already-active geo filter: there, zero is a real and informative
+  //     answer ("no vegan businesses near you"), and silently widening the
+  //     radius or dropping the location would answer a question she did not
+  //     ask, while the chip still claims she is filtering by location.
+  //     Sapir's decision, 26/08.
+  const loadProducersGeo = (lat, lng, chipsState = chips, { allowExpansion = true } = {}) => {
     setGeoLoading(true);
     setProducersLoading(true);
-    const chipParams = buildChipParams(chips);
+    const chipParams = buildChipParams(chipsState);
     const catParam = filters.category ? { category: filters.category } : {};
     const fetchAtRadius = (radius) =>
       api
@@ -548,12 +571,22 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
           return parsed.success ? parsed.data : [];
         });
     fetchAtRadius(GEO_RADIUS_KM)
-      .then((rows) => (rows.length > 0 ? rows : fetchAtRadius(GEO_RADIUS_KM_RETRY)))
+      .then((rows) =>
+        rows.length > 0 || !allowExpansion ? rows : fetchAtRadius(GEO_RADIUS_KM_RETRY)
+      )
       .then((rows) => {
         if (rows.length > 0) {
           // MEH-1282: a successful geo search clears any prior empty notice.
           setGeoEmptyNotice(false);
           setProducers(rows);
+          setVisibleCount(PAGE_SIZE);
+          return;
+        }
+        // MEH-2180: an attribute change under an active geo filter. Zero is the
+        // answer, not a failure to find one — render the ordinary empty grid and
+        // leave the radius, the geo filter and the toast alone.
+        if (!allowExpansion) {
+          setProducers([]);
           setVisibleCount(PAGE_SIZE);
           return;
         }
@@ -602,7 +635,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     const cached = getUserLocation();
     if (cached) {
       applyGeoFilter(cached);
-      loadProducersGeo(cached.lat, cached.lng);
+      loadProducersGeo(cached.lat, cached.lng, chips, { allowExpansion: true });
       return;
     }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -617,7 +650,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
         // reads it via useUserLocation), same contract as LocationModal.
         setUserLocation(latitude, longitude);
         applyGeoFilter({ lat: latitude, lng: longitude });
-        loadProducersGeo(latitude, longitude);
+        loadProducersGeo(latitude, longitude, chips, { allowExpansion: true });
       },
       (err) => {
         setGeoLoading(false);
@@ -753,16 +786,55 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // tapping a CHIP still deep-links to /producers, unchanged. Removing a tag
   // acts on the state home already holds and already fetches with, which is why
   // it belongs here rather than as another navigation hop.
-  const handleRemoveChip = (key) => {
+  //   ^ SUPERSEDED by MEH-2173: the middle clause is no longer true. Home's
+  //   chips do not deep-link any more — the promoted pair and the FilterSheet
+  //   both filter this grid in place through the function below. The rest of
+  //   the paragraph still holds and is why that function lives here. Corrected
+  //   rather than deleted: the reasoning is what a future reader needs, and a
+  //   stale sentence left standing is what would mislead them.
+  // MEH-2173: ONE apply path for every attribute-state change on home.
+  //
+  // Until this ticket, removal was the ONLY in-place attribute mutation home
+  // had — the row's chips NAVIGATED to /producers rather than filtering here
+  // (MEH-1774), so `handleRemoveChip` owned this body alone. The FilterSheet
+  // mounted by this ticket filters home IN PLACE, so the "on" direction now
+  // exists too; both directions share this function rather than growing two
+  // copies of the param assembly that would drift the first time one axis is
+  // added (the Smell #1 shape: two mechanisms owning one job).
+  //
+  // Every caller below differs ONLY in the chip state it computes. The body is
+  // byte-for-byte the MEH-2130 removal path, deliberately unchanged: the
+  // geo-empty clear, the URL write, and the category / city / day carry-over
+  // are all still exactly what a removal used to do.
+  //
+  // ✅ THE GEO GAP IS CLOSED (MEH-2180) — see the branch at the end of the body.
+  //
+  // What it was: this carried the category / city / day context but NOT an
+  // active GEO filter. `loadProducers(params)` has no lat/lng, so with
+  // "קרוב אליי" on, the grid quietly reloaded UNFILTERED while `geoFilter`
+  // stayed set and ActiveFilterChip went on claiming "עסקים ליד המיקום שלך" —
+  // a filter that lied about what it was showing. It was not introduced by
+  // MEH-2173: `handleRemoveChip` had done exactly this since MEH-2130. What
+  // MEH-2173 changed is that the ON direction could reach it too, once
+  // switching a filter on stopped navigating away.
+  //
+  // Why it needed its own ticket rather than a branch here, which is the part
+  // still worth knowing: `loadProducersGeo` built its params from the `chips`
+  // it closed over — the STALE state, one render behind the `setChips(next)`
+  // below — so routing through it required changing that function's signature,
+  // and it owns the radius-widening, the drop-to-unfiltered fallback and the
+  // toast that the whole near-me flow depends on. MEH-2180 answered the product
+  // question that gated it (Sapir, 26/08): that sequence stays EXCLUSIVE to an
+  // explicit "קרוב אליי" press, which is what `allowExpansion` now expresses.
+  const applyChips = (next) => {
     // MEH-1282: a filter action clears the geo-empty notice, so a later
     // back-navigation doesn't land on a stale near-me message.
     setGeoEmptyNotice(false);
-    const next = { ...chips, [key]: false };
     setChips(next);
     updateURL(filters, next);
     // Same param assembly handleCitySelected uses — the category / city / day
-    // context survives removing an attribute (MEH-1470's lesson on /producers:
-    // clearing one axis must not silently drop the others).
+    // context survives changing an attribute (MEH-1470's lesson on /producers:
+    // touching one axis must not silently drop the others).
     const params = buildChipParams(next);
     if (filters.category) params.category = filters.category;
     if (filters.delivery_city) {
@@ -771,8 +843,39 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       // entirely when empty so no valueless `?delivery_days=` reaches the API.
       if (filters.delivery_days?.length) params.delivery_days = filters.delivery_days;
     }
+    // MEH-2180: the gap the comment above describes, closed. An active geo
+    // filter is carried through the geo fetch instead of being dropped on the
+    // floor — `next` goes in as an argument because `setChips(next)` above has
+    // not landed in this render yet. allowExpansion:false: this is an attribute
+    // change, not a near-me press (see loadProducersGeo).
+    if (geoFilter) {
+      loadProducersGeo(geoFilter.lat, geoFilter.lng, next, { allowExpansion: false });
+      return;
+    }
     loadProducers(params);
   };
+
+  const handleRemoveChip = (key) => applyChips({ ...chips, [key]: false });
+
+  // MEH-2173: the promoted chips on the surface and the switches inside the
+  // sheet are the SAME control over the same state — one toggle handler, so
+  // there is no way for the two to disagree about what "on" means.
+  const handleToggleChip = (key) => applyChips({ ...chips, [key]: !chips[key] });
+
+  // MEH-2173: "ניקוי הכל" inside the sheet clears the ATTRIBUTE axes only —
+  // never the category, city or day. Those are picked elsewhere on the page and
+  // wiping them from a panel that does not show them would be a destructive
+  // surprise. Mirrors ProducersClient.clearAttributeChips (:427) and
+  // useMapFilters.js:234, both of which reset their toggles and nothing else.
+  const handleClearChips = () => applyChips(CHIPS_DEFAULT);
+
+  // MEH-2173: STABLE identity on purpose, carried over from /map and
+  // /producers (ProducersClient.jsx:157-161 records the reasoning): an inline
+  // arrow would be a new function every render, and `chips` changes on every
+  // toggle — that tears down and re-arms FilterSheet's [open, onClose] keydown
+  // effect mid-interaction and yanks focus back to the first row.
+  const closeFilterSheet = useCallback(() => setFilterSheetOpen(false), []);
+  const toggleFilterSheet = useCallback(() => setFilterSheetOpen((v) => !v), []);
 
   // Adapters for the producers-grid component (avoids passing the full
   // setFilters/updateURL/loadProducers/buildChipParams quartet).
@@ -870,6 +973,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     categories,
     filters,
     chips,
+    filterSheetOpen,
     visibleCount,
     producersLoading,
     geoLoading,
@@ -908,8 +1012,19 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     handleClearLocation,
     handleWhatsAppClick,
     scrollToProducers,
+    // MEH-1774's deep-link hop. MEH-2173 unwired it from the grid: the home
+    // attribute row now FILTERS in place (the sheet does, so the promoted chips
+    // beside it must, or the same axis would behave two ways on one row).
+    // Kept, not deleted — it is a correct, tested builder of a /producers URL
+    // carrying home's location context (MEH-1826), and deciding whether home
+    // ever deep-links again is a product call, not a side effect of this
+    // ticket. Its only consumer today is HomeDeliveryDayFilter.test.jsx.
     navigateToChip,
     handleRemoveChip,
+    handleToggleChip,
+    handleClearChips,
+    closeFilterSheet,
+    toggleFilterSheet,
     handleClearCategory,
     handleLoadMore,
     handleAdvanceFromStep0,

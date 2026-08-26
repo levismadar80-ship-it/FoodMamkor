@@ -18,9 +18,13 @@ erDiagram
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
+    producers ||--o| products : "features (top_product_id, ON DELETE SET NULL — MEH-2137)"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
     producers ||--o{ producer_name_change_requests : "requests rename (max 1 PENDING)"
+    producers ||--o{ producer_review_checks : "was attested for (CASCADE — MEH-1399)"
+    admin_checklist_items ||--o{ producer_review_checks : "attested via (RESTRICT — an item that was ever ticked cannot be deleted)"
+    users ||--o{ producer_review_checks : "ticked by (SET NULL — deleting the admin must not delete the record)"
     categories ||--o{ producer_categories : ""
 
     users {
@@ -46,6 +50,7 @@ erDiagram
         string name
         string slug UK "nullable"
         string google_place_id "nullable — MEH-1490 admin map; only Google datum stored"
+        uuid top_product_id FK "nullable — MEH-2137, FK products.id ON DELETE SET NULL; featured-product vote by IDENTITY. NULL when the legacy top_product_name matched two products or none — deliberately not guessed"
         string description
         string city
         string address "nullable — MEH-829, VARCHAR(255); collected at register"
@@ -70,6 +75,7 @@ erDiagram
         string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
         timestamp verified_at "nullable — MEH-762, tz-aware; admin tier-1 document-check timestamp (public at date granularity)"
         string verification_doc_type "nullable — MEH-762, VARCHAR(20); license|exemption|cosmetics (S12 badge source)"
+        date license_expires_at "nullable — MEH-2072, DATE not TIMESTAMP (a licence is valid through a calendar day; compared against israel_today()); admin-only (ProducerAdminOut), never owner-writable; NULL = not captured yet, NEVER no-expiry; feeds GET /admin/license-expiry-reminders (30d window), no enforcement"
         text requested_changes "nullable — MEH-1011, admin completion-request feedback (non-terminal, status stays pending; cleared on approve)"
         timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
         timestamp created_at
@@ -88,6 +94,7 @@ erDiagram
     categories {
         int id PK
         string name UK
+        string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
     }
 
@@ -140,6 +147,24 @@ erDiagram
         text admin_notes "nullable, sanitized"
         timestamp created_at
         timestamp reviewed_at "nullable until decided"
+    }
+
+    admin_checklist_items {
+        uuid id PK
+        int position "indexed; written as index*10 by the router, never accepted from the client — a client-supplied position lets two items claim one slot"
+        text label "MEH-1399: editable without a deploy. Seeded with the 7 items frontend/lib/admin-review-checklist.js used to hardcode"
+        text hint "nullable"
+        boolean active "DEFAULT true. Retirement is active=false — there is no delete, see the RESTRICT below"
+        timestamp updated_at "DEFAULT now() + model-level onupdate. No created_at: the question anyone asks of a config row is when it last changed"
+    }
+
+    producer_review_checks {
+        uuid id PK
+        uuid producer_id FK "CASCADE, indexed — with the business gone there is nothing left to attest about"
+        uuid item_id FK "RESTRICT, indexed IN ITS OWN RIGHT (the composite unique leads with producer_id, so it cannot serve the item_id-only lookup Postgres runs to enforce the RESTRICT)"
+        text label_snapshot "what the item SAID when it was ticked. The FK says WHICH item; this says what it said — without it, rewording an item rewrites every historical attestation"
+        uuid checked_by FK "nullable, SET NULL. A null actor is a weaker record than a named one and a far better one than none"
+        timestamp checked_at "DEFAULT now(). Re-ticking does NOT restamp — the first attestation stands"
     }
 
     favorites {

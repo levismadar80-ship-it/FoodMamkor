@@ -256,17 +256,20 @@
         "steps": {
           "account": {
             "title": "1. Account details",
-            "email_section": "Sign up with email"
+            "email_section": "Sign up with email",
+            "duration_hint": "About 3 minutes. You can stop and continue later."
           },
           "business": {
             "title": "2. Business details",
-            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
+            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval.",
+            "free_hint": "Registration and your page — free. No commissions, ever."
           },
           "category": {
             "title": "3. Category"
           },
           "story": {
-            "title": "4. Your story"
+            "title": "4. Your story",
+            "photo_next_hint": "After approval we'll ask for one good photo of your business — that is what makes the page."
           }
         },
         "step_captions": {
@@ -290,10 +293,13 @@
           "address_label": "Address",
           "address_map_privacy_hint": "Your full address isn't published. It only appears on the map if you choose to show it.",
           "address_optional_hint": "No exact address? The town is enough.",
+          "address_city_mismatch": "The address we found is in {found}, but the town you chose is {selected}. Worth checking the town, or searching for a different address.",
+          "address_pin_adjusted": "Location adjusted manually on the map",
+          "address_pin_drag_hint": "You can drag the pin to fine-tune the location",
           "address_confirmed": "Location found: {location}",
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
-          "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
+          "multi_location_hint": "You can add all your points from the dashboard after signing up.",
           "tagline_label": "In one sentence",
           "tagline_placeholder": "The most important thing to know about you",
           "description_label": "Tell us about your business",
@@ -309,6 +315,7 @@
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
+            "optional_hint": "Feel free to skip — the answer just helps us get to know you.",
             "placeholder": "Select an option",
             "other_placeholder": "Tell us where",
             "options": {
@@ -329,6 +336,7 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
+        "submit_next_hint": "We'll review your details and get back to you on WhatsApp within 3 business days.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -344,7 +352,6 @@
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
           "license_required": "A producer license number is required for this category",
-          "referral_source_required": "Please select where you heard about us",
           "cross_step_notice": "Some details are missing — we took you to the field",
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
@@ -371,9 +378,9 @@
           "generic": "Connection error — please try again."
         },
         "success": {
-          "title": "You're signed up — one step to go",
-          "body": "You're registered! Next step: complete your profile in the dashboard and send it for review.",
-          "next": "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
+          "title": "You're signed up — a few short items left",
+          "body": "Next step: complete your profile in the dashboard and send it for review.",
+          "next": "Completing these in your dashboard unlocks sending for review: a photo of your business, a first product in the catalogue, and verifying your WhatsApp number.",
           "cta": "To my dashboard",
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
@@ -503,9 +510,9 @@
       "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
-      "city_day_chip": "Delivery to {city} · {day}",
-      "day_row_label": "Delivery day:",
-      "day_row_hint": "Choose an area to filter by delivery day",
+      "day_chip_idle": "Delivery day",
+      "day_panel_hint": "Delivery to {city} · pick as many days as you like",
+      "day_chip_clear_aria": "Clear delivery-day filter",
       "day_option_aria": "Filter deliveries on {day}",
       "days_chip_more": "{day} +{count}",
       "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
@@ -1027,7 +1034,7 @@
       "sample_meta": "Baking · 30 min",
       "notes_needs_revision": "Reviewer note:",
       "notes_rejected": "Rejection reason:",
-      "pending_eta": "Usually approved within 24 hours",
+      "pending_eta": "Approved within 3 business days — usually sooner",
       "published": "Published on the site",
       "not_published": "Not yet published",
       "edit": "Edit",
@@ -1685,6 +1692,8 @@
           "license_format_warning": "Producer license number is 7-10 digits",
           "license_registry_link": "Check the Ministry of Health registry",
           "license_optional_toggle": "I have a producer license ↓",
+          "license_expires_at": "License valid until (from the document)",
+          "license_expires_at_hint": "The date printed on the license document. Businesses whose license expires within 30 days appear in the reminder list.",
           "has_physical_location": "Physical store (welcomes customers)",
           "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
@@ -1715,6 +1724,7 @@
         }
       },
       "toast_approved": "Business approved",
+      "queue_summary": "{count} waiting · oldest: {days} business days",
       "toast_status_updated": "Status updated",
       "reject": {
         "modal_title": "Reject business application",
@@ -2426,10 +2436,12 @@
       "loading_experiences": "Loading experiences...",
       "empty_events_title": "No events match this filter — yet",
       "empty_events_body": "Try widening the area or clearing the category. Worth checking back soon",
-      "empty_events_cta": "Clear the filter",
       "empty_experiences_title": "New experiences on the way",
       "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
       "empty_experiences_cta": "Hosting an experience? Add it",
+      "empty_browse_producers": "Meanwhile, explore the businesses",
+      "no_results_title": "No results found",
+      "no_results_cta": "Clear filters",
       "free": "Free"
     },
     "categories": {
@@ -2535,7 +2547,7 @@
       "breadcrumb_experiences": "Experiences",
       "breadcrumb_submit": "Submit",
       "title": "Submit a new experience",
-      "subtitle": "All submissions are reviewed by the Mehamakor team. We aim to respond within 24–48 hours",
+      "subtitle": "All submissions are reviewed by the Mehamakor team. We'll get back to you within 3 business days",
       "field_title": "Experience title",
       "field_title_placeholder": "Example: Sourdough bread baking workshop",
       "field_description": "Detailed description",
@@ -3265,6 +3277,7 @@
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
       "escalation": "Another question? Send us a message",
+      "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "recipe_idea": "Can I share a recipe I made?",
       "recipe_idea_message": "Hi! I came from your page on Mehamakor — I made something with your products and I'd love to share the recipe:"
@@ -4163,7 +4176,7 @@
           "views": "Views",
           "window_7d": "Last 7 days",
           "rating_sub": "{count} reviews",
-          "conversion_line": "{rate} WhatsApp clicks per 100 distinct visitors in the last 30 days. A click is not necessarily a message sent."
+          "conversion_line": "{rate} clicks on one of the contact buttons per 100 distinct visitors in the last 30 days. A click is not necessarily an inquiry sent."
         },
         "hero": {
           "views_week_label": "Views this week",
@@ -4272,7 +4285,7 @@
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
-        "pricing_summary_empty": "No price or top product set yet",
+        "pricing_summary_empty": "Optional — price and signature product appear on your page once set",
         "delivery_mode_store": "Physical store",
         "delivery_mode_delivery": "Delivery",
         "delivery_none": "Not set yet",
@@ -4284,6 +4297,8 @@
         "owner_missing": "No photo and story yet",
         "kashrut_has": "Kosher badge active",
         "kashrut_none": "No kosher badge yet",
+        "chip_required": "Required",
+        "chip_optional": "Optional",
         "hub_title": "Edit business",
         "hub_back": "Back to all sections",
         "hub_group_profile": "Your profile",
@@ -4291,7 +4306,8 @@
         "hub_group_location": "Location, delivery & hours",
         "hub_group_contact": "Contact & questions",
         "hub_trust_card": "Certifications & documents",
-        "hub_progress": "{done} of {total} completed"
+        "hub_progress": "{done} of {total} completed",
+        "questions_summary_defaults": "{count, plural, one {showing 1 default question} other {showing # default questions}}"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4442,30 +4458,6 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
       },
-      "hours": {
-        "heading": "Opening hours",
-        "subtitle": "When the business is physically open. Shown on the map and the business page.",
-        "hours_empty_hint": "Hours set here appear on the business page and are sent to search engines.",
-        "field_label": "Opening hours",
-        "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
-        "revert_cta": "Discard changes",
-        "save_cta": "Save",
-        "saving": "Saving…",
-        "saved": "Saved",
-        "save_success": "Hours saved",
-        "save_error": "Save failed. Please try again.",
-        "toggle_open": "Open",
-        "toggle_closed": "Closed",
-        "from_label": "opening time",
-        "to_label": "closing time",
-        "preset": "Sun–Thu 9:00–18:00, Fri until 14:00",
-        "clear_cta": "Clear hours",
-        "unparseable": "The existing format wasn't recognised — please re-enter the hours",
-        "invalid_range": "Closing time must be after opening time",
-        "invalid_overlap": "Ranges must be in order and must not overlap",
-        "add_range": "Add range",
-        "remove_range": "Remove range"
-      },
       "order_window": {
         "heading": "When you take orders",
         "subtitle": "Your fixed weekly schedule. A day left unmarked is closed for orders that day.",
@@ -4499,7 +4491,21 @@
         "placeholder_5": "e.g. Can I arrange a tasting?",
         "save_cta": "Save questions",
         "saving": "Saving…",
-        "saved": "✓ Saved"
+        "saved": "✓ Saved",
+        "live_heading": "What your page shows right now",
+        "live_hint": "This is the live view. It is not editable here — it follows the details you filled in and the questions below.",
+        "live_answered": "answered automatically from your details",
+        "live_via": "opens {channel}",
+        "live_empty": "No questions are showing on your page right now — add a contact channel or fill in a question below.",
+        "live_channel": {
+          "whatsapp": "WhatsApp",
+          "phone": "phone",
+          "website": "your website",
+          "email": "email",
+          "instagram": "Instagram",
+          "facebook": "Facebook",
+          "external_order": "your order form"
+        }
       },
       "view_on_page": "View this section on your page",
       "description_card": {
@@ -4892,7 +4898,12 @@
         "cancel": "Cancel"
       },
       "top_product_hint": "Star one product to make it your top product — it appears as a highlighted card at the top of the product list on your page.",
-      "top_product_empty_hint": "Add a product to choose a top product."
+      "top_product_empty_hint": "Add a product to choose a top product.",
+      "duplicate_name_confirm": {
+        "title": "A product with this name already exists. Continue?",
+        "confirm": "Add product",
+        "cancel": "Cancel"
+      }
     },
     "locations": {
       "section_heading": "Locations",
@@ -4927,6 +4938,7 @@
         "place_hint_approximate": "Only the city is shown. The full address won't appear on your page or in navigation.",
         "lat_label": "Latitude",
         "lng_label": "Longitude",
+        "more_summary": "More details — label, phone, hours",
         "coords_summary": "Manual coordinates",
         "coords_hint": "Optional. Fill these in only if the map pin isn't sitting in the right place.",
         "hours_label": "Hours",
@@ -5123,6 +5135,7 @@
       "title": "Filters",
       "close_aria": "Close filters",
       "group_diet": "Diet",
+      "diet_scope": "Businesses that have such products in their catalog",
       "group_quality": "Source & quality",
       "group_service": "Service & trust",
       "apply": "Show {count} businesses",
@@ -5135,7 +5148,7 @@
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
     "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
-    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip."
+    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",

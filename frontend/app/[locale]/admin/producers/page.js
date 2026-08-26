@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
+import QueueSlaSummary from "./QueueSlaSummary";
 import RequestChangesModal from "./RequestChangesModal";
 import RejectModal from "./RejectModal";
 import { useAdminProducers } from "./use-admin-producers";
@@ -139,6 +140,13 @@ function ProducersAdminPage() {
   return (
     <div className="space-y-5">
       <PageHeader count={h.visible.length} />
+
+      {/* MEH-2138 chunk E: how many are waiting and how old the oldest is.
+          `h.visible` — the full filtered set — NOT `h.pagedVisible`: pagination
+          here is client-side, so the whole set is in hand, and counting one
+          page while reading as a queue-wide claim is the wrong number stated
+          confidently. */}
+      <QueueSlaSummary rows={h.visible} />
 
       <AdminProducersToolbar
         producerSearch={h.producerSearch}

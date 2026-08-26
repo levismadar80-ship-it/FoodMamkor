@@ -68,16 +68,26 @@ export default function StickyContactBar({
       // MEH-1146 chunk A: md:hidden -> lg:hidden so the bar covers the whole
       // single-column range (mobile + tablet) that mounts the inline
       // ContactCard; the desktop sidebar card takes over at lg+.
-      className="lg:hidden fixed bottom-16 inset-x-0 z-[598] bg-white border-t border-border"
+      //
+      // MEH-2148: flush to the viewport edge. The old offset was a hardcoded
+      // twin of the full-width nav band that existed when MEH-20 wrote it; the
+      // pill redesign (MEH-789) replaced that band, and MEH-2148's gate now
+      // unmounts the pill on business pages entirely — so on every surface that
+      // mounts this bar there is nothing below it to clear, and the offset was
+      // rendering as a strip of dead page showing under the CTA. Measured at
+      // 375px before the change: bar bottom 748, viewport 812, 64px of gap.
+      className="lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-white border-t border-border"
       style={{
-        // MEH-1146 chunk A: the hidden state adds the bottom-16 offset (4rem)
-        // to the slide so the bar clears the viewport entirely. translateY(100%)
-        // alone only shifts it down by its own height and leaves it parked in
-        // the bottom-16 gap (previously hidden only by BottomNav's z-1000
-        // occlusion) — which broke the "exactly one primary action per viewport"
-        // invariant. Keep this 4rem in sync with the bottom-16 class above.
-        transform: isBarVisible ? "translateY(0)" : "translateY(calc(100% + 4rem))",
+        // MEH-2148: with the bar flush, its own height is the whole distance it
+        // has to travel, so the plain slide clears the viewport. The previous
+        // form added the offset above on top, and that extra term is now not
+        // just unnecessary but wrong -- it would park the bar a bar-height BELOW
+        // the fold and make the 150ms exit visibly overshoot.
+        transform: isBarVisible ? "translateY(0)" : "translateY(100%)",
         transition: isBarVisible ? "transform 200ms ease-out" : "transform 150ms ease-in",
+        // MEH-2148: this was always here and was always inert -- the bar sat
+        // above the home indicator, so there was nothing to inset for. Flush to
+        // the edge it starts doing its job: it keeps the CTA off the indicator.
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
         opacity: isVacation ? 0.85 : 1,

@@ -24,11 +24,25 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
   // here, the whole suite dies at import with "No \"Clock\" export is defined".
   Clock: (p) => <span {...p} />,
+  // MEH-2186: DeliveryDayRow became a dropdown chip and now imports these.
+  // This mock is enumerated by hand (a Proxy dereferences the JSX runtime at
+  // import time), so a glyph the component imports and this list omits kills
+  // the whole file at import with 'No "X" export is defined' — the same trap
+  // the MEH-2131 note above records.
+  CalendarBlank: (p) => <span {...p} />,
+  CaretUp: (p) => <span {...p} />,
+  X: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-2169: chip-icons.js gained vegetarian -> Carrot and
+  // no_added_sugar -> Cube. This mock enumerates exports by hand, so a new
+  // glyph in the registry kills the whole suite at import time with
+  // 'No "Carrot" export is defined' — not a failing assertion, a dead file.
+  Carrot: (p) => <span {...p} />,
+  Cube: (p) => <span {...p} />,
   CaretDown: (p) => <span {...p} />,
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,

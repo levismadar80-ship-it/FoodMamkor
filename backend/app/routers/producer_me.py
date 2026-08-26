@@ -448,6 +448,53 @@ def _lock_producer_updates(db, producer_id) -> None:
     )
 
 
+def _resolve_top_product(db, producer, payload: dict) -> None:
+    """MEH-2137 switch — authorize the featured-product vote and sync the name.
+
+    The vote used to be a STRING, so any product whose name matched won the
+    badge: two products both called «לחם» both showed it (Sapir, 20/08). The
+    vote is an id now, and an id has to be checked — `top_product_id` is a
+    plain UUID in the payload, and nothing in Pydantic can know whether it
+    belongs to this producer.
+
+    Three cases, and the middle one is the whole point:
+
+      * key absent          → no change. Uses `in payload`, not truthiness: an
+                              unrelated dashboard save must not clear the vote.
+      * value is None       → clear BOTH columns. "No featured product" is one
+                              state, not two, and leaving the stale name behind
+                              would keep rendering a badge the owner just removed.
+      * value is a UUID     → must be a product of THIS producer, or 422. On
+                              success `top_product_name` is synced from it, so
+                              the legacy column stays truthful for every reader
+                              that has not switched yet.
+
+    Runs BEFORE the writable-field setattr loop, so a rejected id never lands.
+    """
+    if "top_product_id" not in payload:
+        return
+
+    new_id = payload["top_product_id"]
+    if new_id is None:
+        payload["top_product_name"] = None
+        return
+
+    product = (
+        db.query(Product)
+        .filter(Product.id == new_id, Product.producer_id == producer.id)
+        .first()
+    )
+    if product is None:
+        # Deliberately the same message whether the product does not exist or
+        # belongs to someone else — distinguishing them would let an owner probe
+        # for other producers' product ids.
+        raise HTTPException(
+            status_code=422,
+            detail="המוצר המוביל חייב להיות מוצר קיים של העסק שלך",
+        )
+    payload["top_product_name"] = product.name
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -475,6 +522,7 @@ def update_my_producer(
     # actual change from a form resubmitting an unchanged value.
     sensitive_before = _snapshot_sensitive(producer)
 
+    # MEH-2137 switch — see _resolve_top_product, defined above this handler.
     _PRODUCER_WRITABLE_FIELDS = {
         "contact_name",
         "description",
@@ -491,6 +539,10 @@ def update_my_producer(
         "facebook",
         "external_order_form",
         "top_product_name",
+        # MEH-2137 switch: the vote by identity. Ownership is enforced by
+        # _resolve_top_product (defined above) BEFORE this loop runs — a product
+        # not this producer's never reaches the setattr.
+        "top_product_id",
         "price_range",
         # MEH-1335: owner story fields (public OwnerCard data path). Validated
         # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
@@ -553,13 +605,51 @@ def update_my_producer(
         # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
-        "opening_hours",
+        # MEH-2142 (MEH-1938 batch B3): `opening_hours` was REMOVED from this
+        # set. Same disposition and the same standing rule as the two blocks
+        # below — the column stays, `admin.py` / `producer_import.py` / the
+        # seeds are untouched, and only the owner PUT path is closed. Do not
+        # re-add it without shipping its editor in the same PR:
+        #   opening_hours        → the business-level hours editor was removed
+        #                          from the dashboard in this PR. Store hours
+        #                          are now a PER-LOCATION fact: the owner edits
+        #                          `ProducerLocation.opening_hours` in
+        #                          LocationsEditor, and the public page prefers
+        #                          the primary location's value, falling back to
+        #                          this column for businesses that have not
+        #                          filled one in yet. Readers-first Parallel
+        #                          Change — the fallback read carries
+        #                          LEGACY(2026-10-01, MEH-1938) and its removal
+        #                          is the contract step.
         # MEH-1543: owner-editable weekly order-acceptance window. Validated in
         # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
-        "kosher",
+        # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
+        # Same disposition and standing rule as the blocks above — the column
+        # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
+        # the seeds are untouched, and only the owner PUT path is closed. Do
+        # not re-add it without shipping its editor in the same PR:
+        #   kosher → free text that NO consumer surface has rendered since
+        #            MEH-986 removed unverified kashrut claims from every one
+        #            of them (חוק איסור הונאה בכשרות — an unverified claim is
+        #            a legal exposure, not a missing feature). The owner was
+        #            able to fill in a field nobody could ever see: the same
+        #            "I wrote it and it is not displayed" class as
+        #            starting_price_label.
+        #
+        #            The kashrut BADGE request flow is the only owner-facing
+        #            mechanism, by design (cards.jsx:1263-1264 says so at the
+        #            other end). There was never a dashboard editor for this
+        #            field to remove — grepped the whole owner dashboard: the
+        #            single reference is a READ at cards.jsx:1363, which shows
+        #            a hint when a legacy value exists WITHOUT a verified
+        #            certificate, explaining that the text drives nothing and
+        #            pointing at the certificate. That hint keeps working:
+        #            historical values still exist and are still served by
+        #            ProducerOwnerOut.kosher (schemas.py:2469), which this
+        #            change deliberately leaves in place.
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
         "images",
@@ -597,6 +687,9 @@ def update_my_producer(
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
+
+    # MEH-2137 switch: resolve + authorize the featured-product vote.
+    _resolve_top_product(db, producer, payload)
 
     # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
     # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would
@@ -1156,18 +1249,38 @@ def producer_analytics(
 
     rank_in_city = _rank_in_city(db, producer, israel_day)
 
-    # MEH-57 ── conversion_rate: whatsapp clicks / profile views × 100 (30d).
-    # MEH-160 contract note: the denominator is now unique daily viewers,
-    # while `producer_whatsapp_clicks` carries NO viewer hash (models.py:1515
-    # — only a nullable user_id), so the numerator cannot be deduped to match
-    # without a schema change. The ratio is therefore "clicks per 100 unique
-    # daily viewers" and CAN exceed 100 legitimately: one viewer clicking
-    # twice in a day. The copy states that in both locales, and the display no
-    # longer clamps it — clamping hid a wrong contract behind a screen that
-    # looked fine. Alternative (Sapir's call, drafted on the card): add
-    # viewer_ip_hash to the clicks table and restore a bounded percentage.
+    # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
+    #
+    # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
+    # plus the non-WhatsApp contact clicks — not WhatsApp alone. A business
+    # whose primary_contact_method is phone/email/website/external_order used to
+    # read 0% forever, because the only table consulted was one it never writes
+    # to. Industry anchor: Google Business Profile's headline number is likewise
+    # the SUM of contact actions ("Interactions"), with the per-channel split
+    # kept as a breakdown — which is why `whatsapp_clicks` and `contact_clicks`
+    # are returned unchanged above and stay separate KPIs on the dashboard.
+    #
+    # The two tables CANNOT double-count one tap, and that is structural rather
+    # than a convention anyone has to maintain: they are written by two distinct
+    # endpoints (`producers.py:471` writes ProducerWhatsAppClick only,
+    # `producers.py:507` writes ContactClick only), and
+    # `_VALID_CONTACT_METHODS` (`producers.py:481`) has no "whatsapp" member, so
+    # a WhatsApp tap has no path into the contact table at all.
+    #
+    # MEH-160 contract note, still in force and now covering both arms: the
+    # denominator is unique daily viewers, while NEITHER click table is counted
+    # per-viewer here — `producer_whatsapp_clicks` carries no viewer hash at all
+    # (models.py:1722-1751 — only a nullable user_id), and although
+    # `producer_contact_clicks` does have one (`ip_hash`, models.py:1779) it is
+    # deliberately counted raw so both halves of the sum share one unit. The
+    # ratio therefore CAN exceed 100 legitimately — one viewer acting twice in a
+    # day — and widening the numerator makes that more likely, not less. The
+    # display does not clamp it; clamping hid a wrong contract behind a screen
+    # that looked fine. Alternative (Sapir's call, drafted on the MEH-160 card):
+    # hash the viewer on both tables and restore a bounded percentage.
+    contact_actions_30d = whatsapp_clicks["last_30d"] + contact_clicks["last_30d"]
     conversion_rate = (
-        round(whatsapp_clicks["last_30d"] / profile_views["last_30d"] * 100, 1)
+        round(contact_actions_30d / profile_views["last_30d"] * 100, 1)
         if profile_views["last_30d"] > 0
         else 0.0
     )
@@ -1920,6 +2033,93 @@ def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> Non
     ).update({ProducerLocation.is_primary: False})
 
 
+def _sync_producer_city_from_primary(db: Session, producer_id: UUID) -> None:
+    """MEH-2141 (MEH-1938 batch B2) — write `Producer.city` through from the
+    primary location, in the caller's open transaction.
+
+    ## Why this exists
+
+    Chunk 4 deleted the dashboard's "מיקום על המפה" card, which was the owner's
+    only editor for `Producer.city`. The CI reviewer flagged the gap on that
+    PR: an owner who moves her primary location to another town now has no way
+    to correct the city that the listing filter, the free-text search, the
+    `/producers/cities` aggregation, the admin search, `rank_in_city` and the
+    two admin notification emails all read. Fourteen readers, and none of them
+    has an equivalent in `producer_locations` — which is why the column stays
+    and is written THROUGH rather than dropped.
+
+    Interim derived, NOT Contract. Chunk 5 is what makes `city` fully derived,
+    and it is blocked on the release card. Nothing here removes a column,
+    changes a schema, or touches `lat`/`lng`.
+
+    ## Two things it deliberately does NOT do
+
+    **It never writes NULL.** If there is no primary row, or the primary row
+    carries no city, the column keeps its last value. A NULL here is not a
+    neutral "unknown" — it drops the business out of `?city=` filtering and
+    out of the region picker, and it renders as a blank line in the admin
+    emails. `ProducerLocation.city` is `str | None` (schemas.py:1090), so this
+    is a reachable state, not a theoretical one.
+
+    **It is not called on every mutation.** The callers below invoke it only
+    when the operation changed WHICH row is primary, or changed the primary
+    row's own city. That precision is what keeps admin authority intact —
+    see the precedence note below.
+
+    ## Precedence: admin wins, and nothing here contests it
+
+    `admin.py` writes `Producer.city` directly (the create path's explicit
+    `city=data.city`, and the PUT's `setattr` loop over `ProducerUpdate`).
+    That write is NOT wrapped, NOT mirrored and NOT reverted by this function.
+    The two paths coexist because they are triggered by different events: an
+    admin edit sets the column and no owner location changed, so this function
+    never runs; an owner moves her primary location and this function sets the
+    column from that row. The one ordering that overwrites an admin value is
+    an owner moving her primary AFTER the admin edit — which is the correct
+    outcome, because at that point the owner's own primary location is the
+    fresher statement of where the business is.
+
+    # DO NOT call this from a non-primary mutation. Doing so would re-derive
+    # the column on an edit that says nothing about it, and would silently
+    # revert an admin's `city` the next time an owner edited an unrelated
+    # pickup point's phone number.
+    """
+    # `SessionLocal` is built with autoflush=False (database.py:107), so a
+    # promotion the caller has only assigned on the ORM instance
+    # (`loc.is_primary = True`, `replacement.is_primary = True`) is NOT visible
+    # to the query below until it is flushed. Without this line the query finds
+    # NO primary at all — the previous one was demoted by a bulk UPDATE that
+    # did hit the database, the new one is still pending in the session — and
+    # the function returns early, leaving the city on the OLD location.
+    #
+    # That is not a hypothesis: the promote and delete-primary tests failed
+    # exactly this way before this flush was added, and they are the two that
+    # would have shipped the bug.
+    #
+    # Flushing here rather than at each call site keeps the helper correct
+    # regardless of what the caller has or has not flushed. The caller still
+    # owns the COMMIT.
+    db.flush()
+
+    primary = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .order_by(ProducerLocation.created_at.asc())
+        .first()
+    )
+    if primary is None:
+        return
+    if not primary.city or not primary.city.strip():
+        return
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return
+    producer.city = primary.city.strip()
+
+
 @router.get("/locations", response_model=list[ProducerLocationOwnerOut])
 def list_my_locations(
     user: User = Depends(require_producer),
@@ -1959,6 +2159,12 @@ def create_my_location(
     db.flush()  # assign loc.id before clearing siblings
     if loc.is_primary:
         _clear_other_primaries(db, user.producer_id, loc.id)
+        # MEH-2141: the primary changed (first location, or an explicit
+        # is_primary=true that just demoted the previous one), so the city the
+        # 14 readers see is re-derived from it. Gated on `is_primary` rather
+        # than run unconditionally: adding a SECOND, non-primary pickup point
+        # says nothing about where the business is.
+        _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()
     db.refresh(loc)
     return loc
@@ -1998,6 +2204,18 @@ def update_my_location(
         # owner promotes another location instead (which clears this one).
         raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
 
+    # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
+    # just PROMOTED to primary (the primary's identity changed), or this row is
+    # ALREADY primary and the patch carried a city (the primary's city changed).
+    #
+    # Read `loc.is_primary` AFTER the block above, not the pre-patch value: a
+    # promotion sets it two lines up, and the demotion arm raises rather than
+    # falling through. Every other edit — a phone on the primary, anything at
+    # all on a non-primary row — leaves the column alone, which is what keeps
+    # an admin-set city from being reverted by an unrelated owner edit.
+    if want_primary is True or (loc.is_primary and "city" in patch):
+        _sync_producer_city_from_primary(db, user.producer_id)
+
     db.commit()
     db.refresh(loc)
     return loc
@@ -2024,4 +2242,13 @@ def delete_my_location(
         )
         if replacement is not None:
             replacement.is_primary = True
+            # MEH-2141: a new row is primary, so the city follows it.
+            #
+            # The `replacement is not None` guard is load-bearing here and not
+            # just a null check: deleting the LAST location leaves no primary,
+            # and the column must then KEEP its last value rather than go NULL.
+            # The helper would decline anyway (it returns early on no primary),
+            # so this is belt and braces on the invariant the 14 readers depend
+            # on — stated twice on purpose, because a NULL city is silent.
+            _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()

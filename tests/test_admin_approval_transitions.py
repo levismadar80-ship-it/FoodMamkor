@@ -274,7 +274,14 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
     monkeypatch.setattr(
         admin_module,
         "_send_notification_email",
-        lambda to, subject, body: sent.append((to, subject, body)),
+        # MEH-2151: `html=` is accepted and DISCARDED. The approval send now
+        # passes an HTML part, so a 3-parameter stand-in raises TypeError from
+        # inside the handler — which is what a fake that has drifted from the
+        # real signature looks like, and it is the reason this file went red on
+        # a ticket that never mentions it. Deliberately not captured: this test
+        # asserts the SUBJECT (MEH-2113), and the HTML part's own contract lives
+        # in tests/test_meh2151_approval_email_cta.py.
+        lambda to, subject, body, html=None: sent.append((to, subject, body)),
     )
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
 

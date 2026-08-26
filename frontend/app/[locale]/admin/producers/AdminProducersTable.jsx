@@ -10,6 +10,7 @@ import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import AdminReviewChecklist from "./AdminReviewChecklist";
+import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
@@ -56,18 +57,9 @@ export function AwaitingCompletionBadge({ producer }) {
 // only colours it, so the badge and the queue's sort order can never disagree
 // about how old a row is.
 //
-// WHICH ROWS GET SLA COLOURS, and why it is not "every row": the promise this
-// escalates against ("עד 3 ימי עסקים") is made only to a business that has
-// asked to be reviewed. A draft has made no such request, so it shows its age
-// in plain grey — the ticket's "no SLA colors" rule. Approved / rejected /
-// inactive rows render nothing at all: they are in the default view (which is
-// `status != draft`, not the pending filter) but they are not waiting for
-// anything, and a "ממתין 0" on every live business would be pure noise.
-//
-// One entry since `pending_whatsapp` was removed in MEH-2124. Kept as an array
-// rather than collapsed to an equality: `isQueued` reads as a set membership
-// question, and a second waiting state is a plausible future addition.
-const SLA_STATUSES = ["pending"];
+// MEH-2161: `SLA_STATUSES` moved to ./sla-statuses, which now carries the full
+// "which rows get SLA colours" rationale. It is imported rather than declared
+// because `QueueSlaSummary` asks the SAME question and had to copy it.
 
 export function WaitingBadge({ producer }) {
   const t = useTranslations("admin");
@@ -346,6 +338,14 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
 // MEH-1232: pending-approval photo preview. Statuses whose gallery the admin
 // must eyeball BEFORE approving (photo-quality gate at manual approval — the
 // MEH-799 gate only checks images is non-empty, not that they render).
+//
+// MEH-2161: this is NOT `SLA_STATUSES` and must not be merged into it, even
+// though both read `["pending"]` today. They answer different questions — "is
+// this row waiting on us" versus "must a human look at its photos before
+// approving" — and the values match by coincidence, not by definition. Merging
+// them would mean a future change to the photo-review policy silently moved the
+// SLA clock. Two owners for one fact is a smell; one owner for two facts is
+// worse, because the coupling is invisible at both call sites.
 const PENDING_PHOTO_STATUSES = ["pending"];
 // Max thumbnails before collapsing the rest into a "+N" indicator.
 const PENDING_THUMB_MAX = 4;
@@ -477,6 +477,13 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
               onToggleOpen={() => checklist.toggleOpen(p.id)}
               checkedIds={checklist.checked[p.id]}
               onToggleItem={(itemId) => checklist.toggleItem(p.id, itemId)}
+              items={checklist.items}
+              itemsError={checklist.itemsError}
+              onReloadItems={checklist.reloadItems}
+              saving={!!checklist.saving[p.id]}
+              /* MEH-1399 chunk 4: the evidence dossier reads this row's own
+                 ProducerAdminOut fields — no extra fetch. */
+              producer={p}
             />
           </td>
         </tr>

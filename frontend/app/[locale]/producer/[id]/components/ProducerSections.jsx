@@ -17,6 +17,7 @@ import OfferBadge from "@/components/OfferBadge";
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
+import { resolveStoreHours } from "@/lib/hours";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
@@ -124,6 +125,11 @@ export default function ProducerSections({
   const t = useTranslations();
   const format = useFormatter();
   const locale = useLocale();
+  // MEH-2142: which store-hours string this page shows — the primary
+  // location's, falling back to the legacy business-level column. Resolved
+  // ONCE, here, because the location section both gates on it and renders it,
+  // and two call sites would be two chances to disagree.
+  const storeHours = resolveStoreHours(producer);
   const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
@@ -170,12 +176,29 @@ export default function ProducerSections({
   // entry's photo in the highlight and DROP it from the grid below (fixes the
   // MEH-1146 chunk B duplicate — C4). Exact name match only; a free-text label
   // with no matching product just renders name + price on the leaf placeholder.
+  // MEH-2137 chunk 3: id first, name as the fallback — same ordering and same
+  // reasoning as the dashboard matcher (ProductsSection.jsx). Under the name
+  // match `.find()` returned whichever duplicate came first in the array, so
+  // two products sharing a name made the featured slot depend on row order.
+  // The name branch stays live for producers whose backfill left the FK NULL.
+  //
+  // The fallback is gated on `top_product_id == null` — NOT on the id lookup
+  // failing. Those are different conditions and an `||` chain conflates them:
+  // when the id is SET but its product is gone (deleted), `||` would fall
+  // through to the name and feature a *surviving* product that happens to
+  // share the deleted one's `top_product_name` — reintroducing exactly the
+  // wrong-row bug this chunk exists to kill, on the surface where a buyer
+  // sees it. The dashboard's `isTopProduct` already reads `!= null` and marks
+  // nothing in that case; this now agrees with it, so a row featured here is
+  // still exactly a row marked there. (Reviewer finding on PR #3048.)
   const signatureProduct =
-    producer.top_product_name
-      ? (producer.products || []).find(
-          (p) => p.name?.trim() === producer.top_product_name.trim(),
-        )
-      : null;
+    producer.top_product_id != null
+      ? (producer.products || []).find((p) => p.id === producer.top_product_id) || null
+      : producer.top_product_name
+        ? (producer.products || []).find(
+            (p) => p.name?.trim() === producer.top_product_name.trim(),
+          ) || null
+        : null;
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
     : null;
@@ -672,7 +695,12 @@ export default function ProducerSections({
           MiniMap (never a Google embed) with brand nav buttons. The owner
           pencil (MEH-1306) moved inline beside the heading, matching the
           bio/products idiom. */}
-      {(parseHasLocation(producer) || producer.opening_hours) && (
+      {/* MEH-2142: the gate reads the RESOLVED hours, not the legacy column.
+          Both halves have to move together — gating on `producer.opening_hours`
+          while rendering the resolved value would hide the whole section from a
+          business whose hours live only on her primary location row, which is
+          exactly the business this change is for. */}
+      {(parseHasLocation(producer) || storeHours) && (
         <section
           id="section-location"
           className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
@@ -690,7 +718,10 @@ export default function ProducerSections({
               {producer.city}
             </p>
           )}
-          <OpeningHours opening_hours={producer.opening_hours} />
+          {/* MEH-2142: primary location's hours, falling back to the legacy
+              business-level column. One resolver so the gate above and this
+              render can never disagree. */}
+          <OpeningHours opening_hours={storeHours} />
           {/* MEH-1611 chunk 2: the map now shows every point this business has
               — its branch plus each pickup / market stand — not just the primary
               pin. Complements the textual pickup list DeliveryBlock renders
