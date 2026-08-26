@@ -4230,11 +4230,11 @@ class ProducerViewIn(BaseModel):
     by either fetch, so `producer_page_views.referrer` was NULL for every row
     ever written.
 
-    Deliberately unvalidated at the schema layer — `track_producer_view`
-    normalizes against its own allowlist and writes NULL for anything else
-    (services/analytics.py:265). A 422 here would turn a fire-and-forget
-    beacon into a client error for a value the writer would have discarded
-    anyway.
+    Deliberately unvalidated at the schema layer — `record_analytics_event`
+    normalizes against the `_ALLOWED_REFERRERS` allowlist and writes NULL for
+    anything else (services/analytics.py:213, applied at :305). A 422 here
+    would turn a fire-and-forget beacon into a client error for a value the
+    writer would have discarded anyway.
     """
 
     referrer: str | None = None
