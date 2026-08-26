@@ -80,8 +80,10 @@ def uploader(monkeypatch):
 
     def _install(rec):
         monkeypatch.setattr(cloudinary.uploader, "upload", rec)
-        # `cloudinary.config(...)` is called for real, with dummy values. It
-        # only mutates in-process state and issues no request.
+        # NB the subject here is the SUT, not this fixture: `_upload_hero`
+        # itself calls `cloudinary.config(...)` with the dummy values
+        # `_configure` monkeypatches onto `settings`. That call only mutates
+        # in-process state and issues no request, so it is left unpatched.
         return rec
 
     return _install
@@ -138,6 +140,9 @@ def test_upload_hero_leaves_every_other_kwarg_untouched(
     seed_mod._upload_hero("bakery-tel-aviv", "https://images.unsplash.com/photo-y")
 
     args, kwargs = rec.calls[0]
+    # Asserted as a positional tuple on purpose: this pins the cloudinary SDK
+    # calling convention (`upload(url, **opts)`) as well as the URL value, so
+    # a refactor that moved the source URL into a keyword would fail here.
     assert args == ("https://images.unsplash.com/photo-y",)
     assert set(kwargs) == {
         "folder",
