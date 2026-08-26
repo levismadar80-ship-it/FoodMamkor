@@ -544,24 +544,54 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 });
 
 // MEH-1422 (MEH-1388 chunk 4b): the informational multi-location intake toggle
-// on DETAILS. Renders the approved referral copy only on "yes", and — critically
-// — is UI-only: its value must never leak into the /auth/register/producer body
-// (no backend field). The next-intl mock returns key paths, so assertions key off
-// the locked-copy i18n KEYS, not the Hebrew strings.
+// on DETAILS. UI-only: its value must never leak into the
+// /auth/register/producer body (no backend field). The next-intl mock returns
+// key paths, so assertions key off the locked-copy i18n KEYS, not the Hebrew
+// strings.
+//
+// MEH-1768 changed WHEN the helper renders: always, not only on "yes". Behind
+// the tick it answered a question the owner had already decided.
 describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", () => {
-  it("shows the referral copy only when the toggle is on", async () => {
+  // The behaviour change itself. Against the pre-MEH-1768 render this first
+  // assertion is the one that goes red: the helper was absent until the box was
+  // ticked, which is exactly the state a hesitating owner is in.
+  it("shows the helper with the box UNCHECKED, and keeps it shown when ticked", async () => {
     await renderWizard();
     await fillAccountToDetails();
     const toggle = screen.getByTestId("register-multi-location-toggle");
-    expect(toggle).toBeInTheDocument();
+    expect(toggle).not.toBeChecked();
     expect(screen.getByText(`${K}.fields.multi_location_label`)).toBeInTheDocument();
-    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
-    fireEvent.click(toggle); // yes
+
     expect(screen.getByTestId("register-multi-location-copy")).toHaveTextContent(
-      `${K}.fields.multi_location_yes_copy`,
+      `${K}.fields.multi_location_hint`,
     );
-    fireEvent.click(toggle); // no
-    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
+
+    // Permanence, in both directions — a helper that vanished on tick, or on
+    // un-tick, would still satisfy a single unchecked-state assertion.
+    fireEvent.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
+  });
+
+  // "Exactly once, never twice" is an acceptance criterion in its own right:
+  // keeping the old conditional line ALONGSIDE the permanent one would pass
+  // every assertion above and double the copy on tick. Counted, not presence-
+  // checked — a presence assertion cannot see a duplicate.
+  it("renders the copy exactly once in both toggle states, and drops the old key", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    const toggle = screen.getByTestId("register-multi-location-toggle");
+
+    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
+    fireEvent.click(toggle);
+    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
+
+    // The retired key must not render anywhere — the mock echoes key paths, so
+    // its presence would be visible text if the old branch survived.
+    expect(screen.queryByText(`${K}.fields.multi_location_yes_copy`)).toBeNull();
   });
 
   it("is informational only — its value is NOT in the submit payload", async () => {
