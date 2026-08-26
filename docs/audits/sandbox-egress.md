@@ -57,7 +57,7 @@
 | `api.linear.app` | ⛔ חסום | 000 | 56 | ‏אבל ה-MCP עובד — ראו §5 |
 | `anthropic.com` | ⛔ חסום | 000 | 56 | ‏`api.anthropic.com` ב-`no_proxy`; ה-apex לא |
 
-**‏11 חסומים · 6 נגישים · 1 auth-walled.**
+**‏10 חסומים · 6 נגישים · 1 auth-walled — סה"כ 17 כתובות.**
 
 ### ‏🔴 תיקון ל-`CLAUDE.md:68` — הכותרת `x-deny-reason` אינה קיימת
 
@@ -92,7 +92,7 @@ curl -sS http://127.0.0.1:41793/__agentproxy/status
 **‏שימו לב לניסוח של ה-proxy עצמו: "policy denial *or upstream failure*".**
 גם ה-proxy אינו מבחין בין השניים. לכן 403 על CONNECT **אינו הוכחה למדיניות**
 כשלעצמו — מה שהופך אותו לכזה הוא הבקרה: אותו curl, אותו proxy, אותה שנייה,
-שישה hosts עוברים ואחד-עשר נחסמים.
+שישה hosts עוברים ועשרה נחסמים.
 
 ---
 
