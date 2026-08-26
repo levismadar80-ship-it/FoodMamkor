@@ -15,7 +15,7 @@ clicks as coverage requests in MEH-1676's dashboard card.
 from app.models.models import Producer, ProducerWhatsAppClick
 from app.schemas.schemas import COVERAGE_CITY_MAX_LENGTH
 
-from test_analytics import make_producer
+from tests.conftest import make_producer
 
 
 class TestCoverageCityCapture:
