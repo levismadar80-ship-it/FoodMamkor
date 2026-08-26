@@ -175,8 +175,22 @@ function createCategoryMarker(
   // an onerror swap below. The glyph + colour come from styleForProducer (the legend's
   // single source of truth); empty/null category degrades to DEFAULT (Leaf on
   // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
+  // MEH-2010: explicit width — c_fill carries no default cap (cloudinary.js:58-66),
+  // so without this the full original is delivered into a 36px circle.
+  // This is the one call site with no `sizes` to read and no next/image in
+  // front of it: the marker is a raw <img> in a divIcon HTML string, so this
+  // URL is exactly what the browser downloads. The container is `size` px
+  // square (`:158`, the only value on this path — `createSecondaryMarker`'s 24
+  // and the cluster badge's 36 never reach optimizeCloudinary) and the <img>
+  // is width:100%;height:100%. 36 CSS px x DPR 2 = 72, matching the repo's
+  // explicit-2x convention for direct <img> delivery (OwnerCard.jsx
+  // `optimizeWidth={avatarSize * 2}`; RecipeDetail 112/56; ProducerSections
+  // 128/64).
   const imgUrl = producer.images?.[0]
-    ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.square })
+    ? optimizeCloudinary(producer.images[0], {
+        aspectRatio: IMAGE_RATIOS.square,
+        width: 72,
+      })
     : null;
   const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const categoryColor = safeCssColor(rawCategoryColor);

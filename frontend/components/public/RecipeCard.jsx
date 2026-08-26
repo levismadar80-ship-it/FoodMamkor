@@ -33,7 +33,23 @@ export default function RecipeCard({ slug, recipe }) {
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
   // MEH-911: smart-crop through the central helper (mirrors ProducerCard:183).
-  const imgSrc = optimizeCloudinary(recipe.image_url, { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-2010: explicit width for the same reason as ProducerCard — c_fill is
+  // uncapped by design, so the cap has to come from the call site.
+  // Derived from the only place this card renders (ProducerSections.jsx:487,
+  // `grid grid-cols-2 md:grid-cols-3 gap-4` inside `max-w-6xl px-4`): the
+  // content column caps at 1120 CSS px, so the widest cell is
+  // (1120 - 32)/3 = 363 CSS px at md+, and (767 - 32 - 16)/2 = 360 below it.
+  // 363 x DPR 2 = 726, rounded up to 750 — a Next `deviceSizes` entry.
+  //
+  // NOTE, and it is deliberately not fixed here: `sizes` below claims
+  // `(max-width: 640px) 100vw`, which is wrong — the grid is 2-column at every
+  // width, never 1. The attribute over-claims by ~2x on mobile. Correcting it
+  // is a `sizes` change on a VRT-covered surface and belongs to its own
+  // ticket; this width is derived from the real box, not from that claim.
+  const imgSrc = optimizeCloudinary(recipe.image_url, {
+    aspectRatio: IMAGE_RATIOS.card,
+    width: 750,
+  });
   // MEH-1976: `imgSrc ?` below only covers a MISSING url. A url that resolves
   // but fails to load (the MEH-1925 Cloudinary 401) rendered a broken glyph
   // instead of the no-photo cell two branches down. Failure now falls through

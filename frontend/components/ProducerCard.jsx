@@ -192,7 +192,20 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
-  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-2010: an explicit width, because the c_fill path is deliberately NOT
+  // covered by DEFAULT_MAX_WIDTH (cloudinary.js:58-66) — c_fill + w_1200 would
+  // UPSCALE every original narrower than 1200px and spend more bandwidth, not
+  // less. 828 is derived, not picked: the widest box `sizes` below can claim
+  // is 33vw at its own 1200px breakpoint edge (= 396 CSS px), and above that
+  // breakpoint `max-w-7xl` (1280) + `px-4` caps the content column at 1248,
+  // where the widest grid this card renders into is lg:grid-cols-3
+  // (SearchClient) at (1248 - 48)/3 = 400 CSS px. 400 x DPR 2 = 800, rounded
+  // up to 828 — the first entry in Next's default `deviceSizes`, so the
+  // optimizer's most likely request is a pass-through rather than an upscale.
+  const imgSrc = optimizeCloudinary(producer.images?.[0], {
+    aspectRatio: IMAGE_RATIOS.card,
+    width: 828,
+  });
   // MEH-1211: a present-but-dead image URL renders the browser broken-glyph +
   // overflowing alt. Track load failure and fall back to the canonical no-photo
   // placeholder below (the same else-branch used when imgSrc is absent).
