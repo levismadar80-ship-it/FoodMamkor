@@ -31,7 +31,7 @@ not this rule.
 
 | Value | Means | Example |
 |---|---|---|
-| `business` | The whole business carries it. | `verified` (רישוי מאומת) — the business's license; `has_delivery`; `kosher` (verified-only); `grass_fed`. |
+| `business` | The whole business carries it. | `verified` (רישוי מאומת) — the business's license; `license` (רישיון יצרן, BADGE_CONFIG); `has_delivery`; `kosher` (verified-only); `grass_fed`. |
 | `any-product` | ≥ 1 matching product in the catalog — NOT the whole business. | `vegan` / `vegetarian` / `gluten_free` / `lactose_free` — `?vegan=true` is an EXISTS subquery over products (MEH-293). |
 | `facility` | A property of the production site, not the catalog. | *Reserved* — used by the MEH-1508 gluten/lactose facility layer (shared vs dedicated). No label carries it yet. |
 
@@ -55,6 +55,29 @@ not this rule.
 > is reserved", and the `system` row was missing its Example cell entirely — a
 > three-column table with a two-cell row. Both corrected under MEH-1753 from the
 > live config, not from the spec.)_
+
+### The `license` ruling (MEH-2191, 26/08)
+
+| Label | scope | evidence | Rationale |
+|---|---|---|---|
+| `license` (רישיון יצרן) | `business` | `admin-verified` | The claim is established by the manual per-business approval against the documents — the DNA lock («עסקים מורשים בלבד» + «אישור ידני לכל עסק»), not by the owner typing a number. |
+
+**Why this row exists at all.** MEH-1753 brought all twelve `BADGE_CONFIG`
+entries under this contract, and `license` was the **one cell of the twelve that
+was derived rather than looked up**: the badge gates on the same
+`verification_tier === "verified"` admin check as `verified` (MEH-1162), so the
+values were read off the `verified` row — a defensible inference, and still an
+inference. CC flagged it instead of quietly minting policy (rule 24), and this
+row is the lookup that replaces the derivation.
+
+`has_producer_license` **alone** is self-declared — a producer typing
+`000000000` earned the chip before MEH-1162 added the verified gate. The
+`admin-verified` value describes the gate, never the field, which is the same
+distinction the kashrut precedent (MEH-1711) draws.
+
+**Measured at ruling time:** `frontend/lib/badges.js` already carried
+`scope: "business"` · `evidence: "admin-verified"`, so the ruling **matched** the
+derived cell and no code changed.
 
 ---
 
