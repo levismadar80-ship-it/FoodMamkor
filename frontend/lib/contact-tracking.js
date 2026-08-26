@@ -80,8 +80,17 @@ export function pingWhatsAppBeacon(producerId, city = null) {
   // click landed with user_id=NULL and could never satisfy the reviews WA-gate
   // (reviews.py guard 3). When a token is present, POST via fetch(keepalive:true)
   // — same pattern as trackContactClick above — so the click is attributed to the
-  // user AND survives the wa.me navigation. The whatsapp-click endpoint takes no
-  // body (producer_id is the path param), so none is sent.
+  // user AND survives the wa.me navigation.
+  //
+  // MEH-1677 CORRECTED the last line of this note. It used to read: "The
+  // whatsapp-click endpoint takes no body (producer_id is the path param), so
+  // none is sent." That was true until the coverage CTA needed to send a city.
+  // What holds NOW: the body is CONDITIONAL — absent when there is no city
+  // (so the token-only path is byte-identical to before), and
+  // JSON.stringify({city}) when there is one. The endpoint still accepts no
+  // body at all, which is what keeps the anonymous sendBeacon path below
+  // working; only a city forces fetch(keepalive) even without a token,
+  // because sendBeacon cannot set Content-Type: application/json.
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   if (token || coverageCity) {
     const headers = {};
