@@ -37,11 +37,40 @@
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
+ *
+ * MEH-1753 — Label Scope Contract (.claude/rules/labels.md). Every entry
+ * declares TWO fields beyond its rendered copy:
+ *   - scope    ∈ business | any-product | facility — WHAT the label applies to.
+ *   - evidence ∈ self-declared | admin-verified | editorial | system — WHO
+ *                established it.
+ * A badge is a label in exactly the contract's sense: a term attached to a
+ * business as a claim about it. The four precedents the contract encodes
+ * (MEH-986 kosher · MEH-1259 organic · MEH-1439 diet tooltips · MEH-1492
+ * editor's pick) are ALL badge incidents, so BADGE_CONFIG was the one label
+ * surface still outside the rule that its own history wrote.
+ *
+ * This is METADATA ONLY. No rendered string changes, and none may: the fields
+ * are inert at render time and `LabelScopeContract.test.js` asserts the full
+ * label set is byte-identical.
+ *
+ * NINE of these twelve keys also exist as filter axes in lib/filter-taxonomy.js
+ * (eight by the same key, plus `delivery` ↔ `has_delivery`). Their scope and
+ * evidence are NOT hand-copied here in the sense that matters: an equality
+ * assertion in LabelScopeContract.test.js requires each pair to agree, so a
+ * change to one side without the other goes red. They are declared rather than
+ * imported because the LABELS legitimately differ — the `verified` badge reads
+ * "מאומת" while its axis reads "רישוי מאומת" — so importing the axis object
+ * would either change rendered copy or need a field-by-field pick, and both
+ * cost more than the guard.
  */
 
 export const BADGE_CONFIG = {
   verified: {
     key: "verified",
+    // Matches FILTER_AXES.verified. An admin checked a licence or exemption
+    // document against the Ministry of Health register (ADR-022).
+    scope: "business",
+    evidence: "admin-verified",
     label: "מאומת",
     // MEH-762: ADR-022 tier-1 copy lock (terms §5.2-aligned). Replaces the
     // pre-ADR-022 over-claim ("עבר אימות זהות ורישוי"). en gap is inherited
@@ -51,6 +80,14 @@ export const BADGE_CONFIG = {
   },
   recommended: {
     key: "recommended",
+    // The 4th evidence value, added by MEH-1753. `recommended` is neither
+    // self-declared (the owner cannot set it) nor admin-verified (nothing is
+    // checked against an external register) — it is an editor's opinion, and
+    // ADR-030 bans buying it. Filing it under either existing value would have
+    // been the MEH-1492 over-claim again: "admin-verified" reads as an earned
+    // status. scope is `business` — it is the whole business being chosen.
+    scope: "business",
+    evidence: "editorial",
     // MEH-1492: renamed מומלץ → "בחירת העורכת" — the label now names who stands
     // behind the opinion (an editor), and the popover links out to the /about
     // criteria + the ADR-030 "can't be bought" promise (aboutHref below).
@@ -68,12 +105,32 @@ export const BADGE_CONFIG = {
   // boolean from MEH-530's producer_license_number, schemas.py:547).
   license: {
     key: "license",
+    // Gated on `verification_tier === "verified"` at :220 — the SAME admin
+    // document check the `verified` badge uses, which is exactly what
+    // labels.md's business/admin-verified row describes ("the business's
+    // licence, checked against the Ministry of Health"). MEH-1162 established
+    // this: `has_producer_license` ALONE is self-declared and a producer
+    // typing 000000000 earned the chip.
+    //
+    // MEH-2191 closed the flag this comment used to carry. labels.md now
+    // carries a `license` ruling of its own (§"The `license` ruling"), and it
+    // ruled business · admin-verified — the same pair #3113 had derived from
+    // the `verified` row. So the values below are unchanged and are now a
+    // lookup rather than the one derived cell of these twelve.
+    scope: "business",
+    evidence: "admin-verified",
     label: "רישיון יצרן",
     tooltip: "בית העסק מחזיק ברישיון יצרן ממשרד הבריאות.",
     color: "primary",
   },
   new: {
     key: "new",
+    // The first live use of `system`, which labels.md reserved and left with
+    // no example. Nobody asserts this and nobody verifies it: it is computed
+    // from `days_since_created` (:225), which is what `system` was reserved
+    // for. scope is `business` — the business joined recently, not a product.
+    scope: "business",
+    evidence: "system",
     label: "חדש",
     tooltip: "העסק הצטרף אלינו בחודש האחרון.",
     // MEH-792: was "secondary" — an alias of primary ever since MEH-703
@@ -92,6 +149,11 @@ export const BADGE_CONFIG = {
   // KEPT (zero data loss); only the public badge/chip/filter surfaces are gone.
   grass_fed: {
     key: "grass_fed",
+    // Matches FILTER_AXES.grass_fed. scope is `business`, NOT `any-product`:
+    // it reads off `producer.grass_fed` (:234), a whole-business marking, and
+    // is the one non-diet member of the self-declared group.
+    scope: "business",
+    evidence: "self-declared",
     label: "גראס פד",
     tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
     color: "muted",
@@ -102,6 +164,12 @@ export const BADGE_CONFIG = {
   // over-claim risk family as MEH-1259 organic).
   gluten_free: {
     key: "gluten_free",
+    // Matches FILTER_AXES.gluten_free. `any-product`, never `business`: the
+    // badge lights on `has_gluten_free_products` — ANY marked product in the
+    // catalog (MEH-479). Reading it as a whole-business property is the exact
+    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    scope: "any-product",
+    evidence: "self-declared",
     label: "ללא גלוטן",
     tooltip: "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
     color: "muted",
@@ -111,18 +179,36 @@ export const BADGE_CONFIG = {
   // after gluten_free, before vegan.
   vegetarian: {
     key: "vegetarian",
+    // Matches FILTER_AXES.vegetarian. `any-product`, never `business`: the
+    // badge lights on `has_vegetarian_products` — ANY marked product in the
+    // catalog (MEH-479). Reading it as a whole-business property is the exact
+    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    scope: "any-product",
+    evidence: "self-declared",
     label: "צמחוני",
     tooltip: "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     color: "muted",
   },
   vegan: {
     key: "vegan",
+    // Matches FILTER_AXES.vegan. `any-product`, never `business`: the
+    // badge lights on `has_vegan_products` — ANY marked product in the
+    // catalog (MEH-479). Reading it as a whole-business property is the exact
+    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    scope: "any-product",
+    evidence: "self-declared",
     label: "טבעוני",
     tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
     color: "muted",
   },
   lactose_free: {
     key: "lactose_free",
+    // Matches FILTER_AXES.lactose_free. `any-product`, never `business`: the
+    // badge lights on `has_lactose_free_products` — ANY marked product in the
+    // catalog (MEH-479). Reading it as a whole-business property is the exact
+    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    scope: "any-product",
+    evidence: "self-declared",
     label: "ללא לקטוז",
     tooltip: "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     color: "muted",
@@ -132,12 +218,27 @@ export const BADGE_CONFIG = {
   // (Its low_carb sibling was withdrawn in MEH-2047 — see the header note.)
   no_added_sugar: {
     key: "no_added_sugar",
+    // Matches FILTER_AXES.no_added_sugar. `any-product`, never `business`: the
+    // badge lights on `has_no_added_sugar_products` — ANY marked product in the
+    // catalog (MEH-479). Reading it as a whole-business property is the exact
+    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    scope: "any-product",
+    evidence: "self-declared",
     label: "ללא סוכר מוסף",
     tooltip: "לעסק יש מוצרים ללא סוכר מוסף מסומנים בקטלוג.",
     color: "muted",
   },
   kosher: {
     key: "kosher",
+    // Matches FILTER_AXES.kosher. STATIC, and deliberately so: MEH-1711 makes
+    // the LABEL dynamic (resolveBadgeLabel names the actual certification when
+    // there is exactly one code, else falls back to the string below), but the
+    // claim's scope and evidence are invariant across every branch of that
+    // resolution — an admin stamped `kashrut_verified_at` either way (MEH-986,
+    // expiry-enforced MEH-1260). Metadata that varied with the rendered string
+    // would be describing the copy, not the claim.
+    scope: "business",
+    evidence: "admin-verified",
     // MEH-1711: "כשר" was our own synthesized label — the bare word claims a
     // kashrut standard without naming which one, the over-claim MEH-1418
     // already rejected once for the filter chip (attribute-labels.js:61,
@@ -156,6 +257,14 @@ export const BADGE_CONFIG = {
   },
   delivery: {
     key: "delivery",
+    // Same CLAIM as FILTER_AXES.has_delivery — same label ("משלוח"), same
+    // scope, same evidence — under a different KEY, which is why the equality
+    // guard maps the pair explicitly. The PREDICATES differ (the badge also
+    // counts `delivery_count > 0` and is suppressed for a delivery-only
+    // business, MEH-1841) and that is fine: the contract governs what the
+    // label claims and who established it, not how the boolean is computed.
+    scope: "business",
+    evidence: "self-declared",
     label: "משלוח",
     tooltip: "העסק מוסר או שולח לכתובת שלך.",
     color: "muted",

@@ -9,6 +9,12 @@ import ProducersClient from "@/components/ProducersClient";
 // acceptance criteria name, all of which are about the CITY PRECONDITION:
 // delivery_day is meaningless without delivery_city (MEH-1645 same-row EXISTS),
 // so it must never be hydrated, written to the URL, or sent to the API alone.
+//
+// MEH-2186 — the row became ONE dropdown chip whose pills live in an inline
+// panel. Every behaviour below is unchanged; what changed is that reaching a
+// pill now costs one tap on the chip first, and the no-city tap lands on the
+// chip instead of on a ghost pill. The URL contract and the API params are
+// byte-identical, which is exactly what these cases keep measuring.
 
 const router = { replace: vi.fn(), push: vi.fn() };
 let params = {};
@@ -40,7 +46,18 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-2169: chip-icons.js gained vegetarian -> Carrot and
+  // no_added_sugar -> Cube. This mock enumerates exports by hand, so a new
+  // glyph in the registry kills the whole suite at import time with
+  // 'No "Carrot" export is defined' — not a failing assertion, a dead file.
+  Carrot: (p) => <span {...p} />,
+  Cube: (p) => <span {...p} />,
   CaretDown: (p) => <span {...p} />,
+  // MEH-2186: DeliveryDayRow's chip glyphs. Same hand-enumeration rule as the
+  // comment above — a missing export kills the whole file at import time.
+  CaretUp: (p) => <span {...p} />,
+  CalendarBlank: (p) => <span {...p} />,
+  X: (p) => <span {...p} />,
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
   // MEH-2046: chip-icons maps pickup_points -> Package.
@@ -124,6 +141,15 @@ const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1
 const listingCalls = () =>
   apiGet.mock.calls.filter(([url]) => url === "/producers").map(([, cfg]) => cfg?.params ?? {});
 
+/** MEH-2186: the pills live behind the chip. One tap, then the panel is open
+ *  and STAYS open across selections — so this is called once per spec, not
+ *  once per pill. Fails loudly rather than silently no-op'ing if the panel
+ *  did not actually open. */
+const openDayPanel = () => {
+  fireEvent.click(screen.getByTestId("delivery-day-chip"));
+  expect(screen.getByTestId("delivery-day-panel")).toBeInTheDocument();
+};
+
 const urlParam = (k) => new URLSearchParams(window.location.search).get(k);
 /** MEH-2036: the day axis serializes as REPEATED ?delivery_days= keys. */
 const urlParams = (k) => new URLSearchParams(window.location.search).getAll(k);
@@ -139,11 +165,15 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     params = { city: "חיפה", delivery_day: "שלישי" };
     render(<ProducersClient {...PROPS} />);
 
-    // The pill reads active — aria-pressed is the row's own state contract.
-    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "true");
-    // Not a ghost: a city is present, so the hint must be gone.
+    // MEH-2186: the chip carries the value in the CLOSED state — a hydrated
+    // day is legible without opening anything.
+    expect(screen.getByTestId("delivery-day-chip")).toHaveTextContent("שלישי");
+    // Not a ghost: a city is present.
     expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "false");
-    expect(screen.queryByTestId("delivery-day-hint")).toBeNull();
+
+    // The pill reads active — aria-pressed is the panel's own state contract.
+    openDayPanel();
+    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "true");
     // And the mount fetch carried BOTH params.
     // MEH-2036: the legacy SINGULAR ?delivery_day= is still accepted on
     // hydration (back-compat for old shared links) — it just becomes a
@@ -154,6 +184,7 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
   it("tapping the active day clears it and removes the URL param", () => {
     params = { city: "חיפה", delivery_day: "שלישי" };
     render(<ProducersClient {...PROPS} />);
+    openDayPanel();
     apiGet.mockClear();
 
     fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
@@ -169,6 +200,7 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
   it("tapping an inactive day sets it and writes it to the URL", () => {
     params = { city: "חיפה" };
     render(<ProducersClient {...PROPS} />);
+    openDayPanel();
     apiGet.mockClear();
 
     fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
@@ -183,10 +215,13 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
   it("tapping a SECOND day adds it — both pressed, both in URL and fetch", () => {
     params = { city: "חיפה", delivery_day: "שלישי" };
     render(<ProducersClient {...PROPS} />);
+    openDayPanel();
     apiGet.mockClear();
 
     fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
 
+    // MEH-2186: the panel survives the tap, so both pills are still readable.
+    expect(screen.getByTestId("delivery-day-panel")).toBeInTheDocument();
     expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
     expect(urlParams("delivery_days")).toEqual(["שלישי", "שישי"]);
@@ -199,6 +234,7 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
   it("un-toggling one of two days removes ONLY that day", () => {
     params = { city: "חיפה" };
     render(<ProducersClient {...PROPS} />);
+    openDayPanel();
     fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
     fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
     apiGet.mockClear();
@@ -214,6 +250,12 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     params = { city: "חיפה", delivery_days: ["רביעי", "רביעי", "nope", "שישי"] };
     render(<ProducersClient {...PROPS} />);
 
+    // MEH-2186 DoD: two deep-linked days collapse on the chip to the first by
+    // WEEK ORDER plus a count — "רביעי +1", never "שישי +1".
+    expect(screen.getByTestId("delivery-day-chip")).toHaveTextContent(
+      "producers.days_chip_more",
+    );
+    openDayPanel();
     expect(screen.getByTestId("delivery-day-pill-רביעי")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
     expect(listingCalls()[0]).toMatchObject({
@@ -226,6 +268,7 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     params = { city: "חיפה", delivery_day: "שלישי", delivery_days: ["שישי"] };
     render(<ProducersClient {...PROPS} />);
 
+    openDayPanel();
     expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
     expect(listingCalls()[0]).toMatchObject({ delivery_days: ["שישי"] });
@@ -238,8 +281,14 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     render(<ProducersClient {...PROPS} />);
 
     expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "true");
-    expect(screen.getByTestId("delivery-day-hint")).toBeInTheDocument();
-    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
+    // MEH-2186: the chip stays IDLE — the leaked day is never shown as a
+    // value, and there are no pills at all until a city admits a panel.
+    expect(screen.getByTestId("delivery-day-chip")).toHaveTextContent(
+      "producers.day_chip_idle",
+    );
+    expect(
+      document.querySelectorAll('[data-testid^="delivery-day-pill-"]'),
+    ).toHaveLength(0);
     // Nothing was fetched at all — a bare day is not an active filter.
     expect(listingCalls()).toHaveLength(0);
   });
@@ -254,15 +303,46 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     expect(urlParams("delivery_days")).toEqual([]);
   });
 
-  it("a ghost pill tap opens the LocationModal instead of filtering", () => {
+  // MEH-2186: was "a ghost pill tap". The ghost pills are gone; the no-city
+  // affordance is the chip itself, and it routes through the SAME handler
+  // (MEH-1825's one-handler rule) with no argument at all.
+  it("a no-city chip tap opens the LocationModal instead of filtering", () => {
     render(<ProducersClient {...PROPS} />);
     expect(screen.queryByTestId("location-modal")).toBeNull();
 
-    fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
 
     expect(screen.getByTestId("location-modal")).toBeInTheDocument();
+    // No panel was opened, and nothing was filtered.
+    expect(screen.queryByTestId("delivery-day-panel")).toBeNull();
     expect(urlParams("delivery_days")).toEqual([]);
     expect(listingCalls()).toHaveLength(0);
+  });
+
+  // MEH-2186: the day chip's own ✕. The city axis has its own × on the city
+  // chip, and the two must not be the same button — that conflation is what
+  // this ticket split apart.
+  it("the day chip ✕ clears the whole day set and KEEPS the city", () => {
+    params = { city: "חיפה", delivery_days: ["רביעי", "שישי"] };
+    render(<ProducersClient {...PROPS} />);
+    apiGet.mockClear();
+
+    fireEvent.click(screen.getByTestId("delivery-day-clear"));
+
+    expect(urlParams("delivery_days")).toEqual([]);
+    expect(urlParam("city")).toBe("חיפה");
+    expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "false");
+    // The refetch keeps the city and drops the days.
+    expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה" });
+    expect(listingCalls()[0]).not.toHaveProperty("delivery_days");
+    // ...and the ✕ is gone with the value it cleared.
+    expect(screen.queryByTestId("delivery-day-clear")).toBeNull();
+  });
+
+  it("no ✕ renders when no day is selected", () => {
+    params = { city: "חיפה" };
+    render(<ProducersClient {...PROPS} />);
+    expect(screen.queryByTestId("delivery-day-clear")).toBeNull();
   });
 
   it("clearing the city drops the day with it", () => {
@@ -275,5 +355,9 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     expect(urlParam("city")).toBeNull();
     expect(urlParams("delivery_days")).toEqual([]);
     expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "true");
+    // MEH-2186: the chip falls back to idle with the city it depended on.
+    expect(screen.getByTestId("delivery-day-chip")).toHaveTextContent(
+      "producers.day_chip_idle",
+    );
   });
 });

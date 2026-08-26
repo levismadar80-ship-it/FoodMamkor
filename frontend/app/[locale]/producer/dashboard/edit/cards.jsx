@@ -45,7 +45,6 @@ import CategoryRequestModal from "@/components/CategoryRequestModal";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import HoursEditor from "./HoursEditor";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -56,14 +55,22 @@ import HoursEditor from "./HoursEditor";
 // payload — no new API calls; self-hides when the id is absent.
 // ============================================================
 
-export function ViewOnPageLink({ producerId, anchor }) {
+// MEH-2155: `testId` is optional and defaults to today's value, so every
+// existing call site — and every locator already written against it — is
+// unchanged. It exists because two cards now deep-link to the SAME anchor:
+// the contact card and the questions card both point at #section-contact
+// (the question chips render inside the contact block on the public page).
+// EditAccordionCard keeps collapsed cards mounted (MEH-1100), so both links
+// are in the DOM at once and a shared testid would resolve to two elements —
+// which `getByTestId` treats as an error, not as a match.
+export function ViewOnPageLink({ producerId, anchor, testId }) {
   const t = useTranslations("dashboard.producer");
   if (!producerId) return null;
   return (
     <p className="mb-3">
       <LocaleLink
         href={`/producer/${producerId}#${anchor}`}
-        data-testid={`view-on-page-${anchor}`}
+        data-testid={testId || `view-on-page-${anchor}`}
         // Calm idiom (ADR-019): muted text link, never a primary CTA;
         // min-h 44px keeps the tap target (MEH-813).
         className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-fg-muted hover:text-accent focus-visible:underline transition-colors"
@@ -1116,18 +1123,18 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
-// MEH-1276: producer-facing opening-hours editor. Was a free-text LTR field
-// (MEH-1242 PR5) that expected the machine format "Sun-Thu 09:00-18:00" and
-// silently dropped any deviation. Now a structured Hebrew editor (7 day rows +
-// toggle + time inputs) that serialises to the same canonical string — storage,
-// API, and lib/hours.parseHours are unchanged. Editor lives in HoursEditor.jsx
-// (cards.jsx is already >1200 lines); this stays a thin, test-exported wrapper.
+// MEH-2142: `HoursCard` — the thin wrapper around HoursEditor — stood here and
+// was REMOVED along with the editor it wrapped. Store hours moved to the
+// per-location field the owner already edits in LocationsEditor; the
+// business-level `Producer.opening_hours` is no longer owner-writable
+// (producer_me.py) and survives only as a public-page read fallback.
+//
+// `frontend/lib/hours-serialize.js` is deliberately LEFT in place even though
+// HoursEditor was its only UI consumer: it is a tested, reusable day-row
+// serializer that `lib/order-window.js` cites as the model for its own, and
+// deleting a library plus its suite is a cleanup this ticket has no AC for.
+// Knip will list it as unused — that is a warn-only signal and an accurate one.
 // ============================================================
-
-// Exported for isolation tests (EditTabDeliveryCard.test.jsx covers the pair).
-export function HoursCard({ profile, onSave, reportDirty = () => {} }) {
-  return <HoursEditor profile={profile} onSave={onSave} reportDirty={reportDirty} />;
-}
 
 // ============================================================
 // MEH-1258: producer-facing license-number editor — closes the "נשאר להשלים:

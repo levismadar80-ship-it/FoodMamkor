@@ -94,7 +94,10 @@ export default function InstallPrompt() {
       role="dialog"
       aria-modal="false"
       aria-label={t("aria_label")}
-      className="fixed bottom-24 md:bottom-6 start-4 end-4 md:start-auto md:end-6 md:w-80 bg-white rounded-[16px] shadow-xl border border-border p-4 z-[9997] flex items-start gap-3"
+      // MEH-2148: bottom-24 (96px) was a static copy of the nav clearance plus a
+      // gap. Derived; 72 + 24 = 96 at the fallback, so nothing moves without the
+      // var. `md:bottom-6` unchanged and still wins at md+, where no pill renders.
+      className="fixed bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+24px)] md:bottom-6 start-4 end-4 md:start-auto md:end-6 md:w-80 bg-white rounded-[16px] shadow-xl border border-border p-4 z-[9997] flex items-start gap-3"
     >
       <DeviceMobile size={28} weight="fill" className="shrink-0 text-primary" aria-hidden="true" />
       <div className="flex-1 min-w-0">

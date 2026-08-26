@@ -223,10 +223,24 @@ export default function BottomNav() {
   // `--bottom-nav-clearance` CSS var on <html> — the MEH-850 `--cookie-banner-h`
   // precedent, inverted. CookieBanner derives its bottom offset from this var
   // instead of carrying a hardcoded twin of the pill geometry, so a change to
-  // the PILL'S OWN height can never silently eat the banner's 8px gap. (The
-  // four other bottom reserves — globals.css --bottom-inset 5rem, MapClient
-  // 96px, ChatWidget/BackToTop 88px — still carry static copies; MEH-1703's
-  // registry is their home. This var covers the banner↔pill pair only.)
+  // the PILL'S OWN height can never silently eat the banner's 8px gap.
+  //
+  // MEH-2148: this note used to end "(the four other bottom reserves — globals.css
+  // --bottom-inset 5rem, MapClient 96px, ChatWidget/BackToTop 88px — still carry
+  // static copies; MEH-1703's registry is their home. This var covers the
+  // banner↔pill pair only.)" That is no longer true, and it undercounted: there
+  // were EIGHT, not four. All eight now derive from this var —
+  // CookieBanner (the original), globals.css --bottom-inset, MapClient's map
+  // padding, MapBottomSheet's list padding, FavoritesClient's alert sheet,
+  // Toaster, InstallPrompt, ChatWidget and BackToTop. Every one keeps a static
+  // fallback: this var is ABSENT on desktop (the pill is md:hidden so height is
+  // 0), on producer pages (the MEH-2148 gate unmounts the pill), and before
+  // hydration — so a consumer with no fallback would collapse to 0 in three
+  // routine states, not exotic ones.
+  //
+  // Two of the eight were not parity swaps: MapBottomSheet and FavoritesClient
+  // each carried 64px against a live clearance of 72–106px, so their content sat
+  // under the pill. Those moved by +16px at the fallback, deliberately.
   //
   // Two deliberate non-features (review F1): publishes are SKIPPED while the
   // MEH-1014 compact state is active, and DEBOUNCED 150ms past the last

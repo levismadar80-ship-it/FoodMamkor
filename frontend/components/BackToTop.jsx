@@ -27,8 +27,11 @@ const REVEAL_VIEWPORTS = 2;
 // Mobile mirrors ChatWidget's own calc — safe-area + pill-clearance(88px) +
 // the live cookie-banner height — then adds the FAB's own height + a gap (60px)
 // to sit just above it. Desktop mirrors the FAB's fixed 24px bottom + 60px.
+// MEH-2148: derived, mirroring ChatWidget's own calc term for term. The +60px
+// (the FAB's height plus a gap) is this component's own and stays literal --
+// it is a stacking offset above the FAB, not a copy of the nav geometry.
 const BOTTOM_MOBILE =
-  "calc(env(safe-area-inset-bottom) + 88px + var(--cookie-banner-h, 0px) + 60px)";
+  `calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 16px + var(--cookie-banner-h, 0px) + 60px)`;
 const BOTTOM_DESKTOP = "84px";
 
 export default function BackToTop() {

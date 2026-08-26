@@ -130,7 +130,7 @@ mechanically true rather than aspirational.
 | `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:64` | tooltips. ChatWidget's FAB shares the value via inline `zIndex: 9999` (`ChatWidget.jsx:212,220`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
 | `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
 | `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
-| `z-[9000]` | 20 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50` |
+| `z-[9000]` | 21 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm |
 | `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
 | `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
 | `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |
@@ -141,7 +141,7 @@ mechanically true rather than aspirational.
 | `z-[1010]` | 3 | `components/AddressSearch.jsx:266` · `components/CitiesAutocomplete.jsx:273` · `components/CitySearch.jsx:206` | autocomplete / combobox suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. **AddressSearch:** MEH-2093 chunk A, fixing an observed clipping. **CitiesAutocomplete:** MEH-2102, *defensive alignment only* — measured 16/08, no current consumer places a map where that list can reach it. **CitySearch:** MEH-2108, an observed occlusion — at 1000 it tied with the Leaflet controls *and* the MiniMap fullscreen button (`MiniMap.jsx:56`), and DOM order handed the band to the map (9 of 15 hit-test samples inside the 72px band were painted by map chrome; 0 after) |
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
-| `z-[1000]` | 13 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010 |
+| `z-[1000]` | 12 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010; 13 → 12 in MEH-2148, which merged MapPane's two top-centre overlays (the search-area pill and the pickup-layer notice) into ONE `z-[1000]` stack — see the MEH-1187 one-corner-one-job note there |
 | `z-[900]` | 2 | `components/OnboardingTip.jsx:39` | onboarding tip |
 | `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
 | `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |

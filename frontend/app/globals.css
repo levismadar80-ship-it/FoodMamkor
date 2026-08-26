@@ -197,7 +197,12 @@ html {
      A future bottom layer registers with THIS variable rather than adding its
      own padding — that is the whole point, and the MEH-1769 draft banner is the
      next one due. Precedent for the mechanism: --map-sheet-h (MEH-970). */
-  --bottom-inset: calc(5rem + env(safe-area-inset-bottom, 0px) + var(--cookie-banner-h, 0px));
+  /* MEH-2148: the 5rem term is now derived from the live var. safe-area moved
+     INSIDE the fallback -- the var already includes the inset, so leaving the
+     term outside would double-count it exactly where it matters (notched
+     phones). Fallback total 72 + 8 = 5rem, so the no-var render is unchanged.
+     The md override below is untouched: no pill there, so no clearance. */
+  --bottom-inset: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + var(--cookie-banner-h, 0px));
 
   scroll-padding-bottom: var(--bottom-inset);
 }

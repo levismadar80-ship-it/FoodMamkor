@@ -39,9 +39,18 @@ vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-// Renders each chip it is handed, so "is the chip offered" is a question about
-// HomeProducersGrid's list rather than about ChipScrollRow's internals.
-vi.mock("@/components/ChipScrollRow", () => ({
+// MEH-2173: the axes moved off the flat row and into the FilterSheet, so the
+// stand-in moves with them. Same contract as the ChipScrollRow mock it replaces
+// — render each chip handed in, so "is the axis OFFERED" stays a question about
+// HomeProducersGrid's list and not about the panel's internals.
+//
+// It deliberately ignores `open`. This suite is about the GATE — whether the
+// axis is in the list at all — and making every case click the trigger first
+// would test the disclosure on the way to testing the gate, so a broken trigger
+// would red seven gate cases and name none of them. That the sheet actually
+// opens is asserted where it belongs: HomePromotedFilters.test.jsx, and the
+// Playwright harness.
+vi.mock("@/components/FilterSheet", () => ({
   default: ({ chips = [] }) => (
     <div data-testid="chip-row">
       {chips.map((c) => (
@@ -88,8 +97,13 @@ const props = (producers, overrides = {}) => ({
   onboardAdvance: () => {},
   onboardDismiss: () => {},
   onAdvanceFromStep0: () => {},
-  onChipNavigate: () => {},
   onRemoveChip: () => {},
+  // MEH-2173 wiring.
+  onToggleChip: () => {},
+  onClearChips: () => {},
+  filterSheetOpen: false,
+  onToggleFilterSheet: () => {},
+  onCloseFilterSheet: () => {},
   onClearCategory: () => {},
   onLoadMore: () => {},
   ...overrides,
@@ -97,8 +111,8 @@ const props = (producers, overrides = {}) => ({
 
 const MANY = OPEN_NOW_CHIP_MIN + 5;
 
-describe("MEH-2131 — the open-now chip on the home row", () => {
-  it("CONTROL: the row renders and other chips are unaffected", () => {
+describe("MEH-2131 — the open-now chip home offers (MEH-2173: in the sheet)", () => {
+  it("CONTROL: the axis list renders and other chips are unaffected", () => {
     render(<HomeProducersGrid {...props(rows(MANY, OPEN_ALL_DAY))} />);
     // Without this, every "chip absent" assertion below would also be satisfied
     // by a row that failed to render at all.

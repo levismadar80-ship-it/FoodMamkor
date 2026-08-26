@@ -132,21 +132,31 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     );
   });
 
-  it("opens + scrolls the card for an in-group #hours deep link", async () => {
+  // MEH-2142: this used to assert that #hours opened the business-level
+  // opening-hours card. That card was REMOVED — store hours are a per-location
+  // fact now — so the anchor was dropped from ANCHOR_TO_KEY with it.
+  //
+  // Replaced rather than deleted, because "the card is gone" and "the deep-link
+  // machinery broke" look identical from a missing test. A stale #hours (an old
+  // email, a bookmark, a screenshot) must be INERT: no crash, no card opened,
+  // and — since the hash resolves to no key — no group switch either.
+  it("a stale #hours deep link is inert: no card opens, nothing throws", async () => {
     const scrollSpy = vi.fn();
     window.HTMLElement.prototype.scrollIntoView = scrollSpy;
     window.requestAnimationFrame = (cb) => cb();
     params.group = "location";
     window.location.hash = "#hours";
     mount();
+
+    // The group itself still renders — the page is not broken by the stale hash.
     await waitFor(() =>
-      expect(screen.getByTestId("accordion-hours")).toHaveAttribute(
-        "aria-expanded",
-        "true",
-      ),
+      expect(screen.getByTestId("group-location")).toBeInTheDocument(),
     );
-    expect(scrollSpy).toHaveBeenCalled();
-    // No group switch needed — already in the location group.
+    // The card it used to open no longer exists at all.
+    expect(screen.queryByTestId("accordion-hours")).not.toBeInTheDocument();
+    // applyHash returns early on an unregistered anchor, so nothing is scrolled
+    // to and no group redirect fires.
+    expect(scrollSpy).not.toHaveBeenCalled();
     expect(routerStub.replace).not.toHaveBeenCalled();
   });
 

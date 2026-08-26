@@ -1108,14 +1108,23 @@ Tasks auto-expire after 7 days.
         parsing/formatting, or touch/scroll behaviour requires a human pass on a
         **real iOS device**.
 
-    > **Why (e) is not negotiable on the evidence available.** There is **no
-    > WebKit engine anywhere in the pipeline** — zero webkit projects in every
-    > Playwright config, and the webkit binary is unobtainable in the CC sandbox
-    > (proxy 403 on the download host). A green Chromium bundle therefore
-    > carries *no information* about these classes. Precedent: MEH-1769 was
+    > **Why (e) is not negotiable on the evidence available.** WebKit coverage
+    > exists, but every form of it is **opt-in or non-voting**, so none of it
+    > substitutes for a real device. `frontend/playwright.config.ts` declares two
+    > webkit projects — `webkit-iphone13` (`:161`) and `webkit-pixel5-viewport`
+    > (`:183`) — but only inside a spread gated on `PW_WEBKIT=1`, so any run that
+    > does not set the flag is a **Chromium** run. In CI the shadow job
+    > `e2e-webkit` (`e2e.yml:432`) does install and run webkit, and it is
+    > `continue-on-error: true` (`:438`) and absent from `e2e-gate`'s `needs:`
+    > (`:566`) — it can neither red a run nor block a merge. In the CC sandbox
+    > the binary **is** obtainable behind the same flag (procedure:
+    > `docs/qa/webkit-local.md`). So a green Chromium bundle still carries *no
+    > information* about these classes, and a green shadow-webkit run carries
+    > *no vote*. Precedent: MEH-1769 was
     > observed on real iOS Safari, and **10/10 green Chromium runs plus a
     > raw-localStorage probe failed to reproduce it** (MEH-1783). This carve-out
-    > is **reviewed, not deleted**, when MEH-1788 lands engine coverage — and
+    > is **reviewed, not deleted**, when MEH-1788 promotes the shadow job to
+    > blocking — and
     > even then Playwright webkit ≠ iOS Safari (no ITP, no PWA storage
     > partitioning, no real safe-area, momentum or input-zoom behaviour), so the
     > platform-specific subset stays human. Vocabulary to reuse: the 27

@@ -33,7 +33,30 @@ export default function RecipeCard({ slug, recipe }) {
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
   // MEH-911: smart-crop through the central helper (mirrors ProducerCard:183).
-  const imgSrc = optimizeCloudinary(recipe.image_url, { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-2010: explicit width for the same reason as ProducerCard — c_fill is
+  // uncapped by design, so the cap has to come from the call site.
+  //
+  // MEH-2190 re-derived both this width and the `sizes` below from the real
+  // box. Three measured containers, this card's ONLY render site:
+  //   ProducerDetail.jsx:107  `max-w-6xl mx-auto px-4`  -> content = min(W,1152) - 32
+  //   ProducerDetail.jsx:226  `lg:grid-cols-[1fr_320px] gap-8`
+  //                           -> at lg+ the main column loses 320 + 32
+  //   ProducerSections.jsx:487 `grid grid-cols-2 md:grid-cols-3 gap-4`
+  //
+  //   W < 768      2 cols, main = W - 32     cell = (W - 48)/2 = 50vw - 24
+  //   768..1023    3 cols, main = W - 32     cell = (W - 64)/3
+  //   1024..1151   3 cols, main = W - 384    cell = (W - 416)/3
+  //   W >= 1152    3 cols, main = 768        cell = (768 - 32)/3 = 245.33px
+  //
+  // Peak cell = 359.5 CSS px, at W = 767 (the last 2-column width). x DPR 2
+  // (the repo convention — OwnerCard `avatarSize * 2`, RecipeDetail 112/56)
+  // = 719, rounded up to 750, a Next `deviceSizes` entry. So MEH-2010's 750
+  // SURVIVES the correction: it was reached from 363 px via a chain that
+  // ignored the lg sidebar, and the right number lands in the same bucket.
+  const imgSrc = optimizeCloudinary(recipe.image_url, {
+    aspectRatio: IMAGE_RATIOS.card,
+    width: 750,
+  });
   // MEH-1976: `imgSrc ?` below only covers a MISSING url. A url that resolves
   // but fails to load (the MEH-1925 Cloudinary 401) rendered a broken glyph
   // instead of the no-photo cell two branches down. Failure now falls through
@@ -56,7 +79,11 @@ export default function RecipeCard({ slug, recipe }) {
             src={imgSrc}
             alt={recipe.title}
             fill
-            sizes="(max-width: 640px) 100vw, 33vw"
+            // MEH-2190: was `(max-width: 640px) 100vw, 33vw` — the grid is
+            // never 1-column, so `100vw` over-claimed ~2x and made the browser
+            // ask Next for a 1200-wide candidate off a 750-capped source.
+            // Each clause below is the cell width for its range, above.
+            sizes="(max-width: 767px) calc(50vw - 24px), (max-width: 1023px) calc(33.33vw - 21.33px), (max-width: 1151px) calc(33.33vw - 138.67px), 246px"
             className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
             onError={() => setFailedSrc(imgSrc)}
           />

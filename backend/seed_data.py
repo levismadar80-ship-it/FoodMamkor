@@ -14,6 +14,7 @@ from app.models import (
     ProducerRecipe,
     Product,
 )
+from app.services.category_slug import bulk_slugs
 from app.models.models import User
 
 # Same logger family as app/startup.py:13, which is what invokes seed() at boot —
@@ -321,9 +322,21 @@ def seed_categories(db):
     """
     # DO NOT reintroduce an UPDATE here — name-keyed was MEH-1104, id-keyed was
     # MEH-1530. Renames/deletes belong in an Alembic revision (MEH-927 pattern).
+    _slugs = bulk_slugs(db, [name for name, _ in CATEGORIES])
     db.execute(
         pg_insert(Category)
-        .values([{"name": name, "emoji": emoji} for name, emoji in CATEGORIES])
+        # MEH-2139: slug is passed EXPLICITLY — a multi-row core insert evaluates
+        # a Python column default once for the whole statement and raises
+        # `KeyError: 'categories.name_m0'` rather than producing 18 slugs
+        # (measured, not assumed). `bulk_slugs` rather than `slug_for_name` so a
+        # re-inserted freed name gets `dairy-2` instead of colliding with the
+        # renamed row that still holds `dairy` — see its docstring.
+        .values(
+            [
+                {"name": name, "emoji": emoji, "slug": _slugs[name]}
+                for name, emoji in CATEGORIES
+            ]
+        )
         .on_conflict_do_nothing(index_elements=[CATEGORY_CONFLICT_KEY])
     )
     db.commit()

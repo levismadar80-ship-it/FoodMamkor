@@ -22,33 +22,57 @@ requests to be *inside* the handler at the same time, so this file drives two
 real threads through the real endpoint and forces the interleaving with a
 barrier planted between the token claim and the commit.
 
-WHERE THE BARRIER LIVES, and why it moved (MEH-2125). It used to wrap
-`_pending_and_approvable`, which was then the only call in that span. MEH-2125
-removed the last of the dead review-ready machinery from the handler, so the
-span now contains no function call at all — only `phone_verified = True` and
-`db.commit()`. The barrier therefore instruments **the request session's own
-`commit`**, via a `get_db` dependency override scoped to this one test. That is
-the same position in the sequence (last thing inside the claim window) and adds
-no production code; what changed is which object carries the seam.
+WHERE THE SEAM LIVES. It used to wrap `_pending_and_approvable` (MEH-2125
+removed that call), then the request session's own `commit`. As of MEH-2162 it
+instruments **both `execute` and `commit`** on the session handed out by a
+`get_db` override scoped to this one test. No production code is involved on
+any of those revisions; what keeps changing is which object carries the seam.
 
-THE BARRIER, and why it is deterministic in both worlds:
+THE RENDEZVOUS (MEH-2162 — this replaced a five-second budget that flaked):
 
-    thread A   claims the token → reaches its commit
-               → signals `a_inside` → waits for `b_inside` (bounded)
-    thread B   enters the handler and tries to claim the same token
+    winner   issues the claim UPDATE → the row lock is now HELD
+             → signals `a_at_claim` → later, at commit, WAITS for `b_at_claim`
+    main     ASSERTS the winner armed, then starts the second thread
+    loser    reaches its own claim UPDATE → signals `b_at_claim` FIRST
+             → issues it, and blocks on the winner's row lock
+    winner   wakes IMMEDIATELY, commits, releases
+    loser    re-evaluates the WHERE against the committed row → 0 rows → 400
 
-    pre-fix    B's SELECT sees used=False (A has not committed), B reaches
-               its own commit, signals `b_inside`, A wakes immediately
-               → BOTH proceed → two 200s
-    post-fix   B blocks on A's row lock inside the conditional UPDATE and
-               never reaches the barrier. A's wait expires, A commits and
-               releases the lock, B's UPDATE matches zero rows → 400
+ROLES ARE DECIDED BY WHO CLAIMS FIRST, never by which session was created
+first, and that distinction is load-bearing rather than pedantic. Measured
+23/08 while building this: the request that reaches the claim SECOND issues its
+own first `commit` — during dependency resolution, before the handler body runs
+— well ahead of the other request's claim. An earlier draft of this fix armed
+on "this session's first commit" and therefore armed on a commit that had
+nothing to do with the token: main started the second thread believing the
+first held the row lock, the second claimed unopposed, and the result was
+`[200, 200]`. The claim statement is the only event that means what this test
+needs it to mean.
 
-So the fixed run costs one bounded wait (`_BARRIER_TIMEOUT`) and the broken run
-costs nothing — and neither outcome depends on thread scheduling luck, which is
-what makes this a guard rather than a coin flip.
+Every wait returns on a signal, not on a clock. The three timeouts are safety
+nets paid only when something is genuinely broken.
+
+WHAT WAS WRONG BEFORE, because the previous version of this passage claimed
+"neither outcome depends on thread scheduling luck" and that was FALSE in one
+direction. A single `_BARRIER_TIMEOUT = 5.0` did two different jobs: it bounded
+A's hold, and it bounded how long main waited for A to arm. The arm wait
+discarded its return value, so when a loaded runner pushed A past five seconds
+main started B anyway and the two ran with NOTHING synchronising them.
+
+That matters because the unsynchronised outcome is `[200, 200]` — B finds
+`phone_verified` already true and takes the early return at
+`producer_me.py:1413` — which is byte-identical to what the pre-fix bug
+produces. The suite could not distinguish a real regression from a busy
+machine, and it reported the regression. Measured on 22-23/08: red on a commit
+whose Python was identical to a green one, then green on re-run, costing two CI
+cycles on PR #3052.
+
+The lesson worth keeping is not "raise the timeout". It is that a fixed time
+budget standing in for a synchronization point converts a guard into a coin
+flip, and prints the same failure either way.
 """
 
+import itertools
 import threading
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -64,11 +88,33 @@ PING_TARGET = "app.routers.producer_me.notify_admin_producer_review_ready"
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/otp.jpg"
 CODE = "123456"
 
-# How long thread A holds the barrier open waiting for B. Only ever paid in
-# full when the fix is working (B is blocked on the row lock and cannot
-# signal). Generous enough that a slow CI runner cannot turn a correct pass
-# into a flake, short enough not to stall the suite.
-_BARRIER_TIMEOUT = 5.0
+# MEH-2162: these are SAFETY NETS, not the mechanism. Both are paid only when
+# something is genuinely broken; on a healthy run every wait below returns the
+# instant the other thread signals, so the test does not get slower on a fast
+# machine or less correct on a slow one.
+#
+# They used to be ONE five-second budget doing both jobs, and that was the
+# whole flake — see the module docstring.
+_ARM_TIMEOUT = 60.0  # main waits for A to reach its claim
+_CLAIM_TIMEOUT = 60.0  # A waits for B to reach the claim statement
+_JOIN_TIMEOUT = 60.0  # main waits for both threads to finish
+
+
+def _is_token_claim(stmt) -> bool:
+    """True for the conditional UPDATE that claims the OTP token.
+
+    `Query.update()` routes through `Session.execute`, so the claim reaches the
+    wrapper as an `Update` construct against `phone_otp_tokens`. Matching on the
+    TABLE (not on a substring of the compiled SQL) keeps this from breaking when
+    the WHERE clause is edited.
+
+    A detector that silently matches nothing would put this suite straight back
+    where it started — B would never signal, A would wait out `_CLAIM_TIMEOUT`,
+    and the run would look like a slow pass or an unexplained failure. So the
+    test asserts, after the join, that it actually fired.
+    """
+    table = getattr(stmt, "table", None)
+    return getattr(table, "name", None) == PhoneOtpToken.__tablename__
 
 
 def _setup(db):
@@ -118,38 +164,91 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
     """
     producer, user = _setup(db)
 
-    a_inside = threading.Event()
-    b_inside = threading.Event()
+    a_at_claim = threading.Event()  # the winner has claimed and holds the row lock
+    b_at_claim = threading.Event()  # B is about to issue its claim UPDATE
     results: dict[str, int] = {}
+    claim_seq = itertools.count()
+    seq_lock = threading.Lock()
 
     def barriered_get_db():
-        """Yield a session whose FIRST commit blocks, forcing the overlap.
+        """Yield a session instrumented so the two requests MEET at the claim.
 
-        The wrap is on the INSTANCE, not on `Session.commit`, so it is scoped
-        to the requests this override serves and cannot leak into the shared
-        `db` fixture or any other test.
+        MEH-2162 — what changed and why. The old seam was A's `commit` waiting
+        a fixed five seconds for B. That is a *time budget standing in for a
+        synchronization point*, and when the budget expired the two requests
+        simply ran unsynchronized — producing `[200, 200]`, which is also the
+        pre-fix bug's signature. Now each side signals the other:
 
-        `armed` makes only the first commit of a given request block. Nothing
-        in this handler commits twice today, but a future second commit inside
-        the window would otherwise re-enter the barrier and deadlock the run
-        rather than fail it — and a hang is the least informative outcome a
-        concurrency test can produce.
+            A (first session)   claims the token — the row lock is now HELD —
+                                and sets `a_at_claim` at that statement, not at
+                                its commit; later, AT commit, WAITS for
+                                `b_at_claim`
+            B (second session)  reaches its claim UPDATE, sets `b_at_claim`,
+                                then issues it — and blocks on A's row lock
+            A                   wakes IMMEDIATELY (not on a timeout), commits,
+                                releases the lock
+            B                   re-evaluates the WHERE, matches zero rows, 400
+
+        So the fixed run is now *faster* as well as deterministic: A no longer
+        pays a five-second wait on every green run, it pays microseconds.
+
+        The wraps are on the INSTANCE, never on `Session.commit`/`execute`, so
+        they are scoped to the requests this override serves and cannot leak
+        into the shared `db` fixture or any other test.
+
+        Which session is A and which is B is decided by ARRIVAL ORDER under a
+        lock, not by inspecting the request — the main thread starts A and
+        waits for it to arm before starting B, so arrival order is the thing
+        the test actually controls.
         """
         session = SessionLocal()
         real_commit = session.commit
-        armed = {"yes": True}
+        real_execute = session.execute
+        # Role is decided by WHO CLAIMS FIRST, not by which session was created
+        # first, and that distinction is the whole fix. Measured 23/08: the
+        # request that reaches the claim second issues its FIRST `commit`
+        # (during dependency resolution, before the handler body) well ahead of
+        # the other request's claim. Keying the barrier on "this session's first
+        # commit" therefore armed on a commit that had nothing to do with the
+        # token, main started B believing A held the row lock, and B claimed
+        # unopposed. The claim statement is the only event that means what the
+        # test needs it to mean.
+        role = {"is_claimer": False}
+        armed = {"commit": True}
 
         def barriered_commit(*a, **kw):
-            if armed["yes"]:
-                armed["yes"] = False
-                if not a_inside.is_set():
-                    a_inside.set()
-                    b_inside.wait(_BARRIER_TIMEOUT)
-                else:
-                    b_inside.set()
+            # Only the claim-winner blocks, and only once. A second commit
+            # inside the window would otherwise re-enter the barrier and
+            # deadlock the run rather than fail it — and a hang is the least
+            # informative outcome a concurrency test can produce.
+            if role["is_claimer"] and armed["commit"]:
+                armed["commit"] = False
+                # If the loser never arrives this returns False and the winner
+                # commits anyway; the control after the join reports it, so a
+                # stall surfaces as a named failure rather than a hang.
+                b_at_claim.wait(_CLAIM_TIMEOUT)
             return real_commit(*a, **kw)
 
+        def barriered_execute(stmt, *a, **kw):
+            if not _is_token_claim(stmt):
+                return real_execute(stmt, *a, **kw)
+            with seq_lock:
+                first_to_claim = next(claim_seq) == 0
+            if first_to_claim:
+                role["is_claimer"] = True
+                result = real_execute(stmt, *a, **kw)
+                # Signal AFTER the statement returns: only then is the row lock
+                # actually held, which is the state main is waiting to observe.
+                a_at_claim.set()
+                return result
+            # Signal BEFORE calling through: this call blocks on the winner's
+            # row lock, so a signal placed after it would never be sent — which
+            # is precisely why the barrier cannot live on the loser's far side.
+            b_at_claim.set()
+            return real_execute(stmt, *a, **kw)
+
         session.commit = barriered_commit
+        session.execute = barriered_execute
         try:
             yield session
         finally:
@@ -178,16 +277,39 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
             ta = threading.Thread(target=confirm, args=("a",))
             tb = threading.Thread(target=confirm, args=("b",))
             ta.start()
-            a_inside.wait(_BARRIER_TIMEOUT)  # let A get inside first
+            # MEH-2162: ASSERT the arm instead of discarding it. This line used
+            # to be a bare `wait(...)` whose False return was ignored, so a slow
+            # runner silently started B with nothing synchronised — and an
+            # unsynchronised run yields `[200, 200]` through the
+            # `phone_verified` early-return (producer_me.py:1413), which is the
+            # SAME value the pre-fix bug produces. The suite could not tell a
+            # regression from a busy machine, and reported the regression.
+            armed = a_at_claim.wait(_ARM_TIMEOUT)
+            assert armed, (
+                "thread A never reached its claim — the two requests were "
+                "never synchronised, so this run cannot distinguish the fix "
+                "from the bug. This is NOT evidence the claim is broken."
+            )
             tb.start()
-            ta.join(timeout=30)
-            tb.join(timeout=30)
+            ta.join(timeout=_JOIN_TIMEOUT)
+            tb.join(timeout=_JOIN_TIMEOUT)
     finally:
         # Restore even on failure — a leaked override would hand every later
         # test in the session a barriered commit.
         client.app.dependency_overrides.pop(get_db, None)
 
     assert not ta.is_alive() and not tb.is_alive(), "a confirm thread hung"
+
+    # CONTROL, and it has to come before the outcome assertion: if the claim
+    # detector matched nothing, B never signalled, A waited out `_CLAIM_TIMEOUT`
+    # and the two requests serialised themselves. That can still produce a
+    # green `[200, 400]` by luck — a pass that proves nothing about the
+    # rendezvous. Requiring the signal makes the mechanism itself falsifiable.
+    assert b_at_claim.is_set(), (
+        "thread B never signalled at the claim statement — `_is_token_claim` "
+        "matched nothing, so the rendezvous did not happen and every "
+        "assertion below is about an accidental ordering, not the guard"
+    )
 
     codes = sorted(results.values())
     assert codes == [200, 400], f"expected one winner and one loser, got {codes}"

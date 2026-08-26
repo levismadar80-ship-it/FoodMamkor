@@ -19,13 +19,10 @@ History:  MEH-1856 (creation), implementing the first four REMOVE-WRITE
           ruling changed the first two from EXPOSE to REMOVE-WRITE.
 """
 
-import ast
-from pathlib import Path
-
 import pytest
 
 from app.models import Producer
-import app.routers.producer_me as producer_me_module
+from tests.whitelist_source import read_producer_writable_fields
 from tests.conftest import auth_header, make_producer, make_user
 
 
@@ -132,31 +129,6 @@ def test_a_still_writable_field_does_change(client, db, owner_and_producer):
     )
 
 
-def _read_whitelist() -> set[str]:
-    """Parse _PRODUCER_WRITABLE_FIELDS out of the real source file.
-
-    `_PRODUCER_WRITABLE_FIELDS` is a local built at call time inside
-    update_my_producer, so there is no importable object to assert against and
-    no constant to introspect. Parsing the shipped source is the next best
-    thing and keeps the single-source property that matters: a hand-copied list
-    in this file would be free to drift from the set the handler consults.
-    """
-    # NOT inspect.getfile(update_my_producer): the handler is wrapped by
-    # slowapi's @limiter.limit, so that resolves to slowapi/extension.py.
-    source = Path(producer_me_module.__file__).read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-        if "_PRODUCER_WRITABLE_FIELDS" not in targets:
-            continue
-        assert isinstance(node.value, ast.Set), "whitelist is no longer a set literal"
-        return {
-            e.value for e in node.value.elts
-            if isinstance(e, ast.Constant) and isinstance(e.value, str)
-        }
-    raise AssertionError("could not find _PRODUCER_WRITABLE_FIELDS in the source")
 
 
 def test_whitelist_does_not_contain_any_closed_field():
@@ -166,7 +138,7 @@ def test_whitelist_does_not_contain_any_closed_field():
     expected exactly 0 present, not 1. MEH-1856 closed 4; MEH-1851 rows
     1/19/39 closed the remaining 3.
     """
-    whitelist = _read_whitelist()
+    whitelist = read_producer_writable_fields()
 
     assert len(CLOSED_FIELDS) == 7, (
         f"expected 7 closed fields, got {len(CLOSED_FIELDS)} — update this count "

@@ -221,33 +221,30 @@ export const FILTER_AXES = {
   // "מתאים לסוכרתיים" stays banned everywhere — a medical claim on top of a
   // self-declaration about a product.
   //
-  // 🔴 MEH-2133 PIN SITE 1 of 3. mapParam: false records a MEASURED DEFECT,
-  // not an intention. Grep `MEH-2133` to find every pin; removing all of them
-  // IS the fix, and MEH-2133's acceptance criterion is that the grep returns 0.
-  //
-  // Before MEH-2130, map-chips.js chipStateToParams carried nine hand-written
+  // This axis carried `mapParam: false` from MEH-2130 until its own follow-up
+  // ticket removed it. That flag was a PIN over a measured defect, never a
+  // design choice:
+  // before MEH-2130, chipStateToParams held nine hand-written
   // `if (state.<key>)` lines and `no_added_sugar` was not among them, while
-  // TOGGLE_CHIPS listed the chip and FilterSheet rendered it. Toggling it on
-  // /map therefore returned the UNFILTERED set, with no error anywhere —
-  // /producers (buildChipParams) was and is correct.
+  // TOGGLE_CHIPS listed the chip and FilterSheet rendered it — so toggling it
+  // on /map returned the UNFILTERED set with no error anywhere. MEH-2130 was a
+  // taxonomy refactor required to leave /map result sets identical, so it
+  // declared the gap instead of quietly closing it inside a refactor, and said
+  // a separate ticket would close it. That ticket is what removed the flag. The
+  // axis now emits on all three surfaces, which is what the `surfaces` list
+  // below has always promised.
   //
-  // MEH-2130 is a taxonomy refactor whose acceptance criteria require /map
-  // result sets to stay identical, so the defect is PRESERVED here rather than
-  // quietly fixed inside a refactor: repairing it changes what /map returns for
-  // an existing control and deserves its own ticket, its own VRT pass and its
-  // own QA. Encoding it as a named field makes it deliberate and greppable
-  // instead of an invisible gap between two lists, and
-  // `filterTaxonomy.test.js` pins it so removing this line is a conscious act.
+  // The pin was greppable by its own ticket identifier, and that identifier is
+  // deliberately absent from this file now: a grep that still returns hits
+  // cannot tell "the pin is live" from "someone wrote about the pin", which is
+  // exactly the signal the pin existed to give.
   no_added_sugar: {
-    // MEH-2133: see the pin note above — this axis is offered on /map and its
-    // param is suppressed there. That is the defect, deliberately preserved.
     label: "ללא סוכר מוסף",
     scope: "any-product",
     evidence: "self-declared",
     subtext: "עסקים עם מוצרים ללא סוכר מוסף בקטלוג",
     group: "diet",
     surfaces: ["home", "producers", "map"],
-    mapParam: false,
   },
   // MEH-1259 (organic) and MEH-2047 (דל פחמימות) were REMOVED from the public
   // taxonomy — a self-declared certificate claim and an undefined term
@@ -345,7 +342,15 @@ export function homeParamFor(key) {
   return FILTER_AXES[key].homeParam ?? key;
 }
 
-/** Whether /map emits a query param for an axis. See no_added_sugar above. */
+/**
+ * Whether /map emits a query param for an axis.
+ *
+ * No axis sets `mapParam: false` today — the only one that did was a pinned
+ * defect rather than an intention, and it is fixed. The hook is kept because a
+ * FUTURE axis may legitimately be display-only on /map; it is not kept as a
+ * place to park a bug. Anything that lands here again needs the reason on the
+ * axis and a test asserting the suppression is wanted.
+ */
 export function mapEmitsParam(key) {
   return FILTER_AXES[key].mapParam !== false;
 }

@@ -129,6 +129,10 @@ graph TD
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
+    Producers --> LicenseExpiry[GET /admin/license-expiry-reminders<br/>🛡️ MEH-2072 approved producers whose licence expires within 30d; read-only, no send, no auto-hide; excludes NULL and already-lapsed]
+    Producers --> AdminGetOne[GET /admin/producers/{producer_id}<br/>🛡️ MEH-2072 the FULL ProducerAdminOut for one producer — the edit page was loading the PUBLIC serializer and writing admin-only fields back as blanks. Declared AFTER /pending and /rejection-presets, or the param route swallows both literals]
+    Producers --> ReviewChecksGet[GET /admin/producers/{producer_id}/review-checks<br/>🛡️ MEH-1399 the ticks recorded for one producer; 404 on unknown producer, not an empty list]
+    Producers --> ReviewChecksPut[PUT /admin/producers/{producer_id}/review-checks<br/>🛡️ MEH-1399 set semantics — present=ticked, absent=deleted. Idempotent; label_snapshot written at tick time; ON CONFLICT DO NOTHING so a concurrent save resolves instead of 500ing]
 
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
@@ -155,6 +159,9 @@ graph TD
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
+    Settings --> ChecklistGet[GET /admin/checklist-items<br/>🛡️ MEH-1399 ordered by position; ?include_inactive=true only for the settings editor — the review flow must never be offered a retired item]
+    Settings --> ChecklistPut[PUT /admin/checklist-items<br/>🛡️ MEH-1399 replace the list — add/edit/reorder/retire in one request. No delete: the FK is ON DELETE RESTRICT. Unknown id is a 404, not a silent insert]
+
     Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
     AdminWhatsapp[/admin/whatsapp-failures page] --> AdminWaFailed[GET /admin/whatsapp/failed<br/>🛡️ MEH-771 Chunk C undelivered outbound<br/>status IN failed,window_expired · last 7d<br/>list-only, no resend/retry]

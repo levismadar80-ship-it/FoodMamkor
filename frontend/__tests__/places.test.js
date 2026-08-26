@@ -13,6 +13,7 @@ import {
   autocompleteAddresses,
   resolveSuggestion,
   geocodeCity,
+  composeScopedQuery,
 } from "@/lib/places";
 
 const KEY = "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY";
@@ -217,5 +218,74 @@ describe("geocodeCity (MEH-2014 PR 2)", () => {
     // tell them apart.
     mockFetchOnce({}, false);
     await expect(geocodeCity("חיפה")).rejects.toThrow(/rejected/i);
+  });
+});
+
+
+// MEH-2181 — city-scoped address lookup. The assertions read the URL / request
+// body the provider was ACTUALLY called with, not a re-implementation of the
+// composer, so a change that composes correctly in the helper but forgets to
+// use it in one of the two branches still fails.
+describe("composeScopedQuery (MEH-2181)", () => {
+  it("appends the city when it is absent from the query", () => {
+    expect(composeScopedQuery("דרך שרה", "זכרון יעקב")).toBe("דרך שרה, זכרון יעקב");
+  });
+
+  it("does NOT double-append when the seller already typed the city", () => {
+    expect(composeScopedQuery("דרך שרה, זכרון יעקב", "זכרון יעקב")).toBe(
+      "דרך שרה, זכרון יעקב",
+    );
+  });
+
+  it("is a no-op with no city, a blank city, or a blank query", () => {
+    expect(composeScopedQuery("דרך שרה")).toBe("דרך שרה");
+    expect(composeScopedQuery("דרך שרה", "   ")).toBe("דרך שרה");
+    expect(composeScopedQuery("   ", "זכרון יעקב")).toBe("");
+  });
+});
+
+describe("autocompleteAddresses — city scoping reaches BOTH providers (MEH-2181)", () => {
+  it("Nominatim: the city rides the q= parameter", async () => {
+    vi.stubEnv(KEY, "");
+    const f = mockFetchOnce([]);
+    await autocompleteAddresses("דרך שרה", { city: "זכרון יעקב" });
+    const url = f.mock.calls[0][0];
+    expect(decodeURIComponent(url)).toContain("q=דרך שרה, זכרון יעקב");
+    // The MEH-1234 provider contract is untouched by the scoping.
+    expect(url).toContain("countrycodes=il");
+    expect(url).toContain("accept-language=he");
+    // ...and none of the geographic-restriction knobs the ticket forbids.
+    expect(url).not.toContain("bounded=");
+    expect(url).not.toContain("viewbox=");
+  });
+
+  it("Google: the city rides the `input` field", async () => {
+    vi.stubEnv(KEY, "abc123");
+    const f = mockFetchOnce({ suggestions: [] });
+    await autocompleteAddresses("דרך שרה", { city: "זכרון יעקב" });
+    const body = JSON.parse(f.mock.calls[0][1].body);
+    expect(body.input).toBe("דרך שרה, זכרון יעקב");
+    expect(body.includedRegionCodes).toEqual(["il"]);
+    // No locationRestriction / locationBias — scoping is query-side only.
+    expect(body).not.toHaveProperty("locationRestriction");
+    expect(body).not.toHaveProperty("locationBias");
+  });
+
+  // Split per provider on purpose: both branches share one `fetch` spy, so
+  // asserting them in a single test reads call[0] twice and silently checks
+  // the Nominatim call for a Google body. (That is exactly how the first
+  // version of this test failed — worth the two extra lines.)
+  it("omitting `city` leaves Nominatim byte-identical to before", async () => {
+    vi.stubEnv(KEY, "");
+    const nom = mockFetchOnce([]);
+    await autocompleteAddresses("דרך שרה");
+    expect(decodeURIComponent(nom.mock.calls[0][0])).toContain("q=דרך שרה&");
+  });
+
+  it("omitting `city` leaves Google byte-identical to before", async () => {
+    vi.stubEnv(KEY, "abc123");
+    const goog = mockFetchOnce({ suggestions: [] });
+    await autocompleteAddresses("דרך שרה");
+    expect(JSON.parse(goog.mock.calls[0][1].body).input).toBe("דרך שרה");
   });
 });

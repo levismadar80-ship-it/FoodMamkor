@@ -77,7 +77,7 @@ import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -88,6 +88,9 @@ import GrassFedCard from "./GrassFedCard";
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
 import { isDefaultDescription } from "@/lib/producer-completeness";
+// MEH-2155: same resolution the public page runs, so the card can show the
+// live list instead of an empty state that contradicts it.
+import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
@@ -114,8 +117,11 @@ const ANCHOR_TO_KEY = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  hours: "hours",
-  // MEH-1544: weekly order-acceptance window (sibling of hours, same group).
+  // MEH-2142: `hours` is gone from all four registries below. The
+  // business-level opening-hours card was removed — store hours are a
+  // per-location fact now, edited in LocationsEditor. A stale #hours deep link
+  // (an old email, a bookmark) therefore falls through to the default group
+  // rather than resolving to a card that no longer exists.
   "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
@@ -170,7 +176,6 @@ const KEY_TO_ANCHOR = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  hours: "hours",
   orderWindow: "order-window",
   // MEH-1823: registered here so #offer deep-links resolve like every other
   // card. These three maps are a guarded registry — a card added to the JSX
@@ -182,8 +187,13 @@ const KEY_TO_ANCHOR = {
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
 // keys and anchor contract above are UNCHANGED — this only assigns each card to
 // one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
-// pricing → profile; delivery + hours → location; license + kashrut → the one
+// pricing → profile; delivery → location; license + kashrut → the one
 // unified "trust" card.
+// MEH-2142: the 21/07 SYNC also assigned `hours` to the location group. That
+// card no longer exists — store hours became a per-location fact — so the
+// membership line above is written as it stands TODAY rather than as the SYNC
+// recorded it. Noted rather than left contradicting the registries below,
+// which is what a reader checks it against.
 const GROUP_KEYS = ["profile", "trust", "location", "contact"];
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub
@@ -203,7 +213,6 @@ const KEY_TO_GROUP = {
   // registered here so a #locations deep link resolves to the right group.
   locations: "location",
   delivery: "location",
-  hours: "location",
   orderWindow: "location",
   // MEH-1823: the offer lives in the location group — it is read against the
   // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
@@ -238,7 +247,10 @@ const GROUP_MEMBERS = {
   // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
   // the group's only location-writing surface and isn't tracked here (see
   // MEH-1544's note above for why an opt-in-shaped field stays out of the count).
-  location: ["delivery", "hours"],
+  // MEH-2142: `hours` was a member until its card was removed. The count is
+  // now "{done}/1" for this group, which is correct — a member with no card
+  // would make the group permanently incompletable.
+  location: ["delivery"],
   contact: ["contact", "questions"],
 };
 
@@ -258,7 +270,7 @@ const GROUP_MEMBERS = {
 //
 // Allowlist, not denylist: a card key added later stays out of the hub until its
 // preview is shown to be short and fixed-shape. Keys with no preview node at all
-// (kashrut / delivery / hours / questions / ownerStory) are already filtered by
+// (kashrut / delivery / questions / ownerStory) are already filtered by
 // the `previews[k]` check below and are deliberately absent here.
 const HUB_PREVIEW_KEYS = new Set([
   "images", // PreviewThumbs — fixed 40px squares
@@ -290,6 +302,10 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-2155: the public renderer's namespace — the accordion summary resolves
+  // the live question list, and must feed the resolver the same label strings
+  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
   // MEH-1823: the offer feature owns one namespace shared by the dashboard
@@ -633,12 +649,26 @@ function EditPageInner() {
     delivery:
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
-    hours: Boolean((profile.opening_hours || "").trim()),
     // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
     orderWindow: Object.keys(profile.order_window || {}).length > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
+
+  // MEH-2155: the accordion header needs the same resolution the card body
+  // shows, so the collapsed summary and the open list can never disagree. Only
+  // the two counts are lifted — the header renders no labels, so it needs none.
+  const questionsSummary = (() => {
+    const { items, usesCustom, customCount } = resolveProducerQuestions(profile, {
+      deliveryQuestion: tChips("delivery_to_city", {
+        city: profile.city || tChips("my_area"),
+      }),
+      orderingQuestion: tChips("ordering_q"),
+      escalationQuestion: tChips("escalation"),
+      recipeQuestion: tChips("recipe_idea"),
+    });
+    return { usesCustom, customCount, liveCount: items.length };
+  })();
 
   // MEH-1408: hub-tile props per group — completion "{done}/{total}", the
   // next-step dot when the next step lands in this group, and up to two of the
@@ -678,13 +708,12 @@ function EditPageInner() {
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
-    hours: t("hours.heading"),
     orderWindow: t("order_window.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -861,6 +890,7 @@ function EditPageInner() {
             embedded
             onCountChange={setProductsCount}
             topProductName={profile.top_product_name}
+            topProductId={profile.top_product_id}
             onTopProductChange={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           />
         </EditAccordionCard>
@@ -1021,7 +1051,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: location — locations, delivery, hours ===== */}
+      {/* ===== GROUP: location — locations, delivery, order window ===== */}
       <div
         hidden={group !== "location"}
         className="space-y-6"
@@ -1098,24 +1128,17 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
-        <EditAccordionCard
-          anchorId="hours"
-          title={t("hours.heading")}
-          summary={profile.opening_hours || tAcc("hours_empty")}
-          open={openKey === "hours"}
-          onToggle={() => toggleKey("hours")}
-        >
-          <HoursCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-2142 — the business-level opening-hours card stood here and was
+            REMOVED. Store hours are a per-location fact: the owner edits them
+            on each location in LocationsEditor (the "פרטים נוספים" section of
+            the locations card, same group), and the public page prefers her
+            primary location's value. Asking for the same fact twice, in two
+            cards, is what made owners fill it in twice and still not know which
+            one the site showed. `Producer.opening_hours` stays as a read
+            fallback and is no longer owner-writable (producer_me.py). */}
 
-        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in and separate from
-            the opening-hours card above: a business that never opens this
-            renders nothing on its public page. */}
+        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in, and the only
+            "when" card left in this group. */}
         <EditAccordionCard
           anchorId="order-window"
           title={t("order_window.heading")}
@@ -1186,9 +1209,16 @@ function EditPageInner() {
         <EditAccordionCard
           anchorId="questions"
           title={t("custom_questions.heading")}
-          summary={tAcc("questions_summary", {
-            count: (profile.custom_questions || []).length,
-          })}
+          // MEH-2155: the summary used to read "עוד אין שאלות מותאמות" while
+          // the public page was serving a full set of category defaults —
+          // literally true about the custom field, and false about the page the
+          // card claims to describe. With no custom questions it now counts the
+          // items the page is ACTUALLY showing.
+          summary={
+            questionsSummary.usesCustom
+              ? tAcc("questions_summary", { count: questionsSummary.customCount })
+              : tAcc("questions_summary_defaults", { count: questionsSummary.liveCount })
+          }
           preview={previews.questions}
           open={openKey === "questions"}
           onToggle={() => toggleKey("questions")}
@@ -1206,13 +1236,56 @@ function EditPageInner() {
 
 // ============================================================
 // MEH-210 Phase 2: custom WhatsApp question chips
+// MEH-2155: the card now opens with the LIVE list — the same items the public
+// page is serving right now — because the card was titled "שאלות שמופיעות בדף
+// שלך" while showing "עוד אין שאלות מותאמות" over a page that was serving a
+// full set of category defaults. A new owner met questions she had never seen,
+// on a profile she had just written herself.
 // ============================================================
 
 const MAX_QUESTIONS = 5;
 
+/**
+ * Read-only mirror of the public page's question list.
+ *
+ * DO NOT turn these into inputs, and DO NOT seed the five inputs below with
+ * them (MEH-2155 constraint, and the reason the whole card is built this way).
+ * Saving a default as a custom question FREEZES it: the delivery and ordering
+ * rows are answered live from her own data and would become dumb WhatsApp chips
+ * the moment they were stored as custom text, and they would stop tracking the
+ * details she later edits.
+ */
+function LiveQuestionsPreview({ items, t }) {
+  if (items.length === 0) {
+    return (
+      <p data-testid="live-questions-empty" className="text-xs text-fg-muted">
+        {t("live_empty")}
+      </p>
+    );
+  }
+  return (
+    <ul data-testid="live-questions-list" className="space-y-1.5">
+      {items.map((item) => (
+        <li key={item.id} data-testid="live-question-item" className="text-sm text-text">
+          <span>{item.label}</span>{" "}
+          <span className="text-xs text-fg-muted">
+            {item.answered
+              ? `— ${t("live_answered")}`
+              : `— ${t("live_via", { channel: t(`live_channel.${item.channel}`) })}`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.custom_questions");
   const tRoot = useTranslations("dashboard.producer");
+  // Same namespace the public renderer reads, so the labels fed to the resolver
+  // are the exact strings WhatsAppQuestionChips resolves — see
+  // lib/resolvedQuestions.js § "why the labels are arguments".
+  const tChips = useTranslations("whatsapp.question_chips");
   const [questions, setQuestions] = useState(() => {
     const saved = profile?.custom_questions || [];
     return [...saved, ...Array(MAX_QUESTIONS - saved.length).fill("")].slice(0, MAX_QUESTIONS);
@@ -1228,6 +1301,24 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   const dirty =
     currentPayload.length !== savedQuestions.length ||
     currentPayload.some((q, i) => q !== savedQuestions[i]);
+
+  // MEH-2155: resolved from the SAVED profile, not from the in-progress inputs.
+  // The list answers "what is on my page right now", so it must not move while
+  // she types — it moves when she saves, which is also when the page moves.
+  const live = resolveProducerQuestions(profile, {
+    deliveryQuestion: tChips("delivery_to_city", {
+      city: profile?.city || tChips("my_area"),
+    }),
+    orderingQuestion: tChips("ordering_q"),
+    escalationQuestion: tChips("escalation"),
+    recipeQuestion: tChips("recipe_idea"),
+  });
+
+  // Nothing to save when every input is blank AND nothing is stored — the save
+  // would PUT an empty list over an empty list and flash "נשמר" at her for a
+  // no-op. With saved questions present an all-blank form is a real intent
+  // (clear them), so it stays enabled.
+  const nothingToSave = currentPayload.length === 0 && savedQuestions.length === 0;
   useEffect(() => {
     reportDirty("questions", dirty);
     return () => reportDirty("questions", false);
@@ -1253,6 +1344,18 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
     <div>
       {/* MEH-1116: chrome + heading live in the accordion header; the heading's
           InfoTooltip moved down to the subtitle so its content isn't lost. */}
+      {/* MEH-2155: the live list comes FIRST — it is the answer to the card's
+          own title. The editing affordance follows it. */}
+      <ViewOnPageLink
+        producerId={profile?.id}
+        anchor="section-contact"
+        testId="view-on-page-questions"
+      />
+      <div className="mb-4 rounded-[10px] border border-border bg-background-alt px-3 py-2.5">
+        <p className="text-sm font-medium text-text mb-1">{t("live_heading")}</p>
+        <p className="text-xs text-fg-muted mb-2">{t("live_hint")}</p>
+        <LiveQuestionsPreview items={live.items} t={t} />
+      </div>
       <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
@@ -1283,7 +1386,8 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || nothingToSave}
+        data-testid="questions-save"
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}

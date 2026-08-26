@@ -59,6 +59,20 @@
 
 > **MEH-1011 (2026-07-03):** producer **request-changes** (completion request) flow — the non-terminal twin of reject. Two nullable `producers` columns (migration `a1b2c3d4e5f6`): `requested_changes` (TEXT — the admin's free-text feedback) + `changes_requested_at` (TIMESTAMPTZ, tz-aware). `POST /admin/producers/{id}/request-changes` (`{feedback}`, empty → 400) records the feedback, KEEPS status `pending`, emails the producer, WhatsApps the producer (**MEH-1051** — Meta-approved `producer_changes_requested_v1`, 2 body params `{name, missing}`, fail-open post-commit), and WhatsApps admin; `approve_producer` clears both columns on success. Admin-only exposure via `ProducerAdminOut` (both fields), never public `ProducerListOut`/`ProducerDetailOut`.
 >
+> **MEH-2072 (2026-08-21):** `producers.license_expires_at` (**DATE**, nullable, migration `c3e9a1f7b204`) records the business-licence expiry the admin reads off the document at approval. Before it, `producer_license_number` recorded *that* a licence was seen and never *until when* — so the "licensed businesses only" promise was verified on day one and never again. **DATE, not TIMESTAMPTZ, and it deliberately diverges from the sibling `kashrut_expires_at`:** a licence is valid *through a calendar day*, so a timestamp would make "expires today" answer differently either side of 00:00 UTC, which in Israel falls inside the same working day; pairing the column with `israel_today()` keeps the comparison calendar-day vs calendar-day. Expand-only, **no backfill** (ADR-007) — the date lives only on a document, so `NULL` means "not captured yet" and **never** "no expiry" (the reminder query filters `IS NOT NULL`, so a NULL row is never reminded about rather than treated as expired). Admin-only exposure via `ProducerAdminOut`, never public `ProducerListOut`/`ProducerDetailOut` (MEH-530 privacy precedent); present on `ProducerUpdate` but **withheld from `_PRODUCER_WRITABLE_FIELDS`** so only the admin PUT can write it — the `google_place_id` (MEH-1490) arrangement, and for the same reason: it is a record of what the *admin* verified, so an owner-writable version would be self-certification. Deliberately **no validator** — a past date is legitimate input when the licence has already lapsed. **No enforcement anywhere:** nothing hides or un-verifies a lapsed producer; v1 is capture + remind, and auto-hiding a live business on a typo is more dangerous than the gap. Surfaced by `GET /admin/license-expiry-reminders` and edited in the admin `ProducerForm` beside the licence number ("תוקף רישיון (מהמסמך)").
+>
+> **MEH-1399 (2026-08-21):** the pre-approval review checklist becomes DATA, and every tick becomes an audit record (migration `d4a9c31e6f82`, two tables). Phase 1 (MEH-1396) put `docs/VERIFICATION.md`'s knowledge in front of the admin as a frozen frontend constant with session-local ticks; that left two gaps — editing an item required a deploy, and the ticks evaporated, so nothing recorded WHAT was verified before a business went live.
+>
+> `admin_checklist_items` — `id` UUID PK, `position` INT NOT NULL (indexed), `label` TEXT NOT NULL, `hint` TEXT NULL, `active` BOOL NOT NULL DEFAULT true, `updated_at` TIMESTAMPTZ NOT NULL DEFAULT now() with model-level `onupdate=func.now()`. Seeded in the migration with the same 7 items `frontend/lib/admin-review-checklist.js` already shipped, so the switch is a change of source and not of content; the constant survives only as that seed plus two copy exports. `position` is written as `index * 10` by the router (never accepted from the client — a client-supplied position lets two items claim one slot and makes the order depend on an unspecified tiebreak), spaced so a later insertion needs no renumbering. **Only `updated_at`, no `created_at`:** the question anyone asks of a config row is when it last changed; the audit surface is the other table.
+>
+> `producer_review_checks` — `id` UUID PK, `producer_id` UUID → `producers.id` **ON DELETE CASCADE** (indexed), `item_id` UUID → `admin_checklist_items.id` **ON DELETE RESTRICT** (indexed **in its own right** — the composite unique below leads with `producer_id`, so it cannot serve the `item_id`-only lookup Postgres runs to enforce the RESTRICT on every parent DELETE), `label_snapshot` TEXT NOT NULL, `checked_by` UUID → `users.id` **ON DELETE SET NULL**, nullable, `checked_at` TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE `(producer_id, item_id)`. **An unchecked item is the ABSENCE of a row**, not a row with a false flag — "never ticked" and "ticked then un-ticked" are deliberately indistinguishable, because the ticket asks for a record of what was verified, not a keystroke log.
+>
+> **The three delete behaviours are each a decision.** CASCADE on the producer: the checks describe a business, and with the business gone there is nothing left to attest about. **RESTRICT on the item: this is the ticket's "no delete — deactivate only" rule enforced in the schema rather than trusted to the router** — a DELETE against an item that has ever been ticked fails at the database, so audit history cannot be destroyed by removing its subject; `active = false` is the sanctioned retirement path, and the settings UI therefore offers «הפסקת שימוש» and no bin. SET NULL on the actor: deleting an admin account must not delete the record that a check happened; a null actor is a weaker record than a named one and a far better one than none (matches the existing `users.id SET NULL` precedent).
+>
+> **`label_snapshot` looks redundant next to the FK and is the opposite.** The FK says WHICH item was ticked; the snapshot says what that item SAID at the moment of ticking. It is written at TICK time, never read back at display time — without it, an admin rewording an item next month would silently rewrite the meaning of every historical attestation, and the trail would describe a check nobody performed. Same reasoning as `producer_name_change_requests.current_name`.
+>
+> **Ticks never gate approval.** The hard gates (photo 422 / licence 422) live in `admin.py::approve_producer` and are untouched; a tick is a record that a human looked, never a permission. **Re-ticking does not restamp** — an item already ticked keeps its FIRST `checked_by`/`checked_at`, or every autosave would rewrite the audit trail to the most recent page load.
+
 > **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 `LICENSE_REQUIRED_CATEGORIES` category AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
 
 > **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s (`ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ`) instead of a DB CHECK 500. **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
@@ -115,6 +129,15 @@ producers (
   -- rating/userRatingCount are live-fetched (never persisted; ToS §3.2.3(b)).
   google_place_id varchar(300) nullable,
   contact_name, top_product_name,
+  -- MEH-2137 expand step: the featured-product vote by IDENTITY. top_product_name
+  -- is a free-text string, so the dashboard picked the featured product by name
+  -- and two products called «לחם» both got the badge. FK -> products.id,
+  -- ON DELETE SET NULL ("no featured product any more", which is true).
+  -- NULL is HONEST here and stays common after the backfill: a producer whose
+  -- name matched two products, or none, is deliberately left NULL rather than
+  -- guessed at. Readers fall back to top_product_name, which is unchanged and
+  -- still the only writer until the switch step. Revision f4b1c8e0a297.
+  top_product_id uuid nullable references products(id) on delete set null,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
@@ -147,6 +170,12 @@ producers (
   kashrut_verified_at timestamp nullable,
   kashrut_expires_at timestamp nullable
 )
+  -- MEH-2137 SWITCH step: `PUT /producers/me` now accepts `top_product_id`
+  -- (422 unless the product belongs to the caller; writing it syncs
+  -- top_product_name from the product). ProducerListOut/DetailOut/AdminOut
+  -- expose BOTH: the id is the authority, and top_product_name is DERIVED
+  -- from the FK in attach_badge_fields when set, else the legacy column —
+  -- so a product renamed after the vote no longer strands the name.
 
 -- MEH-51: one-time WhatsApp OTP for phone verification
 phone_otp_tokens (
@@ -176,7 +205,8 @@ users (
   created_at
 )
 
-categories     (id, name unique, emoji)
+categories     (id, name unique, emoji,
+                slug VARCHAR(50) NOT NULL UNIQUE)  -- MEH-2139: stable ASCII identity; matching keys on this, not on `name`. Added nullable in a7c3e91d5f28 (chunk 1), tightened to NOT NULL in c9f2a41e8b03 (chunk 2) once every writer produced one — the column default in models.py derives it from `name`, so no writer has to remember. Renaming a category does NOT re-derive its slug; surviving a rename is the point.
 producer_categories (producer_id FK, category_id FK, PK(both),
                      position INT NOT NULL default 0)  -- MEH-1297: 0 = primary (first selected); categories ordered by it
 products       (id, producer_id FK, name, description,
@@ -744,6 +774,46 @@ POST   /admin/producers/{id}/approve           admin — emails + WhatsApp; ?all
 POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
 POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
 POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)
+GET    /admin/license-expiry-reminders         admin — MEH-2072: approved producers whose producers.license_expires_at falls in
+                                               [israel_today(), +30d]. Read-only — nothing is sent, hidden or un-verified (v1 is
+                                               capture + remind). Four filters, each excluding a real row: IS NOT NULL (NULL means
+                                               "not captured yet", never "no expiry"), >= today (an already-lapsed licence is a
+                                               different problem, not this queue), <= today+30d, status == approved. Rows carry
+                                               days_remaining computed server-side, phone_masked (never the raw number) and
+                                               producer_license_number; ordered soonest-first. Unlike the kashrut sibling it does
+                                               NOT filter on phone — a business with no number still needs chasing. 60/minute.
+GET    /admin/producers/{producer_id}          admin — MEH-2072: the FULL ProducerAdminOut for one producer. Added because the
+                                               admin edit page was loading the PUBLIC serializer, so ProducerForm hydrated every
+                                               admin-only field as "" and wrote the blanks back on save (measured:
+                                               producer_license_number '1234567' -> '', address 'הרצל 1' -> None). Declared AFTER
+                                               /producers/pending and /producers/rejection-presets — FastAPI matches in declaration
+                                               order, so a {param} route placed first would swallow both literals.
+GET    /admin/checklist-items                  admin — MEH-1399: the review checklist, ordered by position. ?include_inactive=true
+                                               returns retired items too. Default is FALSE because the review flow is the
+                                               high-traffic caller and must never offer a retired item to an admin working a
+                                               business; the settings screen passes true, since editing a list you cannot fully see
+                                               is not editing. 60/minute.
+PUT    /admin/checklist-items                  admin — MEH-1399: replace the list — add, edit, reorder and retire in one request.
+                                               Body {items: [{id?, label, hint?, active}]}. position is assigned from the ARRAY
+                                               INDEX (index * 10), never from the payload. id=null creates. An item ABSENT from the
+                                               payload is left alone, NOT removed — there is no delete (see the RESTRICT above). An
+                                               id that does not exist is a 404, not an insert: a stale tab saving against items
+                                               another admin retired is told, rather than having its old rows quietly resurrected
+                                               under new ids. 30/minute.
+GET    /admin/producers/{producer_id}/review-checks   admin — MEH-1399: the ticks recorded for one producer, each with
+                                               label_snapshot, checked_by_name (null for a deleted admin — the row survives) and
+                                               checked_at. 404s on an unknown producer rather than returning an empty list: "no
+                                               ticks" and "no such business" are different facts. 60/minute.
+PUT    /admin/producers/{producer_id}/review-checks   admin — MEH-1399: record the ticked SET. Body {item_ids: [...]}. Idempotent
+                                               and set-semantic — ids present are ticked, ids absent have their rows deleted. Not a
+                                               diff API, which would require the client to know what it previously sent, the exact
+                                               assumption that breaks with two admin tabs open on one business. Writes
+                                               label_snapshot at tick time; an already-ticked item is left untouched so the first
+                                               attestation stands. Inactive items are still ACCEPTED (an admin may be mid-review
+                                               when another retires one; rejecting her save would lose work over a race she cannot
+                                               see). Both writes are set-based statements — INSERT ... ON CONFLICT DO NOTHING and
+                                               one bulk DELETE ... WHERE — so a concurrent save resolves instead of 500ing on the
+                                               unique constraint or raising StaleDataError on a row already gone. 60/minute.
 GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
 POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes

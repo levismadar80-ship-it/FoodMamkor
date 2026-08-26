@@ -1,17 +1,28 @@
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from html import escape as _html_escape
 from typing import NamedTuple
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
-from app.utils.clock import business_days_waiting
+from app.utils.clock import business_days_waiting, israel_today
+from app.utils.pii import mask_phone
 from app.config import settings
 from app.services.auth_notifications import (
     notify_producer_approved,
@@ -22,8 +33,13 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.email import send_email
+
+# MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
+# never re-declare the literal.
+from app.services.onboarding_followup import SITE_DOMAIN
 from app.services.whatsapp import send_text
 from app.database import get_db
+from app.rate_limit import limiter
 from app.models import (
     DeliveryArea,
     HomeProduct,
@@ -34,6 +50,8 @@ from app.models import (
 )
 from app.schemas.schemas import (
     GrantVerifiedIn,
+    LicenseExpiryReminderOut,
+    LicenseExpiryReminderRow,
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerRejectIn,
@@ -603,6 +621,99 @@ def admin_create_producer(
     return producer
 
 
+# MEH-2072: how far ahead the licence reminder looks. One constant, not a query
+# param — mirroring EXPIRY_REMINDER_WINDOW_DAYS in admin_kashrut.py:31 and for
+# the same reason recorded there: a caller-chosen window lets a mistyped value
+# sweep in every business on file, and the ticket scopes this to 30 days.
+LICENSE_EXPIRY_REMINDER_WINDOW_DAYS = 30
+
+
+@router.get("/license-expiry-reminders", response_model=LicenseExpiryReminderOut)
+@limiter.limit("60/minute")
+def license_expiry_reminders(
+    request: Request,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2072: approved businesses whose licence expires within 30 days.
+
+    Read-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1
+    policy is capture + remind, and the admin pulls this list herself. That is
+    why this is a GET with no `dry_run` flag, unlike its kashrut sibling
+    (admin_kashrut.py:154) which POSTs because it dispatches WhatsApp. Push is a
+    future ticket.
+
+    Selection, and every clause is load-bearing:
+
+    * `license_expires_at IS NOT NULL` — NULL means "not captured yet", never
+      "no expiry". Without this clause every producer predating MEH-2072 would
+      appear in the reminder list forever, which is the failure that would get
+      the whole feature switched off.
+    * `>= israel_today()` — an already-lapsed licence is deliberately EXCLUDED.
+      This mirrors the kashrut endpoint's reasoning: the list exists to catch a
+      licence before it lapses. A lapsed one is a different problem needing a
+      different action (that is the future enforcement decision), and letting it
+      sit here would grow an unactionable backlog that buries the live rows.
+    * `<= horizon` — the 30-day window.
+    * `status == "approved"` — a pending business is already in the review
+      queue, where the admin sees the licence anyway.
+
+    Israel's calendar day, not UTC's: `license_expires_at` is a DATE column, and
+    `israel_today()` is what makes the comparison calendar-day against
+    calendar-day with no zone arithmetic (see the migration docstring).
+
+    `60/minute`, matching the read-only `list_kashrut_requests`
+    (admin_kashrut.py:36) rather than the `10/hour` its expiry-reminder sibling
+    carries — that one is throttled hard because it DISPATCHES WhatsApp, and a
+    read has no outbound side effect to ration.
+
+    Note this is the first `@limiter.limit` in this module: `admin.py` currently
+    has none at all. That is a pre-existing gap, not a local convention to copy
+    — `backend/app/routers/CLAUDE.md` states the per-route limiter stack is
+    mandatory here, so the new route follows the documented rule rather than the
+    surrounding silence. Retro-fitting the rest of the module is out of scope.
+    """
+    today = israel_today()
+    horizon = today + timedelta(days=LICENSE_EXPIRY_REMINDER_WINDOW_DAYS)
+    producers = (
+        db.query(Producer)
+        .filter(
+            Producer.license_expires_at.isnot(None),
+            Producer.license_expires_at >= today,
+            Producer.license_expires_at <= horizon,
+            Producer.status == "approved",
+        )
+        .order_by(Producer.license_expires_at.asc())
+        .all()
+    )
+
+    rows = [
+        LicenseExpiryReminderRow(
+            producer_id=producer.id,
+            name=producer.name,
+            # mask_phone handles the missing-phone case; unlike the kashrut
+            # endpoint there is no `phone IS NOT NULL` filter, because a
+            # business with no phone on file still needs its licence chased —
+            # the admin just reaches it another way. Filtering it out would hide
+            # the row entirely, which is the opposite of what this list is for.
+            phone_masked=mask_phone(producer.phone),
+            expires_at=producer.license_expires_at,
+            # Computed here, not per client: same reasoning as
+            # business_days_waiting on ProducerAdminOut — the number the admin
+            # reads and the order the rows arrive in must come from one clock.
+            days_remaining=(producer.license_expires_at - today).days,
+            producer_license_number=producer.producer_license_number,
+        )
+        for producer in producers
+    ]
+
+    return LicenseExpiryReminderOut(
+        window_days=LICENSE_EXPIRY_REMINDER_WINDOW_DAYS,
+        total=len(rows),
+        rows=rows,
+    )
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -957,9 +1068,15 @@ def approve_producer(
             # It was rejected for the registration screen (MEH-2100 item 9)
             # precisely because onboarding was not complete there; at approval
             # it is — the business is live on the site. Sapir-approved copy,
-            # verbatim (16/08). The body below is deliberately untouched.
+            # verbatim (16/08) and untouched by MEH-2151 — that ticket restructures
+            # the BODY (CTA links, HTML part), never this subject line.
             "ברוכים הבאים למהמקור",
-            _producer_approved_body(p_name),
+            # MEH-2151: p_slug is captured above (MEH-1817 mints it during this
+            # very approval), so both parts can carry the /p/{slug} link. A
+            # producer with no slug still gets a well-formed mail — both
+            # builders drop their view-page block whole.
+            _producer_approved_body(p_name, p_slug),
+            html=_producer_approved_html(p_name, p_slug),
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
@@ -1028,6 +1145,79 @@ def list_rejection_presets(user: User = Depends(require_admin)):
         {"key": key, "label": label}
         for key, label in PRODUCER_REJECTION_PRESETS.items()
     ]
+
+
+@router.get("/producers/{producer_id}", response_model=ProducerAdminOut)
+@limiter.limit("60/minute")
+def admin_get_producer(
+    request: Request,
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2072: the single-producer admin read. There was none before, and the
+    admin EDIT PAGE was loading the PUBLIC serializer instead.
+
+    ## The bug this closes, measured rather than reasoned
+
+    `app/[locale]/admin/producers/[id]/edit/page.js` fetched `GET /producers/{id}`
+    -> `ProducerDetailOut`. That shape carries no admin-only field, by design.
+    So `ProducerForm` hydrated every one of them as `""` (its `initial.X ?? ""`
+    idiom), and because the form POSTs its whole state back, saving ANY edit
+    wrote those blanks over the stored values:
+
+        producer_license_number  '1234567'  ->  ''
+        address                  'הרצל 1'   ->  None
+
+    Silent, on every admin save, including a save that only changed the name.
+    `producer_license_number` is the regulatory field the whole "licensed
+    businesses only" promise rests on, so this was live data loss on the one
+    column the promise depends on.
+
+    Two things made it invisible. The form's own comment asserted that the page
+    called `GET /admin/producers/{id}` "which exposes the raw
+    producer_license_number" — describing this route, which did not exist and
+    returned **405**. And the failure has no error surface: the PUT succeeds,
+    the page redirects, and the value is simply gone.
+
+    ## Why a new route rather than widening the public one
+
+    Widening `ProducerDetailOut` would publish licence numbers and street
+    addresses to every visitor — the exact inversion of the MEH-530 privacy
+    precedent. The admin needs a different SHAPE, not more public data.
+
+    ## Route ordering is load-bearing
+
+    Declared AFTER `/producers/pending` (:977) and `/producers/rejection-presets`
+    (:1132). FastAPI matches in declaration order, so registering this above
+    either of them would swallow both literals into `{producer_id}` and answer
+    them with a UUID-parse 422. Do not move it up.
+
+    Mirrors the list endpoint's post-query enrichment exactly — `attach_badge_fields`
+    then `_attach_aging` — because a single-row read that skipped them would
+    serialise a silent `0` for `business_days_waiting` and default badges, which
+    is the "looks measured and is not" failure `_attach_aging`'s own docstring
+    warns about.
+    """
+    producer = (
+        db.query(Producer)
+        .options(
+            joinedload(Producer.categories),
+            joinedload(Producer.products),
+            joinedload(Producer.delivery_areas),
+            # selectinload, matching the list endpoint (:448) — a 4th collection
+            # joinedload would widen the existing 3-way cartesian. Needed by
+            # attach_badge_fields' pickup_points/offers_pickup derivation.
+            selectinload(Producer.locations),
+        )
+        .filter(Producer.id == producer_id)
+        .first()
+    )
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    attach_badge_fields(producer)
+    _attach_aging(producer)
+    return producer
 
 
 @router.post("/producers/{producer_id}/reject")
@@ -1392,11 +1582,239 @@ def _rejection_reason_suffix(reason: str) -> str:
     return f"\nהסיבה: {reason}" if reason else ""
 
 
-def _producer_approved_body(name: str) -> str:
+# MEH-2134: LOCKED copy, approved by Sapir 20/08/2026, shipped verbatim.
+_APPROVED_COMMUNITY_BLOCK = (
+    "פתחנו קבוצת עדכונים בוואטסאפ לבתי עסק שאושרו במהמקור — שווקים ואירועים "
+    "לפני כולם, ומה חדש באתר. פעם-פעמיים בחודש, רק אנחנו כותבות שם, ואפשר "
+    "לצאת בכל רגע:"
+)
+
+# MEH-2151: LOCKED copy, approved by Sapir 21/08/2026, shipped verbatim.
+# Labels only — the URL is appended on its own line beneath each, mirroring
+# the community block's `label:\n{url}` shape so all three read alike.
+_APPROVED_VIEW_PAGE_LABEL = "ככה העמוד שלך נראה ללקוחות:"
+_APPROVED_DASHBOARD_LABEL = "לעדכון פרטים, תמונות ומוצרים — לוח הבקרה:"
+_APPROVED_HTML_BUTTON_LABEL = "לצפייה בעמוד העסק"
+_APPROVED_HTML_DASHBOARD_LABEL = "לוח הבקרה — עדכון פרטים ומוצרים"
+
+
+def _approval_links(slug: str | None) -> tuple[str, str]:
+    """The two absolute URLs the approval email carries: (page, dashboard).
+
+    Shared by the text and HTML builders deliberately. MEH-2151 requires BOTH
+    parts to carry BOTH links, so composing the URLs twice would create two
+    owners for one fact — the drift `workflow.md` Smell #1 names — and the
+    failure would be silent: an email whose button and whose text line point at
+    different places still renders, still sends, and still looks correct in a
+    diff. This is not a shared layout module (the over-engineering guard's
+    target); it returns two strings and knows nothing about either part's
+    markup.
+
+    The page URL is "" for a falsy or whitespace-only slug, which is what lets
+    each caller drop its view-page block whole. `.strip()` before the guard,
+    not after — same reasoning as the community invite below: a whitespace-only
+    value is truthy, so an unstripped read would emit a label above a URL of
+    "/p/   ". Mirrors the falsy-guard pattern already used for
+    `whatsapp_community_invite_url`.
+
+    Env-aware host (mirrors the changes-requested body's `dashboard_link`):
+    staging emails must point at staging, not production.
+    """
+    clean_slug = (slug or "").strip()
+    page_url = f"{settings.frontend_url}/p/{clean_slug}" if clean_slug else ""
+    dashboard_url = f"{settings.frontend_url}/producer/dashboard"
+    return page_url, dashboard_url
+
+
+def _producer_approved_body(name: str, slug: str | None) -> str:
+    """MEH-2134: copy approved by Sapir 20/08/2026, shipped verbatim.
+
+    Signed `ספיר שנפ | מייסדת` in the first person, matching
+    `pending_nudge.py:149` and all four `onboarding_followup.py` steps —
+    one mailbox, one sender. `_producer_rejected_body` deliberately keeps the
+    institutional sign-off: an institutional "no" is kinder than a personal
+    one, and that asymmetry is a decision, not an oversight. (The literal is
+    spelled out nowhere in this docstring so that the sign-off census below
+    counts signatures, not prose.)
+
+    Census of the institutional sign-off in this file: **2** — the rejection
+    body and the changes-requested body, both untouched here. MEH-2134's DoD
+    predicted 2 → 1, which is wrong twice over: the pre-change count was 3
+    (this body plus those two, verified on `origin/staging`), and 1 is
+    unreachable because the same ticket requires `_producer_changes_requested_body`
+    byte-identical. This function is the only one MEH-2134 moves off it.
+
+    The community invite rides in THIS email rather than the registration
+    form (just-in-time beats upfront, and the group is for *approved*
+    businesses) and rather than the `producer_approved_v1` WhatsApp template
+    (Meta approved it with one parameter and no buttons; adding a URL button
+    means re-approval — MEH-509 PR1 got a 400 for exactly that).
+
+    An unset `whatsapp_community_invite_url` drops the paragraph AND the URL
+    line together, with no dangling label and no blank-line artifact. That is
+    what lets this merge before the link exists in Railway (Phase C).
+    Falsy-guard pattern mirrors `settings.admin_whatsapp_to` at :971.
+
+    MEH-2151 added the two link blocks and the `slug` parameter. Order is
+    greeting → approval → view-page → dashboard → community → signature: the
+    community block moved BELOW the links because it is the secondary action,
+    and its text is byte-identical (MEH-2134 LOCKED — the census above is why
+    that matters). The mail previously announced "הפרופיל שלך כעת גלוי" and
+    then offered no way to look at it; the view-page link is that proof.
+
+    THREE optional blocks now share one shape, and the degradation is the
+    reason to keep it that way: with no slug AND no invite the body is
+    greeting → approval → dashboard → signature, still with no dangling label.
+    Only the dashboard block is unconditional — its URL needs no input beyond
+    `settings.frontend_url`, so there is no state in which it cannot be built.
+    """
+    # `.strip()` before the guard, not after: a Railway value of "  " is
+    # truthy, so the raw read would emit the paragraph above an empty line —
+    # the dangling-label failure this function exists to avoid, reached by the
+    # one input nobody types deliberately.
+    invite_url = settings.whatsapp_community_invite_url.strip()
+    community = f"\n{_APPROVED_COMMUNITY_BLOCK}\n{invite_url}\n" if invite_url else ""
+    page_url, dashboard_url = _approval_links(slug)
+    # Same `\n{label}\n{url}\n` shape as `community`, so each block that is
+    # present contributes exactly one blank line before it and the signature's
+    # own leading "\n" closes the last one — which is why an omitted block
+    # leaves no double blank line and no dangling label.
+    view_page = f"\n{_APPROVED_VIEW_PAGE_LABEL}\n{page_url}\n" if page_url else ""
+    dashboard = f"\n{_APPROVED_DASHBOARD_LABEL}\n{dashboard_url}\n"
     return (
-        f'שלום,\n\nהעסק שלך "{name}" אושר במהמקור!\n'
-        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
-        f"בברכה,\nצוות מהמקור"
+        f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
+        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"{view_page}"
+        f"{dashboard}"
+        f"{community}"
+        f"\nספיר שנפ\nמייסדת | מהמקור\n{SITE_DOMAIN}"
+    )
+
+
+def _producer_approved_html(name: str, slug: str | None) -> str:
+    """MEH-2151: the HTML twin of `_producer_approved_body` — same copy, same order.
+
+    WHY AN HTML PART EXISTS AT ALL, since the text body was already readable:
+    Gmail does not infer direction from content, so a plain-text Hebrew line
+    ending in a period renders that period at the START of the line — observed
+    21/08 on a real approval mail (".גלוי"). `dir="rtl"` on the document plus
+    `direction:rtl` on the containing elements is the fix, and the copy contract
+    (`tests/test_meh1965_email_copy_contract.py`) asserts BOTH: the attribute
+    alone still leaves an inline BiDi run (a Latin business name mid-sentence)
+    to the client's guess.
+
+    Structure and palette follow `routers/marketing.py:_send_newsletter_welcome`
+    — table layout, inline CSS only, no <style> block and no external sheet,
+    because Gmail strips both. No emoji, unlike that precedent: the text twin
+    carries none and the two parts must read alike.
+
+    THE CARD IS `width="100%"` CAPPED BY `max-width`, NEVER `width="560"`. The
+    HTML width ATTRIBUTE beats the CSS `max-width` beside it, so the two
+    together are not belt-and-braces — the attribute simply wins and the card
+    is 560px wide on a 375px screen. Measured with Playwright on staging
+    `88e9717f`: `scrollWidth=560` against `innerWidth=375`, the button label
+    clipped to «עסק». The second-order cost is the one that matters: a client
+    that shrink-to-fits instead of scrolling (Gmail's common behaviour) scales
+    560→375, and the 46px button lands at ~31px physical — under the 44px
+    minimum tap target it passes at CSS scale. `margin:0 auto` keeps it centred
+    once the width is fluid.
+
+    KNOWN LIMIT, stated rather than papered over: Outlook's Word engine ignores
+    `max-width`, so there the card renders full-width instead of capped. The
+    bulletproof fix is an `<!--[if mso]>` fixed-width wrapper, which this
+    ticket did not authorise and which the newsletter precedent does not carry
+    either. Gmail and Apple Mail — the ticket's smoke targets — honour it.
+
+    The primary button centres with `align="center"` on its own table: an HTML
+    attribute, chosen over `margin:auto` because Outlook ignores auto margins
+    on a table box. It sits inside a `text-align:right` cell, which does not
+    move a block-level table on its own.
+
+    EVERY interpolated value goes through `escape()` — all 11 sites, including
+    the LOCKED copy constants and `SITE_DOMAIN`, none of which carries an HTML
+    metacharacter today (measured). That is exactly why escaping them is not
+    optional: a guarantee that holds only because of a property of the current
+    value is not a guarantee, and the next approved copy edit is where it stops
+    holding.
+
+    That sentence was FALSE when first written — it claimed "every" while three
+    constants were interpolated raw, and the CI reviewer caught it on PR #3054.
+    A docstring asserting a property is the artifact least likely to be
+    re-checked (`.claude/rules/testing.md`), so the claim is no longer left on
+    its own: `test_meh2151_approval_email_cta.py` parses this function's source
+    and fails on any interpolation site that is not wrapped, which is what makes
+    the sentence above checkable instead of merely stated. `name` is
+    owner-supplied free text that reaches this function unfiltered, so a
+    business name containing `<` or `"` would break out of the markup it lands
+    in — harmless in the text part, an injection in this one. `slug` is
+    system-minted (MEH-1817) and already URL-safe, but it is escaped on the same
+    line rather than trusted, so the guarantee lives here instead of depending
+    on a property enforced two modules away.
+
+    A falsy slug drops the primary button whole, exactly as the text twin drops
+    its view-page block: the mail then leads with the dashboard link rather than
+    showing a button that goes nowhere.
+    """
+    page_url, dashboard_url = _approval_links(slug)
+    safe_name = _html_escape(name)
+    invite_url = settings.whatsapp_community_invite_url.strip()
+
+    button = (
+        f'<table align="center" cellpadding="0" cellspacing="0" '
+        f'style="margin:0 auto 24px;">'
+        f'<tr><td style="background:#2e6853;border-radius:8px;">'
+        f'<a href="{_html_escape(page_url)}" style="display:inline-block;'
+        f"padding:14px 32px;color:#ffffff;font-size:16px;font-weight:bold;"
+        f'text-decoration:none;direction:rtl;">'
+        f"{_html_escape(_APPROVED_HTML_BUTTON_LABEL)}</a></td></tr></table>"
+        if page_url
+        else ""
+    )
+    community = (
+        f'<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        f'margin:0 0 24px;direction:rtl;">'
+        f"{_html_escape(_APPROVED_COMMUNITY_BLOCK)}<br>"
+        f'<a href="{_html_escape(invite_url)}" '
+        f'style="color:#2e6853;word-break:break-all;">'
+        f"{_html_escape(invite_url)}</a></p>"
+        if invite_url
+        else ""
+    )
+
+    return (
+        "<!DOCTYPE html>\n"
+        '<html dir="rtl" lang="he">\n'
+        '<head><meta charset="UTF-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "</head>\n"
+        '<body style="margin:0;padding:0;background:#F5F0E8;'
+        'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
+        '<table width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#F5F0E8;padding:32px 0;"><tr><td align="center">\n'
+        '<table width="100%" cellpadding="40" cellspacing="0" '
+        'style="background:#ffffff;border-radius:12px;text-align:right;'
+        'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
+        '<td style="text-align:right;direction:rtl;">\n'
+        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        'margin:0 0 16px;direction:rtl;">היי,</p>\n'
+        '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
+        'margin:0 0 24px;direction:rtl;">'
+        f'העסק שלך "{safe_name}" אושר במהמקור! '
+        "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.</p>\n"
+        f"{button}\n"
+        '<p style="margin:0 0 24px;direction:rtl;">'
+        f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'
+        'font-size:15px;text-decoration:underline;direction:rtl;">'
+        f"{_html_escape(_APPROVED_HTML_DASHBOARD_LABEL)}</a></p>\n"
+        f"{community}\n"
+        '<hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">\n'
+        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        'margin:0;direction:rtl;">'
+        f"ספיר שנפ<br>מייסדת | מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
+        "</td></tr></table>\n"
+        "</td></tr></table>\n"
+        "</body>\n"
+        "</html>"
     )
 
 
@@ -1443,8 +1861,19 @@ def _producer_changes_requested_body(
     )
 
 
-def _send_notification_email(to_email: str, subject: str, body: str):
-    send_email(to_email, subject, body)
+def _send_notification_email(
+    to_email: str, subject: str, body: str, html: str | None = None
+):
+    """MEH-2151: `html` is OPTIONAL and defaults to None.
+
+    That default is what keeps the three pre-existing callers (rejected,
+    changes-requested, and the approval site before this ticket) byte-identical
+    on the wire: `send_email` only adds `params["html"]` when the argument is
+    truthy (`services/email.py`), so an omitted argument produces the exact
+    payload it produced before this parameter existed. Same shape, and same
+    reasoning, as `reply_to` two parameters down in `send_email` (MEH-2112).
+    """
+    send_email(to_email, subject, body, html=html)
 
 
 def _send_whatsapp(to: str, body: str):

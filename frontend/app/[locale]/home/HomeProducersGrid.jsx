@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Info, Leaf, MapPin, X } from "@phosphor-icons/react";
+import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useEffect, useMemo, useState } from "react";
-import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
+// MEH-2173: the same grouped sheet /map and /producers mount. Its chip SET is
+// a prop (MEH-1862), so no widening was needed for a third surface.
+import FilterSheet from "@/components/FilterSheet";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 // MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
@@ -21,9 +23,30 @@ import {
   GATED_DIET_KEYS,
   openNowChipVisible,   // MEH-2131
   visibleGatedDietKeys,
+  withChipGroups,       // MEH-2173 — sheet group metadata
 } from "@/lib/producer-filters";
-import { withChipIcons } from "@/lib/chip-icons";
+import { chipIcon } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
+
+// 🔒 MEH-2173 — the two axes the home row PROMOTES onto the surface. Every
+// other axis stays reachable, one tap away, inside the FilterSheet.
+//
+// CHANGING THIS PAIR IS A SAPIR DECISION, not a refactor: it is a product
+// ruling about which two filters are worth permanent screen space on the
+// entry surface, and it was made in the 25/08 "סינון ארוך מדי" conversation.
+//
+// It deliberately does NOT mirror /map. /map promotes the FULFILMENT pair
+// (`has_delivery` + `pickup_points`, ServiceChipRow.jsx:40, MEH-2046); home
+// promotes trust + delivery. The card's own text described this list as a
+// mirror of a `QUICK_CHIP_KEYS` 🔒 in lib/map-chips.js — that symbol does not
+// exist. It was deleted in MEH-1468, which also retired the MEH-1461 "quick row
+// capped at 2" lock along with it (map-chips.js:86-90). Both surfaces are
+// intentionally different rows; neither is derived from the other, and there is
+// no shared constant to keep them in step.
+//
+// Order is RTL reading order: the trust axis leads, matching the sheet's own
+// service group (FilterSheet.jsx GROUP_CHIP_ORDER — verified, then has_delivery).
+const PROMOTED_KEYS = ["verified", "has_delivery"];
 
 /**
  * Producers grid section — heading + map link, onboarding tips,
@@ -60,9 +83,15 @@ export function HomeProducersGrid({
   onboardAdvance,
   onboardDismiss,
   onAdvanceFromStep0,
-  onChipNavigate,
   // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
   onRemoveChip,
+  // MEH-2173: the promoted chips AND the sheet's switches both call this — one
+  // toggle over one state, so the surface and the panel cannot disagree.
+  onToggleChip,
+  onClearChips,
+  filterSheetOpen,
+  onToggleFilterSheet,
+  onCloseFilterSheet,
   onClearCategory,
   onClearLocation,
   onLoadMore,
@@ -93,7 +122,13 @@ export function HomeProducersGrid({
   useEffect(() => {
     setOpenNowClock(new Date());
   }, []);
-  const chipsWithIcons = useMemo(() => {
+  // MEH-2173: the GATED axis list. Unchanged in what it computes — both
+  // runtime gates below still decide what exists — but it now yields plain chip
+  // defs instead of icon-attached ones, because its two consumers attach their
+  // own glyphs: the promoted row via `chipIcon`, and FilterSheet internally
+  // (FilterSheet.jsx calls chipIcon per row). This ticket changes WHERE an axis
+  // renders, never WHETHER it is offered.
+  const gatedChips = useMemo(() => {
     const shown = visibleGatedDietKeys(visibleProducers, chips);
     const hidden = GATED_DIET_KEYS.filter((k) => !shown.includes(k));
     // MEH-2131: the open-now axis reaches the home row via the unified config,
@@ -120,20 +155,62 @@ export function HomeProducersGrid({
         catalogFullyLoaded: true,
         now: openNowClock,
       }) && "open_for_orders_now";
-    return withChipIcons(
-      CHIPS_CONFIG.filter(
-        (c) => !hidden.includes(c.key) && c.key !== openNowHidden,
-      ),
+    return CHIPS_CONFIG.filter(
+      (c) => !hidden.includes(c.key) && c.key !== openNowHidden,
     );
   }, [visibleProducers, chips, producers, openNowClock]);
+
+  // MEH-2173: the promoted pair, resolved out of CHIPS_CONFIG — the same
+  // taxonomy declaration `gatedChips` (and therefore the sheet) is built from.
+  // Looking each key up rather than hand-writing a label is what stops the
+  // surface chip and its twin inside the sheet from ever showing different
+  // Hebrew for one axis: ATTRIBUTE_LABELS owns the string, in one place.
+  //
+  // Read from CHIPS_CONFIG and NOT from `gatedChips`, on purpose. A promoted
+  // chip is one the surface commits to showing, so a runtime data gate must not
+  // be able to take it away — that is what "promoted" means. Moot today (the
+  // only gates are MEH-1934's no_added_sugar and MEH-2131's open-now, neither
+  // of which is promoted), and stated so the distinction survives a third gate.
+  // A key absent from CHIPS_CONFIG yields nothing rather than an empty chip;
+  // the count assertion in HomePromotedFilters.test.jsx is what would catch it.
+  const promotedChips = useMemo(
+    () =>
+      PROMOTED_KEYS.map((key) => {
+        const chip = CHIPS_CONFIG.find((c) => c.key === key);
+        return chip ? { ...chip, icon: chipIcon(key) } : null;
+      }).filter(Boolean),
+    [],
+  );
+  // The sheet gets the gated list plus its group metadata (MEH-1862's seam).
+  const sheetChips = useMemo(() => withChipGroups(gatedChips), [gatedChips]);
+  // The "· N" on the trigger counts ACTIVE ATTRIBUTE axes, promoted included:
+  // the button stands for the whole attribute surface, and a visitor who
+  // switched on a promoted chip has one filter active, not zero.
+  const activeAttributeCount = gatedChips.filter((c) => chips[c.key]).length;
+
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
   // is selected OR the id hasn't resolved against the loaded list yet, so
   // the heading falls back to the default rather than rendering an empty name.
-  const chipsActive = Object.values(chips).some(Boolean);
   const activeCategory = filters.category
     ? categories.find((c) => String(c.id) === filters.category)
     : null;
+  // MEH-2173: the applied-filter strip carries the NON-promoted active axes
+  // only. A promoted axis shows its active state on its own chip, which is
+  // still on screen — tagging it too would print the same filter twice in
+  // adjacent rows. Together the two halves are the Baymard applied-filters
+  // rule: every active filter is visible AND removable, each in exactly one
+  // place.
+  //
+  // 5-state rule (CLAUDE.md): this list is what the strip's render condition
+  // keys on, NOT "is any chip active" — which is what the condition used to be
+  // (a `chipsActive` derived from Object.values(chips).some(Boolean), removed
+  // with this change). With only a promoted chip on, that test is true while
+  // this list is empty, so the row rendered the "מסנן לפי:" label with nothing
+  // after it: a heading for an empty set.
+  const tagChips = gatedChips.filter(
+    (c) => chips[c.key] && !PROMOTED_KEYS.includes(c.key),
+  );
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* Step 0 — producers grid tip (2s delay). MEH-1174: mounted ABOVE the
@@ -158,19 +235,92 @@ export function HomeProducersGrid({
         </Link>
       </div>
 
-      {/* MEH-1774: this row is now NAVIGATION, not filtering — a tap deep-links
-          to /producers with the attribute applied, so the canonical filtering
-          surface is one place instead of two. `variant="toggle"` and
-          `activeKeys` are retained on purpose: home still hydrates chips from
-          its own URL params, and changing that reading is out of scope here
-          (MEH-1083). Visuals are unchanged by design — behavior only. */}
-      <ChipScrollRow
-        variant="toggle"
-        chips={chipsWithIcons}
-        activeKeys={chips}
-        onChipClick={onChipNavigate}
-        className="mb-3"
-      />
+      {/* MEH-2173 — "promoted + all": the flat 8-chip scroll row is replaced by
+          TWO promoted chips plus one "סינון" button opening the grouped
+          FilterSheet. Baymard: a horizontal toolbar stops giving an overview
+          past ~6-8 filter types, but a SMALL one beats a sidebar (which is
+          scanned and skipped); the answer is to promote a couple and file the
+          rest behind a panel. Same IA /map has run since MEH-1368 and
+          /producers since MEH-1862 — now shared by all three discovery
+          surfaces rather than diverging on the entry one.
+
+          NO capability is removed: every axis the old row rendered is in the
+          sheet, gated by the same runtime gates (`gatedChips` feeds both).
+
+          This REVERSES MEH-1774 on home, deliberately and by the card's own
+          instruction. That ticket made an attribute chip a deep-link to
+          /producers so attribute filtering had one canonical home. The card
+          asks for a sheet that filters THIS grid in place, so home is an
+          attribute-filtering surface again whatever the chips do — and once it
+          is, a promoted chip that navigated away while its twin switch inside
+          the sheet filtered in place would be the same axis behaving two ways
+          on one row. One state (`chips`), one handler (`onToggleChip`), for
+          the surface chips and the sheet alike. */}
+      <div className="mb-3 flex items-center gap-2 min-w-0" data-testid="home-filter-row">
+        {promotedChips.map((chip) => {
+          const active = !!chips[chip.key];
+          return (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => onToggleChip(chip.key)}
+              aria-pressed={active}
+              data-testid={`home-promoted-chip-${chip.key}`}
+              // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
+              // — identical promoted-chip geometry and the MEH-1181-A Direction A
+              // wash+ring for the active state, so a promoted chip reads the same
+              // on home as it does on /map even though the PAIR differs.
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+                active
+                  ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
+                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              <span aria-hidden="true">{chip.icon}</span>
+              {chip.label}
+            </button>
+          );
+        })}
+        {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
+            `relative` parent, exactly as on /map and /producers. `ms-auto`
+            pushes the trigger to the inline-END (the LEFT in RTL). */}
+        <div className="relative shrink-0 ms-auto">
+          <button
+            type="button"
+            onClick={onToggleFilterSheet}
+            aria-expanded={filterSheetOpen}
+            aria-controls="filter-sheet-panel"
+            data-testid="home-filters-button"
+            // REUSES: frontend/components/ProducersClient.jsx:775-787 — same
+            // trigger, same inactive chip visuals, same inline count.
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+          >
+            {/* `Faders`, not `FadersHorizontal` as the card's prose says: the
+                two shipped sheet triggers both use `Faders`
+                (FilterChipsBar.jsx:107, ProducersClient.jsx:784) and the card
+                also names "the existing sheet-trigger pattern". Matching the
+                glyph the other two surfaces already show beat matching the
+                parenthetical. */}
+            <Faders size={16} aria-hidden="true" />
+            {t("filters.button")}
+            {/* `.numeric` = tabular/LTR digits inside the RTL button. */}
+            {activeAttributeCount > 0 && (
+              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            )}
+          </button>
+          <FilterSheet
+            open={filterSheetOpen}
+            onClose={onCloseFilterSheet}
+            chips={sheetChips}
+            chipState={chips}
+            onToggleChip={onToggleChip}
+            // The live client-side count, matching what the counter above the
+            // grid says. `producers` is the FILTERED set home last fetched.
+            resultCount={producers.length}
+            onClearAll={onClearChips}
+          />
+        </div>
+      </div>
       {/* Step 1 — filter chips tip */}
       <OnboardingTip
         show={onboardStep === 1}
@@ -181,7 +331,7 @@ export function HomeProducersGrid({
       {/* MEH-1174: single applied-filters summary row — the active category
           now lives here as a removable "× {name}" tag alongside the chip
           summary (replacing the old separate "מציג:" row). */}
-      {(chipsActive || activeCategory) && (
+      {(tagChips.length > 0 || activeCategory) && (
         <div className="mb-6 flex flex-wrap items-center gap-2" aria-live="polite">
           <span className="text-xs text-fg-muted">{t("home.producers.filter_prefix")}</span>
           {/* MEH-2130: each active attribute is now a REMOVABLE tag, matching
@@ -197,8 +347,7 @@ export function HomeProducersGrid({
               colours. The aria-label is the one addition: the /producers pill's
               accessible name is just "× {label}", which does not say what the
               button does. It reuses an existing key, so no new i18n twin. */}
-          {chipsActive &&
-            CHIPS_CONFIG.filter((c) => chips[c.key]).map((chip) => (
+          {tagChips.map((chip) => (
               <button
                 key={chip.key}
                 type="button"
@@ -217,7 +366,7 @@ export function HomeProducersGrid({
                 <span aria-hidden="true" className="text-[10px] font-bold">×</span>
                 {chip.label}
               </button>
-            ))}
+          ))}
           {activeCategory && (
             <button
               type="button"
@@ -237,21 +386,27 @@ export function HomeProducersGrid({
       )}
 
       {/* MEH-1269: dismissible location-filter chip (geo "קרוב אליי" or an
-          explicit city choice). Self-hides when no location filter is active. */}
+          explicit city choice). Self-hides when no location filter is active.
+          MEH-2186: LOCATION-ONLY — the day value moved to the day chip below,
+          so `daysActive` is no longer passed here. It still reaches this
+          component for the empty-state CTA further down. */}
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
-        daysActive={daysActive}
         onClear={onClearLocation}
       />
 
-      {/* MEH-1645 day refinement, made permanently visible in MEH-1771: always
-          rendered — without a city it self-renders a muted ghost row + hint,
-          and a pill click routes into the LocationModal (handleDaySelected). */}
+      {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
+          value-carrying dropdown chip since MEH-2186: always rendered — with
+          no city a tap routes into the LocationModal (handleDaySelected), with
+          a city it opens the inline day panel. `onClearDays` is the chip's ✕:
+          it drops the whole day set and leaves the city standing, which is the
+          same handler the empty-state CTA below already uses. */}
       <DeliveryDayRow
         cityActive={cityActive}
         daysActive={daysActive}
         onSelectDay={onSelectDay}
+        onClearDays={onClearDays}
       />
 
       {producersLoading ? (
