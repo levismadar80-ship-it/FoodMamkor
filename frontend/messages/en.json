@@ -294,6 +294,8 @@
           "address_map_privacy_hint": "Your full address isn't published. It only appears on the map if you choose to show it.",
           "address_optional_hint": "No exact address? The town is enough.",
           "address_city_mismatch": "The address we found is in {found}, but the town you chose is {selected}. Worth checking the town, or searching for a different address.",
+          "address_pin_adjusted": "Location adjusted manually on the map",
+          "address_pin_drag_hint": "You can drag the pin to fine-tune the location",
           "address_confirmed": "Location found: {location}",
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
