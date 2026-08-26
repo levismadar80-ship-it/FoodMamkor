@@ -57,6 +57,16 @@ class TestCoverageCityCapture:
         # would silently disagree with the column if either were changed alone.
         assert len(stored) == COVERAGE_CITY_MAX_LENGTH
 
+    def test_non_string_city_is_rejected_not_silently_nulled(self, client, db):
+        """The `isinstance(v, str)` branch of _validate_city. Without this the
+        branch is unexercised, and a regression that replaced the raise with a
+        `return None` would look identical to a legitimately absent city -- a
+        422 and a silent null are very different contracts."""
+        p = make_producer(db)
+        r = client.post(f"/producers/{p.id}/whatsapp-click", json={"city": 123})
+        assert r.status_code == 422, r.text
+        assert db.query(ProducerWhatsAppClick).count() == 0
+
     def test_unknown_city_is_stored_not_dropped(self, client, db):
         """Soft validation: a locality our canonical list does not carry is the
         most interesting row in the table, not the one to discard."""

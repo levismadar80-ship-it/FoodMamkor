@@ -359,6 +359,14 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // `undefined`, which CoverageRequestCta reads as "not opted out" via its
   // `=== false` comparison. A `.default(true)` here would be equivalent today
   // but would hide a genuine null from a future reader.
+  // DELIBERATE DIVERGENCE from lib/generated/api.zod.js, which renders this
+  // as `_default(boolean(), true)` (absent -> true) because the OpenAPI schema
+  // carries a default. Here it is `.optional()` (absent -> undefined). Both
+  // behave identically for the only consumer today, which compares
+  // `=== false` — but they differ for `!x` and for `x ?? false`, so the
+  // divergence is written down rather than left for a reader to trip over.
+  // Kept as optional on purpose: `undefined` says "this payload did not carry
+  // the field", which a default would erase.
   coverage_cta_enabled: z.boolean().optional(),
 });
 

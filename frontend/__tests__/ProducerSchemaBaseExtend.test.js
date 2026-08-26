@@ -27,7 +27,7 @@ import {
   ProducerSchema,
 } from "@/lib/schemas";
 
-// The four detail-only fields **currently expressed in Zod** — measured from
+// The detail-only fields **currently expressed in Zod** — measured from
 // the Pydantic classes, not copied from a ticket.
 //
 // NOT the whole backend delta: ProducerDetailOut adds **17** fields to
@@ -38,7 +38,16 @@ import {
 // ProducerListSchema because it is missing from this list would be wrong.
 // The Pydantic classes are the authority for placement; MEH-1891's parity
 // guard checks the coverage.
-const DETAIL_ONLY = ["website", "instagram", "facebook", "external_order_form"];
+const DETAIL_ONLY = [
+  "website",
+  "instagram",
+  "facebook",
+  "external_order_form",
+  // MEH-1677: detail-only, verified against the committed field snapshot
+  // rather than assumed — producer_contract_snapshot.json has it on
+  // ProducerDetailOut and NOT on ProducerListOut.
+  "coverage_cta_enabled",
+];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);
 const detailKeys = () => Object.keys(ProducerDetailSchema.shape);
@@ -51,7 +60,10 @@ describe("MEH-1752 — ProducerListSchema / ProducerDetailSchema", () => {
     expect(L.filter((k) => !D.includes(k))).toEqual([]); // list-only must be empty
   });
 
-  it("the delta is exactly the four detail-only fields", () => {
+  // Title deliberately carries NO number: it used to say "the four", which
+// goes stale the moment the list grows (it did, in MEH-1677). The
+// assertion reads DETAIL_ONLY, so the constant is the single source.
+  it("the delta is exactly the detail-only fields", () => {
     const L = listKeys();
     expect(detailKeys().filter((k) => !L.includes(k)).sort()).toEqual(
       [...DETAIL_ONLY].sort(),
