@@ -177,14 +177,14 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
       setOpen(false);
       chipRef.current?.focus();
     };
-    const onPointerDown = (e) => {
+    const onMouseDown = (e) => {
       if (!rootRef.current?.contains(e.target)) setOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("mousedown", onMouseDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("mousedown", onMouseDown);
     };
   }, [open]);
 
@@ -241,12 +241,23 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
             : "bg-surface text-text border-border hover:bg-green-50"
         }`}
       >
+        {/* aria-controls is dropped while closed, because the panel it names is
+            not in the DOM then and a reference to an absent id resolves nowhere
+            (NVDA+Firefox notably). aria-expanded alone carries the disclosure
+            contract, so nothing is lost.
+
+            The other available fix — always render the panel with hidden={!open}
+            — was rejected, and not on taste: `toHaveCount` counts DOM matches
+            regardless of visibility, so a permanently-mounted panel would make
+            the closed-state assertions in flows/27 and the component suite
+            ("0 pills when closed") count 7 and pass only if they were weakened.
+            That trades a dangling attribute for a weaker test. */}
         <button
           ref={chipRef}
           type="button"
           onClick={handleChipClick}
           aria-expanded={open}
-          aria-controls={panelId}
+          aria-controls={open ? panelId : undefined}
           aria-label={chipAriaLabel}
           data-testid="delivery-day-chip"
           className={`inline-flex items-center gap-1.5 py-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${

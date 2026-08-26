@@ -314,6 +314,35 @@ describe("DeliveryDayRow chip + panel (MEH-2186)", () => {
     expect(screen.getByTestId("delivery-day-chip")).toHaveAttribute("aria-expanded", "false");
   });
 
+  // MEH-2186 follow-up (CI reviewer). The panel is conditionally rendered, so a
+  // permanently-set aria-controls names an id that is in the DOM only half the
+  // time — a reference that resolves nowhere while closed.
+  //
+  // Two-sided on purpose. The closed half fails against the shipped-then-fixed
+  // code (attribute always present); the open half fails against the lazier
+  // "just delete aria-controls" repair. Neither half alone discriminates, and
+  // the open half is what stops this test from being satisfied by removing the
+  // feature it guards.
+  //
+  // It asserts the id RESOLVES rather than merely matching a string: comparing
+  // the attribute to panel.id is true by construction if both come from the
+  // same render, which is the entailed-assertion shape .claude/rules/testing.md
+  // names. getElementById is the independent read.
+  it("aria-controls names a live element when open, and is absent when closed", () => {
+    render(<DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />);
+    const chip = () => screen.getByTestId("delivery-day-chip");
+
+    expect(chip()).not.toHaveAttribute("aria-controls");
+
+    fireEvent.click(chip());
+    const id = chip().getAttribute("aria-controls");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id)).toBe(screen.getByTestId("delivery-day-panel"));
+
+    fireEvent.click(chip());
+    expect(chip()).not.toHaveAttribute("aria-controls");
+  });
+
   // ---- multi-select inside the panel (MEH-2036 semantics, preserved) ----
 
   it("panel pills keep the MEH-2036 per-pill aria-pressed and forward the day", () => {
