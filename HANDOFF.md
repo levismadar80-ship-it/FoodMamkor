@@ -3,6 +3,41 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-26 — ‏Batch F (סדרתי, self-merge): 2 מוזגו · 1 הופרך · 1 דולג
+
+**מוזג:** ‏#3125 `ac77fa5b` · ‏#3129 `b6cfa226`. **שניהם אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)`, נקרא מהקומיט שנחת ולא מתשובת ה-API.
+**לא נדרש קוד:** ‏MEH-2147 — הפרמיסה הופרכה במדידה; תיאור הכרטיס עודכן.
+**דולג:** ‏MEH-2004 — ‏PR #3126 של session מקביל תופס בדיוק את אותם קבצים.
+
+### מה ממתין לך, בסדר יורד
+
+1. **‏🔴 שני פערי תיעוד שנמדדו ולא תוקנו — שניהם בשכבת ה-guardrail, ולכן שלך.**
+   - **‏`CLAUDE.md:68` מצטט `x-deny-reason: host_not_allowed` ככותרת שמסמנת חסימה. היא אינה קיימת** בשום תשובת 403 בהרצה של היום; התשובה נושאת `X-Content-Type-Options` ו-`Connection` בלבד. הסיבה כן קיימת, ב-`http://127.0.0.1:41793/__agentproxy/status`.
+   - **‏`.claude/rules/skills.md:90-95` מתעד 7 hosts ב-allowlist של WebFetch; ה-hook החי מתיר 12** (`claude.com`, `developers.google.com`, `cloudinary.com`, `w3.org`, `developer.mozilla.org` אינם מתועדים).
+   שניהם דווחו ולא נגעו: עריכת `.claude/hooks/**` ו-`skills.md` היא שינוי guardrail, ו-CC מוסיפה אילוצים ולא משנה אותם (כלל 32).
+2. **‏`AddressSearch.jsx` נושא את אותו פער a11y ש-#3129 סגר ב-`CitySearch`** — אין `aria-activedescendant`, אין `id` על ה-`<li>`. התיקון הוא אותן שתי שורות. **צריך כרטיס משלו** — ממצא אינו עבודה מאושרת-עצמית.
+3. **‏`.github/workflows/e2e.yml:182` עדיין מצטט את המזהה הפנטום `MEH-360`.** זה הציטוט הנורמטיבי הרביעי והאחרון; הקובץ CC-deny.
+
+### ‏מה שנמצא אגב עבודה ואינו של אף כרטיס
+
+- **‏`actions/checkout@v7` איטי עד כדי timeout על הריפו הזה.** נמדדו 3:05 · 3:55 · 4:59 באותו סשן. פעם אחת ה-`Paths filter` של Deploy נהרג ב-5 דקות **בתוך ה-checkout**, וה-aggregator מיפה `cancelled` ל-FAIL — **אודם שקרי על PR שכל תוכנו קובץ markdown אחד**. אובחן כ-hang (לא קיימת ריצה חדשה יותר לאותו head) ולא כ-supersession, ולכן **הורץ מחדש** — וזה פתח אותו. הבחנה בין השניים היא ההבדל בין תיקון לבין המתנה שלא מסתיימת.
+- **‏ה-E2E ו-סופת המיזוגים אינם תואמים.** ריצת E2E ~20 דקות; staging התחלף כאן כל ~10. כל sync שנכפה ע"י הסופה הורג את ה-E2E ב-supersession, ולכן **PR של frontend עלול לא לקבל אות E2E כלל ביום עמוס** — וה-`E2E gate` יראה `failure` מהביטול בכל פעם. קרה פעמיים ב-#3129.
+- **‏אזהרה על קריאת דיווח הבוט:** ‏`Playwright QA — FAIL` עם *"unknown tests executed"* פירושו **שאף spec לא רץ**, לא ש-spec נפל. ב-`3e945c1` ה-job בוטל בתוך ה-checkout וכל שלב אחריו — כולל "Run E2E tests" — דווח `skipped`.
+
+### ‏תיקון לרשומה קודמת
+
+**הטענה ש-"E2E אדום ברוחב הריפו ב-26/08, כולל על `staging` עצמו" התיישנה במהלך היום.** נמדד: `0f9cfdcc` (18:58), `1388b965` (19:56), `ac77fa5b` (20:08) — כולם `success` על staging. הטענה הייתה נכונה כשנכתבה. **מי שירש אותה בלי למדוד היה פוטר כל אודם E2E כ"לא שלי"** — וזה בדיוק הפטור שאסור לקחת בלי לבדוק.
+
+### החלטות
+
+| החלטה | נימוק |
+| -- | -- |
+| ‏MEH-2147 נסגר בלי שינוי קוד | שני המשתנים מתועדים ב-`backend/.env.example`; השער משווה מול איחוד שלושה קבצים |
+| התיקון נכתב לתיאור הכרטיס, לא כהערה | הפרכה זהה כבר ישבה ב-`HANDOFF.md:648` והכרטיס נשאר Backlog — audit קורא תיאורים (כלל 34) |
+| ‏MEH-2004 דולג ולא שוכפל | ‏PR פתוח של session מקביל על אותם קבצים בדיוק |
+| ‏`AddressSearch` לא תוקן | ‏`NO TOUCH` של הכרטיס; ממצא אינו עבודה מאושרת-עצמית (כלל 24) |
+| ‏#3129 מוזג לפני שה-E2E דיווח | שני שערי החובה ירוקים ו**רצו**; ‏`E2E gate` אינו שער חובה. **לא נטען שה-E2E ירוק** — הוא לא דיווח |
+
 ## 2026-08-26 — ‏Batch 26/08 (MEH-2189 · MEH-1677): שניהם מוזגו; השני רק אחרי שהשער נפתח במפורש
 
 **מוזג:** ‏#3115 `1144a656` (MEH-2189) — **אומת כ-squash** (הורה יחיד + תבנית `<title> (#N)`, נקרא מהקומיט שנחת, MEH-1526). שני שערי החובה ירוקים ו**באמת רצו**: `Backend tests (pytest)`, `Frontend build (Next.js)`, `Frontend unit tests (vitest)`, `Repo guards` — כולם `success`, לא skip-green. הסוקר האדוורסרי: `Must Fix: None`.
