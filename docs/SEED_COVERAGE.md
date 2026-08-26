@@ -43,6 +43,72 @@ with every feature PR and this table does not update itself.
 (chunk B of MEH-1706) — listed here so the gap is visible, not because
 closing them is planned.
 
+## ארכיטיפ×ערוץ — the primary-CTA matrix (MEH-2189)
+
+The table above is the **feature-surface** axis: one flagship business
+(`ruach-hasadeh`) carrying as many features as possible. This section is the
+**perpendicular** axis — one business per outreach archetype, each on a
+different `primary_contact_method`, so every branch of
+`getPrimaryContactHref` (`frontend/lib/contact-method.js:35-81`) renders on a
+live page.
+
+Why a second axis was needed, measured rather than assumed: MEH-1706 chunk B
+(PR #2931, `bc660e9f`) filled the flagship's channel **fields** — `facebook`,
+`external_order_form`, `contact_email` — but left
+`primary_contact_method="whatsapp"` on that row. Filling a field is not
+selecting a channel: `getPrimaryMethod` (`contact-method.js:25-28`) reads only
+`primary_contact_method`, so six of the seven CTA states had still never
+rendered anywhere. Two of them (`facebook`, `external_order`) have no field in
+the registration form at all (`backend/app/routers/auth.py`) and are settable
+only from the dashboard — seeding is the only way they reach a page.
+
+Source of truth: `ARCHETYPE_BUSINESSES` in
+`backend/scripts/seed_demo_producers.py`.
+
+| # | slug | archetype | category | `primary_contact_method` | field that must be filled |
+|---|---|---|---|---|---|
+| 1 | `sdot-zahav` | מאפייה | לחמים ואפייה | `whatsapp` | `phone` |
+| 2 | `machlevet-ramat-yotam` | מחלבה | חלב וגבינות | `phone` | `phone` |
+| 3 | `yekev-karmei-alona` | יקב | יין, בירה ומשקאות | `website` | `website` |
+| 4 | `kaveret-or-habosmat` | כוורת / דבש | דבש | `instagram` | `instagram` |
+| 5 | `beit-habad-sivan` | בית בד | שמנים | `email` | `contact_email` |
+| 6 | `shulchan-aroch-catering` | קייטרינג | מוצרים מוכנים | `external_order` | `external_order_form` |
+| 7 | `arugot-noam` | חוות ירקות | ירקות | `facebook` | `facebook` |
+| 8 | `maadaniyat-ben-shemen` | מעדנייה | בשר | `phone` | **`phone` is NULL — edge** |
+
+Row 1 is `whatsapp` on purpose: it is the regression control. Without it, a
+change that broke the historical path would go unnoticed beside seven new
+states that all looked fine.
+
+Row 8 is the **edge**, and it is the row most likely to be "fixed" by mistake.
+`getPrimaryContactHref` returns `null` for method `phone` when `producer.phone`
+is falsy (`contact-method.js:50-53`), and `PrimaryContactButton.jsx:72` does
+`if (!rawHref) return null`. So the correct rendering is **no CTA at all**, not
+a `tel:` link with nothing after the colon. Do not give this row a phone
+number; the whole point is that the dead-link rule has a live fixture.
+
+Two categories are nearest-match, not exact — there is no `קייטרינג` row and no
+`מעדנייה` row in `seed_data.CATEGORIES`, so those two map to `מוצרים מוכנים`
+and `בשר`. That is a data choice; no category was created (`_seed_one` looks
+categories up by name and aborts if one is missing — it never creates one).
+
+**Teardown.** These eight rows follow the same convention as the ten
+`DEMO_BUSINESSES` rows: none of their names contains any `TEST_NAME_PATTERNS`
+substring, so `--reset` does not sweep them. That is the existing contract for
+demo rows, stated at `seed_demo_producers.py:56-57`, not a new exemption.
+
+**Flags** (the script's real interface — there is no `--refresh` here; that
+flag belongs to `seed_demo_business.py`):
+
+```
+python -m scripts.seed_demo_producers                    # dry-run, no writes
+python -m scripts.seed_demo_producers --confirm          # insert (idempotent)
+python -m scripts.seed_demo_producers --reset --confirm  # sweep TEST rows, then insert
+```
+
+Re-running with `--confirm` and no `--reset` inserts nothing: `_seed_one` skips
+any slug that already exists.
+
 ## Adding a feature
 
 1. Add a seed row for the new surface to `seed_demo_business.py` (or the
