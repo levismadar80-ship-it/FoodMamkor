@@ -286,6 +286,17 @@ function RegisterProducerPageBody() {
   // chrome). Both fold into the single declaration_accepted bool — no new API
   // field. A distinct affirmative act = stronger evidentiary value (Brief Q1.4).
   const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
+  // MEH-2182: the seller dragged the pin, so the point is hers rather than the
+  // provider's. UI-ONLY — it swaps one confirmation line and rides in no
+  // payload. location_precision is untouched: this ticket adds no precision
+  // semantics, and inventing one here would be a schema decision in disguise.
+  // MEH-2182: UI-only, and deliberately NOT part of the saved draft. The
+  // COORDINATES persist (they always did); this flag is only the wording of the
+  // confirmation line, so a seller who reloads mid-signup keeps her dragged
+  // point and sees the plain "location identified" line again. Persisting it
+  // would mean a new draft key for a sentence, and the sentence is not what the
+  // form is for.
+  const [pinAdjusted, setPinAdjusted] = useState(false);
   const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   // MEH-328 Chunks C+D: emailExistsWarning (onBlur) + emailExistsSubmitError
   // (409 on submit) state both removed. Backend's non-upgrade path no longer
@@ -1183,15 +1194,20 @@ function RegisterProducerPageBody() {
                 // is worse than having none: the pin would confidently show the
                 // wrong place. Clearing here is what makes `lat != null` mean
                 // "these coordinates belong to the text currently in the field".
-                onChange={(v) =>
+                onChange={(v) => {
+                  // MEH-2182: the manual-adjust flag dies with the coordinates
+                  // it describes. Deliberately folded into the EXISTING MEH-1808
+                  // null-out rather than given its own reset — two reset paths
+                  // for one fact is how they drift apart.
+                  setPinAdjusted(false);
                   setAndSave((prev) => ({
                     ...prev,
                     address: v,
                     address_city: "",
                     lat: null,
                     lng: null,
-                  }))
-                }
+                  }));
+                }}
                 onSelect={(picked) =>
                   setAndSave((prev) => ({
                     ...prev,
@@ -1242,9 +1258,11 @@ function RegisterProducerPageBody() {
                   <p className="text-sm text-primary inline-flex items-center gap-1.5 text-start">
                     <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
                     <span>
-                      {t("auth.register.producer.fields.address_confirmed", {
-                        location: addressConfirmLabel,
-                      })}
+                      {pinAdjusted
+                        ? t("auth.register.producer.fields.address_pin_adjusted")
+                        : t("auth.register.producer.fields.address_confirmed", {
+                            location: addressConfirmLabel,
+                          })}
                     </span>
                   </p>
                   {/* MEH-2181: the picked address resolved to a different town
@@ -1284,8 +1302,36 @@ function RegisterProducerPageBody() {
                       name={form.producer_name || form.address}
                       zoom={ADDRESS_CONFIRM_ZOOM}
                       showNavigation={false}
+                      // MEH-2182: two more opt-in props, same shape as the two
+                      // above. A geocoder lands within a street or two; only the
+                      // seller knows which gate is hers. The drag moves the
+                      // POINT and nothing else — the address TEXT is untouched
+                      // on purpose, so no reverse-geocode fires and the field
+                      // never rewrites itself under her.
+                      //
+                      // a11y, stated plainly rather than assumed away: dragging
+                      // is a pointer gesture with no keyboard equivalent, so
+                      // WCAG 2.2 SC 2.5.7 (Dragging Movements) is satisfied only
+                      // because the drag is an ENHANCEMENT — typing a more
+                      // precise address and re-picking reaches the same outcome
+                      // without any drag, and that path is unchanged. If the pin
+                      // ever becomes the only way to set a location, this needs
+                      // a tap-to-place alternative.
+                      draggableMarker
+                      onMarkerDragEnd={({ lat, lng }) => {
+                        setPinAdjusted(true);
+                        setAndSave((prev) => ({ ...prev, lat, lng }));
+                      }}
                     />
                   </div>
+                  {/* MEH-2182: says the pin is draggable, because nothing else
+                      on a static-looking confirmation map does. */}
+                  <p
+                    data-testid="register-pin-drag-hint"
+                    className="text-xs text-fg-muted mt-2 text-start"
+                  >
+                    {t("auth.register.producer.fields.address_pin_drag_hint")}
+                  </p>
                 </div>
               ) : (
                 form.address.trim() !== "" && (
@@ -1302,8 +1348,21 @@ function RegisterProducerPageBody() {
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
                 Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
-                no backend field, no location rows; on "yes" the approved copy
-                refers the owner to the dashboard LocationsEditor (chunk 4a). */}
+                no backend field and no location rows; the copy refers the owner
+                to the dashboard LocationsEditor (chunk 4a).
+
+                MEH-1768: the line is now PERMANENT rather than revealed by the
+                checkbox. Behind the tick it answered a question the owner had
+                already decided — the reassurance is what makes the tick safe, so
+                it has to be readable BEFORE she ticks. One renderer, one string:
+                the old conditional `multi_location_yes_copy` is gone rather than
+                kept alongside, so the copy cannot appear twice.
+
+                Styling is this step's own hint recipe, `:1243`
+                (`text-xs text-fg-muted mt-1 text-start` on the
+                `address_optional_hint` paragraph), not the tinted callout the
+                conditional line used — a permanent hint reads as a hint. `ms-6`
+                is kept so it aligns under the label text rather than the box. */}
             <div className="pt-1">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
@@ -1315,15 +1374,12 @@ function RegisterProducerPageBody() {
                 />
                 {t("auth.register.producer.fields.multi_location_label")}
               </label>
-              {hasMultipleLocations && (
-                <p
-                  data-testid="register-multi-location-copy"
-                  className="mt-2 ms-6 flex items-start gap-1.5 rounded-md bg-primary/5 px-3 py-2 text-xs text-fg-muted"
-                >
-                  <MapPin size={14} weight="fill" className="mt-0.5 shrink-0 text-primary" />
-                  <span>{t("auth.register.producer.fields.multi_location_yes_copy")}</span>
-                </p>
-              )}
+              <p
+                data-testid="register-multi-location-copy"
+                className="text-xs text-fg-muted mt-1 ms-6 text-start"
+              >
+                {t("auth.register.producer.fields.multi_location_hint")}
+              </p>
             </div>
 
             {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a

@@ -81,14 +81,34 @@ vi.mock("@/components/ProducerOAuthButtons", () => ({ default: () => <div data-t
 // that these two props exist and default correctly) is pinned separately in
 // MiniMap.test.jsx.
 vi.mock("@/components/MiniMap", () => ({
-  default: ({ lat, lng, zoom, showNavigation }) => (
+  // MEH-2182: the stub surfaces `draggableMarker` and exposes a button that
+  // fires `onMarkerDragEnd`, so a test can drive the drag deterministically.
+  // Leaflet's real drag is not the subject here — what the wizard DOES with the
+  // resulting coordinates is. The prop passthrough itself is asserted against
+  // the real component in MiniMap.test.jsx.
+  default: ({ lat, lng, zoom, showNavigation, draggableMarker, onMarkerDragEnd }) => (
     <div
       data-testid="mini-map"
       data-lat={String(lat)}
       data-lng={String(lng)}
       data-zoom={String(zoom)}
       data-show-navigation={String(showNavigation)}
-    />
+      data-draggable-marker={String(draggableMarker)}
+    >
+      {/* MEH-2182: mirrors the real component, which binds `dragend` ONLY when
+          `draggableMarker` is set — so a consumer that stops opting in loses
+          the affordance here too, and every test that drags goes red instead of
+          quietly clicking a no-op button. */}
+      {draggableMarker && onMarkerDragEnd ? (
+        <button
+          type="button"
+          data-testid="mini-map-drag-pin"
+          onClick={() => onMarkerDragEnd({ lat: 32.1111, lng: 34.2222 })}
+        >
+          drag
+        </button>
+      ) : null}
+    </div>
   ),
 }));
 
@@ -524,24 +544,54 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 });
 
 // MEH-1422 (MEH-1388 chunk 4b): the informational multi-location intake toggle
-// on DETAILS. Renders the approved referral copy only on "yes", and — critically
-// — is UI-only: its value must never leak into the /auth/register/producer body
-// (no backend field). The next-intl mock returns key paths, so assertions key off
-// the locked-copy i18n KEYS, not the Hebrew strings.
+// on DETAILS. UI-only: its value must never leak into the
+// /auth/register/producer body (no backend field). The next-intl mock returns
+// key paths, so assertions key off the locked-copy i18n KEYS, not the Hebrew
+// strings.
+//
+// MEH-1768 changed WHEN the helper renders: always, not only on "yes". Behind
+// the tick it answered a question the owner had already decided.
 describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", () => {
-  it("shows the referral copy only when the toggle is on", async () => {
+  // The behaviour change itself. Against the pre-MEH-1768 render this first
+  // assertion is the one that goes red: the helper was absent until the box was
+  // ticked, which is exactly the state a hesitating owner is in.
+  it("shows the helper with the box UNCHECKED, and keeps it shown when ticked", async () => {
     await renderWizard();
     await fillAccountToDetails();
     const toggle = screen.getByTestId("register-multi-location-toggle");
-    expect(toggle).toBeInTheDocument();
+    expect(toggle).not.toBeChecked();
     expect(screen.getByText(`${K}.fields.multi_location_label`)).toBeInTheDocument();
-    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
-    fireEvent.click(toggle); // yes
+
     expect(screen.getByTestId("register-multi-location-copy")).toHaveTextContent(
-      `${K}.fields.multi_location_yes_copy`,
+      `${K}.fields.multi_location_hint`,
     );
-    fireEvent.click(toggle); // no
-    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
+
+    // Permanence, in both directions — a helper that vanished on tick, or on
+    // un-tick, would still satisfy a single unchecked-state assertion.
+    fireEvent.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
+  });
+
+  // "Exactly once, never twice" is an acceptance criterion in its own right:
+  // keeping the old conditional line ALONGSIDE the permanent one would pass
+  // every assertion above and double the copy on tick. Counted, not presence-
+  // checked — a presence assertion cannot see a duplicate.
+  it("renders the copy exactly once in both toggle states, and drops the old key", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    const toggle = screen.getByTestId("register-multi-location-toggle");
+
+    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
+    fireEvent.click(toggle);
+    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
+
+    // The retired key must not render anywhere — the mock echoes key paths, so
+    // its presence would be visible text if the old branch survived.
+    expect(screen.queryByText(`${K}.fields.multi_location_yes_copy`)).toBeNull();
   });
 
   it("is informational only — its value is NOT in the submit payload", async () => {
@@ -1014,6 +1064,105 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
 // from landing in `city` (CitySearch owns that value). These tests pin both
 // halves — that it appears when the towns disagree, and that it stays absent
 // in the three states where it would be noise.
+// MEH-2182 — draggable confirmation pin. The seller, not the geocoder, has the
+// last word on where her gate is. The drag moves the POINT only: the address
+// text must not be rewritten (no reverse-geocode), and nothing new rides the
+// payload.
+//
+// Failing-by-construction, all four measured against this block (65 green at
+// control), and each reddens a DIFFERENT subset — no single edit satisfies them
+// all, which is what makes them evidence rather than decoration:
+//   • drop `draggableMarker` + `onMarkerDragEnd` from the confirm map → 5 red
+//   • drop `setPinAdjusted(false)` from the address onChange       → 1 red (reset)
+//   • render the confirmed line without the `pinAdjusted` branch   → 1 red (swap)
+//   • delete the drag-hint paragraph                                → 1 red (hint)
+describe("RegisterProducerClient — draggable confirmation pin (MEH-2182)", () => {
+  // DETAILS is filled COMPLETELY (name + phone too), because the payload test
+  // below has to advance past this step — and the pick comes LAST, since typing
+  // into the address field nulls the coordinates by design (MEH-1808).
+  async function reachConfirmedAddress() {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "זכרון יעקב" } });
+    fireEvent.click(screen.getByTestId("address-pick"));
+    await screen.findByTestId("register-address-confirm");
+  }
+
+  it("opts the confirmation map into a draggable marker, and shows the hint", async () => {
+    await reachConfirmedAddress();
+    expect(screen.getByTestId("mini-map").dataset.draggableMarker).toBe("true");
+    expect(screen.getByTestId("register-pin-drag-hint")).toHaveTextContent(
+      `${K}.fields.address_pin_drag_hint`,
+    );
+  });
+
+  it("a drag writes the new coordinates and swaps the confirmation line", async () => {
+    await reachConfirmedAddress();
+    const map = screen.getByTestId("mini-map");
+    expect(map.dataset.lat).toBe("32.5731");
+
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+
+    expect(screen.getByTestId("mini-map").dataset.lat).toBe("32.1111");
+    expect(screen.getByTestId("mini-map").dataset.lng).toBe("34.2222");
+    expect(screen.getByTestId("register-address-confirm")).toHaveTextContent(
+      `${K}.fields.address_pin_adjusted`,
+    );
+  });
+
+  it("the drag does NOT rewrite the address text", async () => {
+    await reachConfirmedAddress();
+    const before = screen.getByTestId("register-details-address").value;
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+    expect(screen.getByTestId("register-details-address")).toHaveValue(before);
+  });
+
+  it("typing over the address resets the adjusted state along with the coordinates", async () => {
+    await reachConfirmedAddress();
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+    await screen.findByTestId("register-address-confirm");
+
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "רחוב אחר 9" },
+    });
+    // The coordinates went (MEH-1808), so the whole confirm block goes with them.
+    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+
+    // ...and re-picking shows the ORIGINAL line again, not the adjusted one —
+    // which is what proves the flag actually reset rather than merely unmounting.
+    fireEvent.click(screen.getByTestId("address-pick"));
+    const confirm = await screen.findByTestId("register-address-confirm");
+    expect(confirm).toHaveTextContent(`${K}.fields.address_confirmed`);
+    expect(confirm).not.toHaveTextContent(`${K}.fields.address_pin_adjusted`);
+  });
+
+  it("adds nothing to the submit payload", async () => {
+    await reachConfirmedAddress();
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+
+    fireEvent.click(nextBtn());
+    fireEvent.click(await screen.findByTestId("pick-category"));
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    // The dragged point rides in lat/lng, which already existed...
+    expect(body.lat).toBe(32.1111);
+    expect(body.lng).toBe(34.2222);
+    // ...and the UI-only flag does not ride at all, under any spelling.
+    expect(body).not.toHaveProperty("pinAdjusted");
+    expect(body).not.toHaveProperty("pin_adjusted");
+    expect(body).not.toHaveProperty("location_precision");
+  });
+});
+
 describe("RegisterProducerClient — address/city mismatch notice (MEH-2181)", () => {
   async function reachDetails() {
     await renderWizard();
