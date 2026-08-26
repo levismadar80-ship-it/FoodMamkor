@@ -464,6 +464,13 @@ def _upload_hero(slug: str, url: str) -> str | None:
             public_id=slug,
             overwrite=True,
             resource_type="image",
+            # MEH-2172: cap the stored original, exactly as every real upload
+            # endpoint already does (`routers/upload.py:134`). Unsplash serves
+            # full-resolution originals — one demo hero landed at 5886x3924 /
+            # 2.43MB (Cloudinary ticket #383070) for a slot that never renders
+            # above 1200px. `crop: "limit"` only ever shrinks: a source already
+            # narrower than 1200 is stored untouched, so this cannot upscale.
+            transformation=[{"width": 1200, "crop": "limit"}],
         )
         return result["secure_url"]
     except Exception as exc:  # noqa: BLE001 — image is best-effort, never fatal
