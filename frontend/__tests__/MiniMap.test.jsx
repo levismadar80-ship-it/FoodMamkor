@@ -103,15 +103,33 @@ vi.mock("react-leaflet", async () => {
   return {
     MapContainer,
     TileLayer: ({ attribution }) => <div data-testid="tile-layer" data-attribution={attribution} />,
-    Marker: ({ children, title, icon, eventHandlers }) => (
+    // MEH-2182: `draggable` and a `dragend` binding are surfaced the same way
+    // `direction` was for the tooltip below — `String(draggable)` keeps the
+    // undefined (nobody opted in) case assertable instead of dropping the
+    // attribute, which is the state four of the five consumers are in.
+    Marker: ({ children, title, icon, eventHandlers, draggable }) => (
       <div
         data-testid="marker"
         data-title={title}
         data-icon-class={icon?.options?.className ?? ""}
         data-has-click={String(Boolean(eventHandlers?.click))}
+        data-draggable={String(draggable)}
+        data-has-dragend={String(Boolean(eventHandlers?.dragend))}
         onClick={eventHandlers?.click}
       >
         {children}
+        {eventHandlers?.dragend ? (
+          <button
+            type="button"
+            data-testid="marker-dragend"
+            onClick={(e) => {
+              e.stopPropagation();
+              eventHandlers.dragend({
+                target: { getLatLng: () => ({ lat: 31.7683, lng: 35.2137 }) },
+              });
+            }}
+          />
+        ) : null}
       </div>
     ),
     // MEH-1682: the stub used to swallow `direction` and `offset`, so the
@@ -540,5 +558,90 @@ describe("MiniMap — opt-in zoom + showNavigation (MEH-1808)", () => {
     // the map itself still renders — this prop hides the CTAs, not the map
     expect(screen.getByTestId("map")).toBeInTheDocument();
     expect(screen.getByTestId("marker")).toBeInTheDocument();
+  });
+});
+
+// MEH-2182 — the opt-in draggable marker, from the MiniMap side.
+//
+// The register wizard is the only caller that asks for it. The four other
+// mounts (producer detail ×2, the admin preview, the fullscreen overlay) pass
+// nothing, and the first test below is the one that pins their non-regression:
+// `draggable` must be *undefined*, not `false` — a present-and-false prop is
+// the MEH-1633 / MEH-1659 shape, and react-leaflet's Marker reads it either
+// way, so only the absent form proves the opt-out path is untouched.
+//
+// Failing-by-construction (both directions, run before this block was trusted):
+//   • hardcode `draggable` (drop the `|| undefined`) → test 1 goes red on
+//     "false" while tests 2–4 stay green.
+//   • drop the `draggableMarker ?` arm of `eventHandlers` → tests 2–4 go red
+//     (no dragend to fire, and the click handler comes back) while 1 stays green.
+//   • revert `coordKeyPart` to `${lat}-${lng}` → only test 5 goes red.
+// No single edit reddens the whole block, which is what makes them evidence.
+describe("MiniMap — opt-in draggable marker (MEH-2182)", () => {
+  beforeEach(() => {
+    leafletStubs.maps.length = 0;
+  });
+
+  it("without the prop the marker carries NO draggable and NO dragend", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" />);
+    const marker = screen.getByTestId("marker");
+    expect(marker.dataset.draggable).toBe("undefined");
+    expect(marker.dataset.hasDragend).toBe("false");
+    // ...and the tap-to-expand handler the untouched consumers rely on is still
+    // bound, so this is a pure addition rather than a swap.
+    expect(marker.dataset.hasClick).toBe("true");
+  });
+
+  it("draggableMarker binds dragend and hands the caller the dropped point", () => {
+    const onMarkerDragEnd = vi.fn();
+    render(
+      <MiniMap
+        lat={32.5}
+        lng={34.9}
+        name="הבית של רותי"
+        draggableMarker
+        onMarkerDragEnd={onMarkerDragEnd}
+      />,
+    );
+    const marker = screen.getByTestId("marker");
+    expect(marker.dataset.draggable).toBe("true");
+    expect(marker.dataset.hasDragend).toBe("true");
+
+    fireEvent.click(screen.getByTestId("marker-dragend"));
+    // The coordinates come off the Leaflet event target, not off the props —
+    // reading them from props would report the OLD point after every drag.
+    expect(onMarkerDragEnd).toHaveBeenCalledTimes(1);
+    expect(onMarkerDragEnd).toHaveBeenCalledWith({ lat: 31.7683, lng: 35.2137 });
+  });
+
+  it("a draggable marker does not also expand the map on click", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" draggableMarker />);
+    expect(screen.getByTestId("marker").dataset.hasClick).toBe("false");
+  });
+
+  it("dragging without a callback does not throw", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" draggableMarker />);
+    expect(() => fireEvent.click(screen.getByTestId("marker-dragend"))).not.toThrow();
+  });
+
+  it("the container survives a coordinate change while draggable, and is rebuilt without it", () => {
+    // Draggable: the caller owns the point, so a coordinate change must NOT
+    // remount — a remount mid-drag tears the map down under the seller's finger.
+    const { rerender, unmount } = render(
+      <MiniMap lat={32.5} lng={34.9} name="הבית של רותי" draggableMarker />,
+    );
+    expect(leafletStubs.maps).toHaveLength(1);
+    rerender(<MiniMap lat={31.7} lng={35.2} name="הבית של רותי" draggableMarker />);
+    expect(leafletStubs.maps).toHaveLength(1);
+    unmount();
+
+    // Opt-out: the remount-on-move behaviour every other consumer has today is
+    // unchanged. Without this half the test above would pass on a MiniMap that
+    // simply never remounts, which is a different (and worse) component.
+    leafletStubs.maps.length = 0;
+    const second = render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" />);
+    expect(leafletStubs.maps).toHaveLength(1);
+    second.rerender(<MiniMap lat={31.7} lng={35.2} name="הבית של רותי" />);
+    expect(leafletStubs.maps).toHaveLength(2);
   });
 });
