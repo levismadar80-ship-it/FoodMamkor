@@ -205,25 +205,50 @@ describe("MEH-2130 — param names are declared once per surface", () => {
     expect(buildChipParams({ vegan: false })).toEqual({});
   });
 
-  // 🔴 MEH-2133 PIN SITE 3 of 3 — the test that holds the defect in place.
-  // MEH-2133 flips this case to assert the CORRECT behaviour; it is not deleted
-  // (a removed test is a removed guarantee, and the axis still needs one).
-  // 🔴 PINNED DEFECT, not a design choice. Full reasoning on the axis in
-  // lib/filter-taxonomy.js: /map lists no_added_sugar as a chip and renders it
-  // in FilterSheet, but chipStateToParams never emitted its param — so toggling
-  // it returns the UNFILTERED set. MEH-2130 preserves /map result sets, so the
-  // gap is declared rather than fixed. This test is here so that removing
-  // `mapParam: false` is a deliberate act with a failing test attached, and so
-  // the next reader finds the defect instead of rediscovering it.
-  it("PINNED: /map does not emit no_added_sugar, while /producers does", () => {
-    expect(mapEmitsParam("no_added_sugar")).toBe(false);
+  // This case was PIN SITE 3 of 3 under MEH-2130, asserting the defect. It is
+  // FLIPPED to assert the correct behaviour, not deleted: a removed test is a
+  // removed guarantee, and this axis is the one that demonstrably lacked one.
+  // (The pin's ticket identifier is intentionally not repeated anywhere in
+  // source — its grep was the pin-finding mechanism, and leaving hits behind
+  // would make a live pin indistinguishable from a note about one.)
+  //
+  // The defect: /map listed `no_added_sugar` in TOGGLE_CHIPS and FilterSheet
+  // rendered it, while chipStateToParams emitted nothing — so toggling the chip
+  // returned the UNFILTERED set, silently. Every assertion below is the exact
+  // inverse of what it asserted while pinned.
+  it("/map emits no_added_sugar, the same as /producers (was pin 3 of 3)", () => {
+    expect(mapEmitsParam("no_added_sugar")).toBe(true);
     expect(TOGGLE_CHIPS.map((c) => c.key)).toContain("no_added_sugar");
-    expect(chipStateToParams({ categoryKeys: [], no_added_sugar: true }, [])).toEqual({});
-    // The control that gives the assertion above its meaning: a sibling diet
-    // axis on the same surface DOES emit. Without this line, a chipStateToParams
-    // that returned {} for everything would pass the assertion above.
+    expect(chipStateToParams({ categoryKeys: [], no_added_sugar: true }, [])).toEqual({
+      no_added_sugar: true,
+    });
+    // The EXCLUSION witness, and the reason this is not just a shape check: a
+    // chipStateToParams that returned `{ no_added_sugar: true }` for every input
+    // would satisfy the line above. Turning the chip OFF must emit nothing, and
+    // a sibling axis must be unaffected either way.
+    expect(chipStateToParams({ categoryKeys: [], no_added_sugar: false }, [])).toEqual({});
     expect(chipStateToParams({ categoryKeys: [], vegan: true }, [])).toEqual({ vegan: true });
     expect(buildChipParams({ no_added_sugar: true })).toEqual({ no_added_sugar: true });
+  });
+
+  // The regression assert for the OTHER half of the original card. The home
+  // deep-link (`?no_added_sugar=1`) was already fixed by PR #3020 and is
+  // asserted here so the round-trip cannot silently regress alongside the /map
+  // change. This is explicitly NOT a claim that this PR fixed it.
+  it("the home deep-link param round-trips (already correct before this change)", () => {
+    expect(homeParamFor("no_added_sugar")).toBe("no_added_sugar");
+    expect(buildChipParams({ no_added_sugar: true })).toEqual({ no_added_sugar: true });
+  });
+
+  // The absence assertion, in the suite rather than only in a grep.
+  // The fix IS the removal of a flag, so the thing worth guarding is that no
+  // axis quietly reacquires it. A grep in a PR body cannot fail next month.
+  it("no /map axis suppresses its param any more", () => {
+    const suppressed = TOGGLE_CHIPS.map((c) => c.key).filter((k) => !mapEmitsParam(k));
+    expect(suppressed, `axes still suppressed on /map: ${suppressed.join(", ")}`).toEqual([]);
+    // Control: mapEmitsParam must be reading something real. If TOGGLE_CHIPS
+    // were empty the filter above would be trivially satisfied.
+    expect(TOGGLE_CHIPS.length).toBeGreaterThan(5);
   });
 
   it("every OTHER /map axis emits its param", () => {
