@@ -584,6 +584,16 @@ export default function MiniMap({
           aria-label={t("expanded_aria")}
           className="fixed inset-0 z-[1150] bg-white"
         >
+          {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
+              here too, so the overlay marker is draggable as well — deliberately.
+              This is NOT inert: the expand button at :564 is unconditional
+              (`showNavigation` gates only the nav pills below), so the overlay is
+              one tap away even for the register caller that passes
+              `showNavigation={false}`. A fullscreen map is the better surface for
+              placing a pin precisely, and both surfaces write through the same
+              callback, so the two cannot disagree. Covered by the (open ×
+              draggable) tests in MiniMap.test.jsx — dropping the forwarding here
+              reddens exactly one of them. */}
           <MapSurface {...surfaceProps} interactive mapKey={`overlay-${coordKeyPart}-${points.length}`} />
           <button
             type="button"

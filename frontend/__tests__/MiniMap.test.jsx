@@ -624,6 +624,54 @@ describe("MiniMap — opt-in draggable marker (MEH-2182)", () => {
     expect(() => fireEvent.click(screen.getByTestId("marker-dragend"))).not.toThrow();
   });
 
+  // The open half of the reveal. The automated reviewer spotted that
+  // `surfaceProps` forwards the two props to the OVERLAY as well, and called it
+  // inert because `showNavigation={false}` supposedly hides the expand button.
+  // That reason is false — `showNavigation` gates only the nav pills
+  // (`MiniMap.jsx:605`); the expand button (`:564`) is unconditional, and the
+  // register QA screenshots show it sitting on the confirmation map. So the
+  // overlay is one tap away and its marker really is draggable, which makes
+  // this the (open × draggable) cell of the conditional-UI matrix — the exact
+  // shape MEH-1583 left orphaned by counting two lists instead of the cells.
+  it("the OVERLAY marker is draggable too, and its drag reaches the caller", () => {
+    const onMarkerDragEnd = vi.fn();
+    render(
+      <MiniMap
+        lat={32.5}
+        lng={34.9}
+        name="הבית של רותי"
+        showNavigation={false}
+        draggableMarker
+        onMarkerDragEnd={onMarkerDragEnd}
+      />,
+    );
+
+    // The expand affordance survives showNavigation={false} — assert it rather
+    // than assume it, since that assumption is what the review got wrong.
+    const expandButtons = screen.getAllByLabelText("הגדלת המפה למסך מלא");
+    expect(expandButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(expandButtons[0]);
+    const dialog = screen.getByRole("dialog");
+    expect(screen.getAllByTestId("map")).toHaveLength(2);
+
+    const overlayMarker = within(dialog).getByTestId("marker");
+    expect(overlayMarker.dataset.draggable).toBe("true");
+    expect(overlayMarker.dataset.hasDragend).toBe("true");
+
+    fireEvent.click(within(dialog).getByTestId("marker-dragend"));
+    expect(onMarkerDragEnd).toHaveBeenCalledWith({ lat: 31.7683, lng: 35.2137 });
+  });
+
+  it("without the prop the overlay marker is NOT draggable either", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" />);
+    fireEvent.click(screen.getAllByLabelText("הגדלת המפה למסך מלא")[0]);
+    const dialog = screen.getByRole("dialog");
+    const overlayMarker = within(dialog).getByTestId("marker");
+    expect(overlayMarker.dataset.draggable).toBe("undefined");
+    expect(overlayMarker.dataset.hasDragend).toBe("false");
+  });
+
   it("the container survives a coordinate change while draggable, and is rebuilt without it", () => {
     // Draggable: the caller owns the point, so a coordinate change must NOT
     // remount — a remount mid-drag tears the map down under the seller's finger.
