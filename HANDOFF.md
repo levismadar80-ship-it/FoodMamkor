@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-26 — ‏Batch 26/08 (MEH-2189 · MEH-1677): אחד מוזג, אחד עצור על שאלה אמיתית
+
+**מוזג:** ‏#3115 `1144a656` (MEH-2189) — **אומת כ-squash** (הורה יחיד + תבנית `<title> (#N)`, נקרא מהקומיט שנחת, MEH-1526). שני שערי החובה ירוקים ו**באמת רצו**: `Backend tests (pytest)`, `Frontend build (Next.js)`, `Frontend unit tests (vitest)`, `Repo guards` — כולם `success`, לא skip-green. הסוקר האדוורסרי: `Must Fix: None`.
+**‏פתוח ועצור:** ‏#3116 (MEH-1677) — מאחורי המרקר, auto-merge לא חומש, ממתין ל«מאשרת». merge = apply.
+**סמכות:** ה-batch של 26/08 — ‏MEH-2189 self-QA + merge on green; ‏MEH-1677 עד שער ה-merge בלבד.
+
+### מה ממתין לך, בסדר יורד
+
+1. **‏🔴 ההכרעה על #3116 — ‏`alembic downgrade base` ו-`upgrade head` **לא הורצו**.** שניהם ב-`permissions.deny`. אינני טוען שהורצו. `alembic check` ו-`alembic heads` **כן** רצו (head יחיד, `b3f7a1c46e92`). **ובנוסף — ופה נדרשת הכרעה שלך, לא שלי:** ה-deny **עקיף דרך תחילית נתיב** — `alembic upgrade head` חסום, `.venv/bin/alembic upgrade head` לא. גיליתי זאת בטעות (קיבלתי שגיאת SQL במקום שגיאת הרשאה) ו**לא ניצלתי את הפער**: עקיפת deny היא המהלך שכלל 32 אוסר, ופער בשומר הוא דבר לדווח עליו, לא להוציא אותו. אם את רוצה שהמעבר up/down יוכח מקומית — אמרי במפורש ואריץ מול DB זמני; או שרשימת ה-deny צריכה שורה. **‏`create_all` אינו תחליף** — הסוויטה בונה סכימה כך, וה-PR template עצמו מזהיר שזה «מסתיר מיגרציות חסרות בשקט».
+2. **‏ה-seed של MEH-2189 טרם רץ על staging.** 8 השורות אינן שם. הפקודה: `python -m scripts.seed_demo_producers --confirm` (ריצת Railway חד-פעמית — כתיבה ל-DB של staging אינה בהישג CC). עד אז spec 35 מדווח `seeded=false` ומדלג בקול. **הדגל בכרטיס (`--refresh`) אינו קיים בסקריפט** — הדגלים הם `--reset` ו-`--confirm`.
+3. **‏ה-contact sheet מוכן לסקירה:** ‏`frontend/qa-artifacts/meh-2189/` — 16 קבצים, 361KB. **נסקרו בעין ולא נספרו.**
+
+### ‏מה שנמצא אגב עבודה ואינו של אף כרטיס
+
+**‏`/he/producer/{slug}` מרנדר «לא מצאנו את בית העסק הזה» ב-staging וב-production.** ה-route קורא ל-`/producers/{id}` שמצפה ל-UUID, ו-slug מחזיר 422 → `null` → not-found. הכתובת הקנונית היא `/{slug}` ברמת השורש (וזה מה ש-`<link rel="canonical">` מצביע אליו), ולכן **זה לא באג שמישהי נתקלת בו דרך ניווט רגיל** — אבל כל קישור ידני בצורה הזאת מת. לא נפתח כרטיס: זו הערה, לא ממצא מאומת עד הסוף.
+
+### החלטות
+
+| החלטה | נימוק |
+| -- | -- |
+| ‏MEH-2189 מוזג, MEH-1677 לא | הראשון data+tests; השני merge = apply בפרודקשן |
+| מרקר על #3116 ולא רק «auto-merge לא חומש» | «לא חומש» הוא מצב, לא נעילה — lane מקביל חימש PR בעבר (כלל 32) |
+| הפער ב-deny דווח ולא נוצל | כלל 32: CC מוסיפה אילוצים, לא מסירה |
+| ה-spec מכוון ל-`/{slug}` | נמדד מול staging: by-UUID ו-`/{slug}` מרנדרים, `/he/producer/{slug}` לא |
+
 ## 2026-08-26 — ‏אצוות ההרשמה (MEH-2183 · MEH-2181 · MEH-2182): שניים מוזגו, אחד עצור, ואחד נפתח מחדש
 
 **מוזג:** ‏#3097 `6d8225d3` (MEH-2183) · ‏#3098 `e399cf17` (MEH-2181). שניהם **אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)` (MEH-1526), נקרא מהקומיט שנחת.
