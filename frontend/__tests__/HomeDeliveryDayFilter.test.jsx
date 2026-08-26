@@ -12,10 +12,12 @@ import api from "@/lib/api";
 // from a string to a SET, and the multi-select cases were added on top.
 // Hook: ?day= round-trip (MEH-1083 pattern), day-only URLs dropped (invisible-
 // filter guard), day falls with its city, API params carry delivery_day.
-// Components: DeliveryDayRow renders ONLY with an active city (progressive
-// disclosure — the ticket's FilterSheet placement was corrected in Phase 0:
-// FilterSheet is /map-only and /map is out of scope); the chip label swaps to
-// "משלוח ל{city} · יום {day}" when a day is active.
+// MEH-2186 — DeliveryDayRow became ONE dropdown chip + an inline day panel,
+// and ActiveFilterChip became LOCATION-ONLY. The hook half of this file is
+// untouched by that (the state machine, the URL contract and the API params
+// are byte-identical); everything below "DeliveryDayRow chip + panel" is the
+// new presentation. The day value now appears exactly once on screen, on the
+// day chip, and the location chip no longer knows about days at all.
 
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -26,6 +28,17 @@ vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: localeRouterPush, replace: vi.fn() }),
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
+// MEH-2186: DeliveryDayRow now imports Phosphor glyphs. Enumerated by hand,
+// not a Proxy — a Proxy's getter runs during import and dereferences the JSX
+// runtime before vitest has initialised it (same reason as the equivalent mock
+// in ProducersClientDayAxis.test.jsx).
+vi.mock("@phosphor-icons/react", () => ({
+  CalendarBlank: (p) => <span {...p} />,
+  CaretDown: (p) => <span {...p} />,
+  CaretUp: (p) => <span {...p} />,
+  MapPin: (p) => <span {...p} />,
+  X: (p) => <span {...p} />,
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () => (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k),
 }));
@@ -213,123 +226,266 @@ describe("useHomePage delivery-day filter (MEH-1645)", () => {
   });
 });
 
-describe("DeliveryDayRow + chip label (MEH-1645)", () => {
-  // MEH-1771: was "renders nothing without an active city". The row is now a
-  // permanent anchor (Baymard promoted-filters); without a city it renders a
-  // muted ghost row + hint whose pills are aria-disabled but still clickable.
-  it("renders the GHOST row without a city: hint + aria-disabled pills (MEH-1771)", () => {
+describe("DeliveryDayRow chip + panel (MEH-2186)", () => {
+  /** The panel's pills — the count the ticket's verification step pins. */
+  const pillCount = () =>
+    document.querySelectorAll('[data-testid^="delivery-day-pill-"]').length;
+
+  // ---- closed state ----
+
+  it("CLOSED with no city: one idle chip, zero pills, nothing aria-disabled", () => {
     render(<DeliveryDayRow cityActive={null} daysActive={[]} onSelectDay={vi.fn()} />);
     const row = screen.getByTestId("delivery-day-row");
-    expect(row).toBeInTheDocument();
     expect(row).toHaveAttribute("data-ghost", "true");
-    expect(row.querySelectorAll("button")).toHaveLength(7);
 
-    const hint = screen.getByTestId("delivery-day-hint");
-    expect(hint).toHaveTextContent("home.producers.day_row_hint");
-
-    const pill = screen.getByTestId("delivery-day-pill-שישי");
-    expect(pill).toHaveAttribute("aria-disabled", "true");
-    // a11y: the hint is what explains the disabled state — it must be linked.
-    expect(pill).toHaveAttribute("aria-describedby", hint.id);
-    // aria-disabled, NOT the disabled attribute: the pill stays clickable so
-    // the click can open the LocationModal (MDN aria-disabled / Smashing).
-    expect(pill).not.toBeDisabled();
+    const chip = screen.getByTestId("delivery-day-chip");
+    expect(chip).toHaveTextContent("home.producers.day_chip_idle");
+    expect(chip).toHaveAttribute("aria-expanded", "false");
+    // MEH-2186: the MEH-1771 ghost pills are gone, and with them the
+    // aria-disabled-but-clickable contradiction this ticket exists to close.
+    expect(pillCount()).toBe(0);
+    expect(row.querySelector("[aria-disabled]")).toBeNull();
+    expect(screen.queryByTestId("delivery-day-panel")).not.toBeInTheDocument();
+    // No days → no ✕.
+    expect(screen.queryByTestId("delivery-day-clear")).not.toBeInTheDocument();
   });
 
-  it("a ghost pill still forwards its click (routes to the LocationModal)", () => {
-    const onSelectDay = vi.fn();
-    render(<DeliveryDayRow cityActive={null} daysActive={[]} onSelectDay={onSelectDay} />);
-    fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
-    expect(onSelectDay).toHaveBeenCalledWith("שישי");
-  });
-
-  it("a ghost row never marks a day as pressed, even if daysActive leaks in", () => {
-    render(<DeliveryDayRow cityActive={null} daysActive={["שישי"]} onSelectDay={vi.fn()} />);
-    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "false");
-  });
-
-  it("with a city the row is NOT ghost: no hint, pills enabled (no MEH-1645 regression)", () => {
+  it("CLOSED with a city and no days: still exactly one chip and zero pills", () => {
     render(<DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />);
     expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "false");
-    expect(screen.queryByTestId("delivery-day-hint")).not.toBeInTheDocument();
-    const pill = screen.getByTestId("delivery-day-pill-שישי");
-    expect(pill).toHaveAttribute("aria-disabled", "false");
-    expect(pill).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByTestId("delivery-day-chip")).toHaveTextContent(
+      "home.producers.day_chip_idle",
+    );
+    expect(pillCount()).toBe(0);
   });
 
-  it("renders all 7 canonical pills with a city, marks the active day, forwards clicks", () => {
+  // ---- the no-city route (MEH-1771 precondition, MEH-1825 one handler) ----
+
+  it("chip tap with NO city calls onSelectDay (the surface's LocationModal route)", () => {
     const onSelectDay = vi.fn();
-    render(<DeliveryDayRow cityActive="חיפה" daysActive={["שישי"]} onSelectDay={onSelectDay} />);
-    const row = screen.getByTestId("delivery-day-row");
-    expect(row.querySelectorAll("button")).toHaveLength(7);
+    render(<DeliveryDayRow cityActive={null} daysActive={[]} onSelectDay={onSelectDay} />);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    // ONE handler, no second prop (MEH-1825). Both surfaces' no-city branch
+    // returns before reading the argument, so the chip sends none.
+    expect(onSelectDay).toHaveBeenCalledTimes(1);
+    expect(onSelectDay.mock.calls[0]).toEqual([]);
+    // ...and it did NOT open a panel — a day cannot be picked without a city.
+    expect(screen.queryByTestId("delivery-day-panel")).not.toBeInTheDocument();
+    expect(pillCount()).toBe(0);
+  });
+
+  it("a day leaking in without a city is never shown as selected", () => {
+    render(<DeliveryDayRow cityActive={null} daysActive={["שישי"]} onSelectDay={vi.fn()} />);
+    // Idle label, not "שישי" — MEH-1771's rule, carried across the reshape.
+    expect(screen.getByTestId("delivery-day-chip")).toHaveTextContent(
+      "home.producers.day_chip_idle",
+    );
+    expect(screen.queryByTestId("delivery-day-clear")).not.toBeInTheDocument();
+  });
+
+  // ---- open state ----
+
+  it("chip tap WITH a city opens the panel: hint + exactly 7 pills, not 8", () => {
+    render(<DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+
+    const panel = screen.getByTestId("delivery-day-panel");
+    expect(panel).toBeInTheDocument();
+    expect(screen.getByTestId("delivery-day-panel-hint")).toHaveTextContent(
+      'home.producers.day_panel_hint:{"city":"חיפה"}',
+    );
+    // Exactly 7 — the count, not a sum of literals. An 8th pill (a stray
+    // day, a duplicated map) reds this.
+    expect(pillCount()).toBe(7);
+    // ...and every one of them is a real DELIVERY_DAYS member.
+    expect(panel.querySelectorAll('[data-testid^="delivery-day-pill-"]')).toHaveLength(7);
+
+    const chip = screen.getByTestId("delivery-day-chip");
+    expect(chip).toHaveAttribute("aria-expanded", "true");
+    expect(chip).toHaveAttribute("aria-controls", panel.id);
+  });
+
+  it("tapping the chip again closes the panel (toggle)", () => {
+    render(<DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(pillCount()).toBe(7);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(pillCount()).toBe(0);
+    expect(screen.getByTestId("delivery-day-chip")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // ---- multi-select inside the panel (MEH-2036 semantics, preserved) ----
+
+  it("panel pills keep the MEH-2036 per-pill aria-pressed and forward the day", () => {
+    const onSelectDay = vi.fn();
+    render(
+      <DeliveryDayRow cityActive="חיפה" daysActive={["רביעי", "שישי"]} onSelectDay={onSelectDay} />,
+    );
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+
+    expect(screen.getByTestId("delivery-day-pill-רביעי")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
+
     fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
     expect(onSelectDay).toHaveBeenCalledWith("שלישי");
   });
 
-  // MEH-2036: multiple days pressed simultaneously — the defining multi-select
-  // assertion. Under MEH-1645 only one pill could ever read aria-pressed=true.
-  it("marks EVERY selected day pressed, and the rest not", () => {
+  // The Baymard mutually-exclusive-facet defect: closing per selection forces
+  // a reload between every comparison. The panel must survive a tap.
+  it("the panel STAYS OPEN across pill taps", () => {
+    render(<DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
+    expect(screen.getByTestId("delivery-day-panel")).toBeInTheDocument();
+    expect(pillCount()).toBe(7);
+  });
+
+  // ---- the chip's own label ----
+
+  it("chip label: 1 day bare, 2+ collapsed with the FULL set in aria-label", () => {
+    const { rerender } = render(
+      <DeliveryDayRow cityActive="חיפה" daysActive={["שישי"]} onSelectDay={vi.fn()} />,
+    );
+    const chip = () => screen.getByTestId("delivery-day-chip");
+    expect(chip()).toHaveTextContent("שישי");
+    // One day is already complete, so nothing shadows the visible name.
+    expect(chip()).not.toHaveAttribute("aria-label");
+
+    // Two days, tapped out of week order → collapses to the FIRST BY WEEK +1.
+    // This is the ticket's DoD case: ?delivery_days=שישי&delivery_days=רביעי
+    // must read "רביעי +1".
+    rerender(
+      <DeliveryDayRow cityActive="חיפה" daysActive={["שישי", "רביעי"]} onSelectDay={vi.fn()} />,
+    );
+    expect(chip()).toHaveTextContent('home.producers.days_chip_more:{"day":"רביעי","count":1}');
+    // ...and a screen reader still gets both, in week order.
+    expect(chip()).toHaveAttribute("aria-label", "רביעי · שישי");
+
+    rerender(
+      <DeliveryDayRow
+        cityActive="חיפה"
+        daysActive={["שישי", "שלישי", "ראשון"]}
+        onSelectDay={vi.fn()}
+      />,
+    );
+    expect(chip()).toHaveTextContent('home.producers.days_chip_more:{"day":"ראשון","count":2}');
+    expect(chip()).toHaveAttribute("aria-label", "ראשון · שלישי · שישי");
+  });
+
+  // ---- the ✕ ----
+
+  it("the ✕ clears days ONLY and does not toggle the panel", () => {
+    const onClearDays = vi.fn();
+    const onSelectDay = vi.fn();
     render(
-      <DeliveryDayRow cityActive="חיפה" daysActive={["רביעי", "שישי"]} onSelectDay={vi.fn()} />,
+      <DeliveryDayRow
+        cityActive="חיפה"
+        daysActive={["שישי"]}
+        onSelectDay={onSelectDay}
+        onClearDays={onClearDays}
+      />,
     );
-    expect(screen.getByTestId("delivery-day-pill-רביעי")).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
+    const clear = screen.getByTestId("delivery-day-clear");
+    expect(clear).toHaveAttribute("aria-label", "home.producers.day_chip_clear_aria");
+
+    fireEvent.click(clear);
+    expect(onClearDays).toHaveBeenCalledTimes(1);
+    // The city axis is NOT this button's business, and neither is the panel.
+    expect(onSelectDay).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("delivery-day-panel")).not.toBeInTheDocument();
   });
 
-  it("chip label swaps to the city·day form when a day is active", () => {
-    const { rerender } = render(
-      <ActiveFilterChip geoActive={false} cityActive="חיפה" daysActive={[]} onClear={vi.fn()} />,
+  // ---- panel a11y ----
+
+  it("Esc closes the panel and returns focus to the chip", () => {
+    render(<DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />);
+    const chip = screen.getByTestId("delivery-day-chip");
+    fireEvent.click(chip);
+    expect(pillCount()).toBe(7);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(pillCount()).toBe(0);
+    expect(document.activeElement).toBe(chip);
+  });
+
+  it("an outside click closes the panel; a click inside does not", () => {
+    render(
+      <div>
+        <button data-testid="outside">elsewhere</button>
+        <DeliveryDayRow cityActive="חיפה" daysActive={[]} onSelectDay={vi.fn()} />
+      </div>,
     );
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(pillCount()).toBe(7);
+
+    // Inside first — the panel must survive its own pills.
+    fireEvent.mouseDown(screen.getByTestId("delivery-day-pill-שלישי"));
+    expect(pillCount()).toBe(7);
+
+    fireEvent.mouseDown(screen.getByTestId("outside"));
+    expect(pillCount()).toBe(0);
+  });
+
+  it("SWITCHING city closes an open panel, and it does not spring back", () => {
+    const { rerender } = render(
+      <DeliveryDayRow cityActive="חיפה" daysActive={["שישי"]} onSelectDay={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(pillCount()).toBe(7);
+
+    // The panel's hint names the city; a switch makes it name the wrong one.
+    rerender(<DeliveryDayRow cityActive="עכו" daysActive={["שישי"]} onSelectDay={vi.fn()} />);
+    expect(pillCount()).toBe(0);
+
+    // Clearing and re-picking the SAME city must not reopen it either — the
+    // reset tracks the transition, not the city's identity.
+    rerender(<DeliveryDayRow cityActive={null} daysActive={[]} onSelectDay={vi.fn()} />);
+    rerender(<DeliveryDayRow cityActive="עכו" daysActive={[]} onSelectDay={vi.fn()} />);
+    expect(pillCount()).toBe(0);
+    expect(screen.getByTestId("delivery-day-chip")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("losing the city closes an open panel", () => {
+    const { rerender } = render(
+      <DeliveryDayRow cityActive="חיפה" daysActive={["שישי"]} onSelectDay={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(pillCount()).toBe(7);
+    // The city ✕ / "נקו הכל" path: the panel's hint names a city that no
+    // longer exists and its pills can no longer filter.
+    rerender(<DeliveryDayRow cityActive={null} daysActive={[]} onSelectDay={vi.fn()} />);
+    expect(pillCount()).toBe(0);
+    expect(screen.getByTestId("delivery-day-chip")).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("ActiveFilterChip is LOCATION-ONLY (MEH-2186)", () => {
+  it("renders the plain city form even when days are active elsewhere", () => {
+    render(<ActiveFilterChip geoActive={false} cityActive="חיפה" onClear={vi.fn()} />);
     expect(screen.getByText('home.producers.city_chip:{"city":"חיפה"}')).toBeInTheDocument();
-    rerender(
-      <ActiveFilterChip geoActive={false} cityActive="חיפה" daysActive={["שישי"]} onClear={vi.fn()} />,
-    );
-    expect(
-      screen.getByText('home.producers.city_day_chip:{"city":"חיפה","day":"שישי"}'),
-    ).toBeInTheDocument();
+    // The day value belongs to the day chip now — exactly once on screen.
+    expect(screen.queryByText(/city_day_chip/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/days_chip_more/)).not.toBeInTheDocument();
   });
 
-  // MEH-2036 label matrix: 1 → bare · 2 → joined · 3+ → "{first} +N",
-  // and the FULL set always in the aria-label even when the visible form drops
-  // names. Days are sorted into week order regardless of tap order.
-  it("renders 2 days joined, and 3+ collapsed with the full set in aria-label", () => {
-    const { rerender } = render(
-      <ActiveFilterChip geoActive={false} cityActive="חיפה" daysActive={["שישי", "שלישי"]} onClear={vi.fn()} />,
-    );
-    expect(
-      screen.getByText('home.producers.city_day_chip:{"city":"חיפה","day":"שלישי · שישי"}'),
-    ).toBeInTheDocument();
-
-    rerender(
+  it("ignores a daysActive prop entirely if a stale call site still passes one", () => {
+    // A leftover prop must not resurrect the deleted label — the component no
+    // longer destructures it, so this is the regression guard for a partial
+    // revert of the call-site change.
+    render(
       <ActiveFilterChip
         geoActive={false}
         cityActive="חיפה"
-        daysActive={["שישי", "שלישי", "ראשון"]}
+        daysActive={["שישי", "שלישי"]}
         onClear={vi.fn()}
       />,
     );
-    // Visible: collapsed to the first (week-order) day + a count of the rest.
-    // Matched by predicate rather than a literal, so the assertion does not
-    // depend on how the mock t() escapes its JSON payload.
-    expect(
-      screen.getByText(
-        (text) =>
-          text.startsWith("home.producers.city_day_chip:") &&
-          text.includes("home.producers.days_chip_more:") &&
-          text.includes("ראשון") &&
-          text.includes("2") &&
-          // the collapsed form must NOT spell out the days it dropped
-          !text.includes("שלישי") &&
-          !text.includes("שישי"),
-      ),
-    ).toBeInTheDocument();
-    // ...but the assistive label still names all three.
+    expect(screen.getByText('home.producers.city_chip:{"city":"חיפה"}')).toBeInTheDocument();
     expect(screen.getByTestId("location-filter-chip")).toHaveAttribute(
       "aria-label",
-      expect.stringContaining("ראשון · שלישי · שישי"),
+      "home.producers.clear_location_filter",
     );
   });
 });
