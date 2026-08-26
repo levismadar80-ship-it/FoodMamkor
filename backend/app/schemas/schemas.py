@@ -2408,6 +2408,11 @@ class ProducerDetailOut(ProducerListOut):
     # MEH-296: extra contact channels (mirror website; owner-editable).
     facebook: str | None = None
     external_order_form: str | None = None
+    # MEH-1677: the business's opt-out for the "לא מגיעים אליך?" CTA. Defaults
+    # true so a row written before the column existed (or any client reading an
+    # older payload) keeps the CTA rather than silently losing it -- the failure
+    # that matters here is the feature vanishing, not it appearing.
+    coverage_cta_enabled: bool = True
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
@@ -4219,6 +4224,44 @@ class ContactIn(BaseModel):
 # the record_contact_click handler) stay in the router.
 class ContactClickIn(BaseModel):
     method: str
+
+
+# MEH-1677: 60 chars after trim. The cap and producer_whatsapp_clicks.city's
+# String(60) are two halves of one bound -- widening either alone re-opens the
+# truncation this exists to prevent.
+COVERAGE_CITY_MAX_LENGTH: int = 60
+
+
+class WhatsAppClickIn(BaseModel):
+    """MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.
+
+    The endpoint took no body before this. It still accepts none -- the
+    anonymous path uses `navigator.sendBeacon`, which cannot set
+    `Content-Type: application/json` (it sends text/plain, which FastAPI
+    rejects with 422), so a REQUIRED body would break every anonymous
+    WhatsApp click on the site. Only the coverage CTA sends a body, and it
+    uses fetch(keepalive) for exactly that reason.
+
+    `city` is validated SOFTLY on purpose: a value that is not in the
+    canonical city list is still STORED, not dropped. The point of the
+    capture is to learn where demand actually is, including spellings and
+    localities our list does not carry yet -- discarding those would delete
+    the most interesting rows.
+    """
+
+    city: str | None = None
+
+    @field_validator("city", mode="before")
+    @classmethod
+    def _validate_city(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            raise ValueError("city חייבת להיות מחרוזת")
+        trimmed = v.strip()
+        if not trimmed:
+            return None
+        return trimmed[:COVERAGE_CITY_MAX_LENGTH]
 
 
 class ProducerViewIn(BaseModel):
