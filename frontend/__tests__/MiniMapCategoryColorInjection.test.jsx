@@ -126,10 +126,11 @@ describe("MEH-2004 — a hostile category colour injects no attribute into the M
     for (const el of renderPins()) {
       const names = [...el.attributes].map((a) => a.name);
       expect(names).not.toContain("onload");
-      // The pin's own markup carries `style` and nothing else. Asserting the
-      // whole attribute set (rather than just the one name in the payload)
-      // means a differently-shaped injection is caught too.
-      expect(names.filter((n) => n !== "style" && n !== "fill" && n !== "viewBox")).toEqual([]);
+      // The pin's markup carries `style` and nothing else — the glyph stub
+      // renders null, so there is no SVG to contribute attributes of its own.
+      // Asserting the WHOLE attribute set, rather than just the one name in
+      // the payload, catches a differently-shaped injection too.
+      expect(names).toEqual(["style"]);
       expect(el.getAttribute("style") ?? "").not.toContain("alert(1)");
     }
   });
@@ -154,6 +155,10 @@ describe("MEH-2004 — a hostile category colour injects no attribute into the M
     "#C8821E", // דבש — uppercase hex, which the validator must accept verbatim
     "#9b59b6", // טיפוח וסבונים
   ];
+  // Note the one row that does not discriminate: "#2e6853" is also the
+  // fallback, so it would pass even against a validator that rejected
+  // everything. The other six carry the assertion; it stays in the list
+  // because "the DEFAULT colour still renders" is the thing it checks.
 
   it.each(REAL_PALETTE)("passes the legitimate palette colour %s through unchanged", (colour) => {
     setCategoryColour(colour);
