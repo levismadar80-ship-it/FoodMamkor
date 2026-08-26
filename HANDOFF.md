@@ -3,10 +3,11 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-08-26 — ‏Batch 26/08 (MEH-2189 · MEH-1677): אחד מוזג, אחד עצור על שאלה אמיתית
+## 2026-08-26 — ‏Batch 26/08 (MEH-2189 · MEH-1677): שניהם מוזגו; השני רק אחרי שהשער נפתח במפורש
 
 **מוזג:** ‏#3115 `1144a656` (MEH-2189) — **אומת כ-squash** (הורה יחיד + תבנית `<title> (#N)`, נקרא מהקומיט שנחת, MEH-1526). שני שערי החובה ירוקים ו**באמת רצו**: `Backend tests (pytest)`, `Frontend build (Next.js)`, `Frontend unit tests (vitest)`, `Repo guards` — כולם `success`, לא skip-green. הסוקר האדוורסרי: `Must Fix: None`.
-**‏פתוח ועצור:** ‏#3116 (MEH-1677) — מאחורי המרקר, auto-merge לא חומש, ממתין ל«מאשרת». merge = apply.
+**מוזג:** ‏#3116 `77ab7c78` (MEH-1677) — **אומת כ-squash** (הורה יחיד + תבנית `<title> (#N)`). עמד מאחורי המרקר דרך **שלושה** אישורי merge כלליים; שוחרר רק כשההוראה נקבה במפורש בצעד המרקר עצמו. ההרשאה תועדה כתגובה על ה-PR **לפני** ההסרה, כדי שאירוע ה-`unlabeled` (שנושא את `claude` כשחקן) לא ייראה כפעולה עצמאית.
+**‏🔴 ה-`commitBody` לא נחת:** ‏GitHub שרשר את קומיטי הענף במקום הגוף שסופק ⇒ **10× `Refs`, אפס `Closes`** ⇒ הכרטיס **לא נסגר לבד** ונדרש עדכון ידני. אם את מסתמכת על `Closes` בקומיט של auto-merge — אל תסתמכי.
 **סמכות:** ה-batch של 26/08 — ‏MEH-2189 self-QA + merge on green; ‏MEH-1677 עד שער ה-merge בלבד.
 
 ### מה ממתין לך, בסדר יורד
@@ -23,8 +24,10 @@
 
 | החלטה | נימוק |
 | -- | -- |
-| ‏MEH-2189 מוזג, MEH-1677 לא | הראשון data+tests; השני merge = apply בפרודקשן |
+| שניהם מוזגו, ‏MEH-1677 אחרון | merge = apply; חיכה לאישור מפורש ואז לשער מעודכן |
 | מרקר על #3116 ולא רק «auto-merge לא חומש» | «לא חומש» הוא מצב, לא נעילה — lane מקביל חימש PR בעבר (כלל 32) |
+| המרקר הוסר רק בהוראה שנקבה בו | אישור merge כללי מאשר את המיזוג, לא את פירוק החסם (כלל 30) |
+| ‏`SELECT` של ה-DoD לא הורץ | `psql` ב-deny, אין credentials ל-staging — הראיות דרך ה-API עקיפות ומסומנות ככאלה |
 | הפער ב-deny דווח ולא נוצל | כלל 32: CC מוסיפה אילוצים, לא מסירה |
 | ה-spec מכוון ל-`/{slug}` | נמדד מול staging: by-UUID ו-`/{slug}` מרנדרים, `/he/producer/{slug}` לא |
 ## 2026-08-26 — ‏Batch E (סדרתי, self-merge): שלושה מוזגו, אחד נעצר על הפרכת פרמיסה
