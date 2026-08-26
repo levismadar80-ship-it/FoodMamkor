@@ -4257,7 +4257,7 @@ class WhatsAppClickIn(BaseModel):
         if v is None:
             return None
         if not isinstance(v, str):
-            raise ValueError("city חייבת להיות מחרוזת")
+            raise ValueError("עיר חייבת להיות מחרוזת")
         trimmed = v.strip()
         if not trimmed:
             return None
