@@ -536,10 +536,30 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // with a toast — the grid is never left blank without a message (mirrors the
   // MapClient.jsx MEH-970 never-blank philosophy). Owns producersLoading +
   // geoLoading for the whole sequence.
-  const loadProducersGeo = (lat, lng) => {
+  //
+  // MEH-2180 changes two things and nothing else.
+  //
+  // (1) `chipsState` is a PARAMETER. It used to read the `chips` this function
+  //     closes over, which is the state as of the last render — fine for the
+  //     near-me paths (nothing sets chips there), and wrong the moment
+  //     applyChips calls in, because `setChips(next)` has not landed yet. The
+  //     caller passes what it means; the default keeps the near-me call sites
+  //     honest rather than silently one render behind.
+  //
+  // (2) `allowExpansion` gates the radius widening, the drop-to-unfiltered
+  //     fallback and the toast — the whole "we found nothing nearby, here is
+  //     everything instead" sequence. That belongs to an explicit «קרוב אליי»
+  //     press, where the reader asked for proximity and an empty answer is
+  //     useless to her. It does NOT belong to an attribute toggle under an
+  //     already-active geo filter: there, zero is a real and informative
+  //     answer ("no vegan businesses near you"), and silently widening the
+  //     radius or dropping the location would answer a question she did not
+  //     ask, while the chip still claims she is filtering by location.
+  //     Sapir's decision, 26/08.
+  const loadProducersGeo = (lat, lng, chipsState = chips, { allowExpansion = true } = {}) => {
     setGeoLoading(true);
     setProducersLoading(true);
-    const chipParams = buildChipParams(chips);
+    const chipParams = buildChipParams(chipsState);
     const catParam = filters.category ? { category: filters.category } : {};
     const fetchAtRadius = (radius) =>
       api
@@ -551,12 +571,22 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
           return parsed.success ? parsed.data : [];
         });
     fetchAtRadius(GEO_RADIUS_KM)
-      .then((rows) => (rows.length > 0 ? rows : fetchAtRadius(GEO_RADIUS_KM_RETRY)))
+      .then((rows) =>
+        rows.length > 0 || !allowExpansion ? rows : fetchAtRadius(GEO_RADIUS_KM_RETRY)
+      )
       .then((rows) => {
         if (rows.length > 0) {
           // MEH-1282: a successful geo search clears any prior empty notice.
           setGeoEmptyNotice(false);
           setProducers(rows);
+          setVisibleCount(PAGE_SIZE);
+          return;
+        }
+        // MEH-2180: an attribute change under an active geo filter. Zero is the
+        // answer, not a failure to find one — render the ordinary empty grid and
+        // leave the radius, the geo filter and the toast alone.
+        if (!allowExpansion) {
+          setProducers([]);
           setVisibleCount(PAGE_SIZE);
           return;
         }
@@ -605,7 +635,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     const cached = getUserLocation();
     if (cached) {
       applyGeoFilter(cached);
-      loadProducersGeo(cached.lat, cached.lng);
+      loadProducersGeo(cached.lat, cached.lng, chips, { allowExpansion: true });
       return;
     }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -620,7 +650,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
         // reads it via useUserLocation), same contract as LocationModal.
         setUserLocation(latitude, longitude);
         applyGeoFilter({ lat: latitude, lng: longitude });
-        loadProducersGeo(latitude, longitude);
+        loadProducersGeo(latitude, longitude, chips, { allowExpansion: true });
       },
       (err) => {
         setGeoLoading(false);
@@ -777,28 +807,25 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // geo-empty clear, the URL write, and the category / city / day carry-over
   // are all still exactly what a removal used to do.
   //
-  // ⚠️ KNOWN GAP, inherited and now reachable from one more direction. This
-  // carries the category / city / day context but NOT an active GEO filter:
-  // `loadProducers(params)` has no lat/lng, so with "קרוב אליי" on the grid
-  // quietly reloads UNFILTERED while `geoFilter` stays set and ActiveFilterChip
-  // goes on claiming "עסקים ליד המיקום שלך".
+  // ✅ THE GEO GAP IS CLOSED (MEH-2180) — see the branch at the end of the body.
   //
-  // It is not introduced here — `handleRemoveChip` has done exactly this since
-  // MEH-2130, and removing a tag under an active geo filter is a shipped path.
-  // What MEH-2173 changes is that the ON direction can now reach it too, since
-  // switching a filter on no longer navigates away.
+  // What it was: this carried the category / city / day context but NOT an
+  // active GEO filter. `loadProducers(params)` has no lat/lng, so with
+  // "קרוב אליי" on, the grid quietly reloaded UNFILTERED while `geoFilter`
+  // stayed set and ActiveFilterChip went on claiming "עסקים ליד המיקום שלך" —
+  // a filter that lied about what it was showing. It was not introduced by
+  // MEH-2173: `handleRemoveChip` had done exactly this since MEH-2130. What
+  // MEH-2173 changed is that the ON direction could reach it too, once
+  // switching a filter on stopped navigating away.
   //
-  // NOT fixed in this card, deliberately — it has its own: MEH-2180. The fix
-  // is not a branch here: the
-  // geo fetch lives in `loadProducersGeo`, which builds its own params from
-  // the `chips` it closes over — i.e. the STALE state, one render behind the
-  // `setChips(next)` above — so routing through it means changing that
-  // function's signature, and it owns the radius-widening and toast behaviour
-  // that the whole near-me flow depends on. That is its own ticket with its own
-  // tests, not a side effect of a filter-row change. MEH-2180 also records the
-  // product question that has to be answered first: whether the radius-widening
-  // and the drop-to-unfiltered fallback should fire on an attribute change at
-  // all, or only on "קרוב אליי" itself.
+  // Why it needed its own ticket rather than a branch here, which is the part
+  // still worth knowing: `loadProducersGeo` built its params from the `chips`
+  // it closed over — the STALE state, one render behind the `setChips(next)`
+  // below — so routing through it required changing that function's signature,
+  // and it owns the radius-widening, the drop-to-unfiltered fallback and the
+  // toast that the whole near-me flow depends on. MEH-2180 answered the product
+  // question that gated it (Sapir, 26/08): that sequence stays EXCLUSIVE to an
+  // explicit "קרוב אליי" press, which is what `allowExpansion` now expresses.
   const applyChips = (next) => {
     // MEH-1282: a filter action clears the geo-empty notice, so a later
     // back-navigation doesn't land on a stale near-me message.
@@ -815,6 +842,15 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       // MEH-2036: repeated bare keys via api.js's paramsSerializer; omitted
       // entirely when empty so no valueless `?delivery_days=` reaches the API.
       if (filters.delivery_days?.length) params.delivery_days = filters.delivery_days;
+    }
+    // MEH-2180: the gap the comment above describes, closed. An active geo
+    // filter is carried through the geo fetch instead of being dropped on the
+    // floor — `next` goes in as an argument because `setChips(next)` above has
+    // not landed in this render yet. allowExpansion:false: this is an attribute
+    // change, not a near-me press (see loadProducersGeo).
+    if (geoFilter) {
+      loadProducersGeo(geoFilter.lat, geoFilter.lng, next, { allowExpansion: false });
+      return;
     }
     loadProducers(params);
   };
