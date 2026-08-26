@@ -452,8 +452,22 @@ producer_page_views (
 producer_whatsapp_clicks (
   id uuid PK,
   producer_id FK producers.id ON DELETE CASCADE (indexed),
-  clicked_at timestamp (indexed)
+  clicked_at timestamp (indexed),
+  -- MEH-1677: the city a coverage-request click ("לא מגיעים אליך?") asked
+  -- about. NULL on every ORDINARY WhatsApp click and on every pre-existing
+  -- row, so NULL means "not a coverage click" rather than "we lost it".
+  -- Validated softly: a locality outside the canonical list is STORED, not
+  -- dropped -- those are the rows worth having. Trim, then cap at 60 to
+  -- match the column width.
+  city varchar(60) NULL
 )
+
+-- MEH-1677: the business's opt-out for the coverage-request CTA (MEH-1675).
+-- server_default true (not a Python-side default) so existing rows are
+-- backfilled by the DDL and a writer bypassing the ORM still gets true.
+-- Exposed on ProducerDetailOut; NO toggle UI ships with it -- that is the
+-- post-launch dashboard card.
+producers.coverage_cta_enabled boolean NOT NULL DEFAULT true
 
 -- DAU tracking column on users. Updated by get_current_user() on every
 -- authenticated request, throttled to at most 1 write per 5 minutes
@@ -655,7 +669,15 @@ GET    /producers/{id}?from=search|map|...        public    — GET that also lo
                                                               otherwise; referrer normalized to an allowlist)
 POST   /producers/{id}/whatsapp-click             public    — anonymous, rate-limited 10/min per IP
                                                               appends a producer_whatsapp_clicks row;
-                                                              frontend fires via navigator.sendBeacon
+                                                              frontend fires via navigator.sendBeacon.
+                                                              MEH-1677: accepts an OPTIONAL JSON body
+                                                              {city} — stored on the row. It MUST stay
+                                                              optional: sendBeacon cannot set
+                                                              Content-Type: application/json (it sends
+                                                              text/plain -> 422), so a required body
+                                                              would break every anonymous click. Only
+                                                              the coverage CTA sends one, via
+                                                              fetch(keepalive)
 ```
 
 ### Favorites (`app/routers/favorites.py`)
