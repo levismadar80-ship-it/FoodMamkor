@@ -41,9 +41,11 @@ mkdirSync(OUT, { recursive: true });
 const CITY = "זכרון יעקב";
 
 let failures = 0;
-const checks = [];
+// Counted, never stated — a literal goes stale the moment an assertion is
+// added. Nothing reads the names, so this is a counter rather than a list.
+let ran = 0;
 function check(name, ok, detail = "") {
-  checks.push(name);
+  ran++;
   if (!ok) failures++;
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 }
@@ -123,8 +125,20 @@ await page.getByTestId("register-details-name").fill("העסק שלי");
 await page.getByTestId("register-details-phone").fill("0501234567");
 await page.getByTestId("register-details-city").getByRole("combobox").fill(CITY);
 await page.getByTestId("register-details-address").fill("הנדיב 12");
-await page.waitForTimeout(1500);
-await page.getByText("הנדיב 12", { exact: false }).last().click().catch(() => {});
+// The suggestion is awaited by its own visibility rather than by a fixed pause.
+// The pause conflated two DIFFERENT failures into one `false`: "the provider
+// stub never produced a row" and "the confirmation block did not render" are
+// separate bugs, and `.catch(() => {})` on the click swallowed the first so it
+// surfaced as the second. Each now has its own named assertion, and the happy
+// path gets faster rather than slower (the debounce is 450ms; the stub answers
+// immediately). Bounded, never a wait on the network going quiet.
+const suggestion = page.getByText("הנדיב 12", { exact: false }).last();
+const suggested = await suggestion
+  .waitFor({ state: "visible", timeout: 5000 })
+  .then(() => true)
+  .catch(() => false);
+check("[webkit] the address suggestion appeared", suggested);
+if (suggested) await suggestion.click();
 
 const confirmed = await page
   .getByTestId("register-address-confirm")
@@ -206,7 +220,14 @@ check(
 );
 
 // THE HEADLINE, reported either way — a measurement, not a hope.
-const trapped = onPin.touchAction === "none";
+// `found` is part of the condition, not an aside. Measured while proving the
+// suggestion assertion discriminates: with the provider returning zero rows the
+// pin never renders, `onPin.touchAction` is `undefined`, `undefined === "none"`
+// is false — and this headline reported PASS ("no scroll trap") off an element
+// that does not exist. A green with two causes, in the one assertion the whole
+// file exists to produce. It now requires the probe to have actually found the
+// pin, so "nothing to measure" reds instead of reassuring.
+const trapped = onPin.found !== true || onPin.touchAction === "none";
 console.log(
   `\n  >>> touch-action on the pin: ${onPin.touchAction} ` +
     `(control paragraph: ${control.touchAction})\n` +
@@ -218,14 +239,14 @@ console.log(
 check(
   "[webkit] no CSS-level scroll trap on the pin",
   !trapped,
-  `touch-action=${onPin.touchAction}`,
+  `found=${onPin.found} touch-action=${onPin.touchAction}`,
 );
 
 await page.screenshot({ path: `${OUT}/webkit-iphone13-confirm.png`, fullPage: true });
 await ctx.close();
 await browser.close();
 
-console.log(`\n${checks.length} assertions, ${failures} failed.`);
+console.log(`\n${ran} assertions, ${failures} failed.`);
 if (failures) {
   console.log("!! A control or a headline assertion failed — read the SCROLL TRAP line above.");
   process.exit(1);

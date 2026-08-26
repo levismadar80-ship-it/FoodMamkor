@@ -44,9 +44,11 @@ mkdirSync(OUT, { recursive: true });
 const CITY = "זכרון יעקב";
 
 let failures = 0;
-const checks = [];
+// Counted, never stated — a literal goes stale the moment an assertion is
+// added. Nothing reads the names, so this is a counter rather than a list.
+let ran = 0;
 function check(name, ok, detail = "") {
-  checks.push(name);
+  ran++;
   if (!ok) failures++;
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 }
@@ -166,7 +168,17 @@ async function run(width, tag) {
 
   const addr = page.getByTestId("register-details-address");
   await addr.fill("הנדיב 12");
-  await page.waitForTimeout(1500);
+  // Await the suggestion itself, not a fixed pause — same reasoning as the
+  // WebKit harness: "the stub produced no row" and "the confirm block did not
+  // render" are different bugs and must not collapse into one `false`. It also
+  // makes the geocode-counter control below meaningful, since a visible row
+  // proves the request actually went out.
+  const suggestion = page.getByText("הנדיב 12", { exact: false }).last();
+  const suggested = await suggestion
+    .waitFor({ state: "visible", timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+  check(`[${tag}] the address suggestion appeared`, suggested);
 
   // CONTROL 2 (positive half) — the counter is wired. If this is 0 the "no
   // geocode on drag" assertion below is measuring a dead probe, not the app.
@@ -177,7 +189,7 @@ async function run(width, tag) {
     `calls=${callsAfterTyping}`,
   );
 
-  await page.getByText("הנדיב 12", { exact: false }).last().click().catch(() => {});
+  if (suggested) await suggestion.click();
   const confirmed = await page
     .getByTestId("register-address-confirm")
     .waitFor({ state: "visible", timeout: 8000 })
@@ -319,7 +331,7 @@ check(
   digests.map((d, i) => `${shots[i]}=${d.slice(0, 8)}`).join(" "),
 );
 
-console.log(`\n${checks.length} assertions, ${failures} failed.`);
+console.log(`\n${ran} assertions, ${failures} failed.`);
 if (failures) {
   console.log("!! Screenshots in this run are VOID — a control failed.");
   process.exit(1);
