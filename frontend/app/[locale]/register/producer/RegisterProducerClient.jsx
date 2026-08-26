@@ -1348,8 +1348,21 @@ function RegisterProducerPageBody() {
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
                 Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
-                no backend field, no location rows; on "yes" the approved copy
-                refers the owner to the dashboard LocationsEditor (chunk 4a). */}
+                no backend field and no location rows; the copy refers the owner
+                to the dashboard LocationsEditor (chunk 4a).
+
+                MEH-1768: the line is now PERMANENT rather than revealed by the
+                checkbox. Behind the tick it answered a question the owner had
+                already decided — the reassurance is what makes the tick safe, so
+                it has to be readable BEFORE she ticks. One renderer, one string:
+                the old conditional `multi_location_yes_copy` is gone rather than
+                kept alongside, so the copy cannot appear twice.
+
+                Styling is this step's own hint recipe, `:1243`
+                (`text-xs text-fg-muted mt-1 text-start` on the
+                `address_optional_hint` paragraph), not the tinted callout the
+                conditional line used — a permanent hint reads as a hint. `ms-6`
+                is kept so it aligns under the label text rather than the box. */}
             <div className="pt-1">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
@@ -1361,15 +1374,12 @@ function RegisterProducerPageBody() {
                 />
                 {t("auth.register.producer.fields.multi_location_label")}
               </label>
-              {hasMultipleLocations && (
-                <p
-                  data-testid="register-multi-location-copy"
-                  className="mt-2 ms-6 flex items-start gap-1.5 rounded-md bg-primary/5 px-3 py-2 text-xs text-fg-muted"
-                >
-                  <MapPin size={14} weight="fill" className="mt-0.5 shrink-0 text-primary" />
-                  <span>{t("auth.register.producer.fields.multi_location_yes_copy")}</span>
-                </p>
-              )}
+              <p
+                data-testid="register-multi-location-copy"
+                className="text-xs text-fg-muted mt-1 ms-6 text-start"
+              >
+                {t("auth.register.producer.fields.multi_location_hint")}
+              </p>
             </div>
 
             {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a
