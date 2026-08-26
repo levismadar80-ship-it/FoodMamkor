@@ -34,10 +34,11 @@ down_revision: str | None = "d4a9c31e6f82"
 branch_labels: str | None = None
 depends_on: str | None = None
 
-# String(60) mirrors the 60-char cap the endpoint enforces after trim
-# (schemas._coverage_city_validator). The column and the validator are two
-# halves of one bound; changing either alone re-opens the truncation the cap
-# exists to prevent.
+# String(60) mirrors the 60-char cap the endpoint enforces after trim:
+# schemas.COVERAGE_CITY_MAX_LENGTH, applied by
+# schemas.WhatsAppClickIn._validate_city. Both names resolve — grep them.
+# The column and the validator are two halves of one bound; changing either
+# alone re-opens the truncation the cap exists to prevent.
 _CITY_LEN = 60
 
 
