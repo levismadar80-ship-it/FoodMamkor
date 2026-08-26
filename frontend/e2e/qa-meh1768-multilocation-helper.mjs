@@ -90,8 +90,10 @@ async function capture(width, height) {
   check(`${width}: helper carries the locked copy`, text === LOCKED_HELPER, `got: "${text}"`);
 
   // C3 — exactly once. A presence assertion cannot see a duplicate.
-  check(`${width}: helper appears exactly once`, (await helper.count()) === 1,
-    `count=${await helper.count()}`);
+  // Read ONCE: two awaits would be two round-trips, and the verdict could then
+  // disagree with the number printed beside it if the page moved between them.
+  const copyCount = await helper.count();
+  check(`${width}: helper appears exactly once`, copyCount === 1, `count=${copyCount}`);
 
   // C4 — the question is unchanged, and the retired line is gone page-wide.
   const body = (await page.locator("body").textContent()) ?? "";
