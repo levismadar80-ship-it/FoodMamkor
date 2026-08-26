@@ -144,6 +144,26 @@ deleting it would remove the reasoning that justifies the exceptions.
     > platform-specific subset stays human. Vocabulary to reuse: the 27
     > DEVICE-ONLY rows in `docs/qa/manual-testing-matrix.md`.
 
+    > ### ⛔ The paragraph above is STALE as applied — corrected in place on 2026-08-14, recorded here 2026-08-26 (MEH-2187)
+    >
+    > It is reproduced unedited because this document is a record of what was
+    > written on 2026-08-14, and rewriting it would erase that. **Do not quote
+    > it.** Three of its factual claims are false today:
+    >
+    > | The claim above | The measurement |
+    > |---|---|
+    > | *"no WebKit engine anywhere in the pipeline"* | `e2e-webkit` (`e2e.yml:432`) installs and runs webkit in CI — landed 2026-08-03 in `323a1258`, **before** this doc was applied |
+    > | *"zero webkit projects in every Playwright config"* | `webkit-iphone13` (`playwright.config.ts:161`) and `webkit-pixel5-viewport` (`:183`), gated on `PW_WEBKIT=1` |
+    > | *"the webkit binary is unobtainable in the CC sandbox (proxy 403)"* | It **is** obtainable behind the same flag — procedure: [`docs/qa/webkit-local.md`](../qa/webkit-local.md) |
+    >
+    > **Carve-out (e) itself is unaffected, and that is the point.** The live
+    > text in `.claude/rules/workflow.md` (rule 23, carve-out (e)) reaches the
+    > same verdict from the true facts: the coverage that exists is **opt-in or
+    > non-voting** — `continue-on-error: true` (`e2e.yml:438`), absent from
+    > `e2e-gate`'s `needs:` (`:566`) — so it can neither red a run nor block a
+    > merge, and Playwright webkit is still not iOS Safari. **Read the live
+    > workflow.md, not this quotation.**
+
     #### The compensating control, and the condition on the whole amendment
 
     This trades **prevention** (a human eye before merge) for
