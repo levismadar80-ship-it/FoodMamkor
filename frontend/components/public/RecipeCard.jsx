@@ -35,17 +35,24 @@ export default function RecipeCard({ slug, recipe }) {
   // MEH-911: smart-crop through the central helper (mirrors ProducerCard:183).
   // MEH-2010: explicit width for the same reason as ProducerCard — c_fill is
   // uncapped by design, so the cap has to come from the call site.
-  // Derived from the only place this card renders (ProducerSections.jsx:487,
-  // `grid grid-cols-2 md:grid-cols-3 gap-4` inside `max-w-6xl px-4`): the
-  // content column caps at 1120 CSS px, so the widest cell is
-  // (1120 - 32)/3 = 363 CSS px at md+, and (767 - 32 - 16)/2 = 360 below it.
-  // 363 x DPR 2 = 726, rounded up to 750 — a Next `deviceSizes` entry.
   //
-  // NOTE, and it is deliberately not fixed here: `sizes` below claims
-  // `(max-width: 640px) 100vw`, which is wrong — the grid is 2-column at every
-  // width, never 1. The attribute over-claims by ~2x on mobile. Correcting it
-  // is a `sizes` change on a VRT-covered surface and belongs to its own
-  // ticket; this width is derived from the real box, not from that claim.
+  // MEH-2190 re-derived both this width and the `sizes` below from the real
+  // box. Three measured containers, this card's ONLY render site:
+  //   ProducerDetail.jsx:107  `max-w-6xl mx-auto px-4`  -> content = min(W,1152) - 32
+  //   ProducerDetail.jsx:226  `lg:grid-cols-[1fr_320px] gap-8`
+  //                           -> at lg+ the main column loses 320 + 32
+  //   ProducerSections.jsx:487 `grid grid-cols-2 md:grid-cols-3 gap-4`
+  //
+  //   W < 768      2 cols, main = W - 32     cell = (W - 48)/2 = 50vw - 24
+  //   768..1023    3 cols, main = W - 32     cell = (W - 64)/3
+  //   1024..1151   3 cols, main = W - 384    cell = (W - 416)/3
+  //   W >= 1152    3 cols, main = 768        cell = (768 - 32)/3 = 245.33px
+  //
+  // Peak cell = 359.5 CSS px, at W = 767 (the last 2-column width). x DPR 2
+  // (the repo convention — OwnerCard `avatarSize * 2`, RecipeDetail 112/56)
+  // = 719, rounded up to 750, a Next `deviceSizes` entry. So MEH-2010's 750
+  // SURVIVES the correction: it was reached from 363 px via a chain that
+  // ignored the lg sidebar, and the right number lands in the same bucket.
   const imgSrc = optimizeCloudinary(recipe.image_url, {
     aspectRatio: IMAGE_RATIOS.card,
     width: 750,
@@ -72,7 +79,11 @@ export default function RecipeCard({ slug, recipe }) {
             src={imgSrc}
             alt={recipe.title}
             fill
-            sizes="(max-width: 640px) 100vw, 33vw"
+            // MEH-2190: was `(max-width: 640px) 100vw, 33vw` — the grid is
+            // never 1-column, so `100vw` over-claimed ~2x and made the browser
+            // ask Next for a 1200-wide candidate off a 750-capped source.
+            // Each clause below is the cell width for its range, above.
+            sizes="(max-width: 767px) calc(50vw - 24px), (max-width: 1023px) calc(33.33vw - 21.33px), (max-width: 1151px) calc(33.33vw - 138.67px), 246px"
             className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
             onError={() => setFailedSrc(imgSrc)}
           />
