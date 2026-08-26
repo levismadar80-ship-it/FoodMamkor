@@ -61,8 +61,8 @@ describe("MEH-1752 — ProducerListSchema / ProducerDetailSchema", () => {
   });
 
   // Title deliberately carries NO number: it used to say "the four", which
-// goes stale the moment the list grows (it did, in MEH-1677). The
-// assertion reads DETAIL_ONLY, so the constant is the single source.
+  // goes stale the moment the list grows (it did, in MEH-1677). The
+  // assertion reads DETAIL_ONLY, so the constant is the single source.
   it("the delta is exactly the detail-only fields", () => {
     const L = listKeys();
     expect(detailKeys().filter((k) => !L.includes(k)).sort()).toEqual(
