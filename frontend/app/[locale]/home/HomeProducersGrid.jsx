@@ -386,21 +386,27 @@ export function HomeProducersGrid({
       )}
 
       {/* MEH-1269: dismissible location-filter chip (geo "קרוב אליי" or an
-          explicit city choice). Self-hides when no location filter is active. */}
+          explicit city choice). Self-hides when no location filter is active.
+          MEH-2186: LOCATION-ONLY — the day value moved to the day chip below,
+          so `daysActive` is no longer passed here. It still reaches this
+          component for the empty-state CTA further down. */}
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
-        daysActive={daysActive}
         onClear={onClearLocation}
       />
 
-      {/* MEH-1645 day refinement, made permanently visible in MEH-1771: always
-          rendered — without a city it self-renders a muted ghost row + hint,
-          and a pill click routes into the LocationModal (handleDaySelected). */}
+      {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
+          value-carrying dropdown chip since MEH-2186: always rendered — with
+          no city a tap routes into the LocationModal (handleDaySelected), with
+          a city it opens the inline day panel. `onClearDays` is the chip's ✕:
+          it drops the whole day set and leaves the city standing, which is the
+          same handler the empty-state CTA below already uses. */}
       <DeliveryDayRow
         cityActive={cityActive}
         daysActive={daysActive}
         onSelectDay={onSelectDay}
+        onClearDays={onClearDays}
       />
 
       {producersLoading ? (

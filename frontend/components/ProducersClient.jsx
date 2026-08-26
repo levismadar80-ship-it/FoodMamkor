@@ -525,6 +525,27 @@ export default function ProducersClient({
     trackEvent("delivery_days_filter", { count: next.length });
   };
 
+  // MEH-2186: drop the WHOLE day set at once — the day chip's ✕. Mirrors
+  // useHomePage.handleClearDays, and exists for the same reason it does:
+  // clearing N days through handleDaySelected would be N toggles, which fight
+  // React state batching. The CITY is deliberately untouched — the day is the
+  // narrowest axis and the point of the ✕ is to relax only it, which is what
+  // separates it from the city chip's own ×.
+  //
+  // Only reachable with a non-empty set (the ✕ renders only when days are
+  // selected, and a day cannot be active without a city), so the city is
+  // passed unconditionally exactly as handleDaySelected does above. The ref is
+  // set synchronously before syncUrl/fetchFiltered because both are
+  // useCallback([]) and read the ref, not the state.
+  const handleClearDays = () => {
+    if (!dayFilterRef.current.length) return;
+    dayFilterRef.current = [];
+    setDayFilters([]);
+    syncUrl(chips, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    trackEvent("delivery_days_filter", { count: 0 });
+  };
+
   // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
@@ -800,12 +821,15 @@ export default function ProducersClient({
       </div>
 
       {/* MEH-1825: day refinement on the canonical listing surface. Same
-          component home mounts; without a city it self-renders the muted
-          ghost row + hint and a tap opens the LocationModal below. */}
+          component home mounts. MEH-2186: it is ONE dropdown chip now — with
+          no city a tap opens the LocationModal below, with a city it opens an
+          inline day panel; `onClearDays` is the chip's ✕ and drops the day set
+          without disturbing the city. */}
       <DeliveryDayRow
         cityActive={cityFilter}
         daysActive={dayFilters}
         onSelectDay={handleDaySelected}
+        onClearDays={handleClearDays}
       />
 
       {/* Results counter + active filters — MEH-1186: one control line.
