@@ -340,63 +340,63 @@ export default function EventsPage() {
           the whole control layer is withheld; on a filtered-to-zero it stays,
           because it is the only way back. */}
       {!datasetEmpty && (
-      <>
-      {/* Toolbar — city search + list/calendar view toggle */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div className="flex items-center gap-2 md:gap-3">
-          <CitySearch
-            id="events-city"
-            label={t("filter_city_label")}
-            value={city}
-            onChange={setCity}
-            placeholder={t("filter_city_placeholder")}
-            className="flex-1 md:max-w-xs"
-          />
-          <div
-            role="tablist"
-            aria-label={t("view_mode_label")}
-            className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
-          >
-            <button
-              role="tab"
-              aria-selected={view === "list"}
-              // Label is icon-only on mobile (hidden sm:inline); keep a stable
-              // accessible name on every viewport (MEH-134 — a11y + E2E locator).
-              aria-label={t("view_list")}
-              onClick={() => setView("list")}
-              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
-                view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
-              }`}
-            >
-              <Rows size={18} weight={view === "list" ? "fill" : "regular"} />
-              <span className="hidden sm:inline">{t("view_list")}</span>
-            </button>
-            <button
-              role="tab"
-              aria-selected={view === "calendar"}
-              aria-label={t("view_calendar")}
-              onClick={() => setView("calendar")}
-              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
-                view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
-              }`}
-            >
-              <CalendarBlank size={18} weight={view === "calendar" ? "fill" : "regular"} />
-              <span className="hidden sm:inline">{t("view_calendar")}</span>
-            </button>
+        <>
+          {/* Toolbar — city search + list/calendar view toggle */}
+          <div className="max-w-5xl mx-auto px-4 pt-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <CitySearch
+                id="events-city"
+                label={t("filter_city_label")}
+                value={city}
+                onChange={setCity}
+                placeholder={t("filter_city_placeholder")}
+                className="flex-1 md:max-w-xs"
+              />
+              <div
+                role="tablist"
+                aria-label={t("view_mode_label")}
+                className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
+              >
+                <button
+                  role="tab"
+                  aria-selected={view === "list"}
+                  // Label is icon-only on mobile (hidden sm:inline); keep a stable
+                  // accessible name on every viewport (MEH-134 — a11y + E2E locator).
+                  aria-label={t("view_list")}
+                  onClick={() => setView("list")}
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                    view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
+                  }`}
+                >
+                  <Rows size={18} weight={view === "list" ? "fill" : "regular"} />
+                  <span className="hidden sm:inline">{t("view_list")}</span>
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={view === "calendar"}
+                  aria-label={t("view_calendar")}
+                  onClick={() => setView("calendar")}
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                    view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
+                  }`}
+                >
+                  <CalendarBlank size={18} weight={view === "calendar" ? "fill" : "regular"} />
+                  <span className="hidden sm:inline">{t("view_calendar")}</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
-      <div className="max-w-5xl mx-auto px-4 pt-3">
-        <ChipScrollRow
-          variant="category"
-          chips={chips}
-          activeKey={activeChipKey}
-          onChipClick={onChipClick}
-        />
-      </div>
-      </>
+          {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
+          <div className="max-w-5xl mx-auto px-4 pt-3">
+            <ChipScrollRow
+              variant="category"
+              chips={chips}
+              activeKey={activeChipKey}
+              onChipClick={onChipClick}
+            />
+          </div>
+        </>
       )}
 
       {/* Feed */}
