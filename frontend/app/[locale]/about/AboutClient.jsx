@@ -36,6 +36,9 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+// MEH-2193: the "how we choose" fact block + its data-gated live counter.
+// Own file because it owns fetch state — see the header comment there.
+import HowWeChoose from "./HowWeChoose";
 
 // MEH-2001: the story portrait. Raw asset URL — every transform is applied by
 // optimizeCloudinary at the call site, never baked into this string.
@@ -132,6 +135,22 @@ export default function AboutPage() {
     <Tag className="block font-body-md text-[13px] font-semibold text-fg-muted mb-3 md:mb-4">
       {children}
     </Tag>
+  );
+
+  // MEH-2193: chapter exit. A text link, never a button — the single primary
+  // CTA stays in Close, and three competing buttons mid-page would flatten that
+  // hierarchy. Styling and ArrowLeft (LEFT = forward in RTL) are lifted verbatim
+  // from the verification-process-link established in the MEH-1840 round, so the
+  // three exits read as one existing pattern rather than a new one.
+  const ExitLink = ({ href, testId, children }) => (
+    <LocaleLink
+      href={href}
+      data-testid={testId}
+      className="mt-8 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
+      {children}
+      <ArrowLeft size={15} aria-hidden="true" />
+    </LocaleLink>
   );
 
   return (
@@ -248,6 +267,33 @@ export default function AboutPage() {
               </figcaption>
             </figure>
           </div>
+          <ExitLink href="/producers" testId="about-exit-story">
+            {tAbout("exit.story")}
+          </ExitLink>
+        </div>
+      </FadeInSection>
+
+      {/* ======== MEH-2193 — "איך אנחנו בוחרות" + the business strip ========
+          Placed between the story and the pull-quote: the differentiator
+          (license-only · manual approval · zero commissions) was scattered
+          across Benefits/Values near the bottom, where a reader who leaves at
+          section 4 never reaches it. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+        <HowWeChoose />
+      </FadeInSection>
+
+      {/* Business strip — the early owner-facing exit. Until now the only one
+          was a demoted link inside Close, at the very bottom. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-7 md:py-9 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <LocaleLink
+            href="/about/for-businesses"
+            data-testid="about-biz-strip"
+            className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {tAbout("biz_strip")}
+            <ArrowLeft size={15} aria-hidden="true" />
+          </LocaleLink>
         </div>
       </FadeInSection>
 
@@ -286,6 +332,9 @@ export default function AboutPage() {
               </li>
             ))}
           </ol>
+          <ExitLink href="/about/process" testId="about-exit-comparison">
+            {tAbout("exit.comparison")}
+          </ExitLink>
         </div>
       </FadeInSection>
 
@@ -308,6 +357,9 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
+          <ExitLink href="/map" testId="about-exit-benefits">
+            {tAbout("exit.benefits")}
+          </ExitLink>
         </div>
       </FadeInSection>
 
