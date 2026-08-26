@@ -40,20 +40,49 @@ not this rule.
 | Value | Means | Example |
 |---|---|---|
 | `self-declared` | The business owner asserted it; no external check. | every diet filter, `has_delivery`, `grass_fed`. |
-| `admin-verified` | An admin checked a document against an external registry. | `verified` (license vs Ministry of Health, ADR-022); `kosher` (kashrut_verified_at, MEH-986/1087). |
-| `system` | *Reserved* — derived by the system, not asserted or verified (e.g. a computed distance / availability). No label carries it yet. |
+| `admin-verified` | An admin checked a document against an external registry. | `verified` (license vs Ministry of Health, ADR-022); `kosher` (kashrut_verified_at, MEH-986/1087); `license` (BADGE_CONFIG — gated on the same `verification_tier === "verified"` check, MEH-1162). |
+| `editorial` | A named editor's opinion. Nobody asserted it and nothing was checked — and it **cannot be bought** (ADR-030). | `recommended` (בחירת העורכת, MEH-1492). |
+| `system` | Derived by the system: not asserted by anyone, not verified against anything. | `new` (BADGE_CONFIG — computed from `days_since_created <= 30`). Also the intended home for a computed distance / availability. |
 
-> Two evidence values are in active use (`self-declared`, `admin-verified`); `system`
-> is reserved. (The MEH-1507 spec named "two evidence values" in one place and
-> `self-declared | admin-verified | system` in the audit-table column in another —
-> this doc follows the audit-table enumeration and marks `system` reserved.)
+> **All four values are now in active use.** `editorial` was added by MEH-1753,
+> which brought `BADGE_CONFIG` under this contract and found `recommended` fitting
+> neither existing value: the owner cannot set it, and no document is checked, so
+> filing it under `admin-verified` would repeat the very over-claim MEH-1492
+> fixed — that value reads as an earned status. `system` was **reserved with no
+> example** until the same pass gave it one in `new`.
+>
+> _(This block previously read "Two evidence values are in active use … `system`
+> is reserved", and the `system` row was missing its Example cell entirely — a
+> three-column table with a two-cell row. Both corrected under MEH-1753 from the
+> live config, not from the spec.)_
 
 ---
 
 ## Where the metadata lives
 
-`frontend/lib/attribute-labels.js` — `ATTRIBUTE_LABELS` is the single source of
-truth. Each entry is an object:
+There are **two** declaration sites, and they cover different surfaces:
+
+| File | Governs | Consumers |
+|---|---|---|
+| `frontend/lib/filter-taxonomy.js` (`FILTER_AXES`) | **filter chips** — one declaration per axis, projected into `ATTRIBUTE_LABELS` / `CHIPS_CONFIG` / `TOGGLE_CHIPS` (MEH-2130) | home · /producers · /map filter rows, FilterSheet |
+| `frontend/lib/badges.js` (`BADGE_CONFIG`) | **badges** — the pills on a card and a detail page (MEH-1753) | ProducerCard, BadgeRow, the `+N` overflow popover |
+
+**Nine claims exist on both** — eight sharing a key (`verified`, `grass_fed`,
+`gluten_free`, `vegetarian`, `vegan`, `lactose_free`, `no_added_sugar`,
+`kosher`) plus `delivery` ↔ `has_delivery`, which are the same claim under
+different keys. They are **not** hand-copies: `LabelScopeContract.test.js`
+asserts each pair agrees on scope and evidence, so changing one side alone goes
+red.
+
+Their **labels** are deliberately not tied together — the `verified` badge reads
+«מאומת» while its axis reads «רישוי מאומת», and their **predicates** may differ
+too (the `delivery` badge also counts `delivery_count > 0` and is suppressed for
+a delivery-only business, MEH-1841). The contract governs what a label *claims*
+and *who established it*, never how the boolean is computed or how the copy is
+worded.
+
+`frontend/lib/attribute-labels.js` — `ATTRIBUTE_LABELS` is the projection the
+filter surfaces consume. Each entry is an object:
 
 ```js
 vegan: {
@@ -89,8 +118,10 @@ because the pattern the MEH-1507 spec cites, the **MEH-1472 emoji guard**
 (`NoEmojiInComponents.test.js`), is itself a vitest test. Same mechanism, real gate.
 
 **Adding a new label:** add the object with `scope` + `evidence` (+ `subtext` if it
-needs an in-component explanation) to `ATTRIBUTE_LABELS` (or a surface-local object
-of the same shape). Omit either field → the guard fails.
+needs an in-component explanation) to `FILTER_AXES` for a filter chip, or to
+`BADGE_CONFIG` for a badge. Omit either field → the guard fails. If the new label
+is a claim that already exists on the other surface, add the pair to
+`SHARED_CLAIMS` in the test so the two cannot drift.
 
 ---
 
@@ -151,5 +182,11 @@ copy, and extend the guard if it's a new overflow surface.
 | MEH-1439 | diet tooltips | Product-level diet flags read as whole-business — tooltips corrected to any-product scope. |
 | MEH-1492 | מומלץ / בחירת העורכת | Editorial priority read as an earned/paid status — renamed + criteria (ADR-030, pay-to-play ban). |
 
-Cross-refs: `frontend/lib/badges.js` (BADGE_CONFIG tooltips),
-`backend/app/services/producer_listing.py` (`_kosher_condition` verified-only pattern).
+Cross-refs: `backend/app/services/producer_listing.py` (`_kosher_condition`
+verified-only pattern).
+
+_(`frontend/lib/badges.js` used to be listed here as a cross-reference. It is
+**in-contract** as of MEH-1753 and is documented above under "Where the metadata
+lives" — which is the point of that ticket: all four precedents this file
+encodes are badge incidents, so the badge surface was the one governed by the
+rule its own history wrote and not covered by the guard.)_
