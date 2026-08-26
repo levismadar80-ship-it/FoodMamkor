@@ -4261,6 +4261,25 @@ class WhatsAppClickIn(BaseModel):
         trimmed = v.strip()
         if not trimmed:
             return None
+        # MEH-555 bug pattern: a free-text str feeding an admin/dashboard
+        # surface accepts punctuation- or digit-only junk ("???", "123")
+        # unless a letter class is required. city feeds the post-launch
+        # demand-by-city card, so junk here is not cosmetic -- it becomes a
+        # phantom "city" in that feed. Letters counted AFTER strip, per the
+        # pattern. min_count=1, matching the sibling city validator above
+        # (`_validate_city_letters`): a legitimate short Hebrew name
+        # ("בת ים", "לוד") must clear the floor.
+        #
+        # DIVERGENCE from that sibling, deliberate: it RAISES, because city is
+        # required there and a stripped-to-nothing value must 422. Here city is
+        # optional telemetry on a fire-and-forget beacon, so junk DROPS to None
+        # and the click is still logged. That is this endpoint's own stated
+        # principle (MEH-1627, routers/producers.py): "losing attribution beats
+        # losing the click" -- a 422 would discard a real click over a bad
+        # city. Soft validation is unaffected: an unknown REAL locality has
+        # letters and still stores as-is.
+        if not _LETTER_REGEX.sub("", trimmed):
+            return None
         return trimmed[:COVERAGE_CITY_MAX_LENGTH]
 
 

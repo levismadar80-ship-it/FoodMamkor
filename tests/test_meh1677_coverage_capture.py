@@ -57,6 +57,42 @@ class TestCoverageCityCapture:
         # would silently disagree with the column if either were changed alone.
         assert len(stored) == COVERAGE_CITY_MAX_LENGTH
 
+    def test_junk_city_drops_to_null_but_the_click_is_still_logged(self, client, db):
+        """MEH-555 pattern: a free-text field feeding a dashboard must require a
+        letter class, or "???" becomes a phantom city in the demand feed.
+
+        Asserts BOTH halves, and the second is the one that discriminates: a
+        naive fix that raises 422 would satisfy "no junk stored" while silently
+        discarding a real click. This endpoint's rule is the opposite (MEH-1627,
+        "losing attribution beats losing the click"), so the row must exist with
+        city NULL.
+        """
+        p = make_producer(db)
+        for junk in ("???", "123", "!!!", "...", "—"):
+            r = client.post(f"/producers/{p.id}/whatsapp-click", json={"city": junk})
+            assert r.status_code == 200, f"{junk!r} -> {r.status_code} {r.text}"
+        rows = db.query(ProducerWhatsAppClick).all()
+        assert len(rows) == 5, "every click must still be logged"
+        assert all(row.city is None for row in rows), [row.city for row in rows]
+
+    def test_short_real_city_names_still_pass(self, client, db):
+        """Real city names must survive the junk guard.
+
+        HONEST LIMIT, stated because the first draft of this docstring claimed
+        more than the test delivers: this does NOT discriminate min_count=1
+        from min_count=3. Measured -- swapping the guard to `< 3` leaves all 12
+        tests green, because every name here clears 3 letters once separators
+        are stripped ("בת ים" -> 4). It proves the guard does not reject real
+        localities; it does not pin the floor's value. The floor is 1 to match
+        the sibling `_validate_city_letters`, not because a test forces it.
+        """
+        p = make_producer(db)
+        for city in ("לוד", "בת ים", "אום אל-פחם"):
+            r = client.post(f"/producers/{p.id}/whatsapp-click", json={"city": city})
+            assert r.status_code == 200
+        stored = [row.city for row in db.query(ProducerWhatsAppClick).all()]
+        assert sorted(stored) == sorted(["לוד", "בת ים", "אום אל-פחם"]), stored
+
     def test_non_string_city_is_rejected_not_silently_nulled(self, client, db):
         """The `isinstance(v, str)` branch of _validate_city. Without this the
         branch is unexercised, and a regression that replaced the raise with a
