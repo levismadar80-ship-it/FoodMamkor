@@ -82,6 +82,10 @@ export default function AboutPage() {
   const tProcess = useTranslations("process");
   // MEH-841: comparison strip ported from home — sibling namespace, not consumer.*
   const tCompare = useTranslations("about.comparison");
+  // MEH-2192: honest freshness stamp. Literal month/year from he.json — NOT a
+  // build-time date, which would re-stamp on every deploy and signal a review
+  // that never happened.
+  const tAbout = useTranslations("about");
   // MEH-848: shared generic error copy (collapsed from about.consumer.contact.error_toast).
   const tError = useTranslations("error");
   const [form, setForm] = useState({ name: "", email: "", message: "", topic: "general" });
@@ -140,6 +144,14 @@ export default function AboutPage() {
           </h1>
           <p className="mt-4 font-body-md text-[17px] md:text-lg text-text/90 leading-relaxed max-w-[46ch]">
             {t("hero.subheading")}
+          </p>
+          {/* MEH-2192: dateline. Small muted line, start-aligned like the rest
+              of the hero — an E-E-A-T freshness signal a reader can check. */}
+          <p
+            data-testid="about-updated-at"
+            className="mt-4 font-body-md text-[13px] text-fg-muted"
+          >
+            {tAbout("updated_at")}
           </p>
         </div>
       </section>
