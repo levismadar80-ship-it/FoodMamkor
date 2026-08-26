@@ -50,8 +50,12 @@ vi.mock("@/lib/user-location", () => ({
   setUserLocation: vi.fn(),
 }));
 
-// Rows the API hands back. Non-empty by default so the geo fetch succeeds and
-// the expansion path is not entered for the wrong reason.
+// Rows the API hands back. Starts EMPTY and is set per test: the cases that
+// need the geo fetch to succeed assign `[producerRow(1)]` before activateGeo,
+// and the zero-result cases leave it (or reset it) empty on purpose. Stated
+// this way because the previous wording claimed "non-empty by default", which
+// is the opposite of the line below it — a comment that misdescribes its own
+// fixture is how a reader concludes a test covers a case it never set up.
 let rows = [];
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })) },
