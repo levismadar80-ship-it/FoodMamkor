@@ -2436,10 +2436,12 @@
       "loading_experiences": "טעינת חוויות...",
       "empty_events_title": "אין כאן אירועים שתואמים לסינון — עדיין",
       "empty_events_body": "נסו להרחיב את האזור, או לנקות את הקטגוריה. שווה לבדוק שוב בקרוב",
-      "empty_events_cta": "נקו את הסינון",
       "empty_experiences_title": "חוויות חדשות בדרך",
       "empty_experiences_body": "עדיין אוספות בתי עסק שמארחים סדנאות באזור שלך",
       "empty_experiences_cta": "מארחות חוויה? הוסיפו",
+      "empty_browse_producers": "בינתיים, גלו את בתי העסק",
+      "no_results_title": "לא נמצאו תוצאות",
+      "no_results_cta": "נקו סינון",
       "free": "חינם"
     },
     "categories": {

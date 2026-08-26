@@ -2436,10 +2436,12 @@
       "loading_experiences": "Loading experiences...",
       "empty_events_title": "No events match this filter — yet",
       "empty_events_body": "Try widening the area or clearing the category. Worth checking back soon",
-      "empty_events_cta": "Clear the filter",
       "empty_experiences_title": "New experiences on the way",
       "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
       "empty_experiences_cta": "Hosting an experience? Add it",
+      "empty_browse_producers": "Meanwhile, explore the businesses",
+      "no_results_title": "No results found",
+      "no_results_cta": "Clear filters",
       "free": "Free"
     },
     "categories": {
