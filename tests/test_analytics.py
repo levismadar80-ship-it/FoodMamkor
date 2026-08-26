@@ -1096,7 +1096,7 @@ class TestViewBeaconEndpoint:
         assert db.query(ProducerPageView).one().referrer is None
 
     def test_bot_user_agent_is_still_skipped(self, client, db):
-        """The bot filter lives in track_producer_view and must survive
+        """The bot filter lives in record_analytics_event and must survive
         the move — the beacon path runs the same writer."""
         p = make_producer(db)
         before = db.query(ProducerPageView).count()

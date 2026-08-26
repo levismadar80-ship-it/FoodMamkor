@@ -101,7 +101,7 @@ describe("MEH-1557 — retired over-claims stay retired", () => {
     const { windowed } = messages.dashboard.producer.analytics;
     const blob = JSON.stringify(messages);
     // C1: search_appearances counts click-throughs only (referrer='search' rows
-    // are written on page entry — services/analytics.py track_producer_view).
+    // are written on page entry — services/analytics.py record_analytics_event).
     expect(blob).not.toContain("גם אם הלקוחה לא לחצה");
     expect(windowed.search_appearances_tooltip).not.toMatch(/even if/i);
   });
