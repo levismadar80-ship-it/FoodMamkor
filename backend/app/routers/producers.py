@@ -36,6 +36,7 @@ from app.schemas.schemas import (
     ProducerListOut,
     ProducerRandomOut,
     ProducerViewIn,
+    WhatsAppClickIn,
 )
 from app.services.analytics import (
     EventContext,
@@ -498,6 +499,11 @@ def record_producer_view(
 def record_whatsapp_click(
     request: Request,
     producer_id: UUID,
+    # MEH-1677: OPTIONAL body carrying the coverage-request city. It must stay
+    # optional: the anonymous path uses navigator.sendBeacon, which cannot set
+    # Content-Type: application/json, so a required body would 422 every
+    # anonymous WhatsApp click on the site. Only CoverageRequestCta sends one.
+    data: WhatsAppClickIn | None = None,
     db: Session = Depends(get_db),
     # MEH-1627: lenient, NOT get_current_user_optional. The frontend fires
     # this via navigator.sendBeacon as the tab hands off to wa.me — there is
@@ -538,7 +544,9 @@ def record_whatsapp_click(
         db,
         event="whatsapp_click",
         producer_id=producer_id,
-        ctx=EventContext(request=request, viewer=current_user),
+        ctx=EventContext(
+            request=request, viewer=current_user, city=data.city if data else None
+        ),
     )
     return {"detail": "logged"}
 

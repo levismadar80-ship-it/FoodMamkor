@@ -73,6 +73,15 @@ class Producer(Base):
     # (default: whatsapp). `contact_email` is the producer's business
     # email — distinct from the owner user's login email.
     primary_contact_method = Column(String(20), default="whatsapp")
+    # MEH-1677: the business's opt-out for the "לא מגיעים אליך?" CTA
+    # (MEH-1675). server_default=true, NOT a Python-side default: existing
+    # rows are backfilled by the DDL, and a writer that bypasses the ORM
+    # still gets true. No toggle UI ships with this column -- that is
+    # MEH-1676; the column lands now so the opt-out does not cost a second
+    # schema change later.
+    coverage_cta_enabled = Column(
+        Boolean, nullable=False, server_default=text("true"), default=True
+    )
     contact_email = Column(String(200), nullable=True)
     # MEH-296: extra contact channels. URLs validated at the API boundary
     # (schemas.ProducerUpdate, http(s) only). Free-text columns, no enum.
@@ -1764,6 +1773,12 @@ class ProducerWhatsAppClick(Base):
         index=True,
     )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    # MEH-1677: the city a coverage-request click ("לא מגיעים אליך?") was
+    # asking about. NULL on an ORDINARY WhatsApp click and on every row that
+    # predates this column -- only CoverageRequestCta sends a city, so NULL
+    # means "not a coverage click" and never "we lost it". Length mirrors the
+    # 60-char cap the request schema enforces after trim.
+    city = Column(String(60), nullable=True)
 
 
 class ContactClick(Base):
