@@ -176,6 +176,23 @@ export default function CitySearch({
           aria-expanded={isOpen && matches.length > 0}
           aria-autocomplete="list"
           aria-controls={`${id}-listbox`}
+          // MEH-2195: completes the combobox contract — without this (and the
+          // `id` on each option below) a screen reader has no way to announce
+          // which suggestion the arrow keys are on. Gated on the SAME condition
+          // as aria-expanded two lines up, so the two can never disagree about
+          // whether the list is open.
+          //
+          // Clamped like HeroSearch.jsx:331-335: `highlight` is state while
+          // `matches` is derived from `value`, so pointing at an id that does
+          // not exist is the one failure worse than omitting the attribute.
+          // Not reachable today (onChange resets to 0, ArrowDown is bounded,
+          // and the async /cities merge only ever grows the set) — it is the
+          // cheap guard, not a fix for an observed bug.
+          aria-activedescendant={
+            isOpen && matches.length > 0
+              ? `${id}-option-${Math.min(highlight, matches.length - 1)}`
+              : undefined
+          }
         />
         {value && (
           <button
@@ -208,6 +225,10 @@ export default function CitySearch({
           {matches.map((city, idx) => (
             <li
               key={city}
+              // MEH-2195: the target of aria-activedescendant above. Index-based
+              // rather than city-based because the input's value is arbitrary
+              // user text and a Hebrew city name is not a valid id fragment.
+              id={`${id}-option-${idx}`}
               role="option"
               aria-selected={idx === highlight}
               onMouseDown={(e) => {
