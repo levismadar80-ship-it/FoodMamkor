@@ -48,6 +48,7 @@ erDiagram
     producers {
         uuid id PK
         string name
+        boolean coverage_cta_enabled "NOT NULL, server_default true — MEH-1677; the business's opt-out for the coverage-request CTA. No toggle UI ships with it (MEH-1676)"
         string slug UK "nullable"
         string google_place_id "nullable — MEH-1490 admin map; only Google datum stored"
         uuid top_product_id FK "nullable — MEH-2137, FK products.id ON DELETE SET NULL; featured-product vote by IDENTITY. NULL when the legacy top_product_name matched two products or none — deliberately not guessed"
@@ -350,6 +351,7 @@ erDiagram
         uuid id PK
         uuid producer_id FK "indexed"
         timestamp clicked_at "indexed"
+        string city "nullable — MEH-1677; the city a coverage-request click asked about. NULL on an ordinary WhatsApp click, so NULL means 'not a coverage click', never 'lost'"
     }
 
     newsletter_subscribers {
