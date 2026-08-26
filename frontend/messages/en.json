@@ -2438,6 +2438,9 @@
       "empty_experiences_title": "New experiences on the way",
       "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
       "empty_experiences_cta": "Hosting an experience? Add it",
+      "empty_browse_producers": "Meanwhile, explore the businesses",
+      "no_results_title": "No results found",
+      "no_results_cta": "Clear filters",
       "free": "Free"
     },
     "categories": {

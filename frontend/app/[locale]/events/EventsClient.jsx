@@ -231,6 +231,21 @@ export default function EventsPage() {
     setCategory("");
   };
 
+  // MEH-1865: a zero row count means two different things, and the page used
+  // to render one surface for both. No new data signal is needed to tell them
+  // apart: load() only ever sends city + category, so with NEITHER applied the
+  // response IS the dataset for this tab. `filtersActive` therefore decides,
+  // and it can only err in the safe direction — a genuinely empty dataset
+  // reached WITH a filter on renders the filtered-to-zero surface, whose
+  // "clear filters" action then reveals the true empty state one click later.
+  // The reverse mistake (hiding the filters on a filtered-to-zero) is the one
+  // that traps the reader with no way back but editing the URL, and it cannot
+  // happen here.
+  const filtersActive = Boolean(city || category);
+  const isZero = !loading && events.length === 0;
+  const datasetEmpty = isZero && !filtersActive;
+  const filteredToZero = isZero && filtersActive;
+
   return (
     <div>
       {/* Breadcrumb — stays on cream so it reads on the dark desktop hero
@@ -320,6 +335,12 @@ export default function EventsPage() {
         </div>
       </div>
 
+      {/* Toolbar + category chips — the tab's filter controls. MEH-1865: on an
+          empty dataset there is nothing to filter and nothing to re-view, so
+          the whole control layer is withheld; on a filtered-to-zero it stays,
+          because it is the only way back. */}
+      {!datasetEmpty && (
+      <>
       {/* Toolbar — city search + list/calendar view toggle */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
         <div className="flex items-center gap-2 md:gap-3">
@@ -375,13 +396,17 @@ export default function EventsPage() {
           onChipClick={onChipClick}
         />
       </div>
+      </>
+      )}
 
       {/* Feed */}
       <section className="max-w-5xl mx-auto px-4 pt-4 pb-16">
         {loading ? (
           <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
-        ) : events.length === 0 ? (
-          <EmptyState tab={tab} t={t} onReset={resetFilters} />
+        ) : filteredToZero ? (
+          <NoResults t={t} onReset={resetFilters} />
+        ) : datasetEmpty ? (
+          <EmptyState tab={tab} t={t} />
         ) : view === "calendar" ? (
           <CalendarView items={events} linkPrefix={isExp ? "/experiences" : "/events"} />
         ) : (
@@ -486,14 +511,18 @@ function EntryRow({ entry, freeLabel }) {
   );
 }
 
-// Per-tab empty state — editorial, not apologetic. Phosphor glyph in
-// gold, headline + body + a single real forward action (filter reset on
-// events; add-experience on experiences).
-function EmptyState({ tab, t, onReset }) {
+// Per-tab EMPTY DATASET state — editorial, not apologetic. Phosphor glyph in
+// gold, headline + body. MEH-1865: this surface now renders only when nothing
+// exists for the tab, so the events tab's old "clear the filter" button is gone
+// — with no filter applied it was a no-op, and it is a filter control on the
+// one state whose whole point is that there is nothing to filter. The heading
+// and body are untouched. What replaces it is the one forward action that is
+// real on BOTH tabs when the shelf is bare: go look at the businesses.
+function EmptyState({ tab, t }) {
   const isExp = tab === "experiences";
   const Icon = isExp ? CookingPot : CalendarX;
   return (
-    <div className="flex flex-col items-center text-center px-6 py-16">
+    <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
         <Icon size={36} />
       </div>
@@ -505,27 +534,48 @@ function EmptyState({ tab, t, onReset }) {
       <p className="text-sm text-fg-muted mt-2.5 max-w-[30ch] leading-relaxed">
         {isExp ? t("empty_experiences_body") : t("empty_events_body")}
       </p>
-      <div className="mt-6 w-full max-w-[260px]">
-        {isExp ? (
+      <div className="mt-6 flex flex-col items-center gap-4 w-full">
+        {isExp && (
           <Link
             href="/experiences/new"
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
           </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={onReset}
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
-          >
-            <ArrowCounterClockwise size={18} weight="bold" />
-            {t("empty_events_cta")}
-          </button>
         )}
+        <Link
+          href="/producers"
+          data-testid="events-browse-producers"
+          className="min-h-[44px] inline-flex items-center text-sm font-semibold text-primary hover:underline"
+        >
+          {t("empty_browse_producers")}
+        </Link>
       </div>
       <span aria-hidden="true" className="mt-6 w-9 h-0.5 bg-accent/50 rounded-full" />
+    </div>
+  );
+}
+
+// FILTERED TO ZERO (MEH-1865) — rows exist for this tab, the active filters
+// matched none of them. Deliberately NOT the editorial empty state above: the
+// filter controls stay on screen alongside this, so all it owes the reader is
+// the fact and the undo. Same tab, same chrome, one click back to results.
+function NoResults({ t, onReset }) {
+  return (
+    <div data-testid="events-no-results" className="flex flex-col items-center text-center px-6 py-16">
+      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+        {t("no_results_title")}
+      </h2>
+      <button
+        type="button"
+        onClick={onReset}
+        data-testid="events-clear-filters"
+        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+      >
+        <ArrowCounterClockwise size={18} />
+        {t("no_results_cta")}
+      </button>
     </div>
   );
 }
