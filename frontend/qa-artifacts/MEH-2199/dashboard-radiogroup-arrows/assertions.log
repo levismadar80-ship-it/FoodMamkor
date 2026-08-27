@@ -40,7 +40,7 @@ PASS  and posted NOTHING — reveal-then-confirm survives the keyboard path
         expected false
         actual   false
 PASS  CONTROL an unhandled key moves nothing (negative control)
-        expected ["on_vacation",["false","false","false","true"]]
-        actual   ["on_vacation",["false","false","false","true"]]
+        expected ["on_vacation",["true","false","false","false"]]
+        actual   ["on_vacation",["true","false","false","false"]]
 
 0 failed of 14 assertions

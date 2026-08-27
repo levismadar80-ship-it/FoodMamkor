@@ -130,6 +130,38 @@ describe("GroupBuy cancel modal — keyboard + focus (MEH-2199)", () => {
     expect(document.activeElement).toBe(last);
   });
 
+  it("the ARIA dialog IS the trapped card, not the backdrop behind it", async () => {
+    const { el } = await openDialog();
+
+    // Behavioural, not structural. The backdrop closes the dialog when clicked;
+    // the card stops propagation and stays open. So if role="dialog" were still
+    // on the backdrop, clicking the element the a11y tree calls "the dialog"
+    // would DISMISS it — which is the concrete consequence of the ARIA boundary
+    // and the focus-trap boundary being different elements.
+    fireEvent.click(el);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(api.delete).not.toHaveBeenCalled();
+
+    // And every focusable control inside the ARIA boundary is inside the trap:
+    // one element owns both, so nothing can sit between them.
+    const focusables = el.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusables.length).toBeGreaterThan(0);
+    for (const node of focusables) expect(el.contains(node)).toBe(true);
+  });
+
+  it("captures the focus-return target when the dialog OPENS, not when it closes", async () => {
+    const { trigger, el } = await openDialog();
+    // Move focus away while the dialog is open, as a real user tabbing would.
+    within(el).getByRole("button", { name: "cancel_dismiss" }).focus();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // Still the CTA, because the target was recorded at open time rather than
+    // inferred from whatever happened to be focused later.
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
   it("confirming still DELETEs — the a11y layer did not touch the destructive path", async () => {
     const { el } = await openDialog();
     fireEvent.click(within(el).getByRole("button", { name: "cancel_cta" }));

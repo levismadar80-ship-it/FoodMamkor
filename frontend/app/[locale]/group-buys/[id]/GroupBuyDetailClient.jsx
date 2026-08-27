@@ -111,6 +111,13 @@ export default function GroupBuyDetailClient({ id }) {
   // non-modal dialog: the ARIA tells the screen reader the rest of the page is
   // inert while it is not.
   const cancelDialogRef = useRef(null);
+  // MEH-2199 follow-up: the focus-return target is captured when the dialog is
+  // OPENED, not read out of document.activeElement inside the effect. Reading
+  // it in the effect is correct under React's current synchronous commit — no
+  // script runs between the click and the effect — but that is a property of
+  // today's scheduler, not of this component. Capturing at the interaction is
+  // what focus-trap-react and react-aria do, and it costs one line.
+  const cancelTriggerRef = useRef(null);
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const prevStatusRef = useRef(null);
@@ -185,8 +192,9 @@ export default function GroupBuyDetailClient({ id }) {
     if (!confirmCancelOpen) return undefined;
     const FOCUSABLE =
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    // Whoever was focused when the dialog opened is the CTA that opened it.
-    const trigger = document.activeElement;
+    // Captured at open time by handleCancel; the activeElement read is only a
+    // fallback for a future path that opens the dialog without going through it.
+    const trigger = cancelTriggerRef.current ?? document.activeElement;
     const focusables = () =>
       Array.from(cancelDialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
     focusables()[0]?.focus();
@@ -222,7 +230,10 @@ export default function GroupBuyDetailClient({ id }) {
   }, [confirmCancelOpen]);
 
   // MEH-1250: open the confirm modal instead of the native window.confirm().
-  const handleCancel = () => setConfirmCancelOpen(true);
+  const handleCancel = () => {
+    cancelTriggerRef.current = document.activeElement;
+    setConfirmCancelOpen(true);
+  };
 
   const doCancel = async () => {
     setConfirmCancelOpen(false);
@@ -469,13 +480,21 @@ export default function GroupBuyDetailClient({ id }) {
       {confirmCancelOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="gb-cancel-title"
           onClick={() => setConfirmCancelOpen(false)}
         >
           <div
             ref={cancelDialogRef}
+            // MEH-2199 follow-up: the dialog role belongs on the CARD, not on
+            // the full-screen backdrop it used to sit on. The backdrop covers
+            // the viewport, so declaring it the dialog made the accessible
+            // dialog the whole screen — and put the ARIA boundary on a
+            // different element from the focus trap, which lives on this ref.
+            // Two boundaries that are meant to be one: a focusable control
+            // added between the backdrop and this card would have been inside
+            // the ARIA dialog and outside the trap.
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gb-cancel-title"
             className="bg-background rounded-[16px] p-6 max-w-sm w-full border border-border"
             onClick={(e) => e.stopPropagation()}
           >
