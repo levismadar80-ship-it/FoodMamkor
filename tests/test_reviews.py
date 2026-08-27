@@ -13,6 +13,12 @@ import pytest
 from conftest import auth_header, make_producer, make_user
 from app.models.models import ContactClick, ProducerReview, ProducerWhatsAppClick
 
+# MEH-2204: imported, not transcribed. The matrix below must widen on its own
+# the day this frozenset does — otherwise adding a method (e.g. when facebook /
+# external_order are fixed at the beacon) silently leaves the new one uncovered
+# while the suite still reports green.
+from app.routers.producers import _VALID_CONTACT_METHODS
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -184,15 +190,22 @@ def test_post_review_contact_click_unlocks_first_review(client, db):
     assert r.json()["stars"] == 5
 
 
-@pytest.mark.parametrize("method", ["phone", "instagram", "website", "email"])
+@pytest.mark.parametrize("method", sorted(_VALID_CONTACT_METHODS))
 def test_post_review_any_contact_method_unlocks(client, db, method):
     """Every method the contact-click endpoint accepts opens the gate.
 
-    Parametrised over `_VALID_CONTACT_METHODS` (routers/producers.py) rather
-    than over the seven primary-channel values, because those four are the only
-    ones that can produce a stored row today — see the PR body: facebook and
-    external_order are rejected 422 at the beacon, which is a separate gap and
-    NOT closed here.
+    Parametrised over the imported `_VALID_CONTACT_METHODS` (routers/producers.py)
+    rather than over the seven `primary_contact_method` values, because only the
+    methods that set accepts can produce a stored row at all: `record_contact_click`
+    raises 422 for anything outside it, so no ContactClick row is written and the
+    gate has nothing to find.
+
+    That gap is real and is NOT closed here: ContactCard renders `facebook` and
+    `external_order` tiles that call trackContactClick with those keys, and both
+    are rejected at the beacon — so those two channels still cannot unlock a first
+    review. Fixing it means widening the frozenset, which is outside this change's
+    scope; when someone does, this test widens with it because the list is derived
+    rather than transcribed.
     """
     user = make_user(db)
     producer = make_producer(db)
