@@ -48,8 +48,18 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
+// MEH-2193: `get` must resolve to a promise. A bare `vi.fn()` returns
+// undefined, which no real client does — and once AboutClient gained the
+// HowWeChoose child (which calls `api.get(...).then(...)` in an effect), the
+// under-specified mock crashed the whole tree during commit, reddening three
+// assertions that have nothing to do with fetching. The shape below is what
+// axios actually returns.
 vi.mock("@/lib/api", () => ({
-  default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+  },
 }));
 
 // Real <img> so the component's own onError path can be exercised (below),
