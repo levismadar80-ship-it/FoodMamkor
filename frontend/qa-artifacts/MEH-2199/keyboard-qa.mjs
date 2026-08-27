@@ -297,6 +297,24 @@ async function dashboardRadios(page) {
   check("and posted NOTHING — reveal-then-confirm survives the keyboard path",
     strayPost, false);
 
+  // WHY THE aria-checked VALUES BELOW ARE NOT STABLE ACROSS RUNS, MEASURED.
+  // This control compares a before/after pair, so it records whatever the group
+  // reads at this point — and that depends on whether the availability POST from
+  // an earlier arrow press has resolved yet. When it resolves it runs
+  // setVacationSelected(false) (dashboard/page.js, the MEH-999 success path),
+  // collapsing the vacation reveal and snapping the group back to the earlier
+  // state. Lengthening the wait above from a fixed 400ms to a bounded condition
+  // wait gave that resolution time to land, which is why the recorded values
+  // moved from ["false","false","false","true"] to ["true","false","false","false"].
+  //
+  // That is NOT a capture artifact. It is a real race a producer can hit by
+  // choosing an availability state and then choosing vacation before the first
+  // write returns. Reproduced deterministically with a deferred POST: reveal
+  // present, then absent once the earlier POST resolves. Reported, NOT fixed
+  // here — the fix belongs in setAvailabilityState, outside this ticket's scope.
+  //
+  // The control itself is unaffected: it asserts the state does not CHANGE
+  // across an unhandled keypress, whatever that state happens to be.
   const before = await snapshot(page, GROUP, '[role="radio"]');
   await page.keyboard.press("a");
   const after = await snapshot(page, GROUP, '[role="radio"]');
