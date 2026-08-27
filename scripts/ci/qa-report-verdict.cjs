@@ -118,7 +118,53 @@ function verdict(raw = {}) {
     };
   }
 
-  const failing = (unexpected ?? 0) + (flaky ?? 0);
+  // PARTIAL APPLICATION of the staged patch. Step 2 (require this module)
+  // without Step 1 (export `unexpected` / `flaky`) leaves both counts empty
+  // while `executed` — which the workflow ALREADY exports today — arrives
+  // fine. `failing` would then be 0 + 0, and a run with 26 real failures
+  // would be headlined PASS over the words "All 300 executed specs green".
+  //
+  // That is a FALSE CLAIM, and it is the same defect class this module was
+  // written to remove — pointed the other way. It is also the likelier half
+  // to be missed: the two `>> "$GITHUB_OUTPUT"` lines are the small, easy
+  // step to skip, and nothing enforces applying both together.
+  //
+  // So: counts we cannot read are never counts of zero. Refuse a verdict.
+  //
+  // `||`, not `&&`, and the operator is the whole point. `&&` would refuse only
+  // when BOTH counts are missing, so an asymmetric export (`unexpected=0`,
+  // `flaky=null`) would slip through as PASS while the flaky count is unknown —
+  // under `--fail-on-flaky-tests` that is a failing run reported green. Today
+  // Step 1 exports both in one sequential block, so the asymmetric state is
+  // unreachable; `||` means it stays unreachable even if that block is ever
+  // split, instead of resting on an assumption nobody re-checks.
+  //
+  // testing.md's "watch the shape of the pass condition" says to prefer `&&`
+  // over `||`. That rule is about a PASS condition, where `||` lets either cue
+  // carry the assertion. This is a REFUSAL condition, so the polarity inverts:
+  // here `||` is the strict form (refuse if EITHER count is unreadable) and
+  // `&&` is the lax one. Same principle, opposite operator.
+  if (unexpected === null || flaky === null) {
+    return {
+      verdict: VERDICTS.DID_NOT_RUN,
+      headline: "Playwright QA — NO VERDICT (counts incomplete)",
+      counts,
+      outcome,
+      detail: `**${executed} specs executed, but a failure count is missing**, so there is no honest verdict to give. This is a configuration fault, not a test result: \`unexpected\` and \`flaky\` are not reaching the reporter, which means **Step 1 of \`docs/ci/meh-2196-qa-three-state.patch.md\` was not applied** (the two \`>> "$GITHUB_OUTPUT"\` lines beside the existing \`executed\` / \`skipped\` exports). Apply it, then re-run. **Do not read this as PASS** — the specs ran and nobody here knows how they went.`,
+    };
+  }
+
+  // Plain addition, no `?? 0`: the guard above returns whenever either count
+  // is null, so both are numbers here and the fallbacks were dead code that
+  // told the next reader null can still arrive.
+  //
+  // Removing them buys clarity and NOTHING ELSE — worth saying, because the
+  // tempting claim is that it also fails loudly if the guard is ever loosened.
+  // It does not: `0 + null` is `0` in JS, so a loosened guard produces the
+  // same silent "unreadable counts as zero" either way. Measured, not assumed.
+  // The `||` in the guard is the only thing standing between an unreadable
+  // count and a false PASS; this line is not a second line of defence.
+  const failing = unexpected + flaky;
   if (failing >= 1) {
     return {
       verdict: VERDICTS.FAIL,
@@ -231,6 +277,21 @@ if (require.main === module) {
       shippedWas: "Playwright QA — FAIL",
     },
     {
+      // The reviewer's finding on #3133: ONE count missing, not both. Under
+      // `&&` this returned PASS with flaky unknown.
+      name: "asymmetric export — unexpected arrives, flaky does not",
+      raw: { outcome: "failure", executed: "300", unexpected: "0", flaky: "", skipped: "54" },
+      want: VERDICTS.DID_NOT_RUN,
+      shippedWas: "Playwright QA — FAIL",
+    },
+    {
+      // The reviewer's finding on #3132, kept as a case so it cannot come back.
+      name: "patch applied HALFWAY — executed exported, failure counts not",
+      raw: { outcome: "failure", executed: "300", unexpected: "", flaky: "", skipped: "54" },
+      want: VERDICTS.DID_NOT_RUN,
+      shippedWas: "Playwright QA — FAIL",
+    },
+    {
       name: "a garbage count is unknown, not zero",
       raw: { outcome: "failure", executed: "n/a" },
       want: VERDICTS.DID_NOT_RUN,
@@ -245,6 +306,13 @@ if (require.main === module) {
     const old = shippedVerdictToday(c.raw);
     const ok = got.verdict === c.want;
     if (!ok) failures.push(`${c.name}: want ${c.want}, got ${got.verdict}`);
+    // `shippedWas` is ASSERTED, not displayed. Left unread it is a field that
+    // looks like an assertion target and verifies nothing — the "artifact that
+    // asserts coverage" smell this repo keeps paying for, in the one file whose
+    // whole subject is a reporter that claimed more than it knew.
+    if (old.headline !== c.shippedWas) {
+      failures.push(`${c.name}: frozen witness drifted — expected the shipped reporter to say ${JSON.stringify(c.shippedWas)}, it said ${JSON.stringify(old.headline)}`);
+    }
     const moved = old.headline !== got.headline;
     if (moved) changed += 1;
     console.log(`${ok ? "  ok  " : " FAIL "} ${c.name}`);
