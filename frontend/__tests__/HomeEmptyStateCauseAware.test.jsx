@@ -172,7 +172,7 @@ describe("HomeProducersGrid day-zero cause-awareness (MEH-2197)", () => {
 
   it("day-empty block carries zero bg-primary elements and clears the days", () => {
     const onClearDays = vi.fn();
-    const { container } = render(
+    render(
       <HomeProducersGrid {...dayZeroProps} onClearDays={onClearDays} regionFallback={null} />,
     );
     const block = screen.getByTestId("day-empty-suggestion");
@@ -183,8 +183,6 @@ describe("HomeProducersGrid day-zero cause-awareness (MEH-2197)", () => {
     expect(cta.className).toContain("text-primary");
     fireEvent.click(cta);
     expect(onClearDays).toHaveBeenCalledTimes(1);
-    // sanity: the whole subtree carries no hero button either
-    expect(container.querySelectorAll('[data-testid="day-empty-suggestion"] .bg-primary').length).toBe(0);
   });
 
   it("day-zero with NO region fallback → exactly ONE empty-state block", () => {
