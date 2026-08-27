@@ -33,14 +33,14 @@ PASS  ArrowUp is previous
 PASS  wrapping backwards lands on vacation
         expected "on_vacation"
         actual   "on_vacation"
-FAIL  vacation REVEALED the return-date field
+PASS  vacation REVEALED the return-date field
         expected 1
-        actual   0
+        actual   1
 PASS  and posted NOTHING — reveal-then-confirm survives the keyboard path
         expected false
         actual   false
 PASS  CONTROL an unhandled key moves nothing (negative control)
-        expected ["on_vacation",["true","false","false","false"]]
-        actual   ["on_vacation",["true","false","false","false"]]
+        expected ["on_vacation",["false","false","false","true"]]
+        actual   ["on_vacation",["false","false","false","true"]]
 
-1 failed of 14 assertions
+0 failed of 14 assertions
