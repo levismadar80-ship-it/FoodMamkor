@@ -3,6 +3,36 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-27 — ‏MEH-2200 (תיקון 13): מוזג `a8e4dca1` / ‏#3139
+
+**מוזג:** ‏#3139 `a8e4dca1` — **אומת כ-squash** (הורה יחיד + תבנית `<title> (#N)`, נקרא מהקומיט שנחת). שני שערי החובה ירוקים ו**באמת רצו**: `Frontend build` · `AI artifact scan` · `Frontend unit tests (vitest)` · `Env drift` כולם `success`, לא `skipped` — נקרא משורות הלוג של השער, לא מה-aggregator.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏PR של קוד ב-draft הוא מלכודת דו-כיוונית, ושני השערים סותרים זה את זה על אותו head.** ‏`Deploy gate` ירוק (leg מדולג עובר aggregator) בזמן ש-`CI gate` אדום (`check_ran` מסרב ל-`skipped`). **אף אחת משתי הקריאות אינה עדות על ה-diff.** ‏re-run אינו עוזר — הוא משחזר payload עם `draft: true`. רק Ready או push אמיתי מריצים את ה-jobs.
+2. **‏היציאה מ-draft חשפה `Env drift` אדום שהיה מוסתר.** ‏`process.env.*` בהרנס QA נספר כמשתנה שחייב תיעוד. **התבנית הנכונה היא `process.argv` + ברירת מחדל קשיחה** (כמו `qa-meh1390`/`qa-meh1539`), לא הוספת שורה ל-`.env.example` — כלל 8 אינו מתיר להרנס חד-פעמי להוסיף env vars.
+3. **‏`git show --stat <merge> -- <path>` אינו בדיקה תקפה ל«האם המיזוג שינה את הקובץ».** ‏combined diff **מסתיר** קובץ שתואם לאחד ההורים. השוואת blob לכל הורה בנפרד היא הבדיקה. כך הופרך Must Fix של הסוקר: שני ההורים נשאו `531bbdaf` זהה.
+4. **‏ה-clone היה shallow וכמעט ייצר תשובה בטוחה-ושגויה** — SHA שדווח «לא קיים» ו-history של קומיט אחד. `git fetch --unshallow` (4254 קומיטים) הפך את שניהם. ‏MEH-1519 חי וקיים.
+5. **‏🔴 ה-`commit_message` שסופק ל-merge לא נחת — מופע שני אחרי ‏#3116.** ‏GitHub שרשר את קומיטי הענף. **אם את מסתמכת על `Closes` בגוף שאת מספקת — אל תסתמכי.** כאן זה לא הזיק (אפס `Closes`, והכרטיס נבדק בשני הכיוונים ולא נסגר).
+6. **‏E2E לא קיבל אות, ולא נטען שקיבל.** ‏`R_E2E: cancelled` פעמיים — ה-concurrency group המקובץ של MEH-1601: staging נדחף ב-11:06:36Z וב-11:17:06Z בתוך ריצה שהתחילה ב-11:07. **staging התחלף 7 פעמים בין 10:00 ל-11:20** מול סוויטה של ~20 דקות. ‏`E2E gate` אינו שער חובה, ולכן לא חסם — אבל **אין אות VRT ל-PR הזה**.
+7. **‏אין preview URL היום:** ‏Vercel החזיר `api-deployments-free-per-day` (מכסת Hobby, מתאפסת יומית). לא ניתן לתקן בקומיט.
+
+### ‏מה שממתין לספיר
+
+- **‏§30א(ה) — חוסם את גל ה-outreach.** הנוסח ב-`docs/compliance/outreach-disclosure-line.md` נושא את דרך ההסרה בלבד; **אין «פרסומת» ואין כתובת מפרסם**, והפטור לפנייה חד-פעמית לבית עסק **לא נבדק מול מקור משפטי**. סעיף פתוח מכוון בקובץ.
+- **‏MEH-2208** — `outreach_leads` (ס' 14, מידע שלא נמסר ע"י נושא המידע). נפתח **ללא `cc-queue`**: שלוש ההכרעות שם משפטיות/קופי.
+- **‏5 קבצים לא-מעקב בעץ העבודה** שדורשים `rm` שלה: `frontend/e2e/_dbg2200.mjs` · `_probe2200.mjs` · `frontend/qa-artifacts/MEH-2200/{notice-closeup-375.png,notice-inviewport-375.png,register-story-notice-375.webp}`. ‏`rm` ו-`git clean -fd` שניהם ב-`permissions.deny`; ‏`mv`/`git stash -u` נשקלו ונדחו כעקיפה.
+
+### החלטות
+
+| החלטה | נימוק |
+| -- | -- |
+| עמוד הפרטיות לא נגעתי בו | חמשת הרכיבים כבר חיים (MEH-1058 · MEH-1981); עריכת קובץ נכון היא רגרסיה שנראית כמו יסודיות |
+| סעיף הנמענים נוסח מחדש | «ספקי תשתית» תת-כולל מדידה — Anthropic ו-Meta מקבלים פרטי הרשמה |
+| «מגזין» הוסר משורת ה-outreach | `BRAND.md` §4 — מונח פנימי; פנייה לבעלת עסק היא משטח חיצוני |
+| ‏`Refs` ולא `Closes` | ‏CHANGELOG+HANDOFF עוד לא נחתו בזמן המיזוג (כלל 31) |
+| הצילום המטעה לא נכלל בקומיט | ‏`fullPage` מראה חפיפה שאינה קיימת בשום viewport; 6/6 hit-test |
+
 ## 2026-08-27 — ‏Batch מצב-אפס-יום (סדרתי): 2 מוזגו
 
 **מוזג:** ‏#3135 `33b4753c` (MEH-2197) · ‏#3141 `e344345f` (MEH-2198). **שניהם אומתו כ-squash** — הורה יחיד ותבנית `<title> (#N)`, נקרא מהקומיט שנחת ולא מתשובת ה-API; ושניהם אומתו כאבות-קדמונים של `origin/staging`. שני שערי החובה ירוקים ו**באמת רצו** בשניהם.
