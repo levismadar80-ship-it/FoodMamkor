@@ -75,8 +75,14 @@ function deliveryDaysForCity(producer, city) {
   );
   if (rows.length === 0) return null;
   const days = [...new Set(rows.map((row) => row?.delivery_day).filter(Boolean))];
-  // # REUSES: sortByWeek (DeliveryDayRow.jsx:20-21) — same comparator. That
-  // file is not ours to touch and does not export it, so the shape is mirrored.
+  // The SORT KEY is shared, not copied: DELIVERY_DAYS is imported from
+  // lib/delivery-days.js, so a change to week order cannot make this and
+  // DeliveryDayRow disagree. What is duplicated is only the two-term
+  // comparator expression (DeliveryDayRow.jsx:20-21), which has nothing to
+  // drift into. Note that file's own comment at :18-19 — sortByWeek is not in
+  // a shared lib "because after that move exactly one component needs it".
+  // That premise now has a second consumer; hoisting it is a separate ticket,
+  // not a change to make from inside this one.
   return days.sort((a, b) => DELIVERY_DAYS.indexOf(a) - DELIVERY_DAYS.indexOf(b));
 }
 

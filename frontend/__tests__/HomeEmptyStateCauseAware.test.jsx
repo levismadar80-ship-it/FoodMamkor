@@ -274,6 +274,12 @@ describe("HomeProducersGrid fallback day captions (MEH-2198)", () => {
     const caption = screen.getByTestId("fallback-day-caption");
     expect(caption).toHaveTextContent("fallback_day_caption_flexible");
     expect(caption).not.toHaveTextContent("fallback_day_caption:");
+    // The city must actually reach the translation call. Without this the
+    // suite is blind to the param being dropped: `t(key)` with no values
+    // returns the bare key, which still satisfies the substring assertion
+    // above. Measured — dropping `city` from the flexible call left the file
+    // 14/14 green until this line existed.
+    expect(caption).toHaveTextContent(CITY);
   });
 
   it("ZERO rows for the active city → zero caption elements for that card", () => {
