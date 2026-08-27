@@ -182,7 +182,104 @@ async function settingsTabs(page) {
     [after.focusedValue, after.selected], [before.focusedValue, before.selected]);
 }
 
-const SURFACES = { "events-tabs-keyboard": eventsTabs, "settings-tabs-keyboard": settingsTabs };
+/**
+ * The producer dashboard needs a signed-in producer AND a dashboard payload.
+ * Both are stubbed: the sandbox has no backend, and the subject here is the
+ * radio group's keyboard behaviour, not the fetch.
+ */
+async function dashboardRadios(page) {
+  log("\n=== /he/producer/dashboard — availability radiogroup ===");
+  await page.addInitScript(() => {
+    try { localStorage.setItem("token", "qa-token"); } catch { /* private mode */ }
+  });
+
+  const posted = [];
+  // ORDER MATTERS, AND IT IS THE REVERSE OF THE OBVIOUS ONE. Playwright checks
+  // page.route handlers in the REVERSE order they were registered, so the LAST
+  // one added wins. Registering the catch-all last therefore swallows /auth/me
+  // and the dashboard payload, the page redirects to /login, and the harness
+  // reports "radiogroup never appeared" — a dead probe wearing the costume of a
+  // finding. Measured: that is exactly what happened on the first run here.
+  // Catch-all FIRST, specific routes after.
+  await page.route("**/api/**", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+  await page.route("**/api/auth/me", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      id: 1, name: "\u05d3\u05e0\u05d4", email: "d@example.com", role: "producer", producer_id: "p1",
+    }) }));
+  await page.route("**/api/producers/me/dashboard", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      producer: { id: 1, name: "\u05e2\u05e1\u05e7", status: "approved", availability_state: "accepting_orders" },
+    }) }));
+  await page.route("**/api/producers/me/availability-state", async (r) => {
+    posted.push(r.request().postDataJSON());
+    await r.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+
+  await page.goto(`${BASE}/he/producer/dashboard`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector('[role="radiogroup"] [role="radio"]');
+
+  const GROUP = '[role="radiogroup"]';
+  let s = await snapshot(page, GROUP, '[role="radio"]');
+  control("radiogroup is present with 4 radios", [s.found, s.count], [true, 4]);
+  check("exactly one tab stop", singleTabStop(s), 1);
+  check("the tab stop is the checked radio",
+    [s.tabindex, s.selected], [["0", "-1", "-1", "-1"], ["true", "false", "false", "false"]]);
+
+  await page.locator(`${GROUP} [data-radio-value="accepting_orders"]`).focus();
+  await page.keyboard.press("ArrowLeft");
+  s = await snapshot(page, GROUP, '[role="radio"]');
+  check("ArrowLeft focuses the NEXT radio by name (RTL contract)", s.focusedValue, "available_today");
+  check("and SELECTS it — aria-checked follows focus", s.selected, ["false", "true", "false", "false"]);
+  check("still exactly one tab stop after the move", singleTabStop(s), 1);
+  await page.waitForTimeout(400);
+  // The POST is what separates "really selected" from "only repainted".
+  check("the availability POST fired once, carrying that state",
+    posted.map((b) => b?.state), ["available_today"]);
+
+  await page.keyboard.press("ArrowRight");
+  s = await snapshot(page, GROUP, '[role="radio"]');
+  check("ArrowRight returns to the PREVIOUS radio by name", s.focusedValue, "accepting_orders");
+  await page.keyboard.press("ArrowDown");
+  s = await snapshot(page, GROUP, '[role="radio"]');
+  check("ArrowDown is next (vertical axis unmirrored)", s.focusedValue, "available_today");
+  await page.keyboard.press("ArrowUp");
+  s = await snapshot(page, GROUP, '[role="radio"]');
+  check("ArrowUp is previous", s.focusedValue, "accepting_orders");
+
+  // The behaviour most at risk of being broken by an a11y change: arrowing onto
+  // vacation must REVEAL the date field and post NOTHING, exactly as a click
+  // does (MEH-999 reveal-then-confirm).
+  const postsBefore = posted.length;
+  await page.keyboard.press("ArrowRight"); // wraps backwards onto on_vacation
+  s = await snapshot(page, GROUP, '[role="radio"]');
+  check("wrapping backwards lands on vacation", s.focusedValue, "on_vacation");
+  // Bounded wait, not a bare count(): the reveal is a React state update, and a
+  // single immediate poll measures the harness's timing rather than the page.
+  // The bound is far above a healthy render, so it changes nothing on a good run
+  // and only caps the pathological one (.claude/rules/testing.md — the
+  // sanctioned form of a wait).
+  const revealed = await page
+    .waitForSelector("#vacation-until", { timeout: 5_000 })
+    .then(() => 1)
+    .catch(() => 0);
+  check("vacation REVEALED the return-date field", revealed, 1);
+  await page.waitForTimeout(400);
+  check("and posted NOTHING — reveal-then-confirm survives the keyboard path",
+    posted.length - postsBefore, 0);
+
+  const before = await snapshot(page, GROUP, '[role="radio"]');
+  await page.keyboard.press("a");
+  const after = await snapshot(page, GROUP, '[role="radio"]');
+  control("an unhandled key moves nothing (negative control)",
+    [after.focusedValue, after.selected], [before.focusedValue, before.selected]);
+}
+
+const SURFACES = {
+  "events-tabs-keyboard": eventsTabs,
+  "settings-tabs-keyboard": settingsTabs,
+  "dashboard-radiogroup-arrows": dashboardRadios,
+};
 
 // The sandbox ships chromium-1194 while the repo pins a playwright that wants
 // 1234; `npx playwright install` is not the move here (the environment provides
