@@ -10,7 +10,8 @@
  * move between items, Escape closes AND returns focus to the trigger, and the
  * menu is a single tab stop.
  *
- * ONE DELIBERATE DEPARTURE FROM THE MODAL IN CHUNK 5, ASSERTED BELOW
+ * ONE DELIBERATE DEPARTURE FROM THE MODAL IN CHUNK 5
+ * (asserted by "closing by clicking OUTSIDE does not yank focus back")
  * A menu is not a modal. Escape returns focus to the trigger, but closing by
  * clicking outside must NOT yank focus — the user is already on their way
  * somewhere else, and stealing focus back would fight them. Chunk 5's dialog
@@ -204,6 +205,26 @@ describe("Header account menu — keyboard (MEH-2199)", () => {
     // Scoped to the open state: an unconditional preventDefault here would
     // swallow Escape for anything else on the page that wants it.
     expect(fireEvent.keyDown(t, { key: "Escape" })).toBe(true);
+  });
+
+  it("closing by clicking OUTSIDE does not yank focus back to the trigger", () => {
+    render(<Header />);
+    const t = trigger();
+    fireEvent.click(t);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    // Put focus somewhere inside the menu, then dismiss by pointer.
+    const first = items()[0];
+    first.focus();
+    expect(document.activeElement).toBe(first);
+    fireEvent.mouseDown(document.body);
+
+    expect(screen.queryByRole("menu")).toBeNull();
+    // THE POINT: a menu is not a modal. Escape returns focus to the trigger
+    // because the user asked to come back; an outside click means they are
+    // already on their way somewhere else, and grabbing focus would fight them.
+    // Chunk 5's dialog restores on every close path — this one must not.
+    expect(document.activeElement).not.toBe(t);
   });
 
   it("does not hijack ArrowDown when the trigger is not focused and the menu is closed", () => {
