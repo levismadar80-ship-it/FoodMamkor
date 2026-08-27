@@ -273,7 +273,7 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
 
   it("escalation appears only when a phone exists", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
-    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? שלחו לנו הודעה");
+    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? צרו איתנו קשר");
   });
 
   // MEH-1462 — recipe-idea chip: last in the row, WhatsApp-only, exact prefill.
