@@ -125,7 +125,64 @@ async function eventsTabs(page) {
   check("view toggle — Home returns to list", [s.focusedValue, s.selected], ["list", ["true", "false"]]);
 }
 
-const SURFACES = { "events-tabs-keyboard": eventsTabs };
+/**
+ * /settings needs a signed-in user or the page redirects to /login. The token is
+ * seeded into localStorage before any script runs and GET /auth/me is stubbed —
+ * the sandbox has no backend to authenticate against, and driving the real login
+ * form would be testing the login form rather than this tablist.
+ */
+async function settingsTabs(page) {
+  log("\n=== /he/settings — profile|security tablist ===");
+  await page.addInitScript(() => {
+    try { localStorage.setItem("token", "qa-token"); } catch { /* private mode */ }
+  });
+  await page.route("**/api/auth/me", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      id: "u1", name: "\u05e1\u05de\u05d3\u05e8", email: "s@example.com", city: "\u05d7\u05d9\u05e4\u05d4", phone: "", role: "user",
+    }) }));
+  await page.goto(`${BASE}/he/settings`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector('[role="tablist"] [role="tab"]');
+
+  const LIST = '[role="tablist"]:has([data-tab-value="profile"])';
+  let s = await snapshot(page, LIST, '[role="tab"]');
+  control("settings tablist is present with 2 tabs", [s.found, s.count], [true, 2]);
+  check("exactly one tab stop", singleTabStop(s), 1);
+  check("the tab stop is the selected tab", [s.tabindex, s.selected], [["0", "-1"], ["true", "false"]]);
+
+  await page.locator(`${LIST} [data-tab-value="profile"]`).focus();
+  await page.keyboard.press("ArrowLeft");
+  s = await snapshot(page, LIST, '[role="tab"]');
+  check("ArrowLeft focuses the NEXT tab by name (RTL contract)", s.focusedValue, "security");
+  check("ArrowLeft activates it — aria-selected follows focus", s.selected, ["false", "true"]);
+  check("still exactly one tab stop after the move", singleTabStop(s), 1);
+  // aria-selected is a CLAIM; the rendered panel is the outcome. The password
+  // form exists only on the security side, so this separates "the ARIA flipped"
+  // from "the page actually switched".
+  check("the security PANEL rendered, not just the ARIA state",
+    await page.locator("#sec-current").count(), 1);
+  // The URL mirror lives inside selectTab — proof the real activator ran, and
+  // not a lookalike that only repainted the tabs.
+  check("the URL mirror followed the keyboard switch",
+    new URL(page.url()).searchParams.get("tab"), "security");
+
+  await page.keyboard.press("ArrowRight");
+  s = await snapshot(page, LIST, '[role="tab"]');
+  check("ArrowRight returns to the PREVIOUS tab by name", s.focusedValue, "profile");
+  await page.keyboard.press("End");
+  s = await snapshot(page, LIST, '[role="tab"]');
+  check("End selects the last tab", [s.focusedValue, s.selected], ["security", ["false", "true"]]);
+  await page.keyboard.press("Home");
+  s = await snapshot(page, LIST, '[role="tab"]');
+  check("Home selects the first tab", [s.focusedValue, s.selected], ["profile", ["true", "false"]]);
+
+  const before = await snapshot(page, LIST, '[role="tab"]');
+  await page.keyboard.press("a");
+  const after = await snapshot(page, LIST, '[role="tab"]');
+  control("an unhandled key moves nothing (negative control)",
+    [after.focusedValue, after.selected], [before.focusedValue, before.selected]);
+}
+
+const SURFACES = { "events-tabs-keyboard": eventsTabs, "settings-tabs-keyboard": settingsTabs };
 
 // The sandbox ships chromium-1194 while the repo pins a playwright that wants
 // 1234; `npx playwright install` is not the move here (the environment provides
@@ -139,19 +196,24 @@ const SURFACES = { "events-tabs-keyboard": eventsTabs };
 // (regression rule 8). A literal with a comment is the cheaper honest answer.
 const CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({ executablePath: CHROMIUM });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 let exitCode = 0;
 try {
   for (const [name, run] of Object.entries(SURFACES)) {
     if (only && only !== name) continue;
+    // A fresh context per surface. Routes, localStorage and the URL from one
+    // surface must not leak into the next and quietly satisfy its controls.
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    lines.length = 0;
+    failures = 0;
     await run(page);
+    await context.close();
     const dir = `${OUT}${name}`;
     mkdirSync(dir, { recursive: true });
     writeFileSync(`${dir}/assertions.log`, `${lines.join("\n")}\n\n${failures} failed of ${lines.filter((l) => /^(PASS|FAIL)/.test(l)).length} assertions\n`, "utf8");
     log(`\nwrote ${dir}/assertions.log`);
   }
   // Derived, never stated: adding an assertion moves this number on its own.
-  log(`\n${failures} failed of ${lines.filter((l) => /^(PASS|FAIL)/.test(l)).length} assertions`);
   if (failures) exitCode = 1;
 } catch (err) {
   console.error(String(err));
