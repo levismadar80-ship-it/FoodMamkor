@@ -270,7 +270,7 @@ export default function AboutPage() {
                     twice, three lines apart. Both keys remain in he.json and
                     en.json untouched, so restoring either is a one-line change
                     if Sapir wants it back. */}
-                <div className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
+                <div data-testid="about-signature" className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
                   <p className="font-headline-display font-black text-primary text-[26px] md:text-[28px] leading-tight">
                     {tAbout("signature.name")}
                   </p>
@@ -288,8 +288,8 @@ export default function AboutPage() {
                   falls back to a bare tonal plate, the same behaviour the
                   portrait had — no Leaf box, no name on an empty container
                   (MEH-1227). */}
-              <figure className="m-0 -mx-4 md:mx-0">
-                <div className="relative w-full aspect-[16/11] md:aspect-[4/5] overflow-hidden bg-background-alt">
+              <figure data-testid="about-story-figure" className="m-0 -mx-4 md:mx-0">
+                <div data-testid="about-story-image-box" className="relative w-full aspect-[16/11] md:aspect-[4/5] overflow-hidden bg-background-alt">
                   {imgFailed ? null : (
                     <Image
                       src={optimizeCloudinary(STORY_IMAGE, {
@@ -349,7 +349,7 @@ export default function AboutPage() {
           parallax, no sticky. */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <figure className="m-0">
+          <figure data-testid="about-band-bread" className="m-0">
             <div className="relative w-full h-[40vw] min-h-[180px] max-h-[420px] rounded-md overflow-hidden bg-background-alt">
               <Image
                 src={optimizeCloudinary(BAND_BREAD, {
@@ -448,8 +448,8 @@ export default function AboutPage() {
           the card asked for (no parallax, no sticky). */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <figure className="m-0">
-            <div className="relative w-[86%] md:w-[72%] aspect-[4/3] rounded-md overflow-hidden bg-background">
+          <figure data-testid="about-band-duo" className="m-0">
+            <div className="relative w-[86%] md:w-[68%] aspect-[4/3] rounded-md overflow-hidden bg-background">
               <Image
                 src={optimizeCloudinary(DUO_REAR, {
                   aspectRatio: "4:3",
@@ -457,12 +457,12 @@ export default function AboutPage() {
                 })}
                 alt={tAbout("img.duo_rear_alt")}
                 fill
-                sizes="(min-width: 1024px) 660px, 86vw"
+                sizes="(min-width: 1024px) 630px, 86vw"
                 className="object-cover"
                 priority={false}
               />
             </div>
-            <div className="relative w-[50%] md:w-[40%] aspect-[3/4] -mt-[16%] ms-auto me-0 rounded-md overflow-hidden border-[5px] border-background bg-background">
+            <div className="relative w-[46%] md:w-[34%] aspect-[3/4] -mt-[14%] ms-auto me-0 rounded-md overflow-hidden border-[5px] border-background bg-background">
               <Image
                 src={optimizeCloudinary(DUO_FRONT, {
                   aspectRatio: "3:4",
@@ -470,7 +470,7 @@ export default function AboutPage() {
                 })}
                 alt=""
                 fill
-                sizes="(min-width: 1024px) 370px, 50vw"
+                sizes="(min-width: 1024px) 315px, 46vw"
                 className="object-cover"
                 priority={false}
               />
