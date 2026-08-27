@@ -100,8 +100,10 @@ reporter's job is to say so honestly rather than to guess.
 > it unreachable if the block is ever split, rather than resting on an
 > assumption nobody re-checks. Its own self-test case pins it.
 >
-> _Found by the CI reviewer on #3132, and confirmed by running the payload
-> before fixing it rather than taken on faith._
+> _Found by the CI reviewer across two rounds, each confirmed by running the
+> payload before fixing it rather than taken on faith: **#3132** for the
+> both-counts-missing case, **#3133** for the asymmetric one that motivated
+> `||` over `&&`._
 
 ## Step 2 — replace the two ternaries with the committed module
 

@@ -154,7 +154,17 @@ function verdict(raw = {}) {
     };
   }
 
-  const failing = (unexpected ?? 0) + (flaky ?? 0);
+  // Plain addition, no `?? 0`: the guard above returns whenever either count
+  // is null, so both are numbers here and the fallbacks were dead code that
+  // told the next reader null can still arrive.
+  //
+  // Removing them buys clarity and NOTHING ELSE — worth saying, because the
+  // tempting claim is that it also fails loudly if the guard is ever loosened.
+  // It does not: `0 + null` is `0` in JS, so a loosened guard produces the
+  // same silent "unreadable counts as zero" either way. Measured, not assumed.
+  // The `||` in the guard is the only thing standing between an unreadable
+  // count and a false PASS; this line is not a second line of defence.
+  const failing = unexpected + flaky;
   if (failing >= 1) {
     return {
       verdict: VERDICTS.FAIL,
