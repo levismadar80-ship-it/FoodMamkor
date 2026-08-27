@@ -110,6 +110,60 @@ function toEntry(row, tab) {
   };
 }
 
+// MEH-2199: APG Tabs keyboard layer for the two tablists on this page. Both
+// declared role="tab" + aria-selected while every tab stayed its own tab-stop
+// and the arrow keys did nothing — a widget that promises more than it does.
+//
+// RTL arrow mapping is the house one: ArrowLeft = next, ArrowRight = prev.
+// REUSES: frontend/components/Lightbox.jsx:58 — same visual mapping, so a
+// keyboard user meets one direction convention across the site.
+//
+// Activation is AUTOMATIC (APG "tabs with automatic activation"): moving focus
+// selects. That is the pattern for a tablist whose panels are cheap and already
+// in the tree, which is the case for both rows here.
+//
+// The DOM is the single authority for both tab order and wire value — the
+// handler reads the buttons it finds and their data-tab-value, so reordering
+// the JSX cannot desync a parallel array (workflow.md Smell #1).
+const TAB_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
+
+function handleTablistKeyDown(e, activate) {
+  const tabs = Array.from(e.currentTarget.querySelectorAll('[role="tab"]'));
+  const from = tabs.indexOf(e.target.closest?.('[role="tab"]'));
+  if (from === -1) return;
+  let to;
+  // Object.hasOwn rather than `e.key in TAB_ARROW_DELTA`. This is DEFENSIVE,
+  // not a fix for a reachable bug — and the distinction is measured, not
+  // assumed. `in` walks the prototype chain, so a key literally named
+  // "constructor" would test true and the delta would read back as a function.
+  // That cannot happen here: React's own getEventKey does
+  // `normalizeKey[nativeEvent.key] || nativeEvent.key` on the same object
+  // shape, so by the time the handler runs, e.key for those names is already a
+  // FUNCTION (measured 27/08: "constructor" arrives as `function Object() {…}`,
+  // "__proto__" as `[object Object]`), and a non-string key misses `in` and
+  // `hasOwn` alike. So the two forms are indistinguishable today and no test
+  // here can tell them apart. hasOwn stays because it costs nothing and does
+  // not depend on a React internal staying the way it is.
+  if (Object.hasOwn(TAB_ARROW_DELTA, e.key)) {
+    to = (from + TAB_ARROW_DELTA[e.key] + tabs.length) % tabs.length;
+  } else if (e.key === "Home") {
+    to = 0;
+  } else if (e.key === "End") {
+    to = tabs.length - 1;
+  } else {
+    return;
+  }
+  // A tab with no data-tab-value would activate with `undefined` and change
+  // the panel to neither value — silently. Bail instead, so the arrow does
+  // nothing visible and the co-located test (which asserts every tab in this
+  // file carries one) is what actually reports the omission.
+  const value = tabs[to].dataset.tabValue;
+  if (value === undefined) return;
+  e.preventDefault();
+  tabs[to].focus();
+  activate(value);
+}
+
 export default function EventsPage() {
   const t = useTranslations("events.list");
   const tCat = useTranslations("events.categories");
@@ -302,10 +356,16 @@ export default function EventsPage() {
             wrapping only the two tabs. The Link stays a sibling in the same
             flex row (ms-auto), so the layout is unchanged. */}
         <div className="flex items-end gap-4 border-b border-border">
-          <div role="tablist" className="flex items-end gap-4">
+          <div
+            role="tablist"
+            className="flex items-end gap-4"
+            onKeyDown={(e) => handleTablistKeyDown(e, switchTab)}
+          >
           <button
             role="tab"
+            data-tab-value="events"
             aria-selected={!isExp}
+            tabIndex={isExp ? -1 : 0}
             onClick={() => switchTab("events")}
             className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
@@ -315,7 +375,9 @@ export default function EventsPage() {
           </button>
           <button
             role="tab"
+            data-tab-value="experiences"
             aria-selected={isExp}
+            tabIndex={isExp ? 0 : -1}
             onClick={() => switchTab("experiences")}
             className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
@@ -356,10 +418,13 @@ export default function EventsPage() {
                 role="tablist"
                 aria-label={t("view_mode_label")}
                 className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
+                onKeyDown={(e) => handleTablistKeyDown(e, setView)}
               >
                 <button
                   role="tab"
+                  data-tab-value="list"
                   aria-selected={view === "list"}
+                  tabIndex={view === "list" ? 0 : -1}
                   // Label is icon-only on mobile (hidden sm:inline); keep a stable
                   // accessible name on every viewport (MEH-134 — a11y + E2E locator).
                   aria-label={t("view_list")}
@@ -373,7 +438,9 @@ export default function EventsPage() {
                 </button>
                 <button
                   role="tab"
+                  data-tab-value="calendar"
                   aria-selected={view === "calendar"}
+                  tabIndex={view === "calendar" ? 0 : -1}
                   aria-label={t("view_calendar")}
                   onClick={() => setView("calendar")}
                   className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${

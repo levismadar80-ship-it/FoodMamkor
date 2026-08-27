@@ -1,0 +1,46 @@
+
+=== /he/events — events|experiences tablist + list|calendar view toggle ===
+PASS  CONTROL main tablist is present with 2 tabs
+        expected [true,2]
+        actual   [true,2]
+PASS  main tablist — exactly one tab stop
+        expected 1
+        actual   1
+PASS  main tablist — the tab stop is the selected tab
+        expected [["0","-1"],["true","false"]]
+        actual   [["0","-1"],["true","false"]]
+PASS  ArrowLeft focuses the NEXT tab by name (RTL contract)
+        expected "experiences"
+        actual   "experiences"
+PASS  ArrowLeft activates it — aria-selected follows focus
+        expected ["false","true"]
+        actual   ["false","true"]
+PASS  still exactly one tab stop after the move
+        expected 1
+        actual   1
+PASS  ArrowRight returns to the PREVIOUS tab by name
+        expected "events"
+        actual   "events"
+PASS  End selects the last tab
+        expected ["experiences",["false","true"]]
+        actual   ["experiences",["false","true"]]
+PASS  Home selects the first tab
+        expected ["events",["true","false"]]
+        actual   ["events",["true","false"]]
+PASS  CONTROL an unhandled key moves nothing (negative control)
+        expected ["events",["true","false"]]
+        actual   ["events",["true","false"]]
+PASS  CONTROL view toggle is present with 2 tabs
+        expected [true,2]
+        actual   [true,2]
+PASS  view toggle — exactly one tab stop
+        expected 1
+        actual   1
+PASS  view toggle — ArrowLeft moves to calendar and activates it
+        expected ["calendar",["false","true"]]
+        actual   ["calendar",["false","true"]]
+PASS  view toggle — Home returns to list
+        expected ["list",["true","false"]]
+        actual   ["list",["true","false"]]
+
+0 failed of 14 assertions
