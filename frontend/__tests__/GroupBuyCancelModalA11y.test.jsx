@@ -138,8 +138,12 @@ describe("GroupBuy cancel modal — keyboard + focus (MEH-2199)", () => {
     // on the backdrop, clicking the element the a11y tree calls "the dialog"
     // would DISMISS it — which is the concrete consequence of the ARIA boundary
     // and the focus-trap boundary being different elements.
+    // getByRole, not findByRole: fireEvent flushes synchronously, so the
+    // outcome is already settled here. A find* would poll for a second and
+    // then report a TIMEOUT — turning "the dialog was dismissed", which is
+    // the exact defect under test, into a message about waiting.
     fireEvent.click(el);
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(api.delete).not.toHaveBeenCalled();
   });
 
