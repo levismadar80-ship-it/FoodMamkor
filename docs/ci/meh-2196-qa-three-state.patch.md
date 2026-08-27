@@ -92,6 +92,14 @@ reporter's job is to say so honestly rather than to guess.
 > does not claim nothing ran, because 300 specs did. `--self-test` pins it as
 > its own case, so it cannot regress.
 >
+> **The guard is `||`, not `&&`, deliberately.** `&&` would refuse only when
+> *both* counts are missing, so an asymmetric export (`unexpected=0`,
+> `flaky=null`) would come out `PASS` with the flaky count unknown — under
+> `--fail-on-flaky-tests` that is a failing run reported green. Step 1 exports
+> both in one sequential block, so that state is unreachable today; `||` keeps
+> it unreachable if the block is ever split, rather than resting on an
+> assumption nobody re-checks. Its own self-test case pins it.
+>
 > _Found by the CI reviewer on #3132, and confirmed by running the payload
 > before fixing it rather than taken on faith._
 
@@ -167,7 +175,7 @@ subclause while its headline said the opposite.
 ## What changes on the surfaces that exist today
 
 Run `node scripts/ci/qa-report-verdict.cjs --self-test` for the live table. As of
-2026-08-27 it is 9 cases, 0 failed, **6 verdicts changed**:
+2026-08-27 it is 10 cases, 0 failed, **7 verdicts changed**:
 
 | payload | shipped today | after this patch |
 |---|---|---|
@@ -177,6 +185,7 @@ Run `node scripts/ci/qa-report-verdict.cjs --self-test` for the live table. As o
 | `executed=0` (global-setup aborted) | `ZERO COVERAGE` | **`DID NOT RUN`**, with the zero-coverage wording kept in the body |
 | specs all passed, the step failed afterwards (the 142 MB upload cut off on #3123) | `FAIL` | **`PASS`**, with an explicit "counts and exit code disagree" note |
 | **Step 2 applied without Step 1** (counts missing) | `FAIL` | **`NO VERDICT (counts incomplete)`**, naming the unapplied step |
+| **asymmetric export** — `unexpected` arrives, `flaky` does not | `FAIL` | **`NO VERDICT (counts incomplete)`** |
 | a genuine failing run (300 executed / 28 unexpected / 3 flaky) | `FAIL` | `FAIL` — **unchanged**, which is the half that matters |
 | flake-only under `--fail-on-flaky-tests` | `FAIL` | `FAIL` — unchanged |
 | a clean green run | `PASS` | `PASS` — unchanged |

@@ -130,13 +130,27 @@ function verdict(raw = {}) {
   // step to skip, and nothing enforces applying both together.
   //
   // So: counts we cannot read are never counts of zero. Refuse a verdict.
-  if (unexpected === null && flaky === null) {
+  //
+  // `||`, not `&&`, and the operator is the whole point. `&&` would refuse only
+  // when BOTH counts are missing, so an asymmetric export (`unexpected=0`,
+  // `flaky=null`) would slip through as PASS while the flaky count is unknown —
+  // under `--fail-on-flaky-tests` that is a failing run reported green. Today
+  // Step 1 exports both in one sequential block, so the asymmetric state is
+  // unreachable; `||` means it stays unreachable even if that block is ever
+  // split, instead of resting on an assumption nobody re-checks.
+  //
+  // testing.md's "watch the shape of the pass condition" says to prefer `&&`
+  // over `||`. That rule is about a PASS condition, where `||` lets either cue
+  // carry the assertion. This is a REFUSAL condition, so the polarity inverts:
+  // here `||` is the strict form (refuse if EITHER count is unreadable) and
+  // `&&` is the lax one. Same principle, opposite operator.
+  if (unexpected === null || flaky === null) {
     return {
       verdict: VERDICTS.DID_NOT_RUN,
       headline: "Playwright QA — NO VERDICT (counts incomplete)",
       counts,
       outcome,
-      detail: `**${executed} specs executed, but the failure counts are missing**, so there is no honest verdict to give. This is a configuration fault, not a test result: \`unexpected\` and \`flaky\` are not reaching the reporter, which means **Step 1 of \`docs/ci/meh-2196-qa-three-state.patch.md\` was not applied** (the two \`>> "$GITHUB_OUTPUT"\` lines beside the existing \`executed\` / \`skipped\` exports). Apply it, then re-run. **Do not read this as PASS** — the specs ran and nobody here knows how they went.`,
+      detail: `**${executed} specs executed, but a failure count is missing**, so there is no honest verdict to give. This is a configuration fault, not a test result: \`unexpected\` and \`flaky\` are not reaching the reporter, which means **Step 1 of \`docs/ci/meh-2196-qa-three-state.patch.md\` was not applied** (the two \`>> "$GITHUB_OUTPUT"\` lines beside the existing \`executed\` / \`skipped\` exports). Apply it, then re-run. **Do not read this as PASS** — the specs ran and nobody here knows how they went.`,
     };
   }
 
@@ -250,6 +264,14 @@ if (require.main === module) {
       name: "specs all passed, the step failed afterwards (the 142 MB upload cut off)",
       raw: { outcome: "failure", executed: "300", unexpected: "0", flaky: "0", skipped: "54" },
       want: VERDICTS.PASS,
+      shippedWas: "Playwright QA — FAIL",
+    },
+    {
+      // The reviewer's finding on #3133: ONE count missing, not both. Under
+      // `&&` this returned PASS with flaky unknown.
+      name: "asymmetric export — unexpected arrives, flaky does not",
+      raw: { outcome: "failure", executed: "300", unexpected: "0", flaky: "", skipped: "54" },
+      want: VERDICTS.DID_NOT_RUN,
       shippedWas: "Playwright QA — FAIL",
     },
     {
