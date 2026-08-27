@@ -1,7 +1,7 @@
 """MEH-103 — verified reviews system tests.
 
 Guards tested:
-  - POST without WA click → 403
+  - POST without any contact click → 403 (MEH-2204: WhatsApp OR any channel)
   - POST from producer owner → 403
   - POST with valid WA click → 201
   - GET /producers/{id}/reviews excludes is_hidden=True rows
@@ -11,7 +11,7 @@ Guards tested:
 import pytest
 
 from conftest import auth_header, make_producer, make_user
-from app.models.models import ProducerReview, ProducerWhatsAppClick
+from app.models.models import ContactClick, ProducerReview, ProducerWhatsAppClick
 
 
 # ---------------------------------------------------------------------------
@@ -23,6 +23,19 @@ def _wa_click(db, producer, user):
     click = ProducerWhatsAppClick(producer_id=producer.id, user_id=user.id)
     db.add(click)
     db.commit()
+
+
+def _contact_click(db, producer, user, method="phone"):
+    """MEH-2204: a non-WhatsApp contact click — the other way through the gate."""
+    db.add(ContactClick(producer_id=producer.id, user_id=user.id, method=method))
+    db.commit()
+
+
+# MEH-2204: the gate's 403 is channel-neutral. Asserted by EQUALITY, not by
+# substring: the old copy named WhatsApp, and a substring check on the new text
+# would keep passing if someone reinstated a WhatsApp-specific instruction
+# around it.
+GATE_403 = "יש ליצור קשר עם בית העסק לפני כתיבת ביקורת"
 
 
 VALID_BODY = "המוצרים מדהימים ואוהבת את השירות!"  # >10 chars
@@ -41,7 +54,7 @@ def test_post_review_requires_wa_click(client, db):
         headers=auth_header(user),
     )
     assert r.status_code == 403, r.text
-    assert "WhatsApp" in r.json().get("detail", "")
+    assert r.json().get("detail", "") == GATE_403
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +128,7 @@ def test_post_review_unattributed_wa_click_still_403(client, db):
         headers=auth_header(user),
     )
     assert r.status_code == 403, r.text
-    assert "WhatsApp" in r.json().get("detail", "")
+    assert r.json().get("detail", "") == GATE_403
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +147,149 @@ def test_post_review_other_users_wa_click_does_not_count(client, db):
         headers=auth_header(reviewer),
     )
     assert r.status_code == 403, r.text
-    assert "WhatsApp" in r.json().get("detail", "")
+    assert r.json().get("detail", "") == GATE_403
+
+
+# ---------------------------------------------------------------------------
+# MEH-2204 — the gate accepts contact through ANY channel.
+#
+# Before this, the gate read producer_whatsapp_clicks alone. Once the page
+# started routing its CTAs by the declared primary channel, a non-WhatsApp
+# business rendered zero wa.me links, so no action available to its customers
+# could ever satisfy the gate: first reviews were structurally impossible.
+#
+# The matrix below is the whole claim — wa-only, contact-only, both, neither —
+# and the two negatives that keep the widening honest: a NULL-user contact row
+# and another user's contact row must both still be refused, exactly as their
+# WhatsApp twins above are.
+# ---------------------------------------------------------------------------
+
+def test_post_review_contact_click_unlocks_first_review(client, db):
+    """The case the ticket exists for: no WhatsApp click anywhere, phone click only."""
+    user = make_user(db)
+    producer = make_producer(db)
+    _contact_click(db, producer, user, method="phone")
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["stars"] == 5
+
+
+@pytest.mark.parametrize("method", ["phone", "instagram", "website", "email"])
+def test_post_review_any_contact_method_unlocks(client, db, method):
+    """Every method the contact-click endpoint accepts opens the gate.
+
+    Parametrised over `_VALID_CONTACT_METHODS` (routers/producers.py) rather
+    than over the seven primary-channel values, because those four are the only
+    ones that can produce a stored row today — see the PR body: facebook and
+    external_order are rejected 422 at the beacon, which is a separate gap and
+    NOT closed here.
+    """
+    user = make_user(db)
+    producer = make_producer(db)
+    _contact_click(db, producer, user, method=method)
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 4, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 201, r.text
+
+
+def test_post_review_both_click_kinds_present(client, db):
+    """Both rows present → still one review, still 201 (no double-counting)."""
+    user = make_user(db)
+    producer = make_producer(db)
+    _wa_click(db, producer, user)
+    _contact_click(db, producer, user)
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 201, r.text
+
+
+def test_post_review_unattributed_contact_click_still_403(client, db):
+    """user_id=NULL is an anonymous click and must not unlock anyone's review.
+
+    The WhatsApp twin of this case is MEH-1426 above. Widening the gate to a
+    second table would have re-opened exactly that hole if the new query had
+    matched on producer_id alone.
+    """
+    user = make_user(db)
+    producer = make_producer(db)
+    db.add(ContactClick(producer_id=producer.id, user_id=None, method="phone"))
+    db.commit()
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json().get("detail", "") == GATE_403
+
+
+def test_post_review_other_users_contact_click_does_not_count(client, db):
+    """The gate stays per-(producer, user) on the new table too."""
+    reviewer = make_user(db)
+    other = make_user(db)
+    producer = make_producer(db)
+    _contact_click(db, producer, other)
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(reviewer),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json().get("detail", "") == GATE_403
+
+
+def test_post_review_contact_click_for_other_producer_does_not_count(client, db):
+    """…and per-producer: contacting one business does not unlock reviewing another."""
+    user = make_user(db)
+    producer = make_producer(db)
+    other_producer = make_producer(db)
+    _contact_click(db, other_producer, user)
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json().get("detail", "") == GATE_403
+
+
+def test_edit_existing_review_is_not_gated(client, db):
+    """The gate guards the FIRST review only — editing is never re-gated.
+
+    Deliberately builds the existing review directly, with NO click row of
+    either kind, so the 201 can only come from the `if not existing_review`
+    branch being skipped. The upsert test above cannot show this: it creates
+    its first review through a WhatsApp click, so a gate that also ran on edits
+    would still pass there.
+    """
+    user = make_user(db)
+    producer = make_producer(db)
+    db.add(
+        ProducerReview(
+            producer_id=producer.id,
+            user_id=user.id,
+            stars=3,
+            body=VALID_BODY,
+        )
+    )
+    db.commit()
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY + " עדכון"},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["stars"] == 5
 
 
 # ---------------------------------------------------------------------------

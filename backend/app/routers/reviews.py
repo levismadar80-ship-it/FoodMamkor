@@ -26,7 +26,13 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_admin
 from app.database import get_db
-from app.models import Producer, ProducerReview, ProducerWhatsAppClick, User
+from app.models import (
+    ContactClick,
+    Producer,
+    ProducerReview,
+    ProducerWhatsAppClick,
+    User,
+)
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     AdminReviewOut,
@@ -245,7 +251,25 @@ def create_review_nested(
         .first()
     )
 
-    # Guard: WA click required for first-time reviews
+    # Guard: a first-time review requires prior contact with the business —
+    # through ANY channel, not only WhatsApp.
+    #
+    # MEH-2204: this used to read producer_whatsapp_clicks alone. Once the
+    # question chips and CTAs started following the declared primary channel,
+    # a phone/email/website/instagram/facebook/external_order-primary business
+    # renders zero wa.me links — so its customers could not satisfy this gate
+    # by any action the page offered them. The 403 told them to press a button
+    # that is not on the page, and first reviews were structurally impossible
+    # for every non-WhatsApp business. The trust model is unchanged: a click on
+    # the business's own primary CTA is the proof of contact, and which channel
+    # that CTA opens is the owner's choice, not the reviewer's.
+    #
+    # Two short-circuiting EXISTS rather than one OR/UNION across the tables:
+    # they are unrelated tables with no join key beyond the pair being matched,
+    # and Python's `or` means a WhatsApp click never issues the second query.
+    # That keeps the pre-existing WhatsApp path identical in both result and
+    # query count — the regression criterion this ticket is held to.
+    # Both columns are indexed (models.py: producer_id and user_id on each).
     if not existing_review:
         clicked = (
             db.query(ProducerWhatsAppClick.id)
@@ -254,11 +278,18 @@ def create_review_nested(
                 ProducerWhatsAppClick.user_id == user.id,
             )
             .first()
+        ) or (
+            db.query(ContactClick.id)
+            .filter(
+                ContactClick.producer_id == producer_id,
+                ContactClick.user_id == user.id,
+            )
+            .first()
         )
         if not clicked:
             raise HTTPException(
                 status_code=403,
-                detail="יש ללחוץ על כפתור WhatsApp לפני כתיבת ביקורת",
+                detail="יש ליצור קשר עם בית העסק לפני כתיבת ביקורת",
             )
 
     # Haiku moderation (fail-open)
