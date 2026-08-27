@@ -23,7 +23,7 @@
  * null output is also its reassuring output is not evidence".)
  */
 import { chromium } from "playwright";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const BASE = "http://127.0.0.1:3000";
 const OUT = new URL("./", import.meta.url).pathname;
@@ -65,6 +65,32 @@ const snapshot = (page, listSel, itemSel) =>
   }, [listSel, itemSel]);
 
 const singleTabStop = (snap) => snap.tabindex.filter((v) => v === "0").length;
+
+/**
+ * Bounded CONDITION wait — true the moment `fn()` is truthy, false when the
+ * bound expires. There are no fixed pauses left in this file.
+ *
+ * A fixed pause is wrong in both directions: too short and it reports a real
+ * event as absent under CPU throttle, too long and every run pays for it. This
+ * costs nothing on a healthy run and only caps the pathological one.
+ *
+ * To prove something did NOT happen, await the UNWANTED event and require it to
+ * time out — deterministic in both worlds, and the bound is paid only when the
+ * answer is genuinely "it did not happen", which is the case being asserted
+ * (.claude/rules/testing.md — the inverted bounded wait).
+ *
+ * Raised by the CI reviewer on #3143 against the DELETE assertion; fixed at all
+ * three sites rather than the one named — a finding is a sample, not an
+ * inventory.
+ */
+const until = async (fn, timeout = 5_000) => {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    if (fn()) return true;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  return Boolean(fn());
+};
 
 async function eventsTabs(page) {
   log("\n=== /he/events — events|experiences tablist + list|calendar view toggle ===");
@@ -232,7 +258,7 @@ async function dashboardRadios(page) {
   check("ArrowLeft focuses the NEXT radio by name (RTL contract)", s.focusedValue, "available_today");
   check("and SELECTS it — aria-checked follows focus", s.selected, ["false", "true", "false", "false"]);
   check("still exactly one tab stop after the move", singleTabStop(s), 1);
-  await page.waitForTimeout(400);
+  await until(() => posted.length > 0);
   // The POST is what separates "really selected" from "only repainted".
   check("the availability POST fired once, carrying that state",
     posted.map((b) => b?.state), ["available_today"]);
@@ -264,9 +290,12 @@ async function dashboardRadios(page) {
     .then(() => 1)
     .catch(() => 0);
   check("vacation REVEALED the return-date field", revealed, 1);
-  await page.waitForTimeout(400);
+  // Inverted bounded wait: await the POST that must NOT happen and require
+  // it to time out. With the bug it resolves instantly; without it, false
+  // after the bound — and no fixed pause on any healthy path.
+  const strayPost = await until(() => posted.length > postsBefore, 1_500);
   check("and posted NOTHING — reveal-then-confirm survives the keyboard path",
-    posted.length - postsBefore, 0);
+    strayPost, false);
 
   const before = await snapshot(page, GROUP, '[role="radio"]');
   await page.keyboard.press("a");
@@ -275,10 +304,147 @@ async function dashboardRadios(page) {
     [after.focusedValue, after.selected], [before.focusedValue, before.selected]);
 }
 
+/**
+ * The cancel-commitment dialog is auth-gated AND commit-gated: the CTA only
+ * renders for a signed-in user who has already committed to an open group buy.
+ * Both are stubbed — the subject is the dialog's keyboard behaviour, not the
+ * fetch.
+ *
+ * The CTA is located by its REAL rendered Hebrew string, read from
+ * messages/he.json rather than hardcoded here, so a copy change renames the
+ * locator instead of silently breaking it. Adding a data-testid would have been
+ * the other option and was rejected: it is markup this ticket has no business
+ * adding, and the zero-visual-delta claim is easier to defend without it.
+ */
+async function groupBuyModal(page) {
+  log("\n=== /he/group-buys/gb-1 — cancel-commitment dialog ===");
+  const he = JSON.parse(readFileSync(new URL("../../messages/he.json", import.meta.url), "utf8"));
+  const CTA = he.group_buys.detail.cancel_cta;
+  const DISMISS = he.group_buys.detail.cancel_dismiss;
+
+  await page.addInitScript(() => {
+    try { localStorage.setItem("token", "qa-token"); } catch { /* private mode */ }
+  });
+
+  const deletes = [];
+  // Catch-all FIRST — Playwright matches route handlers in REVERSE registration
+  // order, so the LAST one registered wins. Getting this backwards on the
+  // dashboard surface produced a dead probe that read like a real finding.
+  await page.route("**/api/**", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+  await page.route("**/api/auth/me", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      id: 1, name: "\u05d3\u05e0\u05d4", email: "d@example.com", role: "user", phone: "0500000000",
+    }) }));
+  await page.route("**/api/group-buys/gb-1", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      id: "gb-1", title: "\u05e7\u05d1\u05d5\u05e6\u05ea \u05e8\u05db\u05e9", status: "open",
+      deadline: "2099-01-01T00:00:00Z", min_participants: 2, max_participants: 10,
+      commits_count: 1, price_per_unit_regular: 100, price_per_unit_group: 80,
+      user_committed: true, user_commit: { quantity: 1 },
+    }) }));
+  await page.route("**/api/group-buys/gb-1/commit", async (r) => {
+    if (r.request().method() === "DELETE") deletes.push(1);
+    await r.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+
+  await page.goto(`${BASE}/he/group-buys/gb-1`, { waitUntil: "domcontentloaded" });
+
+  const DIALOG = '[role="dialog"][aria-modal="true"]';
+  // The page CTA. Resolved with the dialog CLOSED, when it is the only button
+  // carrying this label — the dialog's confirm button shares it. A
+  // `button:not(<dialog> button)` compound was tried first and matched nothing;
+  // the CTA was on the page the whole time, so that read as "the auth/commit
+  // gates failed" when it was purely a bad selector.
+  const cta = page.getByRole("button", { name: CTA }).first();
+
+  // CONTROLS. Without the CTA and the dialog, "focus did not move" below would
+  // be indistinguishable from a real finding, and the run would print a column
+  // of reassuring nulls.
+  //
+  // The wait is not optional and is not belt-and-braces: the group buy arrives
+  // by fetch, so a bare count() here polls ONCE, before the CTA exists, and
+  // reports 0 — which reads as "the auth/commit gates failed". That is the same
+  // mistake the dashboard surface's vacation assertion made, in the one place
+  // where it would have voided the entire run.
+  const ctaAppeared = await cta
+    .waitFor({ state: "visible", timeout: 10_000 })
+    .then(() => 1)
+    .catch(() => 0);
+  control("the cancel CTA rendered (auth + commit gates satisfied)", ctaAppeared, 1);
+  await cta.focus();
+  control("the trigger holds focus before the dialog opens",
+    await page.evaluate((label) => document.activeElement?.textContent?.trim() === label, CTA), true);
+
+  await page.keyboard.press("Enter");
+  await page.waitForSelector(DIALOG);
+  control("the dialog opened", await page.locator(DIALOG).count(), 1);
+
+  const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  const focusState = (label) =>
+    page.evaluate(([sel, foc, lbl]) => {
+      const d = document.querySelector(sel);
+      const els = [...(d?.querySelectorAll(foc) ?? [])];
+      return {
+        insideDialog: Boolean(d && d.contains(document.activeElement)),
+        indexInDialog: els.indexOf(document.activeElement),
+        count: els.length,
+        onTrigger: document.activeElement?.textContent?.trim() === lbl,
+      };
+    }, [DIALOG, FOCUSABLE, label]);
+
+  let f = await focusState(CTA);
+  check("focus moved INTO the dialog, onto its first control",
+    [f.insideDialog, f.indexInDialog], [true, 0]);
+
+  // Tab off the LAST control must wrap to the first rather than escape into the
+  // page the aria-modal claims is inert.
+  await page.evaluate(([sel, foc]) => {
+    const els = [...document.querySelector(sel).querySelectorAll(foc)];
+    els.at(-1).focus();
+  }, [DIALOG, FOCUSABLE]);
+  await page.keyboard.press("Tab");
+  f = await focusState(CTA);
+  check("Tab off the last control wraps to the first — it does not escape",
+    [f.insideDialog, f.indexInDialog], [true, 0]);
+
+  await page.keyboard.press("Shift+Tab");
+  f = await focusState(CTA);
+  check("Shift+Tab off the first wraps to the last",
+    [f.insideDialog, f.indexInDialog], [true, f.count - 1]);
+
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(DIALOG, { state: "detached" });
+  check("Escape closed the dialog", await page.locator(DIALOG).count(), 0);
+  f = await focusState(CTA);
+  check("focus came home to the trigger that opened it", f.onTrigger, true);
+  // The reason MEH-1250 built this dialog at all: closing is never confirming.
+  check("Escape deleted NOTHING", deletes.length, 0);
+
+  // Dismiss is a second close path and must return focus too — three paths
+  // close this dialog and only one of them is Escape.
+  await page.keyboard.press("Enter");
+  await page.waitForSelector(DIALOG);
+  await page.locator(`${DIALOG} button`, { hasText: DISMISS }).first().click();
+  await page.waitForSelector(DIALOG, { state: "detached" });
+  f = await focusState(CTA);
+  check("the dismiss button returns focus to the trigger as well", f.onTrigger, true);
+  check("dismiss deleted NOTHING", deletes.length, 0);
+
+  // And the destructive path still works — an a11y layer that quietly broke it
+  // would pass every assertion above.
+  await page.keyboard.press("Enter");
+  await page.waitForSelector(DIALOG);
+  await page.locator(`${DIALOG} button`, { hasText: CTA }).first().click();
+  await until(() => deletes.length > 0);
+  check("confirming still DELETEs — the destructive path is untouched", deletes.length, 1);
+}
+
 const SURFACES = {
   "events-tabs-keyboard": eventsTabs,
   "settings-tabs-keyboard": settingsTabs,
   "dashboard-radiogroup-arrows": dashboardRadios,
+  "groupbuy-modal-a11y": groupBuyModal,
 };
 
 // The sandbox ships chromium-1194 while the repo pins a playwright that wants

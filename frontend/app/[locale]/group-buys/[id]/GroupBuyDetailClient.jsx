@@ -105,6 +105,12 @@ export default function GroupBuyDetailClient({ id }) {
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  // MEH-2199: the dialog below declares aria-modal="true" and delivered none of
+  // what that promises — no Escape, no focus trap, no focus-return. A keyboard
+  // user could Tab straight out into the page behind it, which is worse than a
+  // non-modal dialog: the ARIA tells the screen reader the rest of the page is
+  // inert while it is not.
+  const cancelDialogRef = useRef(null);
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const prevStatusRef = useRef(null);
@@ -161,6 +167,59 @@ export default function GroupBuyDetailClient({ id }) {
       setSubmitting(false);
     }
   };
+
+  // MEH-2199: the modal keyboard layer, mounted only while the dialog is open.
+  // REUSES: frontend/components/Lightbox.jsx:92-112 — same Escape + Tab-cycle
+  // mechanism, so the two modals on this site behave identically.
+  //
+  // Escape CLOSES and never confirms. MEH-1250 replaced a native
+  // window.confirm() with this dialog precisely so the DELETE stays deliberate;
+  // a key that dismissed and deleted would defeat the ticket that built it.
+  //
+  // Focus-return rides the effect CLEANUP rather than each close path. There
+  // are three ways to close this (Escape, the dismiss button, the overlay), and
+  // hanging a restore off each one is three places to forget. The cleanup runs
+  // whenever `confirmCancelOpen` goes false — or the component unmounts — so it
+  // covers all three and any future fourth by construction.
+  useEffect(() => {
+    if (!confirmCancelOpen) return undefined;
+    const FOCUSABLE =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    // Whoever was focused when the dialog opened is the CTA that opened it.
+    const trigger = document.activeElement;
+    const focusables = () =>
+      Array.from(cancelDialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
+    focusables()[0]?.focus();
+
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setConfirmCancelOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const els = focusables();
+      if (!els.length) return;
+      const first = els[0];
+      const last = els.at(-1);
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      // document.contains guards the node having been unmounted while the
+      // dialog was open — focusing a detached element silently does nothing and
+      // would leave focus on <body>.
+      if (trigger instanceof HTMLElement && document.contains(trigger)) {
+        trigger.focus();
+      }
+    };
+  }, [confirmCancelOpen]);
 
   // MEH-1250: open the confirm modal instead of the native window.confirm().
   const handleCancel = () => setConfirmCancelOpen(true);
@@ -416,6 +475,7 @@ export default function GroupBuyDetailClient({ id }) {
           onClick={() => setConfirmCancelOpen(false)}
         >
           <div
+            ref={cancelDialogRef}
             className="bg-background rounded-[16px] p-6 max-w-sm w-full border border-border"
             onClick={(e) => e.stopPropagation()}
           >
