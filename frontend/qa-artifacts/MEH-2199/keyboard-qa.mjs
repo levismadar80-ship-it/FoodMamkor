@@ -440,12 +440,126 @@ async function groupBuyModal(page) {
   check("confirming still DELETEs — the destructive path is untouched", deletes.length, 1);
 }
 
+/**
+ * The Header account menu is desktop-only (`hidden md:block`) and signed-in
+ * only, so this runs at 1440 with a stubbed user.
+ */
+async function headerMenu(page) {
+  log("\n=== / — Header account menu (APG menu button) ===");
+  await page.addInitScript(() => {
+    try { localStorage.setItem("token", "qa-token"); } catch { /* private mode */ }
+  });
+  // Catch-all FIRST — Playwright matches route handlers in REVERSE order.
+  await page.route("**/api/**", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+  await page.route("**/api/auth/me", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      id: 1, name: "\u05d3\u05e0\u05d4", email: "d@example.com", role: "producer", producer_id: "p1",
+    }) }));
+
+  await page.goto(`${BASE}/he/about`, { waitUntil: "domcontentloaded" });
+
+  const TRIGGER = 'button[aria-haspopup="menu"]';
+  const MENU = '[role="menu"]';
+  // Bounded wait, not a bare count(): the avatar renders only after /auth/me
+  // resolves, so a single poll here would report 0 and read as "the user is not
+  // signed in". Same mistake the group-buy surface's control made.
+  const triggerAppeared = await page
+    .waitForSelector(TRIGGER, { timeout: 10_000 })
+    .then(() => 1)
+    .catch(() => 0);
+  control("the avatar trigger rendered (signed in, desktop width)", triggerAppeared, 1);
+  control("the menu starts CLOSED", await page.locator(MENU).count(), 0);
+
+  const menuState = () =>
+    page.evaluate(([menuSel, trigSel]) => {
+      const m = document.querySelector(menuSel);
+      const els = [...(m?.querySelectorAll('[role="menuitem"]') ?? [])];
+      const trig = document.querySelector(trigSel);
+      return {
+        open: Boolean(m),
+        count: els.length,
+        focusedIndex: els.indexOf(document.activeElement),
+        tabStops: els.filter((e) => e.getAttribute("tabindex") === "0").length,
+        tabStopIndex: els.findIndex((e) => e.getAttribute("tabindex") === "0"),
+        expanded: trig?.getAttribute("aria-expanded"),
+        onTrigger: document.activeElement === trig,
+      };
+    }, [MENU, TRIGGER]);
+
+  // ArrowDown on the CLOSED trigger opens it and lands on the FIRST item.
+  await page.locator(TRIGGER).focus();
+  await page.keyboard.press("ArrowDown");
+  await page.waitForSelector(MENU);
+  let m = await menuState();
+  control("the menu opened and has items", [m.open, m.count > 1], [true, true]);
+  check("ArrowDown on the closed trigger focuses the FIRST item",
+    [m.focusedIndex, m.expanded], [0, "true"]);
+  check("exactly one tab stop, on the focused item", [m.tabStops, m.tabStopIndex], [1, 0]);
+
+  await page.keyboard.press("ArrowDown");
+  m = await menuState();
+  check("ArrowDown moves to the next item and the tab stop follows",
+    [m.focusedIndex, m.tabStops, m.tabStopIndex], [1, 1, 1]);
+
+  await page.keyboard.press("ArrowUp");
+  m = await menuState();
+  check("ArrowUp moves back", m.focusedIndex, 0);
+
+  await page.keyboard.press("ArrowUp");
+  m = await menuState();
+  check("ArrowUp off the first wraps to the last", m.focusedIndex, m.count - 1);
+
+  await page.keyboard.press("Home");
+  m = await menuState();
+  check("Home jumps to the first", m.focusedIndex, 0);
+  await page.keyboard.press("End");
+  m = await menuState();
+  check("End jumps to the last", m.focusedIndex, m.count - 1);
+
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(MENU, { state: "detached" });
+  m = await menuState();
+  check("Escape closed the menu and returned focus to the trigger",
+    [m.open, m.expanded, m.onTrigger], [false, "false", true]);
+
+  // ArrowUp on the CLOSED trigger opens onto the LAST item — the other half of
+  // the APG contract, and the half most often left unimplemented.
+  await page.keyboard.press("ArrowUp");
+  await page.waitForSelector(MENU);
+  m = await menuState();
+  check("ArrowUp on the closed trigger opens onto the LAST item",
+    m.focusedIndex, m.count - 1);
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(MENU, { state: "detached" });
+
+  // The pointer path must be untouched.
+  await page.locator(TRIGGER).click();
+  await page.waitForSelector(MENU);
+  control("clicking still opens the menu", await page.locator(MENU).count(), 1);
+  await page.locator(TRIGGER).click();
+  await page.waitForSelector(MENU, { state: "detached" });
+  check("clicking again still closes it", await page.locator(MENU).count(), 0);
+}
+
 const SURFACES = {
   "events-tabs-keyboard": eventsTabs,
   "settings-tabs-keyboard": settingsTabs,
   "dashboard-radiogroup-arrows": dashboardRadios,
   "groupbuy-modal-a11y": groupBuyModal,
+  "header-menu-keyboard": headerMenu,
 };
+
+// A surface filter that matches NOTHING used to run zero surfaces, print
+// nothing and exit 0 — the reassuring output and the dead-probe output being
+// the same string, which is the failure this whole harness is built to avoid.
+// Measured: `node keyboard-qa.mjs header-menu-keyboard` did exactly that when
+// the surface was defined but never registered below.
+if (only && !Object.hasOwn(SURFACES, only)) {
+  console.error(`unknown surface ${JSON.stringify(only)} — known: ${Object.keys(SURFACES).join(", ")}`);
+  process.exit(2);
+}
+
 
 // The sandbox ships chromium-1194 while the repo pins a playwright that wants
 // 1234; `npx playwright install` is not the move here (the environment provides
