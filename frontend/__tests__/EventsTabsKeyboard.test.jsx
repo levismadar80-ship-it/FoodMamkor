@@ -148,6 +148,20 @@ describe("EventsClient — events/experiences tablist keyboard (MEH-2199)", () =
     expect(events).toHaveAttribute("aria-selected", "true");
   });
 
+  // The handler reads each tab's wire value off the DOM, which is what keeps
+  // order and value single-owned — and what makes a tab added without the
+  // attribute activate with `undefined`. The runtime bails silently on that by
+  // design; THIS is the assertion that makes the omission loud.
+  it("every tab on the page carries the wire value the handler reads", async () => {
+    render(<EventsClient />);
+    await waitFor(() => expect(screen.getAllByRole("tablist").length).toBe(2));
+    const all = screen.getAllByRole("tab");
+    expect(all.length).toBe(4);
+    expect(all.map((el) => el.dataset.tabValue)).toEqual([
+      "events", "experiences", "list", "calendar",
+    ]);
+  });
+
   it("names the tabs it moves between, so the mapping is not vacuous", () => {
     render(<EventsClient />);
     const [events, experiences] = tabsIn(mainTablist());

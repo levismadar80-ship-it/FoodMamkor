@@ -132,7 +132,19 @@ function handleTablistKeyDown(e, activate) {
   const from = tabs.indexOf(e.target.closest?.('[role="tab"]'));
   if (from === -1) return;
   let to;
-  if (e.key in TAB_ARROW_DELTA) {
+  // Object.hasOwn rather than `e.key in TAB_ARROW_DELTA`. This is DEFENSIVE,
+  // not a fix for a reachable bug — and the distinction is measured, not
+  // assumed. `in` walks the prototype chain, so a key literally named
+  // "constructor" would test true and the delta would read back as a function.
+  // That cannot happen here: React's own getEventKey does
+  // `normalizeKey[nativeEvent.key] || nativeEvent.key` on the same object
+  // shape, so by the time the handler runs, e.key for those names is already a
+  // FUNCTION (measured 27/08: "constructor" arrives as `function Object() {…}`,
+  // "__proto__" as `[object Object]`), and a non-string key misses `in` and
+  // `hasOwn` alike. So the two forms are indistinguishable today and no test
+  // here can tell them apart. hasOwn stays because it costs nothing and does
+  // not depend on a React internal staying the way it is.
+  if (Object.hasOwn(TAB_ARROW_DELTA, e.key)) {
     to = (from + TAB_ARROW_DELTA[e.key] + tabs.length) % tabs.length;
   } else if (e.key === "Home") {
     to = 0;
@@ -141,9 +153,15 @@ function handleTablistKeyDown(e, activate) {
   } else {
     return;
   }
+  // A tab with no data-tab-value would activate with `undefined` and change
+  // the panel to neither value — silently. Bail instead, so the arrow does
+  // nothing visible and the co-located test (which asserts every tab in this
+  // file carries one) is what actually reports the omission.
+  const value = tabs[to].dataset.tabValue;
+  if (value === undefined) return;
   e.preventDefault();
   tabs[to].focus();
-  activate(tabs[to].dataset.tabValue);
+  activate(value);
 }
 
 export default function EventsPage() {
