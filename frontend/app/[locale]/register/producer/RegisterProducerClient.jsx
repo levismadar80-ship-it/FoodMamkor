@@ -1998,7 +1998,12 @@ function RegisterProducerPageBody() {
                     {chunks}
                   </Link>
                 ),
-                email: () => (
+                // The placeholder text inside <email>…</email> in the message
+                // files is deliberately discarded — the rendered address is
+                // CONTACT_EMAIL, so the two surfaces cannot name different
+                // mailboxes. Named `_chunks` rather than omitted so a
+                // translator editing that placeholder can see it is inert.
+                email: (_chunks) => (
                   <a
                     href={`mailto:${CONTACT_EMAIL}`}
                     className="text-primary underline break-all"
