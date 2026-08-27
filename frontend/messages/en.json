@@ -520,7 +520,9 @@
       "clear_location_filter": "Remove location filter",
       "geo_empty": "No businesses found nearby — showing all businesses",
       "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:",
-      "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:"
+      "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:",
+      "fallback_day_caption": "Delivers to {city}: {days}",
+      "fallback_day_caption_flexible": "Delivers to {city} by arrangement"
     },
     "recent": {
       "heading": "Recently viewed"
