@@ -66,6 +66,32 @@ const snapshot = (page, listSel, itemSel) =>
 
 const singleTabStop = (snap) => snap.tabindex.filter((v) => v === "0").length;
 
+/**
+ * Bounded CONDITION wait — true the moment `fn()` is truthy, false when the
+ * bound expires. There are no fixed pauses left in this file.
+ *
+ * A fixed pause is wrong in both directions: too short and it reports a real
+ * event as absent under CPU throttle, too long and every run pays for it. This
+ * costs nothing on a healthy run and only caps the pathological one.
+ *
+ * To prove something did NOT happen, await the UNWANTED event and require it to
+ * time out — deterministic in both worlds, and the bound is paid only when the
+ * answer is genuinely "it did not happen", which is the case being asserted
+ * (.claude/rules/testing.md — the inverted bounded wait).
+ *
+ * Raised by the CI reviewer on #3143 against the DELETE assertion; fixed at all
+ * three sites rather than the one named — a finding is a sample, not an
+ * inventory.
+ */
+const until = async (fn, timeout = 5_000) => {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    if (fn()) return true;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  return Boolean(fn());
+};
+
 async function eventsTabs(page) {
   log("\n=== /he/events — events|experiences tablist + list|calendar view toggle ===");
   // One stubbed row: the view toggle is withheld on an empty dataset
@@ -232,7 +258,7 @@ async function dashboardRadios(page) {
   check("ArrowLeft focuses the NEXT radio by name (RTL contract)", s.focusedValue, "available_today");
   check("and SELECTS it — aria-checked follows focus", s.selected, ["false", "true", "false", "false"]);
   check("still exactly one tab stop after the move", singleTabStop(s), 1);
-  await page.waitForTimeout(400);
+  await until(() => posted.length > 0);
   // The POST is what separates "really selected" from "only repainted".
   check("the availability POST fired once, carrying that state",
     posted.map((b) => b?.state), ["available_today"]);
@@ -264,9 +290,12 @@ async function dashboardRadios(page) {
     .then(() => 1)
     .catch(() => 0);
   check("vacation REVEALED the return-date field", revealed, 1);
-  await page.waitForTimeout(400);
+  // Inverted bounded wait: await the POST that must NOT happen and require
+  // it to time out. With the bug it resolves instantly; without it, false
+  // after the bound — and no fixed pause on any healthy path.
+  const strayPost = await until(() => posted.length > postsBefore, 1_500);
   check("and posted NOTHING — reveal-then-confirm survives the keyboard path",
-    posted.length - postsBefore, 0);
+    strayPost, false);
 
   const before = await snapshot(page, GROUP, '[role="radio"]');
   await page.keyboard.press("a");
@@ -407,7 +436,7 @@ async function groupBuyModal(page) {
   await page.keyboard.press("Enter");
   await page.waitForSelector(DIALOG);
   await page.locator(`${DIALOG} button`, { hasText: CTA }).first().click();
-  await page.waitForTimeout(600);
+  await until(() => deletes.length > 0);
   check("confirming still DELETEs — the destructive path is untouched", deletes.length, 1);
 }
 
