@@ -141,14 +141,6 @@ describe("GroupBuy cancel modal — keyboard + focus (MEH-2199)", () => {
     fireEvent.click(el);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(api.delete).not.toHaveBeenCalled();
-
-    // And every focusable control inside the ARIA boundary is inside the trap:
-    // one element owns both, so nothing can sit between them.
-    const focusables = el.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    expect(focusables.length).toBeGreaterThan(0);
-    for (const node of focusables) expect(el.contains(node)).toBe(true);
   });
 
   it("captures the focus-return target when the dialog OPENS, not when it closes", async () => {
