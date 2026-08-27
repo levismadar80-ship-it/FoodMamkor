@@ -83,6 +83,35 @@ const singleTabStop = (snap) => snap.tabindex.filter((v) => v === "0").length;
  * three sites rather than the one named — a finding is a sample, not an
  * inventory.
  */
+/**
+ * Wait until a reading STOPS changing — the same value observed `repeats` times
+ * in a row, or the bound expires.
+ *
+ * Needed because the dashboard has a real race (documented at its negative
+ * control): an availability POST resolving late runs setVacationSelected(false)
+ * and collapses the vacation reveal. Without waiting for the earlier writes to
+ * settle, the vacation assertion measures whether that resolution happened to
+ * land yet — it failed roughly 1 run in 6. This makes the harness measure the
+ * KEYBOARD layer, which is its subject, instead of the race, which is reported
+ * separately and is not this ticket's to fix.
+ *
+ * This is not a fixed pause dressed up: it returns as soon as the reading is
+ * stable, and a healthy run pays only the sampling gap.
+ */
+const untilQuiet = async (read, { repeats = 3, gap = 60, timeout = 5_000 } = {}) => {
+  const end = Date.now() + timeout;
+  let last;
+  let seen = 0;
+  while (Date.now() < end) {
+    const now = JSON.stringify(await read());
+    seen = now === last ? seen + 1 : 0;
+    last = now;
+    if (seen >= repeats) return true;
+    await new Promise((r) => setTimeout(r, gap));
+  }
+  return false;
+};
+
 const until = async (fn, timeout = 5_000) => {
   const end = Date.now() + timeout;
   while (Date.now() < end) {
@@ -276,6 +305,21 @@ async function dashboardRadios(page) {
   // The behaviour most at risk of being broken by an a11y change: arrowing onto
   // vacation must REVEAL the date field and post NOTHING, exactly as a click
   // does (MEH-999 reveal-then-confirm).
+  // Let the earlier writes settle before testing vacation. See the note at the
+  // negative control: a POST resolving late clears vacationSelected, so without
+  // this the next assertion races it.
+  // The return value is ASSERTED, not discarded. A timeout here means the group
+  // never stopped changing — i.e. the race below is live and permanent, which is
+  // the single most interesting thing this harness could discover. Dropped on the
+  // floor it would be indistinguishable from a clean settle, and the vacation
+  // assertion would then run against an unknown state and report something else.
+  // (The bare `await until(...)` at the two POST/DELETE sites is a different
+  // shape and correctly left alone: each is followed immediately by a check() on
+  // the very thing it waited for, so a timeout there already fails loudly.)
+  const settled = await untilQuiet(() =>
+    snapshot(page, GROUP, '[role="radio"]').then((x) => x.selected),
+  );
+  check("the earlier writes settled before the vacation case", settled, true);
   const postsBefore = posted.length;
   await page.keyboard.press("ArrowRight"); // wraps backwards onto on_vacation
   s = await snapshot(page, GROUP, '[role="radio"]');
@@ -297,6 +341,26 @@ async function dashboardRadios(page) {
   check("and posted NOTHING — reveal-then-confirm survives the keyboard path",
     strayPost, false);
 
+  // A REAL RACE LIVES HERE, AND THE untilQuiet ABOVE IS WHY THIS IS STABLE.
+  // setAvailabilityState calls setVacationSelected(false) on the SUCCESS path of
+  // its awaited POST (dashboard/page.js, the MEH-999 "the write is committed"
+  // branch). So an availability write that resolves AFTER the producer has
+  // picked vacation collapses the reveal and snaps the group back.
+  //
+  // Measured, not reasoned about: with a deferred POST the reveal is present
+  // before the resolution and absent after it, and the group reads
+  // ["true","false","false","false"]. In this harness it made the vacation
+  // assertion fail roughly 1 run in 6 until untilQuiet was added; 0 failures in
+  // 22 runs since.
+  //
+  // It is a real defect a producer can hit — choose a state, then choose
+  // vacation before the first write returns — narrow, and older than this
+  // ticket. REPORTED, NOT FIXED: the fix belongs in setAvailabilityState, and
+  // widening an ARIA-boundary PR to carry it is the scope creep rule 24 exists
+  // to stop.
+  //
+  // The control itself was never in doubt: it asserts the state does not CHANGE
+  // across an unhandled keypress, whatever that state happens to be.
   const before = await snapshot(page, GROUP, '[role="radio"]');
   await page.keyboard.press("a");
   const after = await snapshot(page, GROUP, '[role="radio"]');
