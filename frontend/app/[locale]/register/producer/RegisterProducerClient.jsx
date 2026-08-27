@@ -29,6 +29,7 @@ const ADDRESS_CONFIRM_ZOOM = 16;
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
+import { CONTACT_EMAIL } from "@/lib/env.client";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -1971,6 +1972,43 @@ function RegisterProducerPageBody() {
                 Non-upgrade collisions return identical 200 ack → step 3
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
             {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
+
+            {/* MEH-2200 (Amendment 13, s.11 disclosure duty): the collection
+                notice must be given AT collection, so it renders inline on the
+                frame that submits — not behind a disclosure the seller can skip.
+                Recipients are stated as "the service providers that run the
+                site" with the full list one tap away in /privacy: Phase 0 found
+                registration details also reach Anthropic (risk screening) and
+                Meta (the WhatsApp reply promised one line below), so the
+                narrower "infrastructure providers" wording would have
+                under-stated them. CONTACT_EMAIL is the same constant the
+                privacy page gives for rights requests, so the two surfaces
+                cannot drift. */}
+            <p
+              data-testid="register-collection-notice"
+              className="text-xs text-fg-muted text-start leading-relaxed"
+            >
+              {t.rich("auth.register.producer.collection_notice", {
+                privacy: (chunks) => (
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    className="text-primary hover:underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+                email: () => (
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}`}
+                    className="text-primary underline break-all"
+                    dir="ltr"
+                  >
+                    {CONTACT_EMAIL}
+                  </a>
+                ),
+              })}
+            </p>
 
             {/* MEH-2183: what-happens-next, immediately above the submit button.
                 Phase 0 verified this was ABSENT from the STORY step — the only
