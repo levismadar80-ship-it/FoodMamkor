@@ -465,21 +465,25 @@ export function HomeProducersGrid({
           {/* MEH-1645: zero results while a DAY refinement is active → suggest
               removing the day BEFORE the region fallback — the day is the
               narrowest filter, so it is the first thing to relax. */}
+          {/* MEH-2197: compact, cause-aware. The day filter is the narrowest
+              refinement, so its zero-result is a one-line note above the
+              fallback grid — not a hero dead-end that pushes the near-matches
+              below the fold. */}
           {producers.length === 0 && daysActive.length > 0 && (
-            <div className="text-center py-8" data-testid="day-empty-suggestion">
-              <p className="text-fg-muted mb-3 max-w-md mx-auto">
+            <div className="py-2 text-start" data-testid="day-empty-suggestion">
+              <p className="text-sm text-fg-muted">
                 {/* MEH-2036: the full set reads out here — this is a
                     paragraph, not the width-constrained chip, so it never
                     truncates the way ActiveFilterChip's label does. */}
-                {t("home.producers.day_empty_suggestion", { day: daysActive.join(" · "), city: filters.delivery_city })}
+                {t("home.producers.day_empty_suggestion", { day: daysActive.join(" · "), city: filters.delivery_city })}{" "}
+                <button
+                  type="button"
+                  onClick={onClearDays}
+                  className="underline text-primary hover:text-primary-dark transition font-medium"
+                >
+                  {t("home.producers.day_empty_clear_cta")}
+                </button>
               </p>
-              <button
-                type="button"
-                onClick={onClearDays}
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
-              >
-                {t("home.producers.day_empty_clear_cta")}
-              </button>
             </div>
           )}
           {/* MEH-1487: region fallback — when a city filter returned 0 but the
@@ -489,10 +493,17 @@ export function HomeProducersGrid({
           {producers.length === 0 && regionFallback?.producers?.length > 0 && (
             <div data-testid="region-fallback">
               <h3 className="font-headline-md text-lg font-bold text-text mb-4">
-                {t("home.producers.region_fallback_header", {
-                  city: filters.delivery_city,
-                  region: regionFallback.regionName,
-                })}
+                {/* MEH-2197: when the DAY filter is what zeroed the grid, the
+                    city itself is served — the old header would falsely claim
+                    it is not. Cause-aware variant, region only. */}
+                {daysActive.length > 0
+                  ? t("home.producers.region_fallback_header_days", {
+                      region: regionFallback.regionName,
+                    })
+                  : t("home.producers.region_fallback_header", {
+                      city: filters.delivery_city,
+                      region: regionFallback.regionName,
+                    })}
               </h3>
               <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
                 {regionFallback.producers.map((p, idx) => (
@@ -510,8 +521,10 @@ export function HomeProducersGrid({
               </div>
             </div>
           )}
-          {producers.length === 0 && !(regionFallback?.producers?.length > 0) && (
-            <div className="text-center py-16">
+          {/* MEH-2197: daysActive guard — a day-zero result already renders the
+              compact day block above; without this the two empty states stack. */}
+          {producers.length === 0 && daysActive.length === 0 && !(regionFallback?.producers?.length > 0) && (
+            <div className="text-center py-16" data-testid="empty-generic">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} className="text-primary" />
               </div>
