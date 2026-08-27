@@ -121,3 +121,84 @@ describe("HomeProducersGrid region fallback (MEH-1487)", () => {
     expect(screen.getByText("home.producers.empty_heading")).toBeInTheDocument();
   });
 });
+
+// MEH-2197: a day-filter zero-result is a DIFFERENT cause from a city-filter
+// zero-result. The city IS served — only the chosen day is not — so the
+// fallback header must not claim "no deliveries to {city}", the day note must
+// be a compact one-liner rather than a hero dead-end, and exactly one empty
+// state may render.
+describe("HomeProducersGrid day-zero cause-awareness (MEH-2197)", () => {
+  const dayZeroProps = {
+    ...baseProps,
+    filters: { category: "", delivery_city: "רעננה", has_delivery: false },
+    onClearCategory: () => {},
+    daysActive: ["שלישי", "חמישי"],
+  };
+
+  it("day-zero + region fallback → _days header rendered, old header absent", () => {
+    render(
+      <HomeProducersGrid
+        {...dayZeroProps}
+        onClearDays={() => {}}
+        regionFallback={{ regionName: "השרון", producers: [{ id: "a" }] }}
+      />,
+    );
+    const header = screen.getByText(/home\.producers\.region_fallback_header_days/);
+    expect(header).toBeInTheDocument();
+    expect(header).toHaveTextContent("השרון");
+    // the old, city-blaming header must not be in the DOM at all
+    expect(
+      screen.queryByText(/home\.producers\.region_fallback_header:/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("city-zero without days → old header rendered, _days key absent", () => {
+    render(
+      <HomeProducersGrid
+        {...baseProps}
+        filters={{ category: "", delivery_city: "אריאל", has_delivery: false }}
+        onClearCategory={() => {}}
+        daysActive={[]}
+        regionFallback={{ regionName: "השרון", producers: [{ id: "a" }] }}
+      />,
+    );
+    expect(
+      screen.getByText(/home\.producers\.region_fallback_header:/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/home\.producers\.region_fallback_header_days/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("day-empty block carries zero bg-primary elements and clears the days", () => {
+    const onClearDays = vi.fn();
+    const { container } = render(
+      <HomeProducersGrid {...dayZeroProps} onClearDays={onClearDays} regionFallback={null} />,
+    );
+    const block = screen.getByTestId("day-empty-suggestion");
+    expect(block.querySelectorAll(".bg-primary").length).toBe(0);
+    expect(block.className).not.toContain("text-center");
+    const cta = screen.getByRole("button", { name: "home.producers.day_empty_clear_cta" });
+    expect(cta.className).toContain("underline");
+    expect(cta.className).toContain("text-primary");
+    fireEvent.click(cta);
+    expect(onClearDays).toHaveBeenCalledTimes(1);
+    // sanity: the whole subtree carries no hero button either
+    expect(container.querySelectorAll('[data-testid="day-empty-suggestion"] .bg-primary').length).toBe(0);
+  });
+
+  it("day-zero with NO region fallback → exactly ONE empty-state block", () => {
+    render(
+      <HomeProducersGrid {...dayZeroProps} onClearDays={() => {}} regionFallback={null} />,
+    );
+    // count, not presence: the pre-MEH-2197 markup rendered TWO (the day block
+    // plus the unguarded generic empty state).
+    const blocks = [
+      ...screen.queryAllByTestId("day-empty-suggestion"),
+      ...screen.queryAllByText("home.producers.empty_heading"),
+      ...screen.queryAllByText("home.producers.empty_heading_category"),
+    ];
+    expect(blocks.length).toBe(1);
+    expect(screen.getByTestId("day-empty-suggestion")).toBeInTheDocument();
+  });
+});
