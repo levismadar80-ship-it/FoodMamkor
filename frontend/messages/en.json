@@ -2635,6 +2635,22 @@
     }
   },
   "about": {
+    "updated_at": "Updated: August 2026",
+    "choose": {
+      "eyebrow": "How we choose",
+      "fact1": "Licensed businesses only",
+      "fact2": "Every business approved by hand",
+      "fact3": "Zero commissions — always",
+      "process_link": "How our approval process works",
+      "registry_link": "Check the official license registry",
+      "count": "{count} approved businesses right now"
+    },
+    "biz_strip": "Run a food business? Here's how it works",
+    "exit": {
+      "story": "Meet the businesses",
+      "comparison": "How we approve a business",
+      "benefits": "Open the map"
+    },
     "comparison": {
       "eyebrow": "The difference",
       "heading": "What changes along the way",
