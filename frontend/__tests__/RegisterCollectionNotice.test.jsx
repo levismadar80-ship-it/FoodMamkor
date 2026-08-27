@@ -160,9 +160,13 @@ describe("MEH-2200 — Amendment-13 collection notice", () => {
   it("resolves its rich-text tags instead of leaking raw markup to the seller", async () => {
     await reachStoryFrame();
     const notice = screen.getByTestId("register-collection-notice");
-    // A missing tag callback, or a renamed tag in he.json, ships literal
-    // "<privacy>" into a legal notice. Nothing else in the suite catches that.
-    expect(notice.textContent).not.toMatch(/<\/?(privacy|email)>/);
+    // A missing tag callback, or a tag RENAMED in he.json, ships literal
+    // markup into a legal notice. Matched generically on purpose: an earlier
+    // version of this line listed (privacy|email) and would therefore have
+    // passed on <policy>…</policy> — the exact rename it existed to catch.
+    // In production next-intl throws on an unmatched tag rather than emitting
+    // it, so the symptom differs; the defect this detects is the same one.
+    expect(notice.textContent).not.toMatch(/<\/?[a-zA-Z][\w-]*>/);
   });
 
   it("states the three s.11 elements the notice exists to carry", async () => {
