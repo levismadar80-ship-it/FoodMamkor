@@ -122,7 +122,20 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // The numeral is aria-hidden — an ordinal ornament, exactly how the BENEFITS
 // and VALUES numerals are already treated — so where this renders as the
 // section's own heading (Benefits, as="h2") the accessible name stays the
-// label alone, byte-identical to what that <h2> announced before.
+// label alone rather than picking up the "03 · " prefix.
+//
+// That name is UNCHANGED from before, but not automatically, and the
+// distinction matters: the old <Eyebrow as="h2"> announced
+// `about.consumer.benefits.heading` and this announces
+// `about.chapter.3.label`. Two different keys. They render the same string
+// only because the bundles give them equal values — a fact about he.json /
+// en.json, not a property of this markup, and nothing here would notice if a
+// later edit moved one of them.
+//
+// So the claim is not carried by this comment. `AboutChapterLabelParity.test.js`
+// asserts the equality for all four reused labels in both locales, and fails
+// if a sixth chapter is added without a mirror entry. (Chapter 01 is exempt:
+// the story section had no eyebrow, so "הסיפור" is genuinely new copy.)
 function Chapter({ num, label, as: Tag = "p" }) {
   return (
     <div className="flex items-center gap-3 mb-3 md:mb-4">
