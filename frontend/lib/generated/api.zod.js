@@ -4970,7 +4970,8 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  * Guards (checked in order):
  *   1. Producer must exist.
  *   2. Producer owner cannot review their own business.
- *   3. First-time reviewers must have a WA click row for this producer.
+ *   3. First-time reviewers must have a click on ANY of this producer's
+ *      contact channels — a WhatsApp click OR a contact click (MEH-2204).
  *   4. Body is moderated by Haiku (fail-open).
  * @summary Create Review Nested
  */
