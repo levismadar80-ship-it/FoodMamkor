@@ -308,7 +308,18 @@ async function dashboardRadios(page) {
   // Let the earlier writes settle before testing vacation. See the note at the
   // negative control: a POST resolving late clears vacationSelected, so without
   // this the next assertion races it.
-  await untilQuiet(() => snapshot(page, GROUP, '[role="radio"]').then((x) => x.selected));
+  // The return value is ASSERTED, not discarded. A timeout here means the group
+  // never stopped changing — i.e. the race below is live and permanent, which is
+  // the single most interesting thing this harness could discover. Dropped on the
+  // floor it would be indistinguishable from a clean settle, and the vacation
+  // assertion would then run against an unknown state and report something else.
+  // (The bare `await until(...)` at the two POST/DELETE sites is a different
+  // shape and correctly left alone: each is followed immediately by a check() on
+  // the very thing it waited for, so a timeout there already fails loudly.)
+  const settled = await untilQuiet(() =>
+    snapshot(page, GROUP, '[role="radio"]').then((x) => x.selected),
+  );
+  check("the earlier writes settled before the vacation case", settled, true);
   const postsBefore = posted.length;
   await page.keyboard.press("ArrowRight"); // wraps backwards onto on_vacation
   s = await snapshot(page, GROUP, '[role="radio"]');
