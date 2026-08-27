@@ -20,8 +20,17 @@
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.QA_BASE || "http://localhost:3211";
-const OUT = process.env.QA_OUT || "../qa-artifacts/MEH-2193";
+// QA_BASE_URL is the repo's established harness knob and is on
+// check_env_drift.sh's SYSTEM_EXCLUDE list precisely because it configures the
+// TEST RUNNER, not the app. An earlier version of this file invented QA_BASE
+// and QA_OUT, which are the same class of thing under names the gate does not
+// know — so Env drift correctly failed the required CI gate. The fix is to use
+// the sanctioned name and hardcode the output dir, NOT to widen the exclude
+// list or add harness knobs to .env.example (which that script's own comments
+// call actively wrong: it would tell a developer to configure something the
+// app never reads).
+const BASE = process.env.QA_BASE_URL || "http://localhost:3211";
+const OUT = "../qa-artifacts/MEH-2193";
 mkdirSync(OUT, { recursive: true });
 
 const VIEWPORTS = [
