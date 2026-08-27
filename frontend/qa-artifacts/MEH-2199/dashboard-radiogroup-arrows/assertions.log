@@ -37,8 +37,8 @@ PASS  vacation REVEALED the return-date field
         expected 1
         actual   1
 PASS  and posted NOTHING — reveal-then-confirm survives the keyboard path
-        expected 0
-        actual   0
+        expected false
+        actual   false
 PASS  CONTROL an unhandled key moves nothing (negative control)
         expected ["on_vacation",["true","false","false","false"]]
         actual   ["on_vacation",["true","false","false","false"]]
