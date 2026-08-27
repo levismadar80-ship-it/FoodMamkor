@@ -516,11 +516,12 @@
       "day_chip_clear_aria": "Clear delivery-day filter",
       "day_option_aria": "Filter deliveries on {day}",
       "days_chip_more": "{day} +{count}",
-      "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
+      "day_empty_suggestion": "No delivery to {city} on {day} right now",
       "day_empty_clear_cta": "Remove day filter",
       "clear_location_filter": "Remove location filter",
       "geo_empty": "No businesses found nearby — showing all businesses",
-      "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
+      "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:",
+      "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:"
     },
     "recent": {
       "heading": "Recently viewed"

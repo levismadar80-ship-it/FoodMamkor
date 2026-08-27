@@ -516,11 +516,12 @@
       "day_chip_clear_aria": "ניקוי סינון ימי משלוח",
       "day_option_aria": "סינון משלוח ליום {day}",
       "days_chip_more": "{day} +{count}",
-      "day_empty_suggestion": "אין כרגע עסקים עם משלוח ביום {day} ל{city} — אולי בימים אחרים",
+      "day_empty_suggestion": "אין כרגע משלוח ל{city} ב{day}",
       "day_empty_clear_cta": "הסרת סינון היום",
       "clear_location_filter": "הסרת סינון מיקום",
       "geo_empty": "לא מצאנו בתי עסק קרובים — מציגים את כל בתי העסק",
-      "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:"
+      "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:",
+      "region_fallback_header_days": "בינתיים — בתי עסק שמגיעים לאזור {region}:"
     },
     "recent": {
       "heading": "צפית לאחרונה"
