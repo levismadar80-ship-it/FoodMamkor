@@ -29,6 +29,12 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
+// MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
+// chunk 2; /settings then needed the identical behaviour, so it was lifted to
+// a shared hook and this file retrofitted onto it. Two copies of the RTL arrow
+// mapping would drift, and a drifted arrow direction is invisible in review —
+// it reads as a plausible line either way.
+import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -207,6 +213,11 @@ export default function EventsPage() {
   const activeChipKey = category === "" ? "all" : category;
   const onChipClick = (k) => setCategory(k === "all" ? "" : k);
 
+  // MEH-2199: one handler per tablist. The hook reads each row's own tabs out
+  // of the DOM, so the two rows on this page cannot interfere with each other.
+  const onMainTabsKeyDown = useTabsKeyboard(switchTab);
+  const onViewTabsKeyDown = useTabsKeyboard(setView);
+
   // Group rows into consecutive month buckets (same logic as before —
   // restyled into the month-divider). Stores month + year labels split so
   // the year can render in Cormorant italic per the FINAL.
@@ -302,10 +313,16 @@ export default function EventsPage() {
             wrapping only the two tabs. The Link stays a sibling in the same
             flex row (ms-auto), so the layout is unchanged. */}
         <div className="flex items-end gap-4 border-b border-border">
-          <div role="tablist" className="flex items-end gap-4">
+          <div
+            role="tablist"
+            className="flex items-end gap-4"
+            onKeyDown={onMainTabsKeyDown}
+          >
           <button
             role="tab"
+            data-tab-value="events"
             aria-selected={!isExp}
+            tabIndex={isExp ? -1 : 0}
             onClick={() => switchTab("events")}
             className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
@@ -315,7 +332,9 @@ export default function EventsPage() {
           </button>
           <button
             role="tab"
+            data-tab-value="experiences"
             aria-selected={isExp}
+            tabIndex={isExp ? 0 : -1}
             onClick={() => switchTab("experiences")}
             className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
@@ -356,10 +375,13 @@ export default function EventsPage() {
                 role="tablist"
                 aria-label={t("view_mode_label")}
                 className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
+                onKeyDown={onViewTabsKeyDown}
               >
                 <button
                   role="tab"
+                  data-tab-value="list"
                   aria-selected={view === "list"}
+                  tabIndex={view === "list" ? 0 : -1}
                   // Label is icon-only on mobile (hidden sm:inline); keep a stable
                   // accessible name on every viewport (MEH-134 — a11y + E2E locator).
                   aria-label={t("view_list")}
@@ -373,7 +395,9 @@ export default function EventsPage() {
                 </button>
                 <button
                   role="tab"
+                  data-tab-value="calendar"
                   aria-selected={view === "calendar"}
+                  tabIndex={view === "calendar" ? 0 : -1}
                   aria-label={t("view_calendar")}
                   onClick={() => setView("calendar")}
                   className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
