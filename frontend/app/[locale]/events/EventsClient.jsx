@@ -29,6 +29,12 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
+// MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
+// chunk 2; /settings then needed the identical behaviour, so it was lifted to
+// a shared hook and this file retrofitted onto it. Two copies of the RTL arrow
+// mapping would drift, and a drifted arrow direction is invisible in review —
+// it reads as a plausible line either way.
+import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -108,60 +114,6 @@ function toEntry(row, tab) {
     accent: isExp ? "gold" : "green",
     href: isExp ? `/experiences/${row.id}` : `/events/${row.id}`,
   };
-}
-
-// MEH-2199: APG Tabs keyboard layer for the two tablists on this page. Both
-// declared role="tab" + aria-selected while every tab stayed its own tab-stop
-// and the arrow keys did nothing — a widget that promises more than it does.
-//
-// RTL arrow mapping is the house one: ArrowLeft = next, ArrowRight = prev.
-// REUSES: frontend/components/Lightbox.jsx:58 — same visual mapping, so a
-// keyboard user meets one direction convention across the site.
-//
-// Activation is AUTOMATIC (APG "tabs with automatic activation"): moving focus
-// selects. That is the pattern for a tablist whose panels are cheap and already
-// in the tree, which is the case for both rows here.
-//
-// The DOM is the single authority for both tab order and wire value — the
-// handler reads the buttons it finds and their data-tab-value, so reordering
-// the JSX cannot desync a parallel array (workflow.md Smell #1).
-const TAB_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
-
-function handleTablistKeyDown(e, activate) {
-  const tabs = Array.from(e.currentTarget.querySelectorAll('[role="tab"]'));
-  const from = tabs.indexOf(e.target.closest?.('[role="tab"]'));
-  if (from === -1) return;
-  let to;
-  // Object.hasOwn rather than `e.key in TAB_ARROW_DELTA`. This is DEFENSIVE,
-  // not a fix for a reachable bug — and the distinction is measured, not
-  // assumed. `in` walks the prototype chain, so a key literally named
-  // "constructor" would test true and the delta would read back as a function.
-  // That cannot happen here: React's own getEventKey does
-  // `normalizeKey[nativeEvent.key] || nativeEvent.key` on the same object
-  // shape, so by the time the handler runs, e.key for those names is already a
-  // FUNCTION (measured 27/08: "constructor" arrives as `function Object() {…}`,
-  // "__proto__" as `[object Object]`), and a non-string key misses `in` and
-  // `hasOwn` alike. So the two forms are indistinguishable today and no test
-  // here can tell them apart. hasOwn stays because it costs nothing and does
-  // not depend on a React internal staying the way it is.
-  if (Object.hasOwn(TAB_ARROW_DELTA, e.key)) {
-    to = (from + TAB_ARROW_DELTA[e.key] + tabs.length) % tabs.length;
-  } else if (e.key === "Home") {
-    to = 0;
-  } else if (e.key === "End") {
-    to = tabs.length - 1;
-  } else {
-    return;
-  }
-  // A tab with no data-tab-value would activate with `undefined` and change
-  // the panel to neither value — silently. Bail instead, so the arrow does
-  // nothing visible and the co-located test (which asserts every tab in this
-  // file carries one) is what actually reports the omission.
-  const value = tabs[to].dataset.tabValue;
-  if (value === undefined) return;
-  e.preventDefault();
-  tabs[to].focus();
-  activate(value);
 }
 
 export default function EventsPage() {
@@ -261,6 +213,11 @@ export default function EventsPage() {
   const activeChipKey = category === "" ? "all" : category;
   const onChipClick = (k) => setCategory(k === "all" ? "" : k);
 
+  // MEH-2199: one handler per tablist. The hook reads each row's own tabs out
+  // of the DOM, so the two rows on this page cannot interfere with each other.
+  const onMainTabsKeyDown = useTabsKeyboard(switchTab);
+  const onViewTabsKeyDown = useTabsKeyboard(setView);
+
   // Group rows into consecutive month buckets (same logic as before —
   // restyled into the month-divider). Stores month + year labels split so
   // the year can render in Cormorant italic per the FINAL.
@@ -359,7 +316,7 @@ export default function EventsPage() {
           <div
             role="tablist"
             className="flex items-end gap-4"
-            onKeyDown={(e) => handleTablistKeyDown(e, switchTab)}
+            onKeyDown={onMainTabsKeyDown}
           >
           <button
             role="tab"
@@ -418,7 +375,7 @@ export default function EventsPage() {
                 role="tablist"
                 aria-label={t("view_mode_label")}
                 className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
-                onKeyDown={(e) => handleTablistKeyDown(e, setView)}
+                onKeyDown={onViewTabsKeyDown}
               >
                 <button
                   role="tab"
