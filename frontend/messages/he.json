@@ -521,7 +521,9 @@
       "clear_location_filter": "הסרת סינון מיקום",
       "geo_empty": "לא מצאנו בתי עסק קרובים — מציגים את כל בתי העסק",
       "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:",
-      "region_fallback_header_days": "בינתיים — בתי עסק שמגיעים לאזור {region}:"
+      "region_fallback_header_days": "בינתיים — בתי עסק שמגיעים לאזור {region}:",
+      "fallback_day_caption": "משלוח ל{city}: {days}",
+      "fallback_day_caption_flexible": "משלוח ל{city} בתיאום מראש"
     },
     "recent": {
       "heading": "צפית לאחרונה"
