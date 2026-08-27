@@ -1,0 +1,40 @@
+
+=== /he/settings — profile|security tablist ===
+PASS  CONTROL settings tablist is present with 2 tabs
+        expected [true,2]
+        actual   [true,2]
+PASS  exactly one tab stop
+        expected 1
+        actual   1
+PASS  the tab stop is the selected tab
+        expected [["0","-1"],["true","false"]]
+        actual   [["0","-1"],["true","false"]]
+PASS  ArrowLeft focuses the NEXT tab by name (RTL contract)
+        expected "security"
+        actual   "security"
+PASS  ArrowLeft activates it — aria-selected follows focus
+        expected ["false","true"]
+        actual   ["false","true"]
+PASS  still exactly one tab stop after the move
+        expected 1
+        actual   1
+PASS  the security PANEL rendered, not just the ARIA state
+        expected 1
+        actual   1
+PASS  the URL mirror followed the keyboard switch
+        expected "security"
+        actual   "security"
+PASS  ArrowRight returns to the PREVIOUS tab by name
+        expected "profile"
+        actual   "profile"
+PASS  End selects the last tab
+        expected ["security",["false","true"]]
+        actual   ["security",["false","true"]]
+PASS  Home selects the first tab
+        expected ["profile",["true","false"]]
+        actual   ["profile",["true","false"]]
+PASS  CONTROL an unhandled key moves nothing (negative control)
+        expected ["profile",["true","false"]]
+        actual   ["profile",["true","false"]]
+
+0 failed of 12 assertions
