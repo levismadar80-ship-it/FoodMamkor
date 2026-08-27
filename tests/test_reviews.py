@@ -42,10 +42,16 @@ VALID_BODY = "המוצרים מדהימים ואוהבת את השירות!"  # 
 
 
 # ---------------------------------------------------------------------------
-# POST guard: no WA click → 403
+# POST guard: no contact of ANY kind → 403
+#
+# MEH-2204 renamed this from `..._requires_wa_click`. The fixture never had a
+# WhatsApp click OR a contact click, so the behaviour it asserts is unchanged —
+# but the old name said the gate requires WhatsApp specifically, which is no
+# longer true and would lead the next editor to treat the WA path as the only
+# one that counts. Named after the input it covers, not the class it belongs to.
 # ---------------------------------------------------------------------------
 
-def test_post_review_requires_wa_click(client, db):
+def test_post_review_requires_some_contact_click(client, db):
     user = make_user(db)
     producer = make_producer(db)
     r = client.post(
