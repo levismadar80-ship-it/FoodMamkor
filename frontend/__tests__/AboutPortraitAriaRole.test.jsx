@@ -23,6 +23,24 @@ import { render, screen, fireEvent } from "@testing-library/react";
  * pass on any diff that applied a prescribed edit, including one that broke
  * the name; these can only pass if a screen reader would actually reach the
  * right thing — which is the property axe is checking.
+ *
+ * ── MEH-1130 ────────────────────────────────────────────────────────────────
+ * The founder portrait this file was written around is GONE: the editorial
+ * image layer replaced it with a market photograph, and there is no photo of
+ * the founder anywhere on /about any more ("face-not-focal").
+ *
+ * The MEH-1227 property did NOT go with it, and that is why this file was
+ * repointed rather than deleted. The shape it guards — a fill-Image inside a
+ * wrapper, with an onError branch rendering `null` — is exactly the shape the
+ * new story image has, so the same three assertions still discriminate; only
+ * the image they hold on to changed. Deleting the file because "the portrait
+ * is gone" would have retired a live a11y guard on the element that replaced
+ * it, which is the outcome the guard exists to prevent.
+ *
+ * The fourth test is new and is MEH-1130's own absence assertion, stated as
+ * behaviour rather than as a grep: no image on this page announces itself as
+ * the founder. It fails against the pre-MEH-1130 component (demonstrated in
+ * the PR body), which is what makes it a check rather than a decoration.
  */
 
 vi.mock("next-intl", () => ({
@@ -31,6 +49,9 @@ vi.mock("next-intl", () => ({
     const map = {
       "about.consumer.story.image_aria": "תמונה של ספיר, מייסדת מהמקור",
       "about.consumer.story.image_alt": "ספיר, מייסדת מהמקור",
+      // MEH-1130: the alt of the market photograph that replaced the
+      // portrait. Verbatim from the asset's Cloudinary context.alt.
+      "about.img.story_alt": "תוצרת צבעונית בסלים בשוק איכרים",
     };
     return map[full] ?? full;
   },
@@ -83,7 +104,10 @@ beforeAll(() => {
 import AboutClient from "@/app/[locale]/about/AboutClient";
 
 const WRAPPER_NAME = "תמונה של ספיר, מייסדת מהמקור";
-const ALT_NAME = "ספיר, מייסדת מהמקור";
+// The name the STORY IMAGE carries today (MEH-1130 — the market photograph).
+const ALT_NAME = "תוצרת צבעונית בסלים בשוק איכרים";
+// The name the founder portrait used to carry. Nothing may answer to it now.
+const PORTRAIT_NAME = "ספיר, מייסדת מהמקור";
 
 /** Every element carrying aria-label whose role cannot accept a name. */
 function prohibitedLabelHolders(container) {
@@ -96,21 +120,21 @@ function prohibitedLabelHolders(container) {
     .map((el) => `${el.tagName.toLowerCase()}[aria-label="${el.getAttribute("aria-label")}"]`);
 }
 
-describe("MEH-1227 — /about founder portrait: no name stranded on a role-less wrapper", () => {
+describe("MEH-1227 / MEH-1130 — /about story image: no name stranded on a role-less wrapper", () => {
   it("leaves no aria-label on an element whose role cannot carry one (the axe rule)", () => {
     const { container } = render(<AboutClient />);
     expect(prohibitedLabelHolders(container)).toEqual([]);
   });
 
-  it("still exposes the portrait as a named image — via the Image's own alt", () => {
+  it("still exposes the story image as a named image — via the Image's own alt", () => {
     render(<AboutClient />);
     expect(screen.getByRole("img", { name: ALT_NAME })).toBeTruthy();
   });
 
   it("announces nothing over the empty plate when the image fails to load", () => {
-    // The live state today: the Cloudinary portrait 401s, onError fires, and
-    // the component renders `null` inside the wrapper. Naming the wrapper
-    // would announce a photo that is not there.
+    // The live state today: the Cloudinary image 401s, onError fires, and the
+    // component renders `null` inside the wrapper. Naming the wrapper would
+    // announce a photo that is not there.
     const { container } = render(<AboutClient />);
     fireEvent.error(screen.getByRole("img", { name: ALT_NAME }));
 
@@ -119,5 +143,17 @@ describe("MEH-1227 — /about founder portrait: no name stranded on a role-less 
     expect(screen.queryByLabelText(WRAPPER_NAME)).toBeNull();
     // and the failed state must not reintroduce the violation either
     expect(prohibitedLabelHolders(container)).toEqual([]);
+  });
+
+  // MEH-1130 — "face-not-focal", asserted as behaviour: whatever the markup
+  // does, nothing on this page announces itself as a picture of the founder.
+  // Stated over the accessibility tree for the same reason as the three above:
+  // an assertion on the asset URL would pass on a diff that swapped the src
+  // and left the name, and the name is the part a reader actually meets.
+  it("no longer exposes any image of the founder (MEH-1130 absence assertion)", () => {
+    render(<AboutClient />);
+    expect(screen.queryByRole("img", { name: PORTRAIT_NAME })).toBeNull();
+    expect(screen.queryByRole("img", { name: WRAPPER_NAME })).toBeNull();
+    expect(screen.queryByLabelText(PORTRAIT_NAME)).toBeNull();
   });
 });
