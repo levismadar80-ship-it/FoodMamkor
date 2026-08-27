@@ -691,27 +691,6 @@ test.describe("Visual parity — MEH-991", () => {
   // MEH-1113: the contact form gains a "נושא הפנייה" topic select above the
   // message field — another intentional /about visual change, so the baselines
   // regenerate again on this branch via the same vrt-update re-ride.
-  // MEH-2192/MEH-2193 (27/08): the hero gains an "עודכן:" dateline and the page
-  // gains three chapter exits, the "how we choose" fact block and a business
-  // strip — intentional, so the baselines were regenerated on the runner via a
-  // vrt-update dispatch SCOPED with route=about. Scope it: an unscoped run
-  // rewrites every route's baseline, which is how PR #2102 merged a frozen home
-  // baseline. Measured here: exactly two files changed, both about-*.
-  //
-  // TWO THINGS THE REGENERATED BASELINES FREEZE, both pre-existing and neither
-  // introduced by that change — verified by opening the OLD blob from staging
-  // and comparing, not assumed:
-  //   1. The founder portrait renders as a solid MAGENTA rectangle. It is a
-  //      Cloudinary asset (STORY_PORTRAIT in AboutClient.jsx) that does not load
-  //      on the runner. The old baseline has the identical block, so this has
-  //      been the captured state for some time.
-  //   2. Everything below the story is BLANK — FadeInSection leaves un-revealed
-  //      sections at opacity:0 while they still occupy height (the known /about
-  //      VRT defect). So the fact block and business strip are in the frame's
-  //      height but not its ink.
-  // Consequence worth stating plainly: a green `about` here is a weak signal.
-  // It proves the page's geometry did not move; it cannot prove the lower two
-  // thirds render at all, because in this capture they do not.
   test("about", async ({ page }) => {
     await preparePage(page);
     await page.goto("/about");

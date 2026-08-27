@@ -1,0 +1,46 @@
+
+=== /he/producer/dashboard — availability radiogroup ===
+PASS  CONTROL radiogroup is present with 4 radios
+        expected [true,4]
+        actual   [true,4]
+PASS  exactly one tab stop
+        expected 1
+        actual   1
+PASS  the tab stop is the checked radio
+        expected [["0","-1","-1","-1"],["true","false","false","false"]]
+        actual   [["0","-1","-1","-1"],["true","false","false","false"]]
+PASS  ArrowLeft focuses the NEXT radio by name (RTL contract)
+        expected "available_today"
+        actual   "available_today"
+PASS  and SELECTS it — aria-checked follows focus
+        expected ["false","true","false","false"]
+        actual   ["false","true","false","false"]
+PASS  still exactly one tab stop after the move
+        expected 1
+        actual   1
+PASS  the availability POST fired once, carrying that state
+        expected ["available_today"]
+        actual   ["available_today"]
+PASS  ArrowRight returns to the PREVIOUS radio by name
+        expected "accepting_orders"
+        actual   "accepting_orders"
+PASS  ArrowDown is next (vertical axis unmirrored)
+        expected "available_today"
+        actual   "available_today"
+PASS  ArrowUp is previous
+        expected "accepting_orders"
+        actual   "accepting_orders"
+PASS  wrapping backwards lands on vacation
+        expected "on_vacation"
+        actual   "on_vacation"
+PASS  vacation REVEALED the return-date field
+        expected 1
+        actual   1
+PASS  and posted NOTHING — reveal-then-confirm survives the keyboard path
+        expected false
+        actual   false
+PASS  CONTROL an unhandled key moves nothing (negative control)
+        expected ["on_vacation",["false","false","false","true"]]
+        actual   ["on_vacation",["false","false","false","true"]]
+
+0 failed of 14 assertions

@@ -337,6 +337,7 @@
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
         "submit_next_hint": "We'll review your details and get back to you on WhatsApp within 3 business days.",
+        "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -520,7 +521,9 @@
       "clear_location_filter": "Remove location filter",
       "geo_empty": "No businesses found nearby — showing all businesses",
       "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:",
-      "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:"
+      "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:",
+      "fallback_day_caption": "Delivers to {city}: {days}",
+      "fallback_day_caption_flexible": "Delivers to {city} by arrangement"
     },
     "recent": {
       "heading": "Recently viewed"
@@ -2637,6 +2640,35 @@
   },
   "about": {
     "updated_at": "Updated: August 2026",
+    "img": {
+      "story_caption": "A farmers' market. Where it all began.",
+      "story_alt": "Colourful produce in baskets at a farmers' market",
+      "bread_caption": "Sourdough from a small local business.",
+      "bread_alt": "Sliced rustic sourdough loaf on a wooden board",
+      "duo_caption": "The produce speaks for itself. That's the point.",
+      "duo_rear_alt": "A glass bottle of olive oil with olives"
+    },
+    "signature": {
+      "name": "Sapir Schnapp",
+      "role": "Founder, Mehamakor"
+    },
+    "chapter": {
+      "1": {
+        "label": "The story"
+      },
+      "2": {
+        "label": "The difference"
+      },
+      "3": {
+        "label": "Why Mehamakor"
+      },
+      "4": {
+        "label": "Our criteria"
+      },
+      "5": {
+        "label": "First steps"
+      }
+    },
     "choose": {
       "eyebrow": "How we choose",
       "fact1": "Licensed businesses only",
@@ -3293,7 +3325,7 @@
       "ordering_email": "Send us an email",
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
-      "escalation": "Another question? Send us a message",
+      "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "recipe_idea": "Can I share a recipe I made?",
@@ -4501,6 +4533,7 @@
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
         "subtitle": "Leave blank to show default questions based on your category",
         "guidance": "These questions appear on your page. The more delivery and ordering details you fill in, the more of them get answered right on the page instead of reaching you on WhatsApp.",
+        "channel_notice": "Note: these questions appear on your page only when WhatsApp is your primary contact channel.",
         "placeholder_1": "e.g. What's in stock this week?",
         "placeholder_2": "e.g. Do you deliver to [city]?",
         "placeholder_3": "e.g. Can I order for an event?",

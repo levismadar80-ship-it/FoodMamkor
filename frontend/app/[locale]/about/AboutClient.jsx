@@ -40,13 +40,39 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 // Own file because it owns fetch state — see the header comment there.
 import HowWeChoose from "./HowWeChoose";
 
-// MEH-2001: the story portrait. Raw asset URL — every transform is applied by
-// optimizeCloudinary at the call site, never baked into this string.
-const STORY_PORTRAIT =
-  "https://res.cloudinary.com/dfzpscjks/image/upload/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg";
-// 360px (the `sizes` cap on this image) at DPR 2. The source is 1200px wide,
-// so this only ever downscales.
-const STORY_PORTRAIT_WIDTH = 720;
+// MEH-1130: the editorial image layer. Raw asset URLs — every transform is
+// applied by optimizeCloudinary at the call site, never baked into the string
+// (frontend.md, the MEH-2001 rule these lines used to carry).
+//
+// The founder portrait that stood here is GONE from the page: "face-not-focal"
+// is the governing constraint of this layer, and the signature block in the
+// story section carries the personal anchor in its place. There is no
+// photograph of the founder anywhere on /about any more.
+const STORY_IMAGE =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1781214925/home/feature-produce.jpg";
+const BAND_BREAD =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1781215052/about/bread.jpg";
+const DUO_REAR =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1781214483/about/olive-oil.jpg";
+// The FRONT image of the offset duo. Rendered DECORATIVE (alt=""), and that is
+// a measured decision rather than an oversight: unlike the other three, this
+// asset carries NO `context.alt` in Cloudinary — its context object is empty
+// (Admin API, 27/08) — so the card's premise that every alt is "already
+// stored" does not hold for it, and writing a Hebrew alt here would be a
+// fabricated value behind a real one's styling. The pair is named by the rear
+// image's alt plus the shared figcaption, which is the standard reading of an
+// overlapping decorative duo. To give it a real name later: one context.alt
+// write on the asset, then swap alt="" for that stored string.
+const DUO_FRONT =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg";
+
+// Delivered widths. On the c_fill path w_ CAN upscale, so each stays at or
+// below its source width — feature-produce 3732px · bread 3276px ·
+// olive-oil 3000px · hero-market 2400px (all measured via the Admin API).
+const STORY_IMAGE_WIDTH = 1040;
+const BAND_BREAD_WIDTH = 1600;
+const DUO_REAR_WIDTH = 900;
+const DUO_FRONT_WIDTH = 640;
 
 // MEH-1112: testimonials section render-gated OFF until real testimonials
 // exist (NN/g: real social proof or nothing — no empty-shelf placeholder).
@@ -79,6 +105,49 @@ const VALUES = [
 // editorial order — do not re-sort.
 const COMPARE_STOPS = ["row1", "row2", "row3"];
 
+// MEH-1130: the numbered chapter mark that replaces the plain eyebrow on the
+// five narrative sections — "0N · <label>" in gold, then a hairline gold rule
+// running to the section's end edge, so the page reads as a magazine longread
+// rather than a stack of blocks.
+//
+// COLOUR: gold-deep (#7a5a10), NOT accent (#896714), and the deviation from
+// the card's "accent gold" is deliberate and measured. Against the two
+// surfaces this mark renders on, accent is 4.61:1 on background (#f5f0e8)
+// but only 4.14:1 on background-alt (#ede4d2) — under AA for 13px text, and
+// chapters 03/04 sit on background-alt. gold-deep is 5.62:1 and 5.05:1, i.e.
+// passes on both. This is the same finding the previous Eyebrow comment
+// recorded from the other end (it fell back to fg-muted for it); gold-deep
+// keeps the gold the card asked for and the contrast the axe spec requires.
+//
+// The numeral is aria-hidden — an ordinal ornament, exactly how the BENEFITS
+// and VALUES numerals are already treated — so where this renders as the
+// section's own heading (Benefits, as="h2") the accessible name stays the
+// label alone rather than picking up the "03 · " prefix.
+//
+// That name is UNCHANGED from before, but not automatically, and the
+// distinction matters: the old <Eyebrow as="h2"> announced
+// `about.consumer.benefits.heading` and this announces
+// `about.chapter.3.label`. Two different keys. They render the same string
+// only because the bundles give them equal values — a fact about he.json /
+// en.json, not a property of this markup, and nothing here would notice if a
+// later edit moved one of them.
+//
+// So the claim is not carried by this comment. `AboutChapterLabelParity.test.js`
+// asserts the equality for all four reused labels in both locales, and fails
+// if a sixth chapter is added without a mirror entry. (Chapter 01 is exempt:
+// the story section had no eyebrow, so "הסיפור" is genuinely new copy.)
+function Chapter({ num, label, as: Tag = "p" }) {
+  return (
+    <div className="flex items-center gap-3 mb-3 md:mb-4">
+      <Tag className="block font-body-md text-[13px] font-semibold text-gold-deep shrink-0">
+        <span aria-hidden="true">{`${num} · `}</span>
+        {label}
+      </Tag>
+      <span aria-hidden="true" className="h-px flex-1 bg-accent/35" />
+    </div>
+  );
+}
+
 // MEH-2193: chapter exit. A text link, never a button — the single primary CTA
 // stays in Close, and three competing buttons mid-page would flatten that
 // hierarchy. Styling and ArrowLeft (LEFT = forward in RTL) are lifted verbatim
@@ -91,9 +160,7 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // contactStatus, contactMsg, submitCount, openTip and imgFailed state). Each of
 // those re-renders would unmount and remount all three links, throwing away the
 // IntersectionObserver registrations next/link uses to prefetch. Caught by the
-// CI adversarial reviewer on #3123; the sibling `Eyebrow` unit below has the
-// same shape and is left alone deliberately — changing it is not this ticket's
-// scope, and it renders static text with nothing to prefetch.
+// CI adversarial reviewer on #3123.
 function ExitLink({ href, testId, children }) {
   return (
     <LocaleLink
@@ -159,11 +226,6 @@ export default function AboutPage() {
   // cream and background-alt (accent gold fails 4.5:1 at this size). Label is a
   // <p> by default so it never outranks the section h2; pass as="h2" where the
   // label IS the section heading (Benefits).
-  const Eyebrow = ({ children, as: Tag = "p" }) => (
-    <Tag className="block font-body-md text-[13px] font-semibold text-fg-muted mb-3 md:mb-4">
-      {children}
-    </Tag>
-  );
 
   return (
     <div className="relative bg-background">
@@ -187,97 +249,91 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 02 — Sapir's story (prose start · portrait standfirst end) ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+      {/* ======== 02 — Sapir's story (prose at the start edge · market photo bleeding to the end edge) ========
+          MEH-1130 replaces the framed portrait standfirst that stood here since
+          MEH-100. What changed and why: the portrait card (image + mat + offset
+          panel + its figcaption) is removed entirely, a market photograph bleeds
+          off the inline-end edge in its place, and a signature block closes the
+          prose. `overflow-x-clip` is on the section because `50vw` counts the
+          scrollbar on most engines while the layout box does not — without it a
+          few pixels of overshoot would put a horizontal scrollbar on the page.
+          `clip` and not `hidden`: it creates no scroll container, so it cannot
+          disturb sticky or scroll-anchoring behaviour elsewhere. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24 overflow-x-clip">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-12 md:gap-[72px] items-start">
-            {/* prose — sits at start edge in RTL */}
-            <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5 max-w-[64ch]">
-              <p className="font-headline-md font-bold text-text text-2xl md:text-[25px] !mb-2">
-                {t("story.greeting")}
-              </p>
-              <p className="text-fg-muted">{t("story.p1")}</p>
-              <p>{t("story.p2")}</p>
-              <p>{t("story.p3")}</p>
-              <p>{t("story.p4")}</p>
-              <p>{t("story.p5")}</p>
-            </div>
-            {/* portrait standfirst — sticky on desktop. MEH-788 S14: IMG-01
-                framed PLATE — warm-white mat + hairline + an offset
-                background-alt panel behind it (depth by overlap, zero shadows).
-                The plate frames the founder portrait below. */}
-            <figure className="m-0 md:sticky md:top-10 max-w-[280px] md:max-w-[360px]">
-              <div className="relative">
-                {/* offset panel behind the mat */}
-                <div
-                  className="absolute -bottom-3 -end-3 w-full h-full rounded-lg bg-background-alt border border-border"
-                  aria-hidden="true"
-                />
-                {/* mat + hairline + the 3:4 image */}
-                <div className="relative rounded-lg bg-surface-card border border-border p-2">
-                  {/* IMG-01: founder portrait. Empty/failed state falls back
-                      to a tonal background-alt plate (no leaf box). */}
-                  {/* MEH-1227: this wrapper carries NO aria-label and NO role.
-                      It used to carry aria-label={t("story.image_aria")}, which
-                      is `aria-prohibited-attr` (axe, serious) on a role-less
-                      div and fails 12-axe-a11y.spec.ts on /about.
-                      Naming the wrapper instead (role="img" + the label) was
-                      tried and rejected: this fallback renders `null` — a bare
-                      tonal plate, deliberately no Leaf box — so a name here
-                      announces "תמונה של ספיר" over an empty box, and that
-                      empty state is the live one while the Cloudinary images
-                      401. The name belongs on the Image's own alt, which is
-                      where the repo already puts it: ImageWithFallback.jsx:37-56
-                      and ProducerCard.jsx:288-310 both scope role="img" to the
-                      no-photo branch and leave the loaded branch a bare Image.
-                      This DOES drop a name Chrome was exposing — measured via
-                      CDP, the prohibited label produced `role=generic
-                      name="…" ignored=false`. That is the point, not a cost:
-                      a name on a generic container is what ARIA prohibits, and
-                      here it named an empty box. The loaded state keeps its
-                      name through the Image's alt. */}
-                  <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt">
-                    {imgFailed ? null : (
-                      // MEH-2001: this src used to be a hardcoded transform
-                      // string, which frontend.md forbids ("never hardcode
-                      // transform params in component code") and which meant
-                      // the helper's new default width could not reach it —
-                      // it delivered the full original. Routed through the
-                      // helper, so future transform policy lands here too.
-                      //
-                      // width is explicit because on the c_fill path the helper
-                      // deliberately does NOT apply DEFAULT_MAX_WIDTH: c_fill +
-                      // w_ can upscale a narrower original. It cannot here —
-                      // measured via the Cloudinary Admin API, the source is
-                      // 1200x1600 / 186KB, and `sizes` below caps display at
-                      // 360px, so 720 is that at DPR 2.
-                      <Image
-                        src={optimizeCloudinary(STORY_PORTRAIT, {
-                          aspectRatio: "3:4",
-                          width: STORY_PORTRAIT_WIDTH,
-                        })}
-                        alt={t("story.image_alt")}
-                        fill
-                        sizes="(min-width: 768px) 360px, 280px"
-                        className="object-cover object-[center_30%]"
-                        priority={false}
-                        onError={() => setImgFailed(true)}
-                      />
-                    )}
-                  </div>
+          <Chapter num="01" label={tAbout("chapter.1.label")} />
+          {/* The bleed. This wrapper is a BLOCK-LEVEL DIRECT CHILD of the padded
+              container, which is what makes the breakout exact rather than
+              approximate: a percentage margin resolves against its containing
+              block's inline size, so here 50% is half the container's CONTENT
+              width and `50% - 50vw` is precisely the distance from that content
+              edge to the viewport's inline-end edge. Nested one level further in
+              (inside a grid cell) the identical calc resolves against the cell
+              and lands nowhere near the edge — so do not "simplify" it by moving
+              it onto the figure. */}
+          <div className="md:me-[calc(50%-50vw)]">
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,46%)] gap-8 md:gap-14 items-center">
+              {/* prose — anchored at the start edge */}
+              <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5 max-w-[64ch]">
+                <p className="font-headline-md font-bold text-text text-2xl md:text-[25px] !mb-2">
+                  {t("story.greeting")}
+                </p>
+                <p className="text-fg-muted">{t("story.p1")}</p>
+                <p>{t("story.p2")}</p>
+                <p>{t("story.p3")}</p>
+                <p>{t("story.p4")}</p>
+                <p>{t("story.p5")}</p>
+                {/* SIGNATURE — the personal anchor that replaces the face.
+                    Accent-gold rule on the inline-start edge, square corners.
+
+                    story.caption3 is kept VERBATIM from the figcaption that was
+                    removed with the portrait: it is editorial copy, not a photo
+                    credit, so it survives the card it happened to live inside.
+                    story.caption1 does NOT survive — its opening clause IS
+                    signature.role ("מייסדת מהמקור"), and the two would have read
+                    twice, three lines apart. Both keys remain in he.json and
+                    en.json untouched, so restoring either is a one-line change
+                    if Sapir wants it back. */}
+                <div data-testid="about-signature" className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
+                  <p className="font-headline-display font-black text-primary text-[26px] md:text-[28px] leading-tight">
+                    {tAbout("signature.name")}
+                  </p>
+                  <p className="mt-1 font-body-md text-sm text-fg-muted leading-snug">
+                    {tAbout("signature.role")}
+                  </p>
+                  <p className="mt-2.5 font-body-md text-[15px] text-text font-medium leading-snug max-w-[46ch]">
+                    {t("story.caption3")}
+                  </p>
                 </div>
               </div>
-              <figcaption className="mt-4 border-s-2 border-accent ps-4 max-w-[320px] space-y-1.5">
-                {/* credit — small muted role line */}
-                <p className="font-body-md text-sm text-fg-muted leading-snug">
-                  {t("story.caption1")}
-                </p>
-                {/* personal accent — distinct role, slightly larger, full text color */}
-                <p className="font-body-md text-[15px] text-text font-medium leading-snug">
-                  {t("story.caption3")}
-                </p>
-              </figcaption>
-            </figure>
+              {/* The market photograph. Full-width band on mobile (-mx-4 cancels
+                  the container's px-4; mx is symmetric, so it is direction-safe),
+                  bleeding to the viewport's inline-end edge from md up. Failure
+                  falls back to a bare tonal plate, the same behaviour the
+                  portrait had — no Leaf box, no name on an empty container
+                  (MEH-1227). */}
+              <figure data-testid="about-story-figure" className="m-0 -mx-4 md:mx-0">
+                <div data-testid="about-story-image-box" className="relative w-full aspect-[16/11] md:aspect-[4/5] overflow-hidden bg-background-alt">
+                  {imgFailed ? null : (
+                    <Image
+                      src={optimizeCloudinary(STORY_IMAGE, {
+                        aspectRatio: "4:5",
+                        width: STORY_IMAGE_WIDTH,
+                      })}
+                      alt={tAbout("img.story_alt")}
+                      fill
+                      sizes="(min-width: 768px) 46vw, 100vw"
+                      className="object-cover"
+                      priority={false}
+                      onError={() => setImgFailed(true)}
+                    />
+                  )}
+                </div>
+                <figcaption className="mt-3 px-4 md:px-0 font-body-md text-[13px] text-fg-muted leading-snug">
+                  {tAbout("img.story_caption")}
+                </figcaption>
+              </figure>
+            </div>
           </div>
           <ExitLink href="/producers" testId="about-exit-story">
             {tAbout("exit.story")}
@@ -309,6 +365,35 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
+      {/* ======== MEH-1130 — image band 1 (wide) ========
+          Sits after the story/choose area, breaking the run of consecutive
+          text-only sections the MEH-1112 audit flagged. Height is viewport-
+          relative so the band keeps its magazine proportion across widths, and
+          capped so it cannot eat a full screen on a wide desktop. Static — no
+          parallax, no sticky. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14">
+        <div className="max-w-6xl mx-auto px-4 md:px-12">
+          <figure data-testid="about-band-bread" className="m-0">
+            <div className="relative w-full h-[40vw] min-h-[180px] max-h-[420px] rounded-md overflow-hidden bg-background-alt">
+              <Image
+                src={optimizeCloudinary(BAND_BREAD, {
+                  aspectRatio: "16:9",
+                  width: BAND_BREAD_WIDTH,
+                })}
+                alt={tAbout("img.bread_alt")}
+                fill
+                sizes="(min-width: 1152px) 1056px, 100vw"
+                className="object-cover"
+                priority={false}
+              />
+            </div>
+            <figcaption className="mt-3 font-body-md text-[13px] text-fg-muted leading-snug">
+              {tAbout("img.bread_caption")}
+            </figcaption>
+          </figure>
+        </div>
+      </FadeInSection>
+
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
       {/* MEH-1112: container narrowed max-w-6xl → max-w-3xl (matches the comparison
           block below) so the offset blockquote no longer leaves >50% empty cream at 1440px. */}
@@ -323,7 +408,7 @@ export default function AboutPage() {
       {/* ======== Comparison — layout A (3-stop gold-dot path) · MEH-841 (supersedes MEH-525) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Eyebrow>{tCompare("eyebrow")}</Eyebrow>
+          <Chapter num="02" label={tAbout("chapter.2.label")} />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight mb-8 md:mb-10">
             {tCompare("heading")}
           </h2>
@@ -353,7 +438,7 @@ export default function AboutPage() {
       {/* ======== 03 — Benefits (alt-tone block w/ Values · centered gold numerals) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <Eyebrow as="h2">{t("benefits.heading")}</Eyebrow>
+          <Chapter num="03" label={tAbout("chapter.3.label")} as="h2" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
             {BENEFITS.map(({ key, n }) => (
               <div key={key} className="text-center">
@@ -375,10 +460,56 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
+      {/* ======== MEH-1130 — image band 2 (offset duo) ========
+          Rear image larger, front image smaller and overlapping toward the end
+          edge with a cream border that reads as a print mount against the
+          background-alt tone this section shares with Benefits and Values.
+
+          The overlap is a NEGATIVE MARGIN, not absolute positioning: the front
+          block stays in flow, so it contributes its own height, nothing is
+          removed from the layout, and there is no z-index to get wrong — DOM
+          order alone paints it on top. Static by construction, which is what
+          the card asked for (no parallax, no sticky). */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14">
+        <div className="max-w-5xl mx-auto px-4 md:px-12">
+          <figure data-testid="about-band-duo" className="m-0">
+            <div className="relative w-[86%] md:w-[68%] aspect-[4/3] rounded-md overflow-hidden bg-background">
+              <Image
+                src={optimizeCloudinary(DUO_REAR, {
+                  aspectRatio: "4:3",
+                  width: DUO_REAR_WIDTH,
+                })}
+                alt={tAbout("img.duo_rear_alt")}
+                fill
+                sizes="(min-width: 1024px) 630px, 86vw"
+                className="object-cover"
+                priority={false}
+              />
+            </div>
+            <div className="relative w-[46%] md:w-[34%] aspect-[3/4] -mt-[14%] ms-auto me-0 rounded-md overflow-hidden border-[5px] border-background bg-background">
+              <Image
+                src={optimizeCloudinary(DUO_FRONT, {
+                  aspectRatio: "3:4",
+                  width: DUO_FRONT_WIDTH,
+                })}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 315px, 46vw"
+                className="object-cover"
+                priority={false}
+              />
+            </div>
+            <figcaption className="mt-4 font-body-md text-[13px] text-fg-muted leading-snug">
+              {tAbout("img.duo_caption")}
+            </figcaption>
+          </figure>
+        </div>
+      </FadeInSection>
+
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Eyebrow>{t("values.eyebrow")}</Eyebrow>
+          <Chapter num="04" label={tAbout("chapter.4.label")} />
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
             <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
               {t("values.heading")}
@@ -455,7 +586,7 @@ export default function AboutPage() {
       {/* ======== 05 — Tips accordion ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Eyebrow>{t("tips.eyebrow")}</Eyebrow>
+          <Chapter num="05" label={tAbout("chapter.5.label")} />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("tips.heading")}
           </h2>
