@@ -129,9 +129,16 @@ const SURFACES = { "events-tabs-keyboard": eventsTabs };
 
 // The sandbox ships chromium-1194 while the repo pins a playwright that wants
 // 1234; `npx playwright install` is not the move here (the environment provides
-// the binary). Point at it explicitly, and let CHROMIUM_PATH override.
-const EXECUTABLE = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-const browser = await chromium.launch({ executablePath: EXECUTABLE });
+// the binary). Point at it explicitly.
+//
+// Deliberately NOT read from an env var. The first draft accepted a
+// CHROMIUM_PATH override and the `Env drift (.env.example)` gate reddened the
+// PR for it — correctly: `check_env_drift.sh` scans all code, a QA script
+// included, and every var it finds must be documented. Documenting one would
+// mean adding an app-config entry for a convenience nobody asked for
+// (regression rule 8). A literal with a comment is the cheaper honest answer.
+const CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const browser = await chromium.launch({ executablePath: CHROMIUM });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 let exitCode = 0;
 try {
