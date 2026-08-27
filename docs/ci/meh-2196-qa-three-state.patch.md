@@ -70,6 +70,31 @@ Nothing else in that step changes. **Leave its `if:` exactly as it is** — a
 coverage-floor that refuses to run on a cancelled/skipped step is correct; the
 reporter's job is to say so honestly rather than to guess.
 
+> ### ⚠️ Step 1 is the easy one to skip, and skipping it used to be worse than not applying the patch at all
+>
+> `executed` is **already exported today**, so applying Step 2 without Step 1
+> left it arriving fine while `unexpected` and `flaky` came through empty —
+> summing to zero. A run with 26 real failures was then headlined **PASS**, over
+> the words *"All 300 executed specs green."* A false claim about a red suite:
+> the same defect class this patch removes, pointed the other way.
+>
+> **That is now caught.** Counts that cannot be read are never counts of zero,
+> so the module refuses a verdict and names the missing step:
+>
+> ```
+> Playwright QA — NO VERDICT (counts incomplete)
+> executed=300 · unexpected=unknown · flaky=unknown · skipped=54
+> **300 specs executed, but the failure counts are missing** … Step 1 … was not
+> applied … **Do not read this as PASS.**
+> ```
+>
+> The verdict bucket stays `DID_NOT_RUN` — no fourth state — but the headline
+> does not claim nothing ran, because 300 specs did. `--self-test` pins it as
+> its own case, so it cannot regress.
+>
+> _Found by the CI reviewer on #3132, and confirmed by running the payload
+> before fixing it rather than taken on faith._
+
 ## Step 2 — replace the two ternaries with the committed module
 
 Replace `e2e.yml:286-306` — from `const marker = …` down to and including the
@@ -142,7 +167,7 @@ subclause while its headline said the opposite.
 ## What changes on the surfaces that exist today
 
 Run `node scripts/ci/qa-report-verdict.cjs --self-test` for the live table. As of
-2026-08-27 it is 8 cases, 0 failed, **5 verdicts changed**:
+2026-08-27 it is 9 cases, 0 failed, **6 verdicts changed**:
 
 | payload | shipped today | after this patch |
 |---|---|---|
@@ -151,6 +176,7 @@ Run `node scripts/ci/qa-report-verdict.cjs --self-test` for the live table. As o
 | a garbage/unparseable count | `FAIL` | **`DID NOT RUN`** |
 | `executed=0` (global-setup aborted) | `ZERO COVERAGE` | **`DID NOT RUN`**, with the zero-coverage wording kept in the body |
 | specs all passed, the step failed afterwards (the 142 MB upload cut off on #3123) | `FAIL` | **`PASS`**, with an explicit "counts and exit code disagree" note |
+| **Step 2 applied without Step 1** (counts missing) | `FAIL` | **`NO VERDICT (counts incomplete)`**, naming the unapplied step |
 | a genuine failing run (300 executed / 28 unexpected / 3 flaky) | `FAIL` | `FAIL` — **unchanged**, which is the half that matters |
 | flake-only under `--fail-on-flaky-tests` | `FAIL` | `FAIL` — unchanged |
 | a clean green run | `PASS` | `PASS` — unchanged |
