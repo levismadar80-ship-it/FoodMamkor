@@ -5,7 +5,12 @@
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.BASE || "http://localhost:3300";
+// argv/hard-coded, never an env read: the MEH-491 env-drift gate counts every
+// `process` `.env.NAME` in the repo as an undeclared var, and a one-off QA
+// harness has no business adding a line to .env.example. Same convention the
+// qa-meh1390 / qa-meh1539 siblings already follow.
+//   usage: node e2e/qa-meh2200-collection-notice.mjs [baseUrl] [chromiumPath]
+const BASE = process.argv[2] || "http://localhost:3300";
 const OUT = "qa-artifacts/MEH-2200";
 mkdirSync(OUT, { recursive: true });
 
@@ -17,7 +22,7 @@ const CATEGORIES = [
 // The sandbox ships chromium-1194; this playwright build looks for a newer
 // headless-shell revision that is not present, so point at the real binary.
 const browser = await chromium.launch({
-  executablePath: process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  executablePath: process.argv[3] || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
 });
 const page = await browser.newPage({
   viewport: { width: 375, height: 812 },
@@ -79,7 +84,10 @@ const submitBox = await page.getByTestId("register-story-submit").evaluate((el) 
 const fail = [];
 if (!probe.privacyHref) fail.push("no /privacy link inside the notice");
 if (!probe.mailto) fail.push("no mailto: link inside the notice");
-if (/<\/?(privacy|email)>/.test(probe.text)) fail.push("raw rich-text markup leaked into the notice");
+// Generic on purpose — naming the two current tags would pass on a tag
+// RENAMED in he.json, which is the case worth catching (same fix as the
+// vitest assertion in RegisterCollectionNotice.test.jsx).
+if (/<\/?[a-zA-Z][\w-]*>/.test(probe.text)) fail.push("raw rich-text markup leaked into the notice");
 if (!/אינה חובה על פי חוק/.test(probe.text)) fail.push("volition clause missing");
 if (!/לא נוכל להשלים את ההרשמה/.test(probe.text)) fail.push("consequence-of-refusal clause missing");
 if (probe.box.top >= submitBox.top) fail.push("notice does not render ABOVE the submit button");
