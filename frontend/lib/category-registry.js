@@ -88,8 +88,56 @@ export const CATEGORY_LEGEND = Object.entries(CATEGORY_STYLES).map(
   ([name, { color, icon, iconName }]) => ({ name, color, icon, iconName }),
 );
 
-/** Resolve the style for a producer from its first category. */
+// MEH-2004: the category colour is interpolated into RAW MARKUP by every pin
+// consumer — MapComponent's three divIcon builders, MiniMap's locationIcon,
+// HomepageMiniMap's createPreviewMarker — and in one of those it lands inside
+// a JS string literal (createCategoryMarker's `onerror` handler). That nesting
+// (HTML attribute -> JS source) is why this is a VALIDATOR and not an escape:
+// the browser decodes character references BEFORE the handler is parsed as JS,
+// so `&#39;` arrives at the JS parser as a bare `'` and closes the string
+// exactly as an unescaped quote would. Measured under MEH-1998, not assumed —
+// `escapeHtmlAttr("#fff\';alert(1);\'")` produced a handler byte-identical to
+// the unescaped one. HTML-escaping cannot defend that position; only refusing
+// the value can.
+//
+// It lives HERE, on the registry's own resolver, rather than in each consumer:
+// MEH-1998 fixed MapComponent alone and left MiniMap + marker-glyph + the
+// homepage preview injecting the same value raw. One validator on the single
+// source of truth covers every consumer, present and future, by construction.
+//
+// A colour is a closed vocabulary, so an allowlist costs nothing: every value
+// in CATEGORY_STYLES above is #rrggbb and passes through untouched. Anything
+// else degrades to the primary token. Dormant today (the palette is
+// hardcoded); load-bearing the day the colour becomes DB-driven, which is the
+// scenario this ticket was filed for.
+// 3/4/6/8 digits are the only lengths CSS recognises. A lazier `{3,8}` would
+// also admit 5 and 7 — not a security hole (the browser drops an unparseable
+// declaration) but it would render the pin unstyled, a visual regression in
+// exactly the DB-driven future this validator exists for.
+const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+/**
+ * @param {unknown} value a candidate CSS colour from the registry.
+ * @returns {string} `value` when it is a plain hex colour, else the primary
+ *   token. Exported for the guard test; consumers get it via styleForProducer.
+ */
+export function safeCategoryColor(value) {
+  const asString = String(value ?? "");
+  return SAFE_HEX_COLOR.test(asString) ? asString : DEFAULT_CATEGORY_STYLE.color;
+}
+
+/**
+ * Resolve the style for a producer from its first category.
+ *
+ * The returned `color` is always validated (safeCategoryColor above), so no
+ * consumer needs its own guard before interpolating it into markup. The
+ * registry object itself is returned unchanged when the colour is already
+ * clean — the normal path allocates nothing and keeps object identity stable
+ * for the memo in lib/marker-glyph.
+ */
 export function styleForProducer(producer) {
   const firstCategory = producer?.categories?.[0]?.name;
-  return (firstCategory && CATEGORY_STYLES[firstCategory]) || DEFAULT_CATEGORY_STYLE;
+  const style = (firstCategory && CATEGORY_STYLES[firstCategory]) || DEFAULT_CATEGORY_STYLE;
+  const color = safeCategoryColor(style.color);
+  return color === style.color ? style : { ...style, color };
 }
