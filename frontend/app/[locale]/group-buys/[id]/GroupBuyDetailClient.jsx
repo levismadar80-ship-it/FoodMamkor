@@ -194,7 +194,12 @@ export default function GroupBuyDetailClient({ id }) {
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     // Captured at open time by handleCancel; the activeElement read is only a
     // fallback for a future path that opens the dialog without going through it.
+    // Cleared straight after the read, or that fallback could never fire: the
+    // ref would still hold the PREVIOUS open's trigger and win the ?? every
+    // time, so the documented fallback would be dead by accident rather than
+    // by there being no such path yet.
     const trigger = cancelTriggerRef.current ?? document.activeElement;
+    cancelTriggerRef.current = null;
     const focusables = () =>
       Array.from(cancelDialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
     focusables()[0]?.focus();
