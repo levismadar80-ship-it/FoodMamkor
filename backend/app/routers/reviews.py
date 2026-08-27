@@ -1,9 +1,10 @@
 """Producer reviews (1-5 stars + optional body, 10-500 chars).
 
 MEH-103 verified reviews system:
-  - WhatsApp click gate: only users who have clicked the WhatsApp CTA for
-    this specific producer may submit a first review. Enforced via
-    producer_whatsapp_clicks.user_id (nullable FK added in migrations).
+  - Contact gate: only users who have clicked this specific producer's
+    primary CTA may submit a first review. MEH-2204 widened it from
+    WhatsApp-only to ANY channel, so it is enforced via
+    producer_whatsapp_clicks.user_id OR producer_contact_clicks.user_id.
   - Owner guard: producer owners cannot review their own business.
   - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
   - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
@@ -228,7 +229,8 @@ def create_review_nested(
     Guards (checked in order):
       1. Producer must exist.
       2. Producer owner cannot review their own business.
-      3. First-time reviewers must have a WA click row for this producer.
+      3. First-time reviewers must have a click on ANY of this producer's
+         contact channels — a WhatsApp click OR a contact click (MEH-2204).
       4. Body is moderated by Haiku (fail-open).
     """
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
