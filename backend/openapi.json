@@ -4261,6 +4261,11 @@
             ],
             "title": "Contact Name"
           },
+          "coverage_cta_enabled": {
+            "default": true,
+            "title": "Coverage Cta Enabled",
+            "type": "boolean"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -5266,6 +5271,11 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "default": true,
+            "title": "Coverage Cta Enabled",
+            "type": "boolean"
           },
           "created_at": {
             "anyOf": [
@@ -7412,6 +7422,11 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "default": true,
+            "title": "Coverage Cta Enabled",
+            "type": "boolean"
           },
           "created_at": {
             "anyOf": [
@@ -10760,6 +10775,24 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "WhatsAppClickIn": {
+        "description": "MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.\n\nThe endpoint took no body before this. It still accepts none -- the\nanonymous path uses `navigator.sendBeacon`, which cannot set\n`Content-Type: application/json` (it sends text/plain, which FastAPI\nrejects with 422), so a REQUIRED body would break every anonymous\nWhatsApp click on the site. Only the coverage CTA sends a body, and it\nuses fetch(keepalive) for exactly that reason.\n\n`city` is validated SOFTLY on purpose: a value that is not in the\ncanonical city list is still STORED, not dropped. The point of the\ncapture is to learn where demand actually is, including spellings and\nlocalities our list does not carry yet -- discarding those would delete\nthe most interesting rows.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          }
+        },
+        "title": "WhatsAppClickIn",
         "type": "object"
       }
     },
@@ -18571,6 +18604,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WhatsAppClickIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

@@ -92,6 +92,7 @@
     "city",
     "contact_email",
     "contact_name",
+    "coverage_cta_enabled",
     "created_at",
     "custom_questions",
     "days_since_created",
