@@ -38,7 +38,7 @@ vi.mock("next-intl", () => ({
       greeting_template: `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
       source_line: "הגעתי דרך מהמקור",
       recipe_idea_message: "יש לי רעיון למתכון",
-      escalation: "שאלה אחרת? שלחו לנו הודעה",
+      escalation: "שאלה אחרת? צרו איתנו קשר",
       escalation_email_subject: "שאלה דרך מהמקור",
     };
     return map[key] ?? key;
@@ -158,7 +158,7 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     render(<WhatsAppQuestionChips producer={wa} />);
     const href = screen.getByTestId("escalation-link").getAttribute("href");
     expect(decodeURIComponent(href)).toBe(
-      `https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה, שאלה אחרת? שלחו לנו הודעה\n\nהגעתי דרך מהמקור`,
+      `https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה, שאלה אחרת? צרו איתנו קשר\n\nהגעתי דרך מהמקור`,
     );
   });
 

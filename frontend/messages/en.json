@@ -2638,6 +2638,35 @@
   },
   "about": {
     "updated_at": "Updated: August 2026",
+    "img": {
+      "story_caption": "A farmers' market. Where it all began.",
+      "story_alt": "Colourful produce in baskets at a farmers' market",
+      "bread_caption": "Sourdough from a small local business.",
+      "bread_alt": "Sliced rustic sourdough loaf on a wooden board",
+      "duo_caption": "The produce speaks for itself. That's the point.",
+      "duo_rear_alt": "A glass bottle of olive oil with olives"
+    },
+    "signature": {
+      "name": "Sapir Schnapp",
+      "role": "Founder, Mehamakor"
+    },
+    "chapter": {
+      "1": {
+        "label": "The story"
+      },
+      "2": {
+        "label": "The difference"
+      },
+      "3": {
+        "label": "Why Mehamakor"
+      },
+      "4": {
+        "label": "Our criteria"
+      },
+      "5": {
+        "label": "First steps"
+      }
+    },
     "choose": {
       "eyebrow": "How we choose",
       "fact1": "Licensed businesses only",
@@ -3294,7 +3323,7 @@
       "ordering_email": "Send us an email",
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
-      "escalation": "Another question? Send us a message",
+      "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "recipe_idea": "Can I share a recipe I made?",
