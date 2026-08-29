@@ -16,9 +16,12 @@ import Popover from "@/components/ui/Popover";
  * (verification_tier / verified_at / verification_doc_type — MEH-762):
  *   verified + license   → gold seal chip + verified_tooltip_license({date})
  *   verified + exemption → gold seal chip + verified_tooltip_exemption({date})
- *   verified + cosmetics → gold seal chip, NO tooltip (key not yet locked —
- *                          MEH-758 micro; flip to verified_tooltip_registration
- *                          once Sapir locks it)
+ *   verified + cosmetics → gold seal chip + verified_tooltip_cosmetics({date})
+ *                          (MEH-2216 — locked by Sapir 29/08. Before that the
+ *                          card seal opened nothing, so a cosmetics business
+ *                          carried a trust claim with no stated scope; after
+ *                          MEH-2213 made the seal the only licensing signal a
+ *                          reader sees, that silence was the whole gap.)
  *   declared             → NO chip on any surface (MEH-1170: the S12 "מוצהר"
  *                          chip contradicted ADR-022 "tier 2 = no badge"; the
  *                          declared_explainer moved to ProducerHeader as quiet
@@ -179,8 +182,22 @@ function getVerifiedTooltip(producer, t) {
       return t("verified_tooltip_license", { date });
     case "exemption":
       return t("verified_tooltip_exemption", { date });
+    case "cosmetics":
+      // MEH-2216. The copy names the scope in plain Hebrew rather than the
+      // registry's official term ("מרשם העוסקים בתמרוקים"), which is accurate
+      // and unreadable -- the MEH-1548 precedent. It mirrors its two siblings
+      // above exactly: <document> + הוגש ונבדק בתאריך + {date}, no promise.
+      //
+      // NOTE for whoever reads this next: an ORPHAN key verified_tooltip_
+      // registration still sits in he.json/en.json, unreferenced by any code.
+      // It predates this and uses the regulatory wording. It is NOT the live
+      // key and must not be "flipped to" -- the stale comment that said so is
+      // what this ticket removed. Its deletion is a copy call, reported to
+      // Sapir rather than taken here.
+      return t("verified_tooltip_cosmetics", { date });
     default:
-      // cosmetics — tooltip key not locked yet (MEH-758 micro): seal only.
+      // An unrecognised doc_type earns the seal but states no scope, which is
+      // the honest fallback: better silent than claiming a check we cannot name.
       return null;
   }
 }
@@ -286,8 +303,10 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           {tooltip}
         </Popover>
       ) : (
-        // cosmetics — seal only, no popover (MEH-758 micro); keep the
-        // card-Link tap guard the popover branch gets from ui/Popover.
+        // No tooltip -> no popover. Since MEH-2216 that is only an
+        // unrecognised doc_type: license, exemption and cosmetics all resolve
+        // to copy above. Keeps the card-Link tap guard the popover branch
+        // gets from ui/Popover.
         <span className="relative inline-block">
           {cloneElement(chip, {
             onClick: (e) => {
