@@ -1598,10 +1598,6 @@
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
       },
       "request_changes": {
-        "modal_title": "Request completion from the business",
-        "modal_label": "What's missing?",
-        "modal_placeholder": "Describe what needs to be completed…",
-        "submit": "Send request",
         "validate": "Please describe what needs to be completed.",
         "invalid_state": "A completion request can only be sent to a business awaiting approval.",
         "approve_blocked_info": "Can't approve yet — we opened a completion request with the missing detail. You can edit and send it.",
@@ -1731,16 +1727,22 @@
       "queue_summary": "{count} waiting · oldest: {days} business days",
       "toast_status_updated": "Status updated",
       "reject": {
-        "modal_title": "Reject business application",
-        "preset_legend": "Rejection reason",
-        "free_text_label_required": "Details (required)",
-        "free_text_label_optional": "Additional details (optional)",
-        "free_text_placeholder": "You can add details that help the business fix this…",
-        "submit": "Reject and send email",
         "confirm": "This will send an email to the business. Continue?",
         "presets_error": "We couldn't load the rejection reasons. Refresh the page and try again.",
         "invalid_input": "Choose a reason, and add details when 'Other' is selected.",
         "toast_rejected": "The application was rejected and the email was sent."
+      },
+      "decision": {
+        "modal_title": "Decision on the application from \"{name}\"",
+        "changes_legend": "Completion request",
+        "changes_helper": "The business stays in the review queue and gets an email listing what is missing",
+        "reject_legend": "Rejection",
+        "reject_helper": "The business will not appear on the site and gets an email",
+        "other": "Other",
+        "free_text_label": "Details for the business owner",
+        "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
+        "submit_changes": "Send completion request",
+        "submit_reject": "Reject and send email"
       }
     },
     "users": {

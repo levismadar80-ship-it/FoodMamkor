@@ -171,7 +171,7 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     const reject = screen.getByRole("menuitem", { name: REJECT_KEY });
     expect(reject).toHaveClass("text-red-600");
     fireEvent.click(reject);
-    // the whole producer, not just the id — RejectModal renders its name.
+    // the whole producer, not just the id — ProducerDecisionModal renders its name.
     expect(h.onReject).toHaveBeenCalledWith(expect.objectContaining({ id: "p1", name: "חוה" }));
   });
 
