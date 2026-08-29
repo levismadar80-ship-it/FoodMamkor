@@ -338,18 +338,33 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* Business strip — the early owner-facing exit. Until now the only one
-          was a demoted link inside Close, at the very bottom. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-7 md:py-9 scroll-mt-24">
+      {/* Business line — the early owner-facing exit. Until now the only one
+          was a demoted link inside Close, at the very bottom.
+
+          MEH-2211: it was a full-width `bg-background-alt` band. The band was
+          one of the five competing visual languages Sapir's 29/08 review found
+          stacked in this seam, and it was the loudest: a tonal full-bleed
+          surface reads as a section of its own, so a one-line aside announced
+          itself as a chapter. It is now an inline block at the text column's
+          width, separated by a hairline rule instead of a tone change — the
+          lead is muted, only the link is primary, so the seam carries one
+          accent rather than a slab. `border-border` is the same hairline the
+          comparison spine uses; no new token. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <LocaleLink
-            href="/about/for-businesses"
-            data-testid="about-biz-strip"
-            className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            {tAbout("biz_strip")}
-            <ArrowLeft size={15} aria-hidden="true" />
-          </LocaleLink>
+          <div className="border-t border-border pt-6">
+            <p className="font-body-md text-[15px] text-fg-muted leading-snug">
+              {tAbout("biz_strip_lead")}
+            </p>
+            <LocaleLink
+              href="/about/for-businesses"
+              data-testid="about-biz-strip"
+              className="mt-1.5 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {tAbout("biz_strip")}
+              <ArrowLeft size={15} aria-hidden="true" />
+            </LocaleLink>
+          </div>
         </div>
       </FadeInSection>
 

@@ -2669,7 +2669,8 @@
         "label": "First steps"
       }
     },
-    "biz_strip": "Run a food business? Here's how it works",
+    "biz_strip_lead": "Run a food business?",
+    "biz_strip": "Here's how it works",
     "exit": {
       "story": "Meet the businesses",
       "comparison": "How we approve a business",
