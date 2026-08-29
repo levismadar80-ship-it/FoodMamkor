@@ -7,7 +7,7 @@
  * testMatch); no new workflow. Canonical pattern list:
  * .claude/hooks/check-artifact-location.sh.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 // Same base-URL resolution as flows 21/22 (PLAYWRIGHT_BASE_URL in CI,
 // TEST_URL for staging/preview runs, localhost fallback).

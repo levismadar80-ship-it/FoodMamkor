@@ -150,11 +150,16 @@ def _approve(client, db, *, slug: str | None, phone: str | None = "0501112222"):
     admin = make_user(db, role="admin", email=f"admin-{slug or 'noslug'}@example.com")
     # MEH-799: the approve gate requires >=1 image — these tests assert the
     # WhatsApp-hook contract, not the image gate.
+    # MEH-2121: same reasoning for the WhatsApp-verification gate. Note the two
+    # senses of "WhatsApp" in play here and do not conflate them: the gate is
+    # about the OWNER having verified her number, while these tests are about
+    # the notification template fired at her afterwards.
     producer = make_producer(
         db,
         name="חוות האישור",
         status="pending",
         images=["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"],
+        phone_verified=True,
     )
     producer.phone = phone
     producer.slug = slug

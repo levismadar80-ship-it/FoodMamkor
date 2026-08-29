@@ -35,11 +35,16 @@ const tokens = require("./tailwind.tokens.json");
 // future docs/DESIGN.md edit adds a Cormorant token, the entry below is what
 // stops it emitting a stack with no variable — a state that builds clean, emits
 // the utility, and renders the system serif.
+// MEH-2029: a family split across two next/font/local calls (one per unicode
+// subset) contributes BOTH variables, in chain order. The half carrying the
+// size-adjusted fallback face is listed second on purpose — that face has no
+// unicode-range, so ahead of a real face it would match every glyph the real
+// face was there to render.
 const FONT_VAR_BY_FAMILY = [
-  ["Frank Ruhl Libre", "var(--font-headline)"],
-  ["DM Sans", "var(--font-body)"],
-  ["Heebo", "var(--font-hebrew)"],
-  ["Cormorant Garamond", "var(--font-latin)"],
+  ["Frank Ruhl Libre", ["var(--font-headline)", "var(--font-headline-latin)"]],
+  ["DM Sans", ["var(--font-body)"]],
+  ["Heebo", ["var(--font-hebrew)", "var(--font-hebrew-latin)"]],
+  ["Cormorant Garamond", ["var(--font-latin)"]],
 ];
 
 function withFontVariables(tokenFontFamily) {
@@ -50,7 +55,7 @@ function withFontVariables(tokenFontFamily) {
         // Order by where the family appears in the declared stack, so the
         // variables lead in the stack's own order rather than this list's.
         .toSorted(([first], [second]) => family.indexOf(first) - family.indexOf(second))
-        .map(([, variable]) => variable);
+        .flatMap(([, variables]) => variables);
       return [token, [[...variables, family].join(", ")]];
     }),
   );

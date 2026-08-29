@@ -42,11 +42,9 @@ import EditAccordionCard from "@/components/EditAccordionCard";
 // instead of its own flat checkbox grid. Same selection contract (category_ids).
 import CategorySelector from "@/components/CategorySelector";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
-import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import HoursEditor from "./HoursEditor";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -57,14 +55,22 @@ import HoursEditor from "./HoursEditor";
 // payload — no new API calls; self-hides when the id is absent.
 // ============================================================
 
-export function ViewOnPageLink({ producerId, anchor }) {
+// MEH-2155: `testId` is optional and defaults to today's value, so every
+// existing call site — and every locator already written against it — is
+// unchanged. It exists because two cards now deep-link to the SAME anchor:
+// the contact card and the questions card both point at #section-contact
+// (the question chips render inside the contact block on the public page).
+// EditAccordionCard keeps collapsed cards mounted (MEH-1100), so both links
+// are in the DOM at once and a shared testid would resolve to two elements —
+// which `getByTestId` treats as an error, not as a match.
+export function ViewOnPageLink({ producerId, anchor, testId }) {
   const t = useTranslations("dashboard.producer");
   if (!producerId) return null;
   return (
     <p className="mb-3">
       <LocaleLink
         href={`/producer/${producerId}#${anchor}`}
-        data-testid={`view-on-page-${anchor}`}
+        data-testid={testId || `view-on-page-${anchor}`}
         // Calm idiom (ADR-019): muted text link, never a primary CTA;
         // min-h 44px keeps the tap target (MEH-813).
         className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-fg-muted hover:text-accent focus-visible:underline transition-colors"
@@ -457,114 +463,6 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       <button
         onClick={handleSave}
         disabled={saving || uploading || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
-      >
-        <span aria-live="polite" aria-atomic="true">
-          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-        </span>
-      </button>
-    </div>
-  );
-}
-
-// ============================================================
-// Edit-tab chunk C: producer-facing location/coords editor (gated).
-// Mirrors ContactChannelsCard (card/save/dirty/inline-error). The owner types
-// an address into AddressSearch (Nominatim geocode, no Leaflet); onSelect
-// returns {lat,lng,city}; Save persists them via PUT /producers/me. Rendered
-// only for physical-location producers (gated at the mount, MEH-213) — no map,
-// no pin-drag, no radius.
-// REUSES: components/AddressSearch.jsx (onSelect {street,neighborhood,city,lat,lng}).
-// ============================================================
-
-// Exported for isolation tests (EditTabLocationCard.test.jsx) — see CategoriesCard.
-export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
-  const t = useTranslations("dashboard.producer.location");
-  const seedLat = profile?.lat ?? null;
-  const seedLng = profile?.lng ?? null;
-  const seedCity = profile?.city ?? "";
-  const [coords, setCoords] = useState({ lat: seedLat, lng: seedLng, city: seedCity });
-  const [addressText, setAddressText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  const dirty =
-    coords.lat !== seedLat || coords.lng !== seedLng || coords.city !== seedCity;
-  // MEH-1100: lift to the page-level unsaved-changes aggregate.
-  useEffect(() => {
-    reportDirty("location", dirty);
-    return () => reportDirty("location", false);
-  }, [dirty, reportDirty]);
-
-  const handleSelect = (picked) => {
-    setSaved(false);
-    setErrorMsg(null);
-    // Keep the seeded city if Nominatim doesn't resolve one (never clobber).
-    setCoords({
-      lat: picked.lat,
-      lng: picked.lng,
-      city: picked.city || coords.city,
-    });
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    setErrorMsg(null);
-    try {
-      await api.put("/producers/me", {
-        lat: coords.lat,
-        lng: coords.lng,
-        city: coords.city || null,
-      });
-      onSave({ lat: coords.lat, lng: coords.lng, city: coords.city });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const hasCoords = coords.lat != null && coords.lng != null;
-
-  return (
-    <div>
-      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
-      {/* MEH-1306: back-link to the public map block. */}
-      <ViewOnPageLink producerId={profile?.id} anchor="section-location" />
-
-      {hasCoords && (
-        <p className="text-xs text-fg-muted mb-3">
-          {t("current_prefix")}{" "}
-          <span className="text-text">
-            {coords.city ? `${coords.city} · ` : ""}
-            <span dir="ltr">{coords.lat}, {coords.lng}</span>
-          </span>
-        </p>
-      )}
-
-      <AddressSearch
-        id="producer-location-address"
-        label={t("heading")}
-        value={addressText}
-        onChange={setAddressText}
-        onSelect={handleSelect}
-      />
-
-      {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
-          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
-          {errorMsg}
-        </p>
-      )}
-
-      <button
-        onClick={handleSave}
-        disabled={saving || !dirty}
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         <span aria-live="polite" aria-atomic="true">
@@ -1129,26 +1027,34 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
-// MEH-1242 PR3: producer-facing price-range + top-product editor.
+// MEH-1242 PR3: producer-facing price-range editor.
 // Frontend-only gap: the owner whitelist (_PRODUCER_WRITABLE_FIELDS,
 // producer_me.py) already accepts `price_range` + `top_product_name` — there
 // was just no UI in the edit tab. Mirrors LocationCard's card/save/dirty/
 // inline-error contract; persists via PUT /producers/me.
+//
+// MEH-2094: the top-product TEXT INPUT that stood beside the price is gone.
+// The same column is now written from the product row that owns the name
+// (components/ProductsSection.jsx), which is what makes the public page's
+// exact-string match (ProducerSections.jsx:174-177) reliable instead of a
+// coin flip on stray whitespace. This card is price-only and no longer sends
+// `top_product_name` at all.
+// DO NOT re-add a free-text top-product field here — it would reintroduce the
+// double-entry the ticket removed, and a mismatch silently duplicates the
+// product on the public page (MEH-1233 B4 dedup stops firing).
 // REUSES: edit/cards.jsx LocationCard (save/dirty/reportDirty contract).
 // ============================================================
 
 // Exported for isolation tests (EditTabPricingCard.test.jsx).
 export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.pricing");
-  const seedTop = profile?.top_product_name ?? "";
   const seedPrice = profile?.price_range ?? "";
-  const [topProduct, setTopProduct] = useState(seedTop);
   const [priceRange, setPriceRange] = useState(seedPrice);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const dirty = topProduct !== seedTop || priceRange !== seedPrice;
+  const dirty = priceRange !== seedPrice;
   // MEH-1100: lift to the page-level unsaved-changes aggregate.
   useEffect(() => {
     reportDirty("pricing", dirty);
@@ -1160,10 +1066,12 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
     setSaved(false);
     setErrorMsg(null);
     try {
-      const payload = {
-        top_product_name: topProduct.trim() || null,
-        price_range: priceRange.trim() || null,
-      };
+      // MEH-2094: price only. `top_product_name` is deliberately ABSENT rather
+      // than sent as null — producer_me.py:577 applies model_dump(exclude_unset)
+      // and :612-614 setattrs only what is present, so an omitted field is left
+      // untouched. Sending null here would silently CLEAR the owner's signature
+      // product every time she saved a price.
+      const payload = { price_range: priceRange.trim() || null };
       await api.put("/producers/me", payload);
       onSave(payload);
       setSaved(true);
@@ -1183,14 +1091,6 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
 
       <div className="space-y-3">
-        <Input
-          type="text"
-          label={t("field_top_product")}
-          value={topProduct}
-          maxLength={80}
-          onChange={(e) => setTopProduct(e.target.value)}
-          placeholder={t("top_product_placeholder")}
-        />
         <Input
           type="text"
           label={t("field_price_range")}
@@ -1223,18 +1123,18 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
-// MEH-1276: producer-facing opening-hours editor. Was a free-text LTR field
-// (MEH-1242 PR5) that expected the machine format "Sun-Thu 09:00-18:00" and
-// silently dropped any deviation. Now a structured Hebrew editor (7 day rows +
-// toggle + time inputs) that serialises to the same canonical string — storage,
-// API, and lib/hours.parseHours are unchanged. Editor lives in HoursEditor.jsx
-// (cards.jsx is already >1200 lines); this stays a thin, test-exported wrapper.
+// MEH-2142: `HoursCard` — the thin wrapper around HoursEditor — stood here and
+// was REMOVED along with the editor it wrapped. Store hours moved to the
+// per-location field the owner already edits in LocationsEditor; the
+// business-level `Producer.opening_hours` is no longer owner-writable
+// (producer_me.py) and survives only as a public-page read fallback.
+//
+// `frontend/lib/hours-serialize.js` is deliberately LEFT in place even though
+// HoursEditor was its only UI consumer: it is a tested, reusable day-row
+// serializer that `lib/order-window.js` cites as the model for its own, and
+// deleting a library plus its suite is a cleanup this ticket has no AC for.
+// Knip will list it as unused — that is a warn-only signal and an accurate one.
 // ============================================================
-
-// Exported for isolation tests (EditTabDeliveryCard.test.jsx covers the pair).
-export function HoursCard({ profile, onSave, reportDirty = () => {} }) {
-  return <HoursEditor profile={profile} onSave={onSave} reportDirty={reportDirty} />;
-}
 
 // ============================================================
 // MEH-1258: producer-facing license-number editor — closes the "נשאר להשלים:

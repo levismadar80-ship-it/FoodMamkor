@@ -21,7 +21,10 @@ from sqlalchemy.orm import Session
 
 from app.models import Category, Producer, ProducerCategory
 from app.schemas.schemas import DeliveryAreaCreate
-from app.services.producer_queries import persist_registration_delivery_areas
+from app.services.producer_queries import (
+    create_primary_branch_location,
+    persist_registration_delivery_areas,
+)
 from app.slug_utils import RESERVED_SLUGS
 
 # U+00D7 (×, multiplication sign) and U+00F8 (ø) appear when Hebrew UTF-8
@@ -34,6 +37,19 @@ def _has_mojibake(value: str | None) -> bool:
 
 
 def _slugify(text: str) -> str:
+    """Third copy of the slug helper — mirrors `slug_utils.slugify` byte for byte.
+
+    MEH-2021 found this one by grep: the card named two sites and there are
+    **three**. Kept as-is rather than de-duplicated here, because collapsing
+    three slug generators is a behaviour-adjacent refactor on public URLs and
+    this change is docstring-only.
+
+    **The `\\u0590-\\u05FF` range is not redundant — do not remove it.** 81 of
+    its 112 codepoints are not `\\w` (ניקוד, maqaf, geresh, gershayim), so
+    dropping it silently rewrites slugs for real business names. Full
+    measurement in `admin.py::_slugify`; corpus pinned in
+    `tests/test_slugify_charclass_equivalence.py`.
+    """
     if not text:
         return ""
     s = str(text).strip().lower()
@@ -284,6 +300,25 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             grass_fed=parsed.data["grass_fed"],
             organic_certified=parsed.data["organic_certified"],
             has_delivery=parsed.data["has_delivery"],
+            # MEH-2060: deliberately KEPT, unlike admin.py's two writers. Every
+            # consumer surface now derives "offers pickup" from a
+            # ProducerLocation(kind="pickup"/"market_stand") row — but this
+            # importer creates no such row (no ProducerLocation import in this
+            # module at all). Popping this write, the way admin.py's PUT does,
+            # would silently make column J ("pickup=yes" in the sheet)
+            # unrepresentable for every future import — a real data-loss
+            # regression, not a documented no-op, since there is no reader-side
+            # evidence to back the "no-op" branch of this ticket's DoD. Left
+            # writing the (now-unread) column so the raw intent survives in the
+            # DB even though nothing displays it.
+            #
+            # MEH-2140: the follow-up that comment asked for has LANDED — see
+            # `create_primary_branch_location` below. It does NOT resolve this
+            # one. The row it writes is `kind="branch"`, and `offers_pickup`
+            # keys on `kind in ('pickup','market_stand')`
+            # (producer_queries.py:202-205), so column J is still
+            # unrepresentable as a location row and this write is still the
+            # only place its value survives. Stopping it is MEH-2048.
             pickup_points=parsed.data["pickup_points"],
             kosher=parsed.data["kosher"],
             admin_notes=parsed.data["admin_notes"],
@@ -329,6 +364,55 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
                 for city in parsed.data["delivery_area_cities"]
             ],
         )
+
+        # MEH-2140 (MEH-1938 batch B1): the import half of the location
+        # dual-write. Registration got it in MEH-1939 and the admin paths in
+        # MEH-2059/PR #2949; this importer was the last writer that could
+        # create a producer WITH coordinates and NO `producer_locations` row.
+        #
+        # The epic left it uncovered on the stated grounds that "admin+import
+        # are covered by the backfill" — and that backfill (MEH-2056) was
+        # canceled on 14/08 after its entry-condition query measured 0 rows.
+        # So the coverage was never late; it did not exist.
+        #
+        # Sharper here than at signup for the same reason the MEH-1921 comment
+        # above gives: these rows are created `status="approved"`, so they are
+        # live on the site the moment the sheet is imported.
+        #
+        # REUSES: backend/app/services/producer_queries.py:557 — same helper,
+        # same position (after the delivery areas, before the commit), same
+        # already-flushed `producer`. The helper declines on its own when
+        # either coordinate is missing (columns R/S blank), so there is no
+        # condition to restate here.
+        #
+        # ACCEPTED INACCURACY, stated because it is invisible at the call site:
+        # the helper hardcodes `location_precision="exact"` on the reasoning
+        # that a signup's coordinates come from AddressSearch's geocode. THAT
+        # REASONING DOES NOT HOLD HERE. Columns R/S are whatever the admin
+        # typed into the sheet, which may be a town centroid rather than a
+        # street-level fix, so an imported row can be labelled "exact" while
+        # being approximate.
+        #
+        # Accepted rather than fixed, deliberately: `location_precision` is
+        # written in exactly one place and read by NO query — grepped across
+        # backend/app/services/ and backend/app/routers/, the only two hits are
+        # the assignment itself and a comment about it. There is no live bug,
+        # and adding a `precision` parameter would change a helper this ticket
+        # scopes as read-only and that two other call sites depend on.
+        #
+        # # DO NOT introduce precision-based filtering (a "show me exact pins
+        # #        only" toggle, a distance query that trusts the label) without
+        # #        first giving this call site a real value. On the day such a
+        # #        reader lands, every imported row silently claims a precision
+        # #        nobody verified. Raised by the CI reviewer on PR #3030.
+        #
+        # Idempotency needs no upsert on this path: `import_rows` SKIPS a row
+        # whose name already exists (:272-279, warning «עסק עם שם זה כבר קיים
+        # — דולג») rather than updating it, so a re-import of the same sheet
+        # reaches neither this line nor the `Producer(...)` above. That is why
+        # this calls the create helper and not `upsert_primary_branch_location`
+        # the way admin.py's PUT does.
+        create_primary_branch_location(db, producer)
 
         parsed.saved = True
         results.append(parsed)

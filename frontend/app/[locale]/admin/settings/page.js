@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
+import ChecklistSettings from "./ChecklistSettings";
 
 export default function AdminSettingsPage() {
   const t = useTranslations("admin");
@@ -142,6 +143,12 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
+
+      {/* MEH-1399: the pre-approval review checklist, now DB-editable. Its own
+          component — this file already carries a blanket max-lines-per-function
+          disable, and a fifth stateful section here would make that disable
+          load-bearing instead of historical. */}
+      <ChecklistSettings />
 
       {/* MEH-1566: the notifications section (admin_email / admin_whatsapp)
           was removed — both inputs wrote admin_settings keys that nothing ever

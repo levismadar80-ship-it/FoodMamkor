@@ -17,9 +17,10 @@
  * Leaflet is stubbed per repo convention (MapMarkerFanOut.test.jsx,
  * MapGeolocationPersist.test.jsx): real Leaflet never mounts under jsdom.
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render } from "@testing-library/react";
 import MapComponent from "@/components/MapComponent";
+import { CATEGORY_STYLES } from "@/lib/category-registry";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
@@ -28,12 +29,20 @@ vi.mock("next-intl", () => ({
 // The hostile value. `#fff` keeps it colour-shaped so nothing rejects it for
 // being obviously junk; the quote is the whole attack.
 const PAYLOAD = "#fff';alert(1);'";
-// Flipped per-test so one stub can serve both the attack and the control.
-const style = vi.hoisted(() => ({ color: "#fff" }));
 
-vi.mock("@/lib/category-registry", () => ({
-  styleForProducer: () => ({ color: style.color, icon: () => null }),
-}));
+// MEH-2004: the registry is NOT mocked any more, and that is the point. The
+// validator moved out of this component and onto styleForProducer, so a stub
+// standing in for the registry would route around the very code under test —
+// it would report the payload reaching the handler no matter how sound the fix
+// is. Instead the hostile colour is planted in the REAL palette table under a
+// throwaway category name and resolved through the REAL styleForProducer,
+// which is also a faithful model of the DB-driven future this guards.
+const HOSTILE_CATEGORY = "בדיקה-עוינת";
+
+function setCategoryColour(colour) {
+  CATEGORY_STYLES[HOSTILE_CATEGORY] = { color: colour, icon: () => null };
+}
+
 vi.mock("@/lib/marker-glyph", () => ({ categoryGlyphSvg: () => "<svg></svg>" }));
 
 const recorder = vi.hoisted(() => ({ icons: [] }));
@@ -95,7 +104,7 @@ const producer = {
   lat: 32.0853,
   lng: 34.7818,
   images: ["https://res.cloudinary.com/demo/image/upload/v1/x.jpg"],
-  categories: [{ name: "בשר" }],
+  categories: [{ name: HOSTILE_CATEGORY }],
 };
 
 /**
@@ -115,11 +124,15 @@ function parsedOnErrorHandlers() {
 describe("MEH-1998 — marker colour cannot break out of the onerror JS string", () => {
   beforeEach(() => {
     recorder.icons.length = 0;
-    style.color = "#fff";
+    setCategoryColour("#fff");
+  });
+
+  afterEach(() => {
+    delete CATEGORY_STYLES[HOSTILE_CATEGORY];
   });
 
   it("neutralises a colour carrying a quote — no statement escapes the string literal", () => {
-    style.color = PAYLOAD;
+    setCategoryColour(PAYLOAD);
     render(<MapComponent producers={[producer]} />);
 
     const handlers = parsedOnErrorHandlers();
@@ -157,7 +170,7 @@ describe("MEH-1998 — marker colour cannot break out of the onerror JS string",
   it.each(REAL_PALETTE)(
     "leaves the legitimate palette colour %s byte-identical (no behaviour change)",
     (colour) => {
-      style.color = colour;
+      setCategoryColour(colour);
       render(<MapComponent producers={[producer]} />);
 
       const handlers = parsedOnErrorHandlers();

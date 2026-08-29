@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 import { pickProducer, detailPath, openDetail, watchPageErrors, REQUIREMENTS } from "./_producer-fixture";
 
 /**

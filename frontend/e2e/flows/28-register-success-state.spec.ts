@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 /**
  * Module:   28-register-success-state
@@ -67,6 +67,51 @@ async function stubSession(page, roleRef: { current: string }) {
   );
 }
 
+/**
+ * Walks the wizard from the pre-flight screen to a STORY step that is ready to
+ * submit — every field filled, submit NOT clicked. Extracted verbatim under
+ * MEH-2138 chunk F so the scroll test below drives the identical path; the
+ * click stays at each call site because the MEH-1814 test arms a response
+ * waiter immediately before it.
+ */
+async function driveWizardToStorySubmitReady(page) {
+  await page.goto("/register/producer");
+  await page.getByTestId("register-preflight-start").click();
+
+  // Upgrade path skips ACCOUNT — the token puts step at DETAILS.
+  await expect(page.getByTestId("register-frame-details")).toBeVisible();
+  await page.getByTestId("register-details-name").fill("העסק שלי");
+  await page.getByTestId("register-details-phone").fill("0501234567");
+  await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+  await page.getByTestId("register-details-address").fill("הרצל 1");
+  await page.getByTestId("register-details-next").click();
+
+  await expect(page.getByTestId("register-frame-category")).toBeVisible();
+  await page.getByTestId("category-chip-1").click();
+  await page.getByTestId("register-category-license").fill("1234567");
+  await page.getByTestId("register-category-next").click();
+
+  await expect(page.getByTestId("register-frame-story")).toBeVisible();
+  await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
+  await page.getByTestId("register-referral-source").selectOption("instagram");
+  for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
+    await cb.check();
+  }
+}
+
+/** Mocks a successful upgrade and flips the role, exactly as the real one does. */
+async function stubUpgradeSubmit(page, roleRef: { current: string }) {
+  await page.route("**/auth/register/producer", (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    roleRef.current = "producer";
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ access_token: "upgraded-token", whatsapp_sent: true }),
+    });
+  });
+}
+
 test.describe("MEH-1814 — post-submit success state owns the render", () => {
   test("upgrade submit lands on the success screen, not the early gate", async ({ page }) => {
     // Starts as a consumer: the wizard is legitimately reachable.
@@ -86,28 +131,7 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
       });
     });
 
-    await page.goto("/register/producer");
-    await page.getByTestId("register-preflight-start").click();
-
-    // Upgrade path skips ACCOUNT — the token puts step at DETAILS.
-    await expect(page.getByTestId("register-frame-details")).toBeVisible();
-    await page.getByTestId("register-details-name").fill("העסק שלי");
-    await page.getByTestId("register-details-phone").fill("0501234567");
-    await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
-    await page.getByTestId("register-details-address").fill("הרצל 1");
-    await page.getByTestId("register-details-next").click();
-
-    await expect(page.getByTestId("register-frame-category")).toBeVisible();
-    await page.getByTestId("category-chip-1").click();
-    await page.getByTestId("register-category-license").fill("1234567");
-    await page.getByTestId("register-category-next").click();
-
-    await expect(page.getByTestId("register-frame-story")).toBeVisible();
-    await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-    await page.getByTestId("register-referral-source").selectOption("instagram");
-    for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
-      await cb.check();
-    }
+    await driveWizardToStorySubmitReady(page);
     // The bug produced a *later* render — the one after refreshUser() lands the
     // flipped role — so an assertion that fires the instant CONFIRM mounts could
     // pass on broken code. Arm the waiter BEFORE the click so it resolves on the
@@ -150,3 +174,93 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
     await page.screenshot({ path: `${SHOT_DIR}/gate-375.png`, fullPage: true });
   });
 });
+
+/**
+ * MEH-2138 chunk F — the success screen must be ON SCREEN, not merely rendered.
+ *
+ * The wizard is one long page, so CONFIRM mounts at whatever scroll offset the
+ * seller left behind. Measured on staging at 1440: docH 1493, viewport 900,
+ * scrollY 539 — she lands on the footer and never sees what she just earned.
+ * (It is also why MEH-2136's hierarchy fix produced visually identical desktop
+ * before/after captures: the screen was corrected and out of frame.)
+ *
+ * This assertion CANNOT live in vitest. jsdom does no layout, so every
+ * geometric claim there passes against the broken code too — the exact trap the
+ * MEH-2148 harness fell into. __tests__/RegisterProducerClient.test.jsx carries
+ * the complementary half (that the call is made, on BOTH confirm branches);
+ * this file carries the only half that can observe a viewport.
+ *
+ * ── Why this runs twice, and it is not thoroughness for its own sake ──
+ * `playwright.config.ts:97` pins `reducedMotion: "reduce"` for the whole suite.
+ * `SmoothScrollProvider.jsx:25` returns early under exactly that preference, so
+ * the default configuration never mounts Lenis — and Lenis is the one thing in
+ * this app that could plausibly fight a programmatic `window.scrollTo`, since
+ * it owns the scroll position on desktop for every user who has NOT asked for
+ * reduced motion. A single run under the suite default would therefore have
+ * measured the easy half and reported it as the whole answer.
+ */
+const F_CASES = [
+  // The measured case, and the one the ticket pins the claim to.
+  { w: 1440, h: 900, motion: "reduce" as const, label: "1440 · reduced-motion (suite default, no Lenis)" },
+  // Same viewport, Lenis LIVE — fine pointer and no reduced-motion preference
+  // is exactly the gate at SmoothScrollProvider.jsx:25-26.
+  { w: 1440, h: 900, motion: "no-preference" as const, label: "1440 · Lenis live" },
+  // Mobile. `reduce` and not `no-preference` on purpose: a real phone is
+  // `pointer: coarse`, and SmoothScrollProvider.jsx:26 returns early on that —
+  // so Lenis never mounts on a phone regardless of the motion preference, and
+  // this run is the representative one rather than the lenient one.
+  { w: 375, h: 812, motion: "reduce" as const, label: "375 · mobile" },
+];
+
+for (const c of F_CASES) {
+  test.describe(`MEH-2138 chunk F — lands ON the success screen (${c.label})`, () => {
+    test.use({ viewport: { width: c.w, height: c.h }, reducedMotion: c.motion });
+
+    test("submitting from a scrolled page lands the success heading in the viewport", async ({ page }) => {
+      const roleRef = { current: "consumer" };
+      await stubSession(page, roleRef);
+      await stubUpgradeSubmit(page, roleRef);
+
+      await driveWizardToStorySubmitReady(page);
+
+      // Reproduce the condition: the seller has scrolled down to reach submit.
+      const before = await page.evaluate(() => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        return {
+          y: window.scrollY,
+          docH: document.documentElement.scrollHeight,
+          vh: window.innerHeight,
+          lenis: document.documentElement.classList.contains("lenis"),
+        };
+      });
+
+      // ── CONTROL, and the whole spec rests on it ──
+      // If the page does not actually scroll at this viewport, "the heading is
+      // in view" is true no matter what the component does, and this test would
+      // report green against the bug it exists to catch. Assert the
+      // precondition rather than assume the measured docH still holds.
+      expect(
+        before.y,
+        `CONTROL FAILED: the page did not scroll (docH ${before.docH}, viewport ${before.vh}). ` +
+          "Every assertion below is vacuous in that state — fix the control before reading the result.",
+      ).toBeGreaterThan(100);
+
+      await page.getByTestId("register-story-submit").click();
+
+      const success = page.getByTestId("register-success-pending");
+      await expect(success).toBeVisible({ timeout: 10_000 });
+
+      // The heading, not the container: the container opens with a `py-8` block,
+      // so a container-based check is satisfied a little too easily.
+      await expect(success.getByRole("heading")).toBeInViewport({ ratio: 1 });
+
+      const after = await page.evaluate(() => window.scrollY);
+      expect(
+        after,
+        `the document itself must be back at the top, not merely the heading in frame (lenis mounted: ${before.lenis})`,
+      ).toBe(0);
+
+      await page.screenshot({ path: `qa-artifacts/MEH-2138f/success-${c.w}-${c.motion}.png` });
+    });
+  });
+}

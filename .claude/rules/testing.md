@@ -236,9 +236,14 @@ missing element, not "the network never idled".
 > **The ban rests on the observed behaviour above, not on a settled cause.** The
 > working diagnosis — that Cloudinary returns 401 for every image on the CI runner —
 > is **not established, and carries no owning card**; do not restate it as fact from
-> this file. (It previously read "owned by MEH-1948"; that identifier does not exist
-> in Linear — checked 2026-08-12. The nearest real card, MEH-1925, is the *production*
-> Cloudinary 401 incident, which is a different surface.) What justifies the ban is
+> this file. **(This passage previously read "that identifier does not exist in Linear
+> — checked 2026-08-12". That is false, and the correction is itself an instance of
+> this section: MEH-1948 resolves via `get_issue` — Done, `archivedAt`
+> 2026-08-11T14:21:49Z, i.e. archived the day BEFORE that check. A lookup that
+> excludes archived issues returns "not found", which is indistinguishable from
+> "never existed" at the call site. Re-measured 2026-08-15, MEH-2090.)** MEH-1925 is
+> a different surface — the *production* Cloudinary 401 incident — and that part
+> stands. What justifies the ban is
 > only the measured symptom: the network does not idle on CI, and it does locally.
 >
 > **A second failure class, now with its own card — MEH-2029:**
@@ -333,6 +338,19 @@ comments recording that `networkidle` is not layout-idle for them
 > Linear auto-close asserted twice into PR bodies as certain, then measured false
 > (workflow.md rule 29 § *branch name*).
 >
+> **A CI aggregator is the same instrument, one level up (MEH-1742).** `needs.<job>.result`
+> collapses to one of `success|failure|cancelled|skipped` — GitHub Actions does not
+> expose *why* a job skipped. `e2e-gate`'s `ok() { case "$1" in success|skipped) ... }`
+> therefore reads a docs-only PR's *intended* skip and a frontend PR's *unintended* one
+> (a job condition suppressing `e2e` for a reason unrelated to scope) as the identical
+> token, and passes both. Same shape as the `check`/`check_ran` split MEH-1582 already
+> landed on `pr-checks.yml` for exactly this reason on other required jobs — a skip
+> the gate is actively enforcing must have *run*, not just returned a token that also
+> means "nothing to check." Fix staged at
+> [`docs/ci/e2e-gate-strict-skip.patch.md`](../../docs/ci/e2e-gate-strict-skip.patch.md)
+> (`.github/workflows/**` is CC-deny; discrimination proven in
+> `scripts/e2e-gate-selftest.sh` before the patch is even applied).
+>
 > **Three of those happened in one session (2026-08-11), to a session that had this
 > very section loaded the whole time.** Knowing the rule is not the same as running
 > the check — so the practical form is a habit, not a principle: **before a claim
@@ -340,6 +358,13 @@ comments recording that `networkidle` is not layout-idle for them
 > know.** A probe validated on a known case can be trusted in both directions; an
 > unvalidated one can be trusted in neither, and its *red* is worth exactly as little
 > as its green.
+>
+> **A rules file must cite an identifier that resolves, and a citation is checkable —
+> `get_issue` either returns it or does not, so check it rather than inheriting it.**
+> Both directions have now bitten: `MEH-360` is cited in 30 files and has never
+> existed, while `MEH-1948` was declared non-existent from a lookup that silently
+> excluded archived issues (both measured 2026-08-15, MEH-2090). No linter for this —
+> one call, at the moment you write the citation.
 >
 > ### Instance nine — the one where the answer was simply published
 >
@@ -743,6 +768,22 @@ aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
 
+**Consequence of the above, made explicit (MEH-1907):** with auto-merge armed,
+a PR lands the instant `CI gate` and `Deploy gate` report `success` —
+regardless of any verbal or written instruction like "wait for two
+consecutive green E2E runs first." `E2E gate` carries no vote in what merges
+today, so that kind of instruction is not enforced by the merge machinery at
+all; it is enforced only by **not arming auto-merge** until the condition is
+checked by hand. Measured directly: PR #2592 merged on one green E2E run
+though the orchestrator's instruction required two consecutive ones — the
+mechanism did exactly what its required-context set says it will do, which is
+ignore E2E either way. Not a compliance failure on CC's part; a property of
+which contexts `protect-staging` (ruleset 15240090) actually requires. See
+[docs/ci/pr-checks-cancelled-not-failure.patch.md](../../docs/ci/pr-checks-cancelled-not-failure.patch.md)
+for the sibling MEH-1907 fix (a cancelled required job must not read as a
+failed one — same aggregator, opposite direction from the skip-green fix
+above).
+
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then
 retry the merge once. (Observed on PR #908 — first merge attempt blocked on a
@@ -787,33 +828,59 @@ gate: `.github/workflows/**` is CC-deny (MEH-671) and collides with MEH-787 on
 
 ---
 
-## Driving Playwright against staging from the CC sandbox (TLS workaround)
+## Driving Playwright against staging from the CC sandbox — TLS **and** the protection bypass
 
-When you launch Playwright/Chromium against the **live** staging URL
-(`https://staging.mehamakor.online`) or a `*.vercel.app` preview **from
-the CC sandbox**, force the max TLS version to 1.2:
+**A harness pointed at staging needs BOTH of the following. Each alone leaves it
+measuring nothing, and in different ways.**
+
+### 1. Cap TLS at 1.2
 
 ```js
 chromium.launch({ args: ["--ssl-version-max=tls1.2"] })
 ```
 
-Without it the sandbox's Chromium offers a TLS-1.3 ClientHello that the
-Vercel edge drops, surfacing as `ERR_CONNECTION_CLOSED` — which looks like
-the site is down but is really the handshake failing. Capping at TLS 1.2
-lets the handshake complete.
+Without it the sandbox's Chromium offers a TLS-1.3 ClientHello that the Vercel
+edge drops. It surfaces as `ERR_CONNECTION_CLOSED` (2026-06-25) or
+`ERR_CONNECTION_RESET` (2026-08-18) — **the wording varies, the cause does
+not** — and either reads exactly like "the site is down" while the site is fine
+and only the handshake failed. Capping at TLS 1.2 lets it complete.
 
-**Sandbox-only.** Real browsers and the GitHub-hosted CI runners don't
-need it — the `e2e.yml` suite is unaffected. This is for one-off **live
-verification from a CC session** (e.g. confirming a screenshot bug is
-*stale* vs a real regression before filing/fixing — 2026-06-25 MEH-938 /
-MEH-942), not for the automated E2E pipeline. Pairs with the
-`*.up.railway.app` egress block in [CLAUDE.md](../../CLAUDE.md) "Known Bug
-Patterns": backend/API smoke from the sandbox is blocked outright; this
-covers the *frontend* live-check path that Chromium can reach but only
-over TLS 1.2.
+**Sandbox-only.** Real browsers and the GitHub-hosted CI runners do not need it;
+the `e2e.yml` suite is unaffected.
 
-_Source: 2026-06-25 /map UX batch (handoff note) — surfaced while
-verifying MEH-942's GPS-button screenshot against live staging._
+### 2. Send the Vercel Deployment Protection headers
+
+Staging 302s to `vercel.com/sso-api` for **every** path — including `/api/*`,
+because the Next `rewrites()` proxy sits behind the same edge.
+
+```js
+extraHTTPHeaders: {
+  "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+  "x-vercel-set-bypass-cookie": "true",
+}
+```
+
+`VERCEL_AUTOMATION_BYPASS_SECRET` is already provisioned in the CC sandbox (the
+name the E2E job uses). **The control that proves it is the headers doing the
+work and not something else:** `/he` → **200** with them, **302 →
+`vercel.com/sso-api`** without. Never write the secret to a file, a commit, a PR
+body or a log line.
+
+### Corollary — a Railway `000` from the sandbox is NOT an outage
+
+`*.up.railway.app` is egress-blocked here: the proxy answers
+`CONNECT tunnel failed, response 403` and curl surfaces that as `000`, which is
+indistinguishable from a dead backend at the call site. It was misread as one.
+
+**The browser never talks to Railway anyway** — `lib/api.js` uses
+`baseURL: "/api"` and `next.config.js` `rewrites()` proxies that **server-side**.
+Probe the backend through `staging.mehamakor.online/api/…`, the path the app
+actually uses, with the headers above.
+
+_Sources: 2026-06-25 /map UX batch, MEH-938 / MEH-942 (TLS, discovered while
+checking whether a screenshot bug was stale). 2026-08-18 MEH-2118 (TLS
+re-confirmed; bypass headers, control, and the Railway corollary added — a
+register-first harness run end-to-end against staging)._
 
 ---
 

@@ -157,6 +157,32 @@ class TestSmartSearchAutocomplete:
         assert any(p["name"] == "בשר מהחווה" for p in body["producers"])
         assert any(c["name"] == "בשר טרי" for c in body["categories"])
 
+    def test_search_category_hit_carries_slug(self, client, db):
+        """MEH-2139 — `/search` must serialize `slug` on a category hit.
+
+        `CategoryHit` is hand-built with keyword arguments in
+        `routers/search.py`, unlike `CategoryOut`, which is a `response_model`
+        populated from the ORM object and therefore gets every field for free.
+        An omitted keyword there does not raise: the field is `str | None`, so
+        it serializes as `null` forever and every other assertion in this file
+        keeps passing. The CI reviewer found exactly that on PR #3052.
+        """
+        cat = make_category(db, name="גבינות כבשים")
+        # CONTROL: the column default must actually have produced a slug. If it
+        # did not, `hit["slug"] == cat.slug` would be None == None — a green
+        # that proves the endpoint drops the field just as well as it proves
+        # the endpoint carries it.
+        assert cat.slug, "no slug on the seeded row — the assertion below is vacuous"
+
+        resp = client.get("/search?q=גבינות")
+        assert resp.status_code == 200
+        hits = [c for c in resp.json()["categories"] if c["name"] == "גבינות כבשים"]
+        # CONTROL: zero hits is the other vacuous pass — `all()` over an empty
+        # list is True, so a search that matched nothing would report success.
+        assert len(hits) == 1, f"expected exactly 1 category hit, got {len(hits)}"
+        assert hits[0]["slug"] == cat.slug
+        assert hits[0]["slug"] is not None
+
     def test_empty_query_returns_empty(self, client):
         resp = client.get("/search?q=")
         assert resp.status_code == 200

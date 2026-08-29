@@ -26,10 +26,12 @@ import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
  * History:  MEH-1675 (creation).
  */
 
-// MEH-1675 · PHASE-B: the click is counted, the CITY is not. `/whatsapp-click`
-// takes no request body — producer_id is the path param and the endpoint reads
-// nothing else (contact-tracking.js:51-58). Sending a city would mean a schema
-// change, which this ticket forbids, so per-city demand is deferred to MEH-1677.
+// MEH-1677 (Phase B1) CLOSED the gap this comment used to describe. The note
+// here previously read: "the click is counted, the CITY is not … per-city demand
+// is deferred." That is no longer true — `/whatsapp-click` now accepts an
+// OPTIONAL body carrying the city, and this component is its only sender. The
+// endpoint still accepts no body at all, so every other WhatsApp CTA on the site
+// is unchanged and stores NULL.
 
 export default function CoverageRequestCta({ producer = null, city = "" }) {
   const t = useTranslations("group_buys.delivery");
@@ -39,6 +41,11 @@ export default function CoverageRequestCta({ producer = null, city = "" }) {
   const value = (city || "").trim();
   // No WhatsApp channel, or no city to ask about → nothing to offer.
   if (!digits || !value) return null;
+  // MEH-1677: the business's opt-out. Compared against `false` explicitly, not
+  // read as falsy: a payload that omits the field entirely (an older cached
+  // response, or any serializer that has not caught up) must keep the CTA. The
+  // failure worth preventing here is the feature disappearing silently.
+  if (producer?.coverage_cta_enabled === false) return null;
 
   // REUSES: frontend/components/WhatsAppQuestionChips.jsx:165-171 — prefill
   // body, blank line, then the LOCKED attribution marker on its own final
@@ -54,7 +61,7 @@ export default function CoverageRequestCta({ producer = null, city = "" }) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => pingWhatsAppBeacon(producer?.id)}
+        onClick={() => pingWhatsAppBeacon(producer?.id, value)}
         data-testid="coverage-request-link"
         className="inline-flex items-center gap-2 min-h-[44px] text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
       >

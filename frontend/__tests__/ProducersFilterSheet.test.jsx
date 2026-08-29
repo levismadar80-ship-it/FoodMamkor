@@ -44,14 +44,33 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
+  // here, the whole suite dies at import with "No \"Clock\" export is defined".
+  Clock: (p) => <span {...p} />,
+  // MEH-2186: DeliveryDayRow became a dropdown chip and now imports these.
+  // This mock is enumerated by hand (a Proxy dereferences the JSX runtime at
+  // import time), so a glyph the component imports and this list omits kills
+  // the whole file at import with 'No "X" export is defined' — the same trap
+  // the MEH-2131 note above records.
+  CalendarBlank: (p) => <span {...p} />,
+  CaretUp: (p) => <span {...p} />,
+  X: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-2169: chip-icons.js gained vegetarian -> Carrot and
+  // no_added_sugar -> Cube. This mock enumerates exports by hand, so a new
+  // glyph in the registry kills the whole suite at import time with
+  // 'No "Carrot" export is defined' — not a failing assertion, a dead file.
+  Carrot: (p) => <span {...p} />,
+  Cube: (p) => <span {...p} />,
   CaretDown: (p) => <span {...p} />,
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
+  // MEH-2046: chip-icons maps pickup_points -> Package.
+  Package: (p) => <span {...p} />,
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
@@ -259,14 +278,14 @@ describe("MEH-1862 — the /map surface is not disturbed", () => {
     // the config without a group would land in the wrong section silently.
     const grouped = withChipGroups(PRODUCERS_CHIPS_CONFIG);
     const diet = grouped.filter((c) => c.group === "diet").map((c) => c.key);
-    // The six diet axes are the ones a fallback would visibly swallow.
+    // The five diet axes are the ones a fallback would visibly swallow.
+    // MEH-2047 withdrew a sixth (low_carb) with the claim itself.
     expect(diet).toEqual([
       "vegan",
       "vegetarian",
       "gluten_free",
       "lactose_free",
       "no_added_sugar",
-      "low_carb",
     ]);
   });
 });

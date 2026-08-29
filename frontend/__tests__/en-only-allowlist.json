@@ -1,0 +1,13 @@
+{
+  "$comment": [
+    "Keys that exist in en.json and DELIBERATELY have no he.json twin (MEH-2095).",
+    "The MEH-978 parity guard checks he->en; this file is what makes the en->he",
+    "direction enforceable instead of invisible. Every entry needs a reason — a",
+    "bare list would let the next en-only key in under cover of the first.",
+    "Adding a key here is a decision that it SHOULD be English-only; if it merely",
+    "lacks a translation, translate it instead.",
+    "Lives beside en-parity-guard.test.js, which is its only consumer."
+  ],
+  "search.en_notice.body": "Tells an /en visitor that business listings are Hebrew-only, so an English search returns nothing. It renders only on the English UI (components/EnSearchNotice.jsx) — a Hebrew twin would be text no one can reach.",
+  "search.en_notice.cta": "The 'Switch to Hebrew' action on that same English-only notice. Same reasoning: it exists to leave /en, so it never renders on /he."
+}

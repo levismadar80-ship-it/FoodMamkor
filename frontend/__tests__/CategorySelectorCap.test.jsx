@@ -20,12 +20,12 @@ import CategorySelector from "@/components/CategorySelector";
 // First 6 names match POPULAR (CategorySelector.jsx) so they render in the
 // rest state without needing search/expand.
 const CATEGORIES = [
-  { id: 1, name: "חלב וגבינות" },
-  { id: 2, name: "לחמים ואפייה" },
-  { id: 3, name: "בשר" },
-  { id: 4, name: "שמנים" },
-  { id: 5, name: "ירקות" },
-  { id: 6, name: "סבונים טבעיים" },
+  { id: 1, name: "חלב וגבינות", slug: "dairy" },
+  { id: 2, name: "לחמים ואפייה", slug: "bread" },
+  { id: 3, name: "בשר", slug: "meat" },
+  { id: 4, name: "שמנים", slug: "oil" },
+  { id: 5, name: "ירקות", slug: "veg" },
+  { id: 6, name: "סבונים טבעיים", slug: "care" },
 ];
 
 function setup(selectedIds = []) {

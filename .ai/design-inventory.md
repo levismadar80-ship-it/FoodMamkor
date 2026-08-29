@@ -32,7 +32,7 @@ _Last verified: 2026-07-03 against `origin/staging` (MEH-1004 Phase 0)._
 | Component | Where (file:line) | Notes |
 |---|---|---|
 | Tab nav shell — Overview / Edit / Insights / Tools | `frontend/app/[locale]/producer/dashboard/layout.js:33-38` | UX-level auth gate at `:48-55`; real enforcement is `require_producer` server-side |
-| Overview page (greeting, status banners, holiday hint) | `frontend/app/[locale]/producer/dashboard/page.js:77` | status banners: pending / rejected / pending_whatsapp (`:224-272`) |
+| Overview page (greeting, status banners, holiday hint) | `frontend/app/[locale]/producer/dashboard/page.js:77` | status banners: pending / rejected (`pending_whatsapp` removed in MEH-2124) |
 | VanityLinkCard (copy + WhatsApp share of `/p/<slug>`) | `frontend/app/[locale]/producer/dashboard/page.js:19-59` | rendered only when `producer.slug` is set (`:299-301`) |
 | Availability card — 4-state radiogroup | `frontend/app/[locale]/producer/dashboard/page.js:307-379` | states: accepting_orders / available_today / full_this_week / on_vacation; vacation return-date input (`:352-378`) |
 | ProfileCompletenessCard | `frontend/components/ProfileCompletenessCard.jsx:11` | renders `producerCompleteness()` — **6 fields**: city, coords, delivery, contact, category, image (`frontend/lib/producer-completeness.js:14-21`). **No "description" field yet — MEH-1002 open** |
