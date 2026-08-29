@@ -110,6 +110,7 @@ export const BADGE_CONFIG = {
   // unchanged on the API contract, in lib/schemas.js and on every owner/admin
   // surface; it simply lights no badge, the shape MEH-1259 used to retire
   // "organic" and MEH-1846 used to retire "products".
+
   new: {
     key: "new",
     // The first live use of `system`, which labels.md reserved and left with
