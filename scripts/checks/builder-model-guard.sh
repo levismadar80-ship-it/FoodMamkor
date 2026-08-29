@@ -233,17 +233,17 @@ self_test() {
     fi
   }
 
-  # 1-2: the discriminating pair. Same commit message in the wild; the author
+  # IDENTITY: the discriminating pair. Same commit message in the wild; the author
   #      string is the only difference, and it must flip the verdict.
   expect "dependabot is exempt" 0 \
     'dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>'
   expect "github-actions is NOT exempt" 1 \
     'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
-  # 3: a human/session author is never exempt.
+  # IDENTITY: a human/session author is never exempt.
   expect "a session author is NOT exempt" 1 \
     'Claude <noreply@anthropic.com>'
 
-  # 4-7: the two-condition rule, driven through the pure path classifier.
+  # PATH CLASSIFIER: the two-condition rule, driven through the pure classifier.
   expect_paths() { # expect_paths LABEL WANT_RC <<paths>>
     local label="$1" want="$2" paths="$3" got
     ran=$((ran + 1))
@@ -265,7 +265,7 @@ scripts/checks/builder-model-guard.sh'
   expect_paths "a lookalike path outside the dir is NOT confined" 1 \
     'frontend/e2e/visual/parity.spec.ts-snapshots-evil/x.png'
 
-  # 8-11: REAL-FILE ANCHORS + the I/O function, all depth-independent.
+  # REAL-FILE ANCHORS + the I/O function, all depth-independent.
   #
   # An earlier version anchored on two real commit SHAs. Both objects are
   # ABSENT under `repo-guards`' fetch-depth: 1 checkout, so the self-test failed
@@ -325,11 +325,17 @@ scripts/checks/README.md'
   fi
 
   ran=$((ran + 1))
-  if [ -n "$code_sha" ] && ! ( cd "$tmp" && commit_changed_paths "$code_sha" | paths_are_vrt_baseline_only ); then
-    echo "  ok    commit_changed_paths: a code commit does NOT read as confined"
-  else
+  # The empty-$code_sha branch is reported separately: "read as confined" would
+  # be a WRONG diagnosis for a temp repo that never got built, and a misleading
+  # failure message costs more than a missing one when someone is debugging CI.
+  if [ -z "$code_sha" ]; then
+    echo "  FAIL  commit_changed_paths — the temp repo was not built; this case did not run."
+    failures=$((failures + 1))
+  elif ( cd "$tmp" && commit_changed_paths "$code_sha" | paths_are_vrt_baseline_only ); then
     echo "  FAIL  commit_changed_paths: a code commit read as confined"
     failures=$((failures + 1))
+  else
+    echo "  ok    commit_changed_paths: a code commit does NOT read as confined"
   fi
 
   # FAIL-CLOSED: an unreadable diff must never be exempt. Deterministic in every
@@ -343,7 +349,7 @@ scripts/checks/README.md'
   fi
   rm -rf "$tmp" 2>/dev/null
 
-  # 4: REAL-FILE ANCHOR. Compose the author from vrt-update.yml's own
+  # REAL-FILE ANCHOR (the last block). Compose the author from vrt-update.yml's own
   #    `git config` lines and assert the guard still checks it.
   ran=$((ran + 1))
   local vrt_name vrt_email vrt_author
