@@ -143,6 +143,19 @@ def attach_badge_fields(producer):
     # use ProducerAdminOut which serialises the column directly.
     raw_license = getattr(producer, "producer_license_number", None)
     producer.has_producer_license = bool(raw_license and raw_license.strip())
+    # MEH-2137 switch: the vote is an id. The legacy name column is kept in
+    # sync by the writer, but a product renamed AFTER the vote was cast would
+    # leave it stale — and staleness there is the original bug wearing a
+    # different hat. Derive from the FK whenever it is set. `products` is
+    # already loaded above, so this is a list scan and not a query; a vote
+    # pointing at a product that is not in the collection (deleted mid-request,
+    # or a filtered load) falls through to the legacy column rather than
+    # blanking a name the caller can still use.
+    top_id = getattr(producer, "top_product_id", None)
+    if top_id is not None:
+        match = next((p for p in products if getattr(p, "id", None) == top_id), None)
+        if match is not None and getattr(match, "name", None):
+            producer.top_product_name = match.name
     producer.has_gluten_free_products = any(
         getattr(p, "is_gluten_free", False) for p in products
     )
@@ -505,13 +518,22 @@ def upsert_primary_branch_location(
 
 
 def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
-    """Create a pending producer row plus its category and delivery-area
+    """Create a DRAFT producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
 
-    Mirrors the pre-refactor body of the POST /producers endpoint
-    verbatim: status defaults to 'pending', category_ids and
-    delivery_areas are persisted as ProducerCategory / DeliveryArea
-    rows, then the producer is committed and refreshed.
+    Mirrors the pre-refactor body of the POST /producers endpoint:
+    category_ids and delivery_areas are persisted as ProducerCategory /
+    DeliveryArea rows, then the producer is committed and refreshed.
+
+    MEH-2100: status is `draft`, not `pending`. This is the THIRD producer
+    creation site — the two in routers/auth.py are the self-registration
+    ones — and it is the least obvious, which is exactly why it matters:
+    `POST /producers` (routers/producers.py) is authenticated by
+    `require_verified_email`, so ANY logged-in user can reach it. Left on
+    `pending` it would have been an open route straight into the admin
+    review queue, bypassing the submit gate that the whole draft state
+    machine exists to enforce. The row now has to go through
+    `POST /producers/me/submit-for-review` like every other business.
     """
     producer = Producer(
         name=data.name,
@@ -529,7 +551,8 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         # required-vs-optional is gated by the router-level helper before
         # this function is called.
         producer_license_number=data.producer_license_number,
-        status="pending",
+        # MEH-2100: draft, not pending — see the docstring above.
+        status="draft",
     )
     db.add(producer)
     db.flush()

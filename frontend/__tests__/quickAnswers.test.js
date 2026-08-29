@@ -234,7 +234,17 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(links[0].getAttribute("href")).toContain("wa.me");
   });
 
-  it("no phone but data present → block renders answers, no WhatsApp items, no escalation", () => {
+  // MEH-2154 changed the second half of this case ON PURPOSE. It used to assert
+  // `escalation-link` was ABSENT, because the escalation row was gated on a
+  // phone existing. The escalation row is the contact channel itself, so it now
+  // follows the declared primary channel and renders whenever ANY channel
+  // resolves — here, the order form. The WhatsApp half of the assertion is
+  // unchanged and is the half that still matters: zero wa.me rows.
+  //
+  // The replacement is stricter than what it replaces: `not.toBeInTheDocument`
+  // passes for a missing element AND for a broken render, while asserting the
+  // href value can only pass one way.
+  it("no phone but data present → answers render, zero WhatsApp items, escalation follows the order form", () => {
     render(
       <WhatsAppQuestionChips
         producer={{
@@ -247,7 +257,9 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     );
     expect(screen.getAllByTestId("quick-answer-toggle")).toHaveLength(2); // delivery + ordering
     expect(screen.queryByTestId("question-link")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
+    const escalation = screen.getByTestId("escalation-link");
+    expect(escalation).toHaveAttribute("href", "https://order.example.com");
+    expect(escalation.getAttribute("href")).not.toContain("wa.me");
   });
 
   it("no phone and no data → renders nothing", () => {
@@ -261,7 +273,7 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
 
   it("escalation appears only when a phone exists", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
-    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? שלחו לנו הודעה");
+    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? צרו איתנו קשר");
   });
 
   // MEH-1462 — recipe-idea chip: last in the row, WhatsApp-only, exact prefill.

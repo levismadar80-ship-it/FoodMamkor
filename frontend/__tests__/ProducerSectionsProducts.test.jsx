@@ -167,6 +167,97 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getByText("חלה")).toBeInTheDocument();
   });
 
+  // ── MEH-2137 chunk 3: the public matcher votes by id ───────────────────────
+  // The chunk changed this file and shipped no test for it; these close that,
+  // and the third one is the reviewer finding from PR #3048.
+
+  it("the id wins even when the legacy name points at a DIFFERENT row", () => {
+    // The strongest of the three: name and id deliberately disagree. Only an
+    // id-first matcher passes — name-first fails, and so does an OR of the two.
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_id: 52,
+          top_product_name: "לחם",
+          products: [
+            { id: 51, name: "לחם", image_url: "https://res.cloudinary.com/x/sour.jpg" },
+            { id: 52, name: "לחם", image_url: "https://res.cloudinary.com/x/spelt.jpg" },
+          ],
+        }}
+      />,
+    );
+    // The featured photo is row 52's, not row 51's — and row 51 stays in the grid.
+    const imgs = screen.getAllByTestId("product-image").map((i) => i.getAttribute("src") || "");
+    expect(imgs.some((src) => src.includes("spelt.jpg"))).toBe(true);
+    expect(imgs.some((src) => src.includes("sour.jpg"))).toBe(true);
+    // Exactly one row was deduped out of the grid: 2 products, 1 featured.
+    expect(screen.getAllByText("לחם")).toHaveLength(2);
+  });
+
+  it("a NULL id still falls back to the name — those producers are not blanked", () => {
+    // chunk 1's backfill left the FK NULL wherever it refused to guess. The
+    // name branch is the only signal those producers have.
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_id: null,
+          top_product_name: "חלה",
+          products: [
+            { id: 61, name: "חלה", image_url: "https://res.cloudinary.com/x/challah.jpg" },
+            { id: 62, name: "בורקס", image_url: null },
+          ],
+        }}
+      />,
+    );
+    const imgs = screen.getAllByTestId("product-image").map((i) => i.getAttribute("src") || "");
+    expect(imgs.some((src) => src.includes("challah.jpg"))).toBe(true);
+    expect(screen.getAllByText("חלה")).toHaveLength(1);
+  });
+
+  it("id SET but its product is gone: the name fallback must NOT fire (PR #3048 review)", () => {
+    // The reviewer's case, and the one an `||` chain gets wrong. The chosen
+    // product was deleted; a SURVIVING product happens to carry the stale
+    // top_product_name. Falling through to the name would feature the wrong
+    // row on the buyer-facing page — the exact bug this chunk exists to kill.
+    // The dashboard's isTopProduct reads `!= null` and marks nothing here, so
+    // this is also what keeps the two matchers agreeing.
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_id: 999, // deleted — absent from products below
+          top_product_name: "לחם",
+          products: [
+            { id: 71, name: "לחם", image_url: "https://res.cloudinary.com/x/other.jpg" },
+          ],
+        }}
+      />,
+    );
+    // THE discriminating assertion, and it is a count for a reason. Nothing is
+    // featured, so the highlight falls back to rendering the stale
+    // top_product_name as free text (the "no matching product" case above)
+    // while the survivor stays a plain grid card ⇒ «לחם» appears TWICE.
+    // Under the old `||` chain the survivor was featured AND deduped out of the
+    // grid ⇒ it appeared ONCE. Measured in both directions, not reasoned.
+    expect(screen.getAllByText("לחם")).toHaveLength(2);
+    // The survivor's photo renders once, in the grid. (This one does NOT
+    // discriminate — it was also once under the old chain, in the highlight
+    // instead. Kept because it pins WHERE the photo is, via the leaf below.)
+    const imgs = screen.getAllByTestId("product-image").map((i) => i.getAttribute("src") || "");
+    expect(imgs.filter((src) => src.includes("other.jpg"))).toHaveLength(1);
+    // …and the highlight shows the no-photo leaf, which the old chain could not
+    // produce here: it had a real product with a real image to feature.
+    expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
+  });
+
   it("free-text signature with no matching product: name + leaf placeholder, grid intact", () => {
     render(
       <ProducerSections

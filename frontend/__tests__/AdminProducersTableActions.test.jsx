@@ -35,11 +35,10 @@ function renderActions(status) {
 }
 
 describe("ProducerActions — approve gate (MEH-745)", () => {
-  it("renders approve for a self-registered pending_whatsapp producer", () => {
-    renderActions("pending_whatsapp");
-    expect(screen.getByText(APPROVE_KEY)).toBeInTheDocument();
-  });
-
+  // A sibling case here asserted approve for a `pending_whatsapp` producer;
+  // that status was removed in MEH-2124, so the case was deleted rather than
+  // retargeted — the `pending` case below is the same
+  // assertion against the only waiting status that now exists.
   it("still renders approve for a classic pending producer (no regression)", () => {
     renderActions("pending");
     expect(screen.getByText(APPROVE_KEY)).toBeInTheDocument();
@@ -66,11 +65,6 @@ describe("ProducerActions — request-changes button (MEH-1011)", () => {
     expect(btn).toBeInTheDocument();
     fireEvent.click(btn);
     expect(onRequestChanges).toHaveBeenCalledWith({ id: "p1", status: "pending" });
-  });
-
-  it("renders on a pending_whatsapp producer", () => {
-    renderActions("pending_whatsapp");
-    expect(screen.getByText(REQUEST_CHANGES_KEY)).toBeInTheDocument();
   });
 
   it("does NOT render for an approved producer (pending-only)", () => {
@@ -177,7 +171,7 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     const reject = screen.getByRole("menuitem", { name: REJECT_KEY });
     expect(reject).toHaveClass("text-red-600");
     fireEvent.click(reject);
-    // the whole producer, not just the id — RejectModal renders its name.
+    // the whole producer, not just the id — ProducerDecisionModal renders its name.
     expect(h.onReject).toHaveBeenCalledWith(expect.objectContaining({ id: "p1", name: "חוה" }));
   });
 

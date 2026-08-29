@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, MapPin, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, MapPin, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
@@ -13,6 +13,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import AddressSearch from "@/components/AddressSearch";
 import CategorySelector from "@/components/CategorySelector";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
@@ -28,6 +29,7 @@ const ADDRESS_CONFIRM_ZOOM = 16;
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
+import { CONTACT_EMAIL } from "@/lib/env.client";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -155,6 +157,23 @@ const EMPTY_FORM = {
   // answer revealed only when "other" is chosen.
   referral_source: "",
   referral_source_other: "",
+  // MEH-1838 chunk B: the delivery axis. Until this shipped the registration
+  // form captured NO axis at all, so every business arrived identically and the
+  // difference only surfaced if someone opened the dashboard and corrected it.
+  //
+  // Defaults mirror the payload contract byte for byte (schemas.py:701-704), so
+  // a draft restored from before this block existed posts exactly what the
+  // backend already defaults to — physical-only, no delivery — instead of a
+  // shape the validator would reject.
+  //
+  // `delivery_cities` is the PAYLOAD field (schemas.py:704), NOT the legacy flat
+  // Producer column of the same name. The router folds a non-empty list into
+  // delivery_areas rows (auth.py:586-588) — the only store the consumer filter
+  // reads (producer_listing.py:258). The column is never written (auth.py:550).
+  has_physical_location: true,
+  offers_delivery: false,
+  delivery_nationwide: false,
+  delivery_cities: [],
 };
 
 // MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels
@@ -268,6 +287,17 @@ function RegisterProducerPageBody() {
   // chrome). Both fold into the single declaration_accepted bool — no new API
   // field. A distinct affirmative act = stronger evidentiary value (Brief Q1.4).
   const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
+  // MEH-2182: the seller dragged the pin, so the point is hers rather than the
+  // provider's. UI-ONLY — it swaps one confirmation line and rides in no
+  // payload. location_precision is untouched: this ticket adds no precision
+  // semantics, and inventing one here would be a schema decision in disguise.
+  // MEH-2182: UI-only, and deliberately NOT part of the saved draft. The
+  // COORDINATES persist (they always did); this flag is only the wording of the
+  // confirmation line, so a seller who reloads mid-signup keeps her dragged
+  // point and sees the plain "location identified" line again. Persisting it
+  // would mean a new draft key for a sentence, and the sentence is not what the
+  // form is for.
+  const [pinAdjusted, setPinAdjusted] = useState(false);
   const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   // MEH-328 Chunks C+D: emailExistsWarning (onBlur) + emailExistsSubmitError
   // (409 on submit) state both removed. Backend's non-upgrade path no longer
@@ -324,6 +354,16 @@ function RegisterProducerPageBody() {
   // "current: lat, lng" (MEH-1242); a seller cannot check her own shop against
   // a decimal pair, so the street + city she recognises is the whole point.
   const addressConfirmLabel = [form.address, form.address_city].filter(Boolean).join(", ");
+  // MEH-2181: the provider's own city for the PICKED address vs the canonical
+  // CitySearch value the seller chose. Only meaningful once a point is
+  // attached — before that `address_city` is "" and there is nothing to
+  // compare. Deliberately a soft signal: MEH-213 forbids a raw provider string
+  // from reaching `city`, so this can inform her and must never auto-correct.
+  const addressCityMismatch =
+    addressConfirmed &&
+    Boolean(form.address_city) &&
+    Boolean(form.city) &&
+    form.address_city !== form.city;
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
   // with no second piece of state to keep in sync.
@@ -351,6 +391,31 @@ function RegisterProducerPageBody() {
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
   }, [step, showPreflight]);
 
+  // MEH-2138 chunk F: the wizard is ONE long page, so submitting from STORY
+  // leaves the scroll position exactly where the seller left it. Measured at
+  // 1440 on staging: docH 1493, viewport 900, scrollY 539 — the success screen
+  // mounts entirely above the fold and she lands on the FOOTER, not on the
+  // thing she just earned. (It is why MEH-2136's hierarchy fix read as a no-op
+  // in the desktop before/after captures: the screen was correct and unseen.)
+  //
+  // One effect on STEP.CONFIRM, not a call inside each branch. CONFIRM renders
+  // two different screens — the upgrade path and the inbox-check path — and a
+  // third added later cannot forget this, the same DRY argument the effect
+  // above makes for the funnel event.
+  //
+  // `behavior: "instant"` is deliberate and is NOT the convention 20 lines
+  // below, which omits `behavior` to defer to the stylesheet. That call moves
+  // focus to an errored field mid-form, where a smooth ride is a sighted user
+  // tracking WHERE the page went; here there is nothing to track — the
+  // destination is a screen she has not seen yet, and an animated approach to
+  // it is precisely what prefers-reduced-motion exists to suppress. "instant"
+  // says that unconditionally instead of inheriting whatever `scroll-behavior`
+  // happens to be on <html>. Precedent for the literal: ChipScrollRow.jsx:158.
+  useEffect(() => {
+    if (step !== STEP.CONFIRM) return;
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [step]);
+
   // MEH-1807 (GOV.UK error-summary pattern): move focus to the offending field
   // so the seller lands ON it, not merely near it. The id is queried rather
   // than held in a ref because a cross-step bounce focuses a field that did not
@@ -363,7 +428,7 @@ function RegisterProducerPageBody() {
     if (el) {
       el.focus();
       // No explicit `behavior`: passing "smooth" here would override CSS
-      // scroll-behavior, including the `!important` reset globals.css:122 applies
+      // scroll-behavior, including the `!important` reset globals.css:145 applies
       // under prefers-reduced-motion. Omitting it defers to the stylesheet.
       el.scrollIntoView?.({ block: "center" });
     }
@@ -590,9 +655,10 @@ function RegisterProducerPageBody() {
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
-        // MEH-1471: self-reported attribution. referral_source is a required
-        // key from the CONFIRM-step dropdown; the free-text answer is sent only
-        // when "other" is chosen (empty otherwise → backend stores NULL).
+        // MEH-1471: self-reported attribution, from the STORY-step dropdown.
+        // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
+        // backend stores NULL. The free-text answer is sent only when "other"
+        // is chosen (empty otherwise → NULL as well).
         referral_source: form.referral_source,
         referral_source_other:
           form.referral_source === "other" ? form.referral_source_other : "",
@@ -609,7 +675,25 @@ function RegisterProducerPageBody() {
         // stamped. Distinct from declaration_accepted directly above: that is
         // the LICENSING declaration, recorded on the producer row.
         terms_accepted: agreedToTerms,
+        // MEH-1838 chunk B: the delivery axis finally reaches the endpoint.
+        // Chunk A (#2959) added all four to ProducerRegister (schemas.py:701-704);
+        // until this line they were never sent — and Pydantic drops unknown
+        // fields silently, so the form "succeeded" while every business landed
+        // on the same default shape. That silence is why this needs a test that
+        // reads the POST body, not one that asserts the request returned 200.
+        has_physical_location: form.has_physical_location,
+        offers_delivery: form.offers_delivery,
+        delivery_nationwide: form.delivery_nationwide,
       };
+      // Sent only when non-empty: a physical-only registration posts no empty
+      // array (the card's own acceptance criterion) and the server default is
+      // `[]` regardless. The router folds a non-empty list into delivery_areas
+      // ROWS (auth.py:586-588) — the only store the consumer filter reads
+      // (producer_listing.py:258). It never writes the legacy flat column of the
+      // same name (auth.py:550).
+      if (form.offers_delivery && form.delivery_cities.length > 0) {
+        body.delivery_cities = form.delivery_cities;
+      }
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {
         body.email = form.email;
@@ -859,6 +943,11 @@ function RegisterProducerPageBody() {
         {step === STEP.ACCOUNT && (
           <div className="space-y-4" data-testid="register-frame-account">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
+            {/* MEH-2183: step-top expectation line — names the time cost and
+                that the draft survives leaving (setAndSave already persists it). */}
+            <p data-testid="register-account-duration-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.steps.account.duration_hint")}
+            </p>
 
             {/* MEH-880 (S7 Chunk E1): copy-only reassurance card — mirrors the
                 Chunk-D story_card pattern (brand tokens only, no state-color). */}
@@ -983,6 +1072,11 @@ function RegisterProducerPageBody() {
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
+            {/* MEH-2183: the no-cost promise, stated on the step where the
+                seller starts investing real effort. */}
+            <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.steps.business.free_hint")}
+            </p>
 
             <Input
               id="producer-business-name"
@@ -1090,6 +1184,10 @@ function RegisterProducerPageBody() {
               <AddressSearch
                 id="producer-address"
                 inputTestId="register-details-address"
+                // MEH-2181: scope suggestions to the city already chosen above.
+                // Opt-in prop — the other four AddressSearch consumers omit it
+                // and compose their queries exactly as before.
+                city={form.city}
                 value={form.address}
                 // MEH-1808: free typing INVALIDATES a previously picked point —
                 // otherwise coordinates from an earlier selection would ride
@@ -1097,15 +1195,20 @@ function RegisterProducerPageBody() {
                 // is worse than having none: the pin would confidently show the
                 // wrong place. Clearing here is what makes `lat != null` mean
                 // "these coordinates belong to the text currently in the field".
-                onChange={(v) =>
+                onChange={(v) => {
+                  // MEH-2182: the manual-adjust flag dies with the coordinates
+                  // it describes. Deliberately folded into the EXISTING MEH-1808
+                  // null-out rather than given its own reset — two reset paths
+                  // for one fact is how they drift apart.
+                  setPinAdjusted(false);
                   setAndSave((prev) => ({
                     ...prev,
                     address: v,
                     address_city: "",
                     lat: null,
                     lng: null,
-                  }))
-                }
+                  }));
+                }}
                 onSelect={(picked) =>
                   setAndSave((prev) => ({
                     ...prev,
@@ -1156,11 +1259,38 @@ function RegisterProducerPageBody() {
                   <p className="text-sm text-primary inline-flex items-center gap-1.5 text-start">
                     <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
                     <span>
-                      {t("auth.register.producer.fields.address_confirmed", {
-                        location: addressConfirmLabel,
-                      })}
+                      {pinAdjusted
+                        ? t("auth.register.producer.fields.address_pin_adjusted")
+                        : t("auth.register.producer.fields.address_confirmed", {
+                            location: addressConfirmLabel,
+                          })}
                     </span>
                   </p>
+                  {/* MEH-2181: the picked address resolved to a different town
+                      than the one chosen above. NOT error-styled and NOT
+                      blocking — same reasoning as the pick-from-list nudge
+                      below: the address is optional, so a red blocker would be
+                      a lie about the form. Gold rather than red says "worth a
+                      look", which is exactly the claim being made.
+                      There is deliberately NO "use {found} instead" button:
+                      MEH-213 forbids a raw provider string from landing in
+                      `city`, which is CitySearch's canonical value. Correcting
+                      it stays the seller's action, in the field that owns it. */}
+                  {addressCityMismatch && (
+                    <p
+                      data-testid="register-address-city-mismatch"
+                      className="text-xs mt-2 inline-flex items-start gap-1.5 text-start"
+                      style={{ color: "#8B6914" }}
+                    >
+                      <Warning size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0" />
+                      <span>
+                        {t("auth.register.producer.fields.address_city_mismatch", {
+                          found: form.address_city,
+                          selected: form.city,
+                        })}
+                      </span>
+                    </p>
+                  )}
                   <div className="mt-2 overflow-hidden rounded-md">
                     {/* Confirmation only — no Waze/Google pills ("navigate to
                         your own address" means nothing mid-signup) and a street
@@ -1173,8 +1303,36 @@ function RegisterProducerPageBody() {
                       name={form.producer_name || form.address}
                       zoom={ADDRESS_CONFIRM_ZOOM}
                       showNavigation={false}
+                      // MEH-2182: two more opt-in props, same shape as the two
+                      // above. A geocoder lands within a street or two; only the
+                      // seller knows which gate is hers. The drag moves the
+                      // POINT and nothing else — the address TEXT is untouched
+                      // on purpose, so no reverse-geocode fires and the field
+                      // never rewrites itself under her.
+                      //
+                      // a11y, stated plainly rather than assumed away: dragging
+                      // is a pointer gesture with no keyboard equivalent, so
+                      // WCAG 2.2 SC 2.5.7 (Dragging Movements) is satisfied only
+                      // because the drag is an ENHANCEMENT — typing a more
+                      // precise address and re-picking reaches the same outcome
+                      // without any drag, and that path is unchanged. If the pin
+                      // ever becomes the only way to set a location, this needs
+                      // a tap-to-place alternative.
+                      draggableMarker
+                      onMarkerDragEnd={({ lat, lng }) => {
+                        setPinAdjusted(true);
+                        setAndSave((prev) => ({ ...prev, lat, lng }));
+                      }}
                     />
                   </div>
+                  {/* MEH-2182: says the pin is draggable, because nothing else
+                      on a static-looking confirmation map does. */}
+                  <p
+                    data-testid="register-pin-drag-hint"
+                    className="text-xs text-fg-muted mt-2 text-start"
+                  >
+                    {t("auth.register.producer.fields.address_pin_drag_hint")}
+                  </p>
                 </div>
               ) : (
                 form.address.trim() !== "" && (
@@ -1191,8 +1349,21 @@ function RegisterProducerPageBody() {
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
                 Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
-                no backend field, no location rows; on "yes" the approved copy
-                refers the owner to the dashboard LocationsEditor (chunk 4a). */}
+                no backend field and no location rows; the copy refers the owner
+                to the dashboard LocationsEditor (chunk 4a).
+
+                MEH-1768: the line is now PERMANENT rather than revealed by the
+                checkbox. Behind the tick it answered a question the owner had
+                already decided — the reassurance is what makes the tick safe, so
+                it has to be readable BEFORE she ticks. One renderer, one string:
+                the old conditional `multi_location_yes_copy` is gone rather than
+                kept alongside, so the copy cannot appear twice.
+
+                Styling is this step's own hint recipe, `:1243`
+                (`text-xs text-fg-muted mt-1 text-start` on the
+                `address_optional_hint` paragraph), not the tinted callout the
+                conditional line used — a permanent hint reads as a hint. `ms-6`
+                is kept so it aligns under the label text rather than the box. */}
             <div className="pt-1">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
@@ -1204,14 +1375,122 @@ function RegisterProducerPageBody() {
                 />
                 {t("auth.register.producer.fields.multi_location_label")}
               </label>
-              {hasMultipleLocations && (
-                <p
-                  data-testid="register-multi-location-copy"
-                  className="mt-2 ms-6 flex items-start gap-1.5 rounded-md bg-primary/5 px-3 py-2 text-xs text-fg-muted"
-                >
-                  <MapPin size={14} weight="fill" className="mt-0.5 shrink-0 text-primary" />
-                  <span>{t("auth.register.producer.fields.multi_location_yes_copy")}</span>
+              <p
+                data-testid="register-multi-location-copy"
+                className="text-xs text-fg-muted mt-1 ms-6 text-start"
+              >
+                {t("auth.register.producer.fields.multi_location_hint")}
+              </p>
+            </div>
+
+            {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a
+                location question and sits with city/address above. Idiom mirrors
+                the admin ProducerForm block (ProducerForm.jsx:811-880) rather
+                than inventing one — same fields, same order, same nesting, and
+                every string is that block's own key reused verbatim (rule 22).
+
+                The keys are read as `admin.producers.form.fields.*`: the admin
+                form reaches them as `producers.form.fields.*` only because it
+                scopes `useTranslations("admin")` (ProducerForm.jsx:57). This
+                component's `t` is UNSCOPED, so copying the admin call verbatim
+                would silently render the key name instead of the string. */}
+            <div className="pt-1 space-y-3" data-testid="register-delivery-axis">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.has_physical_location}
+                  data-testid="register-has-physical-location"
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setAndSave((prev) => ({ ...prev, has_physical_location: on }));
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+                {t("admin.producers.form.fields.has_physical_location")}
+              </label>
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.offers_delivery}
+                  data-testid="register-offers-delivery"
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    // MEH-1879 (inherited from ProducerForm.jsx:829-845): the
+                    // block below is CONDITIONALLY RENDERED, and unmounting it
+                    // leaves its state untouched — so unticking here would post
+                    // delivery_nationwide=true alongside offers_delivery=false,
+                    // which the validator rejects (schemas.py:857+) and which the
+                    // DB CHECK producer_nationwide_requires_delivery (MEH-1849)
+                    // turns into a 500 further down. Both owned fields are
+                    // cleared: leaving cities would write delivery_areas rows for
+                    // a business declaring no delivery — a cross-table
+                    // contradiction no CHECK can express.
+                    setAndSave((prev) => ({
+                      ...prev,
+                      offers_delivery: on,
+                      ...(on ? {} : { delivery_nationwide: false, delivery_cities: [] }),
+                    }));
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+                {t("admin.producers.form.fields.offers_delivery")}
+              </label>
+
+              {!form.has_physical_location && !form.offers_delivery && (
+                <p className="text-xs text-red-600" data-testid="register-delivery-axis-error">
+                  {t("admin.producers.form.fields.type_validation")}
                 </p>
+              )}
+
+              {form.offers_delivery && (
+                <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.delivery_nationwide}
+                      data-testid="register-delivery-nationwide"
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        // Entering nationwide clears the city list — the XOR the
+                        // validator enforces (schemas.py:857+) and the DB CHECK
+                        // delivery_nationwide_xor_cities is written against.
+                        setAndSave((prev) => ({
+                          ...prev,
+                          delivery_nationwide: on,
+                          ...(on ? { delivery_cities: [] } : {}),
+                        }));
+                      }}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    {t("admin.producers.form.fields.delivery_nationwide")}
+                  </label>
+
+                  {!form.delivery_nationwide && (
+                    <div>
+                      <span className="block text-sm text-muted mb-1">
+                        {t("admin.producers.form.fields.delivery_cities_label")}
+                      </span>
+                      <div data-testid="register-delivery-cities">
+                        <CitiesAutocomplete
+                          value={form.delivery_cities}
+                          onChange={(cities) =>
+                            setAndSave((prev) => ({ ...prev, delivery_cities: cities }))
+                          }
+                          showRegionChips
+                        />
+                      </div>
+                      {form.delivery_cities.length === 0 && (
+                        <p
+                          className="text-xs text-red-600 mt-1"
+                          data-testid="register-delivery-cities-error"
+                        >
+                          {t("admin.producers.form.fields.delivery_cities_required")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -1230,6 +1509,29 @@ function RegisterProducerPageBody() {
                     CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.DETAILS),
                   );
                   if (offenders.length > 0) return;
+                  // MEH-1838 chunk B: mirror the server validator client-side
+                  // (schemas.py:857+ _validate_location_mode) rather than relying
+                  // on it. A 422 two frames later names a field the seller can no
+                  // longer see; blocking the advance is the whole point, same as
+                  // the runRequiredGate above.
+                  if (!form.has_physical_location && !form.offers_delivery) {
+                    setStepError(t("admin.producers.form.fields.type_validation"));
+                    return;
+                  }
+                  // "לכל הארץ" with zero cities is valid; a city list without
+                  // nationwide is valid. Delivery declared with NEITHER is the
+                  // hole — it would post offers_delivery=true and no rows, so the
+                  // business claims delivery the consumer filter can never match
+                  // (producer_listing.py:258 reads delivery_areas rows).
+                  if (
+                    form.offers_delivery &&
+                    !form.delivery_nationwide &&
+                    form.delivery_cities.length === 0
+                  ) {
+                    setStepError(t("admin.producers.form.fields.delivery_cities_required"));
+                    return;
+                  }
+                  setStepError("");
                   setStep(STEP.CATEGORY);
                 }}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
@@ -1441,6 +1743,14 @@ function RegisterProducerPageBody() {
         {step === STEP.STORY && (
           <div className="space-y-4" data-testid="register-frame-story">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
+            {/* MEH-2183: step-top expectation line — what we ask for AFTER
+                approval, so the photo is not a surprise on the dashboard.
+                NOTE: overlaps in substance with photo_disclosure further down
+                this same step (he.json:331). Both strings are Sapir-locked, so
+                neither was edited here — flagged for a copy ruling. */}
+            <p data-testid="register-story-photo-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.steps.story.photo_next_hint")}
+            </p>
             {/* MEH-860: frame-03 tagline (short_description) — the one-line
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
@@ -1540,11 +1850,12 @@ function RegisterProducerPageBody() {
               )}
             </div>
 
-            {/* MEH-1471: self-reported attribution — REQUIRED dropdown directly
-                above the ToS consent (final step). Default "בחר אפשרות" with no
-                preselection (Ruler Analytics speed-bias → first-option overcount);
-                the submit gate blocks while empty. Selecting "other" reveals an
-                optional free-text input. English keys stored; Hebrew from i18n. */}
+            {/* MEH-1471: self-reported attribution — dropdown directly above
+                the ToS consent (final step). Default "בחרי אפשרות" with no
+                preselection (Ruler Analytics speed-bias → first-option overcount).
+                Selecting "other" reveals an optional free-text input. English
+                keys stored; Hebrew from i18n.
+                MEH-2183: OPTIONAL — leaving it empty no longer blocks submit. */}
             <div data-testid="register-referral-source-block">
               <label
                 htmlFor="register-referral-source"
@@ -1552,6 +1863,15 @@ function RegisterProducerPageBody() {
               >
                 {t("auth.register.producer.fields.referral_source.label")}
               </label>
+              {/* MEH-2183: the field is optional now that the submit gate is
+                  gone. Class recipe mirrors the address_optional_hint paragraph
+                  (:1203) — the repo's established optional-field hint. */}
+              <p
+                data-testid="register-referral-optional-hint"
+                className="text-xs text-fg-muted mb-1 text-start"
+              >
+                {t("auth.register.producer.fields.referral_source.optional_hint")}
+              </p>
               <select
                 id="register-referral-source"
                 data-testid="register-referral-source"
@@ -1566,7 +1886,6 @@ function RegisterProducerPageBody() {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                required
                 className="w-full border rounded-md px-3 py-2 min-h-[44px] bg-white text-start"
               >
                 <option value="" disabled>
@@ -1654,6 +1973,57 @@ function RegisterProducerPageBody() {
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
             {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
 
+            {/* MEH-2200 (Amendment 13, s.11 disclosure duty): the collection
+                notice must be given AT collection, so it renders inline on the
+                frame that submits — not behind a disclosure the seller can skip.
+                Recipients are stated as "the service providers that run the
+                site" with the full list one tap away in /privacy: Phase 0 found
+                registration details also reach Anthropic (risk screening) and
+                Meta (the WhatsApp reply promised one line below), so the
+                narrower "infrastructure providers" wording would have
+                under-stated them. CONTACT_EMAIL is the same constant the
+                privacy page gives for rights requests, so the two surfaces
+                cannot drift. */}
+            <p
+              data-testid="register-collection-notice"
+              className="text-xs text-fg-muted text-start leading-relaxed"
+            >
+              {t.rich("auth.register.producer.collection_notice", {
+                privacy: (chunks) => (
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    className="text-primary hover:underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+                // The placeholder text inside <email>…</email> in the message
+                // files is deliberately discarded — the rendered address is
+                // CONTACT_EMAIL, so the two surfaces cannot name different
+                // mailboxes. Named `_chunks` rather than omitted so a
+                // translator editing that placeholder can see it is inert.
+                email: (_chunks) => (
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}`}
+                    className="text-primary underline break-all"
+                    dir="ltr"
+                  >
+                    {CONTACT_EMAIL}
+                  </a>
+                ),
+              })}
+            </p>
+
+            {/* MEH-2183: what-happens-next, immediately above the submit button.
+                Phase 0 verified this was ABSENT from the STORY step — the only
+                comparable copy lives on the post-submit CONFIRM frame
+                (success.*, :1930+), which the seller cannot see while deciding
+                to press this button. */}
+            <p data-testid="register-submit-next-hint" className="text-xs text-fg-muted text-start">
+              {t("auth.register.producer.submit_next_hint")}
+            </p>
+
             <div className="flex gap-3">
               <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
@@ -1679,11 +2049,12 @@ function RegisterProducerPageBody() {
                     setStep(offenders[0].step);
                     return;
                   }
-                  // MEH-1471: required attribution — block submit while empty.
-                  if (!form.referral_source) {
-                    setError(t("auth.register.producer.validation.referral_source_required"));
-                    return;
-                  }
+                  // MEH-2183: the MEH-1471 attribution gate is REMOVED. The
+                  // field stays and still rides the payload — it is simply no
+                  // longer a submit blocker, so an empty value reaches the
+                  // backend as NULL (the MEH-1471 upgrade path already accepts
+                  // that). Registration must not be blocked by an analytics
+                  // question.
                   if (!agreedToTerms) {
                     setError(t("auth.register.producer.validation.terms_required"));
                     return;
@@ -1749,14 +2120,18 @@ function RegisterProducerPageBody() {
             <div className="bg-green-50 rounded-lg p-5 text-start mb-6">
               <p className="text-sm text-text leading-relaxed">{t("auth.register.producer.success.next")}</p>
             </div>
-            {/* MEH-132: S7 06A founder sign-off */}
-            <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
-            <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {/* MEH-2136: the dashboard CTA sits directly under the box that names
+                the dashboard, and is the only primary weight on the screen. It
+                used to be an outline button two blocks further down, tied in
+                weight with the WhatsApp share beside it — Sapir registered and
+                did not find the dashboard. Share drops to secondary below it;
+                signature + tier_trust follow the buttons instead of splitting
+                the box from the action it points at. */}
+            <div className="flex flex-col gap-3 mb-6 sm:mx-auto sm:max-w-xs">
               <button
                 data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
-                className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+                className="w-full bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm"
               >
                 {t("auth.register.producer.success.cta")}
               </button>
@@ -1764,12 +2139,15 @@ function RegisterProducerPageBody() {
                 href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-whatsapp-outline inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
+                className="btn-whatsapp-outline w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
               >
                 <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
                 {t("auth.register.producer.success.share_cta")}
               </a>
             </div>
+            {/* MEH-132: S7 06A founder sign-off */}
+            <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
+            <p className="text-xs text-fg-muted text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
           </div>
         )}
         {step === STEP.CONFIRM && !didUpgrade && (

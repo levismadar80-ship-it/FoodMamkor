@@ -134,14 +134,10 @@ def test_request_changes_on_approved_producer_is_409(client, db):
     assert producer.status == "approved", "guard must not change status"
 
 
-def test_request_changes_on_pending_whatsapp_is_allowed(client, db):
-    """pending_whatsapp is still a pre-approval state → allowed."""
-    producer = make_producer(db, status="pending_whatsapp")
-    resp = _request_changes(client, producer.id, _admin(db))
-    assert resp.status_code == 200, resp.text
-    db.refresh(producer)
-    assert producer.requested_changes == FEEDBACK
-    assert producer.status == "pending_whatsapp"
+# A case here asserted request-changes on a `pending_whatsapp` producer, the
+# second pre-approval state the guard used to admit. That status was removed in
+# MEH-2124 and the guard is now `status != "pending"`, so the case was deleted
+# rather than retargeted — the pending case is asserted above.
 
 
 # --- email fires to the producer's own address ------------------------------
@@ -179,7 +175,11 @@ def test_approve_clears_requested_changes(client, db, monkeypatch):
         admin_module, "notify_producer_approved", lambda *a, **k: None
     )
     admin = _admin(db)
-    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    # MEH-2121: this test's subject is that approve CLEARS the request-changes
+    # trail, so the producer has to be approvable — phone gate included.
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], phone_verified=True
+    )
     # seed a prior request-changes
     resp = _request_changes(client, producer.id, admin)
     assert resp.status_code == 200, resp.text

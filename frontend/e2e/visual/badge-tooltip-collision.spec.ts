@@ -49,7 +49,11 @@ const CARD_PRODUCER = {
   name: "מאפיית לחם וזמן",
   city: "תל אביב",
   verification_tier: "verified",
-  has_producer_license: true,
+  // MEH-2213: the license badge is gone, so the licence number no longer
+  // contributes a badge. is_recommended keeps this fixture at THREE earned
+  // badges (verified > recommended > kosher) — the +N overflow this spec
+  // exists to measure needs a hidden badge to disclose.
+  is_recommended: true,
   kashrut_verified_at: "2026-01-01T00:00:00Z",
   trust_tier: 4,
   avg_rating: 4.8,

@@ -29,19 +29,28 @@ Does NOT: assert delivery, triggers, or which email fires when — that is
           function name. Chase the wrappers (`grep -rn "def .*email"`, then
           grep each name found) or work from the call tree.
 
-          STILL NOT COVERED, stated because "Purpose" above says *every*
-          user-facing email and that is not yet true: the newsletter welcome
-          (`routers/marketing.py:197`, which carries an HTML part) and the
-          pending-producer nudge (`services/pending_nudge.py:223`). Both call
+          CLOSED by MEH-2041: the two senders this paragraph used to list as
+          STILL NOT COVERED — the newsletter welcome (`routers/marketing.py`,
+          which carries an HTML part) and the pending-producer nudge
+          (`services/pending_nudge.py`) — are in `_CORPUS` now. Both called
           `send_email(` directly, so unlike the admin.py three they were
-          visible to the original grep — the miss happened when the corpus was
-          assembled, not when it was searched, which is a separate cause and
-          needs a separate fix. Carried by MEH-2041. Until it lands, read
-          "every" above as "every sender in `_CORPUS`".
+          visible to the original grep: the miss happened when the corpus was
+          assembled, not when it was searched, which is why the MEH-2027
+          wrapper-chasing fix did not close it. Two different causes, two
+          different fixes; the lesson above is still the one that generalises.
+
+          "Every" above therefore still means "every sender in `_CORPUS`" —
+          not because a gap is known, but because that is the only claim this
+          file can make about itself. The next sender added anywhere in the
+          codebase is outside it until someone adds the entry, and nothing
+          here detects that.
 Related:  docs/BRAND.md §4 (voice), docs/decisions/ADR-024-voice-surface-function.md
 History:  MEH-1965 (creation) — the transactional-email audit.
           MEH-2027 — the three admin.py producer-facing bodies joined the
           corpus once they were extracted into pure module-level builders.
+          MEH-2151 — the producer-approval body gained CTA links and an HTML
+          twin, so it is the first admin.py entry rendered with an HTML part
+          and the first entered twice to cover both of its argument states.
 
 WHY THIS IS RENDERED RATHER THAN GREPPED
 ----------------------------------------
@@ -66,9 +75,10 @@ import re
 import pytest
 
 from app.config import settings
-from app.routers import admin
+from app.routers import admin, marketing
 from app.services import auth_emails, experience_notifications
 from app.services import group_buy_notifications as gb
+from app.services import pending_nudge
 
 # --- the corpus -------------------------------------------------------------
 #
@@ -141,9 +151,21 @@ _CORPUS = [
     # the retired resubmit promise stays out, and that the recovery line it
     # replaced is actually true — are held by
     # tests/test_meh226_rejection_reason.py.
+    # MEH-2151 — the approval body gained a `slug` argument and an HTML twin,
+    # so this entry now renders BOTH parts through the same wrapper the handler
+    # uses. Entered TWICE, for the same reason `rejected` is: the slug selects
+    # between two different rendered bodies (with and without the view-page
+    # block), and a corpus carrying only the happy case would leave the
+    # no-slug body — the one a producer without a minted slug receives —
+    # unasserted while the file list said "approved is covered".
     ("producer-approved", admin, lambda: admin._send_notification_email(
         "her@example.com", "subject-not-asserted",
-        admin._producer_approved_body("חוות הבר"))),
+        admin._producer_approved_body("חוות הבר", "havat-habar"),
+        html=admin._producer_approved_html("חוות הבר", "havat-habar"))),
+    ("producer-approved-no-slug", admin, lambda: admin._send_notification_email(
+        "her@example.com", "subject-not-asserted",
+        admin._producer_approved_body("חוות הבר", None),
+        html=admin._producer_approved_html("חוות הבר", None))),
     ("producer-rejected-with-reason", admin, lambda: admin._send_notification_email(
         "her@example.com", "subject-not-asserted",
         admin._producer_rejected_body("מאפיית הדגן", "חסר רישיון עסק"))),
@@ -155,6 +177,37 @@ _CORPUS = [
         admin._producer_changes_requested_body(
             "משק הזית", "נא להוסיף תמונה של הרישיון",
             f"{settings.frontend_url}/producer/dashboard"))),
+
+    # MEH-2041 — the two senders the MEH-1965 docstring listed as STILL NOT
+    # COVERED. Both were visible to the original grep (each calls `send_email(`
+    # directly); the gap was in how the corpus was assembled, not in how it was
+    # searched, which is why the MEH-2027 wrapper-chasing fix did not close it.
+    #
+    # newsletter-welcome is CONSUMER-facing and is the fourth sender in the
+    # corpus that ships an HTML part, so it is entered in `_EXPECT_HTML` below
+    # and the RTL + plain-text-fallback assertions run on it for real.
+    # `_send_newsletter_welcome` mints a signed unsubscribe token, so this
+    # renders the same absolute URL the subscriber clicks — the href assertion
+    # is exercised against a real token URL, not a placeholder.
+    ("newsletter-welcome", marketing,
+     lambda: marketing._send_newsletter_welcome("her@example.com")),
+
+    # pending-nudge is BUSINESS-OWNER-facing. Unlike every other entry its
+    # module does not expose a function that both renders and sends: the send
+    # lives inside `run_pending_nudge`, behind a DB query. So the corpus calls
+    # the real builder and hands its output to the patched symbol with exactly
+    # the arguments the production line uses (`send_email(user.email, subject,
+    # body)`, pending_nudge.py:443) — the same shape the admin.py entries above
+    # use, and the reason the body under assertion is the shipped one rather
+    # than a copy.
+    #
+    # All three approved item lines are passed, so the assertions see the
+    # longest body the sender can produce; `mark=1` because `_BODY` is shared
+    # by all three day-marks and only the SUBJECT varies, and subjects are not
+    # part of this contract (see the admin.py note above).
+    ("pending-nudge", pending_nudge, lambda: pending_nudge.send_email(
+        "her@example.com",
+        *pending_nudge._build_email("רות", list(pending_nudge._ITEM_COPY.values()), 1))),
 ]
 
 
@@ -169,6 +222,18 @@ _EXPECT_HTML = {
     "verify-email",
     "welcome-consumer",
     "welcome-producer",
+    # MEH-2151. Both slug states are listed: the HTML part is unconditional —
+    # a missing slug drops the primary BUTTON, never the part itself — and
+    # listing only the happy case would turn a regression that silently
+    # dropped the whole HTML twin for slug-less producers into a green.
+    "producer-approved",
+    "producer-approved-no-slug",
+    # MEH-2041. The newsletter welcome is the only CONSUMER-facing sender
+    # outside auth_emails that ships an HTML twin, and listing it here is what
+    # makes the RTL + fallback assertions RUN on it rather than return early —
+    # the whole point of declaring the expectation instead of branching on
+    # `if not html`.
+    "newsletter-welcome",
 }
 
 

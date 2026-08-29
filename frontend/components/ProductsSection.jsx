@@ -19,7 +19,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { CaretDown, CaretUp, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phosphor-icons/react";
 // MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
 // currentColor, aria-hidden) instead of a baked-in emoji — same source the
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
@@ -106,7 +106,29 @@ function clearFieldError(setErrors, field) {
 // header owns them); `onCountChange` reports the live product count up for the
 // accordion's one-line summary. Display-only props — save logic untouched.
 // Default (no props) rendering is byte-identical to before.
-export default function ProductsSection({ embedded = false, onCountChange } = {}) {
+// MEH-2094: `topProductName` + `onTopProductChange` move the signature-product
+// choice OUT of a free-text field (edit/cards.jsx PricingCard) and INTO the row
+// of the product it names — the string is now COPIED from a product the owner
+// already owns instead of retyped. Same column (producers.top_product_name),
+// same PUT /producers/me, no schema change (MEH-1564 owns the FK; this only
+// makes its future backfill a trivial JOIN).
+//
+// The value is NOT held in local state on purpose: the mount site (edit/page.js)
+// owns `profile`, and its completeness checklist reads `profile.top_product_name`
+// (page.js:596/:627/:866). Driving the toggle from the prop and patching upward
+// keeps one owner, so marking a product updates the checklist in the same tick
+// instead of leaving it stale until reload.
+export default function ProductsSection({
+  embedded = false,
+  onCountChange,
+  topProductName = null,
+  // MEH-2137 chunk 3: the vote by IDENTITY. Nullable on purpose — the chunk-1
+  // backfill deliberately left it NULL wherever the legacy name matched two
+  // products or none, so a producer whose data was ambiguous keeps the exact
+  // behaviour she has today rather than having one of her rows picked for her.
+  topProductId = null,
+  onTopProductChange = null,
+} = {}) {
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
@@ -127,6 +149,13 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // MEH-1447: { id, name } | null
+  // MEH-2137 chunk 3: the duplicate-name confirm, as a state flag rather than
+  // `window.confirm`. The native dialog is suppressible — and this one gates a
+  // CREATE, so a suppressed dialog returns false and the product silently is
+  // never added. Every other `window.confirm` in this app guards a DELETE,
+  // where false is the safe answer; here it is the destructive one. Same
+  // direction MEH-1250 already took in GroupBuyDetailClient.
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
   const [editUploading, setEditUploading] = useState(false);
   // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
   // renders a distinct error card + retry instead of the "no products yet"
@@ -137,6 +166,75 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // would blank every sibling when a single image 401s (MEH-1925).
   const [failedThumbs, setFailedThumbs] = useState({});
   const [reloadKey, setReloadKey] = useState(0);
+  // MEH-2094: id of the row whose top-product PUT is in flight (disables that
+  // one toggle only — a shared boolean would freeze every sibling, the
+  // MEH-1976 failedThumbs lesson applied to a different control).
+  const [topSavingId, setTopSavingId] = useState(null);
+
+  // MEH-2137 chunk 3 — the FK the MEH-2094 comment below was waiting for.
+  // ID FIRST, name only as a fallback, and the order is the whole fix:
+  // two products called «לחם» (₪44 and ₪57) BOTH lit up under the name match
+  // (observed by Sapir, 20/08) because a display string cannot distinguish
+  // them. An id can.
+  //
+  // The name branch is NOT dead code and must not be deleted: `top_product_id`
+  // is NULL for every row the chunk-1 backfill refused to guess at (two
+  // matches or none), and for those producers the legacy column is still the
+  // only signal there is. They keep exactly today's behaviour — including the
+  // double badge — until they re-pick, which now writes an id. Deleting the
+  // fallback would blank a badge those producers can currently see.
+  //
+  // MEH-2094 LEGACY SAFETY, still in force for that fallback path: the match
+  // is exact-after-trim and read-only. A stored top_product_name naming NO
+  // current product simply marks no row — never cleared, never migrated,
+  // never auto-repaired, and no request is sent on render. It mirrors the
+  // public page's matcher (ProducerSections.jsx), so a row marked here is
+  // exactly a row the public page features.
+  const normalizedTop = (topProductName || "").trim();
+  const isTopProduct = (product) =>
+    topProductId != null
+      ? product.id === topProductId
+      : normalizedTop !== "" && (product.name || "").trim() === normalizedTop;
+
+  // Radio semantics: marking B replaces A (one column, one value), and marking
+  // the already-marked row clears it to null.
+  const handleToggleTop = async (product) => {
+    if (!onTopProductChange) return;
+    // Single-flight. The `disabled` attribute below already blocks this in the
+    // UI; the guard is here too because `disabled` is a rendering concern and
+    // this is a correctness one — a second write must not start while the
+    // first can still revert on top of it.
+    if (topSavingId !== null) return;
+    const previousName = topProductName ?? null;
+    const previousId = topProductId ?? null;
+    // MEH-2137 chunk 3: the request now carries the ID. The backend is the
+    // single writer of the legacy name (producer_me.py syncs it from the
+    // chosen product), so the optimistic patch mirrors what the server will
+    // do rather than inventing a second writer on the client.
+    const clearing = isTopProduct(product);
+    const nextId = clearing ? null : product.id;
+    const nextName = clearing ? null : product.name;
+    setError("");
+    setTopSavingId(product.id);
+    // Optimistic: patch upward first so the row and the completeness checklist
+    // both move immediately.
+    onTopProductChange({ top_product_id: nextId, top_product_name: nextName });
+    try {
+      await api.put("/producers/me", { top_product_id: nextId });
+    } catch (err) {
+      // MEH-1261 F1 family: never fail open. Put the previous value back AND
+      // say so — a toggle that silently snaps back reads as a UI bug. BOTH
+      // fields revert: reverting only one leaves the row and the checklist
+      // disagreeing about which product is featured.
+      onTopProductChange({
+        top_product_id: previousId,
+        top_product_name: previousName,
+      });
+      setError(detailToMessage(err?.response?.data?.detail) || tErr("top_product_failed"));
+    } finally {
+      setTopSavingId(null);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -193,6 +291,28 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       return;
     }
     setFormErrors({});
+
+    // MEH-2137 chunk 3: SOFT duplicate-name confirm. Two products may
+    // legitimately share a name (מחמצת and כוסמין can both be «לחם»), which is
+    // precisely why the featured-product vote moved to an id in this ticket —
+    // so this must never BLOCK the create. It only makes the duplicate visible
+    // at the one moment the owner can still choose a clearer name, because a
+    // catalog of identical labels is confusing to a buyer even once the badge
+    // is unambiguous. Declining leaves the form filled, nothing is sent.
+    const dupe = (products || []).some(
+      (p) => (p.name || "").trim() === form.name.trim(),
+    );
+    if (dupe) {
+      setConfirmDuplicate(true);
+      return;
+    }
+    await submitAdd();
+  };
+
+  // The half of the create that runs once the name question is settled — called
+  // directly when the name is unique, and from the dialog's confirm when it is
+  // not. Validation already ran in `handleAdd`; this never re-gates.
+  const submitAdd = async () => {
     const minNum = Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
     setSaving(true);
@@ -358,6 +478,18 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
     return () => window.removeEventListener("keydown", onKey);
   }, [confirmDelete, deletingId]);
 
+  // MEH-2137 chunk 3: same Escape contract for the duplicate-name dialog.
+  // Escape means "let me rename it", so it declines — the form stays filled
+  // and nothing is sent, exactly as declining the old native confirm did.
+  useEffect(() => {
+    if (!confirmDuplicate) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !saving) setConfirmDuplicate(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDuplicate, saving]);
+
   if (loading) return null;
 
   return (
@@ -384,6 +516,16 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           allows one per card when it covers every field, which it does here —
           name, description and price all surface in the same public list. */}
       <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
+
+      {/* MEH-2094: the toggle's own guidance line (MEH-1539 principle 4 — a
+          dashboard field states what it is AND where it appears). With zero
+          products there is nothing to mark, so the affordance says what to do
+          first instead of rendering a control that cannot act. */}
+      {onTopProductChange && products !== null && !loadError && (
+        <p className="text-xs text-fg-muted mb-3" data-testid="top-product-hint">
+          {t(products.length === 0 ? "top_product_empty_hint" : "top_product_hint")}
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
@@ -554,7 +696,18 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               </div>
             </form>
           ) : (
-            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
+            <div
+              key={product.id}
+              data-testid={isTopProduct(product) ? "product-row-top" : "product-row"}
+              // MEH-2094: the marked row is distinguishable AT REST (ring +
+              // tinted fill), not only on hover — a hover-only cue is invisible
+              // on touch, which is the primary surface here.
+              className={`flex items-center gap-3 p-3 rounded-[10px] ${
+                isTopProduct(product)
+                  ? "bg-primary/5 ring-2 ring-primary"
+                  : "bg-green-50"
+              }`}
+            >
               {product.image_url && failedThumbs[product.id] !== product.image_url ? (
                 <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
                   <Image
@@ -578,6 +731,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-text truncate">{product.name}</p>
+                {isTopProduct(product) && (
+                  <p className="text-[11px] font-medium text-primary">{t("card.top_product_badge")}</p>
+                )}
                 {(() => {
                   if (product.price_min != null)
                     return <p className="text-xs text-accent">{formatPriceRange(product.price_min, product.price_max)}</p>;
@@ -586,6 +742,43 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   return null;
                 })()}
               </div>
+              {/* MEH-2094: the signature-product choice, in the row of the
+                  product it names. aria-pressed carries the radio state to
+                  assistive tech; the label names the ACTION, not the state.
+                  Rendered only when the mount site supplied a handler — a star
+                  that cannot persist anything is a dead control, the same thing
+                  the zero-products branch above exists to avoid. */}
+              {onTopProductChange && (
+                <button
+                  type="button"
+                  onClick={() => handleToggleTop(product)}
+                  // MEH-2094: EVERY star is disabled while ANY toggle is in
+                  // flight, not just this row's. There is one column, so two
+                  // overlapping writes race: the second click would capture the
+                  // OPTIMISTIC value as its `previous`, and a failure of the
+                  // first would then revert on top of the second's committed
+                  // write — UI showing null while the server holds a product.
+                  disabled={topSavingId !== null}
+                  aria-pressed={isTopProduct(product)}
+                  aria-label={t(
+                    isTopProduct(product)
+                      ? "card.top_product_unmark_aria_template"
+                      : "card.top_product_mark_aria_template",
+                    { name: product.name },
+                  )}
+                  className={`p-1.5 rounded-[6px] transition disabled:opacity-40 ${
+                    isTopProduct(product)
+                      ? "text-primary hover:bg-primary/10"
+                      : "text-fg-muted hover:text-primary hover:bg-primary/5"
+                  }`}
+                >
+                  <Star
+                    size={16}
+                    weight={isTopProduct(product) ? "fill" : "regular"}
+                    aria-hidden="true"
+                  />
+                </button>
+              )}
               <button
                 onClick={() => startEdit(product)}
                 aria-label={t("card.edit_aria_template", { name: product.name })}
@@ -721,7 +914,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           aria-modal, Escape closes, buttons disabled while busy, failure keeps
           the dialog open with the error shown. */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
           <div
             role="dialog"
             aria-modal="true"
@@ -749,6 +942,48 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("delete_confirm.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MEH-2137 chunk 3: SOFT duplicate-name confirm — same dialog contract as
+          the delete one above (aria-modal, Escape closes, buttons disabled while
+          busy). Confirming adds the product as-is; declining sends nothing and
+          leaves the form filled so the name can be changed. */}
+      {confirmDuplicate && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-duplicate-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+          >
+            <p id="product-duplicate-title" className="font-medium text-base text-text">
+              {t("duplicate_name_confirm.title")}
+            </p>
+            <div className="flex gap-3 justify-start pt-1">
+              <button
+                type="button"
+                data-testid="duplicate-confirm"
+                disabled={saving}
+                onClick={() => {
+                  setConfirmDuplicate(false);
+                  submitAdd();
+                }}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90 disabled:opacity-50"
+              >
+                {t("duplicate_name_confirm.confirm")}
+              </button>
+              <button
+                type="button"
+                data-testid="duplicate-cancel"
+                disabled={saving}
+                onClick={() => setConfirmDuplicate(false)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("duplicate_name_confirm.cancel")}
               </button>
             </div>
           </div>

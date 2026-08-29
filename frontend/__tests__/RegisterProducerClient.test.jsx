@@ -16,10 +16,27 @@ import api from "@/lib/api";
 // WHAT was substituted, not merely that some string rendered. Keys called
 // without values are byte-identical to before, so every pre-existing assertion
 // is untouched — verified: no test in this file asserts on a value-carrying key.
+// MEH-2200: the collection notice calls t.rich(), which this mock did not
+// expose — 30 tests here crashed on `t.rich is not a function` the moment the
+// notice landed on the STORY frame. `.rich` renders the key path AND invokes
+// every tag callback, so key-based assertions below are byte-identical while
+// the real <Link>/<a> nodes still mount.
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key, values) => {
-    const path = scope ? `${scope}.${key}` : key;
-    return values ? `${path} ${Object.values(values).join(" ")}` : path;
+  useTranslations: (scope) => {
+    const t = (key, values) => {
+      const path = scope ? `${scope}.${key}` : key;
+      return values ? `${path} ${Object.values(values).join(" ")}` : path;
+    };
+    t.rich = (key, tags = {}) => {
+      const path = scope ? `${scope}.${key}` : key;
+      return [
+        path,
+        ...Object.entries(tags).map(([name, render]) => (
+          <span key={name}>{render(name)}</span>
+        )),
+      ];
+    };
+    return t;
   },
 }));
 
@@ -81,14 +98,34 @@ vi.mock("@/components/ProducerOAuthButtons", () => ({ default: () => <div data-t
 // that these two props exist and default correctly) is pinned separately in
 // MiniMap.test.jsx.
 vi.mock("@/components/MiniMap", () => ({
-  default: ({ lat, lng, zoom, showNavigation }) => (
+  // MEH-2182: the stub surfaces `draggableMarker` and exposes a button that
+  // fires `onMarkerDragEnd`, so a test can drive the drag deterministically.
+  // Leaflet's real drag is not the subject here — what the wizard DOES with the
+  // resulting coordinates is. The prop passthrough itself is asserted against
+  // the real component in MiniMap.test.jsx.
+  default: ({ lat, lng, zoom, showNavigation, draggableMarker, onMarkerDragEnd }) => (
     <div
       data-testid="mini-map"
       data-lat={String(lat)}
       data-lng={String(lng)}
       data-zoom={String(zoom)}
       data-show-navigation={String(showNavigation)}
-    />
+      data-draggable-marker={String(draggableMarker)}
+    >
+      {/* MEH-2182: mirrors the real component, which binds `dragend` ONLY when
+          `draggableMarker` is set — so a consumer that stops opting in loses
+          the affordance here too, and every test that drags goes red instead of
+          quietly clicking a no-op button. */}
+      {draggableMarker && onMarkerDragEnd ? (
+        <button
+          type="button"
+          data-testid="mini-map-drag-pin"
+          onClick={() => onMarkerDragEnd({ lat: 32.1111, lng: 34.2222 })}
+        >
+          drag
+        </button>
+      ) : null}
+    </div>
   ),
 }));
 
@@ -97,8 +134,11 @@ vi.mock("@/components/MiniMap", () => ({
 // (onSelect with a full payload). The real component's network debounce is not
 // under test here; its contract is AddressSearch.jsx:39.
 vi.mock("@/components/AddressSearch", () => ({
-  default: ({ value, onChange, onSelect, inputTestId, id, placeholder }) => (
-    <div>
+  // MEH-2181: `city` is surfaced as a data attribute so a test can assert the
+  // wizard opts into city-scoped lookup. The real scoping is proven at the
+  // provider boundary in places.test.js; this only pins the wiring.
+  default: ({ value, onChange, onSelect, inputTestId, id, placeholder, city }) => (
+    <div data-testid="address-search-mock" data-city={city ?? ""}>
       <input
         id={id}
         data-testid={inputTestId}
@@ -142,6 +182,18 @@ vi.mock("@/components/AddressSearch", () => ({
 }));
 
 const K = "auth.register.producer";
+
+// MEH-2138 chunk F: jsdom DEFINES `window.scrollTo`, but its body only logs
+// "Not implemented: Window's scrollTo() method" — so once STEP.CONFIRM scrolls
+// to the top, EVERY test in this file that reaches CONFIRM prints that error
+// (measured: 0 before the effect, 14 after). Replaced once, at module scope, so
+// no test stacks a spy on a spy; `vi.clearAllMocks()` in beforeEach resets its
+// history between tests. Environment shim, not a behavioural mock — the
+// MEH-729 class already established in __tests__/setup.js. Scoped to this file
+// rather than added to that setup because this is the only component that
+// calls it, and a global override could mask a future assertion elsewhere.
+const scrollToSpy = vi.fn();
+window.scrollTo = scrollToSpy;
 const ph = (key) => screen.getByPlaceholderText(`${K}.fields.${key}`);
 const nextBtn = () => screen.getByText(`${K}.actions.next`);
 
@@ -190,10 +242,10 @@ async function fillDetailsToStory() {
   await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`); // STORY marker
 }
 
-// MEH-1471: the attribution dropdown is a REQUIRED field on the STORY step —
-// every submit flow must pick a key or the submit gate blocks with
-// referral_source_required. The <select> stores English keys (labels come from
-// i18n, mocked to key paths), so change the value directly.
+// MEH-1471: the attribution dropdown on the STORY step. MEH-2183 made it
+// OPTIONAL (no submit gate), but the flows below still pick a key so they keep
+// asserting the populated payload. The <select> stores English keys (labels
+// come from i18n, mocked to key paths), so change the value directly.
 function selectReferral(value = "instagram") {
   fireEvent.change(screen.getByTestId("register-referral-source"), {
     target: { value },
@@ -448,6 +500,50 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(api.post).not.toHaveBeenCalled();
   });
 
+  // MEH-2136: the success screen's ACTION HIERARCHY, not merely its contents.
+  // Every assertion above passes on the pre-MEH-2136 markup too — they only ask
+  // whether the CTA exists, and it always did (as an outline button two blocks
+  // below the founder signature, tied in weight with the WhatsApp share). What
+  // Sapir hit was ordering and weight, so that is what this pins:
+  //   green next-box → dashboard CTA (primary solid) → share (secondary) →
+  //   signature → tier_trust
+  // Demonstrated failing against the old markup: `share before signature` and
+  // both class assertions go red (the old CTA was `border-2 … bg-transparent`
+  // and signature/tier_trust sat ABOVE the button row).
+  it("success screen puts the primary dashboard CTA directly under the next-steps box (MEH-2136)", async () => {
+    authState.user = { email: "p@example.com" };
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+    await screen.findByTestId("register-success-pending");
+
+    const nextBox = screen.getByText(`${K}.success.next`);
+    const cta = screen.getByTestId("register-success-dashboard-cta");
+    const share = screen.getByText(`${K}.success.share_cta`).closest("a");
+    const signature = screen.getByText(`${K}.success.signature`);
+    const tierTrust = screen.getByText(`${K}.success.tier_trust`);
+
+    // `a` precedes `b` in document order.
+    const precedes = (a, b) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    expect(precedes(nextBox, cta), "next-steps box before the dashboard CTA").toBe(true);
+    expect(precedes(cta, share), "dashboard CTA before the WhatsApp share").toBe(true);
+    expect(precedes(share, signature), "share before the founder signature").toBe(true);
+    expect(precedes(signature, tierTrust), "signature before the tier-trust line").toBe(true);
+
+    // Weight: the CTA is the only solid button; share stays outline.
+    expect(cta.className).toContain("bg-primary-dark");
+    expect(cta.className).toContain("text-white");
+    expect(cta.className).not.toContain("bg-transparent");
+    // Full-width on mobile (the stack is `flex-col`, capped at sm+).
+    expect(cta.className).toContain("w-full");
+    expect(share.className).toContain("btn-whatsapp-outline");
+    expect(share.className).toContain("w-full");
+  });
+
   it("authenticated user whose token lapsed server-side falls back to the inbox screen (response-shape guard)", async () => {
     authState.user = { email: "p@example.com" }; // frontend thinks upgrade…
     api.post.mockResolvedValue({ data: {} }); // …backend took the non-upgrade path
@@ -465,24 +561,54 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 });
 
 // MEH-1422 (MEH-1388 chunk 4b): the informational multi-location intake toggle
-// on DETAILS. Renders the approved referral copy only on "yes", and — critically
-// — is UI-only: its value must never leak into the /auth/register/producer body
-// (no backend field). The next-intl mock returns key paths, so assertions key off
-// the locked-copy i18n KEYS, not the Hebrew strings.
+// on DETAILS. UI-only: its value must never leak into the
+// /auth/register/producer body (no backend field). The next-intl mock returns
+// key paths, so assertions key off the locked-copy i18n KEYS, not the Hebrew
+// strings.
+//
+// MEH-1768 changed WHEN the helper renders: always, not only on "yes". Behind
+// the tick it answered a question the owner had already decided.
 describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", () => {
-  it("shows the referral copy only when the toggle is on", async () => {
+  // The behaviour change itself. Against the pre-MEH-1768 render this first
+  // assertion is the one that goes red: the helper was absent until the box was
+  // ticked, which is exactly the state a hesitating owner is in.
+  it("shows the helper with the box UNCHECKED, and keeps it shown when ticked", async () => {
     await renderWizard();
     await fillAccountToDetails();
     const toggle = screen.getByTestId("register-multi-location-toggle");
-    expect(toggle).toBeInTheDocument();
+    expect(toggle).not.toBeChecked();
     expect(screen.getByText(`${K}.fields.multi_location_label`)).toBeInTheDocument();
-    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
-    fireEvent.click(toggle); // yes
+
     expect(screen.getByTestId("register-multi-location-copy")).toHaveTextContent(
-      `${K}.fields.multi_location_yes_copy`,
+      `${K}.fields.multi_location_hint`,
     );
-    fireEvent.click(toggle); // no
-    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
+
+    // Permanence, in both directions — a helper that vanished on tick, or on
+    // un-tick, would still satisfy a single unchecked-state assertion.
+    fireEvent.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
+  });
+
+  // "Exactly once, never twice" is an acceptance criterion in its own right:
+  // keeping the old conditional line ALONGSIDE the permanent one would pass
+  // every assertion above and double the copy on tick. Counted, not presence-
+  // checked — a presence assertion cannot see a duplicate.
+  it("renders the copy exactly once in both toggle states, and drops the old key", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    const toggle = screen.getByTestId("register-multi-location-toggle");
+
+    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
+    fireEvent.click(toggle);
+    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
+
+    // The retired key must not render anywhere — the mock echoes key paths, so
+    // its presence would be visible text if the old branch survived.
+    expect(screen.queryByText(`${K}.fields.multi_location_yes_copy`)).toBeNull();
   });
 
   it("is informational only — its value is NOT in the submit payload", async () => {
@@ -502,25 +628,86 @@ describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", (
   });
 });
 
-// MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a REQUIRED dropdown
-// on the final (STORY) step, directly above the ToS checkbox. Default has no
-// preselection, so the submit gate blocks until a key is chosen; "other" reveals
-// an optional free-text input, and both values ride the submit body.
+// MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a dropdown on the
+// final (STORY) step, directly above the ToS checkbox. Default has no
+// preselection. MEH-2183 removed the submit gate, so leaving it empty submits;
+// "other" reveals an optional free-text input, and both values ride the body.
+// MEH-2183: four locked copy lines, one per wizard surface. These assert
+// PRESENCE at the right step — the VALUES are locked in he.json/en.json and
+// t() is mocked to the key path here, so this pins placement, not wording.
+describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
+  it("ACCOUNT carries the duration hint", async () => {
+    await renderWizard();
+    expect(screen.getByTestId("register-account-duration-hint")).toHaveTextContent(
+      `${K}.steps.account.duration_hint`,
+    );
+  });
+
+  it("DETAILS carries the free-forever hint", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(screen.getByTestId("register-details-free-hint")).toHaveTextContent(
+      `${K}.steps.business.free_hint`,
+    );
+  });
+
+  it("STORY carries the photo-next hint, and the submit hint sits above the button", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-story-photo-hint")).toHaveTextContent(
+      `${K}.steps.story.photo_next_hint`,
+    );
+    expect(screen.getByTestId("register-submit-next-hint")).toHaveTextContent(
+      `${K}.submit_next_hint`,
+    );
+  });
+
+  it("the submit hint is NOT on the earlier steps (no duplication)", async () => {
+    await renderWizard();
+    expect(screen.queryByTestId("register-submit-next-hint")).not.toBeInTheDocument();
+    await fillAccountToDetails();
+    expect(screen.queryByTestId("register-submit-next-hint")).not.toBeInTheDocument();
+  });
+});
+
 describe("RegisterProducerClient — referral source (MEH-1471)", () => {
-  it("blocks submit while no attribution is selected (required)", async () => {
+  // MEH-2183: this REPLACES the MEH-1471 "blocks submit while empty" test —
+  // the gate it asserted is gone, so the assertion is inverted rather than
+  // dropped. It discriminates: run it against the pre-MEH-2183 component and
+  // it fails on BOTH counts (api.post is never called, and a role="alert"
+  // carries the removed referral_source_required key).
+  it("submits with an EMPTY attribution — the field is optional (MEH-2183)", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
     fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
       target: { value: "הכי טרי שיש" },
     });
-    // consent boxes checked, but the attribution dropdown left empty
+    // consent boxes checked; the attribution dropdown is deliberately UNTOUCHED
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    expect(screen.getByTestId("register-referral-source")).toHaveValue("");
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      `${K}.validation.referral_source_required`,
-    );
-    expect(api.post).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    // The payload shape is UNCHANGED — the key still rides, carrying "" so the
+    // backend stores NULL (MEH-1471 upgrade path).
+    const [, body] = api.post.mock.calls[0];
+    expect(body).toMatchObject({ referral_source: "", referral_source_other: "" });
+    // ...and no blocking error was painted on the way.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("renders the optional hint under the attribution label (MEH-2183)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(
+      screen.getByTestId("register-referral-optional-hint"),
+    ).toHaveTextContent(`${K}.fields.referral_source.optional_hint`);
+    // The `required` attribute went with the gate — leaving it would announce
+    // an optional field as required (IS-5568).
+    expect(screen.getByTestId("register-referral-source")).not.toBeRequired();
   });
 
   it("selecting 'other' reveals the free-text input and submits both values", async () => {
@@ -887,6 +1074,174 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
 // confirmation row, no map, and no lat/lng in the body. Drop the onChange
 // null-out and test 3 goes red, because stale coordinates would keep the
 // confirmation showing for an address the seller has typed over.
+// MEH-2181 — city-scoped address lookup + the soft mismatch notice.
+//
+// The notice is a SOFT signal by design: it never blocks, and it offers no
+// "use {found} instead" control, because MEH-213 forbids a raw provider string
+// from landing in `city` (CitySearch owns that value). These tests pin both
+// halves — that it appears when the towns disagree, and that it stays absent
+// in the three states where it would be noise.
+// MEH-2182 — draggable confirmation pin. The seller, not the geocoder, has the
+// last word on where her gate is. The drag moves the POINT only: the address
+// text must not be rewritten (no reverse-geocode), and nothing new rides the
+// payload.
+//
+// Failing-by-construction, all four measured against this block (65 green at
+// control), and each reddens a DIFFERENT subset — no single edit satisfies them
+// all, which is what makes them evidence rather than decoration:
+//   • drop `draggableMarker` + `onMarkerDragEnd` from the confirm map → 5 red
+//   • drop `setPinAdjusted(false)` from the address onChange       → 1 red (reset)
+//   • render the confirmed line without the `pinAdjusted` branch   → 1 red (swap)
+//   • delete the drag-hint paragraph                                → 1 red (hint)
+describe("RegisterProducerClient — draggable confirmation pin (MEH-2182)", () => {
+  // DETAILS is filled COMPLETELY (name + phone too), because the payload test
+  // below has to advance past this step — and the pick comes LAST, since typing
+  // into the address field nulls the coordinates by design (MEH-1808).
+  async function reachConfirmedAddress() {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "זכרון יעקב" } });
+    fireEvent.click(screen.getByTestId("address-pick"));
+    await screen.findByTestId("register-address-confirm");
+  }
+
+  it("opts the confirmation map into a draggable marker, and shows the hint", async () => {
+    await reachConfirmedAddress();
+    expect(screen.getByTestId("mini-map").dataset.draggableMarker).toBe("true");
+    expect(screen.getByTestId("register-pin-drag-hint")).toHaveTextContent(
+      `${K}.fields.address_pin_drag_hint`,
+    );
+  });
+
+  it("a drag writes the new coordinates and swaps the confirmation line", async () => {
+    await reachConfirmedAddress();
+    const map = screen.getByTestId("mini-map");
+    expect(map.dataset.lat).toBe("32.5731");
+
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+
+    expect(screen.getByTestId("mini-map").dataset.lat).toBe("32.1111");
+    expect(screen.getByTestId("mini-map").dataset.lng).toBe("34.2222");
+    expect(screen.getByTestId("register-address-confirm")).toHaveTextContent(
+      `${K}.fields.address_pin_adjusted`,
+    );
+  });
+
+  it("the drag does NOT rewrite the address text", async () => {
+    await reachConfirmedAddress();
+    const before = screen.getByTestId("register-details-address").value;
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+    expect(screen.getByTestId("register-details-address")).toHaveValue(before);
+  });
+
+  it("typing over the address resets the adjusted state along with the coordinates", async () => {
+    await reachConfirmedAddress();
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+    await screen.findByTestId("register-address-confirm");
+
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "רחוב אחר 9" },
+    });
+    // The coordinates went (MEH-1808), so the whole confirm block goes with them.
+    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+
+    // ...and re-picking shows the ORIGINAL line again, not the adjusted one —
+    // which is what proves the flag actually reset rather than merely unmounting.
+    fireEvent.click(screen.getByTestId("address-pick"));
+    const confirm = await screen.findByTestId("register-address-confirm");
+    expect(confirm).toHaveTextContent(`${K}.fields.address_confirmed`);
+    expect(confirm).not.toHaveTextContent(`${K}.fields.address_pin_adjusted`);
+  });
+
+  it("adds nothing to the submit payload", async () => {
+    await reachConfirmedAddress();
+    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
+
+    fireEvent.click(nextBtn());
+    fireEvent.click(await screen.findByTestId("pick-category"));
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    // The dragged point rides in lat/lng, which already existed...
+    expect(body.lat).toBe(32.1111);
+    expect(body.lng).toBe(34.2222);
+    // ...and the UI-only flag does not ride at all, under any spelling.
+    expect(body).not.toHaveProperty("pinAdjusted");
+    expect(body).not.toHaveProperty("pin_adjusted");
+    expect(body).not.toHaveProperty("location_precision");
+  });
+});
+
+describe("RegisterProducerClient — address/city mismatch notice (MEH-2181)", () => {
+  async function reachDetails() {
+    await renderWizard();
+    await fillAccountToDetails();
+  }
+
+  it("opts AddressSearch into city-scoped lookup with the chosen city", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    expect(screen.getByTestId("address-search-mock").dataset.city).toBe("תל אביב");
+  });
+
+  it("shows the notice when the picked address resolves to a DIFFERENT town", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("address-pick-other-town")); // resolves חיפה
+    await screen.findByTestId("register-address-confirm");
+
+    const notice = screen.getByTestId("register-address-city-mismatch");
+    expect(notice).toHaveTextContent(`${K}.fields.address_city_mismatch`);
+    // Not error-styled: the gold token, never a red one.
+    expect(notice).toHaveStyle({ color: "#8B6914" });
+    // ...and no auto-correct affordance (MEH-213).
+    expect(notice.querySelector("button")).toBeNull();
+  });
+
+  it("stays absent when the picked address agrees with the chosen town", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "זכרון יעקב" } });
+    fireEvent.click(screen.getByTestId("address-pick")); // resolves זכרון יעקב
+    await screen.findByTestId("register-address-confirm");
+    expect(
+      screen.queryByTestId("register-address-city-mismatch"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("stays absent before any pick — a typed address has no resolved town to disagree with", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "דרך שרה 5" },
+    });
+    expect(
+      screen.queryByTestId("register-address-city-mismatch"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("disappears again once the seller types over the picked address", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("address-pick-other-town"));
+    await screen.findByTestId("register-address-city-mismatch");
+    // Typing invalidates the point (MEH-1808), so the notice loses its subject.
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "משהו אחר" },
+    });
+    expect(
+      screen.queryByTestId("register-address-city-mismatch"),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("RegisterProducerClient — address location confirmation (MEH-1808)", () => {
   async function reachDetails() {
     await renderWizard();
@@ -1172,5 +1527,75 @@ describe("RegisterProducerClient — resumed drafts land where they can finish (
     // Not merely hidden — gone. A stale draft holding a name, phone and address
     // must not sit on a shared machine because nobody came back for it.
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+});
+
+// MEH-2138 chunk F. The wizard is one long page, so CONFIRM mounts wherever the
+// seller left the scroll — measured at 1440 on staging: docH 1493, viewport 900,
+// scrollY 539, i.e. the success screen entirely above the fold.
+//
+// WHAT THIS LAYER CAN AND CANNOT SAY. jsdom does no layout, so "the heading is
+// inside the viewport" is unfalsifiable here — it passes against the broken code
+// too, which is exactly the trap the MEH-2148 harness fell into. This describe
+// therefore asserts only the CALL: that reaching CONFIRM asks the window to go
+// to the top, on BOTH confirm branches. The geometric claim is a browser
+// assertion and lives in e2e/flows/28-register-success-state.spec.ts at 1440.
+describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk F)", () => {
+  async function fillStoryAndSubmit() {
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+  }
+
+  /** The requirement, not the spelling of it. `behavior` is asserted as
+   *  "not smooth" rather than "=== instant" so swapping the literal for an
+   *  equally-instant one does not red this, while an animated ride to a screen
+   *  the user has never seen does. */
+  function expectScrolledToTop() {
+    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    const [arg] = scrollToSpy.mock.calls[0];
+    expect(arg).toMatchObject({ top: 0 });
+    expect(arg.behavior, "an animated approach to an unseen screen is the thing prefers-reduced-motion suppresses").not.toBe("smooth");
+  }
+
+  it("does NOT scroll while the seller is still filling the form", async () => {
+    // CONTROL, and it runs first on purpose. Every assertion below is "scrollTo
+    // was called"; if some unrelated mount already called it, all of them pass
+    // against a component with no CONFIRM effect at all. This pins the count at
+    // zero right up to the submit, so the later calls can only come from CONFIRM.
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(scrollToSpy).not.toHaveBeenCalled();
+  });
+
+  it("inbox-check branch (no access_token) scrolls to the top", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
+    expectScrolledToTop();
+  });
+
+  it("upgrade branch (access_token present) scrolls to the top", async () => {
+    // The second branch is not redundant with the first: CONFIRM renders two
+    // different screens, and a fix written inside one of them would leave the
+    // other exactly as broken while the suite went green.
+    authState.user = { email: "p@example.com" };
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
+    expectScrolledToTop();
   });
 });

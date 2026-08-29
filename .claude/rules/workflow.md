@@ -1108,14 +1108,23 @@ Tasks auto-expire after 7 days.
         parsing/formatting, or touch/scroll behaviour requires a human pass on a
         **real iOS device**.
 
-    > **Why (e) is not negotiable on the evidence available.** There is **no
-    > WebKit engine anywhere in the pipeline** — zero webkit projects in every
-    > Playwright config, and the webkit binary is unobtainable in the CC sandbox
-    > (proxy 403 on the download host). A green Chromium bundle therefore
-    > carries *no information* about these classes. Precedent: MEH-1769 was
+    > **Why (e) is not negotiable on the evidence available.** WebKit coverage
+    > exists, but every form of it is **opt-in or non-voting**, so none of it
+    > substitutes for a real device. `frontend/playwright.config.ts` declares two
+    > webkit projects — `webkit-iphone13` (`:161`) and `webkit-pixel5-viewport`
+    > (`:183`) — but only inside a spread gated on `PW_WEBKIT=1`, so any run that
+    > does not set the flag is a **Chromium** run. In CI the shadow job
+    > `e2e-webkit` (`e2e.yml:432`) does install and run webkit, and it is
+    > `continue-on-error: true` (`:438`) and absent from `e2e-gate`'s `needs:`
+    > (`:566`) — it can neither red a run nor block a merge. In the CC sandbox
+    > the binary **is** obtainable behind the same flag (procedure:
+    > `docs/qa/webkit-local.md`). So a green Chromium bundle still carries *no
+    > information* about these classes, and a green shadow-webkit run carries
+    > *no vote*. Precedent: MEH-1769 was
     > observed on real iOS Safari, and **10/10 green Chromium runs plus a
     > raw-localStorage probe failed to reproduce it** (MEH-1783). This carve-out
-    > is **reviewed, not deleted**, when MEH-1788 lands engine coverage — and
+    > is **reviewed, not deleted**, when MEH-1788 promotes the shadow job to
+    > blocking — and
     > even then Playwright webkit ≠ iOS Safari (no ITP, no PWA storage
     > partitioning, no real safe-area, momentum or input-zoom behaviour), so the
     > platform-specific subset stays human. Vocabulary to reuse: the 27
@@ -1667,6 +1676,44 @@ Tasks auto-expire after 7 days.
     caught. A rule no gate enforces is a suggestion — the same conclusion
     MEH-1155/ADR-016 reached for DO-NOT-MERGE._
 
+    ### 31b — separating the FILES did not separate the ORDER (MEH-2103)
+
+    Rule 31 moved the logs into their own PR. That PR is **docs-only, therefore
+    always green, therefore the most likely of a batch to merge first** — so the
+    split it created has a second failure mode built into it: **the documentation
+    can land ahead of the code it documents.**
+
+    **Do not arm auto-merge on a docs PR until every PR it describes has actually
+    merged.** That is the whole mitigation and it needs no tooling. The failure
+    is not a race you lose occasionally; it is the default ordering, because
+    docs PRs have no shared files and no rebase pressure to hold them back.
+
+    _Measured: on 16/08 five PRs were armed in parallel. #2974 stalled behind
+    staging while the docs PR #2975 landed, and `82b4382` put "מוזג: … #2974"
+    into HANDOFF.md and CHANGELOG.md while `AdminLoadError.jsx` did not exist on
+    staging at all — 67 minutes of a HANDOFF that actively lied. **HANDOFF.md is
+    what every new session reads to orient itself**, so this contaminates the
+    truth layer, not one PR. Base rate is 2 of the last 30 merged docs-only PRs
+    (6.7%) — the other being #2912 → #2877 on 14/08, unreported until MEH-2103
+    went looking._
+
+    **Optional declaration, checked when present:** a `Describes-PRs: #N, #M`
+    trailer in the PR body. `scripts/checks/docs-ordering-guard.sh` (same
+    dispatcher, same **Repo guards** job) reports any declared PR not yet on the
+    base branch. It is **warn-only** — the damage self-heals when the code lands,
+    and a blocking gate here would need Sapir to release it (rule 30).
+
+    **Two things it deliberately does NOT do**, so nobody reads more into a green
+    than is there:
+    - It does not parse loose `#NNNN` out of the diff. That mechanism measured
+      **95.9% false positives** (47 of 49) — CHANGELOG is full of historical PR
+      numbers, and telling "declares merged" from "reports still open" needs a
+      Hebrew verb read. **An undeclared docs PR is therefore unchecked**, which
+      is the accepted cost.
+    - It does not verify the prose is *true*. It checks one reference
+      relationship. Same limit, and same honesty about it, as the
+      `Builder-Model:` trailer above.
+
 32. **CC מוסיפה אילוצים, לא מסירה — CC adds constraints, never removes or
     weakens one (MEH-1779).**
 
@@ -1776,3 +1823,37 @@ Tasks auto-expire after 7 days.
     one that isn't load-bearing. This applies with the same force to boxes a
     PR marks **N/A** — state the reason (docs-only, no UI touched, no schema
     change), don't just tick past it.
+
+34. **A refuted premise updates the card DESCRIPTION, not just a comment
+    (MEH-2085 correction, MEH-1959 chain).**
+
+    When a session's Phase 0 disproves a factual claim a Linear card's
+    description states as true — "X does not exist", "no headers ship",
+    any assertion presented as fact — the correction goes **into the
+    description** (`save_issue` with a `patch` op), not only into a
+    comment. An audit that sweeps the backlog reads descriptions via
+    `list_issues`/`get_issue`; it does not also open every comment thread on
+    every card. A refutation that lives only as a comment is invisible to
+    exactly the process most likely to re-inherit the wrong claim.
+
+    **This is the inverse of rule 31's shape, not its opposite:** rule 31
+    keeps append-only chatter (CHANGELOG/HANDOFF) OUT of the channel that
+    matters (a code branch) because two branches would fight over one log.
+    This rule puts a correction INTO the channel that matters (the
+    description) because a comment thread is the append-only log an audit
+    never reads. Same lesson — put the fact where the next reader's tool
+    actually looks — applied to the opposite failure direction.
+
+    _Source: MEH-2085's own pre-launch audit initially classified
+    MEH-1959 as BLOCKS on the claim "no security headers exist" — a claim
+    that was **already false** four months before MEH-1959 was even
+    created (`frontend/next.config.js` + `backend/app/middleware.py`,
+    shipped 08/04/2026), and had already been disproven **twice**, by two
+    separate sessions (11/08, 14/08). Both disproofs were recorded as
+    comments; MEH-2085's audit — instructed to read cards, not comment
+    threads — inherited the stale description verbatim. Three generations
+    of the same wrong claim, caught only because the third session
+    happened to verify against the live code instead of trusting the
+    description. Fixed in the same audit (see MEH-2085's own correction
+    note) by editing MEH-1959's description directly rather than adding a
+    fourth comment._

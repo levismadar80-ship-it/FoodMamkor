@@ -38,7 +38,6 @@ from app.services.auth_emails import (
     send_welcome_email as _send_welcome_email,
 )
 from app.services.auth_notifications import (
-    notify_admin_new_producer,
     notify_producer_registered,
 )
 from app.services.producer_risk import score_producer
@@ -73,6 +72,7 @@ from app.schemas.schemas import (
     AppleAuthRequest,
     AppleAuthResponse,
     CheckPasswordRequest,
+    DeliveryAreaCreate,
     ForgotPasswordRequest,
     GoogleAuthRequest,
     GoogleAuthResponse,
@@ -542,7 +542,36 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
-            status="pending_whatsapp",
+            # MEH-2100: registration creates a DRAFT, not a queue entry. The
+            # business is invisible to the admin review queue until the owner
+            # presses "שליחה לבדיקה" (POST /producers/me/submit-for-review),
+            # which is also where the 3-business-day SLA starts.
+            #
+            # This is the UPGRADE branch, and it is the one every OAuth signup
+            # lands on, so it is one of THREE creation sites that had to move
+            # together — the others are the new-email branch below and
+            # producer_queries.create_producer_with_relations (POST /producers).
+            # Any site left writing a queue status would be a hole straight
+            # past the submit gate.
+            #
+            # The queue status this branch used to write, `pending_whatsapp`,
+            # was kept alive through the Expand phase (ADR-007) and then
+            # removed in MEH-2124 — the Contract phase — once it was confirmed
+            # that no row had ever held it.
+            status="draft",
+            # MEH-1838 chunk A: delivery shape, previously never captured at
+            # registration — every producer landed on the column defaults
+            # (physical-only) regardless of what the business actually is.
+            # delivery_cities is deliberately NOT written here — Phase 0 found
+            # MEH-903 A already retired that flat column (admin.py:427-429,
+            # :486-489 pop it out on both create and update); producer_listing.py
+            # :258's delivery-city match reads delivery_areas rows exclusively.
+            # The city list is instead folded into the delivery_areas write
+            # below, the same live mechanism admin.py/producer_me.py's own
+            # _apply_delivery_cities use for a flat city list.
+            has_physical_location=data.has_physical_location,
+            offers_delivery=data.offers_delivery,
+            delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
         db.flush()
@@ -562,7 +591,16 @@ async def register_producer(
         # by one owner — this loop used to omit the flag, so a business that
         # registered WITH delivery areas was excluded from the משלוח chip by
         # the MEH-1848 conjunct. Same call in the new-email branch below.
-        persist_registration_delivery_areas(db, producer, data.delivery_areas)
+        # MEH-1838 chunk A: data.delivery_cities (the new flat city-list field)
+        # is folded in here as bare DeliveryAreaCreate(city=...) rows — same
+        # shape _apply_delivery_cities (admin.py/producer_me.py) builds for the
+        # identical input, so a nationwide vs. city-list registration is
+        # visible to the same delivery_areas.any() match producer_listing.py
+        # uses for every other producer.
+        delivery_areas = list(data.delivery_areas) + [
+            DeliveryAreaCreate(city=c) for c in data.delivery_cities if c and c.strip()
+        ]
+        persist_registration_delivery_areas(db, producer, delivery_areas)
         # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
         # This is the UPGRADE branch, and it is the one every OAuth signup
         # lands on — `/auth/register/producer/oauth` creates a consumer and a
@@ -603,10 +641,18 @@ async def register_producer(
         # attributes are expired after commit, and FastAPI closes the session
         # before background tasks run.
         p_name = producer.name
-        p_city = producer.city
         p_phone = producer.phone
         p_id = producer.id
-        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
+        # now creates a draft, which is absent from the admin's default queue
+        # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
+        # business is not in. The identical call now lives in
+        # producer_me.submit_for_review, i.e. at the moment it is true.
+        # Sapir's call, 16/08, after the CI reviewer raised the double-ping.
+        #
+        # notify_producer_registered (to the OWNER) stays: "we got your
+        # registration" is still accurate, and it is the message that tells
+        # her to go finish the profile.
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
@@ -715,7 +761,16 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
-            status="pending_whatsapp",
+            # MEH-2100: see the upgrade branch above — same value, same reason.
+            # These two branches are the only Producer writers on this route
+            # and both had to move; a fix to one alone would have left the
+            # other registration path bypassing the submit gate entirely.
+            status="draft",
+            # MEH-1838 chunk A: see the upgrade branch above — same fields,
+            # same reason (delivery_cities NOT written — see the note there).
+            has_physical_location=data.has_physical_location,
+            offers_delivery=data.offers_delivery,
+            delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
         db.flush()
@@ -734,7 +789,11 @@ async def register_producer(
         # MEH-1921: see the upgrade branch above — same call, same reason. The
         # two branches are the only Producer writers on this route and each
         # built its own rows, so fixing one would have left the other broken.
-        persist_registration_delivery_areas(db, producer, data.delivery_areas)
+        # MEH-1838 chunk A: see the upgrade branch above — same city-list fold.
+        delivery_areas = list(data.delivery_areas) + [
+            DeliveryAreaCreate(city=c) for c in data.delivery_cities if c and c.strip()
+        ]
+        persist_registration_delivery_areas(db, producer, delivery_areas)
 
         # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
         # This is the NEW-EMAIL branch (password signup). Its twin is the
@@ -773,10 +832,18 @@ async def register_producer(
         db.refresh(user)
 
         p_name = producer.name
-        p_city = producer.city
         p_phone = producer.phone
         p_id = producer.id
-        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
+        # now creates a draft, which is absent from the admin's default queue
+        # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
+        # business is not in. The identical call now lives in
+        # producer_me.submit_for_review, i.e. at the moment it is true.
+        # Sapir's call, 16/08, after the CI reviewer raised the double-ping.
+        #
+        # notify_producer_registered (to the OWNER) stays: "we got your
+        # registration" is still accurate, and it is the message that tells
+        # her to go finish the profile.
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.

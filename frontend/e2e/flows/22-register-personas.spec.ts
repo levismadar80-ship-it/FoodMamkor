@@ -149,8 +149,9 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       // STORY — tagline + all declarations (ToS + binding), then submit
       await expect(page.getByTestId("register-frame-story")).toBeVisible();
       await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-      // MEH-1471: required attribution dropdown — pick a key or the submit gate
-      // blocks (referral_source_required) and CONFIRM never renders.
+      // MEH-1471: the attribution dropdown. MEH-2183 made it OPTIONAL — leaving
+      // it empty no longer blocks submit — but this persona keeps picking a key
+      // so it still exercises the populated path end to end.
       await page.getByTestId("register-referral-source").selectOption("instagram");
       for (const cb of await page
         .getByTestId("register-frame-story")
@@ -165,14 +166,26 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
         timeout: 15_000,
       });
 
-      // ── 2) Lands in the admin queue as pending ──
-      const queue = (await (
+      // ── 2) Lands as a DRAFT, NOT in the review queue ──
+      // MEH-2100: the wizard now produces a draft. The admin can still
+      // approve it directly (approve has no status precondition), so the
+      // rest of this journey is unchanged — only where the row is found and
+      // what status it carries.
+      const drafts = (await (
+        await adminCtx.get("/api/admin/producers?status=draft")
+      ).json()) as QueueProducer[];
+      const mine = drafts.find((p) => p.name === producerName);
+      expect(mine, "wizard-registered producer not found in the draft list").toBeTruthy();
+      producerId = mine!.id;
+      expect(mine!.status).toBe("draft");
+
+      const pendingQueue = (await (
         await adminCtx.get("/api/admin/producers?status=pending")
       ).json()) as QueueProducer[];
-      const mine = queue.find((p) => p.name === producerName);
-      expect(mine, "wizard-registered producer not found in the pending queue").toBeTruthy();
-      producerId = mine!.id;
-      expect(["pending", "pending_whatsapp"]).toContain(mine!.status);
+      expect(
+        pendingQueue.find((p) => p.id === producerId),
+        "a draft must NOT appear in the admin review queue",
+      ).toBeFalsy();
 
       // ── 3) Admin attaches the MEH-799 image + location, then approves ──
       const putRes = await adminCtx.put(`/api/admin/producers/${producerId}`, {

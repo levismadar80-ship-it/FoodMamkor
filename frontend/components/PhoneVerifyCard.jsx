@@ -8,16 +8,18 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 
 /**
- * PhoneVerifyCard — producer-facing WhatsApp OTP flow for pending_whatsapp.
+ * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
  *
  * Wires the existing endpoints (POST /producers/me/verify-phone + /confirm)
- * to a dashboard card. A successful confirm advances the producer from
- * pending_whatsapp → pending server-side (producer_me.py, MEH-745); the parent
- * flips its local status via onVerified so the banner updates without a reload.
+ * to a dashboard card. A successful confirm sets `phone_verified`, which is
+ * one of the five submit-gate requirements; the parent refreshes via
+ * onVerified so the banner updates without a reload.
  *
  * Touches:  POST /producers/me/verify-phone, POST /producers/me/verify-phone/confirm.
  * Does NOT: own the status copy banner — that's dashboard/page.js.
- * History:  MEH-745 (origin — closes the pending_whatsapp dead-end).
+ * History:  MEH-745 (origin). The confirm used to also advance the producer
+ *           out of a `pending_whatsapp` status; that status was removed in
+ *           MEH-2124 and the card's only mount is now DraftSubmitBanner's.
  */
 const RESEND_COOLDOWN_SECONDS = 60;
 const OTP_LENGTH = 6;

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import en from "../messages/en.json";
 import he from "../messages/he.json";
+import enOnlyAllowlist from "./en-only-allowlist.json";
 
 // MEH-978 — key-presence parity guard, the opposite direction of the MEH-840
 // en-locale guard. MEH-840 catches Hebrew leaking INTO en.json; this catches a
@@ -24,45 +25,22 @@ import he from "../messages/he.json";
 const BASELINE = new Set([
   // MEH-997: admin.layout.nav.whatsapp_failures translated (sidebar rendered
   // the raw key in /en) — removed from the baseline per the honesty test.
-  "admin.whatsapp_failures.columns.error_code",
-  "admin.whatsapp_failures.columns.error_message",
-  "admin.whatsapp_failures.columns.kind",
-  "admin.whatsapp_failures.columns.phone",
-  "admin.whatsapp_failures.columns.sent_at",
-  "admin.whatsapp_failures.columns.status",
-  "admin.whatsapp_failures.columns.updated_at",
-  "admin.whatsapp_failures.empty",
-  "admin.whatsapp_failures.load_error",
-  "admin.whatsapp_failures.status.failed",
-  "admin.whatsapp_failures.status.window_expired",
-  "admin.whatsapp_failures.subtitle",
-  "admin.whatsapp_failures.title",
-  "auth.register.consumer.eyebrow",
-  "auth.register.producer.account_reassurance",
-  "auth.register.producer.fields.address_map_privacy_hint",
   // MEH-1127: auth.register.producer.fields.city translated to en (placeholder
   // "e.g. Zikhron Ya'akov") — removed from the baseline per the honesty test.
   // MEH-2015 chunk B: city_required_marker deleted outright (the copy it held
   // was the anti-pattern the ticket revoked) — removed from the baseline per
   // the honesty test, same as MEH-1127 above.
-  "auth.register.producer.fields.license_pending_optin_hint",
-  "auth.register.producer.fields.license_pending_optin_label",
-  "auth.register.producer.fields.license_what_is_it",
-  "auth.register.producer.fields.tagline_label",
-  "auth.register.producer.fields.tagline_placeholder",
-  "auth.register.producer.story_card.body",
-  "auth.register.producer.story_card.title",
-  "auth.register.producer.validation.license_required",
   // MEH-1106: completeness.checklist_aria/done/todo translated to en (the
   // 4-step checklist renders in both locales — the he-only gate is gone).
-  // MEH-992 — group-buy form clarity copy (he-first per ADR-024; en wave under MEH-472).
-  "group_buys.dashboard.form.concept_intro",
-  "group_buys.dashboard.form.price_helper",
-  "group_buys.dashboard.form.deadline_helper",
-  "map.near_me_pill.aria",
-  "map.near_me_pill.empty",
   // MEH-1194: the near-me label key was deleted (pill → icon-only button).
-  "nav.trust_strip",
+  // MEH-1702: the entire remaining 30-key EN gap (admin.whatsapp_failures.*,
+  // auth.register.consumer.eyebrow, auth.register.producer.{account_reassurance,
+  // fields.address_map_privacy_hint/license_pending_optin_hint/
+  // license_pending_optin_label/license_what_is_it/tagline_label/
+  // tagline_placeholder, story_card.*, validation.license_required},
+  // group_buys.dashboard.form.{concept_intro,price_helper,deadline_helper},
+  // map.near_me_pill.{aria,empty}, nav.trust_strip) translated to en.json —
+  // removed from the baseline per the honesty test.
 ]);
 
 function leafKeys(obj, prefix = "") {
@@ -74,6 +52,10 @@ function leafKeys(obj, prefix = "") {
   }
   return out;
 }
+
+// MEH-2095: the en-only allowlist. Keys deliberately English-only, each with a
+// reason. `$comment` is documentation inside the JSON, not a key — strip it.
+const EN_ONLY = new Set(Object.keys(enOnlyAllowlist).filter((k) => k !== "$comment"));
 
 describe("en-parity guard (MEH-978)", () => {
   const enKeys = new Set(leafKeys(en));
@@ -88,5 +70,37 @@ describe("en-parity guard (MEH-978)", () => {
     const missingSet = new Set(missing);
     const stale = [...BASELINE].filter((k) => !missingSet.has(k));
     expect(stale).toEqual([]);
+  });
+});
+
+// MEH-2095 — the OTHER direction. The guard above was he→en only, so a key
+// present in en.json and absent from he.json was invisible to it. That is how
+// 14 keys survived the MEH-883 homepage removal: their Hebrew twins were
+// deleted correctly, the English ones were not, and no gate could see it.
+//
+// This half is not symmetric with the half above, deliberately. he.json is the
+// source of truth (every code-referenced key lands there first), so a he-only
+// key is a translation BACKLOG — hence the frozen BASELINE. An en-only key is
+// the opposite: either dead weight or an intentional English-only surface.
+// There is no backlog to grandfather, so there is no baseline here — only an
+// allowlist that must state WHY each key has no twin.
+describe("en-parity guard, en→he direction (MEH-2095)", () => {
+  const heKeys = new Set(leafKeys(he));
+  const enOnly = leafKeys(en).filter((k) => !heKeys.has(k));
+
+  it("has no en.json key missing from he.json outside the explicit allowlist", () => {
+    expect(enOnly.filter((k) => !EN_ONLY.has(k))).toEqual([]);
+  });
+
+  it("allowlist stays honest — every allowlisted key is still en-only (else remove it)", () => {
+    const enOnlySet = new Set(enOnly);
+    expect([...EN_ONLY].filter((k) => !enOnlySet.has(k))).toEqual([]);
+  });
+
+  it("every allowlist entry carries a non-trivial reason", () => {
+    const unexplained = [...EN_ONLY].filter(
+      (k) => typeof enOnlyAllowlist[k] !== "string" || enOnlyAllowlist[k].trim().length < 20,
+    );
+    expect(unexplained).toEqual([]);
   });
 });

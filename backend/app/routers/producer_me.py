@@ -55,9 +55,12 @@ from app.schemas.schemas import (
     ProductUpdate,
 )
 from app.services.auth_notifications import (
+    notify_admin_new_producer,
     notify_admin_producer_review_ready,
     notify_admin_producer_sensitive_edit,
 )
+from app.services.submission_confirmation import send_submission_confirmation
+from app.services.submission_gate import submission_missing_items
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -445,6 +448,53 @@ def _lock_producer_updates(db, producer_id) -> None:
     )
 
 
+def _resolve_top_product(db, producer, payload: dict) -> None:
+    """MEH-2137 switch — authorize the featured-product vote and sync the name.
+
+    The vote used to be a STRING, so any product whose name matched won the
+    badge: two products both called «לחם» both showed it (Sapir, 20/08). The
+    vote is an id now, and an id has to be checked — `top_product_id` is a
+    plain UUID in the payload, and nothing in Pydantic can know whether it
+    belongs to this producer.
+
+    Three cases, and the middle one is the whole point:
+
+      * key absent          → no change. Uses `in payload`, not truthiness: an
+                              unrelated dashboard save must not clear the vote.
+      * value is None       → clear BOTH columns. "No featured product" is one
+                              state, not two, and leaving the stale name behind
+                              would keep rendering a badge the owner just removed.
+      * value is a UUID     → must be a product of THIS producer, or 422. On
+                              success `top_product_name` is synced from it, so
+                              the legacy column stays truthful for every reader
+                              that has not switched yet.
+
+    Runs BEFORE the writable-field setattr loop, so a rejected id never lands.
+    """
+    if "top_product_id" not in payload:
+        return
+
+    new_id = payload["top_product_id"]
+    if new_id is None:
+        payload["top_product_name"] = None
+        return
+
+    product = (
+        db.query(Product)
+        .filter(Product.id == new_id, Product.producer_id == producer.id)
+        .first()
+    )
+    if product is None:
+        # Deliberately the same message whether the product does not exist or
+        # belongs to someone else — distinguishing them would let an owner probe
+        # for other producers' product ids.
+        raise HTTPException(
+            status_code=422,
+            detail="המוצר המוביל חייב להיות מוצר קיים של העסק שלך",
+        )
+    payload["top_product_name"] = product.name
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -472,6 +522,7 @@ def update_my_producer(
     # actual change from a form resubmitting an unchanged value.
     sensitive_before = _snapshot_sensitive(producer)
 
+    # MEH-2137 switch — see _resolve_top_product, defined above this handler.
     _PRODUCER_WRITABLE_FIELDS = {
         "contact_name",
         "description",
@@ -488,6 +539,10 @@ def update_my_producer(
         "facebook",
         "external_order_form",
         "top_product_name",
+        # MEH-2137 switch: the vote by identity. Ownership is enforced by
+        # _resolve_top_product (defined above) BEFORE this loop runs — a product
+        # not this producer's never reaches the setattr.
+        "top_product_id",
         "price_range",
         # MEH-1335: owner story fields (public OwnerCard data path). Validated
         # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
@@ -550,13 +605,51 @@ def update_my_producer(
         # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
-        "opening_hours",
+        # MEH-2142 (MEH-1938 batch B3): `opening_hours` was REMOVED from this
+        # set. Same disposition and the same standing rule as the two blocks
+        # below — the column stays, `admin.py` / `producer_import.py` / the
+        # seeds are untouched, and only the owner PUT path is closed. Do not
+        # re-add it without shipping its editor in the same PR:
+        #   opening_hours        → the business-level hours editor was removed
+        #                          from the dashboard in this PR. Store hours
+        #                          are now a PER-LOCATION fact: the owner edits
+        #                          `ProducerLocation.opening_hours` in
+        #                          LocationsEditor, and the public page prefers
+        #                          the primary location's value, falling back to
+        #                          this column for businesses that have not
+        #                          filled one in yet. Readers-first Parallel
+        #                          Change — the fallback read carries
+        #                          LEGACY(2026-10-01, MEH-1938) and its removal
+        #                          is the contract step.
         # MEH-1543: owner-editable weekly order-acceptance window. Validated in
         # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
-        "kosher",
+        # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
+        # Same disposition and standing rule as the blocks above — the column
+        # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
+        # the seeds are untouched, and only the owner PUT path is closed. Do
+        # not re-add it without shipping its editor in the same PR:
+        #   kosher → free text that NO consumer surface has rendered since
+        #            MEH-986 removed unverified kashrut claims from every one
+        #            of them (חוק איסור הונאה בכשרות — an unverified claim is
+        #            a legal exposure, not a missing feature). The owner was
+        #            able to fill in a field nobody could ever see: the same
+        #            "I wrote it and it is not displayed" class as
+        #            starting_price_label.
+        #
+        #            The kashrut BADGE request flow is the only owner-facing
+        #            mechanism, by design (cards.jsx:1263-1264 says so at the
+        #            other end). There was never a dashboard editor for this
+        #            field to remove — grepped the whole owner dashboard: the
+        #            single reference is a READ at cards.jsx:1363, which shows
+        #            a hint when a legacy value exists WITHOUT a verified
+        #            certificate, explaining that the text drives nothing and
+        #            pointing at the certificate. That hint keeps working:
+        #            historical values still exist and are still served by
+        #            ProducerOwnerOut.kosher (schemas.py:2469), which this
+        #            change deliberately leaves in place.
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
         "images",
@@ -594,6 +687,9 @@ def update_my_producer(
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
+
+    # MEH-2137 switch: resolve + authorize the featured-product vote.
+    _resolve_top_product(db, producer, payload)
 
     # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
     # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would
@@ -1153,18 +1249,38 @@ def producer_analytics(
 
     rank_in_city = _rank_in_city(db, producer, israel_day)
 
-    # MEH-57 ── conversion_rate: whatsapp clicks / profile views × 100 (30d).
-    # MEH-160 contract note: the denominator is now unique daily viewers,
-    # while `producer_whatsapp_clicks` carries NO viewer hash (models.py:1515
-    # — only a nullable user_id), so the numerator cannot be deduped to match
-    # without a schema change. The ratio is therefore "clicks per 100 unique
-    # daily viewers" and CAN exceed 100 legitimately: one viewer clicking
-    # twice in a day. The copy states that in both locales, and the display no
-    # longer clamps it — clamping hid a wrong contract behind a screen that
-    # looked fine. Alternative (Sapir's call, drafted on the card): add
-    # viewer_ip_hash to the clicks table and restore a bounded percentage.
+    # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
+    #
+    # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
+    # plus the non-WhatsApp contact clicks — not WhatsApp alone. A business
+    # whose primary_contact_method is phone/email/website/external_order used to
+    # read 0% forever, because the only table consulted was one it never writes
+    # to. Industry anchor: Google Business Profile's headline number is likewise
+    # the SUM of contact actions ("Interactions"), with the per-channel split
+    # kept as a breakdown — which is why `whatsapp_clicks` and `contact_clicks`
+    # are returned unchanged above and stay separate KPIs on the dashboard.
+    #
+    # The two tables CANNOT double-count one tap, and that is structural rather
+    # than a convention anyone has to maintain: they are written by two distinct
+    # endpoints (`producers.py:471` writes ProducerWhatsAppClick only,
+    # `producers.py:507` writes ContactClick only), and
+    # `_VALID_CONTACT_METHODS` (`producers.py:481`) has no "whatsapp" member, so
+    # a WhatsApp tap has no path into the contact table at all.
+    #
+    # MEH-160 contract note, still in force and now covering both arms: the
+    # denominator is unique daily viewers, while NEITHER click table is counted
+    # per-viewer here — `producer_whatsapp_clicks` carries no viewer hash at all
+    # (models.py:1722-1751 — only a nullable user_id), and although
+    # `producer_contact_clicks` does have one (`ip_hash`, models.py:1779) it is
+    # deliberately counted raw so both halves of the sum share one unit. The
+    # ratio therefore CAN exceed 100 legitimately — one viewer acting twice in a
+    # day — and widening the numerator makes that more likely, not less. The
+    # display does not clamp it; clamping hid a wrong contract behind a screen
+    # that looked fine. Alternative (Sapir's call, drafted on the MEH-160 card):
+    # hash the viewer on both tables and restore a bounded percentage.
+    contact_actions_30d = whatsapp_clicks["last_30d"] + contact_clicks["last_30d"]
     conversion_rate = (
-        round(whatsapp_clicks["last_30d"] / profile_views["last_30d"] * 100, 1)
+        round(contact_actions_30d / profile_views["last_30d"] * 100, 1)
         if profile_views["last_30d"] > 0
         else 0.0
     )
@@ -1305,7 +1421,9 @@ def send_phone_otp(
 def confirm_phone_otp(
     request: Request,
     body: OtpConfirmIn,
-    background_tasks: BackgroundTasks,
+    # MEH-2125: `background_tasks` is gone from this signature — the removed
+    # `_maybe_fire_review_ready` call was its only consumer. FastAPI injects it
+    # per-handler, so dropping it affects nothing else.
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -1319,9 +1437,9 @@ def confirm_phone_otp(
     # The previous form read `used == False` and assigned `used = True` as two
     # statements, so under READ COMMITTED (Postgres' default) two overlapping
     # confirms could both find the same token before either committed — and
-    # both would then run the pending_whatsapp → pending transition and fire
-    # the "ready for review" admin ping. Damage was noise, not data: a
-    # duplicate admin notification.
+    # both would then run the status transition that lived below (removed in
+    # MEH-2124) and fire the "ready for review" admin ping (removed in
+    # MEH-2125). Damage was noise, not data: a duplicate admin notification.
     #
     # `.update()` returns the affected-row count, and that count IS the lock:
     # the second request blocks on the first's row lock, re-evaluates the
@@ -1338,10 +1456,11 @@ def confirm_phone_otp(
     # NOT a reason, and stated here because the first draft of this comment
     # claimed it was: the two forms hold the row lock for exactly the same
     # span. A Postgres row-level write lock lives until the TRANSACTION ends,
-    # not until the statement returns, so the lock taken here is still held
-    # through `_pending_and_approvable` and the status flip below, right up to
-    # `db.commit()`. Anything slow added between here and that commit widens
-    # the window in which a concurrent confirm for the same token blocks.
+    # not until the statement returns, so the row lock taken here is held
+    # right up to `db.commit()`. Anything slow added between here and that
+    # commit widens the window in which a concurrent confirm for the same
+    # token blocks. (It used to name `_pending_and_approvable` and the status
+    # flip as what sat in that span; both are gone — MEH-2124, MEH-2125.)
     #
     # The loser gets the SAME 400 as a wrong or expired code. That is
     # deliberate: from the caller's side a lost race and a stale code are the
@@ -1360,90 +1479,30 @@ def confirm_phone_otp(
     if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
-    # MEH-2051: serialize against a concurrent PUT /producers/me, which is the
-    # OTHER handler able to complete the review-ready transition. Without this
-    # the two compute the same false→true edge independently and the admin is
-    # pinged twice for one flip — measured on origin/staging, guarded by
-    # tests/test_otp_put_ping_race.py.
+    # MEH-2125: this handler is now a pure `phone_verified` writer, and three
+    # things were removed from between the claim above and the commit below —
+    # the MEH-2051 advisory lock + its `db.expire`, the MEH-1816 `was_approvable`
+    # snapshot, and the `_maybe_fire_review_ready` call. All three were
+    # MEASURED unreachable, not judged so: `_pending_and_approvable` (:293)
+    # reads status/photos/licence and never `phone_verified`, so once MEH-2124
+    # deleted the status flip the snapshot and the post-commit re-read
+    # evaluated the same predicate over an unchanged row and the ping's
+    # `not X and X` was False for every input. The concurrency test reported
+    # `fired 0 times` before its assertion was touched.
     #
-    # WHY HERE AND NOT AT THE TOP OF THE HANDLER, which is where the helper's
-    # own docstring points: taking it before the producer load would make a
-    # rival confirm block HERE instead of on the token row lock inside the
-    # conditional UPDATE above. That was not reasoned about and left at that —
-    # it was BUILT and MEASURED, twice, because the failure it causes is the
-    # kind that reads as success:
+    # `_pending_and_approvable`, `_lock_producer_updates` and
+    # `_maybe_fire_review_ready` all REMAIN — PUT /producers/me is the live
+    # caller of each, and that path still produces a genuine false→true edge.
+    # What went is only this handler's use of them.
     #
-    #   lock at top + atomic claim intact  -> codes == [200, 200]
-    #   lock at top + atomic claim REVERTED -> codes == [200, 200]
-    #
-    # Byte-identical. Under that placement the loser hits the `phone_verified`
-    # early-return before ever reaching the UPDATE, so MEH-1820's test reports
-    # the SAME thing whether its guard works or not — it stops being a guard.
-    # Both runs are red today, which sounds safe; the trap is that the obvious
-    # way to clear that red is to relax the assertion to [200, 200], and doing
-    # so would permanently blind the atomic claim with nothing announcing it.
-    # It also changes the API: the loser would return 200 "כבר מאומת" instead
-    # of the 400 MEH-1820 deliberately chose, a contract change smuggled in as
-    # a concurrency fix.
-    #
-    # With the lock HERE, that same reverted-claim run still reports
-    # [200, 200] vs the required [200, 400] — the guard keeps discriminating.
-    # That is the measurement this placement rests on, not the argument above.
-    #
-    # WHY THE EXPIRE IS LOAD-BEARING, not tidiness: `producer` was loaded above,
-    # possibly before the PUT we are now waiting behind committed. `expire`
-    # forces the snapshot below to be computed on a row read *under* this lock —
-    # without it the loser evaluates a stale row, concludes the edge is still
-    # ahead of it, and fires the duplicate ping anyway. That is precisely the
-    # "same bug wearing a lock" the helper warns about.
-    #
-    # NO DEADLOCK: the only lock ordering here is token row → advisory key. The
-    # PUT takes the advisory key alone and never touches phone_otp_tokens, so
-    # there is no cycle. Two confirms for different tokens of one producer take
-    # different rows and then serialize on the key, which is plain waiting.
-    _lock_producer_updates(db, producer.id)
-    db.expire(producer)
-
+    # MEH-1820's guard is unaffected in substance but its SEAM moved: the
+    # barrier in tests/test_otp_confirm_concurrency.py used to be planted on
+    # `_pending_and_approvable` because that was the one call between the claim
+    # and the commit. There is no such call now, so the test instruments the
+    # request session's `commit` instead. If you add anything here that a rival
+    # confirm can reach, re-read that test's docstring first.
     producer.phone_verified = True
-    # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
-    # PUT /producers/me does at :259 — this is the SECOND mutation site able to
-    # complete the review-ready transition, and MEH-1351 only covered the first.
-    # A business that uploaded its image while still pending_whatsapp crosses
-    # the threshold here, so a ping owned by one site alone gets swallowed.
-    # The snapshot is also what keeps the already-pending path silent: such a
-    # producer is approvable before the call, so the false→true edge is absent.
-    #
-    # MEH-1820 — REORDERING THIS LINE BREAKS A TEST IN A SILENT WAY. The
-    # concurrency guard in tests/test_otp_confirm_concurrency.py patches a
-    # barrier over `_pending_and_approvable` precisely because it is the one
-    # call between the token claim above and the commit below. If some other
-    # call moves into that gap, the barrier stops marking "inside the claim
-    # window" and the test degrades into either a no-op that passes on broken
-    # code or a five-second timeout — neither of which announces itself. Move
-    # this and re-read that test's docstring.
-    #
-    # MEH-2051 added the lock+expire pair above INTO that gap, so the warning
-    # deserves its worked example rather than being quietly falsified. It is
-    # safe for one specific reason, and the reason is not "a lock is cheap":
-    # in the OTP-vs-OTP race the rival confirm never gets past the conditional
-    # UPDATE, so it never reaches either the new lock or this barrier, and the
-    # barrier still marks exactly what its docstring says it marks. That was
-    # verified by re-running MEH-1820's test with the atomic claim reverted and
-    # confirming it still goes red. Anything added here that a RIVAL CONFIRM
-    # can actually reach would break that property — the test is what tells
-    # you, and only if you re-run it against the broken claim.
-    was_approvable = _pending_and_approvable(db, producer)
-    # MEH-745: self-registered producers wait in pending_whatsapp until the
-    # business phone is verified; a successful OTP confirm is the gate that
-    # releases them into the normal admin-review queue (pending). Only advance
-    # from pending_whatsapp — never touch approved / rejected / inactive.
-    if producer.status == "pending_whatsapp":
-        producer.status = "pending"
     db.commit()
-    # REUSES: backend/app/routers/producer_me.py:413 — same helper, same
-    # post-commit position, so an admin is never pinged about a transition that
-    # failed to persist.
-    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     return {"detail": "הטלפון אומת בהצלחה"}
 
 
@@ -1540,6 +1599,21 @@ def request_producer_review(
     request only makes sense while the producer is still in the approval queue,
     so an already-decided producer (approved/rejected/inactive) → 409.
 
+    MEH-2120 — THE COMPLETENESS GATE, added after Sapir hit this live. This
+    endpoint predates the shared gate, so it pinged the admin regardless of
+    whether the profile could be approved at all: her test business, with no
+    photo and no product, pressed "סיימתי להשלים" and was told "נשלח לבדיקה".
+    The admin then gets "please look again" on a profile the MEH-799 photo gate
+    will refuse — exactly the queue noise MEH-2100 removed from the FRONT door,
+    arriving through the side one.
+
+    The gate below is a verbatim copy of `submit_for_review`'s, in this same
+    file: same helper, same 422 status, same `code`, same message, same
+    `params.missing`. That sameness is the feature, not laziness — the client
+    renders both through one path (`detailToMessage`, frontend/lib/errors.js:151)
+    and the checklist highlights `params.missing` without knowing which door
+    the owner used. A variant here would be a second definition of "ready".
+
     The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
     MEH-977): a Meta/Resend outage or missing admin config must never affect
     the 200 the owner sees.
@@ -1547,10 +1621,24 @@ def request_producer_review(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    if producer.status not in ("pending", "pending_whatsapp"):
+    if producer.status != "pending":
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+
+    # MEH-2120: ordered AFTER the status check, matching submit_for_review — an
+    # approved business asking for re-review is answered "you are already
+    # decided" (409), not handed a completeness list it has no use for.
+    missing = submission_missing_items(producer)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "submit_gate_incomplete",
+                "message": "עוד לא הכול מוכן — יש להשלים את פריטי החובה לפני שליחה לבדיקה",
+                "params": {"missing": missing},
+            },
         )
 
     # REUSES: app/services/auth_notifications.py notify_admin_new_recipe pattern
@@ -1562,6 +1650,120 @@ def request_producer_review(
         notify_admin_producer_resubmit, producer.name, producer.city
     )
     return {"detail": "נשלח לבדיקה חוזרת"}
+
+
+# ---------------------------------------------------------------------------
+# MEH-2100: draft → submit for review
+# ---------------------------------------------------------------------------
+
+
+@router.post("/submit-for-review", status_code=200)
+@limiter.limit("5/hour")
+def submit_for_review(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """The owner declares her profile ready and hands it to the admin queue.
+
+    This is the ONLY transition out of `draft` (MEH-2100). All three producer
+    creation sites now write `draft`, so before this call the business is
+    invisible to the review queue by construction — and the "בסקירה" banner
+    plus the 3-business-day SLA both start HERE rather than at signup, which
+    is the whole point of the ticket.
+
+    Draft-only, mirroring the MEH-1236 request-review 409 directly above: a
+    business already `pending` is in the queue (nothing to do), and one that
+    is approved / rejected / inactive has been decided. A silent 200 on those
+    would tell the owner something happened when nothing did.
+
+    The gate is SERVER-SIDE and reads the SAME helper the dashboard checklist
+    and the MEH-1818 nudge read (`submission_missing_items`), so the three can
+    never drift into different definitions of "ready". A client that ignores
+    the disabled CTA still gets 422 — the button state is an affordance, not
+    the rule.
+
+    The 422 body uses the MEH-1943 `{code, message, params}` shape, which buys
+    two things at once: `detailToMessage` (frontend/lib/errors.js:151) renders
+    `message` with no client change, and `params.missing` carries the
+    machine-readable codes the checklist highlights.
+
+    NOT gated here, deliberately: the producer LICENSE (MEH-971's
+    license_pending path must still be able to reach the queue with a NULL
+    license — it is an approve-time question) and OPENING HOURS (recommended,
+    not required — Google precedent). Both remain enforced where they belong;
+    see submission_gate.py's "Does NOT" header.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    if producer.status != "draft":
+        raise HTTPException(
+            status_code=409,
+            detail="אפשר לשלוח לבדיקה רק בית עסק שנמצא בטיוטה",
+        )
+
+    missing = submission_missing_items(producer)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "submit_gate_incomplete",
+                "message": "עוד לא הכול מוכן — יש להשלים את פריטי החובה לפני שליחה לבדיקה",
+                "params": {"missing": missing},
+            },
+        )
+
+    producer.status = "pending"
+    # tz-aware — the column is DateTime(timezone=True) and a naive utcnow here
+    # would be silently wrong by the local offset (repo-wide constraint).
+    producer.submitted_for_review_at = datetime.now(timezone.utc)
+
+    # Snapshot BEFORE the commit, matching auth.py's two registration paths.
+    # Reading producer.name/.city after commit() works — the attributes are
+    # expired and lazily reloaded through the still-open request session — but
+    # it reads as a different pattern from its siblings for no reason, and the
+    # next person comparing them has to work out which one is deliberate.
+    # (CI reviewer, #2979.) Same values either way; this is legibility, not a
+    # bug fix.
+    p_name = producer.name
+    p_city = producer.city
+    # MEH-2112: the owner's confirmation needs her address and the stamp that
+    # was just written. Snapshotted here with the two above, for the same
+    # reason — post-commit these attributes are expired and lazily reloaded,
+    # which works but reads as a different pattern from its siblings.
+    owner_email = user.email
+    submitted_at = producer.submitted_for_review_at
+    db.commit()
+
+    # notify_admin_new_producer lives in services/auth_notifications.py. It
+    # used to ALSO fire from auth.py at registration; MEH-2100 removed it from
+    # there, because a fresh registration is a draft and the ping's own
+    # "לאישור: /admin" link pointed at a queue the business was not in. This
+    # is now its ONLY caller — the moment the ping is actually actionable.
+    # (The comment here previously cited auth.py:632, which the same diff had
+    # already deleted — a REUSES pointer to code that no longer exists. CI
+    # reviewer, #2979.)
+    # Post-commit BackgroundTask, fail-open (MEH-1051 / MEH-977):
+    # a Resend/Meta outage must never turn the owner's successful submission
+    # into an error, and post-commit placement mirrors _maybe_fire_review_ready
+    # so the admin is never pinged about a transition that failed to persist.
+    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    # MEH-2112: the owner-facing half of the same moment. Post-commit and
+    # fail-open on the identical grounds as the admin ping above — she has
+    # already been told on screen that the profile was sent, and a Resend
+    # outage must not retract that.
+    #
+    # Placed AFTER the 409/422 raises above, which is what keeps the promise
+    # honest: this fires only on the real draft→pending transition, never on a
+    # rejected re-submit and never on MEH-1236's request-review ping (a
+    # different endpoint entirely, untouched).
+    background_tasks.add_task(
+        send_submission_confirmation, owner_email, p_name, submitted_at
+    )
+    return {"detail": "הפרופיל נשלח לבדיקה"}
 
 
 # ---------------------------------------------------------------------------
@@ -1831,6 +2033,93 @@ def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> Non
     ).update({ProducerLocation.is_primary: False})
 
 
+def _sync_producer_city_from_primary(db: Session, producer_id: UUID) -> None:
+    """MEH-2141 (MEH-1938 batch B2) — write `Producer.city` through from the
+    primary location, in the caller's open transaction.
+
+    ## Why this exists
+
+    Chunk 4 deleted the dashboard's "מיקום על המפה" card, which was the owner's
+    only editor for `Producer.city`. The CI reviewer flagged the gap on that
+    PR: an owner who moves her primary location to another town now has no way
+    to correct the city that the listing filter, the free-text search, the
+    `/producers/cities` aggregation, the admin search, `rank_in_city` and the
+    two admin notification emails all read. Fourteen readers, and none of them
+    has an equivalent in `producer_locations` — which is why the column stays
+    and is written THROUGH rather than dropped.
+
+    Interim derived, NOT Contract. Chunk 5 is what makes `city` fully derived,
+    and it is blocked on the release card. Nothing here removes a column,
+    changes a schema, or touches `lat`/`lng`.
+
+    ## Two things it deliberately does NOT do
+
+    **It never writes NULL.** If there is no primary row, or the primary row
+    carries no city, the column keeps its last value. A NULL here is not a
+    neutral "unknown" — it drops the business out of `?city=` filtering and
+    out of the region picker, and it renders as a blank line in the admin
+    emails. `ProducerLocation.city` is `str | None` (schemas.py:1090), so this
+    is a reachable state, not a theoretical one.
+
+    **It is not called on every mutation.** The callers below invoke it only
+    when the operation changed WHICH row is primary, or changed the primary
+    row's own city. That precision is what keeps admin authority intact —
+    see the precedence note below.
+
+    ## Precedence: admin wins, and nothing here contests it
+
+    `admin.py` writes `Producer.city` directly (the create path's explicit
+    `city=data.city`, and the PUT's `setattr` loop over `ProducerUpdate`).
+    That write is NOT wrapped, NOT mirrored and NOT reverted by this function.
+    The two paths coexist because they are triggered by different events: an
+    admin edit sets the column and no owner location changed, so this function
+    never runs; an owner moves her primary location and this function sets the
+    column from that row. The one ordering that overwrites an admin value is
+    an owner moving her primary AFTER the admin edit — which is the correct
+    outcome, because at that point the owner's own primary location is the
+    fresher statement of where the business is.
+
+    # DO NOT call this from a non-primary mutation. Doing so would re-derive
+    # the column on an edit that says nothing about it, and would silently
+    # revert an admin's `city` the next time an owner edited an unrelated
+    # pickup point's phone number.
+    """
+    # `SessionLocal` is built with autoflush=False (database.py:107), so a
+    # promotion the caller has only assigned on the ORM instance
+    # (`loc.is_primary = True`, `replacement.is_primary = True`) is NOT visible
+    # to the query below until it is flushed. Without this line the query finds
+    # NO primary at all — the previous one was demoted by a bulk UPDATE that
+    # did hit the database, the new one is still pending in the session — and
+    # the function returns early, leaving the city on the OLD location.
+    #
+    # That is not a hypothesis: the promote and delete-primary tests failed
+    # exactly this way before this flush was added, and they are the two that
+    # would have shipped the bug.
+    #
+    # Flushing here rather than at each call site keeps the helper correct
+    # regardless of what the caller has or has not flushed. The caller still
+    # owns the COMMIT.
+    db.flush()
+
+    primary = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .order_by(ProducerLocation.created_at.asc())
+        .first()
+    )
+    if primary is None:
+        return
+    if not primary.city or not primary.city.strip():
+        return
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return
+    producer.city = primary.city.strip()
+
+
 @router.get("/locations", response_model=list[ProducerLocationOwnerOut])
 def list_my_locations(
     user: User = Depends(require_producer),
@@ -1870,6 +2159,12 @@ def create_my_location(
     db.flush()  # assign loc.id before clearing siblings
     if loc.is_primary:
         _clear_other_primaries(db, user.producer_id, loc.id)
+        # MEH-2141: the primary changed (first location, or an explicit
+        # is_primary=true that just demoted the previous one), so the city the
+        # 14 readers see is re-derived from it. Gated on `is_primary` rather
+        # than run unconditionally: adding a SECOND, non-primary pickup point
+        # says nothing about where the business is.
+        _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()
     db.refresh(loc)
     return loc
@@ -1909,6 +2204,18 @@ def update_my_location(
         # owner promotes another location instead (which clears this one).
         raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
 
+    # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
+    # just PROMOTED to primary (the primary's identity changed), or this row is
+    # ALREADY primary and the patch carried a city (the primary's city changed).
+    #
+    # Read `loc.is_primary` AFTER the block above, not the pre-patch value: a
+    # promotion sets it two lines up, and the demotion arm raises rather than
+    # falling through. Every other edit — a phone on the primary, anything at
+    # all on a non-primary row — leaves the column alone, which is what keeps
+    # an admin-set city from being reverted by an unrelated owner edit.
+    if want_primary is True or (loc.is_primary and "city" in patch):
+        _sync_producer_city_from_primary(db, user.producer_id)
+
     db.commit()
     db.refresh(loc)
     return loc
@@ -1935,4 +2242,13 @@ def delete_my_location(
         )
         if replacement is not None:
             replacement.is_primary = True
+            # MEH-2141: a new row is primary, so the city follows it.
+            #
+            # The `replacement is not None` guard is load-bearing here and not
+            # just a null check: deleting the LAST location leaves no primary,
+            # and the column must then KEEP its last value rather than go NULL.
+            # The helper would decline anyway (it returns early on no primary),
+            # so this is belt and braces on the invariant the 14 readers depend
+            # on — stated twice on purpose, because a NULL city is silent.
+            _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()

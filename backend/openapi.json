@@ -1,6 +1,115 @@
 {
   "components": {
     "schemas": {
+      "AdminChecklistItemIn": {
+        "description": "One item in a full-list PUT.\n\n`id` is optional: present = update that row, absent = create a new item.\nThat is what lets the settings screen add, edit and reorder in one request\nwithout a separate POST — the admin drags three rows and saves once.\n\nThere is deliberately NO delete. Retirement is `active: false`, and the DB\nenforces it (`producer_review_checks.item_id` is ON DELETE RESTRICT), so a\ndelete endpoint would only ever produce a 500 on any item with history.",
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "label": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "AdminChecklistItemIn",
+        "type": "object"
+      },
+      "AdminChecklistItemOut": {
+        "description": "MEH-1399: one review-checklist item as the admin surfaces read it.\n\n`updated_at` is exposed rather than omitted — ADR-006 R2 asks every\nnon-internal ORM column to appear in the matching `*Out` or sit on an\nexplicit allowlist, and nothing in this repo mechanically enforces that\n(there is no general parity test), so an omission here would be\nindistinguishable from drift to the next reader. It is also the one\nquestion anyone asks of a config row: when did this last change.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "label",
+          "active",
+          "updated_at"
+        ],
+        "title": "AdminChecklistItemOut",
+        "type": "object"
+      },
+      "AdminChecklistItemsIn": {
+        "description": "Full-list replace. Order in the array IS the order on screen — `position`\nis assigned from the index server-side rather than sent by the client, so\ntwo items can never claim the same slot.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminChecklistItemIn"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AdminChecklistItemsIn",
+        "type": "object"
+      },
       "AdminReviewOut": {
         "properties": {
           "body": {
@@ -413,6 +522,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
           }
         },
         "required": [
@@ -477,6 +597,17 @@
               }
             ],
             "title": "Producer Count"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
           }
         },
         "required": [
@@ -3112,6 +3243,79 @@
         "title": "KashrutRequestOut",
         "type": "object"
       },
+      "LicenseExpiryReminderOut": {
+        "properties": {
+          "rows": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LicenseExpiryReminderRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "window_days": {
+            "title": "Window Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "window_days",
+          "total"
+        ],
+        "title": "LicenseExpiryReminderOut",
+        "type": "object"
+      },
+      "LicenseExpiryReminderRow": {
+        "description": "One business whose licence expires inside the 30-day window.\n\nMEH-2072 — the licence twin of KashrutExpiryReminderRow above, with two\ndeliberate differences:\n\n* `expires_at` is a `date`, not a `datetime`. The column is DATE because a\n  licence is valid through a calendar day (see the migration docstring);\n  widening it to datetime here would reintroduce the timezone ambiguity the\n  column type exists to avoid.\n* There is no `sent` / `error` pair. This endpoint only READS — the admin\n  pulls the list, nothing is dispatched — so a per-row send outcome would be\n  a field that is structurally always None. WhatsApp push is a future\n  ticket; when it lands it adds the fields, rather than them sitting here\n  unused and inviting the reader to think a send happened.\n\n`days_remaining` is computed server-side against israel_today() so the badge\nand the ordering can never disagree, and so a client in another timezone\ncannot render a different number from the same payload.\n\n`phone_masked` is deliberately the ONLY phone field, matching the kashrut\nrow: the admin needs enough to recognise the number, not the number itself.",
+        "properties": {
+          "days_remaining": {
+            "title": "Days Remaining",
+            "type": "integer"
+          },
+          "expires_at": {
+            "format": "date",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone_masked": {
+            "title": "Phone Masked",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_license_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer License Number"
+          }
+        },
+        "required": [
+          "producer_id",
+          "name",
+          "phone_masked",
+          "expires_at",
+          "days_remaining"
+        ],
+        "title": "LicenseExpiryReminderRow",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -3999,6 +4203,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "business_days_waiting": {
+            "default": 0,
+            "title": "Business Days Waiting",
+            "type": "integer"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -4051,6 +4260,11 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "default": true,
+            "title": "Coverage Cta Enabled",
+            "type": "boolean"
           },
           "created_at": {
             "anyOf": [
@@ -4400,6 +4614,18 @@
             ],
             "title": "Lat"
           },
+          "license_expires_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Expires At"
+          },
           "license_pending": {
             "default": false,
             "title": "License Pending",
@@ -4666,6 +4892,30 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "submitted_for_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted For Review At"
+          },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
           },
           "top_product_name": {
             "anyOf": [
@@ -5022,6 +5272,11 @@
             ],
             "title": "Contact Name"
           },
+          "coverage_cta_enabled": {
+            "default": true,
+            "title": "Coverage Cta Enabled",
+            "type": "boolean"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -5531,6 +5786,18 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
           },
           "top_product_name": {
             "anyOf": [
@@ -6195,6 +6462,18 @@
             "default": "pending",
             "title": "Status",
             "type": "string"
+          },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
           },
           "top_product_name": {
             "anyOf": [
@@ -7144,6 +7423,11 @@
             ],
             "title": "Contact Name"
           },
+          "coverage_cta_enabled": {
+            "default": true,
+            "title": "Coverage Cta Enabled",
+            "type": "boolean"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -7687,6 +7971,18 @@
             ],
             "title": "Story Card Url"
           },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
+          },
           "top_product_name": {
             "anyOf": [
               {
@@ -8226,15 +8522,10 @@
             "type": "array"
           },
           "city": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "City"
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
           },
           "contact_email": {
             "anyOf": [
@@ -8261,6 +8552,19 @@
             "title": "Delivery Areas",
             "type": "array"
           },
+          "delivery_cities": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Cities",
+            "type": "array"
+          },
+          "delivery_nationwide": {
+            "default": false,
+            "title": "Delivery Nationwide",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -8283,6 +8587,11 @@
               }
             ],
             "title": "Email"
+          },
+          "has_physical_location": {
+            "default": true,
+            "title": "Has Physical Location",
+            "type": "boolean"
           },
           "instagram": {
             "anyOf": [
@@ -8332,6 +8641,11 @@
               }
             ],
             "title": "Name"
+          },
+          "offers_delivery": {
+            "default": false,
+            "title": "Offers Delivery",
+            "type": "boolean"
           },
           "password": {
             "anyOf": [
@@ -8433,7 +8747,8 @@
           }
         },
         "required": [
-          "producer_name"
+          "producer_name",
+          "city"
         ],
         "title": "ProducerRegister",
         "type": "object"
@@ -8466,6 +8781,81 @@
           }
         },
         "title": "ProducerRejectIn",
+        "type": "object"
+      },
+      "ProducerReviewCheckOut": {
+        "description": "One recorded tick, as the review flow reads it back.",
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "checked_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked By Name"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "label_snapshot": {
+            "title": "Label Snapshot",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "label_snapshot",
+          "checked_at"
+        ],
+        "title": "ProducerReviewCheckOut",
+        "type": "object"
+      },
+      "ProducerReviewChecksIn": {
+        "description": "The ticked item ids for a producer, as the whole set.\n\nSet semantics, not a diff: what arrives IS the state afterwards, so an id\nthat was ticked and is now absent gets its row deleted. A diff API would\nneed the client to know what it previously sent, which is exactly the\nassumption that breaks when two admin tabs are open on the same producer.",
+        "properties": {
+          "item_ids": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "title": "ProducerReviewChecksIn",
+        "type": "object"
+      },
+      "ProducerReviewChecksOut": {
+        "properties": {
+          "checks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProducerReviewCheckOut"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id"
+        ],
+        "title": "ProducerReviewChecksOut",
         "type": "object"
       },
       "ProducerUpdate": {
@@ -8855,6 +9245,18 @@
             ],
             "title": "Lat"
           },
+          "license_expires_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Expires At"
+          },
           "lng": {
             "anyOf": [
               {
@@ -9044,6 +9446,18 @@
             ],
             "title": "Status"
           },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
+          },
           "top_product_name": {
             "anyOf": [
               {
@@ -9113,6 +9527,24 @@
           }
         },
         "title": "ProducerUpdate",
+        "type": "object"
+      },
+      "ProducerViewIn": {
+        "description": "MEH-2159: body of POST /producers/{id}/view.\n\n`referrer` is the `?from=` value off the PAGE url (ProducerCard.jsx:205\nbuilds `/{slug}?from={referrer}`). It reaches the API for the first time\nhere: before this endpoint the page-url query string was never forwarded\nby either fetch, so `producer_page_views.referrer` was NULL for every row\never written.\n\nDeliberately unvalidated at the schema layer — `record_analytics_event`\nnormalizes against the `_ALLOWED_REFERRERS` allowlist and writes NULL for\nanything else (services/analytics.py:213, applied at :305). A 422 here\nwould turn a fire-and-forget beacon into a client error for a value the\nwriter would have discarded anyway.",
+        "properties": {
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer"
+          }
+        },
+        "title": "ProducerViewIn",
         "type": "object"
       },
       "ProductCreate": {
@@ -10344,6 +10776,24 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "WhatsAppClickIn": {
+        "description": "MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.\n\nThe endpoint took no body before this. It still accepts none -- the\nanonymous path uses `navigator.sendBeacon`, which cannot set\n`Content-Type: application/json` (it sends text/plain, which FastAPI\nrejects with 422), so a REQUIRED body would break every anonymous\nWhatsApp click on the site. Only the coverage CTA sends a body, and it\nuses fetch(keepalive) for exactly that reason.\n\n`city` is validated SOFTLY on purpose: a value that is not in the\ncanonical city list is still STORED, not dropped. The point of the\ncapture is to learn where demand actually is, including spellings and\nlocalities our list does not carry yet -- discarding those would delete\nthe most interesting rows.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          }
+        },
+        "title": "WhatsAppClickIn",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -10659,6 +11109,108 @@
         "summary": "Review Category Request",
         "tags": [
           "category-requests"
+        ]
+      }
+    },
+    "/admin/checklist-items": {
+      "get": {
+        "description": "The checklist, ordered.\n\n`include_inactive` defaults to **False** because the review flow — the\nhigh-traffic caller — must never show a retired item to an admin working a\nbusiness. The settings screen passes `true`, since editing a list you\ncannot see all of is not editing.",
+        "operationId": "list_checklist_items_admin_checklist_items_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminChecklistItemOut"
+                  },
+                  "title": "Response List Checklist Items Admin Checklist Items Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Checklist Items",
+        "tags": [
+          "admin-checklist"
+        ]
+      },
+      "put": {
+        "description": "Replace the list: add, edit, reorder and retire in one request.\n\n## Order comes from the array index, not from the client\n\n`position` is assigned HERE rather than accepted from the payload: each\nsubmitted item takes the next free slot, in array order, skipping any slot\nstill held by a row this request did not submit (see the note in the body\nfor why those are not ours to reuse). A client-supplied position lets two\nitems claim the same slot and makes the rendered order depend on a\ntiebreak nobody specified; the array the admin actually sees IS the order,\nso it is the input.\n\nUntil MEH-2176 this read \"`position` is assigned as `index * 10`\", which\nstopped being true when the skip was added — the exact defect class this\nmodule is otherwise careful about, and worth the two extra lines to keep\nthe docstring a description rather than a claim about a previous version.\n\n## There is no delete, and that is enforced below the router\n\nAn item absent from the payload is left ALONE, not removed. Retirement is\n`active: false`. This is not politeness toward the data: the FK from\n`producer_review_checks.item_id` is ON DELETE RESTRICT, so deleting a\nticked item raises at the database — a delete endpoint could only ever\n500 on exactly the items with history worth keeping.\n\nThat does mean a mis-typed item can be created and then only deactivated,\nnever removed. Accepted deliberately: an audit trail whose subjects can be\nerased is not an audit trail, and the cost is one greyed-out row.\n\n## Unknown ids are rejected, not silently created\n\nAn `id` that does not exist is a 404, not an insert. A stale tab saving\nagainst items another admin retired should be told, not have its old rows\nquietly resurrected under new ids.",
+        "operationId": "save_checklist_items_admin_checklist_items_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminChecklistItemsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminChecklistItemOut"
+                  },
+                  "title": "Response Save Checklist Items Admin Checklist Items Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Save Checklist Items",
+        "tags": [
+          "admin-checklist"
         ]
       }
     },
@@ -11226,6 +11778,33 @@
         ]
       }
     },
+    "/admin/license-expiry-reminders": {
+      "get": {
+        "description": "MEH-2072: approved businesses whose licence expires within 30 days.\n\nRead-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1\npolicy is capture + remind, and the admin pulls this list herself. That is\nwhy this is a GET with no `dry_run` flag, unlike its kashrut sibling\n(admin_kashrut.py:154) which POSTs because it dispatches WhatsApp. Push is a\nfuture ticket.\n\nSelection, and every clause is load-bearing:\n\n* `license_expires_at IS NOT NULL` — NULL means \"not captured yet\", never\n  \"no expiry\". Without this clause every producer predating MEH-2072 would\n  appear in the reminder list forever, which is the failure that would get\n  the whole feature switched off.\n* `>= israel_today()` — an already-lapsed licence is deliberately EXCLUDED.\n  This mirrors the kashrut endpoint's reasoning: the list exists to catch a\n  licence before it lapses. A lapsed one is a different problem needing a\n  different action (that is the future enforcement decision), and letting it\n  sit here would grow an unactionable backlog that buries the live rows.\n* `<= horizon` — the 30-day window.\n* `status == \"approved\"` — a pending business is already in the review\n  queue, where the admin sees the licence anyway.\n\nIsrael's calendar day, not UTC's: `license_expires_at` is a DATE column, and\n`israel_today()` is what makes the comparison calendar-day against\ncalendar-day with no zone arithmetic (see the migration docstring).\n\n`60/minute`, matching the read-only `list_kashrut_requests`\n(admin_kashrut.py:36) rather than the `10/hour` its expiry-reminder sibling\ncarries — that one is throttled hard because it DISPATCHES WhatsApp, and a\nread has no outbound side effect to ration.\n\nNote this is the first `@limiter.limit` in this module: `admin.py` currently\nhas none at all. That is a pre-existing gap, not a local convention to copy\n— `backend/app/routers/CLAUDE.md` states the per-route limiter stack is\nmandatory here, so the new route follows the documented rule rather than the\nsurrounding silence. Retro-fitting the rest of the module is out of scope.",
+        "operationId": "license_expiry_reminders_admin_license_expiry_reminders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseExpiryReminderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "License Expiry Reminders",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/name-change-requests": {
       "get": {
         "description": "The admin queue. Old and new name travel together on every row.",
@@ -11742,7 +12321,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "pattern": "^(pending|pending_whatsapp|approved|rejected|inactive|all)$",
+                  "pattern": "^(draft|pending|approved|rejected|inactive|all)$",
                   "type": "string"
                 },
                 {
@@ -12016,6 +12595,53 @@
           "admin"
         ]
       },
+      "get": {
+        "description": "MEH-2072: the single-producer admin read. There was none before, and the\nadmin EDIT PAGE was loading the PUBLIC serializer instead.\n\n## The bug this closes, measured rather than reasoned\n\n`app/[locale]/admin/producers/[id]/edit/page.js` fetched `GET /producers/{id}`\n-> `ProducerDetailOut`. That shape carries no admin-only field, by design.\nSo `ProducerForm` hydrated every one of them as `\"\"` (its `initial.X ?? \"\"`\nidiom), and because the form POSTs its whole state back, saving ANY edit\nwrote those blanks over the stored values:\n\n    producer_license_number  '1234567'  ->  ''\n    address                  'הרצל 1'   ->  None\n\nSilent, on every admin save, including a save that only changed the name.\n`producer_license_number` is the regulatory field the whole \"licensed\nbusinesses only\" promise rests on, so this was live data loss on the one\ncolumn the promise depends on.\n\nTwo things made it invisible. The form's own comment asserted that the page\ncalled `GET /admin/producers/{id}` \"which exposes the raw\nproducer_license_number\" — describing this route, which did not exist and\nreturned **405**. And the failure has no error surface: the PUT succeeds,\nthe page redirects, and the value is simply gone.\n\n## Why a new route rather than widening the public one\n\nWidening `ProducerDetailOut` would publish licence numbers and street\naddresses to every visitor — the exact inversion of the MEH-530 privacy\nprecedent. The admin needs a different SHAPE, not more public data.\n\n## Route ordering is load-bearing\n\nDeclared AFTER `/producers/pending` (:977) and `/producers/rejection-presets`\n(:1132). FastAPI matches in declaration order, so registering this above\neither of them would swallow both literals into `{producer_id}` and answer\nthem with a UUID-parse 422. Do not move it up.\n\nMirrors the list endpoint's post-query enrichment exactly — `attach_badge_fields`\nthen `_attach_aging` — because a single-row read that skipped them would\nserialise a silent `0` for `business_days_waiting` and default badges, which\nis the \"looks measured and is not\" failure `_attach_aging`'s own docstring\nwarns about.",
+        "operationId": "admin_get_producer_admin_producers__producer_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerAdminOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Get Producer",
+        "tags": [
+          "admin"
+        ]
+      },
       "put": {
         "operationId": "admin_update_producer_admin_producers__producer_id__put",
         "parameters": [
@@ -12094,6 +12720,16 @@
             "schema": {
               "default": false,
               "title": "Allow Without License",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "allow_unverified_phone",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Allow Unverified Phone",
               "type": "boolean"
             }
           }
@@ -12342,6 +12978,112 @@
         "summary": "Request Producer Changes",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/review-checks": {
+      "get": {
+        "description": "The ticks recorded for one producer.\n\n404s on an unknown producer rather than returning an empty list: \"this\nbusiness has no ticks\" and \"this business does not exist\" are different\nfacts, and an empty list for the second would let the review flow render a\nclean checklist for a producer that is gone.",
+        "operationId": "get_review_checks_admin_producers__producer_id__review_checks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerReviewChecksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Review Checks",
+        "tags": [
+          "admin-checklist"
+        ]
+      },
+      "put": {
+        "description": "Record the ticked set for a producer. Idempotent.\n\n## Set semantics, and why not a diff\n\nWhat arrives IS the state afterwards: ids present are ticked, ids absent\nhave their rows deleted. A diff API (\"tick this one\") requires the client\nto know what it previously sent, which is exactly the assumption that\nbreaks with two admin tabs open on the same business.\n\n## `label_snapshot` is written HERE, at tick time\n\nNot read back from the item at display time. That is the entire mechanism\nof the audit trail — an admin editing an item's wording next month must not\nretroactively change what a past admin attested to. The FK still says which\nitem; the snapshot says what it said.\n\n## Re-ticking does not restamp\n\nAn item already ticked is left untouched — `checked_by` / `checked_at` keep\nthe FIRST attestation. Re-saving an unchanged checklist (which the UI does\non every autosave) would otherwise rewrite the audit trail to the most\nrecent page load, which is the opposite of what it is for.\n\n## Inactive items are still accepted\n\nDeliberately: an admin may be mid-review when another retires an item, and\nrejecting her save would lose the work over a race she cannot see. The\nreview flow will stop OFFERING the item on the next load.",
+        "operationId": "save_review_checks_admin_producers__producer_id__review_checks_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerReviewChecksIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerReviewChecksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Save Review Checks",
+        "tags": [
+          "admin-checklist"
         ]
       }
     },
@@ -16019,7 +16761,7 @@
         ]
       },
       "post": {
-        "description": "Create a pending producer row.\n\nSECURITY: this endpoint was historically public, which meant anyone\ncould create pending producers with no audit trail. It's now\nauthenticated — any logged-in user can create, but anonymous callers\nget 401. The public \"become a producer\" signup flow lives at\nPOST /auth/register/producer (see routers/auth.py) and is unaffected.",
+        "description": "Create a DRAFT producer row.\n\nSECURITY: this endpoint was historically public, which meant anyone\ncould create pending producers with no audit trail. It's now\nauthenticated — any logged-in user can create, but anonymous callers\nget 401. The public \"become a producer\" signup flow lives at\nPOST /auth/register/producer (see routers/auth.py) and is unaffected.\n\nMEH-2100: the row lands in `draft`, so \"any logged-in user can create\"\nno longer means \"any logged-in user can put a row in front of the\nadmin\". Reaching the review queue now requires\nPOST /producers/me/submit-for-review, which is owner-scoped and gated\non a complete profile. Deepens the audit-trail fix above rather than\nreplacing it.",
         "operationId": "create_producer_producers_post",
         "requestBody": {
           "content": {
@@ -17151,7 +17893,7 @@
     },
     "/producers/me/request-review": {
       "post": {
-        "description": "Producer-initiated \"I'm done — please re-check\" ping (MEH-1236).\n\nNotification-only: NO schema change. The `requested_changes` /\n`changes_requested_at` columns are deliberately left untouched (they are\nadmin-owned; only approve/reject/request-changes in admin.py write them) —\nthis closes the resubmit loop without inventing a \"resubmitted\" DB state.\n\nPending-only: mirrors admin.request_producer_changes:599 — a re-review\nrequest only makes sense while the producer is still in the approval queue,\nso an already-decided producer (approved/rejected/inactive) → 409.\n\nThe admin notification fires as a BackgroundTask, fail-open (MEH-1051 /\nMEH-977): a Meta/Resend outage or missing admin config must never affect\nthe 200 the owner sees.",
+        "description": "Producer-initiated \"I'm done — please re-check\" ping (MEH-1236).\n\nNotification-only: NO schema change. The `requested_changes` /\n`changes_requested_at` columns are deliberately left untouched (they are\nadmin-owned; only approve/reject/request-changes in admin.py write them) —\nthis closes the resubmit loop without inventing a \"resubmitted\" DB state.\n\nPending-only: mirrors admin.request_producer_changes:599 — a re-review\nrequest only makes sense while the producer is still in the approval queue,\nso an already-decided producer (approved/rejected/inactive) → 409.\n\nMEH-2120 — THE COMPLETENESS GATE, added after Sapir hit this live. This\nendpoint predates the shared gate, so it pinged the admin regardless of\nwhether the profile could be approved at all: her test business, with no\nphoto and no product, pressed \"סיימתי להשלים\" and was told \"נשלח לבדיקה\".\nThe admin then gets \"please look again\" on a profile the MEH-799 photo gate\nwill refuse — exactly the queue noise MEH-2100 removed from the FRONT door,\narriving through the side one.\n\nThe gate below is a verbatim copy of `submit_for_review`'s, in this same\nfile: same helper, same 422 status, same `code`, same message, same\n`params.missing`. That sameness is the feature, not laziness — the client\nrenders both through one path (`detailToMessage`, frontend/lib/errors.js:151)\nand the checklist highlights `params.missing` without knowing which door\nthe owner used. A variant here would be a second definition of \"ready\".\n\nThe admin notification fires as a BackgroundTask, fail-open (MEH-1051 /\nMEH-977): a Meta/Resend outage or missing admin config must never affect\nthe 200 the owner sees.",
         "operationId": "request_producer_review_producers_me_request_review_post",
         "responses": {
           "200": {
@@ -17169,6 +17911,31 @@
           }
         ],
         "summary": "Request Producer Review",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/submit-for-review": {
+      "post": {
+        "description": "The owner declares her profile ready and hands it to the admin queue.\n\nThis is the ONLY transition out of `draft` (MEH-2100). All three producer\ncreation sites now write `draft`, so before this call the business is\ninvisible to the review queue by construction — and the \"בסקירה\" banner\nplus the 3-business-day SLA both start HERE rather than at signup, which\nis the whole point of the ticket.\n\nDraft-only, mirroring the MEH-1236 request-review 409 directly above: a\nbusiness already `pending` is in the queue (nothing to do), and one that\nis approved / rejected / inactive has been decided. A silent 200 on those\nwould tell the owner something happened when nothing did.\n\nThe gate is SERVER-SIDE and reads the SAME helper the dashboard checklist\nand the MEH-1818 nudge read (`submission_missing_items`), so the three can\nnever drift into different definitions of \"ready\". A client that ignores\nthe disabled CTA still gets 422 — the button state is an affordance, not\nthe rule.\n\nThe 422 body uses the MEH-1943 `{code, message, params}` shape, which buys\ntwo things at once: `detailToMessage` (frontend/lib/errors.js:151) renders\n`message` with no client change, and `params.missing` carries the\nmachine-readable codes the checklist highlights.\n\nNOT gated here, deliberately: the producer LICENSE (MEH-971's\nlicense_pending path must still be able to reach the queue with a NULL\nlicense — it is an approve-time question) and OPENING HOURS (recommended,\nnot required — Google precedent). Both remain enforced where they belong;\nsee submission_gate.py's \"Does NOT\" header.",
+        "operationId": "submit_for_review_producers_me_submit_for_review_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Submit For Review",
         "tags": [
           "producer-management"
         ]
@@ -17276,22 +18043,6 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "from",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "From"
             }
           }
         ],
@@ -17785,6 +18536,58 @@
         ]
       }
     },
+    "/producers/{producer_id}/view": {
+      "post": {
+        "description": "Record one page view for the producer dashboard.\n\nThe browser reports this explicitly instead of it being a side effect of\nGET /producers/{id}. Auth optional; the owner's and admins' own views are\nskipped inside record_analytics_event. Rate-limited 60/minute per IP —\nhigher than the click endpoints because one is expected per page load.",
+        "operationId": "record_producer_view_producers__producer_id__view_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerViewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Record Producer View",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
     "/producers/{producer_id}/whatsapp-click": {
       "post": {
         "description": "Log a WhatsApp CTA click for the producer dashboard.\n\nAuth optional — JWT is accepted when present so the click can be\nattributed to a registered user. Frontend fires this via\n`navigator.sendBeacon` immediately before opening `wa.me` —\nfire-and-forget, doesn't block the window. Rate-limited 10/minute\nper IP to bound abuse. Unknown producer IDs return 404.",
@@ -17801,6 +18604,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WhatsAppClickIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

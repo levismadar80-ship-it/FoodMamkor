@@ -30,8 +30,6 @@ Persona legend (register phase):
   P5 — pending producer: admin request-changes → owner resubmit loop.
   (P1 — full-wizard UI persona — lives in the Playwright leg, spec 22.)
 """
-import uuid
-
 import pytest
 
 from app.config import settings
@@ -41,6 +39,7 @@ from conftest import (
     auth_header,
     make_category,
     make_producer,
+    make_submit_ready_producer,
     make_user,
     valid_producer_register_payload,
 )
@@ -308,7 +307,7 @@ class TestPersona2OAuthProducer:
         assert user.role == "producer"
         assert user.producer_id is not None
         producer = db.query(Producer).filter(Producer.id == user.producer_id).one()
-        assert producer.status == "pending_whatsapp"
+        assert producer.status == "draft"  # MEH-2100: registration → draft
         # license_pending honoured — NULL license accepted into the queue.
         assert producer.producer_license_number is None
         rows = (
@@ -327,30 +326,34 @@ TEST_IMAGE = "https://res.cloudinary.com/demo/image/upload/sample.jpg"
 
 
 class TestPersona5ResubmitLoop:
-    def _owner_of(self, db, producer):
-        user = make_user(
-            db, email=f"owner-{uuid.uuid4().hex[:8]}@example.com", role="producer"
-        )
-        user.producer_id = producer.id
-        db.commit()
-        return user
-
     def test_request_changes_then_owner_resubmit_closes_loop(
         self, client, db, monkeypatch
     ):
         """The full completion loop: an admin asks a pending producer to fill a
         gap (admin.py:580), then the owner signals she is done via
-        /producers/me/request-review (producer_me.py:903). Both legs 2xx and
-        the producer stays pending throughout (request-review is
-        notification-only, no schema state change)."""
+        /producers/me/request-review. Both legs 2xx and the producer stays
+        pending throughout (request-review is notification-only, no schema
+        state change).
+
+        MEH-2120 — the persona now actually FILLS the gap before saying she is
+        done, and that is the point rather than a fixture detail. This test
+        used to hand a `make_producer` row (no photo, no product) straight to
+        the resubmit ping and assert 200: a "completion loop" that closed
+        without anything being completed. That is precisely the bug Sapir
+        reported, sitting inside the test named after the loop. The middle leg
+        below is the missing step, and the 422 that precedes it is the gate
+        doing its job.
+        """
         # Keep the resubmit ping hermetic (fail-open service; stub anyway).
         import app.services.auth_notifications as an
 
         monkeypatch.setattr(an, "notify_admin_producer_resubmit", lambda *a, **k: None)
 
         admin = make_user(db, email="admin-p5@example.com", role="admin")
-        producer = make_producer(db, status="pending")
-        owner = self._owner_of(db, producer)
+        producer, owner = make_submit_ready_producer(db, status="pending")
+        # The gap the admin is about to ask her to fill.
+        producer.images = []
+        db.commit()
 
         rc = client.post(
             f"/admin/producers/{producer.id}/request-changes",
@@ -361,6 +364,19 @@ class TestPersona5ResubmitLoop:
         db.refresh(producer)
         assert producer.requested_changes == _FEEDBACK
         assert producer.status == "pending"  # unchanged — not a rejection
+
+        # She presses "I'm done" WITHOUT fixing anything: refused, and told what
+        # is still missing. Before the gate this returned 200 and pinged the
+        # admin about a profile that could not be approved.
+        premature = client.post(
+            "/producers/me/request-review", headers=auth_header(owner)
+        )
+        assert premature.status_code == 422, premature.text
+        assert premature.json()["detail"]["params"]["missing"] == ["image"]
+
+        # She fills the gap, then says she is done.
+        producer.images = [TEST_IMAGE]
+        db.commit()
 
         rr = client.post("/producers/me/request-review", headers=auth_header(owner))
         assert rr.status_code == 200, rr.text
