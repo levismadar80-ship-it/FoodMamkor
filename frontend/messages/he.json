@@ -1739,7 +1739,8 @@
         "reject_legend": "דחייה",
         "reject_helper": "בית העסק לא יופיע באתר ומקבל מייל",
         "other": "אחר",
-        "free_text_label": "פירוט לבעלת העסק",
+        "free_text_label_required": "פירוט לבעלת העסק (חובה)",
+        "free_text_label_optional": "פירוט לבעלת העסק (אופציונלי)",
         "free_text_placeholder": "מה בדיוק חסר או לא תקין — זה מגיע למייל שלה",
         "submit_changes": "שליחת בקשת השלמה",
         "submit_reject": "דחייה ושליחת מייל"
