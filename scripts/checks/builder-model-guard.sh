@@ -265,32 +265,83 @@ scripts/checks/builder-model-guard.sh'
   expect_paths "a lookalike path outside the dir is NOT confined" 1 \
     'frontend/e2e/visual/parity.spec.ts-snapshots-evil/x.png'
 
-  # 8-9: REAL-COMMIT ANCHORS (MEH-1909). Synthetic paths prove the classifier
-  # works on shapes I invented; these prove it is aimed at what this repo
-  # actually produces. Skipped only when the object is genuinely absent from a
-  # shallow clone — and that is reported, never silently counted as a pass.
-  local real_bot="fc2c795e" real_code="dc72902c"
-  anchor_commit() { # anchor_commit LABEL SHA WANT_RC
-    local label="$1" sha="$2" want="$3" paths got
-    ran=$((ran + 1))
-    if ! have_commit "$sha"; then
-      echo "  FAIL  real-commit anchor ${label} (${sha}) — object absent from this clone."
-      echo "        Not counted as a pass: an anchor that cannot read its subject"
-      echo "        proves nothing. Deepen the clone and re-run."
-      failures=$((failures + 1))
-      return
-    fi
-    paths="$(commit_changed_paths "$sha")" || { echo "  FAIL  real-commit anchor ${label} — diff undeterminable"; failures=$((failures + 1)); return; }
-    printf '%s\n' "$paths" | paths_are_vrt_baseline_only; got=$?
-    if [ "$got" -eq "$want" ]; then
-      echo "  ok    real-commit anchor ${label} (${sha}, $(printf '%s\n' "$paths" | grep -c .) path(s)) rc=${got}"
-    else
-      echo "  FAIL  real-commit anchor ${label} (${sha}) want rc=${want}, got ${got}"
-      failures=$((failures + 1))
-    fi
-  }
-  anchor_commit "the VRT bot regen"      "$real_bot"  0
-  anchor_commit "a real code commit"     "$real_code" 1
+  # 8-11: REAL-FILE ANCHORS + the I/O function, all depth-independent.
+  #
+  # An earlier version anchored on two real commit SHAs. Both objects are
+  # ABSENT under `repo-guards`' fetch-depth: 1 checkout, so the self-test failed
+  # on every PR and the preflight took the whole guard down with it — a
+  # universal red, strictly worse than the targeted false red this ticket
+  # exists to remove. Measured on PR #3174. Anchors must not depend on history
+  # the CI checkout does not carry.
+  #
+  # These read the WORKING TREE, which is fully present at any depth.
+  ran=$((ran + 1))
+  local real_baselines
+  real_baselines="$(find frontend/e2e/visual -maxdepth 2 -type d -name '*-snapshots' -exec find {} -maxdepth 1 -type f \; 2>/dev/null | head -5)"
+  if [ -z "$real_baselines" ]; then
+    echo "  FAIL  real-path anchor — no baseline files found under frontend/e2e/visual/*-snapshots/."
+    echo "        Not counted as a pass: the anchor could not read its subject, so it"
+    echo "        cannot testify that the classifier matches the shape this repo uses."
+    failures=$((failures + 1))
+  elif printf '%s\n' "$real_baselines" | paths_are_vrt_baseline_only; then
+    echo "  ok    real-path anchor: $(printf '%s\n' "$real_baselines" | grep -c .) live baseline file(s) classified as confined"
+  else
+    echo "  FAIL  real-path anchor: live baseline files were NOT classified as confined."
+    printf '        %s\n' "$real_baselines"
+    failures=$((failures + 1))
+  fi
+  expect_paths "real repo code paths are NOT confined" 1 \
+    'scripts/checks/builder-model-guard.sh
+scripts/checks/README.md'
+
+  # commit_changed_paths, exercised against a REAL git repo built in a temp dir.
+  # Deterministic, offline, and independent of this clone's depth — the failure
+  # the commit-SHA anchors hit. Same idiom as adr-citation-guard's synthetic
+  # decisions dir: real implementation, controlled subject.
+  local tmp
+  tmp="$(mktemp -d)"
+  (
+    cd "$tmp" || exit 1
+    git init -q . && git config user.email t@t.t && git config user.name T
+    mkdir -p frontend/e2e/visual/parity.spec.ts-snapshots
+    echo seed > seed.txt && git add -A && git commit -q -m seed
+    echo png > frontend/e2e/visual/parity.spec.ts-snapshots/home.png
+    git add -A && git commit -q -m "test(vrt): regenerate visual parity baselines"
+    echo code > app.js && git add -A && git commit -q -m "feat: code"
+  ) >/dev/null 2>&1
+  local baseline_sha code_sha
+  baseline_sha="$(cd "$tmp" && git rev-parse HEAD~1 2>/dev/null)"
+  code_sha="$(cd "$tmp" && git rev-parse HEAD 2>/dev/null)"
+
+  ran=$((ran + 1))
+  if [ -z "$baseline_sha" ]; then
+    echo "  FAIL  commit_changed_paths — could not build the temp repo; case did not run."
+    failures=$((failures + 1))
+  elif ( cd "$tmp" && commit_changed_paths "$baseline_sha" | paths_are_vrt_baseline_only ); then
+    echo "  ok    commit_changed_paths: a baseline-only commit reads as confined"
+  else
+    echo "  FAIL  commit_changed_paths: a baseline-only commit did NOT read as confined"
+    failures=$((failures + 1))
+  fi
+
+  ran=$((ran + 1))
+  if [ -n "$code_sha" ] && ! ( cd "$tmp" && commit_changed_paths "$code_sha" | paths_are_vrt_baseline_only ); then
+    echo "  ok    commit_changed_paths: a code commit does NOT read as confined"
+  else
+    echo "  FAIL  commit_changed_paths: a code commit read as confined"
+    failures=$((failures + 1))
+  fi
+
+  # FAIL-CLOSED: an unreadable diff must never be exempt. Deterministic in every
+  # environment, which is exactly what the commit-SHA anchors were not.
+  ran=$((ran + 1))
+  if commit_changed_paths "0000000000000000000000000000000000000000" >/dev/null 2>&1; then
+    echo "  FAIL  fail-closed: an unreachable commit returned success"
+    failures=$((failures + 1))
+  else
+    echo "  ok    fail-closed: an unreachable commit is undeterminable, not exempt"
+  fi
+  rm -rf "$tmp" 2>/dev/null
 
   # 4: REAL-FILE ANCHOR. Compose the author from vrt-update.yml's own
   #    `git config` lines and assert the guard still checks it.
