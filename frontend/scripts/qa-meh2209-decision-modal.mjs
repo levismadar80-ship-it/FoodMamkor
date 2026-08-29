@@ -13,7 +13,15 @@
 import { chromium } from "playwright";
 import { mkdirSync, readdirSync, existsSync } from "node:fs";
 
-const BASE = process.env.QA_BASE || "http://127.0.0.1:3000";
+// CLI flag, not an env var. `scripts/check_env_drift.sh` BLOCKS any
+// `process.env` name absent from a `.env.example`, and documenting a
+// throwaway test knob as application configuration would be false (and
+// regression rule 8 forbids adding env vars unasked). Same resolution the
+// sibling about-page harness reached.
+const BASE_FLAG = "--base=";
+const BASE =
+  (process.argv.find((a) => a.startsWith(BASE_FLAG)) || "").slice(BASE_FLAG.length) ||
+  "http://127.0.0.1:3000";
 const OUT = new URL("../../qa-artifacts/MEH-2209/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
