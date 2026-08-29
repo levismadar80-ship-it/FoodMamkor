@@ -55,15 +55,25 @@
  * are inert at render time and `LabelScopeContract.test.js` asserts the full
  * label set is byte-identical.
  *
- * NINE of these twelve keys also exist as filter axes in lib/filter-taxonomy.js
- * (eight by the same key, plus `delivery` ↔ `has_delivery`). Their scope and
+ * NINE of these keys also exist as filter axes in lib/filter-taxonomy.js
+ * (eight by the same key, plus `delivery` <-> `has_delivery`). Their scope and
  * evidence are NOT hand-copied here in the sense that matters: an equality
  * assertion in LabelScopeContract.test.js requires each pair to agree, so a
- * change to one side without the other goes red. They are declared rather than
- * imported because the LABELS legitimately differ — the `verified` badge reads
- * "מאומת" while its axis reads "רישוי מאומת" — so importing the axis object
- * would either change rendered copy or need a field-by-field pick, and both
- * cost more than the guard.
+ * change to one side without the other goes red.
+ *
+ * MEH-2214 corrects what this paragraph used to say next. It read: "They are
+ * declared rather than imported because the LABELS legitimately differ -- the
+ * `verified` badge reads "מאומת" while its axis reads "רישוי מאומת"." That was
+ * true when written and is now false, and `verified` was the LAST pair it was
+ * true of: measured across all nine, the other eight already agreed
+ * character-for-character, so today every pair does.
+ *
+ * The guard still does not compare labels, and that is now a deliberate
+ * ALLOWANCE rather than a description of the state. The contract governs what
+ * a label CLAIMS (scope) and WHO established it (evidence); copy is a separate
+ * decision, and a future axis may legitimately need wording a badge does not.
+ * Asserting equality would freeze that door shut, so it stays open on purpose
+ * -- not because anything currently differs.
  */
 
 export const BADGE_CONFIG = {

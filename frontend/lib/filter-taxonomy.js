@@ -110,10 +110,17 @@ export const FILTER_AXES = {
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
-  // MEH-1418: names WHAT was verified — a license or exemption document checked
-  // by an admin against the Ministry of Health registry (ADR-022).
+  // MEH-1418 named WHAT was verified — a license or exemption document checked
+  // by an admin against the Ministry of Health registry (ADR-022) — and the
+  // longer phrasing carried that.
+  //
+  // MEH-2214 shortens it to match the badge and the seal. The axis is the same
+  // claim on all three, so three names for it made the filter read as a fourth
+  // thing a business could be. What MEH-1418 was protecting is unchanged: the
+  // FilterSheet row still explains WHAT was checked, via BADGE_CONFIG.verified
+  // .tooltip (see subtext below), which is where that sentence belongs.
   verified: {
-    label: "רישוי מאומת",
+    label: "מאומת",
     scope: "business",
     evidence: "admin-verified",
     subtext: null, // FilterSheet uses BADGE_CONFIG.verified.tooltip
