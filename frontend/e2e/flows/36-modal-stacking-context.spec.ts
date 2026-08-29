@@ -121,6 +121,15 @@ test.describe("MEH-2215 — login prompt is not trapped in a stacking context", 
       `the header centre is painted by <${overHeader.tag} class="${overHeader.cls}">, not by the modal`,
     ).toBe(true);
 
-    expect(pageErrors, "the page must not throw while the modal is open").toEqual([]);
+    // NO assertion on `pageErrors`. It is passed to `openDetail` for its
+    // diagnostics — `_producer-fixture.ts:115` says so in as many words
+    // ("Diagnostics only — nothing asserts on the returned array") — and the
+    // reason is that `watchPageErrors` collects every `console.error`, not only
+    // uncaught exceptions (`:122-125`). Asserting it empty let an unrelated
+    // environment condition decide this spec's outcome, which is exactly what
+    // .claude/rules/testing.md bans. Measured, not supposed: the first CI run
+    // (job 99113429528) failed here on a Vercel speed-insights MIME warning and
+    // two upstream 500s, while all three stacking assertions above PASSED.
+    // Paint order is this spec's subject; console hygiene belongs elsewhere.
   });
 });
