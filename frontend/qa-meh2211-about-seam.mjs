@@ -18,7 +18,7 @@
  * from looking at a PNG.
  */
 import { chromium } from "playwright";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 
 // Configured by CLI FLAGS, deliberately not by environment variables.
 // `scripts/check_env_drift.sh` (the required "Env drift" job) scans the tree
@@ -59,11 +59,20 @@ function check(name, cond, detail = "") {
   return ok;
 }
 
-// The sandbox ships Chromium build 1194 at a fixed path while this repo's
-// @playwright/test pins 1234, so the default resolution misses. Point at the
-// preinstalled binary rather than downloading one (env policy).
-const EXE = ARGV.get("chromium") || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-const browser = await chromium.launch({ executablePath: EXE });
+// The CC sandbox ships Chromium build 1194 at a fixed path while this repo's
+// @playwright/test pins 1234, so Playwright's own resolution misses there and
+// the run dies with "Executable doesn't exist". Point at the preinstalled
+// binary rather than downloading one (env policy).
+//
+// But ONLY when that path actually exists. Hardcoding it unconditionally made
+// every run outside this sandbox fail with a file-not-found that reads as a
+// broken script rather than a missing flag — the CI reviewer's finding on
+// #3152. Falling back to `undefined` hands resolution back to Playwright,
+// which is the correct behaviour on any normal machine.
+const SANDBOX_CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const EXE =
+  ARGV.get("chromium") || (existsSync(SANDBOX_CHROMIUM) ? SANDBOX_CHROMIUM : undefined);
+const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 for (const [tag, width, height] of [["375", 375, 812], ["1440", 1440, 900]]) {
   const page = await browser.newPage({ viewport: { width, height } });
   await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
@@ -158,7 +167,12 @@ for (const [tag, width, height] of [["375", 375, 812], ["1440", 1440, 900]]) {
       const q = (s) => document.querySelector(s);
       const lede = q('[data-testid="about-lede-figure"]');
       const upd = q('[data-testid="about-updated-at"]');
-      const ch1 = q('[data-testid="about-chapter-1"]');
+      // Anchor on chapter 01's H2, not on the eyebrow: the Chapter component
+      // carries no testid, so the original selector here resolved to null and
+      // the assertion below read `undefined` — a broken PROBE reporting as a
+      // failed page. `about-story-h2` is a real element and is the heading the
+      // lede must precede anyway.
+      const ch1 = q('[data-testid="about-story-h2"]');
       const r = (el) => (el ? el.getBoundingClientRect() : null);
       return {
         lede: r(lede) && { top: r(lede).top + scrollY, left: r(lede).left, w: r(lede).width },
