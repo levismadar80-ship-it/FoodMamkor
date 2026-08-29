@@ -88,8 +88,8 @@ describe("FilterSheet (MEH-1075)", () => {
       // quality
       "כשרות מאומתת",
       "גראס פד",
-      // service. MEH-1418: "מאומתים" → "רישוי מאומת".
-      "רישוי מאומת",
+      // service. MEH-1418: "מאומתים" → "רישוי מאומת"; MEH-2214: → "מאומת".
+      "מאומת",
       "משלוח",
       "איסוף עצמי",
       "פתוחים להזמנות עכשיו",
@@ -175,7 +175,7 @@ describe("FilterSheet (MEH-1075)", () => {
       // Two distinct failures guarded: name pollution (the tooltip trigger being
       // read as part of the row's label) and invalid nesting (a <button> inside a
       // <button>, which browsers silently unnest — the reason the ⓘ is a sibling).
-      const row = screen.getByRole("switch", { name: "רישוי מאומת" });
+      const row = screen.getByRole("switch", { name: "מאומת" });
       expect(row.querySelector("button")).toBeNull();
       expect(screen.getByRole("switch", { name: "כשרות מאומתת" })).toBeInTheDocument();
     });

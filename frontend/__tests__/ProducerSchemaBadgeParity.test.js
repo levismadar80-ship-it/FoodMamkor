@@ -292,10 +292,11 @@ describe("MEH-1704 — badges survive a ProducerSchema round-trip", () => {
 
   it("earns every badge BEFORE the parse (the fixture is well-formed)", () => {
     // Establishes that any loss below is the parse's doing, not a bad fixture.
-    // MEH-1846: 12 → 11. The fixture still sets products_count: 12 on purpose —
-    // it is now a field that earns nothing, so this count also asserts the
-    // removal held.
-    expect(allBadges(fixture).length).toBe(11);
+    // MEH-1846: 12 → 11. MEH-2213: 11 → 10. The fixture still sets
+    // products_count: 12 and has_producer_license: true on purpose — both are
+    // now fields that earn nothing, so this count also asserts both removals
+    // held.
+    expect(allBadges(fixture).length).toBe(10);
   });
 
   it("keeps them AFTER the parse — >= 6 badges survive", () => {

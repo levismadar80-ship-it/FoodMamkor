@@ -73,9 +73,16 @@ const SURFACES = {
 // is mapped explicitly rather than inferred from key equality.
 //
 // This is what keeps the two declarations from being hand-copies: each pair
-// must AGREE on scope and evidence, so changing one side alone goes red. The
-// labels are deliberately NOT compared — `verified` reads "מאומת" as a badge
-// and "רישוי מאומת" as an axis, and that difference is intended copy.
+// must AGREE on scope and evidence, so changing one side alone goes red.
+//
+// The labels are deliberately NOT compared. MEH-2214 changed why: this comment
+// used to justify it by pointing at `verified`, which read "מאומת" as a badge
+// and "רישוי מאומת" as an axis. That pair now matches, and it was the last
+// one that did not — all nine agree character-for-character today. So the
+// exemption is an ALLOWANCE, not a description: the contract governs the CLAIM
+// (scope) and its SOURCE (evidence), while copy is a separate decision that may
+// legitimately diverge again. Asserting equality here would quietly convert a
+// copy decision into a test failure.
 const SHARED_CLAIMS = [
   ["verified", "verified"],
   ["grass_fed", "grass_fed"],
@@ -119,11 +126,11 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
 
   // ── MEH-1753 ─────────────────────────────────────────────────────────────
 
-  it("BADGE_CONFIG carries all twelve badges (guards a shrinking scan)", () => {
+  it("BADGE_CONFIG carries all eleven badges (guards a shrinking scan)", () => {
     // A COUNT, not a list of names: the loop above is satisfied by an empty
     // BADGE_CONFIG, so without this a deleted entry would leave the contract
-    // reporting a clean pass over eleven.
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(12);
+    // reporting a clean pass over ten.
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
   });
 
   it("every badge that is also a filter axis agrees with it on scope + evidence", () => {
@@ -194,13 +201,6 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
           "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
         color: "accent",
         aboutHref: "/about#editors-pick",
-      },
-      license: {
-        key: "license",
-        label: "רישיון יצרן",
-        tooltip: "בית העסק מחזיק ברישיון יצרן ממשרד הבריאות.",
-        color: "primary",
-        aboutHref: null,
       },
       new: {
         key: "new",

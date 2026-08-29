@@ -25,10 +25,24 @@ import api from "@/lib/api";
 // NOTE this is exactly why the i18n block at the bottom of this file reads the
 // real JSON instead: under this mock a MISSING key is indistinguishable from a
 // present one, so the mock can never catch the wrong-namespace trap.
+// MEH-2200: `.rich` added for the collection notice on the STORY frame, which
+// this file walks through. Plain-string lookups are unchanged.
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key, values) => {
-    const p = scope ? `${scope}.${key}` : key;
-    return values ? `${p} ${Object.values(values).join(" ")}` : p;
+  useTranslations: (scope) => {
+    const t = (key, values) => {
+      const p = scope ? `${scope}.${key}` : key;
+      return values ? `${p} ${Object.values(values).join(" ")}` : p;
+    };
+    t.rich = (key, tags = {}) => {
+      const p = scope ? `${scope}.${key}` : key;
+      return [
+        p,
+        ...Object.entries(tags).map(([name, render]) => (
+          <span key={name}>{render(name)}</span>
+        )),
+      ];
+    };
+    return t;
   },
 }));
 

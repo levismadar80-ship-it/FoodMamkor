@@ -103,6 +103,39 @@ describe("LoginPromptModal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  // ── MEH-2215: the overlay must be a DIRECT child of <body> ────────────────
+  //
+  // Mounted in place, this modal rendered inside ImageGallery's
+  // `absolute … z-20` wrapper (ImageGallery.jsx:375), which is a stacking
+  // context — so its z-[9500] only ranked inside that wrapper and the page's
+  // `sticky z-[1050]` Header and `sticky z-30` tab bar painted over it.
+  //
+  // These two assertions are falsifiable by exactly that change and by nothing
+  // else: run them against the pre-portal component and both fail (the overlay
+  // is then a child of the RTL container div, not of <body>). Demonstrated
+  // before this test was committed, per .claude/rules/testing.md.
+  it("portals the overlay to <body> so no ancestor can trap it", () => {
+    render(<LoginPromptModal open={true} onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    const overlay = dialog.parentElement;
+
+    // The overlay is the `fixed inset-0` scrim; its parent is <body> itself.
+    expect(overlay).toHaveClass("fixed", "inset-0");
+    expect(overlay.parentElement).toBe(document.body);
+    expect(dialog.parentElement.parentElement).toBe(document.body);
+  });
+
+  it("leaves NOTHING in the mount container when open (the whole tree moved)", () => {
+    // The mirror of the assertion above, and the one that catches a partial
+    // portal: if only the panel were portalled and the scrim stayed behind,
+    // the check above would still pass while the trap survived in the scrim.
+    const { container } = render(
+      <LoginPromptModal open={true} onClose={() => {}} />,
+    );
+    expect(container.innerHTML).toBe("");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("has aria-modal and aria-labelledby for screen readers", () => {
     render(<LoginPromptModal open={true} onClose={() => {}} />);
     const dialog = screen.getByRole("dialog");

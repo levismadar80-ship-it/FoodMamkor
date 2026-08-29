@@ -34,10 +34,22 @@ describe("unified attribute labels (MEH-1082)", () => {
     }
   });
 
-  it("MEH-1418: verified label names WHAT was verified (was the vague 'מאומתים')", () => {
-    expect(ATTRIBUTE_LABELS.verified.label).toBe("רישוי מאומת");
-    expect(CHIPS_CONFIG.find((c) => c.key === "verified")?.label).toBe("רישוי מאומת");
-    expect(TOGGLE_CHIPS.find((c) => c.key === "verified")?.label).toBe("רישוי מאומת");
+  // MEH-1418 set this to "רישוי מאומת" so the label named WHAT was verified,
+  // replacing a vague "מאומתים". MEH-2214 shortens it to "מאומת" so the filter,
+  // the badge and the seal say one word for one axis.
+  //
+  // That trade is deliberate and it is NOT free: the label alone no longer
+  // names the document. What carries MEH-1418's intent now is the FilterSheet
+  // row's explanation, which falls back to BADGE_CONFIG.verified.tooltip
+  // ("בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית") because the
+  // axis declares subtext: null. The assertion below is renamed to describe
+  // what it actually checks -- a name claiming "names WHAT was verified" while
+  // asserting a word that does not would be the coverage-claim failure
+  // .claude/rules/testing.md names.
+  it("MEH-2214: verified label is one word, identical on every surface", () => {
+    expect(ATTRIBUTE_LABELS.verified.label).toBe("מאומת");
+    expect(CHIPS_CONFIG.find((c) => c.key === "verified")?.label).toBe("מאומת");
+    expect(TOGGLE_CHIPS.find((c) => c.key === "verified")?.label).toBe("מאומת");
   });
 
   it("MEH-1418: kosher label unified across surfaces (Sapir-LOCKED, MEH-1087)", () => {

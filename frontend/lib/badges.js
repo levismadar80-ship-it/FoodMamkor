@@ -1,10 +1,13 @@
 /**
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *
- * Badges (Phase B fold, April 2026; license added MEH-531):
+ * Badges (Phase B fold, April 2026):
  *   verified     (manual)  — producer.verification_tier === "verified"   (MEH-762; ADR-022 tier — replaced the legacy admin-verified flag)
  *   recommended  (manual)  — producer.is_recommended
- *   license      (manual)  — producer.has_producer_license AND verification_tier === "verified" (MEH-531; verified-gate MEH-1162)
+ *   (license REMOVED — MEH-2213: the licence number is typed by the business
+ *    and sits beside the ADR-022 verified seal, the admin-checked signal for
+ *    the same fact. The field is still served and still drives owner/admin
+ *    surfaces; it simply lights no badge.)
  *   new          (auto)    — producer.days_since_created <= 30
  *   grass_fed    (manual)  — producer.grass_fed
  *   (organic REMOVED — MEH-1259: self-declared organic_certified presented an
@@ -26,14 +29,13 @@
  *    diluted the badges that do. products_count itself is unchanged.)
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > no_added_sugar > kosher > delivery
+ *   verified > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > no_added_sugar > kosher > delivery
  *   (MEH-1934: the two new diet badges join the diet run, after lactose_free.
  *    They therefore outrank kosher and delivery, which is how every other diet
  *    badge already sits — consistency with the existing group, not a claim
  *    that a self-declared diet marking matters more than a verified kashrut
  *    certificate. Worth revisiting if the diet run keeps growing, since only
  *    the top 2 reach a card.)
- *   (MEH-1492: license — a regulatory fact — outranks recommended, an opinion.)
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -53,15 +55,25 @@
  * are inert at render time and `LabelScopeContract.test.js` asserts the full
  * label set is byte-identical.
  *
- * NINE of these twelve keys also exist as filter axes in lib/filter-taxonomy.js
- * (eight by the same key, plus `delivery` ↔ `has_delivery`). Their scope and
+ * NINE of these keys also exist as filter axes in lib/filter-taxonomy.js
+ * (eight by the same key, plus `delivery` <-> `has_delivery`). Their scope and
  * evidence are NOT hand-copied here in the sense that matters: an equality
  * assertion in LabelScopeContract.test.js requires each pair to agree, so a
- * change to one side without the other goes red. They are declared rather than
- * imported because the LABELS legitimately differ — the `verified` badge reads
- * "מאומת" while its axis reads "רישוי מאומת" — so importing the axis object
- * would either change rendered copy or need a field-by-field pick, and both
- * cost more than the guard.
+ * change to one side without the other goes red.
+ *
+ * MEH-2214 corrects what this paragraph used to say next. It read: "They are
+ * declared rather than imported because the LABELS legitimately differ -- the
+ * `verified` badge reads "מאומת" while its axis reads "רישוי מאומת"." That was
+ * true when written and is now false, and `verified` was the LAST pair it was
+ * true of: measured across all nine, the other eight already agreed
+ * character-for-character, so today every pair does.
+ *
+ * The guard still does not compare labels, and that is now a deliberate
+ * ALLOWANCE rather than a description of the state. The contract governs what
+ * a label CLAIMS (scope) and WHO established it (evidence); copy is a separate
+ * decision, and a future axis may legitimately need wording a badge does not.
+ * Asserting equality would freeze that door shut, so it stays open on purpose
+ * -- not because anything currently differs.
  */
 
 export const BADGE_CONFIG = {
@@ -100,29 +112,15 @@ export const BADGE_CONFIG = {
     aboutHref: "/about#editors-pick",
     color: "accent",
   },
-  // MEH-531: license badge — trust signal for Ministry of Health producer
-  // license. Field source: ProducerListOut.has_producer_license (computed
-  // boolean from MEH-530's producer_license_number, schemas.py:547).
-  license: {
-    key: "license",
-    // Gated on `verification_tier === "verified"` at :220 — the SAME admin
-    // document check the `verified` badge uses, which is exactly what
-    // labels.md's business/admin-verified row describes ("the business's
-    // licence, checked against the Ministry of Health"). MEH-1162 established
-    // this: `has_producer_license` ALONE is self-declared and a producer
-    // typing 000000000 earned the chip.
-    //
-    // MEH-2191 closed the flag this comment used to carry. labels.md now
-    // carries a `license` ruling of its own (§"The `license` ruling"), and it
-    // ruled business · admin-verified — the same pair #3113 had derived from
-    // the `verified` row. So the values below are unchanged and are now a
-    // lookup rather than the one derived cell of these twelve.
-    scope: "business",
-    evidence: "admin-verified",
-    label: "רישיון יצרן",
-    tooltip: "בית העסק מחזיק ברישיון יצרן ממשרד הבריאות.",
-    color: "primary",
-  },
+  // MEH-2213: the "license" badge is REMOVED from every reader surface. It was
+  // fed by the licence number the business types at registration (MEH-530) and
+  // sat beside the ADR-022 verified seal — the admin-checked signal for the same
+  // fact. On a business carrying both, the two claims consumed both visible card
+  // slots (v4 LOCK max 2) and pushed kashrut into the "+N". The field is
+  // unchanged on the API contract, in lib/schemas.js and on every owner/admin
+  // surface; it simply lights no badge, the shape MEH-1259 used to retire
+  // "organic" and MEH-1846 used to retire "products".
+
   new: {
     key: "new",
     // The first live use of `system`, which labels.md reserved and left with
@@ -283,11 +281,12 @@ export const BADGE_CONFIG = {
 };
 
 // Priority order — left = highest. Exposed for tests.
-// MEH-1492: recommended ("בחירת העורכת") drops BELOW license — a regulatory
-// fact (Ministry of Health licence) outranks an editorial opinion.
+// MEH-2213: "license" left this list with its BADGE_CONFIG entry. MEH-1492's
+// ordering rule (a regulatory fact outranks an editorial opinion) is what put
+// it above "recommended"; with the badge gone the rule has nothing left to
+// order here, and "recommended" now follows "verified" directly.
 export const BADGE_PRIORITY = [
   "verified",
-  "license",
   "recommended",
   "new",
   // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
@@ -320,18 +319,6 @@ function earnsBadge(producer, key) {
       return producer.verification_tier === "verified";
     case "recommended":
       return !!producer.is_recommended;
-    case "license":
-      // MEH-531: ProducerListOut.has_producer_license (computed in
-      // attach_badge_fields, schemas.py:547).
-      // MEH-1162 (audit F10): has_producer_license alone is SELF-DECLARED —
-      // a fresh producer typing 000000000 got the chip. Gate on the ADR-022
-      // verification_tier like the verified badge at :136: "verified" means
-      // an admin actually checked the document (MEH-766 model). declared/
-      // null tiers render nothing.
-      return (
-        producer.verification_tier === "verified" &&
-        !!producer.has_producer_license
-      );
     case "new":
       return (
         typeof producer.days_since_created === "number" &&
