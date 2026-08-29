@@ -148,6 +148,32 @@ function Chapter({ num, label, as: Tag = "p" }) {
   );
 }
 
+// MEH-2193: chapter exit. A text link, never a button — the single primary CTA
+// stays in Close, and three competing buttons mid-page would flatten that
+// hierarchy. Styling and ArrowLeft (LEFT = forward in RTL) are lifted verbatim
+// from the verification-process-link established in the MEH-1840 round, so the
+// three exits read as one existing pattern rather than a new one.
+//
+// Defined at MODULE scope, not inside AboutPage. Declaring it in the body gives
+// React a brand-new component type on every render of the page, and AboutPage
+// re-renders on every keystroke in the contact form (it holds form,
+// contactStatus, contactMsg, submitCount, openTip and imgFailed state). Each of
+// those re-renders would unmount and remount all three links, throwing away the
+// IntersectionObserver registrations next/link uses to prefetch. Caught by the
+// CI adversarial reviewer on #3123.
+function ExitLink({ href, testId, children }) {
+  return (
+    <LocaleLink
+      href={href}
+      data-testid={testId}
+      className="mt-8 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
+      {children}
+      <ArrowLeft size={15} aria-hidden="true" />
+    </LocaleLink>
+  );
+}
+
 export default function AboutPage() {
   const t = useTranslations("about.consumer");
   // MEH-534: cross-link label to the /about/process page (process namespace).
@@ -200,21 +226,6 @@ export default function AboutPage() {
   // cream and background-alt (accent gold fails 4.5:1 at this size). Label is a
   // <p> by default so it never outranks the section h2; pass as="h2" where the
   // label IS the section heading (Benefits).
-  // MEH-2193: chapter exit. A text link, never a button — the single primary
-  // CTA stays in Close, and three competing buttons mid-page would flatten that
-  // hierarchy. Styling and ArrowLeft (LEFT = forward in RTL) are lifted verbatim
-  // from the verification-process-link established in the MEH-1840 round, so the
-  // three exits read as one existing pattern rather than a new one.
-  const ExitLink = ({ href, testId, children }) => (
-    <LocaleLink
-      href={href}
-      data-testid={testId}
-      className="mt-8 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-    >
-      {children}
-      <ArrowLeft size={15} aria-hidden="true" />
-    </LocaleLink>
-  );
 
   return (
     <div className="relative bg-background">
