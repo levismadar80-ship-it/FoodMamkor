@@ -20,8 +20,22 @@
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
-const PHASE = process.env.PHASE === "b" ? "b" : "a";
-const BASE = process.env.BASE_URL || "http://localhost:3000";
+// Configured by CLI FLAGS, deliberately not by environment variables.
+// `scripts/check_env_drift.sh` (the required "Env drift" job) scans the tree
+// for process.env reads and blocks any name absent from a .env.example — so a
+// harness knob read from the environment reds a required check, and the only
+// way to satisfy it would be to document four test-only names as though they
+// were application configuration. Flags keep them out of that namespace.
+//
+//   node qa-meh2211-about-seam.mjs --phase=b --base=http://localhost:3000
+const ARGV = new Map(
+  process.argv.slice(2).map((a) => {
+    const [k, ...v] = a.replace(/^--/, "").split("=");
+    return [k, v.join("=") || "true"];
+  }),
+);
+const PHASE = ARGV.get("phase") === "b" ? "b" : "a";
+const BASE = ARGV.get("base") || "http://localhost:3000";
 const OUT = `../qa-artifacts/MEH-2211/pr-${PHASE}`;
 mkdirSync(OUT, { recursive: true });
 
@@ -32,7 +46,7 @@ const LEAD = "מה שמשתנה בדרך";
 // control still runs there — it is aimed at a string that build really has,
 // which is what lets the absence assertions below be observed going red
 // instead of the run aborting at probe 0.
-const HEADING = process.env.CONTROL_STRING || "למה הקמתי את מהמקור";
+const HEADING = ARGV.get("control") || "למה הקמתי את מהמקור";
 const GONE = "איך אנחנו בוחרות";
 
 let failures = 0;
@@ -48,7 +62,7 @@ function check(name, cond, detail = "") {
 // The sandbox ships Chromium build 1194 at a fixed path while this repo's
 // @playwright/test pins 1234, so the default resolution misses. Point at the
 // preinstalled binary rather than downloading one (env policy).
-const EXE = process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const EXE = ARGV.get("chromium") || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({ executablePath: EXE });
 for (const [tag, width, height] of [["375", 375, 812], ["1440", 1440, 900]]) {
   const page = await browser.newPage({ viewport: { width, height } });
