@@ -8,7 +8,7 @@ import api from "@/lib/api";
 /**
  * MEH-2173 — the homepage filter row as "promoted + all".
  *
- * Two promoted chips (רישוי מאומת · משלוח) plus a "סינון" button opening the
+ * Two promoted chips (מאומת · משלוח) plus a "סינון" button opening the
  * SAME FilterSheet /map and /producers mount. Every other axis lives in the
  * sheet; a non-promoted axis that is on shows as a removable tag in the
  * "מסנן לפי:" row, while a promoted one shows its state on its own chip.

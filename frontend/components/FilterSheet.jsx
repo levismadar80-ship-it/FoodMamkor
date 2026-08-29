@@ -33,7 +33,9 @@ import Popover from "@/components/ui/Popover";
  *           subtext narrowed from all 7 toggles to the 3 unfamiliar terms —
  *           kosher · verified · grass_fed — so the sheet fits one 375px screen);
  *           MEH-1478 (diet group → 2-col pill grid; service group reordered
- *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched);
+ *           verified → משלוח — layout only, TOGGLE_CHIPS untouched. That chip
+ *           read "רישוי מאומת" then and reads "מאומת" since MEH-2214; the
+ *           ORDER is what this line records, and it is unchanged);
  *           MEH-1481 (desktop-only density: rows+pills min-h 36px, 13px labels,
  *           tighter gaps + capped scroll body + sticky footer — all lg:-gated,
  *           mobile byte-identical); MEH-1507 (Label Scope Contract: diet group
@@ -68,7 +70,8 @@ function chipSubtext(chip) {
 }
 
 // MEH-1478: within-group render order. Default = TOGGLE_CHIPS array order; the
-// service group leads with "רישוי מאומת" (verified) and trails with "משלוח"
+// service group leads with the verified chip ("מאומת" since MEH-2214, which
+// renamed the label without touching this order) and trails with "משלוח"
 // (has_delivery) per spec — a FilterSheet-LOCAL presentation reorder that leaves
 // lib/map-chips.js TOGGLE_CHIPS untouched (scope lock: the array order there
 // still drives /producers + every other consumer).
@@ -330,7 +333,7 @@ export default function FilterSheet({
                 leading icon + label at the inline-start, a Switch at the
                 inline-end, hairline divider between rows (divide-y). Each row is
                 ONE role="switch" button (min-h 44px tap target); multi-select is
-                unchanged. MEH-1478 service reorder (רישוי מאומת → משלוח) still
+                unchanged. MEH-1478 service reorder (verified → משלוח) still
                 applies via chipsForGroup. MEH-1481 desktop density preserved.
                 REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 — label+icon
                 at start, role="switch" pill at end, knob start-1(off)→end-1(on)
