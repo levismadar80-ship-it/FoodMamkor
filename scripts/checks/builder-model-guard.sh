@@ -108,9 +108,139 @@ cd "$REPO_ROOT" || exit 1
 
 REVIEW_WORKFLOW=".github/workflows/claude-review.yml"
 TRAILER_KEY="Builder-Model"
+VRT_WORKFLOW=".github/workflows/vrt-update.yml"
+
+# ---------------------------------------------------------------------------
+# THE EXEMPTION PREDICATE — the one rule --self-test drives.
+#
+#   is_exempt_bot_author "<name> <email>"  ->  0 = exempt, 1 = checked
+#
+# Extracted from the inline `if` it used to be so the self-test exercises the
+# REAL implementation. A second copy in the test would be free to drift from
+# the one that matters, and the drift would be invisible.
+#
+# SCOPE, deliberately narrow: dependabot ONLY. `github-actions[bot]` — which
+# is what vrt-update.yml commits as — is NOT exempt and MUST NOT be added here
+# without a decision. Widening this predicate shrinks the set of commits the
+# guard checks; workflow.md rule 32 ("CC adds constraints, never removes")
+# makes that direction off-limits to a session acting on its own. The
+# self-test below pins the split so a widening cannot land silently.
+# ---------------------------------------------------------------------------
+is_exempt_bot_author() {
+  printf '%s' "${1:-}" | grep -qiE 'dependabot(\[bot\])?'
+}
+
+# ---------------------------------------------------------------------------
+# self-test
+#
+# Cases 1-3 are synthetic and cover the edges. Case 4 is anchored in a REAL
+# repo file (MEH-1909): it reads the committer identity out of vrt-update.yml
+# rather than restating it, so the assertion tracks the workflow instead of a
+# fixture's idea of it. If Sapir changes that identity, this case follows.
+# ---------------------------------------------------------------------------
+self_test() {
+  echo "builder-model-guard --self-test"
+  echo
+  local failures=0 ran=0
+
+  expect() { # expect LABEL WANT_RC AUTHOR
+    local label="$1" want="$2" author="$3" got
+    ran=$((ran + 1))
+    is_exempt_bot_author "$author"; got=$?
+    if [ "$got" -eq "$want" ]; then
+      echo "  ok    ${label}  (rc=${got})"
+    else
+      echo "  FAIL  ${label}  (want rc=${want}, got ${got})  author=${author}"
+      failures=$((failures + 1))
+    fi
+  }
+
+  # 1-2: the discriminating pair. Same commit message in the wild; the author
+  #      string is the only difference, and it must flip the verdict.
+  expect "dependabot is exempt" 0 \
+    'dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>'
+  expect "github-actions is NOT exempt" 1 \
+    'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+  # 3: a human/session author is never exempt.
+  expect "a session author is NOT exempt" 1 \
+    'Claude <noreply@anthropic.com>'
+
+  # 4: REAL-FILE ANCHOR. Compose the author from vrt-update.yml's own
+  #    `git config` lines and assert the guard still checks it.
+  ran=$((ran + 1))
+  local vrt_name vrt_email vrt_author
+  vrt_name="$(sed -nE 's/^[[:space:]]*git config user\.name[[:space:]]+"(.*)"[[:space:]]*$/\1/p' "$VRT_WORKFLOW" 2>/dev/null | head -1)"
+  vrt_email="$(sed -nE 's/^[[:space:]]*git config user\.email[[:space:]]+"(.*)"[[:space:]]*$/\1/p' "$VRT_WORKFLOW" 2>/dev/null | head -1)"
+  if [ -z "$vrt_name" ] || [ -z "$vrt_email" ]; then
+    # Fail loudly rather than silently skipping: a case that cannot read its
+    # subject is not a case that passed. This is the null-that-reassures trap
+    # the repo's own testing rules spend two sections on.
+    echo "  FAIL  real-file anchor  — could not parse the committer identity from ${VRT_WORKFLOW}."
+    echo "        Every other result in this run is suspect: the anchor is what proves"
+    echo "        the predicate is aimed at the shape this repo actually uses."
+    failures=$((failures + 1))
+  else
+    vrt_author="${vrt_name} <${vrt_email}>"
+    is_exempt_bot_author "$vrt_author"
+    if [ $? -eq 1 ]; then
+      echo "  ok    real-file anchor: ${VRT_WORKFLOW} commits as '${vrt_author}' and is NOT exempt"
+    else
+      echo "  FAIL  real-file anchor: ${VRT_WORKFLOW} commits as '${vrt_author}', which the"
+      echo "        predicate now treats as EXEMPT. The exemption was widened; see rule 32."
+      failures=$((failures + 1))
+    fi
+  fi
+
+  echo
+  # Derived, never stated: a hardcoded count goes stale the moment a case is
+  # added, and a passing run would then misreport its own coverage.
+  if [ "$failures" -eq 0 ]; then
+    echo "builder-model-guard --self-test OK — ${ran} case(s), 0 failures."
+    return 0
+  fi
+  echo "builder-model-guard --self-test FAILED — ${ran} case(s), ${failures} failure(s)."
+  return 1
+}
+
+# ---------------------------------------------------------------------------
+# Arguments. Before this existed the script parsed NOTHING, so any flag —
+# `--self-test` included — silently ran the normal guard and exited 0. A green
+# that means "your flag was ignored" is indistinguishable from a green that
+# means "the test passed", which is the exact failure class .claude/rules/
+# testing.md documents. An unknown flag now exits 2.
+# ---------------------------------------------------------------------------
+case "${1:-}" in
+  --self-test) self_test; exit $? ;;
+  "")          ;;
+  *)           echo "builder-model-guard: unknown argument '$1'" >&2
+               echo "  usage: bash scripts/checks/builder-model-guard.sh [--self-test]" >&2
+               exit 2 ;;
+esac
 
 echo "builder-model-guard (MEH-1668) — repo root: $REPO_ROOT"
 echo
+
+# ---------------------------------------------------------------------------
+# PREFLIGHT — run the self-test on every normal run.
+#
+# Without this the self-test is a test nobody runs: `repo-guards` invokes each
+# guard with no arguments (run-all.sh:145) and NO workflow runs --self-test on
+# anything in this directory. Pinning the exemption split would then be a claim
+# rather than a gate, and a future widening of is_exempt_bot_author() would
+# land green. Wiring it into CI directly would need a .github/workflows/** edit
+# (CC-deny); running it here needs nothing and gates it transitively.
+#
+# Cost is a few milliseconds and no subprocess. On success it is silent, so a
+# normal run's output is unchanged.
+# ---------------------------------------------------------------------------
+if ! self_test_output="$(self_test 2>&1)"; then
+  printf '%s\n' "$self_test_output"
+  echo
+  echo "builder-model-guard FAILED — its own self-test does not pass."
+  echo "The guard refuses to judge a commit while its exemption rule is broken:"
+  echo "a verdict from an instrument that fails its own control is worth nothing."
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Mode. Everything below reports through warn() or fail() and never exits
@@ -247,8 +377,10 @@ fi
 
 # ---------------------------------------------------------------------------
 # Dependabot exemption — author-based, before any trailer check.
+# The predicate lives in is_exempt_bot_author() (defined near the top) so that
+# --self-test drives the REAL rule rather than a second copy of it.
 # ---------------------------------------------------------------------------
-if printf '%s' "$author" | grep -qiE 'dependabot(\[bot\])?'; then
+if is_exempt_bot_author "$author"; then
   echo "builder-model-guard SKIPPED — dependabot-authored commit."
   echo "  No CC session writes these, so no trailer can ever exist on one."
   exit 0
@@ -303,6 +435,23 @@ if [ -z "$trailer_line" ]; then
            "" \
            "Amend with: git commit --amend" \
            "Rationale + the full convention: .claude/rules/workflow.md 'Commit discipline'."
+    # A non-exempt BOT author is a distinct situation with a distinct remedy,
+    # and the wrong remedy is the tempting one. Say so at the point of failure.
+    # Guidance, NOT a second violation: printed directly rather than through
+    # report(), which would increment the problem count and make one problem
+    # read as two.
+    if printf '%s' "$author" | grep -qF '[bot]'; then
+      echo "      ---"
+      echo "      NOTE the author above is a bot, and it is not the exempt one."
+      echo "      No session authored this commit, so no trailer could have been"
+      echo "      written into it. The sanctioned unblock is an authored follow-up"
+      echo "      commit on the branch — which you need anyway, because a bot push"
+      echo "      fires no workflows (CLAUDE.md, MEH-1112/1113)."
+      echo "      Do NOT widen the exemption to make this green: that shrinks the set"
+      echo "      of commits this guard checks, the one direction rule 32 forbids."
+      echo "      Whether the exemption should be identity-based at all is an open"
+      echo "      decision, not a quick fix."
+    fi
   fi
 else
   lineno="${trailer_line%%:*}"
