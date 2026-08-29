@@ -82,20 +82,25 @@ for (const stub of [false, true]) {
     });
 
     // ---- probe 0: THE CONTROL ---------------------------------------------
-    if (!check(`${tag}/CONTROL story greeting renders`,
-      (await page.getByText("היי, אני ספיר", { exact: true }).count()) > 0)) {
+    if (!check(`${tag}/CONTROL story heading renders`,
+      (await page.getByText("למה הקמתי את מהמקור", { exact: true }).count()) > 0)) {
       console.error(`\n!! CONTROL FAILED at ${tag}. Every null in this run is void. Nothing written.`);
       process.exit(1);
     }
 
     // ---- structure ---------------------------------------------------------
-    const fig = page.getByTestId("about-story-figure");
-    const box = page.getByTestId("about-story-image-box");
-    const bread = page.getByTestId("about-band-bread");
+    // MEH-2211 repointed these. The side-bleed figure became the LEDE figure
+    // above the story, and the bread band was removed outright — so the band
+    // assertion inverts from "is present" to "is gone" rather than being
+    // deleted: an assertion that stops existing cannot notice the band coming
+    // back, and its absence is now the thing worth guarding.
+    const fig = page.getByTestId("about-lede-figure");
+    const box = page.getByTestId("about-lede-image-box");
     const duo = page.getByTestId("about-band-duo");
     const sig = page.getByTestId("about-signature");
-    check(`${tag}/story figure`, (await fig.count()) === 1);
-    check(`${tag}/bread band`, (await bread.count()) === 1);
+    check(`${tag}/lede figure`, (await fig.count()) === 1);
+    check(`${tag}/bread band REMOVED (MEH-2211)`,
+      (await page.getByTestId("about-band-bread").count()) === 0);
     check(`${tag}/duo band`, (await duo.count()) === 1);
     check(`${tag}/signature block`, (await sig.count()) === 1);
     check(`${tag}/founder portrait ABSENT`,
@@ -110,36 +115,36 @@ for (const stub of [false, true]) {
     if (stub) {
       check(`${tag}/story <img> renders when the asset loads`,
         (await page.locator('img[alt="תוצרת צבעונית בסלים בשוק איכרים"]').count()) === 1);
-      check(`${tag}/bread <img>`,
-        (await page.locator('img[alt="לחם מחמצת כפרי פרוס על קרש עץ"]').count()) === 1);
+      check(`${tag}/no bread <img> anywhere (MEH-2211)`,
+        (await page.locator('img[alt="לחם מחמצת כפרי פרוס על קרש עץ"]').count()) === 0);
       check(`${tag}/duo rear <img>`,
         (await page.locator('img[alt="בקבוק שמן זית זכוכית עם זיתים"]').count()) === 1);
       check(`${tag}/duo front is decorative (empty alt)`,
         (await duo.locator('img[alt=""]').count()) === 1);
     }
 
-    // ---- the bleed, MEASURED (RTL: the inline-END edge is the LEFT edge) ----
+    // ---- the LEDE, MEASURED. MEH-2211 cancelled the side bleed, so the old
+    // "bleeds to the inline-end edge" assertion is inverted: on desktop the
+    // lede must now stay INSIDE the container, and only mobile is full-width.
     const r = await box.evaluate((el) => {
       const b = el.getBoundingClientRect();
       return { left: b.left, right: b.right, w: b.width };
     });
-    check(`${tag}/story image bleeds to the inline-end (left) edge`, r.left <= 2,
-      `left=${r.left.toFixed(1)} right=${r.right.toFixed(1)} w=${r.w.toFixed(1)} vw=${width}`);
     if (label === "375") {
-      check(`${tag}/375 is a full-width band`, r.right >= width - 2,
-        `right=${r.right.toFixed(1)} vw=${width}`);
+      check(`${tag}/375 lede is a full-width band`, r.left <= 2 && r.right >= width - 2,
+        `left=${r.left.toFixed(1)} right=${r.right.toFixed(1)} vw=${width}`);
     } else {
-      // prose must NOT bleed — it stays inside the page's own container
-      const pr = await page.getByText("היי, אני ספיר", { exact: true })
+      check(`${tag}/desktop lede stays INSIDE the container (no bleed)`, r.left > 40,
+        `left=${r.left.toFixed(1)} right=${r.right.toFixed(1)} w=${r.w.toFixed(1)} vw=${width}`);
+      const pr = await page.getByText("למה הקמתי את מהמקור", { exact: true })
         .evaluate((el) => el.getBoundingClientRect().left);
       check(`${tag}/prose column stays inside the container`, pr > 40, `prose.left=${pr.toFixed(1)}`);
     }
 
     // ---- captures ----------------------------------------------------------
     await shoot(page, `about-${tag}-full.png`, null);
-    await shoot(page, `about-${tag}-story-bleed.png`, fig);
+    await shoot(page, `about-${tag}-lede.png`, fig);
     await shoot(page, `about-${tag}-signature.png`, sig);
-    await shoot(page, `about-${tag}-band-bread.png`, bread);
     await shoot(page, `about-${tag}-band-duo.png`, duo);
     await page.close();
   }
