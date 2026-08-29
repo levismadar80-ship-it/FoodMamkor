@@ -1,5 +1,9 @@
 /**
- * MEH-1934 — the ≥5 data gate on the two new diet chips.
+ * MEH-1934 — the ≥5 data gate on the new diet chip.
+ *
+ * MEH-2047 withdrew the second gated axis (low_carb) along with the claim
+ * itself, so the worked example throughout is now no_added_sugar. The gate's
+ * mechanics are unchanged; only its subject list is shorter.
  *
  * Same principle as MEH-1881's open-now gate: below the threshold the chip is
  * ABSENT, not disabled, so nothing hints at a filter that would return an empty
@@ -31,58 +35,59 @@ import {
 const withFlag = (key, n) => {
   const field = {
     no_added_sugar: "has_no_added_sugar_products",
-    low_carb: "has_low_carb_products",
   }[key];
   return Array.from({ length: n }, (_, i) => ({ id: i, [field]: true }));
 };
 
 describe("MEH-1934 — diet chip data gate", () => {
-  it("gates exactly the two new axes, and never the four that already have data", () => {
-    expect(GATED_DIET_KEYS).toEqual(["no_added_sugar", "low_carb"]);
+  it("gates exactly the new axis, and never the four that already have data", () => {
+    expect(GATED_DIET_KEYS).toEqual(["no_added_sugar"]);
+    // MEH-2047: and the withdrawn axis is not gated either — it is GONE. A
+    // stale entry here would keep a chip key alive that no config defines.
+    expect(GATED_DIET_KEYS).not.toContain("low_carb");
     // Retro-gating an existing axis would REMOVE a working filter.
     for (const old of ["vegan", "vegetarian", "gluten_free", "lactose_free"]) {
       expect(GATED_DIET_KEYS).not.toContain(old);
     }
   });
 
-  it("both new chips are on the shared row, so both surfaces must gate them", () => {
+  it("the gated chip is on the shared row, so both surfaces must gate it", () => {
     const keys = CHIPS_CONFIG.map((c) => c.key);
     for (const k of GATED_DIET_KEYS) expect(keys).toContain(k);
   });
 
   it("shows a chip at the threshold", () => {
-    expect(visibleGatedDietKeys(withFlag("low_carb", DIET_CHIP_MIN), {})).toContain(
-      "low_carb",
+    expect(visibleGatedDietKeys(withFlag("no_added_sugar", DIET_CHIP_MIN), {})).toContain(
+      "no_added_sugar",
     );
   });
 
   /** The discriminating case — one below is the whole point of the gate. */
   it("hides a chip one below the threshold", () => {
-    const shown = visibleGatedDietKeys(withFlag("low_carb", DIET_CHIP_MIN - 1), {});
-    expect(shown).not.toContain("low_carb");
+    const shown = visibleGatedDietKeys(withFlag("no_added_sugar", DIET_CHIP_MIN - 1), {});
+    expect(shown).not.toContain("no_added_sugar");
   });
 
   it("counts only producers that actually carry the flag", () => {
-    // DIET_CHIP_MIN businesses exist, but none declared low-carb.
+    // DIET_CHIP_MIN businesses exist, but none declared no-added-sugar.
     const noise = Array.from({ length: DIET_CHIP_MIN * 3 }, (_, i) => ({ id: i }));
-    expect(visibleGatedDietKeys(noise, {})).not.toContain("low_carb");
+    expect(visibleGatedDietKeys(noise, {})).not.toContain("no_added_sugar");
   });
 
-  it("counts each axis independently — one axis's coverage never opens the other", () => {
-    const shown = visibleGatedDietKeys(withFlag("no_added_sugar", DIET_CHIP_MIN), {});
-    expect(shown).toContain("no_added_sugar");
-    expect(shown).not.toContain("low_carb");
-  });
+  // MEH-2047: the "counts each axis independently" case was DELETED, not
+  // rewritten. It asserted that one gated axis's coverage does not open the
+  // other; with a single gated axis there is no other, and every reformulation
+  // is entailed by the filter in the case above it — decoration that reads as
+  // coverage. It comes back with the next gated axis, not before.
 
   /**
    * An ACTIVE filter keeps its chip even under the gate. Without this, a
-   * deep-linked ?low_carb=1 strands the visitor with a filter whose effect she
+   * deep-linked ?no_added_sugar=1 strands the visitor with a filter whose effect she
    * can see and cannot switch off — the same carve-out MEH-1881 makes.
    */
   it("keeps an active chip visible below the threshold", () => {
-    const shown = visibleGatedDietKeys([], { low_carb: true });
-    expect(shown).toContain("low_carb");
-    expect(shown).not.toContain("no_added_sugar");
+    const shown = visibleGatedDietKeys([], { no_added_sugar: true });
+    expect(shown).toContain("no_added_sugar");
   });
 
   it("survives an empty or absent producer list without throwing", () => {

@@ -16,10 +16,8 @@ from app.auth import (
 from app.database import get_db
 from app.models import (
     Category,
-    ContactClick,
     KashrutBadgeRequest,
     Producer,
-    ProducerWhatsAppClick,
     Report,
     User,
 )
@@ -37,8 +35,14 @@ from app.schemas.schemas import (
     ProducerDetailOut,
     ProducerListOut,
     ProducerRandomOut,
+    ProducerViewIn,
+    WhatsAppClickIn,
 )
-from app.services.analytics import ViewContext, hash_ip, track_producer_view
+from app.services.analytics import (
+    EventContext,
+    is_internal_viewer,
+    record_analytics_event,
+)
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
     build_producers_query,
@@ -127,6 +131,13 @@ def list_producers(
     # REUSES: delivery_cities:113 (repeatable list param) + category:106.
     delivery_days: list[str] | None = Query(None),
     has_delivery: bool | None = None,
+    # MEH-2046: "offers self-pickup". The param keeps the column's name because
+    # that is the user-facing axis, but the predicate reads pickup /
+    # market_stand rows on producer_locations, NOT the near-dead
+    # Producer.pickup_points column — see _pickup_condition for why.
+    # OR-ed with the delivery axes (a service group), never a rung on their
+    # precedence ladder.
+    pickup_points: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
     # organic is no longer a filter (חוק תוצרת אורגנית 2005). See producer_listing.py.
@@ -207,6 +218,7 @@ def list_producers(
         delivery_day=delivery_day,
         delivery_days=delivery_days,  # MEH-2036
         has_delivery=has_delivery,
+        pickup_points=pickup_points,  # MEH-2046
         verified=verified,
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881
@@ -367,7 +379,6 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
 def get_producer(
     producer_id: UUID,
     request: Request,
-    from_: str | None = Query(None, alias="from"),
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
@@ -419,22 +430,68 @@ def get_producer(
         for c in _servable_kashrut_certs(db, producer)
     ]
 
-    # feature/producer-analytics: track the view. Best-effort; swallows
-    # all exceptions so tracking glitches can never break the response.
-    # Bot UAs are filtered inside track_producer_view.
-    client_ip = request.client.host if request.client else None
-    track_producer_view(
-        db,
-        producer_id=producer_id,
-        ctx=ViewContext(
-            viewer_ip=client_ip,
-            user_agent=request.headers.get("user-agent"),
-            viewer_user=viewer,
-            referrer=from_,
-        ),
-    )
-
+    # MEH-2159: this GET no longer records a view. Counting inside a read
+    # made the row depend on WHICH endpoint happened to be called rather
+    # than on "someone opened the page", which produced three bugs at once:
+    # the /{slug} route recorded nothing (it calls get_producer_by_slug,
+    # which never tracked), the /producer/{uuid} route recorded twice (SSR
+    # plus client), and the SSR row carried no Authorization header — so
+    # is_internal_viewer saw viewer=None and the owner's own visit counted
+    # despite MEH-2156. The browser now reports the event explicitly via
+    # POST /producers/{id}/view, the same shape contact-click already uses.
     return result
+
+
+@router.post("/producers/{producer_id}/view", status_code=204)
+@limiter.limit("60/minute")
+def record_producer_view(
+    request: Request,
+    producer_id: UUID,
+    data: ProducerViewIn,
+    db: Session = Depends(get_db),
+    # MEH-2159: lenient, for the same reason as contact-click below — a
+    # keepalive beacon fired during navigation cannot retry, so an expired
+    # token must degrade to "anonymous view" and never to a 401 the page
+    # has already navigated away from.
+    current_user: User | None = Depends(get_current_user_lenient),
+):
+    """Record one page view for the producer dashboard.
+
+    The browser reports this explicitly instead of it being a side effect of
+    GET /producers/{id}. Auth optional; the owner's and admins' own views are
+    skipped inside record_analytics_event. Rate-limited 60/minute per IP —
+    higher than the click endpoints because one is expected per page load.
+    """
+    # Existence check first, so a bogus id 404s rather than silently
+    # recording nothing — same ordering as the two click endpoints.
+    producer = get_producer_or_404(db, producer_id)
+
+    # MEH-2159 + MEH-254: mirror the pending/rejected gate that guards
+    # GET /producers/{id} (producers.py:407-412). Without it this endpoint
+    # is an enumeration oracle for the moderation queue: the GET 404s a
+    # non-approved producer to a stranger, so answering 204 here would let
+    # anyone tell a real-but-unapproved UUID (204) from a nonexistent one
+    # (404) — the exact disclosure MEH-254 closed. Measured before the fix:
+    # pending -> GET=404 / POST=204 / 1 row written by the stranger.
+    #
+    # It also stops a stranger writing rows onto a pending business's
+    # counter, which is the number MEH-2156 exists to make trustworthy.
+    #
+    # DO NOT fork the condition — it must agree with the GET's gate, which
+    # is what makes "any view of a non-approved profile is necessarily the
+    # owner or an admin" true. is_internal_viewer is that same shape,
+    # extracted (services/analytics.py).
+    if producer.status != "approved" and not is_internal_viewer(
+        current_user, producer_id
+    ):
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    record_analytics_event(
+        db,
+        event="page_view",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user, referrer=data.referrer),
+    )
 
 
 @router.post("/producers/{producer_id}/whatsapp-click")
@@ -442,6 +499,11 @@ def get_producer(
 def record_whatsapp_click(
     request: Request,
     producer_id: UUID,
+    # MEH-1677: OPTIONAL body carrying the coverage-request city. It must stay
+    # optional: the anonymous path uses navigator.sendBeacon, which cannot set
+    # Content-Type: application/json, so a required body would 422 every
+    # anonymous WhatsApp click on the site. Only CoverageRequestCta sends one.
+    data: WhatsAppClickIn | None = None,
     db: Session = Depends(get_db),
     # MEH-1627: lenient, NOT get_current_user_optional. The frontend fires
     # this via navigator.sendBeacon as the tab hands off to wa.me — there is
@@ -460,13 +522,32 @@ def record_whatsapp_click(
     """
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
-    db.add(
-        ProducerWhatsAppClick(
-            producer_id=producer_id,
-            user_id=current_user.id if current_user else None,
-        )
+    # MEH-2156: the owner's own clicks (and any admin's) are not audience, so
+    # they are not logged. The check gates the WRITE and not the return, so
+    # there is exactly one exit and the two paths cannot drift apart — an
+    # early `return {"detail": "logged"}` would duplicate the body literal,
+    # and this endpoint's guarantee is that an owner's response is
+    # indistinguishable from a visitor's. Placed after get_producer_or_404 so
+    # a bogus producer_id still 404s for the owner.
+    # Rationale in full: the predicate's docstring in services/analytics.py.
+    #
+    # DO NOT move this explanation into the docstring above — a route
+    # handler's docstring IS the `description` field in backend/openapi.json,
+    # so editing it is a public-contract change that reds the committed-spec
+    # snapshot (tests/test_openapi_contract_snapshot.py).
+    # MEH-2160: the owner/admin skip is no longer decided here — it, the bot
+    # filter, the trusted-proxy IP and the fail-open write all live in
+    # record_analytics_event, which is the only place an analytics row is
+    # written. The gate stays OUT of this handler on purpose: a rule expressed
+    # at the call site is a rule the next writer has to remember.
+    record_analytics_event(
+        db,
+        event="whatsapp_click",
+        producer_id=producer_id,
+        ctx=EventContext(
+            request=request, viewer=current_user, city=data.city if data else None
+        ),
     )
-    db.commit()
     return {"detail": "logged"}
 
 
@@ -495,16 +576,19 @@ def record_contact_click(
         raise HTTPException(status_code=422, detail="method לא חוקי")
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
-    client_ip = request.client.host if request.client else None
-    db.add(
-        ContactClick(
-            producer_id=producer_id,
-            user_id=current_user.id if current_user else None,
-            method=data.method,
-            ip_hash=hash_ip(client_ip),
-        )
+    # MEH-2156: owner/admin clicks are not audience, so they are not logged.
+    # Same shape as record_whatsapp_click deliberately — gate the WRITE, not
+    # the return. Placed after the 422 and the 404 so validation is identical
+    # for the owner, and the 204 she receives is indistinguishable from a
+    # visitor's. (Kept out of the docstring — see record_whatsapp_click.)
+    # MEH-2160: same as whatsapp-click above — every exclusion rule and the
+    # write itself live in record_analytics_event.
+    record_analytics_event(
+        db,
+        event="contact_click",
+        producer_id=producer_id,
+        ctx=EventContext(request=request, viewer=current_user, method=data.method),
     )
-    db.commit()
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
@@ -513,13 +597,20 @@ def create_producer(
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
-    """Create a pending producer row.
+    """Create a DRAFT producer row.
 
     SECURITY: this endpoint was historically public, which meant anyone
     could create pending producers with no audit trail. It's now
     authenticated — any logged-in user can create, but anonymous callers
     get 401. The public "become a producer" signup flow lives at
     POST /auth/register/producer (see routers/auth.py) and is unaffected.
+
+    MEH-2100: the row lands in `draft`, so "any logged-in user can create"
+    no longer means "any logged-in user can put a row in front of the
+    admin". Reaching the review queue now requires
+    POST /producers/me/submit-for-review, which is owner-scoped and gated
+    on a complete profile. Deepens the audit-trail fix above rather than
+    replacing it.
     """
     # MEH-530: 422s when a license-required category is selected without
     # a `producer_license_number`. Format check is intentionally absent
@@ -552,6 +643,27 @@ _ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
 # upload-time cap (upload.py:MAX_FILE_SIZE) for re-encoding, not a promise
 # that a 5 MB+ file is legitimate.
 _MAX_CERT_BYTES = 8 * 1024 * 1024
+
+# MEH-2128: the media types Cloudinary may report for a file that
+# `_sniff_image_type` (upload.py:47-61) accepts at upload time — jpeg / png /
+# webp / gif, plus HEIC and HEIF, whose ISO-BMFF brands that function folds
+# into the single label "heic" while Cloudinary still distinguishes the two on
+# delivery. A `startswith("image/")` gate served ANY image/*,
+# `image/svg+xml` included: an SVG proxied from our own origin renders as a
+# top-level document and executes embedded <script>, i.e. stored XSS on
+# mehamakor. What cannot enter through upload must not leave through the proxy,
+# so the serve-side set is a membership test against exactly that set — never
+# wider (no image/avif, no image/svg+xml).
+_ALLOWED_CERT_CONTENT_TYPES = frozenset(
+    {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+        "image/heic",
+        "image/heif",
+    }
+)
 
 
 # MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
@@ -647,13 +759,22 @@ def get_kashrut_cert(
             if upstream.status_code != 200:
                 raise HTTPException(status_code=404, detail="לא נמצא")
 
-            content_type = upstream.headers.get(
-                "content-type", "application/octet-stream"
+            # MEH-2128: normalise before comparing — an upstream may send
+            # `IMAGE/JPEG; charset=utf-8`, and a raw compare would reject a
+            # legitimate cert while a raw pass-through would echo the
+            # requester-influenced string straight into the response header.
+            content_type = (
+                upstream.headers.get("content-type", "application/octet-stream")
+                .split(";")[0]
+                .strip()
+                .lower()
             )
             # Only ever serve an image — the upload route sniffs magic bytes,
             # but the column is plain text, so this is the second lock
-            # rather than the first.
-            if not content_type.startswith("image/"):
+            # rather than the first. Membership, not a prefix: `image/svg+xml`
+            # passes `startswith("image/")` and executes script when opened
+            # as a top-level document from our own origin (MEH-2128).
+            if content_type not in _ALLOWED_CERT_CONTENT_TYPES:
                 raise HTTPException(status_code=404, detail="לא נמצא")
 
             # Adversarial review: httpx.get().content buffers the WHOLE body

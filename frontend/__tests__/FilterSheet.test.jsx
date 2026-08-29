@@ -2,17 +2,22 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import FilterSheet from "@/components/FilterSheet";
 
-// MEH-1075 / MEH-1423 / MEH-1478 / MEH-1507: FilterSheet — grouped /map filter surface.
-// Covers: closed/open render (3 group headers; MEH-1507 makes ALL toggles —
-// diet + quality + service — full-width role="switch" rows, retiring the MEH-1478
-// diet pill grid), shared-state toggle (aria-checked), the MEH-1507 scope-explicit
-// subtext on every diet row + grass_fed with a BADGE_CONFIG fallback on the trust
-// rows (kosher / verified; has_delivery none), the live apply label (incl. zero
-// state with clear link + apply still enabled), and the close paths (Escape /
-// backdrop) + focus-into-sheet on open.
+// MEH-1075 / MEH-1423 / MEH-1478 / MEH-1507 / MEH-2169: FilterSheet — the grouped
+// filter surface mounted by /map and /producers.
+// Covers: closed/open render (3 group headers), shared-state toggle (aria-checked),
+// the live apply label (incl. zero state with clear link + apply still enabled),
+// and the close paths (Escape / backdrop) + focus-into-sheet on open.
 // MEH-1468: the sheet-only badge-count helper (countActiveSheetOnlyFilters) test
 // was removed here — the helper was deleted (MEH-1368 replaced it with the inline
 // "· N" count from useMapFilters.activeAttributeCount).
+//
+// MEH-2169 changed WHERE the MEH-1507 disclosure is painted, so the assertions
+// below moved with it rather than being dropped — that distinction is the point
+// of the "disclosure did not disappear" block:
+//   · the 5 diet subtexts   → ONE group-level scope line, and the diet axes render
+//                             as a 2-col pill grid (still role="switch")
+//   · every other subtext   → the content of an ⓘ InfoTooltip beside the row
+//   · has_delivery          → still nothing, still asserted absent
 
 // Namespace-less t() that returns the key; interpolated values are appended
 // as `key#value` so the apply-count assertions can target them.
@@ -25,12 +30,16 @@ const ALL_OFF = {
   categoryKeys: [], // MEH-1465: /map category state is a multi-select array now.
   // MEH-1259: organic removed from the /map FilterSheet toggle set.
   has_delivery: false,
+  pickup_points: false, // MEH-2046
   verified: false,
+  open_for_orders_now: false, // MEH-2131
   kosher: false,
   grass_fed: false,
   vegan: false,
+  vegetarian: false,
   gluten_free: false,
   lactose_free: false,
+  no_added_sugar: false,
 };
 
 function renderSheet(overrides = {}) {
@@ -53,71 +62,130 @@ describe("FilterSheet (MEH-1075)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders title, the 3 group headers, and every toggle as a role=switch row when open", () => {
-    // MEH-1259: "אורגני" toggle removed. MEH-1507: the MEH-1478 diet pill GRID is
-    // retired — ALL toggles (diet + quality + service) are now full-width
-    // role="switch" rows so each diet term can carry its scope subtext.
+  it("renders title, the 3 group headers, and every toggle as role=switch when open", () => {
+    // MEH-1259: "אורגני" toggle removed. MEH-2169: the diet axes are a 2-col pill
+    // GRID again, but they keep role="switch" + aria-checked — the visual form
+    // changed, the ARIA vocabulary did not. That is asserted here rather than
+    // assumed because __tests__/ProducersFilterSheet.test.jsx:203 reads
+    // aria-checked off chip-gluten_free on the /producers mount of this same
+    // component; had MEH-2169 copied MEH-1478's aria-pressed, that file would
+    // have gone red from a change in a file it does not import.
     renderSheet();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("filters.sheet.title")).toBeInTheDocument();
     for (const group of ["group_diet", "group_quality", "group_service"]) {
       expect(screen.getByText(`filters.sheet.${group}`)).toBeInTheDocument();
     }
-    // Every toggle is a role="switch" row (MEH-1507).
-    for (const label of [
-      // diet
+    // Labels stay literal (a copy lock — MEH-1418 renamed one of these and this
+    // roster is what would catch the next such rename).
+    const LABELS = [
+      // diet — pills (MEH-2169)
       "טבעוני",
       "צמחוני",
       "ללא גלוטן",
       "ללא לקטוז",
-      // quality + service
+      "ללא סוכר מוסף",
+      // quality
       "כשרות מאומתת",
       "גראס פד",
+      // service. MEH-1418: "מאומתים" → "רישוי מאומת"; MEH-2214: → "מאומת".
+      "מאומת",
       "משלוח",
-      // MEH-1418: "מאומתים" → "רישוי מאומת".
-      "רישוי מאומת",
-    ]) {
-      const row = screen.getByRole("switch", { name: label });
-      expect(row).toHaveAttribute("aria-checked", "false");
+      "איסוף עצמי",
+      "פתוחים להזמנות עכשיו",
+    ];
+    for (const label of LABELS) {
+      expect(screen.getByRole("switch", { name: label })).toHaveAttribute(
+        "aria-checked",
+        "false",
+      );
     }
+    // Exactly this many, not "at least" — the loop above proves each listed axis
+    // is present and says nothing about a TWELFTH one. With this line, adding a
+    // /map axis without adding it to the roster reds the test instead of passing
+    // through a check that reads like full coverage (.claude/rules/testing.md).
+    expect(screen.getAllByRole("switch")).toHaveLength(LABELS.length);
     expect(screen.queryByRole("switch", { name: "אורגני" })).not.toBeInTheDocument();
   });
 
-  // MEH-1507 — Label Scope Contract: every diet row now shows its scope-explicit
-  // LOCKED subtext ("עסקים עם מוצרים … בקטלוג"); grass_fed reads "לפי הצהרת בית
-  // העסק"; the trust rows (kosher · verified) fall back to their BADGE_CONFIG
-  // tooltip; has_delivery has no subtext. Subtext sits OUTSIDE the switch so the
-  // row label stays the accessible name (getByRole name assertions above).
-  it("renders scope-explicit subtext on every diet row + grass_fed, BADGE_CONFIG on the trust rows", () => {
-    renderSheet();
-    // Diet rows — the LOCKED scope-explicit copy (MEH-1507):
-    expect(screen.getByText("עסקים עם מוצרים טבעוניים בקטלוג")).toBeInTheDocument();
-    expect(screen.getByText("עסקים עם מוצרים צמחוניים בקטלוג")).toBeInTheDocument();
-    expect(screen.getByText("עסקים עם מוצרים ללא גלוטן בקטלוג")).toBeInTheDocument();
-    expect(screen.getByText("עסקים עם מוצרים ללא לקטוז בקטלוג")).toBeInTheDocument();
-    // grass_fed — evidence framing (MEH-1507 locked copy):
-    expect(screen.getByText("לפי הצהרת בית העסק")).toBeInTheDocument();
-    // Trust rows fall back to BADGE_CONFIG tooltips (unchanged):
-    // verified → BADGE_CONFIG.verified.tooltip
-    expect(
-      screen.getByText("בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."),
-    ).toBeInTheDocument();
-    // kosher → BADGE_CONFIG.kosher.tooltip
-    expect(screen.getByText("המוצרים תחת השגחת כשרות.")).toBeInTheDocument();
-    // has_delivery has no contract subtext and no BADGE_CONFIG["has_delivery"] → absent.
-    expect(screen.queryByText("העסק מוסר או שולח לכתובת שלך.")).not.toBeInTheDocument();
-    // the subtext must NOT leak into the switch's accessible name
-    expect(
-      screen.getByRole("switch", { name: "רישוי מאומת" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "טבעוני" })).toBeInTheDocument();
+  // MEH-2169 — the MEH-1507 disclosure survived the compaction. This is the block
+  // that proves it, because "we shrank the sheet" and "we deleted the scope
+  // disclosure" produce the same height number and only this tells them apart.
+  //
+  // What changed: the five diet subtexts became ONE group line; every other
+  // subtext became an ⓘ tap-Popover. What did NOT change: the resolution order in
+  // chipSubtext() (contract subtext → BADGE_CONFIG tooltip → nothing), so
+  // has_delivery still discloses nothing and still has no ⓘ.
+  describe("MEH-1507 disclosure, relocated by MEH-2169", () => {
+    it("says the diet scope ONCE at group level, and not per pill", () => {
+      renderSheet();
+      expect(screen.getByText("filters.sheet.diet_scope")).toBeInTheDocument();
+      // The five per-pill paragraphs are gone. Asserted by their LOCKED strings,
+      // not by counting <p> elements: a count would pass if the copy silently
+      // changed, and these exact sentences are what MEH-1507 locked.
+      for (const gone of [
+        "עסקים עם מוצרים טבעוניים בקטלוג",
+        "עסקים עם מוצרים צמחוניים בקטלוג",
+        "עסקים עם מוצרים ללא גלוטן בקטלוג",
+        "עסקים עם מוצרים ללא לקטוז בקטלוג",
+        "עסקים עם מוצרים ללא סוכר מוסף בקטלוג",
+      ]) {
+        expect(screen.queryByText(gone)).not.toBeInTheDocument();
+      }
+      // ...and no diet pill grew an ⓘ of its own (the group line is the disclosure).
+      for (const key of ["vegan", "vegetarian", "gluten_free", "lactose_free", "no_added_sugar"]) {
+        expect(screen.queryByTestId(`chip-info-${key}`)).not.toBeInTheDocument();
+      }
+    });
+
+    it("hides each non-diet explanation behind an ⓘ that reveals the SAME string", () => {
+      renderSheet();
+      // The pairs are [row key, the exact string MEH-1507 resolved for it].
+      // grass_fed + pickup_points + open_for_orders_now come from the contract
+      // metadata; kosher + verified fall back to their BADGE_CONFIG tooltip.
+      const DISCLOSURES = [
+        ["grass_fed", "לפי הצהרת בית העסק"],
+        ["pickup_points", "עסקים עם נקודת איסוף עצמי או דוכן בשוק"],
+        ["open_for_orders_now", "עסקים שחלון ההזמנות שהגדירו פתוח ברגע זה"],
+        ["kosher", "המוצרים תחת השגחת כשרות."],
+        ["verified", "בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."],
+      ];
+      for (const [key, text] of DISCLOSURES) {
+        // Closed by default — this is the height saving, and it is the half of
+        // the change that could have been faked by simply deleting the string.
+        expect(screen.queryByText(text)).not.toBeInTheDocument();
+        const info = screen.getByTestId(`chip-info-${key}`);
+        fireEvent.click(info);
+        expect(screen.getByText(text)).toBeInTheDocument();
+        // Close it again so the next iteration's "not in the document" assertion
+        // is measuring its own row rather than inheriting a still-open bubble.
+        fireEvent.click(info);
+        expect(screen.queryByText(text)).not.toBeInTheDocument();
+      }
+    });
+
+    it("gives has_delivery no ⓘ — it has nothing to disclose", () => {
+      renderSheet();
+      expect(screen.getByRole("switch", { name: "משלוח" })).toBeInTheDocument();
+      expect(screen.queryByTestId("chip-info-has_delivery")).not.toBeInTheDocument();
+    });
+
+    it("keeps the ⓘ OUT of the switch's accessible name and out of the switch", () => {
+      renderSheet();
+      // Two distinct failures guarded: name pollution (the tooltip trigger being
+      // read as part of the row's label) and invalid nesting (a <button> inside a
+      // <button>, which browsers silently unnest — the reason the ⓘ is a sibling).
+      const row = screen.getByRole("switch", { name: "מאומת" });
+      expect(row.querySelector("button")).toBeNull();
+      expect(screen.getByRole("switch", { name: "כשרות מאומתת" })).toBeInTheDocument();
+    });
   });
 
   it("toggling a diet / trust row calls onToggleChip; aria-checked mirrors chipState", () => {
     const { props } = renderSheet({
       chipState: { ...ALL_OFF, vegan: true },
     });
-    // MEH-1507: diet toggles are role="switch" rows writing shared state.
+    // MEH-2169: diet toggles are role="switch" PILLS writing shared state.
     const veganRow = screen.getByRole("switch", { name: "טבעוני" });
     expect(veganRow).toHaveAttribute("aria-checked", "true");
     // MEH-1259: was the organic chip (removed) — grass_fed is the other quality toggle.
@@ -134,6 +202,23 @@ describe("FilterSheet (MEH-1075)", () => {
     const apply = screen.getByRole("button", { name: "filters.sheet.apply#7" });
     fireEvent.click(apply);
     expect(props.onClose).toHaveBeenCalled();
+  });
+
+  // MEH-2169: filters apply LIVE, so the count is the only thing on this surface
+  // that moves when a toggle flips. Without a live region that feedback is
+  // sighted-only.
+  it("announces the apply count as a polite live region that updates in place", () => {
+    const { props, rerender } = renderSheet({ resultCount: 7 });
+    const live = screen.getByText("filters.sheet.apply#7");
+    expect(live).toHaveAttribute("aria-live", "polite");
+
+    // The region must be UPDATED, not replaced. A live region only announces if
+    // the same node's contents change — remount it and assistive tech says
+    // nothing, while every static assertion above still passes. Identity is
+    // therefore the assertion, and it is what distinguishes this from a
+    // decorative attribute.
+    rerender(<FilterSheet {...props} resultCount={4} />);
+    expect(screen.getByText("filters.sheet.apply#4")).toBe(live);
   });
 
   it("zero state: apply shows count 0 and stays enabled; clear link resets sheet filters", () => {
@@ -165,7 +250,7 @@ describe("FilterSheet (MEH-1075)", () => {
   // interaction. Focus capture now keys on [open] only.
   it("keeps focus in place when the caller re-renders with a new onClose ref", () => {
     const { rerender, props } = renderSheet();
-    // MEH-1507: gluten_free is a diet role="switch" row now.
+    // MEH-2169: gluten_free is a diet role="switch" pill in the 2-col grid.
     const glutenFree = screen.getByRole("switch", { name: "ללא גלוטן" });
     glutenFree.focus();
     rerender(

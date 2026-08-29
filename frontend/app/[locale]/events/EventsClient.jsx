@@ -29,6 +29,12 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
+// MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
+// chunk 2; /settings then needed the identical behaviour, so it was lifted to
+// a shared hook and this file retrofitted onto it. Two copies of the RTL arrow
+// mapping would drift, and a drifted arrow direction is invisible in review —
+// it reads as a plausible line either way.
+import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -207,6 +213,11 @@ export default function EventsPage() {
   const activeChipKey = category === "" ? "all" : category;
   const onChipClick = (k) => setCategory(k === "all" ? "" : k);
 
+  // MEH-2199: one handler per tablist. The hook reads each row's own tabs out
+  // of the DOM, so the two rows on this page cannot interfere with each other.
+  const onMainTabsKeyDown = useTabsKeyboard(switchTab);
+  const onViewTabsKeyDown = useTabsKeyboard(setView);
+
   // Group rows into consecutive month buckets (same logic as before —
   // restyled into the month-divider). Stores month + year labels split so
   // the year can render in Cormorant italic per the FINAL.
@@ -230,6 +241,21 @@ export default function EventsPage() {
     setCity("");
     setCategory("");
   };
+
+  // MEH-1865: a zero row count means two different things, and the page used
+  // to render one surface for both. No new data signal is needed to tell them
+  // apart: load() only ever sends city + category, so with NEITHER applied the
+  // response IS the dataset for this tab. `filtersActive` therefore decides,
+  // and it can only err in the safe direction — a genuinely empty dataset
+  // reached WITH a filter on renders the filtered-to-zero surface, whose
+  // "clear filters" action then reveals the true empty state one click later.
+  // The reverse mistake (hiding the filters on a filtered-to-zero) is the one
+  // that traps the reader with no way back but editing the URL, and it cannot
+  // happen here.
+  const filtersActive = Boolean(city || category);
+  const isZero = !loading && events.length === 0;
+  const datasetEmpty = isZero && !filtersActive;
+  const filteredToZero = isZero && filtersActive;
 
   return (
     <div>
@@ -287,10 +313,16 @@ export default function EventsPage() {
             wrapping only the two tabs. The Link stays a sibling in the same
             flex row (ms-auto), so the layout is unchanged. */}
         <div className="flex items-end gap-4 border-b border-border">
-          <div role="tablist" className="flex items-end gap-4">
+          <div
+            role="tablist"
+            className="flex items-end gap-4"
+            onKeyDown={onMainTabsKeyDown}
+          >
           <button
             role="tab"
+            data-tab-value="events"
             aria-selected={!isExp}
+            tabIndex={isExp ? -1 : 0}
             onClick={() => switchTab("events")}
             className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
@@ -300,7 +332,9 @@ export default function EventsPage() {
           </button>
           <button
             role="tab"
+            data-tab-value="experiences"
             aria-selected={isExp}
+            tabIndex={isExp ? 0 : -1}
             onClick={() => switchTab("experiences")}
             className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
@@ -320,68 +354,83 @@ export default function EventsPage() {
         </div>
       </div>
 
-      {/* Toolbar — city search + list/calendar view toggle */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div className="flex items-center gap-2 md:gap-3">
-          <CitySearch
-            id="events-city"
-            label={t("filter_city_label")}
-            value={city}
-            onChange={setCity}
-            placeholder={t("filter_city_placeholder")}
-            className="flex-1 md:max-w-xs"
-          />
-          <div
-            role="tablist"
-            aria-label={t("view_mode_label")}
-            className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
-          >
-            <button
-              role="tab"
-              aria-selected={view === "list"}
-              // Label is icon-only on mobile (hidden sm:inline); keep a stable
-              // accessible name on every viewport (MEH-134 — a11y + E2E locator).
-              aria-label={t("view_list")}
-              onClick={() => setView("list")}
-              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
-                view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
-              }`}
-            >
-              <Rows size={18} weight={view === "list" ? "fill" : "regular"} />
-              <span className="hidden sm:inline">{t("view_list")}</span>
-            </button>
-            <button
-              role="tab"
-              aria-selected={view === "calendar"}
-              aria-label={t("view_calendar")}
-              onClick={() => setView("calendar")}
-              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
-                view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
-              }`}
-            >
-              <CalendarBlank size={18} weight={view === "calendar" ? "fill" : "regular"} />
-              <span className="hidden sm:inline">{t("view_calendar")}</span>
-            </button>
+      {/* Toolbar + category chips — the tab's filter controls. MEH-1865: on an
+          empty dataset there is nothing to filter and nothing to re-view, so
+          the whole control layer is withheld; on a filtered-to-zero it stays,
+          because it is the only way back. */}
+      {!datasetEmpty && (
+        <>
+          {/* Toolbar — city search + list/calendar view toggle */}
+          <div className="max-w-5xl mx-auto px-4 pt-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <CitySearch
+                id="events-city"
+                label={t("filter_city_label")}
+                value={city}
+                onChange={setCity}
+                placeholder={t("filter_city_placeholder")}
+                className="flex-1 md:max-w-xs"
+              />
+              <div
+                role="tablist"
+                aria-label={t("view_mode_label")}
+                className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
+                onKeyDown={onViewTabsKeyDown}
+              >
+                <button
+                  role="tab"
+                  data-tab-value="list"
+                  aria-selected={view === "list"}
+                  tabIndex={view === "list" ? 0 : -1}
+                  // Label is icon-only on mobile (hidden sm:inline); keep a stable
+                  // accessible name on every viewport (MEH-134 — a11y + E2E locator).
+                  aria-label={t("view_list")}
+                  onClick={() => setView("list")}
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                    view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
+                  }`}
+                >
+                  <Rows size={18} weight={view === "list" ? "fill" : "regular"} />
+                  <span className="hidden sm:inline">{t("view_list")}</span>
+                </button>
+                <button
+                  role="tab"
+                  data-tab-value="calendar"
+                  aria-selected={view === "calendar"}
+                  tabIndex={view === "calendar" ? 0 : -1}
+                  aria-label={t("view_calendar")}
+                  onClick={() => setView("calendar")}
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                    view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
+                  }`}
+                >
+                  <CalendarBlank size={18} weight={view === "calendar" ? "fill" : "regular"} />
+                  <span className="hidden sm:inline">{t("view_calendar")}</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
-      <div className="max-w-5xl mx-auto px-4 pt-3">
-        <ChipScrollRow
-          variant="category"
-          chips={chips}
-          activeKey={activeChipKey}
-          onChipClick={onChipClick}
-        />
-      </div>
+          {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
+          <div className="max-w-5xl mx-auto px-4 pt-3">
+            <ChipScrollRow
+              variant="category"
+              chips={chips}
+              activeKey={activeChipKey}
+              onChipClick={onChipClick}
+            />
+          </div>
+        </>
+      )}
 
       {/* Feed */}
       <section className="max-w-5xl mx-auto px-4 pt-4 pb-16">
         {loading ? (
           <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
-        ) : events.length === 0 ? (
-          <EmptyState tab={tab} t={t} onReset={resetFilters} />
+        ) : filteredToZero ? (
+          <NoResults t={t} onReset={resetFilters} />
+        ) : datasetEmpty ? (
+          <EmptyState tab={tab} t={t} />
         ) : view === "calendar" ? (
           <CalendarView items={events} linkPrefix={isExp ? "/experiences" : "/events"} />
         ) : (
@@ -422,7 +471,11 @@ function EntryRow({ entry, freeLabel }) {
   const Icon = CATEGORY_ICON[entry.category] ?? CalendarBlank;
   const accentText = isExp ? "text-accent" : "text-primary";
   const tickBg = isExp ? "bg-accent" : "bg-primary";
-  const catChip = isExp ? "bg-accent/10 text-accent" : "bg-green-50 text-primary";
+  // MEH-2069: bg-accent/10 on the page background (cream, #f5f0e8) computed
+  // 4.07:1 — AA fail for text-xs (12px). Same usage-level fix already applied
+  // twice (MEH-2025/#2825, MEH-2032/#2909): solid bg-surface-card gets
+  // text-accent to 5.19:1.
+  const catChip = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
@@ -482,14 +535,18 @@ function EntryRow({ entry, freeLabel }) {
   );
 }
 
-// Per-tab empty state — editorial, not apologetic. Phosphor glyph in
-// gold, headline + body + a single real forward action (filter reset on
-// events; add-experience on experiences).
-function EmptyState({ tab, t, onReset }) {
+// Per-tab EMPTY DATASET state — editorial, not apologetic. Phosphor glyph in
+// gold, headline + body. MEH-1865: this surface now renders only when nothing
+// exists for the tab, so the events tab's old "clear the filter" button is gone
+// — with no filter applied it was a no-op, and it is a filter control on the
+// one state whose whole point is that there is nothing to filter. The heading
+// and body are untouched. What replaces it is the one forward action that is
+// real on BOTH tabs when the shelf is bare: go look at the businesses.
+function EmptyState({ tab, t }) {
   const isExp = tab === "experiences";
   const Icon = isExp ? CookingPot : CalendarX;
   return (
-    <div className="flex flex-col items-center text-center px-6 py-16">
+    <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
         <Icon size={36} />
       </div>
@@ -501,27 +558,48 @@ function EmptyState({ tab, t, onReset }) {
       <p className="text-sm text-fg-muted mt-2.5 max-w-[30ch] leading-relaxed">
         {isExp ? t("empty_experiences_body") : t("empty_events_body")}
       </p>
-      <div className="mt-6 w-full max-w-[260px]">
-        {isExp ? (
+      <div className="mt-6 flex flex-col items-center gap-4 w-full">
+        {isExp && (
           <Link
             href="/experiences/new"
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
           </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={onReset}
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
-          >
-            <ArrowCounterClockwise size={18} weight="bold" />
-            {t("empty_events_cta")}
-          </button>
         )}
+        <Link
+          href="/producers"
+          data-testid="events-browse-producers"
+          className="min-h-[44px] inline-flex items-center text-sm font-semibold text-primary hover:underline"
+        >
+          {t("empty_browse_producers")}
+        </Link>
       </div>
       <span aria-hidden="true" className="mt-6 w-9 h-0.5 bg-accent/50 rounded-full" />
+    </div>
+  );
+}
+
+// FILTERED TO ZERO (MEH-1865) — rows exist for this tab, the active filters
+// matched none of them. Deliberately NOT the editorial empty state above: the
+// filter controls stay on screen alongside this, so all it owes the reader is
+// the fact and the undo. Same tab, same chrome, one click back to results.
+function NoResults({ t, onReset }) {
+  return (
+    <div data-testid="events-no-results" className="flex flex-col items-center text-center px-6 py-16">
+      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+        {t("no_results_title")}
+      </h2>
+      <button
+        type="button"
+        onClick={onReset}
+        data-testid="events-clear-filters"
+        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+      >
+        <ArrowCounterClockwise size={18} />
+        {t("no_results_cta")}
+      </button>
     </div>
   );
 }

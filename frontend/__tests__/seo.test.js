@@ -175,6 +175,47 @@ describe("buildJsonLd", () => {
     expect(business.geo).toBeUndefined();
   });
 
+  // MEH-1938 chunk 3 — the discriminating case: geo now reads through
+  // producerPoints(), so a producer whose only coordinates live in a
+  // producer_locations row (no Producer.lat/lng) still gets a geo entry.
+  it("includes geo from a locations[] row when Producer.lat/lng are both null", () => {
+    const business = getBusiness(
+      buildJsonLd({
+        ...fullProducer,
+        lat: null,
+        lng: null,
+        locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 31.8928, lng: 34.8113 }],
+      }),
+    );
+    expect(business.geo).toEqual({
+      "@type": "GeoCoordinates",
+      latitude: 31.8928,
+      longitude: 34.8113,
+    });
+  });
+
+  // MEH-1938 chunk 3 — Producer.locations has no `order_by` (models.py:369),
+  // so the API can return a producer's location rows in ANY order. geo must
+  // prefer the PRIMARY row, not whichever one happens to be first.
+  it("prefers the PRIMARY location row for geo when locations[] arrives non-primary-first", () => {
+    const business = getBusiness(
+      buildJsonLd({
+        ...fullProducer,
+        lat: null,
+        lng: null,
+        locations: [
+          { id: "pickup", kind: "pickup", is_primary: false, lat: 32.1, lng: 34.9 },
+          { id: "branch", kind: "branch", is_primary: true, lat: 31.8928, lng: 34.8113 },
+        ],
+      }),
+    );
+    expect(business.geo).toEqual({
+      "@type": "GeoCoordinates",
+      latitude: 31.8928,
+      longitude: 34.8113,
+    });
+  });
+
   it("normalizes producer website into sameAs with https", () => {
     const business = getBusiness(buildJsonLd(fullProducer));
     expect(business.sameAs).toEqual(["https://havat-hashikma.co.il"]);

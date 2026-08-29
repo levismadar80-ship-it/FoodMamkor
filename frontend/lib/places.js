@@ -110,10 +110,35 @@ function normalizeNominatim(r) {
   };
 }
 
-async function nominatimAutocomplete(query, { signal } = {}) {
+/**
+ * MEH-2181 — scope a free-text address query to the city the seller already
+ * picked, by APPENDING the city to the query string. Both providers take a
+ * single text input, so this is the one composition that works for both and
+ * keeps them from drifting apart.
+ *
+ * Deliberately NOT a provider-side geographic restriction: no Nominatim
+ * `bounded=1`/`viewbox`, no Google `locationRestriction`/`locationBias`, no
+ * geocoding of the city to a point. Those change what the provider is willing
+ * to return; this only changes what it is asked. A seller whose address
+ * genuinely sits outside the picked city still gets the result — and the
+ * mismatch notice in the register wizard is what tells her, rather than an
+ * empty list she cannot interpret.
+ *
+ * No-op when `city` is absent, blank, or ALREADY present in the query — the
+ * seller who types "דרך שרה, זכרון יעקב" herself must not be sent
+ * "דרך שרה, זכרון יעקב, זכרון יעקב".
+ */
+export function composeScopedQuery(query, city) {
+  const q = (query || "").trim();
+  const c = (city || "").trim();
+  if (!c || !q) return q;
+  return q.includes(c) ? q : `${q}, ${c}`;
+}
+
+async function nominatimAutocomplete(query, { signal, city } = {}) {
   const url =
     "https://nominatim.openstreetmap.org/search" +
-    `?q=${encodeURIComponent(query)}` +
+    `?q=${encodeURIComponent(composeScopedQuery(query, city))}` +
     "&countrycodes=il" +
     "&format=json" +
     "&addressdetails=1" +
@@ -147,7 +172,7 @@ async function nominatimAutocomplete(query, { signal } = {}) {
 
 // --- Google Places API (New) -------------------------------------------------
 
-async function googleAutocomplete(query, { signal, sessionToken } = {}) {
+async function googleAutocomplete(query, { signal, sessionToken, city } = {}) {
   const res = await fetch(
     "https://places.googleapis.com/v1/places:autocomplete",
     {
@@ -158,7 +183,10 @@ async function googleAutocomplete(query, { signal, sessionToken } = {}) {
       },
       signal,
       body: JSON.stringify({
-        input: query,
+        // MEH-2181: same city scoping as the Nominatim branch, via the one
+        // input both providers share. See composeScopedQuery above for why
+        // this is not locationRestriction/locationBias.
+        input: composeScopedQuery(query, city),
         includedRegionCodes: ["il"],
         languageCode: "he",
         ...(sessionToken ? { sessionToken } : {}),

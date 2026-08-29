@@ -86,7 +86,7 @@ def _names(resp):
 
 
 def _approve(db, producer_name):
-    """Registration lands on `pending_whatsapp`; the public listing shows only
+    """Registration lands on `draft`; the public listing shows only
     approved rows. Approving is what puts the business in front of a consumer,
     which is the state this ticket is about — it is not part of the fix."""
     from app.models.models import Producer

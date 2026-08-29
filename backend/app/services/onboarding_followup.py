@@ -52,8 +52,8 @@ SITE_DOMAIN = "mehamakor.co.il"
 #
 # Producer.status is a free String(20) (models.py:72) with no enum and no DB
 # CHECK constraint; the authoritative enumeration is the admin filter pattern
-# at routers/admin.py:112 — pending | pending_whatsapp | approved | rejected |
-# inactive. Equality against this constant admits exactly one of the five, so
+# in routers/admin.py's list_producers — draft | pending | approved |
+# rejected | inactive. Equality against this constant admits one of the five, so
 # a status added later is excluded by default (fail-closed) rather than
 # silently opted into a first-person email.
 #

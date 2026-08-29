@@ -174,6 +174,10 @@ class TestLicenseWithThreeCategories:
             "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "עסק שלישייה",
             "phone": "0501234567",
+            # MEH-2015 chunk B: city is now required — added for the same
+            # reason category_ids/phone are, so this local payload doesn't 422
+            # on a field unrelated to what this class tests (license any-match).
+            "city": "תל אביב",
             "category_ids": category_ids,
             "primary_contact_method": "whatsapp",
             "declaration_accepted": True,

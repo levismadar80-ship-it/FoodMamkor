@@ -22,16 +22,26 @@ import tokens from "../tailwind.tokens.json";
  */
 
 // Mirrors FONT_VAR_BY_FAMILY in tailwind.config.js and must name every
-// next/font family in app/[locale]/layout.js. Cormorant Garamond has no token
+// next/font family in app/fonts.js. Cormorant Garamond has no token
 // today — it is reached through globals.css's `.font-english` — but a family
 // missing from THIS list is invisible to the check below: verdict() returns
 // `{ needsVar: false, ok: true }` for anything it does not recognise, so the
 // gap would read as a pass. Listing it now costs nothing and closes that.
+//
+// MEH-2029: a family can now own TWO variables. next/font/local applies one
+// `unicode-range` per call, so a family needing both hebrew and latin is two
+// calls — and both halves must be in the stack or that family loses a script
+// entirely. The list is per-family ordered: the half carrying the size-adjusted
+// fallback face goes last, and `__tests__/fonts-are-local.test.js` owns that
+// ordering rule (it can read which half declares `adjustFontFallback`, which
+// this file cannot). Here we only require that BOTH halves are present and in
+// the declared order — a family silently dropping to one variable is the
+// regression this catches.
 const FAMILY_TO_VAR = [
-  ["Frank Ruhl Libre", "--font-headline"],
-  ["DM Sans", "--font-body"],
-  ["Heebo", "--font-hebrew"],
-  ["Cormorant Garamond", "--font-latin"],
+  ["Frank Ruhl Libre", ["--font-headline", "--font-headline-latin"]],
+  ["DM Sans", ["--font-body"]],
+  ["Heebo", ["--font-hebrew", "--font-hebrew-latin"]],
+  ["Cormorant Garamond", ["--font-latin"]],
 ];
 
 /**
@@ -53,9 +63,13 @@ function verdict(stack) {
   const expectedOrder = present
     .slice()
     .sort(([a], [b]) => value.indexOf(a) - value.indexOf(b))
-    .map(([, variable]) => `var(${variable})`);
+    .flatMap(([, variables]) => variables.map((variable) => `var(${variable})`));
 
-  const actualOrder = value.match(/var\(--font-[a-z]+\)/g) ?? [];
+  // `[a-z-]+`, not `[a-z]+` — MEH-2029's per-subset halves carry a second
+  // hyphen segment (`--font-headline-latin`). Under the old class those names
+  // matched NOTHING, which would have quietly shortened `actualOrder` instead
+  // of failing.
+  const actualOrder = value.match(/var\(--font-[a-z-]+\)/g) ?? [];
   const ok =
     actualOrder.length === expectedOrder.length &&
     actualOrder.every((v, i) => v === expectedOrder[i]) &&
@@ -67,7 +81,9 @@ function verdict(stack) {
 describe("MEH-1831 self-test — the validator discriminates", () => {
   it("accepts a correctly ordered var-led stack", () => {
     expect(
-      verdict(['var(--font-body), var(--font-hebrew), "DM Sans", "Heebo", sans-serif']).ok,
+      verdict([
+        'var(--font-headline), var(--font-headline-latin), "Frank Ruhl Libre", "David Libre", Georgia, serif',
+      ]).ok,
     ).toBe(true);
   });
 
@@ -83,12 +99,22 @@ describe("MEH-1831 self-test — the validator discriminates", () => {
     // The dangerous one: present, spelled correctly, and wrong. Hebrew body
     // text would still render — in Heebo — but latin runs would too.
     expect(
-      verdict(['var(--font-hebrew), var(--font-body), "DM Sans", "Heebo", sans-serif']).ok,
+      verdict([
+        'var(--font-hebrew), var(--font-hebrew-latin), var(--font-body), "DM Sans", "Heebo", sans-serif',
+      ]).ok,
     ).toBe(false);
   });
 
   it("REJECTS a plausible-looking stack carrying the wrong variable", () => {
     expect(verdict(['var(--font-headline), "DM Sans", sans-serif']).ok).toBe(false);
+  });
+
+  it("REJECTS a split family that lost one of its two halves (MEH-2029)", () => {
+    // The half-a-family regression: `--font-hebrew` alone still renders Hebrew,
+    // so the page looks fine in Hebrew and loses Heebo's latin glyphs silently.
+    expect(
+      verdict(['var(--font-body), var(--font-hebrew), "DM Sans", "Heebo", sans-serif']).ok,
+    ).toBe(false);
   });
 
   it("passes a stack naming no brand family through untouched", () => {
@@ -124,7 +150,7 @@ describe("MEH-1831 — every brand fontFamily token leads with its variable", ()
     for (const [, stack] of entries) {
       const { needsVar, value } = verdict(stack);
       if (!needsVar) continue;
-      expect(value).toMatch(/var\(--font-[a-z]+\)(, var\(--font-[a-z]+\))*,\s*"/);
+      expect(value).toMatch(/var\(--font-[a-z-]+\)(, var\(--font-[a-z-]+\))*,\s*"/);
     }
   });
 

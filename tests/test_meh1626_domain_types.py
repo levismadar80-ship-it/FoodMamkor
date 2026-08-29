@@ -219,6 +219,8 @@ def test_producer_register_person_name_two_letters_accepted():
         name="גל",
         password="Zx7Yp9Mq2Lr4",
         producer_name="מאפיית שקד",
+        # MEH-2015 chunk B: city is now required (no default) on this schema.
+        city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
     )
@@ -230,6 +232,8 @@ def test_producer_register_person_name_omitted_stays_none():
     the validator or every upgrade would 422."""
     reg = ProducerRegister(
         producer_name="מאפיית שקד",
+        # MEH-2015 chunk B: city is now required (no default) on this schema.
+        city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
     )
@@ -245,6 +249,7 @@ def test_business_name_keeps_three_letter_floor():
     with pytest.raises(ValidationError):
         ProducerRegister(
             producer_name="אב",  # 2 letters — business floor rejects
+            city="תל אביב",
             category_ids=[1],
             declaration_accepted=True,
         )
@@ -253,6 +258,8 @@ def test_business_name_keeps_three_letter_floor():
 def test_business_name_hebrew_accepted():
     reg = ProducerRegister(
         producer_name="<b>מאפיית שקד</b>",
+        # MEH-2015 chunk B: city is now required (no default) on this schema.
+        city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
     )

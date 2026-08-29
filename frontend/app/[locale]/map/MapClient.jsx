@@ -9,6 +9,7 @@ import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { geocodeCity } from "@/lib/places";
+import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -145,6 +146,33 @@ export default function MapPage() {
   // banner the measured offset is just the header band, so the no-banner
   // layout is unchanged — this also absorbs the pre-existing ~10px drift
   // between the real header (~74px) and the hardcoded 64 (the MEH-933 note).
+  // MEH-2148: lock the document while /map is mounted. The sheet's own
+  // `overscroll-y-contain` stops a scroll that STARTS in the list from chaining
+  // out, but it says nothing about the rest of the page: the map shell, the chip
+  // row and the filter bar are all still scrollable surfaces on a viewport this
+  // page sizes to exactly 100dvh, so a stray drag anywhere else still moved the
+  // document behind the sheet. That is the left-hand RTL scrollbar and the
+  // clipped chip row in the 21/08 captures.
+  //
+  // Saves and restores the EXACT prior inline values rather than assuming they
+  // were empty — another effect or a future modal may own them, and clearing to
+  // "" would silently take that ownership away on unmount. Empty string is the
+  // correct restore for "there was no inline value", which is what
+  // `style.overflow` reads as when unset, so the round-trip is faithful either
+  // way.
+  useEffect(() => {
+    const root = document.documentElement;
+    const { body } = document;
+    const prevRoot = root.style.overflow;
+    const prevBody = body.style.overflow;
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prevRoot;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
   const desktopShellRef = useRef(null);
   const [desktopTopOffset, setDesktopTopOffset] = useState(DESKTOP_HEADER_OFFSET_PX);
   useEffect(() => {
@@ -468,11 +496,14 @@ export default function MapPage() {
     sync.mapApiRef.current?.goToMyLocation(
       () => setLocationModalOpen(true),
       ({ lat, lng }) => {
-        const hasNearby = feed.allProducers.some(
-          (p) =>
-            Number.isFinite(p.lat) &&
-            Number.isFinite(p.lng) &&
-            haversineKm(lat, lng, p.lat, p.lng) <= NEAR_ME_RADIUS_KM
+        // MEH-1938 chunk 3: read through producerPoints() instead of
+        // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
+        // citation (MapClient.jsx:348-350) had already drifted to this site
+        // by the time this chunk landed; re-verified live via grep.
+        const hasNearby = feed.allProducers.some((p) =>
+          producerPoints(p).some(
+            (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
+          )
         );
         if (!hasNearby) {
           showToast.info(t("map.near_me_pill.empty"));
@@ -555,6 +586,7 @@ export default function MapPage() {
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
       activeAttributeCount={filters.activeAttributeCount}
+      cityFilter={filters.cityFilter}
     />
   );
 
@@ -564,6 +596,15 @@ export default function MapPage() {
   // selectedProducer is also the state both selection paths agree on
   // (useMapSync handleCardClick + handleMarkerClick set it together).
   const focusedProducerId = filters.selectedProducer?.id ?? null;
+
+  // MEH-2046: is the layer toggle currently costing the user businesses? Read
+  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
+  // never claim something the visible map contradicts. Short-circuits while the
+  // layer is on, which is the default and the common case.
+  const secondaryHidden = useMemo(
+    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
+    [showSecondaryLayer, filters.filteredByCategory],
+  );
 
   const mapPane = (
     <MapPane
@@ -578,6 +619,7 @@ export default function MapPage() {
       visitedIds={hints.visitedIds}
       showSecondaryLayer={showSecondaryLayer}
       onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
+      secondaryHidden={secondaryHidden}
       focusedProducerId={focusedProducerId}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
@@ -751,8 +793,45 @@ export default function MapPage() {
             bleed-through behind the category chips read as the chips "floating"
             over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
             the bar is a solid band the map starts cleanly below (the blur becomes
-            moot once nothing shows through). z-[50] unchanged (ledger-neutral). */}
-        <div ref={mobileBarRef} className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background border-b border-border">
+            moot once nothing shows through).
+
+            MEH-2115: this bar deliberately does NOT create a stacking context.
+            It carried a z-50 token, and `position:absolute` + an integer z-index is
+            exactly the pair that opens one — which imprisoned everything inside
+            it. CitySearch renders here (:777), so its suggestion list resolved
+            only against its siblings in this bar while the bar as a whole was
+            painted at 50 against the page. The Leaflet controls (1000) therefore
+            won, and MEASURED 3 of 3 contested elements painted over the open
+            list. No z-index on the LIST could ever have fixed that; MEH-2108's
+            z-1010 was capped at 50 here and changed nothing (3/3 before and
+            after). Dropping the token is the fix, verified 3/3 -> 0/3.
+
+            (Token names appear here WITHOUT brackets on purpose. The guard in
+            __tests__/ZTokenLedgerSync.test.js treats a bracketed token as a live
+            usage unless the line starts with `*`, `//` or `{/*` — and a
+            continuation line of this block does not. Writing the bracket form in
+            this prose silently adds a phantom owner to that token's ledger row.)
+
+            ⚠️ THE CONSEQUENCE, because it is not obvious from the diff: anything
+            added inside this bar that expects to be capped by it must now create
+            its own stacking context (`isolation: isolate`, or its own positioned
+            + z-index wrapper). At the time of the change the bar contained
+            exactly two z-carrying elements, measured in the browser with the
+            list open — the CitySearch suggestion list (z-1010) and a round
+            h-8/w-8 scroll-arrow button in the filter-chips row (z-20) — and
+            NOTHING outside the bar with a z-index overlapped the bar's box
+            (0 of 24, measured at 375px). That is why removing it was safe; it is
+            not a standing guarantee.
+
+            On that z-20 button, because a wrong attribution here would send the
+            next reader to the wrong file: it is NOT CitySearch's `×` clear
+            control, which carries no z-index at all (CitySearch.jsx:181-188).
+            Its class string does not appear in any source file under app/ or
+            components/ — it is composed at runtime — so it is described here by
+            what was measured rather than by a file:line that could not be
+            confirmed. (An earlier revision of this comment did attribute it to
+            the `×` button; the CI reviewer on PR #3002 caught that.) */}
+        <div ref={mobileBarRef} className="absolute top-0 inset-x-0 px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
               map below) is now the SINGLE mobile near-me control. City search
@@ -788,7 +867,13 @@ export default function MapPage() {
           style={{
             paddingTop: `${mobileBarHeight}px`,
             ...(cookieBannerVisible
-              ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" }
+              // MEH-2148: the 96px was CookieBanner's own offset (nav clearance
+              // + its 8px gap) plus 16px of breathing room, summed by hand. Now
+              // derived. The safe-area term moved INSIDE the fallback -- the var
+              // already includes the inset, so keeping it outside would
+              // double-count it on notched phones. Fallback total is byte-identical
+              // to the old value: 72 + 8 + 16 = 96.
+              ? { paddingBottom: "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px))" }
               : {}),
           }}
         >

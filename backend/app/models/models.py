@@ -23,6 +23,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 
+# MEH-2139: imported under its own name so the column definition below reads as
+# a declaration rather than a call into a service.
+from app.services.category_slug import _column_default as _category_slug_default
+
 from app.database import Base
 
 # MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
@@ -69,18 +73,93 @@ class Producer(Base):
     # (default: whatsapp). `contact_email` is the producer's business
     # email — distinct from the owner user's login email.
     primary_contact_method = Column(String(20), default="whatsapp")
+    # MEH-1677: the business's opt-out for the "לא מגיעים אליך?" CTA
+    # (MEH-1675). server_default=true, NOT a Python-side default: existing
+    # rows are backfilled by the DDL, and a writer that bypasses the ORM
+    # still gets true. No toggle UI ships with this column -- that is
+    # MEH-1676; the column lands now so the opt-out does not cost a second
+    # schema change later.
+    coverage_cta_enabled = Column(
+        Boolean, nullable=False, server_default=text("true"), default=True
+    )
     contact_email = Column(String(200), nullable=True)
     # MEH-296: extra contact channels. URLs validated at the API boundary
     # (schemas.ProducerUpdate, http(s) only). Free-text columns, no enum.
     facebook = Column(String(200), nullable=True)
     external_order_form = Column(String(500), nullable=True)
     # MEH-1612: free String(20) — no enum, no DB CHECK constraint. The
-    # authoritative enumeration is the admin filter pattern at
-    # routers/admin.py:112:
-    #   pending | pending_whatsapp | approved | rejected | inactive
-    # (pending_whatsapp is written at auth.py:509 and auth.py:624; an earlier
-    # version of this comment omitted it and misled MEH-1587's Phase 0.)
-    status = Column(String(20), default="pending")
+    # authoritative enumeration is the admin filter pattern in
+    # routers/admin.py's list_producers (`status` Query pattern):
+    #   draft | pending | approved | rejected | inactive
+    # (An earlier version of this comment cited routers/admin.py:112,
+    # auth.py:509 and auth.py:624 — all three line numbers had drifted.
+    # Cited by section rather than by line here, since the line numbers are
+    # what rotted. Re-derived MEH-2100.)
+    #
+    # MEH-2100: `draft` is where every newly created producer starts, from
+    # all THREE creation sites (routers/auth.py's upgrade and new-email
+    # branches, plus producer_queries.create_producer_with_relations behind
+    # POST /producers). It leaves via POST /producers/me/submit-for-review
+    # and no other path.
+    #
+    # MEH-2124: a sixth value, `pending_whatsapp`, was retained through the
+    # Expand phase and removed in MEH-2124. No migration was needed — the
+    # column is a free String with no enum and no CHECK constraint, so
+    # removing a VALUE is code-only.
+    #
+    # THE TWO PREMISES, with their sources, because a future reader inherits
+    # them as fact otherwise and they are what makes the removal safe:
+    #
+    #   1. UNREACHABLE — CC-verified, mechanically. `grep -rn 'status =
+    #      "pending_whatsapp"' backend/app/` returns nothing, so no writer
+    #      exists; the OTP flip in producer_me.py was its only EXIT. Still
+    #      checkable today, and `tests/test_meh2100_draft_submit.py` asserts
+    #      no creation site can re-introduce it.
+    #   2. ZERO ROWS, EVER — **Sapir's confirmation, 16/08/2026, on the
+    #      MEH-2124 card. NOT measured by CC and not measurable from a CC
+    #      session**: the production database URL is deny-listed for Claude
+    #      Code (.claude/rules/security.md) and `*.up.railway.app` is
+    #      egress-blocked from the sandbox (MEH-2090). It is a human
+    #      attestation about data, recorded as one rather than dressed up as
+    #      a query result.
+    #
+    # If premise 2 were ever wrong, a surviving row would go quiet rather than
+    # loud: `?status=pending` and the pending counters would omit it, and the
+    # toggle / request-changes / request-review guards would answer 409. That
+    # asymmetry is why the attestation is cited here instead of assumed.
+    #
+    # The DEFAULT moved "pending" -> "draft" with the same reasoning, and it is
+    # a fail-closed choice rather than a cosmetic one. Every one of the five
+    # Producer(...) constructors in app/ passes `status` explicitly (three
+    # write "draft"; admin-create and the Excel importer write "approved" —
+    # both pre-approved by definition), and a sweep of tests/ found nothing
+    # relying on the default either, so this changes no behaviour today. What
+    # it changes is the failure mode of a SIXTH creation site added later: on
+    # the old default, forgetting `status=` silently minted a live admin-queue
+    # entry — exactly the hole this ticket closes — whereas now it mints an
+    # invisible draft that simply never gets submitted. Loud and harmless
+    # instead of quiet and wrong.
+    status = Column(String(20), default="draft")
+    # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
+    # moved draft -> pending. That instant, NOT created_at, is when the
+    # 3-business-day review SLA starts once the submit gate ships.
+    #
+    # Nullable, NO default, NO server_default, NO backfill — an HONEST NULL
+    # in the MEH-762 verified_at / MEH-1291 updated_at sense: the column
+    # stays NULL until a real submission writes it, so "never submitted" is
+    # representable and is not silently rendered as "submitted at signup".
+    # Two populations carry NULL legitimately and permanently: a producer
+    # still in draft, and any row seeded before revision e2a7c9d41b06
+    # (staging fixtures — production had no businesses, Sapir 16/08).
+    #
+    # Readers that need a submission instant use
+    # `submitted_for_review_at or created_at`; that fallback is what makes a
+    # backfill unnecessary rather than merely deferred.
+    #
+    # tz-aware (DateTime(timezone=True)), written with
+    # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
+    # Paired migration: e2a7c9d41b06.
+    submitted_for_review_at = Column(DateTime(timezone=True), nullable=True)
     images = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
@@ -118,9 +197,48 @@ class Producer(Base):
     # ≥20 reviews. Written admin-only (excluded from _PRODUCER_WRITABLE_FIELDS
     # in producer_me.py). Migration: a9f2c7d41b6e.
     google_place_id = Column(String(300), nullable=True)
+    # LEGACY(2026-09-20, MEH-2137) — superseded by top_product_id below as of
+    # the switch step. Still WRITTEN (producer_me.py syncs it from the chosen
+    # product) and still SERVED (ProducerListOut), so cards/map need no change;
+    # it is not dead and must not be dropped here. The drop is its own ticket in
+    # the MEH-2064 drop-after-soak pattern, opened at the switch — not this PR.
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
+    # MEH-2137 expand step: the featured-product vote by IDENTITY, replacing
+    # the name comparison above. Two products legitimately named «לחם» both
+    # carried the badge (Sapir, 20/08) because the vote was a string.
+    # ON DELETE SET NULL: deleting the featured product means "there is no
+    # featured product", which is exactly what NULL says here — not a cascade
+    # to the producer, and not a dangling id.
+    # `use_alter` + an explicit name: producers.top_product_id and
+    # products.producer_id form a cycle, so the constraint is created by ALTER
+    # after both tables exist — the same order the revision uses, and the name
+    # is pinned so `alembic check` compares like with like.
+    # Paired revision: f4b1c8e0a297. top_product_name is NOT deprecated by this
+    # commit — it stays the sole writer and reader until the switch step.
+    #
+    # ADR-006 R2 — DELIBERATELY NOT in ProducerListOut / ProducerDetailOut yet.
+    # R2 wants every non-internal column in a `*Out` schema OR on an explicit
+    # allowlist, and the allowlist it names (`schemas/_parity.json`,
+    # docs/SCHEMA_PARITY_AUDIT.md:272) DOES NOT EXIST — measured, along with the
+    # per-domain parity test itself; ADR-006's own Mitigations list R2 as not
+    # yet shipped. So this comment is the citation, standing in for the row
+    # there is nowhere to write. Exposing the field is a CONTRACT change and
+    # belongs to the switch step, which adds it to `*Out` and wires the derived
+    # reader in one move; adding it here would ship a public field that is
+    # always null. Whoever builds the R2 parity test: this column is expected
+    # to be absent from `*Out` until that step, and is an orphan only until then.
+    top_product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "products.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_producers_top_product_id_products",
+        ),
+        nullable=True,
+    )
     # LEGACY(2026-09-01, MEH-1855)
     # MEH-1857: the alias below carried no date and no ticket, so nothing could
     # ever make it expire. Ownership is also INVERTED today — the public page
@@ -167,6 +285,29 @@ class Producer(Base):
     # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
+    # MEH-2072: the licence's expiry date, read off the document by the admin
+    # at approval. Without it the "licensed businesses only" promise is checked
+    # once, on day one, and never again — a lapsed licence is indistinguishable
+    # from a current one in the data.
+    #
+    # Date, NOT DateTime, and it deliberately diverges from the sibling
+    # kashrut_expires_at (:400) whose reminder pattern this mirrors: a licence
+    # is valid THROUGH a calendar day, not to an instant, so a timestamp would
+    # make "expires today" answer differently either side of 00:00 UTC — which
+    # in Israel falls inside the same working day. Paired with israel_today()
+    # (utils/clock.py:33) the comparison is calendar-day vs calendar-day.
+    #
+    # Nullable, Expand-only (ADR-007, no backfill): the date lives only on a
+    # document, so there is nothing to backfill from. NULL means "not captured
+    # yet", NEVER "no expiry" — the reminder query filters IS NOT NULL so a
+    # NULL row is never reminded about rather than treated as expired.
+    #
+    # Admin-owned (MEH-530 precedent): ProducerAdminOut only, never the public
+    # ProducerDetailOut/ListOut, and withheld from _PRODUCER_WRITABLE_FIELDS so
+    # PUT /producers/me cannot write it — same shape as google_place_id
+    # (MEH-1490). Tests assert both. No enforcement anywhere: v1 is capture +
+    # remind only. Paired migration: c3e9a1f7b204.
+    license_expires_at = Column(Date, nullable=True)
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
     # final registration step. `referral_source` holds an English key from
     # constants.REFERRAL_SOURCE_KEYS (validated at the API boundary — no DB
@@ -323,7 +464,7 @@ class Producer(Base):
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-1818: day-1 nudge for a business still awaiting approval (status
-    # pending / pending_whatsapp). Same NULL-means-not-sent contract as the
+    # draft / pending). Same NULL-means-not-sent contract as the
     # MEH-539 columns above, and the same fail-open caveat. Stamped even when
     # nothing was actually missing (nothing to nudge → stamp, no email), so
     # the column means "this producer has been through the nudge pass once",
@@ -339,8 +480,18 @@ class Producer(Base):
         back_populates="producers",
         order_by="ProducerCategory.position",
     )
+    # MEH-2137: `foreign_keys` is now REQUIRED, not stylistic. Adding
+    # producers.top_product_id created a SECOND FK path between producers and
+    # products, and SQLAlchemy refuses to guess which one this collection
+    # joins on (`AmbiguousForeignKeysError` — measured, not anticipated: it
+    # broke 4 tests before the argument was added). The catalogue joins on the
+    # child's owner column; the featured-product FK points the other way and
+    # is a scalar, never a collection.
     products = relationship(
-        "Product", back_populates="producer", cascade="all, delete-orphan"
+        "Product",
+        back_populates="producer",
+        cascade="all, delete-orphan",
+        foreign_keys="Product.producer_id",
     )
     delivery_areas = relationship(
         "DeliveryArea", back_populates="producer", cascade="all, delete-orphan"
@@ -638,8 +789,42 @@ class StaticPage(Base):
 class Category(Base):
     __tablename__ = "categories"
 
+    # MEH-2139: `slug` is the STABLE identity; `name` is display text and `id`
+    # is environment-specific. CategorySelector matched popular/grouping on the
+    # Hebrew name, so a rename made a chip vanish silently (MEH-1104 needed a
+    # temporary alias to survive one). `id` is no better: it is autoincrement
+    # and this repo has measured holes in the sequence that differ between
+    # staging and production (seed_data.py :296-308).
+    # UNIQUE is applied by the paired revision AFTER its backfill, so it lands
+    # on complete data — see a7c3e91d5f28.
+    # NOT NULL was DEFERRED out of chunk 1, deliberately and against the
+    # ticket's literal chunk split, and chunk 2 (this state) applied it —
+    # `nullable=False` below, paired with revision c9f2a41e8b03. The reason for
+    # the deferral, kept because it explains the column default that follows:
+    # 11 sites construct `Category(name=…, emoji=…)` with no slug — production
+    # `admin_extra.py:218` plus 9 tests — so a NOT NULL in chunk 1 would have
+    # failed them with `NotNullViolation: null value in column "slug"`
+    # (reproduced) for the whole window before those writers learned to
+    # generate one. Nullable + UNIQUE cost nothing meanwhile: Postgres allows
+    # many NULLs under UNIQUE, the backfill left none behind, and slug matching
+    # does not match a NULL.
+    # The constraint is NAMED here to match the revision exactly, so
+    # `alembic check` compares like with like (same reason as the MEH-2137 FK).
+    # DO NOT re-derive the slug from the name on rename: surviving a rename is
+    # the entire point.
+    __table_args__ = (UniqueConstraint("slug", name="uq_categories_slug"),)
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
+    # MEH-2139 chunk 2: the default covers every ORM writer — the nine
+    # `Category(name=…, emoji=…)` sites under tests/ and anything added later —
+    # so NOT NULL does not depend on each of them remembering the column.
+    # It does NOT cover a multi-row CORE insert: `seed_data.py`'s `pg_insert`
+    # evaluates this default once per statement and raises
+    # `KeyError: 'categories.name_m0'`, so that one writer passes slug itself.
+    # Measured, and written down in services/category_slug._column_default so
+    # nobody "simplifies" the explicit value back out.
+    slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
 
     producers = relationship(
@@ -675,14 +860,23 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    # LEGACY(2026-09-01, MEH-1857)
-    # MEH-1857: the "MEH-295 follow-up" this line points at DOES NOT EXIST in
-    # Linear (checked 02/08) — the classic shape this guard exists to catch, a
-    # promise addressed to a ticket nobody opened. The marker references THIS
-    # ticket until a real removal ticket is created; whoever opens it should
-    # swap the id here. Separate instance from producers.starting_price_label
-    # above (MEH-1855) — same class, different column.
-    price_range = Column(String(50))  # legacy: removal tracked in MEH-295 follow-up
+    # LEGACY(2026-09-01, MEH-2064)
+    # MEH-2145: the swap MEH-1857 asked for. That marker pointed at ITSELF
+    # because the "MEH-295 follow-up" the line below promised had never been
+    # opened, and it said in as many words: "whoever opens it should swap the
+    # id here." MEH-2064 was opened on 13/08 and is the real removal ticket,
+    # so the marker now names it. **The DATE is unchanged** — swapping the
+    # owner is not an extension, and extending an expiry is Sapir's call made
+    # deliberately in a reviewed PR, never a side effect of re-pointing it.
+    #
+    # MEH-2064 is RED and carries its own entry conditions (a count of rows
+    # with price_range set and price_min NULL, and the removal of the frontend
+    # fallbacks) — naming it here records who removes this column, not that
+    # the removal is ready.
+    #
+    # Separate instance from producers.starting_price_label above (MEH-1855) —
+    # same class, different column.
+    price_range = Column(String(50))  # legacy: removal tracked in MEH-2064
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
     price_max = Column(Numeric(10, 2), nullable=True)
@@ -719,7 +913,11 @@ class Product(Base):
         Boolean, default=False, nullable=False, server_default=text("false")
     )
 
-    producer = relationship("Producer", back_populates="products")
+    # MEH-2137: the other half of the same disambiguation — see the comment on
+    # Producer.products. Without it this side raises the same error.
+    producer = relationship(
+        "Producer", back_populates="products", foreign_keys="Product.producer_id"
+    )
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
     # that promote it. `secondary` points to the link Table defined below.
     recipes = relationship(
@@ -1534,9 +1732,10 @@ class ProducerPageView(Base):
     # Where the view came from — lets the producer dashboard answer
     # "how often did people find me via search" without a separate impression
     # table. NULL = direct/unknown, or a value outside the allowlist.
-    # MEH-1558: the allowlist is the authority (services/analytics.py
-    # track_producer_view) — this comment mirrors it and must be updated
-    # with it. Anything not listed there is stored as NULL.
+    # MEH-1558: the allowlist is the authority (_ALLOWED_REFERRERS,
+    # services/analytics.py:213, enforced by record_analytics_event) — this
+    # comment mirrors it and must be updated with it. Anything not listed
+    # there is stored as NULL.
     referrer = Column(
         String(30), nullable=True
     )  # search | map | category | home | favorites | follow
@@ -1574,6 +1773,12 @@ class ProducerWhatsAppClick(Base):
         index=True,
     )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    # MEH-1677: the city a coverage-request click ("לא מגיעים אליך?") was
+    # asking about. NULL on an ORDINARY WhatsApp click and on every row that
+    # predates this column -- only CoverageRequestCta sends a city, so NULL
+    # means "not a coverage click" and never "we lost it". Length mirrors the
+    # 60-char cap the request schema enforces after trim.
+    city = Column(String(60), nullable=True)
 
 
 class ContactClick(Base):
@@ -2028,3 +2233,107 @@ class OutboundMessage(Base):
         server_default=text("now()"),
     )
     updated_at = Column(DateTime, nullable=True)
+
+
+class AdminChecklistItem(Base):
+    """MEH-1399: one row of the pre-approval review checklist, editable by the
+    admin without a deploy.
+
+    Phase 1 (MEH-1396) shipped these 7 items as a frozen frontend constant
+    (``frontend/lib/admin-review-checklist.js``). That file is now the SEED, not
+    the source: the migration copies its contents in, and every reader goes
+    through this table afterwards.
+
+    Rows are retired with ``active = False``, never deleted. That is not a
+    convention to remember — ``producer_review_checks.item_id`` is
+    ``ON DELETE RESTRICT``, so the database refuses to delete an item any admin
+    has ever ticked. Deleting one would orphan the audit trail's subject.
+
+    ``position`` orders the list; the seed spaces values 10 apart so an item can
+    be inserted between two others without renumbering the rest.
+    """
+
+    __tablename__ = "admin_checklist_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    position = Column(Integer, nullable=False, index=True)
+    label = Column(Text, nullable=False)
+    hint = Column(Text, nullable=True)
+    active = Column(Boolean, nullable=False, default=True, server_default=text("true"))
+    # Only `updated_at`, deliberately: the question anyone asks of a config row
+    # is when it last changed, not when it was first written. The audit surface
+    # is ProducerReviewCheck below.
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class ProducerReviewCheck(Base):
+    """MEH-1399: the audit record — this item was ticked for this producer, by
+    this admin, at this time.
+
+    Phase 1's ticks were session-local and evaporated on collapse, so nothing
+    recorded WHAT was verified before a business went live. One row per
+    (producer, item); the unique constraint makes the tick idempotent, so a
+    double-click cannot produce two conflicting attestations.
+
+    ``label_snapshot`` looks redundant next to ``item_id`` and is the opposite.
+    The FK says WHICH item was ticked; the snapshot says what that item SAID at
+    the moment of ticking. Without it, an admin editing an item's wording later
+    would silently rewrite the meaning of every historical attestation — the
+    audit trail would then describe a check nobody actually performed. Same
+    reasoning as ProducerNameChangeRequest.current_name.
+
+    ``checked_by`` is nullable with ON DELETE SET NULL: deleting an admin
+    account must not delete the record that a check happened. A null actor is a
+    weaker record than a named one and a far better one than none.
+
+    An UNCHECKED item is the ABSENCE of a row, not a row with a false flag —
+    which is why there is no `checked` boolean. "Never ticked" and "ticked then
+    un-ticked" are deliberately indistinguishable here; the ticket asks for a
+    record of what was verified, not a keystroke log.
+    """
+
+    __tablename__ = "producer_review_checks"
+    __table_args__ = (
+        UniqueConstraint(
+            "producer_id", "item_id", name="uq_producer_review_checks_producer_item"
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    item_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("admin_checklist_items.id", ondelete="RESTRICT"),
+        nullable=False,
+        # Indexed in its own right. The unique constraint in __table_args__ is
+        # (producer_id, item_id) and leads with producer_id, so it cannot serve
+        # the item_id-only lookup Postgres performs to enforce the RESTRICT on
+        # every DELETE against admin_checklist_items.
+        index=True,
+    )
+    label_snapshot = Column(Text, nullable=False)
+    checked_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        # Same reasoning as item_id above, on the other FK: SET NULL makes
+        # Postgres find every referencing row on each admin-account DELETE, and
+        # unindexed that is a sequential scan of an append-only audit table.
+        # Rare operation, unbounded table — the index is cheap insurance.
+        index=True,
+    )
+    checked_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    item = relationship("AdminChecklistItem")

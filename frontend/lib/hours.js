@@ -9,7 +9,9 @@
  * Related:  frontend/components/OpeningHours.jsx (detail-page consumer),
  *           frontend/components/MapProducerCard.jsx (compact card consumer).
  * History:  MEH-826 Gap2-hours (extracted from OpeningHours.jsx so the map
- *           card can share the parser instead of duplicating it).
+ *           card can share the parser instead of duplicating it);
+ *           MEH-2142 (added resolveStoreHours — the one place that decides
+ *           WHICH hours string a consumer surface reads).
  */
 
 // Day name constants. DAY_ABBR (English) is the API axis — used to parse
@@ -139,4 +141,50 @@ export function computeStatus(map) {
     }
   }
   return { isOpen: false };
+}
+
+
+/**
+ * MEH-2142 (MEH-1938 batch B3) — the single answer to "which store-hours
+ * string does a consumer surface show?".
+ *
+ * Store hours are becoming a PER-LOCATION fact. The owner edits
+ * `ProducerLocation.opening_hours` in LocationsEditor; the business-level
+ * `Producer.opening_hours` editor was removed from the dashboard in this
+ * change and its owner write path closed. The column stays as a fallback for
+ * every business that filled it in before the switch, which is a readers-first
+ * Parallel Change (Fowler): the readers move now, the column is removed later.
+ *
+ * The primary location wins when it has hours; otherwise the legacy column;
+ * otherwise nothing. It never merges the two — half a week from one row and
+ * half from another would be worse than either, and unreadable to the owner
+ * who is trying to work out where to edit.
+ *
+ * LEGACY(2026-10-01, MEH-1938) — the `producer.opening_hours` arm below is the
+ * Expand-phase overlap. Deleting it is the contract step: by then every
+ * business's hours live on her primary location row, and this function reduces
+ * to reading that row. The date is enforced by
+ * scripts/checks/legacy-expiry-check.sh, so it cannot quietly become permanent.
+ *
+ * Deliberately does NOT touch a non-primary row's own `opening_hours`. Pickup
+ * points and market stands render their individual hours in DeliveryBlock and
+ * MiniMap (MEH-1509) and are unaffected — this answers only "when is the shop
+ * itself open", which is a property of the main location.
+ *
+ * @param {object} producer - a serialized producer; `locations[]` optional.
+ * @returns {string|null} the hours string to render, or null when there is none.
+ */
+export function resolveStoreHours(producer) {
+  const locations = Array.isArray(producer?.locations) ? producer.locations : [];
+  // `find`, not `[0]`: the array is ordered by the API for display, and
+  // relying on position here would make this correct by coincidence.
+  const primary = locations.find((loc) => loc?.is_primary);
+  const fromPrimary = primary?.opening_hours;
+  if (typeof fromPrimary === "string" && fromPrimary.trim()) return fromPrimary;
+
+  // LEGACY(2026-10-01, MEH-1938) — see the note above.
+  const legacy = producer?.opening_hours;
+  if (typeof legacy === "string" && legacy.trim()) return legacy;
+
+  return null;
 }

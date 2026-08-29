@@ -43,13 +43,13 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-// MEH-1158: MapPin + per-channel glyphs feed the header previews below.
+// MEH-1158: per-channel glyphs feed the header previews below.
 // MEH-1408: CaretLeft — the "back to all sections" link's inline-start indicator
 // (base points inline-start in LTR; rtl:rotate-180 flips it to inline-start in RTL).
-// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.)
+// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.
+//  MapPin dropped MEH-2058 — its only use was the deleted "location" header preview.)
 import {
   Warning,
-  MapPin,
   CaretLeft,
   WhatsappLogo,
   Phone,
@@ -77,7 +77,7 @@ import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -88,6 +88,9 @@ import GrassFedCard from "./GrassFedCard";
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
 import { isDefaultDescription } from "@/lib/producer-completeness";
+// MEH-2155: same resolution the public page runs, so the card can show the
+// live list instead of an empty state that contradicts it.
+import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
@@ -106,12 +109,19 @@ const ANCHOR_TO_KEY = {
   // MEH-1167: kashrut-request card (badge request + cert photo + status).
   kashrut: "kashrut",
   images: "images",
-  location: "location",
+  // MEH-2058: LocationsEditor's own anchorId — was unregistered while the
+  // now-deleted LocationCard (anchor "location", singular) sat beside it as
+  // the checklist deep-link target. Registering it keeps
+  // ProfileCompletenessCard's "location" step CTA working.
+  locations: "locations",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  hours: "hours",
-  // MEH-1544: weekly order-acceptance window (sibling of hours, same group).
+  // MEH-2142: `hours` is gone from all four registries below. The
+  // business-level opening-hours card was removed — store hours are a
+  // per-location fact now, edited in LocationsEditor. A stale #hours deep link
+  // (an old email, a bookmark) therefore falls through to the default group
+  // rather than resolving to a card that no longer exists.
   "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
@@ -162,11 +172,10 @@ const KEY_TO_ANCHOR = {
   license: "license",
   kashrut: "kashrut",
   images: "images",
-  location: "location",
+  locations: "locations",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  hours: "hours",
   orderWindow: "order-window",
   // MEH-1823: registered here so #offer deep-links resolve like every other
   // card. These three maps are a guarded registry — a card added to the JSX
@@ -178,8 +187,13 @@ const KEY_TO_ANCHOR = {
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
 // keys and anchor contract above are UNCHANGED — this only assigns each card to
 // one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
-// pricing → profile; delivery + hours → location; license + kashrut → the one
+// pricing → profile; delivery → location; license + kashrut → the one
 // unified "trust" card.
+// MEH-2142: the 21/07 SYNC also assigned `hours` to the location group. That
+// card no longer exists — store hours became a per-location fact — so the
+// membership line above is written as it stands TODAY rather than as the SYNC
+// recorded it. Noted rather than left contradicting the registries below,
+// which is what a reader checks it against.
 const GROUP_KEYS = ["profile", "trust", "location", "contact"];
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub
@@ -194,9 +208,11 @@ const KEY_TO_GROUP = {
   ownerStory: "profile",
   license: "trust",
   kashrut: "trust",
-  location: "location",
+  // MEH-2058: not a GROUP_MEMBERS entry (LocationsEditor was never part of
+  // the hub's "{done}/{total}" count, before or after this chunk) — only
+  // registered here so a #locations deep link resolves to the right group.
+  locations: "location",
   delivery: "location",
-  hours: "location",
   orderWindow: "location",
   // MEH-1823: the offer lives in the location group — it is read against the
   // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
@@ -217,8 +233,7 @@ const OPEN_KEY_FOR = (key) =>
   key === "license" || key === "kashrut" ? "trust" : key;
 
 // Ordered member card keys per group — for the hub completion count + the
-// next-step marker placement (location is filtered out below for delivery-only
-// profiles, whose location card isn't mounted).
+// next-step marker placement.
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
   trust: ["license", "kashrut"],
@@ -228,7 +243,14 @@ const GROUP_MEMBERS = {
   // 2/3 and nudge them to maintain hours they never asked for (the exact
   // GBP-staleness risk the ticket cites). It still belongs to the location
   // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
-  location: ["location", "delivery", "hours"],
+  // MEH-2058: "location" was a member of this group before its card (the
+  // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
+  // the group's only location-writing surface and isn't tracked here (see
+  // MEH-1544's note above for why an opt-in-shaped field stays out of the count).
+  // MEH-2142: `hours` was a member until its card was removed. The count is
+  // now "{done}/1" for this group, which is correct — a member with no card
+  // would make the group permanently incompletable.
+  location: ["delivery"],
   contact: ["contact", "questions"],
 };
 
@@ -248,13 +270,12 @@ const GROUP_MEMBERS = {
 //
 // Allowlist, not denylist: a card key added later stays out of the hub until its
 // preview is shown to be short and fixed-shape. Keys with no preview node at all
-// (kashrut / delivery / hours / questions / ownerStory) are already filtered by
+// (kashrut / delivery / questions / ownerStory) are already filtered by
 // the `previews[k]` check below and are deliberately absent here.
 const HUB_PREVIEW_KEYS = new Set([
   "images", // PreviewThumbs — fixed 40px squares
   "categories", // PreviewChips — closed vocabulary, capped at 3 (MEH-1297)
   "license", // masked "•••1234" chip (MEH-1258)
-  "location", // MapPin + city name
   "contact", // channel glyph + channel label
 ]);
 
@@ -281,6 +302,10 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-2155: the public renderer's namespace — the accordion summary resolves
+  // the live question list, and must feed the resolver the same label strings
+  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
   // MEH-1823: the offer feature owns one namespace shared by the dashboard
@@ -331,6 +356,19 @@ function EditPageInner() {
   // (/producers/me joins products), then kept live by ProductsSection's
   // onCountChange as the owner adds/removes inside the card.
   const [productsCount, setProductsCount] = useState(null);
+
+  // MEH-2207: the LIVE primary contact channel, as selected in the contact
+  // card's form — not the saved value. Seeded from the profile so the notice
+  // below is correct on first paint, then kept live by ContactChannelsCard's
+  // onMethodChange. It has to be the form value, because the case worth
+  // warning about is the owner who switches her channel away from WhatsApp
+  // and, in that same session, opens the questions card to see what happened
+  // to the five questions she wrote. Reading the saved value would show her
+  // the warning only after she saves — i.e. after the surprise.
+  // Same shape as the productsCount lift above: profile-seeded, child-updated.
+  const [liveContactMethod, setLiveContactMethod] = useState(
+    () => profile?.primary_contact_method || "whatsapp"
+  );
 
   // MEH-1100: page-level unsaved-changes signal. Each card reports its own
   // (pre-existing) dirty flag up via reportDirty(key, bool); the page only
@@ -489,8 +527,7 @@ function EditPageInner() {
   // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
   // whose summary signal reads empty gets a single 8px accent dot — so the
   // owner always knows where to start. Derived from the SAME profile fields
-  // the summaries above compute (no producer-completeness import, no fetch);
-  // location is skipped for delivery-only profiles (its card isn't mounted).
+  // the summaries above compute (no producer-completeness import, no fetch).
   // Falls through to null when nothing is missing → no marker at all.
   const productsForMarker = productsCount ?? profile.products?.length ?? 0;
   const nextStepKey =
@@ -498,15 +535,13 @@ function EditPageInner() {
       ? "images"
       : (profile.categories?.length ?? 0) === 0
         ? "categories"
-        : profile.has_physical_location !== false && !(profile.city || "").trim()
-          ? "location"
-          : !(profile.description || "").trim() || isDefaultDescription(profile.description)
-            ? "bio"
-            : productsForMarker < 3
-              ? "products"
-              : !(profile.phone || "").trim()
-                ? "contact"
-                : null;
+        : !(profile.description || "").trim() || isDefaultDescription(profile.description)
+          ? "bio"
+          : productsForMarker < 3
+            ? "products"
+            : !(profile.phone || "").trim()
+              ? "contact"
+              : null;
   // ADR-019 / ADR-024: incomplete-affordance is gold (bg-accent = #896714),
   // never red — a partial profile is progress. role=img + aria-label so the
   // marker is announced; RTL logical margin-start (ms-*) keeps it beside the
@@ -558,14 +593,6 @@ function EditPageInner() {
       ) : (
         <PreviewEmpty />
       ),
-    location: (profile.city || "").trim() ? (
-      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
-        <MapPin size={16} aria-hidden="true" className="shrink-0" />
-        <span className="truncate">{profile.city}</span>
-      </span>
-    ) : (
-      <PreviewEmpty />
-    ),
     bio: bioFirstLine ? (
       <span className="block text-xs font-normal text-fg-muted truncate">
         {bioFirstLine}
@@ -632,25 +659,35 @@ function EditPageInner() {
     ),
     license: Boolean(licenseRaw),
     kashrut: (profile.kashrut_badges || []).length > 0,
-    location: Boolean((profile.city || "").trim()),
     delivery:
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
-    hours: Boolean((profile.opening_hours || "").trim()),
     // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
     orderWindow: Object.keys(profile.order_window || {}).length > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
 
+  // MEH-2155: the accordion header needs the same resolution the card body
+  // shows, so the collapsed summary and the open list can never disagree. Only
+  // the two counts are lifted — the header renders no labels, so it needs none.
+  const questionsSummary = (() => {
+    const { items, usesCustom, customCount } = resolveProducerQuestions(profile, {
+      deliveryQuestion: tChips("delivery_to_city", {
+        city: profile.city || tChips("my_area"),
+      }),
+      orderingQuestion: tChips("ordering_q"),
+      escalationQuestion: tChips("escalation"),
+      recipeQuestion: tChips("recipe_idea"),
+    });
+    return { usesCustom, customCount, liveCount: items.length };
+  })();
+
   // MEH-1408: hub-tile props per group — completion "{done}/{total}", the
   // next-step dot when the next step lands in this group, and up to two of the
-  // group's existing filled previews (MEH-1158 peek). The location card drops
-  // out of the membership for delivery-only profiles (it isn't mounted).
+  // group's existing filled previews (MEH-1158 peek).
   const groupTile = (g) => {
-    const members = GROUP_MEMBERS[g].filter(
-      (k) => !(k === "location" && profile.has_physical_location === false)
-    );
+    const members = GROUP_MEMBERS[g];
     const done = members.filter((k) => cardFilled[k]).length;
     const withPreview = members.filter((k) => cardFilled[k] && previews[k]);
     // MEH-1920: hub tiles take only fixed-shape previews (see HUB_PREVIEW_KEYS).
@@ -679,19 +716,17 @@ function EditPageInner() {
     images: t("images.heading"),
     categories: t("categories.heading"),
     license: t("license.heading"),
-    location: t("location.heading"),
     bio: t("description_card.heading"),
     products: tProducts("section_heading"),
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
-    hours: t("hours.heading"),
     orderWindow: t("order_window.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -784,21 +819,6 @@ function EditPageInner() {
       >
         {backLink}
 
-        {/* ⓪ MEH-1872: business-name editor. First in the group because the
-            name is the most fundamental field — and the ONLY card here that
-            files a REQUEST rather than writing its value. The public name does
-            not move until an admin approves (MEH-1851 removed `name` from
-            _PRODUCER_WRITABLE_FIELDS; this is the sanctioned route back). */}
-        <EditAccordionCard
-          anchorId="business-name"
-          title={tName("heading")}
-          summary={tName("accordion_summary")}
-          open={openKey === "businessName"}
-          onToggle={() => toggleKey("businessName")}
-        >
-          <BusinessNameCard profile={profile} />
-        </EditAccordionCard>
-
         {/* ① Edit-tab chunk B — producer-facing gallery images editor */}
         <EditAccordionCard
           anchorId="images"
@@ -875,7 +895,17 @@ function EditPageInner() {
           {/* MEH-1306: back-link to the public products section — lives in the
               expanded body (the header is a <button>; no nested interactives). */}
           <ViewOnPageLink producerId={profile.id} anchor="section-products" />
-          <ProductsSection embedded onCountChange={setProductsCount} />
+          {/* MEH-2094: the top-product choice lives in the product row now.
+              Same onSave patch shape every other card here uses, so the
+              pricing completeness check (:627) and the accordion summary
+              (:866) see the new value on the same tick. */}
+          <ProductsSection
+            embedded
+            onCountChange={setProductsCount}
+            topProductName={profile.top_product_name}
+            topProductId={profile.top_product_id}
+            onTopProductChange={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          />
         </EditAccordionCard>
 
         {/* MEH-1242 PR3 — price range + top product editor. MEH-1408: moved into
@@ -920,6 +950,25 @@ function EditPageInner() {
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
           />
+        </EditAccordionCard>
+
+        {/* MEH-2063: business-name editor moved LAST in the group — renaming
+            is a rare, request-based action (files a REQUEST rather than
+            writing its value; the public name does not move until an admin
+            approves — MEH-1851 removed `name` from _PRODUCER_WRITABLE_FIELDS,
+            this is the sanctioned route back, MEH-1872) and sits below the
+            content cards edited every week, not above them (industry
+            convention: frequent content actions first, rare administrative
+            actions last — GitHub "Danger Zone" / Shopify store details).
+            anchorId unchanged (deep-link contract MEH-1106). */}
+        <EditAccordionCard
+          anchorId="business-name"
+          title={tName("heading")}
+          summary={tName("accordion_summary")}
+          open={openKey === "businessName"}
+          onToggle={() => toggleKey("businessName")}
+        >
+          <BusinessNameCard profile={profile} />
         </EditAccordionCard>
       </div>
 
@@ -1015,7 +1064,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: location — location, delivery, hours ===== */}
+      {/* ===== GROUP: location — locations, delivery, order window ===== */}
       <div
         hidden={group !== "location"}
         className="space-y-6"
@@ -1023,27 +1072,9 @@ function EditPageInner() {
       >
         {backLink}
 
-        {/* ③ Edit-tab chunk C — producer-facing location/coords editor.
-            MEH-213: only physical-location producers have a map pin; delivery-only
-            businesses intentionally have no lat/lng, so the card is hidden for
-            them (has_physical_location === false). */}
-        {profile.has_physical_location !== false && (
-          <EditAccordionCard
-            anchorId="location"
-            title={t("location.heading")}
-            summary={profile.city || tAcc("location_missing")}
-            preview={previews.location}
-            marker={nextStepKey === "location" ? nextStepDot : undefined}
-            open={openKey === "location"}
-            onToggle={() => toggleKey("location")}
-          >
-            <LocationCard
-              profile={profile}
-              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-              reportDirty={reportDirty}
-            />
-          </EditAccordionCard>
-        )}
+        {/* MEH-2058: the duplicate "מיקום על המפה" card (owner-facing
+            Producer.lat/lng/city editor) was removed here — LocationsEditor
+            below is now the section's only location-writing surface. */}
 
         {/* MEH-1421 (MEH-1388 chunk 4a): multi-location editor (branch / pickup /
             market_stand). NOT gated on has_physical_location — a delivery-only
@@ -1110,24 +1141,17 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
-        <EditAccordionCard
-          anchorId="hours"
-          title={t("hours.heading")}
-          summary={profile.opening_hours || tAcc("hours_empty")}
-          open={openKey === "hours"}
-          onToggle={() => toggleKey("hours")}
-        >
-          <HoursCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-2142 — the business-level opening-hours card stood here and was
+            REMOVED. Store hours are a per-location fact: the owner edits them
+            on each location in LocationsEditor (the "פרטים נוספים" section of
+            the locations card, same group), and the public page prefers her
+            primary location's value. Asking for the same fact twice, in two
+            cards, is what made owners fill it in twice and still not know which
+            one the site showed. `Producer.opening_hours` stays as a read
+            fallback and is no longer owner-writable (producer_me.py). */}
 
-        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in and separate from
-            the opening-hours card above: a business that never opens this
-            renders nothing on its public page. */}
+        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in, and the only
+            "when" card left in this group. */}
         <EditAccordionCard
           anchorId="order-window"
           title={t("order_window.heading")}
@@ -1191,6 +1215,7 @@ function EditPageInner() {
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
+            onMethodChange={setLiveContactMethod}
           />
         </EditAccordionCard>
 
@@ -1198,9 +1223,16 @@ function EditPageInner() {
         <EditAccordionCard
           anchorId="questions"
           title={t("custom_questions.heading")}
-          summary={tAcc("questions_summary", {
-            count: (profile.custom_questions || []).length,
-          })}
+          // MEH-2155: the summary used to read "עוד אין שאלות מותאמות" while
+          // the public page was serving a full set of category defaults —
+          // literally true about the custom field, and false about the page the
+          // card claims to describe. With no custom questions it now counts the
+          // items the page is ACTUALLY showing.
+          summary={
+            questionsSummary.usesCustom
+              ? tAcc("questions_summary", { count: questionsSummary.customCount })
+              : tAcc("questions_summary_defaults", { count: questionsSummary.liveCount })
+          }
           preview={previews.questions}
           open={openKey === "questions"}
           onToggle={() => toggleKey("questions")}
@@ -1209,6 +1241,7 @@ function EditPageInner() {
             profile={profile}
             onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
             reportDirty={reportDirty}
+            primaryMethod={liveContactMethod}
           />
         </EditAccordionCard>
       </div>
@@ -1218,13 +1251,63 @@ function EditPageInner() {
 
 // ============================================================
 // MEH-210 Phase 2: custom WhatsApp question chips
+// MEH-2155: the card now opens with the LIVE list — the same items the public
+// page is serving right now — because the card was titled "שאלות שמופיעות בדף
+// שלך" while showing "עוד אין שאלות מותאמות" over a page that was serving a
+// full set of category defaults. A new owner met questions she had never seen,
+// on a profile she had just written herself.
 // ============================================================
 
 const MAX_QUESTIONS = 5;
 
-function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
+/**
+ * Read-only mirror of the public page's question list.
+ *
+ * DO NOT turn these into inputs, and DO NOT seed the five inputs below with
+ * them (MEH-2155 constraint, and the reason the whole card is built this way).
+ * Saving a default as a custom question FREEZES it: the delivery and ordering
+ * rows are answered live from her own data and would become dumb WhatsApp chips
+ * the moment they were stored as custom text, and they would stop tracking the
+ * details she later edits.
+ */
+function LiveQuestionsPreview({ items, t }) {
+  if (items.length === 0) {
+    return (
+      <p data-testid="live-questions-empty" className="text-xs text-fg-muted">
+        {t("live_empty")}
+      </p>
+    );
+  }
+  return (
+    <ul data-testid="live-questions-list" className="space-y-1.5">
+      {items.map((item) => (
+        <li key={item.id} data-testid="live-question-item" className="text-sm text-text">
+          <span>{item.label}</span>{" "}
+          <span className="text-xs text-fg-muted">
+            {item.answered
+              ? `— ${t("live_answered")}`
+              : `— ${t("live_via", { channel: t(`live_channel.${item.channel}`) })}`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CustomQuestionsCard({
+  profile,
+  onSave,
+  reportDirty = () => {},
+  // MEH-2207: the LIVE channel from the contact card's form, not profile's
+  // saved value — see the state that feeds it on the page component.
+  primaryMethod = "whatsapp",
+}) {
   const t = useTranslations("dashboard.producer.custom_questions");
   const tRoot = useTranslations("dashboard.producer");
+  // Same namespace the public renderer reads, so the labels fed to the resolver
+  // are the exact strings WhatsAppQuestionChips resolves — see
+  // lib/resolvedQuestions.js § "why the labels are arguments".
+  const tChips = useTranslations("whatsapp.question_chips");
   const [questions, setQuestions] = useState(() => {
     const saved = profile?.custom_questions || [];
     return [...saved, ...Array(MAX_QUESTIONS - saved.length).fill("")].slice(0, MAX_QUESTIONS);
@@ -1240,6 +1323,24 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   const dirty =
     currentPayload.length !== savedQuestions.length ||
     currentPayload.some((q, i) => q !== savedQuestions[i]);
+
+  // MEH-2155: resolved from the SAVED profile, not from the in-progress inputs.
+  // The list answers "what is on my page right now", so it must not move while
+  // she types — it moves when she saves, which is also when the page moves.
+  const live = resolveProducerQuestions(profile, {
+    deliveryQuestion: tChips("delivery_to_city", {
+      city: profile?.city || tChips("my_area"),
+    }),
+    orderingQuestion: tChips("ordering_q"),
+    escalationQuestion: tChips("escalation"),
+    recipeQuestion: tChips("recipe_idea"),
+  });
+
+  // Nothing to save when every input is blank AND nothing is stored — the save
+  // would PUT an empty list over an empty list and flash "נשמר" at her for a
+  // no-op. With saved questions present an all-blank form is a real intent
+  // (clear them), so it stays enabled.
+  const nothingToSave = currentPayload.length === 0 && savedQuestions.length === 0;
   useEffect(() => {
     reportDirty("questions", dirty);
     return () => reportDirty("questions", false);
@@ -1265,6 +1366,18 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
     <div>
       {/* MEH-1116: chrome + heading live in the accordion header; the heading's
           InfoTooltip moved down to the subtitle so its content isn't lost. */}
+      {/* MEH-2155: the live list comes FIRST — it is the answer to the card's
+          own title. The editing affordance follows it. */}
+      <ViewOnPageLink
+        producerId={profile?.id}
+        anchor="section-contact"
+        testId="view-on-page-questions"
+      />
+      <div className="mb-4 rounded-[10px] border border-border bg-background-alt px-3 py-2.5">
+        <p className="text-sm font-medium text-text mb-1">{t("live_heading")}</p>
+        <p className="text-xs text-fg-muted mb-2">{t("live_hint")}</p>
+        <LiveQuestionsPreview items={live.items} t={t} />
+      </div>
       <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
@@ -1275,6 +1388,17 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">
         {t("guidance")}
       </p>
+      {/* MEH-2207: since the question chips started following the declared
+          contact channel, a non-WhatsApp business shows none of these on its
+          public page — and nothing here said so. An owner who wrote five
+          questions and later switched her primary channel to phone watched
+          them vanish with no explanation. Same MEH-1116 helper-text idiom as
+          the guidance line above. */}
+      {primaryMethod !== "whatsapp" && (
+        <p className="text-xs text-fg-muted mb-4" data-testid="questions-channel-notice">
+          {t("channel_notice")}
+        </p>
+      )}
       <div className="space-y-2">
         {questions.map((q, i) => (
           <Input
@@ -1295,7 +1419,8 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || nothingToSave}
+        data-testid="questions-save"
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
@@ -1322,7 +1447,16 @@ const PRIMARY_METHODS = [
   "external_order",
 ];
 
-function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
+function ContactChannelsCard({
+  profile,
+  onSave,
+  reportDirty = () => {},
+  // MEH-2207: report the LIVE radio selection up so the questions card can warn
+  // that custom questions only render on the public page for a WhatsApp-primary
+  // business. Same lift-up shape as reportDirty; this card's own behaviour is
+  // unchanged.
+  onMethodChange = () => {},
+}) {
   const t = useTranslations("dashboard.producer.contact_channels");
   // MEH-1115: point-of-decision explainers (top-level whats_this namespace).
   const tWhat = useTranslations("whats_this");
@@ -1345,6 +1479,12 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   const dirty = Object.keys(seed).some((k) => form[k] !== seed[k]);
+  // MEH-2207: fires on mount (reporting the seeded value) and on every change
+  // of the radio — including a change the owner has NOT saved yet, which is the
+  // whole point.
+  useEffect(() => {
+    onMethodChange(form.primary_contact_method);
+  }, [form.primary_contact_method, onMethodChange]);
   // MEH-1100: lift to the page-level unsaved-changes aggregate.
   useEffect(() => {
     reportDirty("contact", dirty);

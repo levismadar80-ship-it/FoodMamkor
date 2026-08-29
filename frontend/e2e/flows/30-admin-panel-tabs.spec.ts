@@ -33,7 +33,7 @@
  * in the DOM but CSS-hidden on the mobile project, and the CI suite runs the
  * `[mobile]` project. Spec 25 made the same call for the same reason.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./_cloudinary-stub";
 import fs from "node:fs";
 import path from "node:path";
 

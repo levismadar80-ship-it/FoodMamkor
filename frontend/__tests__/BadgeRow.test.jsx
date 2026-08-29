@@ -11,6 +11,8 @@ vi.mock("next-intl", () => ({
       verified_label: "מאומת",
       verified_tooltip_license: "רישיון הוגש ונבדק בתאריך {date}",
       verified_tooltip_exemption: "אישור פטור הוגש ונבדק בתאריך {date}",
+      // MEH-2216: cosmetics is no longer the null-tooltip branch.
+      verified_tooltip_cosmetics: "רישום קוסמטיקה הוגש ונבדק בתאריך {date}",
       aria_verified: "בית עסק מאומת. {tooltip}",
       aria_verified_plain: "בית עסק מאומת",
     };
@@ -173,6 +175,28 @@ describe("BadgeRow", () => {
       );
     });
 
+    // MEH-2216: the case this ticket exists to close. Before it, a cosmetics
+    // business got the gold seal on the card and tapping it opened NOTHING --
+    // a trust claim with no stated scope, which after MEH-2213 was the only
+    // licensing signal a reader saw. Asserts the rendered STRING and the
+    // LTR-isolated date, not merely that a popover exists: a popover carrying
+    // the wrong doc type's copy would pass a presence-only check.
+    it("cosmetics doc type states its own scope on the card seal", () => {
+      render(
+        <BadgeRow
+          producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
+          surface="card"
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /מאומת/ }));
+      const tip = screen.getByTestId("badge-tooltip-verified");
+      expect(tip.textContent).toContain("רישום קוסמטיקה הוגש ונבדק בתאריך");
+      expect(tip.textContent).toContain("⁦5.6.2026⁩");
+      // must not inherit a sibling's document name -- the MEH-1843 failure
+      expect(tip.textContent).not.toContain("רישיון");
+      expect(tip.textContent).not.toContain("אישור פטור");
+    });
+
     // MEH-1334: the hero seal ALWAYS opens the verification popover with the
     // LOCKED dateless copy (title + body + about-link) — the pre-existing
     // MEH-762 doc-date line was dropped from the hero surface (CLARIFY c).
@@ -205,7 +229,12 @@ describe("BadgeRow", () => {
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
         />,
       );
-      fireEvent.click(screen.getByRole("button", { name: "בית עסק מאומת" }));
+      // MEH-2216: cosmetics now HAS a card tooltip, so its seal takes the
+      // aria_verified branch and no longer matches the bare plain name. The
+      // subject of this test is unchanged (hero body copy); only the locator
+      // moved, and it is pinned to the composed form so a silent regression
+      // back to the plain label reds it.
+      fireEvent.click(screen.getByRole("button", { name: /^בית עסק מאומת\. / }));
       const pop = screen.getByTestId("badge-tooltip-verified");
       expect(pop.textContent).toContain("verified_popover_body_cosmetics");
       expect(pop.textContent).not.toContain("verified_popover_body_license");
@@ -228,6 +257,21 @@ describe("BadgeRow", () => {
       const btn = screen.getByRole("button", { name: /מאומת/ });
       expect(btn).toHaveAttribute("data-badge", "verified");
       expect(btn.textContent).toBe(""); // seal glyph only — the name stays the hero
+    });
+
+    // MEH-2032: text-accent (#896714) on bg-accent/10 composited over the cream
+    // page background computes 4.07:1 — below the 4.5:1 AA floor for this
+    // text-xs (12px) chip. bg-surface-card (solid #fffefb) gets it to 5.19:1,
+    // the same usage-level fix already applied to the iconOnly seal above
+    // (MEH-2025/#2825). Asserts the FIXED class is present and the FAILING one
+    // is gone — a presence-only check on bg-surface-card alone couldn't
+    // distinguish "fixed" from "never had the bug", so both sides are pinned.
+    it("hero-surface textual chip uses the AA-passing bg-surface-card, not bg-accent/10", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} />);
+      const btn = screen.getByRole("button", { name: /מאומת/ });
+      const pill = btn.querySelector("span");
+      expect(pill.className).toContain("bg-surface-card");
+      expect(pill.className).not.toContain("bg-accent/10");
     });
 
     // MEH-1170: the S12 "מוצהר" chip contradicted ADR-022 ("tier 2 = no

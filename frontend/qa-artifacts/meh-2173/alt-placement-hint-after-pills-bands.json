@@ -1,0 +1,130 @@
+{
+  "390x844:zero": {
+    "bandCount": 6,
+    "bands": [
+      {
+        "top": -406,
+        "height": 42,
+        "items": [
+          "רישוי מאומת",
+          "משלוח",
+          "סינון"
+        ]
+      },
+      {
+        "top": -352,
+        "height": 30,
+        "items": [
+          "ראשון",
+          "שני",
+          "שלישי",
+          "רביעי",
+          "יום משלוח:"
+        ]
+      },
+      {
+        "top": -314,
+        "height": 30,
+        "items": [
+          "חמישי",
+          "שישי",
+          "שבת"
+        ]
+      },
+      {
+        "top": -276,
+        "height": 20,
+        "items": [
+          "בחרו אזור כדי לסנן לפי יום משל"
+        ]
+      },
+      {
+        "top": -232,
+        "height": 20,
+        "items": [
+          "מציגים 8 מתוך 12"
+        ]
+      },
+      {
+        "top": -200,
+        "height": 42,
+        "items": [
+          "לחצו על הלב כדי לשמור בתי עסק "
+        ]
+      }
+    ],
+    "cards": 8,
+    "filterRowInRange": true
+  },
+  "390x844:sheetKeys": [
+    "vegan",
+    "vegetarian",
+    "gluten_free",
+    "lactose_free",
+    "info-kosher",
+    "kosher",
+    "info-verified",
+    "verified",
+    "has_delivery",
+    "info-pickup_points",
+    "pickup_points"
+  ],
+  "1440x900:zero": {
+    "bandCount": 4,
+    "bands": [
+      {
+        "top": -126,
+        "height": 42,
+        "items": [
+          "רישוי מאומת",
+          "משלוח",
+          "סינון"
+        ]
+      },
+      {
+        "top": -72,
+        "height": 30,
+        "items": [
+          "ראשון",
+          "שני",
+          "שלישי",
+          "רביעי",
+          "חמישי",
+          "שישי",
+          "שבת",
+          "יום משלוח:",
+          "בחרו אזור כדי לסנן לפי יום משל"
+        ]
+      },
+      {
+        "top": -18,
+        "height": 20,
+        "items": [
+          "מציגים 8 מתוך 12"
+        ]
+      },
+      {
+        "top": 14,
+        "height": 42,
+        "items": [
+          "לחצו על הלב כדי לשמור בתי עסק "
+        ]
+      }
+    ],
+    "cards": 8,
+    "filterRowInRange": true
+  },
+  "1440x900:sheetKeys": [
+    "vegan",
+    "vegetarian",
+    "gluten_free",
+    "lactose_free",
+    "info-kosher",
+    "kosher",
+    "info-verified",
+    "verified",
+    "has_delivery",
+    "info-pickup_points",
+    "pickup_points"
+  ]
+}

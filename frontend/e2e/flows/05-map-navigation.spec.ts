@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 // Cold Vercel preview: Leaflet is ssr:false so the dynamic chunk fetch + React
 // mount can take 30-45s. These overrides apply only to this spec file.

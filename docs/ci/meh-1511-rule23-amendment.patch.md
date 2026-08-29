@@ -1,7 +1,23 @@
 # MEH-1511 — rule 23 amendment: automated self-QA substitutes for the human mobile-QA gate
 
-**Staged for Sapir. CC cannot apply this** — the write to
-`.claude/rules/workflow.md` is refused by the Claude Code **auto-mode
+> ## ✅ APPLIED 2026-08-14 — this document is now a record, not a pending action
+>
+> The amendment below was **written into `.claude/rules/workflow.md` on
+> 2026-08-14**, verbatim, plus the ADR-016 sync. Nothing here is outstanding.
+>
+> **The block did not recur.** The same `Edit` on the same file, from a fresh
+> session, **succeeded**. That is the opposite of the 12/08 result recorded
+> below, and both readings were correct on their date — the classifier's
+> behaviour changed between them, so neither run generalises. **Do not quote
+> either outcome as a standing property of the harness**; if a future session
+> needs to know, it finds out by attempting the write.
+>
+> The 12/08 measurement is preserved unedited below because it is what the card
+> was opened to establish, and deleting it would erase the evidence that the
+> behaviour is inconsistent rather than fixed.
+
+**Originally staged for Sapir when CC could not apply it** — on 2026-08-12 the
+write to `.claude/rules/workflow.md` was refused by the Claude Code **auto-mode
 classifier**, not by repo policy.
 
 **As of 2026-08-12.** Line numbers drift — match on content, not position.
@@ -127,6 +143,26 @@ deleting it would remove the reasoning that justifies the exceptions.
     > partitioning, no real safe-area, momentum or input-zoom behaviour), so the
     > platform-specific subset stays human. Vocabulary to reuse: the 27
     > DEVICE-ONLY rows in `docs/qa/manual-testing-matrix.md`.
+
+    > ### ⛔ The paragraph above is STALE as applied — corrected in place on 2026-08-14, recorded here 2026-08-26 (MEH-2187)
+    >
+    > It is reproduced unedited because this document is a record of what was
+    > written on 2026-08-14, and rewriting it would erase that. **Do not quote
+    > it.** Three of its factual claims are false today:
+    >
+    > | The claim above | The measurement |
+    > |---|---|
+    > | *"no WebKit engine anywhere in the pipeline"* | `e2e-webkit` (`e2e.yml:432`) installs and runs webkit in CI — landed 2026-08-03 in `323a1258`, **before** this doc was applied |
+    > | *"zero webkit projects in every Playwright config"* | `webkit-iphone13` (`playwright.config.ts:161`) and `webkit-pixel5-viewport` (`:183`), gated on `PW_WEBKIT=1` |
+    > | *"the webkit binary is unobtainable in the CC sandbox (proxy 403)"* | It **is** obtainable behind the same flag — procedure: [`docs/qa/webkit-local.md`](../qa/webkit-local.md) |
+    >
+    > **Carve-out (e) itself is unaffected, and that is the point.** The live
+    > text in `.claude/rules/workflow.md` (rule 23, carve-out (e)) reaches the
+    > same verdict from the true facts: the coverage that exists is **opt-in or
+    > non-voting** — `continue-on-error: true` (`e2e.yml:438`), absent from
+    > `e2e-gate`'s `needs:` (`:566`) — so it can neither red a run nor block a
+    > merge, and Playwright webkit is still not iOS Safari. **Read the live
+    > workflow.md, not this quotation.**
 
     #### The compensating control, and the condition on the whole amendment
 

@@ -222,15 +222,22 @@ tell a valid attribution string from a plausible one, and does not try.
 
 ## Map z-index tokens
 
-Quick reference (canonical ledger + full context in [.claude/rules/rtl.md](./rtl.md)
-— keep these two in sync):
+Quick reference. **The canonical ledger is the full table in
+[.claude/rules/rtl.md](./rtl.md)** — that one is machine-checked against the code
+by `frontend/__tests__/ZTokenLedgerSync.test.js`; this chain is a reading aid and
+is not. When they disagree, rtl.md wins, and the fix goes there.
 
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
-global header/nav (+ account dropdown):1050 →
-cookie:1100 → filter-sheet:1200 → Toaster:2000 → chat:9999
+address suggestions:1010 → global header/nav (+ account dropdown):1050 →
+cookie:1100 → filter-sheet:1200 → Toaster:2000 →
+modals:9000 → interrupt modals:9500 → chat/tooltips:9999
 ```
+
+_(This block used to say "keep these two in sync" — an instruction with no owner
+and no mechanism, which is the smell workflow.md names. The sync that matters is
+now enforced on rtl.md; this chain is explicitly the derived copy.)_
 
 Do not use arbitrary z-index values on `/map`. Floating elements use logical
 props only; the bottom-end corner belongs to the chat FAB (MEH-1135 — see rtl.md).

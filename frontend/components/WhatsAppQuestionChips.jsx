@@ -6,6 +6,12 @@ import { CaretDown, ChatCircle } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { getProducerQuestions } from "@/lib/categoryQuestions";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import {
+  getPrimaryContactHref,
+  getPrimaryMethod,
+  isPrimaryExternal,
+  isWhatsAppPrimary,
+} from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 /**
@@ -20,12 +26,43 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  *   Q1  "אפשר משלוח ל{city}?"  → buildDeliveryAnswer disclosure, else WA link
  *   Q2  "איך מזמינים?"          → buildOrderingAnswer disclosure, else WA link
  *   Q3+ stock / custom          → WhatsApp (getProducerQuestions, category-aware)
- *   Escalation "שאלה אחרת?"     → WhatsApp (only when a phone exists)
+ *   Escalation "שאלה אחרת?"     → the business's PRIMARY channel
  *
  * Unlike the pre-1302 version this no longer bails with `return null` when the
  * producer has no phone — the data-driven answers still render; only the
  * WhatsApp-backed items are hidden. The whole block returns null only when
  * nothing at all is renderable.
+ *
+ * MEH-2154 — WHAT GATES A WHATSAPP ITEM CHANGED, AND WHY IT MATTERS.
+ * Every WhatsApp-prefill row used to be gated on `digits` alone: "the producer
+ * filled in a phone number". That is not the same question as "the producer
+ * chose WhatsApp", and a business that declared any other primary channel still
+ * got wa.me chips because it happened to list a phone. The sharpest damage is
+ * `external_order`: every question answered in WhatsApp is a lead that leaves
+ * the owner's own funnel with no order number attached.
+ *
+ * So the gate is now `isWhatsAppPrimary(producer) && digits` (contact-method.js
+ * — the single owner of channel logic). When it is false:
+ *
+ *   - stock / custom question chips  → hidden
+ *   - recipe-idea chip (MEH-1462)    → hidden. The prefill string is
+ *     Sapir-locked WhatsApp copy with no equivalent on any other channel, so
+ *     narrowing its gate is the honest option and NOT a silent one — it is
+ *     flagged on the MEH-2154 PR as a decision, not an implementation detail.
+ *   - escalation "שאלה אחרת?"        → **still rendered**, pointed at the
+ *     primary channel via getPrimaryContactHref. MEH-1538's lock is that the
+ *     ready-made questions have no off switch; this ticket ROUTES them, it does
+ *     not turn anything off, so the one row that is the contact channel itself
+ *     must never vanish while any channel exists.
+ *
+ * Q1 and Q2 keep their answer-first disclosures untouched — they were already
+ * channel-correct (Q2 reads getPrimaryContactHref through buildOrderingAnswer).
+ * Only their WhatsApp FALLBACKS move behind the new gate, because a fallback
+ * that opens wa.me is a WhatsApp item like any other.
+ *
+ * The attribution beacon stays bound to wa.me rows ONLY (see below): a tel:,
+ * mailto: or https: escalation opens no WhatsApp conversation, so counting it
+ * would inflate the very metric MEH-1426 exists to keep honest.
  */
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
@@ -152,6 +189,9 @@ function OrderingContent({ answer, t }) {
 export default function WhatsAppQuestionChips({ producer }) {
   const t = useTranslations("whatsapp.question_chips");
   const digits = normalizePhone(producer?.phone);
+  // MEH-2154: the single gate for every WhatsApp-prefill row. Both halves are
+  // required — the declared channel AND a number to send to.
+  const waEnabled = isWhatsAppPrimary(producer) && !!digits;
 
   // MEH-1886: a chip that opens WhatsApp is a full WhatsApp path, so it owes
   // the same two calls the primary CTA makes (ContactCard.jsx:235-238) — the
@@ -194,12 +234,31 @@ export default function WhatsAppQuestionChips({ producer }) {
   // moderation). Uses its own Sapir-locked prefill (NOT the greeting_template
   // that wraps the other questions), no in-page answer, gated on a phone like
   // every other WhatsApp row.
-  const recipeIdeaHref = digits
+  const recipeIdeaHref = waEnabled
     ? getWhatsAppHref(
         digits,
         `${t("recipe_idea_message")}\n\n${t("source_line")}`,
       )
     : null;
+
+  // MEH-2154: the escalation row follows the declared channel. WhatsApp-primary
+  // keeps today's wa.me href byte-for-byte (same greeting_template + locked
+  // source_line); every other channel reuses getPrimaryContactHref, which is
+  // the SAME mapping the big primary CTA uses — no per-channel logic is
+  // introduced here.
+  //
+  // The one addition is a subject on the mailto:, because an email with no
+  // subject line is the one channel where the customer's intent is invisible
+  // in the owner's inbox. It is appended HERE rather than inside
+  // getPrimaryContactHref on purpose: that helper also builds the primary CTA,
+  // and changing it would put this subject on a button outside this ticket.
+  const escalationMethod = getPrimaryMethod(producer);
+  const primaryHref = waEnabled ? null : getPrimaryContactHref(producer);
+  const escalationHref = waEnabled
+    ? waHref(t("escalation"))
+    : primaryHref && escalationMethod === "email"
+      ? `${primaryHref}?subject=${encodeURIComponent(t("escalation_email_subject"))}`
+      : primaryHref;
 
   // Category-aware stock / custom questions stay WhatsApp — minus the two
   // canonical slots (delivery + ordering) handled above, to avoid duplicates.
@@ -216,7 +275,7 @@ export default function WhatsAppQuestionChips({ producer }) {
         <DeliveryContent answer={delivery} t={t} />
       </Disclosure>,
     );
-  } else if (digits) {
+  } else if (waEnabled) {
     items.push(
       <WaItem key="delivery" href={waHref(deliveryQ)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
     );
@@ -231,14 +290,14 @@ export default function WhatsAppQuestionChips({ producer }) {
         <OrderingContent answer={ordering} t={t} />
       </Disclosure>,
     );
-  } else if (!ordering && digits) {
+  } else if (!ordering && waEnabled) {
     items.push(
       <WaItem key="ordering" href={waHref(orderingQ)} question={orderingQ} onTrack={trackWhatsAppOpen} />,
     );
   }
 
   // Q3+ — stock / custom, WhatsApp only.
-  if (digits) {
+  if (waEnabled) {
     waQuestions.forEach((q, i) => {
       items.push(
         <WaItem key={`wa-${i}-${q}`} href={waHref(q)} question={q} onTrack={trackWhatsAppOpen} />,
@@ -246,13 +305,21 @@ export default function WhatsAppQuestionChips({ producer }) {
     });
   }
 
-  if (items.length === 0 && !digits) return null;
+  // Nothing to show at all — no answers, no escalation channel, no recipe row.
+  // (Pre-MEH-2154 this read `items.length === 0 && !digits`, where `digits` was
+  // a proxy for "an escalation row will render". Now that the escalation can
+  // ride a non-WhatsApp channel, ask the real question instead of the proxy.)
+  if (items.length === 0 && !escalationHref && !recipeIdeaHref) return null;
 
   return (
     <QuestionList
       items={items}
-      showEscalation={!!digits}
-      escalationHref={waHref(t("escalation"))}
+      escalationHref={escalationHref}
+      // The beacon belongs to wa.me rows only (MEH-1426): a tel:/mailto:/https:
+      // escalation opens no WhatsApp conversation and must not be counted as
+      // one. `null` here is the discriminating case, not an omission.
+      escalationOnTrack={waEnabled ? trackWhatsAppOpen : null}
+      escalationExternal={waEnabled || isPrimaryExternal(producer)}
       recipeIdeaHref={recipeIdeaHref}
       onTrack={trackWhatsAppOpen}
       t={t}
@@ -268,7 +335,15 @@ export default function WhatsAppQuestionChips({ producer }) {
 // tighter row rhythm) per the approved mockup.
 const VISIBLE_MAX = 3;
 
-function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, onTrack, t }) {
+function QuestionList({
+  items,
+  escalationHref,
+  escalationOnTrack,
+  escalationExternal,
+  recipeIdeaHref,
+  onTrack,
+  t,
+}) {
   const [expanded, setExpanded] = useState(false);
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
@@ -293,13 +368,18 @@ function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, o
         </button>
       )}
 
-      {/* Escalation — reuses the greeting template; only when a phone exists. */}
-      {showEscalation && (
+      {/* Escalation — the contact channel itself, so it renders whenever ANY
+          channel resolves (MEH-2154). WhatsApp-primary keeps the greeting
+          template; other channels get the primary CTA's own href. tel: and
+          mailto: must NOT carry target="_blank" — a new tab that immediately
+          hands off to the OS leaves a blank window behind on mobile. */}
+      {escalationHref && (
         <a
           href={escalationHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onTrack}
+          {...(escalationExternal
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
+          onClick={escalationOnTrack ?? undefined}
           data-testid="escalation-link"
           className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-fg-muted transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
         >

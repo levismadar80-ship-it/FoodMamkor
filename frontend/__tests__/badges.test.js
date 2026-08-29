@@ -13,7 +13,6 @@ describe("BADGE_PRIORITY", () => {
     // MEH-1492: recommended drops below license (fact before opinion).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
-      "license",
       "recommended",
       "new",
       "grass_fed",
@@ -21,12 +20,11 @@ describe("BADGE_PRIORITY", () => {
       "vegetarian",
       "vegan",
       "lactose_free",
-      // MEH-1934: the two new diet badges join the diet run, after
-      // lactose_free — where every other diet badge already sits relative to
-      // kosher/delivery. Only the top 2 reach a card, so position is
-      // load-bearing and is pinned deliberately.
+      // MEH-1934: the new diet badge joins the diet run, after lactose_free —
+      // where every other diet badge already sits relative to kosher/delivery.
+      // Only the top 2 reach a card, so position is load-bearing and is pinned
+      // deliberately. (MEH-2047 withdrew its low_carb sibling from this run.)
       "no_added_sugar",
-      "low_carb",
       "kosher",
       "delivery",
     ]);
@@ -39,13 +37,19 @@ describe("BADGE_PRIORITY", () => {
   it("carries no products key, in either structure (MEH-1846)", () => {
     expect(BADGE_PRIORITY).not.toContain("products");
     expect(Object.keys(BADGE_CONFIG)).not.toContain("products");
-    // MEH-1934: 11 → 13 (no_added_sugar + low_carb). Both numbers move together
+    // MEH-1934: 11 → 13 (no_added_sugar + low_carb); MEH-2047: 13 → 12, low_carb
+    // withdrawn as an undefined nutrition claim. Both numbers move together
     // on purpose — allBadges() iterates BADGE_PRIORITY while the tooltips live
     // in BADGE_CONFIG, so a badge present in one and absent from the other is
     // either never rendered or rendered undefined. This pin caught exactly that
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
-    expect(BADGE_PRIORITY).toHaveLength(13);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(13);
+    expect(BADGE_PRIORITY).toHaveLength(11);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
+    // MEH-2047: absence in BOTH structures, the same pair-check the products
+    // removal above uses — a count alone would pass if something else were
+    // added in the same commit that removed this.
+    expect(BADGE_PRIORITY).not.toContain("low_carb");
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("low_carb");
     // Stronger than either count: the two arrays must describe the SAME set.
     expect([...BADGE_PRIORITY].sort()).toEqual(Object.keys(BADGE_CONFIG).sort());
   });
@@ -86,51 +90,34 @@ describe("allBadges", () => {
     expect(badges.map((b) => b.key)).toEqual(["recommended"]);
   });
 
-  // MEH-531: license badge — Ministry of Health producer license trust signal.
-  // Field source: ProducerListOut.has_producer_license (schemas.py:547).
-  // MEH-1162 (audit F10): the license number is SELF-DECLARED at registration,
-  // so the chip additionally requires verification_tier === "verified" (an
-  // admin actually checked the document). declared/null tiers → no chip.
-  it("license — verified tier + has_producer_license → earned", () => {
+  // MEH-2213: the license badge is REMOVED from every reader surface, so the
+  // licence-number field earns nothing on its own and nothing in combination.
+  // These cases replace the MEH-531/MEH-1162 suite that pinned the old chip:
+  // they assert the ABSENCE the removal creates, which is what would go red if
+  // the badge were ever reinstated. The field itself is untouched upstream.
+  it("license — a verified business with a licence number earns NO license badge", () => {
     expect(
       allBadges({
         verification_tier: "verified",
         has_producer_license: true,
-      }).map((b) => b.key),
-    ).toEqual(["verified", "license"]);
-  });
-
-  it("license — declared tier with self-declared license → NOT earned", () => {
-    expect(
-      allBadges({
-        verification_tier: "declared",
-        has_producer_license: true,
-      }).map((b) => b.key),
-    ).toEqual([]);
-  });
-
-  it("license — null tier (pending review) with license number → NOT earned", () => {
-    expect(
-      allBadges({
-        verification_tier: null,
-        has_producer_license: true,
-      }).map((b) => b.key),
-    ).toEqual([]);
-    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([]);
-  });
-
-  it("license — when has_producer_license is false → not earned even when verified", () => {
-    expect(
-      allBadges({
-        verification_tier: "verified",
-        has_producer_license: false,
       }).map((b) => b.key),
     ).toEqual(["verified"]);
   });
 
-  it("license — when has_producer_license is null/undefined → not earned", () => {
-    expect(allBadges({ has_producer_license: null }).map((b) => b.key)).toEqual([]);
-    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  it("license — the licence-number field earns nothing at any verification tier", () => {
+    for (const tier of ["verified", "declared", null, undefined]) {
+      expect(
+        allBadges({ verification_tier: tier, has_producer_license: true }).map(
+          (b) => b.key,
+        ),
+      ).not.toContain("license");
+    }
+    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([]);
+  });
+
+  it("license — no BADGE_CONFIG entry and no priority slot remain", () => {
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("license");
+    expect(BADGE_PRIORITY).not.toContain("license");
   });
 
   it("new — when days_since_created is <= 30", () => {
@@ -245,14 +232,38 @@ describe("allBadges", () => {
     ).toEqual(["kosher"]);
   });
 
-  it("delivery — via delivery_count > 0", () => {
-    expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
+  // MEH-2046: the badge reads the server-computed `delivers` — the result of
+  // producer_listing._has_delivery_condition() — instead of the old
+  // `has_delivery || delivery_count > 0` heuristic. These three replace the
+  // two that asserted the heuristic's operands directly.
+  it("delivery — via the server-computed delivers flag", () => {
+    expect(allBadges({ delivers: true }).map((b) => b.key)).toEqual(["delivery"]);
   });
 
-  it("delivery — via has_delivery flag when delivery_count is 0", () => {
-    expect(allBadges({ delivery_count: 0, has_delivery: true }).map((b) => b.key)).toEqual(
-      ["delivery"],
-    );
+  it("delivery — the MEH-1836 nationwide case now earns the badge", () => {
+    // A business that delivers everywhere holds ZERO delivery_areas rows under
+    // the XOR data model, and the legacy column is not set. Both old operands
+    // are therefore falsy while the business genuinely delivers — it passed the
+    // ?has_delivery filter and rendered no delivery badge. That is the exact
+    // divergence this ticket closes, so it is pinned here as a payload shape.
+    expect(
+      allBadges({ delivers: true, has_delivery: false, delivery_count: 0 }).map(
+        (b) => b.key,
+      ),
+    ).toEqual(["delivery"]);
+  });
+
+  it("delivery — the legacy operands alone no longer earn it", () => {
+    // The inverse pin. `has_delivery` is a column no backend delivery predicate
+    // consults, and `delivery_count` counts delivery_areas rows — neither is
+    // the filter's answer, so neither may light the badge on its own. Without
+    // this, quietly restoring either as a fallback would go unnoticed and
+    // reintroduce the drift.
+    expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({ has_delivery: true }).map((b) => b.key)).toEqual([]);
+    expect(
+      allBadges({ has_delivery: true, delivery_count: 9 }).map((b) => b.key),
+    ).toEqual([]);
   });
 
   // MEH-1841 — specific supersedes generic. ProducerCard renders its own
@@ -264,6 +275,11 @@ describe("allBadges", () => {
     const deliveryOnly = {
       has_physical_location: false,
       offers_delivery: true,
+      // MEH-2046: `delivers` is what earns the badge now, so the suppression
+      // below is only meaningful against a payload that would otherwise earn
+      // it. The legacy operands are kept alongside to prove they are inert:
+      // with suppression lifted it is `delivers` doing the work, not these.
+      delivers: true,
       has_delivery: true,
       delivery_count: 4,
     };
@@ -273,12 +289,17 @@ describe("allBadges", () => {
       expect(allBadges(deliveryOnly)).toEqual([]);
     });
 
-    it("suppression holds when only delivery_count drives the badge", () => {
+    it("suppression holds for a nationwide delivery-only business", () => {
+      // MEH-2046: the old form of this case set `delivery_count: 4`, which a
+      // nationwide business never has. Expressed through `delivers`, the
+      // suppression now covers the shape that previously slipped past the
+      // badge entirely.
       expect(
         allBadges({
           has_physical_location: false,
           offers_delivery: true,
-          delivery_count: 4,
+          delivers: true,
+          delivery_count: 0,
         }).map((b) => b.key),
       ).toEqual([]);
     });
@@ -288,7 +309,7 @@ describe("allBadges", () => {
         allBadges({
           has_physical_location: true,
           offers_delivery: true,
-          has_delivery: true,
+          delivers: true,
         }).map((b) => b.key),
       ).toContain("delivery");
     });
@@ -297,11 +318,11 @@ describe("allBadges", () => {
       // Backend defaults has_physical_location to True (schemas/schemas.py:1772);
       // only an explicit `false` suppresses. A partial payload must not silently
       // lose its delivery indication.
-      expect(allBadges({ has_delivery: true }).map((b) => b.key)).toContain(
+      expect(allBadges({ delivers: true }).map((b) => b.key)).toContain(
         "delivery",
       );
       expect(
-        allBadges({ has_physical_location: null, has_delivery: true }).map(
+        allBadges({ has_physical_location: null, delivers: true }).map(
           (b) => b.key,
         ),
       ).toContain("delivery");
@@ -315,7 +336,7 @@ describe("allBadges", () => {
         allBadges({
           has_physical_location: false,
           offers_delivery: false,
-          has_delivery: true,
+          delivers: true,
         }).map((b) => b.key),
       ).toContain("delivery");
     });
@@ -348,7 +369,7 @@ describe("allBadges", () => {
   it("returns badges in priority order regardless of field order", () => {
     const badges = allBadges({
       products_count: 10,
-      has_delivery: true,
+      delivers: true,
       kashrut_verified_at: "2026-01-01T00:00:00Z",
       grass_fed: true,
       has_gluten_free_products: true,
@@ -364,7 +385,6 @@ describe("allBadges", () => {
     // MEH-1492: license now precedes recommended.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
-      "license",
       "recommended",
       "new",
       "grass_fed",
@@ -388,7 +408,7 @@ describe("topBadges", () => {
     verification_tier: "verified",
     is_recommended: true,
     days_since_created: 10,
-    has_delivery: true,
+    delivers: true,
     products_count: 5,
   };
 
@@ -423,15 +443,16 @@ describe("topBadges", () => {
     const p = {
       verification_tier: "verified",
       grass_fed: true,
-      has_delivery: true,
+      delivers: true,
     };
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
-  // MEH-1492: license now sits between verified and recommended (fact > opinion).
-  // MEH-1162: fixture must be verified-tier — an unverified license no longer
-  // earns the chip, so the verified badge (priority 0) leads the expectation.
-  it("license priority — sits between verified and recommended", () => {
+  // MEH-2213: license left the priority list, so "recommended" now follows
+  // "verified" directly and a licence number moves nothing. Kept as a priority
+  // test (rather than deleted) because the ordering around the removed slot is
+  // exactly what a reinstatement would disturb.
+  it("license — its removal leaves verified > recommended > new intact", () => {
     const p = {
       verification_tier: "verified",
       is_recommended: true,
@@ -440,16 +461,10 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 4).map((b) => b.key)).toEqual([
       "verified",
-      "license",
       "recommended",
       "new",
     ]);
-    // limit=3 → verified + license + recommended, new gets truncated
-    expect(topBadges(p, 3).map((b) => b.key)).toEqual([
-      "verified",
-      "license",
-      "recommended",
-    ]);
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "recommended"]);
   });
 });
 
@@ -495,7 +510,7 @@ describe("badgeCount", () => {
         verification_tier: "verified",
         is_recommended: true,
         days_since_created: 5,
-        has_delivery: true,
+        delivers: true,
         products_count: 7,
       }),
     ).toBe(4);

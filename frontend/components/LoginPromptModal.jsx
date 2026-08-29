@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
@@ -20,6 +21,27 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  *   - Focus moves to the primary CTA on open
  *   - Esc + backdrop click + X button all close
  *   - Body scroll locked while open (map/page under the modal doesn't scroll)
+ *
+ * Rendering: the overlay is portalled to <body>; z-[9500] is meaningful only at
+ * the root stacking context — that is why the portal exists. Mounted in place it
+ * was a sibling of the gallery heart, inside ImageGallery's `absolute … z-20`
+ * overlay wrapper (:375 imaged, :216 imageless at z-10). `position` + a z token
+ * makes that wrapper a stacking context, so 9500 only ever ranked INSIDE it, and
+ * the page's own root-level chrome — the `sticky z-[1050]` Header
+ * (Header.jsx:321) and the `sticky z-30` /producer tab bar
+ * (ProducerDetail.jsx:161) — painted straight over the modal. Raising 9500 is
+ * the tempting non-fix: a bigger number inside a capped context is still capped.
+ * Repo precedent for the portal: FilterSheet.jsx (MEH-1075), ui/Popover.jsx
+ * (MEH-1592). Measured in qa-meh-2215-stacking-probe.mjs (MEH-2215).
+ *
+ * The one non-obvious consequence, recorded because it is invisible in a diff:
+ * a portal moves the DOM node, NOT the React tree, so clicks inside this modal
+ * still bubble to whatever React ancestor mounted the FavoriteButton. That is
+ * inert today — the ancestors between here and `#section-images` carry no
+ * `onClick` (ImageGallery.jsx:240 and :375 are handler-free; the banner's
+ * `openLightbox` at :323 is a SIBLING of the overlay wrapper, not an ancestor).
+ * It stops being inert the moment someone adds a click handler to the gallery
+ * wrapper: a tap on "אולי אחר כך" would then also open the lightbox.
  *
  * Z-index: z-[9500] — below chat widget (9999) + cookie banner (9998),
  * above everything else (map legend 800, controls 1000).
@@ -80,7 +102,7 @@ export default function LoginPromptModal({
 
   const loginHref = `/login?redirect=${encodeURIComponent(nextPath)}`;
 
-  return (
+  const overlay = (
     <div
       className="fixed inset-0 z-[9500] flex items-center justify-center p-4 bg-black/50"
       onClick={onClose}
@@ -136,4 +158,13 @@ export default function LoginPromptModal({
       </div>
     </div>
   );
+
+  // MEH-2215: `document` is safe to read here — the early `if (!open) return
+  // null` above means this line is reached only when the modal is open, and
+  // `open` is only ever set by a client-side click. Same reasoning as
+  // FilterSheet's matchMedia note. The guard stays anyway, so a hypothetical
+  // server-rendered `open` degrades to in-place rendering rather than crashing.
+  return typeof document !== "undefined"
+    ? createPortal(overlay, document.body)
+    : overlay;
 }

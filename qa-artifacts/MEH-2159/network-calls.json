@@ -1,0 +1,70 @@
+[
+  {
+    "route": "slug",
+    "viewport": "375",
+    "heading": "עסק בדיקת ביקון",
+    "viewPosts": 1,
+    "body": "{\"referrer\":\"search\"}",
+    "allRequests": [
+      "GET /api/experiences/count",
+      "GET /api/experiences/count",
+      "POST /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9/view",
+      "GET /api/producers/meh2159-beacon-qa/recipes",
+      "GET /api/events?producer_id=79d66fb7-b4f3-49db-badb-229f1d9c30f9",
+      "GET /api/producers?category=1&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=3",
+      "GET /api/producers?city=%D7%AA%D7%9C+%D7%90%D7%91%D7%99%D7%91&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=12"
+    ]
+  },
+  {
+    "route": "uuid",
+    "viewport": "375",
+    "heading": "עסק בדיקת ביקון",
+    "viewPosts": 1,
+    "body": "{\"referrer\":null}",
+    "allRequests": [
+      "GET /api/experiences/count",
+      "GET /api/experiences/count",
+      "GET /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9",
+      "POST /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9/view",
+      "GET /api/producers/meh2159-beacon-qa/recipes",
+      "GET /api/events?producer_id=79d66fb7-b4f3-49db-badb-229f1d9c30f9",
+      "GET /api/producers?category=1&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=3",
+      "GET /api/producers?city=%D7%AA%D7%9C+%D7%90%D7%91%D7%99%D7%91&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=12"
+    ]
+  },
+  {
+    "route": "slug",
+    "viewport": "1440",
+    "heading": "עסק בדיקת ביקון",
+    "viewPosts": 1,
+    "body": "{\"referrer\":\"search\"}",
+    "allRequests": [
+      "GET /api/experiences/count",
+      "GET /api/experiences/count",
+      "POST /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9/view",
+      "GET /api/producers/meh2159-beacon-qa/recipes",
+      "GET /api/events?producer_id=79d66fb7-b4f3-49db-badb-229f1d9c30f9",
+      "GET /api/producers?category=1&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=3",
+      "GET /api/producers?city=%D7%AA%D7%9C+%D7%90%D7%91%D7%99%D7%91&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=12",
+      "GET /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9/reviews?page=1"
+    ]
+  },
+  {
+    "route": "uuid",
+    "viewport": "1440",
+    "heading": "עסק בדיקת ביקון",
+    "viewPosts": 1,
+    "body": "{\"referrer\":null}",
+    "allRequests": [
+      "GET /api/experiences/count",
+      "GET /api/experiences/count",
+      "GET /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9",
+      "POST /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9/view",
+      "GET /api/producers/meh2159-beacon-qa/recipes",
+      "GET /api/events?producer_id=79d66fb7-b4f3-49db-badb-229f1d9c30f9",
+      "GET /api/producers?category=1&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=3",
+      "GET /api/producers?city=%D7%AA%D7%9C+%D7%90%D7%91%D7%99%D7%91&exclude=79d66fb7-b4f3-49db-badb-229f1d9c30f9&limit=12",
+      "GET /api/producers/79d66fb7-b4f3-49db-badb-229f1d9c30f9/reviews?page=1"
+    ]
+  }
+]

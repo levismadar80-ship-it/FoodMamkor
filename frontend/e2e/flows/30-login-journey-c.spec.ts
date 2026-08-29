@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./_cloudinary-stub";
 
 /**
  * Spec:     30-login-journey-c

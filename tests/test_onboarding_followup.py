@@ -187,15 +187,17 @@ def test_step5_variant_b_for_approved_unlicensed(db, sent_log):
 #
 # Producer.status is a free String(20) (models.py:72) with no enum and no DB
 # CHECK constraint. The authoritative enumeration is the admin filter pattern
-# at backend/app/routers/admin.py:112 —
-#     ^(pending|pending_whatsapp|approved|rejected|inactive|all)$
+# in backend/app/routers/admin.py's list_producers —
+#     ^(draft|pending|approved|rejected|inactive|all)$
 # ("all" is a query-filter sentinel, never a stored value). These are the five
 # real values; every one is asserted below so a future status added to the
 # pattern without a decision here shows up as an uncovered value in review.
+# (The list used to carry a sixth, `pending_whatsapp`, removed in MEH-2124;
+# `draft` joined it in MEH-2100.)
 
 _ALL_PRODUCER_STATUSES = [
+    "draft",
     "pending",
-    "pending_whatsapp",
     "approved",
     "rejected",
     "inactive",

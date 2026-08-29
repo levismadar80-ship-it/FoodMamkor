@@ -258,13 +258,26 @@ class TestJourney2ProducerRegistration:
     def test_registration_fires_admin_and_producer_notifications(
         self, client, monkeypatch
     ):
-        """MEH-977 class — fire-and-forget must be observable. Captures
-        that BOTH notifications are scheduled with expected recipients."""
+        """MEH-977 class — fire-and-forget must be observable.
+
+        MEH-2100: registration now schedules exactly ONE notification, to the
+        OWNER. The admin ping moved to submit-for-review, because a fresh
+        registration is a draft and "בית עסק חדש — לאישור: /admin" would send
+        the admin to a queue the business is not in.
+
+        Asserted in both directions on purpose: the owner one fires, and the
+        admin one is GONE from this module. Dropping the admin half instead
+        of inverting it would have left the move unpinned — nothing would
+        notice it coming back.
+        """
         import app.routers.auth as auth_mod
 
-        admin_notify = MagicMock()
+        assert not hasattr(auth_mod, "notify_admin_new_producer"), (
+            "the admin ping must not be reachable from the registration "
+            "module — it belongs to submit-for-review now (MEH-2100)"
+        )
+
         producer_notify = MagicMock()
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", admin_notify)
         monkeypatch.setattr(auth_mod, "notify_producer_registered", producer_notify)
 
         payload = valid_producer_register_payload() | {
@@ -275,10 +288,7 @@ class TestJourney2ProducerRegistration:
         assert resp.status_code in (200, 201)
 
         # TestClient runs BackgroundTasks synchronously after the response.
-        admin_notify.assert_called_once()
         producer_notify.assert_called_once()
-        # notify_admin_new_producer(name, city)
-        assert admin_notify.call_args.args[0] == payload["producer_name"]
         # notify_producer_registered(name, phone)
         assert producer_notify.call_args.args[0] == payload["producer_name"]
 
@@ -295,15 +305,31 @@ class TestJourney2ProducerRegistration:
         producer = (
             db.query(Producer).filter_by(name=payload["producer_name"]).one()
         )
-        assert producer.status in ("pending", "pending_whatsapp")
+        # MEH-2100: registration lands in draft.
+        assert producer.status == "draft"
 
-        # Hop — pending producer NOT in public list
+        # Hop — an unapproved producer is NOT in the public list
         names = [p["name"] for p in client.get("/producers").json()]
         assert payload["producer_name"] not in names
 
-        # Admin approves (MEH-799 gate: needs >=1 image first)
+        # MEH-2121 CORRECTION. This block used to end "...and the admin approve
+        # path does not require the queue statuses", and approved the draft
+        # directly. That sentence described a hole rather than a design: a
+        # business could go public without ever having been submitted, leaving
+        # `submitted_for_review_at` NULL under the queue's SLA badge. Approve
+        # now 409s on a draft, so this journey moves through the state machine
+        # like a real one.
+        #
+        # The transition is applied directly rather than through
+        # POST /producers/me/submit-for-review because the anonymous
+        # registration path returns an ack, not a token, so this test has no
+        # owner session to call it with — and the submit gate has its own suite
+        # (tests/test_meh2100_draft_submit.py). What this journey is about is
+        # public visibility before and after approval, which is unchanged.
         admin = make_user(db, role="admin", email=f"a{uuid4().hex[:6]}@t.com")
+        producer.status = "pending"
         producer.images = ["https://res.cloudinary.com/demo/image/upload/p.jpg"]
+        producer.phone_verified = True
         db.commit()
         ok = client.post(
             f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)

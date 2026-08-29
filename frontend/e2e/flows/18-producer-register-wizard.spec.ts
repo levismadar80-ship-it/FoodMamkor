@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 /**
  * MEH-866 — producer-register wizard end-to-end (the rendered flow).
@@ -83,8 +83,9 @@ test.describe("Producer register wizard (5-frame)", () => {
     // ── STORY (frame 03) — tagline (short_description) + declarations ──
     await expect(page.getByTestId("register-frame-story")).toBeVisible();
     await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-    // MEH-1471: attribution dropdown is required on STORY — pick a key or the
-    // submit gate blocks (referral_source_required) and CONFIRM never renders.
+    // MEH-1471: the attribution dropdown on STORY. MEH-2183 made it OPTIONAL —
+    // leaving it empty no longer blocks submit — but this spec keeps picking a
+    // key so it still exercises the populated path end to end.
     await page.getByTestId("register-referral-source").selectOption("instagram");
     // ToS + binding declaration (non-agri → no farmer checkbox). Check all shown.
     for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 // Public browse journey: the /producers directory must render its <h1> and
 // either a grid of producer cards or a graceful empty state — never a crash.

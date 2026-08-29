@@ -104,29 +104,13 @@ function escapeHtmlAttr(str) {
     .replace(/>/g, "&gt;");
 }
 
-// MEH-1998: the category colour is interpolated into the divIcon's raw HTML —
-// including into a JS string literal inside the `onerror` handler below. That
-// nesting (HTML attribute → JS source) is why this is a VALIDATOR and not an
-// escape: the browser decodes character references BEFORE the handler is
-// parsed as JS, so `&#39;` arrives at the JS parser as a bare `'` and closes
-// the string exactly as an unescaped quote would. Measured, not assumed —
-// `escapeHtmlAttr("#fff';alert(1);'")` produces a handler byte-identical to
-// the unescaped one. HTML-escaping cannot defend this position; only refusing
-// the value can.
-//
-// A colour is a closed vocabulary, so an allowlist costs nothing: every value
-// in category-registry.js CATEGORY_STYLES is #rrggbb and passes through
-// untouched. Anything else degrades to the primary token. Dormant today (the
-// palette is hardcoded); load-bearing the day the colour becomes DB-driven,
-// which is the scenario this ticket was filed for.
-// 3/4/6/8 digits are the only lengths CSS recognises. A lazier `{3,8}` would
-// also admit 5 and 7 — not a security hole (the browser drops an unparseable
-// declaration) but it would render the pin unstyled, a visual regression in
-// exactly the DB-driven future this validator exists for.
-const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
-function safeCssColor(value) {
-  return SAFE_HEX_COLOR.test(String(value ?? "")) ? String(value) : "#2e6853";
-}
+// MEH-2004: the colour arrives already validated from styleForProducer
+// (lib/category-registry.js -> safeCategoryColor). MEH-1998 fixed this file
+// alone with a local validator, which left MiniMap + HomepageMiniMap injecting
+// the same registry value raw; the check now lives on the single source of
+// truth, so all three consumers are covered by construction. Do NOT
+// reintroduce a local copy — a second copy is free to drift from the one that
+// actually ships.
 
 // MEH-1611: focus-on-select. When one business is selected, every OTHER
 // business's pin is DEMOTED (faded + desaturated) rather than removed — the
@@ -175,11 +159,24 @@ function createCategoryMarker(
   // an onerror swap below. The glyph + colour come from styleForProducer (the legend's
   // single source of truth); empty/null category degrades to DEFAULT (Leaf on
   // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
+  // MEH-2010: explicit width — c_fill carries no default cap (cloudinary.js:58-66),
+  // so without this the full original is delivered into a 36px circle.
+  // This is the one call site with no `sizes` to read and no next/image in
+  // front of it: the marker is a raw <img> in a divIcon HTML string, so this
+  // URL is exactly what the browser downloads. The container is `size` px
+  // square (`:158`, the only value on this path — `createSecondaryMarker`'s 24
+  // and the cluster badge's 36 never reach optimizeCloudinary) and the <img>
+  // is width:100%;height:100%. 36 CSS px x DPR 2 = 72, matching the repo's
+  // explicit-2x convention for direct <img> delivery (OwnerCard.jsx
+  // `optimizeWidth={avatarSize * 2}`; RecipeDetail 112/56; ProducerSections
+  // 128/64).
   const imgUrl = producer.images?.[0]
-    ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.square })
+    ? optimizeCloudinary(producer.images[0], {
+        aspectRatio: IMAGE_RATIOS.square,
+        width: 72,
+      })
     : null;
-  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
-  const categoryColor = safeCssColor(rawCategoryColor);
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   // raw img: this is an HTML *string* handed to Leaflet's divIcon, not JSX.
   // next/image is a React component and cannot be serialised into it — there
   // is no React tree here to render into. Structural, not a preference.
@@ -284,8 +281,7 @@ function createSecondaryMarker(
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.7 : 1;
   const grayscale = dimmed ? "filter:grayscale(1);" : "";
-  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
-  const categoryColor = safeCssColor(rawCategoryColor);
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const borderWidth = active ? 3 : 2;
   // Preserved: dashed border still carries `approximate` on the secondary pin —
   // only the halo shrinks (MEH-1569), so the precision signal survives at 24px.
@@ -338,8 +334,7 @@ function createSecondaryMarker(
 // logical props) — same exception as createCategoryMarker's verified badge.
 function createSingleBusinessClusterIcon(producer, markerCount) {
   const size = 36;
-  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
-  const categoryColor = safeCssColor(rawCategoryColor);
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
       <div style="

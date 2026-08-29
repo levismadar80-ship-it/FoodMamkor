@@ -98,7 +98,14 @@ describe("HomeProducersGrid discovery seam (MEH-1174)", () => {
         onClearCategory={onClearCategory}
       />,
     );
-    const tag = screen.getByRole("button", { name: "home.producers.clear_filter" });
+    // MEH-2130: the accessible name now INCLUDES the category, because a bare
+    // `aria-label` overrides the computed name outright — it was suppressing the
+    // category name in the child span, so with an attribute tag also active the
+    // two buttons were indistinguishable to a screen reader. Asserting the full
+    // name (not a substring) is what makes this a regression test for that.
+    const tag = screen.getByRole("button", {
+      name: "home.producers.clear_filter חלב וגבינות",
+    });
     expect(tag).toHaveTextContent("חלב וגבינות");
     fireEvent.click(tag);
     expect(onClearCategory).toHaveBeenCalledTimes(1);
@@ -108,8 +115,13 @@ describe("HomeProducersGrid discovery seam (MEH-1174)", () => {
 
   it("C — no category → no removable category tag", () => {
     render(<HomeProducersGrid {...baseProps} filters={noCategory} />);
+    // A REGEX, not the exact string. With the name now carrying the category,
+    // an exact-match query for the bare key can never match anything — so this
+    // negative would have passed whether or not a stray tag rendered, which is
+    // the "guard that consults its own subject" shape .claude/rules/testing.md
+    // warns about. The regex still catches any clear-filter button.
     expect(
-      screen.queryByRole("button", { name: "home.producers.clear_filter" }),
+      screen.queryByRole("button", { name: /home\.producers\.clear_filter/ }),
     ).not.toBeInTheDocument();
   });
 });

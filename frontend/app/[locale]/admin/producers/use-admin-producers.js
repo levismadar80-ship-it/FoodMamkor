@@ -10,6 +10,8 @@ import { exportProducersToCSV } from "@/lib/admin-producers-export";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { useDecisionFlow } from "./use-reject-flow";
+import { CHANGES, decisionValue } from "./ProducerDecisionModal";
 
 // Default rows-per-page on the admin producers table (MEH-23 pagination).
 const DEFAULT_PER_PAGE = 25;
@@ -22,12 +24,24 @@ export function approveGateReason(detail) {
   return (detail || "").includes("רישיון") ? "license" : "photo";
 }
 
+// MEH-2209: the same gate, mapped to the decision modal's completion-group
+// preset. The chip TEXT is kept as well (prefilled into the free text) — it is
+// more specific than the label on the licence side ("חסר מספר רישיון יצרן" vs
+// "מסמכים חסרים / לא קריאים"), so dropping it would make the owner's mail
+// vaguer than it is today.
+const GATE_PRESET_KEY = { photo: "missing_image", license: "missing_docs" };
+
 // Sub-hook 1 — data state, list fetch, filter/page state.
 function useProducersData() {
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status") || "all";
 
   const [producers, setProducers] = useState([]);
+  // MEH-2096: THE priority case. Manual approval of every business is a locked
+  // product invariant (docs/CONTEXT.md §2), so a catch that emptied the list
+  // rendered "no businesses awaiting approval" when the API was down — real
+  // businesses waiting, and nobody able to tell.
+  const [loadError, setLoadError] = useState(false);
   const [producerSearch, setProducerSearch] = useState("");
   const [producerStatus, setProducerStatus] = useState(initialStatus);
   const [incompleteOnly, setIncompleteOnly] = useState(false);
@@ -41,7 +55,11 @@ function useProducersData() {
     const params = {};
     if (producerStatus && producerStatus !== "all") params.status = producerStatus;
     if (search) params.search = search;
-    api.get("/admin/producers", { params }).then((r) => setProducers(r.data)).catch(() => setProducers([]));
+    setLoadError(false);
+    api
+      .get("/admin/producers", { params })
+      .then((r) => { setProducers(r.data); setLoadError(false); })
+      .catch(() => setLoadError(true));
   };
 
   useEffect(() => {
@@ -51,6 +69,7 @@ function useProducersData() {
 
   return {
     producers, setProducers,
+    loadError,
     producerSearch, setProducerSearch,
     producerStatus, setProducerStatus,
     incompleteOnly, setIncompleteOnly,
@@ -66,48 +85,14 @@ function useProducersData() {
 // `useAdminAction.run` so a rapid double-click can't double-fire and a
 // failed request surfaces a toast instead of a silent no-op. `isBusy(key)`
 // is threaded out to AdminProducersTable to disable the in-flight button.
-function useProducerActions(loadAllProducers) {
+function useProducerActions(loadAllProducers, deps) {
   const t = useTranslations("admin");
   // MEH-848: errorMessage() copy now lives under the error.* namespace.
   const tError = useTranslations("error");
-  const { run, isBusy } = useAdminAction();
-
-  // MEH-1011 Chunk 2: request-changes modal state (shared by the row button
-  // and the approve-422 auto-open path). `modalProducer` null = closed.
-  const [modalProducer, setModalProducer] = useState(null);
-  const [feedback, setFeedback] = useState("");
-  const openRequestChanges = (producer, prefill = "") => {
-    setModalProducer(producer);
-    setFeedback(prefill);
-  };
-  const closeRequestChanges = () => {
-    setModalProducer(null);
-    setFeedback("");
-  };
-  const submitRequestChanges = () => {
-    if (!modalProducer) return;
-    const fb = feedback.trim();
-    if (!fb) {
-      showToast.error(t("producers.request_changes.validate"));
-      return;
-    }
-    const id = modalProducer.id;
-    return run(
-      `request-changes:${id}`,
-      async () => {
-        await api.post(`/admin/producers/${id}/request-changes`, { feedback: fb });
-        closeRequestChanges();
-        loadAllProducers();
-      },
-      // 409 = producer no longer pending (mirrors toggleStatus:82 precedent).
-      (err) =>
-        showToast.error(
-          err?.response?.status === 409
-            ? t("producers.request_changes.invalid_state")
-            : errorMessage(err, tError),
-        ),
-    );
-  };
+  // MEH-2209: `run` is created by the orchestrator and shared, so the decision
+  // flow can be constructed BEFORE this hook — the approve-422 handler below
+  // needs its `openDecision`, and a hook cannot use a value defined after it.
+  const { run, openDecision } = deps;
 
   const quickApprove = (producer) =>
     run(
@@ -123,8 +108,10 @@ function useProducerActions(loadAllProducers) {
       (err) => {
         if (err?.response?.status === 422) {
           const reason = approveGateReason(err.response.data?.detail);
-          const prefill = t(`producers.request_changes.chips.${reason}`);
-          openRequestChanges(producer, prefill);
+          openDecision(producer, {
+            preselect: decisionValue(CHANGES, GATE_PRESET_KEY[reason]),
+            text: t(`producers.request_changes.chips.${reason}`),
+          });
           showToast.info(t("producers.request_changes.approve_blocked_info"));
         } else {
           showToast.error(errorMessage(err, tError));
@@ -180,10 +167,7 @@ function useProducerActions(loadAllProducers) {
       loadAllProducers();
     });
   return {
-    quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy,
-    // MEH-1011 Chunk 2: request-changes modal controller.
-    modalProducer, feedback, setFeedback,
-    openRequestChanges, closeRequestChanges, submitRequestChanges,
+    quickApprove, toggleStatus, deleteProducer, toggleAmbassador,
     // MEH-1027 Chunk B: delete confirm dialog controller.
     confirmDelete, closeDeleteConfirm, confirmDeleteProducer,
   };
@@ -241,7 +225,16 @@ function useImportFlow(loadAllProducers) {
 // only surface page.js consumes.
 export function useAdminProducers() {
   const data = useProducersData();
-  const actions = useProducerActions(data.loadAllProducers);
+  // MEH-226/MEH-2209: ONE busy registry for every admin action on a row — a
+  // second useAdminAction instance would let a decision fire while another
+  // action on the same row is still in flight. Hoisted here (was inside
+  // useProducerActions) so both hooks below share it and the decision flow can
+  // be built first; the approve-422 handler needs its opener.
+  const { run, isBusy } = useAdminAction();
+  const decision = useDecisionFlow(data.loadAllProducers, run);
+  const actions = useProducerActions(data.loadAllProducers, {
+    run, openDecision: decision.openDecision,
+  });
   const importFlow = useImportFlow(data.loadAllProducers);
 
   const exportExcel = () => exportProducersToCSV(data.producers);
@@ -291,7 +284,13 @@ export function useAdminProducers() {
   const pagedVisible = visible.slice((safePage - 1) * data.perPage, safePage * data.perPage);
 
   return {
-    ...data, ...actions, ...importFlow,
+    ...data, ...actions, ...decision, ...importFlow, isBusy,
+    // MEH-2209: the two row entry points keep their names and signatures, so
+    // AdminProducersTable's wiring is untouched — only where they land moved.
+    // The kebab's "דחייה" opens with nothing chosen; the row's "בקשת השלמה"
+    // lands on the completion group without choosing for the admin.
+    openReject: decision.openDecision,
+    openRequestChanges: (producer) => decision.openDecision(producer, { focus: CHANGES }),
     exportExcel, handleStoryCardUpload, handlePerPageChange,
     incompleteCount, visible, pagedVisible, safePage, totalPages,
   };

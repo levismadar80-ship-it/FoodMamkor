@@ -16,7 +16,8 @@
 // working unchanged.
 import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
-import { parseHours } from "./hours";
+import { parseHours, resolveStoreHours } from "./hours";
+import { producerPoints } from "./producerPoints.js";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -252,11 +253,19 @@ export function buildJsonLd(producer, locale = "he") {
     if (deliveryCities.length > 0) business.areaServed = deliveryCities;
   }
 
-  if (!isDeliveryOnly && producer.lat && producer.lng) {
+  // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
+  // directly — producerPoints() still falls back to Producer.lat/lng when
+  // there is no usable location row, so today's producers are unaffected.
+  // Prefers the PRIMARY point when one exists — Producer.locations has no
+  // `order_by` (models.py:369), so points[0] is arbitrary DB row order, not
+  // necessarily the branch address this structured data should describe.
+  const geoPoints = isDeliveryOnly ? [] : producerPoints(producer);
+  const geoPoint = geoPoints.find((pt) => pt.location?.is_primary) ?? geoPoints[0];
+  if (geoPoint) {
     business.geo = {
       "@type": "GeoCoordinates",
-      latitude: producer.lat,
-      longitude: producer.lng,
+      latitude: geoPoint.lat,
+      longitude: geoPoint.lng,
     };
   }
 
@@ -287,7 +296,15 @@ export function buildJsonLd(producer, locale = "he") {
 
   // MEH-452 Gap 1: openingHoursSpecification — omitted entirely when
   // opening_hours is null/empty/unparseable (no empty array emitted).
-  const openingHoursSpec = parseOpeningHoursSpec(producer.opening_hours);
+  //
+  // MEH-2142: resolved, not read off the column. Store hours became a
+  // per-location fact, and this is a PUBLIC reader of that fact — the same
+  // one MEH-1884 called "the visibility currency" precisely because it feeds
+  // this block. Left on `producer.opening_hours` it would emit no hours at all
+  // for exactly the businesses whose hours now live on their primary location,
+  // which is a silent SEO regression: no error, no failing test, and the
+  // structured data simply loses a field.
+  const openingHoursSpec = parseOpeningHoursSpec(resolveStoreHours(producer));
   if (openingHoursSpec) business.openingHoursSpecification = openingHoursSpec;
 
   // MEH-452 Gap 2: servesCuisine from the producer's categories. Omitted

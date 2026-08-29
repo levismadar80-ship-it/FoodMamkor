@@ -311,13 +311,33 @@ function GoogleMapsGlyph() {
   );
 }
 
+// MEH-2182: which Leaflet events the single-point marker binds. Drag and
+// tap-to-expand are mutually exclusive by design — see the comment on the
+// Marker below for why the click is dropped rather than kept alongside.
+// Written as a statement rather than a nested ternary in the JSX: the three
+// arms are a decision, and a decision reads better with a name on it.
+function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
+  if (draggableMarker) {
+    return {
+      dragend: (event) => {
+        // Off the event target, never off props: props still carry the OLD
+        // point at the moment the drag ends.
+        const { lat: nextLat, lng: nextLng } = event.target.getLatLng();
+        onMarkerDragEnd?.({ lat: nextLat, lng: nextLng });
+      },
+    };
+  }
+  if (onExpand) return { click: onExpand };
+  return undefined;
+}
+
 // MEH-1659: the map itself, rendered identically inline and in the overlay —
 // same tiles, same attribution, same pins, same framing. Only `interactive` and
 // `onExpand` differ, so the two surfaces cannot drift into showing different
 // data. `mapKey` gives the overlay its own MapContainer instance: Leaflet must
 // measure a container that already has its final size, and the overlay's box
 // only exists once it is open.
-function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom }) {
+function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
       key={mapKey}
@@ -350,6 +370,11 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           business has no locations[] rows we keep the original single
           default-icon marker, so /events and /experiences (which pass no
           locations at all) render exactly as before. */}
+      {/* MEH-2182: `draggableMarker` applies to the SINGLE-point path below and
+          nowhere else. A business with locations[] rows has many pins and no
+          single "the" point to move, so a consumer passing both would get a
+          silently inert prop — say so here rather than let the next reader
+          discover it from a non-dragging pin. */}
       {points.length > 0 ? (
         <LocationPins
           points={points}
@@ -361,7 +386,22 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
         <Marker
           position={[Number(lat), Number(lng)]}
           title={name}
-          eventHandlers={onExpand ? { click: onExpand } : undefined}
+          // MEH-2182: opt-in drag. `draggable` is undefined for every consumer
+          // that does not ask, and react-leaflet treats undefined as false, so
+          // the four untouched mounts render byte-identically.
+          //
+          // Marker dragging is `marker.dragging`, a DIFFERENT handler from the
+          // `map.dragging` that InteractionMode disables — so the pin is
+          // draggable on the inline (non-interactive) surface without the map
+          // panning underneath it.
+          //
+          // `click: onExpand` is dropped while draggable: on the inline map a
+          // tap expands to fullscreen, and a pin the seller is trying to drag
+          // must not throw her into an overlay. Leaflet suppresses the click
+          // that follows a real drag, but a slightly-imprecise tap is exactly
+          // what this seller is doing, so we do not rely on that.
+          draggable={draggableMarker || undefined}
+          eventHandlers={singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand })}
         />
       )}
       <FitToPoints points={points} zoom={zoom} />
@@ -398,6 +438,10 @@ export default function MiniMap({
   // assumed.
   zoom = SINGLE_POINT_ZOOM,
   showNavigation = true,
+  // MEH-2182: opt-in, and off by default. Absent → this component behaves
+  // exactly as it did for every existing consumer.
+  draggableMarker = false,
+  onMarkerDragEnd,
 }) {
   const t = useTranslations("map.mini");
 
@@ -493,7 +537,17 @@ export default function MiniMap({
     producer,
     fallbackLabel: name || t("default_label"),
     zoom,
+    draggableMarker,
+    onMarkerDragEnd,
   };
+
+  // MEH-2182: `mapKey` normally includes lat/lng, so a coordinate change
+  // remounts the MapContainer — correct when the point changes underneath the
+  // map (a new address picked), and WRONG while the seller is dragging the pin:
+  // her own drag would feed new coordinates back, tear the map down and rebuild
+  // it under her finger. When the marker is draggable the caller owns the
+  // coordinates, so the key drops them and the container survives the drag.
+  const coordKeyPart = draggableMarker ? "draggable" : `${lat}-${lng}`;
 
   return (
     <div>
@@ -505,7 +559,7 @@ export default function MiniMap({
           {...surfaceProps}
           interactive={false}
           onExpand={expand}
-          mapKey={`inline-${lat}-${lng}-${points.length}`}
+          mapKey={`inline-${coordKeyPart}-${points.length}`}
         />
         <button
           type="button"
@@ -530,7 +584,17 @@ export default function MiniMap({
           aria-label={t("expanded_aria")}
           className="fixed inset-0 z-[1150] bg-white"
         >
-          <MapSurface {...surfaceProps} interactive mapKey={`overlay-${lat}-${lng}-${points.length}`} />
+          {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
+              here too, so the overlay marker is draggable as well — deliberately.
+              This is NOT inert: the expand button at :564 is unconditional
+              (`showNavigation` gates only the nav pills below), so the overlay is
+              one tap away even for the register caller that passes
+              `showNavigation={false}`. A fullscreen map is the better surface for
+              placing a pin precisely, and both surfaces write through the same
+              callback, so the two cannot disagree. Covered by the (open ×
+              draggable) tests in MiniMap.test.jsx — dropping the forwarding here
+              reddens exactly one of them. */}
+          <MapSurface {...surfaceProps} interactive mapKey={`overlay-${coordKeyPart}-${points.length}`} />
           <button
             type="button"
             ref={closeRef}

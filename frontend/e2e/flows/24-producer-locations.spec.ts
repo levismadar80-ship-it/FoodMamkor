@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 /**
  * MEH-1432 (MEH-1388 chunk 6 — closes the producer_locations epic): end-to-end

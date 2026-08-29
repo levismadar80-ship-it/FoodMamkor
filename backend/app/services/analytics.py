@@ -3,7 +3,7 @@ Analytics tracking + metrics helpers for feature/producer-analytics.
 
 This module owns two pieces of infrastructure:
 
-1. **View tracking** — `track_producer_view()` inserts a row into
+1. **Event recording** — `record_analytics_event()` inserts a row into
    `producer_page_views` after a successful `GET /producers/{id}` hit.
    Hashes the client IP (SHA-256 with a rotating salt from settings) so we
    dedupe uniques without storing raw PII. Resolves the viewer's city from
@@ -34,14 +34,19 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from threading import Lock
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from sqlalchemy import and_, case, distinct, func, tuple_
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import ProducerPageView, User
+from app.models import (
+    ContactClick,
+    ProducerPageView,
+    ProducerWhatsAppClick,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -163,91 +168,208 @@ def hash_ip(ip: Optional[str]) -> Optional[str]:
     return hashlib.sha256(f"{ip}|{salt}".encode("utf-8")).hexdigest()
 
 
+def is_internal_viewer(viewer: Optional[User], producer_id: UUID) -> bool:
+    """MEH-2156: True when the viewer is the producer's own owner, or an admin.
+
+    Analytics must measure the AUDIENCE, not the business owner checking her
+    own profile. Before this predicate every writer counted the owner: a
+    `pending` producer — which `producers.py:404-408` serves to nobody BUT
+    the owner and admins — still showed "1 profile view", and after approval
+    every self-check inflated the numbers. The first number an owner sees is
+    her first trust signal in the platform; a number she knows is false burns
+    it immediately.
+
+    Admins are skipped alongside owners by Sapir's 21/08 ruling — same logic,
+    less noise.
+
+    This is the extraction of the owner/admin shape already living inline at
+    `producers.py:405-406` (the MEH-254 gate). DO NOT invent a second form —
+    the two must agree, since the gate is what makes "any view of a
+    non-approved profile is necessarily the owner or an admin" true.
+
+    `viewer` is Optional because the two auth sources differ:
+    `get_current_user_optional` (GET) and `get_current_user_lenient` (POST)
+    both hand back None for an anonymous or expired-token caller. None is
+    never internal.
+    """
+    if viewer is None:
+        return False
+    if getattr(viewer, "role", None) == "admin":
+        return True
+    # bool() because `User.producer_id` is a declarative Column: on an ORM
+    # *instance* the comparison is a plain UUID == UUID, but mypy types the
+    # attribute as Column[...] and reads the result as ColumnElement[bool].
+    # The declared `-> bool` is the contract; make it true at the type level
+    # too rather than leaving a new error in the (warn-only) mypy output.
+    return bool(viewer.producer_id == producer_id)
+
+
+# ============================================================
+# The analytics choke point (MEH-2160)
+# ============================================================
+
+AnalyticsEvent = Literal["page_view", "whatsapp_click", "contact_click"]
+
+_ALLOWED_REFERRERS = frozenset(
+    {
+        "search",
+        "map",
+        "category",
+        "home",
+        "favorites",
+        "follow",
+        "producers-index",
+        "similar",
+        "nearby",
+    }
+)
+
+
 @dataclass
-class ViewContext:
-    """MEH-447: bundle the per-request viewer context so track_producer_view
-    stays under PLR0913's 5-arg cap. Plain dataclass (not Pydantic) since
-    the User field is a SQLAlchemy ORM instance and this is internal-only."""
+class EventContext:
+    """Per-request context for record_analytics_event.
 
-    viewer_ip: Optional[str]
-    user_agent: Optional[str]
-    viewer_user: Optional[User]
-    referrer: Optional[str]
+    Bundled rather than passed as loose arguments so the choke point stays
+    under ruff's PLR0913 5-argument cap. This replaced the older ViewContext,
+    which MEH-2160 deleted: it carried a pre-resolved IP, which meant the
+    write path had two ways in — one that resolved the caller itself and one
+    that trusted a value handed to it. Two doors into one write is the exact
+    shape this ticket exists to remove, so there is now one.
+
+    `referrer` is only meaningful for page_view and `method` only for
+    contact_click; each is ignored by the events that have no column for it.
+    """
+
+    request: object
+    viewer: Optional[User]
+    referrer: Optional[str] = None
+    method: Optional[str] = None
+    # MEH-1677: only the coverage CTA ("לא מגיעים אליך?") sends this, and only
+    # whatsapp_click has a column for it. An ordinary WhatsApp click leaves it
+    # None, so the stored NULL means "not a coverage click" -- see the column
+    # comment on ProducerWhatsAppClick.city.
+    city: Optional[str] = None
 
 
-def track_producer_view(
+def record_analytics_event(
     db: Session,
     *,
+    event: AnalyticsEvent,
     producer_id: UUID,
-    ctx: ViewContext,
+    ctx: EventContext,
 ) -> None:
-    """Insert a ProducerPageView row for this request, best-effort.
+    """The ONE place an analytics row is written. MEH-2160.
 
-    Swallows all exceptions — a tracking failure must never propagate
-    into the GET /producers/{id} response. Bot UAs are silently skipped.
-    Called from `producers.get_producer()` after the response body is
-    computed so a 404 doesn't leave a view behind.
+    Every exclusion rule this system has was, before this function, enforced
+    at exactly the site where its bug was found and nowhere else:
+
+      | rule                | enforced on          | missing from            |
+      | bot user-agent      | page views           | both click writers      |
+      | real client IP      | the rate limiter     | both analytics writers  |
+      | owner/admin skip    | 3 writers, that day  | the 4th, written later  |
+      | referrer allowlist  | page views           | (n/a)                   |
+
+    Three tickets in a row were the same defect wearing different clothes: a
+    correct rule that never propagated. Nothing in the system stopped the
+    next writer from calling `db.add(...)` directly and inheriting none of
+    them. `test_analytics_chokepoint.py` is now what stops it.
+
+    ORDER IS PART OF THE CONTRACT — do not reorder:
+
+      1. bot user-agent      -> skip. Cheapest, and needs no DB read.
+      2. internal viewer     -> skip. The owner is not her own audience.
+      3. real client IP      -> hashed via the trusted-proxy resolver.
+      4. referrer allowlist  -> page_view only; anything else becomes NULL.
+      5. INSERT + commit, fail-open with rollback on any exception.
+
+    Fail-open is deliberate and load-bearing: analytics is telemetry, and a
+    tracking failure must never turn into an error the visitor can see. Every
+    caller is fire-and-forget.
     """
     try:
-        if is_bot_user_agent(ctx.user_agent):
+        if is_bot_user_agent(_user_agent_of(ctx.request)):
             return
 
-        city: Optional[str] = None
-        if ctx.viewer_user is not None and ctx.viewer_user.city:
-            city = ctx.viewer_user.city
+        if is_internal_viewer(ctx.viewer, producer_id):
+            return
 
-        # Only accept known referrer values — protects against callers
-        # stuffing arbitrary strings into the column. `from_` reaches this
-        # function straight off the query string (producers.py:246), so the
-        # set is the ONLY thing keeping the column bounded. DO NOT widen it
-        # to accept arbitrary input; add a literal per frontend writer.
-        #
-        # MEH-1558: the set was missing three values ProducerCard.jsx:174
-        # has been sending all along — producers-index, similar, nearby —
-        # so every view from the /producers index and from the two
-        # same-page rails was silently normalized to NULL, destroying the
-        # attribution permanently. Verified writer set (all hardcoded
-        # literals, none derived from user input):
-        #   home            — page.js:213, HomeProducersGrid.jsx:193,:219
-        #   search          — SearchClient.jsx:154
-        #   producers-index — ProducersClient.jsx:675
-        #   similar         — ProducerSections.jsx:480
-        #   nearby          — ProducerSections.jsx:536
-        # `map`, `category`, `favorites` and `follow` are kept but have NO
-        # writer today (MEH-1558 Phase 0) — retained so a surface that
-        # starts tagging doesn't silently drop to NULL again.
-        normalized_referrer: Optional[str] = None
-        if ctx.referrer in {
-            "search",
-            "map",
-            "category",
-            "home",
-            "favorites",
-            "follow",
-            "producers-index",
-            "similar",
-            "nearby",
-        }:
-            normalized_referrer = ctx.referrer
+        user_id = ctx.viewer.id if ctx.viewer is not None else None
 
-        row = ProducerPageView(
-            producer_id=producer_id,
-            viewer_ip_hash=hash_ip(ctx.viewer_ip),
-            city=city,
-            referrer=normalized_referrer,
-        )
+        if event == "page_view":
+            city: Optional[str] = None
+            if ctx.viewer is not None and ctx.viewer.city:
+                city = ctx.viewer.city
+            # Only accept known referrer values — the caller-supplied string
+            # reaches here unvalidated, so this set is the ONLY thing keeping
+            # the column bounded. DO NOT widen it to accept arbitrary input;
+            # add a literal per frontend writer.
+            row: object = ProducerPageView(
+                producer_id=producer_id,
+                viewer_ip_hash=hash_ip(_client_ip_of(ctx.request)),
+                city=city,
+                referrer=(ctx.referrer if ctx.referrer in _ALLOWED_REFERRERS else None),
+            )
+        elif event == "whatsapp_click":
+            # MEH-1677: ctx.city is None for every ordinary WhatsApp click --
+            # the value only exists when CoverageRequestCta sent one -- so this
+            # writes NULL on the normal path without a branch.
+            row = ProducerWhatsAppClick(
+                producer_id=producer_id,
+                user_id=user_id,
+                city=ctx.city,
+            )
+        elif event == "contact_click":
+            row = ContactClick(
+                producer_id=producer_id,
+                user_id=user_id,
+                method=ctx.method,
+                ip_hash=hash_ip(_client_ip_of(ctx.request)),
+            )
+        else:  # pragma: no cover — Literal makes this unreachable via types
+            raise ValueError(f"unknown analytics event: {event!r}")
+
         db.add(row)
         db.commit()
     except Exception as exc:  # noqa: BLE001 — fail-open by design
         logger.warning(
-            "[ANALYTICS] track_producer_view failed for producer=%s: %s",
-            producer_id,
-            exc,
+            "[ANALYTICS] %s failed for producer=%s: %s", event, producer_id, exc
         )
         try:
             db.rollback()
         except Exception:
             pass
+
+
+def _user_agent_of(request: object) -> Optional[str]:
+    """Read the UA off a Starlette Request without importing FastAPI here.
+
+    This module is a service, and the two callers already hold the Request.
+    Duck-typed so a test can pass any object with `.headers` — and so the
+    service layer keeps no framework import.
+    """
+    headers = getattr(request, "headers", None)
+    if headers is None:
+        return None
+    return headers.get("user-agent")
+
+
+def _client_ip_of(request: object) -> Optional[str]:
+    """Resolve the caller through the trusted-proxy resolver.
+
+    Imported lazily: app.rate_limit pulls in slowapi and the settings object,
+    and a module-level import here would put that on the cold-import path of
+    every consumer of this service.
+    """
+    # DO NOT reintroduce a pre-resolved-IP shortcut here. An earlier shape of
+    # this refactor kept one (`getattr(request, "_ip", None)`) as a leftover
+    # from the ViewContext adapter, and it was dead the moment that adapter
+    # was deleted — nothing sets the attribute. It was worse than dead: a
+    # private back door that let any future caller hand this function an IP
+    # and bypass the trusted-proxy resolver entirely. That is the second
+    # door this whole ticket exists to remove. Caught in review on the PR.
+    from app.rate_limit import get_real_client_ip
+
+    return get_real_client_ip(request)
 
 
 # ============================================================
@@ -303,9 +425,11 @@ def server_health() -> dict:
 
 
 __all__ = [
-    "track_producer_view",
     "record_request",
     "server_health",
     "hash_ip",
     "is_bot_user_agent",
+    "is_internal_viewer",
+    "record_analytics_event",
+    "EventContext",
 ]

@@ -71,9 +71,19 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // (z clears BottomNav:1000 + cookie:1100, below filter-sheet:1200).
         // sm+ → absolute, dropping from just below the bell (top-14 = the bell's
         // bottom edge). Either way the grid cell height is unaffected.
+        // MEH-2148: the mobile sheet cleared a 64px nav band that no longer
+        // exists at that height. Derived from the published clearance now.
+        //
+        // As a CLASS, not an inline style, and that is load-bearing rather than
+        // stylistic: an inline `style={{ bottom }}` outranks every class, so
+        // `sm:bottom-auto` could not fire and at sm+ the panel stayed anchored
+        // at BOTH edges -- `top-14` and a live `bottom` -- stretching it past
+        // its content instead of sizing to it. Measured at 900px: 426px tall
+        // against 369px of content. Same arbitrary-value form as InstallPrompt
+        // below, and Tailwind arbitrary values take no spaces.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-16 z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}
