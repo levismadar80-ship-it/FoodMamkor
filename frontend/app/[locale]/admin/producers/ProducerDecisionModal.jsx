@@ -33,7 +33,7 @@ import { useTranslations } from "next-intl";
 // purpose: before MEH-2209 every reason rejected, so an unrecognised key
 // keeps today's behavior instead of silently promising a business owner a
 // second chance the admin did not intend.
-export const CHANGES_PRESET_KEYS = ["missing_docs", "missing_image", "incomplete_info"];
+const CHANGES_PRESET_KEYS = ["missing_docs", "missing_image", "incomplete_info"];
 
 export const CHANGES = "changes";
 export const REJECT = "reject";
@@ -50,7 +50,7 @@ export const presetKeyOf = (value) => (value || "").split(":").slice(1).join(":"
 /** Split the fetched presets into the two groups, appending the "אחר" chrome
  *  option to each. `other` is dropped from the fetched list first — it is
  *  rendered as chrome in both groups, not as a preset in one. */
-export function partitionPresets(presets, otherLabel) {
+function partitionPresets(presets, otherLabel) {
   const real = (presets || []).filter((p) => p.key !== OTHER);
   const toOption = (group) => (p) => ({ value: decisionValue(group, p.key), label: p.label });
   return {
@@ -69,7 +69,7 @@ export function partitionPresets(presets, otherLabel) {
  *  reason must be chosen, and "אחר" additionally requires free text
  *  (admin.py reject_producer / request_producer_changes both 400 otherwise,
  *  so this only disables the button — it is not the only guard). */
-export const canSubmitDecision = (value, freeText) =>
+const canSubmitDecision = (value, freeText) =>
   Boolean(value) && (presetKeyOf(value) !== OTHER || Boolean((freeText || "").trim()));
 
 // One native <fieldset> + <legend> + native radios sharing one `name`, so
