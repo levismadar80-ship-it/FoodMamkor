@@ -3,6 +3,20 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-29 — ‏הסרת ה-pill «רישיון יצרן»: ‏#3156
+
+**מוזג:** ‏#3156 `c2b9a09e` — **אומת כ-squash** (הורה יחיד `948bf7aa` + תבנית `<title> (#N)`, נקרא מהקומיט שנחת ולא מתשובת ה-API). ה-`commit_message` שסופק **כן** נחת, כולל `Closes` וה-trailer. הכרטיס נסגר לבד ונבדק בשני הכיוונים (כלל 29ב). **אפס שינוי backend** — `git diff --stat staging -- backend/` ריק.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏«staging ירוק» ב-E2E הוא skip-green, ואל תקראי אותו כמו שקראתי אותו בהתחלה.** שתי ריצות ה-`staging` האחרונות מדווחות `success` **ודילגו על ה-job לגמרי** — דחיפות docs-only, paths-filter חיובי, ו-leg מדולג עובר ב-aggregator. **הריצה האחרונה שבאמת הריצה את הסוויטה היא `17011b62` (08:18) — ‏25 נכשלו.** אמרתי «staging ירוק ולכן אי אפשר לפטור את הכישלון» וזו הייתה טעות שהפכה את המסקנה; מה שסוגר את השאלה הוא **להסתכל על ה-job עצמו** (`Playwright E2E (Vercel preview)`), לא על מסקנת הריצה. הפריט 7 ב-HANDOFF הקודם כבר אמר את זה ב-`17011b62` — קראתי אותו רק אחרי.
+2. **‏ההשוואה שסוגרת «של מי הכישלון»:** ‏`17011b62` = 25 נכשלו / 272 עברו; ה-PR הזה = 26 / 270. **אותם שבעה קבצים, 13 כשלי `spec:line` זהים**, והשארית זזה לשני הכיוונים (אחד רק ב-staging, שניים רק כאן). ריצה חוזרת אחת שוחזרה זהה — **שנייה אסורה** ולא נוצלה. **‏`staging` אדום ב-E2E על register/login/OAuth/admin וזה ראוי לכרטיס משלו מול `staging`** — לא נפתח, כי ממצא אינו עבודה שמאשרת את עצמה.
+3. **‏הכרטיס תיאור עולם שלא קיים בשתי נקודות, ושתיהן תוקנו ב-description (כלל 34) ולא רק בתגובה.** אין מפתחות i18n יתומות (התווית קשיחה ב-`badges.js`, לא מפתח תרגום — מחיקת אחת מ-40 מפתחות ה-`license` החיות הייתה רגרסיה, `file-preservation.md` §6), וה-hero מעולם לא הציג את ה-pill. **הכרטיס האחות MEH-2214 חסום מאותה מחלקה** — «רישוי מאומת» אינו ב-`he.json` כלל אלא ב-`frontend/lib/filter-taxonomy.js:116`, קובץ מחוץ ל-`<file_locations>` שלו ובתוך ה-`lib/` שהוא אוסר. **‏STOP (b), ממתין להכרעת scope + tier — צפוי גם regen VRT כי התווית ב-`parity.spec.ts`.**
+4. **‏`commits (1)/(2)/(3)` בכרטיס לא ניתנים לביצוע כפי שנכתבו.** commit (2) הוא ה-i18n שאינו קיים, ו-commit (3) הוא `CHANGELOG` + `HANDOFF` — **שכלל 31 מוציא מכל ענף קוד ו-`changelog-branch-guard.sh` מאדים עליו**. ה-PR הזה הוא ה-docs-only שנושא אותם, ונפתח רק אחרי ש-#3156 נחת (כלל 31ב).
+5. **‏הסנדבוקס הזה מריץ Chromium 1194 בעוד ה-repo מצפה ל-1234**, אז `npx playwright test` נופל על `Executable doesn't exist`. הפתרון בלי לגעת ב-repo: ‏`PLAYWRIGHT_BROWSERS_PATH` לתיקיית צל ב-scratchpad עם symlinks, כולל `chrome-headless-shell` → `headless_shell` (השם שונה בין הבניות). בנוסף `global-setup` נופל על login מול backend שאינו קיים — הרצת spec ממוקד דורשת `env -u DEMO_OWNER_PASSWORD -u DEMO_ADMIN_PASSWORD -u DEMO_CONSUMER_PASSWORD`.
+6. **‏`ss` לא קיים כאן.** לבדיקת פורט: `curl -s -o /dev/null -w '%{http_code}'`. ולהריגת שרת — `ps -eo pid,comm` ואז `kill <pid>`; ‏`pkill -f` היה הורג את ה-shell עצמו (‏`testing.md`).
+7. **‏`check.sh` נותן 6/7 כאן ולא 7/7.** ה-7 הוא pytest על `password authentication failed for user "postgres"` — הסקריפט עצמו מדפיס «This is the environment, not the diff». **‏`uv sync` + `pg_ctlcluster 16 main start` מקדמים אותו משלוש שגיאות שונות עד לנקודה הזאת** — שווה לדעת לפני שמניחים שהוא סתם שבור.
+
 ## 2026-08-29 — ‏MEH-2209 (מודל החלטה מאוחד): ‏#3153
 
 **מוזג:** ‏#3153 `f0419628` — **אומת כ-squash** (הורה יחיד + תבנית `<title> (#N)`, נקרא מהקומיט שנחת ולא מתשובת ה-API; ה-`commit_message` שסופק **כן** נחת הפעם, בניגוד ל-#3116/#3139). ‏`origin/staging` מצביע עליו, ושני המודלים הישנים אינם קיימים בעץ. מודל ההחלטה של המנהלת אוחד לרכיב אחד; `RejectModal.jsx` ו-`RequestChangesModal.jsx` נמחקו. **אפס שינוי backend.**
