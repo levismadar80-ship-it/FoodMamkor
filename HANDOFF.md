@@ -3,6 +3,44 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-29 — MEH-2218 PR sweep, chunk 1 (run #3): 1 מוזג · 2 נסגרו · 3 parked · 7 ל-C
+
+**‏מוזג (1):** ‏#2917 (MEH-2074) — squash **`c1bba1a0`**, הורה יחיד (אומת, לא הונח). סונכרן ב-merge לא rebase (כלל 25), פעמיים, כי staging זז תחת ה-PR באמצע.
+
+**‏נסגרו (2):** ‏#2999 (superseded ע"י #2993 `5bc81974`; MEH-2103 Done) · #2129 (נדחה לפי HANDOFF; נוגע ב-`deploy.yml`).
+
+**‏parked (3) — כל אחת עם שם הצ'ק שנכשל:**
+
+| PR | חוסם | ראיה |
+|---|---|---|
+| #3080 | `CI gate (required)` ← `Backend lint (ruff)` + `Backend tests (pytest)` | `error: The lockfile at 'uv.lock' needs to be updated, but '--check' was provided.` — נקרא מהלוג. ‏+ מעלה `joserfc` (JWT) ו-`alembic`, סיבה שנייה עצמאית |
+| #3079 | ‏`@dependabot rebase` ללא מענה תוך תקרת 10 דק' | head נשאר `e0d2cb056` מ-18:22Z עד 18:32Z. שערים ירוקים אך מ-24/08 מול base `861fbe9d`, 93 קומיטים מאחור |
+| #2941 · #2940 | **לא נוסו** | STOP לפי MEH-450(a) — שתי parked ברצף (#3080, #3079) |
+
+**‏Bucket C — טבלת verdict (read-only, ממתינה ל-go):**
+
+| PR | CI (נקרא 29/08) | diff | merge-tree | תלות / breaking | Linear | `do-not-merge` | verdict |
+|---|---|---|---|---|---|---|---|
+| #3144 | CI ✅ · Deploy ✅ · **E2E gate ❌** | 5 קבצים +226/−18 | CLEAN | — | MEH-2204 Backlog | **כן** | **BLOCKED** — התווית חיה, כלל 30 |
+| #2953 | CI ✅ · Deploy ✅ (15/08) | 2 קבצים +11 | CLEAN | — | MEH-1959 **Done** | לא | **REBASE-THEN-MERGE** |
+| #2943 | **CI ❌** ← ruff + pytest | 1 קובץ +1/−1 | CLEAN | bcrypt 4.0.1→**5.0.0** (major, hashing סיסמאות) | no-issue | לא | **BLOCKED** |
+| #2127 | CI ✅ (11/08) | 2 קבצים | **CONFLICT** → `pyproject.toml`, `uv.lock` | joserfc→1.7.4 (JWT) | no-issue | לא | **BLOCKED** |
+| #2760 | CI ✅ · Deploy ✅ | `.github/workflows/cls-measure.yml` | CLEAN | actions/checkout 4→**7** major | no-issue | לא | **BLOCKED (ספיר)** — CC-deny, MEH-671 |
+| #2759 | CI ✅ · Deploy ✅ | `.github/workflows/claude-review.yml` | CLEAN | claude-code-action 1.0.183→1.0.187 | no-issue | לא | **BLOCKED (ספיר)** — CC-deny; ה-workflow של ה-reviewer (MEH-1844) |
+| #2908 | CI ✅ · Deploy ✅ (14/08) | `HANDOFF.md` +18 | CLEAN | — | MEH-1748 Backlog | לא | **REBASE-THEN-MERGE** |
+
+**‏פקודת התיקון ל-#2127 (נאמרת, לא הורצה):** `cd backend && uv lock` ואז commit של `uv.lock`. אותה פקודה חלה על #3080 ו-#2943.
+
+**‏🔴 MEH-1959 — הכרטיס Done וה-PR מעולם לא נמזג.** ‏`completedAt` = 15/08 19:05:51Z, **39 שניות אחרי פתיחת #2953** (19:05:12Z). זה ה-auto-close מ-slug הענף (כלל 29b), לא מיזוג. התיעוד ש-#2953 נושא — sentinel comment ב-`middleware.py` + תיקון ה-audit — **אינו על staging**.
+
+**‏שתי ריצות קודמות נעצרו על STEP 0.** run #1: ‏#3167 זז באמצע. run #2: ‏#3166 זז בין `git fetch` ל-`list_pull_requests` באותו תור, ו-staging נגע 76 שניות קודם. ספיר משכה את חלון-השקט ב-18:15 והחליפה בשער ownership-scoped.
+
+**‏#3166 / #3167 — נסגרו לבד ע"י הסשן המקביל:** ‏#3167 → `fcd85d59c`, #3166 → `1fc7dab37`. לא נגענו.
+
+**‏main מול staging:** ‏11 קומיטים ב-main שאינם ב-staging, **כולם merge commits של release**; `git diff $(git merge-base staging main) origin/main` → **0 קבצים**. ‏⚠️ הסריקה הראשונה השתמשה ב-`git show --name-only`, שמחזיר אפס קבצים על merge commit — בקרה: אותו `3d46cc37b` = 0 קבצים כך, **430** ב-`git diff $c^1 $c`. ה-null נראה כמו «נקי».
+
+**‏הבא בתור:** ‏go על טבלת C. ‏#2953 ו-#2908 הם sync-ואז-merge; #2943/#2127/#3080 צריכים `uv lock`; #2760/#2759 הם של ספיר; #3144 חסום על התווית.
+
 ## 2026-08-14 — Lane A: MEH-2051 מוזג · chunks 4b + 2 של MEH-1938 חסומים על ספיר
 
 **מוזג:** PR #2915, squash `71354880` — MEH-2051, מרוץ `PUT /producers/me` מול `confirm_phone_otp` שירה פינג «מוכן לאישור» כפול. הכרטיס נסגר Done אוטומטית 3 שניות אחרי המיזוג מ-`Closes MEH-2051` (flip-check בוצע).
