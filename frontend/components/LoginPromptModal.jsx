@@ -34,6 +34,15 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * Repo precedent for the portal: FilterSheet.jsx (MEH-1075), ui/Popover.jsx
  * (MEH-1592). Measured in qa-meh-2215-stacking-probe.mjs (MEH-2215).
  *
+ * The one non-obvious consequence, recorded because it is invisible in a diff:
+ * a portal moves the DOM node, NOT the React tree, so clicks inside this modal
+ * still bubble to whatever React ancestor mounted the FavoriteButton. That is
+ * inert today — the ancestors between here and `#section-images` carry no
+ * `onClick` (ImageGallery.jsx:240 and :375 are handler-free; the banner's
+ * `openLightbox` at :323 is a SIBLING of the overlay wrapper, not an ancestor).
+ * It stops being inert the moment someone adds a click handler to the gallery
+ * wrapper: a tap on "אולי אחר כך" would then also open the lightbox.
+ *
  * Z-index: z-[9500] — below chat widget (9999) + cookie banner (9998),
  * above everything else (map legend 800, controls 1000).
  */
