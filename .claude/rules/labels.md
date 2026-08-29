@@ -31,7 +31,7 @@ not this rule.
 
 | Value | Means | Example |
 |---|---|---|
-| `business` | The whole business carries it. | `verified` (רישוי מאומת) — the business's license; `license` (רישיון יצרן, BADGE_CONFIG); `has_delivery`; `kosher` (verified-only); `grass_fed`. |
+| `business` | The whole business carries it. | `verified` (רישוי מאומת) — the business's license; `has_delivery`; `kosher` (verified-only); `grass_fed`. |
 | `any-product` | ≥ 1 matching product in the catalog — NOT the whole business. | `vegan` / `vegetarian` / `gluten_free` / `lactose_free` — `?vegan=true` is an EXISTS subquery over products (MEH-293). |
 | `facility` | A property of the production site, not the catalog. | *Reserved* — used by the MEH-1508 gluten/lactose facility layer (shared vs dedicated). No label carries it yet. |
 
@@ -40,7 +40,7 @@ not this rule.
 | Value | Means | Example |
 |---|---|---|
 | `self-declared` | The business owner asserted it; no external check. | every diet filter, `has_delivery`, `grass_fed`. |
-| `admin-verified` | An admin checked a document against an external registry. | `verified` (license vs Ministry of Health, ADR-022); `kosher` (kashrut_verified_at, MEH-986/1087); `license` (BADGE_CONFIG — gated on the same `verification_tier === "verified"` check, MEH-1162). |
+| `admin-verified` | An admin checked a document against an external registry. | `verified` (license vs Ministry of Health, ADR-022); `kosher` (kashrut_verified_at, MEH-986/1087). |
 | `editorial` | A named editor's opinion. Nobody asserted it and nothing was checked — and it **cannot be bought** (ADR-030). | `recommended` (בחירת העורכת, MEH-1492). |
 | `system` | Derived by the system: not asserted by anyone, not verified against anything. | `new` (BADGE_CONFIG — computed from `days_since_created <= 30`). Also the intended home for a computed distance / availability. |
 
@@ -56,15 +56,15 @@ not this rule.
 > three-column table with a two-cell row. Both corrected under MEH-1753 from the
 > live config, not from the spec.)_
 
-### The `license` ruling (MEH-2191, 26/08)
+### The `license` ruling (MEH-2191, 26/08) — ⚠️ RETIRED 29/08, the badge it ruled on no longer renders
 
 | Label | scope | evidence | Rationale |
 |---|---|---|---|
 | `license` (רישיון יצרן) | `business` | `admin-verified` | The claim is established by the manual per-business approval against the documents — the DNA lock («עסקים מורשים בלבד» + «אישור ידני לכל עסק»), not by the owner typing a number. |
 
-**Why this row exists at all.** MEH-1753 brought all twelve `BADGE_CONFIG`
-entries under this contract, and `license` was the **one cell of the twelve that
-was derived rather than looked up**: the badge gates on the same
+**Why this row existed at all.** MEH-1753 brought all twelve `BADGE_CONFIG`
+entries under this contract (**eleven since 29/08**), and `license` was the **one
+cell of the twelve that was derived rather than looked up**: the badge gates on the same
 `verification_tier === "verified"` admin check as `verified` (MEH-1162), so the
 values were read off the `verified` row — a defensible inference, and still an
 inference. CC flagged it instead of quietly minting policy (rule 24), and this
@@ -78,6 +78,24 @@ distinction the kashrut precedent (MEH-1711) draws.
 **Measured at ruling time:** `frontend/lib/badges.js` already carried
 `scope: "business"` · `evidence: "admin-verified"`, so the ruling **matched** the
 derived cell and no code changed.
+
+> **⚠️ The `license` badge was removed from every reader surface on 29/08 (PR
+> #3156), three days after this ruling. The row above is kept, not deleted, and
+> it is now history rather than a live cell.**
+>
+> The ruling is not wrong and was not reversed — it answered *what the label
+> claimed and who established it*, which is this contract's question. #3156
+> answered a different one: whether the claim should occupy a badge slot at all
+> beside the ADR-022 verified seal, which asserts the same fact with the same
+> evidence. It should not, so the entry left `BADGE_CONFIG` and the field now
+> lights no badge. Same shape as the `organic` and `products` retirements
+> recorded in `badges.js`.
+>
+> **What this changes for a reader of this file:** `license` is no longer one of
+> the claims the guard scans, so do not look for it in `BADGE_CONFIG`. The
+> paragraph above about `has_producer_license` being self-declared **still
+> stands and is the reason the badge went** — it is the distinction #3156 acted
+> on, not a claim this retirement withdraws.
 
 ---
 
