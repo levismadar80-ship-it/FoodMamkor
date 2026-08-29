@@ -226,7 +226,7 @@ export default function AboutPage() {
     <div className="relative bg-background">
       {/* ======== 01 — Hero (cream editorial · anchored) ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-5xl mx-auto px-4 md:px-12">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
           <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.05] text-[clamp(28px,5vw,52px)] max-w-[15ch]">
             {t("hero.heading")}
           </h1>
