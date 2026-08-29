@@ -73,9 +73,16 @@ const SURFACES = {
 // is mapped explicitly rather than inferred from key equality.
 //
 // This is what keeps the two declarations from being hand-copies: each pair
-// must AGREE on scope and evidence, so changing one side alone goes red. The
-// labels are deliberately NOT compared — `verified` reads "מאומת" as a badge
-// and "רישוי מאומת" as an axis, and that difference is intended copy.
+// must AGREE on scope and evidence, so changing one side alone goes red.
+//
+// The labels are deliberately NOT compared. MEH-2214 changed why: this comment
+// used to justify it by pointing at `verified`, which read "מאומת" as a badge
+// and "רישוי מאומת" as an axis. That pair now matches, and it was the last
+// one that did not — all nine agree character-for-character today. So the
+// exemption is an ALLOWANCE, not a description: the contract governs the CLAIM
+// (scope) and its SOURCE (evidence), while copy is a separate decision that may
+// legitimately diverge again. Asserting equality here would quietly convert a
+// copy decision into a test failure.
 const SHARED_CLAIMS = [
   ["verified", "verified"],
   ["grass_fed", "grass_fed"],
