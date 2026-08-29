@@ -142,6 +142,9 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
   const firstChangesRadio = useRef(null);
   const groups = partitionPresets(presets, t("producers.decision.other"));
   const isReject = groupOf(value) === REJECT;
+  // Same predicate canSubmitDecision() gates the submit on, so the label and
+  // the button can never disagree about whether detail is required.
+  const isOther = presetKeyOf(value) === OTHER;
 
   // The row's "בקשת השלמה" button lands the admin on the completion group
   // without choosing FOR her — focus, never a preselection, so the submit
@@ -188,14 +191,23 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
         onChange={setValue}
       />
 
+      {/* MEH-2209 follow-up: the label states whether the field is required,
+          instead of leaving the admin to infer it from a disabled button. The
+          first pass shipped one unconditional label and a submit that just
+          stayed grey — a smaller affordance than the modal this replaced,
+          which said "פירוט (חובה)". `aria-required` is derived from the SAME
+          condition, so the visual and the accessible name cannot disagree. */}
       <label htmlFor="decision-free-text" className="block text-sm font-medium text-text mb-1">
-        {t("producers.decision.free_text_label")}
+        {isOther
+          ? t("producers.decision.free_text_label_required")
+          : t("producers.decision.free_text_label_optional")}
       </label>
       <textarea
         id="decision-free-text"
         value={freeText}
         onChange={(e) => setFreeText(e.target.value)}
         rows={4}
+        aria-required={isOther}
         className="w-full border border-border rounded-[12px] px-3 py-2 text-sm bg-white"
         placeholder={t("producers.decision.free_text_placeholder")}
       />

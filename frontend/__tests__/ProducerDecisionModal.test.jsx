@@ -89,7 +89,8 @@ vi.mock("next-intl", () => {
     "admin.producers.decision.reject_legend": "דחייה",
     "admin.producers.decision.reject_helper": "בית העסק לא יופיע באתר",
     "admin.producers.decision.other": "אחר",
-    "admin.producers.decision.free_text_label": "פירוט לבעלת העסק",
+    "admin.producers.decision.free_text_label_required": "פירוט לבעלת העסק (חובה)",
+    "admin.producers.decision.free_text_label_optional": "פירוט לבעלת העסק (אופציונלי)",
     "admin.producers.decision.free_text_placeholder": "מה בדיוק חסר",
     "admin.producers.decision.submit_changes": "שליחת בקשת השלמה",
     "admin.producers.decision.submit_reject": "דחייה ושליחת מייל",
@@ -411,6 +412,44 @@ describe("Admin producers — decision modal (MEH-2209)", () => {
     const dialog = await screen.findByRole("dialog");
     await waitFor(() => expect(radio(dialog, "changes:missing_docs").checked).toBe(true));
     expect(textbox(dialog)).toHaveValue("חסר מספר רישיון יצרן");
+  });
+
+  // --- (#19) the required-field affordance ---------------------------------
+
+  it("(#19) the free-text label states required vs optional, in both groups", async () => {
+    const dialog = await openViaKebab();
+    const label = () => dialog.querySelector('label[for="decision-free-text"]').textContent;
+
+    // nothing chosen yet — the field is genuinely optional
+    expect(label()).toBe("פירוט לבעלת העסק (אופציונלי)");
+    expect(textbox(dialog)).toHaveAttribute("aria-required", "false");
+
+    // group 1 "אחר" — required
+    fireEvent.click(radio(dialog, "changes:other"));
+    expect(label()).toBe("פירוט לבעלת העסק (חובה)");
+    expect(textbox(dialog)).toHaveAttribute("aria-required", "true");
+
+    // a group-1 PRESET needs no detail — back to optional
+    fireEvent.click(radio(dialog, "changes:missing_docs"));
+    expect(label()).toBe("פירוט לבעלת העסק (אופציונלי)");
+    expect(textbox(dialog)).toHaveAttribute("aria-required", "false");
+
+    // group 2 "אחר" — required on that side too
+    fireEvent.click(radio(dialog, "reject:other"));
+    expect(label()).toBe("פירוט לבעלת העסק (חובה)");
+    expect(textbox(dialog)).toHaveAttribute("aria-required", "true");
+
+    // and a group-2 preset is optional again
+    fireEvent.click(radio(dialog, "reject:not_eligible"));
+    expect(label()).toBe("פירוט לבעלת העסק (אופציונלי)");
+    expect(textbox(dialog)).toHaveAttribute("aria-required", "false");
+
+    // the label drives the ACCESSIBLE NAME, not just visible ink — a screen
+    // reader must hear the requirement, which is the point of the change.
+    fireEvent.click(radio(dialog, "changes:other"));
+    expect(
+      within(dialog).getByRole("textbox", { name: "פירוט לבעלת העסק (חובה)" }),
+    ).toBeInTheDocument();
   });
 
   // --- carried over from the MEH-226 suite --------------------------------

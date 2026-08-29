@@ -1739,7 +1739,8 @@
         "reject_legend": "Rejection",
         "reject_helper": "The business will not appear on the site and gets an email",
         "other": "Other",
-        "free_text_label": "Details for the business owner",
+        "free_text_label_required": "Details for the business owner (required)",
+        "free_text_label_optional": "Details for the business owner (optional)",
         "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
         "submit_changes": "Send completion request",
         "submit_reject": "Reject and send email"
