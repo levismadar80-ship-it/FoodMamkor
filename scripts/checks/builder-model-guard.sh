@@ -111,6 +111,27 @@ TRAILER_KEY="Builder-Model"
 VRT_WORKFLOW=".github/workflows/vrt-update.yml"
 
 # ---------------------------------------------------------------------------
+# have_commit / fetch_commit — a shallow clone resolves a SHA it never fetched,
+# so `git rev-parse` alone proves nothing. Mirrors changelog-branch-guard.sh.
+# ---------------------------------------------------------------------------
+have_commit() { git cat-file -e "${1}^{commit}" 2>/dev/null; }
+
+fetch_commit() {
+  local sha="$1" depth
+  if git fetch --no-tags --quiet --depth=1 origin "$sha" 2>/dev/null && have_commit "$sha"; then
+    return 0
+  fi
+  # Deepen the PR's own branch — the head commit is its tip, so the base
+  # branch (what changelog-branch-guard deepens) would never reach it.
+  [ -n "${GITHUB_HEAD_REF:-}" ] || return 1
+  for depth in 50 250 1000; do
+    git fetch --no-tags --quiet --depth="$depth" origin "$GITHUB_HEAD_REF" 2>/dev/null || return 1
+    have_commit "$sha" && return 0
+  done
+  return 1
+}
+
+# ---------------------------------------------------------------------------
 # THE EXEMPTION PREDICATE — the one rule --self-test drives.
 #
 #   is_exempt_bot_author "<name> <email>"  ->  0 = exempt, 1 = checked
@@ -128,6 +149,63 @@ VRT_WORKFLOW=".github/workflows/vrt-update.yml"
 # ---------------------------------------------------------------------------
 is_exempt_bot_author() {
   printf '%s' "${1:-}" | grep -qiE 'dependabot(\[bot\])?'
+}
+
+# The generic Actions identity. NOT exempt on its own — see the two-condition
+# rule below. Every workflow in the repo can commit under this name, so an
+# identity-only exemption would open the gate to any commit any future workflow
+# makes. The condition is what it TOUCHED, not who it is.
+is_github_actions_author() {
+  printf '%s' "${1:-}" | grep -qiE 'github-actions(\[bot\])?'
+}
+
+# VRT baseline paths, matching what vrt-update.yml:176 stages
+# (`git add frontend/e2e/visual/*-snapshots`).
+VRT_BASELINE_RE='^frontend/e2e/visual/[^/]+-snapshots/'
+
+# paths_are_vrt_baseline_only — pure, so --self-test drives it directly.
+#   stdin: newline-separated paths.  0 = at least one path AND all baseline.
+# EMPTY INPUT RETURNS 1, deliberately. "No paths" is what an unreadable diff
+# looks like in a shallow clone (measured: `git diff-tree` there exits 0 with
+# no output), and a vacuous "all of nothing matched" would hand the exemption
+# to any bot commit whose diff the guard could not read. An empty commit is not
+# a baseline regen either, so requiring >=1 path costs nothing real.
+paths_are_vrt_baseline_only() {
+  local line seen=0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    seen=1
+    printf '%s' "$line" | grep -qE "$VRT_BASELINE_RE" || return 1
+  done
+  [ "$seen" -eq 1 ]
+}
+
+# commit_changed_paths — prints the paths a commit changed; returns 1 when that
+# CANNOT BE DETERMINED, which the caller must treat as "not exempt".
+#
+# Needs the PARENT object, not just the commit: repo-guards checks out at
+# fetch-depth 1 (pr-checks.yml) and a depth-1 clone of a merge commit does not
+# carry its parents (measured). fetch_commit() is the same on-demand helper the
+# target resolution above already relies on.
+commit_changed_paths() {
+  local ref="$1" parent
+  parent="$(git cat-file commit "$ref" 2>/dev/null | awk '/^parent/{print $2; exit}')"
+  [ -n "$parent" ] || return 1                       # root commit: undeterminable
+  have_commit "$parent" || fetch_commit "$parent" || return 1
+  git diff-tree --no-commit-id --name-only -r "$parent" "$ref" 2>/dev/null || return 1
+}
+
+# is_exempt_bot_commit — the two-condition rule.
+#   dependabot            -> exempt on identity alone (unchanged)
+#   github-actions[bot]   -> exempt ONLY if the diff is confined to baselines
+#   anything else         -> checked
+is_exempt_bot_commit() {
+  local author="$1" ref="${2:-}" paths
+  is_exempt_bot_author "$author" && return 0
+  is_github_actions_author "$author" || return 1
+  [ -n "$ref" ] || return 1
+  paths="$(commit_changed_paths "$ref")" || return 1
+  printf '%s\n' "$paths" | paths_are_vrt_baseline_only
 }
 
 # ---------------------------------------------------------------------------
@@ -155,17 +233,123 @@ self_test() {
     fi
   }
 
-  # 1-2: the discriminating pair. Same commit message in the wild; the author
+  # IDENTITY: the discriminating pair. Same commit message in the wild; the author
   #      string is the only difference, and it must flip the verdict.
   expect "dependabot is exempt" 0 \
     'dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>'
   expect "github-actions is NOT exempt" 1 \
     'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
-  # 3: a human/session author is never exempt.
+  # IDENTITY: a human/session author is never exempt.
   expect "a session author is NOT exempt" 1 \
     'Claude <noreply@anthropic.com>'
 
-  # 4: REAL-FILE ANCHOR. Compose the author from vrt-update.yml's own
+  # PATH CLASSIFIER: the two-condition rule, driven through the pure classifier.
+  expect_paths() { # expect_paths LABEL WANT_RC <<paths>>
+    local label="$1" want="$2" paths="$3" got
+    ran=$((ran + 1))
+    printf '%s\n' "$paths" | paths_are_vrt_baseline_only; got=$?
+    if [ "$got" -eq "$want" ]; then
+      echo "  ok    ${label}  (rc=${got})"
+    else
+      echo "  FAIL  ${label}  (want rc=${want}, got ${got})"
+      failures=$((failures + 1))
+    fi
+  }
+  expect_paths "baseline-only diff is confined" 0 \
+    'frontend/e2e/visual/parity.spec.ts-snapshots/about-desktop-linux.png
+frontend/e2e/visual/parity.spec.ts-snapshots/about-mobile-linux.png'
+  expect_paths "a code path is NOT confined" 1 \
+    'frontend/e2e/visual/parity.spec.ts-snapshots/about-desktop-linux.png
+scripts/checks/builder-model-guard.sh'
+  expect_paths "an EMPTY diff is NOT confined (vacuous-truth trap)" 1 ''
+  expect_paths "a lookalike path outside the dir is NOT confined" 1 \
+    'frontend/e2e/visual/parity.spec.ts-snapshots-evil/x.png'
+
+  # REAL-FILE ANCHORS + the I/O function, all depth-independent.
+  #
+  # An earlier version anchored on two real commit SHAs. Both objects are
+  # ABSENT under `repo-guards`' fetch-depth: 1 checkout, so the self-test failed
+  # on every PR and the preflight took the whole guard down with it — a
+  # universal red, strictly worse than the targeted false red this ticket
+  # exists to remove. Measured on PR #3174. Anchors must not depend on history
+  # the CI checkout does not carry.
+  #
+  # These read the WORKING TREE, which is fully present at any depth.
+  ran=$((ran + 1))
+  local real_baselines
+  real_baselines="$(find frontend/e2e/visual -maxdepth 2 -type d -name '*-snapshots' -exec find {} -maxdepth 1 -type f \; 2>/dev/null | head -5)"
+  if [ -z "$real_baselines" ]; then
+    echo "  FAIL  real-path anchor — no baseline files found under frontend/e2e/visual/*-snapshots/."
+    echo "        Not counted as a pass: the anchor could not read its subject, so it"
+    echo "        cannot testify that the classifier matches the shape this repo uses."
+    failures=$((failures + 1))
+  elif printf '%s\n' "$real_baselines" | paths_are_vrt_baseline_only; then
+    echo "  ok    real-path anchor: $(printf '%s\n' "$real_baselines" | grep -c .) live baseline file(s) classified as confined"
+  else
+    echo "  FAIL  real-path anchor: live baseline files were NOT classified as confined."
+    printf '        %s\n' "$real_baselines"
+    failures=$((failures + 1))
+  fi
+  expect_paths "real repo code paths are NOT confined" 1 \
+    'scripts/checks/builder-model-guard.sh
+scripts/checks/README.md'
+
+  # commit_changed_paths, exercised against a REAL git repo built in a temp dir.
+  # Deterministic, offline, and independent of this clone's depth — the failure
+  # the commit-SHA anchors hit. Same idiom as adr-citation-guard's synthetic
+  # decisions dir: real implementation, controlled subject.
+  local tmp
+  tmp="$(mktemp -d)"
+  (
+    cd "$tmp" || exit 1
+    git init -q . && git config user.email t@t.t && git config user.name T
+    mkdir -p frontend/e2e/visual/parity.spec.ts-snapshots
+    echo seed > seed.txt && git add -A && git commit -q -m seed
+    echo png > frontend/e2e/visual/parity.spec.ts-snapshots/home.png
+    git add -A && git commit -q -m "test(vrt): regenerate visual parity baselines"
+    echo code > app.js && git add -A && git commit -q -m "feat: code"
+  ) >/dev/null 2>&1
+  local baseline_sha code_sha
+  baseline_sha="$(cd "$tmp" && git rev-parse HEAD~1 2>/dev/null)"
+  code_sha="$(cd "$tmp" && git rev-parse HEAD 2>/dev/null)"
+
+  ran=$((ran + 1))
+  if [ -z "$baseline_sha" ]; then
+    echo "  FAIL  commit_changed_paths — could not build the temp repo; case did not run."
+    failures=$((failures + 1))
+  elif ( cd "$tmp" && commit_changed_paths "$baseline_sha" | paths_are_vrt_baseline_only ); then
+    echo "  ok    commit_changed_paths: a baseline-only commit reads as confined"
+  else
+    echo "  FAIL  commit_changed_paths: a baseline-only commit did NOT read as confined"
+    failures=$((failures + 1))
+  fi
+
+  ran=$((ran + 1))
+  # The empty-$code_sha branch is reported separately: "read as confined" would
+  # be a WRONG diagnosis for a temp repo that never got built, and a misleading
+  # failure message costs more than a missing one when someone is debugging CI.
+  if [ -z "$code_sha" ]; then
+    echo "  FAIL  commit_changed_paths — the temp repo was not built; this case did not run."
+    failures=$((failures + 1))
+  elif ( cd "$tmp" && commit_changed_paths "$code_sha" | paths_are_vrt_baseline_only ); then
+    echo "  FAIL  commit_changed_paths: a code commit read as confined"
+    failures=$((failures + 1))
+  else
+    echo "  ok    commit_changed_paths: a code commit does NOT read as confined"
+  fi
+
+  # FAIL-CLOSED: an unreadable diff must never be exempt. Deterministic in every
+  # environment, which is exactly what the commit-SHA anchors were not.
+  ran=$((ran + 1))
+  if commit_changed_paths "0000000000000000000000000000000000000000" >/dev/null 2>&1; then
+    echo "  FAIL  fail-closed: an unreachable commit returned success"
+    failures=$((failures + 1))
+  else
+    echo "  ok    fail-closed: an unreachable commit is undeterminable, not exempt"
+  fi
+  rm -rf "$tmp" 2>/dev/null
+
+  # REAL-FILE ANCHOR (the last block). Compose the author from vrt-update.yml's own
   #    `git config` lines and assert the guard still checks it.
   ran=$((ran + 1))
   local vrt_name vrt_email vrt_author
@@ -269,27 +453,6 @@ report() {
 }
 
 # ---------------------------------------------------------------------------
-# have_commit / fetch_commit — a shallow clone resolves a SHA it never fetched,
-# so `git rev-parse` alone proves nothing. Mirrors changelog-branch-guard.sh.
-# ---------------------------------------------------------------------------
-have_commit() { git cat-file -e "${1}^{commit}" 2>/dev/null; }
-
-fetch_commit() {
-  local sha="$1" depth
-  if git fetch --no-tags --quiet --depth=1 origin "$sha" 2>/dev/null && have_commit "$sha"; then
-    return 0
-  fi
-  # Deepen the PR's own branch — the head commit is its tip, so the base
-  # branch (what changelog-branch-guard deepens) would never reach it.
-  [ -n "${GITHUB_HEAD_REF:-}" ] || return 1
-  for depth in 50 250 1000; do
-    git fetch --no-tags --quiet --depth="$depth" origin "$GITHUB_HEAD_REF" 2>/dev/null || return 1
-    have_commit "$sha" && return 0
-  done
-  return 1
-}
-
-# ---------------------------------------------------------------------------
 # pr_head_sha — SECOND parent of refs/pull/N/merge (the PR's own head commit).
 # See "WHICH COMMIT IT READS" above for why it is parent 2, not parent 1.
 # Echoes the SHA, or returns 1 when this is not a PR-merge checkout.
@@ -380,9 +543,16 @@ fi
 # The predicate lives in is_exempt_bot_author() (defined near the top) so that
 # --self-test drives the REAL rule rather than a second copy of it.
 # ---------------------------------------------------------------------------
-if is_exempt_bot_author "$author"; then
-  echo "builder-model-guard SKIPPED — dependabot-authored commit."
-  echo "  No CC session writes these, so no trailer can ever exist on one."
+if is_exempt_bot_commit "$author" "$target"; then
+  if is_exempt_bot_author "$author"; then
+    echo "builder-model-guard SKIPPED — dependabot-authored commit."
+    echo "  No CC session writes these, so no trailer can ever exist on one."
+  else
+    echo "builder-model-guard SKIPPED — baseline-regen commit."
+    echo "  Authored by github-actions[bot] AND confined to VRT baseline paths,"
+    echo "  so there is no model to attribute. A bot commit touching anything"
+    echo "  else is still checked — the exemption is what it TOUCHED, not who."
+  fi
   exit 0
 fi
 
