@@ -3,7 +3,7 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-08-29 — MEH-2218 PR sweep, chunk 1 (run #3): 1 מוזג · 2 נסגרו · 3 parked · 7 ל-C
+## 2026-08-29 — MEH-2218 PR sweep, chunk 1 (run #3): 1 מוזג · 2 נסגרו · 2 parked · 2 לא-נוסו · 7 ל-C
 
 **‏מוזג (1):** ‏#2917 (MEH-2074) — squash **`c1bba1a0`**, הורה יחיד (אומת, לא הונח). סונכרן ב-merge לא rebase (כלל 25), פעמיים, כי staging זז תחת ה-PR באמצע.
 
