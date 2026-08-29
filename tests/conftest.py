@@ -7,6 +7,7 @@ schema via create_all/drop_all.
 Under pytest-xdist every worker provisions its own database
 (mehamakor_test_gw0, mehamakor_test_gw1, …) — see MEH-1911 below.
 """
+
 import os
 import re
 import sys
@@ -147,6 +148,7 @@ from app.models.models import (  # noqa: E402
     DeliveryArea,
     Producer,
     ProducerCategory,
+    Product,
     User,
 )
 
@@ -208,6 +210,7 @@ def _reset_rate_limiter():
     reset, the 12 POST /contact tests exhaust the 5/hour limit by test 6.
     """
     from app.rate_limit import limiter
+
     limiter._storage.reset()
     yield
 
@@ -229,6 +232,7 @@ def _mock_hibp_clean(monkeypatch, request):
     from unittest.mock import AsyncMock
 
     from app.services import password_policy
+
     monkeypatch.setattr(password_policy, "_check_hibp", AsyncMock(return_value=False))
     yield
 
@@ -262,6 +266,7 @@ def client():
 
 
 # ---------- factory helpers ----------
+
 
 def make_user(
     db,
@@ -300,6 +305,7 @@ def make_producer(
     delivery_cities: list[str] | None = None,
     category: Category | None = None,
     images: list[str] | None = None,
+    phone_verified: bool = False,
 ) -> Producer:
     producer = Producer(
         name=name,
@@ -311,6 +317,14 @@ def make_producer(
         # MEH-799: approve gate requires >=1 image; default stays imageless
         # so the gate's own tests exercise the 422 path explicitly.
         images=images or [],
+        # MEH-2121: the approve gate also requires a verified WhatsApp number.
+        # The default stays False — the COLUMN's default (models.py:340) — for
+        # the same reason `images` stays empty: a factory that quietly satisfied
+        # the gates would let a gate test pass without exercising anything, and
+        # several suites (submission_gate, pending_nudge) depend on an
+        # unverified row to produce the `phone_verified` missing-item at all.
+        # Tests whose subject is "approval succeeds" opt in explicitly.
+        phone_verified=phone_verified,
         # MEH-1848: asking this factory for delivery areas means "a business
         # that delivers to these cities", so it must also declare that it
         # delivers. Without this the factory minted a self-contradictory row —
@@ -347,6 +361,61 @@ def make_category(db, name: str = "ירקות אורגניים", emoji: str = "�
     return cat
 
 
+# MEH-2100 image placeholder — any non-empty images list satisfies the photo
+# requirement, so the URL only has to be well-formed.
+SUBMIT_READY_IMAGE = "https://res.cloudinary.com/demo/image/upload/x.jpg"
+
+
+def make_submit_ready_producer(
+    db, *, status: str = "draft", name: str = "חוות הניסוי"
+) -> tuple[Producer, User]:
+    """A producer satisfying every submission requirement, plus its owner.
+
+    The baseline each submit-gate case degrades by exactly one field: image,
+    product, category, location (lat/lng here) and phone_verified.
+
+    Lives in conftest rather than in one test module because three suites now
+    need it — the MEH-2100 state machine, MEH-2112's confirmation email, and
+    MEH-2120's request-review gate. It began as a `_`-prefixed private helper
+    imported across test files, which the CI reviewer correctly flagged on
+    #3004 as fragile coupling; shared factories belong here with make_user /
+    make_producer / make_category.
+    """
+    producer = Producer(
+        name=name,
+        description="Test producer",
+        city="תל אביב",
+        lat=32.0853,
+        lng=34.7818,
+        status=status,
+        images=[SUBMIT_READY_IMAGE],
+        phone_verified=True,
+    )
+    db.add(producer)
+    db.flush()
+
+    category = Category(name=f"קטגוריה {uuid.uuid4().hex[:6]}", emoji="🥬")
+    db.add(category)
+    db.flush()
+    db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
+    db.add(Product(producer_id=producer.id, name="מוצר ניסוי"))
+
+    user = User(
+        email=f"{uuid.uuid4().hex[:8]}@example.com",
+        name="ספיר ניסוי",
+        password_hash="$2b$12$placeholder",
+        role="producer",
+        producer_id=producer.id,
+        is_producer=True,
+        email_verified=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(producer)
+    db.refresh(user)
+    return producer, user
+
+
 def auth_header(user: User) -> dict:
     token = create_access_token(user.id)
     return {"Authorization": f"Bearer {token}"}
@@ -355,6 +424,7 @@ def auth_header(user: User) -> dict:
 # ---------- valid payload fixtures (MEH-241) ----------
 # Guard tests (401/403/409) must use these so schema changes don't silently
 # invalidate security coverage.  Pattern: valid_*_payload() | {"field": bad}
+
 
 def valid_review_payload() -> dict:
     """Passes ReviewCreateNested: stars (1-5), body (min 10 chars)."""
@@ -391,6 +461,11 @@ def valid_producer_register_payload() -> dict:
     A unique name avoids the `Category.name` UNIQUE collision when a single
     test builds two payloads. `_clean_tables` (TRUNCATE … RESTART IDENTITY)
     cleans it up between tests.
+
+    MEH-2015 chunk B: `city` is now required too (MEH-951's visual-only
+    exception was revoked), so this helper carries one for the same reason
+    it carries a category — every guard test built on it would otherwise 422
+    on a field the test isn't exercising.
     """
     seed_session = SessionLocal()
     try:
@@ -403,6 +478,7 @@ def valid_producer_register_payload() -> dict:
         "name": "יצרנית בדיקה",
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "חוות הבדיקה",
+        "city": "תל אביב",
         "category_ids": [cat_id],
         "primary_contact_method": "whatsapp",
         # MEH-759 (ADR-022 gate 2): binding declaration is mandatory for a

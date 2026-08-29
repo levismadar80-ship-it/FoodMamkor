@@ -18,7 +18,7 @@ import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import {
   buildChipParams,
-  OPEN_NOW_CHIP_MIN,
+  openNowChipVisible,    // MEH-2131
   visibleGatedDietKeys,  // MEH-1934
   GATED_DIET_KEYS,       // MEH-1934
   // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
@@ -103,6 +103,12 @@ export default function ProducersClient({
   const cityChipDef = { key: "city", label: t("filters.city_chip") };
 
   const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
+  // MEH-2131: the clock for the open-now zero-result guard. `null` on the
+  // server pass AND on the first client render, so both produce the same DOM;
+  // the effect below fills it in afterwards. Reading `new Date()` during render
+  // is exactly what lib/orderWindow.js's header warns against — the status is
+  // time-derived, so a server pass and hydration can disagree.
+  const [openNowClock, setOpenNowClock] = useState(null);
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
   // MEH-1825: delivery-day axis. Two guards on hydration, both from the
   // acceptance criteria: an unknown ?delivery_day= value is dropped against
@@ -396,6 +402,14 @@ export default function ProducersClient({
     return () => document.removeEventListener("visibilitychange", refresh);
   }, []);
 
+  // MEH-2131: read the clock once after mount. Not on an interval — the chip's
+  // visibility changing under the visitor's finger would be worse than a value
+  // that is at most one page-view stale, and the server still decides the
+  // result set either way.
+  useEffect(() => {
+    setOpenNowClock(new Date());
+  }, []);
+
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
@@ -511,6 +525,27 @@ export default function ProducersClient({
     trackEvent("delivery_days_filter", { count: next.length });
   };
 
+  // MEH-2186: drop the WHOLE day set at once — the day chip's ✕. Mirrors
+  // useHomePage.handleClearDays, and exists for the same reason it does:
+  // clearing N days through handleDaySelected would be N toggles, which fight
+  // React state batching. The CITY is deliberately untouched — the day is the
+  // narrowest axis and the point of the ✕ is to relax only it, which is what
+  // separates it from the city chip's own ×.
+  //
+  // Only reachable with a non-empty set (the ✕ renders only when days are
+  // selected, and a day cannot be active without a city), so the city is
+  // passed unconditionally exactly as handleDaySelected does above. The ref is
+  // set synchronously before syncUrl/fetchFiltered because both are
+  // useCallback([]) and read the ref, not the state.
+  const handleClearDays = () => {
+    if (!dayFilterRef.current.length) return;
+    dayFilterRef.current = [];
+    setDayFilters([]);
+    syncUrl(chips, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    trackEvent("delivery_days_filter", { count: 0 });
+  };
+
   // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
@@ -547,11 +582,11 @@ export default function ProducersClient({
   // is filtered until then. "הכל" always shows; a category active via the URL
   // stays visible even at 0 so its active-tag + clear flow keep working.
   const loadedCategoryIds = new Set();
-  // MEH-1881: order-window coverage, counted in the same pass and from the same
-  // source as the category set above — the UNFILTERED loaded catalog. Counting
-  // it from the filtered result would be circular: switch the chip on and
-  // coverage instantly reads 100%, so the gate could never close again.
-  let openWindowCount = 0;
+  // MEH-2131: the order-window coverage count moved into `openNowChipVisible`,
+  // which counts from the same UNFILTERED loaded catalog for the same
+  // anti-circularity reason (count the FILTERED result and coverage instantly
+  // reads 100%, so the gate could never close again). The local accumulator is
+  // gone rather than left in place unread.
   // MEH-1483: derive from the same source as displayItems (baseItems is the SSR
   // page, or the sorted page 1 when a non-default sort is active) so the
   // MEH-1088 dead-end-category hiding stays consistent with what's rendered.
@@ -560,20 +595,27 @@ export default function ProducersClient({
   const loadedCatalog = [...baseItems, ...appendItems];
   for (const p of loadedCatalog) {
     for (const c of p?.categories ?? []) loadedCategoryIds.add(String(c.id));
-    if (p?.order_window) openWindowCount += 1;
   }
 
   // MEH-1881: below the coverage threshold the open-now chip is ABSENT, not
   // disabled — zero trace in the DOM, so nothing hints at a filter that would
   // return an empty list today.
   //
-  // The `|| chips.open_for_orders_now` is not a convenience: an active filter
-  // must keep its chip even under the gate, or a deep-linked
-  // ?open_for_orders_now=1 strands the visitor with a filter she can see the
-  // effect of and cannot switch off. Same carve-out MEH-1088 makes two blocks
-  // below for a URL-active category at zero results.
-  const showOpenNowChip =
-    openWindowCount >= OPEN_NOW_CHIP_MIN || chips.open_for_orders_now;
+  // MEH-2131 adds the second half: even WITH coverage, the chip is hidden when
+  // no loaded business is inside its window right now, so the filter can never
+  // land the visitor on an empty list. Both conditions live in
+  // `openNowChipVisible`; the active-filter carve-out (a deep-linked
+  // ?open_for_orders_now=1 must keep its chip, or the visitor is stranded with
+  // a filter she can see the effect of and cannot switch off) is inside it too.
+  //
+  // `openNowClock` is null until mounted — see the state declaration for why
+  // reading the clock during render would be a hydration mismatch.
+  const showOpenNowChip = openNowChipVisible({
+    producers: loadedCatalog,
+    active: chips.open_for_orders_now,
+    catalogFullyLoaded: !hasMore,
+    now: openNowClock,
+  });
   // MEH-1934: the two new diet chips are gated on the same principle — absent,
   // not disabled, until DIET_CHIP_MIN businesses carry the marking. Computed
   // over the loaded producers, so the chips turn themselves on when the
@@ -779,12 +821,15 @@ export default function ProducersClient({
       </div>
 
       {/* MEH-1825: day refinement on the canonical listing surface. Same
-          component home mounts; without a city it self-renders the muted
-          ghost row + hint and a tap opens the LocationModal below. */}
+          component home mounts. MEH-2186: it is ONE dropdown chip now — with
+          no city a tap opens the LocationModal below, with a city it opens an
+          inline day panel; `onClearDays` is the chip's ✕ and drops the day set
+          without disturbing the city. */}
       <DeliveryDayRow
         cityActive={cityFilter}
         daysActive={dayFilters}
         onSelectDay={handleDaySelected}
+        onClearDays={handleClearDays}
       />
 
       {/* Results counter + active filters — MEH-1186: one control line.

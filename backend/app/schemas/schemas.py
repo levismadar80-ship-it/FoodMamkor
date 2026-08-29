@@ -287,6 +287,60 @@ def _url_scheme_validator(value: str | None) -> str | None:
     return stripped
 
 
+# MEH-2153: custom_questions guard, shared so every write schema carrying the
+# field enforces ONE definition (today that is ProducerUpdate alone — the other
+# three occurrences are response schemas; see the module note below).
+#
+# MEH-210 Phase 2 shipped the count + length caps inline on ProducerUpdate; this
+# lifts them out and adds the one rule they were missing — DEDUPE. Two identical
+# questions render as two identical chips on the public page, which reads as a
+# bug to the customer and costs the owner one of her five slots.
+#
+# DO NOT raise _CUSTOM_QUESTION_MAX_LEN without changing the editor input in the
+# same PR — `maxLength={80}` at
+# frontend/app/[locale]/producer/dashboard/edit/page.js:1272 is the other half
+# of this cap, and both landed together in MEH-210 Phase 2 (86eefcfd). A
+# server-side ceiling above the editor's is a value no UI can produce and no
+# reader expects.
+_MAX_CUSTOM_QUESTIONS = 5
+_CUSTOM_QUESTION_MAX_LEN = 80
+
+
+def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
+    """Normalise + cap the owner-authored WhatsApp question chips.
+
+    None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
+    indistinguishable to every reader measured (frontend
+    `getProducerQuestions`, lib/categoryQuestions.js:88, tests
+    `custom_questions?.length > 0`, so both fall through to the category
+    defaults), but collapsing them would still rewrite what the column stores
+    on a path this ticket has no reason to touch.
+
+    Order-preserving throughout: the owner's five inputs are positional in the
+    editor, so a reordering normalisation would silently shuffle her page.
+    """
+    if value is None:
+        return None
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, str):
+            # Let the declared `list[str]` type raise; don't mask it here.
+            return value
+        stripped = item.strip()
+        if not stripped:
+            continue
+        if len(stripped) > _CUSTOM_QUESTION_MAX_LEN:
+            raise ValueError(f"שאלה יכולה להכיל עד {_CUSTOM_QUESTION_MAX_LEN} תווים")
+        if stripped in seen:
+            continue
+        seen.add(stripped)
+        cleaned.append(stripped)
+    if len(cleaned) > _MAX_CUSTOM_QUESTIONS:
+        raise ValueError(f"אפשר עד {_MAX_CUSTOM_QUESTIONS} שאלות מותאמות")
+    return cleaned
+
+
 # MEH-1222: image-URL fields silently accepted garbage — "bread.jpg",
 # "http.ad.jpg", "https://bread.jpg" — which then 404-storm through
 # next/image. Stronger than _url_scheme_validator: besides the http(s)
@@ -605,7 +659,17 @@ class ProducerRegister(BaseModel):
     producer_name: SanitizedBusinessNameField
     description: str | None = None
     short_description: str | None = Field(default=None, max_length=160)
-    city: str | None = None
+    # MEH-2015 chunk B: required on BOTH paths (new registration + MEH-143
+    # upgrade) — Sapir's 14.8.2026 ruling revokes MEH-951's visual-only
+    # exception. City is the discovery axis (map + filter), not a profile
+    # field: unenforced, it shipped empty. Twin of ExperienceCreate.city /
+    # EventCreate.city (MEH-2013's Field(..., min_length=1, max_length=100)
+    # shape) — but NOT byte-identical: adversarial review on this PR found
+    # `min_length=1` alone accepts a whitespace-only value ("   " has length
+    # 3), which those two siblings still carry unfixed. Closed here with the
+    # bleach→letter-floor validator pair below; not backported to the
+    # siblings (out of scope for this PR — they're unmodified elsewhere).
+    city: str = Field(..., min_length=1, max_length=100)
     address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
@@ -659,7 +723,7 @@ class ProducerRegister(BaseModel):
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
-    # license number and land in the pending queue (status="pending_whatsapp").
+    # license number and land in the pending queue.
     # NOT a security control: the licensed-only rule is still enforced
     # downstream — chunk-4 approval guard (admin.py) refuses to approve a
     # license-required producer with NULL license, and publication requires
@@ -678,6 +742,20 @@ class ProducerRegister(BaseModel):
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
+    # MEH-1838 chunk A: delivery-shape fields — registration previously
+    # captured NO axis at all (has_physical_location/offers_delivery both
+    # silently defaulted at the DB layer), so every new business landed
+    # identical regardless of shape. has_physical_location/offers_delivery/
+    # delivery_nationwide map onto their Producer columns directly
+    # (models.py:251-256). delivery_cities does NOT — see the Phase 0 note
+    # on the model_validator below (MEH-903 A): the router folds it into
+    # delivery_areas rows instead of the legacy flat column. Defaults match
+    # the Producer model's own column defaults, so an existing caller that
+    # omits these fields is unaffected.
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
@@ -701,6 +779,16 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
+
+    # MEH-2015 chunk B (adversarial-review finding): city is public-rendered
+    # (map + filter), so bleach it like every other free-text field on this
+    # schema — sanitize_text also collapses a whitespace-only input to None,
+    # which is what lets the letter-floor validator below reject it cleanly
+    # instead of `Field(min_length=1)` silently accepting "   ".
+    @field_validator("city")
+    @classmethod
+    def _sanitize_city(cls, v):
+        return sanitize_text(v, max_length=100)
 
     # MEH-870: reject punctuation-only values on the PUBLIC registration path,
     # which collected short_description (tagline) + address with only the bleach
@@ -729,6 +817,17 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_address_alnum(cls, v):
         return _min_alnum_validator(v)
+
+    # MEH-2015 chunk B: city's floor, min_count=1 (not the ≥3 used for
+    # names/taglines above) — a legitimate short Hebrew city name ("בת ים",
+    # "לוד") must clear it. `_min_letters_validator(None)` coerces the
+    # bleach-emptied case to "" internally and raises (HOT-003 path), so no
+    # None-guard is needed here — unlike short_description, city is required,
+    # not optional, so a stripped-to-nothing value is exactly what must 422.
+    @field_validator("city")
+    @classmethod
+    def _validate_city_letters(cls, v):
+        return _min_letters_validator(v, min_count=1)
 
     @field_validator("primary_contact_method")
     @classmethod
@@ -791,6 +890,35 @@ class ProducerRegister(BaseModel):
     def _require_categories(cls, v):
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
+
+    # MEH-1838 chunk A: same physical-or-delivery / nationwide-XOR-cities
+    # semantic as ProducerAdminCreate._validate_location_mode (:1560-1582) —
+    # NOT a verbatim copy. Phase 0 (required before this chunk) found the
+    # naive read wrong twice over:
+    #   1. ProducerAdminCreate's own XOR checks delivery_area_cities, not the
+    #      flat delivery_cities the DB CHECK (models.py:447-453,
+    #      delivery_nationwide_xor_cities) is written against — MEH-903 A.
+    #   2. The flat column MEH-903 A's comment points at is itself legacy:
+    #      admin.py:427-429/486-489 pop it out of every write on purpose, and
+    #      producer_listing.py:258's "delivers to <city>" match reads
+    #      delivery_areas rows exclusively — the flat column is dead weight
+    #      kept only because dropping it needs its own Alembic chunk.
+    # This validator still checks self.delivery_cities (the PAYLOAD field —
+    # correct, matches what the frontend sends and what the DB CHECK guards
+    # semantically), but the router folds a non-empty list into delivery_areas
+    # rows rather than the column, so the city list is actually visible to the
+    # live filter. See the router-side comment at auth.py for the write.
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        if not self.has_physical_location and not self.offers_delivery:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        if self.delivery_nationwide and not self.offers_delivery:
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
+        return self
 
 
 class GoogleAuthRequest(BaseModel):
@@ -860,6 +988,22 @@ class ProducerOAuthSignupResponse(Token):
 class CategoryOut(BaseModel):
     id: int
     name: str
+    # MEH-2139: the STABLE identity. ADR-006 R1 — a new non-internal column
+    # belongs in the matching *Out.
+    #
+    # `str | None` is NOT a description of the DDL. The column is **NOT NULL**
+    # in the database as of revision c9f2a41e8b03 (chunk 2); a7c3e91d5f28
+    # (chunk 1) added it nullable, and the optional type here is left
+    # deliberately lenient for CONSUMERS — an older client, a cached response,
+    # or a fixture built before the backfill must not 500 on a missing key.
+    # Tightening this to `str` would buy nothing and would turn any such
+    # payload into a validation error at the serializer.
+    #
+    # (This comment read "NOT NULL is deferred to the switch step" until chunk
+    # 2, which IS that step — the future tense outlived the event it described
+    # and told the next reader the column was still nullable. Caught by the CI
+    # reviewer on PR #3052.)
+    slug: str | None = None
     emoji: str | None = None
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
@@ -1608,6 +1752,11 @@ class ProducerUpdate(BaseModel):
     # ≤300). No rating value is ever accepted or stored (live-fetch only).
     google_place_id: str | None = None
     top_product_name: SanitizedLabelField | None = None
+    # MEH-2137 switch: the owner now votes by IDENTITY. Ownership cannot be
+    # checked here — it needs the DB — so producer_me.py 422s a product that
+    # belongs to someone else, and syncs top_product_name from it. Sending
+    # `null` clears the vote.
+    top_product_id: UUID | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
     # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
@@ -1640,6 +1789,19 @@ class ProducerUpdate(BaseModel):
     # whenever category_ids OR producer_license_number is in the body — see
     # routers/producer_me.py + routers/admin.py.
     producer_license_number: str | None = Field(default=None, max_length=20)
+    # MEH-2072: the licence expiry the admin reads off the document. Present on
+    # the shared ProducerUpdate schema but withheld from
+    # _PRODUCER_WRITABLE_FIELDS in routers/producer_me.py, so only the admin PUT
+    # (admin.py bulk setattr) can write it — exactly the google_place_id
+    # arrangement above, and for the same reason: this is a record of what the
+    # ADMIN verified against a document, so an owner-writable version would be
+    # self-certification. A test asserts the owner PUT cannot write it.
+    #
+    # Deliberately NO validator. A past date is legitimate input — capturing an
+    # already-lapsed licence during review is precisely the case this ticket
+    # exists to make visible — so vacation_until's "must not be in the past"
+    # rule would be actively wrong here. Explicit null clears the value.
+    license_expires_at: date | None = None
     admin_notes: str | None = None
     # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
     # setattr-loop can no longer write it (verification = grant-verified only).
@@ -1802,18 +1964,13 @@ class ProducerUpdate(BaseModel):
     def _validate_order_window(cls, v):
         return _order_window_validator(v)
 
+    # MEH-2153: delegates to the shared guard so the count/length/trim rules
+    # that MEH-210 Phase 2 wrote inline live in one place, and picks up the
+    # dedupe they were missing.
     @field_validator("custom_questions")
     @classmethod
     def _validate_custom_questions(cls, v):
-        if v is None:
-            return v
-        filtered = [q.strip() for q in v if q.strip()]
-        if len(filtered) > 5:
-            raise ValueError("מותר עד 5 שאלות")
-        for q in filtered:
-            if len(q) > 80:
-                raise ValueError("כל שאלה מוגבלת ל-80 תווים")
-        return filtered
+        return _custom_questions_validator(v)
 
     @field_validator("primary_contact_method")
     @classmethod
@@ -1988,6 +2145,10 @@ class ProducerListOut(BaseModel):
     # surface is verification_tier/verified_at (ADR-022). Column drops in ch6.
     plan: str = "free"
     slug: str | None = None
+    # MEH-2137 switch: both fields ship. `top_product_id` is the authority;
+    # `top_product_name` stays in the contract so cards/map need zero changes,
+    # and is DERIVED from the FK in attach_badge_fields when the FK is set.
+    top_product_id: UUID | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
@@ -2247,6 +2408,11 @@ class ProducerDetailOut(ProducerListOut):
     # MEH-296: extra contact channels (mirror website; owner-editable).
     facebook: str | None = None
     external_order_form: str | None = None
+    # MEH-1677: the business's opt-out for the "לא מגיעים אליך?" CTA. Defaults
+    # true so a row written before the column existed (or any client reading an
+    # older payload) keeps the CTA rather than silently losing it -- the failure
+    # that matters here is the feature vanishing, not it appearing.
+    coverage_cta_enabled: bool = True
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
@@ -2307,10 +2473,31 @@ class GoogleRatingOut(BaseModel):
 # by /admin/producers/* and producer_me self endpoints so admins and
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
+    # MEH-2110: the review queue's SLA surface. Both fields are admin-only —
+    # deliberately NOT on ProducerDetailOut/ListOut, matching the
+    # producer_license_number privacy precedent (MEH-530): when a business was
+    # sent for review, and how long it has waited, are internal operations
+    # data and nobody's business but the admin's.
+    #
+    # `submitted_for_review_at` is NULL for every row created before MEH-2100
+    # and for every draft; the admin table renders the tooltip from
+    # created_at in that case rather than showing an empty timestamp.
+    submitted_for_review_at: datetime | None = None
+    # Computed server-side (routers/admin.py) rather than derived per client,
+    # so the badge and the queue ordering can never disagree about age.
+    # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
+    business_days_waiting: int = 0
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-2072: licence expiry captured at approval. Admin-only, riding the same
+    # privacy precedent as the licence number directly above it (MEH-530) — when
+    # a business's licence lapses is internal review data, and publishing it
+    # would hand every visitor a countdown on somebody's paperwork. NULL for
+    # every producer approved before this field existed; the admin table renders
+    # "—" rather than an empty date.
+    license_expires_at: date | None = None
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only —
     # NOT on the public ProducerDetailOut/ListOut (internal supply-side data,
     # MEH-530 privacy precedent). NULL for producers who registered before the
@@ -2446,6 +2633,143 @@ class KashrutExpiryReminderOut(BaseModel):
     rows: list[KashrutExpiryReminderRow] = []
 
 
+class AdminChecklistItemOut(BaseModel):
+    """MEH-1399: one review-checklist item as the admin surfaces read it.
+
+    `updated_at` is exposed rather than omitted — ADR-006 R2 asks every
+    non-internal ORM column to appear in the matching `*Out` or sit on an
+    explicit allowlist, and nothing in this repo mechanically enforces that
+    (there is no general parity test), so an omission here would be
+    indistinguishable from drift to the next reader. It is also the one
+    question anyone asks of a config row: when did this last change.
+    """
+
+    id: UUID
+    position: int
+    label: str
+    hint: str | None = None
+    active: bool
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AdminChecklistItemIn(BaseModel):
+    """One item in a full-list PUT.
+
+    `id` is optional: present = update that row, absent = create a new item.
+    That is what lets the settings screen add, edit and reorder in one request
+    without a separate POST — the admin drags three rows and saves once.
+
+    There is deliberately NO delete. Retirement is `active: false`, and the DB
+    enforces it (`producer_review_checks.item_id` is ON DELETE RESTRICT), so a
+    delete endpoint would only ever produce a 500 on any item with history.
+    """
+
+    id: UUID | None = None
+    label: str = Field(min_length=1, max_length=300)
+    hint: str | None = Field(default=None, max_length=300)
+    active: bool = True
+
+    @field_validator("label")
+    @classmethod
+    def _strip_label(cls, v: str) -> str:
+        # MEH-555: a non-empty check alone lets "???" through, and this string
+        # is not merely displayed — it is copied into
+        # `producer_review_checks.label_snapshot` at tick time, so a
+        # punctuation-only label becomes a permanent audit record of an
+        # attestation to nothing. The >=3-letter floor is the repo-wide rule for
+        # free-text a user or admin will read back.
+        #
+        # `hint` deliberately does NOT get this: it is optional, an empty hint
+        # is the normal way to say "no explanation needed", and a terse
+        # legitimate hint can fall under three letters. The asymmetry is the
+        # point — label is the attestation, hint is a note beside it.
+        return _min_letters_validator(v)
+
+    @field_validator("hint")
+    @classmethod
+    def _strip_hint(cls, v):
+        if v is None:
+            return None
+        stripped = v.strip()
+        # "" and "   " both mean "no hint" — normalise to NULL so the column has
+        # one representation of absent rather than two.
+        return stripped or None
+
+
+class AdminChecklistItemsIn(BaseModel):
+    """Full-list replace. Order in the array IS the order on screen — `position`
+    is assigned from the index server-side rather than sent by the client, so
+    two items can never claim the same slot."""
+
+    items: list[AdminChecklistItemIn]
+
+
+class ProducerReviewCheckOut(BaseModel):
+    """One recorded tick, as the review flow reads it back."""
+
+    item_id: UUID
+    label_snapshot: str
+    checked_by_name: str | None = None
+    checked_at: datetime
+
+
+class ProducerReviewChecksOut(BaseModel):
+    producer_id: UUID
+    checks: list[ProducerReviewCheckOut] = []
+
+
+class ProducerReviewChecksIn(BaseModel):
+    """The ticked item ids for a producer, as the whole set.
+
+    Set semantics, not a diff: what arrives IS the state afterwards, so an id
+    that was ticked and is now absent gets its row deleted. A diff API would
+    need the client to know what it previously sent, which is exactly the
+    assumption that breaks when two admin tabs are open on the same producer.
+    """
+
+    item_ids: list[UUID] = []
+
+
+class LicenseExpiryReminderRow(BaseModel):
+    """One business whose licence expires inside the 30-day window.
+
+    MEH-2072 — the licence twin of KashrutExpiryReminderRow above, with two
+    deliberate differences:
+
+    * `expires_at` is a `date`, not a `datetime`. The column is DATE because a
+      licence is valid through a calendar day (see the migration docstring);
+      widening it to datetime here would reintroduce the timezone ambiguity the
+      column type exists to avoid.
+    * There is no `sent` / `error` pair. This endpoint only READS — the admin
+      pulls the list, nothing is dispatched — so a per-row send outcome would be
+      a field that is structurally always None. WhatsApp push is a future
+      ticket; when it lands it adds the fields, rather than them sitting here
+      unused and inviting the reader to think a send happened.
+
+    `days_remaining` is computed server-side against israel_today() so the badge
+    and the ordering can never disagree, and so a client in another timezone
+    cannot render a different number from the same payload.
+
+    `phone_masked` is deliberately the ONLY phone field, matching the kashrut
+    row: the admin needs enough to recognise the number, not the number itself.
+    """
+
+    producer_id: UUID
+    name: str
+    phone_masked: str
+    expires_at: date
+    days_remaining: int
+    producer_license_number: str | None = None
+
+
+class LicenseExpiryReminderOut(BaseModel):
+    window_days: int
+    total: int
+    rows: list[LicenseExpiryReminderRow] = []
+
+
 class KashrutApproveIn(BaseModel):
     pass
 
@@ -2480,6 +2804,41 @@ class RequestChangesIn(BaseModel):
     """
 
     feedback: str | None = Field(None, max_length=2000)
+
+
+class ProducerRejectIn(BaseModel):
+    """MEH-226: admin "reject" payload — preset key + optional free text.
+
+    REUSES: schemas.py:2473 RequestChangesIn — same shape (optional free text
+    emailed to the producer verbatim, handler owns the emptiness rule). The
+    added `preset_key` selects one of the five canonical rejection reasons;
+    the label itself lives in the BACKEND
+    (`admin.py::PRODUCER_REJECTION_PRESETS`), not here and not in the
+    frontend, so the persisted text, the email and the admin UI cannot drift
+    apart (workflow.md Smell #1). Key validity is checked in the handler
+    alongside the "other requires free text" rule, mirroring
+    request_producer_changes' handler-side 400.
+
+    Back-compatible with the pre-MEH-226 body `{"reason": "..."}` — the
+    endpoint took `reason: str = Body("", embed=True)`, which parses into
+    this model unchanged.
+    """
+
+    preset_key: str | None = None
+    reason: str | None = Field(None, max_length=2000)
+
+
+class RejectionPresetOut(BaseModel):
+    """MEH-226: one row of GET /admin/producers/rejection-presets.
+
+    Typed rather than a bare dict so the MEH-1748 codegen chain emits a real
+    schema for this route — an untyped handler generates `zod.unknown()`,
+    which makes the drift guard structurally unable to notice the shape
+    changing.
+    """
+
+    key: str
+    label: str
 
 
 # --- User ---
@@ -3721,6 +4080,15 @@ class ProductHit(BaseModel):
 class CategoryHit(BaseModel):
     id: int
     name: str
+    # MEH-2139: same reasoning as CategoryOut, including why the type stays
+    # optional against a NOT NULL column. Added in the SAME PR as CategoryOut on
+    # purpose — a second serializer of the same entity is exactly the edit that
+    # gets forgotten, and the switch step would then have found one surface
+    # carrying the slug and one silently dropping it. (Past tense: chunk 2 is
+    # that step. The reviewer flagged the same stale tense on CategoryOut; this
+    # sibling carried it too and was found by grepping rather than by being
+    # named.)
+    slug: str | None = None
     emoji: str | None = None
 
 
@@ -3856,6 +4224,82 @@ class ContactIn(BaseModel):
 # the record_contact_click handler) stay in the router.
 class ContactClickIn(BaseModel):
     method: str
+
+
+# MEH-1677: 60 chars after trim. The cap and producer_whatsapp_clicks.city's
+# String(60) are two halves of one bound -- widening either alone re-opens the
+# truncation this exists to prevent.
+COVERAGE_CITY_MAX_LENGTH: int = 60
+
+
+class WhatsAppClickIn(BaseModel):
+    """MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.
+
+    The endpoint took no body before this. It still accepts none -- the
+    anonymous path uses `navigator.sendBeacon`, which cannot set
+    `Content-Type: application/json` (it sends text/plain, which FastAPI
+    rejects with 422), so a REQUIRED body would break every anonymous
+    WhatsApp click on the site. Only the coverage CTA sends a body, and it
+    uses fetch(keepalive) for exactly that reason.
+
+    `city` is validated SOFTLY on purpose: a value that is not in the
+    canonical city list is still STORED, not dropped. The point of the
+    capture is to learn where demand actually is, including spellings and
+    localities our list does not carry yet -- discarding those would delete
+    the most interesting rows.
+    """
+
+    city: str | None = None
+
+    @field_validator("city", mode="before")
+    @classmethod
+    def _validate_city(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            raise ValueError("עיר חייבת להיות מחרוזת")
+        trimmed = v.strip()
+        if not trimmed:
+            return None
+        # MEH-555 bug pattern: a free-text str feeding an admin/dashboard
+        # surface accepts punctuation- or digit-only junk ("???", "123")
+        # unless a letter class is required. city feeds the post-launch
+        # demand-by-city card, so junk here is not cosmetic -- it becomes a
+        # phantom "city" in that feed. Letters counted AFTER strip, per the
+        # pattern. min_count=1, matching the sibling city validator above
+        # (`_validate_city_letters`): a legitimate short Hebrew name
+        # ("בת ים", "לוד") must clear the floor.
+        #
+        # DIVERGENCE from that sibling, deliberate: it RAISES, because city is
+        # required there and a stripped-to-nothing value must 422. Here city is
+        # optional telemetry on a fire-and-forget beacon, so junk DROPS to None
+        # and the click is still logged. That is this endpoint's own stated
+        # principle (MEH-1627, routers/producers.py): "losing attribution beats
+        # losing the click" -- a 422 would discard a real click over a bad
+        # city. Soft validation is unaffected: an unknown REAL locality has
+        # letters and still stores as-is.
+        if not _LETTER_REGEX.sub("", trimmed):
+            return None
+        return trimmed[:COVERAGE_CITY_MAX_LENGTH]
+
+
+class ProducerViewIn(BaseModel):
+    """MEH-2159: body of POST /producers/{id}/view.
+
+    `referrer` is the `?from=` value off the PAGE url (ProducerCard.jsx:205
+    builds `/{slug}?from={referrer}`). It reaches the API for the first time
+    here: before this endpoint the page-url query string was never forwarded
+    by either fetch, so `producer_page_views.referrer` was NULL for every row
+    ever written.
+
+    Deliberately unvalidated at the schema layer — `record_analytics_event`
+    normalizes against the `_ALLOWED_REFERRERS` allowlist and writes NULL for
+    anything else (services/analytics.py:213, applied at :305). A 422 here
+    would turn a fire-and-forget beacon into a client error for a value the
+    writer would have discarded anyway.
+    """
+
+    referrer: str | None = None
 
 
 # --- Referrals (referrals.py) ---

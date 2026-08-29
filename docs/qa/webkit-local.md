@@ -1,12 +1,26 @@
 # WebKit (Safari engine) QA from a Claude Code sandbox
 
-**Status:** available in the sandbox behind `PW_WEBKIT=1`. **Not in CI** — that is
-MEH-1788 step B, which needs `.github/workflows/**` (CC-deny, MEH-671).
+**Status:** available in the sandbox behind `PW_WEBKIT=1`, and **in CI as a
+non-voting shadow job**. Step B landed on 2026-08-03 (`323a1258`): `e2e-webkit`
+(`.github/workflows/e2e.yml:432`) installs webkit and runs it under the same flag.
 
-Until step B lands, **every "mobile QA" claim from CI, or from a session that did
-not set the flag, is a Chromium claim.** The two `webkit-*` projects in
-`playwright.config.ts` are the only Safari-engine coverage that exists anywhere in
-this repo.
+**It carries no vote.** `continue-on-error: true` (`:438`) means a webkit failure
+never reds the run, and the job is absent from `e2e-gate`'s `needs:` (`:566`), so
+the required check literally cannot see it. Promotion to blocking is a separate
+decision (MEH-1788) and has not been taken.
+
+_This section read **"Not in CI — that is MEH-1788 step B"** for three weeks after
+step B landed; corrected under MEH-2187 from the live workflow file. The same stale
+claim sat in `playwright.config.ts` and was corrected in the same pass._
+
+Two things therefore still hold, and they are what the rest of this page is for:
+
+1. **Every "mobile QA" claim from a run that did not set the flag is a Chromium
+   claim** — that includes the blocking `e2e` job, which does not set it.
+2. **Playwright WebKit is not iOS Safari** (no ITP, no PWA storage partitioning, no
+   real safe-area, momentum or input-zoom behaviour), so **Sapir's real-device pass
+   stays required** — `.claude/rules/workflow.md` rule 23, carve-out (e), which is
+   the canonical statement of all of this.
 
 ---
 

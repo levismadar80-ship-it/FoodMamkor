@@ -283,7 +283,7 @@ export default function AdminKashrutPage() {
 
       {/* Reject modal */}
       {rejectModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
           <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea

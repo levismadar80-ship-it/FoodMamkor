@@ -132,6 +132,43 @@ export const ProducerListSchema = z.object({
     lng: z.number().finite().nullable().optional(),
     is_primary: z.boolean().nullable().optional(),
     precision: z.string().nullable().optional(),
+    // MEH-2142: `opening_hours` + `phone` — the SIXTH instance of the exact
+    // mechanism the comment above enumerates five times, and the first one
+    // found by a QA harness rather than by a bug report.
+    //
+    // The backend has served both on the public `ProducerLocationOut` since
+    // MEH-1509 (schemas.py:1049-1050), added so the business page could render
+    // a pickup point's "where and when" and its click-to-call. Undeclared
+    // here, `z.object` STRIPPED them from every parsed payload — including the
+    // producer detail page, whose `.loose()` (useProducerData.js:26) permits
+    // unknown keys only at the TOP level and does not reach inside this
+    // nested object.
+    //
+    // Two consequences, one new and one pre-existing:
+    //   * `resolveStoreHours` (lib/hours.js) could never see a location's
+    //     hours, so the primary-over-legacy preference this ticket ships
+    //     silently degraded to "always the legacy column". Unit tests passed —
+    //     they call the resolver with unparsed objects. The dual-state
+    //     screenshot harness is what caught it.
+    //   * DeliveryBlock.jsx:242 renders `{loc.opening_hours && …}` for pickup
+    //     points and market stands. That has been dead on this page since
+    //     MEH-1509 shipped. Reported, not silently absorbed.
+    //
+    // The two fields are NOT symmetric, and the difference was measured rather
+    // than assumed: `opening_hours` had a live public renderer (above), while
+    // `phone` has NONE — grepped, the only consumer anywhere is
+    // LocationsEditor.jsx:112, the owner's form, which reads
+    // ProducerLocationOwnerOut and already declared it. MEH-1509's backend
+    // comment describes a public click-to-call that was never built. `phone`
+    // is declared here anyway because the backend serves it publicly and a
+    // served field the parse silently drops is the same trap either way — but
+    // it is a LATENT gap, not a repaired feature. Stated so nobody inherits
+    // "we fixed click-to-call" from this comment.
+    //
+    // Permissive per field, like every sibling above: a partial row must never
+    // drop a whole producer from the all-or-nothing parse.
+    opening_hours: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1823: the single active offer, or null. Declared for the same reason
   // as locations/delivery_areas above — an undeclared key is STRIPPED by
@@ -223,6 +260,11 @@ export const ProducerListSchema = z.object({
   trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"/"שגרירת מהמקור"), ProducerCard.jsx:353-354 gate `>= 4`
   favorites_count: z.number().nullable().optional(),         // → heart counter seed, ProducerCard.jsx:161/:166
   short_description: z.string().nullable().optional(),       // → card description line, ProducerCard.jsx:202
+  // MEH-2137: the featured-product vote by IDENTITY. Declared even though no
+  // card reads it yet — z.object strips undeclared keys silently, so a field
+  // that arrives before its consumer would vanish and the chunk-3 component
+  // would debug a backend that is in fact serving it correctly (MEH-901 class).
+  top_product_id: z.string().nullable().optional(),          // → ProductsSection badge, chunk 3
   top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
   availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:36
   availability_status: z.string().nullable().optional(),     // → availability dot (legacy "vacation"), ProducerCard.jsx:37
@@ -259,6 +301,25 @@ export const ProducerListSchema = z.object({
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
     .nullable()
     .optional(),
+  // MEH-1678: the producer-level pair from ProducerListOut
+  // (backend/app/schemas/schemas.py:2125-2135) — DISTINCT from
+  // `delivery_areas[].delivery_fee` above, which is a per-area OVERRIDE of
+  // this value (MEH-1772). Declared here for the same reason as every field
+  // in this recurring block (MEH-826/901/902/1704/1719/1823/1880): an
+  // undeclared key is stripped by z.object, so ProducerCard would never see
+  // it on the two Zod-parsed feeds (home grid + /map) though the backend
+  // already serializes it at LIST level specifically so the card could
+  // (schemas.py:2126-2128, "ProducerCard would render a fee from a field the
+  // list response never carried").
+  //
+  // `.nullable()`, not a truthiness-friendly default: delivery_fee=0 is a
+  // VALUE ("משלוח חינם"), not an absence — same distinction DeliveryBlock.jsx
+  // and MEH-1942 already pin for the per-area field. Both declared even
+  // though ProducerCard only renders delivery_fee (free_delivery_above stays
+  // a detail-page-only display, PR body §"card scope") — declaring is what
+  // stops the strip; a field can be declared without being rendered here.
+  delivery_fee: z.number().nullable().optional(),
+  free_delivery_above: z.number().nullable().optional(),
 });
 
 // MEH-1752: the detail contract — `GET /producers/{producer_id}` and
@@ -289,6 +350,24 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   instagram: z.string().nullable().optional(),
   facebook: z.string().nullable().optional(),
   external_order_form: z.string().nullable().optional(),
+  // MEH-1677: the business's opt-out for the coverage-request CTA. Declared
+  // here rather than baselined in KNOWN_UNDECLARED because z.object STRIPS
+  // undeclared keys -- an omission would delete the flag from every parsed
+  // payload and silently re-enable the CTA for a business that opted out,
+  // which is the exact failure the opt-out exists to prevent.
+  // `.optional()` (no default) so an older payload without the field stays
+  // `undefined`, which CoverageRequestCta reads as "not opted out" via its
+  // `=== false` comparison. A `.default(true)` here would be equivalent today
+  // but would hide a genuine null from a future reader.
+  // DELIBERATE DIVERGENCE from lib/generated/api.zod.js, which renders this
+  // as `_default(boolean(), true)` (absent -> true) because the OpenAPI schema
+  // carries a default. Here it is `.optional()` (absent -> undefined). Both
+  // behave identically for the only consumer today, which compares
+  // `=== false` — but they differ for `!x` and for `x ?? false`, so the
+  // divergence is written down rather than left for a reader to trip over.
+  // Kept as optional on purpose: `undefined` says "this payload did not carry
+  // the field", which a default would erase.
+  coverage_cta_enabled: z.boolean().optional(),
 });
 
 // MEH-1752: back-compat alias. Every existing importer of `ProducerSchema`

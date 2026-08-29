@@ -46,6 +46,7 @@ from app.models import (  # noqa: E402
     Category,
     Producer,
     ProducerCategory,
+    Product,
 )
 from app.models.models import Event, ProducerReview, User  # noqa: E402
 
@@ -346,6 +347,299 @@ DEMO_BUSINESSES = [
 ]
 
 
+# ============================================================================
+# THE 8 ARCHETYPE x CHANNEL BUSINESSES (MEH-2189).
+#
+# WHY A SECOND LIST and not eight more rows above: DEMO_BUSINESSES exists to
+# make the CARD design judgeable on realistic data (MEH-1300) and every row in
+# it is whatsapp-primary. This list exists to make the PRIMARY-CTA RENDER PATH
+# judgeable — one business per `primary_contact_method`, so all 7 values of
+# schemas._ALLOWED_CONTACT_METHODS (schemas.py:159-167) plus the missing-field
+# edge case render on a live staging page. Different purpose, different
+# teardown blast radius, so a separate constant rather than a widened one.
+#
+# What made this necessary (measured, not assumed): MEH-1706 chunk B (PR #2931,
+# bc660e9f) filled the flagship's channel FIELDS — facebook, external_order_form,
+# contact_email — but left `primary_contact_method="whatsapp"` on it
+# (seed_demo_business.py, same commit). Filling the field is not selecting the
+# channel: getPrimaryMethod (frontend/lib/contact-method.js:25-28) reads only
+# `primary_contact_method`, so 6 of the 7 CTA states had still never rendered
+# anywhere. This list is the perpendicular axis to MEH-1706, not a duplicate.
+#
+# Extra keys these rows may carry (all optional; the DEMO_BUSINESSES rows above
+# omit every one of them and therefore keep their historical behaviour byte for
+# byte — `whatsapp`, no products):
+#   primary_contact_method  — defaults to "whatsapp" when absent
+#   website / instagram / contact_email / facebook / external_order_form
+#                           — the backing field the chosen method reads
+#   products                — list of (name, description, price_min, price_max)
+#
+# Category note: mapped to EXISTING seed_data.CATEGORIES rows only — no
+# CategoryRequest, no new category (scope constraint). Where no exact archetype
+# row exists the nearest existing one is used and named in the comment.
+#
+# Naming note: every name below is checked against TEST_NAME_PATTERNS so a later
+# `--reset` cannot sweep these rows. In particular no name contains "תסס",
+# "חוות הגליל", "מאפיית המחמצת" or "גבינות הר הגולן".
+# ============================================================================
+ARCHETYPE_BUSINESSES = [
+    # 1/8 — baseline + regression: the ONLY whatsapp-primary row here, so a
+    # change that breaks the historical path fails beside the seven new ones.
+    {
+        "slug": "sdot-zahav",
+        "name": "מאפיית שדות זהב",
+        "contact_name": "אורית ברנע",
+        "category": "לחמים ואפייה",
+        "city": "קריית גת",
+        "address": "שדרות לכיש 18, קריית גת",
+        "lat": 31.6100,
+        "lng": 34.7642,
+        "phone": "050-0000020",
+        "primary_contact_method": "whatsapp",
+        "short_description": "כיכרות מחמצת וחלות קלועות, נאפות מדי בוקר בתנור אבן.",
+        "description": (
+            "בית עסק משפחתי בקריית גת שאופה בקצב של פעם. אנחנו טוחנות את "
+            "הקמח אצל טוחן מקומי, מתפיחות את המחמצת לילה שלם ואופות בתנור "
+            "אבן שנבנה כאן בחצר. אין אצלנו משפרי אפייה ואין קיצורי דרך — "
+            "רק קמח, מים, מלח וזמן. הכיכרות יוצאות מהתנור בבוקר ומגיעות "
+            "אליכן באותו יום, עדיין חמימות."
+        ),
+        "kosher": "כשר",
+        "kashrut": "rabanut_mekomit",
+        "verified": True,
+        "review_stars": [5, 5, 4, 5, 5, 4],
+        "image": None,
+        "products": [
+            ("כיכר מחמצת כפרית", "מחמצת בת 48 שעות, קרום פריך ולב רך.", 28, 32),
+            ("חלה קלועה לשבת", "בצק חמאה עשיר, נקלעת ביד בכל יום חמישי.", 24, 24),
+            ("לחם שיפון מלא", "שיפון מלא עם גרעיני חמניות, נשמר ימים.", 30, 34),
+        ],
+    },
+    # 2/8 — phone-primary. tel: href; the dashboard-only channels below cannot
+    # be produced from the register form at all (routers/auth.py), which is why
+    # seeding is the only way these states get a live page.
+    {
+        "slug": "machlevet-ramat-yotam",
+        "name": "מחלבת רמת יותם",
+        "contact_name": "שירה מלכה",
+        "category": "חלב וגבינות",
+        "city": "יקנעם עילית",
+        "address": "האורנים 7, יקנעם עילית",
+        "lat": 32.6578,
+        "lng": 35.1103,
+        "phone": "050-0000021",
+        "primary_contact_method": "phone",
+        "short_description": "גבינות כבשים מיושנות במרתף, בסבב עונתי קטן.",
+        "description": (
+            "מחלבה קטנה על הרכס מעל יקנעם. אנחנו חולבות עדר כבשים אחד, "
+            "מייצרות במנות קטנות ומיישנות במרתף אבן טבעי. הגבינות משתנות "
+            "עם העונה ועם המרעה, ולכן אף סבב אינו זהה לקודמו. אפשר להתקשר "
+            "ולשמוע מה יש השבוע לפני שמזמינות."
+        ),
+        "kosher": "כשר",
+        "kashrut": "badatz",
+        "verified": True,
+        "review_stars": [5, 4, 5, 5, 5],
+        "image": None,
+        "products": [
+            ("קשקבל כבשים מיושן", "מיושן ארבעה חודשים, טעם אגוזי עמוק.", 65, 78),
+            ("לבנה בשמן זית", "לבנה עזה בצנצנת, עם זעתר ושמן מקומי.", 38, 38),
+        ],
+    },
+    # 3/8 — website-primary. The only method that gets utm_source=mehamakor
+    # appended (PrimaryContactButton.jsx:80 via withReferralParams, MEH-1525).
+    {
+        "slug": "yekev-karmei-alona",
+        "name": "יקב כרמי אלונה",
+        "contact_name": "אלונה גפני",
+        "category": "יין, בירה ומשקאות",
+        "city": "זכרון יעקב",
+        "address": "הנדיב 44, זכרון יעקב",
+        "lat": 32.5714,
+        "lng": 34.9531,
+        "phone": "050-0000022",
+        "primary_contact_method": "website",
+        "website": "https://karmei-alona.example.co.il",
+        "short_description": "יין בוטיק מכרם יחיד, בציר קטן ומלא סבלנות.",
+        "description": (
+            "יקב בוטיק על מדרון זכרון יעקב. אנחנו בוצרות ביד מכרם יחיד, "
+            "מתססות בחביות עץ קטנות ומשחררות רק אחרי שנה וחצי במרתף. "
+            "הכמות מוגבלת לכמה מאות בקבוקים בשנה, וכל בציר מקבל תווית "
+            "משלו. ההזמנות נסגרות באתר, וגם ביקור בטעימות נקבע דרכו."
+        ),
+        "kosher": None,
+        "kashrut": None,
+        "verified": True,
+        "review_stars": [5, 5, 5, 4],
+        "image": None,
+        "products": [
+            ("קברנה סוביניון בציר קטן", "18 חודשים בחבית אלון צרפתי.", 120, 145),
+            ("רוזה קיץ", "בציר מוקדם, חמצמץ ונקי, מוגש צונן.", 72, 72),
+        ],
+    },
+    # 4/8 — instagram-primary. Href built by lib/social-links.instagramUrl,
+    # which strips the leading "@" (MEH-2174) — the handle is stored WITH it
+    # here on purpose so that stripping is exercised on a live page.
+    {
+        "slug": "kaveret-or-habosmat",
+        "name": "כוורת אור הבשמת",
+        "contact_name": "תמר אלדד",
+        "category": "דבש",
+        "city": "מבשרת ציון",
+        "address": "הראל 9, מבשרת ציון",
+        "lat": 31.7986,
+        "lng": 35.1489,
+        "phone": "050-0000023",
+        "primary_contact_method": "instagram",
+        "instagram": "@or_habosmat",
+        "short_description": "דבש כוורת לפי פריחה, נרעף קר ולא מסונן דק.",
+        "description": (
+            "בית עסק קטן של כוורנית אחת בהרי ירושלים. אנחנו מעבירות את "
+            "הכוורות אחרי הפריחה — שיטה, אקליפטוס, פרי הדר — וכל רעיפה "
+            "נשארת נפרדת, כך שהצנצנת מספרת מאיזה שדה היא באה. הדבש נרעף "
+            "קר ואינו עובר סינון דק, ולכן הוא מתגבש בחורף. זה סימן טוב."
+        ),
+        "kosher": "כשר",
+        "kashrut": "rabanut_mekomit",
+        "verified": True,
+        "review_stars": [5, 5, 5, 5, 4, 5],
+        "image": None,
+        "products": [
+            ("דבש פריחת הדר", "רעיפה של אביב, בהיר ופרחוני.", 42, 46),
+            ("דבש אקליפטוס", "כהה ועמוק, מרקם סמיך.", 44, 48),
+            ("חלת דבש בצנצנת", "חלה שלמה בתוך הדבש שלה.", 58, 58),
+        ],
+    },
+    # 5/8 — email-primary. mailto: href, and the page that proves the MEH-2154
+    # contract: zero wa.me links in the question chips when WA is not primary.
+    {
+        "slug": "beit-habad-sivan",
+        "name": "בית הבד של סיוון",
+        "contact_name": "סיוון נחום",
+        "category": "שמנים",
+        "city": "כפר תבור",
+        "address": "דרך העמק 21, כפר תבור",
+        "lat": 32.6875,
+        "lng": 35.4053,
+        "phone": "050-0000024",
+        "primary_contact_method": "email",
+        "contact_email": "sivan@beit-habad-sivan.example.co.il",
+        "short_description": "שמן זית כתית מעולה, נסחט קר בתוך שש שעות.",
+        "description": (
+            "בית בד משפחתי לרגלי התבור. אנחנו מוסקות ביד ומביאות את "
+            "הזיתים לסחיטה קרה באותו יום — לרוב תוך שש שעות — כי כל שעה "
+            "שעוברת נשמעת אחר כך בטעם. השמן נשמר במיכלי נירוסטה אטומים "
+            "ומחולק לבקבוקים רק לפי הזמנה, כדי שיגיע אליכן טרי."
+        ),
+        "kosher": "כשר",
+        "kashrut": "badatz",
+        "verified": True,
+        "review_stars": [5, 4, 5, 5],
+        "image": None,
+        "products": [
+            ("שמן זית כתית מעולה", "סחיטה קרה, חריפות עדינה ומאוזנת.", 68, 92),
+            ("שמן זית מוקדם", "מסיק מוקדם, ירוק ועשבי במיוחד.", 88, 110),
+        ],
+    },
+    # 6/8 — external_order-primary. No register-form field exists for this
+    # (dashboard only), so this row is the only way the state reaches a page.
+    # Category: nearest existing row — there is no "קייטרינג" in CATEGORIES.
+    {
+        "slug": "shulchan-aroch-catering",
+        "name": "שולחן ארוך קייטרינג",
+        "contact_name": "מיכל אדרי",
+        "category": "מוצרים מוכנים",
+        "city": "הוד השרון",
+        "address": "הבנים 30, הוד השרון",
+        "lat": 32.1500,
+        "lng": 34.8853,
+        "phone": "050-0000025",
+        "primary_contact_method": "external_order",
+        "external_order_form": "https://forms.example.com/shulchan-aroch",
+        "short_description": "מגשי אירוח ביתיים לשבת ולאירועים קטנים.",
+        "description": (
+            "בית עסק שמבשל לאירועים קטנים ולשולחן שבת. אנחנו עובדות עם "
+            "תפריט קצר שמתחלף כל שבוע לפי מה שיש בשוק, ומכינות הכול ביום "
+            "האירוע עצמו. ההזמנה נסגרת בטופס, עם מספר הסועדות והתאריך, "
+            "ואנחנו חוזרות עם הצעה מותאמת. יש מנות לצמחוניות בכל תפריט."
+        ),
+        "kosher": "כשר",
+        "kashrut": "rabanut_mekomit",
+        "verified": True,
+        "review_stars": [5, 5, 4, 5, 5, 5, 4],
+        "image": None,
+        "products": [
+            ("מגש אירוח לשבת", "שישה סלטים, שתי מנות עיקריות ולחם.", 320, 420),
+            ("מגש מאפים מלוחים", "בורקס גבינה, סמבוסק ופשטידות קטנות.", 180, 220),
+        ],
+    },
+    # 7/8 — facebook-primary. Second dashboard-only channel, same reason as 6.
+    {
+        "slug": "arugot-noam",
+        "name": "חוות ערוגות נועם",
+        "contact_name": "נועם ברקת",
+        "category": "ירקות",
+        "city": "נהלל",
+        "address": "משק 42, נהלל",
+        "lat": 32.6906,
+        "lng": 35.1969,
+        "phone": "050-0000026",
+        "primary_contact_method": "facebook",
+        "facebook": "https://www.facebook.com/arugot.noam.demo",
+        "short_description": "ארגזי ירקות עונתיים, נקטפים יום לפני החלוקה.",
+        "description": (
+            "חווה קטנה בעמק שמגדלת ירקות עונתיים בלבד. אנחנו קוטפות יום "
+            "לפני החלוקה ומרכיבות ארגז לפי מה שהבשיל באמת באותו שבוע — "
+            "ולכן התכולה משתנה ואי אפשר להזמין פריט קבוע מראש. מי שרוצה "
+            "לראות מה נכנס לארגז השבוע, אנחנו מעלות תמונות בכל יום שני."
+        ),
+        "kosher": None,
+        "kashrut": None,
+        "verified": False,
+        "review_stars": [4, 5, 4],
+        "image": None,
+        "products": [
+            ("ארגז ירקות שבועי", "תכולה עונתית משתנה, לשתיים עד ארבע נפשות.", 95, 95),
+            ("צרור עשבי תיבול", "פטרוזיליה, כוסברה ושמיר, נקטפים בבוקר.", 18, 18),
+        ],
+    },
+    # 8/8 — EDGE: phone-primary with NO phone. getPrimaryContactHref returns
+    # null for method "phone" when producer.phone is falsy
+    # (contact-method.js:50-53), and PrimaryContactButton.jsx:72 does
+    # `if (!rawHref) return null` — so the CTA must be ABSENT, not a dead
+    # `tel:` link. This row is the live fixture for that rule; the smoke spec
+    # asserts no dead tel: href renders anywhere on the page.
+    {
+        "slug": "maadaniyat-ben-shemen",
+        "name": "מעדניית בן שמן",
+        "contact_name": "רונית כספי",
+        "category": "בשר",
+        "city": "רמלה",
+        "address": "הרצל 55, רמלה",
+        "lat": 31.9288,
+        "lng": 34.8667,
+        "phone": None,  # EDGE — deliberately absent; see the comment above.
+        "primary_contact_method": "phone",
+        "short_description": "נקניקים מיובשים באוויר, בסבבים קטנים.",
+        "description": (
+            "מעדנייה קטנה שמייבשת נקניקים באוויר, בלי מאיצים ובלי צבעי "
+            "מאכל. אנחנו עובדות עם בשר מרעה מחווה אחת ומייבשות בחדר "
+            "בקרה במשך שבועות, לפי סוג הנקניק. כל סבב יוצא במספר מוגבל "
+            "של יחידות, ומה שנגמר חוזר רק בסבב הבא."
+        ),
+        "kosher": "כשר",
+        "kashrut": "badatz",
+        "verified": True,
+        "review_stars": [5, 4, 5],
+        "image": None,
+        "products": [
+            ("נקניק מיובש קלאסי", "ייבוש אוויר של חמישה שבועות.", 78, 92),
+            ("נקניק חריף", "פלפל חריף גרוס ופפריקה מעושנת.", 82, 96),
+        ],
+    },
+]
+
+
 def _assert_not_production() -> None:
     """Refuse to run against anything that is not localhost or Railway staging.
 
@@ -464,6 +758,13 @@ def _upload_hero(slug: str, url: str) -> str | None:
             public_id=slug,
             overwrite=True,
             resource_type="image",
+            # MEH-2172: cap the stored original, exactly as every real upload
+            # endpoint already does (`routers/upload.py:134`). Unsplash serves
+            # full-resolution originals — one demo hero landed at 5886x3924 /
+            # 2.43MB (Cloudinary ticket #383070) for a slot that never renders
+            # above 1200px. `crop: "limit"` only ever shrinks: a source already
+            # narrower than 1200 is stored untouched, so this cannot upscale.
+            transformation=[{"width": 1200, "crop": "limit"}],
         )
         return result["secure_url"]
     except Exception as exc:  # noqa: BLE001 — image is best-effort, never fatal
@@ -492,9 +793,25 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
     if not confirm:
         img = "hero→Cloudinary demo/" if biz["image"] else "NO image (leaf placeholder)"
         kosher = f"kashrut={biz['kashrut']}" if biz["kashrut"] else "no kashrut"
+        # MEH-2189: name the channel + its backing field in the dry-run line, so
+        # `--reset` (no --confirm) is readable evidence of the channel matrix
+        # rather than a list that looks identical for all eight rows.
+        method = biz.get("primary_contact_method", "whatsapp")
+        backing = {
+            "website": "website",
+            "instagram": "instagram",
+            "email": "contact_email",
+            "facebook": "facebook",
+            "external_order": "external_order_form",
+            "phone": "phone",
+            "whatsapp": "phone",
+        }[method]
+        filled = "SET" if biz.get(backing) else "NULL"
+        nprod = len(biz.get("products", []))
         return (
             f"  · {biz['name']} [{biz['category']}] — {img}, "
-            f"{reviews_count} reviews (avg {avg or '—'}), {kosher}"
+            f"{reviews_count} reviews (avg {avg or '—'}), {kosher}, "
+            f"cta={method} ({backing}={filled}), {nprod} products"
         ), True  # would-insert (this slug does not yet exist)
 
     now = datetime.now(timezone.utc)
@@ -511,7 +828,19 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
         lat=biz["lat"],
         lng=biz["lng"],
         phone=biz["phone"],
-        primary_contact_method="whatsapp",
+        # MEH-2189: the channel is now per-fixture. `.get` with the historical
+        # literal as the default is deliberate — every DEMO_BUSINESSES row above
+        # omits this key, so all ten keep the exact value this line used to
+        # hardcode. Only the ARCHETYPE_BUSINESSES rows set it.
+        primary_contact_method=biz.get("primary_contact_method", "whatsapp"),
+        # The backing field each non-whatsapp method reads
+        # (frontend/lib/contact-method.js:35-81). Absent key -> None, which is
+        # what these columns already were for every pre-MEH-2189 demo row.
+        website=biz.get("website"),
+        instagram=biz.get("instagram"),
+        contact_email=biz.get("contact_email"),
+        facebook=biz.get("facebook"),
+        external_order_form=biz.get("external_order_form"),
         status="approved",
         admin_notes=ADMIN_NOTE,
         images=[image_url] if image_url else [],
@@ -536,6 +865,21 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
     db.add(producer)
     db.flush()
     db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
+
+    # MEH-2189: 2-3 products per archetype row so the catalog section on the
+    # public page is not empty. DEMO_BUSINESSES rows carry no "products" key and
+    # therefore still seed none — unchanged behaviour, not an oversight: those
+    # rows exist to exercise the CARD, which reads no product.
+    for pname, pdesc, pmin, pmax in biz.get("products", []):
+        db.add(
+            Product(
+                producer_id=producer.id,
+                name=pname,
+                description=pdesc,
+                price_min=pmin,
+                price_max=pmax,
+            )
+        )
 
     # Idempotency guard: the reviewer emails are deterministic per slug. If this
     # producer was deleted externally but its display-only reviewer consumers
@@ -578,17 +922,27 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
 
 
 def _seed(db, confirm: bool) -> None:
-    print("── SEED ──────────────────────────────────────────────")
-    new_count = 0
-    for biz in DEMO_BUSINESSES:
-        line, is_new = _seed_one(db, biz, confirm)
-        print(line)
-        if is_new:
-            new_count += 1
+    """Seed both packs. Counts are DERIVED from the lists, never stated — a
+    literal goes stale the moment a fixture is added (testing.md § "the artifact
+    that asserts coverage is the one least likely to be checked")."""
     verb = "Inserted" if confirm else "WOULD insert"
-    skipped = len(DEMO_BUSINESSES) - new_count
-    tail = f" ({skipped} already exist, skipped)" if skipped else ""
-    print(f"  {verb} {new_count} demo business(es){tail}.")
+    total_new = 0
+    for label, pack in (
+        ("SEED", DEMO_BUSINESSES),
+        ("SEED · ארכיטיפ×ערוץ (MEH-2189)", ARCHETYPE_BUSINESSES),
+    ):
+        print(f"── {label} ──────────────────────────────────────")
+        new_count = 0
+        for biz in pack:
+            line, is_new = _seed_one(db, biz, confirm)
+            print(line)
+            if is_new:
+                new_count += 1
+        skipped = len(pack) - new_count
+        tail = f" ({skipped} already exist, skipped)" if skipped else ""
+        print(f"  {verb} {new_count} of {len(pack)} business(es){tail}.")
+        total_new += new_count
+    print(f"  TOTAL {verb.lower()}: {total_new} business(es).")
     if not confirm:
         print("  [dry-run] pass --confirm to execute the inserts above.")
 
