@@ -34,6 +34,7 @@ import "leaflet/dist/leaflet.css";
 
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
+import { producerPoints } from "@/lib/producerPoints";
 
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
@@ -192,19 +193,30 @@ export default function HomepageMiniMap() {
     };
   }, [shouldLoad]);
 
-  // Q4: "plottable" = lat AND lng both present. Empty state shows when
+  // Q4: "plottable" = producer has a usable point. Empty state shows when
   // zero plottable markers (not when zero producers, since a producer
   // without coords contributes nothing to the map).
+  // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
+  // directly — a producer whose only coordinates live in a producer_locations
+  // row (no Producer.lat/lng) used to be silently dropped from this preview.
+  // One marker per producer (this is a density preview, not the full /map),
+  // so lat/lng are overridden to the resolved point and every other producer
+  // field passes through unchanged for the marker/tooltip below. Prefers the
+  // PRIMARY point when one exists — Producer.locations has no `order_by`
+  // (models.py:369), so points[0] is arbitrary DB row order, not the branch.
   // MEH-856: memoized so FitToBusinesses keys on a STABLE reference (changes
   // only when `producers` changes). Without this, the filtered array was a new
   // ref every render → the fitBounds effect re-fired and fought user pan.
-  const plottable = useMemo(
-    () =>
-      Array.isArray(producers)
-        ? producers.filter((p) => p.lat != null && p.lng != null)
-        : null,
-    [producers],
-  );
+  const plottable = useMemo(() => {
+    if (!Array.isArray(producers)) return null;
+    return producers
+      .map((p) => {
+        const points = producerPoints(p);
+        const pt = points.find((point) => point.location?.is_primary) ?? points[0];
+        return pt ? { ...p, lat: pt.lat, lng: pt.lng } : null;
+      })
+      .filter(Boolean);
+  }, [producers]);
 
   return (
     <section

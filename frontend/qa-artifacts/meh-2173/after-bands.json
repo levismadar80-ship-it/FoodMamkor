@@ -1,0 +1,130 @@
+{
+  "390x844:zero": {
+    "bandCount": 6,
+    "bands": [
+      {
+        "top": 80,
+        "height": 42,
+        "items": [
+          "רישוי מאומת",
+          "משלוח",
+          "סינון"
+        ]
+      },
+      {
+        "top": 134,
+        "height": 30,
+        "items": [
+          "ראשון",
+          "יום משלוח:",
+          "בחרו אזור כדי לסנן לפי יום משל"
+        ]
+      },
+      {
+        "top": 172,
+        "height": 30,
+        "items": [
+          "שני",
+          "שלישי",
+          "רביעי",
+          "חמישי",
+          "שישי"
+        ]
+      },
+      {
+        "top": 210,
+        "height": 30,
+        "items": [
+          "שבת"
+        ]
+      },
+      {
+        "top": 264,
+        "height": 20,
+        "items": [
+          "מציגים 8 מתוך 12"
+        ]
+      },
+      {
+        "top": 296,
+        "height": 42,
+        "items": [
+          "לחצו על הלב כדי לשמור בתי עסק "
+        ]
+      }
+    ],
+    "cards": 8,
+    "filterRowInRange": true
+  },
+  "390x844:sheetKeys": [
+    "vegan",
+    "vegetarian",
+    "gluten_free",
+    "lactose_free",
+    "info-kosher",
+    "kosher",
+    "info-verified",
+    "verified",
+    "has_delivery",
+    "info-pickup_points",
+    "pickup_points"
+  ],
+  "1440x900:zero": {
+    "bandCount": 4,
+    "bands": [
+      {
+        "top": 80,
+        "height": 42,
+        "items": [
+          "רישוי מאומת",
+          "משלוח",
+          "סינון"
+        ]
+      },
+      {
+        "top": 134,
+        "height": 30,
+        "items": [
+          "ראשון",
+          "שני",
+          "שלישי",
+          "רביעי",
+          "חמישי",
+          "שישי",
+          "שבת",
+          "יום משלוח:",
+          "בחרו אזור כדי לסנן לפי יום משל"
+        ]
+      },
+      {
+        "top": 188,
+        "height": 20,
+        "items": [
+          "מציגים 8 מתוך 12"
+        ]
+      },
+      {
+        "top": 220,
+        "height": 42,
+        "items": [
+          "לחצו על הלב כדי לשמור בתי עסק "
+        ]
+      }
+    ],
+    "cards": 8,
+    "filterRowInRange": true
+  },
+  "1440x900:sheetKeys": [
+    "vegan",
+    "vegetarian",
+    "gluten_free",
+    "lactose_free",
+    "info-kosher",
+    "kosher",
+    "info-verified",
+    "verified",
+    "has_delivery",
+    "info-pickup_points",
+    "pickup_points"
+  ]
+}

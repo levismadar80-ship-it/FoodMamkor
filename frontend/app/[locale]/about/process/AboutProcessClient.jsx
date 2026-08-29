@@ -92,8 +92,14 @@ export default function AboutProcessClient() {
 
   // FRL-900 gold-geresh: tier label sits on a cream↔gold seam after its icon —
   // ms-[0.14em] nudges the accent word off the seam (margin-inline-start, RTL-safe).
+  // MEH-2069: this tag renders inside the bg-background-alt section (#ede4d2,
+  // NOT the cream #f5f0e8 page default) — bg-accent/10 there computed 3.68:1,
+  // AA fail for 12.5px text (worse than the 4.07:1 cream case). Same
+  // usage-level fix already applied twice (MEH-2025/#2825, MEH-2032/#2909):
+  // solid bg-surface-card gets text-accent to 5.19:1, independent of the page
+  // background since the chip is now fully opaque.
   const VerifiedTag = () => (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] font-semibold bg-accent/10 text-accent border border-accent/30 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] font-semibold bg-surface-card text-accent border border-accent/30 whitespace-nowrap">
       <SealCheck size={13} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>

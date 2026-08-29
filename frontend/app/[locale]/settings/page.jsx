@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useUserCity } from "@/lib/use-user-city";
+import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
@@ -88,6 +89,35 @@ function SettingsPageBody() {
     if (!authLoading && !user) router.push("/login");
   }, [authLoading, user, router]);
 
+  const selectTab = useCallback(
+    (next) => {
+      setTab(next);
+      const qp = new URLSearchParams(params.toString());
+      qp.set("tab", next);
+      // MEH-1294: shallow History API, not router.replace — a tab switch should not
+      // trigger an RSC navigation. window.location.pathname keeps the locale prefix
+      // on /en/settings (the old hardcoded "/settings" dropped it). Same-URL guard.
+      // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170.
+      const qs = qp.toString();
+      if (typeof window === "undefined") return;
+      if (qs === window.location.search.replace(/^\?/, "")) return;
+      window.history.replaceState(null, "", `${window.location.pathname}?${qs}`);
+    },
+    [params],
+  );
+
+  // MEH-2199: the tablist's keyboard layer. selectTab already takes the wire
+  // value the buttons carry, so the hook needs no adapter.
+  //
+  // BOTH of these sit ABOVE the early returns below, and that placement is
+  // load-bearing rather than stylistic: the returns are conditional, so a hook
+  // called after them is called conditionally, and React's hook order breaks on
+  // the render where authLoading flips. eslint react-hooks/rules-of-hooks
+  // catches it as an ERROR — it caught exactly this while MEH-2199 was written.
+  // selectTab became useCallback in the same move so the handler identity is
+  // stable across renders.
+  const onTabsKeyDown = useTabsKeyboard(selectTab);
+
   // MEH-1638: authLoading and unauthenticated were one null-returning branch.
   //   - authLoading → the answer is not back yet; show the page's shape.
   //   - !user → the effect above is already redirecting to /login; returning
@@ -95,20 +125,6 @@ function SettingsPageBody() {
   //     the redirect). Same split as producer/dashboard/layout.js:125-132.
   if (authLoading) return <SettingsSkeleton label={tA11y("loading")} />;
   if (!user) return null;
-
-  const selectTab = (next) => {
-    setTab(next);
-    const qp = new URLSearchParams(params.toString());
-    qp.set("tab", next);
-    // MEH-1294: shallow History API, not router.replace — a tab switch should not
-    // trigger an RSC navigation. window.location.pathname keeps the locale prefix
-    // on /en/settings (the old hardcoded "/settings" dropped it). Same-URL guard.
-    // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170.
-    const qs = qp.toString();
-    if (typeof window === "undefined") return;
-    if (qs === window.location.search.replace(/^\?/, "")) return;
-    window.history.replaceState(null, "", `${window.location.pathname}?${qs}`);
-  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -121,8 +137,13 @@ function SettingsPageBody() {
         role="tablist"
         aria-label={tCommon("tabs_aria")}
         className="flex gap-1 bg-white border border-border rounded-full p-1 mb-8 overflow-x-auto"
+        // MEH-2199: the role promised arrow navigation and the bar did not
+        // deliver it. Shared with /events so the RTL arrow mapping has one
+        // owner — see hooks/useTabsKeyboard.js.
+        onKeyDown={onTabsKeyDown}
       >
         <TabButton
+          value="profile"
           active={tab === "profile"}
           onClick={() => selectTab("profile")}
           icon={
@@ -135,6 +156,7 @@ function SettingsPageBody() {
           {tCommon("tab_profile")}
         </TabButton>
         <TabButton
+          value="security"
           active={tab === "security"}
           onClick={() => selectTab("security")}
           icon={
@@ -151,12 +173,17 @@ function SettingsPageBody() {
   );
 }
 
-function TabButton({ active, onClick, icon, children }) {
+function TabButton({ value, active, onClick, icon, children }) {
   return (
     <button
       type="button"
       role="tab"
+      // MEH-2199: data-tab-value is what useTabsKeyboard activates with, and
+      // tabIndex is the roving tab stop — exactly one per tablist, on the
+      // selected tab, so Tab enters the bar once instead of walking every tab.
+      data-tab-value={value}
       aria-selected={active}
+      tabIndex={active ? 0 : -1}
       onClick={onClick}
       className={`flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${
         active

@@ -54,7 +54,7 @@ graph TD
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
-    GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks]
+    GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
@@ -98,6 +98,7 @@ graph TD
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending-only 409, 3/hr,<br/>notification-only, no DB write]
+    Dashboard --> SubmitReview[POST /producers/me/submit-for-review<br/>👤 MEH-2100 draft→pending — draft-only 409, 5/hr,<br/>server-side completeness gate → 422 with params.missing,<br/>stamps submitted_for_review_at + pings admin]
 
     NeighborList[/neighbor + create home product] --> HPCreate[POST /home-products<br/>🔑 Claude Opus moderation on write]
     NeighborList --> HPList[GET /home-products<br/>🌐 city/category filter]
@@ -120,13 +121,18 @@ graph TD
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
-    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️]
+    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit]
+    Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
+    Producers --> LicenseExpiry[GET /admin/license-expiry-reminders<br/>🛡️ MEH-2072 approved producers whose licence expires within 30d; read-only, no send, no auto-hide; excludes NULL and already-lapsed]
+    Producers --> AdminGetOne[GET /admin/producers/{producer_id}<br/>🛡️ MEH-2072 the FULL ProducerAdminOut for one producer — the edit page was loading the PUBLIC serializer and writing admin-only fields back as blanks. Declared AFTER /pending and /rejection-presets, or the param route swallows both literals]
+    Producers --> ReviewChecksGet[GET /admin/producers/{producer_id}/review-checks<br/>🛡️ MEH-1399 the ticks recorded for one producer; 404 on unknown producer, not an empty list]
+    Producers --> ReviewChecksPut[PUT /admin/producers/{producer_id}/review-checks<br/>🛡️ MEH-1399 set semantics — present=ticked, absent=deleted. Idempotent; label_snapshot written at tick time; ON CONFLICT DO NOTHING so a concurrent save resolves instead of 500ing]
 
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
@@ -153,6 +159,9 @@ graph TD
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
+    Settings --> ChecklistGet[GET /admin/checklist-items<br/>🛡️ MEH-1399 ordered by position; ?include_inactive=true only for the settings editor — the review flow must never be offered a retired item]
+    Settings --> ChecklistPut[PUT /admin/checklist-items<br/>🛡️ MEH-1399 replace the list — add/edit/reorder/retire in one request. No delete: the FK is ON DELETE RESTRICT. Unknown id is a 404, not a silent insert]
+
     Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
     AdminWhatsapp[/admin/whatsapp-failures page] --> AdminWaFailed[GET /admin/whatsapp/failed<br/>🛡️ MEH-771 Chunk C undelivered outbound<br/>status IN failed,window_expired · last 7d<br/>list-only, no resend/retry]

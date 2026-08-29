@@ -16,6 +16,7 @@ import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
+import { deriveAvailability } from "@/lib/availability";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -60,7 +61,18 @@ function ProducerLicenseField({ form, categories, update }) {
 
   // Auto-expand the optional path if a value is already present (edit flow)
   // so the admin sees what's persisted rather than a blank toggle.
-  const showField = required || optionalExpanded || !!form.producer_license_number;
+  //
+  // MEH-2072 added `license_expires_at` to the disjunction deliberately. The
+  // two fields are independently nullable, so a producer can carry an expiry
+  // date with no number (imported row, or a number cleared afterwards). Gating
+  // the reveal on the number alone would render that date invisible while it
+  // still drove the 30-day reminder list — a value affecting the admin's queue
+  // that she cannot see or correct from the form that owns it.
+  const showField =
+    required ||
+    optionalExpanded ||
+    !!form.producer_license_number ||
+    !!form.license_expires_at;
 
   if (!showField) {
     return (
@@ -105,6 +117,25 @@ function ProducerLicenseField({ form, categories, update }) {
           {t("producers.form.fields.license_format_warning")}
         </p>
       )}
+      {/* MEH-2072: the licence's expiry, captured from the same document as
+          the number above — which is why it renders here rather than in its
+          own section. Optional: a business whose document the admin has not
+          seen yet stays empty, and empty means "not captured", never
+          "no expiry". No `min` (unlike vacation_until): a past date is
+          legitimate input when the licence has already lapsed. */}
+      <div className="mt-3">
+        <Input
+          id="admin-producer-license-expires"
+          type="date"
+          label={t("producers.form.fields.license_expires_at")}
+          value={form.license_expires_at}
+          onChange={(e) => update("license_expires_at", e.target.value)}
+          dir="ltr"
+        />
+        <p className="text-xs text-fg-muted mt-1">
+          {t("producers.form.fields.license_expires_at_hint")}
+        </p>
+      </div>
       {/* MEH-1271: manual cross-check against the Ministry of Health food
           manufacturers registry (by business name / license number). */}
       <a
@@ -165,6 +196,10 @@ const EMPTY = {
   // MEH-530: admin form persists raw value; backend enforces conditional-
   // required guard on category-license pairing.
   producer_license_number: "",
+  // MEH-2072: licence expiry read off the document. "" (not null) so the
+  // controlled date input never flips to uncontrolled — same idiom as
+  // vacation_until below; the submit path converts "" back to null.
+  license_expires_at: "",
   admin_notes: "",
   images: [],
   // MEH-213 — location mode
@@ -241,9 +276,20 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         category_ids: initial.categories?.map((c) => c.id) ?? [],
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
-        // MEH-530: admin GET /admin/producers/{id} returns ProducerAdminOut
-        // which exposes the raw producer_license_number; null becomes "".
+        // MEH-530: GET /admin/producers/{id} returns ProducerAdminOut, which
+        // exposes the raw producer_license_number; null becomes "".
+        //
+        // MEH-2072: that route did not exist when this comment was written —
+        // the edit page called the PUBLIC `/producers/{id}` and got 405 on the
+        // admin one. So every admin-only field below hydrated as "" and this
+        // form wrote the blanks back on save. The comment described the correct
+        // design and the code did something else; the route now exists and the
+        // page calls it. Do not point the edit page back at the public shape.
         producer_license_number: initial.producer_license_number ?? "",
+        // MEH-2072: same ProducerAdminOut payload, admin-only like the number
+        // above. Already an ISO "YYYY-MM-DD" string (the column is DATE), which
+        // is exactly what <input type="date"> wants — no formatting needed.
+        license_expires_at: initial.license_expires_at ?? "",
         contact_name: initial.contact_name ?? "",
         whatsapp_group: initial.whatsapp_group ?? "",
         // MEH-17
@@ -269,15 +315,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-1255: nationwide exclusion list.
         delivery_excluded_cities: initial.delivery_excluded_cities ?? [],
         // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
-        availability_state:
-          initial.availability_state ??
-          (initial.availability_status === "vacation"
-            ? "on_vacation"
-            : initial.availability_status === "full"
-              ? "full_this_week"
-              : initial.is_available_today
-                ? "available_today"
-                : "accepting_orders"),
+        // MEH-1854 — this chain was the most complete of the four and became
+        // the shared helper; it now calls it rather than restating it.
+        availability_state: deriveAvailability(initial),
         vacation_until: initial.vacation_until ?? "",
       });
     }
@@ -417,6 +457,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       gluten_free_facility: form.gluten_free_facility,
       is_recommended: form.is_recommended,
       producer_license_number: form.producer_license_number,
+      // MEH-2072: "" means "not captured" and must reach the API as null, not
+      // as an empty string — the column is DATE and "" would 422. Sending null
+      // explicitly (rather than omitting the key) is what lets the admin CLEAR
+      // a date she entered by mistake.
+      license_expires_at: form.license_expires_at || null,
       admin_notes: form.admin_notes,
       images: form.images,
       // MEH-213 — location mode

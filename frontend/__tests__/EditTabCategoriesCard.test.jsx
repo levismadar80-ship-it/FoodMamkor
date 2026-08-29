@@ -29,9 +29,9 @@ const C = he.dashboard.producer.categories;
 // "ירקות" + "סבונים טבעיים" are both popular, so both cards are visible without
 // expanding; "פירות" is a rest-category used to cover the show-more path.
 const CATS = [
-  { id: 1, name: "ירקות" },
-  { id: 2, name: "סבונים טבעיים" },
-  { id: 3, name: "פירות" },
+  { id: 1, name: "ירקות", slug: "veg" },
+  { id: 2, name: "סבונים טבעיים", slug: "care" },
+  { id: 3, name: "פירות", slug: "fruit" },
 ];
 const chip = (id) => screen.getByTestId(`category-chip-${id}`);
 
@@ -40,7 +40,7 @@ function renderCard(props = {}) {
   const utils = render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
       <CategoriesCard
-        profile={{ categories: [{ id: 1, name: "ירקות" }] }}
+        profile={{ categories: [{ id: 1, name: "ירקות", slug: "veg" }] }}
         onSave={onSave}
         {...props}
       />

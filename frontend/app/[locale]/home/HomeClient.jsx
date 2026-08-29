@@ -66,7 +66,13 @@ export default function HomeClient({ initialProducers = null, initialCategories 
     // filled "גלו בתי עסק" button was its only consumer on this page and the
     // search pill replaced it. The helper itself still lives in use-home-page
     // (it fires after a near-me / city apply); only the prop pass-through went.
-    handleWhatsAppClick, navigateToChip,
+    // MEH-2173: `navigateToChip` is no longer destructured here — the home
+    // attribute row filters in place now, so the MEH-1774 deep-link hop has no
+    // consumer on this page. The handler itself is kept in use-home-page (see
+    // the note beside its export there); only the prop pass-through went, the
+    // same way MEH-1684 dropped `scrollToProducers` from this list.
+    handleWhatsAppClick, handleRemoveChip, handleToggleChip, handleClearChips,
+    filterSheetOpen, closeFilterSheet, toggleFilterSheet,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage({ initialProducers, initialCategories });
 
@@ -226,7 +232,12 @@ export default function HomeClient({ initialProducers = null, initialCategories 
         onboardAdvance={onboardAdvance}
         onboardDismiss={onboardDismiss}
         onAdvanceFromStep0={handleAdvanceFromStep0}
-        onChipNavigate={navigateToChip}
+        onRemoveChip={handleRemoveChip}
+        onToggleChip={handleToggleChip}
+        onClearChips={handleClearChips}
+        filterSheetOpen={filterSheetOpen}
+        onToggleFilterSheet={toggleFilterSheet}
+        onCloseFilterSheet={closeFilterSheet}
         onClearCategory={handleClearCategory}
         onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}

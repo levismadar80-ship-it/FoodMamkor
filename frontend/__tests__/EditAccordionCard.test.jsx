@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useState } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import he from "../messages/he.json";
 import EditAccordionCard from "@/components/EditAccordionCard";
 
 // MEH-1116: accordion shell — header aria wiring, hidden-toggle (children stay
@@ -10,9 +12,13 @@ vi.mock("@phosphor-icons/react", () => ({
   CaretDown: (props) => <span data-testid="icon-caret" {...props} />,
 }));
 
+// MEH-2138 chunk C: EditAccordionCard now reads i18n for its «חובה»/«רשות»
+// header chip, so it needs a message provider. The assertions below are
+// unchanged — only the wrapper is new.
 function Host() {
   const [open, setOpen] = useState(false);
   return (
+    <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
     <EditAccordionCard
       anchorId="contact-channels"
       title="ערוצי קשר"
@@ -22,6 +28,7 @@ function Host() {
     >
       <input data-testid="inner-input" defaultValue="" />
     </EditAccordionCard>
+    </NextIntlClientProvider>
   );
 }
 

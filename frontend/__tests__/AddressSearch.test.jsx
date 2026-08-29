@@ -213,3 +213,56 @@ describe("AddressSearch — empty/error hint (MEH-1766)", () => {
     expect(screen.queryByTestId(HINT_TESTID)).toBeNull();
   });
 });
+
+
+// MEH-2181 — the `city` prop: scoping passthrough, and the auto-open guard.
+//
+// The guard is worth its own test because the SUITE ABOVE CANNOT SEE IT: the
+// input's own onChange calls setIsOpen(true) on every keystroke, so every
+// typing-path test passes whether or not the post-fetch open fires. Replacing
+// that post-fetch `setIsOpen(true)` with `if (false)` leaves all ten green —
+// measured. These two assert the one path where it is the only opener.
+describe("AddressSearch — city scoping + auto-open guard (MEH-2181)", () => {
+  function CityHarness({ city, value = "דרך שרה" }) {
+    return (
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <AddressSearch id="addr" value={value} onChange={() => {}} onSelect={vi.fn()} city={city} />
+      </NextIntlClientProvider>
+    );
+  }
+
+  it("passes `city` through to the provider call", async () => {
+    render(<CityHarness city="תל אביב" />);
+    await vi.waitFor(
+      () => expect(autocompleteAddresses).toHaveBeenCalled(),
+      { timeout: 2000 },
+    );
+    expect(autocompleteAddresses).toHaveBeenCalledWith(
+      "דרך שרה",
+      expect.objectContaining({ city: "תל אביב" }),
+    );
+  });
+
+  it("a city change refreshes results WITHOUT popping the list open over an unfocused field", async () => {
+    const { rerender } = render(<CityHarness city="תל אביב" />);
+    await vi.waitFor(
+      () => expect(autocompleteAddresses).toHaveBeenCalledTimes(1),
+      { timeout: 2000 },
+    );
+
+    // The seller corrects her town — focus is in the CITY field, not here.
+    rerender(<CityHarness city="חיפה" />);
+    await vi.waitFor(
+      () =>
+        expect(autocompleteAddresses).toHaveBeenLastCalledWith(
+          "דרך שרה",
+          expect.objectContaining({ city: "חיפה" }),
+        ),
+      { timeout: 2000 },
+    );
+
+    // Results refreshed (above) — but the dropdown must NOT have opened itself.
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveAttribute("aria-expanded", "false");
+  });
+});

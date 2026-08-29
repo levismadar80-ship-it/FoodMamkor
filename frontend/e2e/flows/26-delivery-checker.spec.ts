@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 /**
  * MEH-1536 — "מגיעים אלייך?" delivery checker on the producer detail page.

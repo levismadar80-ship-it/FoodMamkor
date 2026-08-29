@@ -27,7 +27,6 @@ const baseProps = () => ({
   onClose: vi.fn(),
   user: null,
   logout: vi.fn(),
-  showBiz: false,
 });
 
 describe("AccountSheet", () => {
@@ -111,18 +110,33 @@ describe("AccountSheet", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("showBiz gates the business CTA", () => {
-    const { rerender } = render(
-      <AccountSheet {...baseProps()} showBiz={false} />,
-    );
-    expect(
-      screen.queryByText("account.sheet.biz_cta"),
-    ).not.toBeInTheDocument();
+  // MEH-669 gate, MEH-1703 chunk 3: this used to drive the `showBiz` prop
+  // directly. The prop is gone — the sheet reads audience "consumer" off the
+  // registry — so the test now drives the gate's REAL input, the user's role.
+  //
+  // That is strictly stronger than what it replaced: the prop-based version
+  // passed even if the caller computed the predicate wrongly, because it set
+  // the answer by hand. This version cannot.
+  it("the MEH-669 gate hides the business CTA from producers and admins", () => {
+    for (const role of ["producer", "admin"]) {
+      const { unmount } = render(
+        <AccountSheet {...baseProps()} user={{ name: "X", role }} />,
+      );
+      expect(
+        screen.queryByText("account.sheet.biz_cta"),
+      ).not.toBeInTheDocument();
+      unmount();
+    }
+  });
 
-    rerender(<AccountSheet {...baseProps()} showBiz={true} />);
-    expect(
-      screen.getByRole("link", { name: /account\.sheet\.biz_cta/ }),
-    ).toHaveAttribute("href", "/register/producer");
+  it("the business CTA shows for a guest and for a consumer", () => {
+    for (const user of [null, { name: "דנה", role: "consumer" }]) {
+      const { unmount } = render(<AccountSheet {...baseProps()} user={user} />);
+      expect(
+        screen.getByRole("link", { name: /account\.sheet\.biz_cta/ }),
+      ).toHaveAttribute("href", "/register/producer");
+      unmount();
+    }
   });
 
   it("scrim click closes the sheet", () => {

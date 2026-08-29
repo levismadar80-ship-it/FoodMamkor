@@ -62,8 +62,15 @@ export const ADMIN_REVIEW_CHECKLIST = [
 // Approve-confirm dialog copy (soft warning shown when items remain unticked).
 // `message` interpolates the remaining count; the buttons are fixed labels.
 export const ADMIN_REVIEW_APPROVE_CONFIRM = {
+  // MEH-2175: `count === null` means the checklist could not be loaded, so
+  // there is no number to report and reporting one would be a fabrication.
+  // The branch lives here rather than at the render site so the dialog in
+  // admin/producers/page.js needs no change — it already asks this module
+  // what to say.
   message: (count) =>
-    `נשארו ${count} סעיפים לא מסומנים ברשימת הבדיקה. לאשר בכל זאת?`,
+    count === null
+      ? "רשימת הבדיקה לא נטענה — לא ניתן לוודא שכל הסעיפים נבדקו."
+      : `נשארו ${count} סעיפים לא מסומנים ברשימת הבדיקה. לאשר בכל זאת?`,
   confirmLabel: "אשרי בכל זאת",
   cancelLabel: "חזרה לבדיקה",
 };

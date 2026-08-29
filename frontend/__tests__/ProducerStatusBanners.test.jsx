@@ -145,7 +145,9 @@ describe("producer dashboard status banners (MEH-1355)", () => {
     fireEvent.click(screen.getByTestId("status-inactive-support"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     const wa = document.querySelector('a[href^="https://wa.me/"]');
-    const mail = document.querySelector('a[href^="mailto:support@mehamakor.online"]');
+    // MEH-2113 rider (Sapir ruling 18/08): the support modal now promises the
+    // monitored contact@ address on the canonical domain, not the dead support@.
+    const mail = document.querySelector('a[href^="mailto:contact@mehamakor.co.il"]');
     expect(wa).not.toBeNull();
     expect(mail).not.toBeNull();
   });

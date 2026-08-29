@@ -19,9 +19,21 @@ Audit + per-endpoint rationale: MEH-1979 comment of 2026-08-09, as corrected
 by this file (see the class docstring below).
 """
 
-import uuid
-
 import pytest
+
+# A fixed id, deliberately NOT `uuid.uuid4()`. Every path built from it below
+# becomes a pytest parametrize ID, and under `-n auto` each xdist worker imports
+# this module in its own process — a random id therefore differs per worker, so
+# xdist aborts the entire run ("Different tests were collected between gw0 and
+# gw1") before a single test executes. Serial runs never showed it: one process,
+# one collection.
+#
+# The value is arbitrary by design. Every path using it is a deliberate miss and
+# the limiter counts the request either way (see the note above REVIEWS) — a
+# literal is exactly as absent as a random one, and collects deterministically.
+#
+# DO NOT replace with uuid4() — that reintroduces the MEH-1911 collection abort.
+_ABSENT_ID = "00000000-0000-4000-8000-000000000000"
 
 # Mounted public endpoints this ticket newly limited · budget per minute.
 # Data, not prose: change a limit in a router and the matching case fails
@@ -38,11 +50,11 @@ MOUNTED = [
     # inventory (scripts/audit_public_endpoints.py) found them: list and
     # detail reads that were public and unlimited the whole time.
     ("/events", 120),
-    (f"/events/{uuid.uuid4()}", 120),
-    (f"/experiences/{uuid.uuid4()}", 120),
-    (f"/group-buys/{uuid.uuid4()}", 120),
+    (f"/events/{_ABSENT_ID}", 120),
+    (f"/experiences/{_ABSENT_ID}", 120),
+    (f"/group-buys/{_ABSENT_ID}", 120),
     ("/producers/no-such-slug/recipes", 120),
-    (f"/producers/no-such-slug/recipes/{uuid.uuid4()}", 120),
+    (f"/producers/no-such-slug/recipes/{_ABSENT_ID}", 120),
 ]
 
 # The only public endpoints allowed to answer without a limit. Each is a
@@ -62,8 +74,8 @@ DELIBERATELY_UNLIMITED = {
 #
 # The value may be a miss — the limiter counts the request either way, which is
 # the property under test.
-REVIEWS = f"/reviews?producer_id={uuid.uuid4()}"
-PRODUCER_REVIEWS = f"/producers/{uuid.uuid4()}/reviews"
+REVIEWS = f"/reviews?producer_id={_ABSENT_ID}"
+PRODUCER_REVIEWS = f"/producers/{_ABSENT_ID}/reviews"
 
 
 def _statuses(client, path, n):
@@ -160,7 +172,7 @@ class TestHomeProductsIsNotMounted:
         [
             "/home-products",
             "/home-products/rate/sometoken",
-            f"/home-products/{uuid.uuid4()}/ratings",
+            f"/home-products/{_ABSENT_ID}/ratings",
         ],
     )
     def test_get_routes_are_absent(self, client, path):
@@ -172,7 +184,7 @@ class TestHomeProductsIsNotMounted:
             "/home-products/rate/sometoken",
             "/home-products/validate",
             "/home-products",
-            f"/home-products/{uuid.uuid4()}/whatsapp-click",
+            f"/home-products/{_ABSENT_ID}/whatsapp-click",
         ],
     )
     def test_post_routes_are_absent(self, client, path):

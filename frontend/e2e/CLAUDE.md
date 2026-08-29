@@ -31,6 +31,76 @@ Mirror this shape for new flows; keep timeouts explicit, not implicit.
     which is exactly what MEH-417 protects. Do not generalise it: mocking a
     flow spec reintroduces the MEH-417 regression. Currently applied in
     `e2e/visual/parity.spec.ts` (`producer detail`).
+  - **Second, narrow exception — intercepting a specific endpoint inside a
+    `flows/` spec (MEH-1968, ruling 14/08/2026, Sapir delegated: "Option A").**
+    Permitted **only** when all three conditions hold (AND, not OR):
+    1. The spec does not assert any backend **behaviour** — it exercises a
+       frontend state machine (which screen renders, what the UI does with a
+       fixed response), never "did the backend compute the right answer."
+    2. The mocked endpoint's contract is stable and documented — a Pydantic
+       response model, an OpenAPI entry, or an existing test pinning its shape.
+    3. The unmocked alternative burns a **shared resource** — e.g. the
+       `/auth/register` rate limiter on shared GitHub Actions runner IPs
+       across concurrent PRs.
+    Precedents this codifies rather than invents: `flows/28-register-success-state.spec.ts`
+    (mocks `POST /auth/register/producer`, `/auth/me`, `/categories` — the
+    question under test is which screen wins the render, not whether
+    registration itself succeeded) and `flows/29-register-journey-a.spec.ts`
+    (mocks `POST /auth/register`).
+  - **Distinguish a stub from a mock — do not conflate them.** A **stub** that
+    removes an *incidental* network call unrelated to what the spec asserts
+    (e.g. `flows/29`'s intercept of `POST /auth/check-password`, the
+    debounced strength-check `PasswordInput` fires on every keystroke past
+    12 characters) is not this exception and needs no justification against
+    the three conditions above — it isn't hiding an approved call, it's
+    preventing an incidental, timing-dependent one from flaking the test.
+    A **mock** that hides a call the spec's own subject depends on is what
+    conditions 1–3 gate. If removing the interception would change nothing
+    about what the spec is asserting, it's a stub; if it would remove the
+    thing under test, it's a mock and needs all three conditions stated in
+    the spec file.
+  - **Rejected: routing both merged specs to a separate, deploy-target-gated
+    suite instead.** `flows/22` already demonstrates where that leads — it
+    skips its localhost target and does not run in CI in practice. Widening
+    the no-mocks rule's exception is preferred over quietly losing coverage.
+
+## Cloudinary image delivery is stubbed suite-wide in `flows/` (MEH-1925)
+
+Every spec under `e2e/flows/` imports `test`/`expect` from
+`flows/_cloudinary-stub.ts` rather than from `@playwright/test`. That fixture
+intercepts Cloudinary image delivery and fulfils a 1×1 PNG. **`e2e/visual/**` is
+untouched and keeps real images** — a VRT baseline cannot be compared against a
+placeholder.
+
+**This is a STUB, and the clause above is what says so.** Per *"Distinguish a
+stub from a mock — do not conflate them"*: an interception is a stub when
+removing it *"would change nothing about what the spec is asserting"*, and needs
+"no justification against the three conditions above." No flow spec asserts on
+image bytes, `naturalWidth`/`naturalHeight`, `toHaveScreenshot`, or a rendered
+`src` — verified by grep across all 36 specs before the fixture was written. Image
+delivery is incidental to every one of them, so this never reaches the
+three-condition mock exception.
+
+**It intercepts two things, not one, and the second is the non-obvious half.**
+`next.config.js` lists `res.cloudinary.com` under `images.remotePatterns`, so
+`next/image` (which `ImageWithFallback.jsx` wraps, and which most producer and
+product imagery goes through) does **not** let the browser fetch Cloudinary
+directly: the browser requests `/_next/image?url=…` and the **Next.js server**
+fetches the origin image. That server-side fetch is invisible to `page.route()`.
+A `res.cloudinary.com`-only route therefore catches only CSS `background-image`
+and bare `<img>` cases and misses the bulk of the bandwidth. The fixture also
+routes `/_next/image`, parses its own `url` param, and stubs only when that
+param points at Cloudinary — `images.unsplash.com` falls through via
+`route.continue()`.
+
+**Why it exists:** Cloudinary was at 506% of plan (126/25 credits) on 181,681
+impressions in 30 days against near-zero real users, tracking CI activity
+on and off (0 on quiet days, ~19k on batch-sweep days). Free/Plus/Advanced do not
+bill overage — they disable the account, and it had already blocked once.
+
+**Adding a spec to `flows/`:** import from `./_cloudinary-stub`, not
+`@playwright/test`. A spec that imports directly still runs and still passes —
+it just silently opts out of the stub and bills real bandwidth.
 
 ## Authenticated specs — where that coverage actually runs (MEH-999)
 

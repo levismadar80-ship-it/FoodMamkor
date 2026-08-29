@@ -44,7 +44,8 @@ def _producer_user(db):
 
 
 def _register(**overrides):
-    base = dict(producer_name="חוות בדיקה", category_ids=[1])
+    # MEH-2015 chunk B: city is now required (no default) on this schema.
+    base = dict(producer_name="חוות בדיקה", city="תל אביב", category_ids=[1])
     base.update(overrides)
     return ProducerRegister(**base)
 

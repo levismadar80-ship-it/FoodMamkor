@@ -16,9 +16,12 @@ import Popover from "@/components/ui/Popover";
  * (verification_tier / verified_at / verification_doc_type — MEH-762):
  *   verified + license   → gold seal chip + verified_tooltip_license({date})
  *   verified + exemption → gold seal chip + verified_tooltip_exemption({date})
- *   verified + cosmetics → gold seal chip, NO tooltip (key not yet locked —
- *                          MEH-758 micro; flip to verified_tooltip_registration
- *                          once Sapir locks it)
+ *   verified + cosmetics → gold seal chip + verified_tooltip_cosmetics({date})
+ *                          (MEH-2216 — locked by Sapir 29/08. Before that the
+ *                          card seal opened nothing, so a cosmetics business
+ *                          carried a trust claim with no stated scope; after
+ *                          MEH-2213 made the seal the only licensing signal a
+ *                          reader sees, that silence was the whole gap.)
  *   declared             → NO chip on any surface (MEH-1170: the S12 "מוצהר"
  *                          chip contradicted ADR-022 "tier 2 = no badge"; the
  *                          declared_explainer moved to ProducerHeader as quiet
@@ -179,8 +182,18 @@ function getVerifiedTooltip(producer, t) {
       return t("verified_tooltip_license", { date });
     case "exemption":
       return t("verified_tooltip_exemption", { date });
+    case "cosmetics":
+      // MEH-2216. The copy names the scope in plain Hebrew rather than the
+      // registry's official term ("מרשם העוסקים בתמרוקים"), which is accurate
+      // and unreadable -- the MEH-1548 precedent. It mirrors its two siblings
+      // above exactly: <document> + הוגש ונבדק בתאריך + {date}, no promise.
+      // verified_tooltip_registration in he/en.json is a pre-existing orphan:
+      // never flip to it (that is what the removed comment said); deleting it
+      // is Sapir's copy call.
+      return t("verified_tooltip_cosmetics", { date });
     default:
-      // cosmetics — tooltip key not locked yet (MEH-758 micro): seal only.
+      // An unrecognised doc_type earns the seal but states no scope, which is
+      // the honest fallback: better silent than claiming a check we cannot name.
       return null;
   }
 }
@@ -215,7 +228,11 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
             ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
               // surface-card backing keeps the gold glyph legible there.
               "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 group-focus-visible:ring-2 group-focus-visible:ring-accent/40"
-            : "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
+            : // MEH-2032: bg-accent/10 on the cream page background computed 4.07:1
+              // (AA fail for 12px text) — same usage-level fix as the iconOnly
+              // branch above (MEH-2025/#2825): solid bg-surface-card gets accent
+              // to 5.19:1.
+              "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
         }
       >
         <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
@@ -282,8 +299,10 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           {tooltip}
         </Popover>
       ) : (
-        // cosmetics — seal only, no popover (MEH-758 micro); keep the
-        // card-Link tap guard the popover branch gets from ui/Popover.
+        // No tooltip -> no popover. Since MEH-2216 that is only an
+        // unrecognised doc_type: license, exemption and cosmetics all resolve
+        // to copy above. Keeps the card-Link tap guard the popover branch
+        // gets from ui/Popover.
         <span className="relative inline-block">
           {cloneElement(chip, {
             onClick: (e) => {

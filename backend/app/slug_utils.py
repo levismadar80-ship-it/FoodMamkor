@@ -71,6 +71,16 @@ def slugify(text: str) -> str:
     just Hebrew, and that a name with no word characters yields `""` and must
     not be stored as a slug. Read it there; this stays a pointer so the two
     cannot drift into two half-descriptions.
+
+    **One thing is repeated here rather than left to the pointer, because
+    getting it wrong edits this line:** the `֐-׿` range is **not** redundant
+    and must not be removed. 81 of the 112 codepoints in `U+0590-U+05FF` are
+    not `\\w` (ניקוד, maqaf `־`, geresh `׳`, gershayim `״`, …) and survive only
+    because it is here. This file writes the range as **literal characters**
+    while `admin.py` writes the same range as **escapes** (`\\u0590-\\u05FF`);
+    the two forms are identical to the regex engine, and the literal form is
+    the easier of the two to delete by eye while "tidying". MEH-2021 —
+    see `tests/test_slugify_charclass_equivalence.py`.
     """
     if not text:
         return ""

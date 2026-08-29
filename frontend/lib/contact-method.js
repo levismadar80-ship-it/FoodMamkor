@@ -8,6 +8,7 @@
  */
 
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
+import { instagramUrl } from "@/lib/social-links";
 
 export const CONTACT_METHODS = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -60,12 +61,12 @@ export function getPrimaryContactHref(producer) {
       if (!email) return null;
       return `mailto:${email}`;
     }
-    case "instagram": {
-      // MEH-296: strip leading "@" (mirrors the ContactSidebar tile).
-      const handle = (producer.instagram || "").trim().replace(/^@+/, "");
-      if (!handle) return null;
-      return `https://instagram.com/${handle}`;
-    }
+    case "instagram":
+      // MEH-296 stripped the leading "@" here; MEH-2174 moved that rule into
+      // lib/social-links.js so this surface, ContactCard and the outreach
+      // table cannot drift apart. Returns null when there is no handle,
+      // exactly as the inline version did.
+      return instagramUrl(producer.instagram);
     case "facebook": {
       const raw = (producer.facebook || "").trim();
       if (!raw) return null;
@@ -104,6 +105,26 @@ export function getPrimaryContactLabel(producer) {
     default:
       return "יצירת קשר";
   }
+}
+
+/**
+ * True when the business DECLARED WhatsApp as its primary channel (MEH-2154).
+ *
+ * Lives here, beside getPrimaryMethod / isPrimaryExternal, because it is a
+ * statement about the contact channel and this module is the single owner of
+ * that fact — a second copy in a component is the "two parallel mechanisms"
+ * smell (workflow.md § Smell #1).
+ *
+ * DO NOT reimplement as `producer.primary_contact_method === "whatsapp"`. That
+ * strict form answers a different question: `primary_contact_method` is
+ * `Column(String(20), default="whatsapp")` (backend models.py:71), a
+ * Python-side default, so a row that predates the column or was written around
+ * the ORM reads NULL — and NULL has always BEHAVED as WhatsApp everywhere,
+ * because every consumer goes through getPrimaryMethod's fallback above. The
+ * strict comparison would silently strip the WhatsApp chips from those rows.
+ */
+export function isWhatsAppPrimary(producer) {
+  return getPrimaryMethod(producer) === "whatsapp";
 }
 
 /** True when the primary CTA will open in a new tab (not wa.me/tel/mailto). */

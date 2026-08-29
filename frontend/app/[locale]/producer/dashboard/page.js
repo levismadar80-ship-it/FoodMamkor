@@ -14,8 +14,8 @@ import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
-import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
@@ -111,7 +111,7 @@ function StatusSupportModal({ onClose }) {
   const t = useTranslations("dashboard.producer.status.support");
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}
@@ -133,13 +133,13 @@ function StatusSupportModal({ onClose }) {
           </div>
         </a>
         <a
-          href="mailto:support@mehamakor.online"
+          href="mailto:contact@mehamakor.co.il"
           className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
+            <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
           </div>
         </a>
         <button
@@ -152,6 +152,51 @@ function StatusSupportModal({ onClose }) {
       </div>
     </div>
   );
+}
+
+// MEH-2199: the availability options, lifted out of the JSX so the roving tab
+// stop and each radio's own state read from ONE evaluation of the rule rather
+// than two. A second copy of "which option is active" is exactly the shape that
+// drifts (.claude/rules/workflow.md — Smell #1).
+const AVAILABILITY_OPTIONS = [
+  { value: "accepting_orders", color: "#22c55e" },
+  { value: "available_today",  color: "#2e6853" },
+  { value: "full_this_week",   color: "#f97316" },
+  { value: "on_vacation",      color: "#9ca3af" },
+];
+
+// MEH-2199: W3C APG Radio Group keyboard layer. The group declared
+// role="radiogroup" + role="radio" + aria-checked and carried no arrow keys, so
+// a keyboard user met a widget that announces itself as a radio group and then
+// behaves like four unrelated buttons.
+//
+// Arrow mapping: ArrowLeft = next, ArrowRight = previous — the house RTL
+// contract (Lightbox.jsx:58), which mirrors the HORIZONTAL axis for Hebrew
+// reading order. ArrowDown = next, ArrowUp = previous, unmirrored: the vertical
+// axis has no reading direction to follow, and APG lists both axes for this
+// pattern.
+const RADIO_ARROW_DELTA = { ArrowLeft: 1, ArrowDown: 1, ArrowRight: -1, ArrowUp: -1 };
+
+function handleAvailabilityKeyDown(e) {
+  // Only ENABLED radios participate. Pre-approval every radio is disabled
+  // (MEH-964 1D), so this list is empty, `from` is -1, and the group is inert
+  // with no separate branch to keep in sync with the disabled attribute.
+  const radios = Array.from(
+    e.currentTarget.querySelectorAll('[role="radio"]:not([disabled])'),
+  );
+  const from = radios.indexOf(e.target.closest?.('[role="radio"]'));
+  if (from === -1) return;
+  // Object.hasOwn, not `in` — see hooks/useTabsKeyboard.js for why this is
+  // defensive rather than a fix for a reachable bug.
+  if (!Object.hasOwn(RADIO_ARROW_DELTA, e.key)) return;
+  const to = (from + RADIO_ARROW_DELTA[e.key] + radios.length) % radios.length;
+  e.preventDefault();
+  radios[to].focus();
+  // .click() rather than a parallel activation path. Whatever clicking a radio
+  // means today is what arrowing onto it means — including vacation's
+  // reveal-then-confirm, which must NOT post (MEH-999). One authority for
+  // activation, so the mouse and keyboard paths cannot diverge later.
+  radios[to].click();
 }
 
 export default function ProducerDashboardPage() {
@@ -342,6 +387,29 @@ export default function ProducerDashboardPage() {
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
   const isApproved = producer.status === "approved";
 
+  // MEH-2199: one evaluation of the active-state rule, consumed by both the
+  // roving tab stop and each radio's aria-checked.
+  // MEH-999: while vacation is selected-but-not-yet-confirmed only the vacation
+  // radio reads active, so the group never lights up two.
+  // MEH-1092 F4: pre-approval the pills show NEUTRAL — a locked block must not
+  // read as a live status in the air — hence `&& isApproved`.
+  const savedAvailability = producer.availability_state || "accepting_orders";
+  const availabilityRadios = AVAILABILITY_OPTIONS.map((opt) => {
+    const isVacation = opt.value === "on_vacation";
+    const active = isVacation
+      ? vacationSelected || savedAvailability === "on_vacation"
+      : !vacationSelected && savedAvailability === opt.value;
+    return { ...opt, isVacation, showActive: active && isApproved };
+  });
+  // APG: the checked radio holds the group's single tab stop; when NOTHING is
+  // checked the FIRST radio holds it, so the group can never become unreachable
+  // by Tab (which is what a bare `showActive ? 0 : -1` would do if the server
+  // ever returned a state outside this list).
+  const availabilityTabStop = Math.max(
+    0,
+    availabilityRadios.findIndex((o) => o.showActive),
+  );
+
   // MEH-1134: state-aware card order. While the business is pending OR the
   // completeness heuristic still reports missing fields, the completeness
   // card is the owner's only actionable surface — it mounts directly below
@@ -398,8 +466,38 @@ export default function ProducerDashboardPage() {
           request-changes is pending — the specific "נשאר להשלים" banner above
           IS the message, and "awaiting approval" would contradict it (the ball
           is in the owner's court). Both otherwise stack on a pending producer. */}
+      {/* MEH-2100: a business in `draft` has NOT asked to be reviewed, so it
+          gets the completion banner instead of "הפרופיל שלך בסקירה". This is
+          the REPLACEMENT the ticket asks for — the pending banner below is
+          keyed on status === "pending" and therefore cannot co-render.
+          On success the local status flips to "pending" with no reload, so
+          the existing review banner takes over immediately. */}
+      {producer.status === "draft" && (
+        <DraftSubmitBanner
+          producer={profile}
+          onSubmitted={() =>
+            setData((prev) =>
+              prev
+                ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                : prev,
+            )
+          }
+          onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
+        />
+      )}
+
       {producer.status === "pending" && !profile?.requested_changes && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
+        // data-testid added with the MEH-2100 E2E spec that reads it — the
+        // draft→pending transition needs to assert WHICH banner won, and a
+        // Hebrew-text locator is the anti-pattern docs/E2E-LOCATORS.md names.
+        // Opportunistic conversion, per that file's migration policy.
+        <div
+          className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm"
+          role="status"
+          data-testid="status-pending-banner"
+        >
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
           {/* MEH-1347: informational only — the completeness card below owns
               the single "השלימו פרופיל" CTA (audit found two clashing CTAs
@@ -466,26 +564,6 @@ export default function ProducerDashboardPage() {
           >
             {t("status.inactive.support_cta")}
           </button>
-        </div>
-      )}
-
-      {producer.status === "pending_whatsapp" && (
-        <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
-          <p className="font-semibold text-primary mb-1">{t("status.pending_whatsapp.title")}</p>
-          <p className="text-fg-muted">
-            {t("status.pending_whatsapp.body")}
-          </p>
-          {/* MEH-745: the OTP card replaces the old dead /settings CTA — a
-              successful confirm flips status to pending without a reload. */}
-          <PhoneVerifyCard
-            onVerified={() =>
-              setData((prev) =>
-                prev
-                  ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                  : prev,
-              )
-            }
-          />
         </div>
       )}
 
@@ -583,31 +661,22 @@ export default function ProducerDashboardPage() {
           aria-labelledby="availability-heading"
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
           className="flex flex-wrap gap-2"
+          // MEH-2199: the arrow-key layer the role already promised. Inert while
+          // the radios are disabled — the handler only walks enabled ones.
+          onKeyDown={handleAvailabilityKeyDown}
         >
-          {[
-            { value: "accepting_orders", color: "#22c55e" },
-            { value: "available_today",  color: "#2e6853" },
-            { value: "full_this_week",   color: "#f97316" },
-            { value: "on_vacation",      color: "#9ca3af" },
-          ].map((opt) => {
-            const savedState = producer.availability_state || "accepting_orders";
-            const isVacation = opt.value === "on_vacation";
-            // MEH-999: while vacation is selected-but-not-yet-confirmed, only the
-            // vacation radio reads active so the group never lights up two.
-            const active = isVacation
-              ? vacationSelected || savedState === "on_vacation"
-              : !vacationSelected && savedState === opt.value;
-            // MEH-1092 F4: pre-approval the pills are already disabled, but the
-            // saved state still read as "live" (bg-primary active fill). Show the
-            // pills NEUTRAL (no active highlight, aria-checked=false) until the
-            // business is approved, so a locked block never reads as an active
-            // status in the air. Post-approval is unchanged.
-            const showActive = active && isApproved;
+          {availabilityRadios.map((opt, i) => {
+            const { isVacation, showActive } = opt;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
+                // MEH-2199: data-radio-value is what the QA harness and tests
+                // name a radio by; tabIndex is the APG roving tab stop, so Tab
+                // enters the group once instead of walking all four.
+                data-radio-value={opt.value}
+                tabIndex={i === availabilityTabStop ? 0 : -1}
                 aria-checked={showActive}
                 // MEH-964 1D: availability is disabled until the business is
                 // published (approved) — an unpublished listing has no public

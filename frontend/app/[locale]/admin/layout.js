@@ -121,6 +121,8 @@ export default function AdminLayout({ children }) {
   // on every /admin/* subpath. Cheap: the endpoint is fast.
   const [pendingModCount, setPendingModCount] = useState(null);
   const [pendingKashrutCount, setPendingKashrutCount] = useState(null);
+  // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
+  const [countsError, setCountsError] = useState(false);
 
   // MEH-1599: same 401/403 split as producer/dashboard/layout.js:53 — an
   // authenticated non-admin gets the in-app denied state below, NOT a bounce
@@ -144,8 +146,17 @@ export default function AdminLayout({ children }) {
       .then((r) => {
         setPendingModCount(r.data?.stats?.pending_moderation_count ?? 0);
         setPendingKashrutCount(r.data?.stats?.pending_kashrut_requests ?? 0);
+        setCountsError(false);
       })
-      .catch(() => { setPendingModCount(null); setPendingKashrutCount(null); });
+      .catch(() => {
+        // MEH-2096: nulling both counts hid the badge, which is the SAME render
+        // as a genuine zero — so a dead dashboard endpoint told the admin the
+        // approval queue was clear. The counts stay null (no fabricated number)
+        // and `countsError` carries the distinction to the badge instead.
+        setPendingModCount(null);
+        setPendingKashrutCount(null);
+        setCountsError(true);
+      });
   }, [user, pathname]);
 
   // 403 — rendered in place. The two admin pages that repeat this guard
@@ -183,10 +194,15 @@ export default function AdminLayout({ children }) {
   // (badge desktop-only), the MEH-1698 viewport-parity class in the other
   // direction. Same derivation idea as NAV_HREFS above: extend the shared
   // source, don't grow a parallel one. Returns the count to show, or null.
-  // A failed fetch leaves both counts null, so `> 0` is false and no badge
-  // renders — indistinguishable from a real 0, inherited from the desktop
-  // behaviour and unchanged here.
+  // MEH-2096: this used to end at "a failed fetch renders no badge —
+  // indistinguishable from a real 0". That indistinguishability was the bug:
+  // on the one queue with no automatic fallback, "no badge" reads as "nothing
+  // waiting". A failed fetch now returns the UNKNOWN sentinel so the badge can
+  // say "I don't know" instead of "zero". A real 0 still renders no badge.
+  const BADGE_HREFS = ["/admin", "/admin/kashrut"];
+  const COUNT_UNKNOWN = "!";
   const badgeCountFor = (href) => {
+    if (countsError && BADGE_HREFS.includes(href)) return COUNT_UNKNOWN;
     if (href === "/admin" && pendingModCount > 0) return pendingModCount;
     if (href === "/admin/kashrut" && pendingKashrutCount > 0) return pendingKashrutCount;
     return null;
@@ -229,8 +245,16 @@ export default function AdminLayout({ children }) {
                     {showBadge && (
                       <span
                         className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
-                        aria-label={t("common.items_pending_label", { count: badgeCount })}
-                        title={t("common.items_pending_title", { count: badgeCount })}
+                        aria-label={
+                          badgeCount === COUNT_UNKNOWN
+                            ? t("common.error_loading")
+                            : t("common.items_pending_label", { count: badgeCount })
+                        }
+                        title={
+                          badgeCount === COUNT_UNKNOWN
+                            ? t("common.error_loading")
+                            : t("common.items_pending_title", { count: badgeCount })
+                        }
                       >
                         {badgeCount}
                       </span>
@@ -271,8 +295,16 @@ export default function AdminLayout({ children }) {
                 {badgeCount !== null && (
                   <span
                     className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
-                    aria-label={t("common.items_pending_label", { count: badgeCount })}
-                    title={t("common.items_pending_title", { count: badgeCount })}
+                    aria-label={
+                      badgeCount === COUNT_UNKNOWN
+                        ? t("common.error_loading")
+                        : t("common.items_pending_label", { count: badgeCount })
+                    }
+                    title={
+                      badgeCount === COUNT_UNKNOWN
+                        ? t("common.error_loading")
+                        : t("common.items_pending_title", { count: badgeCount })
+                    }
                   >
                     {badgeCount}
                   </span>

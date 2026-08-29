@@ -103,11 +103,20 @@ describe("ReportInfoModal (MEH-1443)", () => {
     expect(showToast.error).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it("calls onClose when backdrop clicked", () => {
+  // MEH-2039: previously clicked `getByRole("dialog")` — which closed the modal
+  // only because role="dialog" sat on the full-screen OVERLAY, the very thing
+  // this ticket moves. The role is now on the inner panel, so the backdrop is
+  // addressed as the panel's parent. Pins both halves instead of one.
+  it("calls onClose when the backdrop is clicked, and NOT when the panel is", () => {
     const onClose = vi.fn();
     render(<ReportInfoModal open={true} onClose={onClose} producerSlug={SLUG} />);
-    fireEvent.click(screen.getByRole("dialog"));
-    expect(onClose).toHaveBeenCalled();
+    const panel = screen.getByRole("dialog");
+
+    fireEvent.click(panel);
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(panel.parentElement);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("calls onClose on Escape key — WCAG 2.1 §2.1.2", () => {
@@ -115,5 +124,54 @@ describe("ReportInfoModal (MEH-1443)", () => {
     render(<ReportInfoModal open={true} onClose={onClose} producerSlug={SLUG} />);
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+/**
+ * MEH-2039 — the dialog contract, guarded at the vitest gate.
+ *
+ * Added after the CI reviewer on PR #2847 noted the asymmetry: the sibling
+ * CategoryRequestModal got these three, while this file's identical trap and
+ * scroll-lock code was covered only by a hand-run QA script that no CI job
+ * executes. A guard nothing runs is not a guard.
+ *
+ * Discriminates by construction: jsdom implements no native Tab focus
+ * movement, so focus only moves if the component's own handler runs.
+ */
+describe("ReportInfoModal dialog contract (MEH-2039)", () => {
+  it("traps Tab inside the panel — wraps last→first and first→last", () => {
+    render(<ReportInfoModal open={true} onClose={vi.fn()} producerSlug={SLUG} />);
+    const panel = screen.getByRole("dialog");
+    const focusables = panel.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(first);
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("locks body scroll while open and restores it on unmount", () => {
+    document.body.style.overflow = "auto";
+    const { unmount } = render(
+      <ReportInfoModal open={true} onClose={vi.fn()} producerSlug={SLUG} />,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    unmount();
+    expect(document.body.style.overflow).toBe("auto");
+  });
+
+  it("puts role=dialog on the panel, not on the full-screen overlay", () => {
+    render(<ReportInfoModal open={true} onClose={vi.fn()} producerSlug={SLUG} />);
+    const panel = screen.getByRole("dialog");
+    expect(panel.parentElement.getAttribute("role")).toBe("presentation");
+    expect(panel.className).not.toContain("inset-0");
+    expect(panel).toHaveAttribute("aria-modal", "true");
   });
 });
