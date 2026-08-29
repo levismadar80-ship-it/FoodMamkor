@@ -187,13 +187,9 @@ function getVerifiedTooltip(producer, t) {
       // registry's official term ("מרשם העוסקים בתמרוקים"), which is accurate
       // and unreadable -- the MEH-1548 precedent. It mirrors its two siblings
       // above exactly: <document> + הוגש ונבדק בתאריך + {date}, no promise.
-      //
-      // NOTE for whoever reads this next: an ORPHAN key verified_tooltip_
-      // registration still sits in he.json/en.json, unreferenced by any code.
-      // It predates this and uses the regulatory wording. It is NOT the live
-      // key and must not be "flipped to" -- the stale comment that said so is
-      // what this ticket removed. Its deletion is a copy call, reported to
-      // Sapir rather than taken here.
+      // verified_tooltip_registration in he/en.json is a pre-existing orphan:
+      // never flip to it (that is what the removed comment said); deleting it
+      // is Sapir's copy call.
       return t("verified_tooltip_cosmetics", { date });
     default:
       // An unrecognised doc_type earns the seal but states no scope, which is
