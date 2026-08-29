@@ -276,9 +276,21 @@ export default function AboutPage() {
                   })}
                   alt={tAbout("img.story_alt")}
                   fill
-                  sizes="(min-width: 768px) 768px, 100vw"
+                  // 672, not 768: the container is max-w-3xl (768) minus
+                  // md:px-12 on both sides (96), so 768 fetches a ~14% wider
+                  // source than any pixel that gets painted. Measured, not
+                  // derived — getBoundingClientRect on this box reports
+                  // w=672.0 at 1440.
+                  sizes="(min-width: 768px) 672px, 100vw"
                   className="object-cover"
-                  priority={false}
+                  // priority, and the side-bleed image it replaces was
+                  // correctly NOT priority. Moving the photograph up to the
+                  // lede moved it above the fold, which makes it the LCP
+                  // candidate, and lazy-loading the LCP element delays the
+                  // paint it defines. Measured in the self-QA run rather than
+                  // eyeballed: the lede's top edge is 319.5px at 375x812 and
+                  // 382.7px at 1440x900 — inside the initial viewport at both.
+                  priority
                   onError={() => setImgFailed(true)}
                 />
               )}
