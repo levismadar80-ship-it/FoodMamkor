@@ -36,9 +36,6 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
-// MEH-2193: the "how we choose" fact block + its data-gated live counter.
-// Own file because it owns fetch state — see the header comment there.
-import HowWeChoose from "./HowWeChoose";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -341,27 +338,53 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== MEH-2193 — "איך אנחנו בוחרות" + the business strip ========
-          Placed between the story and the pull-quote: the differentiator
-          (license-only · manual approval · zero commissions) was scattered
-          across Benefits/Values near the bottom, where a reader who leaves at
-          section 4 never reaches it. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <HowWeChoose />
-      </FadeInSection>
+      {/* Business line — the early owner-facing exit. Until now the only one
+          was a demoted link inside Close, at the very bottom.
 
-      {/* Business strip — the early owner-facing exit. Until now the only one
-          was a demoted link inside Close, at the very bottom. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-7 md:py-9 scroll-mt-24">
+          MEH-2211: it was a full-width `bg-background-alt` band. The band was
+          one of the five competing visual languages Sapir's 29/08 review found
+          stacked in this seam, and it was the loudest: a tonal full-bleed
+          surface reads as a section of its own, so a one-line aside announced
+          itself as a chapter. It is now an inline block at the text column's
+          width, separated by a hairline rule instead of a tone change — the
+          lead is muted, only the link is primary, so the seam carries one
+          accent rather than a slab. `border-border` is the same hairline the
+          comparison spine uses; no new token. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <LocaleLink
-            href="/about/for-businesses"
-            data-testid="about-biz-strip"
-            className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            {tAbout("biz_strip")}
-            <ArrowLeft size={15} aria-hidden="true" />
-          </LocaleLink>
+          <div className="border-t border-border pt-6">
+            <p
+              id="about-biz-lead"
+              className="font-body-md text-[15px] text-fg-muted leading-snug"
+            >
+              {tAbout("biz_strip_lead")}
+            </p>
+            {/* aria-labelledby, and it is load-bearing rather than belt-and-braces.
+                The copy used to be ONE string inside the anchor, so the link's
+                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing.
+                Splitting the lead out into a sibling <p> for the visual design
+                silently cut that name down to «כך זה עובד אצלנו», which in a
+                screen reader's link list reads "here's how it works" with nothing
+                saying who it is for. WCAG 2.4.4 (Link Purpose in Context, level A)
+                counts context from the SAME sentence, paragraph, list item or
+                cell — a preceding sibling paragraph is not on that list, and
+                IS 5568 applies to this page.
+
+                Pointing at both ids rebuilds the exact pre-split name from the
+                two elements that render it, so the visual design change costs
+                the screen-reader user nothing. Measured on the running page:
+                getByRole("link", {name: "בעלת עסק? כך זה עובד אצלנו"}) returned 0
+                before this and 1 after, with a control query passing in both. */}
+            <LocaleLink
+              href="/about/for-businesses"
+              data-testid="about-biz-strip"
+              aria-labelledby="about-biz-lead about-biz-cta"
+              className="mt-1.5 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <span id="about-biz-cta">{tAbout("biz_strip")}</span>
+              <ArrowLeft size={15} aria-hidden="true" />
+            </LocaleLink>
+          </div>
         </div>
       </FadeInSection>
 
