@@ -33,15 +33,21 @@ import { test, expect, type Page, type Locator } from "@playwright/test";
  * reach (same constraint parity.spec.ts:302-307 documents for /[slug]).
  */
 
-// Sapir's reported case: badge priority is verified > license > … > kosher,
-// so visible = verified + license and hidden = kosher → a "+1" disclosing
-// "כשר", beside a tier-4 TrustBadge ("מובילת קהילה").
+// Sapir's reported case: badge priority is verified > recommended > … > kosher,
+// so visible = verified + recommended and hidden = kosher → a "+1" disclosing
+// "כשר", beside a tier-4 TrustBadge ("מובילת קהילה"). (MEH-2213 retired the
+// "license" badge that used to occupy the second visible slot here; the shape
+// this spec measures — two visible, one disclosed — is unchanged.)
 const SAPIR_CASE = {
   id: 1,
   name: "מאפיית לחם וזמן",
   city: "תל אביב",
   verification_tier: "verified",
-  has_producer_license: true,
+  // MEH-2213: the license badge is gone, so the licence number no longer
+  // contributes a badge. is_recommended keeps this fixture at THREE earned
+  // badges (verified > recommended > kosher) — the +N overflow this spec
+  // exists to measure needs a hidden badge to disclose.
+  is_recommended: true,
   kashrut_verified_at: "2026-01-01T00:00:00Z",
   trust_tier: 4,
   avg_rating: 4.8,
@@ -235,7 +241,7 @@ test.describe("MEH-1592 +N popover — one-at-a-time + tap guard", () => {
     await expect(chip).toBeVisible();
     await chip.click();
 
-    // Hidden badge for SAPIR_CASE (visible = verified + license) is kosher.
+    // Hidden badge for SAPIR_CASE (visible = verified + recommended) is kosher.
     await expect(page.locator('[data-testid="badge-overflow-popover"]')).toContainText("כשר");
     // The card Link must not have fired.
     await expect(page).toHaveURL(new RegExp("/search"));
