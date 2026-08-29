@@ -37,10 +37,57 @@ function daysUntil(dateStr) {
  */
 function CertModal({ src, expiryText, onClose, t }) {
   const closeRef = useRef(null);
+  // MEH-2039: the trap scopes to the panel, not the fixed inset-0 overlay.
+  const panelRef = useRef(null);
+  // MEH-2129: initial focus is MOUNT-ONLY, and that is why it is its own
+  // effect. Both call sites (:220, :277 below) pass `onClose` as an inline
+  // arrow, so its identity changes on every parent render. Sharing the
+  // `[onClose]` effect below meant every re-render tore the effect down and
+  // rebuilt it — firing `.focus()` again and yanking focus back to the close
+  // button out from under whoever had tabbed into the modal. An empty
+  // dependency array is the fix: the modal is mounted only while it is open
+  // (`{openCert && <CertModal …/>}`), so "on mount" IS "on open".
+  //
+  // MEASURED, not assumed: changing `openCert` from one code to another
+  // WITHOUT closing first re-renders this component in place — same DOM node,
+  // same close button, no remount — so the mount-only effect does not re-focus
+  // on that path, where the old `[onClose]` effect did. That path is not
+  // reachable: the overlay is `fixed inset-0 z-[9000]`, so the triggers behind
+  // it cannot be clicked, and the Tab trap below keeps keyboard focus inside
+  // the panel. The reachable switch is close-then-open, which unmounts and
+  // remounts, and re-focuses exactly as before.
   useEffect(() => {
     closeRef.current?.focus();
+    // Deliberately empty: this must run once per open, never per render.
+    // (No disable directive needed — `closeRef` is a ref, so
+    // react-hooks/exhaustive-deps has nothing to require here.)
+  }, []);
+
+  // MEH-2039: Tab trap ONLY. The body scroll lock was already here and is
+  // deliberately left untouched. This effect keeps `[onClose]` — re-running it
+  // is harmless (it only re-binds a listener and re-reads the overflow value,
+  // which the cleanup has already restored), and `onClose` genuinely must be
+  // current for Escape to close the right modal.
+  // REUSES: LoginPromptModal.jsx:42-77 for the trap half.
+  useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+
+      const focusables = panelRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -62,7 +109,7 @@ function CertModal({ src, expiryText, onClose, t }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-surface-floating rounded-lg border border-border w-full max-w-md p-4 relative" dir="rtl">
+      <div ref={panelRef} className="bg-surface-floating rounded-lg border border-border w-full max-w-md p-4 relative" dir="rtl">
         <button
           ref={closeRef}
           type="button"

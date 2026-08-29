@@ -10,7 +10,40 @@ import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
+
+/**
+ * MEH-1703 chunk 2 — ORDER stays here, identity comes from the registry.
+ *
+ * This is the chunk 0 finding made concrete: the Header renders
+ * home → map → experiences → about while the BottomNav renders
+ * home → map → about, so no single declaration order can describe both.
+ * Deriving order from the registry would itself be a visual change. The
+ * registry supplies each item's `href` and its per-surface `labelKey`; these
+ * two arrays supply the sequence, and stay shell-local by design.
+ *
+ * An id listed here that the registry does not declare for this surface is
+ * simply dropped — but it cannot go unnoticed, because
+ * __tests__/NavRegistryParity.test.jsx compares the rendered link set against
+ * the registry for every auth state.
+ */
+const HEADER_NAV_ORDER = ["home", "map", "experiences", "about"];
+const HEADER_MENU_ORDER = [
+  "producerDashboard",
+  "producerPublicPage",
+  "favorites",
+  "settings",
+  "admin",
+];
+
+/** Order a surface's registry entries by an explicit shell-local sequence. */
+function orderedForSurface(surface, state, order) {
+  const byId = new Map(
+    itemsForSurface(surface, state).map((entry) => [entry.item.id, entry]),
+  );
+  return order.map((id) => byId.get(id)).filter(Boolean);
+}
 
 /**
  * Header — MEH-643 (S3 chunk 4) floating-pill navbar. Global chrome,
@@ -175,13 +208,21 @@ export default function Header() {
   // only once /experiences has real supply, and is absent (not disabled, not
   // greyed) below the threshold. Mirrors the existing items exactly; no
   // redesign, no count badge.
+  // MEH-1703 chunk 2: the list is now DERIVED from lib/nav-registry rather than
+  // written out here. Same four items, same order, same keys — `nav.explore`
+  // still comes from the registry's `header` surface and `nav.discover` stays
+  // the BottomNav's, which is exactly why the registry keeps a separate record
+  // per surface instead of one canonical labelKey.
   const showExperiences = useExperiencesNavGate();
-  const NAV_ITEMS = [
-    { href: "/", label: t("nav.explore") },
-    { href: "/map", label: t("nav.map") },
-    ...(showExperiences ? [{ href: "/experiences", label: t("nav.experiences") }] : []),
-    { href: "/about", label: t("nav.about") },
-  ];
+  const NAV_ITEMS = orderedForSurface(
+    "header",
+    { signedIn: !!user, role: user?.role ?? null },
+    HEADER_NAV_ORDER,
+  )
+    // The data gate stays here: the registry records THAT experiences is gated
+    // on supply, not what the current supply is.
+    .filter(({ item }) => item.dataGate !== "experiences-supply" || showExperiences)
+    .map(({ item, surface }) => ({ href: item.href, label: t(surface.labelKey) }));
 
   const isHomepage = pathname === "/";
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
@@ -550,12 +591,20 @@ function RegisterAccount({ label }) {
  * logged-in state). Dropdown: profile / settings / dashboard (producer) /
  * admin (admin) / logout.
  */
+// MEH-2199: APG Menu Button keyboard layer. Until this ticket the ONLY keydown
+// handler in this file was the "/" search shortcut, while the trigger declared
+// aria-haspopup="menu" and the panel declared role="menu" — a widget announcing
+// itself as a menu button and behaving like a div full of links.
+//
+// ArrowDown/ArrowUp, not ArrowLeft/ArrowRight: this menu is VERTICAL, and the
+// house RTL contract mirrors the horizontal axis only (Lightbox.jsx:58). Up and
+// down have no reading direction to follow.
+const MENU_ARROW_DELTA = { ArrowDown: 1, ArrowUp: -1 };
+
 function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
   const hasAvatar = !!user.avatar_url;
-  const isProducer = user.role === "producer";
-  const isAdmin = user.role === "admin";
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -566,24 +615,120 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   // profile row is dropped entirely — their menu is settings → logout.
   // Settings drops the ?tab param to land on the same /settings as the
   // mobile AccountSheet.
-  const items = [
-    ...(isProducer
-      ? [
-          { href: "/producer/dashboard", label: t("account.menu.dashboard") },
-          ...(user.producer_id
-            ? [{ href: `/producer/${user.producer_id}`, label: t("account.menu.profile") }]
-            : []),
-        ]
-      : []),
-    // MEH-1310: favorites row for EVERY logged-in role — desktop parity with
-    // the mobile AccountSheet, which already links /favorites via the SAME
-    // nav.favorites key (AccountSheet.jsx:148-151). Without it /favorites was
-    // orphaned on desktop (reachable only by typing the URL). No icon — the
-    // existing dropdown rows are text-only, so this matches their anatomy.
-    { href: "/favorites", label: t("nav.favorites") },
-    { href: "/settings", label: t("account.menu.settings") },
-    ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
-  ];
+  //
+  // MEH-1703 chunk 2: the role gating that used to be spelled out here as
+  // `isProducer` / `isAdmin` ternaries now lives on the registry records as
+  // `audience`, and `itemsForSurface` applies it. Both local booleans were
+  // removed because those ternaries were their only readers. The producer-id
+  // guard stays here — the registry records THAT the row needs a linked id
+  // (`dataGate`), not whether this particular user has one.
+  const items = orderedForSurface(
+    "headerMenu",
+    { signedIn: true, role: user.role },
+    HEADER_MENU_ORDER,
+  )
+    .filter(
+      ({ item }) =>
+        item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
+    )
+    .map(({ item, surface }) => ({
+      href: item.href.replace(":producerId", user.producer_id ?? ""),
+      label: t(surface.labelKey),
+    }));
+
+  // MEH-1310 (why the favorites row exists at all, preserved from the list this
+  // replaced): desktop parity with the mobile AccountSheet, which links
+  // /favorites via the SAME nav.favorites key. Without it /favorites was
+  // orphaned on desktop, reachable only by typing the URL — the first of the
+  // three incidents that motivated MEH-1703. It carries no icon because the
+  // dropdown rows are text-only; that stays shell-local, in the JSX below.
+
+  // MEH-2199: the roving tab stop. Reset to the first item on every open, so a
+  // reopened menu always starts at the top rather than wherever it was left.
+  const [activeItem, setActiveItem] = useState(0);
+  const triggerRef = useRef(null);
+  const menuListRef = useRef(null);
+  // Which end to land on when the menu opens by keyboard. Null when it was
+  // opened by pointer, where APG says focus stays put.
+  const openIntentRef = useRef(null);
+
+  const menuItems = () =>
+    Array.from(menuListRef.current?.querySelectorAll('[role="menuitem"]') ?? []);
+
+  const focusItem = (i) => {
+    const els = menuItems();
+    if (!els.length) return;
+    const clamped = (i + els.length) % els.length;
+    els[clamped].focus();
+    setActiveItem(clamped);
+  };
+
+  // The panel only exists after the open render, so the landing focus has to
+  // wait for it. Keyed on `open` rather than done inline in the handler.
+  useEffect(() => {
+    if (!open) return;
+    setActiveItem(0);
+    const intent = openIntentRef.current;
+    openIntentRef.current = null;
+    if (!intent) return;
+    const els = menuItems();
+    if (!els.length) return;
+    const i = intent === "last" ? els.length - 1 : 0;
+    els[i].focus();
+    setActiveItem(i);
+  }, [open]);
+
+  const onTriggerKeyDown = (e) => {
+    // Escape must work from the TRIGGER too, not only from inside the panel.
+    // Opening by click leaves focus on the trigger, so the panel's handler never
+    // sees the key and the menu would have been un-dismissable by keyboard from
+    // the one state a mouse user lands in. Found in adversarial review, not by
+    // a test — the test came after.
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (!Object.hasOwn(MENU_ARROW_DELTA, e.key)) return;
+    e.preventDefault();
+    const intent = e.key === "ArrowUp" ? "last" : "first";
+    if (open) {
+      // Already open and focus is still on the trigger — move straight in
+      // rather than waiting for an effect that will not re-run.
+      focusItem(intent === "last" ? -1 : 0);
+      return;
+    }
+    openIntentRef.current = intent;
+    setOpen(true);
+  };
+
+  const onMenuKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      // Escape is a DISMISSAL, never an action — and unlike a modal it is the
+      // only close path that returns focus. Closing by clicking outside must
+      // not yank focus back: the user is already on their way somewhere else.
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (e.key === "Tab") {
+      // Tab leaves the menu, so the menu should not still be open behind it.
+      // Focus is deliberately left alone — the browser is already moving it.
+      setOpen(false);
+      return;
+    }
+    const els = menuItems();
+    const from = els.indexOf(e.target.closest?.('[role="menuitem"]'));
+    if (from === -1) return;
+    let to;
+    if (Object.hasOwn(MENU_ARROW_DELTA, e.key)) to = from + MENU_ARROW_DELTA[e.key];
+    else if (e.key === "Home") to = 0;
+    else if (e.key === "End") to = els.length - 1;
+    else return;
+    e.preventDefault();
+    focusItem(to);
+  };
 
   return (
     // MEH-789: desktop-only — the bottom-pill account tab + AccountSheet own
@@ -592,7 +737,9 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
     <div ref={menuRef} className="relative hidden md:block">
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={onTriggerKeyDown}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("account.menu.aria", { name: user.name })}
@@ -611,13 +758,18 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
       {open && (
         <div
           role="menu"
+          ref={menuListRef}
+          onKeyDown={onMenuKeyDown}
           className="absolute top-11 bg-surface-card border border-border rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
-          {items.map((item) => (
+          {items.map((item, i) => (
             <Link
               key={item.label}
               role="menuitem"
+              // MEH-2199: roving tab stop — exactly one item is in the tab
+              // order, and it follows arrow focus.
+              tabIndex={i === activeItem ? 0 : -1}
               href={item.href}
               onClick={() => setOpen(false)}
               className="block px-4 py-2 text-sm text-text hover:bg-background transition-colors duration-fast ease-quart"
@@ -629,6 +781,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           <button
             type="button"
             role="menuitem"
+            tabIndex={items.length === activeItem ? 0 : -1}
             onClick={() => { setOpen(false); logout(); }}
             className="w-full text-start px-4 py-2 text-sm text-error hover:bg-background transition-colors duration-fast ease-quart"
           >

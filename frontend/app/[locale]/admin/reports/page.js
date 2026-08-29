@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAdminAction } from "@/lib/use-admin-action";
+import AdminLoadError from "@/components/admin/AdminLoadError";
 
 export default function AdminReportsPage() {
   const t = useTranslations("admin");
@@ -14,11 +15,19 @@ export default function AdminReportsPage() {
   // MEH-1266: dialog state replaces the in-memory "ignore" and the native
   // window.prompt. dismissTarget = a producer group.
   const [dismissTarget, setDismissTarget] = useState(null);
+  // MEH-2096: setReports([]) on failure rendered "no reports" — a moderation
+  // queue that looks handled when it is simply unreadable.
+  const [loadError, setLoadError] = useState(false);
 
   // MEH-1266: reload from the server so closed reports actually disappear
   // (the endpoint returns open reports only) — no more optimistic-only removal.
-  const loadReports = () =>
-    api.get("/admin/reports").then((r) => setReports(r.data)).catch(() => setReports([]));
+  const loadReports = () => {
+    setLoadError(false);
+    return api
+      .get("/admin/reports")
+      .then((r) => { setReports(r.data); setLoadError(false); })
+      .catch(() => setLoadError(true));
+  };
 
   // MEH-1406: the AI-flagged + auto-hidden home-product tabs were removed with
   // the home-products feature (brand LOCK). Only the producer-reports queue
@@ -61,7 +70,9 @@ export default function AdminReportsPage() {
       {/* Producer reports */}
       <section>
         <h2 className="font-semibold text-lg mb-3">{t("reports.section_open")}</h2>
-        {reports.length === 0 ? (
+        {loadError ? (
+          <AdminLoadError onRetry={loadReports} testId="admin-reports-load-error" />
+        ) : reports.length === 0 ? (
           <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-5">
             {t("reports.no_reports")}
           </p>
@@ -128,7 +139,7 @@ export default function AdminReportsPage() {
 
       {/* MEH-1266: dismiss-all confirm dialog (content/page.js precedent) */}
       {dismissTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
           <div
             role="dialog"
             aria-modal="true"

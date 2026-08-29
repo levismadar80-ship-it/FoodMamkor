@@ -572,6 +572,13 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           <span className="text-error" aria-hidden="true">
             *
           </span>
+          {/* MEH-2015 chunk B: the asterisk above is aria-hidden and this is a
+              button group (no native `required` to announce), so screen
+              readers heard nothing marking it required. sr-only text picked up
+              by aria-labelledby below carries it instead of `aria-required` on
+              role="group" (invalid target per axe-core's aria-allowed-attr —
+              that attribute is radiogroup-only). */}
+          <span className="sr-only">{t("required_sr")}</span>
         </span>
         <div
           className="flex flex-wrap gap-2"

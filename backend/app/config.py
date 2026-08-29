@@ -73,12 +73,33 @@ class Settings(BaseSettings):
     whatsapp_app_secret: str = ""
     whatsapp_verify_token: str = ""
 
+    # MEH-2134 — invite link to the "מהמקור · עדכונים לבתי עסק" WhatsApp
+    # community, offered in the producer-approval email only.
+    #
+    # DO NOT hardcode the real URL here or anywhere else in the tree — the
+    # repo is public since June 2026, and an invite link in a tracked file is
+    # a link anyone can use to join without ever being approved as a
+    # business. Set via WHATSAPP_COMMUNITY_INVITE_URL in Railway.
+    #
+    # The empty default is the fail-safe, not a placeholder: an unset value
+    # drops the whole community block from the email (see
+    # `_producer_approved_body` in routers/admin.py), so this ships safely
+    # before the link exists.
+    whatsapp_community_invite_url: str = ""
+
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
     # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
     resend_api_key: str = ""
     # MEH-453: extracted from email.py module constant. Override per env via
-    # EMAIL_FROM_ADDRESS in Railway. Phase 2 will flip the default to .co.il.
-    email_from_address: str = "מהמקור <noreply@mehamakor.online>"
+    # EMAIL_FROM_ADDRESS in Railway.
+    #
+    # MEH-2123: the Phase-2 flip to .co.il is DONE — this line read
+    # `noreply@mehamakor.online` until 19/08. What made it safe to do rather
+    # than a deploy-day surprise is that it changes nothing where it matters:
+    # Railway sets EMAIL_FROM_ADDRESS in every deployed environment (confirmed
+    # by Sapir 18/08), so this default is only ever reached at a boot with no
+    # env — local dev and CI. The canonical domain is mehamakor.co.il.
+    email_from_address: str = "מהמקור <noreply@mehamakor.co.il>"
     # Admin account — used as the notification recipient AND as the initial
     # admin user seeded on first boot (see seed_data.py).
     # Leave admin_password empty in local dev to skip the admin seed.
@@ -112,7 +133,12 @@ class Settings(BaseSettings):
     # Leave empty to disable push (fail-open — alerts still send via WhatsApp if opted in).
     vapid_private_key: str = ""
     vapid_public_key: str = ""
-    vapid_subject: str = "mailto:admin@mehamakor.online"
+    # MEH-2123: .co.il, and `contact@` rather than `admin@` — the latter was
+    # never a real mailbox. VAPID's subject is the contact a push service uses
+    # to reach the sender about a problem with its pushes, so it has to be an
+    # address someone actually reads; contact@mehamakor.co.il is the one the
+    # site already publishes.
+    vapid_subject: str = "mailto:contact@mehamakor.co.il"
 
     # MEH-509 PR2b: after-hours watchdog feature flag. Default False so the
     # 5-min APScheduler job does not run until PR2c (the Meta webhook

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 // Complements 05-map-navigation (which asserts the map *centers* on Israel).
 // This spec asserts producer *markers* actually render on the canvas.

@@ -20,7 +20,7 @@
  *
  *   usage: node qa-meh999-walkthrough3.mjs [baseUrl] [outDir] <ownerPassword> <auditPassword> [chromePath]
  *   ownerPassword = demo-owner@example.com (approved business, seeded reviews)
- *   auditPassword = ux-audit-meh999@example.com (unapproved: pending_whatsapp)
+ *   auditPassword = ux-audit-meh999@example.com (unapproved business)
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";

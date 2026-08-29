@@ -108,6 +108,28 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
 
+  // ── MEH-1677 ──────────────────────────────────────────────────────────────
+  it("is hidden when the business opted out (coverage_cta_enabled false)", async () => {
+    setup({ producer: { ...PRODUCER, coverage_cta_enabled: false } });
+    commitCity("נתניה");
+    // The negative verdict still renders — only the CTA is withheld, which is
+    // what makes this an opt-out rather than a broken checker.
+    await waitFor(() =>
+      expect(screen.getByText("לצערנו לא מגיעים לנתניה כרגע")).toBeTruthy(),
+    );
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
+  });
+
+  it("still shows when the field is ABSENT from the payload", async () => {
+    // The discriminating half of the pair above. An implementation that read
+    // the flag as falsy (`!producer.coverage_cta_enabled`) would pass that test
+    // and silently delete the CTA for every older cached payload. PRODUCER
+    // carries no such key.
+    setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
+  });
+
   it("is absent for a nationwide YES", async () => {
     setup({ nationwide: true, excluded: ["אילת"], areas: [] });
     commitCity("נתניה");
@@ -139,12 +161,17 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
     expect(text.endsWith("הגעתי דרך מהמקור")).toBe(true);
   });
 
-  it("pings the existing whatsapp-click counter on click", async () => {
+  // MEH-1677 CHANGED this pre-existing assertion, deliberately. It read
+  // `toHaveBeenCalledWith(7)` — the id alone — which pinned the exact
+  // behaviour this ticket removes: the city was discarded at click time. The
+  // new form is strictly stronger, not weaker: it still requires the beacon to
+  // fire, and additionally requires the city to travel with it.
+  it("pings the whatsapp-click counter on click, WITH the city", async () => {
     setup();
     commitCity("נתניה");
     await waitFor(() => expect(screen.getByTestId("coverage-request-link")).toBeTruthy());
     screen.getByTestId("coverage-request-link").click();
-    expect(ping).toHaveBeenCalledWith(7);
+    expect(ping).toHaveBeenCalledWith(7, "נתניה");
   });
 
   it("is absent when the producer has no WhatsApp channel", async () => {

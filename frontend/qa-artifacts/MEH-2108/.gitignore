@@ -1,0 +1,21 @@
+# Raw harness output. qa-meh2108-citysearch-occlusion.mjs writes PNG, and
+# scripts/compress-qa-screenshots.mjs converts each one to the .webp committed
+# beside it — so every PNG here is a duplicate of tracked evidence, regenerated
+# on every re-run of the harness.
+#
+# They are ignored rather than deleted because the harness recreates them each
+# run, and committing them is not merely untidy: the eight PNGs from one full
+# before/after sweep total ~3.09 MB against the 2 MB "qa-artifacts size cap"
+# required job (MEH-1156), so staging them reds a required gate.
+#
+# Scoped to this ticket's folder on purpose — two PNGs are tracked under
+# qa-artifacts/ elsewhere in the repo, and silently changing that convention
+# repo-wide is not this ticket's call.
+*.png
+
+# One-off diagnostics kept out of the evidence set: diag-* answered "why did the
+# mobile map not mount" (it did — the probe was taking the hidden desktop shell),
+# probe-* came from temporarily setting SAMPLES=10 to prove the constant controls
+# the sample count. Neither is evidence for a finding.
+diag-*
+probe-*

@@ -106,10 +106,13 @@ else:
 PYEOF
 
 # 4d — status fixtures for the MEH-1171 admin-status-labels suite (MEH-294):
-#      the admin table must show all 5 status chips. The default seed producers
+#      the admin table must show every status chip. The default seed producers
 #      are all 'approved' AND are needed approved by §4c (CP12 detail pages only
 #      serve approved producers) — so create SEPARATE minimal producers for the
-#      4 non-approved statuses ('approved' is already covered by the seed).
+#      non-approved statuses ('approved' is already covered by the seed).
+#      A 'pending_whatsapp' fixture sat here until that status was removed in
+#      MEH-2124; 'draft' is deliberately NOT seeded either — it has its own
+#      dashboard-side coverage and is not an admin-queue chip.
 "$PY" - << 'PYEOF'
 import sys
 sys.path.insert(0, "backend")
@@ -118,7 +121,6 @@ from app.models.models import Producer
 
 db = SessionLocal()
 FIXTURES = [
-    ("status-fixture-pending-whatsapp", "ממתין וואטסאפ", "pending_whatsapp"),
     ("status-fixture-pending", "ממתין אדמין", "pending"),
     ("status-fixture-rejected", "נדחה בדיקה", "rejected"),
     ("status-fixture-inactive", "לא פעיל בדיקה", "inactive"),

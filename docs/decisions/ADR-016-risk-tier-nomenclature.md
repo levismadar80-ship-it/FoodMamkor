@@ -92,3 +92,37 @@ That trade is accepted — a false positive costs one text edit; a false negativ
 could let gated copy reach production. **To write about this gate in any PR
 title/body or comment, call it the "merge-block marker" gate — never spell out
 the literal marker phrase, or your own PR self-blocks.**
+
+## Amendment (2026-08-14, MEH-1511) — the QA *evidence* gate, which is not the merge gate
+
+Workflow rule 23 now carries an amendment letting an **automated evidence
+bundle** substitute for the human mobile-QA pass on UI work. This ADR is
+recorded alongside it so the two cannot drift apart.
+
+**The distinction that keeps them consistent — they govern different gates:**
+
+| | Who supplies it | Governed by |
+|---|---|---|
+| **QA evidence** — has this been looked at? | CC (build · vitest · pytest · `/adversarial-review-*` · 375/1440 screenshots · VRT · DoD skill) | rule 23 amendment |
+| **Merge authority** — may this land? | tier authority, this ADR | GREEN/YELLOW/RED + the amendments above |
+
+Sapir's ruling of 08/08/2026, restated 10/08 — *"רק קלוד קוד בודק, אני לא עושה
+QA"* — moves the **first** row to CC for all UI, central components included.
+It does **not** touch the second. A HIGH-RISK or central-component change still
+lands as a PR under this ADR's tier authority; what changed is that Sapir
+reviews an evidence bundle rather than a phone.
+
+**Nothing above is weakened.** The merge-block marker still voids CC auto-merge
+authority regardless of tier and is still removed only by Sapir (rule 30). The
+batch-prompt override still wins over tier authority. A frontend PR that fails
+any line of rule 23's substitution checklist falls back to the original
+human-preview gate, which is preserved verbatim in the rule.
+
+**One standing condition, because the substitution is a trade.** It swaps
+prevention (a human eye before merge) for detect-and-revert (post-merge Vercel +
+Sentry health, `.claude/commands/batch.md` §9). If either MCP is disconnected the
+amendment does not apply and the original gate stands — so the tier authority in
+this ADR is never the thing carrying the QA question on its own.
+
+_Source: MEH-1511. Carve-out (e) — Safari / real-device — from MEH-1788 /
+MEH-1783 / MEH-1769; see rule 23 for the full carve-out list._

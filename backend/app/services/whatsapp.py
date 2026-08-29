@@ -6,10 +6,18 @@ functions — `send_text` for free-form messages inside the 24h customer-
 service window, `send_template` for pre-approved business-initiated
 templates.
 
-Both fail-open: missing config → return False (no exception); HTTP error →
-log warning, return False. Callers therefore never need a try/except
-around these functions, mirroring the contract of the Twilio call sites
-they replace.
+Both fail-open: missing config → return False (no exception); any send
+failure → log at ERROR, return False. Callers therefore never need a
+try/except around these functions, mirroring the contract of the Twilio
+call sites they replace.
+
+MEH-2122: that level is ERROR rather than WARNING because fail-open makes
+the failure invisible everywhere else — `producer_me.py` discards the
+bool and still answers «קוד נשלח». ERROR is filterable in Railway logs
+and is the threshold sentry-sdk's default LoggingIntegration captures at
+(`sentry.py:110`). Note "failure" here is every non-accepted outcome, not
+only an HTTP error: a Graph `200` carrying an `error` object is one, per
+the AUD-009/010 note below.
 
 Phone-number normalization (Israeli `0…` → `+972…`) stays at call sites;
 this module only strips a leading `+` because Meta's API expects E.164
@@ -154,7 +162,15 @@ def _log_result(kind: str, to: str, result: WhatsAppSendResult) -> None:
             result.http_status,
         )
     else:
-        logger.warning(
+        # MEH-2122: ERROR, not WARNING (Chunk A). Two consumers depend on the
+        # level: Railway logs, where ERROR is filterable and WARNING is not
+        # distinguishable from routine chatter; and Sentry, whose default
+        # LoggingIntegration has event_level=ERROR (sentry.py:110), so a
+        # WARNING here is a breadcrumb and never becomes an issue. The same
+        # failure class in app/services/email.py is loud in production for
+        # exactly that reason. Success stays INFO on purpose — raising the
+        # whole function would bury failures under every successful send.
+        logger.error(
             "[WHATSAPP] %s outcome=%s err_code=%s err=%s to=%s http=%s",
             kind,
             result.outcome,
