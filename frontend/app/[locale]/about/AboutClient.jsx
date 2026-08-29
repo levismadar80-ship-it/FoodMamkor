@@ -36,9 +36,6 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
-// MEH-2193: the "how we choose" fact block + its data-gated live counter.
-// Own file because it owns fetch state — see the header comment there.
-import HowWeChoose from "./HowWeChoose";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -339,15 +336,6 @@ export default function AboutPage() {
             {tAbout("exit.story")}
           </ExitLink>
         </div>
-      </FadeInSection>
-
-      {/* ======== MEH-2193 — "איך אנחנו בוחרות" + the business strip ========
-          Placed between the story and the pull-quote: the differentiator
-          (license-only · manual approval · zero commissions) was scattered
-          across Benefits/Values near the bottom, where a reader who leaves at
-          section 4 never reaches it. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <HowWeChoose />
       </FadeInSection>
 
       {/* Business strip — the early owner-facing exit. Until now the only one

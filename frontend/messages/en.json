@@ -2669,15 +2669,6 @@
         "label": "First steps"
       }
     },
-    "choose": {
-      "eyebrow": "How we choose",
-      "fact1": "Licensed businesses only",
-      "fact2": "Every business approved by hand",
-      "fact3": "Zero commissions — always",
-      "process_link": "How our approval process works",
-      "registry_link": "Check the official license registry",
-      "count": "{count} approved businesses right now"
-    },
     "biz_strip": "Run a food business? Here's how it works",
     "exit": {
       "story": "Meet the businesses",
