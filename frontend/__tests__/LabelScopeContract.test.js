@@ -119,10 +119,10 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
 
   // ── MEH-1753 ─────────────────────────────────────────────────────────────
 
-  it("BADGE_CONFIG carries all twelve badges (guards a shrinking scan)", () => {
+  it("BADGE_CONFIG carries all eleven badges (guards a shrinking scan)", () => {
     // A COUNT, not a list of names: the loop above is satisfied by an empty
     // BADGE_CONFIG, so without this a deleted entry would leave the contract
-    // reporting a clean pass over eleven.
+    // reporting a clean pass over ten.
     expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
   });
 
