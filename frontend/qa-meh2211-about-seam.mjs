@@ -158,7 +158,12 @@ for (const [tag, width, height] of [["375", 375, 812], ["1440", 1440, 900]]) {
       const q = (s) => document.querySelector(s);
       const lede = q('[data-testid="about-lede-figure"]');
       const upd = q('[data-testid="about-updated-at"]');
-      const ch1 = q('[data-testid="about-chapter-1"]');
+      // Anchor on chapter 01's H2, not on the eyebrow: the Chapter component
+      // carries no testid, so the original selector here resolved to null and
+      // the assertion below read `undefined` — a broken PROBE reporting as a
+      // failed page. `about-story-h2` is a real element and is the heading the
+      // lede must precede anyway.
+      const ch1 = q('[data-testid="about-story-h2"]');
       const r = (el) => (el ? el.getBoundingClientRect() : null);
       return {
         lede: r(lede) && { top: r(lede).top + scrollY, left: r(lede).left, w: r(lede).width },
