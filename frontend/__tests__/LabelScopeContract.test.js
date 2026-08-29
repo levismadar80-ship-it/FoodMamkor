@@ -119,11 +119,11 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
 
   // ── MEH-1753 ─────────────────────────────────────────────────────────────
 
-  it("BADGE_CONFIG carries all twelve badges (guards a shrinking scan)", () => {
+  it("BADGE_CONFIG carries all eleven badges (guards a shrinking scan)", () => {
     // A COUNT, not a list of names: the loop above is satisfied by an empty
     // BADGE_CONFIG, so without this a deleted entry would leave the contract
-    // reporting a clean pass over eleven.
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(12);
+    // reporting a clean pass over ten.
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
   });
 
   it("every badge that is also a filter axis agrees with it on scope + evidence", () => {
@@ -194,13 +194,6 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
           "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
         color: "accent",
         aboutHref: "/about#editors-pick",
-      },
-      license: {
-        key: "license",
-        label: "רישיון יצרן",
-        tooltip: "בית העסק מחזיק ברישיון יצרן ממשרד הבריאות.",
-        color: "primary",
-        aboutHref: null,
       },
       new: {
         key: "new",
