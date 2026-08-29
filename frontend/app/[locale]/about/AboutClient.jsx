@@ -353,15 +353,35 @@ export default function AboutPage() {
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <div className="border-t border-border pt-6">
-            <p className="font-body-md text-[15px] text-fg-muted leading-snug">
+            <p
+              id="about-biz-lead"
+              className="font-body-md text-[15px] text-fg-muted leading-snug"
+            >
               {tAbout("biz_strip_lead")}
             </p>
+            {/* aria-labelledby, and it is load-bearing rather than belt-and-braces.
+                The copy used to be ONE string inside the anchor, so the link's
+                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing.
+                Splitting the lead out into a sibling <p> for the visual design
+                silently cut that name down to «כך זה עובד אצלנו», which in a
+                screen reader's link list reads "here's how it works" with nothing
+                saying who it is for. WCAG 2.4.4 (Link Purpose in Context, level A)
+                counts context from the SAME sentence, paragraph, list item or
+                cell — a preceding sibling paragraph is not on that list, and
+                IS 5568 applies to this page.
+
+                Pointing at both ids rebuilds the exact pre-split name from the
+                two elements that render it, so the visual design change costs
+                the screen-reader user nothing. Measured on the running page:
+                getByRole("link", {name: "בעלת עסק? כך זה עובד אצלנו"}) returned 0
+                before this and 1 after, with a control query passing in both. */}
             <LocaleLink
               href="/about/for-businesses"
               data-testid="about-biz-strip"
+              aria-labelledby="about-biz-lead about-biz-cta"
               className="mt-1.5 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              {tAbout("biz_strip")}
+              <span id="about-biz-cta">{tAbout("biz_strip")}</span>
               <ArrowLeft size={15} aria-hidden="true" />
             </LocaleLink>
           </div>
