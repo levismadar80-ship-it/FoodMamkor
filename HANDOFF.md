@@ -3,6 +3,47 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-29 — MEH-2218 chunk 2 (Session B): audit + רסס נייד. אפס merges שלי, שניים נמזגו מתחתיי. הריליז לא יצא הלילה.
+
+**‏שורה אחת:** ‏Session A דיווחה `CHUNK 2 DONE` **בלי לסיים את הרשימה**; ‏Session B (זה) ביצעה STEP 0 מלא, מיפתה מה נשאר, ריעננה את #2760/#2759 — ושניהם נמזגו ע"י actor מקביל שניות אחרי שהשערים הוריקו. **MEH-2221 לא התחיל בכוונה.** הריליז לא יצא: תנאי (1) נכשל מעצם ההגדרה.
+
+### חלוקת הבעלות שנקבעה ב-19:15 (בכרטיס, לא בצ'אט)
+
+‏chunk 2 = Session A, כולל סגירת MEH-2218 **«אם הוא מסיים את הרשימה»**. הוא לא סיים, ולכן MEH-2218 **נשאר In Progress**. ‏MEH-2221 + STEP RELEASE = Session B. ‏D2 בוטל: ‏A עוצרת ב-`CHUNK 2 DONE`.
+
+### מצב ה-PRs — נמדד 19:50, לא מהזיכרון
+
+| PR | מצב | ראיה |
+| -- | -- | -- |
+| #3079 | **מוזג** `a12af8ef6` ע"י A | squash מאומת — הורה יחיד |
+| #2759 | **מוזג** `2a685dc0d` ע"י actor מקביל | **merge commit** — 2 הורים + תבנית merge |
+| #2760 | **מוזג** `ac0b2fda7` ע"י actor מקביל | **merge commit** — 2 הורים + תבנית merge |
+| #3080 | **parked** | `alembic check` → `remove_constraint 'producer_recipes_moderation_status_check'`, exit 255. אף טסט לא נכשל |
+| #2953 | **parked** | `builder-model-guard (exit 1)` — הטריילר בפרוזה ולא בבלוק טריילרים (`0ba5d624b`) |
+| #2941 · #2940 | **parked** | rebased ע"י A; לא נבדקו |
+| #2127 | **מיותר** | ‏#3080 עושה את אותו bump של `joserfc` |
+| #3144 | פתוח בכוונה | rebased, label לא נגעו (כלל 30). ספיר מסירה ומזגת |
+| #3169 | פתוח — **ה-PR הזה** | חייב להיכנס לפני הריליז (תנאי 1) |
+| #3171 | פתוח, draft | לא נגעתי. תנאי (4) ידרוש רענון |
+| #3170 | פתוח, מחוץ ל-sweep | ‏MEH-2168, לא הוקצה לאיש |
+
+### ‏מה שסשן חדש יגלה מחדש אם לא יקרא את זה
+
+1. **‏פקודות `@dependabot` בצ'אט לא עובדות מהערוץ הזה.** ההערות נשלחות **משובשות** — נמדד: `·@·d·ependabot r·ebase`. זה מסביר למפרע את ה-park של #3079 ב-chunk 1 («לא הגיב תוך 10 דקות») — dependabot פשוט לא ראה את הפקודה. **החלופה שעובדת:** ‏`update_pull_request_branch` ב-GitHub MCP.
+2. **‏רסס הנייד דורש ארבעה תיקונים, לא אחד.** ‏webkit מ-`frontend/` (מלכודת 1) + `install-deps` (2) + **Chromium דרך `executablePath: /opt/pw-browsers/chromium`** כי המהדורה הנעוצה מבקשת `-1234` והדימוי נושא `-1194` **וההורדה חסומה** (מלכודת 5) + **`--ssl-version-max=tls1.2`** ל-Chromium מול staging (מלכודת 6). ‏webkit **אינו** זקוק ל-cap. הכל ב-[docs/qa/webkit-local.md](./docs/qa/webkit-local.md).
+3. **‏`npx playwright install chromium 2>&1 | tail -6` מחזיר exit 0 גם כשההורדה נכשלת** — הצינור מחזיר את הסטטוס של `tail`. ההתראה על ה-task אמרה "completed, exit code 0" מעל `Error: Download failure, code=1`. **בדקו את הבינארי על הדיסק, לא את קוד היציאה.**
+4. **‏`devices['iPhone 14']` = 390×844.** ‏MEH-2221 קבע 375×812 — תוקן ב-description.
+5. **‏ה-repo היה shallow.** ‏`git rev-parse --is-shallow-repository` → `true` בתחילת הסשן; כל טענת provenance לפני ה-`--unshallow` הייתה חסרת ערך (MEH-1519).
+6. **‏`rm` ו-`railway *` חסומים ב-Bash כאן.** פקודה מורכבת שמכילה אותם נדחית **כולה**, כולל החלקים התמימים — פצלו.
+
+### ‏הכרעות 19:00 שנשענים עליהן
+
+‏6 פריטי RED עברו ל-CC · ‏D1: ‏CC ממזגת את #2760/#2759 (‏MEH-671 אוסר **עריכת** workflows, לא מיזוג) · ‏D4: ‏CC מבצעת את הריליז תחת 4 שערים · תנאי (3) של הריליז **מסופק** — ספיר מדדה 0 שורות ב-production (‏MEH-2219). ‏#3144 לא נסגר · #3169 נמזג רק בסוף MEH-2221.
+
+### ‏נקודת חידוש
+
+**‏MEH-2221 chunk 1, פריט 1 (MEH-2148).** ‏STEP 0 שלו כבר בוצע ואומת: ‏env (4 SET, `DATABASE_URL` נעדר) · ה-proxy מחזיר 307→200 · `railway` חסום · הרסס עובד בשני המנועים. ‏slug אמיתי לבדיקות: **`teva-pure`**. הריליז אחרי chunk 7 + מיזוג #3169, ובכל מקרה **לא לפני** בדיקה מחדש של תנאי (4) — יש actor מקביל שמזיז את staging כל כמה דקות.
+
 ## 2026-08-29 — MEH-2218 PR sweep, chunk 1 (run #3): 1 מוזג · 2 נסגרו · 2 parked · 2 לא-נוסו · 7 ל-C
 
 **‏מוזג (1):** ‏#2917 (MEH-2074) — squash **`c1bba1a0`**, הורה יחיד (אומת, לא הונח). סונכרן ב-merge לא rebase (כלל 25), פעמיים, כי staging זז תחת ה-PR באמצע.
