@@ -130,6 +130,34 @@ describe("GroupBuy cancel modal — keyboard + focus (MEH-2199)", () => {
     expect(document.activeElement).toBe(last);
   });
 
+  it("the ARIA dialog IS the trapped card, not the backdrop behind it", async () => {
+    const { el } = await openDialog();
+
+    // Behavioural, not structural. The backdrop closes the dialog when clicked;
+    // the card stops propagation and stays open. So if role="dialog" were still
+    // on the backdrop, clicking the element the a11y tree calls "the dialog"
+    // would DISMISS it — which is the concrete consequence of the ARIA boundary
+    // and the focus-trap boundary being different elements.
+    // getByRole, not findByRole: fireEvent flushes synchronously, so the
+    // outcome is already settled here. A find* would poll for a second and
+    // then report a TIMEOUT — turning "the dialog was dismissed", which is
+    // the exact defect under test, into a message about waiting.
+    fireEvent.click(el);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  it("captures the focus-return target when the dialog OPENS, not when it closes", async () => {
+    const { trigger, el } = await openDialog();
+    // Move focus away while the dialog is open, as a real user tabbing would.
+    within(el).getByRole("button", { name: "cancel_dismiss" }).focus();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // Still the CTA, because the target was recorded at open time rather than
+    // inferred from whatever happened to be focused later.
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
   it("confirming still DELETEs — the a11y layer did not touch the destructive path", async () => {
     const { el } = await openDialog();
     fireEvent.click(within(el).getByRole("button", { name: "cancel_cta" }));

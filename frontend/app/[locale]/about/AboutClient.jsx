@@ -36,9 +36,6 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
-// MEH-2193: the "how we choose" fact block + its data-gated live counter.
-// Own file because it owns fetch state — see the header comment there.
-import HowWeChoose from "./HowWeChoose";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -50,8 +47,6 @@ import HowWeChoose from "./HowWeChoose";
 // photograph of the founder anywhere on /about any more.
 const STORY_IMAGE =
   "https://res.cloudinary.com/dfzpscjks/image/upload/v1781214925/home/feature-produce.jpg";
-const BAND_BREAD =
-  "https://res.cloudinary.com/dfzpscjks/image/upload/v1781215052/about/bread.jpg";
 const DUO_REAR =
   "https://res.cloudinary.com/dfzpscjks/image/upload/v1781214483/about/olive-oil.jpg";
 // The FRONT image of the offset duo. Rendered DECORATIVE (alt=""), and that is
@@ -67,10 +62,10 @@ const DUO_FRONT =
   "https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg";
 
 // Delivered widths. On the c_fill path w_ CAN upscale, so each stays at or
-// below its source width — feature-produce 3732px · bread 3276px ·
-// olive-oil 3000px · hero-market 2400px (all measured via the Admin API).
+// below its source width — feature-produce 3732px · olive-oil 3000px ·
+// hero-market 2400px (all measured via the Admin API). The bread entry went
+// with the band it fed (MEH-2211).
 const STORY_IMAGE_WIDTH = 1040;
-const BAND_BREAD_WIDTH = 1600;
 const DUO_REAR_WIDTH = 900;
 const DUO_FRONT_WIDTH = 640;
 
@@ -148,6 +143,32 @@ function Chapter({ num, label, as: Tag = "p" }) {
   );
 }
 
+// MEH-2193: chapter exit. A text link, never a button — the single primary CTA
+// stays in Close, and three competing buttons mid-page would flatten that
+// hierarchy. Styling and ArrowLeft (LEFT = forward in RTL) are lifted verbatim
+// from the verification-process-link established in the MEH-1840 round, so the
+// three exits read as one existing pattern rather than a new one.
+//
+// Defined at MODULE scope, not inside AboutPage. Declaring it in the body gives
+// React a brand-new component type on every render of the page, and AboutPage
+// re-renders on every keystroke in the contact form (it holds form,
+// contactStatus, contactMsg, submitCount, openTip and imgFailed state). Each of
+// those re-renders would unmount and remount all three links, throwing away the
+// IntersectionObserver registrations next/link uses to prefetch. Caught by the
+// CI adversarial reviewer on #3123.
+function ExitLink({ href, testId, children }) {
+  return (
+    <LocaleLink
+      href={href}
+      data-testid={testId}
+      className="mt-8 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
+      {children}
+      <ArrowLeft size={15} aria-hidden="true" />
+    </LocaleLink>
+  );
+}
+
 export default function AboutPage() {
   const t = useTranslations("about.consumer");
   // MEH-534: cross-link label to the /about/process page (process namespace).
@@ -200,27 +221,12 @@ export default function AboutPage() {
   // cream and background-alt (accent gold fails 4.5:1 at this size). Label is a
   // <p> by default so it never outranks the section h2; pass as="h2" where the
   // label IS the section heading (Benefits).
-  // MEH-2193: chapter exit. A text link, never a button — the single primary
-  // CTA stays in Close, and three competing buttons mid-page would flatten that
-  // hierarchy. Styling and ArrowLeft (LEFT = forward in RTL) are lifted verbatim
-  // from the verification-process-link established in the MEH-1840 round, so the
-  // three exits read as one existing pattern rather than a new one.
-  const ExitLink = ({ href, testId, children }) => (
-    <LocaleLink
-      href={href}
-      data-testid={testId}
-      className="mt-8 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-    >
-      {children}
-      <ArrowLeft size={15} aria-hidden="true" />
-    </LocaleLink>
-  );
 
   return (
     <div className="relative bg-background">
       {/* ======== 01 — Hero (cream editorial · anchored) ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-5xl mx-auto px-4 md:px-12">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
           <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.05] text-[clamp(28px,5vw,52px)] max-w-[15ch]">
             {t("hero.heading")}
           </h1>
@@ -238,169 +244,206 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 02 — Sapir's story (prose at the start edge · market photo bleeding to the end edge) ========
-          MEH-1130 replaces the framed portrait standfirst that stood here since
-          MEH-100. What changed and why: the portrait card (image + mat + offset
-          panel + its figcaption) is removed entirely, a market photograph bleeds
-          off the inline-end edge in its place, and a signature block closes the
-          prose. `overflow-x-clip` is on the section because `50vw` counts the
-          scrollbar on most engines while the layout box does not — without it a
-          few pixels of overshoot would put a horizontal scrollbar on the page.
-          `clip` and not `hidden`: it creates no scroll container, so it cannot
-          disturb sticky or scroll-anchoring behaviour elsewhere. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24 overflow-x-clip">
-        <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <Chapter num="01" label={tAbout("chapter.1.label")} />
-          {/* The bleed. This wrapper is a BLOCK-LEVEL DIRECT CHILD of the padded
-              container, which is what makes the breakout exact rather than
-              approximate: a percentage margin resolves against its containing
-              block's inline size, so here 50% is half the container's CONTENT
-              width and `50% - 50vw` is precisely the distance from that content
-              edge to the viewport's inline-end edge. Nested one level further in
-              (inside a grid cell) the identical calc resolves against the cell
-              and lands nowhere near the edge — so do not "simplify" it by moving
-              it onto the figure. */}
-          <div className="md:me-[calc(50%-50vw)]">
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,46%)] gap-8 md:gap-14 items-center">
-              {/* prose — anchored at the start edge */}
-              <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5 max-w-[64ch]">
-                <p className="font-headline-md font-bold text-text text-2xl md:text-[25px] !mb-2">
-                  {t("story.greeting")}
-                </p>
-                <p className="text-fg-muted">{t("story.p1")}</p>
-                <p>{t("story.p2")}</p>
-                <p>{t("story.p3")}</p>
-                <p>{t("story.p4")}</p>
-                <p>{t("story.p5")}</p>
-                {/* SIGNATURE — the personal anchor that replaces the face.
-                    Accent-gold rule on the inline-start edge, square corners.
+      {/* ======== MEH-2211 — the lede image ========
+          MEH-1130 AC1 put this photograph in a SIDE BLEED next to the story
+          prose. Sapir's 29/08 review cancelled that: the page opened with two
+          openers in a row (a textual hero, then a chapter's opening image), a
+          4:5 portrait beside a column that started ~200px below it, and three
+          different content widths inside the first screen.
 
-                    story.caption3 is kept VERBATIM from the figcaption that was
-                    removed with the portrait: it is editorial copy, not a photo
-                    credit, so it survives the card it happened to live inside.
-                    story.caption1 does NOT survive — its opening clause IS
-                    signature.role ("מייסדת מהמקור"), and the two would have read
-                    twice, three lines apart. Both keys remain in he.json and
-                    en.json untouched, so restoring either is a one-line change
-                    if Sapir wants it back. */}
-                <div data-testid="about-signature" className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
-                  <p className="font-headline-display font-black text-primary text-[26px] md:text-[28px] leading-tight">
-                    {tAbout("signature.name")}
-                  </p>
-                  <p className="mt-1 font-body-md text-sm text-fg-muted leading-snug">
-                    {tAbout("signature.role")}
-                  </p>
-                  <p className="mt-2.5 font-body-md text-[15px] text-text font-medium leading-snug max-w-[46ch]">
-                    {t("story.caption3")}
-                  </p>
-                </div>
-              </div>
-              {/* The market photograph. Full-width band on mobile (-mx-4 cancels
-                  the container's px-4; mx is symmetric, so it is direction-safe),
-                  bleeding to the viewport's inline-end edge from md up. Failure
-                  falls back to a bare tonal plate, the same behaviour the
-                  portrait had — no Leaf box, no name on an empty container
-                  (MEH-1227). */}
-              <figure data-testid="about-story-figure" className="m-0 -mx-4 md:mx-0">
-                <div data-testid="about-story-image-box" className="relative w-full aspect-[16/11] md:aspect-[4/5] overflow-hidden bg-background-alt">
-                  {imgFailed ? null : (
-                    <Image
-                      src={optimizeCloudinary(STORY_IMAGE, {
-                        aspectRatio: "4:5",
-                        width: STORY_IMAGE_WIDTH,
-                      })}
-                      alt={tAbout("img.story_alt")}
-                      fill
-                      sizes="(min-width: 768px) 46vw, 100vw"
-                      className="object-cover"
-                      priority={false}
-                      onError={() => setImgFailed(true)}
-                    />
-                  )}
-                </div>
-                <figcaption className="mt-3 px-4 md:px-0 font-body-md text-[13px] text-fg-muted leading-snug">
-                  {tAbout("img.story_caption")}
-                </figcaption>
-              </figure>
+          A lede fixes all three at once — the Natoora our-story pattern:
+          heading, then dek, then ONE image, then the prose. It reads as the
+          hero's own picture rather than a second beginning, and the story
+          below it returns to a single column at the same width as every other
+          chapter.
+
+          3:2 here and 4:3 on mobile: the landscape crop keeps the fold intact
+          on a phone, where a 3:2 at full width already costs ~250px. The
+          container matches the chapter eyebrow rule below it (max-w-3xl), so
+          the image's edges line up with the rule that opens chapter 01. */}
+      <section className="bg-background pb-9 md:pb-14 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <figure data-testid="about-lede-figure" className="m-0 -mx-4 md:mx-0">
+            <div
+              data-testid="about-lede-image-box"
+              className="relative w-full aspect-[4/3] md:aspect-[3/2] max-h-[460px] overflow-hidden rounded-none md:rounded-xl bg-background-alt"
+            >
+              {imgFailed ? null : (
+                <Image
+                  src={optimizeCloudinary(STORY_IMAGE, {
+                    aspectRatio: "3:2",
+                    width: STORY_IMAGE_WIDTH,
+                  })}
+                  alt={tAbout("img.story_alt")}
+                  fill
+                  // 672, not 768: the container is max-w-3xl (768) minus
+                  // md:px-12 on both sides (96), so 768 fetches a ~14% wider
+                  // source than any pixel that gets painted. Measured, not
+                  // derived — getBoundingClientRect on this box reports
+                  // w=672.0 at 1440.
+                  sizes="(min-width: 768px) 672px, 100vw"
+                  className="object-cover"
+                  // priority, and the side-bleed image it replaces was
+                  // correctly NOT priority. Moving the photograph up to the
+                  // lede moved it above the fold, which makes it the LCP
+                  // candidate, and lazy-loading the LCP element delays the
+                  // paint it defines. Measured in the self-QA run rather than
+                  // eyeballed: the lede's top edge is 319.5px at 375x812 and
+                  // 382.7px at 1440x900 — inside the initial viewport at both.
+                  priority
+                  onError={() => setImgFailed(true)}
+                />
+              )}
+            </div>
+            <figcaption className="mt-3 px-4 md:px-0 font-body-md text-[13px] text-fg-muted leading-snug">
+              {tAbout("img.story_caption")}
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      {/* ======== Chapter 01 — Sapir's story (single column) ========
+          MEH-1130 removed the framed portrait standfirst that stood here since
+          MEH-100; MEH-2211 removes the side bleed that replaced it. The
+          photograph is now the lede above, so this section is prose only and
+          returns to `max-w-3xl` — the same column as every other chapter, and
+          the same width the business line below it uses.
+
+          `overflow-x-clip` went with the bleed: nothing here breaks out of the
+          container any more, so there is no 50vw overshoot left to clip. */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <Chapter num="01" label={tAbout("chapter.1.label")} />
+          <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5">
+            {/* Chapter 01's h2. It carries `about-story-h2` so the chapter-02
+                heading below can be asserted to share these exact classes —
+                the two chapter headings must read as one rank, and a class
+                string is the only thing that guarantees it. */}
+            <h2
+              data-testid="about-story-h2"
+              className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6"
+            >
+              {t("story.greeting")}
+            </h2>
+            <p className="text-fg-muted">{t("story.p1")}</p>
+            <p>{t("story.p2")}</p>
+            <p>{t("story.p3")}</p>
+            <p>{t("story.p4")}</p>
+            <p>{t("story.p5")}</p>
+            {/* SIGNATURE — the personal anchor that replaces the face.
+                Accent-gold rule on the inline-start edge, square corners.
+
+                story.caption3 is kept VERBATIM from the figcaption that was
+                removed with the portrait: it is editorial copy, not a photo
+                credit, so it survives the card it happened to live inside.
+                story.caption1 does NOT survive — its opening clause IS
+                signature.role ("מייסדת מהמקור"), and the two would have read
+                twice, three lines apart. Both keys remain in he.json and
+                en.json untouched, so restoring either is a one-line change
+                if Sapir wants it back. */}
+            <div data-testid="about-signature" className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
+              <p className="font-headline-display font-black text-primary text-[26px] md:text-[28px] leading-tight">
+                {tAbout("signature.name")}
+              </p>
+              <p className="mt-1 font-body-md text-sm text-fg-muted leading-snug">
+                {tAbout("signature.role")}
+              </p>
+              <p className="mt-2.5 font-body-md text-[15px] text-text font-medium leading-snug max-w-[46ch]">
+                {t("story.caption3")}
+              </p>
             </div>
           </div>
           <ExitLink href="/producers" testId="about-exit-story">
             {tAbout("exit.story")}
           </ExitLink>
+
+          {/* Business line — the early owner-facing exit. Until now the only
+              one was a demoted link inside Close, at the very bottom.
+
+              MEH-2211, two changes in one block. It was a full-width
+              `bg-background-alt` band, and of the five visual languages
+              Sapir's 29/08 review found stacked in this seam that band was the
+              loudest: a tonal full-bleed surface reads as a section of its
+              own, so a one-line aside announced itself as a chapter. It is now
+              an inline block separated by a hairline rule instead of a tone
+              change — the lead muted, only the link primary, so the seam
+              carries one accent rather than a slab. `border-border` is the
+              hairline the comparison spine already uses; no new token.
+
+              And it now lives INSIDE chapter 01's section rather than in one
+              of its own. That is what makes the B4 spacing fall out of
+              existing tokens instead of new ones: `mt-10` puts it ~40px below
+              the exit link (inside a chapter), while the gap to chapter 02 is
+              this section's `md:pb-14` plus chapter 02's `md:py-14` — the
+              largest gap in the seam, which is exactly where the chapter
+              break should read. DOM order is unchanged; only the wrapper is. */}
+          <div className="mt-10 border-t border-border pt-6">
+            <p
+              id="about-biz-lead"
+              className="font-body-md text-[15px] text-fg-muted leading-snug"
+            >
+              {tAbout("biz_strip_lead")}
+            </p>
+            {/* aria-labelledby, and it is load-bearing rather than belt-and-braces.
+                The copy used to be ONE string inside the anchor, so the link's
+                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing.
+                Splitting the lead out into a sibling <p> for the visual design
+                silently cut that name down to «כך זה עובד אצלנו», which in a
+                screen reader's link list reads "here's how it works" with nothing
+                saying who it is for. WCAG 2.4.4 (Link Purpose in Context, level A)
+                counts context from the SAME sentence, paragraph, list item or
+                cell — a preceding sibling paragraph is not on that list, and
+                IS 5568 applies to this page.
+
+                Pointing at both ids rebuilds the exact pre-split name from the
+                two elements that render it, so the visual design change costs
+                the screen-reader user nothing. Measured on the running page:
+                getByRole("link", {name: "בעלת עסק? כך זה עובד אצלנו"}) returned 0
+                before this and 1 after, with a control query passing in both. */}
+            <LocaleLink
+              href="/about/for-businesses"
+              data-testid="about-biz-strip"
+              aria-labelledby="about-biz-lead about-biz-cta"
+              className="mt-1.5 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <span id="about-biz-cta">{tAbout("biz_strip")}</span>
+              <ArrowLeft size={15} aria-hidden="true" />
+            </LocaleLink>
+          </div>
         </div>
       </FadeInSection>
 
-      {/* ======== MEH-2193 — "איך אנחנו בוחרות" + the business strip ========
-          Placed between the story and the pull-quote: the differentiator
-          (license-only · manual approval · zero commissions) was scattered
-          across Benefits/Values near the bottom, where a reader who leaves at
-          section 4 never reaches it. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <HowWeChoose />
-      </FadeInSection>
+      {/* ======== Chapter 02 — the difference (3-stop gold-dot path) · MEH-841 ========
+          MEH-2211 folds the pull-quote into this chapter instead of leaving it
+          as a section of its own. Once the choose block and the bread band came
+          out, the quote was left hanging between two chapters belonging to
+          neither, and Sapir's 29/08 call is that it becomes chapter 02's
+          headline: the sentence the chapter is about, promoted rather than
+          moved. This is the MEH-1130 AC3 chaptering decision, not a reorder —
+          the CONTENT order is untouched, the quote still precedes
+          «מה שמשתנה בדרך», and only the eyebrow rises by one element.
 
-      {/* Business strip — the early owner-facing exit. Until now the only one
-          was a demoted link inside Close, at the very bottom. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-7 md:py-9 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <LocaleLink
-            href="/about/for-businesses"
-            data-testid="about-biz-strip"
-            className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            {tAbout("biz_strip")}
-            <ArrowLeft size={15} aria-hidden="true" />
-          </LocaleLink>
-        </div>
-      </FadeInSection>
+          Two consequences worth stating because they are easy to get wrong:
 
-      {/* ======== MEH-1130 — image band 1 (wide) ========
-          Sits after the story/choose area, breaking the run of consecutive
-          text-only sections the MEH-1112 audit flagged. Height is viewport-
-          relative so the band keeps its magazine proportion across widths, and
-          capped so it cannot eat a full screen on a wide desktop. Static — no
-          parallax, no sticky. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14">
-        <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <figure data-testid="about-band-bread" className="m-0">
-            <div className="relative w-full h-[40vw] min-h-[180px] max-h-[420px] rounded-md overflow-hidden bg-background-alt">
-              <Image
-                src={optimizeCloudinary(BAND_BREAD, {
-                  aspectRatio: "16:9",
-                  width: BAND_BREAD_WIDTH,
-                })}
-                alt={tAbout("img.bread_alt")}
-                fill
-                sizes="(min-width: 1152px) 1056px, 100vw"
-                className="object-cover"
-                priority={false}
-              />
-            </div>
-            <figcaption className="mt-3 font-body-md text-[13px] text-fg-muted leading-snug">
-              {tAbout("img.bread_caption")}
-            </figcaption>
-          </figure>
-        </div>
-      </FadeInSection>
-
-      {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
-      {/* MEH-1112: container narrowed max-w-6xl → max-w-3xl (matches the comparison
-          block below) so the offset blockquote no longer leaves >50% empty cream at 1440px. */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
-            {t("parallax.quote")}
-          </blockquote>
-        </div>
-      </FadeInSection>
-
-      {/* ======== Comparison — layout A (3-stop gold-dot path) · MEH-841 (supersedes MEH-525) ======== */}
+          1. The quote is an <h2> now, so it drops `border-s-2 border-accent
+             ps-6` — a heading does not also carry a blockquote's side rule, and
+             the chapter's own hairline rule already sits directly above it. Its
+             classes are IDENTICAL to chapter 01's h2 (`about-story-h2`), which
+             is what makes the two chapters read as one rank; the QA harness
+             asserts the two class strings are equal rather than eyeballing it.
+          2. «מה שמשתנה בדרך» was this section's <h2>. It is now a LEAD
+             PARAGRAPH — one h2 per chapter, and two headings in a row would
+             have made the quote look like a kicker over the real title. The
+             string is unchanged on both locales. */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter num="02" label={tAbout("chapter.2.label")} />
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight mb-8 md:mb-10">
-            {tCompare("heading")}
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6">
+            {t("parallax.quote")}
           </h2>
+          <p className="font-body-md text-[17px] font-semibold text-text leading-snug mb-8 md:mb-10">
+            {tCompare("heading")}
+          </p>
           {/* vertical gold-dot spine — hairline border on the start edge; dots are CSS, no icons */}
           <ol className="relative ms-1 border-s border-border space-y-8 md:space-y-10">
             {COMPARE_STOPS.map((row) => (
