@@ -130,7 +130,7 @@ mechanically true rather than aspirational.
 | `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:64` | tooltips. ChatWidget's FAB shares the value via inline `zIndex: 9999` (`ChatWidget.jsx:212,220`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
 | `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
 | `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
-| `z-[9000]` | 21 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm |
+| `z-[9000]` | 20 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm; back to 20 in MEH-2209, which merged the admin producer reject + request-changes modals into one `ProducerDecisionModal` |
 | `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
 | `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
 | `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |
@@ -141,7 +141,7 @@ mechanically true rather than aspirational.
 | `z-[1010]` | 3 | `components/AddressSearch.jsx:266` · `components/CitiesAutocomplete.jsx:273` · `components/CitySearch.jsx:206` | autocomplete / combobox suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. **AddressSearch:** MEH-2093 chunk A, fixing an observed clipping. **CitiesAutocomplete:** MEH-2102, *defensive alignment only* — measured 16/08, no current consumer places a map where that list can reach it. **CitySearch:** MEH-2108, an observed occlusion — at 1000 it tied with the Leaflet controls *and* the MiniMap fullscreen button (`MiniMap.jsx:56`), and DOM order handed the band to the map (9 of 15 hit-test samples inside the 72px band were painted by map chrome; 0 after) |
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
-| `z-[1000]` | 12 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010; 13 → 12 in MEH-2148, which merged MapPane's two top-centre overlays (the search-area pill and the pickup-layer notice) into ONE `z-[1000]` stack — see the MEH-1187 one-corner-one-job note there |
+| `z-[1000]` | 11 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010; 13 → 12 in MEH-2148, which merged MapPane's two top-centre overlays (the search-area pill and the pickup-layer notice) into ONE `z-[1000]` stack — see the MEH-1187 one-corner-one-job note there; **12 → 11 in MEH-2148 close-out**, which took `MiniMap.jsx`'s shared map-button token OFF the page scale entirely (`z-[1000]` → local `z-10`) after it was measured painting over the producer page's `z-[598]` StickyContactBar at 88.5% of the bar width. Its two buttons now rely on a stacking context each — the inline wrapper carries `isolate`, the fullscreen overlay is `z-[1150]` — so neither appears in this table any more |
 | `z-[900]` | 2 | `components/OnboardingTip.jsx:39` | onboarding tip |
 | `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
 | `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |
@@ -150,6 +150,37 @@ mechanically true rather than aspirational.
 | `z-[1]` | 2 | `app/[locale]/about/AboutClient.jsx:624` | decorative layering |
 
 **22 live tokens.** Counts are occurrence counts, not file counts.
+
+### Modal overlays are portalled to `<body>` — a z token only ranks at the root
+
+**A `fixed inset-0` modal overlay is portalled to `<body>`; a z token is only
+meaningful at the root stacking context.** A modal rendered in place inherits
+whatever its mount point's ancestors impose, and `position` + a z-index (or
+`transform`, `opacity < 1`, `filter`, `contain`, `isolation`, and — per CSSWG
+2023 — `position: sticky`) makes any of them a stacking context. Inside one, the
+overlay's `z-[9500]` competes only with that context's own children, so a *lower*
+root-level token wins on screen. **Raising the number is not the fix and cannot
+be**: a bigger value inside a capped context is still capped.
+
+Measured, not reasoned: `frontend/qa-meh-2215-stacking-probe.mjs` walks an
+overlay's ancestors for every context-creating property, hit-tests the Header and
+the /producer tab bar, and samples pixel luma off the captured frames. It ships
+with a chain-walker self-test (four cases with known answers, one lifted from a
+real repo file) and a per-capture luma control, both run before any row is
+printed. Re-run it before claiming any modal is or is not trapped — the answer
+depends on ancestors at runtime, so no grep can produce it.
+
+**As of 29/08 exactly one modal was trapped** (`LoginPromptModal`, inside
+ImageGallery's `absolute … z-20` overlay wrapper, both gallery arms); the other
+seven measured chain-clean to `<html>` and were left byte-identical. That is an
+as-of, not a standing property: a new mount point re-opens the question.
+
+**`elementFromPoint` alone cannot settle it over the Header.** `Header.jsx:321`
+is `pointer-events-none`, so that band is never returned by a hit test whether or
+not it paints on top — a green there has two causes. Pair it with the luma read,
+and note the mirror trap: once a modal is portalled, its own opaque card may be
+what sits over the sample point, so a near-zero luma delta there is not by itself
+evidence of a trap either. Name the element; do not infer it.
 
 > **`z-[50]` is gone as of MEH-2115, and the row it leaves behind is instructive.**
 > The row read **n=2** while only ONE line was a real className

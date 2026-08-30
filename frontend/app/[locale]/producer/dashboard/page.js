@@ -154,6 +154,51 @@ function StatusSupportModal({ onClose }) {
   );
 }
 
+// MEH-2199: the availability options, lifted out of the JSX so the roving tab
+// stop and each radio's own state read from ONE evaluation of the rule rather
+// than two. A second copy of "which option is active" is exactly the shape that
+// drifts (.claude/rules/workflow.md — Smell #1).
+const AVAILABILITY_OPTIONS = [
+  { value: "accepting_orders", color: "#22c55e" },
+  { value: "available_today",  color: "#2e6853" },
+  { value: "full_this_week",   color: "#f97316" },
+  { value: "on_vacation",      color: "#9ca3af" },
+];
+
+// MEH-2199: W3C APG Radio Group keyboard layer. The group declared
+// role="radiogroup" + role="radio" + aria-checked and carried no arrow keys, so
+// a keyboard user met a widget that announces itself as a radio group and then
+// behaves like four unrelated buttons.
+//
+// Arrow mapping: ArrowLeft = next, ArrowRight = previous — the house RTL
+// contract (Lightbox.jsx:58), which mirrors the HORIZONTAL axis for Hebrew
+// reading order. ArrowDown = next, ArrowUp = previous, unmirrored: the vertical
+// axis has no reading direction to follow, and APG lists both axes for this
+// pattern.
+const RADIO_ARROW_DELTA = { ArrowLeft: 1, ArrowDown: 1, ArrowRight: -1, ArrowUp: -1 };
+
+function handleAvailabilityKeyDown(e) {
+  // Only ENABLED radios participate. Pre-approval every radio is disabled
+  // (MEH-964 1D), so this list is empty, `from` is -1, and the group is inert
+  // with no separate branch to keep in sync with the disabled attribute.
+  const radios = Array.from(
+    e.currentTarget.querySelectorAll('[role="radio"]:not([disabled])'),
+  );
+  const from = radios.indexOf(e.target.closest?.('[role="radio"]'));
+  if (from === -1) return;
+  // Object.hasOwn, not `in` — see hooks/useTabsKeyboard.js for why this is
+  // defensive rather than a fix for a reachable bug.
+  if (!Object.hasOwn(RADIO_ARROW_DELTA, e.key)) return;
+  const to = (from + RADIO_ARROW_DELTA[e.key] + radios.length) % radios.length;
+  e.preventDefault();
+  radios[to].focus();
+  // .click() rather than a parallel activation path. Whatever clicking a radio
+  // means today is what arrowing onto it means — including vacation's
+  // reveal-then-confirm, which must NOT post (MEH-999). One authority for
+  // activation, so the mouse and keyboard paths cannot diverge later.
+  radios[to].click();
+}
+
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
   // MEH-1773: explainer for the availability card below. Its twin lives on the
@@ -341,6 +386,29 @@ export default function ProducerDashboardPage() {
     (analytics?.profile_views?.total ?? 0) > 0 ||
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
   const isApproved = producer.status === "approved";
+
+  // MEH-2199: one evaluation of the active-state rule, consumed by both the
+  // roving tab stop and each radio's aria-checked.
+  // MEH-999: while vacation is selected-but-not-yet-confirmed only the vacation
+  // radio reads active, so the group never lights up two.
+  // MEH-1092 F4: pre-approval the pills show NEUTRAL — a locked block must not
+  // read as a live status in the air — hence `&& isApproved`.
+  const savedAvailability = producer.availability_state || "accepting_orders";
+  const availabilityRadios = AVAILABILITY_OPTIONS.map((opt) => {
+    const isVacation = opt.value === "on_vacation";
+    const active = isVacation
+      ? vacationSelected || savedAvailability === "on_vacation"
+      : !vacationSelected && savedAvailability === opt.value;
+    return { ...opt, isVacation, showActive: active && isApproved };
+  });
+  // APG: the checked radio holds the group's single tab stop; when NOTHING is
+  // checked the FIRST radio holds it, so the group can never become unreachable
+  // by Tab (which is what a bare `showActive ? 0 : -1` would do if the server
+  // ever returned a state outside this list).
+  const availabilityTabStop = Math.max(
+    0,
+    availabilityRadios.findIndex((o) => o.showActive),
+  );
 
   // MEH-1134: state-aware card order. While the business is pending OR the
   // completeness heuristic still reports missing fields, the completeness
@@ -593,31 +661,22 @@ export default function ProducerDashboardPage() {
           aria-labelledby="availability-heading"
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
           className="flex flex-wrap gap-2"
+          // MEH-2199: the arrow-key layer the role already promised. Inert while
+          // the radios are disabled — the handler only walks enabled ones.
+          onKeyDown={handleAvailabilityKeyDown}
         >
-          {[
-            { value: "accepting_orders", color: "#22c55e" },
-            { value: "available_today",  color: "#2e6853" },
-            { value: "full_this_week",   color: "#f97316" },
-            { value: "on_vacation",      color: "#9ca3af" },
-          ].map((opt) => {
-            const savedState = producer.availability_state || "accepting_orders";
-            const isVacation = opt.value === "on_vacation";
-            // MEH-999: while vacation is selected-but-not-yet-confirmed, only the
-            // vacation radio reads active so the group never lights up two.
-            const active = isVacation
-              ? vacationSelected || savedState === "on_vacation"
-              : !vacationSelected && savedState === opt.value;
-            // MEH-1092 F4: pre-approval the pills are already disabled, but the
-            // saved state still read as "live" (bg-primary active fill). Show the
-            // pills NEUTRAL (no active highlight, aria-checked=false) until the
-            // business is approved, so a locked block never reads as an active
-            // status in the air. Post-approval is unchanged.
-            const showActive = active && isApproved;
+          {availabilityRadios.map((opt, i) => {
+            const { isVacation, showActive } = opt;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
+                // MEH-2199: data-radio-value is what the QA harness and tests
+                // name a radio by; tabIndex is the APG roving tab stop, so Tab
+                // enters the group once instead of walking all four.
+                data-radio-value={opt.value}
+                tabIndex={i === availabilityTabStop ? 0 : -1}
                 aria-checked={showActive}
                 // MEH-964 1D: availability is disabled until the business is
                 // published (approved) — an unpublished listing has no public

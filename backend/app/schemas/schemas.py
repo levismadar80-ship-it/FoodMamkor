@@ -2408,6 +2408,11 @@ class ProducerDetailOut(ProducerListOut):
     # MEH-296: extra contact channels (mirror website; owner-editable).
     facebook: str | None = None
     external_order_form: str | None = None
+    # MEH-1677: the business's opt-out for the "לא מגיעים אליך?" CTA. Defaults
+    # true so a row written before the column existed (or any client reading an
+    # older payload) keeps the CTA rather than silently losing it -- the failure
+    # that matters here is the feature vanishing, not it appearing.
+    coverage_cta_enabled: bool = True
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
@@ -4219,6 +4224,63 @@ class ContactIn(BaseModel):
 # the record_contact_click handler) stay in the router.
 class ContactClickIn(BaseModel):
     method: str
+
+
+# MEH-1677: 60 chars after trim. The cap and producer_whatsapp_clicks.city's
+# String(60) are two halves of one bound -- widening either alone re-opens the
+# truncation this exists to prevent.
+COVERAGE_CITY_MAX_LENGTH: int = 60
+
+
+class WhatsAppClickIn(BaseModel):
+    """MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.
+
+    The endpoint took no body before this. It still accepts none -- the
+    anonymous path uses `navigator.sendBeacon`, which cannot set
+    `Content-Type: application/json` (it sends text/plain, which FastAPI
+    rejects with 422), so a REQUIRED body would break every anonymous
+    WhatsApp click on the site. Only the coverage CTA sends a body, and it
+    uses fetch(keepalive) for exactly that reason.
+
+    `city` is validated SOFTLY on purpose: a value that is not in the
+    canonical city list is still STORED, not dropped. The point of the
+    capture is to learn where demand actually is, including spellings and
+    localities our list does not carry yet -- discarding those would delete
+    the most interesting rows.
+    """
+
+    city: str | None = None
+
+    @field_validator("city", mode="before")
+    @classmethod
+    def _validate_city(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            raise ValueError("עיר חייבת להיות מחרוזת")
+        trimmed = v.strip()
+        if not trimmed:
+            return None
+        # MEH-555 bug pattern: a free-text str feeding an admin/dashboard
+        # surface accepts punctuation- or digit-only junk ("???", "123")
+        # unless a letter class is required. city feeds the post-launch
+        # demand-by-city card, so junk here is not cosmetic -- it becomes a
+        # phantom "city" in that feed. Letters counted AFTER strip, per the
+        # pattern. min_count=1, matching the sibling city validator above
+        # (`_validate_city_letters`): a legitimate short Hebrew name
+        # ("בת ים", "לוד") must clear the floor.
+        #
+        # DIVERGENCE from that sibling, deliberate: it RAISES, because city is
+        # required there and a stripped-to-nothing value must 422. Here city is
+        # optional telemetry on a fire-and-forget beacon, so junk DROPS to None
+        # and the click is still logged. That is this endpoint's own stated
+        # principle (MEH-1627, routers/producers.py): "losing attribution beats
+        # losing the click" -- a 422 would discard a real click over a bad
+        # city. Soft validation is unaffected: an unknown REAL locality has
+        # letters and still stores as-is.
+        if not _LETTER_REGEX.sub("", trimmed):
+            return None
+        return trimmed[:COVERAGE_CITY_MAX_LENGTH]
 
 
 class ProducerViewIn(BaseModel):

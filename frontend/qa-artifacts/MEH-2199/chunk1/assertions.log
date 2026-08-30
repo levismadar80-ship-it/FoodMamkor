@@ -1,0 +1,40 @@
+MEH-2199 chunk 1 QA — 2026-08-30T10:39:49.069Z
+target: http://localhost:3000/events — LOCAL production build (next start). /events builds its
+        chips from the static EVENT_CATEGORIES vocab, so the row renders without a
+        backend; and the change is not on staging yet, so a staging run would
+        have measured the OLD code.
+engines: webkit devices['iPhone 14'] · chromium 1440x900
+subject: ChipScrollRow role="toolbar" — roving tabindex + arrow/Home/End
+waits: gated on the toolbar element. No networkidle (banned, MEH-215), no untilQuiet.
+
+engine webkit devices['iPhone 14'] viewport 390x664
+PASS  webkit-390/control:toolbar-has-non-zero-box — 358x46
+PASS  webkit-390/control:chips-present — chips = 5
+PASS  webkit-390/A1:exactly-one-tab-stop — tabindex row = ["0","-1","-1","-1","-1"]
+PASS  webkit-390/A2:focus-enters-the-row — focused chip index = 0
+PASS  webkit-390/A3:one-Tab-leaves-the-row-entirely — Tab exits after a single chip — the row is ONE stop
+PASS  webkit-390/B1:ArrowLeft-goes-to-NEXT — index = 1 (expected 1)
+PASS  webkit-390/B2:ArrowRight-goes-to-PREVIOUS — index = 0 (expected 0)
+PASS  webkit-390/B3:ArrowRight-from-first-wraps-to-last — index = 4 (expected 4)
+PASS  webkit-390/B4:Home-first — index = 0
+PASS  webkit-390/B5:End-last — index = 4
+PASS  webkit-390/C1:arrowing-does-not-toggle-any-chip — aria-pressed before=["true","false","false","false","false"] after=["true","false","false","false","false"]
+PASS  webkit-390/control:Enter-target-starts-unpressed — chip 1 aria-pressed=false before Enter
+PASS  webkit-390/C2:Enter-still-activates — chip 1 aria-pressed false -> true, url-changed=true
+PASS  webkit-390/D:no-horizontal-overflow — scrollWidth=390 <= innerWidth=390
+PASS  chromium-1440/control:toolbar-has-non-zero-box — 992x46
+PASS  chromium-1440/control:chips-present — chips = 5
+PASS  chromium-1440/A1:exactly-one-tab-stop — tabindex row = ["0","-1","-1","-1","-1"]
+PASS  chromium-1440/A2:focus-enters-the-row — focused chip index = 0
+PASS  chromium-1440/A3:one-Tab-leaves-the-row-entirely — Tab exits after a single chip — the row is ONE stop
+PASS  chromium-1440/B1:ArrowLeft-goes-to-NEXT — index = 1 (expected 1)
+PASS  chromium-1440/B2:ArrowRight-goes-to-PREVIOUS — index = 0 (expected 0)
+PASS  chromium-1440/B3:ArrowRight-from-first-wraps-to-last — index = 4 (expected 4)
+PASS  chromium-1440/B4:Home-first — index = 0
+PASS  chromium-1440/B5:End-last — index = 4
+PASS  chromium-1440/C1:arrowing-does-not-toggle-any-chip — aria-pressed before=["true","false","false","false","false"] after=["true","false","false","false","false"]
+PASS  chromium-1440/control:Enter-target-starts-unpressed — chip 1 aria-pressed=false before Enter
+PASS  chromium-1440/C2:Enter-still-activates — chip 1 aria-pressed false -> true, url-changed=true
+PASS  chromium-1440/D:no-horizontal-overflow — scrollWidth=1440 <= innerWidth=1440
+
+28 assertions ran, 0 failed.

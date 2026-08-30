@@ -6,8 +6,7 @@ import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
 import QueueSlaSummary from "./QueueSlaSummary";
-import RequestChangesModal from "./RequestChangesModal";
-import RejectModal from "./RejectModal";
+import ProducerDecisionModal from "./ProducerDecisionModal";
 import { useAdminProducers } from "./use-admin-producers";
 import { useReviewChecklist } from "./use-review-checklist";
 import { ADMIN_REVIEW_APPROVE_CONFIRM } from "@/lib/admin-review-checklist";
@@ -199,33 +198,31 @@ function ProducersAdminPage() {
         visibleCount={h.visible.length}
       />
 
-      {/* MEH-1011 Chunk 2: request-changes composer — opened by the row button
-          or auto-opened on approve-422 with the gate-matched chip prefilled. */}
-      <RequestChangesModal
-        producer={h.modalProducer}
-        feedback={h.feedback}
-        setFeedback={h.setFeedback}
-        onClose={h.closeRequestChanges}
-        onSubmit={h.submitRequestChanges}
-        submitting={h.modalProducer ? h.isBusy(`request-changes:${h.modalProducer.id}`) : false}
-      />
-
-      {/* MEH-226: terminal reject composer — preset reasons fetched from the
-          backend, then a confirm step because submitting emails the owner. */}
-      <RejectModal
-        producer={h.rejectProducer}
+      {/* MEH-2209: ONE decision composer. The reason the admin picks decides
+          the outcome — a fixable reason sends a completion request and leaves
+          the business in the queue, a terminal one rejects. Replaces the
+          MEH-1011 request-changes modal and the MEH-226 reject modal, which
+          between them routed all five reasons to /reject. */}
+      <ProducerDecisionModal
+        producer={h.decisionProducer}
         presets={h.presets}
         presetsError={h.presetsError}
-        presetKey={h.presetKey}
-        setPresetKey={h.setPresetKey}
-        freeText={h.rejectText}
-        setFreeText={h.setRejectText}
-        confirming={h.rejectConfirming}
-        onRequestConfirm={h.requestRejectConfirm}
-        onCancelConfirm={h.cancelRejectConfirm}
-        onClose={h.closeReject}
-        onSubmit={h.submitReject}
-        submitting={h.rejectProducer ? h.isBusy(`reject:${h.rejectProducer.id}`) : false}
+        value={h.value}
+        setValue={h.setValue}
+        freeText={h.freeText}
+        setFreeText={h.setFreeText}
+        focusGroup={h.focusGroup}
+        confirming={h.confirming}
+        onRequestConfirm={h.requestDecisionConfirm}
+        onCancelConfirm={h.cancelDecisionConfirm}
+        onClose={h.closeDecision}
+        onSubmit={h.submitDecision}
+        submitting={
+          h.decisionProducer
+            ? h.isBusy(`request-changes:${h.decisionProducer.id}`) ||
+              h.isBusy(`reject:${h.decisionProducer.id}`)
+            : false
+        }
       />
 
       {/* MEH-1027 Chunk B: context-rich delete confirm (was native confirm()). */}

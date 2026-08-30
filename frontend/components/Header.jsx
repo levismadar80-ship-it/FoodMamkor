@@ -591,6 +591,16 @@ function RegisterAccount({ label }) {
  * logged-in state). Dropdown: profile / settings / dashboard (producer) /
  * admin (admin) / logout.
  */
+// MEH-2199: APG Menu Button keyboard layer. Until this ticket the ONLY keydown
+// handler in this file was the "/" search shortcut, while the trigger declared
+// aria-haspopup="menu" and the panel declared role="menu" — a widget announcing
+// itself as a menu button and behaving like a div full of links.
+//
+// ArrowDown/ArrowUp, not ArrowLeft/ArrowRight: this menu is VERTICAL, and the
+// house RTL contract mirrors the horizontal axis only (Lightbox.jsx:58). Up and
+// down have no reading direction to follow.
+const MENU_ARROW_DELTA = { ArrowDown: 1, ArrowUp: -1 };
+
 function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
@@ -633,6 +643,93 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   // three incidents that motivated MEH-1703. It carries no icon because the
   // dropdown rows are text-only; that stays shell-local, in the JSX below.
 
+  // MEH-2199: the roving tab stop. Reset to the first item on every open, so a
+  // reopened menu always starts at the top rather than wherever it was left.
+  const [activeItem, setActiveItem] = useState(0);
+  const triggerRef = useRef(null);
+  const menuListRef = useRef(null);
+  // Which end to land on when the menu opens by keyboard. Null when it was
+  // opened by pointer, where APG says focus stays put.
+  const openIntentRef = useRef(null);
+
+  const menuItems = () =>
+    Array.from(menuListRef.current?.querySelectorAll('[role="menuitem"]') ?? []);
+
+  const focusItem = (i) => {
+    const els = menuItems();
+    if (!els.length) return;
+    const clamped = (i + els.length) % els.length;
+    els[clamped].focus();
+    setActiveItem(clamped);
+  };
+
+  // The panel only exists after the open render, so the landing focus has to
+  // wait for it. Keyed on `open` rather than done inline in the handler.
+  useEffect(() => {
+    if (!open) return;
+    setActiveItem(0);
+    const intent = openIntentRef.current;
+    openIntentRef.current = null;
+    if (!intent) return;
+    const els = menuItems();
+    if (!els.length) return;
+    const i = intent === "last" ? els.length - 1 : 0;
+    els[i].focus();
+    setActiveItem(i);
+  }, [open]);
+
+  const onTriggerKeyDown = (e) => {
+    // Escape must work from the TRIGGER too, not only from inside the panel.
+    // Opening by click leaves focus on the trigger, so the panel's handler never
+    // sees the key and the menu would have been un-dismissable by keyboard from
+    // the one state a mouse user lands in. Found in adversarial review, not by
+    // a test — the test came after.
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (!Object.hasOwn(MENU_ARROW_DELTA, e.key)) return;
+    e.preventDefault();
+    const intent = e.key === "ArrowUp" ? "last" : "first";
+    if (open) {
+      // Already open and focus is still on the trigger — move straight in
+      // rather than waiting for an effect that will not re-run.
+      focusItem(intent === "last" ? -1 : 0);
+      return;
+    }
+    openIntentRef.current = intent;
+    setOpen(true);
+  };
+
+  const onMenuKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      // Escape is a DISMISSAL, never an action — and unlike a modal it is the
+      // only close path that returns focus. Closing by clicking outside must
+      // not yank focus back: the user is already on their way somewhere else.
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (e.key === "Tab") {
+      // Tab leaves the menu, so the menu should not still be open behind it.
+      // Focus is deliberately left alone — the browser is already moving it.
+      setOpen(false);
+      return;
+    }
+    const els = menuItems();
+    const from = els.indexOf(e.target.closest?.('[role="menuitem"]'));
+    if (from === -1) return;
+    let to;
+    if (Object.hasOwn(MENU_ARROW_DELTA, e.key)) to = from + MENU_ARROW_DELTA[e.key];
+    else if (e.key === "Home") to = 0;
+    else if (e.key === "End") to = els.length - 1;
+    else return;
+    e.preventDefault();
+    focusItem(to);
+  };
+
   return (
     // MEH-789: desktop-only — the bottom-pill account tab + AccountSheet own
     // mobile account, so the top-bar avatar is gated off mobile (was a
@@ -640,7 +737,9 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
     <div ref={menuRef} className="relative hidden md:block">
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={onTriggerKeyDown}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("account.menu.aria", { name: user.name })}
@@ -659,13 +758,18 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
       {open && (
         <div
           role="menu"
+          ref={menuListRef}
+          onKeyDown={onMenuKeyDown}
           className="absolute top-11 bg-surface-card border border-border rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
-          {items.map((item) => (
+          {items.map((item, i) => (
             <Link
               key={item.label}
               role="menuitem"
+              // MEH-2199: roving tab stop — exactly one item is in the tab
+              // order, and it follows arrow focus.
+              tabIndex={i === activeItem ? 0 : -1}
               href={item.href}
               onClick={() => setOpen(false)}
               className="block px-4 py-2 text-sm text-text hover:bg-background transition-colors duration-fast ease-quart"
@@ -677,6 +781,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           <button
             type="button"
             role="menuitem"
+            tabIndex={items.length === activeItem ? 0 : -1}
             onClick={() => { setOpen(false); logout(); }}
             className="w-full text-start px-4 py-2 text-sm text-error hover:bg-background transition-colors duration-fast ease-quart"
           >

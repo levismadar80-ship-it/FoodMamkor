@@ -54,7 +54,7 @@ graph TD
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
-    GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks]
+    GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]

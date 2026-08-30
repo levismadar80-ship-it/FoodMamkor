@@ -357,6 +357,19 @@ function EditPageInner() {
   // onCountChange as the owner adds/removes inside the card.
   const [productsCount, setProductsCount] = useState(null);
 
+  // MEH-2207: the LIVE primary contact channel, as selected in the contact
+  // card's form — not the saved value. Seeded from the profile so the notice
+  // below is correct on first paint, then kept live by ContactChannelsCard's
+  // onMethodChange. It has to be the form value, because the case worth
+  // warning about is the owner who switches her channel away from WhatsApp
+  // and, in that same session, opens the questions card to see what happened
+  // to the five questions she wrote. Reading the saved value would show her
+  // the warning only after she saves — i.e. after the surprise.
+  // Same shape as the productsCount lift above: profile-seeded, child-updated.
+  const [liveContactMethod, setLiveContactMethod] = useState(
+    () => profile?.primary_contact_method || "whatsapp"
+  );
+
   // MEH-1100: page-level unsaved-changes signal. Each card reports its own
   // (pre-existing) dirty flag up via reportDirty(key, bool); the page only
   // aggregates — no card save logic changes.
@@ -1202,6 +1215,7 @@ function EditPageInner() {
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
+            onMethodChange={setLiveContactMethod}
           />
         </EditAccordionCard>
 
@@ -1227,6 +1241,7 @@ function EditPageInner() {
             profile={profile}
             onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
             reportDirty={reportDirty}
+            primaryMethod={liveContactMethod}
           />
         </EditAccordionCard>
       </div>
@@ -1279,7 +1294,14 @@ function LiveQuestionsPreview({ items, t }) {
   );
 }
 
-function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
+function CustomQuestionsCard({
+  profile,
+  onSave,
+  reportDirty = () => {},
+  // MEH-2207: the LIVE channel from the contact card's form, not profile's
+  // saved value — see the state that feeds it on the page component.
+  primaryMethod = "whatsapp",
+}) {
   const t = useTranslations("dashboard.producer.custom_questions");
   const tRoot = useTranslations("dashboard.producer");
   // Same namespace the public renderer reads, so the labels fed to the resolver
@@ -1366,6 +1388,17 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">
         {t("guidance")}
       </p>
+      {/* MEH-2207: since the question chips started following the declared
+          contact channel, a non-WhatsApp business shows none of these on its
+          public page — and nothing here said so. An owner who wrote five
+          questions and later switched her primary channel to phone watched
+          them vanish with no explanation. Same MEH-1116 helper-text idiom as
+          the guidance line above. */}
+      {primaryMethod !== "whatsapp" && (
+        <p className="text-xs text-fg-muted mb-4" data-testid="questions-channel-notice">
+          {t("channel_notice")}
+        </p>
+      )}
       <div className="space-y-2">
         {questions.map((q, i) => (
           <Input
@@ -1414,7 +1447,16 @@ const PRIMARY_METHODS = [
   "external_order",
 ];
 
-function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
+function ContactChannelsCard({
+  profile,
+  onSave,
+  reportDirty = () => {},
+  // MEH-2207: report the LIVE radio selection up so the questions card can warn
+  // that custom questions only render on the public page for a WhatsApp-primary
+  // business. Same lift-up shape as reportDirty; this card's own behaviour is
+  // unchanged.
+  onMethodChange = () => {},
+}) {
   const t = useTranslations("dashboard.producer.contact_channels");
   // MEH-1115: point-of-decision explainers (top-level whats_this namespace).
   const tWhat = useTranslations("whats_this");
@@ -1437,6 +1479,12 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   const dirty = Object.keys(seed).some((k) => form[k] !== seed[k]);
+  // MEH-2207: fires on mount (reporting the seeded value) and on every change
+  // of the radio — including a change the owner has NOT saved yet, which is the
+  // whole point.
+  useEffect(() => {
+    onMethodChange(form.primary_contact_method);
+  }, [form.primary_contact_method, onMethodChange]);
   // MEH-1100: lift to the page-level unsaved-changes aggregate.
   useEffect(() => {
     reportDirty("contact", dirty);

@@ -73,6 +73,15 @@ class Producer(Base):
     # (default: whatsapp). `contact_email` is the producer's business
     # email — distinct from the owner user's login email.
     primary_contact_method = Column(String(20), default="whatsapp")
+    # MEH-1677: the business's opt-out for the "לא מגיעים אליך?" CTA
+    # (MEH-1675). server_default=true, NOT a Python-side default: existing
+    # rows are backfilled by the DDL, and a writer that bypasses the ORM
+    # still gets true. No toggle UI ships with this column -- that is
+    # MEH-1676; the column lands now so the opt-out does not cost a second
+    # schema change later.
+    coverage_cta_enabled = Column(
+        Boolean, nullable=False, server_default=text("true"), default=True
+    )
     contact_email = Column(String(200), nullable=True)
     # MEH-296: extra contact channels. URLs validated at the API boundary
     # (schemas.ProducerUpdate, http(s) only). Free-text columns, no enum.
@@ -1764,6 +1773,12 @@ class ProducerWhatsAppClick(Base):
         index=True,
     )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    # MEH-1677: the city a coverage-request click ("לא מגיעים אליך?") was
+    # asking about. NULL on an ORDINARY WhatsApp click and on every row that
+    # predates this column -- only CoverageRequestCta sends a city, so NULL
+    # means "not a coverage click" and never "we lost it". Length mirrors the
+    # 60-char cap the request schema enforces after trim.
+    city = Column(String(60), nullable=True)
 
 
 class ContactClick(Base):
@@ -2065,8 +2080,11 @@ class ProducerRecipe(Base):
     of that producer's products via the producer_recipe_products M2M.
 
     `moderation_status` mirrors the four-state machine used elsewhere
-    (pending / approved / rejected / needs_revision); the DB-level
-    CHECK constraint is declared in the Alembic migration, not here.
+    (pending / approved / rejected / needs_revision). The DB-level CHECK
+    constraint is created by Alembic revision f4c8a91e2b07 and mirrored
+    in `__table_args__` below for autogenerate parity — the migration
+    remains the schema authority (ADR-003); the ORM copy declares only
+    what the DB already has, and creates nothing.
 
     History: MEH-588 (creation, chunk 1/4 of the producer-recipes epic;
     chunk 0 = MEH-587 cleared the legacy `recipes` namespace).
@@ -2083,6 +2101,13 @@ class ProducerRecipe(Base):
             "published",
             "moderation_status",
             postgresql_where=text("published = true"),
+        ),
+        # MEH-588: mirror the CHECK created in revision f4c8a91e2b07. Alembic
+        # 1.19.0 added by-name CHECK autogenerate detection, which surfaced
+        # this as ORM/migration drift; the DB was always correct.
+        CheckConstraint(
+            "moderation_status IN ('pending', 'approved', 'rejected', 'needs_revision')",
+            name="producer_recipes_moderation_status_check",
         ),
     )
 

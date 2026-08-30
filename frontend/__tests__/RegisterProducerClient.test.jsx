@@ -16,10 +16,27 @@ import api from "@/lib/api";
 // WHAT was substituted, not merely that some string rendered. Keys called
 // without values are byte-identical to before, so every pre-existing assertion
 // is untouched — verified: no test in this file asserts on a value-carrying key.
+// MEH-2200: the collection notice calls t.rich(), which this mock did not
+// expose — 30 tests here crashed on `t.rich is not a function` the moment the
+// notice landed on the STORY frame. `.rich` renders the key path AND invokes
+// every tag callback, so key-based assertions below are byte-identical while
+// the real <Link>/<a> nodes still mount.
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key, values) => {
-    const path = scope ? `${scope}.${key}` : key;
-    return values ? `${path} ${Object.values(values).join(" ")}` : path;
+  useTranslations: (scope) => {
+    const t = (key, values) => {
+      const path = scope ? `${scope}.${key}` : key;
+      return values ? `${path} ${Object.values(values).join(" ")}` : path;
+    };
+    t.rich = (key, tags = {}) => {
+      const path = scope ? `${scope}.${key}` : key;
+      return [
+        path,
+        ...Object.entries(tags).map(([name, render]) => (
+          <span key={name}>{render(name)}</span>
+        )),
+      ];
+    };
+    return t;
   },
 }));
 
