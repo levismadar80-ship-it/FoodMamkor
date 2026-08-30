@@ -2099,6 +2099,13 @@ class ProducerRecipe(Base):
             "moderation_status",
             postgresql_where=text("published = true"),
         ),
+        # MEH-588: mirror the CHECK created in revision f4c8a91e2b07. Alembic
+        # 1.19.0 added by-name CHECK autogenerate detection, which surfaced
+        # this as ORM/migration drift; the DB was always correct.
+        CheckConstraint(
+            "moderation_status IN ('pending', 'approved', 'rejected', 'needs_revision')",
+            name="producer_recipes_moderation_status_check",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
