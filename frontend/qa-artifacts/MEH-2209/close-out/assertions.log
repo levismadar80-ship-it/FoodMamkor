@@ -1,0 +1,48 @@
+MEH-2209 close-out QA — 2026-08-30T10:22:06.817Z
+target: https://staging.mehamakor.online/admin/producers (live staging; chromium capped at TLS 1.2 — MEH-2118)
+engines: webkit devices['iPhone 14'] · chromium 375x812
+subject: ProducerDecisionModal — the 5ב required-affordance (#3164 / e1656c02)
+
+engine webkit devices['iPhone 14'] viewport 390x664
+PASS  webkit-390/control:on-admin-page-not-login — url=https://staging.mehamakor.online/admin/producers
+PASS  webkit-390/control:pending-business-present — "MEH-2221" found in the table
+PASS  webkit-390/control:row-trigger-present — "בקשת השלמה" buttons = 1
+PASS  webkit-390/control:modal-has-non-zero-box — 358x565
+PASS  webkit-390/A:native-radios-present — radio inputs = 6
+PASS  webkit-390/B1:nothing-selected-label-optional — label reads OPTIONAL
+PASS  webkit-390/B1:aria-required-false — aria-required=false
+PASS  webkit-390/B2:preset-label-optional — label reads OPTIONAL
+PASS  webkit-390/B2:aria-required-false-on-preset — aria-required=false
+PASS  webkit-390/B2:submit-enabled-on-preset — a preset reason alone can be submitted
+PASS  webkit-390/control:other-radio-found — "אחר" radios = 1
+PASS  webkit-390/C1:other-label-swaps-to-required — label reads REQUIRED — expected REQUIRED
+PASS  webkit-390/C1:aria-required-true — aria-required=true
+PASS  webkit-390/C2:canSubmitDecision-locks-until-text — submit disabled while אחר is selected and the field is empty
+PASS  webkit-390/C3:submit-unlocks-with-text — submit enabled once the free text is non-empty
+PASS  webkit-390/C3:label-stays-required-with-text — the label tracks the SELECTION, not the emptiness
+PASS  webkit-390/C4:reverts-to-optional — label reads OPTIONAL — the swap works in BOTH directions
+PASS  webkit-390/C4:aria-required-back-to-false — aria-required=false
+PASS  webkit-390/D:no-horizontal-overflow — scrollWidth=390 <= innerWidth=390
+NOTE  webkit-390 — the modal was NOT submitted; this asserts the affordance only.
+PASS  chromium-375/control:on-admin-page-not-login — url=https://staging.mehamakor.online/admin/producers
+PASS  chromium-375/control:pending-business-present — "MEH-2221" found in the table
+PASS  chromium-375/control:row-trigger-present — "בקשת השלמה" buttons = 1
+PASS  chromium-375/control:modal-has-non-zero-box — 343x565
+PASS  chromium-375/A:native-radios-present — radio inputs = 6
+PASS  chromium-375/B1:nothing-selected-label-optional — label reads OPTIONAL
+PASS  chromium-375/B1:aria-required-false — aria-required=false
+PASS  chromium-375/B2:preset-label-optional — label reads OPTIONAL
+PASS  chromium-375/B2:aria-required-false-on-preset — aria-required=false
+PASS  chromium-375/B2:submit-enabled-on-preset — a preset reason alone can be submitted
+PASS  chromium-375/control:other-radio-found — "אחר" radios = 1
+PASS  chromium-375/C1:other-label-swaps-to-required — label reads REQUIRED — expected REQUIRED
+PASS  chromium-375/C1:aria-required-true — aria-required=true
+PASS  chromium-375/C2:canSubmitDecision-locks-until-text — submit disabled while אחר is selected and the field is empty
+PASS  chromium-375/C3:submit-unlocks-with-text — submit enabled once the free text is non-empty
+PASS  chromium-375/C3:label-stays-required-with-text — the label tracks the SELECTION, not the emptiness
+PASS  chromium-375/C4:reverts-to-optional — label reads OPTIONAL — the swap works in BOTH directions
+PASS  chromium-375/C4:aria-required-back-to-false — aria-required=false
+PASS  chromium-375/D:no-horizontal-overflow — scrollWidth=375 <= innerWidth=375
+NOTE  chromium-375 — the modal was NOT submitted; this asserts the affordance only.
+
+38 assertions ran, 0 failed.

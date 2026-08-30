@@ -168,7 +168,7 @@ vocabulary doesn't cover yet, and removing it would be a regression.
 
 ## 3 · The edit
 
-### 3.1 · Correct the header comment (`:14-16`)
+### 3.1 · Correct the header comment (`:15-17`)
 
 ```diff
 -# run to one baseline; empty input keeps the full regen. Dispatch needs a token
