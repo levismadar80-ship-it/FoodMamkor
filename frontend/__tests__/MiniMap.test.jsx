@@ -716,10 +716,29 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
     return match ? Number(match[1] ?? match[2]) : null;
   };
 
+  // Resolve the isolated box by what it CONTAINS, not by where it sits relative
+  // to the button. `expand.parentElement` silently becomes the wrong element the
+  // day the button gains a wrapper of its own (a tooltip trigger, a span), and
+  // the two tests below fail differently on that: the first reds with a message
+  // about a className, naming nothing structural; the second reds NOT AT ALL —
+  // a nested span trivially does not contain the overlay, so the containment
+  // assertion passes for the wrong reason. A false pass is the worse half, and
+  // it is why this is a shared resolver rather than a message on one assertion.
+  const isolatedBoxOf = (container, expand) => {
+    const map = container.querySelector('[data-testid="map"]');
+    expect(map, "no map surface rendered — the react-leaflet stub did not mount").not.toBeNull();
+    const box = expand.parentElement;
+    expect(
+      box.contains(map),
+      "the expand button's parent no longer holds the map surface: the button gained its own wrapper, so this test is pointed at the wrong element and its verdict means nothing",
+    ).toBe(true);
+    return box;
+  };
+
   it("keeps the expand button's z below the page CTA, inside an isolated wrapper", () => {
-    render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+    const { container } = render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
     const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
-    const wrapper = expand.parentElement;
+    const wrapper = isolatedBoxOf(container, expand);
 
     // Half 1 — the button's own value is local, not page-scale.
     const z = zTokenOf(expand.className);
@@ -740,9 +759,9 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
     // that as a SIBLING of the isolated wrapper. If a refactor moves it inside,
     // isolation traps it and the overlay renders under the header with no error
     // anywhere: the half of the fix that is invisible until someone opens it.
-    render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+    const { container } = render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
     const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
-    const isolatedWrapper = expand.parentElement;
+    const isolatedWrapper = isolatedBoxOf(container, expand);
 
     fireEvent.click(expand);
     const overlay = screen.getByRole("dialog", { name: "מפה במסך מלא" });
