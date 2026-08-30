@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-29 — ‏builder-model-guard: פטור לפי מה שהקומיט נגע בו, לא לפי זהות · ‏#3173 `dc72902c` + ‏#3174 `54604d1d`
+
+**הבאג:** ‏`vrt-update.yml:174-175` מבצע commit כ-`github-actions[bot]`, והפטור ב-`builder-model-guard.sh` תפס `dependabot[bot]` בלבד. כל PR שה-tip שלו regen של baseline האדים את **Repo guards** — שער חובה — על קומיט שאף session לא כתב.
+
+**‏#3173 (`dc72902c`) — החצי שמוסיף אילוץ.** לא הרחיב את הפטור: הרחבה **מצמצמת** את קבוצת ההפרות הנתפסות, וזה הכיוון שכלל 32 אוסר על session לבצע לבד. במקום זה חילץ את ה-predicate ל-`is_exempt_bot_author()`, הוסיף `--self-test`, והריץ אותו כ-**preflight בכל ריצה רגילה** — כי שום workflow לא מריץ `--self-test` על `scripts/checks/`, ובלי ה-preflight הנעילה הייתה טענה ולא שער. בנוסף: flag לא מוכר יוצא 2 (קודם `--self-test` הריץ בשקט את השער הרגיל ויצא 0 — ירוק שמשמעותו "הדגל שלך לא נקרא").
+
+**‏#3174 (`54604d1d`) — ההכרעה, לפי MEH-2223.** פטור **דו-תנאי**: ‏`github-actions[bot]` **וגם** diff שכולו תחת `frontend/e2e/visual/*-snapshots/`. ‏dependabot לא השתנה. קומיט בוט שנוגע בקוד — עדיין נבדק.
+
+🔴 **המדידה ששינתה את התכנון:** ב-clone בעומק 1, ‏`git diff-tree` יוצא **0 עם פלט ריק**. מבחן "כל הנתיבים הם baseline" על רשימה ריקה הוא **אמת ריקנית** — המימוש המתבקש היה פוטר כל קומיט בוט שה-diff שלו לא נקרא, בשקט, ורק ב-CI. לכן: רשימה ריקה = **לא** מוגבל, וכל מצב בלתי-ניתן-לקביעה נכשל סגור.
+
+🔴 **הפלתי את CI פעם אחת בענף הזה ותיקנתי.** הגרסה הראשונה עיגנה שני מקרי self-test על SHA-ים אמיתיים (`fc2c795e`, `dc72902c`). שני האובייקטים **חסרים** תחת `fetch-depth: 1` של `repo-guards`, ולכן ה-self-test נכשל בכל PR וה-preflight הפיל איתו את כל השער — **אדום גורף**, גרוע מה-false red שהכרטיס בא לתקן. העוגנים הוחלפו בכאלה שתקפים בכל עומק: קבצי baseline חיים מעץ העבודה, ריפו git זמני ב-`mktemp` ל-`commit_changed_paths`, וטענת fail-closed ישירה.
+
+🔴 **ה-merge נדחה שלוש פעמים עם "2 of 2 required status checks are expected" — וזה לא היה קשור לבדיקות.** ‏`mergeable_state` היה **`behind`**: הענף פיגר ב-29 קומיטים אחרי staging, וה-ruleset דורש עדכניות. הודעת השגיאה הצביעה על המקום הלא נכון; קריאת מצב ה-PR עצמו היא שפתרה. ‏`git merge origin/staging` (כלל 25, לא rebase) → `clean` → מוזג.
+
+🔴 **ה-CI reviewer מצא שני ממצאי Minor אמיתיים ב-#3174, שניהם תוקנו:** הודעת כשל שגויה כשהריפו הזמני לא נבנה, ומספור בלוקים מיושן. שניהם בדיף שלי.
+
+🔴 **נותר פתוח:** אם ל-runner אין רשת ל-origin ברגע ה-fetch של ה-parent, השער נכשל סגור וה-false red חוזר — נכון, אבל חוזר. התיקון העמיד הוא `fetch-depth: 2` על checkout של `repo-guards`, שהוא עריכת `.github/workflows/**` ולכן של ספיר.
+
 ## 2026-08-29 — ‏טולטיפ חותם קוסמטיקה: ‏#3166
 
 **מוזג:** ‏#3166 `1fc7dab3` — **אומת כ-squash** (הורה יחיד `fcd85d59`). ‏MEH-2216 סגור.
