@@ -3,6 +3,55 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-30 — ‏#3080 אחרי refresh: חסם ה-alembic נפל, הטסטים אדומים מסיבה אחרת · **לא נחקר, לא מוזג**
+
+**מצב:** ‏#3080 (dependabot pip minor/patch) רועננה מעל staging — head `1100b09`, base `9bf3320`. **לא מוזגה.**
+
+| step ב-`Backend tests (pytest)` | תוצאה |
+| -- | -- |
+| 8 · Alembic upgrade head | ✅ success |
+| 9 · Verify alembic schema (36 tables) | ✅ success |
+| **10 · Alembic drift check (models vs migrations)** | ✅ **success — נמדד** |
+| **11 · Run tests (parallel)** | ❌ **failure** (08:04:32 → 08:17:19) |
+
+‏`CI gate (required)` = failure, והלוג שלו נוקב בסיבה אחת בלבד: `FAIL Backend tests (pytest)`. כל השאר ירוק — ruff, mypy, pip-audit, Repo guards, Env drift, Deploy gate.
+
+✅ **החסם ההיסטורי נעלם.** ה-`exit 255` ב-step 10, עם אפס טסטים שנכשלו, הוא בדיוק מה ש-`9bf3320` תיקן. **step 10 עובר עכשיו — מדידה, לא הסקה.**
+
+❌ **הכישלון החדש הוא בשלב אחר: גופי הטסטים תחת מערך התלויות החדש.** לא אותה תקלה בתחפושת.
+
+⚠️ **אילו טסטים נכשלו — לא חולץ, ובכוונה לא נוחש.** קונטיינר ה-Postgres שופך את הלוג המלא שלו ב-teardown, ושורת הסיכום של pytest קבורה מתחתיו — מחוץ להישג ידה של קריאת tail דרך ה-API. **שני מסלולי חילוץ, שניהם לא בוצעו:** (א) הלוג המלא ב-UI של GitHub Actions (‏run `33300652090`, job `99228061793`); (ב) שכפול מקומי מול מערך התלויות של #3080 — בר-ביצוע בסנדבוקס (‏Postgres 16 עולה תחת המשתמש `postgres`, לא כ-root).
+
+### 15 התלויות שה-PR מרימה
+
+| חבילה | מ- | ל- |
+| -- | -- | -- |
+| fastapi | 0.139.0 | **0.141.1** |
+| uvicorn | 0.48.0 | 0.52.4 |
+| sqlalchemy | 2.0.35 | 2.0.52 |
+| alembic | 1.18.5 | 1.19.1 |
+| joserfc | 1.7.0 | 1.7.4 |
+| pydantic | 2.9.2 | **2.13.4** |
+| pydantic-settings | 2.5.2 | 2.15.0 |
+| cloudinary | 1.40.0 | 1.46.0 |
+| google-auth | 2.34.0 | 2.56.3 |
+| httpx | 0.27.2 | **0.28.1** |
+| slowapi | 0.1.9 | 0.1.10 |
+| pywebpush | 2.3.0 | 2.4.0 |
+| resend | 2.30.1 | 2.38.0 |
+| sentry-sdk | 2.60.0 | **2.68.0** |
+| mypy | 2.3.0 | 2.3.1 |
+
+### 🔴 שני חוטים לבדוק **לפני** חיפוש רחב — הכישלונות אולי אינם מקריים
+
+**1. ‏`fastapi` 0.139.0 → 0.141.1 יחד עם `pydantic` 2.9.2 → 2.13.4.** הכרטיס של תקלת ה-500 מתעד ש-**FastAPI ≥ 0.137 הוא התנאי המוקדם** לבאג ה-re-wrap של sentry (‏`get_request_handler()` נקרא בכל בקשה במקום פעם אחת ברישום). ה-PR הזה מרים את שתיהן בבת אחת, ו-`sentry-sdk` 2.68.0 אמור לסגור בדיוק את זה. כלומר שלוש החבילות שנוגעות באותו מנגנון זזות יחד — **מי שלוקח את זה יבדוק את החוט הזה ראשון**, לא יתחיל מסריקה כללית.
+
+**2. ‏`httpx` 0.27.2 → 0.28.1 — הפין הזה נושא משקל, לפי `.claude/rules/backend.md`.** הכלל אומר במפורש ש-`httpx==0.27.2` הוא מה שמחזיק את הקו, ושבאמפ ל-0.28+ הוא **בדיוק** השינוי שמחזיר לחיים את ה-`TypeError` של לקוח anthropic (‏`proxies=` → `proxy=`). המיטיגציה היא `http_client=httpx.Client()` ב-**6 אתרי קריאה**, וכולם תואמים — אבל **ה-AI fail-open מסווה כישלון כזה** (moderation מחזירה APPROVED במקום 5xx), כך שהתסמין יופיע כטסט אדום ולא כשגיאה רועמת. **חוט שני לבדיקה.**
+
+*(שני החוטים הם **השערות מדורגות לבדיקה**, לא ממצאים. שום דבר מהם לא נמדד על #3080.)*
+
+**החלטה (ספיר, 30/08):** שווה מרדף, **לא בסשן הזה** — שכפול מקומי מול 15 תלויות משודרגות הוא חקירה, לא צעד. #3080 נשארת פתוחה ואדומה.
+
 ## 2026-08-30 — ‏alembic 1.19 חשף drift ותיק ב-`producer_recipes`: התיקון ב-ORM, לא pin · ‏#3177 `9bf3320`
 
 **מה נחסם:** ‏#3080 (dependabot pip minor/patch, נושא `sentry-sdk` 2.60.0 → 2.68.0) מת ב-`Backend tests (pytest)` על step **Alembic drift check**, `exit 255`, **אפס טסטים נכשלו** — `remove_constraint 'producer_recipes_moderation_status_check'`.
