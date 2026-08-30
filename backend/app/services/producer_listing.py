@@ -122,6 +122,25 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
     ("low_carb", "is_low_carb"),
 ]
 
+# MEH-1508 chunk 3א — which exposed dietary axis also honours a business-level
+# 100% declaration (`producers.<col> == 'all'`, added by chunk 1).
+#
+# ONLY `vegan` is in this table, and every omission is deliberate:
+#   * `vegetarian` has a scope column too, but its filter is a two-column OR
+#     handled in its own branch below — same widening, different site.
+#   * `gluten_free` / `lactose_free` have `*_facility` columns, not `*_scope`.
+#     The card rules them a question about the PRODUCTION SITE rather than the
+#     catalog (§2, §6.3: cross-contamination is medical and is not answered by
+#     "everything I sell is X"), so 'dedicated' must NOT satisfy the catalog
+#     filter. Asserted in test_the_declaration_does_not_leak_into_the_facility_axes.
+#   * `no_added_sugar` / `low_carb` (MEH-1934) have no scope column at all.
+#
+# A dict rather than a third tuple-table so the loop reads one lookup, and so a
+# future axis is one row rather than a new branch.
+_SCOPE_COLUMN_FOR_AXIS: dict[str, str] = {
+    "vegan": "vegan_scope",
+}
+
 
 def _build_base_queries(
     db: Session,
@@ -526,6 +545,13 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
             continue
         prod_col = getattr(Product, prod_attr)
         cond = Producer.products.any(prod_col.is_(True))
+        # MEH-1508 chunk 3א — the business-level declaration counts too, on the
+        # axes that HAVE one. See _SCOPE_COLUMN_FOR_AXIS below for why that is
+        # only `vegan`, and why the facility axes are excluded rather than
+        # forgotten.
+        scope_col = _SCOPE_COLUMN_FOR_AXIS.get(key)
+        if scope_col is not None:
+            cond = or_(cond, getattr(Producer, scope_col) == "all")
         q = q.filter(cond if val else ~cond)
         count_q = count_q.filter(cond if val else ~cond)
 
@@ -536,8 +562,18 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     # that table maps a single column — this is a two-column OR condition.
     vegetarian = filters.get("vegetarian")
     if vegetarian is not None:
-        veg_cond = Producer.products.any(
-            or_(Product.is_vegetarian.is_(True), Product.is_vegan.is_(True))
+        veg_cond = or_(
+            Producer.products.any(
+                or_(Product.is_vegetarian.is_(True), Product.is_vegan.is_(True))
+            ),
+            # MEH-1508 chunk 3א, same widening as the loop above. Note the
+            # asymmetry with the product-level rule one line up: a vegan
+            # PRODUCT implies vegetarian, but `vegan_scope='all'` is NOT read
+            # here. That is the card's spec, and extending it is a product call
+            # rather than a tidy-up — pinned by
+            # test_vegan_scope_all_does_not_currently_satisfy_the_vegetarian_filter
+            # so the asymmetry is a recorded decision, not an oversight.
+            Producer.vegetarian_scope == "all",
         )
         q = q.filter(veg_cond if vegetarian else ~veg_cond)
         count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)
