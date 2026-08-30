@@ -3,6 +3,187 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-30 — ‏Release ‏`staging → main` בוצע: ‏**790cf871** · תיקון השורש של MEH-1906 בפרודקשן
+
+**‏מה נחת:** ‏`main` ‏`3d46cc37` → **`790cf871`**, מ-`staging` ‏`c7e509b1`. ‏**72 non-merge commits.** ‏PR #3171, מוזג ע"י CC בסמכות MEH-2227 §1.
+
+**‏אומת כ-merge commit ולא כ-squash:** הורים `3d46cc37` + `c7e509b1`, תבנית `Merge pull request #3171 from …` — נקרא מהקומיט שנחת (MEH-1526), לא מתשובת קריאת ה-merge.
+
+### הסדר שהיה הממצא
+
+‏`#3171` הוא `head=staging` — **ענף, לא SHA**. הוא נושא את מה ש-`staging` מחזיקה ברגע ה-merge. ‏`sentry-sdk 2.68.0` (תיקון MEH-1906) ישב בתוך #3080 ולא על `staging`.
+**‏merge של #3171 לפני ש-#3080 ינחת היה משחרר ריליז בלי התיקון שבשבילו הוא יצא.** נמדד ישירות: `staging` ו-`main` שניהם על `2.60.0` באותו רגע.
+‏#3080 נחת כ-`07d503f4` (ע"י סשן ה-drain, לא CC) → `staging` עברה ל-2.68.0 → ואז ה-merge.
+
+### שתי מסקנות שהתהפכו תוך כדי, והוחלפו לפני ה-merge
+
+| סעיף | נאמר | נכון אחרי `07d503f4` |
+| -- | -- | -- |
+| §2 | `backend/pyproject.toml → EMPTY` | **CHANGED** — 15 חבילות backend |
+| §3 | «MEH-1906 root fix is **NOT** in this release» | **כלול** — `sentry-sdk` 2.68.0 |
+
+שתיהן היו נכונות כשנמדדו. **‏זו התנהגות של PR שה-head שלו חי, לא שגיאת מדידה** — ה-head זז **שמונה פעמים** (`c9b9f077 → 80db6c57 → a12af8ef → dcf17bc2 → 9bf33202 → 4351578c → 273c38e5 → c7e509b1`), ואחת מהן עקפה עדכון בזמן הכתיבה. משטח ההגירה נמדד מחדש בכל עמדה והחזיק בכולן.
+
+### אימות §8 — production, נמדד ע"י CC
+
+| בדיקה | תוצאה |
+| -- | -- |
+| `alembic upgrade head` · `alembic_version` | ✅ **`b3f7a1c46e92`** |
+| `/api/health` — `booted_at` חדש | ✅ **`2026-08-30T15:34:30Z`** (היה 26/08 19:26) · `git_sha` = `790cf871` |
+| `/api/categories` | ✅ **200** |
+| `/api/producers?limit=1` | ✅ **200** (גוף `[]` — ראו למטה) |
+| `/api/producers/by-slug/*` | ✅ **404** עם גוף תקין (היה 500 על כל קלט) |
+| Vercel prod | ✅ `/` · `/he` · `/he/map` — **200** |
+
+‏`mehamakor.co.il` נגישה ל-GET מסנדבוק CC; Railway ו-`staging.mehamakor.online` אינן.
+
+### MEH-1906 — נשאר In Progress בכוונה
+
+**‏תיקון השורש נשלח, וה-endpoint אינו מחזיר עוד 500 באופן בלתי-תלוי-קלט** — `by-slug` מחזיר 404 עם גוף תקין על שלושה קלטים כולל slug שטותי, התנהגות שהנתיב השבור לא יכול לייצר.
+
+**‏אך טרם הוכח תחת uptime מתמשך ולא על נתיב ההצלחה.** ה-deploy מאפס את מונה ה-wrapper; הקונטיינר הקודם הראה את הכשל רק אחרי ~3 ימים, והמדידה כאן נלקחה ב-uptime של דקות. ובנוסף — **אין בית עסק `approved` בפרודקשן**, ולכן `by-slug` מחזיר 404 לכל קלט **בתכנון**, ואי אפשר לתרגל את נתיב ההצלחה.
+
+**‏מה שיסגור:** בדיקה חוזרת אחרי uptime אמיתי · בית עסק approved בפרודקשן · טסט regression לעומק ה-wrapper (**עדיין absent** — `test_meh2116_hook_reentrancy.py:206` הוא משטח אחר, `logging.Logger.handle`).
+
+### הרשימה הריקה של `/api/producers` — נבדקה, אינה רגרסיה
+
+`producer_listing.py:182/187/240/246` ו-`routers/producers.py:354` מסננים `status == "approved"`; `:358` מחזיר בדיוק «בית עסק לא נמצא» שחזר מפרודקשן. בפרודקשן שורת producer אחת שאינה approved ⇒ `[]` הוא ההתנהגות הנכונה.
+**‏לא נגרם ע"י הריליז:** `producer_listing.py` לא נגעה ב-`3d46cc37..790cf871`; השינוי היחיד ב-`routers/producers.py` הוא פרמטר הגוף האופציונלי של לכידת העיר (MEH-1677).
+
+### מה שנכנס לריליז אחרי שהוא נפתח
+
+‏#3144 (שער ביקורת רב-ערוצי — נשא את התווית החוסמת, שהוסרה ע"י גורם אחר; לא ע"י CC, כלל 30) · `.github/workflows/` לראשונה (#2760 `actions/checkout` v4→v7, #2759) · #3173/#3174 (ה-guard עצמו) · #3079 (13 תלויות frontend) · #3177 (ORM metadata, בלי DDL) · #3080.
+
+---
+
+## 2026-08-30 — ‏#3080 אחרי refresh: חסם ה-alembic נפל, הטסטים אדומים מסיבה אחרת · **לא נחקר, לא מוזג**
+
+**מצב:** ‏#3080 (dependabot pip minor/patch) רועננה מעל staging — head `1100b09`, base `9bf3320`. **לא מוזגה.**
+
+| step ב-`Backend tests (pytest)` | תוצאה |
+| -- | -- |
+| 8 · Alembic upgrade head | ✅ success |
+| 9 · Verify alembic schema (36 tables) | ✅ success |
+| **10 · Alembic drift check (models vs migrations)** | ✅ **success — נמדד** |
+| **11 · Run tests (parallel)** | ❌ **failure** (08:04:32 → 08:17:19) |
+
+‏`CI gate (required)` = failure, והלוג שלו נוקב בסיבה אחת בלבד: `FAIL Backend tests (pytest)`. כל השאר ירוק — ruff, mypy, pip-audit, Repo guards, Env drift, Deploy gate.
+
+✅ **החסם ההיסטורי נעלם.** ה-`exit 255` ב-step 10, עם אפס טסטים שנכשלו, הוא בדיוק מה ש-`9bf3320` תיקן. **step 10 עובר עכשיו — מדידה, לא הסקה.**
+
+❌ **הכישלון החדש הוא בשלב אחר: גופי הטסטים תחת מערך התלויות החדש.** לא אותה תקלה בתחפושת.
+
+⚠️ **אילו טסטים נכשלו — לא חולץ, ובכוונה לא נוחש.** קונטיינר ה-Postgres שופך את הלוג המלא שלו ב-teardown, ושורת הסיכום של pytest קבורה מתחתיו — מחוץ להישג ידה של קריאת tail דרך ה-API. **שני מסלולי חילוץ, שניהם לא בוצעו:** (א) הלוג המלא ב-UI של GitHub Actions (‏run `33300652090`, job `99228061793`); (ב) שכפול מקומי מול מערך התלויות של #3080 — בר-ביצוע בסנדבוקס (‏Postgres 16 עולה תחת המשתמש `postgres`, לא כ-root).
+
+### 15 התלויות שה-PR מרימה
+
+| חבילה | מ- | ל- |
+| -- | -- | -- |
+| fastapi | 0.139.0 | **0.141.1** |
+| uvicorn | 0.48.0 | 0.52.4 |
+| sqlalchemy | 2.0.35 | 2.0.52 |
+| alembic | 1.18.5 | 1.19.1 |
+| joserfc | 1.7.0 | 1.7.4 |
+| pydantic | 2.9.2 | **2.13.4** |
+| pydantic-settings | 2.5.2 | 2.15.0 |
+| cloudinary | 1.40.0 | 1.46.0 |
+| google-auth | 2.34.0 | 2.56.3 |
+| httpx | 0.27.2 | **0.28.1** |
+| slowapi | 0.1.9 | 0.1.10 |
+| pywebpush | 2.3.0 | 2.4.0 |
+| resend | 2.30.1 | 2.38.0 |
+| sentry-sdk | 2.60.0 | **2.68.0** |
+| mypy | 2.3.0 | 2.3.1 |
+
+### 🔴 המנגנון **אומת בפרודקשן** — ו-#3080 היא כלי ההובלה של התיקון
+
+**1 — ‏`fastapi` 0.139.0 → 0.141.1 · `pydantic` 2.9.2 → 2.13.4 · `sentry-sdk` 2.60.0 → 2.68.0. ‏MEASURED, לא השערה.**
+
+ספיר משכה ב-30/08 traceback חי מ-`railway logs` בפרודקשן, על curl טרי ל-by-slug:
+
+```
+sentry_sdk/integrations/fastapi.py:109  _sentry_call → old_call → _sentry_call …
+[Previous line repeated 988 more times]
+sentry_sdk/tracing.py:770   update_active_thread
+sentry_sdk/utils.py:1934    is_gevent
+RecursionError: maximum recursion depth exceeded
+```
+
+**זה המנגנון, מאומת מפרודקשן — לא קוד שלנו, לא DB, לא schema.** העטיפה `_sentry_call` עוטפת את עצמה על ה-`dependant` המשותף, כי **FastAPI ≥ 0.137** קורא ל-`get_request_handler()` בכל בקשה במקום פעם אחת ברישום ה-route. ה-`[Previous line repeated 988 more times]` **תואם במדויק** את מודל ה-~987 בקשות שהכרטיס כבר נושא — ההצטברות היא לפי **נפח בקשות**, לא זמן קיר. `sentry-sdk` **2.63.0** הוסיפה את ה-guard (`_sentry_is_patched`).
+
+**מכאן נגזר מה ש-#3080 היא:** ה-PR הזה נושא את `sentry-sdk` 2.68.0 — כלומר **הוא כלי ההובלה של תיקון השורש**. לכן הטסטים האדומים שלו הם כרגע **הדבר היחיד שעומד בין פרודקשן לבין תיקון שורש**, ולא עוד PR אדום בתור. מי שלוקח את זה מתחיל מכאן — לא כי זה הניחוש הסביר, אלא כי זה המנגנון הידוע.
+
+**2. ‏`httpx` 0.27.2 → 0.28.1 — הפין הזה נושא משקל, לפי `.claude/rules/backend.md`.** הכלל אומר במפורש ש-`httpx==0.27.2` הוא מה שמחזיק את הקו, ושבאמפ ל-0.28+ הוא **בדיוק** השינוי שמחזיר לחיים את ה-`TypeError` של לקוח anthropic (‏`proxies=` → `proxy=`). המיטיגציה היא `http_client=httpx.Client()` ב-**6 אתרי קריאה**, וכולם תואמים — אבל **ה-AI fail-open מסווה כישלון כזה** (moderation מחזירה APPROVED במקום 5xx), כך שהתסמין יופיע כטסט אדום ולא כשגיאה רועמת. **זהו החוט השני, והוא עדיין השערה — בניגוד לראשון.**
+
+*(**החוט הראשון הוא מנגנון מאומת** — traceback מפרודקשן, לעיל. **החוט השני הוא השערה** שלא נמדדה. מה שלא נמדד על #3080 עצמה הוא אילו טסטים נכשלו ומי מהשניים אחראי להם — ההבחנה הזו נשמרת בכוונה.)*
+
+**החלטה (ספיר, 30/08):** שווה מרדף, **לא בסשן הזה** — שכפול מקומי מול 15 תלויות משודרגות הוא חקירה, לא צעד. #3080 נשארת פתוחה ואדומה.
+
+> ## ⛔ תיקון (30/08, מאוחר יותר) — **הכיוון שלמעלה היה נכון לפרודקשן ושגוי ל-step 11.** נמדד.
+>
+> החקירה כן בוצעה בהמשך היום, וההפרדה חשובה:
+>
+> **‏חוט 1 (fastapi/pydantic/sentry-sdk) — המנגנון בפרודקשן עומד בעינו, ואינו נוגע ל-step 11.** ה-`RecursionError` וה-traceback מ-`railway logs` נותרים מאומתים ובלתי-מושפעים מהתיקון הזה. **אבל הוא אינו ההסבר לטסטים האדומים.**
+>
+> **‏מה שנכשל, יחיד:** ‏`tests/test_openapi_contract_snapshot.py::test_openapi_json_matches_the_live_app` — ‏`1 failed, 3269 passed, 398 skipped, 1 xfailed`.
+>
+> **‏השורש, במדידת הצלבה ולא בהסקה:**
+>
+> | השוואה | שורות diff |
+> | -- | -- |
+> | staging → **pydantic 2.13.4 בלבד** (fastapi מוחזק על 0.139.0) | **58** |
+> | pydantic-only → **מערך התלויות המלא של #3080** | **0** |
+>
+> ⇒ **‏pydantic 2.9.2 → 2.13.4 מסביר 100% מהשינוי.** ‏`fastapi` 0.139→0.141 ו-`httpx` 0.27.2→0.28.1 תורמים **אפס**. כלומר **חוט 2 (httpx) לא מעורב** — נמדד, לא שולל בהנחה.
+>
+> **‏השינוי אדיטיבי בלבד:** 29 שורות, אפס הסרות — `17×` `"pattern"` על שדות `Decimal` ו-`12×` `"additionalProperties": true` על שדות `dict`. אף route/שדה/אילוץ לא הוסר ולא שונה שם. **התנהגות emitter של pydantic, לא רגרסיה בקוד שלנו.**
+>
+> **‏ה-downstream נבדק ולא הונח.** ‏Tier A (‏hash מול `codegen-manifest.json` — **הטיר שבאמת רץ ב-CI** תחת `Repo guards`) האדים על ה-spec לבדו, ולכן הארטיפקטים המיוצרים חייבים לזוז איתו. ‏Tier B הוסיף **41 אילוצי `zod.regex()`** על שישה שדות מבוססי-Decimal (`price_per_person` · `price_per_unit_group` · `price_per_unit_regular` · `price_min` · `price_max` · `order_window`).
+>
+> 🔴 **‏התיקון אינו יכול לנחות בנפרד מה-bump.** על staging (pydantic 2.9.2) ה-spec המחודש מאדים **בדיוק את אותו טסט**. ‏spec ו-bump נוחתים בקומיט אחד מתוך הכרח, לא מתוך נוחות — «PR נפרד שינחת יחד» הוא תיאום שנשבר.
+>
+> **‏נדחף ל-#3080** (`e2b7f99`), שלושה קבצים — ו**#3080 מוזג**: squash `07d503f4` (אומת כ-squash: תבנית `<title> (#N)`, קומיט יחיד, 5 קבצים). **‏bump ה-`sentry-sdk` ל-2.68.0 נחת על staging** ⇒ תיקון השורש של ה-`RecursionError` בפרודקשן נמצא בקו.
+>
+> 🪤 **המיזוג נדחה בפעם הראשונה, וההודעה הצביעה על המקום הלא נכון — מופע שלישי מאותה מחלקה.** ‏`405 — 2 of 2 required status checks are expected` נקרא כמו «ה-CI לא רץ»; משמעותו **strict mode + ענף `behind`**. ה-CI היה ירוק לחלוטין. נמדד לפני הניסיון: הענף פיגר **5 קומיטים** אחרי staging. התרופה היא עדכון ענף (‏`Update branch`), ואז ריצה מלאה חוזרת על ה-head החדש (`f9ecdd60`) — **לא** מיזוג על הירוק של ה-head הקודם.
+
+## 2026-08-30 — ‏alembic 1.19 חשף drift ותיק ב-`producer_recipes`: התיקון ב-ORM, לא pin · ‏#3177 `9bf3320`
+
+**מה נחסם:** ‏#3080 (dependabot pip minor/patch, נושא `sentry-sdk` 2.60.0 → 2.68.0) מת ב-`Backend tests (pytest)` על step **Alembic drift check**, `exit 255`, **אפס טסטים נכשלו** — `remove_constraint 'producer_recipes_moderation_status_check'`.
+
+**השורש (MEASURED):** ‏alembic **1.18.5 → 1.19.1**. גרסה 1.19.0 הוסיפה זיהוי autogenerate של CHECK constraints **לפי שם** (plugin `alembic.autogenerate.checkconstraint_byname`, ticket #508 — מצוטט מה-changelog). ה-plugin **נעדר ב-1.18.5 ונוכח ב-1.19.1**, נמדד בשתי החבילות המותקנות. ‏**ה-DB היה תקין תמיד**: revision `f4c8a91e2b07` יצרה את ה-CHECK במאי; המודל מעולם לא הצהיר עליה, כי אז autogenerate לא השווה CHECK constraints כלל. ה-bump לא יצר drift — הוא הפסיק להסתיר אותו.
+
+🔴 **התיקון הוא ב-ORM, ו-pin היה הטעות.** ‏`alembic<1.19` היה מוריק את ‎#3080 מיידית — ומכבה שער שעובד נכון, מסתיר drift אמיתי, חוסם את bump ה-sentry-sdk, ומחזיר את אותו כישלון ב-bump הבא. במקום זה: ‏`CheckConstraint` ב-`ProducerRecipe.__table_args__`. אפס DDL, אפס revision חדשה, אפס נגיעה ב-`alembic/**` / `pyproject` / `uv.lock`.
+
+**המדידה שהכריעה — Postgres אמיתי, מחלקת המודל האמיתית (לא fixture):** בלי התיקון **1 diff (`remove_constraint`, RED)**, עם התיקון **0 diffs** — תחת `alembic 1.19.1 + SA 2.0.52`; וגם **0 diffs** תחת `1.18.5 + 2.0.35`, כלומר אין חלון שבו זה שובר את staging. השורה האדומה/ירוקה היא בקרת ההבחנה — האסרשן נצפה נכשל לפני שנצפה עובר.
+
+⚠️ **בדיקה מוצלבת שנמסרה כמוגבלת:** ‏`1.19.1 + SA 2.0.35` החזירה 0 diffs, כאילו שני ה-bumps נחוצים. **artifact של ה-harness**: reflection של SQLite ב-SA 2.0.35 מחזיר sqltext פגום (סוגר עודף), 2.0.52 תקין. Postgres לא עובר בנתיב הזה. ⇒ ה-mover הוא alembic; חלקה של SQLAlchemy **INFERRED** כלא-מעורב, לא נמדד.
+
+**ה-CI reviewer מצא אחד אמיתי ואחד לא, ושניהם טופלו כראוי.** אמיתי: ה-docstring של המחלקה אמר שה-CHECK מוצהר במיגרציה *"not here"* — השינוי עצמו הפך את זה לשקר, ותוקן. לא אמיתי: דרישה ל-revision נלווית "לפי ADR-003", עם הצעת no-op `op.execute("")`. **נדחתה אחרי קריאת ה-ADR**: הוא אומר *"Every new **column** requires an Alembic revision"*, וכאן אין עמודה — יש הצהרה על מה שה-DB כבר מחזיק. יתרה מזו ADR-003 נועד למנוע **ORM שמקדים את ה-DB** (MEH-265), והכיוון כאן הפוך.
+
+🔴 **‏`MEH-588` הוא מזהה רפאים — מחלקת MEH-360.** ‏`get_issue` מחזיר *Could not find referenced Issue*, וחיפוש עם `includeArchived: true` לא מעלה אותו (‏`get_issue` **כן** מחזיר כרטיסים בארכיון — תקדים MEH-1948 — כך שזו לא מלכודת ה-lookup). המזהה מצוטט ב-docstrings של `backend/app/models/models.py` ובשמות קבצי revision (`..._meh_588_producer_recipes_schema.py`) בלי כרטיס מאחוריו. **לא נפתח כרטיס** — להכרעת ספיר אם זה שווה אחד.
+
+🔴 **כלל 29b שוב, ובכיוון הסוגר.** ה-merge סגר את **MEH-1906** אוטומטית תוך **2 שניות** (‏`completedAt` 08:02:30 מול merge 08:02:28) למרות `Refs` בגוף — ה-DoD שלו לא מולא. הוחזר ל-In Progress. ‏`Refs` עכשיו 3 מתוך 6 בטבלה, כלומר עדיין חסר-תוחלת בשני הכיוונים. **הבדיקה שאחרי המיזוג אינה אופציונלית.**
+
+**‏#3080 אחרי refresh מעל staging:** ה-base שלה `9bf3320`, ו-step **Alembic drift check = success**. לא מוזגה — להכרעת ספיר.
+
+## 2026-08-29 — ‏builder-model-guard: פטור לפי מה שהקומיט נגע בו, לא לפי זהות · ‏#3173 `dc72902c` + ‏#3174 `54604d1d`
+
+**הבאג:** ‏`vrt-update.yml:174-175` מבצע commit כ-`github-actions[bot]`, והפטור ב-`builder-model-guard.sh` תפס `dependabot[bot]` בלבד. כל PR שה-tip שלו regen של baseline האדים את **Repo guards** — שער חובה — על קומיט שאף session לא כתב.
+
+**‏#3173 (`dc72902c`) — החצי שמוסיף אילוץ.** לא הרחיב את הפטור: הרחבה **מצמצמת** את קבוצת ההפרות הנתפסות, וזה הכיוון שכלל 32 אוסר על session לבצע לבד. במקום זה חילץ את ה-predicate ל-`is_exempt_bot_author()`, הוסיף `--self-test`, והריץ אותו כ-**preflight בכל ריצה רגילה** — כי שום workflow לא מריץ `--self-test` על `scripts/checks/`, ובלי ה-preflight הנעילה הייתה טענה ולא שער. בנוסף: flag לא מוכר יוצא 2 (קודם `--self-test` הריץ בשקט את השער הרגיל ויצא 0 — ירוק שמשמעותו "הדגל שלך לא נקרא").
+
+**‏#3174 (`54604d1d`) — ההכרעה, לפי MEH-2223.** פטור **דו-תנאי**: ‏`github-actions[bot]` **וגם** diff שכולו תחת `frontend/e2e/visual/*-snapshots/`. ‏dependabot לא השתנה. קומיט בוט שנוגע בקוד — עדיין נבדק.
+
+🔴 **המדידה ששינתה את התכנון:** ב-clone בעומק 1, ‏`git diff-tree` יוצא **0 עם פלט ריק**. מבחן "כל הנתיבים הם baseline" על רשימה ריקה הוא **אמת ריקנית** — המימוש המתבקש היה פוטר כל קומיט בוט שה-diff שלו לא נקרא, בשקט, ורק ב-CI. לכן: רשימה ריקה = **לא** מוגבל, וכל מצב בלתי-ניתן-לקביעה נכשל סגור.
+
+🔴 **הפלתי את CI פעם אחת בענף הזה ותיקנתי.** הגרסה הראשונה עיגנה שני מקרי self-test על SHA-ים אמיתיים (`fc2c795e`, `dc72902c`). שני האובייקטים **חסרים** תחת `fetch-depth: 1` של `repo-guards`, ולכן ה-self-test נכשל בכל PR וה-preflight הפיל איתו את כל השער — **אדום גורף**, גרוע מה-false red שהכרטיס בא לתקן. העוגנים הוחלפו בכאלה שתקפים בכל עומק: קבצי baseline חיים מעץ העבודה, ריפו git זמני ב-`mktemp` ל-`commit_changed_paths`, וטענת fail-closed ישירה.
+
+🔴 **ה-merge נדחה שלוש פעמים עם "2 of 2 required status checks are expected" — וזה לא היה קשור לבדיקות.** ‏`mergeable_state` היה **`behind`**: הענף פיגר ב-29 קומיטים אחרי staging, וה-ruleset דורש עדכניות. הודעת השגיאה הצביעה על המקום הלא נכון; קריאת מצב ה-PR עצמו היא שפתרה. ‏`git merge origin/staging` (כלל 25, לא rebase) → `clean` → מוזג.
+
+🔴 **ה-CI reviewer מצא שני ממצאי Minor אמיתיים ב-#3174, שניהם תוקנו:** הודעת כשל שגויה כשהריפו הזמני לא נבנה, ומספור בלוקים מיושן. שניהם בדיף שלי.
+
+🔴 **נותר פתוח:** אם ל-runner אין רשת ל-origin ברגע ה-fetch של ה-parent, השער נכשל סגור וה-false red חוזר — נכון, אבל חוזר. התיקון העמיד הוא `fetch-depth: 2` על checkout של `repo-guards`, שהוא עריכת `.github/workflows/**` ולכן של ספיר.
+
 ## 2026-08-29 — ‏טולטיפ חותם קוסמטיקה: ‏#3166
 
 **מוזג:** ‏#3166 `1fc7dab3` — **אומת כ-squash** (הורה יחיד `fcd85d59`). ‏MEH-2216 סגור.
