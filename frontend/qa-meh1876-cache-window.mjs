@@ -166,6 +166,13 @@ async function main() {
     `Cache-Control: ${cc} (x-vercel-cache: ${hit} — asserted on a MISS; a HIT reports only "public")`,
   );
 
+  // --- the admin session FIRST, before anything exists to clean up ----------
+  // Order matters, and the reviewer on #3189 is why it is stated: the finally
+  // block can only undo the subject if it holds an admin token, so acquiring
+  // that token AFTER creating the subject leaves a window where a failure
+  // strands a registered business AND reports "nothing to undo".
+  adminToken = (await call("POST", "/api/auth/login", { jar: adminJar, body: { email: ADMIN_EMAIL, password: ADMIN_PW } })).json.access_token;
+
   // --- register the throwaway subject ---------------------------------------
   await call("POST", "/api/auth/register/producer", {
     body: {
@@ -186,7 +193,6 @@ async function main() {
   producerId = me.json.id;
   say(`      subject producer ${producerId} — "${BIZ}"`);
 
-  adminToken = (await call("POST", "/api/auth/login", { jar: adminJar, body: { email: ADMIN_EMAIL, password: ADMIN_PW } })).json.access_token;
   // Publish via the admin PUT rather than submit-for-review -> approve. The
   // submit gate requires `phone_verified` (submission_gate.py:159), which needs
   // a real WhatsApp OTP and is not reachable from here. The admin PUT sets
@@ -253,6 +259,13 @@ main()
         say(`CLEANUP  subject -> ${t.json.status}`);
         const gone = await waitUntil(Date.now(), (h) => !h.includes(BIZ), "CLEANUP");
         rec(gone !== null, "C4:subject-off-the-public-page", gone === null ? "STILL VISIBLE — needs a manual sweep" : `gone after ${gone}s`);
+      } else if (producerId) {
+        // Reachable only if the admin token was lost between the login above
+        // and here. Say what is actually true — a `draft` producer exists and
+        // nobody cleaned it up — rather than the reassuring line, which is the
+        // exact null-that-lies this repo keeps finding.
+        failed++;
+        say(`FAIL  CLEANUP  producer ${producerId} ("${BIZ}") WAS created and could not be undone — no admin token. It is NOT public (draft), but it needs a manual sweep.`);
       } else {
         say("CLEANUP  nothing to undo (no producer was created)");
       }
