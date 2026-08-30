@@ -1,0 +1,40 @@
+MEH-1832 chunk 2 — read-only matrix. 2026-08-30, staging (deployed), no code edits.
+engines: webkit 375x812 · chromium 1440x900
+ACCURATE LINE: 8 of 10 rows measured. 2 NOT COVERED. "Zero FAILs" is NOT "fully covered".
+
+row                        webkit-375                     chromium-1440
+1  geo                     PASS (2nd pass, geo grant)     —
+2  chips deep-links        PASS chips=2                   PASS chips=2
+3  onboarding              PASS hero-delivery-cta=1       PASS
+4  friday strip            NOT COVERED                    NOT COVERED
+5  recently-viewed         PASS (2nd pass, after visit)   —
+6  region fallback         NOT COVERED                    NOT COVERED
+7  empty-state             PASS empty-generic=0           PASS
+8  load-more (#2742)       PASS "8 מתוך 17"->"16 מתוך 17"  PASS identical
+9  sessionStorage restore  PASS home_visible_count=16     PASS
+10 hydration warnings      PASS 0 of 12 console msgs      PASS 0 of 20
+
+NOT COVERED — what would cover each:
+  row 4 friday strip     day-of-week dependent. Needs a controlled clock, or a run on the
+                         trigger day. Today is not it; staging's clock is not movable here.
+  row 6 region fallback   needs a region state that ENTERS the fallback branch. A Tel Aviv
+                         geolocation grant produces the normal path, so the branch was never
+                         reached. Needs coordinates outside a served region, or the region
+                         state forced.
+
+LCP / CLS — chromium 375, 3 runs, staging:
+  run 1: LCP=9000ms  CLS=0.0000
+  run 2: LCP=8352ms  CLS=0.0000
+  run 3: LCP=8164ms  CLS=0.0000
+  median: LCP=8352ms  CLS=0.0000
+  CAVEAT: staging sits behind Vercel Deployment Protection; every request pays a 307->200
+  bypass handshake. This LCP is NOT a real-user number and must not be quoted as one.
+  CLS=0.0000 is engine-measured and unaffected by that latency.
+  CONTROL: observerError=none on all 3 runs, and no run reported LCP=0 (an LCP of 0 means
+  the observer never fired, which reads identically to a fast page).
+
+DEAD SUB-PROBE, recorded rather than dropped:
+  the control counted a[href^="/he/"] and returned 0 on a page that had plainly rendered.
+  The selector is wrong — links do not carry that prefix. The page was fine. The control
+  still held via two other signals (non-zero body box; live counter "מציגים 8 מתוך 17"),
+  so the matrix stands, but that 0 is a dead number and must not be read as one.
