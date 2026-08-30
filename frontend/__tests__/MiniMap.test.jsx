@@ -712,7 +712,14 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
     // Both Tailwind forms: the scale token (z-10) and the arbitrary one
     // (bracketed). The regression this guards reintroduces the arbitrary form,
     // so a check that only understood the scale would go green on it.
-    const match = className.match(/(?:^|\s)z-(?:\[(\d+)\]|(\d+))(?:\s|$)/);
+    //
+    // Negatives are PARSED (`-?`) but not ACCEPTED — see the bounds below. The
+    // reader and the gate are two different jobs: parsing `z-[-1]` is what lets
+    // the failure name the real value instead of claiming the button carries no
+    // token at all, while the lower bound is what keeps that case failing.
+    // Widening the reader alone turns a correct red into a green: measured on
+    // `z-[-1]`, reader-only goes 31/31 on a button rendered BEHIND its own map.
+    const match = className.match(/(?:^|\s)z-(?:\[(-?\d+)\]|(-?\d+))(?:\s|$)/);
     return match ? Number(match[1] ?? match[2]) : null;
   };
 
@@ -746,9 +753,15 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
     const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
     const wrapper = isolatedBoxOf(container, expand);
 
-    // Half 1 — the button's own value is local, not page-scale.
+    // Half 1 — the button's own value is local: high enough to sit above its
+    // own map, low enough that it cannot reach the page CTA. Both bounds are
+    // load-bearing. The upper one is the MEH-2148 defect. The lower one is the
+    // opposite failure and is just as silent: `z-0` or a negative renders the
+    // expand control BEHIND the tiles, where it is invisible and untappable —
+    // and nothing about the page CTA would notice.
     const z = zTokenOf(expand.className);
     expect(z, `expand button carries no z token: "${expand.className}"`).not.toBeNull();
+    expect(z, "a non-positive z puts the expand control behind its own map").toBeGreaterThan(0);
     expect(z).toBeLessThan(STICKY_CONTACT_BAR_Z);
 
     // Half 2 — the wrapper creates a stacking context, so the value cannot
