@@ -716,14 +716,20 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
     return match ? Number(match[1] ?? match[2]) : null;
   };
 
-  // Resolve the isolated box by what it CONTAINS, not by where it sits relative
-  // to the button. `expand.parentElement` silently becomes the wrong element the
-  // day the button gains a wrapper of its own (a tooltip trigger, a span), and
-  // the two tests below fail differently on that: the first reds with a message
-  // about a className, naming nothing structural; the second reds NOT AT ALL —
-  // a nested span trivially does not contain the overlay, so the containment
-  // assertion passes for the wrong reason. A false pass is the worse half, and
-  // it is why this is a shared resolver rather than a message on one assertion.
+  // Anchor on `expand.parentElement`, then VALIDATE that anchor by containment,
+  // so a future wrapper around the button produces a named failure instead of a
+  // wrong result. Containment is the check, not the lookup — the box is still
+  // the button's parent, and this comment says so because an earlier version of
+  // it claimed the box was "resolved by containment", which the code never did.
+  //
+  // Why the validation earns its place: `expand.parentElement` silently becomes
+  // the wrong element the day the button gains a wrapper of its own (a tooltip
+  // trigger, a span), and the two tests below fail DIFFERENTLY on that. The
+  // first reds with a message about a className, naming nothing structural. The
+  // second does not red at all — a nested span trivially does not contain the
+  // overlay, so `contains(overlay)` is false for the wrong reason and reads as
+  // a pass. Measured on that construction: without this guard 1 test fails,
+  // with it 2 do. The false pass is the half worth the shared helper.
   const isolatedBoxOf = (container, expand) => {
     const map = container.querySelector('[data-testid="map"]');
     expect(map, "no map surface rendered — the react-leaflet stub did not mount").not.toBeNull();
