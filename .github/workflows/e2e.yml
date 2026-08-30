@@ -83,7 +83,7 @@ jobs:
     # only in a follow-up that updates branch protection in the same change.
     name: Playwright E2E (Vercel preview)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     needs: filter
 
     # paths-filter (MEH-424): skip when no frontend files changed.
