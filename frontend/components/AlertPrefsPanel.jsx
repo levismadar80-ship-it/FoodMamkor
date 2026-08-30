@@ -187,7 +187,15 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
 
   return (
     <div
-      role="dialog"
+      // MEH-2199: a labelled GROUP, which is what this is. The panel is inline
+      // and always visible — no modal semantics, no focus trap, no way out,
+      // because it needs none. It used to claim the dialog role, which tells a
+      // screen reader to expect all three. aria-labelledby is valid here, so
+      // the accessible name is unchanged.
+      //
+      // The inverse of the rest of MEH-2199: the other five surfaces gained the
+      // behaviour their role promised; this one sheds a role it never meant.
+      role="group"
       aria-labelledby={headingId}
       className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
       dir="rtl"

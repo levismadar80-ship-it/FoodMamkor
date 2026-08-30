@@ -244,6 +244,11 @@ class EventContext:
     viewer: Optional[User]
     referrer: Optional[str] = None
     method: Optional[str] = None
+    # MEH-1677: only the coverage CTA ("לא מגיעים אליך?") sends this, and only
+    # whatsapp_click has a column for it. An ordinary WhatsApp click leaves it
+    # None, so the stored NULL means "not a coverage click" -- see the column
+    # comment on ProducerWhatsAppClick.city.
+    city: Optional[str] = None
 
 
 def record_analytics_event(
@@ -305,9 +310,13 @@ def record_analytics_event(
                 referrer=(ctx.referrer if ctx.referrer in _ALLOWED_REFERRERS else None),
             )
         elif event == "whatsapp_click":
+            # MEH-1677: ctx.city is None for every ordinary WhatsApp click --
+            # the value only exists when CoverageRequestCta sent one -- so this
+            # writes NULL on the normal path without a branch.
             row = ProducerWhatsAppClick(
                 producer_id=producer_id,
                 user_id=user_id,
+                city=ctx.city,
             )
         elif event == "contact_click":
             row = ContactClick(

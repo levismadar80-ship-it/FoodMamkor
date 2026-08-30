@@ -14,6 +14,7 @@ import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import FilterSheet from "@/components/FilterSheet";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 // MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
 // CHIPS_CONFIG is shared with /producers, so a chip added there appears on
 // this row automatically — gating only at /producers would leave the home
@@ -47,6 +48,43 @@ import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 // Order is RTL reading order: the trust axis leads, matching the sheet's own
 // service group (FilterSheet.jsx GROUP_CHIP_ORDER — verified, then has_delivery).
 const PROMOTED_KEYS = ["verified", "has_delivery"];
+
+/**
+ * MEH-2198: the days a region-fallback producer delivers to the ACTIVE city,
+ * read from the `delivery_areas` rows the list payload already carries
+ * (MEH-902). No backend call — these rows are in the response already.
+ *
+ * Returns `null` when the producer has NO row for this city, and that is the
+ * load-bearing distinction: `delivery_nationwide` is not resolvable
+ * client-side (the XOR data model means a nationwide producer typically holds
+ * ZERO delivery_areas rows), so a caption inferred for one would be an
+ * unverifiable delivery promise — the MEH-1848 class. Omission over invention.
+ * An empty array means the opposite: rows exist, but every `delivery_day` is
+ * null, which is a real "by arrangement" answer.
+ *
+ * # REUSES: backend `_delivery_city_condition` (producer_listing.py:274)
+ * compares `func.lower(DeliveryArea.city) == city.lower()`, so both sides are
+ * lowercased here and NOT trimmed — matching the backend exactly rather than
+ * being incidentally more permissive than the filter that produced this list.
+ */
+function deliveryDaysForCity(producer, city) {
+  if (!city) return null;
+  const target = city.toLowerCase();
+  const rows = (producer?.delivery_areas || []).filter(
+    (row) => typeof row?.city === "string" && row.city.toLowerCase() === target,
+  );
+  if (rows.length === 0) return null;
+  const days = [...new Set(rows.map((row) => row?.delivery_day).filter(Boolean))];
+  // The SORT KEY is shared, not copied: DELIVERY_DAYS is imported from
+  // lib/delivery-days.js, so a change to week order cannot make this and
+  // DeliveryDayRow disagree. What is duplicated is only the two-term
+  // comparator expression (DeliveryDayRow.jsx:20-21), which has nothing to
+  // drift into. Note that file's own comment at :18-19 — sortByWeek is not in
+  // a shared lib "because after that move exactly one component needs it".
+  // That premise now has a second consumer; hoisting it is a separate ticket,
+  // not a change to make from inside this one.
+  return days.sort((a, b) => DELIVERY_DAYS.indexOf(a) - DELIVERY_DAYS.indexOf(b));
+}
 
 /**
  * Producers grid section — heading + map link, onboarding tips,
@@ -465,21 +503,25 @@ export function HomeProducersGrid({
           {/* MEH-1645: zero results while a DAY refinement is active → suggest
               removing the day BEFORE the region fallback — the day is the
               narrowest filter, so it is the first thing to relax. */}
+          {/* MEH-2197: compact, cause-aware. The day filter is the narrowest
+              refinement, so its zero-result is a one-line note above the
+              fallback grid — not a hero dead-end that pushes the near-matches
+              below the fold. */}
           {producers.length === 0 && daysActive.length > 0 && (
-            <div className="text-center py-8" data-testid="day-empty-suggestion">
-              <p className="text-fg-muted mb-3 max-w-md mx-auto">
+            <div className="py-2 text-start" data-testid="day-empty-suggestion">
+              <p className="text-sm text-fg-muted">
                 {/* MEH-2036: the full set reads out here — this is a
                     paragraph, not the width-constrained chip, so it never
                     truncates the way ActiveFilterChip's label does. */}
-                {t("home.producers.day_empty_suggestion", { day: daysActive.join(" · "), city: filters.delivery_city })}
+                {t("home.producers.day_empty_suggestion", { day: daysActive.join(" · "), city: filters.delivery_city })}{" "}
+                <button
+                  type="button"
+                  onClick={onClearDays}
+                  className="underline text-primary hover:text-primary-dark transition font-medium"
+                >
+                  {t("home.producers.day_empty_clear_cta")}
+                </button>
               </p>
-              <button
-                type="button"
-                onClick={onClearDays}
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
-              >
-                {t("home.producers.day_empty_clear_cta")}
-              </button>
             </div>
           )}
           {/* MEH-1487: region fallback — when a city filter returned 0 but the
@@ -489,29 +531,74 @@ export function HomeProducersGrid({
           {producers.length === 0 && regionFallback?.producers?.length > 0 && (
             <div data-testid="region-fallback">
               <h3 className="font-headline-md text-lg font-bold text-text mb-4">
-                {t("home.producers.region_fallback_header", {
-                  city: filters.delivery_city,
-                  region: regionFallback.regionName,
-                })}
+                {/* MEH-2197: when the DAY filter is what zeroed the grid, the
+                    city itself is served — the old header would falsely claim
+                    it is not. Cause-aware variant, region only. */}
+                {daysActive.length > 0
+                  ? t("home.producers.region_fallback_header_days", {
+                      region: regionFallback.regionName,
+                    })
+                  : t("home.producers.region_fallback_header", {
+                      city: filters.delivery_city,
+                      region: regionFallback.regionName,
+                    })}
               </h3>
               <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
-                {regionFallback.producers.map((p, idx) => (
-                  <motion.div
-                    key={p.id}
-                    className="h-full"
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.1 }}
-                    transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  >
+                {regionFallback.producers.map((p, idx) => {
+                  /* MEH-2198: these cards already ARE the near-matches — same
+                     city, other days — but carried no day info. The caption
+                     says which days, and ONLY when a day filter is what zeroed
+                     the grid; the city-zero path is untouched. */
+                  const captionDays =
+                    daysActive.length > 0
+                      ? deliveryDaysForCity(p, filters.delivery_city)
+                      : null;
+                  const card = (
                     <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
-                  </motion.div>
-                ))}
+                  );
+                  return (
+                    <motion.div
+                      key={p.id}
+                      /* ProducerCard's own root is `h-full` (ProducerCard.jsx:306),
+                         so a caption added as a plain sibling here is pushed OUTSIDE
+                         the grid cell and collides with the row below — measured at
+                         375 on the first capture of this ticket. The captioned cell
+                         becomes a flex column so the card grows and the caption keeps
+                         its own space inside the cell. The uncaptioned cell keeps the
+                         exact markup it had before this ticket. */
+                      className={captionDays === null ? "h-full" : "h-full flex flex-col"}
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.1 }}
+                      transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    >
+                      {captionDays === null ? (
+                        card
+                      ) : (
+                        <>
+                          <div className="flex-1 min-h-0">{card}</div>
+                          <p className="text-sm text-fg-muted mt-1" data-testid="fallback-day-caption">
+                            {captionDays.length > 0
+                              ? t("home.producers.fallback_day_caption", {
+                                  city: filters.delivery_city,
+                                  days: captionDays.join(" · "),
+                                })
+                              : t("home.producers.fallback_day_caption_flexible", {
+                                  city: filters.delivery_city,
+                                })}
+                          </p>
+                        </>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           )}
-          {producers.length === 0 && !(regionFallback?.producers?.length > 0) && (
-            <div className="text-center py-16">
+          {/* MEH-2197: daysActive guard — a day-zero result already renders the
+              compact day block above; without this the two empty states stack. */}
+          {producers.length === 0 && daysActive.length === 0 && !(regionFallback?.producers?.length > 0) && (
+            <div className="text-center py-16" data-testid="empty-generic">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} className="text-primary" />
               </div>

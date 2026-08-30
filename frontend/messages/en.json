@@ -337,6 +337,7 @@
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
         "submit_next_hint": "We'll review your details and get back to you on WhatsApp within 3 business days.",
+        "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -515,11 +516,14 @@
       "day_chip_clear_aria": "Clear delivery-day filter",
       "day_option_aria": "Filter deliveries on {day}",
       "days_chip_more": "{day} +{count}",
-      "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
+      "day_empty_suggestion": "No delivery to {city} on {day} right now",
       "day_empty_clear_cta": "Remove day filter",
       "clear_location_filter": "Remove location filter",
       "geo_empty": "No businesses found nearby — showing all businesses",
-      "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
+      "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:",
+      "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:",
+      "fallback_day_caption": "Delivers to {city}: {days}",
+      "fallback_day_caption_flexible": "Delivers to {city} by arrangement"
     },
     "recent": {
       "heading": "Recently viewed"
@@ -712,6 +716,7 @@
     "badge": {
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
+      "verified_tooltip_cosmetics": "Cosmetics registration submitted and reviewed on {date}",
       "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
@@ -1594,10 +1599,6 @@
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
       },
       "request_changes": {
-        "modal_title": "Request completion from the business",
-        "modal_label": "What's missing?",
-        "modal_placeholder": "Describe what needs to be completed…",
-        "submit": "Send request",
         "validate": "Please describe what needs to be completed.",
         "invalid_state": "A completion request can only be sent to a business awaiting approval.",
         "approve_blocked_info": "Can't approve yet — we opened a completion request with the missing detail. You can edit and send it.",
@@ -1727,16 +1728,23 @@
       "queue_summary": "{count} waiting · oldest: {days} business days",
       "toast_status_updated": "Status updated",
       "reject": {
-        "modal_title": "Reject business application",
-        "preset_legend": "Rejection reason",
-        "free_text_label_required": "Details (required)",
-        "free_text_label_optional": "Additional details (optional)",
-        "free_text_placeholder": "You can add details that help the business fix this…",
-        "submit": "Reject and send email",
         "confirm": "This will send an email to the business. Continue?",
         "presets_error": "We couldn't load the rejection reasons. Refresh the page and try again.",
         "invalid_input": "Choose a reason, and add details when 'Other' is selected.",
         "toast_rejected": "The application was rejected and the email was sent."
+      },
+      "decision": {
+        "modal_title": "Decision on the application from \"{name}\"",
+        "changes_legend": "Completion request",
+        "changes_helper": "The business stays in the review queue and gets an email listing what is missing",
+        "reject_legend": "Rejection",
+        "reject_helper": "The business will not appear on the site and gets an email",
+        "other": "Other",
+        "free_text_label_required": "Details for the business owner (required)",
+        "free_text_label_optional": "Details for the business owner (optional)",
+        "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
+        "submit_changes": "Send completion request",
+        "submit_reject": "Reject and send email"
       }
     },
     "users": {
@@ -2635,6 +2643,41 @@
     }
   },
   "about": {
+    "updated_at": "Updated: August 2026",
+    "img": {
+      "story_caption": "A farmers' market. Where it all began.",
+      "story_alt": "Colourful produce in baskets at a farmers' market",
+      "duo_caption": "The produce speaks for itself. That's the point.",
+      "duo_rear_alt": "A glass bottle of olive oil with olives"
+    },
+    "signature": {
+      "name": "Sapir Schnapp",
+      "role": "Founder, Mehamakor"
+    },
+    "chapter": {
+      "1": {
+        "label": "The story"
+      },
+      "2": {
+        "label": "The difference"
+      },
+      "3": {
+        "label": "Why Mehamakor"
+      },
+      "4": {
+        "label": "Our criteria"
+      },
+      "5": {
+        "label": "First steps"
+      }
+    },
+    "biz_strip_lead": "Run a food business?",
+    "biz_strip": "Here's how it works",
+    "exit": {
+      "story": "Meet the businesses",
+      "comparison": "How we approve a business",
+      "benefits": "Open the map"
+    },
     "comparison": {
       "eyebrow": "The difference",
       "heading": "What changes along the way",
@@ -2653,7 +2696,7 @@
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
         "image_alt": "Sapir, founder of Mehamakor",
-        "greeting": "Hi, I'm Sapir",
+        "greeting": "Why I started Mehamakor",
         "p1": "It was always important to me to know where my food comes from. I wanted to buy better — healthier, more local.",
         "p2": "But I quickly discovered that it isn't accessible. To find truly good food, I had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
         "p3": "And then it hit me: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
@@ -3276,7 +3319,7 @@
       "ordering_email": "Send us an email",
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
-      "escalation": "Another question? Send us a message",
+      "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "recipe_idea": "Can I share a recipe I made?",
@@ -4484,6 +4527,7 @@
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
         "subtitle": "Leave blank to show default questions based on your category",
         "guidance": "These questions appear on your page. The more delivery and ordering details you fill in, the more of them get answered right on the page instead of reaching you on WhatsApp.",
+        "channel_notice": "Note: these questions appear on your page only when WhatsApp is your primary contact channel.",
         "placeholder_1": "e.g. What's in stock this week?",
         "placeholder_2": "e.g. Do you deliver to [city]?",
         "placeholder_3": "e.g. Can I order for an event?",

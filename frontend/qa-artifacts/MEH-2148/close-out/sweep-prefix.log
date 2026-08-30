@@ -1,0 +1,27 @@
+MEH-2148 CTA-vs-map-control width sweep — 2026-08-30T08:11:22.004Z
+target: https://staging.mehamakor.online/he/teva-pure
+mode: PRE-FIX (staging as deployed)
+
+## webkit-iPhone14-390 [prefix] http=200 bar(z=598) ctl(z=1000) doc=3582 vp=664
+  PASS flush-control PRE-scroll: bar bottom=733 > vp=664 (hidden below fold)
+  flush-control POST-scroll: non-flush at 0..1040px (n=27); flush elsewhere
+  overlap offsets : 1760..1840px (n=3)
+  FAIL CTA-unobstructed (13-sample width sweep): control won 1 sample-set(s)
+       first @y=1800: BAR,OTHER,BAR,BAR,BAR,BAR,BAR,BAR,BAR,BAR,BAR,CTL,BAR
+  PASS INVERTED control reachable at SOME offset: 1800..2320px (n=12)
+  RESIDUAL control in viewport but NOT reachable: 1880..2400px (n=4)
+  PASS fullscreen opens on control click
+  PASS overlay z-index === 1150 (live computed, not a count-of-0): 1150
+  PASS close button reachable at its centre: elementFromPoint=CLOSE box=44x44 z=1000
+
+## chromium-375 [prefix] http=200 bar(z=598) ctl(z=1000) doc=3602 vp=812
+  PASS flush-control PRE-scroll: bar bottom=881 > vp=812 (hidden below fold)
+  flush-control POST-scroll: non-flush at 0..1040px (n=27); flush elsewhere
+  overlap offsets : 1640..1720px (n=3)
+  FAIL CTA-unobstructed (13-sample width sweep): control won 1 sample-set(s)
+       first @y=1680: BAR,OTHER,BAR,BAR,BAR,BAR,BAR,BAR,BAR,BAR,CTL,CTL,BAR
+  PASS INVERTED control reachable at SOME offset: 1680..2440px (n=17)
+  RESIDUAL control in viewport but NOT reachable: 1760..2400px (n=3)
+  PASS fullscreen opens on control click
+  PASS overlay z-index === 1150 (live computed, not a count-of-0): 1150
+  PASS close button reachable at its centre: elementFromPoint=CLOSE box=44x44 z=1000

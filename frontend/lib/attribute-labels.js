@@ -14,7 +14,7 @@
  *
  * Both the /producers filter row (`producer-filters.js` CHIPS_CONFIG) and the
  * /map filter chips (`map-chips.js` TOGGLE_CHIPS) render these, so the taxonomy
- * reads identically on every surface ("רישוי מאומת" / "משלוח").
+ * reads identically on every surface ("מאומת" / "משלוח").
  *
  * MEH-1507 — Label Scope Contract: every entry is an OBJECT carrying the label
  * PLUS its scope×evidence metadata and (where it applies) an in-component

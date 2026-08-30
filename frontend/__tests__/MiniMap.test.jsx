@@ -693,3 +693,99 @@ describe("MiniMap — opt-in draggable marker (MEH-2182)", () => {
     expect(leafletStubs.maps).toHaveLength(2);
   });
 });
+
+// MEH-2148 — the inline map's expand button used a PAGE-level z token while its
+// wrapper created no stacking context, so the value competed at the root and
+// painted over the producer page's StickyContactBar (fixed, token 598). The fix
+// is two halves and BOTH are load-bearing: a local value on the button, and a
+// stacking context on the wrapper that keeps it local. Asserting either one
+// alone passes on a component that is still broken — a local value with no
+// context is one careless z away from escaping again, and a context around a
+// page-scale value still wins against the CTA inside its own box.
+describe("MEH-2148 — the mini-map contains its own z-index", () => {
+  // Every element between the page and the CTA bar; anything the button could
+  // outrank at page scale. 598 is StickyContactBar
+  // (app/[locale]/producer/[id]/components/StickyContactBar.jsx:79).
+  const STICKY_CONTACT_BAR_Z = 598;
+
+  const zTokenOf = (className) => {
+    // Both Tailwind forms: the scale token (z-10) and the arbitrary one
+    // (bracketed). The regression this guards reintroduces the arbitrary form,
+    // so a check that only understood the scale would go green on it.
+    //
+    // Negatives are PARSED (`-?`) but not ACCEPTED — see the bounds below. The
+    // reader and the gate are two different jobs: parsing `z-[-1]` is what lets
+    // the failure name the real value instead of claiming the button carries no
+    // token at all, while the lower bound is what keeps that case failing.
+    // Widening the reader alone turns a correct red into a green: measured on
+    // `z-[-1]`, reader-only goes 31/31 on a button rendered BEHIND its own map.
+    const match = className.match(/(?:^|\s)z-(?:\[(-?\d+)\]|(-?\d+))(?:\s|$)/);
+    return match ? Number(match[1] ?? match[2]) : null;
+  };
+
+  // Anchor on `expand.parentElement`, then VALIDATE that anchor by containment,
+  // so a future wrapper around the button produces a named failure instead of a
+  // wrong result. Containment is the check, not the lookup — the box is still
+  // the button's parent, and this comment says so because an earlier version of
+  // it claimed the box was "resolved by containment", which the code never did.
+  //
+  // Why the validation earns its place: `expand.parentElement` silently becomes
+  // the wrong element the day the button gains a wrapper of its own (a tooltip
+  // trigger, a span), and the two tests below fail DIFFERENTLY on that. The
+  // first reds with a message about a className, naming nothing structural. The
+  // second does not red at all — a nested span trivially does not contain the
+  // overlay, so `contains(overlay)` is false for the wrong reason and reads as
+  // a pass. Measured on that construction: without this guard 1 test fails,
+  // with it 2 do. The false pass is the half worth the shared helper.
+  const isolatedBoxOf = (container, expand) => {
+    const map = container.querySelector('[data-testid="map"]');
+    expect(map, "no map surface rendered — the react-leaflet stub did not mount").not.toBeNull();
+    const box = expand.parentElement;
+    expect(
+      box.contains(map),
+      "the expand button's parent no longer holds the map surface: the button gained its own wrapper, so this test is pointed at the wrong element and its verdict means nothing",
+    ).toBe(true);
+    return box;
+  };
+
+  it("keeps the expand button's z below the page CTA, inside an isolated wrapper", () => {
+    const { container } = render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+    const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
+    const wrapper = isolatedBoxOf(container, expand);
+
+    // Half 1 — the button's own value is local: high enough to sit above its
+    // own map, low enough that it cannot reach the page CTA. Both bounds are
+    // load-bearing. The upper one is the MEH-2148 defect. The lower one is the
+    // opposite failure and is just as silent: `z-0` or a negative renders the
+    // expand control BEHIND the tiles, where it is invisible and untappable —
+    // and nothing about the page CTA would notice.
+    const z = zTokenOf(expand.className);
+    expect(z, `expand button carries no z token: "${expand.className}"`).not.toBeNull();
+    expect(z, "a non-positive z puts the expand control behind its own map").toBeGreaterThan(0);
+    expect(z).toBeLessThan(STICKY_CONTACT_BAR_Z);
+
+    // Half 2 — the wrapper creates a stacking context, so the value cannot
+    // escape to the root even if it later grows. `relative` alone does not:
+    // position without a z-index leaves the child competing at page scale,
+    // which is exactly how the original defect reached the CTA.
+    expect(wrapper.className).toMatch(/(^|\s)isolate(\s|$)/);
+    expect(wrapper.className).toMatch(/(^|\s)relative(\s|$)/);
+  });
+
+  it("keeps the fullscreen overlay OUT of that stacking context", () => {
+    // The overlay must still outrank the global header (1050) and the cookie
+    // banner (1100) — .claude/rules/rtl.md § Map z-index tokens. It can only do
+    // that as a SIBLING of the isolated wrapper. If a refactor moves it inside,
+    // isolation traps it and the overlay renders under the header with no error
+    // anywhere: the half of the fix that is invisible until someone opens it.
+    const { container } = render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+    const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
+    const isolatedWrapper = isolatedBoxOf(container, expand);
+
+    fireEvent.click(expand);
+    const overlay = screen.getByRole("dialog", { name: "מפה במסך מלא" });
+
+    expect(isolatedWrapper.contains(overlay)).toBe(false);
+    expect(zTokenOf(overlay.className)).toBeGreaterThan(1100);
+  });
+});

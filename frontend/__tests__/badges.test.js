@@ -13,7 +13,6 @@ describe("BADGE_PRIORITY", () => {
     // MEH-1492: recommended drops below license (fact before opinion).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
-      "license",
       "recommended",
       "new",
       "grass_fed",
@@ -44,8 +43,8 @@ describe("BADGE_PRIORITY", () => {
     // in BADGE_CONFIG, so a badge present in one and absent from the other is
     // either never rendered or rendered undefined. This pin caught exactly that
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
-    expect(BADGE_PRIORITY).toHaveLength(12);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(12);
+    expect(BADGE_PRIORITY).toHaveLength(11);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
     // MEH-2047: absence in BOTH structures, the same pair-check the products
     // removal above uses — a count alone would pass if something else were
     // added in the same commit that removed this.
@@ -91,51 +90,34 @@ describe("allBadges", () => {
     expect(badges.map((b) => b.key)).toEqual(["recommended"]);
   });
 
-  // MEH-531: license badge — Ministry of Health producer license trust signal.
-  // Field source: ProducerListOut.has_producer_license (schemas.py:547).
-  // MEH-1162 (audit F10): the license number is SELF-DECLARED at registration,
-  // so the chip additionally requires verification_tier === "verified" (an
-  // admin actually checked the document). declared/null tiers → no chip.
-  it("license — verified tier + has_producer_license → earned", () => {
+  // MEH-2213: the license badge is REMOVED from every reader surface, so the
+  // licence-number field earns nothing on its own and nothing in combination.
+  // These cases replace the MEH-531/MEH-1162 suite that pinned the old chip:
+  // they assert the ABSENCE the removal creates, which is what would go red if
+  // the badge were ever reinstated. The field itself is untouched upstream.
+  it("license — a verified business with a licence number earns NO license badge", () => {
     expect(
       allBadges({
         verification_tier: "verified",
         has_producer_license: true,
-      }).map((b) => b.key),
-    ).toEqual(["verified", "license"]);
-  });
-
-  it("license — declared tier with self-declared license → NOT earned", () => {
-    expect(
-      allBadges({
-        verification_tier: "declared",
-        has_producer_license: true,
-      }).map((b) => b.key),
-    ).toEqual([]);
-  });
-
-  it("license — null tier (pending review) with license number → NOT earned", () => {
-    expect(
-      allBadges({
-        verification_tier: null,
-        has_producer_license: true,
-      }).map((b) => b.key),
-    ).toEqual([]);
-    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([]);
-  });
-
-  it("license — when has_producer_license is false → not earned even when verified", () => {
-    expect(
-      allBadges({
-        verification_tier: "verified",
-        has_producer_license: false,
       }).map((b) => b.key),
     ).toEqual(["verified"]);
   });
 
-  it("license — when has_producer_license is null/undefined → not earned", () => {
-    expect(allBadges({ has_producer_license: null }).map((b) => b.key)).toEqual([]);
-    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  it("license — the licence-number field earns nothing at any verification tier", () => {
+    for (const tier of ["verified", "declared", null, undefined]) {
+      expect(
+        allBadges({ verification_tier: tier, has_producer_license: true }).map(
+          (b) => b.key,
+        ),
+      ).not.toContain("license");
+    }
+    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([]);
+  });
+
+  it("license — no BADGE_CONFIG entry and no priority slot remain", () => {
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("license");
+    expect(BADGE_PRIORITY).not.toContain("license");
   });
 
   it("new — when days_since_created is <= 30", () => {
@@ -403,7 +385,6 @@ describe("allBadges", () => {
     // MEH-1492: license now precedes recommended.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
-      "license",
       "recommended",
       "new",
       "grass_fed",
@@ -467,10 +448,11 @@ describe("topBadges", () => {
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
-  // MEH-1492: license now sits between verified and recommended (fact > opinion).
-  // MEH-1162: fixture must be verified-tier — an unverified license no longer
-  // earns the chip, so the verified badge (priority 0) leads the expectation.
-  it("license priority — sits between verified and recommended", () => {
+  // MEH-2213: license left the priority list, so "recommended" now follows
+  // "verified" directly and a licence number moves nothing. Kept as a priority
+  // test (rather than deleted) because the ordering around the removed slot is
+  // exactly what a reinstatement would disturb.
+  it("license — its removal leaves verified > recommended > new intact", () => {
     const p = {
       verification_tier: "verified",
       is_recommended: true,
@@ -479,16 +461,10 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 4).map((b) => b.key)).toEqual([
       "verified",
-      "license",
       "recommended",
       "new",
     ]);
-    // limit=3 → verified + license + recommended, new gets truncated
-    expect(topBadges(p, 3).map((b) => b.key)).toEqual([
-      "verified",
-      "license",
-      "recommended",
-    ]);
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "recommended"]);
   });
 });
 
