@@ -11,10 +11,19 @@
 import { webkit, chromium, devices } from '@playwright/test';
 import fs from 'fs';
 
-const BASE = process.env.TEST_URL || 'https://staging.mehamakor.online';
-const SLUG = process.env.SLUG || 'teva-pure';
-const TAG = process.env.TAG || (process.env.INJECT === '1' ? 'postfix' : 'prefix');
-const INJECT = process.env.INJECT === '1';
+// CLI flags, not env vars: these are harness parameters, and `.env.example`
+// documents deployment configuration. Reading them from process.env made the
+// Env-drift gate (MEH-491) block the PR — correctly, since a var read in code and
+// absent from .env.example is exactly the drift it exists to catch.
+//   node sweep.mjs [--slug=<slug>] [--tag=<tag>] [--inject]
+const arg = (name, fallback) => {
+  const hit = process.argv.slice(2).find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.split('=').slice(1).join('=') : fallback;
+};
+const BASE = process.env.TEST_URL || arg('base', 'https://staging.mehamakor.online');
+const SLUG = arg('slug', 'teva-pure');
+const INJECT = process.argv.includes('--inject');
+const TAG = arg('tag', INJECT ? 'postfix' : 'prefix');
 const HDRS = {
   'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   'x-vercel-set-bypass-cookie': 'true',
