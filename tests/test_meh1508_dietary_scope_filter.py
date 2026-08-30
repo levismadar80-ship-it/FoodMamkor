@@ -194,13 +194,43 @@ def test_false_half_still_includes_an_undeclared_producer(client, db):
 
 # --------------------------------------------------------------------------
 # The counter reads a SECOND query object (`count_q`). Widening one and not the
-# other is the silent half of this change: the list would show the business and
-# the "X מתוך Y" counter would not count it.
+# other is the silent half of this change: the listing would show the business
+# and the "X מתוך Y" counter would not count it.
+#
+# THE CONSUMER IS THE `X-Total-Count` HEADER, NOT `/producers/count`.
+# That distinction is the whole reason these tests work. `/producers/count`
+# (producers.py:253) takes NO filter parameters — it is an unfiltered total of
+# approved, available producers — so `client.get("/producers/count",
+# params={"vegan": "true"})` silently ignores the param and answers a different
+# question. An earlier version of this file compared THAT against the filtered
+# listing and passed, because a single-producer fixture makes the two numbers
+# coincide. It was green while proving nothing, and a probe that broke `count_q`
+# on purpose did not move it. `count_q` reaches the caller through
+# `producers.py:245` and nowhere else.
 # --------------------------------------------------------------------------
-def test_the_count_endpoint_agrees_with_the_listing(client, db):
+def _assert_counter_matches_listing(client, params):
+    r = client.get("/producers", params=params)
+    assert r.status_code == 200, r.text
+    rows = len(r.json())
+    header = r.headers.get("X-Total-Count")
+    assert header is not None, f"no X-Total-Count on {params} — count_q never reached the caller"
+    assert int(header) == rows, (
+        f"count_q and q disagree for {params}: header {header} vs {rows} rows"
+    )
+    # >= 1, so the equality cannot be satisfied by 0 == 0 — which is exactly
+    # what a filter matching nothing would produce.
+    assert rows >= 1, f"nothing matched {params} — 0 == 0 proves nothing"
+
+
+def test_the_counter_agrees_with_the_listing_on_the_vegan_axis(client, db):
     _scoped(db, name="ספירה טבעונית", vegan_scope="all")
-    listed = client.get("/producers", params={"vegan": "true"})
-    counted = client.get("/producers/count", params={"vegan": "true"})
-    assert listed.status_code == 200 and counted.status_code == 200
-    assert counted.json()["count"] == len(listed.json())
-    assert counted.json()["count"] >= 1
+    _assert_counter_matches_listing(client, {"vegan": "true"})
+
+
+def test_the_counter_agrees_with_the_listing_on_the_vegetarian_axis(client, db):
+    """CI reviewer, #3191 (Minor). The vegan case exercises the dispatch loop;
+    the vegetarian widening is a separate branch, so it needs its own counter
+    assertion. A claim about `count_q` that covered one of the two sites it
+    applies to is the artifact-asserting-coverage shape, one level down."""
+    _scoped(db, name="ספירה צמחונית", vegetarian_scope="all")
+    _assert_counter_matches_listing(client, {"vegetarian": "true"})
