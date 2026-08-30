@@ -52,8 +52,16 @@ const SECONDARY_PIN_PX = 24;
 // the same corner rather than the opposite one: it is where the finger already
 // went to open the overlay, and top-end there is the +/− corner.
 const MAP_BUTTON_POSITION = "absolute top-3 right-3"; // rtl-ok: map control layer, see above
+// MEH-2148: this was `z-[1000]` — a PAGE-level token — on a button that only
+// ever needs to outrank its own map. `relative` alone does not create a stacking
+// context, so the value escaped to the root and painted over the producer page's
+// StickyContactBar (`z-[598]`, fixed): measured at 88.5% of the bar width, the
+// expand button won `elementFromPoint` over the primary CTA. Both callers now sit
+// inside a stacking context of their own — the inline wrapper below carries
+// `isolate`, the overlay is `fixed … z-[1150]` — so a LOCAL value is sufficient
+// and cannot reach the page scale again.
 const MAP_BUTTON_STYLE =
-  "z-[1000] flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
 
 // pickup / market_stand are the business's satellite points; a branch (and any
 // unknown kind) is the business itself. Same split as the /map fan-out
@@ -551,8 +559,12 @@ export default function MiniMap({
 
   return (
     <div>
+      {/* `isolate` (isolation: isolate) creates a stacking context so the expand
+          button's z stays inside this box. Without it `relative` leaves the
+          button competing at page scale — MEH-2148. The fullscreen overlay below
+          is a SIBLING of this div, not a child, so it is not trapped by this. */}
       <div
-        className="relative rounded-lg overflow-hidden border border-border"
+        className="relative isolate rounded-lg overflow-hidden border border-border"
         style={{ height: 300 }}
       >
         <MapSurface
