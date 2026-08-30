@@ -162,6 +162,28 @@ def test_false_half_excludes_the_declared_producer(client, db):
     assert "טבעונית מוצהרת" not in _names(client, {"vegan": "false"})
 
 
+def test_vegetarian_false_half_excludes_the_declared_producer(client, db):
+    """CI reviewer, #3191. The vegetarian widening lives in its OWN branch (a
+    two-column OR, not the dispatch loop), so the vegan axis's partition tests
+    say nothing about it — dropping `Producer.vegetarian_scope == "all"` from
+    `veg_cond` would leave every `true`-side assertion above still green while
+    silently putting the declared business into BOTH halves.
+
+    This is the discriminating one of the pair: without the widening,
+    `~veg_cond` matches a zero-product producer, so it lands in `false` — and
+    this assertion reddens."""
+    _scoped(db, name="צמחונית מוצהרת", vegetarian_scope="all")
+    assert "צמחונית מוצהרת" in _names(client, {"vegetarian": "true"})
+    assert "צמחונית מוצהרת" not in _names(client, {"vegetarian": "false"})
+
+
+def test_vegetarian_false_half_still_includes_an_undeclared_producer(client, db):
+    """Its mirror — otherwise the assertion above is satisfied by a `false`
+    half that returns nothing at all."""
+    _scoped(db, name="ללא הצהרה צמחונית", vegetarian_scope="unknown")
+    assert "ללא הצהרה צמחונית" in _names(client, {"vegetarian": "false"})
+
+
 def test_false_half_still_includes_an_undeclared_producer(client, db):
     """The mirror: without the declaration the producer belongs to `false`.
     Without this, the assertion above is satisfied by a `false` half that
