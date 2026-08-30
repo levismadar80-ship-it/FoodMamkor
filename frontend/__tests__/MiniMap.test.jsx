@@ -693,3 +693,61 @@ describe("MiniMap — opt-in draggable marker (MEH-2182)", () => {
     expect(leafletStubs.maps).toHaveLength(2);
   });
 });
+
+// MEH-2148 — the inline map's expand button used a PAGE-level z token while its
+// wrapper created no stacking context, so the value competed at the root and
+// painted over the producer page's StickyContactBar (fixed, token 598). The fix
+// is two halves and BOTH are load-bearing: a local value on the button, and a
+// stacking context on the wrapper that keeps it local. Asserting either one
+// alone passes on a component that is still broken — a local value with no
+// context is one careless z away from escaping again, and a context around a
+// page-scale value still wins against the CTA inside its own box.
+describe("MEH-2148 — the mini-map contains its own z-index", () => {
+  // Every element between the page and the CTA bar; anything the button could
+  // outrank at page scale. 598 is StickyContactBar
+  // (app/[locale]/producer/[id]/components/StickyContactBar.jsx:79).
+  const STICKY_CONTACT_BAR_Z = 598;
+
+  const zTokenOf = (className) => {
+    // Both Tailwind forms: the scale token (z-10) and the arbitrary one
+    // (bracketed). The regression this guards reintroduces the arbitrary form,
+    // so a check that only understood the scale would go green on it.
+    const match = className.match(/(?:^|\s)z-(?:\[(\d+)\]|(\d+))(?:\s|$)/);
+    return match ? Number(match[1] ?? match[2]) : null;
+  };
+
+  it("keeps the expand button's z below the page CTA, inside an isolated wrapper", () => {
+    render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+    const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
+    const wrapper = expand.parentElement;
+
+    // Half 1 — the button's own value is local, not page-scale.
+    const z = zTokenOf(expand.className);
+    expect(z, `expand button carries no z token: "${expand.className}"`).not.toBeNull();
+    expect(z).toBeLessThan(STICKY_CONTACT_BAR_Z);
+
+    // Half 2 — the wrapper creates a stacking context, so the value cannot
+    // escape to the root even if it later grows. `relative` alone does not:
+    // position without a z-index leaves the child competing at page scale,
+    // which is exactly how the original defect reached the CTA.
+    expect(wrapper.className).toMatch(/(^|\s)isolate(\s|$)/);
+    expect(wrapper.className).toMatch(/(^|\s)relative(\s|$)/);
+  });
+
+  it("keeps the fullscreen overlay OUT of that stacking context", () => {
+    // The overlay must still outrank the global header (1050) and the cookie
+    // banner (1100) — .claude/rules/rtl.md § Map z-index tokens. It can only do
+    // that as a SIBLING of the isolated wrapper. If a refactor moves it inside,
+    // isolation traps it and the overlay renders under the header with no error
+    // anywhere: the half of the fix that is invisible until someone opens it.
+    render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+    const expand = screen.getByRole("button", { name: "הגדלת המפה למסך מלא" });
+    const isolatedWrapper = expand.parentElement;
+
+    fireEvent.click(expand);
+    const overlay = screen.getByRole("dialog", { name: "מפה במסך מלא" });
+
+    expect(isolatedWrapper.contains(overlay)).toBe(false);
+    expect(zTokenOf(overlay.className)).toBeGreaterThan(1100);
+  });
+});
