@@ -66,6 +66,31 @@ RecursionError: maximum recursion depth exceeded
 
 **החלטה (ספיר, 30/08):** שווה מרדף, **לא בסשן הזה** — שכפול מקומי מול 15 תלויות משודרגות הוא חקירה, לא צעד. #3080 נשארת פתוחה ואדומה.
 
+> ## ⛔ תיקון (30/08, מאוחר יותר) — **הכיוון שלמעלה היה נכון לפרודקשן ושגוי ל-step 11.** נמדד.
+>
+> החקירה כן בוצעה בהמשך היום, וההפרדה חשובה:
+>
+> **‏חוט 1 (fastapi/pydantic/sentry-sdk) — המנגנון בפרודקשן עומד בעינו, ואינו נוגע ל-step 11.** ה-`RecursionError` וה-traceback מ-`railway logs` נותרים מאומתים ובלתי-מושפעים מהתיקון הזה. **אבל הוא אינו ההסבר לטסטים האדומים.**
+>
+> **‏מה שנכשל, יחיד:** ‏`tests/test_openapi_contract_snapshot.py::test_openapi_json_matches_the_live_app` — ‏`1 failed, 3269 passed, 398 skipped, 1 xfailed`.
+>
+> **‏השורש, במדידת הצלבה ולא בהסקה:**
+>
+> | השוואה | שורות diff |
+> | -- | -- |
+> | staging → **pydantic 2.13.4 בלבד** (fastapi מוחזק על 0.139.0) | **58** |
+> | pydantic-only → **מערך התלויות המלא של #3080** | **0** |
+>
+> ⇒ **‏pydantic 2.9.2 → 2.13.4 מסביר 100% מהשינוי.** ‏`fastapi` 0.139→0.141 ו-`httpx` 0.27.2→0.28.1 תורמים **אפס**. כלומר **חוט 2 (httpx) לא מעורב** — נמדד, לא שולל בהנחה.
+>
+> **‏השינוי אדיטיבי בלבד:** 29 שורות, אפס הסרות — `17×` `"pattern"` על שדות `Decimal` ו-`12×` `"additionalProperties": true` על שדות `dict`. אף route/שדה/אילוץ לא הוסר ולא שונה שם. **התנהגות emitter של pydantic, לא רגרסיה בקוד שלנו.**
+>
+> **‏ה-downstream נבדק ולא הונח.** ‏Tier A (‏hash מול `codegen-manifest.json` — **הטיר שבאמת רץ ב-CI** תחת `Repo guards`) האדים על ה-spec לבדו, ולכן הארטיפקטים המיוצרים חייבים לזוז איתו. ‏Tier B הוסיף **41 אילוצי `zod.regex()`** על שישה שדות מבוססי-Decimal (`price_per_person` · `price_per_unit_group` · `price_per_unit_regular` · `price_min` · `price_max` · `order_window`).
+>
+> 🔴 **‏התיקון אינו יכול לנחות בנפרד מה-bump.** על staging (pydantic 2.9.2) ה-spec המחודש מאדים **בדיוק את אותו טסט**. ‏spec ו-bump נוחתים בקומיט אחד מתוך הכרח, לא מתוך נוחות — «PR נפרד שינחת יחד» הוא תיאום שנשבר.
+>
+> **‏נדחף ל-#3080** (`e2b7f99`), שלושה קבצים. **לא מוזג — של ספיר.**
+
 ## 2026-08-30 — ‏alembic 1.19 חשף drift ותיק ב-`producer_recipes`: התיקון ב-ORM, לא pin · ‏#3177 `9bf3320`
 
 **מה נחסם:** ‏#3080 (dependabot pip minor/patch, נושא `sentry-sdk` 2.60.0 → 2.68.0) מת ב-`Backend tests (pytest)` על step **Alembic drift check**, `exit 255`, **אפס טסטים נכשלו** — `remove_constraint 'producer_recipes_moderation_status_check'`.
