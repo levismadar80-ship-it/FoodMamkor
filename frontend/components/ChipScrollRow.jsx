@@ -197,7 +197,18 @@ export default function ChipScrollRow({
     // `chips` order are the same list, and this keeps the roving state in the
     // component's own vocabulary.
     const nextKey = chips[to]?.key;
-    if (nextKey !== undefined) setRovedKey(nextKey);
+    if (nextKey !== undefined) {
+      setRovedKey(nextKey);
+      // Match the click/activation path's scroll behaviour (CI reviewer, #3186).
+      // `.focus()` alone scrolls an off-screen chip into view INSTANTLY — the
+      // browser's own auto-scroll — while every other route into this row uses
+      // scrollIntoView({ behavior: "smooth" }). On the overflowing rows this is
+      // aimed at (/map and /producers both overflow in practice) the difference
+      // is a jump versus a glide for the same movement, which reads as two
+      // different components. Calling it explicitly makes the keyboard path and
+      // the pointer path agree.
+      scrollChipIntoView(nextKey);
+    }
   }
 
   function scrollChipIntoView(key) {

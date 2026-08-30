@@ -139,6 +139,41 @@ describe("ChipScrollRow — the keyboard its role=toolbar promises (MEH-2199 chu
     expect(onChipClick).toHaveBeenCalledWith("bread");
   });
 
+  it("scrolls the newly focused chip into view, the same way a click does", () => {
+    // CI reviewer, #3186. `.focus()` on an off-screen chip triggers the
+    // browser's INSTANT auto-scroll, while the click/activation path uses
+    // scrollIntoView({ behavior: "smooth" }) — the same movement would jump on
+    // the keyboard and glide on the pointer. jsdom lays everything out at zero
+    // size so overflow cannot be reproduced here; what CAN be asserted is that
+    // the call is made with the smooth behaviour, on every key that moves.
+    renderRow();
+    const [first] = chipButtons();
+    first.focus();
+    Element.prototype.scrollIntoView.mockClear();
+
+    for (const key of ["ArrowLeft", "ArrowRight", "Home", "End"]) {
+      Element.prototype.scrollIntoView.mockClear();
+      fireEvent.keyDown(document.activeElement, { key });
+      expect(
+        Element.prototype.scrollIntoView,
+        `${key} moved focus without scrolling the chip into view`,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "smooth" }),
+      );
+    }
+  });
+
+  it("does NOT scroll for a key that moves nothing", () => {
+    // The mirror of the case above — otherwise the assertion could be satisfied
+    // by a component that scrolls on every keystroke, which is not the claim.
+    renderRow();
+    const [first] = chipButtons();
+    first.focus();
+    Element.prototype.scrollIntoView.mockClear();
+    fireEvent.keyDown(first, { key: "a" });
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
   it("leaves every other key alone", () => {
     // A handler that preventDefault'd everything would break type-ahead and
     // browser shortcuts and still pass an arrows-only suite.
