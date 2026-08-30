@@ -1,0 +1,31 @@
+MEH-2151 close-out QA — 2026-08-30T08:18:29.585Z
+subject: the approval email's HTML part, rendered from _producer_approved_html("משק הר הפרחים","meshek-har-haprachim")
+engines: webkit devices['iPhone 14'] 390x844 · webkit 375x812 · chromium 375x812
+NOTE: this is the EMAIL BODY in a browser engine, not a mail client. Gmail/
+      Apple Mail apply their own sanitisers; that layer is not observable here.
+
+engine webkit devices['iPhone 14'] declared viewport 390x664
+PASS  webkit-390/control:page-has-layout — innerWidth=390 scrollWidth=390
+PASS  webkit-390/control:button-has-non-zero-box — 210x46
+PASS  webkit-390/A:no-horizontal-overflow — scrollWidth=390 <= innerWidth=390
+PASS  webkit-390/B:tap-target-44px — height=46px
+PASS  webkit-390/C:button-centred-delta<=1px — start=90 end=90 Δ=0
+PASS  webkit-390/D:html-declares-rtl — dir=rtl
+PASS  webkit-390/E:absolute-links — ["http://localhost:3000/p/meshek-har-haprachim","http://localhost:3000/producer/dashboard"]
+PASS  webkit-375/control:page-has-layout — innerWidth=375 scrollWidth=375
+PASS  webkit-375/control:button-has-non-zero-box — 210x46
+PASS  webkit-375/A:no-horizontal-overflow — scrollWidth=375 <= innerWidth=375
+PASS  webkit-375/B:tap-target-44px — height=46px
+PASS  webkit-375/C:button-centred-delta<=1px — start=82 end=82 Δ=0
+PASS  webkit-375/D:html-declares-rtl — dir=rtl
+PASS  webkit-375/E:absolute-links — ["http://localhost:3000/p/meshek-har-haprachim","http://localhost:3000/producer/dashboard"]
+PASS  chromium-375/control:page-has-layout — innerWidth=375 scrollWidth=375
+PASS  chromium-375/control:button-has-non-zero-box — 210x46
+PASS  chromium-375/A:no-horizontal-overflow — scrollWidth=375 <= innerWidth=375
+PASS  chromium-375/B:tap-target-44px — height=46px
+PASS  chromium-375/C:button-centred-delta<=1px — start=82 end=82 Δ=0
+PASS  chromium-375/D:html-declares-rtl — dir=rtl
+PASS  chromium-375/E:absolute-links — ["http://localhost:3000/p/meshek-har-haprachim","http://localhost:3000/producer/dashboard"]
+PASS  control/overflow-probe-discriminates — pre-#3072 width="560" shape overflows as it must: scrollWidth=560 > innerWidth=375
+
+22 assertions ran, 0 failed.
