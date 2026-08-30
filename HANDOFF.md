@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-30 — ‏alembic 1.19 חשף drift ותיק ב-`producer_recipes`: התיקון ב-ORM, לא pin · ‏#3177 `9bf3320`
+
+**מה נחסם:** ‏#3080 (dependabot pip minor/patch, נושא `sentry-sdk` 2.60.0 → 2.68.0) מת ב-`Backend tests (pytest)` על step **Alembic drift check**, `exit 255`, **אפס טסטים נכשלו** — `remove_constraint 'producer_recipes_moderation_status_check'`.
+
+**השורש (MEASURED):** ‏alembic **1.18.5 → 1.19.1**. גרסה 1.19.0 הוסיפה זיהוי autogenerate של CHECK constraints **לפי שם** (plugin `alembic.autogenerate.checkconstraint_byname`, ticket #508 — מצוטט מה-changelog). ה-plugin **נעדר ב-1.18.5 ונוכח ב-1.19.1**, נמדד בשתי החבילות המותקנות. ‏**ה-DB היה תקין תמיד**: revision `f4c8a91e2b07` יצרה את ה-CHECK במאי; המודל מעולם לא הצהיר עליה, כי אז autogenerate לא השווה CHECK constraints כלל. ה-bump לא יצר drift — הוא הפסיק להסתיר אותו.
+
+🔴 **התיקון הוא ב-ORM, ו-pin היה הטעות.** ‏`alembic<1.19` היה מוריק את ‎#3080 מיידית — ומכבה שער שעובד נכון, מסתיר drift אמיתי, חוסם את bump ה-sentry-sdk, ומחזיר את אותו כישלון ב-bump הבא. במקום זה: ‏`CheckConstraint` ב-`ProducerRecipe.__table_args__`. אפס DDL, אפס revision חדשה, אפס נגיעה ב-`alembic/**` / `pyproject` / `uv.lock`.
+
+**המדידה שהכריעה — Postgres אמיתי, מחלקת המודל האמיתית (לא fixture):** בלי התיקון **1 diff (`remove_constraint`, RED)**, עם התיקון **0 diffs** — תחת `alembic 1.19.1 + SA 2.0.52`; וגם **0 diffs** תחת `1.18.5 + 2.0.35`, כלומר אין חלון שבו זה שובר את staging. השורה האדומה/ירוקה היא בקרת ההבחנה — האסרשן נצפה נכשל לפני שנצפה עובר.
+
+⚠️ **בדיקה מוצלבת שנמסרה כמוגבלת:** ‏`1.19.1 + SA 2.0.35` החזירה 0 diffs, כאילו שני ה-bumps נחוצים. **artifact של ה-harness**: reflection של SQLite ב-SA 2.0.35 מחזיר sqltext פגום (סוגר עודף), 2.0.52 תקין. Postgres לא עובר בנתיב הזה. ⇒ ה-mover הוא alembic; חלקה של SQLAlchemy **INFERRED** כלא-מעורב, לא נמדד.
+
+**ה-CI reviewer מצא אחד אמיתי ואחד לא, ושניהם טופלו כראוי.** אמיתי: ה-docstring של המחלקה אמר שה-CHECK מוצהר במיגרציה *"not here"* — השינוי עצמו הפך את זה לשקר, ותוקן. לא אמיתי: דרישה ל-revision נלווית "לפי ADR-003", עם הצעת no-op `op.execute("")`. **נדחתה אחרי קריאת ה-ADR**: הוא אומר *"Every new **column** requires an Alembic revision"*, וכאן אין עמודה — יש הצהרה על מה שה-DB כבר מחזיק. יתרה מזו ADR-003 נועד למנוע **ORM שמקדים את ה-DB** (MEH-265), והכיוון כאן הפוך.
+
+🔴 **‏`MEH-588` הוא מזהה רפאים — מחלקת MEH-360.** ‏`get_issue` מחזיר *Could not find referenced Issue*, וחיפוש עם `includeArchived: true` לא מעלה אותו (‏`get_issue` **כן** מחזיר כרטיסים בארכיון — תקדים MEH-1948 — כך שזו לא מלכודת ה-lookup). המזהה מצוטט ב-docstrings של `backend/app/models/models.py` ובשמות קבצי revision (`..._meh_588_producer_recipes_schema.py`) בלי כרטיס מאחוריו. **לא נפתח כרטיס** — להכרעת ספיר אם זה שווה אחד.
+
+🔴 **כלל 29b שוב, ובכיוון הסוגר.** ה-merge סגר את **MEH-1906** אוטומטית תוך **2 שניות** (‏`completedAt` 08:02:30 מול merge 08:02:28) למרות `Refs` בגוף — ה-DoD שלו לא מולא. הוחזר ל-In Progress. ‏`Refs` עכשיו 3 מתוך 6 בטבלה, כלומר עדיין חסר-תוחלת בשני הכיוונים. **הבדיקה שאחרי המיזוג אינה אופציונלית.**
+
+**‏#3080 אחרי refresh מעל staging:** ה-base שלה `9bf3320`, ו-step **Alembic drift check = success**. לא מוזגה — להכרעת ספיר.
+
 ## 2026-08-29 — ‏builder-model-guard: פטור לפי מה שהקומיט נגע בו, לא לפי זהות · ‏#3173 `dc72902c` + ‏#3174 `54604d1d`
 
 **הבאג:** ‏`vrt-update.yml:174-175` מבצע commit כ-`github-actions[bot]`, והפטור ב-`builder-model-guard.sh` תפס `dependabot[bot]` בלבד. כל PR שה-tip שלו regen של baseline האדים את **Repo guards** — שער חובה — על קומיט שאף session לא כתב.
