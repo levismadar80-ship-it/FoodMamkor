@@ -269,7 +269,6 @@ async function matrix(page, tag) {
     // Friday 2026-09-04, 10:00 Israel time (07:00Z).
     const FAKE = new Date("2026-09-04T07:00:00Z").getTime();
     const RealDate = Date;
-    // eslint-disable-next-line no-global-assign
     Date = class extends RealDate {
       constructor(...a) { return a.length ? new RealDate(...a) : new RealDate(FAKE); }
       static now() { return FAKE; }
