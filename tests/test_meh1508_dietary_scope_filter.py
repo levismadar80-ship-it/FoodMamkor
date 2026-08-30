@@ -89,12 +89,12 @@ def test_vegan_scope_all_matches_even_when_products_are_marked_is_vegan_false(cl
     `is_vegan=False` does not contradict it. Distinct from the zero-product case
     above: here the EXISTS subquery has rows to look at and still returns false.
 
-    CI reviewer, #3191 (Minor): this was named "...products_are_untagged", which
-    implies `NULL`. The fixture sets an explicit `False`, and the two are not the
-    same case — a reader checking NULL handling would have read this as covering
-    it. The name now states the input, per the rule that a case is named after
-    what it covers rather than the class it belongs to. NULL `is_vegan` is NOT
-    exercised here by anyone."""
+    MEH-1508: this was named "...products_are_untagged", which implies `NULL`.
+    The fixture sets an explicit `False`, and the two are not the same case — a
+    reader checking NULL handling would have read this as covering it. The name
+    now states the input, per the rule that a case is named after what it covers
+    rather than the class it belongs to. NULL `is_vegan` is NOT exercised here
+    by anyone."""
     p = _scoped(db, name="מאפייה טבעונית", vegan_scope="all")
     _add_product(db, p, name="לחם", is_vegan=False)
     assert "מאפייה טבעונית" in _names(client, {"vegan": "true"})
