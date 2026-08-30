@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
@@ -34,6 +34,13 @@ const TRAILING_FILLER_PX = 56;
 // it and no caller has to declare its background colour.
 const START_FADE_PX = 12;
 const END_FADE_PX = 48;
+
+// MEH-2199 chunk 1: ArrowLeft = next, ArrowRight = prev. The VISUAL mapping for
+// Hebrew reading order, and the same one Lightbox.jsx:58 and
+// hooks/useTabsKeyboard.js:35 use, so a keyboard user meets one convention
+// across the site. Deliberately NOT the LTR mapping — this is the documented
+// arrow-mirroring exception in .claude/rules/rtl.md, not an oversight.
+const CHIP_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
 
 /**
  * Scrollable chip row for filter bars.
@@ -135,6 +142,73 @@ export default function ChipScrollRow({
     if (variant !== "category") return !!activeKeys[chip.key];
     if (chip.key === "all") return categorySet.size === 0;
     return categorySet.has(chip.key);
+  }
+
+  // MEH-2199 chunk 1 — the keyboard layer `role="toolbar"` (below) has promised
+  // since MEH-1465 and never had. Before this, every chip was its own tab stop:
+  // a filter row of 20 categories cost 20 presses to pass, and the arrow keys
+  // did nothing at all.
+  //
+  // ROVING TABINDEX. One chip is tabbable; the arrows move within the row. The
+  // stop follows, in order: whatever the user last arrowed to, else the first
+  // ACTIVE chip (so Tab lands on the selection a returning user cares about),
+  // else the first chip.
+  const [rovedKey, setRovedKey] = useState(null);
+  const rovedStillPresent = rovedKey !== null && chips.some((c) => c.key === rovedKey);
+  const tabStopKey =
+    (rovedStillPresent ? rovedKey : null) ??
+    chips.find((c) => isActive(c))?.key ??
+    chips[0]?.key;
+
+  // WHY THIS IS NOT `useTabsKeyboard` — the difference is behavioural, not
+  // stylistic. That hook activates on move ("tabs with automatic activation",
+  // its own docstring). These chips are TOGGLE buttons: arrowing across the row
+  // would fire onChipClick per keystroke and rewrite the user's filter set on
+  // the way past. A toolbar moves focus; Enter/Space (native on a <button>)
+  // activates. `ChipScrollRowKeyboard.test.jsx` pins that apart explicitly, so
+  // swapping in the tabs hook here goes red rather than shipping quietly.
+  function onToolbarKeyDown(e) {
+    // The DOM is the single authority for chip ORDER — a parallel array beside
+    // the JSX would be a second owner of the same fact and would desync on any
+    // reorder, silently (workflow.md Smell #1). Same reasoning as the hook.
+    const buttons = Array.from(e.currentTarget.querySelectorAll("button"));
+    const from = buttons.indexOf(e.target.closest?.("button"));
+    if (from === -1) return;
+
+    let to;
+    // Object.hasOwn, not `in` — same defensive choice, and same honest caveat,
+    // as hooks/useTabsKeyboard.js: the two are indistinguishable here today.
+    if (Object.hasOwn(CHIP_ARROW_DELTA, e.key)) {
+      to = (from + CHIP_ARROW_DELTA[e.key] + buttons.length) % buttons.length;
+    } else if (e.key === "Home") {
+      to = 0;
+    } else if (e.key === "End") {
+      to = buttons.length - 1;
+    } else {
+      // Everything else is left alone — no preventDefault. A handler that
+      // swallowed the rest would break type-ahead and browser shortcuts and
+      // would still pass an arrows-only suite.
+      return;
+    }
+
+    e.preventDefault();
+    buttons[to].focus();
+    // Index into `chips`, not into a key read off the DOM: the button order and
+    // `chips` order are the same list, and this keeps the roving state in the
+    // component's own vocabulary.
+    const nextKey = chips[to]?.key;
+    if (nextKey !== undefined) {
+      setRovedKey(nextKey);
+      // Match the click/activation path's scroll behaviour (CI reviewer, #3186).
+      // `.focus()` alone scrolls an off-screen chip into view INSTANTLY — the
+      // browser's own auto-scroll — while every other route into this row uses
+      // scrollIntoView({ behavior: "smooth" }). On the overflowing rows this is
+      // aimed at (/map and /producers both overflow in practice) the difference
+      // is a jump versus a glide for the same movement, which reads as two
+      // different components. Calling it explicitly makes the keyboard path and
+      // the pointer path agree.
+      scrollChipIntoView(nextKey);
+    }
   }
 
   function scrollChipIntoView(key) {
@@ -251,6 +325,8 @@ export default function ChipScrollRow({
         // aria-pressed on each button carries the on/off state.
         role="toolbar"
         aria-label={variant === "category" ? t("category_aria") : t("attribute_aria")}
+        // MEH-2199 chunk 1: the keyboard the role above has always declared.
+        onKeyDown={onToolbarKeyDown}
       >
         {chips.map((chip) => {
           const active = isActive(chip);
@@ -302,6 +378,8 @@ export default function ChipScrollRow({
               type="button"
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
+              // MEH-2199 chunk 1: roving tabindex — the row is ONE tab stop.
+              tabIndex={chip.key === tabStopKey ? 0 : -1}
               // MEH-764: chips are rounded-md on ALL surfaces (/home, /producers,
               // /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
               className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}

@@ -1,0 +1,62 @@
+MEH-1832 chunk 2 — parity/regression matrix — 2026-08-30T15:45:17.021Z
+target: https://staging.mehamakor.online/ (live staging; chromium capped at TLS 1.2 — MEH-2118)
+engines: webkit devices['iPhone 14'] · chromium 1440x900
+NOT-COVERED is a THIRD outcome, deliberately: a state that could not be
+produced is not a pass. Absence of an empty-state marker on a populated feed
+is green in two worlds — healthy, and deleted — so it is never scored PASS.
+
+engine webkit devices['iPhone 14'] viewport 390x664
+PASS  webkit-390/R0a:server-html-carries-producer-cards — producer-card markers in the RAW response = 8 (chunk-1 criterion: >= 1)
+PASS  webkit-390/R0b:control-cards-in-dom — cards = 8
+PASS  webkit-390/R0c:control-non-zero-body — 390x7067
+PASS  webkit-390/R10:zero-hydration-warnings — 0 hydration diagnostics on the console
+METRIC webkit-390/R11:cold-load-client-producers-xhr — 1 :: ["/api/producers"]
+PASS  webkit-390/R11a-control:page-still-renders-with-ric-stubbed — cards = 8 — without this, a zero below could just be a broken page
+PASS  webkit-390/R11a:home-feed-makes-NO-cold-load-xhr — with requestIdleCallback neutralised (so HomepageMiniMap cannot fetch): client /api/producers = 0. The 1 on a normal load is therefore the map's accepted duplicate, not the feed's.
+PASS  webkit-390/R8:load-more-present — "עוד בתי עסק" buttons = 1 · counter = מציגים 8 מתוך 17
+PASS  webkit-390/R8b:load-more-actually-expands — cards 8 -> 16
+PASS  webkit-390/R11b:CONTROL-the-xhr-counter-counts — an interaction moved it 1 -> 2; without this, R11's zero proves nothing
+PASS  webkit-390/R9a:visibleCount-written — sessionStorage home_visible_count = 8
+PASS  webkit-390/R9b:visibleCount-restored-on-return — stored=8, cards after return = 8
+PASS  webkit-390/R2:chips-deep-link-applies — ?category=2 -> cards = 3, counter = "מציגים 3 מתוך 3" (unfiltered total is 17; a no-op deep link would say 17)
+PASS  webkit-390/R2b:deep-link-zero-hydration-warnings — 0
+PASS  webkit-390/R7a:zero-result-filter-shows-no-cards — ?category=14 -> cards = 0 (control: ?category=2 showed 3)
+PASS  webkit-390/R7b:empty-state-marker-rendered — empty-generic=1 day-empty-suggestion=0 :: "אוכל מקומי, במקום אחד ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך. חיפוש בתי עסק וערים פופולרי עכשיו: קרוב אליי משלוחים "
+PASS  webkit-390/R7c:empty-state-zero-hydration-warnings — 0
+PASS  webkit-390/R3a-control:profile-really-is-fresh — recently_viewed=null favorite_hint_shown=null — the gate's precondition
+NOT-COVERED  webkit-390/R3b:onboarding-hint-appears-on-a-fresh-profile — precondition satisfied (storage clean) but no hint observed within 7s; the tip carries a further timing gate — reported as NOT exercised rather than as a defect
+PASS  webkit-390/R4:friday-strip-appears-on-a-faked-friday — page believes it is UTC day 5; "שישי" markers = 1
+NOT-COVERED  webkit-390/R1:geo-notice — geo empty notice absent — expected on a populated feed; state NOT exercised
+NOT-COVERED  webkit-390/R6:region-fallback — region fallback strip absent — expected on a populated feed; state NOT exercised
+PASS  webkit-390/R5a:recently-viewed-current-shape-survives — recently_viewed = [{"id":"seed-a","viewedAt":1788104638486},{"id":"seed-b","vi
+PASS  webkit-390/R5b:page-parity-with-recently-viewed-set — cards = 8, hydration diagnostics = 0
+PASS  chromium-1440/R0a:server-html-carries-producer-cards — producer-card markers in the RAW response = 8 (chunk-1 criterion: >= 1)
+PASS  chromium-1440/R0b:control-cards-in-dom — cards = 8
+PASS  chromium-1440/R0c:control-non-zero-body — 1440x6056
+PASS  chromium-1440/R10:zero-hydration-warnings — 0 hydration diagnostics on the console
+METRIC chromium-1440/R11:cold-load-client-producers-xhr — 1 :: ["/api/producers"]
+PASS  chromium-1440/R11a-control:page-still-renders-with-ric-stubbed — cards = 8 — without this, a zero below could just be a broken page
+PASS  chromium-1440/R11a:home-feed-makes-NO-cold-load-xhr — with requestIdleCallback neutralised (so HomepageMiniMap cannot fetch): client /api/producers = 0. The 1 on a normal load is therefore the map's accepted duplicate, not the feed's.
+PASS  chromium-1440/R8:load-more-present — "עוד בתי עסק" buttons = 1 · counter = מציגים 8 מתוך 17
+PASS  chromium-1440/R8b:load-more-actually-expands — cards 8 -> 16
+PASS  chromium-1440/R11b:CONTROL-the-xhr-counter-counts — an interaction moved it 1 -> 2; without this, R11's zero proves nothing
+PASS  chromium-1440/R9a:visibleCount-written — sessionStorage home_visible_count = 8
+PASS  chromium-1440/R9b:visibleCount-restored-on-return — stored=8, cards after return = 8
+PASS  chromium-1440/R2:chips-deep-link-applies — ?category=2 -> cards = 3, counter = "מציגים 3 מתוך 3" (unfiltered total is 17; a no-op deep link would say 17)
+PASS  chromium-1440/R2b:deep-link-zero-hydration-warnings — 0
+PASS  chromium-1440/R7a:zero-result-filter-shows-no-cards — ?category=14 -> cards = 0 (control: ?category=2 showed 3)
+PASS  chromium-1440/R7b:empty-state-marker-rendered — empty-generic=1 day-empty-suggestion=0 :: "אוכל מקומי, במקום אחד ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך. חיפוש בתי עסק וערים פופולרי עכשיו: קרוב אליי משלוחים "
+PASS  chromium-1440/R7c:empty-state-zero-hydration-warnings — 0
+PASS  chromium-1440/R3a-control:profile-really-is-fresh — recently_viewed=null favorite_hint_shown=null — the gate's precondition
+NOT-COVERED  chromium-1440/R3b:onboarding-hint-appears-on-a-fresh-profile — precondition satisfied (storage clean) but no hint observed within 7s; the tip carries a further timing gate — reported as NOT exercised rather than as a defect
+PASS  chromium-1440/R4:friday-strip-appears-on-a-faked-friday — page believes it is UTC day 5; "שישי" markers = 1
+NOT-COVERED  chromium-1440/R1:geo-notice — geo empty notice absent — expected on a populated feed; state NOT exercised
+NOT-COVERED  chromium-1440/R6:region-fallback — region fallback strip absent — expected on a populated feed; state NOT exercised
+PASS  chromium-1440/R5a:recently-viewed-current-shape-survives — recently_viewed = [{"id":"seed-a","viewedAt":1788104691826},{"id":"seed-b","vi
+PASS  chromium-1440/R5b:page-parity-with-recently-viewed-set — cards = 8, hydration diagnostics = 0
+METRIC chromium-1440 run1 — LCP 868ms · CLS 0.0178
+METRIC chromium-1440 run2 — LCP 880ms · CLS 0.0178
+METRIC chromium-1440 run3 — LCP 916ms · CLS 0.0178
+METRIC chromium-1440 median — LCP 880ms · CLS 0.0178 (n=3, median not mean)
+
+40 assertions ran, 0 failed, 6 not covered.
