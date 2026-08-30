@@ -3,6 +3,99 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-29 — MEH-2218 chunk 2 (Session B): audit + רסס נייד. אפס merges שלי, שניים נמזגו מתחתיי. הריליז לא יצא הלילה.
+
+**‏שורה אחת:** ‏Session A דיווחה `CHUNK 2 DONE` **בלי לסיים את הרשימה**; ‏Session B (זה) ביצעה STEP 0 מלא, מיפתה מה נשאר, ריעננה את #2760/#2759 — ושניהם נמזגו ע"י actor מקביל שניות אחרי שהשערים הוריקו. **MEH-2221 לא התחיל בכוונה.** הריליז לא יצא: תנאי (1) נכשל מעצם ההגדרה.
+
+### חלוקת הבעלות שנקבעה ב-19:15 (בכרטיס, לא בצ'אט)
+
+‏chunk 2 = Session A, כולל סגירת MEH-2218 **«אם הוא מסיים את הרשימה»**. הוא לא סיים, ולכן MEH-2218 **נשאר In Progress**. ‏MEH-2221 + STEP RELEASE = Session B. ‏D2 בוטל: ‏A עוצרת ב-`CHUNK 2 DONE`.
+
+### מצב ה-PRs — נמדד 19:50, לא מהזיכרון
+
+| PR | מצב | ראיה |
+| -- | -- | -- |
+| #3079 | **מוזג** `a12af8ef6` ע"י A | squash מאומת — הורה יחיד |
+| #2759 | **מוזג** `2a685dc0d` ע"י actor מקביל | **merge commit** — 2 הורים + תבנית merge |
+| #2760 | **מוזג** `ac0b2fda7` ע"י actor מקביל | **merge commit** — 2 הורים + תבנית merge |
+| #3080 | **parked** | `alembic check` → `remove_constraint 'producer_recipes_moderation_status_check'`, exit 255. אף טסט לא נכשל |
+| #2953 | **parked** | `builder-model-guard (exit 1)` — הטריילר בפרוזה ולא בבלוק טריילרים (`0ba5d624b`) |
+| #2941 · #2940 | **parked** | rebased ע"י A; לא נבדקו |
+| #2127 | **מיותר** | ‏#3080 עושה את אותו bump של `joserfc` |
+| #3144 | **מוזג** `4ec1b88a` ע"י ספיר 20:52Z | rebased, label לא נגעו (כלל 30) — ספיר הסירה את התווית ומיזגה בעצמה |
+| #3169 | פתוח — **ה-PR הזה** | חייב להיכנס לפני הריליז (תנאי 1) |
+| #3171 | פתוח, draft | לא נגעתי. תנאי (4) ידרוש רענון |
+| #3170 | פתוח, מחוץ ל-sweep | ‏MEH-2168, לא הוקצה לאיש |
+
+### ‏מה שסשן חדש יגלה מחדש אם לא יקרא את זה
+
+1. **‏פקודות `@dependabot` בצ'אט לא עובדות מהערוץ הזה.** ההערות נשלחות **משובשות** — נמדד: `·@·d·ependabot r·ebase`. זה מסביר למפרע את ה-park של #3079 ב-chunk 1 («לא הגיב תוך 10 דקות») — dependabot פשוט לא ראה את הפקודה. **החלופה שעובדת:** ‏`update_pull_request_branch` ב-GitHub MCP.
+2. **‏רסס הנייד דורש ארבעה תיקונים, לא אחד.** ‏webkit מ-`frontend/` (מלכודת 1) + `install-deps` (2) + **Chromium דרך `executablePath: /opt/pw-browsers/chromium`** כי המהדורה הנעוצה מבקשת `-1234` והדימוי נושא `-1194` **וההורדה חסומה** (מלכודת 5) + **`--ssl-version-max=tls1.2`** ל-Chromium מול staging (מלכודת 6). ‏webkit **אינו** זקוק ל-cap. הכל ב-[docs/qa/webkit-local.md](./docs/qa/webkit-local.md).
+3. **‏`npx playwright install chromium 2>&1 | tail -6` מחזיר exit 0 גם כשההורדה נכשלת** — הצינור מחזיר את הסטטוס של `tail`. ההתראה על ה-task אמרה "completed, exit code 0" מעל `Error: Download failure, code=1`. **בדקו את הבינארי על הדיסק, לא את קוד היציאה.**
+4. **‏`devices['iPhone 14']` = 390×844.** ‏MEH-2221 קבע 375×812 — תוקן ב-description.
+5. **‏ה-repo היה shallow.** ‏`git rev-parse --is-shallow-repository` → `true` בתחילת הסשן; כל טענת provenance לפני ה-`--unshallow` הייתה חסרת ערך (MEH-1519).
+6. **‏`rm` ו-`railway *` חסומים ב-Bash כאן.** פקודה מורכבת שמכילה אותם נדחית **כולה**, כולל החלקים התמימים — פצלו.
+
+### ‏הכרעות 19:00 שנשענים עליהן
+
+‏6 פריטי RED עברו ל-CC · ‏D1: ‏CC ממזגת את #2760/#2759 (‏MEH-671 אוסר **עריכת** workflows, לא מיזוג) · ‏D4: ‏CC מבצעת את הריליז תחת 4 שערים · תנאי (3) של הריליז **מסופק** — ספיר מדדה 0 שורות ב-production (‏MEH-2219). ‏#3144 **נמזג ע"י ספיר** 20:52Z (`4ec1b88a`) — אחרי שהשורה הזאת נכתבה · #3169 נמזג רק בסוף MEH-2221.
+
+### ‏נקודת חידוש
+
+**‏MEH-2221 chunk 1, פריט 1 (MEH-2148).** ‏STEP 0 שלו כבר בוצע ואומת: ‏env (4 SET, `DATABASE_URL` נעדר) · ה-proxy מחזיר 307→200 · `railway` חסום · הרסס עובד בשני המנועים. ‏slug אמיתי לבדיקות: **`teva-pure`**. הריליז אחרי chunk 7 + מיזוג #3169, ובכל מקרה **לא לפני** בדיקה מחדש של תנאי (4) — יש actor מקביל שמזיז את staging כל כמה דקות.
+
+## 2026-08-29 — MEH-2218 PR sweep, chunk 1 (run #3): 1 מוזג · 2 נסגרו · 2 parked · 2 לא-נוסו · 7 ל-C
+
+**‏מוזג (1):** ‏#2917 (MEH-2074) — squash **`c1bba1a0`**, הורה יחיד (אומת, לא הונח). סונכרן ב-merge לא rebase (כלל 25), פעמיים, כי staging זז תחת ה-PR באמצע.
+
+**‏נסגרו (2):** ‏#2999 (superseded ע"י #2993 `5bc81974`; MEH-2103 Done) · #2129 (נדחה לפי HANDOFF; נוגע ב-`deploy.yml`).
+
+**‏parked (3) — כל אחת עם שם הצ'ק שנכשל:**
+
+| PR | חוסם | ראיה |
+|---|---|---|
+| #3080 | `CI gate (required)` ← `Backend lint (ruff)` + `Backend tests (pytest)` | `error: The lockfile at 'uv.lock' needs to be updated, but '--check' was provided.` — נקרא מהלוג. ‏+ מעלה `joserfc` (JWT) ו-`alembic`, סיבה שנייה עצמאית |
+| #3079 | ‏`@dependabot rebase` ללא מענה תוך תקרת 10 דק' | head נשאר `e0d2cb056` מ-18:22Z עד 18:32Z. שערים ירוקים אך מ-24/08 מול base `861fbe9d`, 93 קומיטים מאחור |
+| #2941 · #2940 | **לא נוסו** | STOP לפי MEH-450(a) — שתי parked ברצף (#3080, #3079) |
+
+**‏Bucket C — טבלת verdict (read-only, ממתינה ל-go):**
+
+| PR | CI (נקרא 29/08) | diff | merge-tree | תלות / breaking | Linear | `do-not-merge` | verdict |
+|---|---|---|---|---|---|---|---|
+| #3144 | CI ✅ · Deploy ✅ · **E2E gate ❌** | 5 קבצים +226/−18 | CLEAN | — | MEH-2204 **Todo גם אחרי המיזוג** | **כן** | **מוזג** `4ec1b88a` 20:52Z — ספיר הסירה את התווית ומיזגה |
+| #2953 | CI ✅ · Deploy ✅ (15/08) | 2 קבצים +11 | CLEAN | — | MEH-1959 **Done** | לא | **REBASE-THEN-MERGE** |
+| #2943 | **CI ❌** ← ruff + pytest | 1 קובץ +1/−1 | CLEAN | bcrypt 4.0.1→**5.0.0** (major, hashing סיסמאות) | no-issue | לא | **BLOCKED** |
+| #2127 | CI ✅ (11/08) | 2 קבצים | **CONFLICT** → `pyproject.toml`, `uv.lock` | joserfc→1.7.4 (JWT) | no-issue | לא | **BLOCKED** |
+| #2760 | CI ✅ · Deploy ✅ | `.github/workflows/cls-measure.yml` | CLEAN | actions/checkout 4→**7** major | no-issue | לא | **BLOCKED (ספיר)** — CC-deny, MEH-671 |
+| #2759 | CI ✅ · Deploy ✅ | `.github/workflows/claude-review.yml` | CLEAN | claude-code-action 1.0.183→1.0.187 | no-issue | לא | **BLOCKED (ספיר)** — CC-deny; ה-workflow של ה-reviewer (MEH-1844) |
+| #2908 | CI ✅ · Deploy ✅ (14/08) | `HANDOFF.md` +18 | CLEAN | — | MEH-1748 Backlog | לא | **REBASE-THEN-MERGE** |
+
+**‏פקודת התיקון ל-#2127 (נאמרת, לא הורצה):** `cd backend && uv lock` ואז commit של `uv.lock`. אותה פקודה חלה על #3080 ו-#2943.
+
+**‏🔴 MEH-1959 — הכרטיס Done וה-PR מעולם לא נמזג.** ‏`completedAt` = 15/08 19:05:51Z, **39 שניות אחרי פתיחת #2953** (19:05:12Z). זה ה-auto-close מ-slug הענף (כלל 29b), לא מיזוג. התיעוד ש-#2953 נושא — sentinel comment ב-`middleware.py` + תיקון ה-audit — **אינו על staging**.
+
+**‏שתי ריצות קודמות נעצרו על STEP 0.** run #1: ‏#3167 זז באמצע. run #2: ‏#3166 זז בין `git fetch` ל-`list_pull_requests` באותו תור, ו-staging נגע 76 שניות קודם. ספיר משכה את חלון-השקט ב-18:15 והחליפה בשער ownership-scoped.
+
+**‏#3166 / #3167 — נסגרו לבד ע"י הסשן המקביל:** ‏#3167 → `fcd85d59c`, #3166 → `1fc7dab37`. לא נגענו.
+
+**‏main מול staging:** ‏11 קומיטים ב-main שאינם ב-staging, **כולם merge commits של release**; `git diff $(git merge-base staging main) origin/main` → **0 קבצים**. ‏⚠️ הסריקה הראשונה השתמשה ב-`git show --name-only`, שמחזיר אפס קבצים על merge commit — בקרה: אותו `3d46cc37b` = 0 קבצים כך, **430** ב-`git diff $c^1 $c`. ה-null נראה כמו «נקי».
+
+**‏הבא בתור:** ‏go על טבלת C. ‏#2953 ו-#2908 הם sync-ואז-merge; #2943/#2127/#3080 צריכים `uv lock`; #2760/#2759 **נמזגו** (`2a685dc0` · `ac0b2fda`); #3144 **נמזג** (`4ec1b88a`).
+
+### ‏STEP 5 — סגירת chunk 2 (30/08 07:2xZ, סשן יחיד אחרי שספיר סגרה את שאר החלונות)
+
+**‏מה שנחת אחרי שהרשומה למעלה נכתבה (19:53Z) ולכן לא היה יכול להופיע בה:**
+
+| PR | ‏SHA | מתי | מי | תיעוד |
+| -- | -- | -- | -- | -- |
+| ‏#3144 (MEH-2204) | `4ec1b88a` | ‏29/08 20:52Z | ספיר | ‏4 שורות בטבלאות למעלה תוקנו מ«חסום» ל«מוזג» |
+| ‏#3175 (MEH-2223) | `dcf17bc2` | ‏30/08 07:22Z | ספיר | ‏מתעד את #3173 + #3174 — סוגר את ה-drift שלהם |
+
+**‏אחרי #3175, ה-drift מסוג MEH-351 שנותר על staging הוא #3079 · #2759 · #2760 — ו-#3169 (‏ה-PR הזה) מספק את שלושתם.** נמדד פר-PR מול `dcf17bc2`: ‏#3079 ‏6 שורות · #2759 ‏7 · #2760 ‏8 · #3144 ‏4. ‏#3168 ו-#3172 אינם drift — הם ה-carriers של #3166/#3167, ושני אלה מתועדים.
+
+🔴 **‏הערת ה-audit של 07:18Z על הכרטיס שגויה בשתי טענותיה המרכזיות, ואין לרשת אותה.** היא קובעת ש-#3169 «מעולם לא זז מעבר ל-`fc3d2a2e`» ושה-#3079 «אינו מתועד בשום מקום, לא ב-#3169». נמדד ישירות: ‏#3169 התקדם **שלושה קומיטים** מעבר לו — `a89c7d19` (19:47Z) · `718a0a24` (19:51Z) · `0c421505` (19:53Z) — ו-#3079 מתועד בו ב-**6 שורות שנוספו**. ‏מקור הטעות הוא ככל הנראה ref מקומי לא מרוענן; המחלקה היא בדיוק זו של «מכשיר שלא נבדק» ב-`testing.md`.
+
+🔴 **‏כשל flip-check בכיוון השני (כלל 29b): ‏#3144 נמזג ו-MEH-2204 נשאר `Todo`.** לא «נסגר בטעות» אלא **לא נסגר כשהיה צריך** — הכיוון שכלל 29b מוסיף אחרי #2813. הכרטיס הועבר ל-Done על ראיית ה-SHA בסשן הזה.
 ## 2026-08-30 — MEH-2221 close-out: 4 כרטיסים נסגרו, ‏3 PRs נחתו, ‏chunk 5 עצר על מדידה אדומה
 
 **מה נחת (כל אחד squash מאומת — הורה יחיד + תבנית `<title> (#N)`, נקרא מהקומיט שנחת ולא מהתשובה של הקריאה):**
@@ -220,6 +313,28 @@ RecursionError: maximum recursion depth exceeded
 3. **‏שינוי `getVerifiedTooltip` מזיז את ה-aria-label, לא רק את הטולטיפ.** מ-`aria_verified_plain` ל-`aria_verified` המורכב. טסט שאיתר את החותם לפי השם הפשוט נשבר — **וזה הסימן הנכון**, לא רעש. אם תוסיפי doc_type נוסף, אותו דבר יקרה.
 4. **‏אפס חשיפת VRT כאן — ונבדק:** כל fixture ויזואלי נושא `verification_doc_type: null`. זה **שונה מ-#3161**, שם התווית התקצרה ו-baselines כן זזו וממתינים ל-regen על runner.
 5. **‏ה-cap של E2E חתך שוב פעמיים.** ‏#3166 הצטרף ל-#3161: אפס טסטים דווחו. **לא בוזבזה ריצה חוזרת שנייה** — המחלקה כבר קיבלה אחת היום ושוחזרה. MEH-2168 מחזיק עכשיו שבע ריצות מדודות מהיום.
+
+## MEH-1748 scope note (ported from #2908)
+
+> Ported verbatim from PR #2908 during the MEH-2218 sweep, chunk 2. That PR carried these lines and nothing else; it is closed and its branch kept. The text below is unedited.
+
+## 2026-08-14 — MEH-1748 (Zod-from-OpenAPI spike) Lane C Phase 0 scoping — comment posted, STOP, no code touched
+
+**Branch:** `feature/meh-1748-zod-openapi-scope`, cut off fresh `origin/staging` (re-cut from the harness-provided `claude/meh-1748-zod-openapi-scope-t9tnf9` per workflow rule 3 — divergence was 0 against `origin/staging` by the time of the recut, so no lost work). This entry ships in the same docs-only branch — no code PR, per the task brief ("read-only on application code, docs-only carrier PR for the session log is the only PR allowed", rule 31).
+
+**What's done:** posted a full Phase 0 scoping comment on MEH-1748 (Linear). Read MEH-1748 + its whole dependency chain (MEH-1750/1751/1752/1891/1896/1897) live, re-derived every field count against current code rather than trusting cached numbers in the tickets, and unshallowed the clone (`git rev-parse --is-shallow-repository` was `true`) before citing any file history.
+
+**Key findings (full evidence in the Linear comment):**
+- The `KNOWN_UNDECLARED` baseline in `backend-contract-parity.test.js` is **46 fields today, not 47** as MEH-1897's card text says — `order_window` was declared and removed from the baseline after MEH-1897 was written; MEH-1897 itself is still Backlog/not started, so this had never been caught.
+- MEH-1751's bundle measurement (the number the 28/07 spike used to argue against codegen) **inverted under a real `next build`**: −45,192 B under esbuild became +2,073 B worse under the real bundler, reproduced byte-identical on a control rebuild. MEH-1752's own resolution text already says the bundle axis carries no evidence either direction — nobody has ever measured actual generated-vs-hand schema code under a real production build.
+- A recurrence **8** (MEH-2046, `delivers`/`offers_pickup`) and a nested-object recurrence outside the original "7" count (MEH-1942, `delivery_areas[].delivery_fee`) both happened since the spike was written — the first was caught pre-merge by the MEH-1891 parity guard (evidence the guard works), the second shipped and was fixed manually because the guard is provably top-level-only (`nested-schema-stripping.md:130-133`).
+- MEH-1896 (nested stripping, Backlog, `needs-sapir`) and MEH-1748 converged independently on the same structural answer — MEH-1896's own audit names MEH-1748's codegen as the fix that would make its own options א/ב/ג moot. The two decisions are coupled and neither ticket currently says so.
+
+**Verdict:** MEH-1748 is not a runnable CC prompt as currently scoped — it needs a single Sapir architecture ruling (adopt OpenAPI→Zod generation, yes/no, and if yes with what override/CI mechanism), coupled to MEH-1896's pending decision. Recommended MEH-1897 (Backlog, unblocked, 🟢 GREEN reasoning tier) as the one card in the chain actually ready to run today if Sapir wants incremental value without deciding the bigger question. Did not self-authorize either decision — flagged per the task's own stop condition.
+
+**What's pending (Sapir):** the adopt/don't-adopt call on MEH-1748, and the א/ב/ג call on MEH-1896 — both now cross-referenced to each other via the Linear comment on MEH-1748.
+
+**No code touched.** `git status` on `backend/` and `frontend/` clean for the whole session; this HANDOFF entry is the only file this branch carries.
 
 ## 2026-08-14 — Lane A: MEH-2051 מוזג · chunks 4b + 2 של MEH-1938 חסומים על ספיר
 
