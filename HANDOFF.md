@@ -3,6 +3,59 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-30 — ‏Release ‏`staging → main` בוצע: ‏**790cf871** · תיקון השורש של MEH-1906 בפרודקשן
+
+**‏מה נחת:** ‏`main` ‏`3d46cc37` → **`790cf871`**, מ-`staging` ‏`c7e509b1`. ‏**72 non-merge commits.** ‏PR #3171, מוזג ע"י CC בסמכות MEH-2227 §1.
+
+**‏אומת כ-merge commit ולא כ-squash:** הורים `3d46cc37` + `c7e509b1`, תבנית `Merge pull request #3171 from …` — נקרא מהקומיט שנחת (MEH-1526), לא מתשובת קריאת ה-merge.
+
+### הסדר שהיה הממצא
+
+‏`#3171` הוא `head=staging` — **ענף, לא SHA**. הוא נושא את מה ש-`staging` מחזיקה ברגע ה-merge. ‏`sentry-sdk 2.68.0` (תיקון MEH-1906) ישב בתוך #3080 ולא על `staging`.
+**‏merge של #3171 לפני ש-#3080 ינחת היה משחרר ריליז בלי התיקון שבשבילו הוא יצא.** נמדד ישירות: `staging` ו-`main` שניהם על `2.60.0` באותו רגע.
+‏#3080 נחת כ-`07d503f4` (ע"י סשן ה-drain, לא CC) → `staging` עברה ל-2.68.0 → ואז ה-merge.
+
+### שתי מסקנות שהתהפכו תוך כדי, והוחלפו לפני ה-merge
+
+| סעיף | נאמר | נכון אחרי `07d503f4` |
+| -- | -- | -- |
+| §2 | `backend/pyproject.toml → EMPTY` | **CHANGED** — 15 חבילות backend |
+| §3 | «MEH-1906 root fix is **NOT** in this release» | **כלול** — `sentry-sdk` 2.68.0 |
+
+שתיהן היו נכונות כשנמדדו. **‏זו התנהגות של PR שה-head שלו חי, לא שגיאת מדידה** — ה-head זז **שמונה פעמים** (`c9b9f077 → 80db6c57 → a12af8ef → dcf17bc2 → 9bf33202 → 4351578c → 273c38e5 → c7e509b1`), ואחת מהן עקפה עדכון בזמן הכתיבה. משטח ההגירה נמדד מחדש בכל עמדה והחזיק בכולן.
+
+### אימות §8 — production, נמדד ע"י CC
+
+| בדיקה | תוצאה |
+| -- | -- |
+| `alembic upgrade head` · `alembic_version` | ✅ **`b3f7a1c46e92`** |
+| `/api/health` — `booted_at` חדש | ✅ **`2026-08-30T15:34:30Z`** (היה 26/08 19:26) · `git_sha` = `790cf871` |
+| `/api/categories` | ✅ **200** |
+| `/api/producers?limit=1` | ✅ **200** (גוף `[]` — ראו למטה) |
+| `/api/producers/by-slug/*` | ✅ **404** עם גוף תקין (היה 500 על כל קלט) |
+| Vercel prod | ✅ `/` · `/he` · `/he/map` — **200** |
+
+‏`mehamakor.co.il` נגישה ל-GET מסנדבוק CC; Railway ו-`staging.mehamakor.online` אינן.
+
+### MEH-1906 — נשאר In Progress בכוונה
+
+**‏תיקון השורש נשלח, וה-endpoint אינו מחזיר עוד 500 באופן בלתי-תלוי-קלט** — `by-slug` מחזיר 404 עם גוף תקין על שלושה קלטים כולל slug שטותי, התנהגות שהנתיב השבור לא יכול לייצר.
+
+**‏אך טרם הוכח תחת uptime מתמשך ולא על נתיב ההצלחה.** ה-deploy מאפס את מונה ה-wrapper; הקונטיינר הקודם הראה את הכשל רק אחרי ~3 ימים, והמדידה כאן נלקחה ב-uptime של דקות. ובנוסף — **אין בית עסק `approved` בפרודקשן**, ולכן `by-slug` מחזיר 404 לכל קלט **בתכנון**, ואי אפשר לתרגל את נתיב ההצלחה.
+
+**‏מה שיסגור:** בדיקה חוזרת אחרי uptime אמיתי · בית עסק approved בפרודקשן · טסט regression לעומק ה-wrapper (**עדיין absent** — `test_meh2116_hook_reentrancy.py:206` הוא משטח אחר, `logging.Logger.handle`).
+
+### הרשימה הריקה של `/api/producers` — נבדקה, אינה רגרסיה
+
+`producer_listing.py:182/187/240/246` ו-`routers/producers.py:354` מסננים `status == "approved"`; `:358` מחזיר בדיוק «בית עסק לא נמצא» שחזר מפרודקשן. בפרודקשן שורת producer אחת שאינה approved ⇒ `[]` הוא ההתנהגות הנכונה.
+**‏לא נגרם ע"י הריליז:** `producer_listing.py` לא נגעה ב-`3d46cc37..790cf871`; השינוי היחיד ב-`routers/producers.py` הוא פרמטר הגוף האופציונלי של לכידת העיר (MEH-1677).
+
+### מה שנכנס לריליז אחרי שהוא נפתח
+
+‏#3144 (שער ביקורת רב-ערוצי — נשא את התווית החוסמת, שהוסרה ע"י גורם אחר; לא ע"י CC, כלל 30) · `.github/workflows/` לראשונה (#2760 `actions/checkout` v4→v7, #2759) · #3173/#3174 (ה-guard עצמו) · #3079 (13 תלויות frontend) · #3177 (ORM metadata, בלי DDL) · #3080.
+
+---
+
 ## 2026-08-30 — ‏#3080 אחרי refresh: חסם ה-alembic נפל, הטסטים אדומים מסיבה אחרת · **לא נחקר, לא מוזג**
 
 **מצב:** ‏#3080 (dependabot pip minor/patch) רועננה מעל staging — head `1100b09`, base `9bf3320`. **לא מוזגה.**
