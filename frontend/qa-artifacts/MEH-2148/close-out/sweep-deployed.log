@@ -1,0 +1,25 @@
+MEH-2148 CTA-vs-map-control width sweep — 2026-08-30T09:21:27.290Z
+target: https://staging.mehamakor.online/he/teva-pure
+mode: PRE-FIX (staging as deployed)
+
+## webkit-iPhone14-390 [deployed] http=200 bar(z=598) ctl(z=10) doc=3582 vp=664
+  PASS flush-control PRE-scroll: bar bottom=733 > vp=664 (hidden below fold)
+  flush-control POST-scroll: non-flush at 0..1040px (n=27); flush elsewhere
+  overlap offsets : 1760..1840px (n=3)
+  PASS CTA-unobstructed (13-sample width sweep): control won 0 sample-set(s)
+  PASS INVERTED control reachable at SOME offset: 1840..2280px (n=10)
+  RESIDUAL control in viewport but NOT reachable: 1800..2400px (n=6)
+  PASS fullscreen opens on control click
+  PASS overlay z-index === 1150 (live computed, not a count-of-0): 1150
+  PASS close button reachable at its centre: elementFromPoint=CLOSE box=44x44 z=10
+
+## chromium-375 [deployed] http=200 bar(z=598) ctl(z=10) doc=3602 vp=812
+  PASS flush-control PRE-scroll: bar bottom=881 > vp=812 (hidden below fold)
+  flush-control POST-scroll: non-flush at 0..1040px (n=27); flush elsewhere
+  overlap offsets : 1640..1720px (n=3)
+  PASS CTA-unobstructed (13-sample width sweep): control won 0 sample-set(s)
+  PASS INVERTED control reachable at SOME offset: 1720..2440px (n=14)
+  RESIDUAL control in viewport but NOT reachable: 1680..2400px (n=6)
+  PASS fullscreen opens on control click
+  PASS overlay z-index === 1150 (live computed, not a count-of-0): 1150
+  PASS close button reachable at its centre: elementFromPoint=CLOSE box=44x44 z=10

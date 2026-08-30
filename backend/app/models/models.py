@@ -2080,8 +2080,11 @@ class ProducerRecipe(Base):
     of that producer's products via the producer_recipe_products M2M.
 
     `moderation_status` mirrors the four-state machine used elsewhere
-    (pending / approved / rejected / needs_revision); the DB-level
-    CHECK constraint is declared in the Alembic migration, not here.
+    (pending / approved / rejected / needs_revision). The DB-level CHECK
+    constraint is created by Alembic revision f4c8a91e2b07 and mirrored
+    in `__table_args__` below for autogenerate parity — the migration
+    remains the schema authority (ADR-003); the ORM copy declares only
+    what the DB already has, and creates nothing.
 
     History: MEH-588 (creation, chunk 1/4 of the producer-recipes epic;
     chunk 0 = MEH-587 cleared the legacy `recipes` namespace).
@@ -2098,6 +2101,13 @@ class ProducerRecipe(Base):
             "published",
             "moderation_status",
             postgresql_where=text("published = true"),
+        ),
+        # MEH-588: mirror the CHECK created in revision f4c8a91e2b07. Alembic
+        # 1.19.0 added by-name CHECK autogenerate detection, which surfaced
+        # this as ORM/migration drift; the DB was always correct.
+        CheckConstraint(
+            "moderation_status IN ('pending', 'approved', 'rejected', 'needs_revision')",
+            name="producer_recipes_moderation_status_check",
         ),
     )
 
