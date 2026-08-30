@@ -30,15 +30,21 @@ WHAT "SURVIVES DECODING" MEANS HERE, AND WHAT IT DOES NOT
 There is NO MIME construction in this repository. `send_email` hands Resend a
 dict over HTTPS (`app/services/email.py`, `resend.Emails.send(params)`) and
 Resend's MTA builds the MIME. So a test cannot open a MIME part and read a
-`charset=`, and this file does not claim to. What it CAN establish — and what
-actually protects the two characters the ticket names — is that the strings
-reach the transport intact and round-trip through the UTF-8 JSON encoding the
-HTTP client applies to them. A mojibake introduced anywhere upstream of
-`resend.Emails.send` fails here; one introduced by Resend's own MTA is not
-observable from this process and is named as such rather than assumed away.
-"""
+`charset=`, and this file does not claim to.
 
-import json
+What it CAN establish — and all it claims — is that the two characters are
+PRESENT in both parts at the transport, and that the strings carrying them are
+`str` and are UTF-8-encodable. A mojibake introduced anywhere upstream of
+`resend.Emails.send` fails the first check; a lone surrogate left by a bad
+decode upstream fails the second.
+
+What it CANNOT establish, stated so no reader infers otherwise: the encoding
+performed by the HTTP client and by Resend's MTA happens outside this process
+and is not observable here. An earlier version of this file asserted a
+`json.dumps(...).encode().decode()` "round trip" as if it covered that layer.
+It did not and could not — that expression is the identity on any valid `str`.
+Caught by the CI reviewer on #3180 and removed rather than reworded.
+"""
 
 import pytest
 
@@ -102,36 +108,56 @@ def test_both_parts_reach_the_transport_not_just_the_builder(wire):
 
 @pytest.mark.parametrize("part", ["text", "html"])
 @pytest.mark.parametrize("char, label", [(EM_DASH, "em-dash"), (PIPE, "pipe")])
-def test_the_locked_punctuation_survives_the_utf8_json_round_trip(wire, part, char, label):
-    """Present AND intact after the encoding the client applies.
+def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part, char, label):
+    """The character is present, and the string it sits in can actually be encoded.
 
-    Two separate failures wear the same face in an inbox — a character that was
-    never rendered, and one that was rendered and then mangled — so both are
-    asserted, in that order.
+    WHAT THIS DELIBERATELY NO LONGER DOES, AND WHY (CI reviewer, #3180)
+    -------------------------------------------------------------------
+    The first version of this test round-tripped the value through
+    `json.dumps(...).encode("utf-8").decode("utf-8")` and asserted equality.
+    That is a Python **no-op**: `json.dumps` returns `str`, and encode/decode
+    is the identity on any valid `str`, so the equality could not fail and the
+    membership re-check was entailed by the assertion above it. It read as an
+    encoding guard while being decoration — the exact "an assertion entailed by
+    the lines above it is not a check" failure in `.claude/rules/testing.md`,
+    committed in a file that cites that rule. Removed rather than reworded.
+
+    What replaces it is a check that CAN fail: `.encode("utf-8")` raises
+    `UnicodeEncodeError` on a lone surrogate, which is what a bad decode
+    upstream (a latin-1 read of UTF-8 bytes, a `surrogateescape` round trip)
+    actually leaves in a Python string. That is the one in-process corruption
+    mode this boundary can still see.
+
+    The wire encoding itself happens inside the HTTP client and inside Resend's
+    MTA — outside this process, and NOT observable here. Named, not asserted.
     """
     _send_approval()
     value = wire[0][part]
     assert char in value, f"{label} absent from the {part} part at the transport"
-
-    round_tripped = json.loads(json.dumps({part: value}).encode("utf-8").decode("utf-8"))
-    assert round_tripped[part] == value, f"{part} part mutated by UTF-8 JSON encoding"
-    assert char in round_tripped[part], f"{label} lost in the {part} part round trip"
+    assert isinstance(value, str), f"{part} part reached the transport as {type(value).__name__}"
+    value.encode("utf-8")  # raises UnicodeEncodeError on a lone surrogate
 
 
-def test_encoding_probe_discriminates():
-    """The round-trip assertion above must be able to go RED.
+def test_both_assertions_above_can_actually_go_red():
+    """Each of the two surviving assertions is shown rejecting a real bad input.
 
-    A probe that cannot fail is decoration. This constructs a payload mangled
-    exactly the way a latin-1 transport mangles an em-dash and requires the
-    same membership test to reject it — so the greens above are a measurement
-    of the real payload, not a property of `json` being lossless for all input.
+    A probe that cannot fail is decoration, so both halves get a case with a
+    known answer rather than a claim that they work.
     """
+    # (1) the membership half: a latin-1 read of the UTF-8 bytes, which is
+    #     exactly what mojibake in an inbox is.
     mojibake = EM_DASH.encode("utf-8").decode("latin-1")
     assert EM_DASH not in mojibake, (
         "the synthetic mangled payload still contains a real em-dash — "
         "this control proves nothing as constructed"
     )
     assert len(mojibake) == 3, "expected the classic three-byte latin-1 rendering"
+
+    # (2) the encodability half: a lone surrogate is a valid Python `str` that
+    #     CANNOT be encoded to UTF-8. This is what makes the bare
+    #     `value.encode("utf-8")` above a check and not a no-op.
+    with pytest.raises(UnicodeEncodeError):
+        "\ud800 broken".encode("utf-8")
 
 
 def test_the_meh331_base64_header_rides_with_the_html_part(wire):
