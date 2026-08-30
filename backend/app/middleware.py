@@ -41,6 +41,15 @@ def _redact_email(addr: str | None) -> str:
     return f"{local[0]}***@{domain}"
 
 
+# DO NOT treat a card asking to "add security headers" or "ship CSP in
+# Report-Only" as green-field work without reading this function (and its
+# frontend twin, next.config.js's securityHeaders) first. This baseline has
+# lived here since 2026-04-08 (37b39940e), and the frontend's CSP already
+# ENFORCES. MEH-1959 re-litigated that exact false premise 3x (2026-08-11,
+# -14, -15) — see the MEH-1959 Linear comments for full file:line evidence.
+# Weakening HSTS in this function (dropping preload / shortening max-age)
+# would be a security regression, not a baseline addition — don't do it
+# without an explicit, informed decision from Sapir.
 async def add_security_headers(request: Request, call_next) -> Response:
     response: Response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
