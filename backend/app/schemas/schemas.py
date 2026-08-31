@@ -18,7 +18,32 @@ from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 
-_LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
+# MEH-2236: the letter class behind MEH-555's "at least 3 letter characters"
+# floor. Hebrew + Latin + **Arabic letters**. Arabic was added because MEH-2020
+# ruled Arabic legal in a public slug ("an Arabic-speaking business in Israel is
+# an ordinary case") while this class still refused the business *name* one
+# layer earlier, so the ruling admitted a slug no business could ever reach:
+# "مزرعة الشمس" counted 0 letters and died in request validation with a 422.
+#
+# The Arabic sub-ranges, NOT the whole \u0600-\u06ff block. The block carries
+# the comma, semicolon, question mark and tatweel, and a name made only of
+# those is exactly the "???" case MEH-555 exists to reject. Harakat
+# (\u064b-\u0652) are excluded for the same reason Hebrew niqqud is: a
+# diacritic decorating two letters must not manufacture a third.
+#
+# Two code points are carved OUT of the letter ranges, and they are the only
+# two: \u0640 TATWEEL (Lm — the kashida elongation glyph, which the ruling
+# names explicitly as punctuation) and \u0670 SUPERSCRIPT ALEF (Mn — a
+# combining mark despite its name). A scan of all 144 code points in the
+# ruled ranges found no others outside Lo/Ll/Lu. Without the carve-out
+# "ــــ" would clear a floor whose whole purpose is to reject "???".
+#
+# Arabic-Indic digits are deliberately absent here and present in _ALNUM_REGEX
+# below: the two classes are split by role, not copied. This one counts
+# letters, so "١٢٣" must fail it exactly as "12345" does.
+_LETTER_REGEX = re.compile(
+    r"[^\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]"
+)
 
 # MEH-1543: weekly order-acceptance window validation. Keys are a subset of
 # these 7 English day names (stable storage keys; Hebrew labels rendered
@@ -131,7 +156,13 @@ def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     return stripped
 
 
-_ALNUM_REGEX = re.compile(r"[א-תa-zA-Z0-9]")
+# MEH-2236: same three scripts as _LETTER_REGEX, plus digits — both ASCII and
+# Arabic-Indic (\u0660-\u0669), since this class's job is "a letter OR a digit"
+# and an address written in Arabic numerals is the case it exists to accept.
+_ALNUM_REGEX = re.compile(
+    r"[\u05d0-\u05eaa-zA-Z0-9\u0621-\u063f\u0641-\u064a"
+    r"\u0660-\u0669\u066e-\u066f\u0671-\u06d3]"
+)
 
 
 def _min_alnum_validator(value: str | None) -> str | None:
