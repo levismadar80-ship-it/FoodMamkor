@@ -100,8 +100,8 @@ function AreaRow({ da, t, fee = null }) {
 // MEH-1903: preview cap for the MEH-1305 editorial area rows, which rendered
 // every area unbounded in all three modes. Same progressive-disclosure idiom
 // already proven twice in this file — CompactCities (CITY_PREVIEW_LIMIT, :125)
-// and PickupRows (PICKUP_PREVIEW_LIMIT, :209): slice + one reused
-// show_all/show_less toggle. Nothing is deleted; the rest is one tap away.
+// and PickupRows (PICKUP_PREVIEW_LIMIT, :209): slice + a show-more/show_less
+// toggle. Nothing is deleted; the rest is one tap away.
 //
 // 6 and not the compact list's 15 because these rows are ~7x taller: a city
 // row here carries min_order and (under MEH-1772 variance) a per-area fee,
@@ -109,10 +109,16 @@ function AreaRow({ da, t, fee = null }) {
 const AREA_PREVIEW_LIMIT = 6;
 
 // MEH-1903: the area section's show-more/less control. Anatomy is copied from
-// CompactCities' toggle verbatim — same two i18n keys, same Phosphor carets,
-// same aria-expanded and text-primary — so the third disclosure surface in this
-// file is indistinguishable from the two that predate it.
+// CompactCities' toggle verbatim — same Phosphor carets, same aria-expanded and
+// text-primary — so the third disclosure surface in this file is
+// indistinguishable from the two that predate it.
 // REUSES: frontend/components/DeliveryBlock.jsx:147-161 (CompactCities toggle)
+//
+// MEH-1908: the show-more key is the ONE part that is deliberately NOT shared.
+// The three toggles previously read a single `show_all` = "הצג עוד {count} ערים",
+// which was wrong twice over: no ICU `plural`, so count=1 rendered "הצג עוד 1
+// ערים"; and "ערים" is the wrong noun for pickup points at EVERY count. Each
+// consumer now owns a pluralised key naming its own entity.
 function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
   return (
     <button
@@ -121,7 +127,7 @@ function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
       aria-expanded={expanded}
       className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
     >
-      {expanded ? t("show_less") : t("show_all", { count: hiddenCount })}
+      {expanded ? t("show_less") : t("show_all_areas", { count: hiddenCount })}
       {expanded ? (
         <CaretUp size={16} aria-hidden="true" />
       ) : (
@@ -212,7 +218,7 @@ function CompactCities({ areas, t }) {
           aria-expanded={expanded}
           className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
         >
-          {expanded ? t("show_less") : t("show_all", { count: hiddenCount })}
+          {expanded ? t("show_less") : t("show_all_cities", { count: hiddenCount })}
           {expanded ? (
             <CaretUp size={16} aria-hidden="true" />
           ) : (
@@ -264,7 +270,7 @@ function PickupRow({ loc, t, tMap }) {
 
 // MEH-1512: the pickup-rows list. Mirrors the MEH-1435 CompactCities
 // progressive-disclosure structure above (DeliveryBlock.jsx:75-112) — useState
-// + slice + a reused show_all/show_less toggle — so a long market-stand list
+// + slice + a show-more/show_less toggle — so a long market-stand list
 // stays short (preview PICKUP_PREVIEW_LIMIT + "הצג עוד"). Sorted city→label,
 // stable. Heading reuses the MEH-1461-locked "איסוף עצמי" string (t("pickup")).
 //
@@ -302,7 +308,7 @@ function PickupRows({ locations, t, tMap }) {
           aria-expanded={expanded}
           className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
         >
-          {expanded ? t("show_less") : t("show_all", { count: hiddenCount })}
+          {expanded ? t("show_less") : t("show_all_pickup", { count: hiddenCount })}
           {expanded ? (
             <CaretUp size={16} aria-hidden="true" />
           ) : (
