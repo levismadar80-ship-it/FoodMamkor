@@ -32,6 +32,31 @@ function formatTime(t) {
 
 const LONG_DATE = { weekday: "long", day: "numeric", month: "long" };
 
+// MEH-1988 — Phase 0 asked whether this component should be moved onto the
+// Israel clock (lib/israel-date.js) with holidays.js and the seasonal
+// placeholders. DECIDED: NO. Browser-local is correct here, and the decision is
+// recorded in the file rather than only on the ticket, because this is exactly
+// where someone would come to "fix" it.
+//
+// Three reasons, in order of weight:
+//
+//  1. NOTHING HERE IS COMPARED AGAINST THE SERVER. That is the criterion the
+//     MEH-1983 defect actually turned on — the vacation pickers offered a date
+//     `israel_today()` then rejected. This grid is browsing chrome; no value it
+//     computes is ever sent anywhere to be validated.
+//
+//  2. A HALF-MIGRATION WOULD BE A REGRESSION. `dateKey` (:13) and `cells` (:56)
+//     build their keys and their month grid from local getFullYear/getMonth/
+//     getDate. Moving only `today` onto Israel time would let the "is this cell
+//     today" highlight disagree with the grid it sits in — for a viewer abroad,
+//     a highlighted cell in the wrong square. Strictly worse than now.
+//
+//  3. IT IS THE USER'S OWN CALENDAR. Showing a viewer in Berlin *their* today is
+//     the expected behaviour of a month grid; forcing Israel's day on them would
+//     be the surprising choice, not the correct one.
+//
+// DO NOT "align this with the israel-clock sweep" without re-reading (2) — the
+// cheap version of that change is the one that breaks it.
 export default function CalendarView({ items, linkPrefix }) {
   const t = useTranslations("events.calendar");
   const locale = useLocale();
