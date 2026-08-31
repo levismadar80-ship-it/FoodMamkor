@@ -25,7 +25,12 @@ from app.services.producer_queries import (
     create_primary_branch_location,
     persist_registration_delivery_areas,
 )
-from app.slug_utils import RESERVED_SLUGS
+
+# MEH-2020 — the third copy of the slug helper is gone; `slug_utils` is the one
+# owner, and the reserved check now folds under NFKC + casefold rather than
+# comparing raw strings against a frozenset of ASCII literals.
+from app.slug_utils import is_reserved
+from app.slug_utils import slugify as _slugify
 
 # U+00D7 (×, multiplication sign) and U+00F8 (ø) appear when Hebrew UTF-8
 # bytes are decoded as Latin-1/Windows-1252 — the classic XLS mojibake.
@@ -34,29 +39,6 @@ _MOJIBAKE_RE = re.compile(r"[×ø]")
 
 def _has_mojibake(value: str | None) -> bool:
     return bool(value and _MOJIBAKE_RE.search(value))
-
-
-def _slugify(text: str) -> str:
-    """Third copy of the slug helper — mirrors `slug_utils.slugify` byte for byte.
-
-    MEH-2021 found this one by grep: the card named two sites and there are
-    **three**. Kept as-is rather than de-duplicated here, because collapsing
-    three slug generators is a behaviour-adjacent refactor on public URLs and
-    this change is docstring-only.
-
-    **The `\\u0590-\\u05FF` range is not redundant — do not remove it.** 81 of
-    its 112 codepoints are not `\\w` (ניקוד, maqaf, geresh, gershayim), so
-    dropping it silently rewrites slugs for real business names. Full
-    measurement in `admin.py::_slugify`; corpus pinned in
-    `tests/test_slugify_charclass_equivalence.py`.
-    """
-    if not text:
-        return ""
-    s = str(text).strip().lower()
-    s = re.sub(r"\s+", "-", s)
-    s = re.sub(r"[^\w\u0590-\u05FF\-]", "", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s[:100]
 
 
 def _yes_no(value: Any) -> bool:
@@ -74,7 +56,7 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id=None) -> str:
     candidate = base_slug
     counter = 2
     while True:
-        if candidate not in RESERVED_SLUGS:
+        if not is_reserved(candidate):
             q = db.query(Producer).filter(Producer.slug == candidate)
             if exclude_id:
                 q = q.filter(Producer.id != exclude_id)
