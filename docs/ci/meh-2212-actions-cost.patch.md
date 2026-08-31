@@ -72,12 +72,21 @@ read via the Actions API `list_workflow_jobs`, job-level `started_at` →
 >    workflow's own `timeout-minutes` plus the 9.5-min vitest figure MEH-2194
 >    measured. Re-measure on a frontend PR before sizing a spending limit on it.
 > 2. **`get_workflow_run_usage` returns `total_ms: 0` for every job in both
->    runs.** That is not an error and not a free run — the repo was **public**
->    when they executed, and GitHub bills public-repo standard runners at zero.
->    The billed column above is therefore *derived* (wall-clock, rounded up per
->    job), not read off the billing API. Once the repo is private the same call
->    will return real values; re-run it then rather than trusting this
->    derivation.
+>    runs**, so the billed column above is *derived* (wall-clock, rounded up per
+>    job), not read off the billing API. Treat the derivation as the measurement
+>    and re-derive it rather than trusting this table.
+>
+>    > **⚠️ Corrected 2026-08-31 (MEH-1907). This bullet previously explained that
+>    > zero as "the repo was public when they executed, and GitHub bills
+>    > public-repo runners at zero," and predicted the call would return real
+>    > values once private. That was an unvalidated instrument reading and it is
+>    > wrong.** Measured at 22:14Z: run `33443341578` reports `total_ms: 0` for
+>    > all 17 jobs **while the repo measures `private: true`** (two independent
+>    > live reads at 22:15Z). So the zero has at least two causes — no billing,
+>    > or billing data absent/lagging — and **discriminates in neither
+>    > direction**. Do not use it to infer repository visibility, and do not
+>    > expect it to start reporting real minutes on its own. The derived column
+>    > is unaffected: it never depended on that field.
 
 **E2E measured separately** (`e2e.yml`, run-level wall-clock, `pull_request`,
 2026-08-31): real executions **17.1 / 17.2 / 21.2 min**; runs whose paths-filter
@@ -936,9 +945,11 @@ and gate the install on a miss:
 | 7 | **§2ג**, **§6** | Only after re-measuring on a **private** repo with real billing data |
 
 **Re-measure after each step.** Every number in this document was taken while the
-repo was **public**, so `get_workflow_run_usage` returned `total_ms: 0` and the
-billed column is derived, not read. Once private, that same call returns real
-values — use them, and correct this file rather than inheriting its arithmetic.
+`get_workflow_run_usage` returned `total_ms: 0` and the billed column is derived,
+not read. **That zero is not a visibility signal and may not become one** — see
+the corrected note in *Measurement method* above; it still reads `0` on a run
+measured while the repo was private. Re-derive from wall-clock rather than
+inheriting this file's arithmetic.
 
 ---
 
