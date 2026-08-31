@@ -87,15 +87,15 @@ import { pickProducer, detailPath, type FeedProducer } from "./_producer-fixture
  *  D1  a failed save does not stick         covered — the discriminating case;
  *                                           without it a dead backend passes D1
  *  D2  removing it from /favorites          covered (stubbed backend)
- *  D2  the list empties                     **PARTIAL — and the card is wrong.**
- *                                           The removal PERSISTS (asserted via
- *                                           reload). The live list does NOT
- *                                           empty: measured count 1 after the
- *                                           DELETE resolves, because
- *                                           FavoritesClient holds its rows in
- *                                           local state and never subscribes to
- *                                           the shared cache. Reported on the
- *                                           card; not asserted either way here.
+ *  D2  the list empties                     covered (MEH-2034). Was PARTIAL:
+ *                                           the live list did NOT empty —
+ *                                           measured count 1 after the DELETE
+ *                                           resolved, because FavoritesClient
+ *                                           held its rows in local state and
+ *                                           never subscribed to the shared
+ *                                           cache. Fixed under MEH-2034; the
+ *                                           count is now asserted live AND
+ *                                           after a reload (removal persists).
  *  D3  guest tap → prompt, nothing saved    covered, BOTH surfaces
  *  D3  intent survives for after sign-in    covered (the STORE is asserted)
  *  D3  after signing in it is saved         **covered-by-stub → NOT COUNTED.**
@@ -379,21 +379,26 @@ test.describe("MEH-215 journey D — favourites", () => {
     expect(String(deletes[0].id)).toBe(String(producer.id));
     expect(store.ids.has(String(producer.id))).toBe(false);
 
-    // The removal must PERSIST. Asserting the live list is deliberately avoided
-    // here, in both directions, and that is a finding rather than a dodge:
+    // MEH-2034: the live list now empties, and this assertion is the whole
+    // point of the fix.
     //
-    //   measured (run 31620486228) — after the DELETE resolves the row is STILL
-    //   rendered, 44 polls over 20s, count 1. `FavoritesClient.jsx:95,138` keeps
-    //   `favorites` in local `useState` filled by a one-shot fetch effect and
-    //   never calls `subscribeFavorites`, so /favorites is the ONE favourites
-    //   surface not wired to the shared cache that CardHeart and FavoriteButton
-    //   both subscribe to. The card stays until a refetch.
+    // This comment block used to explain why the count was asserted in NEITHER
+    // direction: measured (run 31620486228), the row was still rendered after
+    // the DELETE resolved — 44 polls over 20s, count 1 — because
+    // `FavoritesClient` held its rows in local `useState` and never called
+    // `subscribeFavorites`, making /favorites the one favourites surface
+    // outside the shared cache. Asserting 0 then would have encoded a fix that
+    // did not exist; asserting 1 would have frozen the defect.
     //
-    // Asserting `toHaveCount(0)` would encode a fix that does not exist and red
-    // this spec against the shipped app; asserting `toHaveCount(1)` would freeze
-    // behaviour that may well be a defect, so a later fix would red it instead.
-    // A reload settles what actually matters — that the DELETE was real — and
-    // stays true under either resolution.
+    // That is no longer a dodge to preserve — it is the RED half of the
+    // MEH-1619 discrimination pair, already observed and recorded above with
+    // its run id. This line is the green half: it fails against the shipped
+    // behaviour that run measured, and passes only once the page reads the
+    // shared cache.
+    await expect(page.getByTestId("producer-card")).toHaveCount(0);
+
+    // And the removal must still PERSIST — a row hidden by the cache but never
+    // deleted server-side would pass the line above and fail here.
     await page.reload();
     await expect(page.getByTestId("producer-card")).toHaveCount(0);
   });
