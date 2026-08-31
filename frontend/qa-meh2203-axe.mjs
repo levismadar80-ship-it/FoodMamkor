@@ -28,7 +28,7 @@
  */
 import { chromium } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 const BASE = process.env.QA_BASE_URL || "https://staging.mehamakor.online";
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
@@ -81,8 +81,23 @@ const rows = [];
   // The repo pins a Playwright whose browser build the sandbox does not carry
   // (wants 1234, has 1194). The environment documents executablePath as the
   // sanctioned route rather than `playwright install`.
-  const EXE = process.env.PW_CHROME || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-  const browser = await chromium.launch({ executablePath: EXE, args: ["--ssl-version-max=tls1.2"] });
+  // Use the sandbox build only IF PRESENT, else let Playwright resolve its own.
+  // That is the house pattern across ~20 harnesses here — see
+  // e2e/qa-meh2108-citysearch-occlusion.mjs:608 and the note above it.
+  // An env-var override was written here first and is reverted: it reddened
+  // `Env drift (.env.example)`, which BLOCKS on any env var read in code and
+  // undocumented in a .env.example. Documenting it would mean ADDING an env
+  // var — regression rule 8 requires those be listed and confirmed first — for
+  // a portability fallback the repo already solves without one. The gate's
+  // exclude list carries PLAYWRIGHT_CHROMIUM_PATH, not the name used here.
+  // Do not spell that override out even in prose: check_env_drift.sh greps raw
+  // text and cannot tell code from a comment, so naming it literally re-reds
+  // the gate.
+  const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+  const browser = await chromium.launch({
+    ...(existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
+    args: ["--ssl-version-max=tls1.2"],
+  });
 
   // Discover a real producer slug through the /api proxy rather than hardcoding.
   let slug = null;
