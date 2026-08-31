@@ -3,6 +3,45 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-31 — drain (session `01SQ2s5YJSfz6TkZFAkKG1bW`): 3 merges, ושני חסמי CI שהיו נקראים כמו באגי קוד
+
+**‏שורה אחת:** ‏T0 היה נקי חוץ משני כרטיסים; ‏3 PRs מוזגו; ושני חסמים שמפילים PRs **בלי שום קשר ל-diff** אובחנו לשורש — אחד עדכן כרטיס קיים, השני קיבל כרטיס חדש. שניהם `.github/workflows/**` ⇒ ספיר.
+
+### מה שסשן חדש חייב לדעת לפני שהוא מתחיל לחפש באג בקוד שלו
+
+1. **`CI gate` אדום על PR פרונטנד הוא כנראה לא ה-diff שלך.** ה-job של vitest נהרג ב-cap של 10 דק' (`pr-checks.yml:629`). הסימן המבחין בלוג: `Terminate orphan process: pid (…) (npm exec vitest run)` **בלי אף טסט שנכשל מעליו**. ‏GitHub מדווח את זה `cancelled`, וה-aggregator ממפה `cancelled → FAIL` — כלומר זה נראה בדיוק כמו טסט שנכשל. **MEH-2194.**
+2. **‏זה גבול, לא נפילה ודאית — ולכן re-run שעובר אינו ראיה שנפתר.** באותו חלון שעה: #3196 · #3202 · #3206 · #3200 · #3212 → `cancelled`; #3201 · #3211 → `success`. אותה סוויטה בדיוק.
+3. **‏dependabot PR אדום ≠ dependabot PR רע.** שלושת ה-pip PRs נפלו כי `uv lock --check` רץ ב-setup של שני ה-jobs; #2940/#2941 נופלים כי החבילה דורשת Node ≥22 וה-runner על 20. אף אחד מהם אינו כשל טסט.
+
+### מצב ה-PRs — נמדד, לא מהזיכרון
+
+| PR | מצב | ראיה |
+| -- | -- | -- |
+| #3203 | **מוזג** `ea122dfc` | squash מאומת (הורה יחיד). ‏CC הריצה `uv lock` — dependabot לא מעדכן את ה-lock |
+| #3201 | **מוזג** `2a2e4624` | squash מאומת. ⚠️ הודעת ה-squash טוענת ש-vitest היה ירוק — **שגוי**, הוא `cancelled`; תוקן ב-comment |
+| #3202 | **מוזג** `def0d560` | squash מאומת. workflows-only ⇒ השער אוכף רק `Env drift` |
+| #3212 (MEH-2185) | פתוח, על שער vitest | קופי + מחיקת `photo_next_hint`. מקומית: build ✓ · vitest 3650 ✓ · 12/12 בדיקות ראיה |
+| #3213 (MEH-1765) | פתוח, על שער vitest | `copy-gate.ts` + self-test. מקומית: vitest 3668 ✓ (‏+18) |
+| #3200 | פתוח | `claude-code-action` minor group; ריצה אחרונה cancelled |
+| #3206 | פתוח | ‏npm-minor-patch (10). **frontend ⇒ השער כן אוכף vitest**, ולכן חסום ממש ע"י MEH-2194 |
+| #2940 · #2941 | פתוחים, **חסומים מבנית** | ‏MEH-2234 — ‏Node 20 מול חבילות שדורשות ≥22. comment עם הראיה על שניהם |
+| #2831 · #2953 · #2127 · #2943 · #2129 | **סגורים** | לא פתוחים יותר; אין «waiting-Sapir» מהם |
+
+### שני החסמים, במשפט כל אחד
+
+* **‏MEH-2194** — ה-description **תוקן** (כלל 34): הסיבה שהייתה רשומה בו (checkout של 4:44) כבר אינה הסיבה. נמדד היום: checkout 9 שניות, `vitest` **9מ32ש**/**9מ27ש**. הסוויטה גדלה מ-282/2,418 ל-**375/3,653** מאז מדידת MEH-1912 ב-06/08. `docs/ci/meh-1912-vitest-shard.patch.md` כתוב מאז ו**לא הוחל** — מומלץ להחיל אותו יחד עם `timeout-minutes: 15`.
+* **‏MEH-2234** (חדש) — ‏11 אתרי `node-version: "20"`. `jsdom@30` דורש `^22.22.2 || …`, `eslint-plugin-unicorn@73` דורש `>=22`. אימות דו-כיווני: ב-sandbox על Node v22.22.2 הקובץ שנכשל ב-CI **עובר** על אותו ענף.
+
+### תת-ממצא ששווה לזכור
+
+**‏על PR שהוא workflows-only, ה-job של vitest *רץ* אבל התוצאה שלו *לא נאכפת*.** ה-`if:` שלו כולל `workflows == 'true'`, אבל `ci-gate` מדלג על הרגל כי אף stack לא "נגוע". כלומר ה-timeout **בלתי-נראה** במחלקה הזאת של PRs — הוא שורף 10 דקות runner, מדווח `cancelled`, והשער עובר. נרשם על MEH-2194.
+
+### הצעד הבא
+
+‏#3212 ו-#3213 ממתינים לשער אחד בלבד. ברגע ש-MEH-2194 מוחל — למזג את שניהם, ואז את #3206, ואחרי MEH-2234 את #2940/#2941. אין עליהם עבודת קוד פתוחה.
+
+---
+
 ## 2026-08-29 — MEH-2218 chunk 2 (Session B): audit + רסס נייד. אפס merges שלי, שניים נמזגו מתחתיי. הריליז לא יצא הלילה.
 
 **‏שורה אחת:** ‏Session A דיווחה `CHUNK 2 DONE` **בלי לסיים את הרשימה**; ‏Session B (זה) ביצעה STEP 0 מלא, מיפתה מה נשאר, ריעננה את #2760/#2759 — ושניהם נמזגו ע"י actor מקביל שניות אחרי שהשערים הוריקו. **MEH-2221 לא התחיל בכוונה.** הריליז לא יצא: תנאי (1) נכשל מעצם ההגדרה.
