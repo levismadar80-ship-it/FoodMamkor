@@ -1,0 +1,11 @@
+slug discovery: http=200 slug=teva-pure
+ok    mobile-375    home               http=200 violations=0 passes=32 {}
+ok    mobile-375    producers          http=200 violations=1 passes=32 {"serious":1}
+ok    mobile-375    map                http=200 violations=0 passes=30 {}
+ok    mobile-375    producer-detail    http=200 violations=0 passes=30 {}
+ok    mobile-375    register-producer  http=200 violations=0 passes=27 {}
+ok    desktop-1440  home               http=200 violations=0 passes=32 {}
+ok    desktop-1440  producers          http=200 violations=1 passes=31 {"serious":1}
+ok    desktop-1440  map                http=200 violations=0 passes=31 {}
+ok    desktop-1440  producer-detail    http=200 violations=0 passes=30 {}
+ok    desktop-1440  register-producer  http=200 violations=0 passes=27 {}

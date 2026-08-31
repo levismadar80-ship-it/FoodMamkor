@@ -220,7 +220,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "10 minutes. No commissions. The customer comes straight to you",
+        "subtitle": "About 3 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
           "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
@@ -234,7 +234,7 @@
           "item_story": "A short story about your business",
           "item_photos": "2–3 photos of your business or products",
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
-          "duration": "The whole process takes about 10 minutes",
+          "duration": "The whole process takes about 3 minutes",
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — our team reviews the details, reaches out for a short call, and the business usually goes live within a day or two.",
           "after_link": "How the acceptance process works",
@@ -268,8 +268,7 @@
             "title": "3. Category"
           },
           "story": {
-            "title": "4. Your story",
-            "photo_next_hint": "After approval we'll ask for one good photo of your business — that is what makes the page."
+            "title": "4. Your story"
           }
         },
         "step_captions": {
@@ -654,7 +653,7 @@
       "title": "Join as a business | Mehamakor",
       "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
       "og_title": "Your business. A page of its own. | Mehamakor",
-      "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
+      "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
     },
     "share": {
       "title": "Spread the word — Mehamakor",
@@ -3412,7 +3411,7 @@
       "eyebrow": "How it works",
       "heading": "Four steps",
       "step1_title": "Sign up",
-      "step1_text": "A short form about your business — story, photos, and contact details. About 10 minutes.",
+      "step1_text": "A short form about your business — story, photos, and contact details. About 3 minutes.",
       "step2_title": "A personal call",
       "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
       "step3_title": "Your page goes live",
