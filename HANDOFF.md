@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-31 ערב — drain ו': #3206 מוזג, וחצי-CC של MEH-2194 נמדד ונדחה
+
+**‏שורה אחת:** אין עוד PR frontend שממתין ל-MEH-2194; חצי-CC שלו נמדד ונדחה על מספרים, לא על תחושה; והלבר שהכרטיס נקב בו התגלה כלא-קיים בגרסה המותקנת.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏אל תנסו `environmentMatchGlobs` — הוא לא קיים.** הוסר ב-Vitest 4; המותקנת היא 4.1.11. אומת מול `node_modules` עם בקרה חיובית. המחליף הוא `test.projects`.
+2. **‏הפיצול ל-node/jsdom נמדד ונדחה.** ‏17.5% שיפור (487ש׳→402ש׳) מול רף של 20%, **ומספר העוברים ירד** 3681→3679. הכשל בחצי ה-jsdom על קובץ שעובר ב-baseline — הפיצול מרעיל בידוד. אל תחזרו לזה בלי לפתור קודם את `MapNearestSortTrigger.test.jsx`.
+3. **‏העלות שהרעיון נשען עליה כן אמיתית:** ‏`environment` 554ש׳ מול `tests` 182ש׳, ו-84 קבצים node-only רצים ב-11.1ש׳ עם `environment: 11ms`. התיקון המבני נשאר `docs/ci/meh-1912-vitest-shard.patch.md` — ‏shard נותן מקבילות על כל הסוויטה במקום 22% מהקבצים.
+4. **‏אל תתנו ל-PR של תיעוד drain שם ענף `meh-2227`.** בחלון הקודם `feature/meh-2227-drain-31-08-docs` **סגר את מסמך הבקרה החי** מה-slug בלבד, בלי `Closes` בשום מקום. הענף הזה נקרא `feature/meh-2194-drain-docs` בכוונה.
+
+---
+
 ## 2026-08-31 — drain ה', חלון שני (session `01SQ2s5YJSfz6TkZFAkKG1bW`): החוסם הוסר, 3 מוזגו, 3 כרטיסים נסגרו
 
 **‏שורה אחת:** ‏ספיר החילה את MEH-2194 באמצע הסשן ושחררה 4 PRs שהיו תקועים על תקרת זמן; ‏MEH-1765, ‏MEH-2185 ו-MEH-2020 קיבלו מימוש; ונמצא אודם CI חדש על staging שאינו חוסם merge אך יאדים כל PR שנוגע ב-messages.
