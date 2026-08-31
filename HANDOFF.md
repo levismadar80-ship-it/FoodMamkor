@@ -13,6 +13,16 @@
 2. **‏ה-check `parity` אדום על staging, ואינו חוסם.** ‏`dff304d0f` (#3208) הכניס שלושה מפתחות ICU בלי ענף `two`. כל PR שנוגע ב-`frontend/messages/**` יראה `parity` אדום. **אל תחפשו את זה ב-diff שלכם.** ‏MEH-2235 מחזיק את התיקון, והוא `needs-sapir` כי הוספת ענף `two` היא קופי עברי חדש (כלל 22).
 3. **‏`/producer/<slug>` כבר לא מקבל כל כתב יוניקוד.** אחרי #3216, ‏`slug_utils.slugify` היא **הבעלים היחיד** (‏`admin.py::_slugify` ו-`producer_import.py::_slugify` הם aliases), ויש שתי פונקציות נוספות: `rejected_characters` (לוולידציה של slug שהוקלד) ו-`is_reserved` (‏NFKC+casefold). **‏`slugify` מסננת ולא דוחה** — היא מטביעה משם העסק; הדחייה נשאלת רק על slug מפורש.
 
+### 🔴 מה שסשן חדש חייב לדעת לפני שהוא מסתכל על E2E
+
+**‏`Playwright E2E` אדום על staging, ולא בגלל ה-diff שלך.** נמדד היום בארבע ריצות: 26–27 כשלים באותם שבעה קבצי spec (`18-producer-register-wizard` · `28-register-success-state` · `30-login-journey-c` · `31-favorites-journey-d` · `32-register-journey-b-oauth` · `33-admin-producers-tab` · `visual/parity map`) — אותה קבוצה ש-MEH-2168 מתעד מאז 26/08.
+
+**‏אל תקראי את זה ברמת ה-run.** בין ה-commits של frontend, staging מציג רצף של `success` — כולם commits שאינם frontend שבהם ה-paths-filter מדלג על ה-job, ו-skip עובר את האגרגטור. הסשן הזה קרא את הרצף כ-«staging היה ירוק עד ש-#3213 שבר אותו» ותיקן רק אחרי פתיחת ה-jobs. **סטטוס ה-job `Playwright E2E (Vercel preview)` הוא האות היחיד; מסקנת ה-run אינה.**
+
+**‏ה-cap כבר לא הסיפור.** ‏`e2e.yml:86` הוא `timeout-minutes: 30` (שלב 1 של MEH-2168 הוחל) — ריצות מסתיימות ב-18–20 דקות במקום להיחתך. הכותרת של MEH-2168 היא היסטוריה; ה-description שלו עודכן.
+
+**‏ה-traces לא זמינים** — מכסת ה-artifacts של GitHub מוצתה מאז ~13:43. ‏`playwright-report` ו-`e2e-diagnostics` נכשלים בהעלאה. ספיר.
+
 ### הכרעות שנרשמו
 
 | נושא | הכרעה | איפה |
