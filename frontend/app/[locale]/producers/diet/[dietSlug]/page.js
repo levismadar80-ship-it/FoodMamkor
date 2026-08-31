@@ -91,6 +91,16 @@ async function fetchDietProducers(filterParam, limit) {
  *      contradicts its own H1 (see lib/diet-pages.js).
  *   2. `total >= DIET_PAGE_MIN` — the thin-content / doorway-page gate.
  */
+// MEH-1944: React.cache() was implemented here and REVERTED. Measured, not
+// assumed — see the ticket. `cache` is exported from react@18.3.1 only under
+// the `react-server` condition, which Next supplies inside the RSC graph but
+// vitest does not: the wrapped module stops importing under test, and
+// __tests__/DietLandingPage.test.jsx drops from 32 tests to "no tests" while
+// the full suite still reports 0 failed. Silent coverage loss in exchange for
+// eliminating one duplicate read that costs nothing correctness-wise.
+//
+// DO NOT re-apply without first giving vitest a `cache` (an alias or a mock).
+// That is a harness change, outside this ticket's single-file scope.
 async function resolveDietPage(slug) {
   const entry = getDietPage(slug);
   if (!isDietPageBacked(entry)) return null;
@@ -115,7 +125,20 @@ async function fetchServableSiblings(currentSlug) {
     others.map((p) =>
       fetchDietProducers(p.filterParam, 1)
         .then((r) => r.total)
-        .catch(() => 0),
+        // MEH-1944: the fail-open is deliberate and UNCHANGED — 0 still drops
+        // the chip. What was missing is any trace of it. A silent `catch`
+        // here means that if sibling counts start failing, the chip row simply
+        // empties and looks like a legitimately thin catalog; there is no
+        // symptom to notice and nothing to search for. That is the silent-except
+        // class `.claude/rules/` documents, and the cheapest exit from it is a
+        // line naming WHICH sibling failed.
+        .catch((err) => {
+          console.warn(
+            `[diet-page] sibling count failed for filterParam=${p.filterParam} — chip omitted (fail-open):`,
+            err,
+          );
+          return 0;
+        }),
     ),
   );
   return others.filter((_, i) => counts[i] >= DIET_PAGE_MIN);

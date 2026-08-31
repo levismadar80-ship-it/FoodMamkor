@@ -717,7 +717,6 @@
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
       "verified_tooltip_cosmetics": "Cosmetics registration submitted and reviewed on {date}",
-      "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
       "aria_verified": "Verified business. {tooltip}",
@@ -1193,7 +1192,9 @@
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
-      "show_all": "Show {count} more cities",
+      "show_all_cities": "{count, plural, one {Show 1 more city} other {Show {count} more cities}}",
+      "show_all_pickup": "{count, plural, one {Show 1 more pickup point} other {Show {count} more pickup points}}",
+      "show_all_areas": "{count, plural, one {Show 1 more delivery area} other {Show {count} more delivery areas}}",
       "show_less": "Show less",
       "checker": {
         "label": "Do you deliver to me?",
