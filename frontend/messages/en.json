@@ -1193,7 +1193,9 @@
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
-      "show_all": "Show {count} more cities",
+      "show_all_cities": "{count, plural, one {Show 1 more city} other {Show {count} more cities}}",
+      "show_all_pickup": "{count, plural, one {Show 1 more pickup point} other {Show {count} more pickup points}}",
+      "show_all_areas": "{count, plural, one {Show 1 more delivery area} other {Show {count} more delivery areas}}",
       "show_less": "Show less",
       "checker": {
         "label": "Do you deliver to me?",
