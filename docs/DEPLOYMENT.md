@@ -285,13 +285,38 @@ ruleset belong to the aggregators, the practical consequences invert:
 | **A leg of an aggregator** (every job in `ci-gate`/`deploy-gate` `needs:`) | Plain `needs: changes` + `if: <paths>` on the job. **No twin.** | The aggregator's `ok()` maps `skipped` → pass, so the required context still reports `success`. But check which helper guards it first: a leg enforced by `check_ran` treats `skipped` as **failure** — that is the PR #2794 stranded-red class, and it is why `Env drift` must not gain a `draft`/paths skip. |
 | **Not required and not a leg** (e.g. `Adversarial review (calibration)`, `skills-audit.yml`, `E2E gate`) | **Trigger-level `paths-ignore`** on the `pull_request:` trigger. | The workflow doesn't trigger → no check is expected. Worked example: **#812 (F3)** — `paths-ignore` on `claude-review.yml`. Safe here precisely because none of these is a context; do NOT apply `paths-ignore` to `pr-checks.yml` or `deploy.yml`, whose aggregators ARE the contexts. |
 
-> **⚠️ Unverified: whether `enforcement=active` is truthful right now.** The API
-> reports `active` for both rulesets. The repo is currently **private on GitHub
-> Free**, where rulesets are **not enforced** (MEH-2212) — the rules are kept, they
-> just stop applying. **It has not been established whether the API keeps reporting
-> `active` while the plan suppresses enforcement**, and the banner that would settle
-> it is UI-only (Settings → Rules). Do not read `active` here as proof that a red PR
-> is currently blocked. Recorded as a limitation, not a finding.
+> **⚠️ Unverified: whether `enforcement=active` is truthful. Still open, and the
+> visibility it depends on has moved twice in one evening — so read the as-of, not
+> the claim.** The rulesets API reports `active` for both. In a **private** repo on
+> **Free**, rulesets are **not enforced** (MEH-2212) — the rules are kept, they just
+> stop applying — and it has not been established whether the API keeps reporting
+> `active` while the plan suppresses enforcement. The banner that settles it is
+> UI-only (Settings → Rules).
+>
+> **Visibility, measured 2026-08-31 ~22:15Z: `"private": true` / `"visibility":
+> "private"`,** from two independent live reads (the repo object via the search API,
+> and the session's repo listing), on an object whose `updated_at` was 22:05:50Z —
+> so not a stale cache.
+>
+> **This contradicts a reading taken ~28 minutes earlier**, at 21:47Z, which
+> reported `"private": false` and was used to declare this caveat closed. Both
+> cannot describe the same moment. Either the repo was flipped again in between —
+> plausible, since MEH-2212 records it going private, CI dying on quota at 15:48Z,
+> and recovering ~20:53Z — or one read was wrong. **Not resolved here, and not
+> guessed at.**
+>
+> **What follows for a reader:** do NOT treat `active` as proof that a red PR is
+> currently blocked, and do not treat this line as permanent either — re-read
+> `GET /repos/{owner}/{repo}` before relying on either direction. The **plan**
+> (Free vs Pro) is a separate fact and was **not** measured from here at all.
+>
+> **One instrument explicitly ruled out.** `get_workflow_run_usage` returning
+> `total_ms: 0` does **not** prove the repo is public. Measured 22:14Z: run
+> `33443341578`, executed at 21:50Z, reports `total_ms: 0` for all 17 jobs while
+> the repo measures private. That zero has at least two causes — no billing because
+> public, and billing data absent or lagging — so it does not discriminate, in
+> either direction. Recorded because it was used as evidence for "public" earlier
+> in this repo's notes and should not be again.
 
 #### Rule 1: `main`
 
