@@ -165,18 +165,20 @@ def test_admin_create_rejects_a_fullwidth_reserved_slug_as_reserved(client, db):
 def test_admin_create_accepts_an_arabic_slug(client, db):
     """The ruling's affirmative half — Arabic is a local business language.
 
-    The `name` here is Hebrew **on purpose, and the reason is a finding rather
-    than a convenience.** An all-Arabic name is rejected 422 by
+    The name is Arabic too, and that is the whole point of the row. It used to
+    be Hebrew here on purpose: an all-Arabic name was rejected 422 by
     `SanitizedBusinessNameField`, whose MEH-555 "at least 3 letter characters"
-    validator counts `[א-תa-zA-Z]` — a class that does not include Arabic. So
-    `{"name": "مزرعة الشمس"}` never reaches the slug code at all; it dies in
-    request validation.
+    validator counted `[א-תa-zA-Z]` — a class with no Arabic in it. So
+    `{"name": "مزرعة الشمس"}` never reached the slug code at all; it died in
+    request validation, and this ruling admitted a slug that no business could
+    actually register under.
 
-    That is a real gap in the ruling's intent — an Arabic slug is admitted while
-    an Arabic business *name* is refused — but it lives in a different validator
-    with its own history, and widening a name-validation regex is not what
-    MEH-2020 decided. Filed separately (MEH-2236); this test stays on the slug
-    path so it keeps testing the thing it is named after.
+    MEH-2236 closed that: the letter class now carries Arabic letters (not the
+    punctuation, and not the harakat). With both halves in place the endpoint
+    accepts an Arabic business end to end, which is what MEH-2020 meant all
+    along. The letter class itself is pinned by
+    `test_arabic_name_letter_class.py`, including the cases that must still be
+    refused.
 
     The generator's own handling of Arabic is covered directly by
     GENERATOR_CASES["arabic"], which calls `slugify` with no endpoint in the way.
@@ -184,7 +186,7 @@ def test_admin_create_accepts_an_arabic_slug(client, db):
     admin = _admin(db)
     res = client.post(
         "/admin/producers",
-        json={"name": "חוות השמש", "slug": "مزرعة-الشمس"},
+        json={"name": "مزرعة الشمس", "slug": "مزرعة-الشمس"},
         headers=auth_header(admin),
     )
     assert res.status_code == 201, res.text
