@@ -7,10 +7,21 @@
  * `res.json()` straight to `generateMetadata` and the JSON-LD builders. A
  * contract change or a network failure produced no log line at all.
  *
- * The failure behaviour is DECIDED in
+ * SCHEMA-validation behaviour is DECIDED in
  * `docs/audits/producer-detail-page-validation.md` §6 and is not re-opened
- * here: safeParse, report to Sentry, then render the RAW payload. Never throw,
- * never `notFound()` — that is the MEH-1754 indexing-risk class.
+ * here: safeParse, report to Sentry, then render the RAW payload. A malformed
+ * payload never degrades the page.
+ *
+ * MEH-2101 UPDATE — the FETCH axis moved, and it is a different axis. §6's
+ * blanket "never throw, never notFound()" was read as covering every fetch
+ * outcome, so a 404, a 500, a 429 and a timeout all became one `null` and
+ * every one of them rendered a soft 404. §6 now carries the three-way table:
+ * 404 for a missing entity, 5xx for an unavailable backend, 429 for a rate
+ * limit. So the "fetch throws" case below asserts report-then-RETHROW, and
+ * the static "no notFound()" block is gone — see the note where it stood.
+ *
+ * Everything about the schema axis is unchanged, and that is the point: a
+ * malformed 200 still reports once and still renders.
  *
  * Four assertions per route, and the third is the one that matters most:
  *   1. A conforming payload reports NOTHING. Without this the "reports once"
@@ -189,13 +200,18 @@ describe.each(ROUTES)("MEH-1885 — $name SSR metadata validation", (route) => {
     }
   });
 
-  it("reports EXACTLY once when the fetch throws, and still returns", async () => {
+  // MEH-2101: was "and still returns". A network failure is not a missing
+  // entity, so it must reach error.js and carry a 5xx instead of rendering a
+  // soft 404. The "exactly once" half is MEH-1885's and is unchanged — one
+  // report, not zero and not one per retry.
+  it("reports EXACTLY once when the fetch throws, and rethrows", async () => {
     serverFetch.mockRejectedValue(new Error("ECONNRESET"));
     const { generateMetadata } = await route.load();
-    const meta = await generateMetadata({ params: Promise.resolve(route.params) });
+    await expect(
+      generateMetadata({ params: Promise.resolve(route.params) }),
+    ).rejects.toThrow("ECONNRESET");
     expect(captureException).toHaveBeenCalledTimes(1);
     expect(captureMessage).toHaveBeenCalledTimes(0);
-    expect(meta).toBeDefined();
   });
 
   if (route.rendersJsonLd) {
@@ -210,34 +226,19 @@ describe.each(ROUTES)("MEH-1885 — $name SSR metadata validation", (route) => {
   }
 });
 
-describe("MEH-1885 — no SSR route answers a validation failure with notFound()", () => {
-  const FILES = [
-    "app/[locale]/producer/[id]/page.js",
-    "app/[locale]/events/[id]/page.js",
-    "app/[locale]/group-buys/[id]/page.js",
-    "app/[locale]/experiences/[id]/page.js",
-  ];
-
-  // `notFound` can only come from next/navigation, so the import is the
-  // precise thing to forbid. Matching the bare identifier would also hit the
-  // comments in these files that say "never notFound()" — a guard that reds on
-  // its own rationale is not a guard.
-  it.each(FILES)("%s does not import from next/navigation", (rel) => {
-    const src = fs.readFileSync(path.join(process.cwd(), rel), "utf8");
-    expect(src).not.toMatch(/from\s+["']next\/navigation["']/);
-  });
-
-  it.each(FILES)("%s contains no notFound() call", (rel) => {
-    const src = fs.readFileSync(path.join(process.cwd(), rel), "utf8");
-    const executable = src
-      .split("\n")
-      .filter((line) => !line.trim().startsWith("//"))
-      .join("\n");
-    expect(executable).not.toMatch(/\bnotFound\s*\(/);
-  });
-
-  it.each(FILES)("%s reports to Sentry", (rel) => {
-    const src = fs.readFileSync(path.join(process.cwd(), rel), "utf8");
-    expect(src).toMatch(/Sentry\.(captureException|captureMessage)/);
-  });
-});
+// MEH-2101 — the static block that stood here is REMOVED, not relocated.
+//
+// It asserted that these four files neither import `next/navigation` nor call
+// `notFound()`, which was a faithful encoding of §6's old blanket ruling. That
+// ruling is what produced the soft-404 bug, so the assertion now pins the
+// defect rather than guarding against one.
+//
+// It is not replaced by its inverse. "The file imports notFound" is a test
+// that the prescribed edit was applied, and an inert change passes it by
+// construction (ADR-032 §3.6). The replacement is behavioural and lives in
+// `EntityResolverErrorSeparation.test.jsx`: a 404 from the API yields
+// notFound(), and 500/502/503/429/network do NOT — checked in both directions,
+// so over-correcting into "everything is a 404" fails just as loudly.
+//
+// What that file cannot see is the schema axis above, which is why this suite
+// keeps every one of its MEH-1885 assertions intact.
