@@ -1191,9 +1191,9 @@
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
-      "show_all_cities": "{count, plural, one {הצג עיר נוספת} other {הצג עוד {count} ערים}}",
-      "show_all_pickup": "{count, plural, one {הצג נקודת איסוף נוספת} other {הצג עוד {count} נקודות איסוף}}",
-      "show_all_areas": "{count, plural, one {הצג אזור משלוח נוסף} other {הצג עוד {count} אזורי משלוח}}",
+      "show_all_cities": "{count, plural, one {הצג עיר נוספת} two {הצג שתי ערים נוספות} other {הצג עוד {count} ערים}}",
+      "show_all_pickup": "{count, plural, one {הצג נקודת איסוף נוספת} two {הצג שתי נקודות איסוף נוספות} other {הצג עוד {count} נקודות איסוף}}",
+      "show_all_areas": "{count, plural, one {הצג אזור משלוח נוסף} two {הצג שני אזורי משלוח נוספים} other {הצג עוד {count} אזורי משלוח}}",
       "show_less": "הצג פחות",
       "checker": {
         "label": "מגיעים אלייך?",
