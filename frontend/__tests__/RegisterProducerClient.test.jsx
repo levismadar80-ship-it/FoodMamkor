@@ -651,13 +651,16 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
     );
   });
 
-  it("STORY carries the photo-next hint, and the submit hint sits above the button", async () => {
+  // MEH-2185: this case used to assert the photo-next hint was PRESENT. The copy
+  // ruling deleted it (it overlapped photo_disclosure, which stays), so the
+  // assertion is inverted rather than dropped — a deletion with no guard is one
+  // careless re-add away from coming back. Asserting absence discriminates: put
+  // the <p> back and this reddens.
+  it("STORY has no photo-next hint (deleted, MEH-2185), and the submit hint sits above the button", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByTestId("register-story-photo-hint")).toHaveTextContent(
-      `${K}.steps.story.photo_next_hint`,
-    );
+    expect(screen.queryByTestId("register-story-photo-hint")).not.toBeInTheDocument();
     expect(screen.getByTestId("register-submit-next-hint")).toHaveTextContent(
       `${K}.submit_next_hint`,
     );
