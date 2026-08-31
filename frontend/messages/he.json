@@ -717,7 +717,6 @@
       "verified_tooltip_license": "רישיון הוגש ונבדק בתאריך {date}",
       "verified_tooltip_exemption": "אישור פטור הוגש ונבדק בתאריך {date}",
       "verified_tooltip_cosmetics": "רישום קוסמטיקה הוגש ונבדק בתאריך {date}",
-      "verified_tooltip_registration": "אישור רישום במרשם התמרוקים הוגש ונבדק בתאריך {date}",
       "declared_explainer": "אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.",
       "verified_label": "מאומת",
       "aria_verified": "בית עסק מאומת. {tooltip}",
@@ -1193,7 +1192,9 @@
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
-      "show_all": "הצג עוד {count} ערים",
+      "show_all_cities": "{count, plural, one {הצג עיר נוספת} other {הצג עוד {count} ערים}}",
+      "show_all_pickup": "{count, plural, one {הצג נקודת איסוף נוספת} other {הצג עוד {count} נקודות איסוף}}",
+      "show_all_areas": "{count, plural, one {הצג אזור משלוח נוסף} other {הצג עוד {count} אזורי משלוח}}",
       "show_less": "הצג פחות",
       "checker": {
         "label": "מגיעים אלייך?",
