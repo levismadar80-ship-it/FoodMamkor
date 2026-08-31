@@ -12,9 +12,15 @@
  * the same intl-messageformat the app ships, and every assertion below is a
  * string a reader would actually see.
  *
- * Coverage is the full matrix the card's DoD asks for — 3 consumers ×
- * {count===1, count>1} × {he, en} — because the two counts take different ICU
- * branches and the two locales have different plural rules.
+ * Coverage is 3 consumers × {count===1, count===2, count>2} × {he, en}.
+ *
+ * MEH-2235 added the middle column. Hebrew has FOUR plural categories, so the
+ * validator requires a `two` branch these three keys shipped without; the
+ * matrix was {1, many} while the language has a distinct form at exactly 2.
+ * The he/en pair at count===2 is the discriminating one: Hebrew takes `two`
+ * («הצג שתי ערים נוספות») and English, which has no such category, stays on
+ * `other` («Show 2 more cities»). A single-locale test cannot tell those
+ * apart.
  *
  * REUSES: frontend/__tests__/MastheadPopoverRealIntl.test.jsx (the
  * NextIntlClientProvider-over-a-real-catalogue idiom, MEH-1843).
@@ -85,13 +91,22 @@ describe("MEH-1908 — pluralised show-more copy, real ICU (he)", () => {
     expect(toggleNames("he", { areas: cities(16) })).toEqual(["הצג עיר נוספת"]);
   });
 
-  it("cities: count>1 names cities in the plural", () => {
+  it("cities: count===2 takes the `two` branch, not «הצג עוד 2 ערים»", () => {
+    expect(toggleNames("he", { areas: cities(17) })).toEqual(["הצג שתי ערים נוספות"]);
+  });
+
+  it("cities: count>2 names cities in the plural", () => {
     expect(toggleNames("he", { areas: cities(18) })).toEqual(["הצג עוד 3 ערים"]);
   });
 
   it("pickup: says «נקודת איסוף», never «עיר» — the count===1 branch", () => {
     expect(toggleNames("he", { areas: [], pickup: true, producer: { ...producer, locations: pickups(4) } }))
       .toEqual(["הצג נקודת איסוף נוספת"]);
+  });
+
+  it("pickup: count===2 takes the `two` branch, still «נקודות איסוף»", () => {
+    expect(toggleNames("he", { areas: [], pickup: true, producer: { ...producer, locations: pickups(5) } }))
+      .toEqual(["הצג שתי נקודות איסוף נוספות"]);
   });
 
   it("pickup: says «נקודות איסוף», never «ערים» — the plural branch", () => {
@@ -103,8 +118,12 @@ describe("MEH-1908 — pluralised show-more copy, real ICU (he)", () => {
     expect(toggleNames("he", { areas: areas(7) })).toEqual(["הצג אזור משלוח נוסף"]);
   });
 
-  it("areas: count>1 names delivery areas in the plural", () => {
-    expect(toggleNames("he", { areas: areas(8) })).toEqual(["הצג עוד 2 אזורי משלוח"]);
+  it("areas: count===2 takes the `two` branch, not «הצג עוד 2 אזורי משלוח»", () => {
+    expect(toggleNames("he", { areas: areas(8) })).toEqual(["הצג שני אזורי משלוח נוספים"]);
+  });
+
+  it("areas: count>2 names delivery areas in the plural", () => {
+    expect(toggleNames("he", { areas: areas(9) })).toEqual(["הצג עוד 3 אזורי משלוח"]);
   });
 });
 
@@ -113,6 +132,13 @@ describe("MEH-1908 — pluralised show-more copy, real ICU (he)", () => {
 describe("MEH-1908 — pluralised show-more copy, real ICU (en)", () => {
   it("cities: «Show 1 more city»", () => {
     expect(toggleNames("en", { areas: cities(16) })).toEqual(["Show 1 more city"]);
+  });
+
+  // The control for the he `two` cases above: English has no `two` category,
+  // so the same count must NOT produce a distinct form. Without this pair, a
+  // `two` branch accidentally added to en.json would go unnoticed.
+  it("cities: count===2 stays on `other` — English has no `two`", () => {
+    expect(toggleNames("en", { areas: cities(17) })).toEqual(["Show 2 more cities"]);
   });
 
   it("cities: «Show 3 more cities»", () => {
