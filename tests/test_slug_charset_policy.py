@@ -163,11 +163,28 @@ def test_admin_create_rejects_a_fullwidth_reserved_slug_as_reserved(client, db):
 
 
 def test_admin_create_accepts_an_arabic_slug(client, db):
-    """The ruling's affirmative half — Arabic is a local business language."""
+    """The ruling's affirmative half — Arabic is a local business language.
+
+    The `name` here is Hebrew **on purpose, and the reason is a finding rather
+    than a convenience.** An all-Arabic name is rejected 422 by
+    `SanitizedBusinessNameField`, whose MEH-555 "at least 3 letter characters"
+    validator counts `[א-תa-zA-Z]` — a class that does not include Arabic. So
+    `{"name": "مزرعة الشمس"}` never reaches the slug code at all; it dies in
+    request validation.
+
+    That is a real gap in the ruling's intent — an Arabic slug is admitted while
+    an Arabic business *name* is refused — but it lives in a different validator
+    with its own history, and widening a name-validation regex is not what
+    MEH-2020 decided. Filed separately (MEH-2236); this test stays on the slug
+    path so it keeps testing the thing it is named after.
+
+    The generator's own handling of Arabic is covered directly by
+    GENERATOR_CASES["arabic"], which calls `slugify` with no endpoint in the way.
+    """
     admin = _admin(db)
     res = client.post(
         "/admin/producers",
-        json={"name": "مزرعة الشمس", "slug": "مزرعة-الشمس"},
+        json={"name": "חוות השמש", "slug": "مزرعة-الشمس"},
         headers=auth_header(admin),
     )
     assert res.status_code == 201, res.text
