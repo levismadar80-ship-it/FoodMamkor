@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
@@ -17,37 +18,55 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 const ROUTE = "/[locale]/experiences/[id]";
 
 async function getExperience(id) {
+  // MEH-2101: `null` means ONE thing — this experience does not exist, and only a
+  // 404 may become notFound(). Every other failure THROWS, so it reaches
+  // app/[locale]/error.js and the response carries a 5xx.
+  //
+  // The old shape returned `null` for every `!res.ok` and swallowed the catch,
+  // so a 404, a 500, a 429 and a timeout were indistinguishable — all four
+  // rendered a soft 404 with no error status. That is not only a debugging
+  // problem: a 404 tells Google the page is GONE and de-indexing starts, while
+  // a 5xx says "try later". §6 of
+  // docs/audits/producer-detail-page-validation.md used to forbid throwing
+  // here; this ticket replaced that ruling with the three-way table.
+  let res;
   try {
-    const res = await serverFetch(`${API_URL}/experiences/${id}`, {
+    res = await serverFetch(`${API_URL}/experiences/${id}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) {
-      // >= 500 only — a pending/rejected experience is 404 to the public by
-      // design (routers/experiences.py:7). Threshold from lib/api.js:140.
-      if (res.status >= 500) {
-        Sentry.captureMessage("SSR fetch failed", {
-          level: "error",
-          extra: { route: ROUTE, id, status: res.status },
-        });
-      }
-      return null;
-    }
-    const data = await res.json();
-    const parsed = ExperienceMetadataSchema.safeParse(data);
-    if (!parsed.success) {
-      Sentry.captureMessage("SSR payload failed schema validation", {
-        level: "warning",
-        extra: { route: ROUTE, id, issues: parsed.error.issues },
-      });
-    }
-    // Raw, never `parsed.data` — the schema is minimal, so parsing would strip
-    // every undeclared key from the metadata input (MEH-901 class).
-    return data;
   } catch (err) {
-    // Was `catch { return null }`. Same return, no longer silent.
+    // Network failure or timeout — not a missing experience. Report, then rethrow.
     Sentry.captureException(err, { extra: { route: ROUTE, id } });
-    return null;
+    throw err;
   }
+
+  if (res.status === 404) return null;
+
+  if (!res.ok) {
+    Sentry.captureMessage("SSR fetch failed", {
+      level: "error",
+      extra: { route: ROUTE, id, status: res.status },
+    });
+    const err = new Error(
+      `experience lookup failed: ${res.status} ${res.statusText} (id=${id})`
+    );
+    // Read by Sentry in app/[locale]/error.js; keeps id+status on the event.
+    err.status = res.status;
+    err.entityId = id;
+    throw err;
+  }
+
+  const data = await res.json();
+  const parsed = ExperienceMetadataSchema.safeParse(data);
+  if (!parsed.success) {
+    Sentry.captureMessage("SSR payload failed schema validation", {
+      level: "warning",
+      extra: { route: ROUTE, id, issues: parsed.error.issues },
+    });
+  }
+  // Raw, never `parsed.data` — the schema is minimal, so parsing would strip
+  // every undeclared key from the metadata input (MEH-901 class).
+  return data;
 }
 
 export async function generateMetadata(props) {
@@ -59,6 +78,11 @@ export async function generateMetadata(props) {
   ]);
   const path = `/experiences/${id}`;
   const alternates = buildAlternates(path, locale);
+  // MEH-2101: pre-streaming, so this yields a REAL 404 status. A page-level
+  // notFound() alone streams 200 + 404 UI, because the shared
+  // app/[locale]/loading.js boundary flushes the shell first — bots would
+  // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
+  if (!experience) notFound();
   const entityName = experience?.title || experience?.name;
 
   if (!entityName) {
