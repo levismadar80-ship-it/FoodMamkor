@@ -24,7 +24,11 @@ from sqlalchemy.orm import Session
 
 from app.models import Producer, User
 from app.routers import admin as admin_module
-from app.routers.admin import RESERVED_SLUGS
+
+# MEH-2020 — imported from the owner. This used to read `from app.routers.admin`,
+# which worked only because admin.py happened to re-export it; the set has always
+# been slug_utils'. Unifying the three slug helpers removed that incidental path.
+from app.slug_utils import RESERVED_SLUGS
 from tests.conftest import auth_header, make_producer, make_user
 
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/x.jpg"
