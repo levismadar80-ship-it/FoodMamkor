@@ -752,8 +752,18 @@ jobs:
             esac
           }
 
+          # MEH-1907: `cancelled` means a newer push superseded this run
+          # before it finished — this workflow's own concurrency group
+          # (cancel-in-progress: true, line ~41) guarantees that. It is an
+          # absence of measurement, not a failed one. Mirror of MEH-1582's
+          # skip-green fix in the opposite direction.
+          # NON-BLOCKING BY DESIGN — see .claude/rules/testing.md for why.
+          is_cancelled() { [ "$1" = "cancelled" ]; }
+
           check() {
-            if ok "$2"; then
+            if is_cancelled "$2"; then
+              echo "  SUPERSEDED $1: $2 (a newer push cancelled this run — not counted as a failure, MEH-1907)"
+            elif ok "$2"; then
               echo "  OK  $1: $2"
             else
               echo "  FAIL $1: $2"
@@ -772,7 +782,9 @@ jobs:
           }
 
           check_ran() {
-            if strict_ok "$2"; then
+            if is_cancelled "$2"; then
+              echo "  SUPERSEDED $1: $2 (a newer push cancelled this run — not counted as a failure, MEH-1907)"
+            elif strict_ok "$2"; then
               echo "  OK  $1: $2"
             else
               echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
