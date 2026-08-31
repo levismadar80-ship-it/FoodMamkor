@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Heart, HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { FavoriteWithProducerSchema } from "@/lib/api-schemas";
+import {
+  ensureFavoritesLoaded,
+  isFavorited,
+  subscribeFavorites,
+} from "@/lib/favorites-cache";
 import ProducerCard from "@/components/ProducerCard";
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -158,6 +163,54 @@ export default function FavoritesClient() {
     }
   }, [user, authLoading, router, attempt]);
 
+  // MEH-2034: /favorites was the only favorites surface not subscribed to the
+  // shared cache — its list lived in the local useState above, filled by the
+  // one-shot fetch effect and never touched again. CardHeart (inside the cards
+  // this page renders) already writes setFavoritedLocal, so un-favoriting here
+  // succeeded server-side while the row stayed on screen until a reload.
+  //
+  // Sapir's ruling (12/08): same contract as FavoriteButton — the row goes
+  // immediately (optimistic) and comes BACK if the API call fails. No undo
+  // delay. So this deliberately does NOT delete from `favorites`: a deleted row
+  // could not return. The fetched list stays whole and the cache decides what
+  // renders, which makes CardHeart's existing revert (setFavoritedLocal(!next)
+  // on failure) restore the row for free — no second mechanism.
+  const [cacheTick, setCacheTick] = useState(0);
+  // Producer ids the cache actually knew at load time. Null until it resolves.
+  const [cacheKnownIds, setCacheKnownIds] = useState(null);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    let alive = true;
+    const unsub = subscribeFavorites(() => {
+      if (alive) setCacheTick((n) => n + 1);
+    });
+    ensureFavoritesLoaded().then((ids) => {
+      // Copy: the cache resolves with its live Set, which it mutates in place.
+      if (alive) setCacheKnownIds(new Set(ids));
+    });
+    return () => {
+      alive = false;
+      unsub();
+    };
+  }, [user]);
+
+  // Hide a row only if the cache KNEW it and no longer does. The `has` guard is
+  // what keeps a failed cache load from blanking a list this page fetched
+  // successfully: ensureFavoritesLoaded swallows its error and resolves with an
+  // empty Set (favorites-cache.js:58-61), which is indistinguishable from "you
+  // have no favorites". Gating on prior knowledge makes that case degrade to
+  // today's behaviour instead of emptying the page.
+  const visibleFavorites = useMemo(() => {
+    if (!cacheKnownIds) return favorites;
+    return favorites.filter(
+      (fav) => !cacheKnownIds.has(fav.producer_id) || isFavorited(fav.producer_id),
+    );
+    // cacheTick is the subscription's signal: isFavorited reads module state,
+    // so nothing else here changes when a heart is tapped.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [favorites, cacheKnownIds, cacheTick]);
+
   // MEH-1479: clear the error, show the skeleton again, and bump attempt to
   // re-trigger the fetch effect.
   const handleRetry = () => {
@@ -195,7 +248,7 @@ export default function FavoritesClient() {
             {tError("retry")}
           </button>
         </div>
-      ) : favorites.length === 0 ? (
+      ) : visibleFavorites.length === 0 ? (
         <div className="text-center py-20">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
             {/* MEH-1628: HeartStraight, not the generic Leaf — the glyph must
@@ -241,7 +294,7 @@ export default function FavoritesClient() {
               2 cols mobile · 3 at lg · 4 at xl, same gap-3/md:gap-6. The old
               1/md:2/lg:3 grid rendered one near-full-width card per row. */}
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-            {favorites.map((fav) => (
+            {visibleFavorites.map((fav) => (
               <FavoriteCardWrapper
                 key={fav.producer_id}
                 fav={fav}
