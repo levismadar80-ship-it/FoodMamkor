@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
@@ -157,6 +157,19 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               <Link href={row("login").item.href} onClick={onClose} className={rowCls}>
                 <SignIn size={19} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("login").surface.labelKey)}
+              </Link>
+            </li>
+          )}
+          {/* MEH-2070 (A-narrow): the admin entry. It sat on the desktop
+              dropdown only, so an admin on a phone had no route into /admin at
+              all — manual approval is a LOCK, and a solo operator has to be
+              able to clear the queue from a phone. Audience "admin" comes from
+              the registry, so a consumer or producer sheet is unchanged. */}
+          {row("admin") && (
+            <li className={liCls}>
+              <Link href={row("admin").item.href} onClick={onClose} className={rowCls}>
+                <Lock size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                {t(row("admin").surface.labelKey)}
               </Link>
             </li>
           )}

@@ -294,15 +294,18 @@ export const NAV_ITEMS = Object.freeze([
     href: "/admin",
     surfaces: {
       headerMenu: { labelKey: "account.menu.admin", audience: "admin" },
+      accountSheet: { labelKey: "account.menu.admin", audience: "admin" },
     },
-    only: "desktop",
     note:
-      "Desktop only. The mobile sheet offers an admin no route into /admin — " +
-      "the same shape as MEH-1701, which found the admin queue counters " +
-      "missing on mobile. Recorded, not changed. THIS IS THE ONE `only` FLAG " +
-      "THAT MARKS A KNOWN GAP RATHER THAN A DELIBERATE DESIGN — it is " +
-      "declared so the guard passes on today's shipped state, and closing it " +
-      "is MEH-1701's job, not this registry's.",
+      "Decision: A-narrow (MEH-2070). Present on BOTH shells. This entry used " +
+      "to carry `only: \"desktop\"` and a note declaring itself the one flag " +
+      "that marked a KNOWN GAP rather than a design — an admin had no route " +
+      "into /admin from a phone at all. That gap is now closed: manual " +
+      "approval is a LOCK and a solo operator has to be able to clear the " +
+      "queue from a phone, so the approvals surface is responsive and the " +
+      "rest of /admin carries a desktop-only banner instead of being " +
+      "unreachable. The banner lives in admin/layout.js, not here — this " +
+      "registry owns entry points, not what a screen does once you arrive.",
   },
   {
     id: "account",

@@ -1418,7 +1418,8 @@
         "content": "Content",
         "queues": "Pending",
         "system": "System"
-      }
+      },
+      "desktop_only": "This screen is available on desktop"
     },
     "dashboard": {
       "title": "Dashboard",
