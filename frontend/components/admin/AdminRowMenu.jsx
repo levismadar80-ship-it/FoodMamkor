@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { computeMenuTop, MENU_GAP_PX } from "@/lib/panel-position";
 import { DotsThreeVertical } from "@phosphor-icons/react";
 
 /**
@@ -36,9 +37,13 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *   `disabled` mirrors an in-flight busy state — the item renders but can't fire.
  * @param {string} props.ariaLabel — accessible name for the kebab trigger.
  */
-// Gap (px) between the trigger's bottom edge and the panel top — mirrors the
-// pre-portal `mt-1` (0.25rem).
-const MENU_GAP_PX = 4;
+// MEH-2230: MENU_GAP_PX + the viewport-fit maths now live in
+// lib/panel-position.js, shared with Popover, which already solved this.
+// SSR-safe layout effect — mirrors the Popover idiom (Popover.jsx:59-60):
+// this is a client component that Next still renders on the server, where
+// useLayoutEffect warns. The measurement can only run in a browser anyway.
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 // Measure the trigger and pin the panel's inline-END edge to the trigger's
 // inline-END edge (opening toward the start — same visual anchor as the old
@@ -52,8 +57,13 @@ function measureCoords(triggerEl) {
     document.documentElement.getAttribute("dir") === "rtl" ||
     getComputedStyle(document.documentElement).direction === "rtl";
   return {
+    // First-paint placement: below the trigger. Corrected before paint by the
+    // layout effect below, which is the only point the panel's height is known
+    // (it is not rendered yet here). MEH-2230.
     top: rect.bottom + MENU_GAP_PX,
     insetInlineEnd: rtl ? rect.left : window.innerWidth - rect.right,
+    triggerTop: rect.top,
+    triggerBottom: rect.bottom,
   };
 }
 
@@ -113,6 +123,28 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
       window.removeEventListener("resize", handleReflow);
     };
   }, [open]);
+
+  // MEH-2230 — fit the panel to the viewport once its real height exists.
+  // `measureCoords` runs in the toggle handler, before the panel is mounted, so
+  // it cannot know the height and pinned `top` to the trigger's bottom edge
+  // unconditionally. Measured at 375x812 on /admin/producers: the FIRST row's
+  // panel already overflowed by 77px, the last row's by 1457px — and because
+  // any scroll closes the menu (handleReflow above), there was no way to reach
+  // it. Runs before paint, so the corrected position is the first one shown.
+  useIsomorphicLayoutEffect(() => {
+    if (!open || !coords || !menuRef.current) return;
+    const height = menuRef.current.getBoundingClientRect().height;
+    if (!height) return;
+    const next = computeMenuTop(
+      { top: coords.triggerTop, bottom: coords.triggerBottom },
+      height,
+      window.innerHeight,
+    );
+    // Guard the loop: only write when the position actually moves.
+    if (Math.abs(next - coords.top) > 0.5) {
+      setCoords((c) => (c ? { ...c, top: next } : c));
+    }
+  }, [open, coords]);
 
   // Nothing to show (e.g. protected super-admin + self) → render nothing.
   if (items.length === 0) return null;
