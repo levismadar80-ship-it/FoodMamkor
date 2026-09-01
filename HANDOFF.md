@@ -3,6 +3,33 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-01 סוף — drain טז' (session `0113JYkWvGYY…`): חמישה תדריכים, חמש פרמיסות שזזו · המדווח שיקר תחת `control: ok`
+
+**‏שורה אחת:** כל אחד מחמשת הפריטים נשען על טענה שכבר לא הייתה נכונה, והתפוקה האמיתית היא התיקונים — ושני מכשירים שעכשיו רואים את מה שלא ראו.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏להריץ `git fetch --unshallow origin && git fetch origin staging` לפני STEP 0.** ‏STEP 0 על הקונטיינר **כפי שנמסר** החזיר `2 OPEN · 5 parked · 0 satisfied · 5 skipped · 1 void` — ‏**פסול**. שתי תקלות מכשיר: ה-`--self-test` נכשל 1/11 (קלון רדוד), ו-`git fetch origin staging` החזיר `+ 17011b6...826b6df (forced update)` — הרף היה **ארבעה קומיטים מאחור**. הקריאה האמיתית: `0 OPEN · 7 parked · 1 satisfied · 0 void`.
+2. **‏שלושה ורדיקטים התהפכו, ו-`control: ok` הודפס בשתי ההרצות.** ‏MEH-1855 ch2 קרא **OPEN** (`now=0`) והוא parked (`now=1`); ‏MEH-1915 s1 קרא **REGRESSED** «CODEOWNERS נעלם מ-staging» והוא SATISFIED. ‏OPEN שקרי שולח סשן לעבודה חסומה; ‏REGRESSED שקרי מדווח על שומר חי כמחוק. לחצי ה**רדידות** היה גלאי; לחצי ה**התיישנות** לא היה. נסגר ב-#3260 (`currency:`).
+3. **‏MEH-2189 chunks B ו-C **שניהם מוזגו** (`1144a656`, PR #3115).** שמונה שורות הארכיטיפ ב-`seed_demo_producers.py` ו-`frontend/e2e/flows/35-archetype-channel-smoke.spec.ts` קיימים. **לא הורץ שום דבר מחדש.** מה שחסר לא השתנה והוא של ספיר: `seed_demo_producers --confirm` על Railway.
+4. **‏MEH-1976 — הטבלה בכרטיס אומרת שפריטים 1 ו-2 «❌ לא קיימים». שניהם על staging** (#2780), ופריט 3 ב-#2757. ‏`--self-test` של הייצוא: *«OK — 17 assertions, 7 של them against real account data»*, exit 0. **הפער אינו קוד — אין גיבוי.** שום ייצוא לא רץ מעולם, שלושת משתני `CLOUDINARY_*` לא מוגדרים כאן (`--dry-run` יוצא 3). **סקריפט שיכול לקחת גיבוי אינו גיבוי.**
+5. **⚠️ שתי הטענות על dependabot שהתדריך נשא היו שגויות, בשני כיוונים הפוכים.**
+   - ‏`#2943`/`#2129` — ה-ignores **כן בתוקף**. ספיר פרסמה אותן נקיות ב-30/08 (`08:23:10Z`/`08:23:17Z`) ו-dependabot אישרה 3-4 שניות אחר כך: *«won't notify you about version 5.x.x / 7.x.x again»*.
+   - ‏`#2940` — ה-`recreate` **כן נקלט**. *«edited by someone other than Dependabot»* הייתה תשובתה המתועדת של dependabot ל-**`rebase`**, והיא נוקבת ב-`recreate` כפתרון באותו משפט. הוא נשלח ועבד: הענף מוקד מחדש `73.0.0 → 74.0.0`, head `46dce07c`, CI טרי ב-11:15Z.
+   - **מה שכן נכון:** ה-park של `#3079` יוחס בטעות. הפקודה היחידה שם היא המעוותת, ו-dependabot **לא ענתה כלל**.
+6. **‏MEH-2226 הוא workaround קבוע, ועכשיו הוא בריפו** — ‏`.claude/rules/workflow.md` כלל 35. הוא חי רק על הכרטיס, ולכן המשיך להיקרא כבאג שמישהו יתקן. **לא יתקנו:** שכבת העיוות מחוץ לריפו, עם בקרות בשני הכיוונים.
+7. **‏`docs/MIGRATIONS.md` שורה 4 טענה את ההפך מהקוד** — «`create_all` הוסר מ-boot path ב-MEH-267». הוא ב-`startup.py:150`. ‏MEH-267 הסיר את `_migrate_columns()`; ‏ADR-003 §Consequences **שימר** את `create_all` במפורש; ו-MEH-352 (27/04, *אחרי* MEH-267) **הוסיף** אותו. תוקן.
+8. **‏MEH-2219 chunk 2 אינו בר-ביצוע כפי שנכתב — וזו מסקנת Phase 0, לא הערת תזמון.** ה-acceptance criteria דורשים טסט שמוכיח ש-boot מסתיים כאשר `create_all` זורק. ‏`tests/test_lifespan_init.py` (רגרסיית MEH-352) דורש בדיוק את ההפך: הוא מוחק כל טבלה ומוודא שה-lifespan בונה אותן מחדש. השניים אינם יכולים להתקיים יחד, וה-`over_engineering_guard` של הצ'אנק אוסר את הפיוס המתבקש («no boot-time alembic invocation from Python»). ההסרה גם הופכת **שתי החלטות נעולות** — ‏ADR-003 ו-`docs/REFACTOR_PLAN.md:306` (*«leave behind … do not touch this block»*). **צריך הכרעה, לא מימוש.**
+
+### PRs
+
+‏#3260 (`scripts/wake-when.sh` — בקרת currency, ורדיקט `UNSTARTED`, שלוש שורות) · ה-PR הזה (docs+rules). ‏אין preview: אין `[preview]` בהודעות הקומיט, כלומר `Ignored` לפי `frontend/vercel.json` — ההתנהגות המוגדרת (MEH-1900), **לא** rate-limit ולא תקלה.
+
+### שאריות של ספיר (לא נגעתי)
+
+‏MEH-1915 שלב 4 · MEH-1981 (המסמך + חמש שורות ההודעה, ו-`gov.il` ל-allowlist — עכשיו שורה נבדקת ב-wake-when) · MEH-2168 A′ · MEH-1949 · MEH-1904 · MEH-1244 · החוסם הבלתי-פתיר של MEH-1207 · הרצת seed ל-2189 · הרצת הייצוא ל-1976 · RATIFY/FIX + `DEMO_ADMIN_PASSWORD` ל-1508 · dispatch של `vrt-update.yml` ל-1694 · go ל-1938 ch5 · **והכרעת MEH-2219 chunk 2 מול ADR-003.**
+‏**‏`@dependabot` — אין שאריות.** שתי הפקודות פורסמו ואושרו ב-30/08.
+
 ## 2026-09-01 סוף — drain טו' (session `01FK56Pd…`): מנגנון הודעת-איסוף בלי קופי · 1,654 פריטים מתויגים בסיכון · שלוש שורות «חוסם ללא בעלים»
 
 **‏שורה אחת:** חמש משימות שהוכרעו מראש — נחתו שלושה PRs קוד, אפס מחרוזת עברית חדשה, ו**686 מתוך 1,654** הוא המספר שמתמחר את ה-QA לפני ההשקה.

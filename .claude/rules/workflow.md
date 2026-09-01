@@ -1857,3 +1857,92 @@ Tasks auto-expire after 7 days.
     description. Fixed in the same audit (see MEH-2085's own correction
     note) by editing MEH-1959's description directly rather than adding a
     fourth comment._
+
+35. **CC never posts a bot command. It reports the command; a human posts it
+    (MEH-2226).**
+
+    `@dependabot …` comments written by CC arrive mangled — U+00B7 inserted
+    between characters — and dependabot does not recognise them. There is no
+    error, no retry, no bounce: the comment renders, and nothing happens.
+
+    **This is a permanent working rule, not a bug awaiting a fix.** MEH-2226's
+    Phase 0 (30/08) located the layer and it is **outside this repo**: the
+    outbound comment write path (harness/MCP), with controls in both
+    directions — CC's own Bash output is clean (`U+00B7 count: 0`), and
+    dependabot writing the same string into a comment is clean, so it is
+    neither a filter over CC's output nor anything GitHub does. `grep -rniE
+    '00b7|\\u00b7|middle.?dot|interpunct' .claude/ scripts/` returns **zero
+    hits**, and no hook in `.claude/hooks/` rewrites `@` — they are deny gates
+    (exit 2), not transformers. So there is no `file:line` to change, no
+    `patch.md` to write, and `.claude/hooks/**` is CC-deny regardless. Nobody
+    is going to fix this; write the command down and hand it over.
+
+    **What CC does instead:** put the exact command in a comment as plain text,
+    on its own line, and say who must post it and how they will know it took.
+    That is the whole procedure.
+
+    **The insertion is targeted, which is why "it will probably still work" is
+    wrong.** Measured on comment `5464248489`:
+
+    ```
+    stored:  '·@·d·ependabot i·gnore t·his major version'
+    clean:   '@dependabot ignore this major version'
+    len 42 vs 37 · 5× U+00B7 · stored.replace('·','') == clean → True
+    insert offsets: 0, 1, 2, 13, 20   →   @dependabot · ignore · this
+    ```
+
+    `major` and `version` come through untouched. Random encoding corruption
+    would not spare exactly the two words that carry no command meaning; the
+    insertions land on precisely the three tokens that make the string a bot
+    directive. A near-miss is not a partial success here — the parser sees no
+    command at all.
+
+    **How the human confirms it landed** — the acknowledgement is specific and
+    the default reply is not:
+
+    | dependabot replies | meaning |
+    |---|---|
+    | `OK, I won't notify you about version 5.x.x again` | the command was parsed |
+    | `If you'd rather skip all updates… comment @dependabot ignore…` | **not parsed** — that is the generic blurb |
+
+    ### The measured record, because both halves of it get misremembered
+
+    Three CC-issued commands exist, all on 29/08, all mangled, all no-ops:
+    `#2943` (`5464248489`) and `#2129` (`5464077622`), both `ignore this major
+    version`; `#3079` (`5464075324`), `rebase`. **#3079 drew no dependabot
+    reply of any kind** — which is what makes it the cleanest evidence, and it
+    is also why that PR's park was once attributed to "dependabot did not
+    respond". It never received a command to respond to.
+
+    _Audit bound, stated rather than implied: six dependabot PRs were read
+    comment-by-comment (#2943, #2129, #3079, #3080, #2760, #2940) out of 18
+    touched in the window. Three commands is a floor, not a ceiling — a listing
+    is evidence of presence, never of absence._
+
+    **What is NOT broken, and must not be inherited as broken:**
+
+    - **A human's command works.** Every clean command from the `levismadar80-ship-it`
+      account landed and was acknowledged within seconds: the two ignores on
+      30/08 (`08:23:13Z` → *"won't notify you about version 5.x.x again"*;
+      `08:23:21Z` → *"…7.x.x…"*), and on #2940 on 01/09 `rebase` (09:21), then
+      `recreate` (09:25), then `ignore this major version` (12:29:57Z → ack at
+      12:30:04Z).
+    - **#2940's `recreate` took.** Dependabot's *"this PR has been edited by
+      someone other than Dependabot"* was its documented reply to **`rebase`**,
+      and that same reply tells you to use `recreate` instead. It was used, and
+      it worked: the branch was retargeted `73.0.0 → 74.0.0`, head `46dce07c`,
+      fresh CI at 11:15Z. Read as "the command never landed", it looks like the
+      mangling reaching a human's comments. It is not — it is dependabot
+      refusing a rebase over a hand-edited branch, exactly as documented.
+    - **CC's ordinary comments are fine.** The multi-paragraph analyses posted
+      alongside those three commands came through intact, and `Closes MEH-2074`
+      read back clean from #3169's body. Whatever this is, it is aimed at bot
+      mentions, not at everything CC writes. _(Not systematically swept — the
+      body evidence is n=1.)_
+
+    **Do not run the controlled re-test the card originally asked for.** The
+    MCP surface has `add_issue_comment` and **no** `delete_issue_comment`, so
+    the prescribed "post, read back, delete" cannot be completed by CC; a test
+    comment is permanent litter on someone's PR. The result is already measured
+    twice on two PRs with an identical signature, and a third run buys n=3 of
+    the same number.
