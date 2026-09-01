@@ -23,7 +23,7 @@
 
 ### PRs
 
-‏#3260 (`scripts/wake-when.sh` — בקרת currency, ורדיקט `UNSTARTED`, שלוש שורות) · **#3262** (תיקון: שורת ה-UNSTART של #3260 הגזימה — נתפס ע"י בדיקת ההיפוך של כלל 29b, פקודה אחת אחרי המיזוג) · ה-PR הזה (docs+rules). ‏אין preview: אין `[preview]` בהודעות הקומיט, כלומר `Ignored` לפי `frontend/vercel.json` — ההתנהגות המוגדרת (MEH-1900), **לא** rate-limit ולא תקלה.
+‏#3260 (`scripts/wake-when.sh` — בקרת currency, ורדיקט `UNSTARTED`, שלוש שורות) · **#3262** (תיקון: שורת ה-UNSTART של #3260 הגזימה — נתפס ע"י בדיקת ההיפוך של כלל 29b, פקודה אחת אחרי המיזוג) · ה-PR הזה (docs+rules). ‏**אין preview — ושני המצבים קרו בהפרש 16 דקות:** ‏#3260 = `Ignored` (‏`Canceled by Ignored Build Step`, ההתנהגות המוגדרת ב-MEH-1900), ‏#3262 = **rate-limit** (`api-deployments-free-per-day`). שניהם בלי `[preview]`. זו נקודת נתונים לשאלה הפתוחה ב-`deployment.md` (האם `Ignored` צורך מכסה) ו**אינה מכריעה אותה** — לא לכתוב תשובה לתוך הכלל.
 
 ### שאריות של ספיר (לא נגעתי)
 

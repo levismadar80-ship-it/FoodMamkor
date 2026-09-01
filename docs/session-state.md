@@ -129,9 +129,27 @@ it is *current*. Closed in PR #3260.
 `openapi-codegen-drift`. All four measured present on a clean `origin/staging`
 with the diff stashed; none is this window's.
 
-## No preview
+## No preview — and the two states BOTH occurred, hours apart, on this one window
 
-Neither PR carries `[preview]` in a commit message, so `frontend/vercel.json`'s
-`ignoreCommand` skips the build (MEH-1900). That is the configured behaviour —
-`Ignored`, **not** rate-limited, and not a fault. No preview URL is reported,
-because none rendered this diff (rule 9).
+No PR carries `[preview]` in a commit message, so none should have built. What
+Vercel actually reported differs per PR, and naming the wrong state sends the
+next reader after the wrong remedy:
+
+| PR | Vercel status | state |
+|---|---|---|
+| #3260 | `Canceled by Ignored Build Step` (19:04Z) | **`Ignored`** — the configured `ignoreCommand` (MEH-1900) |
+| #3262 | `Deployment rate limited — retry in 24 hours` (19:20Z) | **rate-limited** — the Hobby daily cap |
+
+> **This is a live data point on the open question in `.claude/rules/deployment.md`
+> — does an `Ignored` deployment consume quota? — and it does NOT settle it.**
+> Sixteen minutes apart, same session, same repo, same no-`[preview]` condition,
+> and the second one crossed the cap. That is consistent with `Ignored`
+> deployments counting; it is equally consistent with other branches' real builds
+> crossing 100 in between. **The rule's own resolution method still applies:
+> compare the Vercel dashboard's deployment list against the number of pushes
+> over one day. Not resolvable from the repo, so no CC session can settle it —
+> do not write either answer into the rule.**
+
+No preview URL is reported for any PR in this window, because none rendered
+these diffs (rule 9). Neither state is a fault, and neither is fixable by a
+commit.
