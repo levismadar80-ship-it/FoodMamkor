@@ -66,16 +66,28 @@ if echo "$COMMAND" | grep -qE 'git[[:space:]]+branch[[:space:]]+[^-[:space:]]'; 
 fi
 
 # --- Push -----------------------------------------------------------------
-# The branch that lands on the remote: explicit token after `origin`, else the
-# current branch (bare `git push` / `git push -u origin HEAD`).
+# The branch that lands on the remote: the first NON-FLAG token after `origin`,
+# else the current branch (bare `git push` / `git push -u origin HEAD`).
 if echo "$COMMAND" | grep -qE 'git[[:space:]]+push'; then
-  pushed=$(echo "$COMMAND" | sed -nE 's/.*origin[[:space:]]+([^[:space:];&|]+).*/\1/p')
-  # src:dst refspec → the remote branch is the dst side.
-  case "$pushed" in *:*) pushed="${pushed##*:}";; esac
-  if [ -z "$pushed" ] || [ "$pushed" = "HEAD" ]; then
-    pushed=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  # Isolate the push command itself, so a later `&& git ...` cannot donate tokens.
+  push_seg=$(echo "$COMMAND" | sed -nE 's/.*(git[[:space:]]+push[^;&|]*).*/\1/p')
+
+  # A DELETE never creates a remote branch — and the branch most in need of
+  # deletion is precisely one that violates the convention. Out of scope, the
+  # same way the read paths in the header are.  (MEH-2077)
+  if ! echo "$push_seg" | grep -qE '([[:space:]](--delete|-d)([[:space:]]|$))|([[:space:]]:[^[:space:]]+)'; then
+    # The branch that lands on the remote is the first NON-FLAG token after
+    # `origin`. Reading the token positionally is what made `git push origin
+    # --delete <branch>` validate the string `--delete` as a branch name.
+    pushed=$(echo "$push_seg" | sed -nE 's/.*origin[[:space:]]+//p' \
+               | tr '[:space:]' '\n' | grep -vE '^-' | head -1)
+    # src:dst refspec → the remote branch is the dst side.
+    case "$pushed" in *:*) pushed="${pushed##*:}";; esac
+    if [ -z "$pushed" ] || [ "$pushed" = "HEAD" ]; then
+      pushed=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    fi
+    [ -n "$pushed" ] && ! conforms "$pushed" && emit_block "$pushed" "push"
   fi
-  [ -n "$pushed" ] && ! conforms "$pushed" && emit_block "$pushed" "push"
 fi
 
 exit 0
