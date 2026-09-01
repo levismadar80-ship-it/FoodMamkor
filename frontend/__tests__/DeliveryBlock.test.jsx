@@ -14,8 +14,17 @@ vi.mock("next-intl", () => ({
     if (key === "delivery_day_group") return `ימי ${vars?.day ?? ""}`;
     // MEH-1255: nationwide-with-exclusions display.
     if (key === "nationwide_except") return `משלוחים לכל הארץ (למעט ${vars?.cities ?? ""})`;
-    // MEH-1435: compact city-list toggle copy.
-    if (key === "show_all") return `הצג עוד ${vars?.count ?? ""} ערים`;
+    // MEH-1908: the three show-more toggles each own a pluralised key naming
+    // their own entity (cities / pickup points / delivery areas). This mock
+    // echoes the KEY and the count rather than the Hebrew copy, deliberately:
+    //   - it makes each assertion below state which consumer read which key, so
+    //     a toggle wired to a sibling's key fails on the name;
+    //   - a mock that reproduced the he.json sentences would be a second copy
+    //     of them, free to drift from the catalogue it is standing in for.
+    // The real strings — and the ICU one/other split — are asserted against the
+    // real formatter in DeliveryBlockShowAllPlural.test.jsx. This file owns
+    // routing; that file owns copy.
+    if (key.startsWith("show_all_")) return `${key}|${vars?.count ?? ""}`;
     // MEH-1646 (a): order-cutoff copy — with and without the day promise.
     if (key === "order_cutoff") return `מקבלים הזמנות עד ${vars?.day ?? ""} ${vars?.time ?? ""}`;
     if (key === "order_cutoff_with_day")
@@ -75,6 +84,15 @@ vi.mock("@phosphor-icons/react", () => {
 import DeliveryBlock from "@/components/DeliveryBlock";
 
 const producer = { id: 1, name: "חוות", phone: "0501234567" };
+
+// MEH-1908: the show-more/show-less disclosure control, in either state. The
+// four assertions using it below previously matched /הצג/ — the old mock's
+// Hebrew. Now that the mock echoes `show_all_<consumer>|<count>` instead, that
+// pattern would match no button at all, and THREE of the four are
+// `not.toBeInTheDocument()` assertions: they would have kept passing while
+// having become unable to fail. This matches both halves of the control by
+// construction, so it stays falsifiable in both directions.
+const DISCLOSURE = /^(show_all_|הצג פחות$)/;
 
 describe("DeliveryBlock (MEH-1146 chunk B)", () => {
   it("MEH-1305 A: one shared day is hoisted to a subline, rows carry city + min only", () => {
@@ -187,7 +205,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("חיפה")).toBeInTheDocument();
     expect(screen.getByText("תל אביב")).toBeInTheDocument();
     expect(screen.queryByText("מינימום")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /הצג/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: DISCLOSURE })).not.toBeInTheDocument();
     // Hebrew a→ז order: אשדוד before חיפה before תל אביב.
     const cities = ["אשדוד", "חיפה", "תל אביב"].map((c) => screen.getByText(c));
     expect(cities[0].compareDocumentPosition(cities[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -206,7 +224,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     // Preview: first 15, 16th hidden; toggle names the 3 hidden.
     expect(screen.getByText("עיר 15")).toBeInTheDocument();
     expect(screen.queryByText("עיר 16")).not.toBeInTheDocument();
-    const toggle = screen.getByRole("button", { name: "הצג עוד 3 ערים" });
+    const toggle = screen.getByRole("button", { name: "show_all_cities|3" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
     // Expanded: all 18 shown, toggle flips to "show less".
@@ -278,7 +296,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     // First 3 shown (sorted city→label), the 4th hidden behind the reused toggle.
     expect(screen.getByText("נקודה 03")).toBeInTheDocument();
     expect(screen.queryByText("נקודה 04")).not.toBeInTheDocument();
-    const toggle = screen.getByRole("button", { name: "הצג עוד 7 ערים" });
+    const toggle = screen.getByRole("button", { name: "show_all_pickup|7" });
     fireEvent.click(toggle);
     expect(screen.getByText("נקודה 10")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "הצג פחות" })).toBeInTheDocument();
@@ -297,7 +315,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("נקודה 03")).toBeInTheDocument();
     expect(screen.queryByText("נקודה 04")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "הצג עוד 1 ערים" }));
+    fireEvent.click(screen.getByRole("button", { name: "show_all_pickup|1" }));
     expect(screen.getByText("נקודה 04")).toBeInTheDocument();
   });
 
@@ -513,7 +531,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(container.querySelectorAll("li").length).toBe(6);
     // Numeric assertion, not a name match: no disclosure control of any kind.
     expect(container.querySelectorAll("button[aria-expanded]").length).toBe(0);
-    expect(screen.queryByRole("button", { name: /הצג/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: DISCLOSURE })).not.toBeInTheDocument();
   });
 
   it("MEH-1903 hoist: 7 rows preview 6 + a toggle that expands to all 7 and collapses back", () => {
@@ -524,7 +542,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.queryByText("עיר 07")).not.toBeInTheDocument();
     // The hoisted day is still stated exactly once (MEH-1305), cap or no cap.
     expect(screen.getByText("יוצאים בימי שישי")).toBeInTheDocument();
-    const toggle = screen.getByRole("button", { name: "הצג עוד 1 ערים" });
+    const toggle = screen.getByRole("button", { name: "show_all_areas|1" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
     expect(screen.getByText("עיר 07")).toBeInTheDocument();
@@ -541,7 +559,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("עיר 06")).toBeInTheDocument();
     expect(screen.queryByText("עיר 07")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "הצג עוד 2 ערים" }));
+    fireEvent.click(screen.getByRole("button", { name: "show_all_areas|2" }));
     expect(screen.getByText("עיר 08")).toBeInTheDocument();
   });
 
@@ -573,7 +591,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.queryByText("ימי שלישי")).not.toBeInTheDocument();
     expect(screen.queryByText("עיר 09")).not.toBeInTheDocument();
     // One toggle for the whole section — not one per group.
-    const toggles = screen.getAllByRole("button", { name: /הצג/ });
+    const toggles = screen.getAllByRole("button", { name: DISCLOSURE });
     expect(toggles).toHaveLength(1);
     fireEvent.click(toggles[0]);
     expect(screen.getByText("ימי שלישי")).toBeInTheDocument();
@@ -600,7 +618,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("ימי שני")).toBeInTheDocument();
     expect(screen.queryByText("בתיאום מראש")).not.toBeInTheDocument();
     expect(screen.queryByText("עיר 08")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "הצג עוד 3 ערים" }));
+    fireEvent.click(screen.getByRole("button", { name: "show_all_areas|3" }));
     expect(screen.getByText("בתיאום מראש")).toBeInTheDocument();
     expect(screen.getByText("עיר 09")).toBeInTheDocument();
   });
@@ -620,7 +638,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
       />,
     );
     expect(screen.getByText("עיר 10")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /הצג/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: DISCLOSURE })).not.toBeInTheDocument();
   });
 
   // ---------- MEH-1772 chunk 3: per-area fee override ----------
