@@ -23,7 +23,7 @@
 
 ### PRs
 
-‏#3260 (`scripts/wake-when.sh` — בקרת currency, ורדיקט `UNSTARTED`, שלוש שורות) · ה-PR הזה (docs+rules). ‏אין preview: אין `[preview]` בהודעות הקומיט, כלומר `Ignored` לפי `frontend/vercel.json` — ההתנהגות המוגדרת (MEH-1900), **לא** rate-limit ולא תקלה.
+‏#3260 (`scripts/wake-when.sh` — בקרת currency, ורדיקט `UNSTARTED`, שלוש שורות) · **#3262** (תיקון: שורת ה-UNSTART של #3260 הגזימה — נתפס ע"י בדיקת ההיפוך של כלל 29b, פקודה אחת אחרי המיזוג) · ה-PR הזה (docs+rules). ‏אין preview: אין `[preview]` בהודעות הקומיט, כלומר `Ignored` לפי `frontend/vercel.json` — ההתנהגות המוגדרת (MEH-1900), **לא** rate-limit ולא תקלה.
 
 ### שאריות של ספיר (לא נגעתי)
 

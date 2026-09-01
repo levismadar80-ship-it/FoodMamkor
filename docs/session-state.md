@@ -109,9 +109,12 @@ it is *current*. Closed in PR #3260.
    `@dependabot` commands are **done**, nothing pending there any more.
 2. **Sapir** — decide MEH-2219 chunk 2: it contradicts ADR-003 as specified. Either
    amend the ADR or close the chunk. CC cannot resolve a locked-decision conflict.
-3. **CC** — MEH-2107 is unblocked, `cc-queue`, High, and untracked since 01/09. It
-   now carries the first `UNSTART` row. Its title still says `[חסום ע"י MEH-1906]`,
-   which is false.
+3. **CC** — MEH-2107 is unblocked, `cc-queue`, High, GREEN, and now carries the
+   first `UNSTART` row. **Read its §7 before starting** — it was corrected on 31/08
+   with two design findings that change the approach: the DoD's mutation check
+   cannot run against a deployed form, and a register spec pointed at staging is
+   MEH-1502 self-pollution. Its title still says `[חסום ע"י MEH-1906]`, which is
+   false, and a title is what a sweep sorts on.
 
 ## PRs this window
 
