@@ -1,0 +1,7 @@
+# Global fallback — MUST be first. A file matching no pattern gets NO review
+# request at all, even with branch protection on.
+* @levismadar80-ship-it
+
+# CI and agent configuration — the gate this file exists for (MEH-1915).
+/.github/ @levismadar80-ship-it
+/.claude/ @levismadar80-ship-it
