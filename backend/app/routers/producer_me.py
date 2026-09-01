@@ -775,7 +775,7 @@ def update_my_producer(
     return producer
 
 
-# LEGACY(2026-09-01, MEH-1854)
+# LEGACY(2026-10-01, MEH-1854)
 # MEH-291 — dual-write helpers used during the 7-day overlap.
 # Phase 4 (separate PR) drops the legacy is_available_today + availability_status
 # columns and removes these helpers along with the legacy endpoints below.
