@@ -1,3 +1,5 @@
+> **⚪ SUPERSEDED — as-of 01/09.** This patch swaps `workflow.md`'s “✅ CORRECTED 2026-08-03” block for a “STATUS IS A DATED CLAIM” one. **Neither string is in `workflow.md` today** — the file moved past both, to “✅ RESOLVED 2026-08-13 (MEH-1844)”. There is nothing left to apply. (Measured by drain י', MEH-2227 T5 table.)
+
 # Staged correction — the adversarial reviewer's status in `.claude/rules/workflow.md`
 
 > **Why this is a staged patch and not an edit.** The claim needing correction lives in
