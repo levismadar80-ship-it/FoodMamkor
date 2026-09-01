@@ -17,9 +17,10 @@
 
 ### ממתין לספיר
 
-- **#2940** — הכרעה: לבצע קפיצת major של `eslint` 9→10, או לדחות את `eslint-plugin-unicorn@74`. ה-PR חסום על peer-dependency, לא על lint.
-- **‏patch.md ל-workflows:** ‏F-1 (`meh-1907-workflows-only-enforcement`) + **החדש** `meh-1907-cancelled-guard-f9` (‏Part A: הודעת SUPERSEDED, ה-exit נשאר 1 · Part B: שלוש הודעות לשלוש תוצאות).
-- **מחיקת שלושת הענפים** — `feature/meh-2234-node-22-1` · `feature/meh-1907-superseded-probe` · `feature/meh-1907-superseded-probe-b`.
+- **#2940** — הכרעה: לבצע קפיצת major של `eslint` 9→10, או לדחות את `eslint-plugin-unicorn@74`. ‏**זו MEH-893, לא MEH-2234:** נמדד מהרג'יסטרי ש-`eslint-plugin-unicorn` דורש `peer eslint >=10.4` **גם ב-73.0.0**, ולכן הבמפ ל-Node 22 לא היה פותר את ה-PR הזה בשום תרחיש. ‏CC אינה יכולה לגעת בזה בלי לערוך `frontend/package.json` ⇒ STOP.
+- **‏patch.md ל-workflows:** ‏F-1 (`meh-1907-workflows-only-enforcement`) **כבר פתוח כ-PR #3240 של ספיר** ורץ ב-CI — ה-legs של frontend/backend אכן **רצים** עליו במקום לדלג, כלומר האכיפה עובדת. ‏**עדיין לא מוחל:** `meh-1907-cancelled-guard-f9` (‏Part A: הודעת SUPERSEDED, ה-exit נשאר 1 · Part B: שלוש הודעות לשלוש תוצאות).
+- **מחיקת שלושת הענפים** — `feature/meh-2234-node-22-1` · `feature/meh-1907-superseded-probe` · `feature/meh-1907-superseded-probe-b`. (‏החוסם הוא 403 של GitHub על `git-receive-pack`, לא ה-hook — ראו סעיף 5 למעלה.)
+- **‏הכרעת overlap ל-MEH-2064** — הוארך ל-01/10 יחד עם MEH-1854/1855 כדי למנוע שער אדום, אבל ההכרעה על ה-overlap שלו מעולם לא ניתנה. הקיר הבא הוא **21/09** (‏MEH-2137), לא 01/10.
 
 ## 2026-08-31 — drain ז' (session `01AypFzkTdnMjiDn4MoiEeRz`): מוזג 1, שני PRs תקועים על CI שהפסיק לרוץ, ושתי הכרעות שנמצאו סותרות החלטות נעולות
 
