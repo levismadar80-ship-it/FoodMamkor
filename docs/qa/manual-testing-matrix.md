@@ -1,6 +1,22 @@
 # MEH-1171 — Manual Testing → Automated Suite: Triage Matrix
 
-> **STATUS: 🔒 DRAFT — WAIT GATE. Awaiting Sapir's approval of this matrix (including STALE deletions) before any conversion work starts.** Per ADR-016 amendment (MEH-1155), the DO-NOT-MERGE marker on the PR overrides tier auto-merge authority.
+> **STATUS: ✅ APPROVED — 05/08/2026. The conversion is released; this matrix is the frozen SoT it runs from.**
+>
+> _Corrected 01/09 (MEH-1249, drain יד'). This line read `🔒 DRAFT — WAIT GATE. Awaiting Sapir's approval of
+> this matrix (including STALE deletions) before any conversion work starts.` — **26 days after that approval was
+> given**, and it also cited the merge marker on a PR (#1729) that has been closed since 23/07. PR #2776 unstuck the
+> sibling checkpoint (`conversion-progress.md`) on 11/08 and did not reach this file, so the exact failure that PR
+> existed to fix — a session reads a stale wait-gate and stops — stayed reachable from here. Same class as
+> `.claude/rules/testing.md` § "Restoring an old artifact is not ratification": the sentence was true when written and
+> carries no visual tell that it stopped being true._
+>
+> **⚠️ COVERAGE, measured 01/09 — this matrix no longer spans the document it triages.** `docs/MANUAL_TESTING.md`
+> was 2,331 lines / 1,076 `- [ ]` items at the triage commit (`824d80e7`, 13/07) and is **3,504 / 1,654** on
+> `staging` today. This matrix has 1,074 rows, so **at least 580 live items (≥35%) carry no verdict at all** — a
+> lower bound, since any classified item deleted since makes it larger. The approval above covers the 1,074 rows
+> that were classified; it does not and cannot cover items written after it. **Whether the conversion runs against
+> this frozen set (leaving the remainder to a separate triage) or waits for a refresh is Sapir's call and is open
+> — see MEH-1249.** Do not read a row's absence here as a verdict.
 >
 > Ticket A scope: classification only — **zero app fixes**. Suspected app bugs found during triage are logged in § Findings below as input for Ticket B.
 
