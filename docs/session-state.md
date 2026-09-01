@@ -1,155 +1,140 @@
-# Session state — 2026-09-01, drain טז' (session `0113JYkWvGYY…`)
+# Session state — 2026-09-01, drain יז' (session `0113JYkWvGYY…`)
 
-> This file was **stale by six days** when this window opened — it still described
-> the 26/08 batch. That is the same failure the window itself was called to fix:
-> a state document nobody rewrote reads exactly like a state document that is
-> current. Rewritten in full.
-
-**One line:** every one of the five briefed items turned out to rest on a premise
-that had already moved, and the window's real output is the corrections plus two
-instruments that can now see what they could not.
+**One line:** the brief changed twice mid-window; of the twelve items the work
+briefs named, **eight were already done or empty**, and the labeling pass that
+replaced them stopped after two writes when Sapir's edits began landing on the
+same cards I was reading.
 
 ---
 
-## STEP 0 — the reporter lied, and it said `control: ok` while doing it
-
-`bash scripts/wake-when.sh` on the container **as handed over**:
+## STEP 0 — clean, and this time the instrument was verified first
 
 ```
-2 OPEN · 5 parked · 0 satisfied · 5 skipped · 1 void
+git fetch --unshallow origin   →  shallow=false
+bash scripts/wake-when.sh --self-test   →  17/17, all discriminating
+bash scripts/wake-when.sh
+  0 OPEN · 8 parked · 1 satisfied · 6 skipped · 1 unstarted · 0 void
+  control: ok · currency: ok (origin/staging matches origin)
 ```
 
-Void. Two independent instrument faults, both caught before the numbers were used:
+The currency control added yesterday reported `ok` — the first run where the
+staleness half of STEP 0 was actually checked rather than assumed.
 
-1. `--self-test` **FAILED 1/11** — `baseline_drift()` blind on a shallow clone.
-2. `git fetch origin staging` → `+ 17011b6...826b6df (forced update)` — the ref
-   was **four commits stale**.
+**T11 / OPEN work: none.**
 
-After `git fetch --unshallow origin` and the fetch, self-test is 11/11 and the
-true reading is `0 OPEN · 7 parked · 1 satisfied · 0 void`. Three verdicts flipped:
+---
 
-| row | as handed over | true |
+## The refutation sweep — 8 of 12 briefed items
+
+Every one measured with a single command before any card was read. **Not one
+announced itself; each read as live work in the brief.**
+
+| item | verdict | evidence |
 |---|---|---|
-| MEH-1855 ch2 | **OPEN** `now=0` | parked `now=1` |
-| MEH-1915 s1 | **REGRESSED** — "CODEOWNERS is GONE" | SATISFIED — it is on the base |
-| MEH-1694 B | VOID | parked, 77 commits |
+| **MEH-2122** (OTP silent failure) | ❌ **refuted ×2** | Chunk A merged 18/08 — `b43b6176` (#3007), guard test `tests/test_meh2122_otp_failure_visibility.py` on staging. Card is now labelled **`post-launch`** = out of scope by the brief's own rule. Its own banner warns the orchestrator routed it by the stale title; that happened again. |
+| **MEH-1754** (resolver → notFound) | ❌ **refuted** | Landed 02/08 (#2514) + 12/08 (#2832). Verified across **all seven** SSR entity routes: each has `status === 404` + a `throw`, **none returns a bare `null`**. Only item 5 (env fail-fast) is open. |
+| **MEH-2192** (GEO foundation) | ❌ **refuted** | `llms.txt` exists · `buildOrganizationNode()` carries `description` + `sameAs` (#3199) · `/about` has `alternates` + `about.updated_at = "עודכן: אוגוסט 2026"` rendered at `AboutClient.jsx:242`. #3123 + #3199. The one AC left (`grep = 1` site-wide) the card itself proves impossible. |
+| **MEH-2119** (3 × BaseHTTPMiddleware) | ❌ **refuted** | `grep -c "class.*BaseHTTPMiddleware" middleware.py` → **0**. MEH-1906 converted ours to pure ASGI. **Three → one**, and the one left is vendor code (`SlowAPIMiddleware`, `middleware.py:277`). |
+| **MEH-2043** (fonts from gstatic) | ❌ **refuted** | PR 1 shipped: `StoryCardCanvas.jsx` has **no** gstatic reference; `next.config.js:90-105` documents the repoint. Only the CSP tightening remains — which waits for a go anyway. |
+| **MEH-2231/2232** (duplicate) | ✅ **resolved, verified** | MEH-2232 is `Duplicate`, `canceledAt 2026-08-31T06:14:18Z`. Confirmed, not assumed. |
+| **MEH-2239** (one-line PNG fix) | ❌ **not one line** | **Three** `page.screenshot` PNG calls in that one file (`:161`, `:176`, `:265`), across **two** directories, and **no spec in the repo compresses**. Left alone per instruction. |
+| **T11** | — | 0 OPEN. |
 
-**The shallow half had a detector; the staleness half had none.** `control: ok`
-printed in both runs, because it asked whether `$REF` *resolves*, never whether
-it is *current*. Closed in PR #3260.
-
-> **For the next session, this is the operative line:** run
-> `git fetch --unshallow origin && git fetch origin staging` **before** STEP 0,
-> or read the new `currency:` line and believe it.
+**Premise held:** MEH-2079 (nothing prunes), MEH-2080 (no age field anywhere),
+MEH-2184 (proven, below), MEH-2237 (no audit doc exists).
 
 ---
 
-## What a new session must know
+## The one real finding — MEH-2184 is worse than the card says
 
-1. **Three of the five briefed items were duplicate or already-refuted work, and
-   none of them announced it.** The pattern is not carelessness in the briefs —
-   it is that a card's own description is an append-only claim that rots (rule 34),
-   and every one of these was measured false against live state in minutes.
+The qa-artifacts size cap uses a root-anchored pathspec, so it never matched
+`frontend/qa-artifacts/`. Proven with git, not argued:
 
-2. **MEH-2189 chunks B and C are both MERGED** (`1144a656`, PR #3115). The 8
-   archetype rows are in `seed_demo_producers.py` (`sdot-zahav` …
-   `maadaniyat-ben-shemen`) and `frontend/e2e/flows/35-archetype-channel-smoke.spec.ts`
-   exists. **Nothing was re-run.** What is missing is unchanged and is Sapir's:
-   `python -m scripts.seed_demo_producers --confirm` on Railway. Until that runs,
-   "8 live demo pages" is false and the smoke has nothing to measure.
+```
+git ls-files -- qa-artifacts/           → 1620 files,  0 under frontend/
+git ls-files -- frontend/qa-artifacts/  →  495 files
+git ls-files -- ':(glob)**/qa-artifacts/**' → 2115   (= 1620 + 495, exact union)
+```
 
-3. **MEH-1976's card is wrong on its face and was not corrected for three weeks.**
-   Its 11/08 table says items 1 and 2 "❌ do not exist". Both are on staging
-   (`scripts/ops/cloudinary-export.py`, `docs/runbooks/MEDIA-RESTORE.md`, PR #2780);
-   item 3 shipped in #2757. **All three deliverables are code-complete.**
-   `--self-test` → *"OK — 17 assertions, 7 of them against real account data"*, exit 0.
-   **The gap is not code. There is no backup.** No export has ever run; the three
-   `CLOUDINARY_*` vars are unset here (`--dry-run` exits 3) and the script writes
-   outside the repo by design. A script that can take a backup is not a backup.
+**14,806,301 bytes (≈14.8 MB) already committed in the blind half — against a
+2 MB per-PR cap.**
 
-4. **MEH-2226 is a permanent workaround, now written into the repo** as
-   `.claude/rules/workflow.md` rule 35 — it had lived only on the card, which is
-   why it kept reading like a bug someone would fix. It will not be fixed: the
-   mangling layer is outside the repo, with controls in both directions.
+> **And it is not "a PR could evade the gate".** `e2e.yml` runs Playwright with
+> `working-directory: frontend`, so a spec writing a relative path lands in the
+> blind half. `28-register-success-state.spec.ts:265` writes
+> `qa-artifacts/MEH-2138f/…` and that directory exists **only** at
+> `frontend/qa-artifacts/MEH-2138f/`. **The blind half is the default output
+> location of the thing the cap exists to measure.**
 
-5. **⚠️ Both claims the brief carried about dependabot were false, in opposite
-   directions. Do not re-inherit either.**
-   - `#2943` / `#2129` ignores **ARE in effect** — Sapir posted them clean on
-     30/08 at `08:23:10Z` / `08:23:17Z` and dependabot acknowledged 3-4 seconds
-     later (*"won't notify you about version 5.x.x / 7.x.x again"*).
-   - **`#2940`'s `recreate` DID take.** *"edited by someone other than Dependabot"*
-     was dependabot's documented reply to **`rebase`**, and it names `recreate` as
-     the remedy in the same sentence. `recreate` was issued and worked — branch
-     retargeted `73.0.0 → 74.0.0`, head `46dce07c`, fresh CI 11:15Z.
-   - What IS true: `#3079`'s park was misattributed. Its only command was the
-     mangled one, and dependabot **never replied at all**.
+Patch for Sapir: `docs/ci/meh-2184-qa-artifacts-pathspec.patch.md`.
 
-6. **`docs/MIGRATIONS.md` asserted the opposite of the code, at line 4, in the
-   file a migrations author reads first.** It said `create_all` "was removed from
-   the boot path in MEH-267". It is at `startup.py:150`. MEH-267 removed
-   `_migrate_columns()`; ADR-003 §Consequences **retained** `create_all`
-   deliberately; MEH-352 (27/04, *after* MEH-267) **added** it. Corrected here.
+---
 
-7. **MEH-2219 chunk 2 cannot be executed as written, and that is the Phase 0
-   finding — not a scheduling note.** Its acceptance criteria require a test that
-   boot completes with `create_all` monkeypatched to raise. `tests/test_lifespan_init.py`
-   is the MEH-352 regression test and requires the exact opposite: it drops every
-   table and asserts the lifespan repopulates them. Both cannot hold while
-   `_run_db_init_sync` is the only schema path at boot, and the chunk's own
-   over-engineering guard forbids the obvious reconciliation ("no boot-time
-   alembic invocation from Python"). Removing the call also reverses two locked
-   decisions — ADR-003 and `docs/REFACTOR_PLAN.md:306` (*"leave behind … do not
-   touch this block"*). **This needs a decision, not an implementation.**
+## Three cards were being tracked in the wrong shape
+
+All three sat in wake-when's `SKIP` list — "an action outside the repo" — while
+each one's gate is **a line in a file on this branch**. Now checked rows (#3263):
+
+| card | gate | today |
+|---|---|---|
+| MEH-1754 item5 | `NEXT_PUBLIC_API_URL` in `pr-checks.yml` | `0` (e2e.yml has 9; the gating file has none) |
+| MEH-2184 | cap pathspec globbed | `0` |
+| MEH-2043 pr2 | `fonts.gstatic.com` out of `next.config.js` | `2` |
+
+MEH-2237 became the second `UNSTART`.
+
+---
+
+## The labeling pass — started, stopped after two writes, and why
+
+| card | label | the sentence that decided it |
+|---|---|---|
+| **MEH-1249** | `blocked-needs-sapir` | *"השאלה שמחכה להכרעה: האם ההמרה מכסה את 1,074 השורות שאושרו ב-05/08 … או שהמטריצה מתרעננת קודם?"* |
+| **MEH-1976** | `post-launch` | *"📌 01/09 — הכרעת ספיר: post-launch … אין עבודת CC נותרת"* |
+
+> **⚠️ MEH-1976 is a self-correction, and it is the reason the pass stopped.**
+> I first wrote `blocked-needs-sapir` on it, from a body I had read earlier in
+> this same window. Between that read and that write, **Sapir added a ruling
+> banner to the card** moving it to `post-launch`. My label contradicted her
+> ruling and was corrected within the minute.
+>
+> **The lesson is procedural, not incidental:** the cards are being edited live,
+> so a body read thirty minutes ago is exactly the "stale artifact carrying
+> inherited authority" this repo has a rule about. Continuing the pass from my
+> earlier reads of MEH-2189 / MEH-2219 / MEH-1981 would have repeated the
+> mistake three more times. **Each card needs a fresh read immediately before
+> its write — that is a full window's work and it is where I stopped.**
+
+**Not written, and why:** MEH-2189, MEH-2219, MEH-1981, MEH-1938, MEH-2210,
+MEH-2167 (bodies read too early, or not read at all). **Confirmed correct with
+no write:** MEH-2168, MEH-1904, MEH-1949, MEH-784, MEH-1517, MEH-1615, MEH-1244.
+**Backlog (~60): not reached.**
+
+### Counts, so far
+
+`cc-queue 0 · needs-sapir 0 · blocked-needs-sapir 1 · not-cc 0 · post-launch 1 ·
+already-done reported 8 · skipped/not-written 6 · confirmed-no-write 7 ·
+Backlog not reached ~60`
 
 ---
 
 ## Next 3
 
-1. **Sapir** — `seed_demo_producers --confirm` on Railway (MEH-2189), and the two
-   `@dependabot` commands are **done**, nothing pending there any more.
-2. **Sapir** — decide MEH-2219 chunk 2: it contradicts ADR-003 as specified. Either
-   amend the ADR or close the chunk. CC cannot resolve a locked-decision conflict.
-3. **CC** — MEH-2107 is unblocked, `cc-queue`, High, GREEN, and now carries the
-   first `UNSTART` row. **Read its §7 before starting** — it was corrected on 31/08
-   with two design findings that change the approach: the DoD's mutation check
-   cannot run against a deployed form, and a register spec pointed at staging is
-   MEH-1502 self-pollution. Its title still says `[חסום ע"י MEH-1906]`, which is
-   false, and a title is what a sweep sorts on.
+1. **Sapir** — apply `docs/ci/meh-2184-qa-artifacts-pathspec.patch.md`. The gate
+   has been reporting green on a diff it never looked at.
+2. **CC, fresh window** — finish the labeling pass, re-reading each body
+   immediately before its write. 13 Todo + ~60 Backlog remain.
+3. **Sapir** — MEH-2219 chunk 2 still contradicts ADR-003 as specified (drain
+   טז' finding, unchanged).
 
-## PRs this window
+## PRs
 
-| PR | What | Notes |
-|---|---|---|
-| #3260 | `scripts/wake-when.sh` — currency control + `UNSTARTED` verdict + 3 rows | self-test 11 → 17, shown failing 3/17 against the wrong implementation |
-| (this) | rule 35, `MIGRATIONS.md` correction, STATE + logs | docs-only |
+| PR | What |
+|---|---|
+| #3263 | `scripts/wake-when.sh` — three gate rows + MEH-2237 `UNSTART` |
+| (this) | the MEH-2184 patch for Sapir + STATE + logs |
 
 ## Guards
 
-18 ran, **0 fail**, 4 warned — `claude-md-line-cap`, `dnm-matcher`, `israel-clock`,
-`openapi-codegen-drift`. All four measured present on a clean `origin/staging`
-with the diff stashed; none is this window's.
-
-## No preview — and the two states BOTH occurred, hours apart, on this one window
-
-No PR carries `[preview]` in a commit message, so none should have built. What
-Vercel actually reported differs per PR, and naming the wrong state sends the
-next reader after the wrong remedy:
-
-| PR | Vercel status | state |
-|---|---|---|
-| #3260 | `Canceled by Ignored Build Step` (19:04Z) | **`Ignored`** — the configured `ignoreCommand` (MEH-1900) |
-| #3262 | `Deployment rate limited — retry in 24 hours` (19:20Z) | **rate-limited** — the Hobby daily cap |
-
-> **This is a live data point on the open question in `.claude/rules/deployment.md`
-> — does an `Ignored` deployment consume quota? — and it does NOT settle it.**
-> Sixteen minutes apart, same session, same repo, same no-`[preview]` condition,
-> and the second one crossed the cap. That is consistent with `Ignored`
-> deployments counting; it is equally consistent with other branches' real builds
-> crossing 100 in between. **The rule's own resolution method still applies:
-> compare the Vercel dashboard's deployment list against the number of pushes
-> over one day. Not resolvable from the repo, so no CC session can settle it —
-> do not write either answer into the rule.**
-
-No preview URL is reported for any PR in this window, because none rendered
-these diffs (rule 9). Neither state is a fault, and neither is fixable by a
-commit.
+18 ran, **0 fail**, 4 warned — all four measured present on a clean
+`origin/staging`; none is this window's.
