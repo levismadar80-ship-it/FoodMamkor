@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `DEMO_OWNER_PASSWORD` x3 in `.github/workflows/e2e.yml`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # `Playwright E2E` — enable authenticated coverage (MEH-999)
 
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply

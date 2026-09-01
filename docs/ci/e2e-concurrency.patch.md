@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: the `run_id` fallback is present in `e2e.yml`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # `e2e.yml` concurrency — workflow patch (MEH-1601)
 
 `.github/workflows/**` is CC-deny (**MEH-671**), so Claude Code cannot apply
