@@ -17,7 +17,6 @@
 
 ### ממתין לספיר
 
-- **פקודת rebase ל-dependabot על #2941** (קונפליקט אמיתי על `frontend/package.json` + `frontend/package-lock.json`; ‏CC לעולם לא מפרסמת פקודות bot — MEH-2226).
 - **#2940** — הכרעה: לבצע קפיצת major של `eslint` 9→10, או לדחות את `eslint-plugin-unicorn@74`. ה-PR חסום על peer-dependency, לא על lint.
 - **‏patch.md ל-workflows:** ‏F-1 (`meh-1907-workflows-only-enforcement`) + **החדש** `meh-1907-cancelled-guard-f9` (‏Part A: הודעת SUPERSEDED, ה-exit נשאר 1 · Part B: שלוש הודעות לשלוש תוצאות).
 - **מחיקת שלושת הענפים** — `feature/meh-2234-node-22-1` · `feature/meh-1907-superseded-probe` · `feature/meh-1907-superseded-probe-b`.
