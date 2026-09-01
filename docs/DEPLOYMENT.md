@@ -214,42 +214,107 @@ consequence:
 > _(Source: 2026-05-23 — a session note briefly claimed "branch protection absent"
 > off this 404 before it was corrected from the Rulesets UI.)_
 
-**The 6 required status checks on `protect-main`** (verbatim job `name:` strings,
-confirmed from the Rulesets UI 2026-05-23):
+> ## ⚠️ CORRECTED 2026-08-31 (MEH-1907) — there are **2** required contexts, not 6, and the `*-noop` twins do not exist
+>
+> Everything this section used to say about six per-job required checks, about
+> renaming a `name:` breaking branch protection, and about docs-only twin jobs was
+> **measured false on 2026-08-31**. It is replaced below rather than annotated,
+> because a reader who skims inherits the old model. The 2026-05-23 list was
+> accurate for its date; the rulesets changed and this file did not.
 
-1. `Frontend build (Next.js)` — `pr-checks.yml` job key `build`
-2. `Backend tests (pytest)` — `pr-checks.yml` job key `pytest`
-3. `Backend lint (ruff)` — `pr-checks.yml` job key `lint-backend`
-4. `Env drift (.env.example)` — `pr-checks.yml` job key `env-drift`
-5. `Frontend lint (RTL + Next.js rules)` — `deploy.yml` job key `lint`
-6. `API contract audit (static)` — `deploy.yml` job key `api-contract-static`
+**The 2 required status checks — identical on `protect-main` and `protect-staging`.**
+Live `gh api repos/levismadar80-ship-it/FoodMamkor/rulesets/{id}`, 2026-08-31:
 
-> `protect-staging` is assumed to mirror this list (the tables below have
-> historically been identical for both branches), but only `protect-main` was
-> screenshotted on 2026-05-23 — confirm via Settings → Rules → `protect-staging`
-> if it ever matters.
+```
+=== protect-main · enforcement=active · target=branch
+CI gate (required)
+Deploy gate (required)
+--- other rules: deletion · non_fast_forward · pull_request · required_status_checks
 
-> **`Backend dependency audit (pip-audit)` and `Frontend dependency audit (npm
-> audit)` are NOT required checks** as of this audit. They are *blocking jobs*
-> in `dependency-audit.yml` (`continue-on-error: false` — a real CVE fails that
-> workflow run) but are not in the `protect-main` required-status-checks list.
-> **"Blocking job" ≠ "required check."**
+=== protect-staging · enforcement=active · target=branch
+CI gate (required)
+Deploy gate (required)
+--- other rules: deletion · non_fast_forward · required_status_checks · pull_request
+```
 
-**The required-check identifier is the job's `name:` field, NOT the job key (id).**
-GitHub matches required checks by the human-readable `name:` string. The
-`deploy.yml` job *key* is `api-contract-static`, but the required-check *name*
-is `API contract audit (static)`.
-- Renaming a job's **`name:`** silently **breaks** branch protection — the
-  required check goes missing and PRs block forever waiting for a status that
-  never reports. Update the ruleset in the same change.
-- Renaming a job **key** is safe for branch protection (but update any `needs:`).
+1. `CI gate (required)` — `pr-checks.yml` job key `ci-gate` (aggregator)
+2. `Deploy gate (required)` — `deploy.yml` job key `deploy-gate` (aggregator)
 
-**Decision rule — skipping a check on docs-only PRs without breaking protection:**
+**Both are aggregators. No individual job is a required context.** `Frontend build
+(Next.js)`, `Backend tests (pytest)`, `Backend lint (ruff)`, `Env drift
+(.env.example)`, `Frontend lint (RTL + Next.js rules)` and `API contract audit
+(static)` — the old list of six — are **blocking jobs feeding an aggregator**, not
+required checks. They reach the ruleset only through `ci-gate`/`deploy-gate`.
+
+> **The `*-noop` docs-only twins described here previously DO NOT EXIST.**
+> Measured 2026-08-31:
+>
+> ```
+> $ grep -rn "noop" .github/workflows/*.yml
+> $                       # zero matches, exit 1
+> ```
+>
+> They were never needed. A skipped leg is absorbed by the aggregator's own
+> `ok()` helper (`success|skipped` → pass), so a docs-only PR goes green through
+> `ci-gate` with no twin and no admin override. `.claude/rules/testing.md`
+> § *Required status checks + docs-only merge (MEH-716)* has said this since
+> 2026-07-04 and is the correct source; this file contradicted it for ~8 weeks.
+
+**What identifies a required check, and what actually breaks it.** GitHub still
+matches by the human-readable `name:` string — but since the only two names in the
+ruleset belong to the aggregators, the practical consequences invert:
+
+- Renaming **any other job's `name:`** is now **safe** for branch protection. It is
+  not a context. _(This section previously said such a rename "silently breaks
+  branch protection"; that was true under the 6-context ruleset and is false now.)_
+- Renaming **`CI gate (required)` or `Deploy gate (required)`** still breaks it
+  outright — those two strings are the contexts. Update the ruleset in the same
+  change.
+- **The real fragility moved inside the aggregator.** Deleting or merging a job
+  means updating `ci-gate`'s `needs:` list **and** its `R_*` env block
+  (`pr-checks.yml:707-743`). A `needs:` entry naming a job that no longer exists
+  fails the workflow outright; an `R_*` reference to a removed job resolves empty,
+  and `check_ran` treats empty as "did not run" → **every PR red**. That, not the
+  Settings list, is what must be updated in the same breath as any job merge
+  (MEH-2212's consolidation proposal).
+
+**Decision rule — skipping a check on docs-only PRs:**
 
 | Check is… | How to skip on docs-only PRs | Why it's safe |
 |---|---|---|
-| **Required** (any of the 6 above) | **Job-skip + docs-only twin (MEH-736)** — keep `needs: changes` + `if: <paths>` on the real job, AND add a no-op twin job with the **identical `name:`** that runs on the exact complement filter and exits 0. | **Under Rulesets a *skipped* required check reports as "Expected" and BLOCKS merge** — it does NOT satisfy the check. This **differs from classic branch protection**, which treated skipped as success; the stale assumption forced admin-merges on 2026-06 (#910/#913 + a near-miss). The twin reports `success` under the same `name:` so docs-only PRs merge with no override. Twins = the `*-noop` jobs in `pr-checks.yml` + `deploy.yml`. Earlier examples **#811/#814** predate the Rulesets migration and relied on the now-false skipped=success assumption. |
-| **Not required** (e.g. `Adversarial review (calibration)`) | **Trigger-level `paths-ignore`** on the `pull_request:` trigger. | The workflow doesn't trigger → no check is expected → nothing to satisfy. Worked example: **#812 (F3)** — `paths-ignore` on `claude-review.yml`. **NEVER** apply `paths-ignore` to a *required* check: the check becomes **absent** and branch protection blocks the PR forever. |
+| **A leg of an aggregator** (every job in `ci-gate`/`deploy-gate` `needs:`) | Plain `needs: changes` + `if: <paths>` on the job. **No twin.** | The aggregator's `ok()` maps `skipped` → pass, so the required context still reports `success`. But check which helper guards it first: a leg enforced by `check_ran` treats `skipped` as **failure** — that is the PR #2794 stranded-red class, and it is why `Env drift` must not gain a `draft`/paths skip. |
+| **Not required and not a leg** (e.g. `Adversarial review (calibration)`, `skills-audit.yml`, `E2E gate`) | **Trigger-level `paths-ignore`** on the `pull_request:` trigger. | The workflow doesn't trigger → no check is expected. Worked example: **#812 (F3)** — `paths-ignore` on `claude-review.yml`. Safe here precisely because none of these is a context; do NOT apply `paths-ignore` to `pr-checks.yml` or `deploy.yml`, whose aggregators ARE the contexts. |
+
+> **✅ Enforcement is live — measured, and this caveat is now closed.** The rulesets
+> API reports `enforcement=active` for both, and that report has been corroborated
+> against *behaviour* rather than trusted on its own: under MEH-1907 a PR was
+> observed **blocked and then clean on the same head**, which is the reading that
+> separates a truthful `active` from a decorative one. The required set is **two
+> contexts on both rulesets** — `CI gate (required)` and `Deploy gate (required)`,
+> both aggregators. **No individual job is required.**
+>
+> **Visibility, as of 2026-09-01: public.** The private reading below described a
+> window that has since closed. Corroborated here rather than asserted: the
+> `pr-checks` run on `96d29c7d` at 06:40Z was assigned real runners and reported
+> real per-job durations (`Repo guards` 16s, `Env drift` 10s) — the opposite of the
+> `runner_id: 0` / no-`steps` / 2-second signature that budget exhaustion produced
+> on 31/08. Standard-runner minutes are unlimited again, and rulesets apply.
+>
+> **The history below is kept because the as-of is the point, not the answer.**
+> Visibility moved at least twice on 31/08 — `"private": false` at 21:47Z,
+> `"private": true` at 22:15Z, CI dying on quota at 15:48Z and recovering ~20:53Z.
+> In a **private** repo on **Free**, rulesets are kept but **stop applying**
+> (MEH-2212), so a future flip makes this block stale the moment it happens. Re-read
+> `GET /repos/{owner}/{repo}` before relying on either direction; the **plan**
+> (Free vs Pro) is a separate fact and has never been measured from here.
+>
+> **One instrument explicitly ruled out.** `get_workflow_run_usage` returning
+> `total_ms: 0` does **not** prove the repo is public. Measured 22:14Z: run
+> `33443341578`, executed at 21:50Z, reports `total_ms: 0` for all 17 jobs while
+> the repo measures private. That zero has at least two causes — no billing because
+> public, and billing data absent or lagging — so it does not discriminate, in
+> either direction. Recorded because it was used as evidence for "public" earlier
+> in this repo's notes and should not be again.
 
 #### Rule 1: `main`
 
@@ -260,12 +325,8 @@ is `API contract audit (static)`.
 | Required approvals | **1** |
 | Dismiss stale approvals on new commits | ✅ |
 | Require status checks to pass before merging | ✅ |
-| → Required checks | `Frontend build (Next.js)` |
-| → Required checks | `Backend tests (pytest)` |
-| → Required checks | `Backend lint (ruff)` |
-| → Required checks | `Env drift (.env.example)` |
-| → Required checks | `Frontend lint (RTL + Next.js rules)` |
-| → Required checks | `API contract audit (static)` |
+| → Required checks | `CI gate (required)` — the ONLY two, measured 31/08 |
+| → Required checks | `Deploy gate (required)` |
 | Require branches to be up to date before merging | ✅ |
 | Require linear history (squash or rebase only) | ✅ |
 | Do not allow bypassing the above settings | ✅ (applies to admins too) |
@@ -280,20 +341,19 @@ is `API contract audit (static)`.
 | Require a pull request before merging | ✅ |
 | Required approvals | **0** (self-merge OK — review happens at `staging → main`) |
 | Require status checks to pass before merging | ✅ |
-| → Required checks | `Frontend build (Next.js)` |
-| → Required checks | `Backend tests (pytest)` |
-| → Required checks | `Backend lint (ruff)` |
-| → Required checks | `Env drift (.env.example)` |
-| → Required checks | `Frontend lint (RTL + Next.js rules)` |
-| → Required checks | `API contract audit (static)` |
+| → Required checks | `CI gate (required)` — the ONLY two, measured 31/08 |
+| → Required checks | `Deploy gate (required)` |
 | Require branches to be up to date before merging | ✅ |
 | Allow force pushes | ❌ disabled |
 | Allow deletions | ❌ disabled |
 
-> **Check names must match exactly.** The job `name:` fields in
-> `.github/workflows/pr-checks.yml` and `.github/workflows/deploy.yml` are what
-> GitHub uses to identify required checks. If the workflow YAML changes a job name,
-> the branch protection rule must be updated to match.
+> **Check names must match exactly — but only two names matter.** The contexts are
+> the `name:` fields of the `ci-gate` and `deploy-gate` jobs, i.e. the literal
+> strings `CI gate (required)` and `Deploy gate (required)`. Renaming either breaks
+> branch protection and the ruleset must be updated in the same change. Renaming any
+> **other** job's `name:` does not touch branch protection — but does require
+> updating that job's `needs:` consumers and `ci-gate`'s `R_*` env block. Corrected
+> 2026-08-31 (MEH-1907).
 
 > **`Adversarial review (calibration)` is intentionally NOT a required check.**
 > Wired via `.github/workflows/claude-review.yml`
@@ -301,8 +361,9 @@ is `API contract audit (static)`.
 > `continue-on-error: true` during the calibration window so findings are
 > informational. After the calibration tally crosses >70% useful (see
 > [docs/CLAUDE-REVIEW.md](./CLAUDE-REVIEW.md) → "Calibration plan"), a
-> follow-up PR flips it to blocking and adds the job name to the required
-> checks list above.
+> follow-up PR flips it to blocking. **It would NOT be added to the required-checks
+> list** — that list holds only the two aggregators. To give it a vote, add the job
+> to `ci-gate`'s `needs:` + `R_*` block. (Corrected 2026-08-31, MEH-1907.)
 
 > **`Backend lint (ruff)` is a required check (MEH-488 / MEH-448 /
 > MEH-505).** Wired via `.github/workflows/pr-checks.yml` `lint-backend`
@@ -313,8 +374,10 @@ is `API contract audit (static)`.
 > `--extend-exclude` to `--exclude` (only `ruff check` accepts the
 > `extend-` form). After the MEH-505 PR merges, add `Backend lint
 > (ruff)` to the required-checks lists for both `staging` and `main`
-> via `Settings → Branches`. GitHub only auto-suggests the check name
-> after the first run on the protected branch.
+> via `Settings → Branches`. **That last instruction is obsolete** — `Backend lint
+> (ruff)` is not a context; it is a `check_ran` leg of `ci-gate`
+> (`pr-checks.yml:799`), which is how it actually blocks. (Corrected 2026-08-31,
+> MEH-1907.)
 
 > **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
 > (npm audit)` are blocking jobs, but NOT `protect-main` required checks**
@@ -325,8 +388,13 @@ is `API contract audit (static)`.
 > flipped to blocking 2026-05-01). However, they are NOT in the `protect-main`
 > ruleset's required-status-checks list: an earlier revision of this section
 > wrongly listed them as required and claimed the tables reflected that. The
-> tables above now show the ruleset-authoritative 6. **"Blocking job" (fails
-> its own workflow run) ≠ "required check" (gates the PR via the ruleset).**
+> tables above now show the ruleset-authoritative **2** (corrected 2026-08-31,
+> MEH-1907 — they read "6" until then). **"Blocking job" (fails its own workflow
+> run) ≠ "required check" (gates the PR via the ruleset).** That distinction is
+> now the single most important line in this section: **15 of the ~17 jobs on a PR
+> are blocking jobs with no vote of their own**, and `pip-audit` is the one of them
+> that reaches the ruleset anyway — as a `check_ran` leg of `ci-gate`
+> (`pr-checks.yml:810`), enforced only when a dependency manifest changed.
 
 After saving both rules, verify by attempting a direct push from a feature branch
 to `staging` — it should be rejected with "protected branch" error.
