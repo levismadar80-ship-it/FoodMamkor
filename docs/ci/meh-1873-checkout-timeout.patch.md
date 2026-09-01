@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `Repo guards` AND `Env drift` both carry `timeout-minutes: 10` in `pr-checks.yml`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # MEH-1873 — `timeout-minutes: 3 → 10` on the two light checkout jobs
 
 **Status:** staged for Sapir. `.github/workflows/**` is CC-deny (MEH-671).

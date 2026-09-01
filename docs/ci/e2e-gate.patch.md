@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: the `e2e-gate:` job exists in `e2e.yml`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # E2E gate (required) — YAML patch ל-`e2e.yml` (MEH-1201)
 
 > # 🟢 סטטוס סופי (27/07) — אל תבצעי את צעדי ההחלה שבהמשך

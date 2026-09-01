@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `check_ran` present x11 in `pr-checks.yml`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # `CI gate` — skip-green fix (MEH-1582)
 
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply this
