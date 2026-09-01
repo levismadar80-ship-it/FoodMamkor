@@ -726,6 +726,13 @@ jobs:
         env:
           FRONTEND_TOUCHED: ${{ needs.changes.outputs.frontend }}
           BACKEND_TOUCHED: ${{ needs.changes.outputs.backend }}
+          # MEH-1907 F-1: this output was never loaded into the step, so the
+          # aggregator could not see it. Every frontend/backend job below
+          # carries `|| workflows == 'true'` in its `if:` — meaning a
+          # workflows-only PR RAN the full suite and enforced none of it.
+          # Nine legs reported, zero read. Not the same as a docs-only PR,
+          # where those jobs are skipped and there is nothing to enforce.
+          WORKFLOWS_TOUCHED: ${{ needs.changes.outputs.workflows }}
           R_CHANGES: ${{ needs.changes.result }}
           R_DNM: ${{ needs.do-not-merge-gate.result }}
           R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
@@ -792,7 +799,7 @@ jobs:
             fi
           }
 
-          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED"
+          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED workflows=$WORKFLOWS_TOUCHED"
 
           if ! ok "$R_CHANGES"; then
             echo "::error::Paths-filter job did not succeed (result=$R_CHANGES) — cannot determine stack."
@@ -805,8 +812,11 @@ jobs:
           check_ran "Repo guards" "$R_REPO_GUARDS"
           check_ran "Env drift (.env.example)" "$R_ENV_DRIFT"
 
-          if [ "$BACKEND_TOUCHED" = "true" ]; then
-            echo "Backend stack touched — enforcing backend checks:"
+          # MEH-1907 F-1: mirror the `if:` of the jobs themselves
+          # (`backend == 'true' || workflows == 'true'`). A workflows-only PR
+          # runs pytest and ruff; before this, neither was read.
+          if [ "$BACKEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; then
+            echo "Backend stack touched (or workflows changed) — enforcing backend checks:"
             check_ran "Backend tests (pytest)" "$R_PYTEST"
             check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
             check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
@@ -817,6 +827,10 @@ jobs:
           # MEH-1585: enforced ONLY when a dependency manifest changed. On every
           # other PR the job is `skipped` and this branch is not taken — so the
           # gate neither blocks nor pretends the audit ran.
+          # DELIBERATELY NOT widened to workflows (MEH-1907 F-1): pip-audit's
+          # own `if:` is `deps == 'true'` alone, so on a workflows-only PR it is
+          # skipped. Enforcing it here would demand a leg that never ran and red
+          # every workflow PR — the #2794 class, in reverse.
           if [ "$DEPS_TOUCHED" = "true" ]; then
             echo "Dependency manifest touched — enforcing the CVE audit:"
             check_ran "Backend dependency audit (pip-audit)" "$R_PIP_AUDIT"
@@ -824,8 +838,8 @@ jobs:
             echo "No dependency manifest touched — pip-audit not enforced."
           fi
 
-          if [ "$FRONTEND_TOUCHED" = "true" ]; then
-            echo "Frontend stack touched — enforcing frontend checks:"
+          if [ "$FRONTEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; then
+            echo "Frontend stack touched (or workflows changed) — enforcing frontend checks:"
             check_ran "Frontend build (Next.js)" "$R_BUILD"
             check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
             check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
@@ -835,8 +849,8 @@ jobs:
             echo "Frontend stack not touched — frontend checks not enforced."
           fi
 
-          if [ "$BACKEND_TOUCHED" != "true" ] && [ "$FRONTEND_TOUCHED" != "true" ]; then
-            echo "Neither stack touched (workflows-only / docs-only) — only env-drift enforced."
+          if [ "$BACKEND_TOUCHED" != "true" ] && [ "$FRONTEND_TOUCHED" != "true" ] && [ "$WORKFLOWS_TOUCHED" != "true" ]; then
+            echo "Neither stack touched (docs-only) — only the stack-independent legs enforced."
           fi
 
           if [ "$fail" -ne 0 ]; then
