@@ -464,12 +464,16 @@ echo
 echo "  Unstarted — cc-queue, no gate, nobody blocked. This is WORK, not a park:"
 unstarted_rows=$(cat <<'UNSTARTED'
     UNSTART MEH-2107        Retired from this file 01/09 when its blocker MEH-1906 went
-                            Done (completedAt 2026-08-30T10:38:03Z). Retiring a row
-                            removed it from the report and put it nowhere else, so the
-                            card has been unblocked and untracked since. Its TITLE still
-                            reads "[חסום ע"י MEH-1906]", which is now false and is the
-                            only thing a reader would go by. Delivery-axis E2E coverage,
-                            High, cc-queue — ordinary queue work, not a Sapir action.
+                            Done (completedAt 2026-08-30T10:38:03Z), which removed it from
+                            the report without putting it anywhere else. It is queue-ready
+                            and nobody is blocked on it: delivery-axis E2E coverage, High,
+                            cc-queue, GREEN, ordinary CC work rather than a Sapir action.
+                            NOT "nobody has looked at it" — §7 of the card was corrected on
+                            31/08 with the measured unblock AND two design findings worth
+                            reading before starting (the mutation check cannot run against
+                            staging, and a register spec against staging is MEH-1502
+                            self-pollution). What is stale is the TITLE, which still reads
+                            "[חסום ע"י MEH-1906]" — and a title is what a sweep sorts on.
 UNSTARTED
 )
 printf '%s\n' "$unstarted_rows"
