@@ -6,7 +6,7 @@
  * Does NOT: measure anything itself. Callers pass rects they measured; these
  *           are pure functions so they can be unit-tested without a layout
  *           engine (jsdom reports every rect as 0, so a component test cannot
- *           cover this at all — see __tests__/AdminRowMenuViewportFit.test.jsx).
+ *           cover this at all — see __tests__/AdminRowMenuViewportFit.test.js).
  * Related:  components/ui/Popover.jsx (overlay placement — owns `clamp`'s
  *           original definition, moved here) ·
  *           components/admin/AdminRowMenu.jsx (row kebab)
