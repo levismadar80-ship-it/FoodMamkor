@@ -2,7 +2,11 @@
  * MEH-55: Israel food holiday calendar.
  * Holidays include advance window (7 days before) and active period.
  * Used by: HolidayBanner (homepage), producer dashboard hint.
+ *
+ * MEH-1988: "today" comes from lib/israel-date, not the browser clock — see
+ * todayMs below. Do NOT reintroduce a local date primitive here.
  */
+import { israelToday } from "@/lib/israel-date";
 
 export const HOLIDAYS = {
   pesach: {
@@ -87,8 +91,21 @@ function parseLocalDate(dateStr) {
   return new Date(y, m - 1, d);
 }
 
+// MEH-1988: "today" is the Israel calendar day, not the browser's.
+//
+// The holiday windows below are Israeli dates, so a viewer in a timezone whose
+// calendar day differs from Israel's saw a banner appear or disappear up to a
+// day off. Not the MEH-1983 defect — nothing here is compared against the
+// server, so it could never offer a date the backend rejects — consistency
+// rather than correctness, which is why this is a small change and not a fix.
+//
+// Routed through `parseLocalDate` ON PURPOSE: it is the same constructor the
+// holiday `start`/`end` go through two lines below, so both sides of every
+// comparison are built identically and only WHICH day counts as today moves.
+// Reading `israelToday()` into a Date some other way would put the two sides
+// on different constructions, which is a subtler bug than the one being fixed.
 function todayMs(ref = new Date()) {
-  return new Date(ref.getFullYear(), ref.getMonth(), ref.getDate()).getTime();
+  return parseLocalDate(israelToday(ref)).getTime();
 }
 
 /**
