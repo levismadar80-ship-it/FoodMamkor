@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-01 סוף — drain יד'2 (session `01FK56Pd…`): התדריך חזר פעם שנייה · אומת כבר-בוצע · החלון הוסט ל-MEH-1981 שלב 1
+
+**‏שורה אחת:** ‏dispatch כפול נתפס ואומת מול staging במקום להתבצע שוב; החלון הופנה לפריט ה-Next-3 של ה-STATE, ושם נמצא חוסם שלא היה רשום — `gov.il` אינו ב-WebFetch allowlist.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏אם התדריך נראה מוכר — הריצי את בדיקת ה-pre-dispatch של כלל 28 לפני שאת עובדת.** «אותה עבודה כבר דווחה merged?» → **אמתי מול staging מכנית**, לא מהזיכרון ולא מה-HANDOFF. כאן זה חסך חלון שלם.
+2. **‏MEH-1981 חסום חלקית ולא בגלל תזמון.** שלב 0 (הנחיות הרשות מ-`gov.il`) ו-שלב 2 (רישום מאגר, «עם מקור») **אינם ניתנים להרצה** — הדומיין אינו ב-`.claude/settings.json:240-249` וה-hook חוסם fail-closed. **אל תמלאי את העמודה מהיכרות עם החוק.** שתי הדרכים קדימה שתיהן של ספיר.
+3. **‏שלב 1 סופק** — חמישה משטחי איסוף בלי הודעה/קישור פרטיות: `ForgotPasswordClient` · `ChatWidget` · `ExperienceForm` · `EventForm` · `CategoryRequestModal`. הטבלה המלאה בתגובה על הכרטיס.
+4. **‏אל תפתחי כרטיס על מעבדי צד ג'.** בדקתי כי חשדתי, וזה חזר נקי: Anthropic · Claude · PostHog · Cloudinary · Resend · Google · Vercel · Railway כולם מוצהרים ב-`privacy.*`.
+5. **‏שלב 3 = כלל 22.** כל הודעת איסוף היא מחרוזת חדשה פונה-למשתמשת. אישור מילולי של ספיר לפני כרטיס ביצוע.
+
+### PRs
+
+אין PR קוד בחלון הזה. ה-PR היחיד הוא זה, docs-only.
+
+### שאריות של ספיר (לא נגעתי)
+
+‏MEH-1915 שלבים 2-4 · MEH-1949 · MEH-1904 · MEH-1244 (`not-cc`) · **`gov.il` ל-WebFetch allowlist, או משיכת מסמך הרשות ידנית (MEH-1981)** · הרצת seed על Railway (2189) · RATIFY/FIX + `DEMO_ADMIN_PASSWORD` (1508) · שתי פקודות `@dependabot` (2226) · dispatch של `vrt-update.yml` (1694) · go ל-2168 A′ · go ל-1938 ch5.
+
 ## 2026-09-01 מאוחר — drain יד' (session `01FK56Pd…`): תשע שורות SKIP נבדקו, שבע היו שגויות · MEH-1249 סחף 7 שבועות · A′ נכתב וממתין
 
 **‏שורה אחת:** המוניטור נתן נוחות שווא על תשעה כרטיסים — שתי סיבות חניה היו נכונות, שתיים הפכו לבדיקות שרצות, שלוש נמחקו, וארבע קיבלו סיבה מתוקנת שנוקבת בפעולה במקום בהחלטה.
