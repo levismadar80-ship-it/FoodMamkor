@@ -285,30 +285,28 @@ ruleset belong to the aggregators, the practical consequences invert:
 | **A leg of an aggregator** (every job in `ci-gate`/`deploy-gate` `needs:`) | Plain `needs: changes` + `if: <paths>` on the job. **No twin.** | The aggregator's `ok()` maps `skipped` → pass, so the required context still reports `success`. But check which helper guards it first: a leg enforced by `check_ran` treats `skipped` as **failure** — that is the PR #2794 stranded-red class, and it is why `Env drift` must not gain a `draft`/paths skip. |
 | **Not required and not a leg** (e.g. `Adversarial review (calibration)`, `skills-audit.yml`, `E2E gate`) | **Trigger-level `paths-ignore`** on the `pull_request:` trigger. | The workflow doesn't trigger → no check is expected. Worked example: **#812 (F3)** — `paths-ignore` on `claude-review.yml`. Safe here precisely because none of these is a context; do NOT apply `paths-ignore` to `pr-checks.yml` or `deploy.yml`, whose aggregators ARE the contexts. |
 
-> **⚠️ Unverified: whether `enforcement=active` is truthful. Still open, and the
-> visibility it depends on has moved twice in one evening — so read the as-of, not
-> the claim.** The rulesets API reports `active` for both. In a **private** repo on
-> **Free**, rulesets are **not enforced** (MEH-2212) — the rules are kept, they just
-> stop applying — and it has not been established whether the API keeps reporting
-> `active` while the plan suppresses enforcement. The banner that settles it is
-> UI-only (Settings → Rules).
+> **✅ Enforcement is live — measured, and this caveat is now closed.** The rulesets
+> API reports `enforcement=active` for both, and that report has been corroborated
+> against *behaviour* rather than trusted on its own: under MEH-1907 a PR was
+> observed **blocked and then clean on the same head**, which is the reading that
+> separates a truthful `active` from a decorative one. The required set is **two
+> contexts on both rulesets** — `CI gate (required)` and `Deploy gate (required)`,
+> both aggregators. **No individual job is required.**
 >
-> **Visibility, measured 2026-08-31 ~22:15Z: `"private": true` / `"visibility":
-> "private"`,** from two independent live reads (the repo object via the search API,
-> and the session's repo listing), on an object whose `updated_at` was 22:05:50Z —
-> so not a stale cache.
+> **Visibility, as of 2026-09-01: public.** The private reading below described a
+> window that has since closed. Corroborated here rather than asserted: the
+> `pr-checks` run on `96d29c7d` at 06:40Z was assigned real runners and reported
+> real per-job durations (`Repo guards` 16s, `Env drift` 10s) — the opposite of the
+> `runner_id: 0` / no-`steps` / 2-second signature that budget exhaustion produced
+> on 31/08. Standard-runner minutes are unlimited again, and rulesets apply.
 >
-> **This contradicts a reading taken ~28 minutes earlier**, at 21:47Z, which
-> reported `"private": false` and was used to declare this caveat closed. Both
-> cannot describe the same moment. Either the repo was flipped again in between —
-> plausible, since MEH-2212 records it going private, CI dying on quota at 15:48Z,
-> and recovering ~20:53Z — or one read was wrong. **Not resolved here, and not
-> guessed at.**
->
-> **What follows for a reader:** do NOT treat `active` as proof that a red PR is
-> currently blocked, and do not treat this line as permanent either — re-read
-> `GET /repos/{owner}/{repo}` before relying on either direction. The **plan**
-> (Free vs Pro) is a separate fact and was **not** measured from here at all.
+> **The history below is kept because the as-of is the point, not the answer.**
+> Visibility moved at least twice on 31/08 — `"private": false` at 21:47Z,
+> `"private": true` at 22:15Z, CI dying on quota at 15:48Z and recovering ~20:53Z.
+> In a **private** repo on **Free**, rulesets are kept but **stop applying**
+> (MEH-2212), so a future flip makes this block stale the moment it happens. Re-read
+> `GET /repos/{owner}/{repo}` before relying on either direction; the **plan**
+> (Free vs Pro) is a separate fact and has never been measured from here.
 >
 > **One instrument explicitly ruled out.** `get_workflow_run_usage` returning
 > `total_ms: 0` does **not** prove the repo is public. Measured 22:14Z: run
