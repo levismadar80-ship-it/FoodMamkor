@@ -114,7 +114,7 @@ baseline_drift() {
 #
 # Six synthetic cases pin the three operators in BOTH directions. Case 7 proves
 # an unknown operator fails loudly rather than defaulting to a verdict. Cases
-# 8-10 are anchored to REAL repo state, per MEH-1909: a suite built only from
+# 8-11 are anchored to REAL repo state, per MEH-1909: a suite built only from
 # invented shapes passes against shapes the repo does not use.
 # ---------------------------------------------------------------------------
 self_test() {
@@ -283,7 +283,7 @@ fi
 # ---------------------------------------------------------------------------
 echo
 echo "  Not expressible — an action outside the repo, named:"
-cat <<'SKIPS'
+skips=$(cat <<'SKIPS'
     SKIP    MEH-2189        Sapir runs `seed_demo_producers --confirm` on Railway.
                             NOT "MEH-2168 Done" — that was wrong; the card says
                             it has no blocker. The code merged (PR #3115); what
@@ -304,7 +304,13 @@ cat <<'SKIPS'
                             controls both ways), so no .claude/hooks/ edit is needed
                             or possible. A GitHub comment leaves no repo trace.
 SKIPS
-skipped=4
+)
+printf '%s\n' "$skips"
+# DERIVED, not stated. `skipped=4` stood here for one commit and was caught by
+# the CI reviewer — a hardcoded tally in the file whose own message quotes
+# "Derive counts, never state them" (testing.md / MEH-1976). Add or remove a
+# SKIP row above and this number follows on its own.
+skipped=$(printf '%s\n' "$skips" | grep -c '^[[:space:]]*SKIP')
 
 echo
 echo "  Retired this run (drain 14) — the gate opened or the card closed:"
