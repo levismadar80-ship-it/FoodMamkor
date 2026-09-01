@@ -18,6 +18,23 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 const ICON_SIZE_SM = 16;
 // Column count for the table — used by the empty-state and story-card
 // sub-row's colSpan. MEH-509 PR3: bumped 6 → 7 (added Risk column).
+// Seven columns on desktop. On mobile only three survive — name, status,
+// actions — via `hidden md:table-cell` on city/categories/tags/risk.
+//
+// MEH-2070 (A-narrow): this is the approvals queue, the one admin surface a
+// phone has to be able to finish work on, because manual approval is a LOCK.
+// At 375 the seven-column table overflowed its `overflow-x-auto` far enough
+// that the ACTIONS column sat at x = -168 — the approve/reject controls were
+// off-screen on the inline axis, measured under MEH-2230, which fixed the
+// kebab's vertical clamp and correctly left this for a layout decision.
+//
+// Dropping columns rather than rebuilding the table as cards is deliberate:
+// the four hidden ones are triage context (city, categories, tags, risk) and
+// none of them is what the approve/reject decision is made on — that happens
+// on the single-business screen. The three that stay are identity, state, and
+// the control. colSpan stays 7: a colSpan wider than the visible column count
+// is clamped by the renderer, so the detail rows still span the full width in
+// both layouts.
 const TABLE_COLUMN_COUNT = 7;
 
 // MEH-509 PR3: hardcoded score thresholds per spec. Constants here so a
@@ -447,9 +464,9 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
           </div>
           <ReferralSource producer={p} />
         </td>
-        <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
-        <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
-        <td className="px-4 py-3 text-xs"><ProducerTags producer={p} /></td>
+        <td className="hidden md:table-cell px-4 py-3 text-muted">{p.city || "—"}</td>
+        <td className="hidden md:table-cell px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
+        <td className="hidden md:table-cell px-4 py-3 text-xs"><ProducerTags producer={p} /></td>
         <td className="px-4 py-3">
           <div className="flex flex-col items-start gap-1">
             <StatusBadge status={p.status} />
@@ -457,7 +474,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
             <WaitingBadge producer={p} />
           </div>
         </td>
-        <td className="px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
+        <td className="hidden md:table-cell px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
         <td className="px-4 py-3">
           <ProducerActions producer={p} isStoryOpen={isStoryOpen} {...handlers} />
         </td>
@@ -528,14 +545,14 @@ function TableHead() {
     <thead className="bg-gray-50">
       <tr>
         <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
-        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
-        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
-        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
+        <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
+        <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
+        <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
         <th className="text-start px-4 py-3 font-medium text-muted">
           {t("producers.table.columns.status")}
           <InfoTooltip content={statusTooltip} label={t("producers.table.status_tooltip_label")} position="bottom" />
         </th>
-        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
+        <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
         <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.actions")}</th>
       </tr>
     </thead>
