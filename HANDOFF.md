@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-01 סוף — drain יג' (session `01FK56Pd…`): ה-WAKE-WHEN רץ ומצא park מת · CODEOWNERS נמדד · צ'אנק A בוטל
+
+**‏שורה אחת:** הבדיקות המכניות תפסו כרטיס שנשאר parked 16 יום אחרי שהשער שלו נפתח; ‏CODEOWNERS חי אבל עדיין לא חוסם; וצ'אנק A של MEH-2168 בוטל כי הוא מכוון לטסט שאינו נכשל.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏להריץ `bash scripts/wake-when.sh` ב-STEP 0.** זה מחליף את סריקת ה-§4ה בשיפוט. כל `OPEN` חוזר לתור. הסקריפט **תמיד יוצא 0** ואינו חלק מ-`run-all.sh` — הוא reporter.
+2. **‏אם הבקרה מדפיסה `VOID` — אין תוצאות.** ‏`git fetch origin staging` ואז שוב. מול ref שאינו קיים כל grep מחזיר 0, ו-0 הוא ערך ה-parked בחלק מהשורות וה-OPEN באחרות.
+3. **‏MEH-1249 אינו חסום** — ‏MEH-1909 סגור מ-16/08. הוא הפריט הראשון בתור לפי tier.
+4. **‏CODEOWNERS חי על `staging` אבל אינו חוסם.** ‏#3247 נחת אחריו, נגע ב-`docs/**`, ומוזג עם אפס reviews. הדרישה מגיעה מה-ruleset — שלבים 2-4 של ספיר.
+5. **‏CC פותחת PRs בתור `sapirschnapp`, לא בתור ה-owner.** אם זה ישתנה — ‏CODEOWNERS יהפוך ל-no-op **בשקט**. תנאי לשמר, לא עובדה קבועה.
+6. **‏`requested_reviewers` אינו נגיש מהכלים.** אף אחת מתשע מתודות `pull_request_read` אינה חושפת אותו. אפשר לקבוע «לא נדרש review», אי-אפשר לקבוע «לא נתבקש».
+
+### ממתין לספיר
+
+- **‏#3248** (`scripts/wake-when.sh`) ו-**#3249** (הדוקים האלה) — ‏CC פתחה, ניתנים למיזוג על ירוק.
+- **‏MEH-1915 שלבים 2-4** — ה-ruleset, branch protection, ו-`settings.json`. **בלעדיהם CODEOWNERS מבקש ולא דורש.** שווה להוסיף ל-DoD: «לאמת שזהות פותחת ה-PR אינה ה-owner».
+- **‏MEH-2168 — go על A′** (‏Phase 0 קריאה-בלבד: לסווג את שלושת הכשלים כ-`beforeEach` מול גוף-טסט). ‏A המקורי בוטל.
+- **‏שלושה `not-cc` מזדקנים ב-Todo:** ‏MEH-1949 · MEH-1904 · MEH-1244.
+
 ## 2026-09-01 מאוחר — drain יב' (session `01FK56Pd…`): מסמך הבקרה עבר ל-STATE+delta · CODEOWNERS נפתח · צ'אנק A נעצר
 
 **‏שורה אחת:** ‏MEH-2227 כבר לא דורש קריאה מלאה — יש בראשו בלוק **STATE** ורשימת **WAKE-WHEN** מכנית; ‏#3246 פותח את מסלול ה-CODEOWNERS; וצ'אנק A של MEH-2168 נעצר כי ההנחה שעליה אושר אינה נכונה.
