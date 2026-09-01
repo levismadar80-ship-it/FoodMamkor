@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-01 מאוחר — drain יב' (session `01FK56Pd…`): מסמך הבקרה עבר ל-STATE+delta · CODEOWNERS נפתח · צ'אנק A נעצר
+
+**‏שורה אחת:** ‏MEH-2227 כבר לא דורש קריאה מלאה — יש בראשו בלוק **STATE** ורשימת **WAKE-WHEN** מכנית; ‏#3246 פותח את מסלול ה-CODEOWNERS; וצ'אנק A של MEH-2168 נעצר כי ההנחה שעליה אושר אינה נכונה.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏STEP 0 קורא **רק** את בלוק ה-STATE בראש MEH-2227.** כל מה שמתחת לשורה «Everything below is archive» הוא ארכיון. לרענן את STATE בתחילת ה-drain **ובסופו**, ב-`patch` replace — לא append.
+2. **‏תור ה-parked הוא עכשיו לולאה על בדיקות, לא שיפוט.** טבלת ה-WAKE-WHEN ב-STATE נותנת לכל כרטיס בדיקה שרצה ומחזירה true/false. מריצים; כל true חוזר לתור. **כל בדיקה שם הורצה ואומתה** שהיא מחזירה את ערך ה-parked.
+3. **‏אימות אחרי `merge_method: "squash"` חייב לקרוא גם מי מיזג ומתי — לא רק ספירת הורים.** ‏#3242 נראה כמו מופע MEH-1526 ולא היה: auto-merge דרוך עם `merge` מיזג אותו **לפני** הקריאה שלי, והקריאה החזירה success על PR ממוזג. מחבר הקומיט הוא המבחין (`levismadar80-ship-it` מול `sapirschnapp`).
+4. **‏`.github/CODEOWNERS` אינו על נתיב ה-deny** (רק `.github/workflows/**` הוא). ‏Write רגיל עובד. **אין להשתמש בנתיב ה-API כדי לעקוף** — עד שה-ruleset של ספיר חי, `.github/**` נשאר CC-deny **במוסכמה**.
+5. **‏GitHub קורא CODEOWNERS מענף ה-base.** לכן PR שמוסיף את הקובץ לא יכול להראות בקשת code-owner review — היעדרה אינו ראיה. הבדיקה האמיתית היא ב-PR הבא **אחרי** המיזוג.
+
+### ממתין לספיר
+
+- **‏#3246 (‏CODEOWNERS)** — שלבים 2-4 של MEH-1915 הם הקונסולות ו-`settings.json` שלה. לא למזג על ידי CC.
+- **‏MEH-2168 — הכרעה על היקף צ'אנק A.** הכרטיס מכוון ל-`:171` שאינו נכשל; ששת הכשלים הם `:80`/`:128`/`:193`. צריך את שלוש הודעות הכשל מ-job `99812135214`, או הכרעה שהיעד המשותף ייזרע (פעולת DB — לא CC).
+- **‏שלושה `not-cc` מזדקנים ב-Todo:** ‏MEH-1949 · MEH-1904 · MEH-1244.
+- **‏patch.md ל-workflows שעדיין לא הוחל:** `meh-1907-cancelled-guard-f9`.
+
 ## 2026-09-01 — drains י' + יא' (session `01FK56Pd…`): מוזגו 3 · Done 1 · טריאז' `docs/ci` נסגר · שני PRs parked עם שער נקוב
 
 **‏שורה אחת:** ‏MEH-2070 נחת (אדמינית יכולה סוף-סוף להיכנס ל-`/admin` מהטלפון), ‏MEH-2168 שלב 2 נמדד והפריך את היפותזת ה-500, וטריאז' `docs/ci` ירד מהתור אחרי 24/24.
