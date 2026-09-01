@@ -294,10 +294,19 @@ skips=$(cat <<'SKIPS'
                             on Railway. NOT "per-chunk go" — the 09/08 ruling grants
                             chunk-by-chunk authority; `needs-sapir` is on this card
                             for those two ACTIONS. ch3א already shipped (#3191/#3194).
-    SKIP    MEH-1938 ch5    Contract/RED needs its own go + full WAIT (card §5 of the
-                            13/08 authority). Chunks 2-4b and B1-B6 got a bundled go
-                            with self-merge and have merged. Note the stated blocker
-                            on ch5 — MEH-1909 — closed 16/08, so the ask is unblocked.
+    SKIP    MEH-1938 ch5    Sapir action: GIVE THE GO for chunk 5 (Contract/RED,
+                            full WAIT). Its named blocker MEH-1909 closed 16/08, so
+                            this waits on a request nobody has made - which is not a
+                            gate, it is an unowned item (drain 15 ruling). Chunks
+                            2-4b and B1-B6 got a bundled go and have merged.
+    SKIP    MEH-1207        Sapir action: REPLACE `MEH-1146` in that card's title with
+                            an identifier that resolves, or drop the blocked marker.
+                            `get_issue MEH-1146` returns "Could not find referenced
+                            Issue"; an archived-inclusive query did not surface it
+                            either. NOT a claim that it never existed - a lookup that
+                            excludes archived is indistinguishable from that (MEH-1948).
+                            Worse than a closed blocker: there is no entity whose
+                            status can change, so this card cannot ever open by itself.
     SKIP    MEH-2226        Sapir posts two @dependabot commands in the GitHub UI.
                             NOT "hooks write" — the card's own Phase 0 (30/08) put
                             the mangling OUTSIDE the repo (harness/MCP write path,
@@ -317,6 +326,10 @@ echo "  Retired this run (drain 14) — the gate opened or the card closed:"
 cat <<'RETIRED'
     RETIRED MEH-1249        Gate was "MEH-1909 open". It closed 16/08. Caught by this
                             file's first run after 16 days and three judgement sweeps.
+    RETIRED MEH-2107        Gate was "blocked by MEH-1906" (in the card title).
+                            MEH-1906 is Done, completedAt 2026-08-30T10:38:03Z - two
+                            days. Card is cc-queue and its scope is CC work, so it
+                            resolves to "back in the queue", not to a Sapir action.
     RETIRED MEH-1981        Gate was "lawyer". Sapir's 30/08 split scoped the card to
                             what CC can do WITHOUT one (steps 0-3); the lawyer half is
                             a separate post-launch card and is no longer a DoD line.
