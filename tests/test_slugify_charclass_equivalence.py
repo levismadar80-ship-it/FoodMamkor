@@ -11,13 +11,23 @@ changing every slug belonging to a business whose name carries a geresh.
 So this suite is deliberately **inverted** relative to the ticket that spawned it.
 It does not assert equivalence. It asserts **divergence**: that removing the range
 changes the output, on inputs drawn from real Hebrew business naming. If someone
-deletes the range from any of the three call sites, `test_range_is_live_in_source`
-goes red.
+deletes the range from the one remaining implementation,
+`test_range_is_live_in_source` goes red.
 
-Three sites carry the same character class (grepped 2026-08-16, MEH-2021):
-  * `backend/app/routers/admin.py::_slugify`            — escaped form
-  * `backend/app/slug_utils.py::slugify`                — literal form
-  * `backend/app/services/producer_import.py::_slugify` — escaped form
+Three sites used to carry three COPIES of the same character class (grepped
+2026-08-16, MEH-2021). **MEH-2020 collapsed them into one owner** —
+`slug_utils.slugify` — and the other two names are now aliases:
+
+  * `backend/app/slug_utils.py::slugify`                — the implementation
+  * `backend/app/routers/admin.py::_slugify`            — alias
+  * `backend/app/services/producer_import.py::_slugify` — alias
+
+The parametrisation below is therefore no longer three independent
+measurements, and saying so matters: a suite that reads as 3x coverage while
+exercising one function is the "artifact that asserts coverage" failure this
+repo has a rule about. `test_the_three_names_are_one_object` is what carries
+the real content now — it reds if someone re-forks a copy, which is the only
+way the three could diverge again.
 """
 
 from __future__ import annotations
@@ -35,9 +45,11 @@ from app.slug_utils import slugify as utils_slugify
 
 HEBREW_BLOCK = range(0x0590, 0x0600)
 
-# The three production entry points. `admin_slugify` rejects non-str by design
-# (documented in its docstring); the other two cast. Every case below passes a
-# str, so all three are exercised identically.
+# The three production entry NAMES. Since MEH-2020 they resolve to one object,
+# so the parametrisation re-runs one function three times rather than comparing
+# three. Kept deliberately: the names are what the rest of the codebase imports,
+# so a future re-fork shows up here as three differing results — and
+# `test_the_three_names_are_one_object` catches it directly.
 IMPLEMENTATIONS = (
     ("admin._slugify", admin_slugify),
     ("slug_utils.slugify", utils_slugify),
@@ -136,11 +148,23 @@ def test_range_removal_changes_output(
         )
 
 
-def test_the_three_implementations_agree() -> None:
-    """They are three copies of one function; drift between them is a bug."""
-    for label, text, _ in CORPUS:
-        results = {name: impl(text) for name, impl in IMPLEMENTATIONS}
-        assert len(set(results.values())) == 1, f"slug helpers disagree on {label}: {results}"
+def test_the_three_names_are_one_object() -> None:
+    """MEH-2020 — identity, not agreement.
+
+    Agreement on a corpus was the best available check while these were three
+    copies. It is the weaker check now and would stay green forever: comparing a
+    function to itself cannot fail, so it would report full health against a
+    repo that had re-forked a copy and drifted on an input nobody listed.
+
+    Identity can fail, and fails on exactly the thing worth catching.
+    """
+    functions = {impl for _, impl in IMPLEMENTATIONS}
+    assert len(functions) == 1, (
+        "the slug helpers are no longer one function — a copy has been "
+        f"re-introduced: {[(name, impl) for name, impl in IMPLEMENTATIONS]}. "
+        "MEH-2020 made slug_utils.slugify the single owner of a public URL; "
+        "three generators is three chances to drift."
+    )
 
 
 def test_81_codepoints_survive_only_because_of_the_range() -> None:
@@ -154,8 +178,7 @@ def test_81_codepoints_survive_only_because_of_the_range() -> None:
 
     assert len(non_word) == 81, (
         f"expected 81 non-\\w codepoints in U+0590-U+05FF, measured {len(non_word)}. "
-        "The docstrings in admin.py, slug_utils.py and producer_import.py quote "
-        "this number — update all three."
+        "The docstring in slug_utils.py quotes this number — update it."
     )
 
     categories = {unicodedata.category(chr(cp)) for cp in non_word}

@@ -19,7 +19,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { env, SITE_URL } from "@/lib/env";
-import { BRAND_NAME } from "@/lib/constants";
+import { BRAND_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
@@ -39,8 +39,9 @@ import {
 // hosting, and a hand-written face would resolve to a different file.
 
 const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
-const SITE_DESCRIPTION =
-  "בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד. כל בית עסק נבחר אישית.";
+// MEH-2192: SITE_DESCRIPTION moved to lib/constants.js so the Organization
+// JSON-LD node and this <meta name="description"> cannot drift apart. Same
+// string, one owner.
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 // MEH-1060 (SEO-11): og-image-en.png exists but was unreferenced — /en/* pages
 // shared the Hebrew-text og-image.png. Select the EN artwork for the en locale.
