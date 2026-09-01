@@ -18,7 +18,7 @@
 #       that state trains the reader to ignore the notice, which disarms it.
 #     - keep it out of the directory entirely. <- this
 #
-# THE FOUR VERDICTS, and why SATISFIED is not OPEN
+# THE FIVE VERDICTS, and why SATISFIED is not OPEN
 #   OPEN       the gate opened; the card goes back in the queue.
 #   parked     the gate is still shut. The number moves, so you can see it move.
 #   SATISFIED  the condition is permanently true and there is nothing to do.
@@ -29,6 +29,14 @@
 #   SKIP       no condition can be expressed. Each SKIP names WHY, specifically.
 #              "Sapir has to decide" is not a reason; "Sapir has to run X, which
 #              leaves no trace in the repo" is.
+#   UNSTARTED  a cc-queue card in an active state with NO gate at all. Added
+#              drain 16. Before it, such a card appeared nowhere: not parked
+#              (nothing holds it), not SKIP (no outside action is owed), not
+#              OPEN (nothing opened). It was simply absent, and STEP 0 read as
+#              "everything is accounted for" while three cc-queue cards sat in
+#              Todo untouched. A card nobody is blocked on and nobody has
+#              started is the one this file was least able to see, because it
+#              only ever asked "has a gate opened?" and never "is there a gate?"
 #
 # ON THE SKIP REASONS (drain 14, 01/09)
 #   All nine SKIP rows were re-derived from the cards. SEVEN were wrong or stale:
@@ -81,6 +89,43 @@ verdict() {   # <op: eq|ge|lt> <now> <threshold>  ->  prints open | parked
     lt) if [ "$2" -lt "$3" ]; then echo open; else echo parked; fi ;;
     *)  echo "verdict: unknown operator '$1'" >&2; return 2 ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+# currency — THE SECOND CLASSIFIER, added drain 16 after it cost two wrong
+# verdicts in one run.
+#
+# The control below proves $REF *resolves*. It cannot prove $REF is *current*,
+# and those are different failures with the same appearance. On a fresh
+# container origin/staging is whatever the harness cloned; every `git grep` then
+# answers about a base branch that has moved. Measured 01/09, one run, before
+# any fetch — `git fetch origin staging` reported `+ 17011b6...826b6df (forced
+# update)`, i.e. the ref had been four commits behind:
+#
+#   row            stale reading            true reading
+#   MEH-1855 ch2   OPEN   (now=0)           parked (now=1)
+#   MEH-1915 s1    REGRESSED "CODEOWNERS    SATISFIED — it is on the base
+#                  is GONE from staging"
+#
+# A false OPEN sends a session to do work that is still gated; a false REGRESSED
+# reports a guard as deleted when it is present. Both printed under `control:
+# ok`, because the old control asked the wrong question.
+#
+# Pure, so --self-test can drive it in every direction without a network:
+# it takes the two SHAs and classifies, it does not fetch them.
+# ---------------------------------------------------------------------------
+currency() {   # <local-sha> <remote-sha>  ->  current | stale | unverified
+  [ -n "${2:-}" ] || { echo unverified; return; }
+  [ -n "${1:-}" ] || { echo unverified; return; }
+  if [ "$1" = "$2" ]; then echo current; else echo stale; fi
+}
+
+# remote_head — the SHA origin currently has for $REF's branch, or empty when
+# it cannot be asked. Empty is NOT "same"; it flows to `unverified` above, so a
+# network-blocked environment gets an honest "not checked" instead of a silent
+# pass. Never let this default to the local SHA.
+remote_head() {
+  git ls-remote --heads origin "${REF#origin/}" 2>/dev/null | awk 'NR==1{print $1}'
 }
 
 # ---------------------------------------------------------------------------
@@ -144,6 +189,17 @@ self_test() {
   chk "unknown operator exits 2" 2 "$rc"
 
   echo
+  echo "  currency — the classifier that would have caught drain 16's two false verdicts:"
+  chk "same sha            -> current"    current    "$(currency aaa111 aaa111)"
+  chk "different sha       -> stale"      stale      "$(currency aaa111 bbb222)"
+  # The load-bearing pair. An empty remote SHA means "could not ask", and the
+  # tempting implementation treats it as agreement — which prints `current` for
+  # a ref nobody checked, the reassuring answer produced by a blind probe. Both
+  # empty directions are pinned so that shortcut cannot be reintroduced quietly.
+  chk "remote unknown      -> unverified" unverified "$(currency aaa111 '')"
+  chk "local unknown       -> unverified" unverified "$(currency '' bbb222)"
+
+  echo
   echo "  anchored to real repo state at $REF (MEH-1909 — synthetic shapes are not enough):"
   local present absent drift
   present=$(count 'class Producer' backend/app/models/models.py); present=${present:-0}
@@ -172,6 +228,17 @@ self_test() {
     frontend/components/public \
     frontend/messages/he.json 2>/dev/null)
   chk "baseline_drift() agrees with an independent count" "$cross" "$drift"
+  # MEH-1909: synthetic shapes are not enough. This drives currency() through
+  # the REAL git plumbing — a branch name that exists on origin must classify as
+  # current-or-stale (never unverified, which would mean ls-remote itself is
+  # broken), and one that cannot exist must classify as unverified.
+  local real_cur nosuch
+  real_cur=$(currency "$(git rev-parse "$REF" 2>/dev/null)" "$(remote_head)")
+  case "$real_cur" in current|stale) real_cur=resolved ;; esac
+  chk "currency() on the real $REF resolves" resolved "$real_cur"
+  nosuch=$(currency "$(git rev-parse "$REF" 2>/dev/null)" \
+           "$(git ls-remote --heads origin zzz-wake-when-no-such-branch 2>/dev/null | awk 'NR==1{print $1}')")
+  chk "currency() on a branch origin lacks -> unverified" unverified "$nosuch"
 
   echo
   if [ "$fails" -gt 0 ]; then
@@ -215,9 +282,41 @@ if [ "$control_ok" != 1 ]; then
   exit 0
 fi
 echo "  control: ok ($REF resolves; sentinel token found)"
+
+# --- currency, the half the old control could not see (drain 16) ---------
+cur=$(currency "$(git rev-parse "$REF" 2>/dev/null)" "$(remote_head)")
+case "$cur" in
+  current)
+    echo "  currency: ok ($REF matches origin)"
+    ;;
+  stale)
+    echo
+    echo "  ⛔ $REF IS STALE — it does not match what origin has for"
+    echo "     '${REF#origin/}'. Every row below is a measurement of the WRONG tree."
+    echo "     This is not hypothetical: on 01/09 a run in this exact state"
+    echo "     printed OPEN for MEH-1855 ch2 (truly parked) and REGRESSED for"
+    echo "     MEH-1915 s1 (truly SATISFIED), both under 'control: ok'."
+    echo "     Fix: git fetch origin ${REF#origin/}"
+    echo
+    echo "wake-when: VOID (ref is stale). Reporter only — exiting 0."
+    exit 0
+    ;;
+  *)
+    echo "  currency: UNVERIFIED — could not reach origin to compare."
+    echo "            Not a pass. If this container has network, run"
+    echo "            'git fetch origin ${REF#origin/}' before trusting any row."
+    ;;
+esac
+
+# --- depth, which degrades one row rather than all of them ---------------
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  echo "  depth:    SHALLOW — baseline_drift cannot measure and reports VOID."
+  echo "            'git fetch --unshallow origin' to restore it. The other rows"
+  echo "            read blobs at \$REF and are unaffected."
+fi
 echo
 
-open=0; parked=0; satisfied=0; skipped=0; void=0
+open=0; parked=0; satisfied=0; skipped=0; void=0; unstarted=0
 
 report() {   # <card> <desc> <now> <open|parked>
   if [ "$4" = open ]; then
@@ -247,6 +346,18 @@ report "MEH-2224"     "false claim gone (wake when 0)"    "$v" "$(verdict eq "$v
 
 v=$(count 'MEH-' .github/pull_request_template.md); v=${v:-0}
 report "MEH-2167"     "fewer MEH ids (wake when <4)"      "$v" "$(verdict lt "$v" 4)"
+
+# MEH-1981 — added drain 16. It carried NO row: drain 14 retired its "waiting on
+# a lawyer" gate (correctly — Sapir's 30/08 split removed it) and nothing
+# replaced it, so a High cc-queue card in Todo became invisible to STEP 0. Its
+# real blocker turns out to be a REPO FILE and therefore checkable: steps 0 and
+# 2 need the Privacy Authority's guidance from gov.il, the domain is not in the
+# WebFetch allowlist, and check-webfetch-allowlist.sh fails closed. Sapir adding
+# the domain is the wake signal. (Step 3 is separately gated by rule 22 — new
+# user-facing Hebrew needs her verbal approval — which is a decision, not a
+# state, so it is not what this row measures.)
+v=$(count 'gov\.il' .claude/settings.json); v=${v:-0}
+report "MEH-1981 s0/s2" "gov.il in WebFetch allowlist (>=1)" "$v" "$(verdict ge "$v" 1)"
 
 # MEH-1694 part B — the card's own <precondition_hard>, run rather than quoted.
 v=$(baseline_drift)
@@ -307,6 +418,17 @@ skips=$(cat <<'SKIPS'
                             excludes archived is indistinguishable from that (MEH-1948).
                             Worse than a closed blocker: there is no entity whose
                             status can change, so this card cannot ever open by itself.
+    SKIP    MEH-1976        Sapir runs the export once, with the Cloudinary credentials.
+                            NOT "the script does not exist" — the card's own 11/08
+                            table says items 1 and 2 are missing and BOTH have shipped
+                            since (PR #2780): scripts/ops/cloudinary-export.py and
+                            docs/runbooks/MEDIA-RESTORE.md are on staging, item 3 landed
+                            in #2757. All three deliverables are code-complete and the
+                            self-test passes (17 assertions, exit 0). What does not
+                            exist is a BACKUP: no export has ever run, the sandbox holds
+                            none of the three env vars (--dry-run exits 3, config error),
+                            and the script writes outside the repo by design. A script
+                            that can take a backup is not a backup.
     SKIP    MEH-2226        Sapir posts two @dependabot commands in the GitHub UI.
                             NOT "hooks write" — the card's own Phase 0 (30/08) put
                             the mangling OUTSIDE the repo (harness/MCP write path,
@@ -321,6 +443,44 @@ printf '%s\n' "$skips"
 # SKIP row above and this number follows on its own.
 skipped=$(printf '%s\n' "$skips" | grep -c '^[[:space:]]*SKIP')
 
+# ---------------------------------------------------------------------------
+# UNSTARTED — added drain 16, and the reason it exists is the shape of the gap
+# it closes rather than the length of the list.
+#
+# Every other section here answers "has a gate opened?". A card with no gate is
+# invisible to that question in both directions: it is never OPEN because
+# nothing opened, and never parked because nothing holds it. So the summary line
+# could report a clean board while cc-queue cards sat in Todo that nobody had
+# started and nobody was blocked on — which is what happened. Three cc-queue
+# cards were in Todo through several sweeps; the sweeps were not wrong, they
+# were reading an instrument that could not represent the state.
+#
+# ENTRY RULE: a cc-queue card in an active state (Todo / In Progress), or one
+# this file retired into limbo, for which no gate can be written because none
+# exists. If a gate exists, it belongs in the checks above; if an outside action
+# is owed, it belongs in SKIP. UNSTARTED means the work is simply unclaimed.
+# ---------------------------------------------------------------------------
+echo
+echo "  Unstarted — cc-queue, no gate, nobody blocked. This is WORK, not a park:"
+unstarted_rows=$(cat <<'UNSTARTED'
+    UNSTART MEH-2107        Retired from this file 01/09 when its blocker MEH-1906 went
+                            Done (completedAt 2026-08-30T10:38:03Z), which removed it from
+                            the report without putting it anywhere else. It is queue-ready
+                            and nobody is blocked on it: delivery-axis E2E coverage, High,
+                            cc-queue, GREEN, ordinary CC work rather than a Sapir action.
+                            NOT "nobody has looked at it" — §7 of the card was corrected on
+                            31/08 with the measured unblock AND two design findings worth
+                            reading before starting (the mutation check cannot run against
+                            staging, and a register spec against staging is MEH-1502
+                            self-pollution). What is stale is the TITLE, which still reads
+                            "[חסום ע"י MEH-1906]" — and a title is what a sweep sorts on.
+UNSTARTED
+)
+printf '%s\n' "$unstarted_rows"
+# Derived, for the same reason the SKIP tally is (testing.md — "Derive counts,
+# never state them"; a stated tally here was caught by the CI reviewer once).
+unstarted=$(printf '%s\n' "$unstarted_rows" | grep -c '^[[:space:]]*UNSTART')
+
 echo
 echo "  Retired this run (drain 14) — the gate opened or the card closed:"
 cat <<'RETIRED'
@@ -330,18 +490,23 @@ cat <<'RETIRED'
                             MEH-1906 is Done, completedAt 2026-08-30T10:38:03Z - two
                             days. Card is cc-queue and its scope is CC work, so it
                             resolves to "back in the queue", not to a Sapir action.
+                            Drain 16: "back in the queue" was where it stopped being
+                            tracked. Now carried as UNSTART above.
     RETIRED MEH-1981        Gate was "lawyer". Sapir's 30/08 split scoped the card to
                             what CC can do WITHOUT one (steps 0-3); the lawyer half is
                             a separate post-launch card and is no longer a DoD line.
                             Its own two prerequisites (#2743, #2746) are both on staging.
+                            Drain 16: retiring it left the card with no row for two days.
+                            It has a real gate after all — gov.il, checked above.
     RETIRED MEH-2087        Card is Done (31/08 22:10Z) and its single remaining CC task
                             is verified: ProducerDetailOut(ProducerListOut) inherits
                             availability_state + vacation_until (schemas.py:2248/2250,
                             :2429), and the frontend consumes them.
 RETIRED
 
-printf '\nwake-when: %d OPEN · %d parked · %d satisfied · %d skipped · %d void. Reporter only — exit 0.\n' \
-  "$open" "$parked" "$satisfied" "$skipped" "$void"
+printf '\nwake-when: %d OPEN · %d parked · %d satisfied · %d skipped · %d unstarted · %d void. Reporter only — exit 0.\n' \
+  "$open" "$parked" "$satisfied" "$skipped" "$unstarted" "$void"
 echo "Anything OPEN goes back in the queue (MEH-2227 §4ה). VOID means the probe could"
-echo "not see — treat it as unknown, never as parked."
+echo "not see — treat it as unknown, never as parked. UNSTARTED is work with no gate"
+echo "at all: it does not need anything to happen first, only for someone to take it."
 exit 0
