@@ -91,3 +91,5 @@ if echo "$COMMAND" | grep -qE 'git[[:space:]]+push'; then
 fi
 
 exit 0
+
+   # MEH-2077: --delete/-d/:refspec no longer read as a branch name.
