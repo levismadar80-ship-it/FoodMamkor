@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-01 — drains י' + יא' (session `01FK56Pd…`): מוזגו 3 · Done 1 · טריאז' `docs/ci` נסגר · שני PRs parked עם שער נקוב
+
+**‏שורה אחת:** ‏MEH-2070 נחת (אדמינית יכולה סוף-סוף להיכנס ל-`/admin` מהטלפון), ‏MEH-2168 שלב 2 נמדד והפריך את היפותזת ה-500, וטריאז' `docs/ci` ירד מהתור אחרי 24/24.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏מילת הסגירה שייכת לגוף ה-PR — לא ל-`commit_message` של `merge_pull_request`.** ‏MEH-1526 (squash שנוחת כ-merge) **מוחק את גוף ה-squash**, ואיתו את מילת הסגירה. קרה פעמיים היום; ‏MEH-2070 לא נסגר לבד בגללו ונסגר ידנית עם טבלת DoD.
+2. **‏אחרי כל מיזוג — flip-check לשני הכיוונים.** ‏MEH-2070 **לא** נסגר למרות שם ענף שנושא את המזהה. «לא נסגר» הוא כשל שקט בדיוק כמו «נסגר בטעות», והוא זה שקרה היום.
+3. **‏קבוצת 28 הכשלים ב-E2E אינה בעיית דאטה של staging ואינה MEH-1906.** משתחזרת מול backend מקומי בריא — `18-producer-register-wizard` 12→12, `28-register-success-state` 16→16. מי שממשיך את MEH-2168 מתחיל משם, לא מה-500. הפירוט המלא בתגובה על הכרטיס.
+4. **‏להריץ את הסוויטה מקומית צריך שני דברים לא-מובנים מאליהם:** ‏`@playwright/test` רוצה browser build 1234 ובסנדבוקס יש 1194 (‏config מקומי שמצביע על הבינארי הקיים; **לא** להריץ `playwright install`), ו-login מוגבל ל-`5/15 minutes` פר-אימייל — ‏global-setup נופל על `HTTP 429` אם מריצים פעמיים ברצף.
+5. **‏מחיקת ענף מרוחק חסומה ב-GitHub עצמו (403 על `git-receive-pack`), לא ב-hook של שם הענף.** דחיפה רגילה עובדת — נמדד. שלושה ענפים ממתינים למחיקה ידנית; הרשימה בתגובה על MEH-2077.
+
+### ממתין לספיר
+
+- **#2940** — הכרעה: לבצע קפיצת major של `eslint` 9→10, או לדחות את `eslint-plugin-unicorn@74`. ה-PR חסום על peer-dependency, לא על lint.
+- **‏patch.md ל-workflows:** ‏F-1 (`meh-1907-workflows-only-enforcement`) + **החדש** `meh-1907-cancelled-guard-f9` (‏Part A: הודעת SUPERSEDED, ה-exit נשאר 1 · Part B: שלוש הודעות לשלוש תוצאות).
+- **מחיקת שלושת הענפים** — `feature/meh-2234-node-22-1` · `feature/meh-1907-superseded-probe` · `feature/meh-1907-superseded-probe-b`.
+
 ## 2026-08-31 — drain ז' (session `01AypFzkTdnMjiDn4MoiEeRz`): מוזג 1, שני PRs תקועים על CI שהפסיק לרוץ, ושתי הכרעות שנמצאו סותרות החלטות נעולות
 
 **‏שורה אחת:** ‏MEH-2236 נחת (עסק בערבית יכול סוף-סוף להירשם); ‏MEH-2235 ו-MEH-2101 מוכנים ומאומתים מקומית אך **לא ניתנים למיזוג** כי CI מפסיק לרוץ מ-~15:40Z; ושתי הכרעות של אורקסטרטור ד' נמצאו סותרות החלטות שכבר נעולות בריפו, ולכן parked בלי קוד.

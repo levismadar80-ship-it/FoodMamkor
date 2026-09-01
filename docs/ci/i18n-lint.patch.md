@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `.github/workflows/i18n-icu-parity.yml` exists.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # i18n literal gate — ESLint patch ל-`frontend/eslint.config.mjs` (MEH-1618)
 
 > **הבלוק כאן מיועד לספיר להדבקה ידנית.** `frontend/eslint.config.mjs` הוא
