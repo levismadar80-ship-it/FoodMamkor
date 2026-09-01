@@ -239,7 +239,7 @@ class Producer(Base):
         ),
         nullable=True,
     )
-    # LEGACY(2026-09-01, MEH-1855)
+    # LEGACY(2026-10-01, MEH-1855)
     # MEH-1857: the alias below carried no date and no ticket, so nothing could
     # ever make it expire. Ownership is also INVERTED today — the public page
     # reads this alias (ProducerSections.jsx) while the owner writes the
@@ -860,7 +860,7 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    # LEGACY(2026-09-01, MEH-2064)
+    # LEGACY(2026-10-01, MEH-2064)
     # MEH-2145: the swap MEH-1857 asked for. That marker pointed at ITSELF
     # because the "MEH-295 follow-up" the line below promised had never been
     # opened, and it said in as many words: "whoever opens it should swap the
