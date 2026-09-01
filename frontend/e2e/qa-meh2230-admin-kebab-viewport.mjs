@@ -16,7 +16,7 @@
  */
 import { chromium } from "@playwright/test";
 
-const BASE = process.env.QA_BASE || "http://localhost:3100";
+const BASE = process.env.QA_BASE_URL || "http://localhost:3100";
 const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const ADMIN = { id: 1, email: "admin@example.com", role: "admin", name: "ספיר" };
 const N_ROWS = 15;
