@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: 18 guards ran on job 99774630688 (01/09).
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # `repo-guards` — workflow patch (MEH-999)
 
 > **Supersedes `docs/ci/ui-pattern-guard.patch.md`** (deleted in this PR, never

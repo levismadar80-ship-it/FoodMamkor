@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `webkit-iphone13` present in `frontend/playwright.config.ts`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # WebKit E2E project — workflow + config patch (MEH-1793)
 
 `.github/workflows/**` is CC-deny (**MEH-671**), so Claude Code cannot apply
