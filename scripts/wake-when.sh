@@ -138,6 +138,25 @@ currency() {   # <local-sha> <remote-sha>  ->  current | stale | unverified
 # it cannot be asked. Empty is NOT "same"; it flows to `unverified` above, so a
 # network-blocked environment gets an honest "not checked" instead of a silent
 # pass. Never let this default to the local SHA.
+# ---------------------------------------------------------------------------
+# days_until — whole days from <now-epoch> to <YYYY-MM-DD> (UTC midnight).
+# Negative once the date has passed. Pure: the epoch is a parameter so
+# --self-test can drive it through both sides of a threshold without waiting
+# for the calendar, and the real rows pass $(date -u +%s).
+#
+# Added drain 19 for the LEGACY(YYYY-MM-DD, MEH-N) class. Those markers are
+# enforced by scripts/checks/legacy-expiry-check.sh — but only at the moment
+# they EXPIRE, which is when the required Repo guards job goes red on whatever
+# unrelated PR happens to be open. A row here fires a week early, so the
+# extension (its own reviewed PR, per docs/MIGRATIONS.md) can land as a decision
+# rather than as a hotfix to somebody else's branch.
+# ---------------------------------------------------------------------------
+days_until() {   # <YYYY-MM-DD> <now-epoch>  ->  integer days (may be negative)
+  local target
+  target=$(date -u -d "$1 00:00:00" +%s 2>/dev/null) || { echo "days_until: bad date '$1'" >&2; return 2; }
+  echo $(( (target - $2) / 86400 ))
+}
+
 remote_head() {
   git ls-remote --heads origin "${REF#origin/}" 2>/dev/null | awk 'NR==1{print $1}'
 }
@@ -214,8 +233,24 @@ self_test() {
   chk "local unknown       -> unverified" unverified "$(currency '' bbb222)"
 
   echo
+  echo "  days_until — the LEGACY-expiry early warning, both sides of the 8-day line:"
+  # 2026-09-01T00:00:00Z = 1788220800. Fixed so the cases never drift with the
+  # calendar; the date under test is the real B3 marker's.
+  local fixed=1788220800
+  chk "30 days out (2026-10-01 from 01/09) -> 30"  30  "$(days_until 2026-10-01 "$fixed")"
+  chk "30 days out                         -> parked" parked "$(verdict lt "$(days_until 2026-10-01 "$fixed")" 8)"
+  chk "7 days out  (2026-09-08 from 01/09) -> open"   open   "$(verdict lt "$(days_until 2026-09-08 "$fixed")" 8)"
+  chk "already past (2026-08-01)           -> negative, open" open "$(verdict lt "$(days_until 2026-08-01 "$fixed")" 8)"
+  days_until not-a-date "$fixed" >/dev/null 2>&1; rc=$?
+  chk "a malformed date must fail, not pick a verdict" 2 "$rc"
+
+  echo
   echo "  anchored to real repo state at $REF (MEH-1909 — synthetic shapes are not enough):"
   local present absent drift
+  # The B3 marker as it is actually spelled in the repo — a synthetic-only
+  # suite would pass against a spelling hours.js does not use.
+  present=$(count 'LEGACY(2026-10-01, MEH-1938)' frontend/lib/hours.js); present=${present:-0}
+  chk "count() finds the B3 marker in hours.js"   open "$(verdict ge "$present" 1)"
   present=$(count 'class Producer' backend/app/models/models.py); present=${present:-0}
   chk "count() finds a token that IS in models.py" open "$(verdict ge "$present" 1)"
   absent=$(count 'zzz_wake_when_absent_token_xyz' backend/app/models/models.py); absent=${absent:-0}
@@ -411,6 +446,30 @@ report "MEH-2184"      "cap pathspec globbed (wake >=1)"    "$v" "$(verdict ge "
 v=$(count 'fonts\.gstatic\.com' frontend/next.config.js); v=${v:-0}
 report "MEH-2043 pr2"  "gstatic gone from CSP (wake when 0)" "$v" "$(verdict eq "$v" 0)"
 
+# MEH-1938 B3 — the opening_hours read fallback carries LEGACY(2026-10-01,
+# MEH-1938) (frontend/lib/hours.js, mirrored in producer_me.py:622). That is
+# B3's contract step, NOT chunk 5's (Sapir, 01/09: "SEPARATE — do not fold into
+# 5a"). Nothing owned it, so the only thing that would have noticed the date is
+# legacy-expiry-check.sh going red on 01/10 — on whichever PR was open that day.
+# This row wakes a week before: either the contract lands or the date is
+# extended in a reviewed PR. When the marker is gone the row is SATISFIED —
+# the contract shipped — and never OPEN again.
+v=$(count 'LEGACY(2026-10-01, MEH-1938)' frontend/lib/hours.js); v=${v:-0}
+if [ "$v" -eq 0 ]; then
+  echo "    SATISFIED  MEH-1938 B3     opening_hours LEGACY marker is gone from hours.js at $REF."
+  satisfied=$((satisfied + 1))
+else
+  d=$(days_until 2026-10-01 "$(date -u +%s)")
+  if [ -z "$d" ]; then
+    # An empty result is `date -d` failing, not "no days left" — say so rather
+    # than let verdict() read "" as a number and print the reassuring parked.
+    printf '  VOID    %-16s %-38s %s\n' "MEH-1938 B3" "hours LEGACY days-left UNMEASURABLE" "(date -d unavailable)"
+    void=$((void + 1))
+  else
+    report "MEH-1938 B3"  "hours LEGACY <8 days left (now=days)" "$d" "$(verdict lt "$d" 8)"
+  fi
+fi
+
 # MEH-1694 part B — the card's own <precondition_hard>, run rather than quoted.
 v=$(baseline_drift)
 if [ "$v" -lt 0 ] 2>/dev/null; then
@@ -457,11 +516,13 @@ skips=$(cat <<'SKIPS'
                             on Railway. NOT "per-chunk go" — the 09/08 ruling grants
                             chunk-by-chunk authority; `needs-sapir` is on this card
                             for those two ACTIONS. ch3א already shipped (#3191/#3194).
-    SKIP    MEH-1938 ch5    Sapir action: GIVE THE GO for chunk 5 (Contract/RED,
-                            full WAIT). Its named blocker MEH-1909 closed 16/08, so
-                            this waits on a request nobody has made - which is not a
-                            gate, it is an unowned item (drain 15 ruling). Chunks
-                            2-4b and B1-B6 got a bundled go and have merged.
+    SKIP    MEH-1938 ch5    Sapir action: RUN the MEH-2056 count query (producers with
+                            coordinates and no producer_locations row) on PROD and
+                            STAGING and paste both numbers on the card. The go for
+                            5a was GIVEN 01/09, conditional on 0/0; >0 on either
+                            brings chunk 2's backfill back first. A Railway console
+                            query writes nothing to this repo. Branch cut:
+                            feature/meh-1938-ch5-contract-reads, no code yet.
     SKIP    MEH-1207        Sapir action: REPLACE `MEH-1146` in that card's title with
                             an identifier that resolves, or drop the blocked marker.
                             `get_issue MEH-1146` returns "Could not find referenced
