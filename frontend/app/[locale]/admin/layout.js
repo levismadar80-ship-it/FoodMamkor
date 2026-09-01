@@ -32,6 +32,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import api from "@/lib/api";
+import AdminDesktopOnlyNotice from "./AdminDesktopOnlyNotice";
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -106,6 +107,29 @@ const NAV_SECTIONS = [
 
 // Flattened list for the mobile horizontal nav (order follows the sections).
 const NAV_HREFS = NAV_SECTIONS.flatMap((s) => s.items);
+
+/**
+ * MEH-2070 (A-narrow) — the admin screens that are RESPONSIVE, i.e. the ones a
+ * phone is expected to complete work on. Everything else under /admin renders
+ * the desktop-only banner above its existing content.
+ *
+ * Only the approvals queue is listed, and that is the decision rather than an
+ * accident of effort: manual approval is a LOCK with no automatic fallback, so
+ * a solo operator has to be able to clear it from a phone. Moderation,
+ * settings and outreach are not urgent-on-the-move.
+ *
+ * Prefix match, so /admin/producers/<id>/edit — the single-business screen the
+ * approve/reject decision is actually made on — is included. `/admin` itself is
+ * NOT: the dashboard is a desktop overview, and leaving it out is what makes
+ * the banner visible on the screen an admin lands on first.
+ */
+const MOBILE_READY_PREFIXES = ["/admin/producers"];
+
+export function isMobileReadyAdminPath(pathname) {
+  return MOBILE_READY_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+}
 
 export default function AdminLayout({ children }) {
   const t = useTranslations("admin");
@@ -317,6 +341,7 @@ export default function AdminLayout({ children }) {
 
       {/* Content — offset by sidebar width on desktop */}
       <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
+        {!isMobileReadyAdminPath(pathname) && <AdminDesktopOnlyNotice />}
         {children}
       </main>
     </div>
