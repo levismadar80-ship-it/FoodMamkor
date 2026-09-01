@@ -98,6 +98,8 @@ vi.mock("@phosphor-icons/react", () => {
   return {
     // Header
     MagnifyingGlass: stub("MagnifyingGlass"),
+    // MEH-2070: the AccountSheet admin row.
+    Lock: stub("Lock"),
     SealCheck: stub("SealCheck"),
     // BottomNav
     Compass: stub("Compass"),
@@ -514,7 +516,16 @@ describe("MEH-1703 — recorded asymmetries hold as described", () => {
     );
   });
 
-  it("/admin has a desktop entry and no mobile one (the MEH-1701 shape)", () => {
+  // MEH-2070 (A-narrow): this test previously asserted the OPPOSITE — that
+  // /admin had a desktop entry and deliberately no mobile one (the MEH-1701
+  // shape). That gap is now closed by decision, so the assertion is inverted
+  // rather than deleted: an admin must reach /admin from BOTH shells.
+  //
+  // Discrimination (MEH-1619): against the pre-change code this fails on the
+  // sheet leg — the registry carried `only: "desktop"` and AccountSheet had no
+  // admin row, so `/admin` was absent from the sheet. It is not satisfiable by
+  // the old implementation.
+  it("/admin is reachable from BOTH shells for an admin (MEH-2070 A-narrow)", () => {
     userRef.current = STATES.admin.user;
     const header = render(<Header />);
     openUserMenu();
@@ -526,6 +537,22 @@ describe("MEH-1703 — recorded asymmetries hold as described", () => {
         open
         onClose={() => {}}
         user={STATES.admin.user}
+        logout={() => {}}
+      />,
+    );
+    expect(renderedLinks(sheet.container).map((l) => l.href)).toContain("/admin");
+  });
+
+  // The other half of the audience contract: closing the gap for admins must
+  // not leak an /admin row to everyone else. A non-admin sheet is the control —
+  // without it, the assertion above passes just as well against a registry that
+  // dropped the audience gate entirely.
+  it("/admin stays absent from a non-admin sheet (MEH-2070 audience control)", () => {
+    const sheet = render(
+      <AccountSheet
+        open
+        onClose={() => {}}
+        user={STATES.consumer.user}
         logout={() => {}}
       />,
     );
