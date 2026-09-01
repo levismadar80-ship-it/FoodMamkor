@@ -1,4 +1,5 @@
-> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `.github/workflows/i18n-icu-parity.yml` exists.
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `frontend/eslint.config.mjs:1` imports `eslint-plugin-i18next`, and `:151-153` register `plugins: { i18next }` + the `i18next/no-literal-string` rule — i.e. **the artifact this patch is actually about**.
+> _(An earlier stamp cited `.github/workflows/i18n-icu-parity.yml` existing. That file does exist, but it is a different artifact from the one this patch changes, so it could not have settled the question either way. Re-measured against the config itself on 01/09.)_
 > The banner below is a claim with an as-of date, not the current state — read this line first.
 
 # i18n literal gate — ESLint patch ל-`frontend/eslint.config.mjs` (MEH-1618)
@@ -7,7 +8,8 @@
 > **CC-deny** — `.claude/hooks/protect-lint-config.sh` (MEH-442) חוסם אותו
 > ב-`PROTECTED_FULL` כחסימת-קובץ-מלאה, וההודעה של ה-hook עצמו היא *"If a rule
 > blocks your task, REPORT to user with explanation. Do NOT modify config."*
-> CC לא נגעה בקונפיג. **שום דבר כאן לא הוחל.**
+> CC לא נגעה בקונפיג. ‏**«שום דבר כאן לא הוחל» היה נכון ביום הכתיבה ואינו נכון היום** —
+> ראו שורת ה-Status בראש הקובץ. המשפט נשאר גלוי ומתוקן במקום להימחק.
 >
 > מה כן נחת ב-PR: התלות `eslint-plugin-i18next@^6.1.5` ב-`package.json`
 > (לא מוגן), כך שההחלה אצל ספיר היא הדבקה של בלוק אחד — בלי `npm i`.
