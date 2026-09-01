@@ -1,69 +1,155 @@
-# Session state — 2026-08-26, Batch 26/08 (MEH-2189 · MEH-1677)
+# Session state — 2026-09-01, drain טז' (session `0113JYkWvGYY…`)
 
-**Both code PRs merged. Two items remain open, and both are Sapir's.**
+> This file was **stale by six days** when this window opened — it still described
+> the 26/08 batch. That is the same failure the window itself was called to fix:
+> a state document nobody rewrote reads exactly like a state document that is
+> current. Rewritten in full.
 
-## Landed
+**One line:** every one of the five briefed items turned out to rest on a premise
+that had already moved, and the window's real output is the corrections plus two
+instruments that can now see what they could not.
 
-| PR | SHA | What | Squash verified? |
-|---|---|---|---|
-| #3115 | `1144a656` | MEH-2189 — 8 archetype×channel demo businesses + smoke spec | yes (1 parent, `<title> (#N)`) |
-| #3116 | `77ab7c78` | MEH-1677 — alembic `b3f7a1c46e92`, two columns | yes (1 parent) |
-| #3117 | `1388b965` | docs-only batch log | yes (1 parent) |
+---
 
-## OPEN — Sapir's, in priority order
+## STEP 0 — the reporter lied, and it said `control: ok` while doing it
 
-### 1. Seed has never run on staging (blocks MEH-2189)
+`bash scripts/wake-when.sh` on the container **as handed over**:
+
 ```
-python -m scripts.seed_demo_producers --confirm      # Railway one-off
+2 OPEN · 5 parked · 0 satisfied · 5 skipped · 1 void
 ```
-Until this runs, "8 live demo pages" is false. **MEH-2189 was reopened to Todo** —
-it auto-closed off #3117's branch slug (`feature/meh-2189-batch-docs`), i.e. a
-docs PR closed a code card. Reopen verified to have held.
-Card flag note: the ticket says `--refresh`; the script has no such flag. Real
-flags are `--reset` and `--confirm`.
 
-### 2. alembic downgrade never exercised (MEH-1677)
-`alembic downgrade base` / `upgrade head` sit in `permissions.deny` and were NOT
-run. The deny is evadable by path prefix (`.venv/bin/alembic …`); that gap was
-reported, never used (rule 32). Sapir approved with the gap disclosed.
-- **UPGRADE path IS proven** against a real Postgres container: CI's pytest job
-  runs `alembic upgrade head` + `Verify alembic schema (36 tables)` + `Alembic
-  drift check`, all green.
-- **ROLLBACK path is unproven.** Nothing has ever run `downgrade` on this revision.
+Void. Two independent instrument faults, both caught before the numbers were used:
 
-### 3. The DoD `SELECT` was not run (MEH-1677)
-`psql` is denied and the sandbox holds no staging DB credentials. Evidence
-gathered instead, and it is INDIRECT:
-```
-before deploy: /api/producers/by-slug/lehem-vezman -> 86 keys, coverage_cta_enabled ABSENT
-after  deploy: /api/producers/by-slug/lehem-vezman -> 87 keys, coverage_cta_enabled = true
-POST .../whatsapp-click {"city":"נתניה"} -> 200 · no body -> 200 · {"city":"???"} -> 200
-```
-`lehem-vezman` predates the column and reads `true`, so `server_default`
-backfilled existing rows. This proves the column exists and accepts writes; it
-does NOT prove what is stored in it.
+1. `--self-test` **FAILED 1/11** — `baseline_drift()` blind on a shallow clone.
+2. `git fetch origin staging` → `+ 17011b6...826b6df (forced update)` — the ref
+   was **four commits stale**.
 
-### 4. dnm-matcher-guard patch — unchanged, still Sapir's
-`docs/ci/meh-1523-dnm-label-gate.patch.md`. `.github/workflows/**` is CC-deny.
-The live gate still scans title/body TEXT, not the label — so the `do-not-merge`
-label carries **no mechanical enforcement** today. Worth knowing: during this
-batch the label held only because rule 30 was obeyed, not because anything
-blocked. It was removed on Sapir's explicit instruction, with the authorization
-recorded as a PR comment before the removal so the `unlabeled` event is attributed.
+After `git fetch --unshallow origin` and the fetch, self-test is 11/11 and the
+true reading is `0 OPEN · 7 parked · 1 satisfied · 0 void`. Three verdicts flipped:
 
-## Unexplained, reported rather than resolved
+| row | as handed over | true |
+|---|---|---|
+| MEH-1855 ch2 | **OPEN** `now=0` | parked `now=1` |
+| MEH-1915 s1 | **REGRESSED** — "CODEOWNERS is GONE" | SATISFIED — it is on the base |
+| MEH-1694 B | VOID | parked, 77 commits |
 
-- **`/producers/by-slug/*` returned 200 to my probe and 500 to the E2E runner**,
-  same route, same window. My earlier "Railway staging 500s on every by-slug"
-  diagnosis rests on the runner's log; my own probe contradicts it. Cause unknown.
-- **E2E red repo-wide on 26/08**, including on `staging` itself. 25 failures on
-  #3116's head, all in register/login/admin/map specs, none touching that diff.
-  `E2E gate` is not a required check, so it blocked nothing — but **no PR in this
-  batch has a VRT signal**, and nobody should claim one.
-- **`enable_pr_auto_merge`'s `commitBody` did not land.** GitHub concatenated the
-  branch commits instead, so #3116's squash carries 10× `Refs` and zero `Closes`,
-  and MEH-1677 did not auto-close. Do not rely on a closing keyword in an
-  auto-merge commit.
+**The shallow half had a detector; the staleness half had none.** `control: ok`
+printed in both runs, because it asked whether `$REF` *resolves*, never whether
+it is *current*. Closed in PR #3260.
+
+> **For the next session, this is the operative line:** run
+> `git fetch --unshallow origin && git fetch origin staging` **before** STEP 0,
+> or read the new `currency:` line and believe it.
+
+---
+
+## What a new session must know
+
+1. **Three of the five briefed items were duplicate or already-refuted work, and
+   none of them announced it.** The pattern is not carelessness in the briefs —
+   it is that a card's own description is an append-only claim that rots (rule 34),
+   and every one of these was measured false against live state in minutes.
+
+2. **MEH-2189 chunks B and C are both MERGED** (`1144a656`, PR #3115). The 8
+   archetype rows are in `seed_demo_producers.py` (`sdot-zahav` …
+   `maadaniyat-ben-shemen`) and `frontend/e2e/flows/35-archetype-channel-smoke.spec.ts`
+   exists. **Nothing was re-run.** What is missing is unchanged and is Sapir's:
+   `python -m scripts.seed_demo_producers --confirm` on Railway. Until that runs,
+   "8 live demo pages" is false and the smoke has nothing to measure.
+
+3. **MEH-1976's card is wrong on its face and was not corrected for three weeks.**
+   Its 11/08 table says items 1 and 2 "❌ do not exist". Both are on staging
+   (`scripts/ops/cloudinary-export.py`, `docs/runbooks/MEDIA-RESTORE.md`, PR #2780);
+   item 3 shipped in #2757. **All three deliverables are code-complete.**
+   `--self-test` → *"OK — 17 assertions, 7 of them against real account data"*, exit 0.
+   **The gap is not code. There is no backup.** No export has ever run; the three
+   `CLOUDINARY_*` vars are unset here (`--dry-run` exits 3) and the script writes
+   outside the repo by design. A script that can take a backup is not a backup.
+
+4. **MEH-2226 is a permanent workaround, now written into the repo** as
+   `.claude/rules/workflow.md` rule 35 — it had lived only on the card, which is
+   why it kept reading like a bug someone would fix. It will not be fixed: the
+   mangling layer is outside the repo, with controls in both directions.
+
+5. **⚠️ Both claims the brief carried about dependabot were false, in opposite
+   directions. Do not re-inherit either.**
+   - `#2943` / `#2129` ignores **ARE in effect** — Sapir posted them clean on
+     30/08 at `08:23:10Z` / `08:23:17Z` and dependabot acknowledged 3-4 seconds
+     later (*"won't notify you about version 5.x.x / 7.x.x again"*).
+   - **`#2940`'s `recreate` DID take.** *"edited by someone other than Dependabot"*
+     was dependabot's documented reply to **`rebase`**, and it names `recreate` as
+     the remedy in the same sentence. `recreate` was issued and worked — branch
+     retargeted `73.0.0 → 74.0.0`, head `46dce07c`, fresh CI 11:15Z.
+   - What IS true: `#3079`'s park was misattributed. Its only command was the
+     mangled one, and dependabot **never replied at all**.
+
+6. **`docs/MIGRATIONS.md` asserted the opposite of the code, at line 4, in the
+   file a migrations author reads first.** It said `create_all` "was removed from
+   the boot path in MEH-267". It is at `startup.py:150`. MEH-267 removed
+   `_migrate_columns()`; ADR-003 §Consequences **retained** `create_all`
+   deliberately; MEH-352 (27/04, *after* MEH-267) **added** it. Corrected here.
+
+7. **MEH-2219 chunk 2 cannot be executed as written, and that is the Phase 0
+   finding — not a scheduling note.** Its acceptance criteria require a test that
+   boot completes with `create_all` monkeypatched to raise. `tests/test_lifespan_init.py`
+   is the MEH-352 regression test and requires the exact opposite: it drops every
+   table and asserts the lifespan repopulates them. Both cannot hold while
+   `_run_db_init_sync` is the only schema path at boot, and the chunk's own
+   over-engineering guard forbids the obvious reconciliation ("no boot-time
+   alembic invocation from Python"). Removing the call also reverses two locked
+   decisions — ADR-003 and `docs/REFACTOR_PLAN.md:306` (*"leave behind … do not
+   touch this block"*). **This needs a decision, not an implementation.**
+
+---
+
+## Next 3
+
+1. **Sapir** — `seed_demo_producers --confirm` on Railway (MEH-2189), and the two
+   `@dependabot` commands are **done**, nothing pending there any more.
+2. **Sapir** — decide MEH-2219 chunk 2: it contradicts ADR-003 as specified. Either
+   amend the ADR or close the chunk. CC cannot resolve a locked-decision conflict.
+3. **CC** — MEH-2107 is unblocked, `cc-queue`, High, GREEN, and now carries the
+   first `UNSTART` row. **Read its §7 before starting** — it was corrected on 31/08
+   with two design findings that change the approach: the DoD's mutation check
+   cannot run against a deployed form, and a register spec pointed at staging is
+   MEH-1502 self-pollution. Its title still says `[חסום ע"י MEH-1906]`, which is
+   false, and a title is what a sweep sorts on.
+
+## PRs this window
+
+| PR | What | Notes |
+|---|---|---|
+| #3260 | `scripts/wake-when.sh` — currency control + `UNSTARTED` verdict + 3 rows | self-test 11 → 17, shown failing 3/17 against the wrong implementation |
+| (this) | rule 35, `MIGRATIONS.md` correction, STATE + logs | docs-only |
 
 ## Guards
-16 ran, 1 warned (`dnm-matcher-guard`) — the same pre-existing warn all session.
+
+18 ran, **0 fail**, 4 warned — `claude-md-line-cap`, `dnm-matcher`, `israel-clock`,
+`openapi-codegen-drift`. All four measured present on a clean `origin/staging`
+with the diff stashed; none is this window's.
+
+## No preview — and the two states BOTH occurred, hours apart, on this one window
+
+No PR carries `[preview]` in a commit message, so none should have built. What
+Vercel actually reported differs per PR, and naming the wrong state sends the
+next reader after the wrong remedy:
+
+| PR | Vercel status | state |
+|---|---|---|
+| #3260 | `Canceled by Ignored Build Step` (19:04Z) | **`Ignored`** — the configured `ignoreCommand` (MEH-1900) |
+| #3262 | `Deployment rate limited — retry in 24 hours` (19:20Z) | **rate-limited** — the Hobby daily cap |
+
+> **This is a live data point on the open question in `.claude/rules/deployment.md`
+> — does an `Ignored` deployment consume quota? — and it does NOT settle it.**
+> Sixteen minutes apart, same session, same repo, same no-`[preview]` condition,
+> and the second one crossed the cap. That is consistent with `Ignored`
+> deployments counting; it is equally consistent with other branches' real builds
+> crossing 100 in between. **The rule's own resolution method still applies:
+> compare the Vercel dashboard's deployment list against the number of pushes
+> over one day. Not resolvable from the repo, so no CC session can settle it —
+> do not write either answer into the rule.**
+
+No preview URL is reported for any PR in this window, because none rendered
+these diffs (rule 9). Neither state is a fault, and neither is fixable by a
+commit.
