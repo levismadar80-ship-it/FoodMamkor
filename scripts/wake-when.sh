@@ -4,29 +4,50 @@
 # WHAT THIS IS
 #   Each parked card carries one condition that, when it becomes true, means the
 #   gate holding it has opened and the card returns to the queue. This runs those
-#   conditions and prints OPEN / parked. That is all it does.
+#   conditions and prints a verdict. That is all it does.
 #
 # WHY IT IS NOT IN scripts/checks/
 #   run-all.sh auto-discovers *executable* *.sh directly in scripts/checks/ and
 #   runs every one of them (see its discovery block). This is a REPORTER, not a
 #   guard: it must never influence a PR's verdict. There are two ways to keep it
 #   out of the dispatcher, and only one of them is honest:
-#     - drop it in scripts/checks/ without +x → run-all.sh prints
+#     - drop it in scripts/checks/ without +x -> run-all.sh prints
 #       "NOTICE ... is not executable — not run. (chmod +x to enable)" on EVERY
 #       run, forever. That notice exists to catch a guard that silently lost its
 #       +x bit (the MEH-1030 self-disabling class). A file deliberately parked in
 #       that state trains the reader to ignore the notice, which disarms it.
-#     - keep it out of the directory entirely. ← this
-#   So scripts/checks/wake-when.sh is deliberately NOT the path used.
+#     - keep it out of the directory entirely. <- this
+#
+# THE FOUR VERDICTS, and why SATISFIED is not OPEN
+#   OPEN       the gate opened; the card goes back in the queue.
+#   parked     the gate is still shut. The number moves, so you can see it move.
+#   SATISFIED  the condition is permanently true and there is nothing to do.
+#              Kept for audit, counted separately. Before drain 14 this printed
+#              as OPEN forever (MEH-1915 s1), and a row that is OPEN on every run
+#              teaches the reader that OPEN means nothing — the same disarming
+#              this file refuses in the +x NOTICE case above.
+#   SKIP       no condition can be expressed. Each SKIP names WHY, specifically.
+#              "Sapir has to decide" is not a reason; "Sapir has to run X, which
+#              leaves no trace in the repo" is.
+#
+# ON THE SKIP REASONS (drain 14, 01/09)
+#   All nine SKIP rows were re-derived from the cards. SEVEN were wrong or stale:
+#   two cards' gates had already opened, one card was Done, one pair was already
+#   covered by a check in this very file, and three reasons named the wrong gate.
+#   A park reason is a claim of fact and rots exactly like any other (rule 34).
+#   Whatever is left in a SKIP row below has been read at the card this week.
 #
 # EXIT CODE
 #   Always 0 — including when checks are OPEN, and including when the control
 #   fails. An OPEN result is information, not a failure; nothing here should ever
-#   be able to red a PR.
+#   be able to red a PR. --self-test is the one exception: it exits non-zero when
+#   the classifier fails to discriminate, because a reporter whose classifier is
+#   broken is worse than no reporter.
 #
 # USAGE
-#   bash scripts/wake-when.sh            # against origin/staging
+#   bash scripts/wake-when.sh              # against origin/staging
 #   REF=origin/main bash scripts/wake-when.sh
+#   bash scripts/wake-when.sh --self-test  # prove the classifier discriminates
 set -uo pipefail
 
 REF="${REF:-origin/staging}"
@@ -38,6 +59,131 @@ cd "$(git rev-parse --show-toplevel)" || exit 0
 # CSS violation in a shell script. False positive, annotated rather than
 # allowlisted — .claude/hooks/rtl-allowlist.txt is CC-deny.
 PR_CHECKS_WF=".github/workflows/pr-checks.yml"   # rtl-ok: a filename, not a CSS class
+
+SNAP="frontend/e2e/visual/parity.spec.ts-snapshots/producer-detail-desktop-linux.png"
+
+# ---------------------------------------------------------------------------
+# count — occurrences of a token in one path at $REF. Empty result normalises
+# to 0 at the call site, never here: a caller that cannot tell "absent" from
+# "grep failed" is the bug this file's control exists to catch.
+# ---------------------------------------------------------------------------
+count() { git grep -c "$1" "$REF" -- "$2" 2>/dev/null | sed 's/.*://' | head -1 || true; }
+
+# ---------------------------------------------------------------------------
+# verdict — THE CLASSIFIER. Every row's OPEN/parked decision goes through here,
+# so --self-test below exercises the real implementation and not a copy of it
+# (.claude/rules/testing.md: "Exercise the real implementation, never a copy").
+# ---------------------------------------------------------------------------
+verdict() {   # <op: eq|ge|lt> <now> <threshold>  ->  prints open | parked
+  case "$1" in
+    eq) if [ "$2" -eq "$3" ]; then echo open; else echo parked; fi ;;
+    ge) if [ "$2" -ge "$3" ]; then echo open; else echo parked; fi ;;
+    lt) if [ "$2" -lt "$3" ]; then echo open; else echo parked; fi ;;
+    *)  echo "verdict: unknown operator '$1'" >&2; return 2 ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# baseline_drift — MEH-1694's own <precondition_hard>, made runnable.
+#
+# Prints the number of commits touching the producer-detail surface since the
+# last commit that WROTE the desktop baseline. 0 means Sapir's vrt-update
+# dispatch is current and part B may start.
+#
+# Prints -1, never 0, when it cannot measure. That distinction is the whole
+# point: in a SHALLOW clone `git log -- <path>` reports the graft commit as
+# having written every file (MEH-1519), the range is then empty, and the row
+# would read "0 -> baselines fresh" — the reassuring answer, produced by the
+# probe being blind. -1 is surfaced as VOID by the caller.
+# ---------------------------------------------------------------------------
+baseline_drift() {
+  [ "$(git rev-parse --is-shallow-repository)" = "false" ] || { echo -1; return; }
+  local sha
+  sha=$(git log -1 --format=%H "$REF" -- "$SNAP" 2>/dev/null)
+  [ -n "$sha" ] || { echo -1; return; }
+  git log --oneline "$sha..$REF" -- \
+    'frontend/app/[locale]/producer/[id]' \
+    frontend/components/public \
+    frontend/messages/he.json 2>/dev/null | wc -l | tr -d ' '
+}
+
+# ---------------------------------------------------------------------------
+# --self-test — run it FIRST when changing anything here. If the classifier
+# cannot sort a correct state from a broken one, nothing this file reports
+# afterwards is worth reading (MEH-1619).
+#
+# Six synthetic cases pin the three operators in BOTH directions. Case 7 proves
+# an unknown operator fails loudly rather than defaulting to a verdict. Cases
+# 8-10 are anchored to REAL repo state, per MEH-1909: a suite built only from
+# invented shapes passes against shapes the repo does not use.
+# ---------------------------------------------------------------------------
+self_test() {
+  local fails=0 ran=0
+  chk() {  # <label> <expected> <actual>
+    ran=$((ran + 1))
+    if [ "$2" = "$3" ]; then
+      printf '  ok    %-46s -> %s\n' "$1" "$3"
+    else
+      printf '  FAIL  %-46s -> %s (expected %s)\n' "$1" "$3" "$2"; fails=$((fails + 1))
+    fi
+  }
+
+  echo "wake-when --self-test"
+  echo
+  echo "  synthetic — each operator in both directions:"
+  chk "eq  now=0 thr=0"  open   "$(verdict eq 0 0)"
+  chk "eq  now=1 thr=0"  parked "$(verdict eq 1 0)"
+  chk "ge  now=1 thr=1"  open   "$(verdict ge 1 1)"
+  chk "ge  now=0 thr=1"  parked "$(verdict ge 0 1)"
+  chk "lt  now=3 thr=4"  open   "$(verdict lt 3 4)"
+  chk "lt  now=4 thr=4"  parked "$(verdict lt 4 4)"
+
+  echo
+  echo "  an unknown operator must fail, not pick a verdict:"
+  local rc; verdict zz 1 1 >/dev/null 2>&1; rc=$?
+  chk "unknown operator exits 2" 2 "$rc"
+
+  echo
+  echo "  anchored to real repo state at $REF (MEH-1909 — synthetic shapes are not enough):"
+  local present absent drift
+  present=$(count 'class Producer' backend/app/models/models.py); present=${present:-0}
+  chk "count() finds a token that IS in models.py" open "$(verdict ge "$present" 1)"
+  absent=$(count 'zzz_wake_when_absent_token_xyz' backend/app/models/models.py); absent=${absent:-0}
+  chk "count() returns 0 for a token that is NOT"  parked "$(verdict ge "$absent" 1)"
+  # baseline_drift needs TWO cases, and the second is the load-bearing one.
+  #
+  # "returns >= 0" is NOT a check: a blind probe that answers 0 satisfies it, and
+  # 0 is precisely the reassuring value (= "baselines fresh, part B may start").
+  # That hole was found by breaking the sentinel and watching this suite stay
+  # green while the real run printed OPEN now=0. So:
+  #   (1) the sentinel path is exercised on a ref that genuinely cannot resolve;
+  #   (2) the measured value is cross-checked against a SECOND, independent
+  #       instrument over the same range. A probe that has gone blind returns 0
+  #       while the cross-check returns the true count, and they disagree.
+  local unresolvable
+  unresolvable=$(REF=refs/heads/zzz-wake-when-no-such-ref baseline_drift)
+  chk "baseline_drift() -> -1 when it cannot measure" "-1" "$unresolvable"
+
+  local drift sha cross
+  drift=$(baseline_drift)
+  sha=$(git log -1 --format=%H "$REF" -- "$SNAP" 2>/dev/null)
+  cross=$(git rev-list --count "$sha..$REF" -- \
+    'frontend/app/[locale]/producer/[id]' \
+    frontend/components/public \
+    frontend/messages/he.json 2>/dev/null)
+  chk "baseline_drift() agrees with an independent count" "$cross" "$drift"
+
+  echo
+  if [ "$fails" -gt 0 ]; then
+    echo "self-test FAILED — $fails of $ran cases. The classifier does not discriminate;"
+    echo "every verdict this file prints is void until this passes."
+    return 1
+  fi
+  echo "self-test ok — $ran cases, all discriminating."
+  return 0
+}
+
+if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
 
 printf '\nWAKE-WHEN — parked-card gate checks against %s\n' "$REF"
 printf 'as-of %s\n\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -54,7 +200,7 @@ printf 'as-of %s\n\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 control_ok=1
 git rev-parse --verify --quiet "$REF" >/dev/null || control_ok=0
 if [ "$control_ok" = 1 ]; then
-  sentinel=$(git grep -c 'class Producer' "$REF" -- backend/app/models/models.py 2>/dev/null | sed 's/.*://' | head -1)
+  sentinel=$(count 'class Producer' backend/app/models/models.py)
   [ -n "${sentinel:-}" ] && [ "${sentinel:-0}" -ge 1 ] || control_ok=0
 fi
 
@@ -71,63 +217,112 @@ fi
 echo "  control: ok ($REF resolves; sentinel token found)"
 echo
 
-open=0; parked=0; skipped=0
+open=0; parked=0; satisfied=0; skipped=0; void=0
 
-count() { git grep -c "$1" "$REF" -- "$2" 2>/dev/null | sed 's/.*://' | head -1 || true; }
-
-report() {   # <card> <desc> <now> <is_open>
-  if [ "$4" = 1 ]; then
-    printf '  OPEN    %-16s %-34s now=%s\n' "$1" "$2" "$3"; open=$((open + 1))
+report() {   # <card> <desc> <now> <open|parked>
+  if [ "$4" = open ]; then
+    printf '  OPEN    %-16s %-38s now=%s\n' "$1" "$2" "$3"; open=$((open + 1))
   else
-    printf '  parked  %-16s %-34s now=%s\n' "$1" "$2" "$3"; parked=$((parked + 1))
+    printf '  parked  %-16s %-38s now=%s\n' "$1" "$2" "$3"; parked=$((parked + 1))
   fi
 }
 
 v=$(count 'LEGACY(2026-10-01, MEH-1855)' backend/app/models/models.py); v=${v:-0}
-report "MEH-1855 ch2" "marker gone (wake when 0)"        "$v" "$([ "$v" -eq 0 ] && echo 1 || echo 0)"
+report "MEH-1855 ch2" "marker gone (wake when 0)"         "$v" "$(verdict eq "$v" 0)"
 
 v=$(count 'rejection_reason_code' backend/app/models/models.py); v=${v:-0}
-report "MEH-2210 A"   "column present (wake when >=1)"   "$v" "$([ "$v" -ge 1 ] && echo 1 || echo 0)"
+report "MEH-2210 A"   "column present (wake when >=1)"    "$v" "$(verdict ge "$v" 1)"
+
+# B and C are YELLOW end-to-end with self-QA + auto-merge on green (card §4,
+# "Chunks B, C: YELLOW end-to-end"). They never needed a per-chunk go — only
+# chunk A is the RED gate. So B/C wake on exactly the condition above, and the
+# SKIP row that used to carry them was covered by a check in this same file.
+report "MEH-2210 B/C" "waits on chunk A, same signal"     "$v" "$(verdict ge "$v" 1)"
 
 v=$(count 'the job ran and did not pass' "$PR_CHECKS_WF"); v=${v:-0}
-report "MEH-1907 F-9" "F-9 string present (wake >=1)"    "$v" "$([ "$v" -ge 1 ] && echo 1 || echo 0)"
+report "MEH-1907 F-9" "F-9 string present (wake >=1)"     "$v" "$(verdict ge "$v" 1)"
 
 v=$(count 'does not have' .github/workflows/vrt-update.yml); v=${v:-0}
-report "MEH-2224"     "false claim gone (wake when 0)"   "$v" "$([ "$v" -eq 0 ] && echo 1 || echo 0)"
+report "MEH-2224"     "false claim gone (wake when 0)"    "$v" "$(verdict eq "$v" 0)"
 
 v=$(count 'MEH-' .github/pull_request_template.md); v=${v:-0}
-report "MEH-2167"     "fewer MEH ids (wake when <4)"     "$v" "$([ "$v" -lt 4 ] && echo 1 || echo 0)"
+report "MEH-2167"     "fewer MEH ids (wake when <4)"      "$v" "$(verdict lt "$v" 4)"
 
-if git cat-file -e "$REF:.github/CODEOWNERS" 2>/dev/null; then v=1; else v=0; fi
-report "MEH-1915 s1"  "CODEOWNERS on base (wake when 1)" "$v" "$v"
+# MEH-1694 part B — the card's own <precondition_hard>, run rather than quoted.
+v=$(baseline_drift)
+if [ "$v" -lt 0 ] 2>/dev/null; then
+  printf '  VOID    %-16s %-38s %s\n' "MEH-1694 B" "baseline freshness UNMEASURABLE" \
+    "(shallow clone — run: git fetch --unshallow origin)"
+  void=$((void + 1))
+else
+  report "MEH-1694 B"  "surface commits since baseline (0)" "$v" "$(verdict eq "$v" 0)"
+fi
 
 echo
-echo "  Linear-status checks — real conditions, but they need the API, not git:"
-echo "    SKIP    MEH-2189         wake when MEH-2168 is Done"
-echo "    SKIP    MEH-1249         wake when MEH-1909 is Done"
-skipped=$((skipped + 2))
+echo "  Satisfied — condition permanently met, retained for audit, NOT open work:"
+if git cat-file -e "$REF:.github/CODEOWNERS" 2>/dev/null; then
+  echo "    SATISFIED  MEH-1915 s1     CODEOWNERS is on the base branch (PR #3246, 9bb90379)."
+  echo "                               Measured drain 13: the file REQUESTS a reviewer, it does"
+  echo "                               not REQUIRE one — #3247 matched '*' and merged with zero"
+  echo "                               reviews. Steps 2-4 (the ruleset) are Sapir's and are not"
+  echo "                               a repo state, so nothing here can ever report on them."
+  satisfied=$((satisfied + 1))
+else
+  echo "    REGRESSED  MEH-1915 s1     CODEOWNERS is GONE from $REF — it was on the base."
+  open=$((open + 1))
+fi
 
 # ---------------------------------------------------------------------------
-# Gates that are decisions, not states. Listed so the set stays complete — a
-# reporter that silently omits them reads as "everything is covered".
+# Gates that genuinely cannot be expressed. Listed so the set stays complete —
+# a reporter that silently omits them reads as "everything is covered".
+#
+# Each line names the ACTION that would open it and why it leaves no trace.
 # Deliberately NOT given invented conditions: the two candidates rejected on
 # 01/09 (a token already present for another reason, and a string whose real
 # spelling differed by one space) are what an unrun check looks like.
 # ---------------------------------------------------------------------------
 echo
-echo "  Not expressible as a check — a ruling, not a state:"
-for c in "MEH-1981      lawyer" \
-         "MEH-1938      per-chunk go" \
-         "MEH-2210 B/C  per-chunk go" \
-         "MEH-1508      per-chunk go" \
-         "MEH-2087      brand ruling" \
-         "MEH-1694      dispatch on the right ref" \
-         "MEH-2226      hooks write + bot command"; do
-  echo "    SKIP    $c"
-  skipped=$((skipped + 1))
-done
+echo "  Not expressible — an action outside the repo, named:"
+cat <<'SKIPS'
+    SKIP    MEH-2189        Sapir runs `seed_demo_producers --confirm` on Railway.
+                            NOT "MEH-2168 Done" — that was wrong; the card says
+                            it has no blocker. The code merged (PR #3115); what
+                            is missing is a seed run and one green e2e signal,
+                            and a Railway run writes nothing to this repo.
+    SKIP    MEH-1508 ch3ב/ג Sapir's RATIFY/FIX verdict on the non-deterministic
+                            home VRT diff (MEH-1519/1531), plus DEMO_ADMIN_PASSWORD
+                            on Railway. NOT "per-chunk go" — the 09/08 ruling grants
+                            chunk-by-chunk authority; `needs-sapir` is on this card
+                            for those two ACTIONS. ch3א already shipped (#3191/#3194).
+    SKIP    MEH-1938 ch5    Contract/RED needs its own go + full WAIT (card §5 of the
+                            13/08 authority). Chunks 2-4b and B1-B6 got a bundled go
+                            with self-merge and have merged. Note the stated blocker
+                            on ch5 — MEH-1909 — closed 16/08, so the ask is unblocked.
+    SKIP    MEH-2226        Sapir posts two @dependabot commands in the GitHub UI.
+                            NOT "hooks write" — the card's own Phase 0 (30/08) put
+                            the mangling OUTSIDE the repo (harness/MCP write path,
+                            controls both ways), so no .claude/hooks/ edit is needed
+                            or possible. A GitHub comment leaves no repo trace.
+SKIPS
+skipped=4
 
-printf '\nwake-when: %d OPEN · %d parked · %d skipped. Reporter only — exit 0.\n' \
-  "$open" "$parked" "$skipped"
-echo "Anything OPEN goes back in the queue (MEH-2227 §4ה)."
+echo
+echo "  Retired this run (drain 14) — the gate opened or the card closed:"
+cat <<'RETIRED'
+    RETIRED MEH-1249        Gate was "MEH-1909 open". It closed 16/08. Caught by this
+                            file's first run after 16 days and three judgement sweeps.
+    RETIRED MEH-1981        Gate was "lawyer". Sapir's 30/08 split scoped the card to
+                            what CC can do WITHOUT one (steps 0-3); the lawyer half is
+                            a separate post-launch card and is no longer a DoD line.
+                            Its own two prerequisites (#2743, #2746) are both on staging.
+    RETIRED MEH-2087        Card is Done (31/08 22:10Z) and its single remaining CC task
+                            is verified: ProducerDetailOut(ProducerListOut) inherits
+                            availability_state + vacation_until (schemas.py:2248/2250,
+                            :2429), and the frontend consumes them.
+RETIRED
+
+printf '\nwake-when: %d OPEN · %d parked · %d satisfied · %d skipped · %d void. Reporter only — exit 0.\n' \
+  "$open" "$parked" "$satisfied" "$skipped" "$void"
+echo "Anything OPEN goes back in the queue (MEH-2227 §4ה). VOID means the probe could"
+echo "not see — treat it as unknown, never as parked."
 exit 0
