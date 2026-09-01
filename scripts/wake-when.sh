@@ -359,6 +359,44 @@ report "MEH-2167"     "fewer MEH ids (wake when <4)"      "$v" "$(verdict lt "$v
 v=$(count 'gov\.il' .claude/settings.json); v=${v:-0}
 report "MEH-1981 s0/s2" "gov.il in WebFetch allowlist (>=1)" "$v" "$(verdict ge "$v" 1)"
 
+# ---------------------------------------------------------------------------
+# Three rows added drain 17, and the reason they are rows is the finding.
+#
+# All three cards were being carried as "Sapir does something outside the repo"
+# — the SKIP shape. They are not. Each one's gate is a line in a file on this
+# branch, so each is a CHECK, and the difference matters: a SKIP row is a note
+# nobody can act on, while these flip on their own the moment Sapir's edit
+# lands, with no session having to notice.
+# ---------------------------------------------------------------------------
+
+# MEH-1754 — the resolver itself landed 02/08 (#2514) and 12/08 (#2832); verified
+# drain 17 across all seven SSR entity routes (each carries the 404 check and a
+# throw; none returns a bare null). The card's ONLY open item is item 5, and its
+# gate is two `NEXT_PUBLIC_API_URL` lines in pr-checks.yml — the `Frontend build`
+# and `AI artifact scan` steps, both of which run their own `npm run build`.
+# Measured drain 17: pr-checks.yml carries ZERO occurrences (e2e.yml and
+# vrt-update.yml have it; the file that gates the PR does not).
+v=$(count 'NEXT_PUBLIC_API_URL' "$PR_CHECKS_WF"); v=${v:-0}
+report "MEH-1754 item5" "NEXT_PUBLIC_API_URL in pr-checks (>=1)" "$v" "$(verdict ge "$v" 1)"
+
+# MEH-2184 — the qa-artifacts size cap's pathspec is root-only, so the gate is
+# blind to frontend/qa-artifacts/. Not hypothetical: Playwright runs with
+# working-directory: frontend, so a spec writing the relative path
+# "qa-artifacts/X" lands under frontend/ — the blind half is the DEFAULT write
+# target. Measured drain 17: 495 tracked files / 14.8 MB the cap cannot see.
+# Wakes when the pathspec stops being root-only (the patch adds a glob).
+v=$(count 'qa-artifacts/\*\*' "$PR_CHECKS_WF"); v=${v:-0}
+report "MEH-2184"      "cap pathspec globbed (wake >=1)"    "$v" "$(verdict ge "$v" 1)"
+
+# MEH-2043 — PR 1 (self-host the StoryCardCanvas fonts) already landed: the
+# component carries no gstatic reference and next.config.js says so at :90-105.
+# What remains is PR 2, dropping the CSP entry, which next.config.js itself
+# defers "until the fix has been checked with the network blocked". That is a
+# security change and waits for a go; the row exists so the card stops reading
+# as "fonts still fetch from Google".
+v=$(count 'fonts\.gstatic\.com' frontend/next.config.js); v=${v:-0}
+report "MEH-2043 pr2"  "gstatic gone from CSP (wake when 0)" "$v" "$(verdict eq "$v" 0)"
+
 # MEH-1694 part B — the card's own <precondition_hard>, run rather than quoted.
 v=$(baseline_drift)
 if [ "$v" -lt 0 ] 2>/dev/null; then
@@ -474,6 +512,15 @@ unstarted_rows=$(cat <<'UNSTARTED'
                             staging, and a register spec against staging is MEH-1502
                             self-pollution). What is stale is the TITLE, which still reads
                             "[חסום ע"י MEH-1906]" — and a title is what a sweep sorts on.
+    UNSTART MEH-2237        17-gate CI reliability audit — Phase 0, read-only, a document
+                            rather than code. High, cc-queue, no gate: nothing blocks it
+                            and nobody is waiting on anyone. Not reached in drain 17,
+                            which is why it is here rather than in a session summary.
+                            The evidence it needs was gathered along the way and is
+                            already in the log: F-1 (nine legs ran, zero read), the
+                            cancelled-run guard, skip-green, the aggregator-duration
+                            misread, MEH-1514's height-not-content VRT, and MEH-2184's
+                            blindness measured in this same run.
 UNSTARTED
 )
 printf '%s\n' "$unstarted_rows"
