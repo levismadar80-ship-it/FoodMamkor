@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `.claude/hooks/check-artifact-location.sh` exists AND is registered in `.claude/settings.json`.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # MEH-449 — `.claude/settings.json` hook registration (Sapir-apply)
 
 Layer 4 of the MEH-449 AI-artifact leak defense is the

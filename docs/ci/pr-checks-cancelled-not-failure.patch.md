@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `is_cancelled` present x3 in `pr-checks.yml`, and observed firing.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # `CI gate` — a cancelled job is not a failed job (MEH-1907)
 
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply this
