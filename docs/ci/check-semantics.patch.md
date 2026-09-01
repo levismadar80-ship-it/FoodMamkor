@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `MEH-1604` x3 in `e2e.yml` + x1 in `playwright.config.ts`; the `executed=` marker was observed FIRING in run 33483882305.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # Check semantics — YAML patch ל-`e2e.yml` + `playwright.config.ts` (MEH-1604)
 
 > **הבלוקים כאן מיועדים לספיר להדבקה ידנית.** `.github/workflows/**` הוא CC-deny

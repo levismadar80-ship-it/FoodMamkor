@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: the live hook is byte-identical to the 144-line replacement this file proposes (diff = trailing newline only), and `check-bash-safety.selftest.sh` exists and PASSES, including the C1/C2 cases.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # `check-bash-safety.sh` — patch for three holes in the Bash layer (MEH-1500 Phase C)
 
 > **הבלוקים כאן מיועדים לספיר להחלה ידנית.** `.claude/hooks/**` הוא CC-deny
