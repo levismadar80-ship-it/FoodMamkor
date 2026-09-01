@@ -1,140 +1,132 @@
-# Session state — 2026-09-01, drain יז' (session `0113JYkWvGYY…`)
+# Session state — 2026-09-01 night, drain יח' (session `0113JYkWvGYY…`)
 
-**One line:** the brief changed twice mid-window; of the twelve items the work
-briefs named, **eight were already done or empty**, and the labeling pass that
-replaced them stopped after two writes when Sapir's edits began landing on the
-same cards I was reading.
-
----
-
-## STEP 0 — clean, and this time the instrument was verified first
-
-```
-git fetch --unshallow origin   →  shallow=false
-bash scripts/wake-when.sh --self-test   →  17/17, all discriminating
-bash scripts/wake-when.sh
-  0 OPEN · 8 parked · 1 satisfied · 6 skipped · 1 unstarted · 0 void
-  control: ok · currency: ok (origin/staging matches origin)
-```
-
-The currency control added yesterday reported `ok` — the first run where the
-staleness half of STEP 0 was actually checked rather than assumed.
-
-**T11 / OPEN work: none.**
+**One line:** the MEH-2189 smoke spec ran against real data for the first time —
+**11 passed, 1 failed** — and both sandbox blockers that had made that impossible
+turned out to be already-documented and clearable without touching repo config.
 
 ---
 
-## The refutation sweep — 8 of 12 briefed items
+## The headline: 8 demo pages are LIVE, and the spec finally had something to measure
 
-Every one measured with a single command before any card was read. **Not one
-announced itself; each read as live work in the brief.**
+Sapir seeded staging tonight (`Inserted 8 of 8`, then `Inserted 0 of 8` on a second
+`--confirm` — idempotency proven). Independently verified before running anything:
 
-| item | verdict | evidence |
-|---|---|---|
-| **MEH-2122** (OTP silent failure) | ❌ **refuted ×2** | Chunk A merged 18/08 — `b43b6176` (#3007), guard test `tests/test_meh2122_otp_failure_visibility.py` on staging. Card is now labelled **`post-launch`** = out of scope by the brief's own rule. Its own banner warns the orchestrator routed it by the stale title; that happened again. |
-| **MEH-1754** (resolver → notFound) | ❌ **refuted** | Landed 02/08 (#2514) + 12/08 (#2832). Verified across **all seven** SSR entity routes: each has `status === 404` + a `throw`, **none returns a bare `null`**. Only item 5 (env fail-fast) is open. |
-| **MEH-2192** (GEO foundation) | ❌ **refuted** | `llms.txt` exists · `buildOrganizationNode()` carries `description` + `sameAs` (#3199) · `/about` has `alternates` + `about.updated_at = "עודכן: אוגוסט 2026"` rendered at `AboutClient.jsx:242`. #3123 + #3199. The one AC left (`grep = 1` site-wide) the card itself proves impossible. |
-| **MEH-2119** (3 × BaseHTTPMiddleware) | ❌ **refuted** | `grep -c "class.*BaseHTTPMiddleware" middleware.py` → **0**. MEH-1906 converted ours to pure ASGI. **Three → one**, and the one left is vendor code (`SlowAPIMiddleware`, `middleware.py:277`). |
-| **MEH-2043** (fonts from gstatic) | ❌ **refuted** | PR 1 shipped: `StoryCardCanvas.jsx` has **no** gstatic reference; `next.config.js:90-105` documents the repoint. Only the CSP tightening remains — which waits for a go anyway. |
-| **MEH-2231/2232** (duplicate) | ✅ **resolved, verified** | MEH-2232 is `Duplicate`, `canceledAt 2026-08-31T06:14:18Z`. Confirmed, not assumed. |
-| **MEH-2239** (one-line PNG fix) | ❌ **not one line** | **Three** `page.screenshot` PNG calls in that one file (`:161`, `:176`, `:265`), across **two** directories, and **no spec in the repo compresses**. Left alone per instruction. |
-| **T11** | — | 0 OPEN. |
-
-**Premise held:** MEH-2079 (nothing prunes), MEH-2080 (no age field anywhere),
-MEH-2184 (proven, below), MEH-2237 (no audit doc exists).
-
----
-
-## The one real finding — MEH-2184 is worse than the card says
-
-The qa-artifacts size cap uses a root-anchored pathspec, so it never matched
-`frontend/qa-artifacts/`. Proven with git, not argued:
-
-```
-git ls-files -- qa-artifacts/           → 1620 files,  0 under frontend/
-git ls-files -- frontend/qa-artifacts/  →  495 files
-git ls-files -- ':(glob)**/qa-artifacts/**' → 2115   (= 1620 + 495, exact union)
-```
-
-**14,806,301 bytes (≈14.8 MB) already committed in the blind half — against a
-2 MB per-PR cap.**
-
-> **And it is not "a PR could evade the gate".** `e2e.yml` runs Playwright with
-> `working-directory: frontend`, so a spec writing a relative path lands in the
-> blind half. `28-register-success-state.spec.ts:265` writes
-> `qa-artifacts/MEH-2138f/…` and that directory exists **only** at
-> `frontend/qa-artifacts/MEH-2138f/`. **The blind half is the default output
-> location of the thing the cap exists to measure.**
-
-Patch for Sapir: `docs/ci/meh-2184-qa-artifacts-pathspec.patch.md`.
-
----
-
-## Three cards were being tracked in the wrong shape
-
-All three sat in wake-when's `SKIP` list — "an action outside the repo" — while
-each one's gate is **a line in a file on this branch**. Now checked rows (#3263):
-
-| card | gate | today |
-|---|---|---|
-| MEH-1754 item5 | `NEXT_PUBLIC_API_URL` in `pr-checks.yml` | `0` (e2e.yml has 9; the gating file has none) |
-| MEH-2184 | cap pathspec globbed | `0` |
-| MEH-2043 pr2 | `fonts.gstatic.com` out of `next.config.js` | `2` |
-
-MEH-2237 became the second `UNSTART`.
-
----
-
-## The labeling pass — started, stopped after two writes, and why
-
-| card | label | the sentence that decided it |
-|---|---|---|
-| **MEH-1249** | `blocked-needs-sapir` | *"השאלה שמחכה להכרעה: האם ההמרה מכסה את 1,074 השורות שאושרו ב-05/08 … או שהמטריצה מתרעננת קודם?"* |
-| **MEH-1976** | `post-launch` | *"📌 01/09 — הכרעת ספיר: post-launch … אין עבודת CC נותרת"* |
-
-> **⚠️ MEH-1976 is a self-correction, and it is the reason the pass stopped.**
-> I first wrote `blocked-needs-sapir` on it, from a body I had read earlier in
-> this same window. Between that read and that write, **Sapir added a ruling
-> banner to the card** moving it to `post-launch`. My label contradicted her
-> ruling and was corrected within the minute.
->
-> **The lesson is procedural, not incidental:** the cards are being edited live,
-> so a body read thirty minutes ago is exactly the "stale artifact carrying
-> inherited authority" this repo has a rule about. Continuing the pass from my
-> earlier reads of MEH-2189 / MEH-2219 / MEH-1981 would have repeated the
-> mistake three more times. **Each card needs a fresh read immediately before
-> its write — that is a full window's work and it is where I stopped.**
-
-**Not written, and why:** MEH-2189, MEH-2219, MEH-1981, MEH-1938, MEH-2210,
-MEH-2167 (bodies read too early, or not read at all). **Confirmed correct with
-no write:** MEH-2168, MEH-1904, MEH-1949, MEH-784, MEH-1517, MEH-1615, MEH-1244.
-**Backlog (~60): not reached.**
-
-### Counts, so far
-
-`cc-queue 0 · needs-sapir 0 · blocked-needs-sapir 1 · not-cc 0 · post-launch 1 ·
-already-done reported 8 · skipped/not-written 6 · confirmed-no-write 7 ·
-Backlog not reached ~60`
-
----
-
-## Next 3
-
-1. **Sapir** — apply `docs/ci/meh-2184-qa-artifacts-pathspec.patch.md`. The gate
-   has been reporting green on a diff it never looked at.
-2. **CC, fresh window** — finish the labeling pass, re-reading each body
-   immediately before its write. 13 Todo + ~60 Backlog remain.
-3. **Sapir** — MEH-2219 chunk 2 still contradicts ADR-003 as specified (drain
-   טז' finding, unchanged).
-
-## PRs
-
-| PR | What |
+| probe | result |
 |---|---|
-| #3263 | `scripts/wake-when.sh` — three gate rows + MEH-2237 `UNSTART` |
-| (this) | the MEH-2184 patch for Sapir + STATE + logs |
+| all 8 archetype slugs, `GET /api/producers/by-slug/<slug>` | **`200` ×8** |
+| control: `zzz-no-such-producer` | **`404`** |
+
+The control matters: without it a `200` proves only that something answered.
+
+### The run
+
+```
+target: https://staging.mehamakor.online   (project: desktop)
+[MEH-2189 fixture gate] seeded=true (GET /api/producers/by-slug/sdot-zahav -> 200)
+
+  11 passed (1.3m)
+   1 failed — beacon :: whatsapp-click fires on wa.me items and on nothing else
+```
+
+**All eight matrix rows passed, including the edge.** `maadaniyat-ben-shemen`
+(phone-primary, `phone=NULL`) renders **no CTA** — not a dead `tel:` link. That was
+the card's STOP condition (e) and **it did not fire**. `breakpoints` and
+`contact sheet` passed too.
+
+---
+
+## The one failure is a spec gap, not a product bug — and it was classified, not guessed
+
+It failed on the test's **own CONTROL step**: no *visible* `question-link` with a
+`wa.me` href on `sdot-zahav`. Measured against the live HTML:
+
+```
+sdot-zahav:  question-link ×2 · wa.me ×9 · primary-cta ×2
+<button aria-expanded="false" data-testid="quick-answer-toggle" …>
+```
+
+The chips **exist and are correct** — `<a href="https://wa.me/…" data-testid="question-link">`
+— but sit behind a disclosure that is **collapsed by default**. The spec clicks
+without opening it. That is a **test-bug** under MEH-1249's own test-bug/app-bug
+distinction, and it is the CLAUDE.md 5-state rule exactly: **open/closed for every reveal.**
+
+> ### 🔴 And a second finding: one of the 11 "passes" is green for two reasons
+>
+> `MEH-2154 :: non-whatsapp-primary pages carry zero wa.me links in the question chips`
+> passed. But `beit-habad-sivan` (email-primary) has **`question-link ×0`** — there
+> are no chips at all. The assertion passes because nothing is there, not because
+> what is there is right. **That is `testing.md`'s "green with two possible causes",
+> and it is currently counted as one of the 11.**
+>
+> Whether an email-primary page *should* carry channel-aware `mailto:` chips is a
+> product question. **Not decided here.**
+
+**Zero component changes. Zero spec changes.** Both fixes deserve a focused pass.
+
+---
+
+## Both sandbox blockers cleared — documented, and with no repo config touched
+
+| blocker | fix |
+|---|---|
+| pinned `@playwright/test` resolves `chromium_headless_shell-1234`; image carries **1194** (the MEH-2168 A′ blocker) | `executablePath` → `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` |
+| every `page.goto` → **`net::ERR_CONNECTION_RESET`** | `--ssl-version-max=tls1.2` (`testing.md`, MEH-938/942, re-confirmed MEH-2118) |
+
+**The discriminator that proved it was the browser and not staging:** the spec's
+fixture gate uses Playwright's *request* context (Node, not Chromium) and reported
+`seeded=true (200)` **in the same run** where every browser navigation reset.
+
+Both overrides lived in a scratch file that was **not committed**.
+
+> **Contact sheet — a correction worth carrying.** The 16 `.webp` in
+> `frontend/qa-artifacts/meh-2189/` were **already tracked**; they landed in #3115
+> itself (`1144a656`). The spec writes **PNG only** (`:266`), so tonight's run
+> produced 16 fresh PNGs (2.5 MB) which were discarded per MEH-1156.
+> **The merged sheet therefore predates the seed and cannot depict the seeded
+> pages.** No new sheet was produced this window.
+
+---
+
+## STEP 0 lied to me, and the control said `ok` while it did
+
+STEP 0 was first run from a local base branch **two commits behind** its remote.
+The **old** script executed, printed **three fewer rows** than exist, and reported
+`currency: ok` — truthfully, because the *remote ref* was current. The **working
+tree** was not.
+
+```
+first   0 OPEN ·  8 parked · 1 satisfied · 6 skipped · 1 unstarted   ← stale script
+true    0 OPEN · 11 parked · 1 satisfied · 6 skipped · 2 unstarted
+```
+
+Named in `scripts/wake-when.sh`'s header (#3265). No code fix: a script cannot ask
+whether it is itself the newest version without trusting the tree it was read from.
+
+---
+
+## Per-item verdicts
+
+| item | verdict |
+|---|---|
+| **T0** MEH-2189 chunk C | ✅ **run** — 11/12, both findings on the card, only the spec DoD line ticked |
+| **T10** retire MEH-1976 SKIP row | ✅ **#3265** — post-launch card, row was noise; tally 6→5 derived |
+| **T11 / T4** wake-when OPEN | ✅ **empty** — 0 OPEN |
+| **T1** MEH-2192 | ⏸️ **refuted twice** (drains 17 + 18): `llms.txt` ✓ · `buildOrganizationNode` with `description`+`sameAs` ✓ · `about.updated_at` ✓. Nothing to ship. |
+| **T4/T2** MEH-2080 | 📊 **measured, parked**: `User` has **no** DOB/age column; `UserRegister` + `ProducerRegister` collect none. Both carry `terms_accepted: bool = False`, and `schemas.py:737-748` records that ToS consent **reaches no column at all** — that is the natural carrier and it is already half-built. Threshold = Sapir's ruling; a column = Alembic = not tonight. |
+| **T2** MEH-1754 · **T3** MEH-2079 · **T5–T9** | ⏸️ **not reached** |
+
+---
+
+## For Sapir, over coffee — her rulings queue, in priority order
+
+1. **MEH-2189** — the contact sheet on staging predates your seed. Do you want a
+   fresh one, and do you want the mobile pass now that 8 pages are live?
+2. **MEH-2189 / MEH-2154** — should an email-primary page carry channel-aware
+   `mailto:` question chips, or none? A passing test currently depends on the answer.
+3. **MEH-2080** — the minimum-age threshold, and whether it rides `terms_accepted`.
+4. **MEH-2219** ch2 vs ADR-003 (unchanged from drain טז').
+5. Apply `docs/ci/meh-2184-qa-artifacts-pathspec.patch.md`.
 
 ## Guards
 
-18 ran, **0 fail**, 4 warned — all four measured present on a clean
-`origin/staging`; none is this window's.
+18 ran, **0 fail**, 3 warned — all pre-existing on clean `origin/staging`.
