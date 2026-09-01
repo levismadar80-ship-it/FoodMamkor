@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `.claude/rules/workflow.md` carries “Amendment 2026-08-12 (MEH-1511)”.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # MEH-1511 — rule 23 amendment: automated self-QA substitutes for the human mobile-QA gate
 
 > ## ✅ APPLIED 2026-08-14 — this document is now a record, not a pending action
