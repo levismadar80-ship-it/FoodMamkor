@@ -45,6 +45,20 @@
 #   A park reason is a claim of fact and rots exactly like any other (rule 34).
 #   Whatever is left in a SKIP row below has been read at the card this week.
 #
+# WHAT `currency: ok` DOES NOT COVER — measured drain 18, on this file
+#   The control compares $REF against origin. It says nothing about the SCRIPT
+#   YOU ARE RUNNING. On 01/09 STEP 0 was executed from a local base branch two
+#   commits behind its remote: the OLD script ran, printed three fewer rows
+#   than exist, and reported `currency: ok` truthfully — because the remote ref
+#   WAS current; the working tree was not. The output looked entirely ordinary
+#   and was missing a quarter of the board.
+#
+#   No code fix, deliberately: a script cannot ask whether it is itself the
+#   newest version without trusting the same tree it was read from. The habit
+#   is the fix — fetch, hard-align the local base branch onto the fetched
+#   remote ref, and only THEN run STEP 0. Reading the numbers first and
+#   aligning afterwards is how that run happened.
+#
 # EXIT CODE
 #   Always 0 — including when checks are OPEN, and including when the control
 #   fails. An OPEN result is information, not a failure; nothing here should ever
@@ -456,17 +470,6 @@ skips=$(cat <<'SKIPS'
                             excludes archived is indistinguishable from that (MEH-1948).
                             Worse than a closed blocker: there is no entity whose
                             status can change, so this card cannot ever open by itself.
-    SKIP    MEH-1976        Sapir runs the export once, with the Cloudinary credentials.
-                            NOT "the script does not exist" — the card's own 11/08
-                            table says items 1 and 2 are missing and BOTH have shipped
-                            since (PR #2780): scripts/ops/cloudinary-export.py and
-                            docs/runbooks/MEDIA-RESTORE.md are on staging, item 3 landed
-                            in #2757. All three deliverables are code-complete and the
-                            self-test passes (17 assertions, exit 0). What does not
-                            exist is a BACKUP: no export has ever run, the sandbox holds
-                            none of the three env vars (--dry-run exits 3, config error),
-                            and the script writes outside the repo by design. A script
-                            that can take a backup is not a backup.
     SKIP    MEH-2226        Sapir posts two @dependabot commands in the GitHub UI.
                             NOT "hooks write" — the card's own Phase 0 (30/08) put
                             the mangling OUTSIDE the repo (harness/MCP write path,
