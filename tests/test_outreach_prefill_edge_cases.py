@@ -36,7 +36,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.models import OutreachLead
-from tests.conftest import auth_header, make_user
+from tests.conftest import auth_header, make_user, valid_producer_register_payload
 
 # ---------------------------------------------------------------------------
 # Fixtures lifted from the real outreach sheet, format preserved.
@@ -639,8 +639,6 @@ class TestRegistrationDoesNotCloseTheLoop:
     """
 
     def test_status_is_unchanged_by_a_producer_registration(self, client, db):
-        from tests.conftest import valid_producer_register_payload
-
         h = auth_header(_admin(db, "loop@example.com"))
         lead = _post(
             client, h, name="חוות הבדיקה", city="תל אביב", phone="050-1234567"

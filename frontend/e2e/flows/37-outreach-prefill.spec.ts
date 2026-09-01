@@ -464,31 +464,58 @@ test.describe("MEH-2238 — the owner opens the link", () => {
     }
   });
 
-  test.fail(
-    "FINDING-7: the «filled in for you» notice appears even when the token 404s",
+  /**
+   * FINDING-7, asserted as CURRENT behaviour — deliberately NOT `test.fail()`.
+   *
+   * `test.fail()` was the obvious shape here and it is the wrong one, because
+   * it does not discriminate: Playwright counts the test as "expected failure"
+   * if it fails for ANY reason. Once the bug is fixed the notice disappears,
+   * the positive assertion below is what breaks instead, and `test.fail()`
+   * reports the identical green — the very "one signal, two possible causes"
+   * defect .claude/rules/testing.md exists to prevent. It has no
+   * `strict=True` counterpart, so the Python xfails in
+   * `tests/test_outreach_prefill_edge_cases.py` cannot be mirrored literally.
+   *
+   * A plain assertion on the observed value gives the same guarantee `strict`
+   * gives on the backend: the moment someone fixes the handler, this test goes
+   * RED and names itself, which is the notification that the PR's Findings
+   * table is stale. Same shape as FINDING-5, -6 and -8 above.
+   *
+   * TO FIX THE UNDERLYING BUG, then DELETE this test (do not "repair" it):
+   * `RegisterProducerClient.jsx:486` — `.catch(() => setPrefillApplied(true))`
+   * sets the SAME flag on failure as on success, and the notice renders on
+   * `prefillToken && prefillApplied` (`:935`). A dead, expired or tampered link
+   * therefore greets the owner with a success notice over an empty form — and
+   * the notice sits above the frames, so she reads it on the ACCOUNT step,
+   * before any field could contradict it.
+   *
+   * _(Credit: the CI reviewer caught the `test.fail()` non-strictness on this
+   * PR. The first version of this test shipped the defect it was written to
+   * document.)_
+   */
+  test(
+    "FINDING-7 (current behaviour): the «filled in for you» notice appears even when the token 404s",
     async ({ browser }) => {
-      // `.catch(() => setPrefillApplied(true))` (RegisterProducerClient.jsx:486)
-      // sets the SAME flag on failure as on success, and the notice renders on
-      // `prefillToken && prefillApplied` (line 935). So a dead, expired or
-      // tampered link greets the owner with a success notice over an empty
-      // form — and the notice sits above the frames, so she sees it on the
-      // ACCOUNT step, before any field that could contradict it.
-      const { context, page } = await openPrefillAsGuest(browser, "z".repeat(43));
+      const { context, page, errors } = await openPrefillAsGuest(
+        browser,
+        "z".repeat(43),
+      );
       try {
         await page.getByTestId("register-preflight-start").click();
         await expect(page.getByTestId("register-frame-account")).toBeVisible({
           timeout: 15_000,
         });
-        // Positive half first, and it is not decoration: it pins WHY this
-        // test.fail fails. Without it, a typo'd selector would also "fail"
-        // and the finding would be recorded on no evidence at all.
-        const notice = page.locator("main").getByText(/מילא/);
-        await expect(notice).toHaveCount(1, { timeout: 15_000 });
-        // The assertion that SHOULD hold: no "we prefilled this for you"
-        // notice when nothing was prefilled. It does not hold today. Short
-        // timeout — the state is already settled by the line above, so the
-        // default 20s would just be 20s of waiting for a known answer.
-        await expect(notice).toHaveCount(0, { timeout: 1_000 });
+        // The lookup 404s (proven independently, so this test cannot be green
+        // because the token accidentally resolved).
+        const api = await page.request.get(
+          `/api/register/producer/prefill/${"z".repeat(43)}`,
+        );
+        expect(api.status()).toBe(404);
+        // …and the success notice is rendered anyway.
+        await expect(page.locator("main").getByText(/מילא/)).toHaveCount(1, {
+          timeout: 15_000,
+        });
+        assertNoConsoleErrors(errors);
       } finally {
         await context.close();
       }
