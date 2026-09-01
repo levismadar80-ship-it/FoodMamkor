@@ -290,6 +290,11 @@ export default function ProducerDashboardPage() {
       return;
     }
     setVacationDateError("");
+    // MEH-2229: remember what the server last confirmed BEFORE the optimistic
+    // write, so a failed POST can be rolled back from memory. The rollback
+    // must not depend on the network — the refetch below is a second request
+    // that can fail for the same reason the first one did.
+    const previousState = data?.producer?.availability_state;
     // Optimistic update so the radio lights up immediately on click.
     setData((prev) =>
       prev
@@ -324,11 +329,31 @@ export default function ProducerDashboardPage() {
       // MEH-1092: native alert() → toast (matches recipes/page.js; anti-pattern
       // retired for admin in MEH-1023/1040).
       showToast.error(detailToMessage(err?.response?.data?.detail) || t("error_availability_update"));
-      // Refetch on failure so the UI doesn't stay out of sync.
+      // MEH-2229: roll the optimistic value back to the last server-confirmed
+      // state FIRST, from memory. Before this the only thing undoing the
+      // optimistic write was the refetch below — and its `.catch(() => {})`
+      // meant a refetch that failed (network, 401 mid-refresh, 500) left the
+      // rejected state lit on screen next to an error toast saying it was
+      // rejected. The screen must never keep a state the server refused.
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              producer: { ...prev.producer, availability_state: previousState },
+            }
+          : prev,
+      );
+      // Then refetch so any OTHER server-side drift is picked up. A failed
+      // refetch is no longer swallowed: the rollback above already made the
+      // screen correct, so the only job left here is to say the re-sync did
+      // not happen (MEH-325 silent-except class) — reuse the same toast, no
+      // new copy (rule 22).
       api
         .get("/producers/me/dashboard")
         .then((r) => setData(r.data))
-        .catch(() => {});
+        .catch(() => {
+          showToast.error(t("error_availability_update"));
+        });
     }
   };
 
