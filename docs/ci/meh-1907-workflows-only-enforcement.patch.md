@@ -1,3 +1,11 @@
+> **Status: APPLIED IN PR #3240 — not yet on `staging`. as-of 2026-09-01.**
+> Evidence: job `99811633641` (run `33493134235`) printed
+> `Stack touched -> frontend=false backend=false workflows=true`
+> and enforced eight frontend/backend legs on a workflows-only diff.
+> Option A was chosen; the draft-guard mirror (Option B) was NOT applied —
+> see MEH-2227 §4ז for why. `pip-audit` deliberately left unenforced: its own
+> `if:` is deps-only, so widening the gate would demand a leg that never ran.
+
 # MEH-1907 F-1 — `ci-gate` runs the suite on a workflows-only PR and enforces none of it
 
 `.github/workflows/**` is CC-deny (**MEH-671**), so Claude Code cannot apply this.
