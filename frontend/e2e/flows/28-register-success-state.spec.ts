@@ -60,8 +60,10 @@ async function stubSession(page, roleRef: { current: string }) {
       // id 1 mirrors flows/18: a license-required category, so the MEH-952
       // inline license gate is exercised rather than bypassed.
       body: JSON.stringify([
-        { id: 1, name: "חלב וגבינות" },
-        { id: 2, name: "לחמים ואפייה" },
+        // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
+        // Hebrew name — a slug-less stub renders no chip at all.
+        { id: 1, name: "חלב וגבינות", slug: "dairy" },
+        { id: 2, name: "לחמים ואפייה", slug: "bread" },
       ]),
     }),
   );
