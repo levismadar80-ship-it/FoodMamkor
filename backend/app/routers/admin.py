@@ -1492,35 +1492,58 @@ _DATA_GOV_URL = (
 )
 
 
+# MEH-2241: this handler used to carry an inline copy of the parser in
+# `scripts/seed_cities.py` — same guessed column names, same silent outcome.
+# On Railway staging that script reported `Received 1272 records`, inserted
+# nothing and exited 0, because the resource publishes `שם_ישוב` (one yod)
+# while both parsers read `שם_יישוב` (two yods). PR #3288 fixed the script by
+# discovering the column from the response; this route now calls the same
+# function rather than holding a second copy of the bug. Two owners for one
+# parse is the drift `.claude/rules/workflow.md` Smell #1 names, and here it
+# was not hypothetical — fixing one would have left the other broken.
+#
+# The rationale lives in a comment, not the docstring: FastAPI publishes a
+# route's docstring as the endpoint `description` in `backend/openapi.json`,
+# which is a committed artifact that `frontend/lib/generated/` is derived
+# from. Internal history does not belong in the API contract, and putting it
+# there drags two generated files into every such diff.
 @router.post("/seed-cities", status_code=200)
 def seed_cities(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Idempotent: fetch Israeli localities from data.gov.il and upsert into cities table."""
+    # Imported here, not at module scope: `scripts.seed_cities` calls
+    # `logging.basicConfig` when imported (it is written to be run as a
+    # script), and the API process must not inherit that at boot merely
+    # because this route exists.
+    from scripts.seed_cities import LocalityParseError, parse_localities
+
     try:
         resp = httpx.get(_DATA_GOV_URL, timeout=30)
         resp.raise_for_status()
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"data.gov.il fetch failed: {exc}")
 
-    records = resp.json().get("result", {}).get("records", [])
+    try:
+        cities = parse_localities(resp.json())
+    except LocalityParseError as exc:
+        # The message names the keys the records DID carry — the one piece of
+        # evidence nobody could get from the sandbox. Surfacing it beats a 200
+        # that says "seeded 0" and explains nothing.
+        raise HTTPException(
+            status_code=502,
+            detail=f"הרשומות התקבלו אך לא נמצאה בהן עמודת שם יישוב: {exc}",
+        )
+
     inserted = 0
-    for rec in records:
-        name = (rec.get("שם_יישוב") or rec.get("SHEM_YISHUV") or "").strip()
-        if not name:
-            continue
-        try:
-            lat = float(rec.get("lat") or rec.get("Y") or 0) or None
-            lng = float(rec.get("lon") or rec.get("X") or 0) or None
-        except (TypeError, ValueError):
-            lat = lng = None
+    for city in cities:
         result = db.execute(
             text(
                 "INSERT INTO cities (name_he, lat, lng) VALUES (:name_he, :lat, :lng)"
                 " ON CONFLICT (name_he) DO NOTHING"
             ),
-            {"name_he": name, "lat": lat, "lng": lng},
+            city,
         )
         inserted += result.rowcount
     db.commit()
