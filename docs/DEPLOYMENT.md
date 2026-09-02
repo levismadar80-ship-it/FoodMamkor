@@ -1541,7 +1541,7 @@ Run through this checklist in a real browser:
 | `backend/pyproject.toml` | Direct Python dependencies (replaces requirements.txt); source of truth for dep versions |
 | `backend/uv.lock` | Full transitive lock file with hashes — committed so CI and Railway install identical packages |
 | `backend/.env.example` | All backend env vars, documented |
-| `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
+| `backend/app/services/producer_queries.py` | Haversine-in-SQL distance filter (`haversine_min_km`) — the nearest `producer_locations` row per business; no fallback to the legacy `producers.lat/lng` mirror since MEH-1938 chunk 5a |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
 | `frontend/.env.example` | All frontend env vars, documented |
 | `frontend/next.config.js` | `/api/*` → `BACKEND_URL` rewrite |

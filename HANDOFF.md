@@ -3,6 +3,35 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-02 ערב — MEH-1938 chunk 5a (session `01MaGjwx…`, HIGH-RISK): #3285 נחת · שלוש הנחות הופרכו · ה-PR הממשיך חסום על ספירה אחת
+
+**‏שורה אחת:** ה-Contract של האפיק בוצע — אין יותר אף קורא fallback ל-`Producer.lat/lng`, `producer_locations` הוא ה-SoT בכל משטח; #3285 מוזג כ-squash `6cd5a3bf` על «approved, go merge #3285» מפורש של ספיר, אחרי ארבעה תת-שלבים עם go בין כל אחד.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏5b עדיין לא. שני תנאים, שניהם של ספיר:** ‏≥7 ימי soak אחרי 5a (מוקדם ביותר ~09/09) **וגם** ‏`SELECT count(*) FROM producers p WHERE p.lat IS NOT NULL AND NOT EXISTS (SELECT 1 FROM producer_locations l WHERE l.producer_id = p.id AND l.is_primary AND l.lat IS NOT NULL AND l.lng IS NOT NULL)` = **0 ב-staging וגם ב-prod**. הספירה שנמדדה קודם (0/0) ענתה על שאלה **חלשה יותר** («קואורדינטות ובלי אף שורה»); הקוראים מאז 5a דורשים שורה ראשית **שמישה**. שורת `SKIP MEH-1938 5b` ב-`scripts/wake-when.sh`.
+2. **‏ה-PR הממשיך (`feature/meh-1938-ch5-strict-followup`) לא התחיל, וחסום על ספירה אחת:** ‏`SELECT count(*) FROM producer_locations WHERE is_primary AND kind <> 'branch'` (staging + prod). `>0` → ה-PR נושא **מסלול מיגרציה** (הבעלים מתבקשת לבחור), לא רק את החסימה. התכולה מוגדרת ב-description של MEH-1938.
+3. **‏שלוש הנחות הופרכו במדידה בסשן הזה — כולן תוקנו ב-description של MEH-1938 ולא בתגובה (כלל 34).** ‏(א) `delete_my_location` **כן** מקדם אוטומטית היום — `producer_me.py:2263-2271`, השורה הוותיקה ביותר, **בלי סינון kind** — בניגוד להנחה שנמסרה. (ב) ל-`primaryPoint()` **אין** כלל «never a pickup»: הוא kind-agnostic במפורש, וה-docstring שלו (`producerPoints.js:82-83`) מנמק למה — ראשית-pickup היא פגם דאטה שצריך **להיראות**. (ג) `market_stand` מסווג ברפו עם `pickup` כשכבה משנית, בארבעה מקומות זהים (MEH-1412): `producerPoints.js:28` · `MiniMap.jsx:70` · `MapComponent.jsx:375` · `DeliveryBlock.jsx:468`. **בעקבות (ג) ספיר הפכה את הכרעתה:** כשיר-לראשיות = `branch` **בלבד**; ההרחבה ל-market_stand בוטלה כי ראשי שהמרקר שלו מוסתר מתחת לטוגל של /map הוא תשובה שלישית.
+4. **‏ההכרעות התקפות ל-PR הממשיך, אחרי ההיפוך:** מחיקת הראשית כשיש אחרות → **422** עם «חובה מיקום ראשי אחד» (אותו קוד ואותו מפתח כמו `:2229-2232`, שהוא אותו אינווריאנט מהצד השני) · מחיקת האחרונה → מותר, `primary = null` (ה-ping שייך ל-MEH-2073 chunk 2) · קידום = מפורש בלבד, `branch` בלבד · `primaryPoint()` **נשאר kind-agnostic** (הכרעה חלה על צד הכתיבה בלבד).
+5. **‏מכשיר שיחזור: ה-ruleset דורש ענף מעודכן, וההודעה מטעה.** מיזוג #3285 נדחה ב-`405 — 2 of 2 required status checks are expected` בזמן ששני השערים היו **ירוקים**; הסיבה האמיתית היא ש-staging זזה קומיט אחד. הפתרון: `git merge origin/staging` (לא rebase), push, להמתין ל-CI, למזג. לא לחפש check אדום שאינו קיים.
+6. **‏E2E: קבוצת ההפרש היא הכלי, לא הספירה.** 9 אדומים על ה-head האחרון, כולם VRT, וההפרש מול הרצת staging באותו base **ריק**. ‏`37-outreach-prefill:285` נראה חדש ואז הוסבר — `429` מ-`/api/experiences/count`, backend משותף תחת עומס, אותה שגיאה משני הצדדים. לפני שמכריזים על ספק «חדש»: להשוות מול הרצת ה-base, לא מול הזיכרון.
+7. **‏`Builder-Model`: הסשן החליף מודל באמצע.** הקומיטים של #3285 עד `77984123` נושאים `claude-fable-5-1` — נכון לשעתם; מכאן ואילך `claude-opus-5`. ה-pin של ה-reviewer הוא `claude-sonnet-4-6` (`claude-review.yml:105`), אז אין התנגשות בשני המקרים.
+8. **‏ה-flip-check עבד:** ‏`Refs MEH-1938` — הכרטיס נשאר **Todo** אחרי המיזוג (`completedAt: null`, stateHistory ללא שינוי). ה-slug לא סגר אותו, לא נדרשה פתיחה מחדש.
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3285 | MEH-1938 chunk 5a — הסרת קוראי ה-fallback ל-`Producer.lat/lng` | `6cd5a3bf` |
+| זה | docs backfill — CHANGELOG + HANDOFF + `DEPLOYMENT.md:1544` | — |
+
+### רשימת ספיר (residual מהסשן הזה)
+
+* **‏שתי ספירות, שתיהן על staging **וגם** prod:** שער 5b (סעיף 1) ושער הדאטה של ה-PR הממשיך (סעיף 2).
+* ‏`docs/DEPLOYMENT.md:1544` תוקן ב-PR הזה: הפניה ל-`_haversine_km` **בקובץ הלא נכון** (`routers/producers.py`). ה-reviewer ב-CI תפס את השם; הקובץ היה שגוי גם הוא. ה-sweep מצא שזה האתר היחיד — `.ai/diagrams/db-schema.md:415` כבר נכון.
+
+---
+
 ## 2026-09-02 אחה"צ — drain כב' (session `01UJNNqp…`): גיליון הכרעות · שלושה PRs על GO · MEH-2170 מקצה לקצה · 1896/2043 סגורים
 
 **‏שורה אחת:** T0 = גיליון של 12 הכרעות עם המלצה ומדידה לכל שורה (לא הוכרע דבר); T1 = שלושת ה-GO בוצעו ומוזגו (#3284 · #3286 · #3283); T2 = MEH-2170 נבנה, הוכח אדום-ואז-ירוק, ומוזג (#3287); ה-STATE על MEH-2227 נכתב מחדש אחרי כל מיזוג.
