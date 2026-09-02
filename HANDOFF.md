@@ -3,6 +3,42 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-02 אחה"צ — drain כב' (session `01UJNNqp…`): גיליון הכרעות · שלושה PRs על GO · MEH-2170 מקצה לקצה · 1896/2043 סגורים
+
+**‏שורה אחת:** T0 = גיליון של 12 הכרעות עם המלצה ומדידה לכל שורה (לא הוכרע דבר); T1 = שלושת ה-GO בוצעו ומוזגו (#3284 · #3286 · #3283); T2 = MEH-2170 נבנה, הוכח אדום-ואז-ירוק, ומוזג (#3287); ה-STATE על MEH-2227 נכתב מחדש אחרי כל מיזוג.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏ה-STATE על MEH-2227 הוא האמת; הסעיף הזה היסטוריה.** `LEASE: none` בסוף הסשן.
+2. **‏גיליון ההכרעות חי ב-`docs/decisions/rulings-pending-2026-09-02.md`** — 12 שורות + SQL ל-`xcv` + שתי פקודות seed + סדר שבעת ה-patch-docs. ORCH מכריע על LOW-RISK, SAPIR על Alembic/auth/security/money/legal. עד שלא הוכרע, הכרטיסים האלה **לא** cc-queue.
+3. **‏`Refs` — 2 מתוך 19.** ‏1896 · 2043 · 2168 · 2170 כולם נשארו במצבם אחרי המיזוג; 1896 ו-2043 נסגרו **ידנית** עם טבלת DoD. `Closes` לא נבדק היום (0 מיזוגים עם Closes).
+4. **‏ה-STOP (e) על ספק 03 מכא' היה שגוי** — fixture window, לא התנהגות: הגריד מרנדר `limit=24` והבחירה הייתה מה-feed הלא-מוגבל. אין כרטיס באג לפתוח.
+5. **‏MEH-2170 מוזג — השער קורא snapshot של ה-mount.** על staging (25 עסקים, 0·0·1·0·0) ה-sheet מציג עכשיו **0** צירי תזונה; ברגע ש-`seed_demo_business --refresh` ירוץ על Railway (רשימת ספיר) הצירים יחזרו מעצמם כשיחצו 5. המצב «רבים» מקובע ב-unit בלבד — אין seed עם חמישה.
+6. **‏סטאק מקומי: `mehamakor_local` נהרס באמצע** (רק `alembic_version` נשאר; חשוד pytest teardown, לא הוכח). עכשיו על **`mehamakor_local2`** (uvicorn :8000, next :3000 = staging-code, next :3100 = build של 2170 ב-`.claude/worktrees/meh-2170-build`). ‏Turbopack לא בונה worktree עם `node_modules` symlink — `cp -al`.
+7. **‏ה-reviewer ב-CI מצא שלושה ממצאים אמיתיים על #3283** (403 רחב מדי · JSDoc יתום · import) — כולם תוקנו ב-`5020b79d` לפני המיזוג. הראשון היה באג של השער עצמו: `Failed to load resource … 403 ()` בלע כל 403 עם reason ריק.
+
+8. **‏`Builder-Model` — הסשן הזה החליף מודל באמצע, וזה מתועד ולא מוסתר.** ‏`get_session` מדווח `configured_model: claude-fable-5-1` בעוד `session_context.model` ו-`last_served_model` = **`claude-opus-5`**; הודעת ה-attribution של ה-harness התחלפה באותו רגע. הקומיטים עד `0eba63cd` נושאים `claude-fable-5-1` — נכון לשעתם; מכאן ואילך `claude-opus-5`. ה-guard לא מתנגש בשני המקרים: ה-pin של ה-reviewer הוא `claude-sonnet-4-6` (`claude-review.yml:105`). כלל MEH-1668: הערך חייב לומר מה הסשן **באמת** רץ בו — לכן זה נרשם כאן ולא נשתק.
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3284 | MEH-1896 ג' — parity gate מקונן | `30ecfa47` |
+| #3286 | MEH-2043 PR2 — CSP בלי gstatic | `db40e289` |
+| #3283 | MEH-2168 chunk 3 — ספקים 30/32/37/03 (tests-only) | `0eba63cd` |
+| #3287 | MEH-2170 — שער תזונה ב-/map מ-snapshot | `2f1f6f6f` |
+| זה | docs + גיליון ההכרעות | — |
+
+כולם אומתו: הורה יחיד, מחבר `sapirschnapp`, תבנית squash.
+
+### רשימת ספיר (residual)
+
+* **‏להכריע** — הגיליון: ‏2189 (א/ב) · ‏2233 (מנוף) · ‏1286 · ‏1892 · ‏1944 §3 · ‏2242 · ‏2079 (SAPIR, SQL) · ‏1897 · ‏1980 rider · ‏1748 שלב 2 · ‏1736 (הצעת סגירה על הכרטיס — האורקסטרטור סוגר).
+* **‏Railway Query tab:** ה-`UPDATE` ל-`xcv` מהגיליון (אחרי ה-`SELECT`).
+* **‏Railway Console:** `python -m scripts.seed_demo_business --refresh` · `python -m scripts.seed_cities` (WORKDIR /app).
+* **‏patch docs (`.github/**`):** ‏1706 · ‏2196 (שני השלבים) · ‏1868 mypy · ‏1868 knip · ‏1980 · ‏2184 · ‏1754 — לפי סדר הערך בגיליון.
+* ‏wake-when: 0 OPEN · 11 parked · 1 satisfied · 5 skipped · 2 unstarted · 0 void (self-test 17/17). ‏MEH-2237 — כותרת מיושנת (Done); ‏MEH-2107 — Done מכ'.
+
 ## 2026-09-02 צהריים — drain כא' (session `01UJNNqp…`): ארבעה PRs נחתו · MEH-1414 ו-2239 סגורים · שבעה Phase 0 של B-tier על הכרטיסים · רשימת ספיר בסוף
 
 **‏שורה אחת:** תדריך של 21 פריטים; A-tier נעשה עד הסוף (#3278 · #3280 · #3279 · #3281), שבעה פריטים הופרכו ב-SHA ולא בוצעו פעמיים, B-tier נמדד ונרשם על הכרטיסים עם labels, ושני כרטיסים חדשים (MEH-2241 · MEH-2242). ‏`LEASE: none` ב-MEH-2227.
