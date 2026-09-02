@@ -1121,9 +1121,11 @@ class ProducerLocationOut(BaseModel):
     """MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /
     pickup / market_stand) serialized on `ProducerListOut.locations[]`. Read
     straight off the `ProducerLocation` ORM rows (selectinload'd in
-    producer_listing.py — no N+1). Expand-phase serialization only; the
-    Producer.lat/lng column stays the primary mirror (chunk-3 map UI consumes
-    this array). `precision` is emitted from the ORM's `location_precision`
+    producer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the
+    ONLY source of a business's position: `ProducerListOut.lat/lng` are
+    derived from the `is_primary` row here, and the `Producer.lat/lng`
+    columns are a legacy mirror ahead of the chunk-5b drop (the map UI
+    consumes this array). `precision` is emitted from the ORM's `location_precision`
     column (serialization_alias) to match the epic's map contract shape.
     Street `address` is intentionally NOT exposed here — MEH-829 keeps the
     exact address admin/owner-only; the map pins on lat/lng + city and
@@ -2333,8 +2335,10 @@ class ProducerListOut(BaseModel):
     # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
     # market_stand). selectinload'd on both LIST branches + the DETAIL query
     # (producer_listing.py + producers.py) so from_attributes reads the loaded
-    # relationship with no N+1. Empty for producers with no location rows yet
-    # (Expand overlap — Producer.lat/lng still drives their single map pin).
+    # relationship with no N+1. Empty for producers with no location rows —
+    # and since MEH-1938 chunk 5a such a producer has NO map pin and
+    # serializes `lat`/`lng` as null (see _derive_lat_lng_from_primary_location
+    # below); the Expand-overlap fallback to Producer.lat/lng is gone.
     # Chunk 3 (map UI) is the consumer; the frontend ProducerSchema (non-strict
     # z.object, schemas.js:7) silently strips this until chunk 3 declares it.
     locations: list[ProducerLocationOut] = []
@@ -2421,6 +2425,34 @@ class ProducerListOut(BaseModel):
             self.verification_tier = "declared"
         else:
             self.verification_tier = None
+        return self
+
+    @model_validator(mode="after")
+    def _derive_lat_lng_from_primary_location(self):
+        """MEH-1938 chunk 5a (Q1 ruling, Sapir 01/09): `lat` / `lng` STAY in the
+        contract and are DERIVED from the primary `producer_locations` row —
+        never read from the `Producer.lat/lng` columns, which no reader falls
+        back to since this chunk and which chunk 5b drops.
+
+        Expand-Contract shrinks the storage, not the API shape; the serializer
+        is the seam. So `from_attributes` still copies the column values in,
+        and this validator overwrites them from `self.locations` before
+        anything is sent: the `is_primary` row's coordinates, or None when
+        there is no such row or its pin is cleared. Inherited by
+        ProducerDetailOut → ProducerAdminOut / ProducerOwnerOut, so the list,
+        the business page, the admin form and the owner dashboard read ONE
+        answer. Same rule as admin_extra._primary_location_points (5a.2).
+
+        DO NOT fall back to the column value here "for producers without a
+        row": that population is empty on every environment (7c1e2a9f4b3d,
+        P0 measured 0 on staging and production, 02/09), and a fallback would
+        silently reopen the two-stores drift this epic exists to remove.
+        Removing the fields from the contract is a separate, future decision
+        (when readers == 0), not this one.
+        """
+        primary = next((loc for loc in self.locations if loc.is_primary), None)
+        self.lat = primary.lat if primary is not None else None
+        self.lng = primary.lng if primary is not None else None
         return self
 
     model_config = {"from_attributes": True}

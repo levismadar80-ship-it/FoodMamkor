@@ -21,7 +21,10 @@ FastAPI + SQLAlchemy ORM + Pydantic v2 + PostgreSQL on Railway.
 ## No PostGIS
 
 Distance queries use the **Haversine formula in raw SQL** against
-`producers.lat` / `producers.lng` float columns. PostGIS is not
+`producer_locations.lat` / `producer_locations.lng` float columns — the
+nearest row per business (`producer_queries.py::haversine_min_km`, MEH-1402),
+with **no fallback** to the legacy `producers.lat/lng` mirror since MEH-1938
+chunk 5a (the mirror carries `LEGACY(2026-10-15)` ahead of its drop). PostGIS is not
 installed on Railway's stock PostgreSQL — adding it would break the
 deploy. **Never add PostGIS.**
 _(Platform claim — **as of 2026-08-03, unverified**. Railway is unreachable from

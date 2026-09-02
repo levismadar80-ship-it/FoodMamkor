@@ -101,10 +101,11 @@ def test_every_requirement_code_is_reachable(db):
         MISSING_IMAGE: lambda p: setattr(p, "images", []),
         MISSING_PRODUCT: lambda p: [db.delete(x) for x in p.products],
         MISSING_CATEGORY: lambda p: [db.delete(x) for x in p.categories],
-        MISSING_LOCATION: lambda p: (
-            setattr(p, "lat", None),
-            setattr(p, "lng", None),
-        ),
+        # MEH-1938 chunk 5a: degrade by deleting the location ROWS and
+        # deliberately LEAVING lat/lng set. Clearing the columns too would
+        # pass against the old code as well; this construction is red before
+        # the Contract phase and green after, so it measures the removal.
+        MISSING_LOCATION: lambda p: [db.delete(loc) for loc in p.locations],
         MISSING_PHONE_VERIFIED: lambda p: setattr(p, "phone_verified", False),
     }
     assert set(degrade) == set(SUBMISSION_REQUIREMENTS), (
@@ -311,10 +312,8 @@ def test_no_creation_site_writes_a_queue_status():
         (MISSING_IMAGE, lambda db, p: setattr(p, "images", [])),
         (MISSING_PRODUCT, lambda db, p: [db.delete(x) for x in p.products]),
         (MISSING_CATEGORY, lambda db, p: [db.delete(x) for x in p.categories]),
-        (
-            MISSING_LOCATION,
-            lambda db, p: (setattr(p, "lat", None), setattr(p, "lng", None)),
-        ),
+        # Rows deleted, lat/lng left set — see the note in the self-test above.
+        (MISSING_LOCATION, lambda db, p: [db.delete(loc) for loc in p.locations]),
         (MISSING_PHONE_VERIFIED, lambda db, p: setattr(p, "phone_verified", False)),
     ],
 )
@@ -384,9 +383,7 @@ def test_submit_pings_the_admin_with_the_business_identity(client, db, monkeypat
     assert producer.status == "pending"
 
 
-@pytest.mark.parametrize(
-    "status", ["pending", "approved", "rejected", "inactive"]
-)
+@pytest.mark.parametrize("status", ["pending", "approved", "rejected", "inactive"])
 def test_submit_409_on_every_non_draft_status(client, db, status):
     producer, user = _complete_draft(db, status=status)
 
