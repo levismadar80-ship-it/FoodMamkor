@@ -300,6 +300,8 @@ export default function MapPage() {
     requestedSort === "rating" && !ratingSortEnabled ? autoSort : requestedSort;
   const filters = useMapFilters({
     allProducers: feed.allProducers,
+    // MEH-2170: one-time mount catalog for diet-chip gating (see map-chips.js).
+    catalogSnapshot: feed.catalogSnapshot,
     categories: feed.categories,
     loadProducers: feed.loadProducers,
     userCity: userCityCtx.city,
@@ -578,6 +580,7 @@ export default function MapPage() {
     <FilterChipsBar
       visibleCategoryChips={filters.visibleCategoryChips}
       chipState={filters.chipState}
+      visibleToggleChips={filters.visibleToggleChips}
       onCategoryChipClick={filters.onCategoryChipClick}
       onToggleChipClick={filters.onToggleChipClick}
       onSheetToggleChip={filters.onSheetToggleChip}

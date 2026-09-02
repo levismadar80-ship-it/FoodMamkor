@@ -26,6 +26,11 @@ import ServiceChipRow from "./ServiceChipRow";
 export default function FilterChipsBar({
   visibleCategoryChips,
   chipState,
+  // MEH-2170: the toggle chips FilterSheet offers on this mount — the diet
+  // axes are gated from the mount snapshot (useMapFilters.visibleToggleChips).
+  // undefined → FilterSheet's own default (every /map chip), so a caller that
+  // does not pass it is unchanged.
+  visibleToggleChips,
   onCategoryChipClick,
   onToggleChipClick,
   onSheetToggleChip,
@@ -118,6 +123,7 @@ export default function FilterChipsBar({
             open={sheetOpen}
             onClose={closeSheet}
             chipState={chipState}
+            chips={visibleToggleChips}
             onToggleChip={onSheetToggleChip}
             resultCount={resultCount}
             onClearAll={clearSheetFilters}
