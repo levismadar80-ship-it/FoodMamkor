@@ -19,6 +19,8 @@ const fullProducer = {
   website: "havat-hashikma.co.il",
   lat: 31.8928,
   lng: 34.8113,
+  // MEH-1938 chunk 5a: geo reads the primary row; the columns are inert.
+  locations: [{ kind: "branch", is_primary: true, lat: 31.8928, lng: 34.8113, precision: "exact", id: "loc-0" }],
   images: [
     "https://res.cloudinary.com/demo/image/upload/v1/photo1.jpg",
     "https://res.cloudinary.com/demo/image/upload/v1/photo2.jpg",
@@ -170,8 +172,20 @@ describe("buildJsonLd", () => {
     });
   });
 
-  it("omits geo when lat or lng is missing", () => {
-    const business = getBusiness(buildJsonLd({ ...fullProducer, lat: null }));
+  it("omits geo when the primary row has no usable coordinates", () => {
+    const business = getBusiness(
+      buildJsonLd({
+        ...fullProducer,
+        locations: [{ id: "loc-0", kind: "branch", is_primary: true, lat: null, lng: 34.8113 }],
+      }),
+    );
+    expect(business.geo).toBeUndefined();
+  });
+
+  // MEH-1938 chunk 5a — the inversion: columns set, no row → no geo. Against
+  // the pre-5a producerPoints() this emits GeoCoordinates from the columns.
+  it("omits geo for coordinates that live only on Producer.lat/lng (MEH-1938 chunk 5a)", () => {
+    const business = getBusiness(buildJsonLd({ ...fullProducer, locations: [] }));
     expect(business.geo).toBeUndefined();
   });
 

@@ -2423,6 +2423,34 @@ class ProducerListOut(BaseModel):
             self.verification_tier = None
         return self
 
+    @model_validator(mode="after")
+    def _derive_lat_lng_from_primary_location(self):
+        """MEH-1938 chunk 5a (Q1 ruling, Sapir 01/09): `lat` / `lng` STAY in the
+        contract and are DERIVED from the primary `producer_locations` row —
+        never read from the `Producer.lat/lng` columns, which no reader falls
+        back to since this chunk and which chunk 5b drops.
+
+        Expand-Contract shrinks the storage, not the API shape; the serializer
+        is the seam. So `from_attributes` still copies the column values in,
+        and this validator overwrites them from `self.locations` before
+        anything is sent: the `is_primary` row's coordinates, or None when
+        there is no such row or its pin is cleared. Inherited by
+        ProducerDetailOut → ProducerAdminOut / ProducerOwnerOut, so the list,
+        the business page, the admin form and the owner dashboard read ONE
+        answer. Same rule as admin_extra._primary_location_points (5a.2).
+
+        DO NOT fall back to the column value here "for producers without a
+        row": that population is empty on every environment (7c1e2a9f4b3d,
+        P0 measured 0 on staging and production, 02/09), and a fallback would
+        silently reopen the two-stores drift this epic exists to remove.
+        Removing the fields from the contract is a separate, future decision
+        (when readers == 0), not this one.
+        """
+        primary = next((loc for loc in self.locations if loc.is_primary), None)
+        self.lat = primary.lat if primary is not None else None
+        self.lng = primary.lng if primary is not None else None
+        return self
+
     model_config = {"from_attributes": True}
 
 

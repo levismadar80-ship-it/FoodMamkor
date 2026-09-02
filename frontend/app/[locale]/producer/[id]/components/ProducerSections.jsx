@@ -18,6 +18,7 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
 import { resolveStoreHours } from "@/lib/hours";
+import { primaryPoint } from "@/lib/producerPoints";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
@@ -67,8 +68,13 @@ const MIN_NEARBY_BUSINESSES = 4;
 
 // MEH-1334 chunk 3: single owner of "does this producer have a mappable
 // location" — gates both the merged location section and the MiniMap mount.
+// MEH-1938 chunk 5a: answered from the PRIMARY producer_locations row via
+// primaryPoint(), not from Producer.lat/lng — those columns are read by no
+// consumer surface any more and are dropped in chunk 5b. The
+// has_physical_location gate is unchanged: a delivery-only business keeps its
+// pickup pins on /map, not a "location" section here.
 function parseHasLocation(producer) {
-  return producer.has_physical_location !== false && !!producer.lat && !!producer.lng;
+  return producer.has_physical_location !== false && primaryPoint(producer) !== null;
 }
 
 // MEH-1901: the signature card's outer element. A <button> when the free-text
@@ -728,8 +734,8 @@ export default function ProducerSections({
               (MEH-1512): same rows, one as a list, one on a map. */}
           {parseHasLocation(producer) && (
             <MiniMap
-              lat={producer.lat}
-              lng={producer.lng}
+              lat={primaryPoint(producer).lat}
+              lng={primaryPoint(producer).lng}
               name={producer.name}
               locations={producer.locations}
               producer={producer}

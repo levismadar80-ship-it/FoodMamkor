@@ -254,8 +254,8 @@ export function buildJsonLd(producer, locale = "he") {
   }
 
   // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
-  // directly — producerPoints() still falls back to Producer.lat/lng when
-  // there is no usable location row, so today's producers are unaffected.
+  // directly. Chunk 5a removed producerPoints()'s fallback to the columns, so a
+  // business with no usable location row gets no geo — by design.
   // Prefers the PRIMARY point when one exists — Producer.locations has no
   // `order_by` (models.py:369), so points[0] is arbitrary DB row order, not
   // necessarily the branch address this structured data should describe.

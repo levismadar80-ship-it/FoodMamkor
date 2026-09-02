@@ -9,9 +9,9 @@
 
 // MEH-1938 chunk 3: reads through producerPoints() instead of Producer.lat/lng
 // directly, so a producer whose only coordinates live in a producer_locations
-// row (no Producer.lat/lng) counts as having coords too — that case used to
-// read red by mistake. producerPoints() still falls back to Producer.lat/lng
-// when there is no usable location row, so today's producers are unaffected.
+// row counts as having coords. Chunk 5a removed producerPoints()'s fallback to
+// Producer.lat/lng, so the rows are now the ONLY source: coordinates that live
+// solely in the columns no longer count, here or on the map.
 import { producerPoints } from "./producerPoints.js";
 // MEH-2142: the same resolver the public page uses, so "does she have hours?"
 // and "which hours do we show?" cannot answer differently. Reading the column
@@ -53,8 +53,8 @@ export function isDefaultDescription(text) {
 export function producerCompleteness(p) {
   const missing = [];
   const isDeliveryOnly = p.has_physical_location === false && p.offers_delivery;
-  // MEH-1938 chunk 3: true when the producer has a usable point through
-  // either a producer_locations row or the Producer.lat/lng fallback.
+  // MEH-1938 chunk 3 / 5a: true when the producer has a usable point in a
+  // producer_locations row — the only source since chunk 5a.
   const hasCoords = producerPoints(p).length > 0;
 
   if (!p.city) missing.push(COMPLETENESS_FIELDS.city);

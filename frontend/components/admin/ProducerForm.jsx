@@ -265,11 +265,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   useEffect(() => {
     if (initial) {
+      // MEH-1938 chunk 5a (4b-ii, reduced per the Q1 ruling): the pin prefills
+      // from the PRIMARY producer_locations row, not from Producer.lat/lng —
+      // the row is where the admin's save lands anyway (MEH-2059 routes the
+      // lat/lng this form still submits into upsert_primary_branch_location).
+      // No fallback to the columns on purpose: they are dropped in chunk 5b.
+      const primaryLocation = initial.locations?.find((loc) => loc?.is_primary) ?? null;
       setForm({
         ...EMPTY,
         ...initial,
-        lat: initial.lat ?? "",
-        lng: initial.lng ?? "",
+        lat: primaryLocation?.lat ?? "",
+        lng: primaryLocation?.lng ?? "",
         slug: initial.slug ?? "",
         // MEH-1490: pre-fill the mapping so an unrelated admin save can't wipe it.
         google_place_id: initial.google_place_id ?? "",

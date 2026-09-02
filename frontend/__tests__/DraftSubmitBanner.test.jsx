@@ -65,8 +65,9 @@ const READY = {
   images: ["https://res.cloudinary.com/demo/image/upload/x.jpg"],
   products: [{ id: "p1", name: "מוצר" }],
   categories: [{ id: 1, name: "קטגוריה" }],
-  lat: 32.0853,
-  lng: 34.7818,
+  // MEH-1938 chunk 5a: the location signal is a producer_locations row, not
+  // Producer.lat/lng — the gate's producerPoints() no longer reads the columns.
+  locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 32.0853, lng: 34.7818, precision: "exact" }],
   phone_verified: true,
   has_physical_location: true,
 };
@@ -100,7 +101,7 @@ describe("DraftSubmitBanner — CTA enablement", () => {
     ["image", { images: [] }],
     ["product", { products: [] }],
     ["category", { categories: [] }],
-    ["location", { lat: null, lng: null }],
+    ["location", { locations: [] }],
     ["phone_verified", { phone_verified: false }],
   ])("CTA is disabled and names %s when it alone is missing", (code, patch) => {
     render(<DraftSubmitBanner producer={{ ...READY, ...patch }} />);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { producerPoints, producerInBounds } from "@/lib/producerPoints";
+import { producerPoints, producerInBounds, primaryPoint } from "@/lib/producerPoints";
 
 // producerPoints also returns `location` (the source row, needed by the marker
 // layer). These helpers assert the coordinate triple without restating it.
@@ -8,12 +8,13 @@ const coords = (pts) => pts.map(({ lat, lng, kind }) => ({ lat, lng, kind }));
 // MEH-1670: the single point-derivation, extracted from the MapComponent marker
 // loop so the map and the /map list cannot disagree about where a business is.
 //
-// The rules under test are the marker loop's, verbatim (MapComponent.jsx:844-865):
-// a row counts when both coords are usable numbers; pickup/market_stand drop out
-// when the secondary layer is off; and the Producer.lat/lng fallback fires ONLY
-// when no usable row existed at all — judged BEFORE the toggle, so a business
-// whose only points are hidden pickups stays off the map instead of reappearing
-// at its own coordinates.
+// The rules under test are the marker loop's: a row counts when both coords are
+// usable numbers, and pickup/market_stand drop out when the secondary layer is
+// off. MEH-1938 chunk 5a REMOVED the third rule — the Producer.lat/lng fallback
+// that fired when no usable row existed — so every "falls back" case below is
+// now asserted as its inverse: columns alone yield NO point. Against the
+// pre-5a module those inverted cases return one synthesised branch point and
+// go red; that is the discrimination.
 
 const PICKUP = { kind: "pickup", lat: 32.519, lng: 34.953 };
 const BRANCH = { kind: "branch", lat: 32.5732, lng: 34.9519 };
@@ -36,16 +37,16 @@ describe("producerPoints — derivation (MEH-1670)", () => {
     expect(pts.map((p) => p.kind)).toEqual(["branch", "pickup"]);
   });
 
-  it("falls back to Producer.lat/lng when locations[] is empty", () => {
-    expect(coords(producerPoints({ lat: 32.08, lng: 34.78, locations: [] }))).toEqual([
-      { lat: 32.08, lng: 34.78, kind: "branch" },
-    ]);
+  // MEH-1938 chunk 5a — THE INVERSION. These two asserted the fallback until
+  // 02/09; usable coordinates on the columns alone now yield nothing.
+  it("does NOT fall back to Producer.lat/lng when locations[] is empty (MEH-1938 chunk 5a)", () => {
+    expect(producerPoints({ lat: 32.08, lng: 34.78, locations: [] })).toEqual([]);
   });
 
-  it("falls back when every location row is coord-invalid", () => {
+  it("does NOT fall back when every location row is coord-invalid (MEH-1938 chunk 5a)", () => {
     expect(
-      coords(producerPoints({ lat: 32.08, lng: 34.78, locations: [{ kind: "pickup", lat: null, lng: 34.9 }] })),
-    ).toEqual([{ lat: 32.08, lng: 34.78, kind: "branch" }]);
+      producerPoints({ lat: 32.08, lng: 34.78, locations: [{ kind: "pickup", lat: null, lng: 34.9 }] }),
+    ).toEqual([]);
   });
 
   it("returns [] for a producer with neither usable locations nor own coords", () => {
@@ -57,17 +58,17 @@ describe("producerPoints — derivation (MEH-1670)", () => {
     expect(coords(pts)).toEqual([{ lat: 32.5732, lng: 34.9519, kind: "branch" }]);
   });
 
-  // The rule that is easy to get backwards, and the reason the fallback is
-  // decided before the toggle filter rather than after.
+  // Held over from the fallback era, still true and still worth pinning: hidden
+  // pickups leave the business off the map, never re-pinned somewhere else.
   it("does NOT fall back to Producer.lat/lng when the only points are hidden pickups", () => {
     expect(
       producerPoints({ lat: 32.08, lng: 34.78, locations: [PICKUP] }, { includeSecondary: false }),
     ).toEqual([]);
   });
 
-  it("treats a missing/!array locations field as empty", () => {
-    expect(producerPoints({ lat: 32.08, lng: 34.78 })).toHaveLength(1);
-    expect(producerPoints({ lat: 32.08, lng: 34.78, locations: null })).toHaveLength(1);
+  it("treats a missing/!array locations field as empty — and empty means no point", () => {
+    expect(producerPoints({ lat: 32.08, lng: 34.78 })).toEqual([]);
+    expect(producerPoints({ lat: 32.08, lng: 34.78, locations: null })).toEqual([]);
     expect(producerPoints(null)).toEqual([]);
   });
 
@@ -92,6 +93,31 @@ describe("producerPoints — derivation (MEH-1670)", () => {
   });
 });
 
+describe("primaryPoint — the business page's single pin (MEH-1938 chunk 5a)", () => {
+  const PRIMARY = { kind: "branch", is_primary: true, lat: 32.6, lng: 34.96 };
+
+  it("prefers the is_primary branch row over an earlier non-primary branch", () => {
+    const pt = primaryPoint({ locations: [BRANCH, PRIMARY] });
+    expect(pt).toMatchObject({ lat: 32.6, lng: 34.96, kind: "branch" });
+    expect(pt.location).toBe(PRIMARY);
+  });
+
+  it("falls to the first branch row when no row is flagged primary", () => {
+    expect(primaryPoint({ locations: [PICKUP, BRANCH] })).toMatchObject({ lat: 32.5732, lng: 34.9519 });
+  });
+
+  it("never answers with a pickup or market stand", () => {
+    expect(primaryPoint({ locations: [PICKUP] })).toBeNull();
+    expect(primaryPoint({ locations: [{ kind: "market_stand", is_primary: true, lat: 32.5, lng: 34.9 }] })).toBeNull();
+  });
+
+  it("is null for columns-only, for a NULL-pin primary row, and for null input", () => {
+    expect(primaryPoint({ lat: 32.08, lng: 34.78, locations: [] })).toBeNull();
+    expect(primaryPoint({ locations: [{ kind: "branch", is_primary: true, lat: null, lng: null }] })).toBeNull();
+    expect(primaryPoint(null)).toBeNull();
+  });
+});
+
 describe("producerInBounds — viewport predicate (MEH-1670)", () => {
   it("includes a delivery-only producer whose pickup point is inside bounds", () => {
     expect(producerInBounds({ lat: null, lng: null, locations: [PICKUP] }, BOUNDS)).toBe(true);
@@ -106,8 +132,8 @@ describe("producerInBounds — viewport predicate (MEH-1670)", () => {
     expect(producerInBounds(p, BOUNDS)).toBe(true);
   });
 
-  it("is unchanged for a producer with own coords and empty locations[]", () => {
-    expect(producerInBounds({ lat: 32.5, lng: 34.9, locations: [] }, BOUNDS)).toBe(true);
+  it("is never in bounds for a producer with own coords and empty locations[] (MEH-1938 chunk 5a)", () => {
+    expect(producerInBounds({ lat: 32.5, lng: 34.9, locations: [] }, BOUNDS)).toBe(false);
     expect(producerInBounds({ lat: 32.5, lng: 34.9, locations: [] }, FAR)).toBe(false);
   });
 

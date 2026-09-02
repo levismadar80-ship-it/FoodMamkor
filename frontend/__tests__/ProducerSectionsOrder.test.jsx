@@ -70,6 +70,8 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
           has_physical_location: true,
           lat: 32,
           lng: 34,
+          // MEH-1938 chunk 5a: the MiniMap gates on primaryPoint(), i.e. the row.
+          locations: [{ kind: "branch", is_primary: true, lat: 32, lng: 34, precision: "exact", id: 1 }],
           categories: [{ id: 1, name: "ירקות" }],
         }}
         events={[]}
