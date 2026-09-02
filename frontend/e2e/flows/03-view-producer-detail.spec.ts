@@ -4,8 +4,7 @@ import {
   detailPath,
   assertDetailRendered,
   watchPageErrors,
-  REQUIREMENTS,
-} from "./_producer-fixture";
+  REQUIREMENTS, GRID_FIRST_PAGE_FEED } from "./_producer-fixture";
 
 // MEH-1440: this spec used to click the FIRST producer card and assert the
 // contact CTA — but PrimaryContactButton self-collapses (returns null) when
@@ -34,7 +33,12 @@ import {
 test.describe("Producer detail", () => {
   test("clicking a contactable producer card opens detail page with h1 and CTA", async ({ page }) => {
     const pageErrors = watchPageErrors(page);
-    const producer = await pickProducer(page.request, REQUIREMENTS.contactable);
+    // MEH-2168 chunk 3: pick from the grid's own first-page window, or the
+    // "card is not on /producers" assertion below fails on a catalog whose
+    // 25th business happens to sort first — see GRID_FIRST_PAGE_FEED.
+    const producer = await pickProducer(page.request, REQUIREMENTS.contactable, {
+      feedQuery: GRID_FIRST_PAGE_FEED,
+    });
     const href = detailPath(producer);
 
     await page.goto("/producers");
