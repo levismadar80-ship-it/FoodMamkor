@@ -81,10 +81,12 @@ def _discover_name_key(fields: list, records: list[dict]) -> str | None:
     """Return the record key holding the Hebrew locality name, or None.
 
     Prefers the schema CKAN publishes in ``result.fields``; falls back to the
-    keys of the first record (some mirrors omit ``fields``).
+    keys of the first record (some mirrors omit ``fields``). ``records`` must
+    be non-empty — :func:`parse_localities` returns before calling this on an
+    empty list, and a caller with no records has nothing to discover a key in.
     """
     candidates = [f.get("id") for f in fields if isinstance(f, dict)]
-    candidates += list(records[0].keys()) if records else []
+    candidates += list(records[0].keys())
     for key in candidates:
         if isinstance(key, str) and _NAME_FIELD_RE.match(key.strip()):
             return key
