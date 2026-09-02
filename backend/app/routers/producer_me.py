@@ -318,6 +318,17 @@ SENSITIVE_FIELDS = frozenset(
     {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
 )
 
+# MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
+# ONE voice. Both the demote arm and the delete arm of the locations CRUD are
+# the same rule seen from two sides, so they share this exact string; a second
+# wording (or a second status code) would read to a client as a second rule.
+# Hebrew in `detail=` is required — backend/app/routers/CLAUDE.md.
+ONE_PRIMARY_REQUIRED = "חובה מיקום ראשי אחד"
+
+# Promotion is branch-only. `pickup` and `market_stand` are the secondary
+# layer (MEH-1412) and cannot answer "where is the business".
+PRIMARY_MUST_BE_BRANCH = "רק סניף יכול להיות המיקום הראשי"
+
 
 def _snapshot_sensitive(producer) -> dict:
     """Read the sensitive fields BEFORE the setattr loop mutates them.
@@ -2178,9 +2189,30 @@ def create_my_location(
         .count()
     )
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
-    # Single-primary: the first location is always primary; an explicit
-    # is_primary=true on a later one clears the existing primary.
-    if existing_count == 0:
+
+    # MEH-1938 follow-up (Sapir, 02/09) — branch-only primaries are enforced
+    # HERE too, not only on the update path. A rule that the create path can
+    # mint around is text in the code with a hole beside it, and this endpoint
+    # is where the pickup-primary on staging actually came from: the seed was
+    # not an outlier, it exercised behaviour the API had all along.
+    #
+    # The two cases are deliberately different, and must not be collapsed:
+    #
+    #   1. An EXPLICIT is_primary=true on a non-branch is refused. The schema
+    #      defaults it to False (schemas.py:1202), so True here can only have
+    #      come from the body — she asked for something the model forbids and
+    #      is told so.
+    #   2. A first location that happens to be a non-branch is CREATED, just
+    #      not force-primary. Silent and correct: this is the delivery-only
+    #      owner adding her only pickup point, and per MEH-213 she legitimately
+    #      has no pin at all. Refusing her would block a valid business shape.
+    if loc.is_primary and loc.kind != "branch":
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+
+    # Single-primary: the first BRANCH is primary; an explicit is_primary=true
+    # on a later one clears the existing primary. A producer whose only rows
+    # are pickups / market stands therefore has no primary — see case 2 above.
+    if existing_count == 0 and loc.kind == "branch":
         loc.is_primary = True
     db.add(loc)
     db.flush()  # assign loc.id before clearing siblings
@@ -2224,12 +2256,23 @@ def update_my_location(
         setattr(loc, field, value)
 
     if want_primary is True:
+        # MEH-1938 follow-up (Sapir, 02/09): promotion is BRANCH-ONLY, and this
+        # is a NEW constraint rather than a description of what was here. A
+        # primary answers "where is the business" — the navigation target and
+        # the pin. `market_stand` is excluded along with `pickup` because the
+        # repo already classifies both as the SECONDARY layer, hidden by the
+        # /map toggle, in four identical call sites (MEH-1412:
+        # producerPoints.js:28, MiniMap.jsx:70, MapComponent.jsx:375,
+        # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
+        # layer toggle is a third answer to a question that must have one.
+        if loc.kind != "branch":
+            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
         _clear_other_primaries(db, user.producer_id, loc.id)
         loc.is_primary = True
     elif want_primary is False and loc.is_primary:
         # Can't directly demote the sole primary (that would leave zero) — the
         # owner promotes another location instead (which clears this one).
-        raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
+        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
 
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
@@ -2255,27 +2298,38 @@ def delete_my_location(
     db: Session = Depends(get_db),
 ):
     loc = _get_owned_location(db, user.producer_id, location_id)
-    was_primary = loc.is_primary
-    db.delete(loc)
-    db.flush()
-    # Delete-primary: promote the oldest survivor so the producer keeps exactly
-    # one primary while any location remains (map/geo needs a primary anchor).
-    if was_primary:
-        replacement = (
-            db.query(ProducerLocation)
-            .filter(ProducerLocation.producer_id == user.producer_id)
-            .order_by(ProducerLocation.created_at.asc())
+
+    # MEH-1938 follow-up (Sapir, 02/09): the system does not guess which
+    # location becomes primary — the OWNER chooses. This used to promote the
+    # oldest surviving row automatically, with no kind filter, so deleting a
+    # branch could silently make a pickup point the business's navigation
+    # target. Industry precedent for refusing instead: Shopify will not let you
+    # deactivate the default location (change the default first), and Google
+    # Business does the same for the primary address.
+    #
+    # 422 and not 409, deliberately: this is the SAME invariant as the demote
+    # arm above, seen from the other side, so it answers with the same status
+    # and the same message key. Two codes for one violation would itself be a
+    # third answer.
+    if loc.is_primary:
+        others_remain = (
+            db.query(ProducerLocation.id)
+            .filter(
+                ProducerLocation.producer_id == user.producer_id,
+                ProducerLocation.id != loc.id,
+            )
             .first()
+            is not None
         )
-        if replacement is not None:
-            replacement.is_primary = True
-            # MEH-2141: a new row is primary, so the city follows it.
-            #
-            # The `replacement is not None` guard is load-bearing here and not
-            # just a null check: deleting the LAST location leaves no primary,
-            # and the column must then KEEP its last value rather than go NULL.
-            # The helper would decline anyway (it returns early on no primary),
-            # so this is belt and braces on the invariant the 14 readers depend
-            # on — stated twice on purpose, because a NULL city is silent.
-            _sync_producer_city_from_primary(db, user.producer_id)
+        if others_remain:
+            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+
+    # Deleting the LAST remaining location is allowed and leaves no primary.
+    # The business stays approved but is unpinned and cannot submit — STRICT
+    # makes that visible rather than papering over it. `Producer.city` KEEPS
+    # its last value rather than going NULL: the 17 readers depend on it, and
+    # _sync_producer_city_from_primary declines on no-primary anyway, so it is
+    # deliberately not called here. The admin ping for this event belongs to
+    # MEH-2073 chunk 2 and is not built here.
+    db.delete(loc)
     db.commit()
