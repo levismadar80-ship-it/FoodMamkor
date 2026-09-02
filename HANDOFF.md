@@ -3,6 +3,41 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-02 צהריים — drain כא' (session `01UJNNqp…`): ארבעה PRs נחתו · MEH-1414 ו-2239 סגורים · שבעה Phase 0 של B-tier על הכרטיסים · רשימת ספיר בסוף
+
+**‏שורה אחת:** תדריך של 21 פריטים; A-tier נעשה עד הסוף (#3278 · #3280 · #3279 · #3281), שבעה פריטים הופרכו ב-SHA ולא בוצעו פעמיים, B-tier נמדד ונרשם על הכרטיסים עם labels, ושני כרטיסים חדשים (MEH-2241 · MEH-2242). ‏`LEASE: none` ב-MEH-2227.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏ה-STATE על MEH-2227 הוא האמת; הסעיף הזה היסטוריה.** נכתב מחדש אחרי כל מיזוג היום. תדריך שסותר אותו מיושן.
+2. **‏`Refs` — 2 מתוך 15.** ‏2168 · 1706 · 2239 · 1414 כולם נשארו במצבם אחרי המיזוג; 2239 נסגר **ידנית**. ‏`Closes` 6/6. ספיר: branch automation כבוי מ-01/09 — עקבי עם כל מיזוג `Refs` מאז (MEH-1736 מודד את זה; כיוון ה-reopen-of-Done עדיין לא נמדד).
+3. **‏ספירות API מול staging עובדות מהסנדבוקס** — `request.newContext` + `x-vercel-protection-bypass` (testing.md). MEH-2170 טען «staging חסום מ-CC»; ל-API זה לא נכון. ‏curl עם `x-vercel-set-bypass-cookie` נכנס ללולאת 307 — להשתמש ב-Playwright.
+4. **‏E2E על staging: ספק 03 (`03-view-producer-detail:35`) אדום חדש בשני הפרויקטים** בריצה 33620715216, ולא נגע ב-diff. לא הוסבר. יתר האדומים היציבים: 30:394 · 32:205 · parity:423 (map). ‏37-outreach ×4 ירדו ל-flaky אחד.
+5. **‏WhatsApp desktop (MEH-2189) הוא hydration mismatch, לא `lib/utils.js`:** 7/20 מתחלפים, תמיד עד +1.5s. שתי אופציות על הכרטיס.
+6. **‏staging לא זרועה:** group-buys 0 · experiences 0 · 10/11 שדות chunk B ריקים · דמו dietary לא קיימים (עמודי diet חשוכים גם ב-production) · טבלת ערים ריקה (102 fallback סטטי). כל אלה = `seed_demo_business --refresh` + זריעת ערים מול Railway — של ספיר.
+7. **‏סטאק מקומי מלא עלה בסנדבוקס** (postgres + uvicorn :8000 + `next start` :3000, seed_demo_business + seed_demo_producers): ספק 05 רץ מולו 10/10, וזו הדרך להוכיח red-then-green בלי לזהם staging. ‏runbook: `service postgresql start` → `runuser -u postgres -- psql -c "ALTER USER postgres PASSWORD 'postgres'"` → `SKIP_UVICORN=1 bash scripts/local-backend.sh` → seeds → uvicorn → `NEXT_PUBLIC_API_URL=http://localhost:8000 npm run build && npm run start`. ‏ESM import של playwright מסקראצ'פד דורש נתיב מוחלט ל-`frontend/node_modules/playwright/index.mjs` (‏`NODE_PATH` לא חל על ESM).
+8. **‏ה-harness דוחה `rm`, ו-hook שם-הענף חוסם push שבו שם הענף הוא משתנה.** PNG גולמיים נשארו untracked ליד ה-WebP שקומטו; push בלולאה — רק בשם ענף literal.
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3278 | ספק 33 tests-only (MEH-2168 chunk 2), 6 אדומים → 0 | `e4423320` |
+| #3280 | `docs/ci/meh-1706-seed-coverage-gate.patch.md` | `857b396c` |
+| #3279 | ספק 28 → `test-results/` (MEH-2239 → Done) | `3b59edd7` |
+| #3281 | MEH-1414: מצלמת /map + «חזרה למפה» | `78341b55` |
+| זה | docs | — |
+
+כולם אומתו: הורה יחיד, מחבר `sapirschnapp`, תבנית squash.
+
+### רשימת ספיר (residual)
+
+* להחיל patch docs: ‏MEH-1754 (pr-checks) · ‏MEH-1706 (seed-coverage gate) · ‏MEH-2184 · ‏MEH-2196 (**שני** השלבים) · ‏MEH-1868 (mypy + Knip) · ‏MEH-1980 (coverage ratchet).
+* להריץ מול Railway staging: ‏`seed_demo_business --refresh` (מזריע גם dietary ⇒ עמודי diet) · זריעת טבלת הערים (MEH-2241 chunk 0).
+* go: ‏MEH-2043 PR2 (CSP) · ‏MEH-2168 chunk 3 (37-outreach ×4) · ‏MEH-2170 (כשיר, אופציה ב׳) · ‏MEH-1896 prompt להרחבת השער · ‏MEH-1748 שלב 2.
+* הכרעות: ‏2189 (א/ב) · ‏2233 (איזה מנוף) · ‏1286 (`approved_at`) · ‏1892 · ‏1944 פריט 3 · ‏2242 · ‏2079 (חלונות + SQL) · ‏1736 (אופציה) · ‏1897 (הקפאה) · ‏1980 rider רישיונות · קופי «חזרה למפה» (MEH-1414).
+* דאטה: staging producer `xcv` עם סטטוס `pending_whatsapp` שפרש.
+
 ## 2026-09-02 בוקר — drain כ' (session `01Rqretx5os…`): STATE נכתב מחדש ממדידה · שלושה PRs נחתו · ארבעה פריטי תדריך הופרכו כבר-עשויים
 
 **‏שורה אחת:** התדריך ירש STATE משני לילות אחורה; כלל 28 הפריך ארבעה פריטים ב-SHA, שלושה PRs נחתו (`6fc1f387` · `d913d9af` · `42aa161a`), ו-CitySearch נמדד מול הטופס הרץ במקום רק מהמקור.
