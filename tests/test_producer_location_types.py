@@ -8,9 +8,10 @@ Coverage:
 - GET /producers with lat/lng/radius_km includes delivery-only producers by
   default; excludes them only with ?require_physical=true (MEH-1282)
 """
+
 import pytest
 
-from app.models.models import City, Producer
+from app.models.models import City, Producer, ProducerLocation
 from conftest import auth_header, make_producer, make_user
 
 
@@ -20,6 +21,7 @@ def admin(db):
 
 
 # ---------- GET /cities ----------
+
 
 class TestCitiesEndpoint:
     def test_returns_prefix_matches(self, client, db):
@@ -54,6 +56,7 @@ class TestCitiesEndpoint:
 
 
 # ---------- Validation: both booleans false ----------
+
 
 class TestLocationModeValidation:
     def _base_payload(self):
@@ -98,6 +101,7 @@ class TestLocationModeValidation:
 
 # ---------- Validation: nationwide XOR cities ----------
 
+
 class TestNationwideXorCities:
     def test_nationwide_and_cities_rejected_on_update(self, client, db, admin):
         p = make_producer(db)
@@ -118,7 +122,11 @@ class TestNationwideXorCities:
         p = make_producer(db)
         resp = client.put(
             f"/admin/producers/{p.id}",
-            json={"offers_delivery": True, "delivery_nationwide": True, "delivery_area_cities": []},
+            json={
+                "offers_delivery": True,
+                "delivery_nationwide": True,
+                "delivery_area_cities": [],
+            },
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
@@ -144,12 +152,44 @@ class TestNationwideXorCities:
 
 # ---------- Geo-search + delivery-only (MEH-1282) ----------
 
+
 class TestGeoSearchDeliveryOnly:
     """MEH-1282: geo results include delivery-only producers by default; the
     has_physical_location filter is opt-in via ?require_physical=true (map-pin
     semantics). Supersedes the MEH-213 always-exclude behavior — delivery-only
     businesses in range were permanently invisible to the home "קרוב אליי" flow.
     """
+
+    def _pin(self, db, producer):
+        """The primary `branch` row every write path creates alongside the
+        coordinates (registration MEH-1939, admin MEH-2059, import MEH-2140,
+        seeds MEH-2056).
+
+        MEH-1938 chunk 5a: geo distance now reads ONLY `producer_locations`;
+        the COALESCE fallback to `Producer.lat/lng` is gone. A fixture built
+        straight from `Producer(...)` therefore mints a shape the application
+        can no longer produce — and which revision 7c1e2a9f4b3d backfilled out
+        of existence (staging measured 0 on 02/09). Adding the row here keeps
+        these cases about what they are about (the `require_physical` filter),
+        not about a fallback that no longer exists.
+
+        `kind="branch"` deliberately, including for the delivery-only row: a
+        branch is NOT pickup/market_stand, so it gives the business a distance
+        without making it map-pinnable — which is exactly what keeps the
+        require_physical case below a real exclusion test.
+        """
+        db.add(
+            ProducerLocation(
+                producer_id=producer.id,
+                kind="branch",
+                is_primary=True,
+                city=producer.city,
+                lat=producer.lat,
+                lng=producer.lng,
+                location_precision="exact",
+            )
+        )
+        db.commit()
 
     def _make_delivery_only(self, db):
         p = Producer(
@@ -166,10 +206,12 @@ class TestGeoSearchDeliveryOnly:
         db.add(p)
         db.commit()
         db.refresh(p)
+        self._pin(db, p)
         return p
 
     def test_delivery_only_included_in_geo_results_by_default(self, client, db):
         physical = make_producer(db, name="חנות פיזית", city="תל אביב")
+        self._pin(db, physical)
         delivery = self._make_delivery_only(db)
 
         # Search at the same coords — both producers sit at (32.0853, 34.7818).
@@ -187,6 +229,7 @@ class TestGeoSearchDeliveryOnly:
 
     def test_delivery_only_excluded_from_geo_with_require_physical(self, client, db):
         physical = make_producer(db, name="חנות פיזית", city="תל אביב")
+        self._pin(db, physical)
         delivery = self._make_delivery_only(db)
 
         # Same geo query, but with require_physical=true → map-pin semantics.

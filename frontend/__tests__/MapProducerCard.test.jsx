@@ -58,6 +58,8 @@ const producer = {
   categories: [],
   lat: 31.7683,
   lng: 35.2137,
+  // MEH-1938 chunk 5a: distance reads the row; the columns above are inert.
+  locations: [{ kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137, precision: "exact", id: "loc-0" }],
 };
 
 const GEO = { lat: 32.0853, lng: 34.7818 };
@@ -86,9 +88,9 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     expect(pill).not.toHaveAttribute("dir");
   });
 
-  it("does NOT render distance when producer lat/lng are missing", () => {
+  it("does NOT render distance when the producer has no location row (MEH-1938 chunk 5a)", () => {
     window.localStorage.setItem("user_location", JSON.stringify(GEO));
-    render(<MapProducerCard producer={{ ...producer, lat: null, lng: null }} />);
+    render(<MapProducerCard producer={{ ...producer, locations: [] }} />);
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
 

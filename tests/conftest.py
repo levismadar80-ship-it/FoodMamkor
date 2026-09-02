@@ -148,6 +148,7 @@ from app.models.models import (  # noqa: E402
     DeliveryArea,
     Producer,
     ProducerCategory,
+    ProducerLocation,
     Product,
     User,
 )
@@ -372,7 +373,16 @@ def make_submit_ready_producer(
     """A producer satisfying every submission requirement, plus its owner.
 
     The baseline each submit-gate case degrades by exactly one field: image,
-    product, category, location (lat/lng here) and phone_verified.
+    product, category, location and phone_verified.
+
+    MEH-1938 chunk 5a: "location" is a `producer_locations` ROW, not the
+    lat/lng columns. The submit gate lost its fallback to those columns when
+    the Contract phase removed it, so a baseline carrying only coordinates
+    stopped being submit-ready — correctly, because no write path produces
+    that shape any more (registration MEH-1939, admin MEH-2059, import
+    MEH-2140, both seeds MEH-2056 all create the row). The columns stay set
+    here because every one of those paths still writes them too; they are
+    dropped in chunk 5b, not this one.
 
     Lives in conftest rather than in one test module because three suites now
     need it — the MEH-2100 state machine, MEH-2112's confirmation email, and
@@ -393,6 +403,20 @@ def make_submit_ready_producer(
     )
     db.add(producer)
     db.flush()
+
+    # The primary branch row registration creates — this is what satisfies the
+    # location requirement now. Mirrors producer_queries.create_primary_branch_location.
+    db.add(
+        ProducerLocation(
+            producer_id=producer.id,
+            kind="branch",
+            is_primary=True,
+            city="תל אביב",
+            lat=32.0853,
+            lng=34.7818,
+            location_precision="exact",
+        )
+    )
 
     category = Category(name=f"קטגוריה {uuid.uuid4().hex[:6]}", emoji="🥬")
     db.add(category)

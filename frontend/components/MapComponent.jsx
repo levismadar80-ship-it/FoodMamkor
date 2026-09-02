@@ -366,8 +366,8 @@ function createSingleBusinessClusterIcon(producer, markerCount) {
 }
 
 // MEH-1412: pick the marker style for a single producer_location row.
-// branch (+ the empty-locations fallback synthesised in the marker loop) →
-// the primary category pin; pickup / market_stand → the secondary outline.
+// branch → the primary category pin; pickup / market_stand → the secondary
+// outline. (MEH-1938 chunk 5a: there is no synthesised fallback row any more.)
 // precision flows through to both so an approximate point anchors softly.
 function createLocationIcon(producer, location, state = {}) {
   const kind = location?.kind;
@@ -818,11 +818,11 @@ export default function MapComponent({
 
       // MEH-1412 (MEH-1388 chunk 3): fan a producer's physical presence points
       // (locations[], from chunk 2's serializer) into one marker each — branch
-      // (+ the fallback below) → the primary category pin, pickup/market_stand →
-      // the secondary outline (createLocationIcon). If locations[] is empty OR
-      // no row had usable coords, the post-loop fallback pins the producer's own
-      // lat/lng mirror so no business disappears (parity with the chunk-2
-      // backend COALESCE — Expand overlap + the all-coords-invalid edge).
+      // → the primary category pin, pickup/market_stand → the secondary outline
+      // (createLocationIcon). MEH-1938 chunk 5a: the post-loop fallback that
+      // pinned the producer's own lat/lng mirror when no row had usable coords
+      // is GONE, on both sides (producerPoints() here, the backend COALESCE
+      // there) — a business with no usable location row has no marker.
 
       const markerLabel = p.name || t("marker_singular");
       const entryMarkers = [];
@@ -897,17 +897,14 @@ export default function MapComponent({
       };
 
       // MEH-1412: render each usable location. Secondary points
-      // (pickup/market_stand) are suppressed when the layer toggle is off — but
-      // a suppressed point still COUNTS as a usable location, so the coord
-      // fallback below does not fire for a producer whose only points are hidden
-      // pickups (it stays off-map while the layer is hidden rather than
-      // reappearing as a primary pin).
-      // MEH-1670: the three rules above now live in producerPoints(), so the
-      // /map viewport filter derives points the same way instead of reading
-      // Producer.lat/lng on its own (which dropped a delivery-only business from
-      // the list while its pickup pin was on screen). Behaviour here is
-      // unchanged — including the synthesised fallback row, which the module
-      // builds with the same fields this loop used to inline.
+      // (pickup/market_stand) are suppressed when the layer toggle is off, so a
+      // producer whose only points are hidden pickups stays off-map while the
+      // layer is hidden (hiddenWhenSecondaryOff() is how the UI says so).
+      // MEH-1670: the rules live in producerPoints(), so the /map viewport
+      // filter derives points the same way instead of reading Producer.lat/lng
+      // on its own (which dropped a delivery-only business from the list while
+      // its pickup pin was on screen). MEH-1938 chunk 5a removed the module's
+      // synthesised fallback row; this loop renders exactly what it returns.
       producerPoints(p, { includeSecondary: showSecondaryLayer }).forEach(({ location }) =>
         addMarker(location),
       );

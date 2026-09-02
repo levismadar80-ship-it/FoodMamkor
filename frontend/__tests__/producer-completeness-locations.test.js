@@ -3,14 +3,14 @@
  * instead of Producer.lat/lng directly, so the "coordinates" criterion doesn't
  * false-red a producer whose only coordinates live in a producer_locations row.
  *
- * Three states, per the card's acceptance criteria:
- *   1. columns only (Producer.lat/lng, no locations)   — unchanged: valid.
- *   2. locations only (a usable branch row, no columns) — THE FIX: was
- *      incorrectly red before this change, is correctly green after.
- *   3. both                                             — unchanged: valid.
- *
- * State 2 is the discriminating case: it must fail against the OLD
- * `p.lat == null || p.lng == null` check and pass against producerPoints().
+ * Three states, per the card's acceptance criteria — state 1 INVERTED by
+ * MEH-1938 chunk 5a, when producerPoints() lost its Producer.lat/lng fallback:
+ *   1. columns only (Producer.lat/lng, no locations)   — coords MISSING, red.
+ *      (Was "valid" from chunk 3 until 02/09; against the pre-5a module this
+ *      case goes green and reds the assertion — the discrimination.)
+ *   2. locations only (a usable branch row, no columns) — THE chunk-3 FIX:
+ *      was incorrectly red before it, correctly green since.
+ *   3. both                                             — green, from the row.
  */
 import { describe, it, expect } from "vitest";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
@@ -39,11 +39,11 @@ const hasCoordsMissing = (p) =>
   producerCompleteness(p).missing.includes(COMPLETENESS_FIELDS.coords);
 
 describe("producerCompleteness — coords via producerPoints() (MEH-1938 chunk 3)", () => {
-  it("columns only (Producer.lat/lng, no locations) → green, coords not missing", () => {
+  it("columns only (Producer.lat/lng, no locations) → coords MISSING, red (MEH-1938 chunk 5a)", () => {
     const p = { ...BASE, lat: 32.08, lng: 34.78 };
     const r = producerCompleteness(p);
-    expect(hasCoordsMissing(p)).toBe(false);
-    expect(r.priority).toBe("green");
+    expect(hasCoordsMissing(p)).toBe(true);
+    expect(r.priority).toBe("red");
   });
 
   it("locations only (a usable branch row, no Producer.lat/lng) → green, coords not missing (THE FIX)", () => {

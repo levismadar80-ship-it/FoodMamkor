@@ -363,7 +363,15 @@ describe("ProducerCard — Phase B anatomy", () => {
       JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
     );
     render(
-      <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          lat: 31.7683,
+          lng: 35.2137,
+          // MEH-1938 chunk 5a: the row is the source; the columns are inert.
+          locations: [{ id: "loc-0", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
     );
     const distance = screen.getByTestId("distance-pill");
     // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
