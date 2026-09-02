@@ -18,7 +18,9 @@ Related:  backend/scripts/seed_demo_business.py (single-business pattern — env
           MEH-643) — the 2 image-less businesses exercise that path.
 History:  MEH-1300 (creation); MEH-1707 (the flagship demo business is spared
           from --reset — see the TEST_NAME_PATTERNS comment below for why that
-          is a role change, not a bug fix).
+          is a role change, not a bug fix); MEH-2056 (every inserted business
+          also gets its primary `branch` row on producer_locations — this
+          script wrote coordinates with no row, eight times, on 01/09).
 
 Run (Sapir, Railway one-off — deletes require --confirm):
     # 1) dry-run: prints exactly what WOULD be deleted + inserted, no writes
@@ -49,6 +51,7 @@ from app.models import (  # noqa: E402
     Product,
 )
 from app.models.models import Event, ProducerReview, User  # noqa: E402
+from app.services.producer_queries import create_primary_branch_location  # noqa: E402
 
 # ============================================================================
 # RESET — names of the ACCUMULATED TEST businesses to delete (substring match
@@ -864,6 +867,14 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
 
     db.add(producer)
     db.flush()
+    # MEH-2056 (MEH-1938 chunk 2): the eight ARCHETYPE_BUSINESSES rows this
+    # inserted on 01/09 had coordinates and no producer_locations row — 8 of
+    # the 13 gap rows Sapir measured on staging on 02/09. Same helper the
+    # registration / admin / import writers use (it reads the flushed
+    # instance, so the row mirrors these columns by construction). A
+    # coordinate-less fixture gets no row, which is the helper's contract.
+    # REUSES: backend/app/services/producer_import.py:397
+    create_primary_branch_location(db, producer)
     db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
 
     # MEH-2189: 2-3 products per archetype row so the catalog section on the
