@@ -34,6 +34,7 @@ existing CI legs.
 import json
 import os
 from pathlib import Path
+from typing import get_args
 
 from app.schemas.schemas import ProducerDetailOut, ProducerListOut
 
@@ -62,11 +63,66 @@ _HEADER = [
 ]
 
 
+def _nested_model(annotation):
+    """Return the BaseModel class a field annotation wraps, or None.
+
+    Unwraps `X | None`, `Optional[X]`, `list[X]`, `list[X] | None` — the four
+    shapes the two producer classes actually use (categories, delivery_areas,
+    locations are `list[Model]`; active_offer is `Model | None`). Anything
+    deeper (dict[str, Model], nested lists) returns None on purpose: it does
+    not occur today, and a silent guess here would be the parity test
+    checking a shape nobody serves.
+    """
+    from pydantic import BaseModel
+
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        return annotation
+    for arg in get_args(annotation):
+        if arg is type(None):
+            continue
+        found = _nested_model(arg)
+        if found is not None:
+            return found
+    return None
+
+
+def _served_keys(model) -> list[str]:
+    """Field names AS SERVED — serialization_alias wins over the attribute.
+
+    ProducerLocationOut.location_precision is served as `precision`
+    (schemas.py, `serialization_alias="precision"`); the Zod side declares the
+    wire name, so the wire name is what the snapshot must carry.
+    """
+    return sorted(
+        (f.serialization_alias or name) for name, f in model.model_fields.items()
+    )
+
+
+def _nested_contract(cls) -> dict[str, list[str]]:
+    """MEH-1896: `{"<Class>.<field>": [served keys of the nested model]}`.
+
+    The top-level lists above are what MEH-1891 compares; they cannot see a
+    key stripped INSIDE `categories[]`, because `categories` itself is
+    declared. This map is the nested half of the same contract, keyed by the
+    parent field so the frontend can find the matching `z.object` literal.
+    """
+    out = {}
+    for name, field in cls.model_fields.items():
+        model = _nested_model(field.annotation)
+        if model is not None:
+            out[f"{cls.__name__}.{name}"] = _served_keys(model)
+    return out
+
+
 def _current_contract() -> dict:
+    nested = {}
+    nested.update(_nested_contract(ProducerListOut))
+    nested.update(_nested_contract(ProducerDetailOut))
     return {
         "_README": _HEADER,
         "ProducerListOut": sorted(ProducerListOut.model_fields),
         "ProducerDetailOut": sorted(ProducerDetailOut.model_fields),
+        "nested": dict(sorted(nested.items())),
     }
 
 
@@ -109,6 +165,21 @@ def test_producer_contract_snapshot_is_current():
             "new backend field with no Zod counterpart is what this pair exists "
             "to catch."
         )
+
+    # MEH-1896: the nested half drifts the same way and is checked the same
+    # way. A key added to CategoryOut must show up here, or the frontend
+    # nested-parity test keeps asserting against yesterday's inner shape.
+    live_nested = current["nested"]
+    stored_nested = committed.get("nested")
+    assert stored_nested is not None, (
+        f"{SNAPSHOT_PATH} has no 'nested' map — regenerate: {REGEN_COMMAND}"
+    )
+    assert live_nested == stored_nested, (
+        "The nested contract drifted from the committed snapshot.\n"
+        f"  live:   {live_nested}\n"
+        f"  stored: {stored_nested}\n"
+        f"Regenerate: {REGEN_COMMAND}"
+    )
 
 
 def test_detail_is_a_superset_of_list():
