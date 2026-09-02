@@ -1,69 +1,57 @@
-# Session state — 2026-08-26, Batch 26/08 (MEH-2189 · MEH-1677)
+# Session state — 2026-09-01 night → 02/09, drain יט' (session `01Rqretx5os…`)
 
-**Both code PRs merged. Two items remain open, and both are Sapir's.**
+**One line:** a locally seeded stack ran inside a drain for the first time, reproduced
+`33-admin-producers-tab` numerically, and turned two briefed hypotheses into two measured
+root causes on two different cards.
 
-## Landed
+**Rewritten after every merge. Final rewrite: after all five code/audit PRs landed — the last was #3271 (`be76ec60`).**
 
-| PR | SHA | What | Squash verified? |
-|---|---|---|---|
-| #3115 | `1144a656` | MEH-2189 — 8 archetype×channel demo businesses + smoke spec | yes (1 parent, `<title> (#N)`) |
-| #3116 | `77ab7c78` | MEH-1677 — alembic `b3f7a1c46e92`, two columns | yes (1 parent) |
-| #3117 | `1388b965` | docs-only batch log | yes (1 parent) |
+---
 
-## OPEN — Sapir's, in priority order
+## Merged — five, in landing order
 
-### 1. Seed has never run on staging (blocks MEH-2189)
-```
-python -m scripts.seed_demo_producers --confirm      # Railway one-off
-```
-Until this runs, "8 live demo pages" is false. **MEH-2189 was reopened to Todo** —
-it auto-closed off #3117's branch slug (`feature/meh-2189-batch-docs`), i.e. a
-docs PR closed a code card. Reopen verified to have held.
-Card flag note: the ticket says `--refresh`; the script has no such flag. Real
-flags are `--reset` and `--confirm`.
+| PR | what | landed as |
+|---|---|---|
+| #3268 | `docs/ci/meh-1754-next-public-api-url.patch.md` — the item-5 workflow block, and the record that #2831 was closed stale on 28/08 so **neither half** of item 5 is on staging | `b288292b` |
+| #3267 | MEH-2229 — availability write rolled back from memory, failed re-sync reported. 3 vitest cases: case 1 red on the old handler, case 2 the control, green on both | `9173a967` |
+| #3270 | spec 35, device-dependent WhatsApp href — 24/24 on staging, both projects | `64ed80fc` |
+| #3269 | `docs/audits/2026-08-ci-signal-audit.md` — 23 checks, two that cannot fail on what their name promises | `1bb0a1e4` |
+| #3271 | `docs/audits/undeclared-contract-fields.md` — the baseline is 42, and zero live stripping bugs | `be76ec60` |
 
-### 2. alembic downgrade never exercised (MEH-1677)
-`alembic downgrade base` / `upgrade head` sit in `permissions.deny` and were NOT
-run. The deny is evadable by path prefix (`.venv/bin/alembic …`); that gap was
-reported, never used (rule 32). Sapir approved with the gap disclosed.
-- **UPGRADE path IS proven** against a real Postgres container: CI's pytest job
-  runs `alembic upgrade head` + `Verify alembic schema (36 tables)` + `Alembic
-  drift check`, all green.
-- **ROLLBACK path is unproven.** Nothing has ever run `downgrade` on this revision.
+Every one verified after the fact: **one parent** (a real squash, not a merge commit), author `sapirschnapp`, message template `<title> (#N)`.
 
-### 3. The DoD `SELECT` was not run (MEH-1677)
-`psql` is denied and the sandbox holds no staging DB credentials. Evidence
-gathered instead, and it is INDIRECT:
-```
-before deploy: /api/producers/by-slug/lehem-vezman -> 86 keys, coverage_cta_enabled ABSENT
-after  deploy: /api/producers/by-slug/lehem-vezman -> 87 keys, coverage_cta_enabled = true
-POST .../whatsapp-click {"city":"נתניה"} -> 200 · no body -> 200 · {"city":"???"} -> 200
-```
-`lehem-vezman` predates the column and reads `true`, so `server_default`
-backfilled existing rows. This proves the column exists and accepts writes; it
-does NOT prove what is stored in it.
+## Open
 
-### 4. dnm-matcher-guard patch — unchanged, still Sapir's
-`docs/ci/meh-1523-dnm-label-gate.patch.md`. `.github/workflows/**` is CC-deny.
-The live gate still scans title/body TEXT, not the label — so the `do-not-merge`
-label carries **no mechanical enforcement** today. Worth knowing: during this
-batch the label held only because rule 30 was obeyed, not because anything
-blocked. It was removed on Sapir's explicit instruction, with the authorization
-recorded as a PR comment before the removal so the `unlabeled` event is attributed.
+| PR | what | note |
+|---|---|---|
+| #3273 | spec 38, registration delivery axis (8/8 local, mutation check on both halves) | tests-only, `Closes MEH-2107`. **Sapir merges** — the card says no auto-merge, so it was left unmerged and auto-merge was NOT armed |
+| this one | CHANGELOG + HANDOFF + this file | docs-only. Its `Describes-PRs` trailer lists the five that landed; #3273 is deliberately absent, and nothing here claims it merged (rule 31b) |
 
-## Unexplained, reported rather than resolved
+## What a new session must know
 
-- **`/producers/by-slug/*` returned 200 to my probe and 500 to the E2E runner**,
-  same route, same window. My earlier "Railway staging 500s on every by-slug"
-  diagnosis rests on the runner's log; my own probe contradicts it. Cause unknown.
-- **E2E red repo-wide on 26/08**, including on `staging` itself. 25 failures on
-  #3116's head, all in register/login/admin/map specs, none touching that diff.
-  `E2E gate` is not a required check, so it blocked nothing — but **no PR in this
-  batch has a VRT signal**, and nobody should claim one.
-- **`enable_pr_auto_merge`'s `commitBody` did not land.** GitHub concatenated the
-  branch commits instead, so #3116's squash carries 10× `Refs` and zero `Closes`,
-  and MEH-1677 did not auto-close. Do not rely on a closing keyword in an
-  auto-merge commit.
+1. **A locally seeded healthy stack is ~15 minutes and it works.** `service postgresql start` + `ALTER USER postgres PASSWORD 'postgres'` (the runbook assumes it) → `SKIP_UVICORN=1 bash scripts/local-backend.sh` → `seed_demo_business.py` + `seed_demo_producers --confirm` with local `DEMO_*_PASSWORD` → uvicorn → `NEXT_PUBLIC_API_URL=http://localhost:8000 npm run build` → `npm run start`. Playwright then provisions `admin.json` against it. This is what made MEH-2168 A′ measurable.
+2. **Two instruments reported red before a single test ran, and both were thrown away rather than reported.** The pinned Playwright resolves `chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell`; the image carries `chromium_headless_shell-1194/chrome-linux/headless_shell` — a **directory-layout** problem, not a version one. Symlinks under `/opt/pw-browsers` fix it; never run `playwright install`. And against staging **only the full chrome binary honours `--ssl-version-max=tls1.2`** — the headless shell resets regardless. `frontend/pw-staging.scratch.config.ts` is untracked and must stay so.
+3. **MEH-2168 A′ is (b), the test body, in all three — hypothesis (a) is refuted** by a `beforeEach` that passed 14/14. `:80`/`:193` race `EmptyRow` (no loading flag at `use-admin-producers.js:39`; the trace shows `GET /api/admin/producers` still pending at the assertion). `:128` demands `bg-green` for approved, which has been `bg-primary` since 07/05. `:105` is green for two reasons. Next chunk is tests-only in spec 33, awaiting go.
+4. **MEH-2189: the "closed disclosure" was a misreading of SSR HTML.** `getWhatsAppHref` emits `web.whatsapp.com/send` on fine-pointer desktops, SSR is always `wa.me`, and the swap lands in about **1 of 4 loads** — a hydration mismatch React does not patch. The spec accepts either form. The partial swap is a product observation reported on the card, not fixed.
+5. **MEH-1754 item 5 has two halves and neither is on staging** — #2831 closed stale 28/08, `env.client.js:27` still `.optional()`. Card description corrected (rule 34). Workflow half first, then the code half re-cut from `5b339fc3`.
+6. **Merge rule measured tonight:** the ruleset refuses a merge when the base moved since the head's checks reported ("2 of 2 required status checks are expected"). Update the branch, wait, merge.
+7. **Vercel's daily deployment quota is exhausted** (`api-deployments-free-per-day`, over 100). It shows as a red status on every open PR, resets on its own, and no commit clears it.
+
+## Parked with a measurement, not a promise
+
+MEH-1892 (the one-line fix **is** option 3 — all of `/en` to LTR, a product ruling) · MEH-1414 (Phase 0 on the card; central component; the `MapClient.jsx:523-529` prohibition and `__MAP_CENTER__` being a hardcoded literal that would lie about a restored view) · MEH-2079 (all three tables carry an indexed time column, so a purge is one `DELETE`; row counts are **not measurable from the sandbox** — the SQL is on the card) · MEH-1896 (option ג plan on the card, discrimination proven before the baseline is filled, STOP).
+
+## For Sapir, over coffee — priority order
+
+1. **MEH-2189 / `lib/utils.js`** — the desktop `web.whatsapp.com` optimisation applies in ~¼ of loads. Fix or accept?
+2. **MEH-2168 chunk 2 go** — spec 33 fixes are tests-only: wait for a real row, and approved is `bg-primary`.
+3. **MEH-2237 §5** — two one-liners: the RTL lint rule to a ratchet, and Branch name gate into `ci-gate`.
+4. **MEH-1754** — apply the patch.md; the code half is re-cut after it.
+5. **MEH-2079** — run the row-count SQL on staging; pick windows (48h / 13mo / 13mo + roll-up proposed).
+6. **MEH-2189 contact sheet** — 16 fresh PNGs exist untracked; commit them (webp, under 2 MB)?
+7. Standing: MEH-2219 ch2 vs ADR-003 · the MEH-2184 patch · the MEH-2080 threshold · `gov.il` on the allowlist.
 
 ## Guards
-16 ran, 1 warned (`dnm-matcher-guard`) — the same pre-existing warn all session.
+
+STEP 0: `--self-test` 17/17 · `shallow=false` · `currency: ok` · `0 OPEN · 11 parked · 1 satisfied · 5 skipped · 2 unstarted · 0 void`.
+`scripts/checks/run-all.sh`: 18 guards ran, 0 fail, 3 warned (all pre-existing on a clean tree).
