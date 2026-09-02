@@ -1121,9 +1121,11 @@ class ProducerLocationOut(BaseModel):
     """MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /
     pickup / market_stand) serialized on `ProducerListOut.locations[]`. Read
     straight off the `ProducerLocation` ORM rows (selectinload'd in
-    producer_listing.py — no N+1). Expand-phase serialization only; the
-    Producer.lat/lng column stays the primary mirror (chunk-3 map UI consumes
-    this array). `precision` is emitted from the ORM's `location_precision`
+    producer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the
+    ONLY source of a business's position: `ProducerListOut.lat/lng` are
+    derived from the `is_primary` row here, and the `Producer.lat/lng`
+    columns are a legacy mirror ahead of the chunk-5b drop (the map UI
+    consumes this array). `precision` is emitted from the ORM's `location_precision`
     column (serialization_alias) to match the epic's map contract shape.
     Street `address` is intentionally NOT exposed here — MEH-829 keeps the
     exact address admin/owner-only; the map pins on lat/lng + city and
@@ -2333,8 +2335,10 @@ class ProducerListOut(BaseModel):
     # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
     # market_stand). selectinload'd on both LIST branches + the DETAIL query
     # (producer_listing.py + producers.py) so from_attributes reads the loaded
-    # relationship with no N+1. Empty for producers with no location rows yet
-    # (Expand overlap — Producer.lat/lng still drives their single map pin).
+    # relationship with no N+1. Empty for producers with no location rows —
+    # and since MEH-1938 chunk 5a such a producer has NO map pin and
+    # serializes `lat`/`lng` as null (see _derive_lat_lng_from_primary_location
+    # below); the Expand-overlap fallback to Producer.lat/lng is gone.
     # Chunk 3 (map UI) is the consumer; the frontend ProducerSchema (non-strict
     # z.object, schemas.js:7) silently strips this until chunk 3 declares it.
     locations: list[ProducerLocationOut] = []

@@ -270,7 +270,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // the row is where the admin's save lands anyway (MEH-2059 routes the
       // lat/lng this form still submits into upsert_primary_branch_location).
       // No fallback to the columns on purpose: they are dropped in chunk 5b.
-      const primaryLocation = initial.locations?.find((loc) => loc?.is_primary) ?? null;
+      const primaryLocation = initial.locations?.find((loc) => loc?.is_primary === true) ?? null;
       setForm({
         ...EMPTY,
         ...initial,

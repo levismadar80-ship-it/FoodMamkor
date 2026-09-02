@@ -61,15 +61,19 @@ class Producer(Base):
     city = Column(String(100))
     address = Column(String(255), nullable=True)
     # LEGACY(2026-10-15, MEH-1938) — `lat` / `lng` are the business-level mirror
-    # of the primary `producer_locations` row. Since chunk 5a (02/09) NO reader
-    # falls back to them (geo, submit gate, admin map, producerPoints,
-    # JSON-LD) and the owner PUT ignores them; `ProducerListOut.lat/lng` are
-    # DERIVED from the primary row at serialization. Admin, import and the
-    # seeds still WRITE them during the soak, so they are not dead. Chunk 5b
-    # drops both columns — [DESTRUCTIVE], its own revision, ≥7-day soak, R2
-    # backup ≤24h, the MEH-2056 count query = 0 on production first.
-    # DO NOT add a reader of these columns anywhere — producer_queries.py's
-    # haversine_min_km carries the standing "no COALESCE" rule.
+    # of the primary `producer_locations` row. Since chunk 5a (02/09) no
+    # CONSUMER SURFACE reads them (geo, submit gate, admin map, producerPoints,
+    # JSON-LD all read the rows, with no fallback) and the owner PUT ignores
+    # them; `ProducerListOut.lat/lng` are DERIVED from the primary row at
+    # serialization. Two readers remain on purpose, in the WRITE direction:
+    # producer_queries.create_primary_branch_location and
+    # upsert_primary_branch_location copy the columns INTO the row, because
+    # admin, import and the seeds still deliver coordinates through them
+    # during the soak. Chunk 5b rewires those helpers to take coordinates
+    # directly and drops both columns — [DESTRUCTIVE], its own revision,
+    # ≥7-day soak, R2 backup ≤24h, the MEH-2056 count query = 0 on production.
+    # DO NOT add a reader of these columns on any consumer path —
+    # producer_queries.haversine_min_km carries the standing "no COALESCE" rule.
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))

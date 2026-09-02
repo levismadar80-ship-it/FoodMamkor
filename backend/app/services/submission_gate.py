@@ -115,7 +115,9 @@ def _has_location(producer: Producer) -> bool:
     # location row, so nothing this gate governs changed hands.
     #
     # Still the fail-closed direction the docstring above demands: a producer
-    # whose locations failed to load reads as MISSING, not as satisfied.
+    # with no rows, or rows without usable coordinates, reads as MISSING, not
+    # as satisfied. (A relationship that fails to LOAD raises, as it always
+    # did — this guards the empty case, not the exception case.)
     return any(
         _is_usable_coord(loc.lat) and _is_usable_coord(loc.lng)
         for loc in producer.locations or []

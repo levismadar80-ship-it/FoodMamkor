@@ -93,6 +93,38 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
     expect(before(reviews, minimap)).toBe(true); // location is last
   });
 
+  // MEH-1938 chunk 5a — the removal path, so the gate cannot quietly revert
+  // to `!!producer.lat && !!producer.lng`: coordinates on the columns alone
+  // (no row) render NO location section and NO MiniMap. Against the pre-5a
+  // gate this producer mounts both.
+  it("hides the location section and the MiniMap for coordinates that live only on the columns (MEH-1938 chunk 5a)", () => {
+    const { container } = render(
+      <ProducerSections
+        producer={{
+          id: 1,
+          name: "חוות",
+          slug: "x",
+          description: "תיאור",
+          products: [{ id: 9, name: "מוצר", image_url: null }],
+          offers_delivery: true,
+          delivery_areas: [{ id: 1, city: "עיר", min_order: 50, delivery_day: "שישי" }],
+          has_physical_location: true,
+          lat: 32,
+          lng: 34,
+          locations: [],
+          categories: [{ id: 1, name: "ירקות" }],
+        }}
+        events={[]}
+        similarProducers={[]}
+        sectionRefs={{ current: {} }}
+        reviewsContainerRef={{ current: null }}
+        reviewsVisible={true}
+      />,
+    );
+    expect(screen.queryByTestId("minimap")).toBeNull();
+    expect(container.querySelector("#section-location")).toBeNull();
+  });
+
   // MEH-1168 P3: the editorial DeliveryBlock serves ALL producers (the legacy
   // table retired). It must render when offers_delivery is FALSE but the
   // producer still has delivery_areas rows (or pickup_points).

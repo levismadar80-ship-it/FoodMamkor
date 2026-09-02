@@ -470,6 +470,26 @@ else
   fi
 fi
 
+# MEH-1938 chunk 5a — Producer.lat/lng carry LEGACY(2026-10-15, MEH-1938)
+# (backend/app/models/models.py). That marker is chunk 5b's deadline: the
+# [DESTRUCTIVE] column drop, ≥7-day soak after 5a, R2 backup ≤24h, count=0 on
+# production. Same shape as the B3 row above: SATISFIED once the marker is
+# gone (the drop shipped), a week's warning before legacy-expiry-check.sh
+# would red the required Repo guards job on whichever PR is open on 15/10.
+v=$(count 'LEGACY(2026-10-15, MEH-1938)' backend/app/models/models.py); v=${v:-0}
+if [ "$v" -eq 0 ]; then
+  echo "    SATISFIED  MEH-1938 5b     lat/lng LEGACY marker is gone from models.py at $REF."
+  satisfied=$((satisfied + 1))
+else
+  d=$(days_until 2026-10-15 "$(date -u +%s)")
+  if [ -z "$d" ]; then
+    printf '  VOID    %-16s %-38s %s\n' "MEH-1938 5b" "lat/lng LEGACY days-left UNMEASURABLE" "(date -d unavailable)"
+    void=$((void + 1))
+  else
+    report "MEH-1938 5b"  "lat/lng LEGACY <8 days left (now=days)" "$d" "$(verdict lt "$d" 8)"
+  fi
+fi
+
 # MEH-1694 part B — the card's own <precondition_hard>, run rather than quoted.
 v=$(baseline_drift)
 if [ "$v" -lt 0 ] 2>/dev/null; then

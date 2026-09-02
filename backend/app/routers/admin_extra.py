@@ -394,7 +394,10 @@ def _primary_location_points(db: Session, *, limit: int | None = None):
     Inner join on purpose: a business with no primary row, or a primary row
     with a cleared pin (the admin path mirrors a clear onto the row rather
     than deleting it — producer_queries.upsert_primary_branch_location),
-    has no point to plot and drops out, exactly as a NULL column did before.
+    has no point to plot and drops out. That is what a NULL column did
+    before, plus one population the column never expressed: rows that exist
+    but none flagged primary. By the STRICT ruling (02/09) that is a data
+    defect to surface, not to paper over with "any row".
 
     # DO NOT fall back to Producer.lat/lng here — that is the read chunk 5a
     #        exists to remove, and chunk 5b's revision assumes zero readers.
