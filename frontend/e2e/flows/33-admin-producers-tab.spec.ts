@@ -169,8 +169,13 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     // staging carries a row whose badge is the unknown-status fallback, and
     // the loop failed on it at row 12 on the mobile project while desktop
     // happened to receive the response first (MEH-2168 chunk 2 measurement).
+    // Bounded explicitly (CI reviewer on this PR): the default would be the
+    // 30s navigation timeout, which reads like a hang. 15s is far above a
+    // healthy response and identical to nothing else here by design — it
+    // caps the pathological case only.
     const filtered = page.waitForResponse(
       (r) => r.url().includes("/admin/producers") && r.url().includes("status=approved") && r.ok(),
+      { timeout: 15_000 },
     );
     await select.selectOption("approved");
     await filtered;
