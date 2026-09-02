@@ -17,7 +17,7 @@
 import { SITE_URL } from "./env";
 import { BRAND_NAME, BRAND_SAME_AS, SITE_DESCRIPTION } from "./constants";
 import { parseHours, resolveStoreHours } from "./hours";
-import { producerPoints } from "./producerPoints.js";
+import { primaryPoint } from "./producerPoints.js";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -254,13 +254,11 @@ export function buildJsonLd(producer, locale = "he") {
   }
 
   // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
-  // directly. Chunk 5a removed producerPoints()'s fallback to the columns, so a
-  // business with no usable location row gets no geo — by design.
-  // Prefers the PRIMARY point when one exists — Producer.locations has no
-  // `order_by` (models.py:369), so points[0] is arbitrary DB row order, not
-  // necessarily the branch address this structured data should describe.
-  const geoPoints = isDeliveryOnly ? [] : producerPoints(producer);
-  const geoPoint = geoPoints.find((pt) => pt.location?.is_primary) ?? geoPoints[0];
+  // directly. Chunk 5a: the SAME rule as the API's own lat/lng — the
+  // `is_primary` row or nothing (primaryPoint(); ruling 02/09, STRICT). The
+  // `?? geoPoints[0]` that used to sit here was a third answer to "where is
+  // the business" — arbitrary DB row order, possibly a pickup — and is gone.
+  const geoPoint = isDeliveryOnly ? null : primaryPoint(producer);
   if (geoPoint) {
     business.geo = {
       "@type": "GeoCoordinates",

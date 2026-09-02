@@ -102,13 +102,19 @@ describe("primaryPoint — the business page's single pin (MEH-1938 chunk 5a)", 
     expect(pt.location).toBe(PRIMARY);
   });
 
-  it("falls to the first branch row when no row is flagged primary", () => {
-    expect(primaryPoint({ locations: [PICKUP, BRANCH] })).toMatchObject({ lat: 32.5732, lng: 34.9519 });
+  // STRICT by ruling (Sapir, 02/09): the same rule as the backend's derived
+  // ProducerListOut.lat/lng — is_primary or nothing. Against the first-branch
+  // fallback this file shipped with for one sub-step, the first case here
+  // returns BRANCH and goes red; that fallback was a guess, not a measurement.
+  it("does NOT fall to the first branch row when no row is flagged primary — a missing primary is a data defect", () => {
+    expect(primaryPoint({ locations: [PICKUP, BRANCH] })).toBeNull();
+    expect(primaryPoint({ locations: [BRANCH] })).toBeNull();
   });
 
-  it("never answers with a pickup or market stand", () => {
+  it("is kind-agnostic: a pickup flagged primary IS the answer (wrong data shows up), an unflagged one is not", () => {
     expect(primaryPoint({ locations: [PICKUP] })).toBeNull();
-    expect(primaryPoint({ locations: [{ kind: "market_stand", is_primary: true, lat: 32.5, lng: 34.9 }] })).toBeNull();
+    const flaggedPickup = { kind: "pickup", is_primary: true, lat: 32.5, lng: 34.9 };
+    expect(primaryPoint({ locations: [flaggedPickup] })).toMatchObject({ lat: 32.5, lng: 34.9, kind: "pickup" });
   });
 
   it("is null for columns-only, for a NULL-pin primary row, and for null input", () => {

@@ -70,21 +70,27 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
 
 /**
  * MEH-1938 chunk 5a: THE point that stands for "where the business is" — the
- * `is_primary` branch row, else the first branch row, never a pickup or a
- * market stand. `null` when the business has no such point.
+ * row flagged `is_primary`, with usable coordinates. `null` otherwise.
+ *
+ * STRICT, by ruling (Sapir, 02/09): no "else the first branch row". The
+ * backend derives `ProducerListOut.lat/lng` from the `is_primary` row or
+ * None (schemas.py, `_derive_lat_lng_from_primary_location`), and this is the
+ * same rule in JavaScript, so one business cannot render on the map here and
+ * carry null coordinates in the API. A business with rows and no primary is a
+ * DATA DEFECT (the single-primary invariant is application-level — there is
+ * no DB unique on it) and must stay visible as one, not be papered over by a
+ * guess. Kind-agnostic for the same reason: a pickup flagged primary is wrong
+ * data that should show up, not be silently skipped.
  *
  * The business page (ProducerSections.jsx) centres its MiniMap on this and
- * gates the location section on it; before chunk 5a both read
- * `Producer.lat/lng` directly, the last two readers of the columns on a
- * consumer surface. Composes `producerPoints` with the secondary layer OFF so
- * the answer cannot drift from the map's own primary pins.
+ * gates the location section on it; JSON-LD geo (seo.js) reads it too. Before
+ * chunk 5a those read `Producer.lat/lng` directly.
  *
  * @param {object|null} producer  a ProducerListOut-shaped object
  * @returns {{lat: number, lng: number, kind: string|null, location: object}|null}
  */
 export function primaryPoint(producer) {
-  const primaries = producerPoints(producer, { includeSecondary: false });
-  return primaries.find((pt) => pt.location?.is_primary === true) ?? primaries[0] ?? null;
+  return producerPoints(producer).find((pt) => pt.location?.is_primary === true) ?? null;
 }
 
 /**

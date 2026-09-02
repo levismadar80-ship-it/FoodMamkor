@@ -189,6 +189,22 @@ describe("buildJsonLd", () => {
     expect(business.geo).toBeUndefined();
   });
 
+  // MEH-1938 chunk 5a, STRICT ruling: geo is the is_primary row or nothing —
+  // the same answer the API's lat/lng give. The `?? geoPoints[0]` this replaced
+  // emitted a pickup's coordinates here, and a branch that nobody flagged.
+  it("omits geo when rows exist but none is flagged primary", () => {
+    const business = getBusiness(
+      buildJsonLd({
+        ...fullProducer,
+        locations: [
+          { id: "pickup", kind: "pickup", is_primary: false, lat: 32.1, lng: 34.9 },
+          { id: "branch", kind: "branch", is_primary: false, lat: 31.8928, lng: 34.8113 },
+        ],
+      }),
+    );
+    expect(business.geo).toBeUndefined();
+  });
+
   // MEH-1938 chunk 3 — the discriminating case: geo now reads through
   // producerPoints(), so a producer whose only coordinates live in a
   // producer_locations row (no Producer.lat/lng) still gets a geo entry.
