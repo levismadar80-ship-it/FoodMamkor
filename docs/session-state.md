@@ -4,26 +4,28 @@
 `33-admin-producers-tab` numerically, and turned two briefed hypotheses into two measured
 root causes on two different cards.
 
-**Rewritten after every merge. Final rewrite: after #3267 (`9173a967`) and #3268 (`b288292b`) merged.**
+**Rewritten after every merge. Final rewrite: after all five code/audit PRs landed — the last was #3271 (`be76ec60`).**
 
 ---
 
-## Merged
+## Merged — five, in landing order
 
 | PR | what | landed as |
 |---|---|---|
-| #3268 | `docs/ci/meh-1754-next-public-api-url.patch.md` — the item-5 workflow block, and the record that #2831 was closed stale on 28/08 so **neither half** of item 5 is on staging | `b288292b`, squash |
-| #3267 | MEH-2229 — availability write rolled back from memory, failed re-sync reported. 3 vitest cases: case 1 red on the old handler, case 2 the control, green on both | `9173a967`, squash |
+| #3268 | `docs/ci/meh-1754-next-public-api-url.patch.md` — the item-5 workflow block, and the record that #2831 was closed stale on 28/08 so **neither half** of item 5 is on staging | `b288292b` |
+| #3267 | MEH-2229 — availability write rolled back from memory, failed re-sync reported. 3 vitest cases: case 1 red on the old handler, case 2 the control, green on both | `9173a967` |
+| #3270 | spec 35, device-dependent WhatsApp href — 24/24 on staging, both projects | `64ed80fc` |
+| #3269 | `docs/audits/2026-08-ci-signal-audit.md` — 23 checks, two that cannot fail on what their name promises | `1bb0a1e4` |
+| #3271 | `docs/audits/undeclared-contract-fields.md` — the baseline is 42, and zero live stripping bugs | `be76ec60` |
 
-## Open — CI-gated, none auto-merged
+Every one verified after the fact: **one parent** (a real squash, not a merge commit), author `sapirschnapp`, message template `<title> (#N)`.
+
+## Open
 
 | PR | what | note |
 |---|---|---|
-| #3269 | `docs/audits/2026-08-ci-signal-audit.md` | docs-only, `Closes`. Merge refused once with "2 of 2 required checks are expected" after the base moved — branch updated, gates re-registering |
-| #3270 | spec 35, device-dependent WhatsApp href (24/24 on staging) | tests-only, `Refs`. Both reviewer nits fixed in `9ecd1f0f`; standing-down comment posted for the E2E red |
-| #3271 | `docs/audits/undeclared-contract-fields.md` | docs-only, `Refs` |
-| #3273 | spec 38, registration delivery axis (8/8 local, mutation check both halves) | tests-only, `Closes`. **Sapir merges** — the card says no auto-merge |
-| this one | CHANGELOG + HANDOFF + this file | docs-only. **Do not merge before the four above land** (rule 31b) |
+| #3273 | spec 38, registration delivery axis (8/8 local, mutation check on both halves) | tests-only, `Closes MEH-2107`. **Sapir merges** — the card says no auto-merge, so it was left unmerged and auto-merge was NOT armed |
+| this one | CHANGELOG + HANDOFF + this file | docs-only. Its `Describes-PRs` trailer lists the five that landed; #3273 is deliberately absent, and nothing here claims it merged (rule 31b) |
 
 ## What a new session must know
 
