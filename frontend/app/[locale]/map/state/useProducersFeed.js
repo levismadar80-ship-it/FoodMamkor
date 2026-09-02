@@ -30,6 +30,13 @@ export function useProducersFeed() {
   // above) and deliberately does NOT toggle this flag — MAP-16 covers the
   // initial-load flicker, not area re-queries over an already-drawn list.
   const [loading, setLoading] = useState(true);
+  // MEH-2170: the mount catalog, captured ONCE from the first fetch — the
+  // only request that is both unfiltered and not viewport-bounded. Never
+  // overwritten by a toggle reload (loadProducers with chip params) or by the
+  // geo-search refetch in useMapSync (which bypasses loadProducers anyway).
+  // null until that first fetch resolves; consumers treat null as "unknown"
+  // and gate nothing. See lib/map-chips.js visibleMapToggleChips.
+  const [catalogSnapshot, setCatalogSnapshot] = useState(null);
 
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
@@ -39,7 +46,7 @@ export function useProducersFeed() {
     showToast.error(t("map.errors.load_failed"));
   };
 
-  const loadProducers = (params = {}) => {
+  const loadProducers = (params = {}, { snapshot = false } = {}) => {
     setLoading(true);
     api
       .get("/producers", { params })
@@ -52,6 +59,9 @@ export function useProducersFeed() {
           return;
         }
         setAllProducers(parsed.data);
+        // MEH-2170: only the mount call asks for the snapshot; a failed or
+        // malformed first load leaves it null (no gating), by design.
+        if (snapshot) setCatalogSnapshot(parsed.data);
       })
       .catch(handleLoadFailure)
       // MEH-1054: every terminal path (data / malformed / network error)
@@ -62,8 +72,15 @@ export function useProducersFeed() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
-    loadProducers();
+    loadProducers({}, { snapshot: true });
   }, []);
 
-  return { allProducers, setAllProducers, categories, loadProducers, loading };
+  return {
+    allProducers,
+    setAllProducers,
+    categories,
+    loadProducers,
+    loading,
+    catalogSnapshot,
+  };
 }
