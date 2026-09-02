@@ -1,132 +1,55 @@
-# Session state — 2026-09-01 night, drain יח' (session `0113JYkWvGYY…`)
+# Session state — 2026-09-01 night → 02/09, drain יט' (session `01Rqretx5os…`)
 
-**One line:** the MEH-2189 smoke spec ran against real data for the first time —
-**11 passed, 1 failed** — and both sandbox blockers that had made that impossible
-turned out to be already-documented and clearable without touching repo config.
+**One line:** a locally seeded stack ran inside a drain for the first time, reproduced
+`33-admin-producers-tab` numerically, and turned two briefed hypotheses into two measured
+root causes on two different cards.
 
----
-
-## The headline: 8 demo pages are LIVE, and the spec finally had something to measure
-
-Sapir seeded staging tonight (`Inserted 8 of 8`, then `Inserted 0 of 8` on a second
-`--confirm` — idempotency proven). Independently verified before running anything:
-
-| probe | result |
-|---|---|
-| all 8 archetype slugs, `GET /api/producers/by-slug/<slug>` | **`200` ×8** |
-| control: `zzz-no-such-producer` | **`404`** |
-
-The control matters: without it a `200` proves only that something answered.
-
-### The run
-
-```
-target: https://staging.mehamakor.online   (project: desktop)
-[MEH-2189 fixture gate] seeded=true (GET /api/producers/by-slug/sdot-zahav -> 200)
-
-  11 passed (1.3m)
-   1 failed — beacon :: whatsapp-click fires on wa.me items and on nothing else
-```
-
-**All eight matrix rows passed, including the edge.** `maadaniyat-ben-shemen`
-(phone-primary, `phone=NULL`) renders **no CTA** — not a dead `tel:` link. That was
-the card's STOP condition (e) and **it did not fire**. `breakpoints` and
-`contact sheet` passed too.
+**Rewritten after every merge. Final rewrite: after #3267 (`9173a967`) and #3268 (`b288292b`) merged.**
 
 ---
 
-## The one failure is a spec gap, not a product bug — and it was classified, not guessed
+## Merged
 
-It failed on the test's **own CONTROL step**: no *visible* `question-link` with a
-`wa.me` href on `sdot-zahav`. Measured against the live HTML:
+| PR | what | landed as |
+|---|---|---|
+| #3268 | `docs/ci/meh-1754-next-public-api-url.patch.md` — the item-5 workflow block, and the record that #2831 was closed stale on 28/08 so **neither half** of item 5 is on staging | `b288292b`, squash |
+| #3267 | MEH-2229 — availability write rolled back from memory, failed re-sync reported. 3 vitest cases: case 1 red on the old handler, case 2 the control, green on both | `9173a967`, squash |
 
-```
-sdot-zahav:  question-link ×2 · wa.me ×9 · primary-cta ×2
-<button aria-expanded="false" data-testid="quick-answer-toggle" …>
-```
+## Open — CI-gated, none auto-merged
 
-The chips **exist and are correct** — `<a href="https://wa.me/…" data-testid="question-link">`
-— but sit behind a disclosure that is **collapsed by default**. The spec clicks
-without opening it. That is a **test-bug** under MEH-1249's own test-bug/app-bug
-distinction, and it is the CLAUDE.md 5-state rule exactly: **open/closed for every reveal.**
+| PR | what | note |
+|---|---|---|
+| #3269 | `docs/audits/2026-08-ci-signal-audit.md` | docs-only, `Closes`. Merge refused once with "2 of 2 required checks are expected" after the base moved — branch updated, gates re-registering |
+| #3270 | spec 35, device-dependent WhatsApp href (24/24 on staging) | tests-only, `Refs`. Both reviewer nits fixed in `9ecd1f0f`; standing-down comment posted for the E2E red |
+| #3271 | `docs/audits/undeclared-contract-fields.md` | docs-only, `Refs` |
+| #3273 | spec 38, registration delivery axis (8/8 local, mutation check both halves) | tests-only, `Closes`. **Sapir merges** — the card says no auto-merge |
+| this one | CHANGELOG + HANDOFF + this file | docs-only. **Do not merge before the four above land** (rule 31b) |
 
-> ### 🔴 And a second finding: one of the 11 "passes" is green for two reasons
->
-> `MEH-2154 :: non-whatsapp-primary pages carry zero wa.me links in the question chips`
-> passed. But `beit-habad-sivan` (email-primary) has **`question-link ×0`** — there
-> are no chips at all. The assertion passes because nothing is there, not because
-> what is there is right. **That is `testing.md`'s "green with two possible causes",
-> and it is currently counted as one of the 11.**
->
-> Whether an email-primary page *should* carry channel-aware `mailto:` chips is a
-> product question. **Not decided here.**
+## What a new session must know
 
-**Zero component changes. Zero spec changes.** Both fixes deserve a focused pass.
+1. **A locally seeded healthy stack is ~15 minutes and it works.** `service postgresql start` + `ALTER USER postgres PASSWORD 'postgres'` (the runbook assumes it) → `SKIP_UVICORN=1 bash scripts/local-backend.sh` → `seed_demo_business.py` + `seed_demo_producers --confirm` with local `DEMO_*_PASSWORD` → uvicorn → `NEXT_PUBLIC_API_URL=http://localhost:8000 npm run build` → `npm run start`. Playwright then provisions `admin.json` against it. This is what made MEH-2168 A′ measurable.
+2. **Two instruments reported red before a single test ran, and both were thrown away rather than reported.** The pinned Playwright resolves `chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell`; the image carries `chromium_headless_shell-1194/chrome-linux/headless_shell` — a **directory-layout** problem, not a version one. Symlinks under `/opt/pw-browsers` fix it; never run `playwright install`. And against staging **only the full chrome binary honours `--ssl-version-max=tls1.2`** — the headless shell resets regardless. `frontend/pw-staging.scratch.config.ts` is untracked and must stay so.
+3. **MEH-2168 A′ is (b), the test body, in all three — hypothesis (a) is refuted** by a `beforeEach` that passed 14/14. `:80`/`:193` race `EmptyRow` (no loading flag at `use-admin-producers.js:39`; the trace shows `GET /api/admin/producers` still pending at the assertion). `:128` demands `bg-green` for approved, which has been `bg-primary` since 07/05. `:105` is green for two reasons. Next chunk is tests-only in spec 33, awaiting go.
+4. **MEH-2189: the "closed disclosure" was a misreading of SSR HTML.** `getWhatsAppHref` emits `web.whatsapp.com/send` on fine-pointer desktops, SSR is always `wa.me`, and the swap lands in about **1 of 4 loads** — a hydration mismatch React does not patch. The spec accepts either form. The partial swap is a product observation reported on the card, not fixed.
+5. **MEH-1754 item 5 has two halves and neither is on staging** — #2831 closed stale 28/08, `env.client.js:27` still `.optional()`. Card description corrected (rule 34). Workflow half first, then the code half re-cut from `5b339fc3`.
+6. **Merge rule measured tonight:** the ruleset refuses a merge when the base moved since the head's checks reported ("2 of 2 required status checks are expected"). Update the branch, wait, merge.
+7. **Vercel's daily deployment quota is exhausted** (`api-deployments-free-per-day`, over 100). It shows as a red status on every open PR, resets on its own, and no commit clears it.
 
----
+## Parked with a measurement, not a promise
 
-## Both sandbox blockers cleared — documented, and with no repo config touched
+MEH-1892 (the one-line fix **is** option 3 — all of `/en` to LTR, a product ruling) · MEH-1414 (Phase 0 on the card; central component; the `MapClient.jsx:523-529` prohibition and `__MAP_CENTER__` being a hardcoded literal that would lie about a restored view) · MEH-2079 (all three tables carry an indexed time column, so a purge is one `DELETE`; row counts are **not measurable from the sandbox** — the SQL is on the card) · MEH-1896 (option ג plan on the card, discrimination proven before the baseline is filled, STOP).
 
-| blocker | fix |
-|---|---|
-| pinned `@playwright/test` resolves `chromium_headless_shell-1234`; image carries **1194** (the MEH-2168 A′ blocker) | `executablePath` → `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` |
-| every `page.goto` → **`net::ERR_CONNECTION_RESET`** | `--ssl-version-max=tls1.2` (`testing.md`, MEH-938/942, re-confirmed MEH-2118) |
+## For Sapir, over coffee — priority order
 
-**The discriminator that proved it was the browser and not staging:** the spec's
-fixture gate uses Playwright's *request* context (Node, not Chromium) and reported
-`seeded=true (200)` **in the same run** where every browser navigation reset.
-
-Both overrides lived in a scratch file that was **not committed**.
-
-> **Contact sheet — a correction worth carrying.** The 16 `.webp` in
-> `frontend/qa-artifacts/meh-2189/` were **already tracked**; they landed in #3115
-> itself (`1144a656`). The spec writes **PNG only** (`:266`), so tonight's run
-> produced 16 fresh PNGs (2.5 MB) which were discarded per MEH-1156.
-> **The merged sheet therefore predates the seed and cannot depict the seeded
-> pages.** No new sheet was produced this window.
-
----
-
-## STEP 0 lied to me, and the control said `ok` while it did
-
-STEP 0 was first run from a local base branch **two commits behind** its remote.
-The **old** script executed, printed **three fewer rows** than exist, and reported
-`currency: ok` — truthfully, because the *remote ref* was current. The **working
-tree** was not.
-
-```
-first   0 OPEN ·  8 parked · 1 satisfied · 6 skipped · 1 unstarted   ← stale script
-true    0 OPEN · 11 parked · 1 satisfied · 6 skipped · 2 unstarted
-```
-
-Named in `scripts/wake-when.sh`'s header (#3265). No code fix: a script cannot ask
-whether it is itself the newest version without trusting the tree it was read from.
-
----
-
-## Per-item verdicts
-
-| item | verdict |
-|---|---|
-| **T0** MEH-2189 chunk C | ✅ **run** — 11/12, both findings on the card, only the spec DoD line ticked |
-| **T10** retire MEH-1976 SKIP row | ✅ **#3265** — post-launch card, row was noise; tally 6→5 derived |
-| **T11 / T4** wake-when OPEN | ✅ **empty** — 0 OPEN |
-| **T1** MEH-2192 | ⏸️ **refuted twice** (drains 17 + 18): `llms.txt` ✓ · `buildOrganizationNode` with `description`+`sameAs` ✓ · `about.updated_at` ✓. Nothing to ship. |
-| **T4/T2** MEH-2080 | 📊 **measured, parked**: `User` has **no** DOB/age column; `UserRegister` + `ProducerRegister` collect none. Both carry `terms_accepted: bool = False`, and `schemas.py:737-748` records that ToS consent **reaches no column at all** — that is the natural carrier and it is already half-built. Threshold = Sapir's ruling; a column = Alembic = not tonight. |
-| **T2** MEH-1754 · **T3** MEH-2079 · **T5–T9** | ⏸️ **not reached** |
-
----
-
-## For Sapir, over coffee — her rulings queue, in priority order
-
-1. **MEH-2189** — the contact sheet on staging predates your seed. Do you want a
-   fresh one, and do you want the mobile pass now that 8 pages are live?
-2. **MEH-2189 / MEH-2154** — should an email-primary page carry channel-aware
-   `mailto:` question chips, or none? A passing test currently depends on the answer.
-3. **MEH-2080** — the minimum-age threshold, and whether it rides `terms_accepted`.
-4. **MEH-2219** ch2 vs ADR-003 (unchanged from drain טז').
-5. Apply `docs/ci/meh-2184-qa-artifacts-pathspec.patch.md`.
+1. **MEH-2189 / `lib/utils.js`** — the desktop `web.whatsapp.com` optimisation applies in ~¼ of loads. Fix or accept?
+2. **MEH-2168 chunk 2 go** — spec 33 fixes are tests-only: wait for a real row, and approved is `bg-primary`.
+3. **MEH-2237 §5** — two one-liners: the RTL lint rule to a ratchet, and Branch name gate into `ci-gate`.
+4. **MEH-1754** — apply the patch.md; the code half is re-cut after it.
+5. **MEH-2079** — run the row-count SQL on staging; pick windows (48h / 13mo / 13mo + roll-up proposed).
+6. **MEH-2189 contact sheet** — 16 fresh PNGs exist untracked; commit them (webp, under 2 MB)?
+7. Standing: MEH-2219 ch2 vs ADR-003 · the MEH-2184 patch · the MEH-2080 threshold · `gov.il` on the allowlist.
 
 ## Guards
 
-18 ran, **0 fail**, 3 warned — all pre-existing on clean `origin/staging`.
+STEP 0: `--self-test` 17/17 · `shallow=false` · `currency: ok` · `0 OPEN · 11 parked · 1 satisfied · 5 skipped · 2 unstarted · 0 void`.
+`scripts/checks/run-all.sh`: 18 guards ran, 0 fail, 3 warned (all pre-existing on a clean tree).

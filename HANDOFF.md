@@ -3,6 +3,36 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-01 לילה → 02/09 — drain יט' (session `01Rqretx5os…`): הסטאק המקומי המזורע שיחזר את CI מספרית, ושתי פרמיסות של תדריך הופרכו במדידה
+
+**‏שורה אחת:** בפעם הראשונה בתוך drain הורם סטאק מלא ומזורע מקומית — והוא הפך שתי «היפותזות» לשתי סיבות שורש מדודות, על שני כרטיסים שונים.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏סטאק מקומי מזורע הוא ~15 דקות, והוא עובד.** `service postgresql start` + `ALTER USER postgres PASSWORD 'postgres'` (הרנבוק מניח את זה) → `SKIP_UVICORN=1 bash scripts/local-backend.sh` → `seed_demo_business.py` + `seed_demo_producers --confirm` עם `DEMO_*_PASSWORD` מקומיים → uvicorn → `NEXT_PUBLIC_API_URL=http://localhost:8000 npm run build` → `npm run start`. ‏`global-setup` מקצה `admin.json` מולו. **זה מה שהפך את MEH-2168 A′ ממדידה בלתי אפשרית לשעה של עבודה.**
+2. **‏שני מכשירים דיווחו אדום לפני שרץ טסט אחד — ושניהם נזרקו במקום להידווח.** ‏(א) ‏`@playwright/test` הנעוץ פותר `chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell` וה-image נושא `chromium_headless_shell-1194/chrome-linux/headless_shell` — **פריסת ספריות, לא גרסה**; symlinks מחוץ לריפו פתרו, ואסור להריץ `playwright install`. (ב) מול staging **רק הבינארי המלא של chrome מכבד `--ssl-version-max=tls1.2`**; ה-headless shell מחזיר `ERR_CONNECTION_RESET` תמיד. ‏`frontend/pw-staging.scratch.config.ts` נשאר **לא-מסומן ואסור לסמן אותו**.
+3. **‏MEH-2168 A′ — (b) גוף הטסט, ולא ה-`beforeEach`.** ‏6/8 מקומית = מספר ה-CI. ה-`beforeEach` עבר **14/14**. שתי סיבות: מרוץ מול `EmptyRow` (אין דגל loading ב-`use-admin-producers.js:39`; ה-trace מראה את הבקשה **עדיין pending** ברגע האסרציה), ו-`bg-green` שהוא `bg-primary` מאז 07/05. ‏`:105` ירוק משתי סיבות. **הצ'אנק הבא הוא tests-only בספק 33 — ממתין ל-go.**
+4. **‏MEH-2189 — ה-href של וואטסאפ תלוי-מכשיר, וההחלפה אינה דטרמיניסטית (1 מ-4 טעינות).** ‏SSR תמיד `wa.me`; desktop אחרי hydration `web.whatsapp.com/send`. הספק מקבל את שתי הצורות (24/24). **ההחלפה החלקית היא ממצא מוצר שדווח על הכרטיס ולא תוקן** — אפס עריכות קומפוננטה, לפי ה-scope.
+5. **‏MEH-1754 — לפריט 5 שני חצאים ואף אחד לא נחת.** ‏#2831 נסגר `stale` ב-28/08; `env.client.js:27` עדיין `.optional()`. הסדר: workflow תחילה (‏`docs/ci/meh-1754-next-public-api-url.patch.md`), ואז PR קוד שנחתך מ-`5b339fc3`.
+6. **‏MEH-2237 — שני שערים שאינם יכולים להיכשל על מה ששמם מבטיח:** ה-lint של RTL (‏`warn` + `eslint .` חשוף) ו-Branch name gate (מבחין אבל אינו חוסם). שניהם תיקון בשורה אחת, ושניהם הכרעת ספיר.
+7. **‏כלל מיזוג שנמדד הלילה:** ה-ruleset מסרב למזג כשהבסיס זז מאז שה-checks דיווחו («2 of 2 required status checks are expected») — **לעדכן את הענף, לחכות, ואז למזג**. קרה על #3267 מיד אחרי ש-#3268 נחת.
+8. **⚠️ מכסת Vercel מוצתה** (`api-deployments-free-per-day`, יותר מ-100) — סטטוס אדום על כל PR פתוח, **מתאפס לבד**, ואף commit לא מנקה אותו.
+
+### PRs
+
+**מוזגו:** #3268 (`b288292b`, patch.md של MEH-1754) · #3267 (`9173a967`, MEH-2229).
+**פתוחים:** #3269 (אודיט CI) · #3270 (ספק 35) · #3271 (אודיט שדות) · #3273 (ספק 38 — **ספיר ממזגת**, לפי הכרטיס) · ה-PR הזה (docs).
+
+### לספיר, בבוקר — לפי עדיפות
+
+1. **MEH-2189 / `lib/utils.js`** — אופטימיזציית ה-desktop חלה ב-¼ מהטעינות. לתקן או לקבל?
+2. **MEH-2168 chunk 2** — go לתיקוני ספק 33 (tests-only): לחכות לשורה אמיתית, ו-approved = `bg-primary`.
+3. **MEH-2237 §5** — שתי שורות: כלל ה-RTL ל-ratchet, ו-Branch name gate לתוך `ci-gate`.
+4. **MEH-1754** — להחיל את ה-patch.md; אז החצי השני נחתך מחדש.
+5. **MEH-2079** — להריץ את שאילתת ספירת השורות; לבחור חלונות (48ש' / 13ח' / 13ח'+roll-up).
+6. **MEH-2189 contact sheet** — 16 PNG טריים קיימים לא-מסומנים; לסמן (webp, <2MB)?
+7. קבוע: MEH-2219 ch2 מול ADR-003 · patch של MEH-2184 · סף MEH-2080 · `gov.il` ל-allowlist.
+
 ## 2026-09-01 לילה — drain יח' (session `0113JYkWvGYY…`): ה-smoke של 2189 רץ סוף-סוף מול דאטה — 11/12, והכשל היחיד הוא בספק
 
 **‏שורה אחת:** הזרע של ספיר הפך את chunk C מ«ספק שלא היה לו מול מה לרוץ» ל-**11 עברו / 1 נכשל**, ושני חוסמי הסנדבוקס שמנעו את זה התבררו כמתועדים ובני-פתרון בלי לגעת בקונפיג של הריפו.
