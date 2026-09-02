@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- app identity probe MEH-1501
 - **‏02/09 ערב — ‏MEH-1938 chunk 5a (session `01MaGjwx…`, HIGH-RISK, chunk-by-chunk עם WAIT): ‏#3285 נחת — כל ה-fallback-ים ל-`Producer.lat/lng` הוסרו, ושורות `producer_locations` הן המקור היחיד למיקום העסק בכל משטח. אפס schema, אפס alembic.**
   - **‏#3285 (`6cd5a3bf`) — ארבעה תת-שלבים + סבב adversarial, כל אחד עם go נפרד.** ‏5a.1 backend: ה-COALESCE ב-`haversine_min_km` הוסר ו-`haversine_km` המת נמחק; `submission_gate._has_location` קורא שורות בלבד. ‏5a.2 כתיבה+אדמין: `city/lat/lng` יצאו מ-`_PRODUCER_WRITABLE_FIELDS`, `/admin/analytics` ו-`/admin/dashboard` מציירים את השורה הראשית דרך `_primary_location_points()`. ‏5a.3 frontend+חוזה: ה-fallback ב-`producerPoints()` הוסר, `primaryPoint()` נוסף, ו-`ProducerListOut.lat/lng` **נגזרים** מהשורה הראשית ב-after-validator (הכרעת Q1) — נשארים בחוזה, `None` כשאין ראשית. ‏5a.4: ‏`LEGACY(2026-10-15, MEH-1938)` על העמודות + `primaryPoint()` STRICT (is_primary או null, kind-agnostic) גם ב-`seo.js`.
   - **‏מה שהסבב האדוורסרי תפס והיה נחתם אחרת:** ‏fixtures של VRT נשאו `lat/lng` בלי `locations` (שלושה producer-detail) או `locations: []` (כל שורה ב-`map-producers.json`) — הצילומים היו מאבדים את הנושא שלהם וה-container הממוסך של `/map` היה נקרא ירוק. כל עסק קיבל את השורה הראשית שהקואורדינטות שלו מרמזות עליה.
