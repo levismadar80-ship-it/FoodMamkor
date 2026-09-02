@@ -181,7 +181,11 @@ test.describe("Map", () => {
       lactose_free: "has_lactose_free_products",
       no_added_sugar: "has_no_added_sugar_products",
     };
-    const res = await page.request.get("/api/producers?limit=100");
+    // The SAME request the app's mount fetch issues (useProducersFeed.js —
+    // api.get("/producers", { params: {} })): no explicit limit, so both sides
+    // land on the backend default (producers.py: `limit: int = Query(100, …)`)
+    // and the counts below are computed over exactly the snapshot's rows.
+    const res = await page.request.get("/api/producers");
     expect(res.ok(), "control: the mount catalog request the app makes must answer").toBe(true);
     const feed = (await res.json()) as Array<Record<string, unknown>>;
     expect(feed.length, "control: an empty catalog would make every 'absent' below vacuous").toBeGreaterThan(0);
@@ -190,9 +194,16 @@ test.describe("Map", () => {
       expected[key] = feed.filter((p) => p && p[field]).length >= DIET_CHIP_MIN;
     }
 
+    // The snapshot is set from the mount fetch's RESPONSE, not from map init —
+    // __MAP_CENTER__ lands earlier (Leaflet setView) and would let the sheet
+    // open on a still-null snapshot, which offers every chip. Arm the wait
+    // before navigating so a fast response cannot slip past it.
+    const mountFeed = page.waitForResponse(
+      (r) => r.request().method() === "GET" && /\/api\/producers(\?|$)/.test(r.url()),
+    );
     await page.goto("/map");
     await expect(page.locator(".leaflet-container:visible")).toBeVisible();
-    // Wait for the mount fetch to have landed (the snapshot is set from it).
+    expect((await mountFeed).ok(), "the mount catalog fetch must succeed for the snapshot to exist").toBe(true);
     await expect
       .poll(() => page.evaluate(() => Array.isArray((window as unknown as { __MAP_CENTER__?: unknown }).__MAP_CENTER__)))
       .toBe(true);

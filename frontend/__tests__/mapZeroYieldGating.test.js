@@ -81,14 +81,17 @@ describe("MEH-2170 — visibleMapToggleChips", () => {
     expect(after).toEqual(before);
   });
 
-  it("STABILITY after a geo-search: the feed shrinks to the viewport, the snapshot does not", () => {
+  it("geo-search cannot corrupt the offered set — pure-function control (the React-state half lives in e2e/flows/05)", () => {
+    // This file only sees the pure gate: it cannot observe whether
+    // useProducersFeed keeps `catalogSnapshot` untouched across a viewport
+    // refetch — that is what the E2E toggle step in 05-map-navigation proves.
+    // What THIS case pins is the discriminating half: the gate's answer is a
+    // function of the snapshot alone, and a viewport-sized feed fed to it in
+    // the snapshot's place would drop vegan. If the gate ever grows a second
+    // input (a feed, a count from elsewhere), the control below stops holding.
     const snap = producers({ vegan: DIET_CHIP_MIN });
     const viewportFeed = snap.slice(0, 1); // what «חפשי באזור זה» would leave in allProducers
-    const before = keys(visibleMapToggleChips({ catalogSnapshot: snap }));
-    // The gate reads the snapshot, so the viewport feed is irrelevant to it —
-    // this is the whole reason the snapshot exists (card §STOP items 1-3).
-    const after = keys(visibleMapToggleChips({ catalogSnapshot: snap }));
-    expect(after).toEqual(before);
+    expect(keys(visibleMapToggleChips({ catalogSnapshot: snap }))).toContain("vegan");
     // Control: had the gate read the FEED, vegan would vanish here.
     expect(keys(visibleMapToggleChips({ catalogSnapshot: viewportFeed }))).not.toContain("vegan");
   });
