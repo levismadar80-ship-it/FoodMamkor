@@ -84,12 +84,22 @@ def _discover_name_key(fields: list, records: list[dict]) -> str | None:
     keys of the first record (some mirrors omit ``fields``). ``records`` must
     be non-empty — :func:`parse_localities` returns before calling this on an
     empty list, and a caller with no records has nothing to discover a key in.
+
+    Whatever names the column, the value returned is a key that actually
+    exists on the records: a ``fields`` id is only trusted once it (or its
+    stripped form) is found on the first record, so a schema entry the
+    records do not carry falls through to the record-key scan instead of
+    producing a key that reads every value as empty. (CI reviewer, PR #3288.)
     """
+    record_keys = records[0].keys()
     candidates = [f.get("id") for f in fields if isinstance(f, dict)]
-    candidates += list(records[0].keys())
+    candidates += list(record_keys)
     for key in candidates:
-        if isinstance(key, str) and _NAME_FIELD_RE.match(key.strip()):
-            return key
+        if not isinstance(key, str) or not _NAME_FIELD_RE.match(key.strip()):
+            continue
+        for resolved in (key, key.strip()):
+            if resolved in record_keys:
+                return resolved
     return None
 
 

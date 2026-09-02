@@ -169,6 +169,48 @@ def test_schema_fields_win_over_record_keys(seed_cities):
     assert seed_cities.parse_localities(payload)[0]["name_he"] == "נהריה"
 
 
+def test_padded_schema_id_resolves_to_the_unpadded_record_key(seed_cities):
+    """CI reviewer, PR #3288 round 3: a `fields` id with stray whitespace used
+    to be returned verbatim, so `rec.get(" שם_ישוב ")` missed every record and
+    the error read "every value was empty" — a key mismatch dressed as empty
+    data. The discovered key must be one the records actually carry."""
+    payload = {
+        "result": {
+            "fields": [{"id": " שם_ישוב "}],
+            "records": [{"שם_ישוב": "אילת"}, {"שם_ישוב": "מצפה רמון"}],
+        }
+    }
+    cities = seed_cities.parse_localities(payload)
+    assert [c["name_he"] for c in cities] == ["אילת", "מצפה רמון"]
+
+
+def test_schema_id_absent_from_records_falls_through_to_record_keys(seed_cities):
+    """`fields` names a column the records do not carry; the record-key scan
+    still finds the real one instead of trusting the schema blindly."""
+    payload = {
+        "result": {
+            "fields": [{"id": "שם_ישוב"}],
+            "records": [{"SHEM_YISHUV": "דימונה"}],
+        }
+    }
+    assert seed_cities.parse_localities(payload)[0]["name_he"] == "דימונה"
+
+
+def test_schema_id_absent_and_no_record_key_reports_a_key_mismatch(seed_cities):
+    """Neither the schema id nor any record key resolves → the error names the
+    KEYS (a mismatch), not "every value was empty"."""
+    payload = {
+        "result": {
+            "fields": [{"id": "שם_ישוב"}],
+            "records": [{"_id": 1, "name": "x"}],
+        }
+    }
+    with pytest.raises(seed_cities.LocalityParseError) as exc:
+        seed_cities.parse_localities(payload)
+    assert "none carries a locality-name column" in str(exc.value)
+    assert "every value was empty" not in str(exc.value)
+
+
 def test_coordinates_read_when_present_and_tolerate_garbage(seed_cities):
     payload = {
         "result": {
