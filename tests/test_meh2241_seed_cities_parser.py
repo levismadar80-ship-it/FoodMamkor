@@ -142,6 +142,14 @@ def test_every_known_spelling_of_the_name_key_parses(seed_cities, key):
     ]
 
 
+@pytest.mark.parametrize("key", ["שמישוב", "שמיישוב", "שם ישוב", "SHEMYISHUV"])
+def test_undocumented_spellings_without_the_underscore_are_rejected(seed_cities, key):
+    """CI reviewer, PR #3288 round 4: the separator is part of every known
+    column name; an optional underscore would admit forms nobody publishes."""
+    with pytest.raises(seed_cities.LocalityParseError):
+        seed_cities.parse_localities({"result": {"records": [{key: "כפר סבא"}]}})
+
+
 def test_latin_script_name_column_is_never_chosen(seed_cities):
     """`שם_ישוב_לועזי` shares the prefix; a loose match would seed English."""
     payload = {

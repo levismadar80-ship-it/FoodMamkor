@@ -54,11 +54,12 @@ DATA_GOV_URL = (
 # The locality-name column, in every spelling it has been seen or documented
 # under. Anchored on both ends so ``שם_ישוב_לועזי`` (Latin-script name) never
 # matches: it shares the prefix and would otherwise win on a record that
-# carries both.
+# carries both. The underscore is required — every known spelling has it,
+# and an optional separator would admit undocumented forms like ``שמישוב``.
 #   שם_ישוב   — the resource's published field id (one yod)
 #   שם_יישוב  — the spelling this script read before MEH-2241 (two yods)
 #   SHEM_YISHUV — the Latin transliteration some data.gov.il mirrors use
-_NAME_FIELD_RE = re.compile(r"^(?:שם_?י{1,2}שוב|shem_yishuv)$", re.IGNORECASE)
+_NAME_FIELD_RE = re.compile(r"^(?:שם_י{1,2}שוב|shem_yishuv)$", re.IGNORECASE)
 
 # Coordinates: the localities resource carries none, so these stay None for
 # every row today. Kept tolerant in case a future resource/mirror adds them.
