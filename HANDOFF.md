@@ -3,6 +3,42 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-02 בוקר — drain כ' (session `01Rqretx5os…`): STATE נכתב מחדש ממדידה · שלושה PRs נחתו · ארבעה פריטי תדריך הופרכו כבר-עשויים
+
+**‏שורה אחת:** התדריך ירש STATE משני לילות אחורה; כלל 28 הפריך ארבעה פריטים ב-SHA, שלושה PRs נחתו (`6fc1f387` · `d913d9af` · `42aa161a`), ו-CitySearch נמדד מול הטופס הרץ במקום רק מהמקור.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏ה-STATE על MEH-2227 הוא האמת; הסעיף הזה הוא היסטוריה.** הוא נכתב מחדש הבוקר מ-`list_pull_requests` + `list_issues` + `git log` ולא מזיכרון — ואז שוב אחרי כל מיזוג. תדריך שסותר אותו מיושן, לא ה-STATE.
+2. **‏MEH-2168 A′ בוצע (יט') ואושש ב-CI (run 33609674707).** ‏chunk 2 = tests-only בספק 33 — לחכות לשורה אמיתית, approved = `bg-primary` — **ממתין ל-go**. בלוק A′ בתיאור הכרטיס תוקן; הכותרת הישנה נשמרה ומתוארכת.
+3. **‏CitySearch מקבל טקסט חופשי בטופס הרץ.** נמדד על staging: ריק חסום (בקרה), נבחר עובר (בקרה), חופשי-ללא-בחירה **עובר בלי שגיאה**. הצעת כרטיס על MEH-2227; לא נפתח. הספק 38 נשען היום על ההתנהגות הזאת (תגובה 5506994219 על #3273).
+4. **‏`Refs` — 2 מתוך 11** אחרי #3258 (MEH-2168 נשאר Todo); נשאר Todo אחרי #3275 — `Refs` לא סגר, 2 מתוך 12 ⇒ ראו ה-STATE למספר העדכני. `Closes` 6/6 (MEH-2107 היום). ספיר: branch automation כבוי מ-01/09; magic-word עדיין פועל. **לבדוק אחרי כל מיזוג, שני הכיוונים.**
+5. **‏`Deploy gate (required)` failure שהוא `cancelled` = כלל 21.** על #3273: ריצה 10765 cancelled, 10767 success על head חדש יותר. לחפש ריצה חדשה על אותו PR לפני שקוראים לזה כשל.
+6. **‏ה-contact sheet ב-`qa-artifacts/meh-2189/` הוא tracked.** ה-webp שהתחלפו ב-#3275 היו של #3115 (טרום-seed). ריצה תועה של הממיר השאירה 370,094 B — «מתחת לכובע» מבלי שהממיר רץ; בקרה: פלט ההמרה + סכום PNG ללא שינוי.
+7. **‏מכשיר לבדיקת טופס חי בלי סטאק מקומי:** `createRequire("/…/frontend/package.json")("@playwright/test")` מ-script בסקראצ'פד + chrome 1194 + `--ssl-version-max=tls1.2` + bypass headers. ‏DETAILS→CATEGORY הוא client-side — אפשר לבדוק בלי ליצור עסק.
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3273 | ספק 38 (MEH-2107 → Done) | `6fc1f387` |
+| #3258 | docs backfill מסשן מקביל, 3 שורות תוקנו לפני | `d913d9af` |
+| #3275 | הודעת beacon בספק 35 + 16 webp מזורעים (689,950 B) | `42aa161a` |
+| זה | docs | — |
+
+כולם אומתו: הורה יחיד, מחבר `sapirschnapp`, תבנית squash.
+
+### לספיר — לפי עדיפות
+
+1. **MEH-2168 chunk 2 — go.** ‏tests-only בספק 33; A′ סגר את השאלה ו-CI מאשש.
+2. **MEH-2189 — נותרו שני פריטי DoD בלבד:** המעבר שלך בנייד (8 עמודים, ~5 דק') ותיוג. ה-seed רץ, הספק 24/24, ה-sheet מזורע.
+3. **CitySearch / MEH-213** — לפתוח את הכרטיס המוצע (MEH-2227, 09:13Z) או לא. Phase 0 שלו: האם ה-backend דוחה עיר לא-ידועה ב-POST.
+4. **MEH-2237 §5** — שתי שורות: RTL lint ל-ratchet, Branch name gate לתוך `ci-gate`.
+5. **MEH-1754** — להחיל את ה-patch.md; החצי בקוד נחתך אחריו.
+6. **MEH-2079** — ה-SQL לספירת שורות על staging + חלונות.
+7. **MEH-2056** — לבטל ארכוב (מוזג `4f7ecf8c`).
+8. עומדים: MEH-1938 ch5 · MEH-2219 ch2 · MEH-2080 · MEH-1915 s4 · חמש שורות ה-notice · `gov.il`.
+
 ## 2026-09-01 סוף — drain ט"ו (session `bf19f9d3…`): שני PR-ים של טסטים נחתו · 14 כשלי E2E נסגרו · flip-check תפס כרטיס שלא נסגר
 
 **‏שורה אחת:** ‏#3252 ו-#3245 מוזגו ב-squash מאומת; ‏14 מתוך ~31 כשלי ה-E2E היציבים נסגרו מ-stub אחד מיושן; ‏8 פערי outreach הוצמדו ל-`xfail(strict=True)`; ושני flip-checks החזירו «לא נסגר», אחד מהם בטעות.
