@@ -43,10 +43,17 @@
  * text (`getProducerStatusColor` in `lib/producer-status.js` maps status ->
  * a fixed Tailwind class per status). A class comparison survives a copy
  * change to the label; a text comparison would not.
+ *
+ * MEH-2168 chunk 2 — the expected classes are IMPORTED from that module, not
+ * remembered. The first version of this file asserted `/bg-green/` for
+ * approved; the map has said `bg-primary text-white` since 07/05 (MEH-294,
+ * `ebcb63a5`), three months before the spec was written, so the assertion
+ * was wrong from its first run and the file never went green on §2B.
  */
 import { test, expect } from "./_cloudinary-stub";
 import fs from "node:fs";
 import path from "node:path";
+import { PRODUCER_STATUS_COLORS, UNKNOWN_STATUS_COLOR } from "../../lib/producer-status.js";
 
 const AUTH_DIR = path.join(__dirname, "..", ".auth");
 
@@ -64,6 +71,20 @@ function skipUnlessProvisioned(): void {
 
 const DENIED = "access-denied";
 const TABLE_ROWS = "table tbody tr";
+// A DATA row, as opposed to the EmptyRow placeholder («אין בתי עסק להצגה»)
+// the table renders while `GET /admin/producers` is still pending —
+// `use-admin-producers.js` starts from `useState([])` with no loading flag,
+// and `AdminProducersTable.jsx` renders EmptyRow for `rows.length === 0`.
+// Only real rows carry an edit link, so the link is the discriminator.
+const DATA_ROW_LINK = 'a[href*="/edit"]';
+
+/** The status classes the badge can legitimately render, read from the map
+ *  the component itself uses. Anything else — including the module's own
+ *  unknown-status fallback — is a status the badge does not know. */
+const KNOWN_STATUS_CLASSES = Object.values(PRODUCER_STATUS_COLORS);
+function isKnownStatusClass(cls: string): boolean {
+  return KNOWN_STATUS_CLASSES.some((known) => cls.includes(known));
+}
 
 test.describe("MEH-217 chunk 2 — admin producers tab", () => {
   skipUnlessProvisioned();
@@ -72,9 +93,13 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/admin/producers");
     await expect(page.getByTestId(DENIED)).toHaveCount(0);
-    // Wait for the table itself, not just the page shell — the fetch is
-    // client-side (use-admin-producers.js), so a bare goto() can race it.
-    await expect(page.locator("table thead th").first()).toBeVisible();
+    // Wait for a DATA row, not for the table shell. The fetch is client-side
+    // (use-admin-producers.js) and the table renders `thead` + one EmptyRow
+    // placeholder while it is pending — so waiting on `thead th` released
+    // §2A/§2D into a one-row table whose only row read «אין בתי עסק להצגה»
+    // (MEH-2168 A′, trace: `GET /api/admin/producers` still pending at the
+    // assertion). A real row is the only thing that proves the fetch resolved.
+    await expect(page.locator(TABLE_ROWS).filter({ has: page.locator(DATA_ROW_LINK) }).first()).toBeVisible();
   });
 
   test("§2A — the table renders seeded rows with every documented column", async ({ page }) => {
@@ -83,7 +108,9 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     // ">=" not "===": other lanes/sessions may have seeded additional
     // producers by the time this runs. A lower bound is still a real
     // assertion — it fails if the table renders empty or errors out.
-    await expect(rows).not.toHaveCount(0);
+    // (The former `not.toHaveCount(0)` guard is gone: it was satisfied by
+    // the EmptyRow placeholder, so it guarded nothing, and beforeEach now
+    // waits for a data row anyway.)
     expect(await rows.count()).toBeGreaterThanOrEqual(10);
 
     const headers = page.locator("table thead th");
@@ -102,27 +129,25 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     await expect(firstRowDot).toHaveAttribute("title", /.+/);
   });
 
-  test("§2A — every rendered status badge is one of the four documented classes", async ({
+  test("§2A — every rendered status badge carries one of the documented status classes", async ({
     page,
   }) => {
     // Structural discrimination: a StatusBadge with an unrecognized status
-    // falls back to getProducerStatusColor's "bg-gray-100" default (unstyled
-    // fallback) rather than one of the four real status classes. Asserting
-    // membership in the real set — not just "a class exists" — is what
-    // catches a status value the badge doesn't know how to render.
-    const REAL_STATUS_CLASSES = [
-      /bg-green/, // approved
-      /bg-yellow/, // pending
-      /bg-red/, // rejected
-      /bg-gray-2|bg-slate/, // inactive/suspended — exact shade not pinned
-    ];
+    // falls back to getProducerStatusColor's UNKNOWN_STATUS_COLOR rather than
+    // one of the real status classes. Asserted POSITIVELY — the class must
+    // contain one of PRODUCER_STATUS_COLORS' values. The previous form only
+    // asserted "not the fallback", so it was green on `bg-primary text-white`
+    // while its own list still said `/bg-green/` for approved: green for two
+    // reasons (MEH-2168 A′ finding on :105).
     const badges = page.locator(TABLE_ROWS).first().locator("td").nth(4).locator("span").first();
     const cls = (await badges.getAttribute("class")) || "";
-    const matchesReal = REAL_STATUS_CLASSES.some((re) => re.test(cls));
-    const isBareFallback = cls.includes("bg-gray-100") && !matchesReal;
-    expect(isBareFallback, `status badge class "${cls}" must not be the unstyled fallback`).toBe(
-      false,
-    );
+    expect(
+      isKnownStatusClass(cls),
+      `status badge class "${cls}" must contain one of ${JSON.stringify(KNOWN_STATUS_CLASSES)}`,
+    ).toBe(true);
+    // And the control the positive assertion needs: the fallback is NOT in
+    // the known set, or the assertion above could never fail on it.
+    expect(isKnownStatusClass(UNKNOWN_STATUS_COLOR)).toBe(false);
   });
 
   test("§2B — status filter narrows to a single status class across all visible rows", async ({
@@ -137,11 +162,21 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     // use-admin-producers.js re-fetches via a useEffect keyed on it — no
     // separate "search" click needed for this filter (unlike the text
     // search input, which only re-fetches on Enter/button).
+    //
+    // Wait for THAT re-fetch, not for "a row is visible": the hook keeps the
+    // previous (unfiltered) rows on screen until the filtered response lands,
+    // so a visibility check released this loop into the OLD list — which on
+    // staging carries a row whose badge is the unknown-status fallback, and
+    // the loop failed on it at row 12 on the mobile project while desktop
+    // happened to receive the response first (MEH-2168 chunk 2 measurement).
+    const filtered = page.waitForResponse(
+      (r) => r.url().includes("/admin/producers") && r.url().includes("status=approved") && r.ok(),
+    );
     await select.selectOption("approved");
-    await expect(page.locator(TABLE_ROWS).first()).toBeVisible();
+    await filtered;
 
-    const statusCells = page.locator(TABLE_ROWS).locator("td").nth(4);
     const count = await page.locator(TABLE_ROWS).count();
+    expect(count, "the approved filter must return at least one row").toBeGreaterThan(0);
     for (let i = 0; i < count; i++) {
       const cellClass =
         (await page
@@ -152,8 +187,8 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
           .locator("span")
           .first()
           .getAttribute("class")) || "";
-      expect(cellClass, `row ${i} must carry the approved status class after filtering`).toMatch(
-        /bg-green/,
+      expect(cellClass, `row ${i} must carry the approved status class after filtering`).toContain(
+        PRODUCER_STATUS_COLORS.approved,
       );
     }
   });
@@ -174,12 +209,23 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     const baseline = await page.locator(TABLE_ROWS).count();
     const search = page.locator('input[placeholder]').first();
 
-    // "קצרין" — city of the seeded מחלבת עמק האלה, distinctive enough that
-    // no other seeded producer shares it (verified against the seed list).
+    // "קצרין" — city of the seeded מחלבת עמק האלה (seed_demo_producers.py:179).
+    // The first version of this test pinned `toHaveCount(1)` on the premise
+    // that no other producer shares the city; staging now has TWO (measured
+    // 02/09, MEH-2168 chunk 2). "Exactly one" was a claim about the data set,
+    // not about the search — the search's contract is "narrower than before,
+    // and every survivor matches", which is what is asserted now.
     await search.fill("קצרין");
     await search.press("Enter");
-    await expect(page.locator(TABLE_ROWS)).toHaveCount(1);
-    await expect(page.locator(TABLE_ROWS).first()).toContainText("קצרין");
+    await expect(async () => {
+      const n = await page.locator(TABLE_ROWS).count();
+      expect(n).toBeGreaterThan(0);
+      expect(n).toBeLessThan(baseline);
+    }).toPass({ timeout: 10_000 });
+    const narrowed = page.locator(TABLE_ROWS);
+    for (let i = 0; i < (await narrowed.count()); i++) {
+      await expect(narrowed.nth(i)).toContainText("קצרין");
+    }
 
     // Clearing the search must widen back to at least the pre-search count —
     // not just "not one row", which a broken empty-state could also satisfy.
