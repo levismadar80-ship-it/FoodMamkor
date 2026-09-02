@@ -74,7 +74,15 @@ export async function pickProducer(
   request: APIRequestContext,
   requirement: { label: string; matches: (p: FeedProducer) => boolean },
 ): Promise<FeedProducer> {
-  const res = await request.get("/api/producers");
+  // MEH-2168 chunk 3: ask for exactly what /producers renders on its first
+  // page — app/[locale]/producers/page.jsx:21,37 fetches
+  // `?limit=24&offset=0` — so the chosen producer is on the grid the specs
+  // then look at BY CONSTRUCTION. Measured 02/09 on staging (25 businesses):
+  // the unbounded feed put lehem-vezman at index 24, the grid showed 24 cards,
+  // and spec 03 failed "card is not on /producers" on both projects with the
+  // API and the grid both correct. Keep PER_PAGE in sync with page.jsx by hand;
+  // the comment there names this file.
+  const res = await request.get("/api/producers?limit=24&offset=0");
   if (!res.ok()) {
     throw new Error(
       `GET /producers returned ${res.status()} — the E2E backend is unreachable or erroring. ` +
