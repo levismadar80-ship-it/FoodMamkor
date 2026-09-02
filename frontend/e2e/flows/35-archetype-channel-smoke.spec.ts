@@ -269,7 +269,7 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     await expect
       .poll(() => beacons.length, {
         message:
-          "CONTROL: a wa.me chip click MUST fire the beacon. 0 here means the " +
+          "CONTROL: a WhatsApp chip click MUST fire the beacon. 0 here means the " +
           "route interception is broken, so the 0 asserted below proves nothing.",
         timeout: 5_000,
       })
