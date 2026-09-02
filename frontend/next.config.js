@@ -91,18 +91,20 @@ const securityHeaders = [
       // (the admin Instagram story-card generator) built its FontFace objects
       // from a live Google URL at runtime — the one remaining consumer, since
       // MEH-1831 already moved the page's own fonts off the network.
-      // MEH-2043 repointed that component at the same locally self-hosted
-      // .woff2 files app/fonts.js feeds next/font/local, via a direct static
-      // import (a URL under this origin, not through next/font/local itself
-      // — Canvas 2D's `font` property needs a FontFace it can load, not a CSS
-      // variable). font-src 'self' now covers it. Dropping this entry is left
-      // to a deliberate follow-up (MEH-2043 DoD item 4) rather than done in
-      // the same PR as the component fix — CSP-hardening ahead of the
-      // component landing would have silently broken it (rejected load,
-      // caught exception, wrong-typeface fallback with nothing failing); the
-      // same risk applies to un-hardening on unverified footing, so it stays
-      // deferred until the fix has been checked with the network blocked.
-      `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
+      // MEH-2043 PR1 (#2862) repointed that component at the locally
+      // self-hosted .woff2 files via a direct static import, so font-src
+      // 'self' covers it. PR2 (this line) drops the gstatic entry — DoD item
+      // 4 — AFTER the fix was checked live: on staging with PR1 deployed,
+      // opening the story card from /admin/producers loaded 8 font files,
+      // all under /_next/static/immutable/media/ on this origin, zero from
+      // gstatic, zero CSP violations in the console, and the canvas rendered
+      // the Hebrew business name (qa-artifacts/MEH-2043/). The order —
+      // component first, header second — was deliberate: hardening ahead of
+      // the component would have failed silently (rejected load, caught
+      // exception, wrong-typeface fallback). fonts-are-local.test.js and
+      // FontGate.test.js keep the build off the network; this keeps the
+      // browser off it too.
+      `font-src 'self' data:${vercelLiveFont}`,
       `connect-src 'self' https://accounts.google.com https://places.googleapis.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,
       "object-src 'none'",
