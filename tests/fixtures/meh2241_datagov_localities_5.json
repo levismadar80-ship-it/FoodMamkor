@@ -1,0 +1,98 @@
+{
+  "__provenance__": "MEH-2241 chunk 0. Shape of a data.gov.il CKAN datastore_search response for resource d4901968-dad3-4845-a9b0-a57d027f11ab (Israeli localities), limit=5. NOT a live capture: data.gov.il is egress-blocked from the CC sandbox (CONNECT 403, same class as MEH-2090) and absent from the WebFetch allowlist, so the record keys below are the resource's published schema written from documentation, not from a curl. Replace this file with the real `curl '...datastore_search?resource_id=d4901968-dad3-4845-a9b0-a57d027f11ab&limit=5'` output the moment one exists — tests/test_meh2241_seed_cities_parser.py reads whatever is here and must still pass. Names carry the trailing padding the dataset ships with.",
+  "help": "https://data.gov.il/api/3/action/help_show?name=datastore_search",
+  "success": true,
+  "result": {
+    "include_total": true,
+    "limit": 5,
+    "records_format": "objects",
+    "resource_id": "d4901968-dad3-4845-a9b0-a57d027f11ab",
+    "total_estimation_threshold": null,
+    "records": [
+      {
+        "_id": 1,
+        "טבלה": "טבלת יישובים",
+        "סמל_ישוב": 472,
+        "שם_ישוב": "אבו גוש            ",
+        "שם_ישוב_לועזי": "ABU GHOSH          ",
+        "סמל_נפה": 11,
+        "שם_נפה": "ירושלים",
+        "סמל_לשכת_מנא": 11,
+        "לשכה": "ירושלים",
+        "סמל_מועצה_איזורית": 0,
+        "שם_מועצה": null
+      },
+      {
+        "_id": 2,
+        "טבלה": "טבלת יישובים",
+        "סמל_ישוב": 473,
+        "שם_ישוב": "אבו סנאן           ",
+        "שם_ישוב_לועזי": "ABU SINAN          ",
+        "סמל_נפה": 24,
+        "שם_נפה": "עכו",
+        "סמל_לשכת_מנא": 24,
+        "לשכה": "עכו",
+        "סמל_מועצה_איזורית": 0,
+        "שם_מועצה": null
+      },
+      {
+        "_id": 3,
+        "טבלה": "טבלת יישובים",
+        "סמל_ישוב": 935,
+        "שם_ישוב": "אבו סריחאן (שבט)   ",
+        "שם_ישוב_לועזי": "ABU SUREIHAN       ",
+        "סמל_נפה": 62,
+        "שם_נפה": "באר שבע",
+        "סמל_לשכת_מנא": 62,
+        "לשכה": "באר שבע",
+        "סמל_מועצה_איזורית": 99,
+        "שם_מועצה": "אין מועצה אזורית"
+      },
+      {
+        "_id": 4,
+        "טבלה": "טבלת יישובים",
+        "סמל_ישוב": 958,
+        "שם_ישוב": "אבו עבדון (שבט)    ",
+        "שם_ישוב_לועזי": "ABU ABDUN          ",
+        "סמל_נפה": 62,
+        "שם_נפה": "באר שבע",
+        "סמל_לשכת_מנא": 62,
+        "לשכה": "באר שבע",
+        "סמל_מועצה_איזורית": 99,
+        "שם_מועצה": "אין מועצה אזורית"
+      },
+      {
+        "_id": 5,
+        "טבלה": "טבלת יישובים",
+        "סמל_ישוב": 1042,
+        "שם_ישוב": "אבו עמאר (שבט)     ",
+        "שם_ישוב_לועזי": "ABU AMMAR          ",
+        "סמל_נפה": 62,
+        "שם_נפה": "באר שבע",
+        "סמל_לשכת_מנא": 62,
+        "לשכה": "באר שבע",
+        "סמל_מועצה_איזורית": 99,
+        "שם_מועצה": "אין מועצה אזורית"
+      }
+    ],
+    "fields": [
+      { "id": "_id", "type": "int" },
+      { "id": "טבלה", "type": "text" },
+      { "id": "סמל_ישוב", "type": "numeric" },
+      { "id": "שם_ישוב", "type": "text" },
+      { "id": "שם_ישוב_לועזי", "type": "text" },
+      { "id": "סמל_נפה", "type": "numeric" },
+      { "id": "שם_נפה", "type": "text" },
+      { "id": "סמל_לשכת_מנא", "type": "numeric" },
+      { "id": "לשכה", "type": "text" },
+      { "id": "סמל_מועצה_איזורית", "type": "numeric" },
+      { "id": "שם_מועצה", "type": "text" }
+    ],
+    "_links": {
+      "start": "/api/3/action/datastore_search?limit=5&resource_id=d4901968-dad3-4845-a9b0-a57d027f11ab",
+      "next": "/api/3/action/datastore_search?offset=5&limit=5&resource_id=d4901968-dad3-4845-a9b0-a57d027f11ab"
+    },
+    "total": 1272,
+    "total_was_estimated": false
+  }
+}
