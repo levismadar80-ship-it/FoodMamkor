@@ -148,17 +148,24 @@ const TARGET_NOISE = [
   // logs the reason. Both lines are the third party refusing the runner's
   // origin, not the outreach form; measured on runs 33620715216 and
   // 33622606801 (four tests, both projects, identical text). The 403 entry
-  // keeps the empty "()" status text on purpose: a FastAPI 403 reads
-  // "(Forbidden)" and stays visible.
+  // is anchored on the third-party origin — collectConsoleErrors appends the
+  // failing resource URL to a resource-load error — so a 403 from our own
+  // stack, or from any edge in front of it, stays visible whatever its
+  // reason phrase says.
   "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
-  "Failed to load resource: the server responded with a status of 403 ()",
+  "Failed to load resource: the server responded with a status of 403 () @ https://accounts.google.com/gsi/",
 ] as const;
 
 /** Collect console errors so a test can FAIL on them rather than log them. */
 function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
+    if (m.type() !== "error") return;
+    // A resource-load error names the failing URL in its location, not in its
+    // text. Append it so TARGET_NOISE can anchor an entry on the origin that
+    // produced it rather than on every error with the same status line.
+    const url = m.location()?.url;
+    errors.push(url && m.text().startsWith("Failed to load resource") ? `${m.text()} @ ${url}` : m.text());
   });
   page.on("pageerror", (e) => errors.push(String(e)));
   return errors;

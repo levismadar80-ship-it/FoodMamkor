@@ -4,7 +4,9 @@ import {
   detailPath,
   assertDetailRendered,
   watchPageErrors,
-  REQUIREMENTS, GRID_FIRST_PAGE_FEED } from "./_producer-fixture";
+  REQUIREMENTS,
+  GRID_FIRST_PAGE_FEED,
+} from "./_producer-fixture";
 
 // MEH-1440: this spec used to click the FIRST producer card and assert the
 // contact CTA — but PrimaryContactButton self-collapses (returns null) when

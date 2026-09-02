@@ -62,15 +62,6 @@ export function detailPath(p: FeedProducer): string {
 }
 
 /**
- * Fetch the public feed and return the producers matching `requirement`,
- * ordered deterministically.
- *
- * Sorting by `id` is the whole point: the API's own ordering is a product
- * decision that changes with ranking, availability and the vacation calendar,
- * so consuming it makes every spec a hostage to it. `id` is stable for the
- * lifetime of the row.
- */
-/**
  * MEH-2168 chunk 3: the window a spec picks from must be the window the
  * surface it then asserts on actually renders. /producers renders its first
  * page from `?limit=24&offset=0` (app/[locale]/producers/page.jsx:21,37);
@@ -86,6 +77,15 @@ export function detailPath(p: FeedProducer): string {
  */
 export const GRID_FIRST_PAGE_FEED = "/api/producers?limit=24&offset=0";
 
+/**
+ * Fetch the public feed and return the producers matching `requirement`,
+ * ordered deterministically.
+ *
+ * Sorting by `id` is the whole point: the API's own ordering is a product
+ * decision that changes with ranking, availability and the vacation calendar,
+ * so consuming it makes every spec a hostage to it. `id` is stable for the
+ * lifetime of the row.
+ */
 export async function pickProducer(
   request: APIRequestContext,
   requirement: { label: string; matches: (p: FeedProducer) => boolean },
