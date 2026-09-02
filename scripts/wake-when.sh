@@ -536,13 +536,18 @@ skips=$(cat <<'SKIPS'
                             on Railway. NOT "per-chunk go" — the 09/08 ruling grants
                             chunk-by-chunk authority; `needs-sapir` is on this card
                             for those two ACTIONS. ch3א already shipped (#3191/#3194).
-    SKIP    MEH-1938 ch5    Sapir action: RUN the MEH-2056 count query (producers with
-                            coordinates and no producer_locations row) on PROD and
-                            STAGING and paste both numbers on the card. The go for
-                            5a was GIVEN 01/09, conditional on 0/0; >0 on either
-                            brings chunk 2's backfill back first. A Railway console
-                            query writes nothing to this repo. Branch cut:
-                            feature/meh-1938-ch5-contract-reads, no code yet.
+    SKIP    MEH-1938 5b     Sapir action: RUN the 5b precondition count on PROD and
+                            STAGING and paste both numbers on the card (ruling 02/09):
+                              SELECT count(*) FROM producers p WHERE p.lat IS NOT NULL
+                              AND NOT EXISTS (SELECT 1 FROM producer_locations l
+                                WHERE l.producer_id = p.id AND l.is_primary
+                                AND l.lat IS NOT NULL AND l.lng IS NOT NULL);
+                            Stricter than the 5a P0 (which counted "no row at all"):
+                            the 5a readers require a USABLE PRIMARY row. 5b (the
+                            [DESTRUCTIVE] lat/lng drop, LEGACY 2026-10-15 in
+                            models.py — see the dated row above) needs 0/0 here AND
+                            >=7 days of soak after PR #3285 lands. The old P0 read
+                            0/0 on 02/09 and 5a merged on it; this is the next gate.
     SKIP    MEH-1207        Sapir action: REPLACE `MEH-1146` in that card's title with
                             an identifier that resolves, or drop the blocked marker.
                             `get_issue MEH-1146` returns "Could not find referenced
