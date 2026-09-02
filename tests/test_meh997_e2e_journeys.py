@@ -599,17 +599,39 @@ class TestJourney8Experience:
 
 class TestJourney9MapData:
     def test_producers_list_serves_map_coordinates(self, client, db):
+        """MEH-1938 chunk 5a: the list serves the PRIMARY producer_locations
+        row's coordinates, derived at serialization — not the Producer.lat/lng
+        columns (make_producer seeds those with Tel Aviv; the row is Haifa, so
+        the assertion can tell which one it got). Until 02/09 this asserted the
+        column values on a producer with no row at all."""
+        from app.models import ProducerLocation
+
         approved = make_producer(db, name=f"מפה {uuid4().hex[:6]}")
         pending = make_producer(
             db, name=f"נסתרת {uuid4().hex[:6]}", status="pending"
         )
+        db.add(
+            ProducerLocation(
+                producer_id=approved.id,
+                kind="branch",
+                is_primary=True,
+                city="חיפה",
+                lat=32.7940,
+                lng=34.9896,
+                location_precision="exact",
+            )
+        )
+        db.commit()
+        assert (approved.lat, approved.lng) == (32.0853, 34.7818)
 
         rows = client.get("/producers").json()
         by_name = {p["name"]: p for p in rows}
         assert approved.name in by_name
         assert pending.name not in by_name
-        assert by_name[approved.name]["lat"] == approved.lat
-        assert by_name[approved.name]["lng"] == approved.lng
+        assert (by_name[approved.name]["lat"], by_name[approved.name]["lng"]) == (
+            32.7940,
+            34.9896,
+        )
 
 
 # ============================================================
