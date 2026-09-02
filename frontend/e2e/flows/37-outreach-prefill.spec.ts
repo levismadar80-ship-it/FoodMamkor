@@ -142,6 +142,16 @@ async function mintToken(leadId: string): Promise<string> {
 const TARGET_NOISE = [
   "/_vercel/speed-insights/script.js",
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  // MEH-2168 chunk 3: Google Identity Services on the register page. The
+  // button iframe (accounts.google.com/gsi/button) answers 403 for an origin
+  // the OAuth client does not list — CI's http://localhost:3000 — and the SDK
+  // logs the reason. Both lines are the third party refusing the runner's
+  // origin, not the outreach form; measured on runs 33620715216 and
+  // 33622606801 (four tests, both projects, identical text). The 403 entry
+  // keeps the empty "()" status text on purpose: a FastAPI 403 reads
+  // "(Forbidden)" and stays visible.
+  "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
+  "Failed to load resource: the server responded with a status of 403 ()",
 ] as const;
 
 /** Collect console errors so a test can FAIL on them rather than log them. */
