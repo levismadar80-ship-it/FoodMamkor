@@ -57,14 +57,22 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * the per-project form was tried and is exactly the assertion that flaked.
  */
 
-/** Both forms getWhatsAppHref can emit. */
-const WA_HREF = /^https:\/\/(wa\.me\/|web\.whatsapp\.com\/send)/;
-const WA_HREF_SELECTOR = '[href^="https://wa.me/"], [href^="https://web.whatsapp.com/send"]';
+/**
+ * Both forms getWhatsAppHref can emit. The regex and the CSS selector are
+ * DERIVED from this one list rather than written twice: a reviewer flagged the
+ * two as parallel definitions that could drift, and deriving them removes the
+ * drift instead of documenting it.
+ */
+const WA_PREFIXES = ["https://wa.me/", "https://web.whatsapp.com/send"] as const;
+const WA_HREF = new RegExp(`^(${WA_PREFIXES.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`);
+const WA_HREF_SELECTOR = WA_PREFIXES.map((p) => `[href^="${p}"]`).join(", ");
 
 /** `[data-testid=<id>]` rows whose href is a WhatsApp link in either form. */
 const waHrefLocator = (page: Page, testid: string, visibleOnly = false) =>
   page
-    .locator(`[data-testid=${testid}]${visibleOnly ? ":visible" : ""}`)
+    // Quoted attribute value: valid CSS for the plain identifiers both callers
+    // pass today, and still valid if a future testid carries a colon or bracket.
+    .locator(`[data-testid="${testid}"]${visibleOnly ? ":visible" : ""}`)
     .and(page.locator(WA_HREF_SELECTOR));
 
 const baseURL =
