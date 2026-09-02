@@ -170,5 +170,96 @@
     "verified_at",
     "website",
     "whatsapp_group"
-  ]
+  ],
+  "nested": {
+    "ProducerDetailOut.active_offer": [
+      "expires_at",
+      "headline",
+      "id",
+      "offer_type",
+      "starts_at",
+      "threshold_unit",
+      "threshold_value"
+    ],
+    "ProducerDetailOut.categories": [
+      "emoji",
+      "id",
+      "name",
+      "producer_count",
+      "slug"
+    ],
+    "ProducerDetailOut.delivery_areas": [
+      "city",
+      "delivery_day",
+      "delivery_fee",
+      "id",
+      "min_order"
+    ],
+    "ProducerDetailOut.kashrut_certs": [
+      "badge_code"
+    ],
+    "ProducerDetailOut.locations": [
+      "city",
+      "is_primary",
+      "kind",
+      "label",
+      "lat",
+      "lng",
+      "opening_hours",
+      "phone",
+      "precision"
+    ],
+    "ProducerDetailOut.products": [
+      "description",
+      "id",
+      "image_url",
+      "is_gluten_free",
+      "is_lactose_free",
+      "is_low_carb",
+      "is_no_added_sugar",
+      "is_vegan",
+      "is_vegetarian",
+      "name",
+      "price_max",
+      "price_min",
+      "price_range"
+    ],
+    "ProducerListOut.active_offer": [
+      "expires_at",
+      "headline",
+      "id",
+      "offer_type",
+      "starts_at",
+      "threshold_unit",
+      "threshold_value"
+    ],
+    "ProducerListOut.categories": [
+      "emoji",
+      "id",
+      "name",
+      "producer_count",
+      "slug"
+    ],
+    "ProducerListOut.delivery_areas": [
+      "city",
+      "delivery_day",
+      "delivery_fee",
+      "id",
+      "min_order"
+    ],
+    "ProducerListOut.kashrut_certs": [
+      "badge_code"
+    ],
+    "ProducerListOut.locations": [
+      "city",
+      "is_primary",
+      "kind",
+      "label",
+      "lat",
+      "lng",
+      "opening_hours",
+      "phone",
+      "precision"
+    ]
+  }
 }
