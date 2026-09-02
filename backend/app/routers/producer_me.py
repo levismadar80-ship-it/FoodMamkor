@@ -327,7 +327,16 @@ ONE_PRIMARY_REQUIRED = "חובה מיקום ראשי אחד"
 
 # Promotion is branch-only. `pickup` and `market_stand` are the secondary
 # layer (MEH-1412) and cannot answer "where is the business".
-PRIMARY_MUST_BE_BRANCH = "רק סניף יכול להיות המיקום הראשי"
+#
+# The second sentence is load-bearing and was added on Sapir's copy ruling
+# (rule 22): the prohibition alone leaves a delivery-only owner stuck, since
+# she flags her only pickup point and is told no with no way forward. It names
+# the legitimate state MEH-213 already recognises instead. Mirrored for the UI
+# as settings.locations.errors.primary_must_be_branch in he.json + en.json.
+PRIMARY_MUST_BE_BRANCH = (
+    "המיקום הראשי חייב להיות סניף. "
+    "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
+)
 
 
 def _snapshot_sensitive(producer) -> dict:

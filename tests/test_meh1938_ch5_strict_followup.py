@@ -22,6 +22,7 @@ that there is no physical presence to pin.
 from tests.conftest import auth_header, make_producer, make_user
 
 from app.models.models import Producer, ProducerLocation
+from app.routers.producer_me import ONE_PRIMARY_REQUIRED, PRIMARY_MUST_BE_BRANCH
 
 
 def _producer_user(db, *, city="תל אביב", has_physical_location=None, **kwargs):
@@ -83,7 +84,7 @@ class TestDeleteThePrimary:
 
         assert resp.status_code == 422, resp.text
         # The same string the demote arm raises — one invariant, one voice.
-        assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+        assert resp.json()["detail"] == ONE_PRIMARY_REQUIRED
         assert len(_rows(db, producer.id)) == 2, "a refused delete mutates nothing"
 
     def test_the_pickup_is_not_promoted(self, client, db):
@@ -150,7 +151,7 @@ class TestPromotionIsBranchOnly:
         )
 
         assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == "רק סניף יכול להיות המיקום הראשי"
+        assert resp.json()["detail"] == PRIMARY_MUST_BE_BRANCH
         assert [r.kind for r in _rows(db, producer.id) if r.is_primary] == ["branch"]
 
     def test_a_market_stand_cannot_be_promoted_either(self, client, db):
@@ -218,7 +219,7 @@ class TestCreateEnforcesBranchOnlyToo:
         )
 
         assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == "רק סניף יכול להיות המיקום הראשי"
+        assert resp.json()["detail"] == PRIMARY_MUST_BE_BRANCH
         assert [r.kind for r in _rows(db, producer.id) if r.is_primary] == ["branch"]
 
     def test_an_explicit_primary_on_a_market_stand_is_refused(self, client, db):
