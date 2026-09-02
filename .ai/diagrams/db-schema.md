@@ -55,7 +55,7 @@ erDiagram
         string description
         string city
         string address "nullable — MEH-829, VARCHAR(255); collected at register"
-        float lat "indexed with lng"
+        float lat "LEGACY(2026-10-15, MEH-1938): mirror of the primary producer_locations row, no reader since 5a, drop in 5b"
         float lng
         string status "pending|approved|rejected"
         float avg_rating "cached aggregate"
@@ -412,7 +412,7 @@ erDiagram
 
 ## Locked invariants (do not drift)
 
-- **No PostGIS.** `producers.lat` + `producers.lng` are plain `FLOAT`. Distance queries use Haversine in raw SQL (see `backend/app/routers/producers.py::_haversine_km`). Reverting this breaks Railway deploy.
+- **No PostGIS.** Coordinates are plain `FLOAT`. Distance queries use Haversine in raw SQL over `producer_locations.lat/lng` — `backend/app/services/producer_queries.py::haversine_min_km`, the nearest row per business, with NO fallback to the legacy `producers.lat/lng` mirror since MEH-1938 chunk 5a. Reverting this breaks Railway deploy.
 - **IPs are always hashed.** `producer_page_views.viewer_ip_hash` is SHA-256 of `ip + settings.secret_key[:32]` — never raw IP, per Privacy Law amendment 13 (2025) and `docs/SECURITY.md` §8a.
 - **Cached rating aggregates.** `producers.avg_rating` + `producers.reviews_count` are cached from `producer_reviews` to avoid a JOIN on every producer detail request. Update them transactionally when writing/deleting a review.
 - **Experience vs Event moderation are different flows.** Events: direct admin approval. Experiences: Claude Haiku pre-check → admin queue → approval. Don't conflate them (see `docs/MODERATION.md`).

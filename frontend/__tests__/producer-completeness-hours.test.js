@@ -19,6 +19,8 @@ const baseComplete = {
   city: "חיפה",
   lat: 32.8,
   lng: 34.9,
+  // MEH-1938 chunk 5a: coords come from the row; the columns are inert.
+  locations: [{ kind: "branch", is_primary: true, lat: 32.8, lng: 34.9, precision: "exact" }],
   phone: "050-1234567",
   categories: [{ id: 1, name: "מאפים" }],
   images: ["https://x/img.jpg"],
@@ -68,7 +70,7 @@ describe("producerCompleteness — opening_hours (MEH-1884)", () => {
   // exercised WITH hours present, so a red can only come from the old three.
   it.each([
     ["city", { city: "" }],
-    ["coords", { lat: null, lng: null }],
+    ["coords", { locations: [] }],
     ["contact", { phone: "", instagram: "" }],
   ])("still reds on missing %s (red logic unchanged)", (_label, patch) => {
     expect(producerCompleteness({ ...baseComplete, ...patch }).priority).toBe("red");

@@ -180,10 +180,12 @@ def _build_base_queries(
     if geo is not None:
         lat, lng, radius_km = geo
         # MEH-1402: distance = the NEAREST of the producer's producer_locations
-        # rows (COALESCE fallback to Producer.lat/lng during the Expand
-        # overlap). It's a correlated scalar subquery — NOT a JOIN — so a
+        # rows. It's a correlated scalar subquery — NOT a JOIN — so a
         # 10-location producer stays ONE row and the DISTINCT count below is
         # one-per-business (the _build_base_queries double-count trap).
+        # MEH-1938 chunk 5a: the COALESCE fallback to Producer.lat/lng that
+        # used to back this during the Expand overlap is gone — location rows
+        # are now the only source (producer_queries.py, haversine_min_km).
         distance_expr = haversine_min_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
@@ -221,11 +223,11 @@ def _build_base_queries(
             )
             q = q.filter(pinnable)
             count_q = count_q.filter(pinnable)
-        # MEH-1402: the coalesced distance is NULL exactly when a producer has
-        # neither a usable location row NOR a Producer.lat/lng point, and
-        # `NULL <= radius` is false — so those drop out without an explicit
-        # coord-IS-NOT-NULL guard (which would wrongly exclude a producer that
-        # has a valid pickup location but no own Producer point).
+        # MEH-1402 / MEH-1938 chunk 5a: the distance is NULL exactly when a
+        # producer has no usable location row, and `NULL <= radius` is false —
+        # so those drop out without an explicit coord-IS-NOT-NULL guard. Before
+        # chunk 5a this also required the producer to have no own lat/lng; the
+        # rule is now the single one, because the rows are the single source.
         q = q.filter(distance_expr <= radius_km).order_by(distance_expr.asc())
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q

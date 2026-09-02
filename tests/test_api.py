@@ -2210,14 +2210,19 @@ class TestMeh2120RequestReviewGate:
     """
 
     # (requirement code, mutation that removes exactly that requirement).
-    # Location is expressed as lat+lng because make_submit_ready_producer gives
-    # the producer a physical location, and `submission_gate._has_location`
-    # reads coordinates — NOT `city`, which the producer keeps either way.
+    # MEH-1938 chunk 5a: location is expressed as the `producer_locations`
+    # ROWS, not lat/lng. `submission_gate._has_location` lost its fallback to
+    # those columns when the Contract phase removed it, so clearing them no
+    # longer degrades anything — and leaving them SET while deleting the rows
+    # is the stronger construction: it is red against the pre-Contract gate
+    # and green after, so it measures the removal rather than restating it.
+    # `.clear()` deletes the rows (cascade="all, delete-orphan",
+    # models.py:520-522), the same idiom the product/category cases use.
     _DEGRADATIONS = [
         ("image", lambda p: setattr(p, "images", [])),
         ("product", lambda p: p.products.clear()),
         ("category", lambda p: p.categories.clear()),
-        ("location", lambda p: (setattr(p, "lat", None), setattr(p, "lng", None))),
+        ("location", lambda p: p.locations.clear()),
         ("phone_verified", lambda p: setattr(p, "phone_verified", False)),
     ]
 

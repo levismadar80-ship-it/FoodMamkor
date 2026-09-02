@@ -151,18 +151,19 @@ const singlePointProducer = {
   name: "עסק נקודה אחת",
   lat: 31.8,
   lng: 35.2,
-  locations: [],
+  // MEH-1938 chunk 5a: one primary row, not a Producer.lat/lng fallback.
+  locations: [{ kind: "branch", is_primary: true, lat: 31.8, lng: 35.2, precision: "exact" }],
 };
 const otherProducer = {
   id: "p-other",
   name: "עסק אחר",
   lat: 33.0,
   lng: 35.5,
-  locations: [],
+  locations: [{ kind: "branch", is_primary: true, lat: 33.0, lng: 35.5, precision: "exact" }],
 };
 
 const ALL = [multiPointProducer, singlePointProducer, otherProducer];
-// 3 fan-out points + 1 fallback + 1 fallback.
+// 3 fan-out points + 1 single-row business + 1 single-row business.
 const TOTAL_MARKERS = 5;
 
 const classNameOf = (marker) => marker.icon?.__divIcon?.className ?? "";

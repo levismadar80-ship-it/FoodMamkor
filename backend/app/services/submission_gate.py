@@ -104,14 +104,24 @@ def _has_location(producer: Producer) -> bool:
             (area.city or "").strip() for area in (producer.delivery_areas or [])
         )
 
-    # Physical location. MEH-1938 chunk 3: a producer_locations row counts,
-    # and Producer.lat/lng is the fallback for rows that predate that table —
-    # same precedence producerPoints() uses, so a business with coordinates in
-    # either place reads as located.
-    for loc in producer.locations or []:
-        if _is_usable_coord(loc.lat) and _is_usable_coord(loc.lng):
-            return True
-    return _is_usable_coord(producer.lat) and _is_usable_coord(producer.lng)
+    # Physical location: a `producer_locations` row with usable coordinates.
+    #
+    # MEH-1938 chunk 5a (Contract): the `Producer.lat/lng` fallback that used
+    # to sit under this loop is GONE. It covered the Expand overlap — rows
+    # predating `producer_locations` — and every write path now creates the
+    # row (registration MEH-1939, admin MEH-2059, import MEH-2140, both seeds
+    # MEH-2056), with revision 7c1e2a9f4b3d backfilling the rest. Measured on
+    # staging 02/09 before this landed: zero producers with coordinates and no
+    # location row, so nothing this gate governs changed hands.
+    #
+    # Still the fail-closed direction the docstring above demands: a producer
+    # with no rows, or rows without usable coordinates, reads as MISSING, not
+    # as satisfied. (A relationship that fails to LOAD raises, as it always
+    # did — this guards the empty case, not the exception case.)
+    return any(
+        _is_usable_coord(loc.lat) and _is_usable_coord(loc.lng)
+        for loc in producer.locations or []
+    )
 
 
 def submission_missing_items(producer: Producer) -> list[str]:

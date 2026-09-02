@@ -94,6 +94,8 @@ const completeProfile = {
   city: "חיפה",
   lat: 32.79,
   lng: 34.99,
+  // MEH-1938 chunk 5a: coords are satisfied by a row, not by the columns.
+  locations: [{ kind: "branch", is_primary: true, lat: 32.79, lng: 34.99, precision: "exact" }],
   phone: "0501234567",
   instagram: null,
   categories: ["honey"],

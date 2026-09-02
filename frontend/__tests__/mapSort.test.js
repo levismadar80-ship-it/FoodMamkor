@@ -6,10 +6,13 @@ import { sortProducers } from "@/app/[locale]/map/state/useMapFilters";
 // Haifa ≈ 85km.
 const userLoc = { lat: 32.0853, lng: 34.7818 };
 
-const tlv = { id: "tlv", name: "תל אביב", lat: 32.0853, lng: 34.7818, avg_rating: 3.5, reviews_count: 2 };
-const jlm = { id: "jlm", name: "ירושלים", lat: 31.7683, lng: 35.2137, avg_rating: 4.8, reviews_count: 12 };
-const haifa = { id: "haifa", name: "חיפה", lat: 32.794, lng: 34.9896, avg_rating: 4.8, reviews_count: 3 };
-const noCoords = { id: "nc", name: "בלי מיקום", lat: null, lng: null, avg_rating: null, reviews_count: null };
+// MEH-1938 chunk 5a: distance reads producer_locations rows; the lat/lng
+// columns are kept on the fixtures and pin nothing on their own.
+const at = (lat, lng) => [{ id: `loc-${lat}`, kind: "branch", is_primary: true, lat, lng }];
+const tlv = { id: "tlv", name: "תל אביב", lat: 32.0853, lng: 34.7818, locations: at(32.0853, 34.7818), avg_rating: 3.5, reviews_count: 2 };
+const jlm = { id: "jlm", name: "ירושלים", lat: 31.7683, lng: 35.2137, locations: at(31.7683, 35.2137), avg_rating: 4.8, reviews_count: 12 };
+const haifa = { id: "haifa", name: "חיפה", lat: 32.794, lng: 34.9896, locations: at(32.794, 34.9896), avg_rating: 4.8, reviews_count: 3 };
+const noCoords = { id: "nc", name: "בלי מיקום", lat: null, lng: null, locations: [], avg_rating: null, reviews_count: null };
 
 const FEED = [jlm, noCoords, haifa, tlv]; // deliberate non-sorted feed order
 

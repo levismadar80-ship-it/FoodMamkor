@@ -6,14 +6,34 @@
     "city": "ירושלים",
     "lat": 31.7683,
     "lng": 35.2137,
-    "categories": [{ "id": 4, "name": "לחמים ואפייה" }],
-    "images": ["https://res.cloudinary.com/demo/image/upload/v1/sample.jpg"],
+    "categories": [
+      {
+        "id": 4,
+        "name": "לחמים ואפייה"
+      }
+    ],
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/sample.jpg"
+    ],
     "avg_rating": 4.8,
     "reviews_count": 27,
     "primary_contact_method": "whatsapp",
     "phone": "0501110001",
     "delivery_areas": [],
-    "locations": []
+    "locations": [
+      {
+        "id": "loc-1",
+        "kind": "branch",
+        "label": null,
+        "city": "ירושלים",
+        "lat": 31.7683,
+        "lng": 35.2137,
+        "is_primary": true,
+        "precision": "exact",
+        "opening_hours": null,
+        "phone": null
+      }
+    ]
   },
   {
     "id": "2b2b2b2b-2222-4222-8222-222222222222",
@@ -22,14 +42,34 @@
     "city": "רמת הגולן",
     "lat": 32.9004,
     "lng": 35.7003,
-    "categories": [{ "id": 3, "name": "חלב וגבינות" }],
-    "images": ["https://res.cloudinary.com/demo/image/upload/v1/coffee.jpg"],
+    "categories": [
+      {
+        "id": 3,
+        "name": "חלב וגבינות"
+      }
+    ],
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/coffee.jpg"
+    ],
     "avg_rating": 4.6,
     "reviews_count": 12,
     "primary_contact_method": "whatsapp",
     "phone": "0501110002",
     "delivery_areas": [],
-    "locations": []
+    "locations": [
+      {
+        "id": "loc-2",
+        "kind": "branch",
+        "label": null,
+        "city": "רמת הגולן",
+        "lat": 32.9004,
+        "lng": 35.7003,
+        "is_primary": true,
+        "precision": "exact",
+        "opening_hours": null,
+        "phone": null
+      }
+    ]
   },
   {
     "id": "3c3c3c3c-3333-4333-8333-333333333333",
@@ -38,14 +78,32 @@
     "city": "עמק חפר",
     "lat": 32.3812,
     "lng": 34.9021,
-    "categories": [{ "id": 2, "name": "ירקות, פירות ומשקים" }],
+    "categories": [
+      {
+        "id": 2,
+        "name": "ירקות, פירות ומשקים"
+      }
+    ],
     "images": [],
     "avg_rating": 5.0,
     "reviews_count": 1,
     "primary_contact_method": "phone",
     "phone": "0501110003",
     "delivery_areas": [],
-    "locations": []
+    "locations": [
+      {
+        "id": "loc-3",
+        "kind": "branch",
+        "label": null,
+        "city": "עמק חפר",
+        "lat": 32.3812,
+        "lng": 34.9021,
+        "is_primary": true,
+        "precision": "exact",
+        "opening_hours": null,
+        "phone": null
+      }
+    ]
   },
   {
     "id": "4d4d4d4d-4444-4444-8444-444444444444",
@@ -54,14 +112,32 @@
     "city": "בית שאן",
     "lat": 32.4967,
     "lng": 35.4996,
-    "categories": [{ "id": 1, "name": "בשר" }],
+    "categories": [
+      {
+        "id": 1,
+        "name": "בשר"
+      }
+    ],
     "images": [],
     "avg_rating": null,
     "reviews_count": 0,
     "primary_contact_method": "phone",
     "phone": "0501110004",
     "delivery_areas": [],
-    "locations": []
+    "locations": [
+      {
+        "id": "loc-4",
+        "kind": "branch",
+        "label": null,
+        "city": "בית שאן",
+        "lat": 32.4967,
+        "lng": 35.4996,
+        "is_primary": true,
+        "precision": "exact",
+        "opening_hours": null,
+        "phone": null
+      }
+    ]
   },
   {
     "id": "5e5e5e5e-5555-4555-8555-555555555555",
@@ -70,14 +146,32 @@
     "city": "גליל עליון",
     "lat": 33.0012,
     "lng": 35.5504,
-    "categories": [{ "id": 5, "name": "דבש" }],
+    "categories": [
+      {
+        "id": 5,
+        "name": "דבש"
+      }
+    ],
     "images": [],
     "avg_rating": 4.9,
     "reviews_count": 8,
     "primary_contact_method": "whatsapp",
     "phone": "0501110005",
     "delivery_areas": [],
-    "locations": []
+    "locations": [
+      {
+        "id": "loc-5",
+        "kind": "branch",
+        "label": null,
+        "city": "גליל עליון",
+        "lat": 33.0012,
+        "lng": 35.5504,
+        "is_primary": true,
+        "precision": "exact",
+        "opening_hours": null,
+        "phone": null
+      }
+    ]
   },
   {
     "id": "6f6f6f6f-6666-4666-8666-666666666666",
@@ -86,13 +180,31 @@
     "city": "רמות מנשה",
     "lat": 32.6031,
     "lng": 35.0402,
-    "categories": [{ "id": 6, "name": "שמנים" }],
+    "categories": [
+      {
+        "id": 6,
+        "name": "שמנים"
+      }
+    ],
     "images": [],
     "avg_rating": 4.2,
     "reviews_count": 2,
     "primary_contact_method": "whatsapp",
     "phone": "0501110006",
     "delivery_areas": [],
-    "locations": []
+    "locations": [
+      {
+        "id": "loc-6",
+        "kind": "branch",
+        "label": null,
+        "city": "רמות מנשה",
+        "lat": 32.6031,
+        "lng": 35.0402,
+        "is_primary": true,
+        "precision": "exact",
+        "opening_hours": null,
+        "phone": null
+      }
+    ]
   }
 ]

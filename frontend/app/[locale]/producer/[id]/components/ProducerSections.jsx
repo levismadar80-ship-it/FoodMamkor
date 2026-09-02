@@ -18,6 +18,7 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
 import { resolveStoreHours } from "@/lib/hours";
+import { primaryPoint } from "@/lib/producerPoints";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
@@ -67,8 +68,17 @@ const MIN_NEARBY_BUSINESSES = 4;
 
 // MEH-1334 chunk 3: single owner of "does this producer have a mappable
 // location" — gates both the merged location section and the MiniMap mount.
-function parseHasLocation(producer) {
-  return producer.has_physical_location !== false && !!producer.lat && !!producer.lng;
+// MEH-1938 chunk 5a: answered from the PRIMARY producer_locations row via
+// primaryPoint(), not from Producer.lat/lng — those columns are read by no
+// consumer surface any more and are dropped in chunk 5b. The
+// has_physical_location gate is unchanged: a delivery-only business keeps its
+// pickup pins on /map, not a "location" section here.
+// `pin` is primaryPoint(producer), computed ONCE per render by the component
+// and passed in, so the gate and the MiniMap props read the same value — the
+// null-safety of `pin.lat` below is then a fact of one variable, not a
+// coincidence between two calls (CI reviewer, 02/09).
+function parseHasLocation(producer, pin) {
+  return producer.has_physical_location !== false && pin !== null;
 }
 
 // MEH-1901: the signature card's outer element. A <button> when the free-text
@@ -125,6 +135,10 @@ export default function ProducerSections({
   const t = useTranslations();
   const format = useFormatter();
   const locale = useLocale();
+  // MEH-1938 chunk 5a: the one point that stands for "where the business is"
+  // (the is_primary row or null) — gates the location section and centres the
+  // MiniMap. Computed once so both read the same answer.
+  const primaryPin = primaryPoint(producer);
   // MEH-2142: which store-hours string this page shows — the primary
   // location's, falling back to the legacy business-level column. Resolved
   // ONCE, here, because the location section both gates on it and renders it,
@@ -700,7 +714,7 @@ export default function ProducerSections({
           while rendering the resolved value would hide the whole section from a
           business whose hours live only on her primary location row, which is
           exactly the business this change is for. */}
-      {(parseHasLocation(producer) || storeHours) && (
+      {(parseHasLocation(producer, primaryPin) || storeHours) && (
         <section
           id="section-location"
           className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
@@ -726,10 +740,10 @@ export default function ProducerSections({
               — its branch plus each pickup / market stand — not just the primary
               pin. Complements the textual pickup list DeliveryBlock renders
               (MEH-1512): same rows, one as a list, one on a map. */}
-          {parseHasLocation(producer) && (
+          {parseHasLocation(producer, primaryPin) && (
             <MiniMap
-              lat={producer.lat}
-              lng={producer.lng}
+              lat={primaryPin.lat}
+              lng={primaryPin.lng}
               name={producer.name}
               locations={producer.locations}
               producer={producer}
