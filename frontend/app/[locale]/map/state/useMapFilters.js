@@ -6,6 +6,7 @@ import {
   TOGGLE_CHIPS,
   chipStateToParams,
   resolveCategoryId,
+  visibleMapToggleChips,
 } from "@/lib/map-chips";
 // MEH-2131: the chip-state default is derived from the taxonomy — see the
 // useState below for the three-way drift that made a hand-written copy a bad
@@ -101,6 +102,9 @@ export function useMapFilters({
   // viewport filter needs it so the list drops a business at the same moment
   // the map does — a producer whose only points are hidden pickups is off both.
   showSecondaryLayer = true,
+  // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
+  // loaded yet, and then no toggle is hidden.
+  catalogSnapshot = null,
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -405,10 +409,20 @@ export function useMapFilters({
     [chipState],
   );
 
+  // MEH-2170: which toggle chips FilterSheet offers. Derived from the mount
+  // snapshot + the active state only — NOT from allProducers, which reloads
+  // with the chip params after every toggle (circular) and is replaced by a
+  // viewport-bounded list after «חפשי באזור זה» (frame-dependent).
+  const visibleToggleChips = useMemo(
+    () => visibleMapToggleChips({ catalogSnapshot, chipState }),
+    [catalogSnapshot, chipState],
+  );
+
   return {
     // state
     chipState,
     setChipState,
+    visibleToggleChips,
     cityFilter,
     setCityFilter,
     activeCategoryNames,
