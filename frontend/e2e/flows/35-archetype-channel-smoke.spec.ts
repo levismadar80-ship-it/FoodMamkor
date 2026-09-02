@@ -32,29 +32,31 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * breakpoint test asserts the SPLIT (exactly one visible) rather than a total,
  * so a regression that renders both — or neither — fails.
  *
- * ── THE WHATSAPP HREF IS DEVICE-DEPENDENT, AND SSR AND HYDRATION DISAGREE ──
- * getWhatsAppHref (lib/utils.js:17-25) returns `https://wa.me/…` on a touch
- * device and `https://web.whatsapp.com/send?…` on a fine-pointer desktop
- * (`(hover: hover) and (pointer: fine)`). SSR has no window, so the server
- * HTML ALWAYS carries wa.me; on the desktop project hydration then rewrites
- * every WhatsApp href. Measured on staging, 01/09, 1440px, sdot-zahav:
- *   t0      chips=wa.me            cta=wa.me            (both mounts display:none)
- *   +500ms  chips=web.whatsapp.com cta=web.whatsapp.com (aside mount visible)
- * So on desktop `[href*="wa.me"]` can match ONLY the pre-hydration snapshot. A
- * locator waiting for it to be VISIBLE never resolves (the one red drain יח'
- * saw, and misread as a closed disclosure — there is none: WaItem rows are
- * plain <li>s, WhatsAppQuestionChips.jsx:280-303), and a zero-count assertion
- * on it passes on a page FULL of WhatsApp links — green for the wrong reason.
+ * ── THE WHATSAPP HREF WAS DEVICE-DEPENDENT. IT IS NOT ANY MORE ──
+ * getWhatsAppHref used to return `https://wa.me/…` on a touch device and
+ * `https://web.whatsapp.com/send?…` on a fine-pointer desktop, so the server
+ * HTML always carried wa.me and hydration rewrote it — a mismatch React does
+ * not patch. That produced everything this header used to warn about: a
+ * `[href*="wa.me"]` locator that could match only the pre-hydration snapshot,
+ * a zero-count assertion that passed on a page full of WhatsApp links, and a
+ * swap that was not deterministic (two runs of this spec on the same commit
+ * and page: one swapped within 500ms, the other held wa.me for the full 20s
+ * budget).
  *
- * AND the swap itself is not deterministic. Two runs of this very spec on the
- * same commit, same project, same page: one held wa.me on the visible CTA for
- * the full 20s expect budget, the other swapped within 500ms. An href that
- * differs between server and client render is a hydration mismatch, and React
- * does not patch a mismatched attribute — the SSR value stays until something
- * re-renders that subtree. So "which form" is a product observation (reported
- * on MEH-2189, not fixed here — zero component edits), and this spec asserts
- * "a WhatsApp link, in either form" through WA_HREF / waHrefLocator. Pinning
- * the per-project form was tried and is exactly the assertion that flaked.
+ * MEH-2189 ruling ב' (02/09) removed the branch: `getWhatsAppHref` now returns
+ * wa.me in every environment, so server and client agree and the form is no
+ * longer a variable. The measurement behind the ruling is in the function's
+ * own comment — the desktop rewrite was already only landing in 7 of 20 loads.
+ *
+ * WA_PREFIXES below still carries both forms ON PURPOSE. Nothing can emit the
+ * desktop form today, so the second entry costs one array element and asserts
+ * nothing false; what it buys is that this spec does not go red against a
+ * cached page or an older deploy still serving the pre-ruling HTML. If it is
+ * ever removed, remove it because the tolerance is proven unnecessary, not
+ * because the list looks redundant.
+ *
+ * The double-mount note above is unaffected and still load-bearing: every
+ * assertion here is explicit about which mount it means.
  */
 
 /**
@@ -257,8 +259,9 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     await page.goto(url("sdot-zahav"), { waitUntil: "domcontentloaded" });
     // `:visible` because the question chips are inside ContactCard, which is
     // mounted twice (see the header note) — `.first()` alone resolves to the
-    // display:none copy and the click times out. Either WhatsApp href form:
-    // on desktop the visible chip is web.whatsapp.com, never wa.me (header).
+    // display:none copy and the click times out. The href form is no longer
+    // device-dependent (MEH-2189 ruling ב'), so this is wa.me on both projects;
+    // the locator still accepts either form per the header.
     const waChip = waHrefLocator(page, "question-link", true).first();
     await expect(
       waChip,
