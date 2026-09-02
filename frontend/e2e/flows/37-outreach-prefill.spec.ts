@@ -228,6 +228,25 @@ async function reachDetailsFrame(page: Page): Promise<void> {
   await expect(page.getByTestId("register-frame-details")).toBeVisible({ timeout: 15_000 });
 }
 
+/**
+ * STUB, not a mock, same reasoning: the nav gate (`lib/use-experiences-nav-gate.js`)
+ * asks `GET /experiences/count` on every page load from Header and Footer.
+ * No assertion in this file reads it — but the route is limited to 60/minute
+ * per IP (experiences.py, `@limiter.limit("60/minute")`) and the whole CI
+ * suite is one IP, so the eight tests here, on two projects, plus every
+ * other spec's page loads inside the same minute, push it over. The browser
+ * then logs `429 (Too Many Requests)` for the count and assertNoConsoleErrors
+ * reds a test about outreach prefill on a nav counter. Measured on run
+ * 33631151404: four tests, 12 such lines, no other error. Answering the
+ * count locally takes the suite's request volume out of the equation
+ * without hiding a 429 from anything the spec is actually about.
+ */
+async function stubExperiencesCount(page: Page): Promise<void> {
+  await page.route("**/experiences/count", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ count: 0 }) }),
+  );
+}
+
 async function openPrefillAsGuest(
   browser: Browser,
   token: string,
@@ -239,6 +258,7 @@ async function openPrefillAsGuest(
   const page = await context.newPage();
   const errors = collectConsoleErrors(page);
   await stubPasswordCheck(page);
+  await stubExperiencesCount(page);
   await page.goto(`/register/producer?prefill=${token}`);
   return { context, page, errors };
 }
