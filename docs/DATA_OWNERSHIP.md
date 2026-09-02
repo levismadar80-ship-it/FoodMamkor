@@ -30,7 +30,7 @@ again.
 
 | Fact | Canonical field | Single editor | Deprecated aliases (do not write) | Contract |
 |---|---|---|---|---|
-| **Where the business is** | `producer_locations` rows (`kind`, `lat`, `lng`, `city`, `address`, `is_primary`) | owner — `LocationsEditor.jsx` | `producers.address` (owner path closed, MEH-1856); `producers.lat`/`lng` as the *only* source | MEH-1938 |
+| **Where the business is** | `producer_locations` rows (`kind`, `lat`, `lng`, `city`, `address`, `is_primary`) | owner — `LocationsEditor.jsx` | `producers.address` (owner path closed, MEH-1856); `producers.lat`/`lng` (owner path closed, MEH-1938 chunk 5a; no reader falls back to them since the same chunk; column drop is chunk 5b) | MEH-1938 |
 | **Which town it is listed under** | `producer_locations.city` of the **primary** row | owner — `LocationsEditor.jsx`; `producers.city` follows automatically | `producers.city` as an independently-edited value | MEH-2141 |
 | **When it is open** | `producer_locations.opening_hours` of the primary row | owner — `LocationsEditor.jsx` | `producers.opening_hours` (owner path closed, MEH-2142; read fallback behind `LEGACY(2026-10-01, MEH-1938)`) | MEH-1938 |
 | **Whether it is kosher** | `producers.kashrut_verified_at` + the certificate (badge flow) | admin — verification, per חוק איסור הונאה בכשרות | `producers.kosher` free text (owner path closed, MEH-2143; no consumer surface has rendered it since MEH-986) | — |

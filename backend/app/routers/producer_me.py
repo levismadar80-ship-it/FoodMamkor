@@ -528,8 +528,24 @@ def update_my_producer(
         "description",
         "short_description",
         "city",
-        "lat",
-        "lng",
+        # MEH-1938 chunk 5a: `lat` and `lng` were REMOVED from this set. Same
+        # disposition and the same standing rule as the blocks below — the
+        # columns stay, `admin.py` / `producer_import.py` / the seeds are
+        # untouched, and only the owner PUT path is closed. Do not re-add
+        # either without shipping its editor in the same PR:
+        #   lat / lng → chunk 4 (MEH-2058) deleted the dashboard card that
+        #                sent them, so this was an API path with no owner UI
+        #                behind it. Worse than the MEH-1856 class: it wrote the
+        #                columns and NOT the `producer_locations` row, and the
+        #                Contract phase (chunk 5a) removed every read of the
+        #                columns as a fallback — so a coordinate written here
+        #                would have been invisible to the map, to "near me"
+        #                and to the submit gate. The owner's editor is
+        #                LocationsEditor.jsx (PUT /producers/me/locations/*).
+        #   city      → deliberately STILL HERE. It is in SENSITIVE_FIELDS
+        #                (MEH-2073, above), whose admin ping fires only from
+        #                this handler; closing it is a decision about that
+        #                ping, not about this set. Tracked on the MEH-1938 card.
         "phone",
         "instagram",
         "website",

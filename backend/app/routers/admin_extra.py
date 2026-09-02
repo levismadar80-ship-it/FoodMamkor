@@ -26,6 +26,7 @@ from app.models import (
     HomeProduct,
     Producer,
     ProducerCategory,
+    ProducerLocation,
     ProducerPageView,
     Report,
     StaticPage,
@@ -379,6 +380,40 @@ def update_static_page(
 # ============================================================
 
 
+def _primary_location_points(db: Session, *, limit: int | None = None):
+    """(producer_id, name, lat, lng) for every approved business that has a
+    primary `producer_locations` row with usable coordinates.
+
+    MEH-1938 chunk 5a (Contract): the two admin map surfaces used to read
+    `Producer.lat/lng`. Those columns are the Contract target — every other
+    reader has moved to the location rows, the geo query and the submit gate
+    lost their fallback to them in this same chunk, and chunk 5b drops them.
+    Reading the PRIMARY row (not MIN over all rows) keeps the shape the admin
+    pages already render: one point per business, at its main location.
+
+    Inner join on purpose: a business with no primary row, or a primary row
+    with a cleared pin (the admin path mirrors a clear onto the row rather
+    than deleting it — producer_queries.upsert_primary_branch_location),
+    has no point to plot and drops out, exactly as a NULL column did before.
+
+    # DO NOT fall back to Producer.lat/lng here — that is the read chunk 5a
+    #        exists to remove, and chunk 5b's revision assumes zero readers.
+    """
+    q = (
+        db.query(Producer.id, Producer.name, ProducerLocation.lat, ProducerLocation.lng)
+        .join(ProducerLocation, ProducerLocation.producer_id == Producer.id)
+        .filter(
+            Producer.status == "approved",
+            ProducerLocation.is_primary.is_(True),
+            ProducerLocation.lat.isnot(None),
+            ProducerLocation.lng.isnot(None),
+        )
+    )
+    if limit is not None:
+        q = q.limit(limit)
+    return q.all()
+
+
 @router.get("/analytics")
 def get_analytics(
     user: User = Depends(require_admin),
@@ -450,18 +485,15 @@ def get_analytics(
         for pid, name, favs in top_rows
     ]
 
-    # Heat map points
-    points = (
-        db.query(Producer.id, Producer.name, Producer.lat, Producer.lng)
-        .filter(
-            Producer.status == "approved",
-            Producer.lat.isnot(None),
-            Producer.lng.isnot(None),
-        )
-        .all()
-    )
+    # Heat map points — one per approved business, at its PRIMARY location.
+    # MEH-1938 chunk 5a: read from `producer_locations`, not the
+    # `Producer.lat/lng` mirror — those columns are the Contract target and no
+    # reader may depend on them. The primary row is the business's "where",
+    # so the count stays one-per-business, which is what a heat map wants.
+    points = _primary_location_points(db)
     map_points = [
-        {"id": str(p.id), "name": p.name, "lat": p.lat, "lng": p.lng} for p in points
+        {"id": str(pid), "name": name, "lat": lat, "lng": lng}
+        for pid, name, lat, lng in points
     ]
 
     return {
@@ -779,16 +811,11 @@ def get_dashboard(
             {"month": ref.strftime("%Y-%m"), "producers": int(producers or 0)}
         )
 
+    # MEH-1938 chunk 5a: primary-location rows, not Producer.lat/lng — see
+    # _primary_location_points. The 200 cap is the pre-existing one.
     map_points = [
-        {"id": str(p.id), "name": p.name, "lat": p.lat, "lng": p.lng}
-        for p in db.query(Producer)
-        .filter(
-            Producer.status == "approved",
-            Producer.lat.isnot(None),
-            Producer.lng.isnot(None),
-        )
-        .limit(200)
-        .all()
+        {"id": str(pid), "name": name, "lat": lat, "lng": lng}
+        for pid, name, lat, lng in _primary_location_points(db, limit=200)
     ]
 
     # ---- feature/producer-analytics additions ----
