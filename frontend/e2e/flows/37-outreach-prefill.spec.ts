@@ -142,13 +142,30 @@ async function mintToken(leadId: string): Promise<string> {
 const TARGET_NOISE = [
   "/_vercel/speed-insights/script.js",
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  // MEH-2168 chunk 3: Google Identity Services on the register page. The
+  // button iframe (accounts.google.com/gsi/button) answers 403 for an origin
+  // the OAuth client does not list — CI's http://localhost:3000 — and the SDK
+  // logs the reason. Both lines are the third party refusing the runner's
+  // origin, not the outreach form; measured on runs 33620715216 and
+  // 33622606801 (four tests, both projects, identical text). The 403 entry
+  // is anchored on the third-party origin — collectConsoleErrors appends the
+  // failing resource URL to a resource-load error — so a 403 from our own
+  // stack, or from any edge in front of it, stays visible whatever its
+  // reason phrase says.
+  "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
+  "Failed to load resource: the server responded with a status of 403 () @ https://accounts.google.com/gsi/",
 ] as const;
 
 /** Collect console errors so a test can FAIL on them rather than log them. */
 function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
+    if (m.type() !== "error") return;
+    // A resource-load error names the failing URL in its location, not in its
+    // text. Append it so TARGET_NOISE can anchor an entry on the origin that
+    // produced it rather than on every error with the same status line.
+    const url = m.location()?.url;
+    errors.push(url && m.text().startsWith("Failed to load resource") ? `${m.text()} @ ${url}` : m.text());
   });
   page.on("pageerror", (e) => errors.push(String(e)));
   return errors;
@@ -211,6 +228,25 @@ async function reachDetailsFrame(page: Page): Promise<void> {
   await expect(page.getByTestId("register-frame-details")).toBeVisible({ timeout: 15_000 });
 }
 
+/**
+ * STUB, not a mock, same reasoning: the nav gate (`lib/use-experiences-nav-gate.js`)
+ * asks `GET /experiences/count` on every page load from Header and Footer.
+ * No assertion in this file reads it — but the route is limited to 60/minute
+ * per IP (experiences.py, `@limiter.limit("60/minute")`) and the whole CI
+ * suite is one IP, so the eight tests here, on two projects, plus every
+ * other spec's page loads inside the same minute, push it over. The browser
+ * then logs `429 (Too Many Requests)` for the count and assertNoConsoleErrors
+ * reds a test about outreach prefill on a nav counter. Measured on run
+ * 33631151404: four tests, 12 such lines, no other error. Answering the
+ * count locally takes the suite's request volume out of the equation
+ * without hiding a 429 from anything the spec is actually about.
+ */
+async function stubExperiencesCount(page: Page): Promise<void> {
+  await page.route("**/experiences/count", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ count: 0 }) }),
+  );
+}
+
 async function openPrefillAsGuest(
   browser: Browser,
   token: string,
@@ -222,6 +258,7 @@ async function openPrefillAsGuest(
   const page = await context.newPage();
   const errors = collectConsoleErrors(page);
   await stubPasswordCheck(page);
+  await stubExperiencesCount(page);
   await page.goto(`/register/producer?prefill=${token}`);
   return { context, page, errors };
 }

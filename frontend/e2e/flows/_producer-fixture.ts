@@ -62,6 +62,22 @@ export function detailPath(p: FeedProducer): string {
 }
 
 /**
+ * MEH-2168 chunk 3: the window a spec picks from must be the window the
+ * surface it then asserts on actually renders. /producers renders its first
+ * page from `?limit=24&offset=0` (app/[locale]/producers/page.jsx:21,37);
+ * a spec that goes on to look for the card on that grid passes this so the
+ * pick is on the grid BY CONSTRUCTION. Measured 02/09 on staging (25
+ * businesses): the unbounded feed put lehem-vezman at index 24, the grid
+ * showed 24 cards, and spec 03 failed "card is not on /producers" on both
+ * projects with the API and the grid both correct.
+ *
+ * Opt-in, not the default: specs 04/06/31/36 reach the detail page by URL and
+ * never look at the grid, so they keep the full feed (measured: switching them
+ * changed which producer they picked and moved a favourites assertion).
+ */
+export const GRID_FIRST_PAGE_FEED = "/api/producers?limit=24&offset=0";
+
+/**
  * Fetch the public feed and return the producers matching `requirement`,
  * ordered deterministically.
  *
@@ -73,8 +89,9 @@ export function detailPath(p: FeedProducer): string {
 export async function pickProducer(
   request: APIRequestContext,
   requirement: { label: string; matches: (p: FeedProducer) => boolean },
+  { feedQuery = "/api/producers" }: { feedQuery?: string } = {},
 ): Promise<FeedProducer> {
-  const res = await request.get("/api/producers");
+  const res = await request.get(feedQuery);
   if (!res.ok()) {
     throw new Error(
       `GET /producers returned ${res.status()} — the E2E backend is unreachable or erroring. ` +

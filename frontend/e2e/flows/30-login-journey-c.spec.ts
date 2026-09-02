@@ -212,6 +212,18 @@ const STUB_TOKEN = "example-journey-c-token";
 
 /** A signed-in backend: token minted, profile returned. */
 async function stubSuccessfulLogin(page: Page) {
+  // MEH-2168 chunk 3: the stub token is not a real JWT, so the first
+  // authenticated call the app makes AFTER login — ensureFavoritesLoaded()
+  // → GET /users/me/favorites (auth-context.js afterLogin) — 401s against the
+  // real backend, the interceptor tries /auth/refresh, that 401s too, and
+  // _expireSession() (lib/api.js) wipes localStorage.token. Measured on
+  // staging and on CI: the reopened tab in C2 found `token: null` and never
+  // even called /auth/me. Stub the one call that fires, so the stubbed
+  // session survives the way a real one does. Nothing else in this spec
+  // reaches an authed endpoint.
+  await page.route("**/api/users/me/favorites", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
   await page.route("**/api/auth/login", (route) =>
     route.fulfill({
       status: 200,
