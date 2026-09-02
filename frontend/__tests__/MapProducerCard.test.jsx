@@ -230,13 +230,13 @@ describe("MapProducerCard — chevron nav + second-tap (Direction B)", () => {
     render(<MapProducerCard producer={producer} onClick={vi.fn()} />);
     const chevron = screen.getByTestId("map-chevron");
     expect(chevron.tagName).toBe("A");
-    expect(chevron).toHaveAttribute("href", "/havat-hadvash");
+    expect(chevron).toHaveAttribute("href", "/havat-hadvash?from=map");
     expect(chevron).toHaveAttribute("aria-label", "full_profile");
   });
 
   it("falls back to /producer/:id when there is no slug", () => {
     render(<MapProducerCard producer={{ ...producer, slug: undefined }} onClick={vi.fn()} />);
-    expect(screen.getByTestId("map-chevron")).toHaveAttribute("href", "/producer/p1");
+    expect(screen.getByTestId("map-chevron")).toHaveAttribute("href", "/producer/p1?from=map");
   });
 
   it("body tap on an UNSELECTED card selects (onClick), does not navigate", () => {
@@ -251,7 +251,7 @@ describe("MapProducerCard — chevron nav + second-tap (Direction B)", () => {
     const onClick = vi.fn();
     render(<MapProducerCard producer={producer} onClick={onClick} active={true} />);
     fireEvent.click(screen.getByText("חוות הדבש"));
-    expect(pushMock).toHaveBeenCalledWith("/havat-hadvash");
+    expect(pushMock).toHaveBeenCalledWith("/havat-hadvash?from=map");
     expect(onClick).not.toHaveBeenCalled();
   });
 

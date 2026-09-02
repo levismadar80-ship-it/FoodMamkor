@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
+import Link from "next/link";
+import { Info, Package, Truck, ChatCircleText, CaretLeft } from "@phosphor-icons/react";
+import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
@@ -39,6 +41,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const params = useParams();
   const { user } = useAuth();
   const t = useTranslations();
+  // MEH-1414: "חזרה למפה" renders only when this page was reached from /map
+  // (MapProducerCard appends ?from=map). Read from window in an effect — not
+  // useSearchParams — for the same reason useProducerData.js:113 does: this
+  // route is ISR-static and a render-time search-param read would need a
+  // Suspense boundary; an effect also cannot mismatch hydration (MEH-517).
+  const [fromMap, setFromMap] = useState(false);
+  useEffect(() => {
+    setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
+  }, []);
 
   const { producer, loading, events, similarProducers, nearbyProducers } = useProducerData({
     params,
@@ -122,6 +133,22 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { label: producer.name },
           ]}
         />
+        {fromMap && (
+          <p className="mt-2">
+            {/* Points "back": CaretLeft in LTR, rtl:rotate-180 → right in he.
+                Same convention as MapProducerCard's chevron (CaretRight +
+                rtl:rotate-180 = forward). /map restores the camera the visitor
+                left on its own (lib/map-view-state.js). */}
+            <Link
+              href="/map"
+              data-testid="back-to-map"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline focus-ring"
+            >
+              <CaretLeft size={16} className="rtl:rotate-180" aria-hidden="true" />
+              {t("producer.detail.back_to_map")}
+            </Link>
+          </p>
+        )}
       </div>
 
       {/* Gallery — MEH-1306: wrapped with the stable section id (deep-link

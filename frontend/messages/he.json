@@ -731,6 +731,7 @@
       "loading_fresh": "בטעינה…",
       "not_found": "לא מצאנו את בית העסק הזה — עדיין",
       "breadcrumb_home": "בית",
+      "back_to_map": "חזרה למפה",
       "google_rating": {
         "summary": "ל{name} יש {count} ביקורות ב-Google Maps, בדירוג ממוצע {rating}.",
         "cta": "לצפייה בהן ‹",

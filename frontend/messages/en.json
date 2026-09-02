@@ -731,6 +731,7 @@
       "loading_fresh": "Loading fresh businesses...",
       "not_found": "We couldn't find this business — yet",
       "breadcrumb_home": "Home",
+      "back_to_map": "Back to map",
       "google_rating": {
         "summary": "{name} has {count} reviews on Google Maps, averaging {rating}.",
         "cta": "View them ‹",
