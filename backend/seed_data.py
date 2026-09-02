@@ -15,6 +15,7 @@ from app.models import (
     Product,
 )
 from app.services.category_slug import bulk_slugs
+from app.services.producer_queries import create_primary_branch_location
 from app.models.models import User
 
 # Same logger family as app/startup.py:13, which is what invokes seed() at boot —
@@ -416,6 +417,17 @@ def _seed_demo_producers(db):
         )
         db.add(producer)
         db.flush()
+        # MEH-2056 (MEH-1938 chunk 2): this seed was one of the two writers
+        # that put coordinates on `producers.lat/lng` with NO producer_locations
+        # row — measured 13 such rows on staging on 02/09, five of them these
+        # fixtures, recreated after every `seed_demo_producers --reset` (that
+        # script names all five in TEST_NAME_PATTERNS). Same helper the
+        # registration, admin and import paths use, so the row is a mirror of
+        # the instance and cannot drift from it. Chunk 5 removes the
+        # Producer.lat/lng fallbacks; a fixture without this row would then
+        # vanish from the map and from "near me".
+        # REUSES: backend/app/services/producer_import.py:397
+        create_primary_branch_location(db, producer)
 
         # MEH-2081: name → id, resolved above from the DB. Never a literal.
         for cname in p_data["category_names"]:
