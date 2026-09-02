@@ -46,4 +46,121 @@ test.describe("Map", () => {
       await expect(page.locator(".leaflet-container:visible")).toBeVisible();
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // MEH-1414 — camera persistence (anti-pogo-sticking, NN/g). The camera the
+  // visitor leaves the map at is saved to sessionStorage["map_view_state"] on
+  // her own moveend (30-min TTL) and restored as the FIRST setView on the next
+  // /map mount, so browser-back from a producer page lands on the same spot.
+  // `window.__MAP_CENTER__` is the initial camera — default on a fresh visit,
+  // the restored one when something was saved — which is what these read.
+  // ---------------------------------------------------------------------------
+  const MAP_VIEW_KEY = "map_view_state";
+  const waitForMapCenter = async (page: import("@playwright/test").Page) => {
+    await page.waitForFunction(
+      () => (window as unknown as { __MAP_CENTER__?: [number, number] }).__MAP_CENTER__ !== undefined,
+      { timeout: 45_000 },
+    );
+    return page.evaluate(
+      () => (window as unknown as { __MAP_CENTER__: [number, number] }).__MAP_CENTER__,
+    );
+  };
+
+  test("MEH-1414: a fresh saved camera is restored on the next /map visit", async ({ page }) => {
+    test.setTimeout(90_000);
+    // Seeded BEFORE navigation, in every document of this context — the same
+    // shape MapComponent writes. Far from the MEH-932 default so a default
+    // render cannot pass this by accident.
+    await page.addInitScript(
+      ([key, value]) => window.sessionStorage.setItem(key, value),
+      [MAP_VIEW_KEY, JSON.stringify({ lat: 31.25, lng: 34.79, zoom: 12, ts: Date.now() })] as const,
+    );
+    await page.goto("/map");
+    const center = await waitForMapCenter(page);
+    expect(center[0]).toBeCloseTo(31.25, 2);
+    expect(center[1]).toBeCloseTo(34.79, 2);
+  });
+
+  test("MEH-1414: a saved camera older than 30 minutes is ignored — default camera unchanged", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(
+      ([key, value]) => window.sessionStorage.setItem(key, value),
+      [
+        MAP_VIEW_KEY,
+        JSON.stringify({ lat: 31.25, lng: 34.79, zoom: 12, ts: Date.now() - 31 * 60 * 1000 }),
+      ] as const,
+    );
+    await page.goto("/map");
+    const center = await waitForMapCenter(page);
+    // MEH-932 default band, same bounds the first test pins.
+    expect(center[0]).toBeGreaterThan(32);
+    expect(center[0]).toBeLessThan(33);
+    expect(center[1]).toBeGreaterThan(34);
+    expect(center[1]).toBeLessThan(36);
+  });
+
+  test("MEH-1414: a user pan writes the camera to sessionStorage; a fresh visit had written nothing", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await page.goto("/map");
+    await waitForMapCenter(page);
+    // Control — the programmatic initial setView must NOT count as a user move.
+    expect(await page.evaluate((k) => window.sessionStorage.getItem(k), MAP_VIEW_KEY)).toBeNull();
+
+    // LocationModal (z-[9000]) can open ~800ms after mount over the map —
+    // dismiss it the way 07-gps-button.spec.ts does, so the drag lands on the map.
+    const skipBtn = page.getByRole("button", { name: "דלגו לעכשיו" });
+    try {
+      await skipBtn.waitFor({ state: "visible", timeout: 2000 });
+      await skipBtn.click();
+      await skipBtn.waitFor({ state: "hidden", timeout: 2000 });
+    } catch {
+      // modal did not appear — proceed
+    }
+
+    const box = await page.locator(".leaflet-container:visible").boundingBox();
+    if (!box) throw new Error("visible map container has no bounding box");
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx - 60, cy - 40, { steps: 8 });
+    await page.mouse.move(cx - 120, cy - 80, { steps: 8 });
+    await page.mouse.up();
+
+    // Leaflet fires moveend after its inertia animation; poll rather than sleep.
+    await expect
+      .poll(async () => page.evaluate((k) => window.sessionStorage.getItem(k), MAP_VIEW_KEY), {
+        timeout: 10_000,
+      })
+      .not.toBeNull();
+    const saved = JSON.parse(
+      (await page.evaluate((k) => window.sessionStorage.getItem(k), MAP_VIEW_KEY)) as string,
+    );
+    expect(typeof saved.lat).toBe("number");
+    expect(typeof saved.lng).toBe("number");
+    expect(typeof saved.zoom).toBe("number");
+    // The drag moved the camera off the default; both coordinates must differ.
+    expect(Math.abs(saved.lat - 32.4) + Math.abs(saved.lng - 34.95)).toBeGreaterThan(0.01);
+  });
+
+  test("MEH-1414: producer page shows «חזרה למפה» only when reached with ?from=map", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    // ruach-hasadeh is the flagship demo business (seed_demo_business.py).
+    await page.goto("/ruach-hasadeh?from=map");
+    const back = page.getByTestId("back-to-map");
+    await expect(back).toBeVisible();
+    await expect(back).toHaveAttribute("href", /\/map$/);
+    await expect(back).toHaveText(/חזרה למפה|Back to map/);
+
+    // Control — the same page without the referrer renders NO back link (0-state).
+    await page.goto("/ruach-hasadeh");
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByTestId("back-to-map")).toHaveCount(0);
+  });
 });
