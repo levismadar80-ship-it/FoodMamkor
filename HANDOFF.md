@@ -3,6 +3,38 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-02 לילה — drain כד' (session `01UJNNqp…`): ארבעה PRs נחתו · Phase 0 שינה את הצורה של שניים מהם · מיזוג אחד נחת כ-merge ולא כ-squash
+
+**‏שורה אחת:** ‏#3292 (WhatsApp href אחד) · #3294 (MEH-2073 chunk 2) · #3295 (MEH-1904 §5.2) · #3296 (MEH-1949 wiring). אפס פארקים, אפס STOP.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏מיזוג שביקש squash נחת כ-merge commit — משפחת MEH-1526, כלל 21.** ‏`merge_pull_request` עם `merge_method: "squash"` על **#3294** החזיר `merged: true`, וה-commit שנחת הוא `a85efa26` = `Merge pull request #3294 from …` עם **שני הורים**. הודעת ה-commit המנוסחת קבורה בהיסטוריית הענף. שלושת המיזוגים האחרים באותה אצווה (`dc304f2c` · `493dc905` · `715fb499`) נחתו כ-squash תקין באותה שיטת קריאה בדיוק. **הקריאה החוזרת של ההודעה היא מה שתפס** — הצלחת הקריאה אינה ראיה.
+2. **‏שני שלישים מ-MEH-1904 §5 כבר היו staged תחת MEH-2196.** ‏§5.1 (נוסח מהספירות) ו-§5.3 (`flaky` תמיד גלוי) חיים ב-`docs/ci/meh-2196-qa-three-state.patch.md` + `scripts/ci/qa-report-verdict.cjs` עם self-test. **#3295 מכיל רק את §5.2** ואומר בראשו להחיל את meh-2196 קודם. אל תשכפלו — שני patch-docs על אותו בלוק ב-`e2e.yml` הם שני בעלים לאותה עובדה.
+3. **‏`Linear mention guard` לא רץ על PRs של קוד — וזה מבטל את כל הפואנטה של MEH-1949.** ‏`pr-checks.yml:659` מגביל את ה-job ל-diff שאין בו קוד. נמדד 02/09: `skipped` על #3292 (frontend) ו-#3294 (backend). לכן `docs/ci/meh-1949-branch-arg-wiring.patch.md` הוא **שני** hunks — הארגומנט **וגם** התנאי. החלת הראשון לבדו מתקינה גארד ירוק-כי-לא-רץ.
+4. **‏הריצה על #3294 נמשכה 27 דקות מול 9 על אותו diff 15 דקות קודם.** אותו ה-head, אותם טסטים, `Run tests (parallel)` שרץ 7 דקות בפעם הראשונה ולמעלה מ-25 בשנייה. לא נחקר — נמזג ירוק. אם זה חוזר, זו הנקודה להתחיל בה, ולא ה-diff.
+5. **‏מכשיר: `git checkout` פוסל ריצת pytest ברקע.** החלפת ענף כדי למזג PR אחר החליפה את `producer_me.py` תחת ריצה פעילה. הריצה **בוטלה ונפסלה**, לא «עדיין רצה» — התיקון פורסם כתגובה על #3294 לפני המיזוג, כי שתי המילים נראות זהות למי שסורק.
+6. **‏ה-ruleset דורש ענף מעודכן, ופעם אחת הוסיף שורה מטעה.** שלושה מיזוגים נדחו ב-`405` כי staging זזה. באחת הפעמים ההודעה כללה גם `At least 1 approving review is required` — היא **נעלמה מעצמה** בניסיון הבא בלי ששום דבר אושר. לא לפעול על השורה הזאת בלי לנסות שוב אחרי sync.
+7. **‏ה-flip-check עבד על כל הארבעה:** ‏MEH-2189 · MEH-2073 · MEH-1904 · MEH-1949 — כולם **נשארו Todo** אחרי המיזוג (`completedAt: null`). אף slug לא סגר כרטיס, לא נדרשה פתיחה מחדש.
+8. **‏שני כרטיסים שנגענו בהם נושאים `not-cc`** (‏1904 · 1949). נפתחו כי הוראת ה-batch נקבה בהם במפורש, והעבודה נשארה בתוך מה שהתווית מגנה עליו: `.github/workflows/**` ו-`.claude/**` לא נגועים בשום PR.
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3292 | MEH-2189 — `wa.me` בכל סביבה, ענף ה-`matchMedia` נמחק | `dc304f2c` (squash) |
+| #3294 | MEH-2073 chunk 2 — ה-ping ב-locations CRUD | `a85efa26` (**merge, לא squash**) |
+| #3295 | MEH-1904 §5.2 — patch doc | `493dc905` (squash) |
+| #3296 | MEH-1949 — patch doc, שני hunks | `715fb499` (squash) |
+| זה | docs backfill — CHANGELOG + HANDOFF | — |
+
+### רשימת ספיר (residual מהסשן הזה)
+
+* **‏MEH-2189:** לפתוח `wa.me/972…` ב-Desktop Chrome בלי אפליקציה ולוודא שאין loop אמיתי (לא interstitial). ה-host חסום מהסנדבוק; הבקרה (`mehamakor.co.il` → 200) מוכיחה שהמכשיר תקין.
+* **‏MEH-2073:** הבדיקה הידנית ב-staging — שההודעה מגיעה לאדמינית. WhatsApp ו-Resend שניהם מחוץ להישג הסנדבוק. שווה גם החלטה על נוסח `primary_location_removed`, מחרוזת שכתבתי ולא הכרטיס.
+* **‏MEH-1904 · MEH-1949:** להחיל את שני ה-patch-docs. סדר: `meh-2196` (שני שלביו) → `meh-1904-coverage-regression` (בונה עליו) → `meh-1949-branch-arg-wiring` (**שני** ה-hunks).
+* **‏Railway staging redeploy נכשל אחרי מיזוג #3296** — `The latest deployment … cannot be redeployed` ואז `error decoding response body`. צד Railway; המיזוג הבא יפעיל redeploy חדש ממילא. קונסולות Railway הן STOP ל-CC.
+
 ## 2026-09-02 ערב — MEH-1938 chunk 5a (session `01MaGjwx…`, HIGH-RISK): #3285 נחת · שלוש הנחות הופרכו · ה-PR הממשיך חסום על ספירה אחת
 
 **‏שורה אחת:** ה-Contract של האפיק בוצע — אין יותר אף קורא fallback ל-`Producer.lat/lng`, `producer_locations` הוא ה-SoT בכל משטח; #3285 מוזג כ-squash `6cd5a3bf` על «approved, go merge #3285» מפורש של ספיר, אחרי ארבעה תת-שלבים עם go בין כל אחד.
