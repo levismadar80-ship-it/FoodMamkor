@@ -246,3 +246,249 @@ def test_city_is_no_longer_sensitive_and_no_longer_writable(client, db):
     ping.assert_not_called()
     db.refresh(producer)
     assert producer.city == "תל אביב", "city must be ignored on the owner PUT"
+
+
+# ===========================================================================
+# chunk 2 — the same ping, fired from the locations CRUD
+# ===========================================================================
+#
+# Sapir's ruling, 02/09: chunk 1's `city` case died with its write path
+# (MEH-1938 chunk 5a ruling A closed `city` on `PUT /producers/me`), and the
+# owner's real city editor has been the locations CRUD since MEH-2141. The
+# gap this closes therefore pre-dates chunk 5a — an owner has been able to
+# move her business to another town, through the UI, pinging nobody.
+#
+# Two events, one ping:
+#   `city`                     — Producer.city followed the primary row
+#   `primary_location_removed` — the LAST location was deleted, so an approved
+#                                business now has no primary row at all
+#
+# Both are compared against a snapshot taken before the handler mutates
+# anything, and both go through the same `_fire_sensitive_edit` gate as chunk
+# 1 — so "approved only" and "one ping per request" cannot drift apart between
+# the two call sites.
+
+SEED_CITY = "תל אביב"
+
+
+def _location(**overrides):
+    payload = {"kind": "branch", "label": None, "city": "חיפה"}
+    payload.update(overrides)
+    return payload
+
+
+def _add_location(client, user, **overrides):
+    """Create a location with the ping suppressed — setup, not the assertion."""
+    with patch(PATCH_TARGET):
+        resp = client.post(
+            "/producers/me/locations",
+            json=_location(**overrides),
+            headers=auth_header(user),
+        )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+# --- the ping fires ---------------------------------------------------------
+
+
+def test_first_location_in_another_city_pings_admin(client, db):
+    """Case 1 of MEH-2141's write-through: the first location is forced
+    primary, so `Producer.city` follows it. Against chunk-1 code this is
+    silent — the locations CRUD never called the notifier at all."""
+    user, producer = _owner(db, name="משק המיקום")
+    assert producer.city == SEED_CITY
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.post(
+            "/producers/me/locations",
+            json=_location(city="חיפה"),
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 201, resp.text
+    ping.assert_called_once_with("משק המיקום", ["city"])
+    db.refresh(producer)
+    assert producer.city == "חיפה"
+
+
+def test_moving_the_primary_location_to_another_city_pings_admin(client, db):
+    user, producer = _owner(db, name="משק המעבר")
+    loc = _add_location(client, user, city="חיפה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.put(
+            f"/producers/me/locations/{loc['id']}",
+            json={"city": "רעננה"},
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 200, resp.text
+    ping.assert_called_once_with("משק המעבר", ["city"])
+    db.refresh(producer)
+    assert producer.city == "רעננה"
+
+
+def test_promoting_a_location_in_another_city_pings_admin(client, db):
+    """The promote path changes WHICH row is primary, so the city follows a
+    row whose own city nobody edited in this request."""
+    user, producer = _owner(db, name="משק הקידום")
+    _add_location(client, user, city="חיפה")
+    second = _add_location(client, user, city="רעננה", label="נקודת חלוקה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.put(
+            f"/producers/me/locations/{second['id']}",
+            json={"is_primary": True},
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 200, resp.text
+    ping.assert_called_once_with("משק הקידום", ["city"])
+    db.refresh(producer)
+    assert producer.city == "רעננה"
+
+
+def test_deleting_the_last_location_pings_admin(client, db):
+    """Sapir's ruling, 02/09 evening: deleting the last row is ALLOWED and
+    leaves the business approved with no primary — no pin on the map and
+    nothing to submit. Notification-only makes that visible, not blocked.
+
+    The city deliberately does NOT appear in the ping: MEH-2141's helper keeps
+    the column's last value rather than writing NULL, so nothing changed there.
+    """
+    user, producer = _owner(db, name="משק הריק")
+    loc = _add_location(client, user, city="חיפה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.delete(
+            f"/producers/me/locations/{loc['id']}",
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 204, resp.text
+    ping.assert_called_once_with("משק הריק", ["primary_location_removed"])
+    db.refresh(producer)
+    assert producer.city == "חיפה", "the column keeps its last value (MEH-2141)"
+    assert producer.status == "approved", "notification-only — no status flip"
+
+
+def test_deleting_the_primary_with_a_survivor_pings_the_city_only(client, db):
+    """A survivor is promoted, so `has_primary` never goes false — the ping
+    reports the city move and nothing else. This is the case that would go
+    wrong if `has_primary` were read before the promotion instead of after."""
+    user, producer = _owner(db, name="משק ההחלפה")
+    first = _add_location(client, user, city="חיפה")
+    _add_location(client, user, city="רעננה", label="נקודת חלוקה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.delete(
+            f"/producers/me/locations/{first['id']}",
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 204, resp.text
+    ping.assert_called_once_with("משק ההחלפה", ["city"])
+
+
+# --- the ping does NOT fire -------------------------------------------------
+
+
+def test_resubmitting_the_same_city_does_not_ping(client, db):
+    """LocationsEditor posts the whole row on every save, so an unchanged city
+    arrives on the wire constantly. Values are compared, not key presence —
+    the same distinction chunk 1's no-op case pins down on the PUT."""
+    user, _ = _owner(db)
+    loc = _add_location(client, user, city="חיפה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.put(
+            f"/producers/me/locations/{loc['id']}",
+            json={"city": "חיפה", "kind": "branch"},
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 200, resp.text
+    ping.assert_not_called()
+
+
+def test_editing_a_non_primary_location_does_not_ping(client, db):
+    """MEH-2141 leaves `Producer.city` alone on a non-primary mutation, so
+    there is nothing to report — a pickup point's phone number is not an
+    identity change."""
+    user, _ = _owner(db)
+    _add_location(client, user, city="חיפה")
+    second = _add_location(client, user, city="רעננה", label="נקודת חלוקה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.put(
+            f"/producers/me/locations/{second['id']}",
+            json={"phone": "0521112233"},
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 200, resp.text
+    ping.assert_not_called()
+
+
+def test_adding_a_second_non_primary_location_does_not_ping(client, db):
+    user, _ = _owner(db)
+    _add_location(client, user, city="חיפה")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.post(
+            "/producers/me/locations",
+            json=_location(city="רעננה", label="נקודת חלוקה"),
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 201, resp.text
+    ping.assert_not_called()
+
+
+@pytest.mark.parametrize("status", ["draft", "pending", "inactive"])
+def test_a_non_approved_business_moving_city_does_not_ping(client, db, status):
+    """The promise this ping protects is made at approval. Before it, an admin
+    is going to read the whole card anyway."""
+    user, _ = _owner(db, status=status, name=f"משק {status}")
+
+    with patch(PATCH_TARGET) as ping:
+        resp = client.post(
+            "/producers/me/locations",
+            json=_location(city="חיפה"),
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 201, resp.text
+    ping.assert_not_called()
+
+
+# --- fail-open, on the locations path too -----------------------------------
+
+
+def test_location_notification_failure_does_not_affect_the_write(client, db):
+    """Same contract as chunk 1: the owner already saved, so a Meta/Resend
+    outage must not reach her. `_sensitive_edit_task` is the boundary."""
+    user, producer = _owner(db, name="משק הכשל")
+
+    with patch(PATCH_TARGET, side_effect=RuntimeError("meta is down")):
+        resp = client.post(
+            "/producers/me/locations",
+            json=_location(city="חיפה"),
+            headers=auth_header(user),
+        )
+
+    assert resp.status_code == 201, resp.text
+    db.refresh(producer)
+    assert producer.city == "חיפה", "the write must survive a notify failure"
+
+
+def test_every_ping_key_has_a_hebrew_label(client, db):
+    """`primary_location_removed` is not a column, so nothing else pins it to
+    the label dictionary. Without this, the admin message would degrade to the
+    raw key — the notifier's documented fallback, which is a diagnostic, not
+    copy anyone should read."""
+    from app.services.auth_notifications import SENSITIVE_FIELD_LABELS
+
+    for key in {*SENSITIVE_FIELDS, "city", "primary_location_removed"}:
+        assert key in SENSITIVE_FIELD_LABELS, key
