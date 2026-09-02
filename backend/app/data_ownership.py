@@ -38,10 +38,13 @@ DEPRECATED_OWNER_WRITE_FIELDS = frozenset(
         # MEH-1938 batch: B4 and B3 respectively
         "kosher",
         "opening_hours",
-        # MEH-1938 chunk 5a (Contract): the owner's editor is LocationsEditor;
-        # these columns are read by nothing as a fallback since 5a and are
-        # dropped in 5b. `city` is deliberately NOT here — see producer_me.py.
+        # MEH-1938 chunk 5a (Contract): the owner's editor is LocationsEditor.
+        # lat/lng are read by nothing as a fallback since 5a and are dropped in
+        # 5b. `city` STAYS a column (17 readers, Q3 ruling) and follows the
+        # primary location row (B2, MEH-2141) — closed here by ruling A
+        # (02/09) so that write-through has no second writer racing it.
         "lat",
         "lng",
+        "city",
     }
 )

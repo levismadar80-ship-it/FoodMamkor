@@ -9,10 +9,11 @@ Purpose:  Lock the owner write path for `lat` / `lng` closed. Chunk 4 (MEH-2058)
           submit gate: the last owner-side drift path.
 Does NOT: test the admin (`admin.py`, which dual-writes the row — MEH-2059),
           import (`producer_import.py`) or seed write paths — those stay open
-          by design. Does NOT touch `city`, which is still owner-writable on
-          this endpoint because it sits in SENSITIVE_FIELDS (MEH-2073) and the
-          admin ping fires only from here; that closure is a separate decision
-          tracked on the MEH-1938 card. Does NOT drop the columns (chunk 5b).
+          by design. `city` is closed on this endpoint too — one sub-step
+          later than lat/lng, by ruling A (Sapir, 02/09): it sat in
+          SENSITIVE_FIELDS (MEH-2073) and the admin ping fired only from here,
+          so the pin below first FORCED that ruling and now RECORDS it. Does
+          NOT drop the columns (chunk 5b); `city` is not dropped at all (Q3).
 Related:  backend/app/routers/producer_me.py (_PRODUCER_WRITABLE_FIELDS) ·
           tests/test_meh1856_closed_write_paths.py (the pattern this mirrors) ·
           tests/test_meh2143_kosher_owner_path.py (the most recent sibling) ·
@@ -99,13 +100,33 @@ def test_a_still_writable_field_does_change(client, db):
     )
 
 
-def test_city_is_deliberately_still_writable(client, db):
-    """Pins the held decision, so it cannot be closed by accident in a later
-    tidy-up: `city` stays in the whitelist until the MEH-2073 ping question
-    is ruled (it is in SENSITIVE_FIELDS, and the ping fires only from this
-    handler). Removing it must be a decision that also updates this test."""
+def test_city_is_closed_by_ruling_a_02_09(client, db):
+    """The inverse of the pin this replaced (`..._deliberately_still_writable`).
+
+    That pin held `city` open until the MEH-2073 coupling was ruled — it did
+    its job by forcing a ruling instead of a silent closure. Ruling A (Sapir,
+    02/09): close `city` here, drop it from SENSITIVE_FIELDS, move the ping
+    into `_sync_producer_city_from_primary` as MEH-2073 chunk 2. Why A and not
+    "keep it": since B2 (MEH-2141) `Producer.city` follows the primary
+    location row, so an owner PUT of `city` was a second writer racing that
+    write-through — the two-stores shape this epic removes — kept alive only
+    to protect a ping no UI reached anyway.
+
+    Both halves asserted through the endpoint, not only the parsed source:
+    200-and-unchanged, and no location row minted as a side channel.
+    """
     whitelist = read_producer_writable_fields()
-    assert "city" in whitelist
+    assert STILL_WRITABLE[0] in whitelist, "parse returned the wrong set"
+    assert "city" not in whitelist
+
+    user, producer = _owner(db)
+    assert producer.city == "תל אביב"
+    resp = client.put("/producers/me", json={"city": "חיפה"}, headers=auth_header(user))
+
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.city == "תל אביב", "city must be ignored, not written"
+    assert db.query(ProducerLocation).filter_by(producer_id=producer.id).count() == 0
 
 
 def test_whitelist_does_not_contain_lat_or_lng():

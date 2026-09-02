@@ -306,8 +306,16 @@ def _pending_and_approvable(db, producer) -> bool:
 # Every member is verified present in _PRODUCER_WRITABLE_FIELDS below — a name
 # that drifts out of that set would make this silently un-pingable, which is
 # what `test_sensitive_fields_are_all_writable` exists to catch.
+#
+# MEH-1938 chunk 5a (ruling A, Sapir 02/09): `city` was REMOVED from this set
+# together with its removal from _PRODUCER_WRITABLE_FIELDS below. Keeping it
+# here would have kept a second writer on `Producer.city` alive solely to
+# protect a ping no UI can reach — since B2 (MEH-2141) the owner edits her
+# city through the locations CRUD, which pings nobody. That gap is real and
+# pre-dates this change; it is MEH-2073 chunk 2's to close by moving the ping
+# into `_sync_producer_city_from_primary`, not this handler's to paper over.
 SENSITIVE_FIELDS = frozenset(
-    {"city", "phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
 )
 
 
@@ -330,7 +338,7 @@ def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None
     check on the same object the diff is computed from.
 
     Compares values, not "was this key in the payload": a save that submits
-    `city` unchanged (which the dashboard form does on every save, since it
+    `phone` unchanged (which the dashboard form does on every save, since it
     posts the whole card) must not ping. That is the difference between a
     signal and noise, and it is what the no-op test pins down.
     """
@@ -527,12 +535,11 @@ def update_my_producer(
         "contact_name",
         "description",
         "short_description",
-        "city",
-        # MEH-1938 chunk 5a: `lat` and `lng` were REMOVED from this set. Same
-        # disposition and the same standing rule as the blocks below — the
-        # columns stay, `admin.py` / `producer_import.py` / the seeds are
-        # untouched, and only the owner PUT path is closed. Do not re-add
-        # either without shipping its editor in the same PR:
+        # MEH-1938 chunk 5a: `city`, `lat` and `lng` were REMOVED from this
+        # set. Same disposition and the same standing rule as the blocks below
+        # — the columns stay, `admin.py` / `producer_import.py` / the seeds are
+        # untouched, and only the owner PUT path is closed. Do not re-add any
+        # of them without shipping its editor in the same PR:
         #   lat / lng → chunk 4 (MEH-2058) deleted the dashboard card that
         #                sent them, so this was an API path with no owner UI
         #                behind it. Worse than the MEH-1856 class: it wrote the
@@ -542,10 +549,14 @@ def update_my_producer(
         #                would have been invisible to the map, to "near me"
         #                and to the submit gate. The owner's editor is
         #                LocationsEditor.jsx (PUT /producers/me/locations/*).
-        #   city      → deliberately STILL HERE. It is in SENSITIVE_FIELDS
-        #                (MEH-2073, above), whose admin ping fires only from
-        #                this handler; closing it is a decision about that
-        #                ping, not about this set. Tracked on the MEH-1938 card.
+        #   city      → closed by ruling A (Sapir, 02/09). It was held open
+        #                one sub-step longer than lat/lng because it sat in
+        #                SENSITIVE_FIELDS (MEH-2073) and the admin ping fired
+        #                only from here; both went together, because since B2
+        #                (MEH-2141) `Producer.city` follows the primary
+        #                location row and an owner PUT of `city` was a second
+        #                writer racing that write-through. The ping's new home
+        #                is MEH-2073 chunk 2 (`_sync_producer_city_from_primary`).
         "phone",
         "instagram",
         "website",
