@@ -225,6 +225,9 @@ self_test() {
   trap 'rm -rf "$SELFTEST_TMP"' EXIT
   local tmp="$SELFTEST_TMP"
   local real_root; real_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  # Absolute path resolved once, as stop-git-check.sh does — `$0` is whatever the
+  # caller typed and drifts under a symlink or a cwd change (CI reviewer on #3325).
+  local SELF; SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 
   check() { # $1=label $2=expected-exit $3=actual-exit [$4=required substring of combined output]
     total=$((total+1))
@@ -236,7 +239,7 @@ self_test() {
     fi
   }
   run_on() { # $1=root  → sets out + rc
-    set +e; out="$(STOP_HOOK_ROOT="$1" bash "$0" 2>&1 </dev/null)"; rc=$?; set -e; return 0; }
+    set +e; out="$(STOP_HOOK_ROOT="$1" bash "$SELF" 2>&1 </dev/null)"; rc=$?; set -e; return 0; }
   fake_frontend() { # $1=root $2=build-command
     mkdir -p "$1/frontend/node_modules"
     printf '{"name":"fake","private":true,"scripts":{"build":"%s"}}\n' "$2" > "$1/frontend/package.json"
@@ -312,11 +315,11 @@ EOF
   check "two failures → both reasons listed" 2 "$rc" "STOP HOOK BLOCK (2)"
 
   # (i) STOP_HOOK_SKIP suppresses a failing step
-  set +e; out="$(STOP_HOOK_ROOT="$tmp/redbuild" STOP_HOOK_SKIP=build bash "$0" 2>&1 </dev/null)"; rc=$?; set -e
+  set +e; out="$(STOP_HOOK_ROOT="$tmp/redbuild" STOP_HOOK_SKIP=build bash "$SELF" 2>&1 </dev/null)"; rc=$?; set -e
   check "STOP_HOOK_SKIP=build turns the red build into a skip" 0 "$rc" "build: skipped"
 
   # (j) stop_hook_active → exit 0 immediately, even on a red root
-  set +e; out="$(printf '{"stop_hook_active": true}' | STOP_HOOK_ROOT="$tmp/redbuild" bash "$0" 2>&1)"; rc=$?; set -e
+  set +e; out="$(printf '{"stop_hook_active": true}' | STOP_HOOK_ROOT="$tmp/redbuild" bash "$SELF" 2>&1)"; rc=$?; set -e
   check "stop_hook_active=true → exit 0 (no block loop)" 0 "$rc"
 
   echo "  $pass/$total self-test cases behaved correctly"

@@ -190,7 +190,7 @@ self_test() {
   # Rewrite HEAD as an identical commit carrying a (fake) gpgsig header.
   sign_head() {
     (cd "$work" && git cat-file -p HEAD \
-      | awk 'BEGIN{done=0} /^committer /{print; print "gpgsig -----BEGIN SSH SIGNATURE-----"; print " U1NIU0lHAAAAAQ== (selftest)"; print " -----END SSH SIGNATURE-----"; done=1; next} {print}' \
+      | awk '/^committer /{print; print "gpgsig -----BEGIN SSH SIGNATURE-----"; print " U1NIU0lHAAAAAQ== (selftest)"; print " -----END SSH SIGNATURE-----"; next} {print}' \
       | git hash-object -t commit -w --stdin \
       | xargs -I{} git update-ref "refs/heads/$(git branch --show-current)" {})
   }
