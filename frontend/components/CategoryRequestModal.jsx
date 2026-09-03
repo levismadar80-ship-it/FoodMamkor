@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
+import CollectionNotice from "@/components/CollectionNotice";
 
 function countLetters(s) {
   return (s.match(/[א-תa-zA-Z]/g) || []).length;
@@ -12,6 +13,9 @@ function countLetters(s) {
 
 export default function CategoryRequestModal({ open, onClose, producerId }) {
   const t = useTranslations("modals.category_request");
+  // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
+  const tNotice = useTranslations("privacy.collection_notice");
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [name, setName] = useState("");
   const [examples, setExamples] = useState("");
   const [loading, setLoading] = useState(false);
@@ -129,6 +133,12 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
             />
             <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
           </div>
+
+          <CollectionNotice
+            message={tNotice("category_request")}
+            linkLabel={tPrivacyLink("privacy_link")}
+            testId="category-request-collection-notice"
+          />
 
           <div className="flex gap-3 pt-1">
             <button
