@@ -142,7 +142,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // inside the <bdi dir="ltr"> below. e.g. "1.2 ק"מ". (MEH-1307 dropped the
   // "ממך" tail everywhere, so no per-call suffix flag is needed anymore.)
   // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
-  // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx).
+  // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx). No
+  // fallback to the columns since chunk 5a — no usable row, no distance.
   const points = producerPoints(p);
   const distanceLabel =
     userLoc && points.length > 0

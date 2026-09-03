@@ -223,10 +223,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
-  // MEH-1938 chunk 3: distance to the CLOSEST point (mirrors the backend's
-  // haversine_min_km COALESCE, producer_queries.py:100-115), read through
-  // producerPoints() instead of Producer.lat/lng directly — producerPoints
-  // still falls back to Producer.lat/lng when there is no usable location row.
+  // MEH-1938 chunk 3: distance to the CLOSEST point, read through
+  // producerPoints() instead of Producer.lat/lng directly. Mirrors the
+  // backend's haversine_min_km (producer_queries.py:51). Chunk 5a removed the
+  // fallback on BOTH sides: a producer with no usable location row now has no
+  // point and no distance, rather than one synthesised from the columns.
   const points = producerPoints(producer);
   const distanceLabel =
     userLoc && points.length > 0

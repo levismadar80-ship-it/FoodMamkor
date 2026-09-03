@@ -76,11 +76,28 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
  * backend derives `ProducerListOut.lat/lng` from the `is_primary` row or
  * None (schemas.py, `_derive_lat_lng_from_primary_location`), and this is the
  * same rule in JavaScript, so one business cannot render on the map here and
- * carry null coordinates in the API. A business with rows and no primary is a
- * DATA DEFECT (the single-primary invariant is application-level — there is
- * no DB unique on it) and must stay visible as one, not be papered over by a
- * guess. Kind-agnostic for the same reason: a pickup flagged primary is wrong
- * data that should show up, not be silently skipped.
+ * carry null coordinates in the API.
+ *
+ * Kind-agnostic: a pickup flagged primary is wrong data that should show up,
+ * not be silently skipped. That stays true — and note it is about the READ
+ * side only. Which kinds may BE promoted is a separate, stricter rule on the
+ * write path (branch only); this function reports whatever is flagged.
+ *
+ * "No primary at all" is TWO cases, not one (refined by Sapir, 02/09 — the
+ * earlier wording collapsed them):
+ *
+ *   - `has_physical_location !== false` + rows + no primary → a DATA DEFECT
+ *     (the single-primary invariant is application-level; there is no DB
+ *     unique on it). Returns null so it stays visible as one, rather than
+ *     being papered over by a guess.
+ *   - `has_physical_location === false` → null is CORRECT, not a defect. That
+ *     flag is the owner's explicit MEH-213 declaration that the business has
+ *     no physical presence; pinning her pickup point would tell a visitor
+ *     "the business is here", which is false. No pin, no navigation target —
+ *     pickup points belong to the secondary layer.
+ *
+ * `submission_gate._has_location` (submission_gate.py:97) has kept exactly
+ * this split for the same reason throughout the epic.
  *
  * The business page (ProducerSections.jsx) centres its MiniMap on this and
  * gates the location section on it; JSON-LD geo (seo.js) reads it too. Before
