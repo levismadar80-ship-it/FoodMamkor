@@ -62,7 +62,11 @@ function directionRulesFromGlobals() {
   while ((m = ruleRe.exec(withoutComments)) !== null) {
     const selector = m[1].trim();
     const body = m[2];
-    if (/(^|[;\s])direction\s*:/.test(body) && /(^|[\s,>+~])?html\b/.test(selector)) {
+    // The alternation is NOT optional: an optional `?` here would let `html\b`
+    // match after any preceding character (e.g. a hypothetical
+    // `.my-html-class`), defeating the boundary the group exists to enforce.
+    // CI reviewer finding, PR #3303.
+    if (/(^|[;\s])direction\s*:/.test(body) && /(^|[\s,>+~])html\b/.test(selector)) {
       const decl = body.match(/(^|[;\s])direction\s*:\s*([a-z]+)/);
       rules.push({ selector, css: `${selector} { direction: ${decl[2]}; }` });
     }
