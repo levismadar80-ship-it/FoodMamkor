@@ -169,7 +169,17 @@ base_table_count() {
             AND table_name <> 'alembic_version';"
 }
 
+# A table name reaches the SQL below as a literal. derive_tables() only yields
+# [A-Za-z0-9_]+, but --expect-nonempty is operator-supplied, so refuse anything
+# else here instead of trusting the caller — one guard for both readers.
+_ident() { # $1=candidate → 0 if a plain identifier, else 1 (+ stderr)
+  case "$1" in
+    *[!A-Za-z0-9_]*|"") echo "refusing non-identifier table name: '$1'" >&2; return 1 ;;
+  esac
+}
+
 table_exists() { # $1=url $2=table → 0/1
+  _ident "$2" || return 1
   [ "$(q "$1" "SELECT COUNT(*) FROM information_schema.tables
                WHERE table_schema='public' AND table_type='BASE TABLE'
                  AND table_name='$2';")" = "1" ]
