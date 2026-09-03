@@ -2445,8 +2445,13 @@ def delete_my_location(
     # makes that visible rather than papering over it. `Producer.city` KEEPS
     # its last value rather than going NULL: the 17 readers depend on it, and
     # _sync_producer_city_from_primary declines on no-primary anyway, so it is
-    # deliberately not called here. The admin ping for this event belongs to
-    # MEH-2073 chunk 2 and is not built here.
+    # deliberately not called here.
+    #
+    # The admin ping for this event IS built — MEH-2073 chunk 2 landed on
+    # staging while this branch was open, and its snapshot/fire pair now
+    # brackets this handler. Note what the refusal above means for it: a
+    # rejected delete promotes nothing and moves no city, so it must ping
+    # nothing either. That is asserted, not assumed.
     db.delete(loc)
     db.commit()
     _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)
