@@ -362,14 +362,29 @@ def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None
     posts the whole card) must not ping. That is the difference between a
     signal and noise, and it is what the no-op test pins down.
     """
-    if producer.status != "approved":
-        return
-    changed = sorted(
-        field
-        for field in SENSITIVE_FIELDS
-        if before.get(field) != getattr(producer, field, None)
+    _fire_sensitive_edit(
+        background_tasks,
+        producer,
+        sorted(
+            field
+            for field in SENSITIVE_FIELDS
+            if before.get(field) != getattr(producer, field, None)
+        ),
     )
-    if not changed:
+
+
+def _fire_sensitive_edit(background_tasks, producer, changed: list[str]) -> None:
+    """MEH-2073 chunk 2: the gate + dispatch shared by BOTH call sites — the
+    owner PUT (chunk 1, above) and the locations CRUD (chunk 2, below).
+
+    Extracted rather than duplicated because the two decisions that determine
+    whether the admin hears anything at all are the same on both paths: the
+    business is ALREADY approved, and something actually changed. Only the way
+    the change list is computed differs — a column diff on the PUT, a city
+    write-through or a lost primary row on the locations CRUD — so that half
+    stays with each caller and this half cannot drift between them.
+    """
+    if producer.status != "approved" or not changed:
         return
     background_tasks.add_task(_sensitive_edit_task, producer.name, changed)
 
@@ -2167,6 +2182,79 @@ def _sync_producer_city_from_primary(db: Session, producer_id: UUID) -> None:
     producer.city = primary.city.strip()
 
 
+def _has_primary_location(db: Session, producer_id: UUID) -> bool:
+    return (
+        db.query(ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .first()
+        is not None
+    )
+
+
+def _snapshot_location_signal(db: Session, producer_id: UUID) -> dict:
+    """MEH-2073 chunk 2 — read what the admin ping compares against, BEFORE the
+    handler mutates anything.
+
+    Same idiom as `_snapshot_sensitive` on the owner PUT: plain values, not ORM
+    references, so the comparison survives the `db.commit()` that expires every
+    instance in the session.
+
+    Two entries, because the locations CRUD carries two admin-visible events
+    that the PUT path never could:
+
+    - `city` — since MEH-2141 (batch B2) `Producer.city` follows the primary
+      location row, so the owner's real city editor is this CRUD and not the
+      PUT. `city` left SENSITIVE_FIELDS with its PUT write path under MEH-1938
+      chunk 5a ruling A; this is where the ping it used to fire now lives.
+    - `has_primary` — deleting the LAST location is allowed and leaves the
+      business approved with no primary row: no pin on the map and nothing to
+      submit. Sapir's ruling (02/09 evening) makes that visible rather than
+      blocked, which is exactly this card's notification-only posture.
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return {}
+    return {
+        "city": producer.city,
+        "has_primary": _has_primary_location(db, producer_id),
+    }
+
+
+def _maybe_fire_location_signal(
+    background_tasks, db: Session, producer_id: UUID, before: dict
+) -> None:
+    """MEH-2073 chunk 2: one ping per request, AFTER the commit, listing the
+    location-side changes that actually happened.
+
+    Compares the persisted city rather than "did this request carry a city":
+    LocationsEditor posts the whole row on every save, so a resubmitted
+    identical city must not ping. Same distinction between signal and noise the
+    chunk-1 no-op case pins down.
+
+    `has_primary` is only ever reported in the true -> false direction. Gaining
+    a primary is the normal course of registration and of adding a first
+    location, and says nothing an admin needs to act on.
+
+    Fail-open and notification-only, unchanged from chunk 1: the task is
+    `_sensitive_edit_task`, which swallows and logs, so nothing here can turn
+    a saved location into an error the owner cannot act on.
+    """
+    if not before:
+        return
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return
+    changed: list[str] = []
+    if before.get("city") != producer.city:
+        changed.append("city")
+    if before.get("has_primary") and not _has_primary_location(db, producer_id):
+        changed.append("primary_location_removed")
+    _fire_sensitive_edit(background_tasks, producer, changed)
+
+
 @router.get("/locations", response_model=list[ProducerLocationOwnerOut])
 def list_my_locations(
     user: User = Depends(require_producer),
@@ -2188,9 +2276,14 @@ def list_my_locations(
 def create_my_location(
     request: Request,
     data: ProducerLocationCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2073 chunk 2: snapshot before any mutation — adding a location that
+    # becomes primary re-derives Producer.city, which is an identity change the
+    # admin hears about when the business is already approved.
+    signal_before = _snapshot_location_signal(db, user.producer_id)
     _reject_same_city_without_label(db, user.producer_id, data.city, data.label)
     existing_count = (
         db.query(ProducerLocation)
@@ -2235,18 +2328,25 @@ def create_my_location(
         _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()
     db.refresh(loc)
+    _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)
     return loc
 
 
 @router.put("/locations/{location_id}", response_model=ProducerLocationOwnerOut)
 @limiter.limit("60/hour")
-def update_my_location(
+def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2073 chunk 2 added the notify hop
+    # REUSES: backend/app/routers/producer_recipes.py:231 — same handler
+    # shape, same waiver, same reason (a DI signature is not complexity).
     request: Request,
     location_id: UUID,
     data: ProducerLocationUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2073 chunk 2 — see create_my_location above. Both the promote path
+    # and a city edit on the row that is already primary move Producer.city.
+    signal_before = _snapshot_location_signal(db, user.producer_id)
     loc = _get_owned_location(db, user.producer_id, location_id)
     patch = data.model_dump(exclude_unset=True)
     # Same-city check ONLY when this update actually touches city or label —
@@ -2297,15 +2397,22 @@ def update_my_location(
 
     db.commit()
     db.refresh(loc)
+    _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)
     return loc
 
 
 @router.delete("/locations/{location_id}", status_code=204)
 def delete_my_location(
     location_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2073 chunk 2: deleting the last remaining row is ALLOWED and leaves
+    # the business approved with no primary location — no pin on the map, and
+    # nothing to submit. Snapshot here so the post-commit check can see the
+    # true -> false edge on `has_primary` (Sapir's ruling, 02/09 evening).
+    signal_before = _snapshot_location_signal(db, user.producer_id)
     loc = _get_owned_location(db, user.producer_id, location_id)
 
     # MEH-1938 follow-up (Sapir, 02/09): the system does not guess which
@@ -2342,3 +2449,4 @@ def delete_my_location(
     # MEH-2073 chunk 2 and is not built here.
     db.delete(loc)
     db.commit()
+    _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)
