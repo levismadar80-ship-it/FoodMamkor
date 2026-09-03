@@ -81,7 +81,9 @@ export default function MapPane({
   showSecondaryLayer,
   onToggleSecondaryLayer,
   // MEH-2046: ≥1 business currently drops off the map because the layer is off
-  // (producerPoints rule 3). Computed in MapClient, which owns the feed.
+  // (producerPoints rule 2 — the layer toggle; it was rule 3 until MEH-1938
+  // chunk 5a deleted the Producer.lat/lng fallback rule). Computed in
+  // MapClient, which owns the feed.
   secondaryHidden = false,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
@@ -209,7 +211,7 @@ export default function MapPane({
           )}
         {/* MEH-2046: the reminder, in the slot the pill vacated. A business whose
             only points are pickup rows yields NO points at all when the layer is
-            off (producerPoints rule 3, deliberate) — so it does not fade or move,
+            off (producerPoints rule 2, deliberate) — so it does not fade or move,
             it disappears. Silence there is the failure mode this line exists to
             prevent; it renders only while businesses are actually being hidden.
             MEH-2148: `self-start` keeps its original inline-start alignment
