@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { OPEN_NOW_CHIP_MIN } from "@/lib/producer-filters";
@@ -62,9 +62,31 @@ vi.mock("@/components/FilterSheet", () => ({
 
 const CHIP = () => screen.queryByTestId("chip-open_for_orders_now");
 
-// Windows are built against the RUN'S OWN clock in Asia/Jerusalem, so these
-// cases mean the same thing at any hour. A fixed window would make this suite
-// pass or fail by the day — the defect this ticket found in the MEH-1881 spec.
+// MEH-2243: the clock is PINNED, and the window is built from the pinned clock
+// INSIDE each case — never at import. The previous form keyed `openAllDay()`
+// by the run's own day at import time, which is right at any hour except one:
+// a suite that starts at 23:5x Asia/Jerusalem and asserts after midnight has
+// a window for yesterday and a component reading today (CI run 33682258984,
+// 20:57Z → 21:03Z, 2 failed). A fixed window would be the opposite defect —
+// pass or fail by the day, the MEH-1881 spec's bug — so the day is still
+// derived, only from a clock that cannot move under the test.
+//
+// `toFake: ["Date"]` only: the clock this suite controls is the component's
+// own `setOpenNowClock(new Date())` effect (HomeProducersGrid.jsx:161 —
+// ProducerCard, the consumer of hours.js, is stubbed above), and nothing
+// here needs timers, so the RTL render path keeps real
+// setTimeout/queueMicrotask.
+// PINNED is a Wednesday at 12:00 Asia/Jerusalem (IDT, UTC+3) — mid-day, as
+// far from both midnights as a moment can be.
+const PINNED = new Date("2026-09-02T09:00:00Z");
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(PINNED);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 function todayKey(now = new Date()) {
   const wd = new Intl.DateTimeFormat("en-US", {
@@ -73,7 +95,10 @@ function todayKey(now = new Date()) {
   }).format(now);
   return DAY_KEYS[["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(wd)];
 }
-const OPEN_ALL_DAY = { [todayKey()]: [{ open: "00:00", close: "23:59" }] };
+// A function, not a constant: evaluated per case, after the clock is pinned,
+// from the SAME `new Date()` the component reads. Keying it at import is the
+// flake this ticket closes.
+const openAllDay = () => ({ [todayKey()]: [{ open: "00:00", close: "23:59" }] });
 // Truthy, so it passes the coverage count — and open on no day, so only the
 // zero-result condition can act on it.
 const NEVER_OPEN = {};
@@ -112,15 +137,22 @@ const props = (producers, overrides = {}) => ({
 const MANY = OPEN_NOW_CHIP_MIN + 5;
 
 describe("MEH-2131 — the open-now chip home offers (MEH-2173: in the sheet)", () => {
+  it("CONTROL (MEH-2243): the window is keyed by the PINNED clock, not the import clock", () => {
+    // 2026-09-02T09:00Z is a Wednesday in Asia/Jerusalem. If this ever reads
+    // the machine's real day, every "open now" case below is day-dependent
+    // again and the midnight flake is back.
+    expect(Object.keys(openAllDay())).toEqual(["wednesday"]);
+  });
+
   it("CONTROL: the axis list renders and other chips are unaffected", () => {
-    render(<HomeProducersGrid {...props(rows(MANY, OPEN_ALL_DAY))} />);
+    render(<HomeProducersGrid {...props(rows(MANY, openAllDay()))} />);
     // Without this, every "chip absent" assertion below would also be satisfied
     // by a row that failed to render at all.
     expect(screen.getByTestId("chip-kosher")).toBeTruthy();
   });
 
   it("offers the chip when businesses are open now", () => {
-    render(<HomeProducersGrid {...props(rows(MANY, OPEN_ALL_DAY))} />);
+    render(<HomeProducersGrid {...props(rows(MANY, openAllDay()))} />);
     expect(CHIP()).toBeTruthy();
     expect(CHIP().textContent).toBe("פתוחים להזמנות עכשיו");
   });
@@ -141,7 +173,7 @@ describe("MEH-2131 — the open-now chip home offers (MEH-2173: in the sheet)", 
   });
 
   it("withholds it below the coverage threshold, even when open", () => {
-    render(<HomeProducersGrid {...props(rows(OPEN_NOW_CHIP_MIN - 1, OPEN_ALL_DAY))} />);
+    render(<HomeProducersGrid {...props(rows(OPEN_NOW_CHIP_MIN - 1, openAllDay()))} />);
     expect(CHIP()).toBeNull();
   });
 
@@ -164,7 +196,7 @@ describe("MEH-2131 — the open-now chip home offers (MEH-2173: in the sheet)", 
     // The mirror, so the case above cannot pass by hiding the chip always.
     render(
       <HomeProducersGrid
-        {...props(rows(MANY, OPEN_ALL_DAY), { hasMore: true, visibleCount: 8 })}
+        {...props(rows(MANY, openAllDay()), { hasMore: true, visibleCount: 8 })}
       />,
     );
     expect(CHIP()).toBeTruthy();
