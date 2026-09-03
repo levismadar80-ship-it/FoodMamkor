@@ -439,6 +439,72 @@ jobs:
           SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
   # ─────────────────────────────────────────────
+  # JOB 2b: seed-coverage (MEH-1706 chunk C)
+  # Runs backend/scripts/check_seed_coverage.py against the CI-local
+  # Postgres, seeded from scratch. Catches code drift — a surface added
+  # to the models with no seed row, or a table nobody classified.
+  # Does NOT protect staging: a wiped staging still passes here.
+  # ─────────────────────────────────────────────
+  seed-coverage:
+    name: Seed coverage contract (MEH-1706)
+    needs: changes
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_seed
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_seed
+      SECRET_KEY: ci-test-secret-not-for-production
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Schema to head
+        run: .venv/bin/alembic upgrade head
+        working-directory: backend
+
+      # seed_data.py first (categories + sample producers + admin), then the
+      # demo business — the same order scripts/local-backend.sh uses. The
+      # DEMO_* passwords are deliberately absent: the seed falls back to a
+      # random unrecorded password (seed_demo_business.py:889-967), which is
+      # exactly right for a throwaway CI database.
+      - name: Seed base + demo
+        working-directory: backend
+        run: |
+          .venv/bin/python seed_data.py
+          .venv/bin/python -m scripts.seed_demo_business --refresh
+
+      - name: Seed coverage contract
+        working-directory: backend
+        run: .venv/bin/python scripts/check_seed_coverage.py
+
+  # ─────────────────────────────────────────────
   # JOB 3: lint-backend (MEH-488 / MEH-505)
   # ruff check + ruff format --check against backend/.
   # `alembic/versions` excluded (auto-generated revisions don't follow
@@ -713,6 +779,7 @@ jobs:
       - ai-artifact-scan
       - pytest
       - lint-backend
+      - seed-coverage
       - env-drift
       - backend-mypy
       - frontend-knip
@@ -741,6 +808,7 @@ jobs:
           R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
           R_PYTEST: ${{ needs.pytest.result }}
           R_LINT_BACKEND: ${{ needs.lint-backend.result }}
+          R_SEED_COVERAGE: ${{ needs.seed-coverage.result }}
           R_ENV_DRIFT: ${{ needs.env-drift.result }}
           R_BACKEND_MYPY: ${{ needs.backend-mypy.result }}
           R_FRONTEND_KNIP: ${{ needs.frontend-knip.result }}
@@ -819,6 +887,7 @@ jobs:
             echo "Backend stack touched (or workflows changed) — enforcing backend checks:"
             check_ran "Backend tests (pytest)" "$R_PYTEST"
             check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
+            check_ran "Seed coverage contract (MEH-1706)" "$R_SEED_COVERAGE"
             check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
           else
             echo "Backend stack not touched — backend checks not enforced."
