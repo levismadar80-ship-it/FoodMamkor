@@ -472,6 +472,64 @@ describe("MEH-1935 rendered page", () => {
     const list = JSON.parse(html)["@graph"].find((n) => n["@type"] === "ItemList");
     expect(list.itemListElement[0].url).toBe("https://mehamakor.co.il/producer/7");
   });
+
+  /**
+   * MEH-1944 §3 — truncation disclosure. The grid is capped at PER_PAGE (24)
+   * with no pagination; a reader who sees exactly 24 cannot know more exist
+   * (labels.md §Indicators). The counter reuses `producers.discovery.showing_count`
+   * (the key ProducersClient renders off the same X-Total-Count) and the link
+   * reuses `map.pane.show_all` — no new copy. State × count, all cells:
+   *   total == shown → nothing rendered · total > shown → counter + link.
+   * The link carries THIS page's own filter so the catalog opens already
+   * narrowed (the MEH-293 EXISTS filter /producers?<filterParam>=true consumes).
+   */
+  function findTestId(node, id) {
+    if (!node || typeof node !== "object") return null;
+    if (Array.isArray(node)) {
+      for (const c of node) {
+        const hit = findTestId(c, id);
+        if (hit) return hit;
+      }
+      return null;
+    }
+    if (node.props?.["data-testid"] === id) return node;
+    return findTestId(node.props?.children, id);
+  }
+  function textOf(node) {
+    if (node == null || typeof node === "boolean") return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(textOf).join("");
+    return textOf(node.props?.children);
+  }
+  const TWENTY_FOUR = Array.from({ length: 24 }, (_, i) => ({ id: i + 1, name: `עסק ${i + 1}`, slug: `b${i + 1}` }));
+
+  it("discloses the truncation when X-Total-Count exceeds the rendered grid", async () => {
+    serverFetch.mockResolvedValue(listing(40, TWENTY_FOUR));
+    const tree = await DietLandingPage({ params: Promise.resolve({ dietSlug: "vegan", locale: "he" }) });
+    const disclosure = findTestId(tree, "diet-truncation");
+    expect(disclosure).toBeTruthy();
+    // The mocked t() renders the KEY it was asked for — so the assertion is on
+    // which key is reused, which is the whole point of the ruling (no new copy).
+    expect(textOf(disclosure)).toContain("t:discovery.showing_count");
+    const link = findTestId(tree, "diet-truncation-link");
+    expect(link.props.href).toBe("/producers?vegan=true");
+    expect(textOf(link)).toBe("t:pane.show_all");
+  });
+
+  it("renders no disclosure when the whole set fits in the grid", async () => {
+    serverFetch.mockResolvedValue(listing(24, TWENTY_FOUR));
+    const tree = await DietLandingPage({ params: Promise.resolve({ dietSlug: "vegan", locale: "he" }) });
+    expect(findTestId(tree, "diet-truncation")).toBeNull();
+    expect(findTestId(tree, "diet-truncation-link")).toBeNull();
+  });
+
+  it("carries the page's OWN filter on the link for every backed slug", async () => {
+    for (const entry of BACKED_DIET_PAGES) {
+      serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN * 10, TWENTY_FOUR));
+      const tree = await DietLandingPage({ params: Promise.resolve({ dietSlug: entry.slug, locale: "he" }) });
+      expect(findTestId(tree, "diet-truncation-link").props.href).toBe(`/producers?${entry.filterParam}=true`);
+    }
+  });
 });
 
 describe("MEH-1935 sitemap emission", () => {

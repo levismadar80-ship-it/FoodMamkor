@@ -190,9 +190,18 @@ export default async function DietLandingPage({ params }) {
 
   const resolved = await resolveDietPage(dietSlug);
   if (!resolved) notFound();
-  const { entry, items } = resolved;
+  const { entry, items, total } = resolved;
 
   const t = await getTranslations({ locale, namespace: "diet_pages" });
+  // MEH-1944 §3: the grid is capped at PER_PAGE with no pagination, so a reader
+  // who sees exactly 24 cannot know there are more (labels.md §Indicators —
+  // truncation without disclosure is a defect). The counter reuses the SAME
+  // key ProducersClient.jsx renders off the same X-Total-Count header
+  // (`producers.discovery.showing_count`), and the link text reuses the map
+  // pane's `show_all` — zero new strings, so rule 22 is satisfied by reuse.
+  // Ruling: MEH-1944 description, 02/09 + 03/09 (option a, no new copy).
+  const tProducers = await getTranslations({ locale, namespace: "producers" });
+  const tMap = await getTranslations({ locale, namespace: "map" });
   const label = dietPageLabel(entry);
   const path = dietPagePath(entry.slug);
   const intro = t(`pages.${entry.attribute}.intro`);
@@ -271,6 +280,30 @@ export default async function DietLandingPage({ params }) {
           <ProducerCard key={p.id} producer={p} referrer="diet-landing" />
         ))}
       </div>
+
+      {/*
+        MEH-1944 §3 — truncation disclosure. Rendered ONLY when the header says
+        more exist than the grid shows (total > items.length); a page whose
+        whole set fits gets no counter, so the 0/1/many × shown/hidden cells
+        are: fits → nothing · overflows → "מציגות 24 מתוך N" + a link to the
+        catalog with this diet's own filter already applied (the MEH-293
+        EXISTS filter /producers?<filterParam>=true consumes).
+      */}
+      {total > items.length && (
+        <p className="mt-4 text-sm text-fg-muted" data-testid="diet-truncation">
+          <span>
+            {tProducers("discovery.showing_count", { loaded: items.length, total })}
+          </span>
+          {" · "}
+          <Link
+            href={`/producers?${entry.filterParam}=true`}
+            className="text-primary underline"
+            data-testid="diet-truncation-link"
+          >
+            {tMap("pane.show_all")}
+          </Link>
+        </p>
+      )}
 
       {/*
         MEH-1507 copy-honesty: these are any-product, self-declared labels. The
