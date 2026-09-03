@@ -519,20 +519,41 @@ export default function MiniMap({
   //
   // The `!hasCoords && points.length > 0` arm is defensive depth, not a live
   // path from the business page: ProducerSections gates the mount on
-  // parseHasLocation() (ProducerSections.jsx:45), which requires lat/lng AND
-  // has_physical_location !== false, and lat/lng is maintained as the mirror of
-  // the primary location. Do NOT "fix" that gate by widening it to
+  // parseHasLocation() (ProducerSections.jsx:80), which requires
+  // has_physical_location !== false AND a non-null primaryPoint(producer) —
+  // since MEH-1938 chunk 5a the lat/lng it passes ARE the primary row's, not a
+  // Producer.lat/lng mirror. Do NOT "fix" that gate by widening it to
   // `|| locations?.length` — it would bypass the has_physical_location check and
   // put delivery-only businesses back on a map, which is MEH-213.
   if (!hasCoords && points.length === 0) return null;
 
-  // Initial camera + navigation target. Prefer the producer's own lat/lng
-  // mirror so /events, /experiences and every existing producer page keep the
-  // exact target they have today; fall back to the primary point (then the
-  // first) only for a business that has points but no mirror. FitToPoints
-  // re-frames straight after mount when there is more than one point.
-  const primaryPoint = points.find((point) => point.is_primary) ?? points[0] ?? null;
+  // Widened for STRICT (Sapir, 02/09): "rows exist, none of them primary" must
+  // render nothing too. Without this the resolution below is null and the Waze
+  // URL two lines on dereferences it — a STRICT edit that ships a TypeError is
+  // not STRICT. Absent from the DOM IS the semantic: a business with rows and
+  // no primary is a data defect, and a delivery-only business
+  // (has_physical_location === false) correctly has no pin at all (MEH-213).
+  // The concrete check is `!centerPoint`, immediately after it is computed.
+
+  // Initial camera + navigation target. Prefer the caller's own lat/lng so
+  // /events, /experiences, the register flow and LocationsEditor keep the exact
+  // target they have today; otherwise the PRIMARY point, and nothing else.
+  // FitToPoints re-frames straight after mount when there is more than one.
+  //
+  // STRICT (Sapir, 02/09): the `is_primary` row or null — no "else the first
+  // point". There used to be a `?? points[0]` here, and points[] is in
+  // arbitrary DB row order (Producer.locations has no `order_by`,
+  // models.py:369), so it could silently make a pickup the navigation target.
+  //
+  // This arm is defensive depth, not a live path — the comment at :520 says so
+  // and it is still true: of the five mount sites only ProducerSections passes
+  // `locations`, and it gates the mount on parseHasLocation(producer, pin),
+  // which requires pin !== null (ProducerSections.jsx:80), so hasCoords is
+  // always true there. Nothing in production reaches the null case. Do not go
+  // hunting for a behaviour change; there isn't one.
+  const primaryPoint = points.find((point) => point.is_primary === true) ?? null;
   const centerPoint = hasCoords ? { lat: Number(lat), lng: Number(lng) } : primaryPoint;
+  if (!centerPoint) return null;
   const wazeUrl = `https://waze.com/ul?ll=${centerPoint.lat},${centerPoint.lng}&navigate=yes`;
   const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${centerPoint.lat},${centerPoint.lng}`;
 
