@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import CollectionNotice from "@/components/CollectionNotice";
 
 /**
  * ChatWidget — floating Q&A bot, DESKTOP ONLY (≥768px).
@@ -86,6 +87,12 @@ const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
 export default function ChatWidget() {
   const t = useTranslations("chat");
+  // MEH-1981: notice-at-collection. The line names Anthropic itself — "to whom
+  // the data is passed" is a mandatory §11 item, not something a link can
+  // carry. Copy approved verbatim 02/09 (rule 22); the link label is the one
+  // the registration pages already use, so there is one privacy-link string.
+  const tNotice = useTranslations("privacy.collection_notice");
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
 
   // MEH-1617: a lazy useState initializer, so the object identity is stable for
   // the component's lifetime — the API-payload filter in sendMessage drops
@@ -348,6 +355,12 @@ export default function ChatWidget() {
               <PaperPlaneTilt size={16} weight="fill" style={{ transform: "scaleX(-1)" }} />
             </button>
           </form>
+          <CollectionNotice
+            message={tNotice("chat")}
+            linkLabel={tPrivacyLink("privacy_link")}
+            testId="chat-collection-notice"
+            className="bg-white px-3 pb-2"
+          />
         </div>
       )}
     </>
