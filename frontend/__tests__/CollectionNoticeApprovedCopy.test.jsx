@@ -108,6 +108,10 @@ function expectNotice(testId, expectedLine) {
   expect(el.textContent).toContain(expectedLine);
   expect(el.textContent).toContain(LINK_LABEL);
   const link = screen.getByTestId(`${testId}-link`);
+  // Exact "/privacy" holds only because @/i18n/navigation's Link is mocked
+  // above to pass a string href through verbatim; the real next-intl Link
+  // would render the locale-prefixed "/he/privacy". The mock is the contract
+  // this assertion depends on — if it goes, use toMatch(/\/privacy$/).
   expect(link.getAttribute("href")).toBe("/privacy");
   expect(link.textContent).toBe(LINK_LABEL);
 }

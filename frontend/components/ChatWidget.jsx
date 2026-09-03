@@ -359,6 +359,9 @@ export default function ChatWidget() {
             message={tNotice("chat")}
             linkLabel={tPrivacyLink("privacy_link")}
             testId="chat-collection-notice"
+            // The only surface that overrides the default: the composer sits on a
+            // white panel over the page, so the notice paints the same white and
+            // shares the composer's horizontal padding instead of the form default.
             className="bg-white px-3 pb-2"
           />
         </div>
