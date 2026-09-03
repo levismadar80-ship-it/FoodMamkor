@@ -516,13 +516,24 @@ DELIVERY_ONLY_PRODUCER = {
         "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
     ],
 }
+# MEH-1938 follow-up (Sapir, 02/09): `is_primary` is False, and that is the
+# CORRECT state for this producer rather than a gap. She is delivery-only
+# (has_physical_location=False, the owner's explicit MEH-213 declaration) and
+# her single row is a pickup point. A primary answers "where is the business";
+# flagging this pickup would tell a visitor the business is in Binyamina,
+# which is false. Promotion is branch-only now, and she has no branch by
+# design — so no primary, no pin, no navigation target, and the pickup shows
+# in the secondary layer where it belongs.
+#
+# This row was `is_primary: True` and was the ONE row the pre-follow-up count
+# found on staging (prod: 0). It was a seed defect, not owner data.
 DELIVERY_ONLY_LOCATION = {
     "kind": "pickup",
     "label": "איסוף — מרכז בנימינה",
     "city": "בנימינה",
     "lat": 32.5190,
     "lng": 34.9530,
-    "is_primary": True,
+    "is_primary": False,
     "location_precision": "exact",
 }
 
