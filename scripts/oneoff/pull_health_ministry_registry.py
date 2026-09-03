@@ -220,7 +220,9 @@ def _get_json(url: str) -> dict:
         return json.load(resp)
 
 
-def discover_resource_id() -> str:
+def discover_resource_id() -> str | None:
+    """Returns the datastore resource id, or None when the package has none
+    (the caller turns None into exit 5 — every failure path exits from main)."""
     url = f"{CKAN_BASE}/package_show?{urllib.parse.urlencode({'id': PACKAGE_ID})}"
     data = _get_json(url)
     resources = (data.get("result") or {}).get("resources") or []
@@ -234,7 +236,7 @@ def discover_resource_id() -> str:
             f"    {r.get('id')}  {r.get('name')}  format={r.get('format')}",
             file=sys.stderr,
         )
-    sys.exit(5)
+    return None
 
 
 def fetch_all_rows(resource_id: str) -> tuple[list[str], list[dict]]:
@@ -509,6 +511,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         rid = a.resource_id or discover_resource_id()
+        if not rid:
+            return 5
         fields, rows = fetch_all_rows(rid)
     except urllib.error.HTTPError as e:
         print(
