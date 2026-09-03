@@ -432,7 +432,17 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
         conds.append(func.lower(DeliveryArea.city) == city.lower())
-    return Producer.delivery_areas.any(and_(*conds))
+    # MEH-2242: `offers_delivery` is conjoined here exactly as MEH-1848 did on
+    # _delivery_city_condition (:305). A day row is delivery SCOPE, not a
+    # delivery promise — a business that switched delivery off while its
+    # delivery_areas rows stayed behind must not surface under «משלוח ביום X».
+    # Measured before the fix: ?delivery_city=חיפה&delivery_days=שלישי → 3,
+    # of which 2 carried offers_delivery=false; the city predicate alone was
+    # already hiding them. `.is_(True)` for the same NULL reason as :302-304.
+    return and_(
+        Producer.offers_delivery.is_(True),
+        Producer.delivery_areas.any(and_(*conds)),
+    )
 
 
 def _kosher_condition(kosher: bool):
