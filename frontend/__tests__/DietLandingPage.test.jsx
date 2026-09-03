@@ -472,7 +472,9 @@ describe("MEH-1935 rendered page", () => {
     const list = JSON.parse(html)["@graph"].find((n) => n["@type"] === "ItemList");
     expect(list.itemListElement[0].url).toBe("https://mehamakor.co.il/producer/7");
   });
+});
 
+describe("MEH-1944 §3 truncation disclosure", () => {
   /**
    * MEH-1944 §3 — truncation disclosure. The grid is capped at PER_PAGE (24)
    * with no pagination; a reader who sees exactly 24 cannot know more exist
@@ -527,7 +529,11 @@ describe("MEH-1935 rendered page", () => {
     for (const entry of BACKED_DIET_PAGES) {
       serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN * 10, TWENTY_FOUR));
       const tree = await DietLandingPage({ params: Promise.resolve({ dietSlug: entry.slug, locale: "he" }) });
-      expect(findTestId(tree, "diet-truncation-link").props.href).toBe(`/producers?${entry.filterParam}=true`);
+      const link = findTestId(tree, "diet-truncation-link");
+      // Named failure: a null here says WHICH slug lost the disclosure, instead
+      // of a TypeError on `.props` (CI reviewer, #3312).
+      expect(link, `no disclosure link on /producers/diet/${entry.slug}`).not.toBeNull();
+      expect(link.props.href).toBe(`/producers?${entry.filterParam}=true`);
     }
   });
 });

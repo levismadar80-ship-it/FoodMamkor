@@ -200,8 +200,10 @@ export default async function DietLandingPage({ params }) {
   // (`producers.discovery.showing_count`), and the link text reuses the map
   // pane's `show_all` — zero new strings, so rule 22 is satisfied by reuse.
   // Ruling: MEH-1944 description, 02/09 + 03/09 (option a, no new copy).
-  const tProducers = await getTranslations({ locale, namespace: "producers" });
-  const tMap = await getTranslations({ locale, namespace: "map" });
+  const [tProducers, tMap] = await Promise.all([
+    getTranslations({ locale, namespace: "producers" }),
+    getTranslations({ locale, namespace: "map" }),
+  ]);
   const label = dietPageLabel(entry);
   const path = dietPagePath(entry.slug);
   const intro = t(`pages.${entry.attribute}.intro`);
