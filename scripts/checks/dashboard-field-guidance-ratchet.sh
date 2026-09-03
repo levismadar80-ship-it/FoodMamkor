@@ -87,7 +87,16 @@ run() {
 
   if [ -n "$(printf '%s' "$new_unguided" | tr -d '[:space:]')" ]; then
     echo "::error::${label}: owner-writable field(s) with no row in the guidance audit:" >&2
-    printf '  - %s\n' $new_unguided >&2
+    # A locator, per CI review on #3305: these fields have no line of their own
+    # in the audit doc (that's the finding), so the useful jump target is where
+    # each one is DECLARED writable instead. A loop, not a recycled printf format
+    # — printf's format string would otherwise consume router_name as the SECOND
+    # field's placeholder once new_unguided has more than one entry.
+    local router_name field
+    router_name="$(basename "$router")"
+    for field in $new_unguided; do
+      printf '  - %s (%s:_PRODUCER_WRITABLE_FIELDS)\n' "$field" "$router_name" >&2
+    done
     echo "  Add a row to docs/audits/dashboard-field-guidance-audit.md (label + where-it-appears + example placeholder), or regenerate the grandfather list with --update-baseline and say why in the PR." >&2
     return 1
   fi
