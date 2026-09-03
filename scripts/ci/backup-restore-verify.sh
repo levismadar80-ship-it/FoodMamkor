@@ -186,6 +186,7 @@ table_exists() { # $1=url $2=table → 0/1
 }
 
 row_count() { # $1=url $2=table → number, or the literal MISSING
+  _ident "$2" || return 1 # a rejected name errors out; it must not read as MISSING
   if table_exists "$1" "$2"; then
     q "$1" "SELECT COUNT(*) FROM \"$2\";"
   else
