@@ -116,6 +116,10 @@ count_files() {
 # scan records → sorted multiset of baseline keys `path:literal`
 keys_of() { awk -F'\t' '{ print $1 ":" $3 }' | LC_ALL=C sort; }
 
+# `return 0` is load-bearing, not dead code: with `set -e` a missing baseline
+# would otherwise fail the function (the `[ -f ]` test returns 1). A missing
+# file is an EMPTY baseline — run() then reports every literal as new, which is
+# the right first-run outcome — so the miss is swallowed here on purpose.
 baseline_keys() { [ -f "$1" ] && grep -vE '^[[:space:]]*(#|$)' "$1" | LC_ALL=C sort; return 0; }
 
 run() {
