@@ -443,6 +443,22 @@ self_test() {
   rm -f "$empty_models"
   check "a models file deriving ZERO tables is a preflight error, not a pass" 2 "$rc" "derived ZERO tables"
 
+  # (i) the identifier guard, exercised on row_count() ITSELF — not through
+  #     the CLI. (g) only proves --expect-nonempty rejects a bad name at the
+  #     option parser; this is the reader every path funnels into. The control
+  #     first: a valid name for a table that does not exist must still read
+  #     MISSING (exit 0), so the rejection below cannot be "everything errors".
+  set +e
+  out="$(row_count "$tgt_url" "no_such_table_here" 2>&1)"; rc=$?
+  set -e
+  check "row_count on a VALID name of an absent table reads MISSING (control)" 0 "$rc" "MISSING"
+  set +e
+  out="$(row_count "$tgt_url" 'favorites" OR 1=1 --' 2>&1)"; rc=$?
+  set -e
+  check "row_count on a NON-identifier is rc=1 and names the refusal" 1 "$rc" "refusing non-identifier"
+  printf '%s' "$out" | grep -qF "MISSING" && rc=1 || rc=0
+  check "...and its output does NOT read MISSING (a rejection is not an absence)" 0 "$rc"
+
   echo "  $pass/$total self-test cases behaved correctly"
   [ "$pass" -eq "$total" ]
 }
