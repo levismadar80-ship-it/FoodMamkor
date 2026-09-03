@@ -5,6 +5,20 @@ cannot apply this. Everything below was measured against a live fixture corpus
 before this doc was written, and that corpus ships as a guard —
 `scripts/checks/dnm-matcher-guard.sh`, third mode `label`.
 
+> **Anchors re-verified 2026-09-03 against `origin/staging` @ `bdf47989` (MEH-1523
+> refresh, drain lane).** Edit 1's range (67–77), Edit 2's line 27 and Edit 3's
+> line 40 are **unchanged and still exact** — the step, the `types:` list and the
+> `group:` expression quoted in §3 match the live file verbatim, so none of the
+> three hunks needed rewriting. Drifted since 14/08 and corrected below:
+> `ci-gate:` is now at **771** (was 704), its `- do-not-merge-gate` entry in
+> `needs:` at **775** (was 709), and `R_DNM` is read at **804**. The
+> `seed-coverage` leg (MEH-1706, PR #3298, merged 02/09) added a **14th**
+> job-level `if:` (§3.1 read 13) and one more job that Edit 2 would re-run.
+> `github.event.action` still appears **exactly once** (line 40).
+> `scripts/checks/dnm-matcher-guard.sh` today: `mode: pre-patch`, 19 fixtures
+> pinned, WARNED (the three known defects); `--self-test` 11/11. §6 step 6 is
+> done since 01/09. The 14/08 note below is kept as history.
+>
 > **Anchors re-verified 2026-08-14 against `origin/staging` @ `7cddbb8` (MEH-1603
 > lane).** Edit 1's range (67–77), Edit 2's line 27 and Edit 3's line 40 are all
 > **unchanged and still exact**. One anchor had drifted and is corrected in this
@@ -236,13 +250,13 @@ fires. It says nothing about the CI blast radius of Edit 2, which is the part th
 actually costs money.
 
 **Measured, not reasoned:** `github.event.action` appears in `pr-checks.yml`
-**exactly once** — the concurrency group at line 40. None of the 13 job-level
-`if:` conditions reference it; they gate on draft state or
+**exactly once** — the concurrency group at line 40. None of the 14 job-level
+`if:` conditions (13 on 14/08; `seed-coverage` added the 14th on 02/09) reference it; they gate on draft state or
 `needs.changes.outputs.*`. So a trigger widened to `labeled`/`unlabeled` re-runs
 **every job in the workflow**:
 
 ```
-build · pytest (coverage gate) · lint-backend · env-drift · backend-mypy
+build · pytest (coverage gate) · lint-backend · seed-coverage (alembic + two seeds, MEH-1706) · env-drift · backend-mypy
 frontend-knip · frontend-tsc-strict · frontend-vitest · pip-audit
 ai-artifact-scan · … plus the four guard jobs
 ```
@@ -259,7 +273,7 @@ re-run, so this is not an unprecedented shape. It roughly doubles the exposure.
 | | **Option A** — in place (§3 as written) | **Option B** — its own workflow ⭐ |
 |---|---|---|
 | Edits | 3, all in `pr-checks.yml` | 1 new file; delete the step from `pr-checks.yml` |
-| Ruleset change | **none** — job keeps its name and its place in `ci-gate`'s `needs:` (line 709) | **one** — add the new context to ruleset 15240090 |
+| Ruleset change | **none** — job keeps its name and its place in `ci-gate`'s `needs:` (line 775, re-measured 03/09) | **one** — add the new context to ruleset 15240090 |
 | CI cost per label toggle | **a full pipeline** | **one ~10-second job** |
 | Edit 3 (concurrency surgery) | required | **unnecessary** — the new workflow owns its own group |
 
@@ -447,8 +461,8 @@ gate is a no-op that cannot false-positive.
 2. **Apply all three edits** in §3. Dropping edit 2 leaves a gate that cannot
    fire; dropping edit 3 risks false reds on unrelated PRs.
 3. **No ruleset change needed.** The job keeps its name
-   (`DO-NOT-MERGE marker gate`) and stays in `ci-gate`'s `needs:` at line 709
-   (`ci-gate:` itself begins at line 704), so the required context
+   (`DO-NOT-MERGE marker gate`) and stays in `ci-gate`'s `needs:` at line 775
+   (`ci-gate:` itself begins at line 771; both re-measured 03/09), so the required context
    `CI gate (required)` is unchanged.
 4. **Verify, on a real PR** (this is DoD item *"אומת על PR אמיתי"*):
    - add the label → `DO-NOT-MERGE marker gate` goes red within ~30 s, and the
@@ -459,6 +473,8 @@ gate is a no-op that cannot false-positive.
 5. `bash scripts/checks/dnm-matcher-guard.sh` → expect `mode: label`, no
    `WARNING`, `15 fixtures pinned, all as expected`.
 6. **Mark `dnm-gate-regex.patch.md` superseded** so it does not read as pending.
+   **Done 01/09** — its header now opens *"PENDING, and SUPERSEDED — apply
+   `meh-1523-dnm-label-gate.patch.md` instead, not this one."*
 7. **Release #2121** — its body no longer needs rewriting.
 
 ---
