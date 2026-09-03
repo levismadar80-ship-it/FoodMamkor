@@ -7,7 +7,7 @@
 >
 > | script | replaces | self-test |
 > |---|---|---|
-> | [`scripts/hooks/stop-build-and-test.sh`](../../scripts/hooks/stop-build-and-test.sh) | the **four inline** `bash -c '…'` Stop hooks in `.claude/settings.json` (build · ESLint · vitest · pytest) | 13/13 |
+> | [`scripts/hooks/stop-build-and-test.sh`](../../scripts/hooks/stop-build-and-test.sh) | the **four inline** `bash -c '…'` Stop hooks in `.claude/settings.json` (build · ESLint · vitest · pytest) | 14/14 |
 > | [`scripts/hooks/stop-git-check.sh`](../../scripts/hooks/stop-git-check.sh) | `~/.claude/stop-hook-git-check.sh`, the machine-level git-state hook — **the file both cards are actually about** | 11/11 |
 >
 > Same pattern as [`meh-449-settings-hook-registration.patch.md`](./meh-449-settings-hook-registration.patch.md):
@@ -148,7 +148,7 @@ Verify after applying:
 ```bash
 jq . .claude/settings.json > /dev/null && echo "JSON valid"
 jq '.hooks.Stop | length' .claude/settings.json        # → 1
-bash scripts/hooks/stop-build-and-test.sh --self-test   # → 13/13, exit 0
+bash scripts/hooks/stop-build-and-test.sh --self-test   # → 14/14, exit 0
 ```
 
 ## 3 · Hunk 2 — `~/.claude/launcher-settings.json` (Sapir; machine-level, outside the repo)
