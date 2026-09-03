@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Module:   dashboard-field-guidance-ratchet.sh
+# Purpose:  Ratchet the dashboard field-guidance contract — every NEW
+#           owner-writable producer field must appear in the guidance audit.
+#           Existing gaps are grandfathered, never backfilled.
+# Touches:  nothing — reads two repo files and a generated baseline.
+# Does NOT: judge whether a field's guidance is GOOD. It checks presence in the
+#           audit, which is the only part a script can decide; the quality bar
+#           lives in docs/audits/dashboard-field-guidance-audit.md.
+# Related:  docs/audits/dashboard-field-guidance-audit.md (the baseline source),
+#           backend/app/routers/producer_me.py (_PRODUCER_WRITABLE_FIELDS),
+#           scripts/checks/coverage-ratchet.mjs (the ratchet pattern copied).
+# History:  MEH-1539 (creation — the dashboard field-guidance standard's gate).
+#           Opened under MEH-1897 by mistake and re-homed: that card is the
+#           Pydantic->Zod parity baseline, a different contract whose own
+#           freeze+ratchet already lives in backend-contract-parity.test.js.
+#
+# ## Why the baseline is derived and not written down
+#
+# The ruling was explicit: derive at runtime, do not hand-write. A written count
+# rots the moment a field lands, and this card already has three stale numbers
+# behind it — "47" (which resolves to nothing in the repo), "42" (a decision
+# sheet, 02/09) and "44" (the audit doc's own heading today). Only the last is
+# real, and it is real because the doc can be counted rather than quoted.
+#
+# So: the audit table is parsed, `len(rows)` is the baseline, and the count is
+# reported rather than asserted. If a row is added, the number moves on its own.
+#
+# ## What the grandfather file is, and why it is not a hand-written baseline
+#
+# `dashboard-field-guidance-baseline.txt` holds the writable fields that are
+# NOT in the audit as of the freeze. It is GENERATED (`--update-baseline`), the
+# same way coverage-ratchet.mjs regenerates its own, so it is a measurement
+# rather than a claim. It exists because the alternative — failing on today's
+# gap — would red the required gate on `staging` from the first commit, and
+# "no backfill pre-launch" was part of the ruling.
+#
+# Today it holds exactly one field. That is a stated debt, visible in a
+# committed file, not a silent pass.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+AUDIT="$ROOT/docs/audits/dashboard-field-guidance-audit.md"
+ROUTER="$ROOT/backend/app/routers/producer_me.py"
+BASELINE="$ROOT/scripts/checks/dashboard-field-guidance-baseline.txt"
+
+# Field names from the audit table's numbered rows: `| 12 | \`some_field\` | ...`
+audited_fields() {
+  grep -oE '^\| [0-9]+ \| `[a-z_]+`' "$1" | grep -oE '`[a-z_]+`' | tr -d '`' | LC_ALL=C sort -u
+}
+
+# Names inside the _PRODUCER_WRITABLE_FIELDS set literal, comments stripped so a
+# field named in a `# MEH-1938: city was REMOVED` note is not counted as live.
+writable_fields() {
+  awk '/_PRODUCER_WRITABLE_FIELDS = \{/{f=1} f{print} f&&/^    \}/{exit}' "$1" \
+    | sed 's/#.*//' | grep -oE '"[a-z_]+"' | tr -d '"' | LC_ALL=C sort -u
+}
+
+run() {
+  local audit="$1" router="$2" baseline="$3" label="$4"
+  local audited writable grandfathered unguided new_unguided count
+
+  audited="$(audited_fields "$audit")"
+  writable="$(writable_fields "$router")"
+  count="$(printf '%s\n' "$audited" | grep -c .)"
+
+  # CONTROL, first. Either extractor returning nothing makes every verdict below
+  # vacuous -- and "no unguided fields" is exactly the reassuring answer. A guard
+  # whose null output is also its pass is not a guard.
+  if [ "$count" -eq 0 ]; then
+    echo "::error::${label}: parsed 0 fields from $(basename "$audit") — the audit table's shape changed. Every result below is void, NOT passing." >&2
+    return 1
+  fi
+  if [ "$(printf '%s\n' "$writable" | grep -c .)" -eq 0 ]; then
+    echo "::error::${label}: parsed 0 fields from _PRODUCER_WRITABLE_FIELDS — the set literal's shape changed. Void, not passing." >&2
+    return 1
+  fi
+
+  grandfathered=""
+  [ -f "$baseline" ] && grandfathered="$(grep -vE '^\s*(#|$)' "$baseline" | LC_ALL=C sort -u)"
+
+  unguided="$(comm -23 <(printf '%s\n' "$writable") <(printf '%s\n' "$audited"))"
+  new_unguided="$(comm -23 <(printf '%s\n' "$unguided" | grep . | LC_ALL=C sort -u) \
+                          <(printf '%s\n' "$grandfathered" | grep . | LC_ALL=C sort -u))"
+
+  echo "${label}: baseline ${count} audited fields (derived) · $(printf '%s\n' "$writable" | grep -c .) writable · $(printf '%s\n' "$grandfathered" | grep -c . || true) grandfathered"
+
+  if [ -n "$(printf '%s' "$new_unguided" | tr -d '[:space:]')" ]; then
+    echo "::error::${label}: owner-writable field(s) with no row in the guidance audit:" >&2
+    printf '  - %s\n' $new_unguided >&2
+    echo "  Add a row to docs/audits/dashboard-field-guidance-audit.md (label + where-it-appears + example placeholder), or regenerate the grandfather list with --update-baseline and say why in the PR." >&2
+    return 1
+  fi
+  return 0
+}
+
+case "${1:-}" in
+  --update-baseline)
+    {
+      echo "# GENERATED by scripts/checks/dashboard-field-guidance-ratchet.sh --update-baseline"
+      echo "# Owner-writable fields with no row in the guidance audit at freeze time."
+      echo "# MEH-1539: grandfathered, never backfilled pre-launch. Shrinking this list"
+      echo "# is the point; growing it needs a reason in the PR body."
+      comm -23 <(writable_fields "$ROUTER") <(audited_fields "$AUDIT")
+    } > "$BASELINE"
+    echo "wrote $BASELINE"
+    exit 0
+    ;;
+  --self-test)
+    # Discrimination, proven rather than asserted: the SAME guard must go red on
+    # a writable set carrying an unaudited field and green once it is audited.
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    printf '| 1 | `alpha` | x |\n| 2 | `beta` | x |\n' > "$tmp/audit.md"
+    printf '    _PRODUCER_WRITABLE_FIELDS = {\n        "alpha",\n        "beta",\n        "gamma",  # unaudited\n    }\n' > "$tmp/router.py"
+    : > "$tmp/base.txt"
+    if run "$tmp/audit.md" "$tmp/router.py" "$tmp/base.txt" "selftest/unaudited" >/dev/null 2>&1; then
+      echo "SELF-TEST FAIL: an unaudited writable field did not red the guard" >&2; exit 1
+    fi
+    printf '| 1 | `alpha` | x |\n| 2 | `beta` | x |\n| 3 | `gamma` | x |\n' > "$tmp/audit.md"
+    if ! run "$tmp/audit.md" "$tmp/router.py" "$tmp/base.txt" "selftest/audited" >/dev/null 2>&1; then
+      echo "SELF-TEST FAIL: a fully audited writable set did not pass" >&2; exit 1
+    fi
+    # The grandfather path: same unaudited field, this time listed.
+    printf '| 1 | `alpha` | x |\n| 2 | `beta` | x |\n' > "$tmp/audit.md"
+    printf 'gamma\n' > "$tmp/base.txt"
+    if ! run "$tmp/audit.md" "$tmp/router.py" "$tmp/base.txt" "selftest/grandfathered" >/dev/null 2>&1; then
+      echo "SELF-TEST FAIL: a grandfathered field did not pass" >&2; exit 1
+    fi
+    # The control itself: an audit whose shape broke must fail, not pass empty.
+    printf 'no table here\n' > "$tmp/audit.md"
+    if run "$tmp/audit.md" "$tmp/router.py" "$tmp/base.txt" "selftest/void" >/dev/null 2>&1; then
+      echo "SELF-TEST FAIL: an unparseable audit passed instead of failing loudly" >&2; exit 1
+    fi
+    echo "self-test: 4/4 (unaudited reds · audited passes · grandfathered passes · unparseable fails)"
+    exit 0
+    ;;
+esac
+
+run "$AUDIT" "$ROUTER" "$BASELINE" "dashboard-field-guidance"
