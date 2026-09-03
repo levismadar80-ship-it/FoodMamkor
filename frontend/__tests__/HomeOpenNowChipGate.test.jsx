@@ -71,8 +71,11 @@ const CHIP = () => screen.queryByTestId("chip-open_for_orders_now");
 // pass or fail by the day, the MEH-1881 spec's bug — so the day is still
 // derived, only from a clock that cannot move under the test.
 //
-// `toFake: ["Date"]` only: hours.js:87 reads `new Date()`, and nothing here
-// needs timers, so the RTL render path keeps real setTimeout/queueMicrotask.
+// `toFake: ["Date"]` only: the clock this suite controls is the component's
+// own `setOpenNowClock(new Date())` effect (HomeProducersGrid.jsx:161 —
+// ProducerCard, the consumer of hours.js, is stubbed above), and nothing
+// here needs timers, so the RTL render path keeps real
+// setTimeout/queueMicrotask.
 // PINNED is a Wednesday at 12:00 Asia/Jerusalem (IDT, UTC+3) — mid-day, as
 // far from both midnights as a moment can be.
 const PINNED = new Date("2026-09-02T09:00:00Z");
