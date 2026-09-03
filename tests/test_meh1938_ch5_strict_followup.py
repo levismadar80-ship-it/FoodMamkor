@@ -72,6 +72,29 @@ def _rows(db, producer_id):
     )
 
 
+def test_the_approved_copy_is_pinned_by_literal(client, db):
+    """Rule 22: the wording is Sapir's, so a change to it must fail a test.
+
+    Every other assertion in this file compares the response to the CONSTANT,
+    which cannot catch a copy change — the endpoint returns the constant and
+    the test compares against the same constant, so the two move together and
+    the assertion is entailed by its own subject.
+
+    This is the one place the literal strings appear, and it is deliberate.
+    The CI reviewer proposed the reverse (import the constant here too); that
+    would have removed the last literal pin in the repo and left the approved
+    Hebrew guarded by nothing. Both strings below were approved verbatim on
+    02/09 — the second sentence of the branch-only message is load-bearing,
+    because the prohibition alone leaves a delivery-only owner with no way
+    forward.
+    """
+    assert ONE_PRIMARY_REQUIRED == "חובה מיקום ראשי אחד"
+    assert PRIMARY_MUST_BE_BRANCH == (
+        "המיקום הראשי חייב להיות סניף. "
+        "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
+    )
+
+
 class TestDeleteThePrimary:
     def test_refused_while_other_locations_remain(self, client, db):
         user, producer = _producer_user(db)
@@ -98,9 +121,14 @@ class TestDeleteThePrimary:
         primary = _add(client, user)
         _add(client, user, kind="pickup", city="פרדס חנה")
 
-        client.delete(
+        resp = client.delete(
             f"/producers/me/locations/{primary['id']}", headers=auth_header(user)
         )
+
+        # The refusal is what makes the row assertions below load-bearing:
+        # without it they would also pass against an endpoint that deleted
+        # nothing for some unrelated reason.
+        assert resp.status_code == 422, resp.text
 
         rows = _rows(db, producer.id)
         assert sorted(r.kind for r in rows) == ["branch", "pickup"]
