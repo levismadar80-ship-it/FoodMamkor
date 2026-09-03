@@ -283,6 +283,59 @@ describe("MEH-1611 — producer locations on the mini map", () => {
     expect(screen.queryByTestId("map")).not.toBeInTheDocument();
   });
 
+  it("is absent from the DOM when it has rows but none of them is primary (STRICT)", () => {
+    // MEH-1938 follow-up (Sapir, 02/09). Before it, the camera resolved
+    // `points.find(is_primary) ?? points[0]`, so an arbitrary DB row — a
+    // pickup, in this fixture — silently became the map centre AND the Waze /
+    // Google navigation target. STRICT is the is_primary row or nothing.
+    //
+    // Rendering nothing IS the semantic: rows with no primary are a data
+    // defect that must stay visible as one, and a delivery-only business
+    // correctly has no pin at all (MEH-213).
+    const { container } = render(
+      <MiniMap
+        lat={null}
+        lng={null}
+        name="x"
+        producer={producer}
+        locations={[
+          { id: "p-1", kind: "pickup", label: "איסוף", lat: 32.5, lng: 34.9 },
+          { id: "p-2", kind: "market_stand", label: "דוכן", lat: 32.6, lng: 34.8 },
+        ]}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("centres on the primary row, not on the first row, when it has no lat/lng", () => {
+    // The control for the case above: STRICT must not mean "render nothing
+    // whenever hasCoords is false". With a primary present it renders, and it
+    // navigates to THAT point — the pickup listed first is not the target.
+    render(
+      <MiniMap
+        lat={null}
+        lng={null}
+        name="x"
+        producer={producer}
+        locations={[
+          { id: "p-1", kind: "pickup", label: "איסוף", lat: 32.5, lng: 34.9 },
+          {
+            id: "b-1",
+            kind: "branch",
+            label: "ראשי",
+            is_primary: true,
+            lat: 31.77,
+            lng: 35.21,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Waze").closest("a")).toHaveAttribute(
+      "href",
+      "https://waze.com/ul?ll=31.77,35.21&navigate=yes",
+    );
+  });
+
   it("still renders the single legacy marker when no locations are passed (events / experiences)", () => {
     // /events + /experiences call MiniMap with lat/lng/name only — that path
     // must keep working exactly as before this ticket.

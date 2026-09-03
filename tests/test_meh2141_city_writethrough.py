@@ -183,7 +183,13 @@ class TestUpdate:
 
 class TestPromote:
     def test_promoting_a_sibling_moves_the_city(self, client, db):
-        """Case 3, the is_primary half."""
+        """Case 3, the is_primary half.
+
+        The sibling is a BRANCH. It was a pickup until the MEH-1938 follow-up
+        (Sapir, 02/09) made promotion branch-only — a pickup here now answers
+        422 and the case would be testing the refusal instead of the property.
+        The property under test is unchanged: the city follows the new primary.
+        """
         user, producer = _producer_user(db)
         client.post(
             "/producers/me/locations",
@@ -192,7 +198,7 @@ class TestPromote:
         )
         second = client.post(
             "/producers/me/locations",
-            json=_base_location(city="אשדוד", kind="pickup"),
+            json=_base_location(city="אשדוד", label="סניף אשדוד"),
             headers=auth_header(user),
         ).json()
         assert _city_of(db, producer.id) == "חיפה"
@@ -227,8 +233,21 @@ class TestPromote:
 
 
 class TestDelete:
-    def test_deleting_the_primary_promotes_and_the_city_follows(self, client, db):
-        """Case 3, the delete half — the oldest survivor is promoted."""
+    def test_deleting_the_primary_is_refused_so_the_city_cannot_move(
+        self, client, db
+    ):
+        """Case 3, the delete half — INVERTED by ruling (Sapir, 02/09).
+
+        This test used to assert that deleting the primary promoted the oldest
+        survivor and the city followed it. That auto-promotion is gone: the
+        system does not guess which location becomes primary, the owner
+        chooses. So the delete is refused with the same 422 and message key as
+        the demote arm, and the city column cannot move because nothing
+        happened.
+
+        The write-through property this file exists for is unaffected and is
+        still covered — by TestPromote above, on an explicit promotion.
+        """
         user, producer = _producer_user(db)
         first = client.post(
             "/producers/me/locations",
@@ -246,8 +265,9 @@ class TestDelete:
             f"/producers/me/locations/{first['id']}", headers=auth_header(user)
         )
 
-        assert resp.status_code == 204, resp.text
-        assert _city_of(db, producer.id) == "אשדוד"
+        assert resp.status_code == 422, resp.text
+        assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+        assert _city_of(db, producer.id) == "חיפה"
 
     def test_deleting_the_LAST_location_keeps_the_last_city(self, client, db):
         """Case 5. Fourteen readers have no equivalent in `producer_locations`,

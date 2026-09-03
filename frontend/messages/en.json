@@ -5011,7 +5011,9 @@
           "many": "You already have {count} locations in {city}.",
           "generic": "You already have a location in this town.",
           "action": "So customers can tell them apart, give this one a name — at least three letters."
-        }
+        },
+        "primary_must_be_branch": "The primary location must be a branch. If the business has no physical address, the primary location can be left empty.",
+        "one_primary_required": "Exactly one primary location is required"
       }
     },
     "security": {
