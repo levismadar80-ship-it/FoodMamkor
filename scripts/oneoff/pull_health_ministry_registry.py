@@ -78,6 +78,7 @@ import argparse
 import csv
 import json
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -137,12 +138,34 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
     "name": ["שם עסק", "שם העסק", "שם_עסק", "business_name", "name"],
     "city": ["יישוב", "ישוב", "עיר", "שם יישוב", "שם_ישוב", "city", "settlement"],
     "address": ["כתובת", "רחוב", "address"],
-    "category": ["קטגוריה", "סוג רישיון", "סוג_רישיון", "תחום", "ענף", "category", "license_type"],
-    "license_valid_until": ["תוקף רישיון", "תוקף_רישיון", "תאריך תוקף", "valid_until", "expiry"],
+    "category": [
+        "קטגוריה",
+        "סוג רישיון",
+        "סוג_רישיון",
+        "תחום",
+        "ענף",
+        "category",
+        "license_type",
+    ],
+    "license_valid_until": [
+        "תוקף רישיון",
+        "תוקף_רישיון",
+        "תאריך תוקף",
+        "valid_until",
+        "expiry",
+    ],
     "phone": ["טלפון", "phone", "tel"],
-    "email": ["אימייל", "דוא\"ל", "email"],
+    "email": ["אימייל", 'דוא"ל', "email"],
 }
-OUTPUT_COLUMNS = ["שם עסק", "יישוב", "כתובת", "קטגוריה/סוג רישיון", "תוקף רישיון", "טלפון", "אימייל"]
+OUTPUT_COLUMNS = [
+    "שם עסק",
+    "יישוב",
+    "כתובת",
+    "קטגוריה/סוג רישיון",
+    "תוקף רישיון",
+    "טלפון",
+    "אימייל",
+]
 
 
 def _norm(value) -> str:
@@ -190,7 +213,9 @@ def near_misses(cities: set[str]) -> list[str]:
 # Network (only reached behind --confirm)
 # ---------------------------------------------------------------------------
 def _get_json(url: str) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": "mehamakor-oneoff/1.0 (manual, local)"})
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "mehamakor-oneoff/1.0 (manual, local)"}
+    )
     with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310 — https, fixed host
         return json.load(resp)
 
@@ -205,7 +230,10 @@ def discover_resource_id() -> str:
             return r["id"]
     print("[discover] no datastore_active resource in package:", file=sys.stderr)
     for r in resources:
-        print(f"    {r.get('id')}  {r.get('name')}  format={r.get('format')}", file=sys.stderr)
+        print(
+            f"    {r.get('id')}  {r.get('name')}  format={r.get('format')}",
+            file=sys.stderr,
+        )
     sys.exit(5)
 
 
@@ -214,7 +242,9 @@ def fetch_all_rows(resource_id: str) -> tuple[list[str], list[dict]]:
     fields: list[str] = []
     offset = 0
     while True:
-        q = urllib.parse.urlencode({"resource_id": resource_id, "limit": PAGE_SIZE, "offset": offset})
+        q = urllib.parse.urlencode(
+            {"resource_id": resource_id, "limit": PAGE_SIZE, "offset": offset}
+        )
         data = _get_json(f"{CKAN_BASE}/datastore_search?{q}")
         result = data.get("result") or {}
         if not fields:
@@ -237,7 +267,10 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
     for k, v in cols.items():
         print(f"    {k:20s} -> {v}")
     if not cols["city"]:
-        print("[columns] no settlement column recognised — extend FIELD_CANDIDATES['city'] from the schema above.", file=sys.stderr)
+        print(
+            "[columns] no settlement column recognised — extend FIELD_CANDIDATES['city'] from the schema above.",
+            file=sys.stderr,
+        )
         return 2
 
     cat_col = cols["category"]
@@ -249,13 +282,18 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
         for k, n in sorted(counts.items(), key=lambda kv: -kv[1]):
             print(f"    {n:6d}  {k}   {'(EXCLUDED)' if is_excluded_type(k) else ''}")
     else:
-        print("[type] no category column recognised — filter B skipped, every geo row kept.")
+        print(
+            "[type] no category column recognised — filter B skipped, every geo row kept."
+        )
 
     geo = [r for r in rows if in_wave1(r.get(cols["city"]))]
     print(f"[geo] {len(rows)} total -> {len(geo)} in Wave 1")
     if not geo:
         misses = near_misses({_norm(r.get(cols["city"])) for r in rows})
-        print("[geo] ZERO matches. Near-miss settlements (share a word with a target):", file=sys.stderr)
+        print(
+            "[geo] ZERO matches. Near-miss settlements (share a word with a target):",
+            file=sys.stderr,
+        )
         for m in misses:
             print(f"    {m}", file=sys.stderr)
         return 3
@@ -265,28 +303,37 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
 
     per_town: dict[str, int] = {}
     for r in kept:
-        per_town[_norm(r.get(cols["city"]))] = per_town.get(_norm(r.get(cols["city"])), 0) + 1
+        per_town[_norm(r.get(cols["city"]))] = (
+            per_town.get(_norm(r.get(cols["city"])), 0) + 1
+        )
     print("[summary] per settlement:")
     for town, n in sorted(per_town.items()):
         print(f"    {n:4d}  {town}")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     raw_path = out_dir / "moh_raw_rows.json"
-    raw_path.write_text(json.dumps({"fields": fields, "rows": rows}, ensure_ascii=False), encoding="utf-8")
+    raw_path.write_text(
+        json.dumps({"fields": fields, "rows": rows}, ensure_ascii=False),
+        encoding="utf-8",
+    )
     csv_path = out_dir / "wave1_moh_producers.csv"
     with csv_path.open("w", newline="", encoding="utf-8-sig") as fh:
         w = csv.writer(fh)
         w.writerow(OUTPUT_COLUMNS)
         for r in sorted(kept, key=lambda r: _norm(r.get(cols["city"]))):
-            w.writerow([
-                _norm(r.get(cols["name"])) if cols["name"] else "",
-                _norm(r.get(cols["city"])),
-                _norm(r.get(cols["address"])) if cols["address"] else "",
-                _norm(r.get(cat_col)) if cat_col else "",
-                _norm(r.get(cols["license_valid_until"])) if cols["license_valid_until"] else "",
-                _norm(r.get(cols["phone"])) if cols["phone"] else "",
-                _norm(r.get(cols["email"])) if cols["email"] else "",
-            ])
+            w.writerow(
+                [
+                    _norm(r.get(cols["name"])) if cols["name"] else "",
+                    _norm(r.get(cols["city"])),
+                    _norm(r.get(cols["address"])) if cols["address"] else "",
+                    _norm(r.get(cat_col)) if cat_col else "",
+                    _norm(r.get(cols["license_valid_until"]))
+                    if cols["license_valid_until"]
+                    else "",
+                    _norm(r.get(cols["phone"])) if cols["phone"] else "",
+                    _norm(r.get(cols["email"])) if cols["email"] else "",
+                ]
+            )
     print(f"[out] {csv_path}  ({len(kept)} rows)   raw: {raw_path}")
     misses = near_misses({_norm(r.get(cols["city"])) for r in rows})
     if misses:
@@ -303,14 +350,18 @@ def dry_run() -> int:
     print("DRY RUN — no network. What a real run would do:")
     print(f"  official portal (manual cross-check): {OFFICIAL_PORTAL_URL}")
     print(f"  discovery:  {CKAN_BASE}/package_show?id={PACKAGE_ID}")
-    print(f"  datastore:  {CKAN_BASE}/datastore_search?resource_id={CANDIDATE_RESOURCE_ID}&limit={PAGE_SIZE}&offset=N")
+    print(
+        f"  datastore:  {CKAN_BASE}/datastore_search?resource_id={CANDIDATE_RESOURCE_ID}&limit={PAGE_SIZE}&offset=N"
+    )
     print(f"  output columns: {OUTPUT_COLUMNS}")
     print(f"  filter A (settlements, {len(WAVE1_TOWNS)}): {WAVE1_TOWNS}")
     print(f"  filter B (EXCLUDE by stem): {list(EXCLUDE_STEMS)}")
     print("  column candidates per logical field:")
     for k, v in FIELD_CANDIDATES.items():
         print(f"    {k:20s} {v}")
-    print("  refuses to fetch without --confirm; never run from Claude Code (see docstring).")
+    print(
+        "  refuses to fetch without --confirm; never run from Claude Code (see docstring)."
+    )
     return 0
 
 
@@ -352,7 +403,9 @@ def self_test() -> int:
     check("type/dairy-kept", not is_excluded_type("מחלבה"))
     check("type/none-kept", not is_excluded_type(None))
     # Column resolution — case-insensitive, first candidate wins, printed choice.
-    cols = resolve_columns(["שם עסק", "ישוב", "כתובת", "סוג רישיון", "תוקף רישיון", "טלפון"])
+    cols = resolve_columns(
+        ["שם עסק", "ישוב", "כתובת", "סוג רישיון", "תוקף רישיון", "טלפון"]
+    )
     check("cols/name", cols["name"] == "שם עסק")
     check("cols/city-variant", cols["city"] == "ישוב")
     check("cols/category", cols["category"] == "סוג רישיון")
@@ -360,25 +413,49 @@ def self_test() -> int:
     check("cols/phone", cols["phone"] == "טלפון")
     check("cols/email-missing", cols["email"] is None)
     cols2 = resolve_columns(["Business_Name", "CITY"])
-    check("cols/case-insensitive", cols2["name"] == "Business_Name" and cols2["city"] == "CITY")
+    check(
+        "cols/case-insensitive",
+        cols2["name"] == "Business_Name" and cols2["city"] == "CITY",
+    )
     check("cols/no-city", resolve_columns(["שם", "כתובת"])["city"] is None)
     # End-to-end on synthetic rows, in a temp dir (no network).
-    import tempfile
 
     with tempfile.TemporaryDirectory() as td:
         fields = ["שם עסק", "יישוב", "כתובת", "קטגוריה"]
         rows = [
-            {"שם עסק": "מאפיית הכפר", "יישוב": "בנימינה", "כתובת": "", "קטגוריה": "ייצור מזון"},
-            {"שם עסק": "הובלות דן", "יישוב": "בנימינה", "כתובת": "", "קטגוריה": "הובלת מזון"},
-            {"שם עסק": "מחלבת רמות", "יישוב": "תל אביב", "כתובת": "", "קטגוריה": "מחלבה"},
+            {
+                "שם עסק": "מאפיית הכפר",
+                "יישוב": "בנימינה",
+                "כתובת": "",
+                "קטגוריה": "ייצור מזון",
+            },
+            {
+                "שם עסק": "הובלות דן",
+                "יישוב": "בנימינה",
+                "כתובת": "",
+                "קטגוריה": "הובלת מזון",
+            },
+            {
+                "שם עסק": "מחלבת רמות",
+                "יישוב": "תל אביב",
+                "כתובת": "",
+                "קטגוריה": "מחלבה",
+            },
         ]
         rc = run_filters(fields, rows, out_dir=Path(td))
         check("e2e/exit-0", rc == 0)
-        out = (Path(td) / "wave1_moh_producers.csv").read_text(encoding="utf-8-sig").splitlines()
+        out = (
+            (Path(td) / "wave1_moh_producers.csv")
+            .read_text(encoding="utf-8-sig")
+            .splitlines()
+        )
         check("e2e/header", out[0].split(",")[0] == "שם עסק")
         check("e2e/one-row", len(out) == 2)
         check("e2e/kept-bakery", "מאפיית הכפר" in out[1])
-        check("e2e/no-city-exit-2", run_filters(["שם", "כתובת"], rows, out_dir=Path(td)) == 2)
+        check(
+            "e2e/no-city-exit-2",
+            run_filters(["שם", "כתובת"], rows, out_dir=Path(td)) == 2,
+        )
         far = [dict(r, **{"יישוב": "תל אביב"}) for r in rows]
         check("e2e/zero-geo-exit-3", run_filters(fields, far, out_dir=Path(td)) == 3)
 
@@ -390,11 +467,29 @@ def self_test() -> int:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[2].strip())
-    p.add_argument("--dry-run", action="store_true", help="print URLs, columns and filters; no network")
-    p.add_argument("--self-test", action="store_true", help="offline filter checks; no network")
-    p.add_argument("--confirm", action="store_true", help="actually fetch from data.gov.il (Sapir, locally — never CC)")
-    p.add_argument("--out", default="./moh-registry", help="output directory (default ./moh-registry)")
-    p.add_argument("--resource-id", default=None, help="skip discovery and use this datastore resource id")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print URLs, columns and filters; no network",
+    )
+    p.add_argument(
+        "--self-test", action="store_true", help="offline filter checks; no network"
+    )
+    p.add_argument(
+        "--confirm",
+        action="store_true",
+        help="actually fetch from data.gov.il (Sapir, locally — never CC)",
+    )
+    p.add_argument(
+        "--out",
+        default="./moh-registry",
+        help="output directory (default ./moh-registry)",
+    )
+    p.add_argument(
+        "--resource-id",
+        default=None,
+        help="skip discovery and use this datastore resource id",
+    )
     a = p.parse_args(argv)
 
     if a.dry_run:
@@ -402,15 +497,24 @@ def main(argv: list[str] | None = None) -> int:
     if a.self_test:
         return self_test()
     if not a.confirm:
-        print("refusing to fetch: pass --confirm to hit data.gov.il (or --dry-run / --self-test for offline modes).", file=sys.stderr)
-        print("This script is never run from Claude Code — see the module docstring.", file=sys.stderr)
+        print(
+            "refusing to fetch: pass --confirm to hit data.gov.il (or --dry-run / --self-test for offline modes).",
+            file=sys.stderr,
+        )
+        print(
+            "This script is never run from Claude Code — see the module docstring.",
+            file=sys.stderr,
+        )
         return 4
 
     try:
         rid = a.resource_id or discover_resource_id()
         fields, rows = fetch_all_rows(rid)
     except urllib.error.HTTPError as e:
-        print(f"HTTP {e.code} from data.gov.il — {e.reason}. Automated access is denied by site policy; run locally.", file=sys.stderr)
+        print(
+            f"HTTP {e.code} from data.gov.il — {e.reason}. Automated access is denied by site policy; run locally.",
+            file=sys.stderr,
+        )
         return 4
     except urllib.error.URLError as e:
         print(f"unreachable: {e.reason}", file=sys.stderr)
