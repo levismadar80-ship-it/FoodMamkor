@@ -87,7 +87,19 @@ def test_cannot_demote_the_sole_primary(client, db):
     assert resp.status_code == 422, resp.text
 
 
-def test_delete_primary_promotes_oldest_survivor(client, db):
+def test_delete_primary_is_refused_while_a_survivor_remains(client, db):
+    """INVERTED by ruling (Sapir, 02/09) — was
+    `test_delete_primary_promotes_oldest_survivor`.
+
+    Deleting the primary used to promote the oldest surviving row, with no
+    kind filter, so deleting a branch could silently make a pickup point the
+    business's navigation target. The system no longer guesses: the owner
+    promotes another location first, and until she does the delete is refused
+    with the same 422 and message key as the demote arm.
+
+    Nothing is mutated by the refusal — both rows survive, and the primary is
+    still the primary.
+    """
     user, _ = _producer_user(db)
     primary = client.post(
         "/producers/me/locations",
@@ -106,12 +118,14 @@ def test_delete_primary_promotes_oldest_survivor(client, db):
         f"/producers/me/locations/{primary['id']}",
         headers=auth_header(user),
     )
-    assert resp.status_code == 204, resp.text
+    assert resp.status_code == 422, resp.text
+    assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
 
     listing = client.get("/producers/me/locations", headers=auth_header(user)).json()
-    assert len(listing) == 1
-    assert listing[0]["id"] == survivor["id"]
-    assert listing[0]["is_primary"] is True
+    assert len(listing) == 2, "a refused delete removes nothing"
+    by_id = {row["id"]: row for row in listing}
+    assert by_id[primary["id"]]["is_primary"] is True
+    assert by_id[survivor["id"]]["is_primary"] is False
 
 
 # --- IDOR --------------------------------------------------------------------
