@@ -37,7 +37,7 @@
 #           still how upstream is chosen) ·
 #           docs/ci/meh-2117-stop-hook-in-repo.patch.md (the launcher-settings
 #           hunk Sapir applies so the machine points here) ·
-#           .claude/rules/security.md ("A green that has two possible causes").
+#           .claude/rules/testing.md ("A green that has two possible causes").
 # History:  MEH-2117 + MEH-1839 (creation — one move covers both, same file).
 #
 # ENV
