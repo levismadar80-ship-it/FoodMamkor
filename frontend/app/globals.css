@@ -165,8 +165,26 @@
   @apply bg-transparent border border-background text-background;
 }
 
-html {
+/* MEH-1892: scoped to `[dir="rtl"]` rather than left on the bare `html`
+   selector. `app/[locale]/layout.js:202` already computes the base direction
+   and puts it on <html>; an unscoped rule here overrode that attribute, so the
+   whole /en document computed `rtl` while its own markup said `ltr`.
+
+   W3C i18n puts a page's base direction on <html> — which the layout does —
+   while <bdi> / `unicode-bidi: isolate` govern mixed-direction runs INSIDE a
+   block. There was no inline fragment to isolate here: the element with the
+   wrong direction was the root itself.
+
+   DO NOT fold this back into the `html {` block below. That block also carries
+   `--bottom-inset` and `scroll-padding-bottom`, which are direction-agnostic
+   and MUST keep applying on /en — scoping the whole selector would silently
+   drop the focus-obscured reservation (W3C SC 2.4.11) from the English site.
+   Guard: frontend/__tests__/EnLocaleDirection.test.js */
+html[dir="rtl"] {
   direction: rtl;
+}
+
+html {
 
   /* MEH-1775 — THE bottom inset. Single source of truth for how much vertical
      room the fixed bottom chrome occupies. `<body>` reserves it as padding
