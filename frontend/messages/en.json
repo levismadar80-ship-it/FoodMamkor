@@ -3544,6 +3544,13 @@
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
     "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "collection_notice": {
+      "chat": "What you write here is sent to Anthropic to draft the reply.",
+      "password_reset": "Your email is used only to send the reset link.",
+      "experience": "What you submit here is intended for publication on the site, after review.",
+      "event": "What you submit here is intended for publication on the site, after review.",
+      "category_request": "The request is sent to us for review and is not published on the site."
+    },
     "sections": {
       "operator": {
         "title": "Site operator details",
