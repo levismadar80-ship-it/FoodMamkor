@@ -184,7 +184,7 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
           id: 2,
           name: "חוות",
           top_product_name: "גבינה כפרית",
-          starting_price_label: "מ-35₪",
+          price_range: "מ-35₪",
           products: [],
         }}
         events={[]}

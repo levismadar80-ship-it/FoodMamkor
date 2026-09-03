@@ -644,12 +644,13 @@ def update_my_producer(
         #                          so an APPROVED business could rename itself
         #                          into something else entirely through the raw
         #                          API. An editor with re-moderation is MEH-1872.
-        #   starting_price_label → the owner edits `price_range` (PricingCard);
-        #                          this second, older price string has no editor
-        #                          and is what ProducerSections.jsx:206 actually
-        #                          renders. MEH-1855 owns mirroring price_range
-        #                          into it — deliberately NOT done here, so the
-        #                          two PRs cannot collide in either merge order.
+        #   (price alias)        → the second, older price string that used to
+        #                          sit beside `price_range` was closed here by
+        #                          MEH-1851 and then DROPPED outright by
+        #                          MEH-1855 chunk 2 (revision 9849fab1637a) —
+        #                          `price_range` (PricingCard) is the only
+        #                          price-label field now. Its registry row went
+        #                          with the column (data_ownership.py).
         #   is_available_today   → written by POST /producers/me/availability-state
         #                          (and the legacy /availability toggle), BOTH of
         #                          which mirror `availability_state`. This path
@@ -698,8 +699,8 @@ def update_my_producer(
         #            of them (חוק איסור הונאה בכשרות — an unverified claim is
         #            a legal exposure, not a missing feature). The owner was
         #            able to fill in a field nobody could ever see: the same
-        #            "I wrote it and it is not displayed" class as
-        #            starting_price_label.
+        #            "I wrote it and it is not displayed" class as the price
+        #            alias MEH-1855 retired.
         #
         #            The kashrut BADGE request flow is the only owner-facing
         #            mechanism, by design (cards.jsx:1263-1264 says so at the
