@@ -121,9 +121,9 @@ export function useMapSync({
   //
   // DO NOT resolve coordinates here — `focusProducer` (MapComponent.jsx:461-483) is the
   // single resolver: it reads the business's actual rendered markers via usablePoints()
-  // (Zod-checked, MEH-1611), which are built from locations[] with the Producer.lat/lng
-  // row as fallback (MapComponent.jsx:833-861) — the same COALESCE semantics as the
-  // backend's haversine_min_km. It already frames >= 2 points (fitBounds + FIT_MAX_ZOOM),
+  // (Zod-checked, MEH-1611), which are built from locations[] rows ONLY — MEH-1938
+  // chunk 5a deleted the Producer.lat/lng fallback here and the matching COALESCE in
+  // the backend's haversine_min_km. It already frames >= 2 points (fitBounds + FIT_MAX_ZOOM),
   // already keeps the single-point flyTo, already no-ops on zero usable points, and
   // already sets programmaticMoveRef first so the "חפשי באזור זה" banner stays down
   // (MEH-78). A second resolver here would be the two-parallel-mechanisms smell
@@ -151,8 +151,9 @@ export function useMapSync({
   const handleMarkerClick = useCallback((producer, location = null) => {
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
-    // MEH-1412: remember which location's marker was clicked (null for the
-    // lat/lng fallback marker) so the card can label the point.
+    // MEH-1412: remember which location's marker was clicked so the card can
+    // label the point. It is typed nullable for callers that omit it; there is
+    // no longer a lat/lng fallback marker to be null FOR (MEH-1938 chunk 5a).
     setSelectedLocation(location);
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
     if (!isDesktop) {

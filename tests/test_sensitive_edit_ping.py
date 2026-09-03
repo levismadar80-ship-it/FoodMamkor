@@ -373,10 +373,27 @@ def test_deleting_the_last_location_pings_admin(client, db):
     assert producer.status == "approved", "notification-only — no status flip"
 
 
-def test_deleting_the_primary_with_a_survivor_pings_the_city_only(client, db):
-    """A survivor is promoted, so `has_primary` never goes false — the ping
-    reports the city move and nothing else. This is the case that would go
-    wrong if `has_primary` were read before the promotion instead of after."""
+def test_deleting_the_primary_with_a_survivor_is_refused_and_pings_nothing(
+    client, db
+):
+    """INVERTED by the MEH-1938 follow-up (Sapir, 02/09) — was
+    `test_deleting_the_primary_with_a_survivor_pings_the_city_only`.
+
+    This case used to assert that deleting the primary promoted the survivor,
+    moved the city, and pinged `["city"]`. The auto-promotion is gone: the
+    system no longer guesses which location becomes primary, so the delete is
+    refused and NOTHING changes — no promotion, no city move, and therefore
+    no ping.
+
+    **The ping itself is not lost, only this trigger for it.** The owner now
+    promotes the survivor explicitly (PUT `is_primary: true`), and that path
+    syncs the city and fires the same ping — covered by
+    `test_promoting_a_location_in_another_city_pings_admin` above (:332).
+
+    A refused write must be inert in every respect, and the ping is part of
+    "every respect": firing an admin notification for a change that was
+    rejected would be worse than not firing one at all.
+    """
     user, producer = _owner(db, name="משק ההחלפה")
     first = _add_location(client, user, city="חיפה")
     _add_location(client, user, city="רעננה", label="נקודת חלוקה")
@@ -387,8 +404,9 @@ def test_deleting_the_primary_with_a_survivor_pings_the_city_only(client, db):
             headers=auth_header(user),
         )
 
-    assert resp.status_code == 204, resp.text
-    ping.assert_called_once_with("משק ההחלפה", ["city"])
+    assert resp.status_code == 422, resp.text
+    assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+    ping.assert_not_called()
 
 
 # --- the ping does NOT fire -------------------------------------------------
