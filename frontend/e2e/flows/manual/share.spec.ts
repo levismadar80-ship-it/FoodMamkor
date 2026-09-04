@@ -40,9 +40,18 @@ import he from "../../../messages/he.json";
 const COPY = he.share_page;
 const FIRST_PAINT = { timeout: 15_000 };
 
+// MEH-1792 (re-measured 2026-09-04 on this spec): during the app's page-transition
+// window a second copy of the page tree exists briefly OUTSIDE `#main-content`,
+// so a page-wide `getByTestId` can resolve to TWO elements and fail strict mode
+// ("resolved to 2 elements … unexpected value hidden") — seen on the mobile
+// project in both a red-control run and a green run. Scoping every locator to
+// the `#main-content` landmark (layout.js) names the live tree only. Same fix
+// as e2e/flows/27-delivery-day-discoverability.spec.ts:73.
+const scope = (page: Page) => page.locator("#main-content");
+
 /** The site URL the page itself advertises — the WhatsApp message ends with it. */
 async function advertisedSiteUrl(page: Page): Promise<string> {
-  const href = await page.getByTestId("share-whatsapp").getAttribute("href");
+  const href = await scope(page).getByTestId("share-whatsapp").getAttribute("href");
   expect(href, "share-whatsapp must carry an href before it can be parsed").toBeTruthy();
   const text = new URL(href ?? "").searchParams.get("text") ?? "";
   const m = text.match(/(https?:\/\/\S+)$/);
@@ -62,19 +71,22 @@ test.describe("manual › /share (MEH-1160)", () => {
   // MT:MEH-1160:1 — /share loads with the four share actions (WhatsApp, copy link, more ways, email).
   test("loads with exactly four share actions", async ({ page }) => {
     await page.goto("/share");
-    await expect(page.getByTestId("share-whatsapp")).toBeVisible(FIRST_PAINT);
+    // Count gate first (retries; the strict visibility check below would throw
+    // instead of waiting if a stray copy ever landed INSIDE the landmark).
+    await expect(scope(page).getByTestId("share-whatsapp")).toHaveCount(1, FIRST_PAINT);
+    await expect(scope(page).getByTestId("share-whatsapp")).toBeVisible(FIRST_PAINT);
     for (const id of ["share-whatsapp", "share-copy", "share-native", "share-email"]) {
       // toHaveCount(1) and not just visible: a duplicated action row (the
       // shape an earlier draft of this page had) must fail here, not pass.
-      await expect(page.getByTestId(id)).toHaveCount(1);
-      await expect(page.getByTestId(id)).toBeVisible();
+      await expect(scope(page).getByTestId(id)).toHaveCount(1);
+      await expect(scope(page).getByTestId(id)).toBeVisible();
     }
   });
 
   // MT:MEH-1160:2 — "שתפו בוואטסאפ" opens WhatsApp with the prepared message that ends in the site link.
   test("WhatsApp action is a wa.me link carrying the full share message", async ({ page }) => {
     await page.goto("/share");
-    const wa = page.getByTestId("share-whatsapp");
+    const wa = scope(page).getByTestId("share-whatsapp");
     await expect(wa).toBeVisible(FIRST_PAINT);
     const href = (await wa.getAttribute("href")) ?? "";
     expect(href).toMatch(/^https:\/\/wa\.me\/\?text=/);
@@ -87,9 +99,9 @@ test.describe("manual › /share (MEH-1160)", () => {
   test("copy link puts the site URL on the clipboard", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/share");
-    await expect(page.getByTestId("share-copy")).toBeVisible(FIRST_PAINT);
+    await expect(scope(page).getByTestId("share-copy")).toBeVisible(FIRST_PAINT);
     const siteUrl = await advertisedSiteUrl(page);
-    await page.getByTestId("share-copy").click();
+    await scope(page).getByTestId("share-copy").click();
     await expect.poll(() => readClipboard(page)).toBe(siteUrl);
   });
 
@@ -107,9 +119,9 @@ test.describe("manual › /share (MEH-1160)", () => {
       });
     });
     await page.goto("/share");
-    await expect(page.getByTestId("share-native")).toBeVisible(FIRST_PAINT);
+    await expect(scope(page).getByTestId("share-native")).toBeVisible(FIRST_PAINT);
     const siteUrl = await advertisedSiteUrl(page);
-    await page.getByTestId("share-native").click();
+    await scope(page).getByTestId("share-native").click();
     const calls = () =>
       page.evaluate(() => (window as unknown as { __shareCalls: unknown[] }).__shareCalls);
     await expect.poll(async () => (await calls()).length).toBe(1);
@@ -130,16 +142,16 @@ test.describe("manual › /share (MEH-1160)", () => {
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
     });
     await page.goto("/share");
-    await expect(page.getByTestId("share-native")).toBeVisible(FIRST_PAINT);
+    await expect(scope(page).getByTestId("share-native")).toBeVisible(FIRST_PAINT);
     const siteUrl = await advertisedSiteUrl(page);
-    await page.getByTestId("share-native").click();
+    await scope(page).getByTestId("share-native").click();
     await expect.poll(() => readClipboard(page)).toBe(siteUrl);
   });
 
   // MT:MEH-1160:5 — "שתפו במייל" opens the mail app with the subject "מכירים את מהמקור?" and the prepared body.
   test("email action is a mailto with the expected subject and body", async ({ page }) => {
     await page.goto("/share");
-    const mail = page.getByTestId("share-email");
+    const mail = scope(page).getByTestId("share-email");
     await expect(mail).toBeVisible(FIRST_PAINT);
     const href = (await mail.getAttribute("href")) ?? "";
     expect(href).toMatch(/^mailto:\?/);
