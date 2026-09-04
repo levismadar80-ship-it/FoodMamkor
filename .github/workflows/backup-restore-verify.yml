@@ -82,7 +82,9 @@ jobs:
         env:
           DATABASE_URL: ${{ env.SOURCE_URL }}
 
-      # Same two seeds, same order, as the seed-coverage job (pr-checks.yml:497-501).
+      # Same two seeds, same order, as the `seed-coverage` job in pr-checks.yml
+      # (named, not line-cited: this file's siblings in the MEH-2227 patch sweep
+      # insert lines above that job, so any number here goes stale on merge).
       # DEMO_* passwords deliberately absent: the seed falls back to a random, unrecorded
       # password, which is right for a throwaway database.
       - name: Seed base + demo (source)
@@ -97,7 +99,8 @@ jobs:
         run: createdb -h localhost -U postgres mehamakor_drill_target
 
       # docs/BACKUPS.md §3: pg_dump -Fc → pg_restore --no-owner --no-acl → verify.
-      # --expect-table-count auto reads EXPECTED_TABLES out of pr-checks.yml at run time.
+      # --expect-table-count auto reads EXPECTED_TABLES out of pr-checks.yml at run
+      # time — the value, never a copy of it, because it moved 38 -> 40 -> 42.
       # The dump is written to mktemp and deleted on exit; it is never uploaded.
       - name: Dump → restore → verify (docs/BACKUPS.md §3)
         run: |
