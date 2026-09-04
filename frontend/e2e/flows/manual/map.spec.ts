@@ -376,7 +376,12 @@ async function gotoWithCatalog(page: Page, info: TestInfo, path = "/map", list?:
 const cards = (shell: Locator) => shell.getByTestId("map-card");
 const cardNames = (shell: Locator) => cards(shell).getByRole("heading", { level: 3 }).allTextContents();
 const cardOf = (shell: Locator, p: Producer) => cards(shell).filter({ has: shell.page().getByRole("heading", { level: 3, name: p.name, exact: true }) });
-const markerOf = (shell: Locator, p: Producer) => shell.locator(`.leaflet-marker-icon[aria-label="${p.name}"]`);
+// The aria-label is quoted via JSON.stringify, not interpolated raw: a name
+// containing `"` would otherwise close the attribute string early and yield a
+// malformed selector that matches NOTHING — a null that is also the reassuring
+// answer (testing.md). Fixture names are quote-free today; this holds if one
+// stops being.
+const markerOf = (shell: Locator, p: Producer) => shell.locator(`.leaflet-marker-icon[aria-label=${JSON.stringify(p.name)}]`);
 const primaryMarkers = (shell: Locator) => shell.locator(".leaflet-marker-icon:not(.mehamakor-marker-secondary):not(.mehamakor-cluster)");
 const secondaryMarkers = (shell: Locator) => shell.locator(".leaflet-marker-icon.mehamakor-marker-secondary");
 const mapCanvas = (shell: Locator) => shell.locator(".leaflet-container");
