@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from conftest import make_producer
 
 from app.models.models import Producer
-from app.schemas.schemas import ProducerUpdate
+from app.schemas.schemas import ProducerDetailOut, ProducerListOut, ProducerUpdate
 
 
 # ── The absence control ───────────────────────────────────────────────────
@@ -41,3 +41,12 @@ def test_new_producer_is_not_in_season(db):
 # write schema, a business could put itself on the homepage.
 def test_not_owner_writable():
     assert "in_season_until" not in ProducerUpdate.model_fields
+
+
+# Chunk A adds storage only. The public read shapes are pinned by NAME so an
+# auto-included model field cannot leak the editorial mark before chunk B
+# decides what (if anything) the reader sees (reviewer on PR #3396, matching
+# the recommended_note precedent).
+def test_absent_from_public_schemas_in_chunk_a():
+    for schema in (ProducerListOut, ProducerDetailOut):
+        assert "in_season_until" not in schema.model_fields, schema.__name__
