@@ -1962,3 +1962,52 @@ Tasks auto-expire after 7 days.
     comment is permanent litter on someone's PR. The result is already measured
     twice on two PRs with an identical signature, and a third run buys n=3 of
     the same number.
+
+36. **Multi-PR work is split into Linear sub-issues, one per chunk — each PR
+    `Closes` its sub-issue; the parent carries no `Closes` and is closed by
+    Linear's auto-close-parent setting (MEH-2244).**
+
+    **Why.** Rule 29b measured that a merge closes a card unpredictably — the
+    same `Refs <id>` form closed a card in 2 of 5 merges and left it untouched
+    in the other 3 — and the `Refs MEH-<parent>` + `Closes MEH-<child>`
+    convention has a hole of its own: the LAST chunk of a multi-chunk card has
+    no child to close, so it carries no `Closes` at all, and the parent sits
+    open after every one of its PRs has merged. MEH-2244 §2 photographed five
+    of them on 04/09: MEH-1754 (5 PRs), MEH-2122, MEH-1606, MEH-2241, MEH-817.
+    Sub-issues make closure mechanical instead of remembered: every PR closes
+    **exactly one leaf**, and the parent closes itself when all its children
+    are Done. Nothing is left for the last chunk to forget.
+
+    **The mechanics, in order:**
+
+    1. **Open the sub-issue BEFORE cutting the branch** (rule 28 §5 — the
+       identifier is read off the created card, never predicted). One
+       sub-issue per chunk, under the parent.
+    2. **The branch slug carries the SUB-ISSUE id** —
+       `feature/meh-<sub>-<slug>`, never the parent's — so the branch-name
+       auto-link (rule 29b) points at the leaf, which is the card this PR
+       actually finishes.
+    3. **The PR body ends with `Closes MEH-<sub>` as a standalone line.** The
+       mentions gate (`.claude/scripts/check-linear-mentions.sh`, extended
+       under MEH-2244 chunk A) accepts `Refs MEH-<parent> (chunk k/n)` as the
+       alternative **only for work that has no sub-issue yet** — a
+       transitional form for cards chunked before this rule, not a second
+       convention to keep choosing between.
+    4. **The parent's own body and branch never carry `Closes`.** Nobody
+       closes the parent by hand and no PR claims it; its state is derived
+       from its children.
+
+    **Residual for Sapir — UI only, one click:** Linear Settings → Workflow →
+    *"Auto-close parent issues when all sub-issues are closed"*. **Until it is
+    on, the parent still needs a hand close after the last child lands**, with
+    the DoD table on the card — and rule 29b's post-merge flip-check stays
+    mandatory in **both** directions (did it close a card it should not have;
+    did it fail to close one it should have) regardless of the setting.
+
+    Cross-refs: rule 28 §5 (identifier read from the created card), rule 29
+    (no bare identifiers of Done cards), rule 29b (the 2-of-5 measurement and
+    the flip-check), rule 31b (docs PRs land ahead of the code they describe —
+    same class of "closure by convention, not by mechanism"). MEH-1615 /
+    MEH-1736 — the branch-name auto-link class — is closed by the same move:
+    when the slug names the leaf, the auto-link and the `Closes` line agree by
+    construction.
