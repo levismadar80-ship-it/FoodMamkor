@@ -106,13 +106,14 @@ describe("MEH-2015 — no label prop smuggles a literal asterisk (the RecipeForm
   const LITERAL_MARKER_IN_LABEL = /label=\{<>(?:(?!<\/>)[\s\S]){0,200}\*/;
 
   it("control: the scan matches the exact line that shipped the regression", () => {
-    // token-ok — this literal is a JSX-SOURCE FIXTURE (the exact line that
-    // shipped the regression), not a class string. Under the widened palette
-    // selector (MEH-1647, `Literal[...]` without the className prefix) it is
-    // the one hit in the repo that is not a class string, so it opts out via
-    // the rule's own escape hatch rather than by narrowing the rule.
-    // eslint-disable-next-line no-restricted-syntax
-    const shipped = 'label={<>{t("title_label")} <span className="text-red-500">*</span></>}';
+    // The shipped line carried `text-red-500`; the class is swapped for the
+    // `text-error` token here because LITERAL_MARKER_IN_LABEL is indifferent
+    // to it (it matches the fragment + asterisk shape) and a raw shade inside
+    // a JSX-source fixture is the one string in the repo the widened palette
+    // selector (MEH-1647) would flag that is not a class string. An
+    // eslint-disable would be an "unused directive" error under today's
+    // config, so the fixture changes instead of the rule.
+    const shipped = 'label={<>{t("title_label")} <span className="text-error">*</span></>}';
     expect(LITERAL_MARKER_IN_LABEL.test(shipped)).toBe(true);
   });
 
