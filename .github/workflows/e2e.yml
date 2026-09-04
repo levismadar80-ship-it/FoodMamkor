@@ -312,7 +312,12 @@ jobs:
               report = {
                 headline: "Playwright QA — DID NOT RUN",
                 outcome: raw.outcome || "unknown",
-                counts: { text: "executed=unknown · unexpected=unknown · flaky=unknown · skipped=unknown" },
+                // executed/skipped are read below for the MEH-1904 drop
+                // comparison and stored in the data marker. Spelled as null,
+                // not left undefined: JSON.stringify omits undefined keys, so
+                // the marker would lose them entirely and stop matching the
+                // module's documented `number | null` shape.
+                counts: { text: "executed=unknown · unexpected=unknown · flaky=unknown · skipped=unknown", executed: null, skipped: null },
                 detail: `**Nothing ran, and the reporter itself could not load** (\`${err.message}\`) — the checkout did not complete. **This is NOT a spec failure.**`,
               };
             }
@@ -331,17 +336,67 @@ jobs:
               per_page: 100,
             });
             const existing = comments.find((c) => c.body && c.body.startsWith(marker));
+
+            // MEH-1904 §5.2 — the previous REPORTED run on this PR. A cancelled
+            // run never posts, so the standing comment is the right comparand.
+            // Absent or malformed reads as "no previous numbers"; it must never
+            // read as zero, which would claim a drop on every first run.
+            let prev = null;
+            if (existing && existing.body) {
+              const m = existing.body.match(/<!-- e2e-qa-data (\{.*?\}) -->/);
+              if (m) { try { prev = JSON.parse(m[1]); } catch (_) { prev = null; } }
+            }
+
+            // Reconciled against qa-report-verdict.cjs: `report.counts.executed`
+            // and `.skipped` are `number | null` (toCount). The require-failure
+            // fallback above carries both keys, but as null rather than a
+            // number, so the two `typeof` guards are what keep a run that
+            // measured nothing from claiming a drop ("null < 194" is true in
+            // JS).
+            const executed = report.counts.executed;
+            const skipped = report.counts.skipped;
+            const lines = [body];
+
+            // A verdict that improved while coverage shrank is not an
+            // improvement (MEH-1904 §1 case 3: 194 → 191 executed, verdict
+            // improved, the comment said nothing).
+            if (
+              prev &&
+              typeof prev.executed === "number" &&
+              typeof executed === "number" &&
+              executed < prev.executed
+            ) {
+              const fewer = prev.executed - executed;
+              lines.push(
+                "",
+                `🔻 **${executed} executed (was ${prev.executed}) — ${fewer} spec${fewer === 1 ? "" : "s"} fewer ran.** ` +
+                  `Skipped went ${prev.skipped ?? "?"} → ${skipped ?? "?"}. ` +
+                  "Find out what stopped running before reading this comment as progress.",
+              );
+            }
+
+            // The data line goes LAST; `existing` is found by startsWith(marker),
+            // so the marker must stay the first line.
+            lines.push(
+              "",
+              `<!-- e2e-qa-data ${JSON.stringify({
+                executed, skipped,
+                sha: context.payload.pull_request.head.sha.slice(0, 7),
+                runId: String(context.runId),
+              })} -->`,
+            );
+            const finalBody = lines.join("\n");
             if (existing) {
               await github.rest.issues.updateComment({
                 ...context.repo,
                 comment_id: existing.id,
-                body,
+                body: finalBody,
               });
             } else {
               await github.rest.issues.createComment({
                 ...context.repo,
                 issue_number: context.issue.number,
-                body,
+                body: finalBody,
               });
             }
 
