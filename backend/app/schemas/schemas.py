@@ -3972,7 +3972,7 @@ class ReviewOut(BaseModel):
     reply_at: str | None = None
     # MEH-1428: how the reviewer passed the contact gate — "click" (a contact
     # click row) or "invite_link" (a signed "request a review" token).
-    source: str = "click"
+    source: Literal["click", "invite_link"] = "click"
 
     model_config = {"from_attributes": True}
 
@@ -3989,7 +3989,7 @@ class AdminReviewOut(BaseModel):
     is_hidden: bool
     created_at: str
     # MEH-1428: "click" | "invite_link" — see ReviewOut.source.
-    source: str = "click"
+    source: Literal["click", "invite_link"] = "click"
 
     model_config = {"from_attributes": True}
 

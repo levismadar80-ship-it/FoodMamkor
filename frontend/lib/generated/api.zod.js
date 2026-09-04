@@ -2170,7 +2170,7 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListReviewsAdminReviewsGetResponseSourceDefault),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), adminListReviewsAdminReviewsGetResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "user_id": /*#__PURE__*/ zod.uuid(),
@@ -5003,7 +5003,7 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemSourceDefault),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -5032,7 +5032,7 @@ export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PUR
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createReviewNestedProducersProducerIdReviewsPostResponseSourceDefault),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), createReviewNestedProducersProducerIdReviewsPostResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -5165,7 +5165,7 @@ export const ListReviewsReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listReviewsReviewsGetResponseSourceDefault),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), listReviewsReviewsGetResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -5196,7 +5196,7 @@ export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.o
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), setReviewReplyReviewsReviewIdReplyPutResponseSourceDefault),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), setReviewReplyReviewsReviewIdReplyPutResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))

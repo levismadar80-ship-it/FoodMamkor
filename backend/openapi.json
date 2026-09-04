@@ -154,6 +154,10 @@
           },
           "source": {
             "default": "click",
+            "enum": [
+              "click",
+              "invite_link"
+            ],
             "title": "Source",
             "type": "string"
           },
@@ -10240,6 +10244,10 @@
           },
           "source": {
             "default": "click",
+            "enum": [
+              "click",
+              "invite_link"
+            ],
             "title": "Source",
             "type": "string"
           },

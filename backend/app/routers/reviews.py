@@ -146,7 +146,7 @@ def _serialize(review: ProducerReview) -> ReviewOut:
         reply=review.reply,
         reply_at=review.reply_at.isoformat() if review.reply_at else None,
         # MEH-1428: "click" | "invite_link".
-        source=review.source or "click",
+        source=review.source,
     )
 
 
@@ -484,7 +484,7 @@ def admin_list_reviews(
             is_hidden=r.is_hidden,
             created_at=r.created_at.isoformat() if r.created_at else "",
             # MEH-1428: "click" | "invite_link".
-            source=r.source or "click",
+            source=r.source,
         )
         for r in rows
     ]
