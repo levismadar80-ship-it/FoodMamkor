@@ -1481,7 +1481,13 @@ def _otp_test_mode_allowed(db_host: str, railway_env: str, app_env: str) -> bool
     """
     if app_env.strip().lower() == "production":
         return False
-    if db_host.strip().lower() in _LOCAL_DB_HOSTS:
+    host = db_host.strip().lower()
+    if not host:
+        # No host (Unix-socket URL) → OFF, as the docstring promises. Without
+        # this line "" fell through to the Railway check and a staging
+        # service on a socket would have been allowed (reviewer, PR #3393).
+        return False
+    if host in _LOCAL_DB_HOSTS:
         return True
     return railway_env.strip().lower() == "staging"
 
