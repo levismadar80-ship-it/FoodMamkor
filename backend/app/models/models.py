@@ -850,6 +850,22 @@ class Category(Base):
     # nobody "simplifies" the explicit value back out.
     slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
+    # MEH-1456 chunk A: declared ownership ON THE ROW (Oracle Siebel "Protect
+    # Seed Data", IBM RDU WRITE_PROTECTED — and, measured 04/09, GBP's closed
+    # taxonomy / Etsy's immutable taxonomy_id). TRUE for exactly the rows
+    # seed_data.CATEGORIES owns, FALSE for admin-created rows. Two writers, on
+    # purpose: revision b7d3e5a9c1f4 backfills existing databases by name
+    # (name is UNIQUE and the seed's own conflict key, so a seed-named row IS
+    # the seed row); seed_categories writes True on its own INSERT for fresh
+    # ones, where migrations run BEFORE the boot seed inserts anything.
+    # Two-state by design (NOT NULL + server_default false) — ownership has no
+    # "unknown". Chunk 2b makes update_category / delete_category refuse a
+    # rename or delete while this is True; chunk A only creates the fact.
+    # DO NOT expose this as admin-editable — a flag the second authority can
+    #        clear is not a lock (the whole point of the column).
+    is_system = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
