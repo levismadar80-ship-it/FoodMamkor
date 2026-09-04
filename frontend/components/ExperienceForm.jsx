@@ -34,6 +34,7 @@ import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import CollectionNotice from "@/components/CollectionNotice";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
@@ -182,6 +183,9 @@ function validateExperienceForm(f, t) {
 export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
   const t = useTranslations("experiences.new");
   const tCat = useTranslations("experiences.categories");
+  // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
+  const tNotice = useTranslations("privacy.collection_notice");
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(() => seed(initial));
   const [verdict, setVerdict] = useState(null); // { status, reason, suggestion }
   const [checking, setChecking] = useState(false);
@@ -701,6 +705,12 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           </div>
         )}
       </div>
+
+      <CollectionNotice
+        message={tNotice("experience")}
+        linkLabel={tPrivacyLink("privacy_link")}
+        testId="experience-collection-notice"
+      />
 
       <div className="flex items-center justify-between pt-4 border-t border-border">
         <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
