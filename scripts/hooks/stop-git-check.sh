@@ -188,9 +188,11 @@ self_test() {
   run_hook() { set +e; out="$(cd "$work" && bash "$SELF" 2>&1 </dev/null)"; rc=$?; set -e; }
   commit() { (cd "$work" && echo "$1" > "$1.txt" && $G add -A && $G commit -q -m "$1" "${@:2}"); }
   # Rewrite HEAD as an identical commit carrying a (fake) gpgsig header.
-  sign_head() {
+  sign_head() { # the gpgsig header goes after `committer` in the HEADER only —
+                # `hdr` drops to 0 at the blank line, so a body line that
+                # happens to start with "committer " is left alone
     (cd "$work" && git cat-file -p HEAD \
-      | awk '/^committer /{print; print "gpgsig -----BEGIN SSH SIGNATURE-----"; print " U1NIU0lHAAAAAQ== (selftest)"; print " -----END SSH SIGNATURE-----"; next} {print}' \
+      | awk 'hdr && /^$/{hdr=0} hdr && /^committer /{print; print "gpgsig -----BEGIN SSH SIGNATURE-----"; print " U1NIU0lHAAAAAQ== (selftest)"; print " -----END SSH SIGNATURE-----"; next} {print}' hdr=1 \
       | git hash-object -t commit -w --stdin \
       | xargs -I{} git update-ref "refs/heads/$(git branch --show-current)" {})
   }
