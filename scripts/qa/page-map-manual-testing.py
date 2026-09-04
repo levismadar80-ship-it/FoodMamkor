@@ -461,6 +461,11 @@ def self_test():
 def main():
     if "--self-test" in sys.argv:
         return self_test()
+    # Deliberate second read of both sources: the self-test's real-file cases
+    # (MEH-1909 — anchor the probe to the corpus it will run on) must pass
+    # against the SAME bytes the emit is about to use, so it re-reads rather
+    # than trusting a cached copy. Two reads of two markdown files is cheaper
+    # than one emit from a join that silently stopped resolving.
     if self_test() != 0:
         print("\nRefusing to emit the page map from a join that does not resolve.")
         return 1
@@ -496,7 +501,8 @@ def main():
     w(f"> Source: `docs/MANUAL_TESTING.md` + `docs/qa/manual-testing-matrix.md` · as-of **{today}**.\n\n")
     w("**Status:** chunk 0 of the stage-2 conversion (MEH-1249). This file is the plan's index; the\n")
     w("per-chunk log lives in `docs/qa/conversion-progress.md`.\n\n")
-    w("**Sapir's ruling (04/09):** *\"refresh scope (1,654), one page per chunk per PR\"* — the conversion\n")
+    w("**Sapir's ruling of 2026-09-04 (a fixed historical date — it does not move with the `as-of` above):**\n")
+    w("*\"refresh scope (1,654), one page per chunk per PR\"* — the conversion\n")
     w("scope is the **current** `docs/MANUAL_TESTING.md`, the frozen matrix stays the SoT for the rows it\n")
     w("covers, and each chunk = one app **page** = one PR.\n\n")
     w("**The key rule:** a matrix row's verdict is not re-derived. An item the matrix does **not** cover gets\n")

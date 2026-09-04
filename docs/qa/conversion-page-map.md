@@ -7,7 +7,8 @@
 **Status:** chunk 0 of the stage-2 conversion (MEH-1249). This file is the plan's index; the
 per-chunk log lives in `docs/qa/conversion-progress.md`.
 
-**Sapir's ruling (04/09):** *"refresh scope (1,654), one page per chunk per PR"* — the conversion
+**Sapir's ruling of 2026-09-04 (a fixed historical date — it does not move with the `as-of` above):**
+*"refresh scope (1,654), one page per chunk per PR"* — the conversion
 scope is the **current** `docs/MANUAL_TESTING.md`, the frozen matrix stays the SoT for the rows it
 covers, and each chunk = one app **page** = one PR.
 
