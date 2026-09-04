@@ -8,10 +8,16 @@ Guards tested:
   - PUT /admin/reviews/{id}/hide sets is_hidden, recomputes aggregates
   - _recompute_producer_rating excludes hidden reviews
 """
+
 import pytest
 
-from conftest import auth_header, make_producer, make_user
-from app.models.models import ContactClick, ProducerReview, ProducerWhatsAppClick
+from conftest import auth_header, make_category, make_producer, make_user
+from app.models.models import (
+    ContactClick,
+    ProducerCategory,
+    ProducerReview,
+    ProducerWhatsAppClick,
+)
 
 # MEH-2204: imported, not transcribed. The matrix below must widen on its own
 # the day this frozenset does — otherwise adding a method (e.g. when facebook /
@@ -23,6 +29,7 @@ from app.routers.producers import _VALID_CONTACT_METHODS
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _wa_click(db, producer, user):
     """Insert a WA click row so the user passes the gate."""
@@ -57,6 +64,7 @@ VALID_BODY = "המוצרים מדהימים ואוהבת את השירות!"  # 
 # one that counts. Named after the input it covers, not the class it belongs to.
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_requires_some_contact_click(client, db):
     user = make_user(db)
     producer = make_producer(db)
@@ -73,6 +81,7 @@ def test_post_review_requires_some_contact_click(client, db):
 # POST guard: unauthenticated → 401
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_requires_auth(client, db):
     producer = make_producer(db)
     r = client.post(
@@ -85,6 +94,7 @@ def test_post_review_requires_auth(client, db):
 # ---------------------------------------------------------------------------
 # POST guard: producer owner cannot review themselves
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_rejects_producer_owner(client, db):
     owner = make_user(db, role="producer")
@@ -103,8 +113,98 @@ def test_post_review_rejects_producer_owner(client, db):
 
 
 # ---------------------------------------------------------------------------
+# MEH-2076: same-category conflict-of-interest guard.
+#
+# A business owner may not review a business that SHARES a category with hers
+# (policy, Sapir 14/08: same-category only — cross-category stays open, the
+# bakery owner really does buy the cheese). Each case carries a click so the
+# contact gate is satisfied and only the guard under test decides the verdict.
+# The 403 detail is asserted by EQUALITY — the copy is locked on the card.
+# ---------------------------------------------------------------------------
+
+SAME_CATEGORY_403 = (
+    "כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות."
+)
+
+
+def _owner_of(db, category, *, email):
+    """A producer owner whose business sits in `category`."""
+    owner = make_user(db, role="producer", email=email)
+    mine = make_producer(db, name=f"העסק של {email}", category=category)
+    owner.producer_id = mine.id
+    db.commit()
+    return owner
+
+
+def test_same_category_owner_is_blocked(client, db):
+    """Owner of a dairy business reviewing ANOTHER dairy business → 403 + locked copy."""
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מחלבת המתחרה", category=dairy)
+    owner = _owner_of(db, dairy, email="dairy-owner@example.com")
+    _wa_click(db, target, owner)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 1, "body": VALID_BODY},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json()["detail"] == SAME_CATEGORY_403
+    assert db.query(ProducerReview).filter_by(producer_id=target.id).count() == 0
+
+
+def test_shared_secondary_category_is_also_blocked(client, db):
+    """Intersection, not primary-only: the target's SECOND category matches the
+    owner's → still 403. Guards a primary-only implementation."""
+    bakery = make_category(db, name="מאפים", emoji="🥐")
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מאפייה עם גבינות", category=bakery)
+    db.add(ProducerCategory(producer_id=target.id, category_id=dairy.id, position=1))
+    db.commit()
+    owner = _owner_of(db, dairy, email="dairy-owner-2@example.com")
+    _wa_click(db, target, owner)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 2, "body": VALID_BODY},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json()["detail"] == SAME_CATEGORY_403
+
+
+def test_cross_category_owner_is_allowed(client, db):
+    """Bakery owner reviewing a dairy → 201, unchanged behaviour (community)."""
+    bakery = make_category(db, name="מאפים", emoji="🥐")
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מחלבה שכנה", category=dairy)
+    owner = _owner_of(db, bakery, email="bakery-owner@example.com")
+    _wa_click(db, target, owner)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["stars"] == 5
+
+
+def test_consumer_is_not_affected_by_category_guard(client, db):
+    """A consumer (no producer_id) reviewing a categorised business → 201."""
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מחלבה", category=dairy)
+    user = make_user(db, email="consumer@example.com")
+    _wa_click(db, target, user)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 4, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 201, r.text
+
+
+# ---------------------------------------------------------------------------
 # POST success: user with WA click → 201
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_success(client, db):
     user = make_user(db)
@@ -129,6 +229,7 @@ def test_post_review_success(client, db):
 # frontend fix (authenticated fetch) is what makes the row attributable.
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_unattributed_wa_click_still_403(client, db):
     user = make_user(db)
     producer = make_producer(db)
@@ -147,6 +248,7 @@ def test_post_review_unattributed_wa_click_still_403(client, db):
 # MEH-1426: an attributed click by a DIFFERENT user doesn't count — the gate is
 # per-(producer, user), so one user's click can't unlock another's review.
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_other_users_wa_click_does_not_count(client, db):
     reviewer = make_user(db)
@@ -175,6 +277,7 @@ def test_post_review_other_users_wa_click_does_not_count(client, db):
 # and another user's contact row must both still be refused, exactly as their
 # WhatsApp twins above are.
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_contact_click_unlocks_first_review(client, db):
     """The case the ticket exists for: no WhatsApp click anywhere, phone click only."""
@@ -315,6 +418,7 @@ def test_edit_existing_review_is_not_gated(client, db):
 # POST validation: body too short → 422
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_body_too_short(client, db):
     user = make_user(db)
     producer = make_producer(db)
@@ -330,6 +434,7 @@ def test_post_review_body_too_short(client, db):
 # ---------------------------------------------------------------------------
 # POST upsert: duplicate updates existing review
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_upserts_existing(client, db):
     user = make_user(db)
@@ -352,6 +457,7 @@ def test_post_review_upserts_existing(client, db):
 # ---------------------------------------------------------------------------
 # GET: hidden reviews excluded from public endpoint
 # ---------------------------------------------------------------------------
+
 
 def test_get_excludes_hidden_reviews(client, db):
     user1 = make_user(db)
@@ -378,6 +484,7 @@ def test_get_excludes_hidden_reviews(client, db):
 # ---------------------------------------------------------------------------
 # Admin: PUT /admin/reviews/{id}/hide sets is_hidden
 # ---------------------------------------------------------------------------
+
 
 def test_admin_hide_review(client, db):
     admin = make_user(db, role="admin")
@@ -418,6 +525,7 @@ def test_admin_hide_requires_admin(client, db):
 # Aggregate: hidden reviews excluded from avg_rating
 # ---------------------------------------------------------------------------
 
+
 def test_rating_aggregate_excludes_hidden(db):
     from app.routers.reviews import _recompute_producer_rating
 
@@ -426,7 +534,11 @@ def test_rating_aggregate_excludes_hidden(db):
     producer = make_producer(db)
 
     visible = ProducerReview(
-        producer_id=producer.id, user_id=user1.id, stars=5, is_hidden=False, body="מצוין"
+        producer_id=producer.id,
+        user_id=user1.id,
+        stars=5,
+        is_hidden=False,
+        body="מצוין",
     )
     hidden = ProducerReview(
         producer_id=producer.id, user_id=user2.id, stars=1, is_hidden=True, body="ספאם"
@@ -436,7 +548,7 @@ def test_rating_aggregate_excludes_hidden(db):
 
     _recompute_producer_rating(producer.id, db)
     db.refresh(producer)
-    assert producer.avg_rating == 5.0   # hidden 1-star excluded
+    assert producer.avg_rating == 5.0  # hidden 1-star excluded
     assert producer.reviews_count == 1  # only the visible review counted
 
 
@@ -444,6 +556,7 @@ def test_rating_aggregate_excludes_hidden(db):
 # Rating threshold: ProducerCard shows rating only when reviews_count >= 3
 # (backend stores the raw count; frontend enforces the ≥3 gate)
 # ---------------------------------------------------------------------------
+
 
 def test_rating_threshold_in_aggregate(db):
     """With 2 visible reviews, reviews_count should be 2 (< threshold for display)."""
@@ -453,9 +566,11 @@ def test_rating_threshold_in_aggregate(db):
     producer = make_producer(db)
 
     for i, u in enumerate(users):
-        db.add(ProducerReview(
-            producer_id=producer.id, user_id=u.id, stars=4, body="טוב מאוד!"
-        ))
+        db.add(
+            ProducerReview(
+                producer_id=producer.id, user_id=u.id, stars=4, body="טוב מאוד!"
+            )
+        )
     db.commit()
 
     _recompute_producer_rating(producer.id, db)
@@ -466,6 +581,7 @@ def test_rating_threshold_in_aggregate(db):
 # ---------------------------------------------------------------------------
 # DELETE — owner or admin; cross-owner is 404 (MEH-1001 anti-existence-leak)
 # ---------------------------------------------------------------------------
+
 
 def test_delete_review_cross_owner_returns_404(client, db):
     """MEH-1001 — a non-owner (non-admin) deleting someone else's review gets
@@ -524,7 +640,10 @@ def test_delete_review_admin_succeeds(client, db):
 # PUT /reviews/{id}/reply — business-owner only (MEH-1039)
 # ---------------------------------------------------------------------------
 
-def _owned_producer_review(db, owner_email="biz@example.com", cust_email="c@example.com"):
+
+def _owned_producer_review(
+    db, owner_email="biz@example.com", cust_email="c@example.com"
+):
     """Producer + owning user + a customer's review of that producer."""
     owner = make_user(db, role="producer", email=owner_email)
     customer = make_user(db, email=cust_email)
