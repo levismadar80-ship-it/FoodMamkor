@@ -518,9 +518,8 @@ export default function ProducerSections({
               return (
                 // MEH-999: the card was a static <div> — the only event surface
                 // that did not open its public /events/[id] page. Now a Link,
-                // hover/focus styling mirrored from the experience card
-                // (the experience card's own hover treatment, :47 — that
-                // component was deleted in MEH-2248).
+                // hover/focus styling — the hover treatment the experience
+                // card carried before it was deleted (MEH-2248).
                 // The registration_url <a> MOVED OUT of the Link (sibling row
                 // below it) — an <a> inside an <a> is invalid HTML and React
                 // hydration-unsafe; there is no stopPropagation precedent in
