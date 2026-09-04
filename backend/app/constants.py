@@ -114,3 +114,12 @@ REFERRAL_SOURCE_KEYS: tuple[str, ...] = (
     "other",
     "prefer_not_to_say",
 )
+
+
+# MEH-2210 — how many times a REJECTED business may send itself back to the
+# review queue (POST /producers/me/request-review from status "rejected").
+# Server-side, in addition to the 3/hour rate limit (MEH-1236). After the cap
+# the CTA is replaced by "צרו קשר" and the endpoint answers 409. The count is
+# history (Producer.resubmission_count) — approve does not reset it. Sapir's
+# ruling 29/08 on the card: 3.
+MAX_PRODUCER_RESUBMISSIONS: int = 3
