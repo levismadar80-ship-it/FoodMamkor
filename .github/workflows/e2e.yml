@@ -312,7 +312,12 @@ jobs:
               report = {
                 headline: "Playwright QA — DID NOT RUN",
                 outcome: raw.outcome || "unknown",
-                counts: { text: "executed=unknown · unexpected=unknown · flaky=unknown · skipped=unknown" },
+                // executed/skipped are read below for the MEH-1904 drop
+                // comparison and stored in the data marker. Spelled as null,
+                // not left undefined: JSON.stringify omits undefined keys, so
+                // the marker would lose them entirely and stop matching the
+                // module's documented `number | null` shape.
+                counts: { text: "executed=unknown · unexpected=unknown · flaky=unknown · skipped=unknown", executed: null, skipped: null },
                 detail: `**Nothing ran, and the reporter itself could not load** (\`${err.message}\`) — the checkout did not complete. **This is NOT a spec failure.**`,
               };
             }
