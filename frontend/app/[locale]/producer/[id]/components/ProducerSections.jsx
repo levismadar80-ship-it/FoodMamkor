@@ -110,7 +110,7 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
  * The middle of the main column. MEH-1146 chunk B reorders the sections to
  * the editorial IA: about → products → recipes → events → delivery →
  * reviews → similar → location (OpeningHours + MiniMap, LAST) → disclaimer →
- * report. The signature product (top_product_name / starting_price_label)
+ * report. The signature product (top_product_name / price_range)
  * moved OUT of ProducerHeader to the top of the products section here.
  *
  * Delivery (MEH-1168 P3, decision A): a single editorial <DeliveryBlock> serves
@@ -176,15 +176,10 @@ export default function ProducerSections({
     };
   }, [producer?.slug]);
 
-  // MEH-1855: price_range is the canonical field (models.py:121 documents
-  // starting_price_label as its legacy alias) — read price_range first, fall
-  // back to the alias so producers who only ever filled the canonical field
-  // are no longer invisible on their own page.
-  const hasSignature = !!(
-    producer.top_product_name ||
-    producer.price_range ||
-    producer.starting_price_label
-  );
+  // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
+  // first with a fallback to the legacy alias; chunk 2 dropped the alias
+  // column (revision 9849fab1637a), so there is nothing to fall back to.
+  const hasSignature = !!(producer.top_product_name || producer.price_range);
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -259,19 +254,18 @@ export default function ProducerSections({
   );
 
   // MEH-1463: when the signature product was deduped out of the grid and
-  // neither producer-level price field (MEH-1855: price_range canonical,
-  // starting_price_label legacy alias) is set, surface the matched product's
-  // own price/description on the highlight card so the info the dedup
-  // removed isn't lost. Either producer-level field keeps priority when
-  // present (unchanged). Numeric price → canonical formatPriceRange
-  // (MEH-1140) with dir="ltr" bidi isolation; free-text price_range is DATA
-  // (MEH-1305 F) rendered in natural direction.
+  // the producer-level price_range (MEH-1855: the single price-label field)
+  // is not set, surface the matched product's own price/description on the
+  // highlight card so the info the dedup removed isn't lost. price_range
+  // keeps priority when present (unchanged). Numeric price → canonical
+  // formatPriceRange (MEH-1140) with dir="ltr" bidi isolation; free-text
+  // price_range is DATA (MEH-1305 F) rendered in natural direction.
   const signatureNumericPrice =
-    !(producer.price_range || producer.starting_price_label) && signatureProduct?.price_min != null
+    !producer.price_range && signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
   const signatureFreeTextPrice =
-    !(producer.price_range || producer.starting_price_label) && !signatureNumericPrice
+    !producer.price_range && !signatureNumericPrice
       ? signatureProduct?.price_range || null
       : null;
 
@@ -307,9 +301,9 @@ export default function ProducerSections({
 
           {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
               MEH-1233 B4: rendered as a real highlight CARD (thumbnail + name +
-              starting_price_label) on the lighter surface-card token, not the
+              price_range) on the lighter surface-card token, not the
               page-cream `bg-background` box that read as an empty wide row when
-              only the name was present. starting_price_label is a free-text DB
+              only the name was present. price_range is a free-text DB
               label (NOT routed through formatPrice per MEH-1140 — data, not a
               numeric amount). The photo comes from the matching grid product
               when one exists (that product is deduped out of the grid below);
@@ -356,9 +350,9 @@ export default function ProducerSections({
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
-                {producer.price_range || producer.starting_price_label ? (
+                {producer.price_range ? (
                   <p className="text-accent font-semibold mt-0.5">
-                    {producer.price_range || producer.starting_price_label}
+                    {producer.price_range}
                   </p>
                 ) : signatureNumericPrice ? (
                   <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
