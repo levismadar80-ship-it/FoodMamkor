@@ -4,7 +4,7 @@ Purpose:  Lock the owner write path for the free-text `kosher` field closed.
           Since MEH-986 removed unverified kashrut claims from every consumer
           surface (חוק איסור הונאה בכשרות), an owner could fill in a field no
           visitor could ever see — the same "I wrote it and nobody sees it"
-          class as starting_price_label.
+          class as the price alias MEH-1855 retired.
 Does NOT: test the admin (`admin.py:552`), import (`producer_import.py:323`,
           sheet column M) or seed write paths — those stay open by design.
           Does NOT touch the kashrut BADGE flow, which is the only owner-facing
@@ -117,8 +117,6 @@ def test_the_owner_can_still_READ_her_historical_value(client, db):
 
     assert resp.status_code == 200, resp.text
     assert resp.json()["kosher"] == SEEDED_KOSHER
-
-
 
 
 def test_whitelist_does_not_contain_kosher():
