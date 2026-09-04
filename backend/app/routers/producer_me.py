@@ -1729,20 +1729,24 @@ def request_producer_review(
         # `rejection_reason` + `rejection_reason_code` are KEPT: they are the
         # admin's history and the queue shows "the prior reason" next to the
         # "שליחה חוזרת #n" badge. Only approve clears them.
+        # Captured BEFORE the commit: the commit expires the ORM row, and every
+        # later attribute read would be a lazy reload round-trip (CI reviewer
+        # on #3333). The literals below are what was just written.
+        new_count = producer.resubmission_count + 1
         producer.status = "pending"
-        producer.resubmission_count = producer.resubmission_count + 1
+        producer.resubmission_count = new_count
         producer.resubmitted_at = datetime.now(timezone.utc)
         db.commit()
         background_tasks.add_task(
             notify_admin_producer_resubmit,
             producer.name,
             producer.city,
-            resubmission_count=producer.resubmission_count,
+            resubmission_count=new_count,
         )
         return {
             "detail": "נשלח לבדיקה חוזרת",
-            "status": producer.status,
-            "resubmission_count": producer.resubmission_count,
+            "status": "pending",
+            "resubmission_count": new_count,
         }
 
     background_tasks.add_task(
