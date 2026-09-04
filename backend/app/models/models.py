@@ -1671,6 +1671,13 @@ class ProducerReview(Base):
     # utcnow() the endpoint writes (CHUNK B). Alembic revision b8f3d21a9c47.
     reply = Column(Text, nullable=True)
     reply_at = Column(DateTime, nullable=True)
+    # MEH-1428 chunk 1: how the reviewer passed the contact gate —
+    # "click" (a WhatsApp/contact click row, the pre-MEH-1428 path) or
+    # "invite_link" (a signed "request a review" token, reviews.py guard 3).
+    # NOT NULL with a server_default so every pre-existing row reads "click"
+    # without a backfill — Expand-only (ADR-007). Alembic revision
+    # 3f9a7c2e5d18 (down_revision e6b2d4f81a37).
+    source = Column(String(20), nullable=False, server_default="click")
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")
