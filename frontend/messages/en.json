@@ -692,10 +692,10 @@
       "og_description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel."
     },
     "experiences": {
-      "title": "Community experiences and workshops | Mehamakor",
-      "description": "Cooking workshops, food tours, and nutrition classes hosted by locals across Israel. Find an experience by city and category, or submit your own.",
-      "og_title": "Community experiences and workshops | Mehamakor",
-      "og_description": "Cooking workshops, food tours, and nutrition classes — local hosts, real experiences."
+      "title": "Food experiences and workshops at local businesses | Mehamakor",
+      "description": "Cooking workshops, food tours and tastings hosted by licensed local businesses in Israel. Find one by city and category.",
+      "og_title": "Food experiences and workshops at local businesses | Mehamakor",
+      "og_description": "Learn, taste, discover — food experiences at local businesses."
     },
     "group_buys": {
       "title": "Group purchases | Mehamakor",
@@ -2433,6 +2433,7 @@
       "h1_experiences": "Food experiences & workshops",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
+      "breadcrumb_experiences": "Experiences",
       "tab_events": "Farm events",
       "tab_experiences": "Workshops & experiences",
       "add_event": "Add event",
@@ -2501,19 +2502,6 @@
     }
   },
   "experiences": {
-    "list": {
-      "title": "Community workshops & experiences",
-      "subtitle": "Cooking workshops, food tours, nutrition classes — local hosts, real experiences",
-      "submit_cta": "Submit your own experience",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "cross_link_events": "Also looking for farm events? All events and experiences together ←",
-      "filter_city_label": "Filter by city",
-      "filter_city_placeholder": "Search city...",
-      "loading": "Loading experiences...",
-      "empty_title": "No experiences match this filter — yet",
-      "empty_cta": "Submit the first experience →"
-    },
     "categories": {
       "all": "All",
       "cooking": "Cooking",
