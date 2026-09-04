@@ -1911,17 +1911,17 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ## Legal pages (אפריל 2026)
 
-- [ ] /privacy — פתחי בדפדפן — מכיל "תיקון 13" ושם Cloudinary/Google
-- [ ] /terms — פתחי בדפדפן — מכיל "חוק רישוי עסקים" ו-18+
+- ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:1) — /privacy — פתחי בדפדפן — מכיל "תיקון 13" ושם Cloudinary/Google
+- ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:2) — /terms — פתחי בדפדפן — מכיל "חוק רישוי עסקים" ו-18+
 - [ ] /contact — מלאי טופס ושלחי — התגובה "תודה! נחזור אליך בקרוב 🌿"
 - [ ] /contact — אחרי שליחה — מגיע אימייל ל-`CONTACT_EMAIL` (`levismadar80@gmail.com`) עם שם/אימייל/הודעה בגוף, `From:` גם הוא `levismadar80@gmail.com` (לא spoofed)
 - [ ] /contact — אחרי שליחה — יש שורה ב-`contact_messages` עם הערכים הנכונים (בדקי דרך `/admin` או `psql`)
 - [ ] /contact — שלחי 6 פניות ברצף מאותה IP — השישית מחזירה 429
 - [ ] /contact — זמני השבת של SMTP (או SMTP_USER ריק) — הטופס עדיין מחזיר 200 וה-DB שומר את השורה (fail-open)
-- [ ] /accessibility — פתחי בדפדפן — מכיל תאריך עדכון ופרטי קשר
-- [ ] Footer — גללי למטה — 4 לינקים: מדיניות / תנאי / נגישות / קשר
-- [ ] Cookie banner — כנסי בחלון פרטי — מופיע עם 2 כפתורים
-- [ ] "רק הכרחיים" — לחצי — banner נעלם, analytics לא נטען
+- ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:8) — /accessibility — פתחי בדפדפן — מכיל תאריך עדכון ופרטי קשר
+- ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:9) — Footer — גללי למטה — 4 לינקים: מדיניות / תנאי / נגישות / קשר
+- ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:10) — Cookie banner — כנסי בחלון פרטי — מופיע עם 2 כפתורים
+- ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:11) — "רק הכרחיים" — לחצי — banner נעלם, analytics לא נטען
 - [ ] Producer registration — נסי לשלוח בלי checkboxes — כפתור disabled (גם checkbox הרישיונות וגם checkbox תנאי השימוש חובה)
 - [ ] DirectoryDisclaimer — כנסי לדף יצרן — disclaimer מוצג מעל כפתור הדיווח
 - [ ] DirectoryDisclaimer — גללי את גריד "מהמטבח של השכן" — כל כרטיסייה מציגה את ה-disclaimer בתחתית
