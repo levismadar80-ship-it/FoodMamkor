@@ -515,8 +515,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > `POST /group-buys` depend on `require_verified_producer` (`app/auth.py`) =
 > `require_producer` (role first → "Producer access required") **then** the
 > email-verified check (unverified → 403), matching the verification banner's
-> promise. `POST /experiences` already used `require_verified_email` and is
-> unchanged. Non-create producer routes (PUT/update, list/delete) stay on
+> promise. `POST /experiences` used `require_verified_email` at the time and
+> was left unchanged; **MEH-2246 (04/09/2026, PR #3357) moved it to the same
+> `require_verified_producer` gate** — since the read gate (approved business
+> only) a consumer's submission could only ever sit in the admin queue
+> unpublished. Non-create producer routes (PUT/update, list/delete) stay on
 > `require_producer`. No schema change — uses the existing
 > `users.email_verified`. (`POST /group-buys` has no dedicated block below;
 > noted here.)
@@ -748,7 +751,7 @@ GET    /experiences                    public  — filter: category, city. Only 
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
-POST   /experiences                    auth    — require_verified_email (already gated pre-MEH-1164 — left unchanged by Chunk 2A). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
+POST   /experiences                    auth    — require_verified_producer (MEH-2246: producer role first → 403 "Producer access required", then email-verified → 403 {code: email_unverified}; was require_verified_email). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
 PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate.
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
