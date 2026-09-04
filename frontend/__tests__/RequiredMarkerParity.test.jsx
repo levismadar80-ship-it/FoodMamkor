@@ -105,7 +105,7 @@ describe("MEH-2015 — no label prop smuggles a literal asterisk (the RecipeForm
   // ended the match before the asterisk was ever reached.
   const LITERAL_MARKER_IN_LABEL = /label=\{<>(?:(?!<\/>)[\s\S]){0,200}\*/;
 
-  it("control: the scan matches the exact line that shipped the regression", () => {
+  it("control: the scan matches the fragment-plus-asterisk shape of the line that shipped the regression (class swapped to a token per MEH-1647)", () => {
     // The shipped line carried `text-red-500`; the class is swapped for the
     // `text-error` token here because LITERAL_MARKER_IN_LABEL is indifferent
     // to it (it matches the fragment + asterisk shape) and a raw shade inside
