@@ -496,13 +496,13 @@ hover הוא affordance של דסקטופ — הבדיקות האלה רצות �
 
 עמוד עריכתי חדש (magazine prose, ללא bullets). Copy נעול ע"י ספיר — verbatim.
 
-- [ ] **טעינת העמוד** — פתחי `/about/why-local` — **תוצאה מצופה:** H1 "למה מקומי?", פסקת פתיחה, וחמש כותרות H2 (טעם של עכשיו · הכסף נשאר קרוב · הוגנות למי שעושה את העבודה · לדעת מאיפה זה בא · טוב לסביבה, טוב לכולנו) + "איפה מתחילים". טיפוגרפיה: כותרות Frank Ruhl (serif) ירוקות, גוף DM-Sans. RTL תקין, ללא נקודות/emoji.
-- [ ] **קישור פנימי בגוף** — בסקציה "הכסף נשאר קרוב", הביטוי "מחקר בריטי של New Economics Foundation" מקושר (קו-תחתון ירוק) — לחיצה נפתחת בטאב חדש ל-`sustainweb.org/blogs/jul25-what-is-local-food/`.
-- [ ] **CTA** — כפתור "גלו בתי עסק באזור שלכם" בתחתית הפרוזה → `/producers` (עברי) / `/en/producers` (אנגלי).
-- [ ] **שורת מקורות** — בתחתית העמוד, טקסט קטן "מקורות:" + שני קישורים חיים: Sustain UK (→ sustainweb) · CollectiveCrop (→ collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter), שניהם target=_blank.
-- [ ] **גילוי** — הקישור "למה מקומי?" מופיע בקבוצת "גלו" בפוטר וגם כ-cross-link שקט בתחתית `/about`.
-- [ ] **מובייל 375px** — כל התוכן קריא, הכפתור thumb-reachable, אין גלישה אופקית.
-- [ ] **/en** — `/en/about/why-local` מציג את הגרסה האנגלית (סיכום קצר, לא תרגום מלא); אין עברית דולפת.
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:1) — **טעינת העמוד** — פתחי `/about/why-local` — **תוצאה מצופה:** H1 "למה מקומי?", פסקת פתיחה, וחמש כותרות H2 (טעם של עכשיו · הכסף נשאר קרוב · הוגנות למי שעושה את העבודה · לדעת מאיפה זה בא · טוב לסביבה, טוב לכולנו) + "איפה מתחילים". טיפוגרפיה: כותרות Frank Ruhl (serif) ירוקות, גוף DM-Sans. RTL תקין, ללא נקודות/emoji.
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:2) — **קישור פנימי בגוף** — בסקציה "הכסף נשאר קרוב", הביטוי "מחקר בריטי של New Economics Foundation" מקושר (קו-תחתון ירוק) — לחיצה נפתחת בטאב חדש ל-`sustainweb.org/blogs/jul25-what-is-local-food/`.
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:3) — **CTA** — כפתור "גלו בתי עסק באזור שלכם" בתחתית הפרוזה → `/producers` (עברי) / `/en/producers` (אנגלי).
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:4) — **שורת מקורות** — בתחתית העמוד, טקסט קטן "מקורות:" + שני קישורים חיים: Sustain UK (→ sustainweb) · CollectiveCrop (→ collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter), שניהם target=_blank.
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:5) — **גילוי** — הקישור "למה מקומי?" מופיע בקבוצת "גלו" בפוטר וגם כ-cross-link שקט בתחתית `/about`.
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:6) — **מובייל 375px** — כל התוכן קריא, הכפתור thumb-reachable, אין גלישה אופקית.
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-1289:7) — **/en** — `/en/about/why-local` מציג את הגרסה האנגלית (סיכום קצר, לא תרגום מלא); אין עברית דולפת.
 
 ---
 
@@ -1176,10 +1176,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## MEH-841 — comparison moved home→/about + layout A + copy refresh (supersedes MEH-525)
 
-- [ ] **/about — רצועת השוואה חדשה** — פתחי `/he/about`, גללי בין הציטוט (Pull-quote) ל-Benefits → סקשן "ההבדל / מה שמשתנה בדרך": ציר אנכי עם 3 נקודות זהב, כל תחנה = שורה ירוקה גדולה (Frank-Ruhl) + שורת "בסופר —" אפורה קטנה. ללא צל, ללא אייקונים, קרם + קו שיער. RTL — הנקודות בצד ימין (start), טקסט מימין לשמאל
-- [ ] **/about — copy מדויק** — 3 השורות: "את יודעת בדיוק מי מאחורי זה / בסופר — שם על אריזה, אם בכלל" · "קרוב אלייך, מגיע טרי / בסופר — מי יודע מאיפה ומתי" · "ישירות מול מי שמייצרת / בסופר — עוד פריט בעגלה". ללא נקודה בסוף כותרות
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-841:1) — **/about — רצועת השוואה חדשה** — פתחי `/he/about`, גללי בין הציטוט (Pull-quote) ל-Benefits → סקשן "ההבדל / מה שמשתנה בדרך": ציר אנכי עם 3 נקודות זהב, כל תחנה = שורה ירוקה גדולה (Frank-Ruhl) + שורת "בסופר —" אפורה קטנה. ללא צל, ללא אייקונים, קרם + קו שיער. RTL — הנקודות בצד ימין (start), טקסט מימין לשמאל
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-841:2) — **/about — copy מדויק** — 3 השורות: "את יודעת בדיוק מי מאחורי זה / בסופר — שם על אריזה, אם בכלל" · "קרוב אלייך, מגיע טרי / בסופר — מי יודע מאיפה ומתי" · "ישירות מול מי שמייצרת / בסופר — עוד פריט בעגלה". ללא נקודה בסוף כותרות
 - [ ] **דף הבית — טיזר** — במקום הטבלה הישנה (אחרי "איך זה עובד") יש טיזר ממורכז: eyebrow "ההבדל" + כותרת "מה שמשתנה בדרך" + קישור "גלו את ההבדל" → מוביל ל-`/about`. אין יותר טבלת סופר|מהמקור בהום
-- [ ] **EN mirror** — `/en/about` + `/en/` — הטקסט עדיין בעברית (HE-mirror, TODO i18n EN), RTL תקין
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-841:4) — **EN mirror** — `/en/about` + `/en/` — הטקסט עדיין בעברית (HE-mirror, TODO i18n EN), RTL תקין
 
 ## Overnight design batch 2026-06-12/13 (PRs #1073–#1080)
 
@@ -1199,18 +1199,18 @@ New standalone editorial page at `/about/process`. he copy locked; en is draft
 (⏳ pending Sapir). Badge shown is illustrative (no live producer). Test on
 mobile widths **375 / 360 / 390** and desktop.
 
-- [ ] **Route renders** — פתחי `/he/about/process` ו-`/en/about/process` — שני הדפים נטענים (SSG), כותרת הטאב = "תהליך הקבלה | מהמקור" / "Our Acceptance Process | Mehamakor"
-- [ ] **Hero** — H1 `כל בית עסק כאן עובר דרכנו — היכרות אישית.` עם "היכרות אישית" בזהב נטוי (Cormorant) — ללא חיתוך, RTL נכון
-- [ ] **4 steps** — מובייל: רשימה אנכית עם עיגולי מספר 01–04; דסקטופ: 4 עמודות. אייקונים: מטוס/שיחה/סיכה/חנות. כיתוב "תג מאומת שלב נפרד" מופיע מתחת לשלבים
-- [ ] **What's checked** — 3 כרטיסים (זהות · סיפור · שיחה) על רקע `background-alt`, מספרי זהב 01–03
-- [ ] **Badge section** — צ'יפ "מאומת" עם אייקון חותם + טקסט tooltip "רישיון הוגש ונבדק בתאריך 5.6.2026" (התאריך LTR לא מתהפך); בלוק "אין תג מאומת? זה לא אומר פחות" עם kicker זהב
-- [ ] **Matrix — group A** — 8 קטגוריות (בשר/חלב/לחם/מוכנים/מותססים/משקאות/שוקולד/דבש), כולן תג "מאומת"; שורת דבש = "שלושה רישיונות יחד…"
-- [ ] **Matrix — group B** — 8 קטגוריות, כל אחת "מוצהר או מאומת" חוץ מ**נרות וארומה** = "מוצהר" בלבד + הערה "אין מסלול לתג…"; ירקות/פירות מציגים שורת "מוצהר: הצהרה שזו תוצרת…"
-- [ ] **Closing** — ציטוט ספיר `אני רוצה לדעת ממי אני קונה…` נטוי, eyebrow "מהמקור", קרדיט "— ספיר"
-- [ ] **CTA** — כפתור "ספרו לנו על העסק" → `/register/producer`; טקסט משני "ממשיכים לטופס ההרשמה"
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:1) — **Route renders** — פתחי `/he/about/process` ו-`/en/about/process` — שני הדפים נטענים (SSG), כותרת הטאב = "תהליך הקבלה | מהמקור" / "Our Acceptance Process | Mehamakor"
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:2) — **Hero** — H1 `כל בית עסק כאן עובר דרכנו — היכרות אישית.` עם "היכרות אישית" בזהב נטוי (Cormorant) — ללא חיתוך, RTL נכון
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:3) — **4 steps** — מובייל: רשימה אנכית עם עיגולי מספר 01–04; דסקטופ: 4 עמודות. אייקונים: מטוס/שיחה/סיכה/חנות. כיתוב "תג מאומת שלב נפרד" מופיע מתחת לשלבים
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:4) — **What's checked** — 3 כרטיסים (זהות · סיפור · שיחה) על רקע `background-alt`, מספרי זהב 01–03
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:5) — **Badge section** — צ'יפ "מאומת" עם אייקון חותם + טקסט tooltip "רישיון הוגש ונבדק בתאריך 5.6.2026" (התאריך LTR לא מתהפך); בלוק "אין תג מאומת? זה לא אומר פחות" עם kicker זהב
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:6) — **Matrix — group A** — 8 קטגוריות (בשר/חלב/לחם/מוכנים/מותססים/משקאות/שוקולד/דבש), כולן תג "מאומת"; שורת דבש = "שלושה רישיונות יחד…"
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:7) — **Matrix — group B** — 8 קטגוריות, כל אחת "מוצהר או מאומת" חוץ מ**נרות וארומה** = "מוצהר" בלבד + הערה "אין מסלול לתג…"; ירקות/פירות מציגים שורת "מוצהר: הצהרה שזו תוצרת…"
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:8) — **Closing** — ציטוט ספיר `אני רוצה לדעת ממי אני קונה…` נטוי, eyebrow "מהמקור", קרדיט "— ספיר"
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:9) — **CTA** — כפתור "ספרו לנו על העסק" → `/register/producer`; טקסט משני "ממשיכים לטופס ההרשמה"
 - [ ] **Footer link** — "תהליך הקבלה" מופיע בעמודת הניווט בפוטר → מוביל ל-`/about/process`
-- [ ] **Cross-link from /about** — בתחתית עמוד `/about` יש קישור "כך אנחנו מכירות כל בית עסק" → `/about/process`
-- [ ] **RTL + tap targets** — כל הסקשנים מיושרים RTL, אין גלישה אופקית ב-360px, קישור CTA ≥44px, focus ring נראה
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:11) — **Cross-link from /about** — בתחתית עמוד `/about` יש קישור "כך אנחנו מכירות כל בית עסק" → `/about/process`
+- ✅ → `frontend/e2e/flows/manual/about.spec.ts` (MT:MEH-534:12) — **RTL + tap targets** — כל הסקשנים מיושרים RTL, אין גלישה אופקית ב-360px, קישור CTA ≥44px, focus ring נראה
 
 ---
 
