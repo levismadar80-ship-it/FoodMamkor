@@ -58,6 +58,8 @@ const producer = {
   categories: [],
   lat: 31.7683,
   lng: 35.2137,
+  // MEH-1938 chunk 5a: distance reads the row; the columns above are inert.
+  locations: [{ kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137, precision: "exact", id: "loc-0" }],
 };
 
 const GEO = { lat: 32.0853, lng: 34.7818 };
@@ -86,9 +88,9 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     expect(pill).not.toHaveAttribute("dir");
   });
 
-  it("does NOT render distance when producer lat/lng are missing", () => {
+  it("does NOT render distance when the producer has no location row (MEH-1938 chunk 5a)", () => {
     window.localStorage.setItem("user_location", JSON.stringify(GEO));
-    render(<MapProducerCard producer={{ ...producer, lat: null, lng: null }} />);
+    render(<MapProducerCard producer={{ ...producer, locations: [] }} />);
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
 
@@ -230,13 +232,13 @@ describe("MapProducerCard — chevron nav + second-tap (Direction B)", () => {
     render(<MapProducerCard producer={producer} onClick={vi.fn()} />);
     const chevron = screen.getByTestId("map-chevron");
     expect(chevron.tagName).toBe("A");
-    expect(chevron).toHaveAttribute("href", "/havat-hadvash");
+    expect(chevron).toHaveAttribute("href", "/havat-hadvash?from=map");
     expect(chevron).toHaveAttribute("aria-label", "full_profile");
   });
 
   it("falls back to /producer/:id when there is no slug", () => {
     render(<MapProducerCard producer={{ ...producer, slug: undefined }} onClick={vi.fn()} />);
-    expect(screen.getByTestId("map-chevron")).toHaveAttribute("href", "/producer/p1");
+    expect(screen.getByTestId("map-chevron")).toHaveAttribute("href", "/producer/p1?from=map");
   });
 
   it("body tap on an UNSELECTED card selects (onClick), does not navigate", () => {
@@ -251,7 +253,7 @@ describe("MapProducerCard — chevron nav + second-tap (Direction B)", () => {
     const onClick = vi.fn();
     render(<MapProducerCard producer={producer} onClick={onClick} active={true} />);
     fireEvent.click(screen.getByText("חוות הדבש"));
-    expect(pushMock).toHaveBeenCalledWith("/havat-hadvash");
+    expect(pushMock).toHaveBeenCalledWith("/havat-hadvash?from=map");
     expect(onClick).not.toHaveBeenCalled();
   });
 

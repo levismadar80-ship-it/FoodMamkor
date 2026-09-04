@@ -1,0 +1,206 @@
+[
+  {
+    "vp": "mobile-375",
+    "label": "home",
+    "path": "/he",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 32,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "mobile-375",
+    "label": "producers",
+    "path": "/he/producers",
+    "status": 200,
+    "void": null,
+    "violations": 1,
+    "passes": 32,
+    "byImpact": {
+      "serious": 1
+    },
+    "detail": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+        "count": 7,
+        "nodes": [
+          {
+            "target": "article:nth-child(1) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "article:nth-child(2) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "article:nth-child(3) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "div[aria-label=\"גבינות הר הגולן — תמונה חסרה\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "article:nth-child(5) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "div[aria-label=\"בית הבד של זייתון — תמונה חסרה\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "div[aria-label=\"בית הבצק של דנה — תמונה חסרה\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "vp": "mobile-375",
+    "label": "map",
+    "path": "/he/map",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 30,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "mobile-375",
+    "label": "producer-detail",
+    "path": "/he/teva-pure",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 30,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "mobile-375",
+    "label": "register-producer",
+    "path": "/he/register/producer",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 27,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "desktop-1440",
+    "label": "home",
+    "path": "/he",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 32,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "desktop-1440",
+    "label": "producers",
+    "path": "/he/producers",
+    "status": 200,
+    "void": null,
+    "violations": 1,
+    "passes": 31,
+    "byImpact": {
+      "serious": 1
+    },
+    "detail": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+        "count": 7,
+        "nodes": [
+          {
+            "target": "article:nth-child(1) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "article:nth-child(2) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "article:nth-child(3) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "div[aria-label=\"גבינות הר הגולן — תמונה חסרה\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "article:nth-child(5) > .relative > .focus-visible\\:ring-inset.focus-visible\\:outline-none.focus-visible\\:ring-primary\\/40 > .aspect-square.lg\\:aspect-\\[4\\/3\\].bg-background > .inset-0.bg-green-50[role=\"img\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "div[aria-label=\"בית הבד של זייתון — תמונה חסרה\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          },
+          {
+            "target": "div[aria-label=\"בית הבצק של דנה — תמונה חסרה\"] > .text-primary\\/80.text-base.font-headline-md",
+            "summary": "Fix any of the following: Element has insufficient color contrast of 3.74 (foreground color: #54846f, background color: #eaf3de, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+            "html": "<span class=\"font-headline-md text-base font-bold text-primary/80\">מהמקור</span>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "vp": "desktop-1440",
+    "label": "map",
+    "path": "/he/map",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 31,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "desktop-1440",
+    "label": "producer-detail",
+    "path": "/he/teva-pure",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 30,
+    "byImpact": {},
+    "detail": []
+  },
+  {
+    "vp": "desktop-1440",
+    "label": "register-producer",
+    "path": "/he/register/producer",
+    "status": 200,
+    "void": null,
+    "violations": 0,
+    "passes": 27,
+    "byImpact": {},
+    "detail": []
+  }
+]

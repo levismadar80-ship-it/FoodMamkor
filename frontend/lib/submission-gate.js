@@ -73,9 +73,10 @@ function hasLocation(producer) {
     );
   }
 
-  // Physical: a producer_locations row, else the Producer.lat/lng fallback —
-  // producerPoints() already encodes that precedence (MEH-1938 chunk 3), so
-  // this reuses it rather than re-deriving it and drifting.
+  // Physical: a producer_locations row with usable coordinates — the only
+  // source since MEH-1938 chunk 5a (the Producer.lat/lng fallback is gone on
+  // both sides: producerPoints() here, submission_gate._has_location there).
+  // Reused rather than re-derived so the two cannot drift.
   return producerPoints(producer).length > 0;
 }
 

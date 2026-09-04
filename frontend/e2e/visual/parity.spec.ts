@@ -4,6 +4,11 @@ import * as path from "path";
 // MEH-1727: the font gate's decision lives in one place, shared with its
 // self-test, so the tested logic and the live logic cannot drift apart.
 import { judgeFonts } from "./font-gate";
+// MEH-1765: the text layer. Same shape and same reason as the font gate above —
+// the decision lives in one importable module shared with its self-test
+// (frontend/__tests__/CopyGate.test.js), so the tested logic and the live logic
+// cannot drift apart.
+import { copyTarget, type Messages } from "./copy-gate";
 
 // MEH-1497: fixed producer-detail payload for the network-mocked shot (below).
 // Read from disk (not `import ... json`) so it works regardless of the spec
@@ -208,6 +213,55 @@ async function preparePage(page: Page): Promise<void> {
  */
 const failedFontRequests = new WeakMap<Page, string[]>();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MEH-1765 — the TEXT layer, complementary to the pixel layer.
+//
+// `maxDiffPixelRatio` stays 0.02 (09/08 ruling, playwright.config.ts untouched).
+// That budget is 25,920 px on desktop and 6,688 px on mobile, against ~2,800 px
+// for a Hebrew hero line — so a complete copy change fits inside it and the
+// shot stays green. Two measured escapes: the home chips prefix (MEH-1758) and
+// the producer-detail tab row going 4 -> 2 (MEH-1390). Pixels keep guarding
+// geometry; these assertions guard the words.
+//
+// The expected value is READ FROM he.json AT RUNTIME, never hardcoded:
+//   · an approved copy edit moves he.json, the assertion follows it → green
+//   · a code change that renders a different key, or nothing, does not move
+//     he.json → red. That is the escape being caught.
+// ─────────────────────────────────────────────────────────────────────────────
+const HE_MESSAGES: Messages = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "..", "messages", "he.json"), "utf-8"),
+);
+
+/**
+ * Assert that the string `key` names in he.json is rendered on the page.
+ *
+ * Two failure modes are separated on purpose, because they have opposite fixes:
+ *   · the key does not resolve to a usable literal  → the TEST is wrong (a key
+ *     was renamed, or it is an ICU plural whose rendered form depends on
+ *     `count` and so never appears verbatim). copy-gate refuses those out loud
+ *     rather than letting a substring match paper over it.
+ *   · the key resolves but the string is not on the page → the PAGE is wrong.
+ *     That is the regression this layer exists to catch.
+ *
+ * Scoped to `main` so a match in the header or footer cannot satisfy an
+ * assertion about the page body, and asserted `>= 1` visible rather than
+ * `=== 1`: some of these strings legitimately appear twice (a visually-hidden
+ * heading beside its visible twin), and pinning an exact count would make the
+ * guard brittle in the direction that costs most — red on a healthy page.
+ */
+async function expectCopy(page: Page, key: string): Promise<void> {
+  const target = copyTarget(HE_MESSAGES, key);
+  if (!target.ok) {
+    throw new Error(`[copy-gate] cannot assert "${key}" — ${target.reason}`);
+  }
+  await expect(
+    page.locator("main").getByText(target.value, { exact: false }).first(),
+    `[copy-gate] he.json "${key}" = «${target.value}» is not rendered on this page. ` +
+      `A green VRT shot does NOT rule this out: the pixel budget (0.02) is wider ` +
+      `than the ink of a full copy line — that is MEH-1765.`,
+  ).toBeVisible({ timeout: 20_000 });
+}
+
 /**
  * Wait for fonts + a settle beat so text renders identically run-to-run.
  *
@@ -312,6 +366,12 @@ test.describe("Visual parity — MEH-991", () => {
       page.getByRole("search").locator('[data-testid="hero-search"]')
     ).toBeVisible({ timeout: 20_000 });
     await settle(page);
+    // MEH-1765 — the two home strings, asserted BEFORE the shot so a copy
+    // regression names itself instead of arriving as an unexplained pixel diff.
+    // `chips_prefix` is the string that actually escaped in MEH-1758
+    // («מחפשות עכשיו:» -> «פופולרי עכשיו:», ~2,800 px, VRT green).
+    await expectCopy(page, "home.hero.title");
+    await expectCopy(page, "home.hero.chips_prefix");
     await expect(page).toHaveScreenshot("home.png", {
       ...SHOT,
       // Live data: featured grid + events preview + homepage mini-map.
@@ -549,6 +609,13 @@ test.describe("Visual parity — MEH-991", () => {
     await page.goto(`/producer/${borrowedId}`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     await settle(page);
+    // MEH-1765 — the tab row is the surface that escaped in MEH-1390 (4 tabs ->
+    // 2, ~3,100 px, VRT green and a scoped regen reporting "baselines
+    // unchanged"). `tabs.about` is the one tab this fixture always renders, so
+    // it is the only unconditional anchor here; the conditional
+    // products/delivery tabs are absent by construction on this payload and
+    // asserting them would be a check that cannot fail.
+    await expectCopy(page, "producer.detail.tabs.about");
     await expect(page).toHaveScreenshot("producer-detail.png", {
       ...SHOT,
       // With the fixture, the name, one-liner, meta line and gallery grid
@@ -696,6 +763,10 @@ test.describe("Visual parity — MEH-991", () => {
     await page.goto("/about");
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
     await settle(page);
+    // MEH-1765 — /about is a fullPage shot, so its copy has the LARGEST pixel
+    // budget of any route here and is the easiest place for a rewrite to hide.
+    await expectCopy(page, "about.consumer.hero.heading");
+    await expectCopy(page, "about.consumer.hero.subheading");
     await expect(page).toHaveScreenshot("about.png", {
       ...SHOT,
       fullPage: true,

@@ -215,7 +215,15 @@ test.describe("MEH-215 journey B — consumer Google OAuth registration", () => 
     );
 
     const marker = page.locator("[data-e2e-google-btn]");
-    await expect(marker).toBeVisible();
+    // MEH-2168 chunk 3: attached, not visible. stubGoogleSdk's renderButton
+    // writes the marker attribute and nothing else into the div, so the
+    // element the app hands to renderButton is 0-height by construction —
+    // `toBeVisible` could only pass if the REAL gsi/client script overwrote
+    // window.google first and drew its iframe, which is a race this test
+    // never meant to assert (and which GSI now refuses on the CI origin with
+    // 403 "origin is not allowed"). The claim under test is the renderButton
+    // CALL with the right opts, and that is the attribute below.
+    await expect(marker).toBeAttached();
 
     // GoogleAuthButton.jsx's real renderButton call — asserted, not assumed.
     const opts = JSON.parse(

@@ -34,7 +34,7 @@ import "leaflet/dist/leaflet.css";
 
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
-import { producerPoints } from "@/lib/producerPoints";
+import { primaryPoint } from "@/lib/producerPoints";
 
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
@@ -201,9 +201,19 @@ export default function HomepageMiniMap() {
   // row (no Producer.lat/lng) used to be silently dropped from this preview.
   // One marker per producer (this is a density preview, not the full /map),
   // so lat/lng are overridden to the resolved point and every other producer
-  // field passes through unchanged for the marker/tooltip below. Prefers the
-  // PRIMARY point when one exists — Producer.locations has no `order_by`
-  // (models.py:369), so points[0] is arbitrary DB row order, not the branch.
+  // field passes through unchanged for the marker/tooltip below.
+  //
+  // STRICT (Sapir, 02/09): primaryPoint() — the `is_primary` row or nothing,
+  // the same rule as the business page and as the backend's ProducerListOut
+  // validator, so one business cannot appear here and carry null coordinates
+  // in the API. There used to be `points.find(is_primary) ?? points[0]` here;
+  // Producer.locations has no `order_by` (models.py:369), so that fell back to
+  // arbitrary DB row order and could put a pickup on the homepage and call it
+  // the business.
+  //
+  // It CALLS primaryPoint rather than re-deriving it. The predicate was
+  // inlined here and that is two owners for one rule — the next edit to STRICT
+  // would have had to find both. producerPoints.test.js pins the helper.
   // MEH-856: memoized so FitToBusinesses keys on a STABLE reference (changes
   // only when `producers` changes). Without this, the filtered array was a new
   // ref every render → the fitBounds effect re-fired and fought user pan.
@@ -211,8 +221,7 @@ export default function HomepageMiniMap() {
     if (!Array.isArray(producers)) return null;
     return producers
       .map((p) => {
-        const points = producerPoints(p);
-        const pt = points.find((point) => point.location?.is_primary) ?? points[0];
+        const pt = primaryPoint(p);
         return pt ? { ...p, lat: pt.lat, lng: pt.lng } : null;
       })
       .filter(Boolean);

@@ -170,11 +170,13 @@ describe("hiddenWhenSecondaryOff — the predicate the notice is keyed on", () =
     ).toBe(false);
   });
 
-  it("is true even when the business has its own lat/lng — rule 3 does not rescue it", () => {
+  it("is true even when the business has its own lat/lng — the columns never rescue it", () => {
     // The case that is easy to get backwards, and the reason the notice is
-    // needed at all: producerPoints decides "had a usable row" BEFORE applying
-    // the layer filter, so a pickup-only business does NOT fall back to its own
-    // coordinates. It vanishes from the map entirely.
+    // needed at all: a pickup-only business does NOT reappear at its own
+    // coordinates when the layer hides its pickup. Until MEH-1938 chunk 5a
+    // that was producerPoints' rule 3 (fallback judged before the toggle);
+    // since 5a there is no fallback at all, so the columns are inert here.
+    // Same outcome, one fewer rule — pinned so neither version can regress.
     expect(
       hiddenWhenSecondaryOff({ locations: [row("pickup")], lat: 32.0, lng: 34.7 }),
     ).toBe(true);

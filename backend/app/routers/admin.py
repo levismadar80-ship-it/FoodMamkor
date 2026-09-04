@@ -1,5 +1,4 @@
 import logging
-import re
 from datetime import datetime, timedelta, timezone
 from html import escape as _html_escape
 from typing import NamedTuple
@@ -69,7 +68,14 @@ from app.services.producer_queries import (
     create_primary_branch_location,
     upsert_primary_branch_location,
 )
-from app.slug_utils import RESERVED_SLUGS
+from app.slug_utils import is_reserved, rejected_characters
+
+# MEH-2020 — `_slugify` used to be a full copy of `slug_utils.slugify` here,
+# and a third copy lived in `producer_import.py`. Three generators of a public
+# URL is three chances to drift, and MEH-2021 already caught one docstring
+# describing all three wrongly. The name stays so every call site and the
+# MEH-2021 corpus keep working; only the body is gone.
+from app.slug_utils import slugify as _slugify
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = logging.getLogger(__name__)
@@ -77,59 +83,31 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def _slugify(text: str) -> str:
-    """Lower-case, hyphenate, and strip a name down to URL-safe characters.
+def _guard_supplied_slug(raw: str) -> None:
+    """Validate a slug an admin typed, before it is normalised into one.
 
-    MEH-1813 — this line previously read "Hebrew → transliterate-ish fallback".
-    **There is no transliteration**, here or anywhere in the repo: no
-    `unidecode`, no `any-ascii`, no PyICU, no character map. Hebrew is kept
-    verbatim — "חוות הדגן" → "חוות-הדגן". That sentence was the only thing in
-    the codebase that looked like transliteration existed, and MEH-1812 costed
-    an `/en` search option against it before measuring that it did not.
+    MEH-2020. Two rejections, and the order between them is the ruling's, not a
+    detail: **reserved is asked first, of the raw value under NFKC + casefold.**
+    Ask it of `_slugify(raw)` instead and the fullwidth "ａbout" reports as a
+    charset error, because the stripping already removed the character that made
+    it reserved — the same word, refused for the wrong reason and with an error
+    message that sends the admin to fix the wrong thing.
 
-    **Not Hebrew-specific either** (measured 2026-08-11). `\\w` is Unicode-aware
-    in Python 3, so every script survives, not just Hebrew: "мосты", "مزرعة" and
-    "農場" pass through unchanged, and "Café Crème" → "café-crème".
-
-    **The explicit `\\u0590-\\u05FF` range is NOT redundant. Do not remove it.**
-    This docstring said the opposite between MEH-1813 and MEH-2021, and the
-    claim was false: **81 of the 112 codepoints in `U+0590-U+05FF` are not
-    `\\w`** (measured 2026-08-16) and survive *only* because the range is here —
-    51 combining marks (ניקוד), 24 unassigned, the maqaf `־` (U+05BE), and 5
-    punctuation marks including geresh `׳` (U+05F3) and gershayim `״` (U+05F4).
-
-    Dropping the range is therefore a **behaviour change on real business
-    names**, not a cleanup: "מאפיית ״שקד״" → "מאפיית-שקד", "צ׳יפס" → "ציפס",
-    "לחם־כוסמין" → "לחםכוסמין", and any name carrying ניקוד loses it. Those are
-    different slugs, so they are different public URLs.
-
-    **Why the earlier claim looked true:** it was measured on a single input,
-    "חוות" — letters only, the one case where both forms agree. A sample of one
-    settled a question about 81 characters. `tests/test_slugify_charclass_equivalence.py`
-    now pins a corpus that separates them (7 of 14 inputs diverge) so the next
-    reader gets a red test instead of a reassuring comment.
-
-    Whether keeping these characters in a public URL is *desirable* is a
-    separate, open question — MEH-2020 owns the charset ruling. Until it lands,
-    the measured behaviour above is the contract.
-
-    **Returns "" when nothing survives** — "!!!" → "". The empty string is not a
-    slug and must not be stored: `_ensure_unique_slug` passes an empty base
-    straight through, which is why the approval path coerces it with `or None`
-    (MEH-1817) rather than writing "" into a column whose NULL is load-bearing
-    for the `/producer/{uuid}` fallback.
-
-    Output is capped at 100 characters.
+    The charset rejection is a 422 carrying a code plus the offending characters,
+    not a hard-coded Hebrew sentence (MEH-1943). The reserved rejection keeps its
+    existing 400 and its existing Hebrew string: changing a live contract that
+    nothing in this ticket asked about is scope this change does not own.
     """
-    if not text:
-        return ""
-    # Keep ASCII letters/numbers/hyphens; replace whitespace with hyphens
-    s = text.strip().lower()
-    s = re.sub(r"\s+", "-", s)
-    # Strip characters that are not safe URL chars (keep hebrew letters)
-    s = re.sub(r"[^\w\u0590-\u05FF\-]", "", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s[:100]
+    if is_reserved(raw):
+        raise HTTPException(
+            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
+        )
+    bad = rejected_characters(raw)
+    if bad:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "slug_charset_not_allowed", "characters": bad},
+        )
 
 
 def _yes_no(value) -> bool:
@@ -151,7 +129,7 @@ def _ensure_unique_slug(
     candidate = base_slug
     counter = 2
     while True:
-        if candidate not in RESERVED_SLUGS:
+        if not is_reserved(candidate):
             q = db.query(Producer).filter(Producer.slug == candidate)
             if exclude_id:
                 q = q.filter(Producer.id != exclude_id)
@@ -523,10 +501,8 @@ def admin_create_producer(
     """Admin-created producers are auto-approved."""
     slug = data.slug or _slugify(data.name)
     # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
-    if data.slug and _slugify(data.slug) in RESERVED_SLUGS:
-        raise HTTPException(
-            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
-        )
+    if data.slug:
+        _guard_supplied_slug(data.slug)
     slug = _ensure_unique_slug(db, slug)
 
     # MEH-530: same conditional-required guard as the public endpoints —
@@ -764,11 +740,8 @@ def admin_update_producer(
 
     # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:
+        _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
-        if candidate in RESERVED_SLUGS:
-            raise HTTPException(
-                status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
-            )
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
 
     # Mirror price_range → starting_price_label for backward-compat display
@@ -1519,35 +1492,58 @@ _DATA_GOV_URL = (
 )
 
 
+# MEH-2241: this handler used to carry an inline copy of the parser in
+# `scripts/seed_cities.py` — same guessed column names, same silent outcome.
+# On Railway staging that script reported `Received 1272 records`, inserted
+# nothing and exited 0, because the resource publishes `שם_ישוב` (one yod)
+# while both parsers read `שם_יישוב` (two yods). PR #3288 fixed the script by
+# discovering the column from the response; this route now calls the same
+# function rather than holding a second copy of the bug. Two owners for one
+# parse is the drift `.claude/rules/workflow.md` Smell #1 names, and here it
+# was not hypothetical — fixing one would have left the other broken.
+#
+# The rationale lives in a comment, not the docstring: FastAPI publishes a
+# route's docstring as the endpoint `description` in `backend/openapi.json`,
+# which is a committed artifact that `frontend/lib/generated/` is derived
+# from. Internal history does not belong in the API contract, and putting it
+# there drags two generated files into every such diff.
 @router.post("/seed-cities", status_code=200)
 def seed_cities(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Idempotent: fetch Israeli localities from data.gov.il and upsert into cities table."""
+    # Imported here, not at module scope: `scripts.seed_cities` calls
+    # `logging.basicConfig` when imported (it is written to be run as a
+    # script), and the API process must not inherit that at boot merely
+    # because this route exists.
+    from scripts.seed_cities import LocalityParseError, parse_localities
+
     try:
         resp = httpx.get(_DATA_GOV_URL, timeout=30)
         resp.raise_for_status()
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"data.gov.il fetch failed: {exc}")
 
-    records = resp.json().get("result", {}).get("records", [])
+    try:
+        cities = parse_localities(resp.json())
+    except LocalityParseError as exc:
+        # The message names the keys the records DID carry — the one piece of
+        # evidence nobody could get from the sandbox. Surfacing it beats a 200
+        # that says "seeded 0" and explains nothing.
+        raise HTTPException(
+            status_code=502,
+            detail=f"הרשומות התקבלו אך לא נמצאה בהן עמודת שם יישוב: {exc}",
+        )
+
     inserted = 0
-    for rec in records:
-        name = (rec.get("שם_יישוב") or rec.get("SHEM_YISHUV") or "").strip()
-        if not name:
-            continue
-        try:
-            lat = float(rec.get("lat") or rec.get("Y") or 0) or None
-            lng = float(rec.get("lon") or rec.get("X") or 0) or None
-        except (TypeError, ValueError):
-            lat = lng = None
+    for city in cities:
         result = db.execute(
             text(
                 "INSERT INTO cities (name_he, lat, lng) VALUES (:name_he, :lat, :lng)"
                 " ON CONFLICT (name_he) DO NOTHING"
             ),
-            {"name_he": name, "lat": lat, "lng": lng},
+            city,
         )
         inserted += result.rowcount
     db.commit()

@@ -1,0 +1,20 @@
+MEH-1876 stacked-cache window — measured on live staging — 2026-08-30T15:59:44.374Z
+target: https://staging.mehamakor.online/producers (the PAGE — both layers; the API carries only the CDN half)
+under test: s-maxage=30 + stale-while-revalidate=30 (producers.py:96) stacked under
+            next revalidate 30 (producers/page.jsx:31) — the comment claims the sum is <= 90s
+
+PASS  H1:cdn-header-live — Cache-Control: public, s-maxage=30, stale-while-revalidate=30 (x-vercel-cache: MISS — asserted on a MISS; a HIT reports only "public")
+PASS  S1:owner-logged-in — token for cc-meh1876-fzwb1y@example.com
+      subject producer 02dd8155-e819-4d75-9e63-1160220e6e7c — "בדיקת מטמון fzwb1y"
+PASS  S2:subject-published — status -> approved via the admin PUT
+PASS  C1-control:subject-is-on-the-page — business name present after 19.082s (this is also the approve->visible window, incidentally)
+PASS  D1-pre:chip-absent-before-the-write — the headline is not on the page yet
+      PUT offer at 2026-08-30T16:00:06.356Z
+PASS  D1:offer-appears — 48.142s
+      PUT null at 2026-08-30T16:00:54.669Z
+PASS  D2:offer-disappears — 48.661s
+PASS  V:worst-direction-within-the-90s-the-comment-claims — worst = 48.661s (appear 48.142s · remove 48.661s)
+CLEANUP  subject -> inactive
+PASS  C4:subject-off-the-public-page — gone after 56.133s
+
+9 assertions, 0 failed.

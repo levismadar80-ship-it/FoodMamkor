@@ -122,6 +122,25 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
     ("low_carb", "is_low_carb"),
 ]
 
+# MEH-1508 chunk 3א — which exposed dietary axis also honours a business-level
+# 100% declaration (`producers.<col> == 'all'`, added by chunk 1).
+#
+# ONLY `vegan` is in this table, and every omission is deliberate:
+#   * `vegetarian` has a scope column too, but its filter is a two-column OR
+#     handled in its own branch below — same widening, different site.
+#   * `gluten_free` / `lactose_free` have `*_facility` columns, not `*_scope`.
+#     The card rules them a question about the PRODUCTION SITE rather than the
+#     catalog (§2, §6.3: cross-contamination is medical and is not answered by
+#     "everything I sell is X"), so 'dedicated' must NOT satisfy the catalog
+#     filter. Asserted in test_the_declaration_does_not_leak_into_the_facility_axes.
+#   * `no_added_sugar` / `low_carb` (MEH-1934) have no scope column at all.
+#
+# A dict rather than a third tuple-table so the loop reads one lookup, and so a
+# future axis is one row rather than a new branch.
+_SCOPE_COLUMN_FOR_AXIS: dict[str, str] = {
+    "vegan": "vegan_scope",
+}
+
 
 def _build_base_queries(
     db: Session,
@@ -161,10 +180,12 @@ def _build_base_queries(
     if geo is not None:
         lat, lng, radius_km = geo
         # MEH-1402: distance = the NEAREST of the producer's producer_locations
-        # rows (COALESCE fallback to Producer.lat/lng during the Expand
-        # overlap). It's a correlated scalar subquery — NOT a JOIN — so a
+        # rows. It's a correlated scalar subquery — NOT a JOIN — so a
         # 10-location producer stays ONE row and the DISTINCT count below is
         # one-per-business (the _build_base_queries double-count trap).
+        # MEH-1938 chunk 5a: the COALESCE fallback to Producer.lat/lng that
+        # used to back this during the Expand overlap is gone — location rows
+        # are now the only source (producer_queries.py, haversine_min_km).
         distance_expr = haversine_min_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
@@ -202,11 +223,11 @@ def _build_base_queries(
             )
             q = q.filter(pinnable)
             count_q = count_q.filter(pinnable)
-        # MEH-1402: the coalesced distance is NULL exactly when a producer has
-        # neither a usable location row NOR a Producer.lat/lng point, and
-        # `NULL <= radius` is false — so those drop out without an explicit
-        # coord-IS-NOT-NULL guard (which would wrongly exclude a producer that
-        # has a valid pickup location but no own Producer point).
+        # MEH-1402 / MEH-1938 chunk 5a: the distance is NULL exactly when a
+        # producer has no usable location row, and `NULL <= radius` is false —
+        # so those drop out without an explicit coord-IS-NOT-NULL guard. Before
+        # chunk 5a this also required the producer to have no own lat/lng; the
+        # rule is now the single one, because the rows are the single source.
         q = q.filter(distance_expr <= radius_km).order_by(distance_expr.asc())
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
@@ -411,7 +432,17 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
         conds.append(func.lower(DeliveryArea.city) == city.lower())
-    return Producer.delivery_areas.any(and_(*conds))
+    # MEH-2242: `offers_delivery` is conjoined here exactly as MEH-1848 did on
+    # _delivery_city_condition (:305). A day row is delivery SCOPE, not a
+    # delivery promise — a business that switched delivery off while its
+    # delivery_areas rows stayed behind must not surface under «משלוח ביום X».
+    # Measured before the fix: ?delivery_city=חיפה&delivery_days=שלישי → 3,
+    # of which 2 carried offers_delivery=false; the city predicate alone was
+    # already hiding them. `.is_(True)` for the same NULL reason as :302-304.
+    return and_(
+        Producer.offers_delivery.is_(True),
+        Producer.delivery_areas.any(and_(*conds)),
+    )
 
 
 def _kosher_condition(kosher: bool):
@@ -526,6 +557,13 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
             continue
         prod_col = getattr(Product, prod_attr)
         cond = Producer.products.any(prod_col.is_(True))
+        # MEH-1508 chunk 3א — the business-level declaration counts too, on the
+        # axes that HAVE one. See _SCOPE_COLUMN_FOR_AXIS below for why that is
+        # only `vegan`, and why the facility axes are excluded rather than
+        # forgotten.
+        scope_col = _SCOPE_COLUMN_FOR_AXIS.get(key)
+        if scope_col is not None:
+            cond = or_(cond, getattr(Producer, scope_col) == "all")
         q = q.filter(cond if val else ~cond)
         count_q = count_q.filter(cond if val else ~cond)
 
@@ -536,8 +574,18 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     # that table maps a single column — this is a two-column OR condition.
     vegetarian = filters.get("vegetarian")
     if vegetarian is not None:
-        veg_cond = Producer.products.any(
-            or_(Product.is_vegetarian.is_(True), Product.is_vegan.is_(True))
+        veg_cond = or_(
+            Producer.products.any(
+                or_(Product.is_vegetarian.is_(True), Product.is_vegan.is_(True))
+            ),
+            # MEH-1508 chunk 3א, same widening as the loop above. Note the
+            # asymmetry with the product-level rule one line up: a vegan
+            # PRODUCT implies vegetarian, but `vegan_scope='all'` is NOT read
+            # here. That is the card's spec, and extending it is a product call
+            # rather than a tidy-up — pinned by
+            # test_vegan_scope_all_does_not_currently_satisfy_the_vegetarian_filter
+            # so the asymmetry is a recorded decision, not an oversight.
+            Producer.vegetarian_scope == "all",
         )
         q = q.filter(veg_cond if vegetarian else ~veg_cond)
         count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)

@@ -220,7 +220,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "10 minutes. No commissions. The customer comes straight to you",
+        "subtitle": "About 3 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
           "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
@@ -234,7 +234,7 @@
           "item_story": "A short story about your business",
           "item_photos": "2–3 photos of your business or products",
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
-          "duration": "The whole process takes about 10 minutes",
+          "duration": "The whole process takes about 3 minutes",
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — our team reviews the details, reaches out for a short call, and the business usually goes live within a day or two.",
           "after_link": "How the acceptance process works",
@@ -268,8 +268,7 @@
             "title": "3. Category"
           },
           "story": {
-            "title": "4. Your story",
-            "photo_next_hint": "After approval we'll ask for one good photo of your business — that is what makes the page."
+            "title": "4. Your story"
           }
         },
         "step_captions": {
@@ -654,7 +653,7 @@
       "title": "Join as a business | Mehamakor",
       "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
       "og_title": "Your business. A page of its own. | Mehamakor",
-      "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
+      "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
     },
     "share": {
       "title": "Spread the word — Mehamakor",
@@ -717,7 +716,6 @@
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
       "verified_tooltip_cosmetics": "Cosmetics registration submitted and reviewed on {date}",
-      "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
       "aria_verified": "Verified business. {tooltip}",
@@ -733,6 +731,7 @@
       "loading_fresh": "Loading fresh businesses...",
       "not_found": "We couldn't find this business — yet",
       "breadcrumb_home": "Home",
+      "back_to_map": "Back to map",
       "google_rating": {
         "summary": "{name} has {count} reviews on Google Maps, averaging {rating}.",
         "cta": "View them ‹",
@@ -1193,7 +1192,9 @@
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
-      "show_all": "Show {count} more cities",
+      "show_all_cities": "{count, plural, one {Show 1 more city} other {Show {count} more cities}}",
+      "show_all_pickup": "{count, plural, one {Show 1 more pickup point} other {Show {count} more pickup points}}",
+      "show_all_areas": "{count, plural, one {Show 1 more delivery area} other {Show {count} more delivery areas}}",
       "show_less": "Show less",
       "checker": {
         "label": "Do you deliver to me?",
@@ -1418,7 +1419,8 @@
         "content": "Content",
         "queues": "Pending",
         "system": "System"
-      }
+      },
+      "desktop_only": "This screen is available on desktop"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -3411,7 +3413,7 @@
       "eyebrow": "How it works",
       "heading": "Four steps",
       "step1_title": "Sign up",
-      "step1_text": "A short form about your business — story, photos, and contact details. About 10 minutes.",
+      "step1_text": "A short form about your business — story, photos, and contact details. About 3 minutes.",
       "step2_title": "A personal call",
       "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
       "step3_title": "Your page goes live",
@@ -3542,6 +3544,13 @@
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
     "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "collection_notice": {
+      "chat": "What you write here is sent to Anthropic to draft the reply.",
+      "password_reset": "Your email is used only to send the reset link.",
+      "experience": "What you submit here is intended for publication on the site, after review.",
+      "event": "What you submit here is intended for publication on the site, after review.",
+      "category_request": "The request is sent to us for review and is not published on the site."
+    },
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -5009,7 +5018,9 @@
           "many": "You already have {count} locations in {city}.",
           "generic": "You already have a location in this town.",
           "action": "So customers can tell them apart, give this one a name — at least three letters."
-        }
+        },
+        "primary_must_be_branch": "The primary location must be a branch. If the business has no physical address, the primary location can be left empty.",
+        "one_primary_required": "Exactly one primary location is required"
       }
     },
     "security": {

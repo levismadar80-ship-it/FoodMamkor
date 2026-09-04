@@ -1,69 +1,51 @@
-# Session state — 2026-08-26, Batch 26/08 (MEH-2189 · MEH-1677)
+# Session state — 2026-09-02 morning, drain כ' (session `01Rqretx5os…`, continuation of יט')
 
-**Both code PRs merged. Two items remain open, and both are Sapir's.**
+**One line:** the brief arrived with a two-night-old STATE; four of its items were already done and were refuted by SHA instead of redone; three PRs landed; CitySearch was measured on the running form.
 
-## Landed
+**Rewritten after every merge. Final rewrite: after #3275 (`42aa161a`).**
 
-| PR | SHA | What | Squash verified? |
-|---|---|---|---|
-| #3115 | `1144a656` | MEH-2189 — 8 archetype×channel demo businesses + smoke spec | yes (1 parent, `<title> (#N)`) |
-| #3116 | `77ab7c78` | MEH-1677 — alembic `b3f7a1c46e92`, two columns | yes (1 parent) |
-| #3117 | `1388b965` | docs-only batch log | yes (1 parent) |
+---
 
-## OPEN — Sapir's, in priority order
+## Merged this drain — three, all verified single-parent + author on the landed commit
 
-### 1. Seed has never run on staging (blocks MEH-2189)
-```
-python -m scripts.seed_demo_producers --confirm      # Railway one-off
-```
-Until this runs, "8 live demo pages" is false. **MEH-2189 was reopened to Todo** —
-it auto-closed off #3117's branch slug (`feature/meh-2189-batch-docs`), i.e. a
-docs PR closed a code card. Reopen verified to have held.
-Card flag note: the ticket says `--refresh`; the script has no such flag. Real
-flags are `--reset` and `--confirm`.
+| PR | what | landed as |
+|---|---|---|
+| #3273 | spec 38, registration delivery axis. MEH-2107 → Done 5 s after, per `Closes` | `6fc1f387` |
+| #3258 | docs backfill from the parallel session (01BJjrYtMyb). Three stale HANDOFF lines fixed in place first (rule 31b) | `d913d9af` |
+| #3275 | spec 35 beacon-control message (`wa.me` → `WhatsApp`) + 16 seeded WebPs replacing #3115's pre-seed sheet, 689,950 B under the 2,097,152 cap | `42aa161a` |
 
-### 2. alembic downgrade never exercised (MEH-1677)
-`alembic downgrade base` / `upgrade head` sit in `permissions.deny` and were NOT
-run. The deny is evadable by path prefix (`.venv/bin/alembic …`); that gap was
-reported, never used (rule 32). Sapir approved with the gap disclosed.
-- **UPGRADE path IS proven** against a real Postgres container: CI's pytest job
-  runs `alembic upgrade head` + `Verify alembic schema (36 tables)` + `Alembic
-  drift check`, all green.
-- **ROLLBACK path is unproven.** Nothing has ever run `downgrade` on this revision.
+## Refuted by SHA — rule 28, not redone
 
-### 3. The DoD `SELECT` was not run (MEH-1677)
-`psql` is denied and the sandbox holds no staging DB credentials. Evidence
-gathered instead, and it is INDIRECT:
-```
-before deploy: /api/producers/by-slug/lehem-vezman -> 86 keys, coverage_cta_enabled ABSENT
-after  deploy: /api/producers/by-slug/lehem-vezman -> 87 keys, coverage_cta_enabled = true
-POST .../whatsapp-click {"city":"נתניה"} -> 200 · no body -> 200 · {"city":"???"} -> 200
-```
-`lehem-vezman` predates the column and reads `true`, so `server_default`
-backfilled existing rows. This proves the column exists and accepts writes; it
-does NOT prove what is stored in it.
+| brief item | already done | evidence |
+|---|---|---|
+| T4 MEH-2168 A′ | drain יט' | card comment 21:08Z 01/09 with trace; CI run 33609674707 reproduces exactly :80/:128/:193 |
+| T5 MEH-1754 | #3268 | `b288292b` — patch.md; code half NOT on staging (#2831 closed stale) |
+| T5 MEH-2229 | #3267 | `9173a967` |
+| T5 MEH-2237 | #3269 | `1bb0a1e4`, card Done |
+| T5 MEH-1896 + 1897 | #3271 | `be76ec60`; 1897 description corrected to 42 |
+| T5 MEH-2079 / 1892 / 1414 | parked | each on its card with a measurement |
 
-### 4. dnm-matcher-guard patch — unchanged, still Sapir's
-`docs/ci/meh-1523-dnm-label-gate.patch.md`. `.github/workflows/**` is CC-deny.
-The live gate still scans title/body TEXT, not the label — so the `do-not-merge`
-label carries **no mechanical enforcement** today. Worth knowing: during this
-batch the label held only because rule 30 was obeyed, not because anything
-blocked. It was removed on Sapir's explicit instruction, with the authorization
-recorded as a PR comment before the removal so the `unlabeled` event is attributed.
+## What a new session must know
 
-## Unexplained, reported rather than resolved
+1. **STATE on MEH-2227 is the truth layer** — rewritten from live measurement (`list_pull_requests`, `list_issues`, `git log`) at STEP 0 and after every merge. A brief that contradicts it is stale.
+2. **MEH-2168 chunk 2 needs a go** — tests-only in spec 33: wait for a real row, approved is `bg-primary`. The A′ block in the card description now says so; the old heading is kept, dated.
+3. **CitySearch accepts free text on the running form** (empty → blocked with error, list-selected → advances, free text with zero suggestions and no selection → advances, no error). No enforcement card exists; MEH-213 does not resolve via `get_issue`. Proposal on MEH-2227 at 09:13Z, not opened.
+4. **A `Deploy gate` failure that is a `cancelled` run superseded on the same PR is rule 21** — check for a newer run before treating it as red.
+5. **The contact sheet under `qa-artifacts/meh-2189/` is tracked.** A stray converter run left 370,094 B of partial WebPs that read as "under cap" without the converter having run; the real run's output plus an unchanged PNG total (15,165,320 B) is the control.
+6. **Live-form probes need no local stack:** `createRequire` against `frontend/package.json` for `@playwright/test`, chrome 1194 + `--ssl-version-max=tls1.2` + bypass headers; DETAILS→CATEGORY is client-side, so no business is created.
 
-- **`/producers/by-slug/*` returned 200 to my probe and 500 to the E2E runner**,
-  same route, same window. My earlier "Railway staging 500s on every by-slug"
-  diagnosis rests on the runner's log; my own probe contradicts it. Cause unknown.
-- **E2E red repo-wide on 26/08**, including on `staging` itself. 25 failures on
-  #3116's head, all in register/login/admin/map specs, none touching that diff.
-  `E2E gate` is not a required check, so it blocked nothing — but **no PR in this
-  batch has a VRT signal**, and nobody should claim one.
-- **`enable_pr_auto_merge`'s `commitBody` did not land.** GitHub concatenated the
-  branch commits instead, so #3116's squash carries 10× `Refs` and zero `Closes`,
-  and MEH-1677 did not auto-close. Do not rely on a closing keyword in an
-  auto-merge commit.
+## For Sapir, over coffee — priority order
+
+1. **MEH-2168 chunk 2 go** (spec 33, tests-only).
+2. **MEH-2189** — only the mobile pass and DoD ticking remain.
+3. **CitySearch / MEH-213** — open the proposed card or not.
+4. **MEH-2237 §5** — two one-liners.
+5. **MEH-1754** — apply the patch.md.
+6. **MEH-2079** — row-count SQL on staging.
+7. **MEH-2056** — unarchive (merged `4f7ecf8c`).
+8. Standing: MEH-1938 ch5 · MEH-2219 ch2 · MEH-2080 · MEH-1915 s4 · the five notice lines · `gov.il`.
 
 ## Guards
-16 ran, 1 warned (`dnm-matcher-guard`) — the same pre-existing warn all session.
+
+STEP 0: `--self-test` 17/17 · `shallow=false` · `0 OPEN · 11 parked · 1 satisfied · 5 skipped · 2 unstarted · 0 void`.
+Zero `--admin`, zero auto-merge, zero `add -A`, zero force-push. `scripts/checks/run-all.sh`: 18 guards, 0 fail, 3 pre-existing warnings.

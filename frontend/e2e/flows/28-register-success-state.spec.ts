@@ -23,7 +23,16 @@ import { test, expect } from "./_cloudinary-stub";
  * Hebrew copy can change without silently disarming the spec.
  */
 
-const SHOT_DIR = "qa-artifacts/MEH-1814";
+// MEH-2239: screenshots go under Playwright's gitignored output tree
+// (`frontend/.gitignore` → `test-results/`), NOT under the git-managed
+// `qa-artifacts/`. Every local run used to leave a raw 557KB PNG untracked
+// next to the compressed .webp evidence that already sits in
+// qa-artifacts/MEH-1814/ — and frontend/qa-artifacts/ is exactly the
+// half the size-cap gate cannot see (MEH-2184), so a stray commit there
+// would have passed green. The evidence workflow is unchanged: copy the
+// PNG out and compress it (scripts/compress-qa-screenshots.mjs) when a PR
+// needs it.
+const SHOT_DIR = "test-results/qa-artifacts/MEH-1814";
 
 // 375px — the narrowest phone we design for; the ticket pins self-QA to it.
 test.use({ viewport: { width: 375, height: 812 } });
@@ -60,8 +69,10 @@ async function stubSession(page, roleRef: { current: string }) {
       // id 1 mirrors flows/18: a license-required category, so the MEH-952
       // inline license gate is exercised rather than bypassed.
       body: JSON.stringify([
-        { id: 1, name: "חלב וגבינות" },
-        { id: 2, name: "לחמים ואפייה" },
+        // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
+        // Hebrew name — a slug-less stub renders no chip at all.
+        { id: 1, name: "חלב וגבינות", slug: "dairy" },
+        { id: 2, name: "לחמים ואפייה", slug: "bread" },
       ]),
     }),
   );
@@ -260,7 +271,7 @@ for (const c of F_CASES) {
         `the document itself must be back at the top, not merely the heading in frame (lenis mounted: ${before.lenis})`,
       ).toBe(0);
 
-      await page.screenshot({ path: `qa-artifacts/MEH-2138f/success-${c.w}-${c.motion}.png` });
+      await page.screenshot({ path: `test-results/qa-artifacts/MEH-2138f/success-${c.w}-${c.motion}.png` });
     });
   });
 }

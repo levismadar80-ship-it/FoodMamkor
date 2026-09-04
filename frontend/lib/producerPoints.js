@@ -11,7 +11,11 @@
  *           frontend/app/[locale]/map/state/useMapFilters.js (viewport filter).
  * History:  MEH-1670 (extracted from the MapComponent marker loop, where it was
  *           the only implementation; MEH-1412 wrote it, MEH-1402 defined the
- *           fallback semantics it mirrors).
+ *           fallback semantics it mirrored). MEH-1938 chunk 5a (Contract): the
+ *           Producer.lat/lng fallback is GONE — location rows are the only
+ *           source of a point, matching the backend's haversine_min_km, whose
+ *           COALESCE went in the same chunk. `primaryPoint()` added for the
+ *           business page.
  */
 
 // A row is map-able only when both coordinates are real numbers. `typeof` alone
@@ -20,27 +24,30 @@
 const isUsableCoord = (value) => typeof value === "number" && !isNaN(value);
 
 // MEH-1412: pickup + market_stand are the SECONDARY layer, hidden by the /map
-// toggle. `branch` (and the synthesised Producer.lat/lng fallback) are primary.
+// toggle. `branch` is primary.
 const isSecondary = (kind) => kind === "pickup" || kind === "market_stand";
 
 /**
  * The points a producer contributes to the map.
  *
- * Three rules, all inherited verbatim from the marker loop this replaced:
+ * Two rules, inherited from the marker loop this replaced:
  *
  * 1. A `locations[]` row counts when lat AND lng are both usable numbers.
  * 2. A secondary row (pickup / market_stand) is dropped when `includeSecondary`
  *    is false — the layer toggle.
- * 3. The `Producer.lat/lng` fallback fires ONLY when the producer had no usable
- *    location row **at all**. Crucially that is judged BEFORE rule 2, so a
- *    business whose only points are hidden pickups yields `[]` rather than
- *    reappearing at its own coordinates. This mirrors the backend's
- *    `haversine_min_km` COALESCE (MEH-1402).
  *
- * Each point carries `location`: the ORIGINAL row it came from (or, for the
- * fallback, the synthesised branch row the marker loop used to build inline).
- * The marker layer needs the whole row — `createLocationIcon` reads `precision`
- * for the approximate halo and the selected card reads `label` — so returning a
+ * There is NO fallback to `Producer.lat/lng`. Until MEH-1938 chunk 5a a third
+ * rule synthesised a branch point from those columns when the producer had no
+ * usable row at all — the Expand overlap, mirroring the backend's
+ * `haversine_min_km` COALESCE (MEH-1402). Both went in the same chunk: every
+ * write path creates the row (registration MEH-1939, admin MEH-2059, import
+ * MEH-2140, seeds MEH-2056) and revision 7c1e2a9f4b3d backfilled the rest, so
+ * a producer without a usable row has NO point, on the map and in "near me"
+ * alike. DO NOT reintroduce it here — the columns are dropped in chunk 5b.
+ *
+ * Each point carries `location`: the ORIGINAL row it came from. The marker
+ * layer needs the whole row — `createLocationIcon` reads `precision` for the
+ * approximate halo and the selected card reads `label` — so returning a
  * reduced {lat,lng,kind} would have quietly changed marker rendering. Bounds
  * consumers just use lat/lng and can ignore it.
  *
@@ -51,31 +58,56 @@ const isSecondary = (kind) => kind === "pickup" || kind === "market_stand";
 export function producerPoints(producer, { includeSecondary = true } = {}) {
   const locations = Array.isArray(producer?.locations) ? producer.locations : [];
 
-  // Rule 1 + 3: "had a usable row" is decided across ALL rows, toggle-blind.
-  const usable = locations.filter((loc) => isUsableCoord(loc?.lat) && isUsableCoord(loc?.lng));
+  // Rule 1: a row is a point only with both coordinates usable.
+  // Rule 2: the toggle filters what we RETURN. A business whose only usable
+  // rows are hidden pickups yields [] — it stays off the map while the layer
+  // is hidden, and hiddenWhenSecondaryOff() is how the UI says so.
+  return locations
+    .filter((loc) => isUsableCoord(loc?.lat) && isUsableCoord(loc?.lng))
+    .filter((loc) => includeSecondary || !isSecondary(loc?.kind))
+    .map((loc) => ({ lat: loc.lat, lng: loc.lng, kind: loc.kind ?? null, location: loc }));
+}
 
-  if (usable.length > 0) {
-    // Rule 2 applies only to what we RETURN, never to the fallback decision.
-    return usable
-      .filter((loc) => includeSecondary || !isSecondary(loc?.kind))
-      .map((loc) => ({ lat: loc.lat, lng: loc.lng, kind: loc.kind ?? null, location: loc }));
-  }
-
-  // Rule 3: no usable row anywhere → the producer's own mirrored point, if any.
-  // The row shape is byte-for-byte what MapComponent's inline fallback built.
-  if (isUsableCoord(producer?.lat) && isUsableCoord(producer?.lng)) {
-    const synthesized = {
-      kind: "branch",
-      is_primary: true,
-      lat: producer.lat,
-      lng: producer.lng,
-      precision: "exact",
-      label: null,
-    };
-    return [{ lat: producer.lat, lng: producer.lng, kind: "branch", location: synthesized }];
-  }
-
-  return [];
+/**
+ * MEH-1938 chunk 5a: THE point that stands for "where the business is" — the
+ * row flagged `is_primary`, with usable coordinates. `null` otherwise.
+ *
+ * STRICT, by ruling (Sapir, 02/09): no "else the first branch row". The
+ * backend derives `ProducerListOut.lat/lng` from the `is_primary` row or
+ * None (schemas.py, `_derive_lat_lng_from_primary_location`), and this is the
+ * same rule in JavaScript, so one business cannot render on the map here and
+ * carry null coordinates in the API.
+ *
+ * Kind-agnostic: a pickup flagged primary is wrong data that should show up,
+ * not be silently skipped. That stays true — and note it is about the READ
+ * side only. Which kinds may BE promoted is a separate, stricter rule on the
+ * write path (branch only); this function reports whatever is flagged.
+ *
+ * "No primary at all" is TWO cases, not one (refined by Sapir, 02/09 — the
+ * earlier wording collapsed them):
+ *
+ *   - `has_physical_location !== false` + rows + no primary → a DATA DEFECT
+ *     (the single-primary invariant is application-level; there is no DB
+ *     unique on it). Returns null so it stays visible as one, rather than
+ *     being papered over by a guess.
+ *   - `has_physical_location === false` → null is CORRECT, not a defect. That
+ *     flag is the owner's explicit MEH-213 declaration that the business has
+ *     no physical presence; pinning her pickup point would tell a visitor
+ *     "the business is here", which is false. No pin, no navigation target —
+ *     pickup points belong to the secondary layer.
+ *
+ * `submission_gate._has_location` (submission_gate.py:97) has kept exactly
+ * this split for the same reason throughout the epic.
+ *
+ * The business page (ProducerSections.jsx) centres its MiniMap on this and
+ * gates the location section on it; JSON-LD geo (seo.js) reads it too. Before
+ * chunk 5a those read `Producer.lat/lng` directly.
+ *
+ * @param {object|null} producer  a ProducerListOut-shaped object
+ * @returns {{lat: number, lng: number, kind: string|null, location: object}|null}
+ */
+export function primaryPoint(producer) {
+  return producerPoints(producer).find((pt) => pt.location?.is_primary === true) ?? null;
 }
 
 /**
@@ -83,14 +115,14 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
  * (pickup / market_stand) layer is switched off?
  *
  * True exactly when it has points today and none of them survives rule 2 —
- * i.e. every usable row it owns is a pickup or a market stand. Rule 3 is what
- * makes such a business vanish outright rather than falling back to its own
- * coordinates, and that is deliberate (it mirrors the backend COALESCE), so
- * the honest fix is to TELL the user the layer is hiding businesses rather
- * than to change the rule.
+ * i.e. every usable row it owns is a pickup or a market stand. Such a business
+ * vanishes outright rather than reappearing at some other coordinate (there is
+ * no fallback to fall to — MEH-1938 chunk 5a), and that is deliberate, so the
+ * honest fix is to TELL the user the layer is hiding businesses rather than to
+ * change the rule.
  *
  * Composes `producerPoints` twice and reads its results; it does not
- * reimplement or alter any of the three rules. MEH-1670 semantics unchanged.
+ * reimplement or alter either rule. MEH-1670 semantics unchanged.
  */
 export function hiddenWhenSecondaryOff(producer) {
   if (producerPoints(producer).length === 0) return false;

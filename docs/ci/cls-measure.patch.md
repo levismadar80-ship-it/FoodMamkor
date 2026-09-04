@@ -1,3 +1,6 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `.github/workflows/cls-measure.yml` exists.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # 🔧 Staged patch — `workflow_dispatch` CLS measurement job (MEH-1853)
 
 > ## ✅ APPLIED — 2026-08-05. This document is now a record, not a request.

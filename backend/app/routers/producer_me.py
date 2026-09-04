@@ -306,8 +306,36 @@ def _pending_and_approvable(db, producer) -> bool:
 # Every member is verified present in _PRODUCER_WRITABLE_FIELDS below — a name
 # that drifts out of that set would make this silently un-pingable, which is
 # what `test_sensitive_fields_are_all_writable` exists to catch.
+#
+# MEH-1938 chunk 5a (ruling A, Sapir 02/09): `city` was REMOVED from this set
+# together with its removal from _PRODUCER_WRITABLE_FIELDS below. Keeping it
+# here would have kept a second writer on `Producer.city` alive solely to
+# protect a ping no UI can reach — since B2 (MEH-2141) the owner edits her
+# city through the locations CRUD, which pings nobody. That gap is real and
+# pre-dates this change; it is MEH-2073 chunk 2's to close by moving the ping
+# into `_sync_producer_city_from_primary`, not this handler's to paper over.
 SENSITIVE_FIELDS = frozenset(
-    {"city", "phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+)
+
+# MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
+# ONE voice. Both the demote arm and the delete arm of the locations CRUD are
+# the same rule seen from two sides, so they share this exact string; a second
+# wording (or a second status code) would read to a client as a second rule.
+# Hebrew in `detail=` is required — backend/app/routers/CLAUDE.md.
+ONE_PRIMARY_REQUIRED = "חובה מיקום ראשי אחד"
+
+# Promotion is branch-only. `pickup` and `market_stand` are the secondary
+# layer (MEH-1412) and cannot answer "where is the business".
+#
+# The second sentence is load-bearing and was added on Sapir's copy ruling
+# (rule 22): the prohibition alone leaves a delivery-only owner stuck, since
+# she flags her only pickup point and is told no with no way forward. It names
+# the legitimate state MEH-213 already recognises instead. Mirrored for the UI
+# as settings.locations.errors.primary_must_be_branch in he.json + en.json.
+PRIMARY_MUST_BE_BRANCH = (
+    "המיקום הראשי חייב להיות סניף. "
+    "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
 )
 
 
@@ -330,18 +358,33 @@ def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None
     check on the same object the diff is computed from.
 
     Compares values, not "was this key in the payload": a save that submits
-    `city` unchanged (which the dashboard form does on every save, since it
+    `phone` unchanged (which the dashboard form does on every save, since it
     posts the whole card) must not ping. That is the difference between a
     signal and noise, and it is what the no-op test pins down.
     """
-    if producer.status != "approved":
-        return
-    changed = sorted(
-        field
-        for field in SENSITIVE_FIELDS
-        if before.get(field) != getattr(producer, field, None)
+    _fire_sensitive_edit(
+        background_tasks,
+        producer,
+        sorted(
+            field
+            for field in SENSITIVE_FIELDS
+            if before.get(field) != getattr(producer, field, None)
+        ),
     )
-    if not changed:
+
+
+def _fire_sensitive_edit(background_tasks, producer, changed: list[str]) -> None:
+    """MEH-2073 chunk 2: the gate + dispatch shared by BOTH call sites — the
+    owner PUT (chunk 1, above) and the locations CRUD (chunk 2, below).
+
+    Extracted rather than duplicated because the two decisions that determine
+    whether the admin hears anything at all are the same on both paths: the
+    business is ALREADY approved, and something actually changed. Only the way
+    the change list is computed differs — a column diff on the PUT, a city
+    write-through or a lost primary row on the locations CRUD — so that half
+    stays with each caller and this half cannot drift between them.
+    """
+    if producer.status != "approved" or not changed:
         return
     background_tasks.add_task(_sensitive_edit_task, producer.name, changed)
 
@@ -527,9 +570,28 @@ def update_my_producer(
         "contact_name",
         "description",
         "short_description",
-        "city",
-        "lat",
-        "lng",
+        # MEH-1938 chunk 5a: `city`, `lat` and `lng` were REMOVED from this
+        # set. Same disposition and the same standing rule as the blocks below
+        # — the columns stay, `admin.py` / `producer_import.py` / the seeds are
+        # untouched, and only the owner PUT path is closed. Do not re-add any
+        # of them without shipping its editor in the same PR:
+        #   lat / lng → chunk 4 (MEH-2058) deleted the dashboard card that
+        #                sent them, so this was an API path with no owner UI
+        #                behind it. Worse than the MEH-1856 class: it wrote the
+        #                columns and NOT the `producer_locations` row, and the
+        #                Contract phase (chunk 5a) removed every read of the
+        #                columns as a fallback — so a coordinate written here
+        #                would have been invisible to the map, to "near me"
+        #                and to the submit gate. The owner's editor is
+        #                LocationsEditor.jsx (PUT /producers/me/locations/*).
+        #   city      → closed by ruling A (Sapir, 02/09). It was held open
+        #                one sub-step longer than lat/lng because it sat in
+        #                SENSITIVE_FIELDS (MEH-2073) and the admin ping fired
+        #                only from here; both went together, because since B2
+        #                (MEH-2141) `Producer.city` follows the primary
+        #                location row and an owner PUT of `city` was a second
+        #                writer racing that write-through. The ping's new home
+        #                is MEH-2073 chunk 2 (`_sync_producer_city_from_primary`).
         "phone",
         "instagram",
         "website",
@@ -775,7 +837,7 @@ def update_my_producer(
     return producer
 
 
-# LEGACY(2026-09-01, MEH-1854)
+# LEGACY(2026-10-01, MEH-1854)
 # MEH-291 — dual-write helpers used during the 7-day overlap.
 # Phase 4 (separate PR) drops the legacy is_available_today + availability_status
 # columns and removes these helpers along with the legacy endpoints below.
@@ -2120,6 +2182,79 @@ def _sync_producer_city_from_primary(db: Session, producer_id: UUID) -> None:
     producer.city = primary.city.strip()
 
 
+def _has_primary_location(db: Session, producer_id: UUID) -> bool:
+    return (
+        db.query(ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .first()
+        is not None
+    )
+
+
+def _snapshot_location_signal(db: Session, producer_id: UUID) -> dict:
+    """MEH-2073 chunk 2 — read what the admin ping compares against, BEFORE the
+    handler mutates anything.
+
+    Same idiom as `_snapshot_sensitive` on the owner PUT: plain values, not ORM
+    references, so the comparison survives the `db.commit()` that expires every
+    instance in the session.
+
+    Two entries, because the locations CRUD carries two admin-visible events
+    that the PUT path never could:
+
+    - `city` — since MEH-2141 (batch B2) `Producer.city` follows the primary
+      location row, so the owner's real city editor is this CRUD and not the
+      PUT. `city` left SENSITIVE_FIELDS with its PUT write path under MEH-1938
+      chunk 5a ruling A; this is where the ping it used to fire now lives.
+    - `has_primary` — deleting the LAST location is allowed and leaves the
+      business approved with no primary row: no pin on the map and nothing to
+      submit. Sapir's ruling (02/09 evening) makes that visible rather than
+      blocked, which is exactly this card's notification-only posture.
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return {}
+    return {
+        "city": producer.city,
+        "has_primary": _has_primary_location(db, producer_id),
+    }
+
+
+def _maybe_fire_location_signal(
+    background_tasks, db: Session, producer_id: UUID, before: dict
+) -> None:
+    """MEH-2073 chunk 2: one ping per request, AFTER the commit, listing the
+    location-side changes that actually happened.
+
+    Compares the persisted city rather than "did this request carry a city":
+    LocationsEditor posts the whole row on every save, so a resubmitted
+    identical city must not ping. Same distinction between signal and noise the
+    chunk-1 no-op case pins down.
+
+    `has_primary` is only ever reported in the true -> false direction. Gaining
+    a primary is the normal course of registration and of adding a first
+    location, and says nothing an admin needs to act on.
+
+    Fail-open and notification-only, unchanged from chunk 1: the task is
+    `_sensitive_edit_task`, which swallows and logs, so nothing here can turn
+    a saved location into an error the owner cannot act on.
+    """
+    if not before:
+        return
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        return
+    changed: list[str] = []
+    if before.get("city") != producer.city:
+        changed.append("city")
+    if before.get("has_primary") and not _has_primary_location(db, producer_id):
+        changed.append("primary_location_removed")
+    _fire_sensitive_edit(background_tasks, producer, changed)
+
+
 @router.get("/locations", response_model=list[ProducerLocationOwnerOut])
 def list_my_locations(
     user: User = Depends(require_producer),
@@ -2141,9 +2276,14 @@ def list_my_locations(
 def create_my_location(
     request: Request,
     data: ProducerLocationCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2073 chunk 2: snapshot before any mutation — adding a location that
+    # becomes primary re-derives Producer.city, which is an identity change the
+    # admin hears about when the business is already approved.
+    signal_before = _snapshot_location_signal(db, user.producer_id)
     _reject_same_city_without_label(db, user.producer_id, data.city, data.label)
     existing_count = (
         db.query(ProducerLocation)
@@ -2151,9 +2291,30 @@ def create_my_location(
         .count()
     )
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
-    # Single-primary: the first location is always primary; an explicit
-    # is_primary=true on a later one clears the existing primary.
-    if existing_count == 0:
+
+    # MEH-1938 follow-up (Sapir, 02/09) — branch-only primaries are enforced
+    # HERE too, not only on the update path. A rule that the create path can
+    # mint around is text in the code with a hole beside it, and this endpoint
+    # is where the pickup-primary on staging actually came from: the seed was
+    # not an outlier, it exercised behaviour the API had all along.
+    #
+    # The two cases are deliberately different, and must not be collapsed:
+    #
+    #   1. An EXPLICIT is_primary=true on a non-branch is refused. The schema
+    #      defaults it to False (schemas.py:1202), so True here can only have
+    #      come from the body — she asked for something the model forbids and
+    #      is told so.
+    #   2. A first location that happens to be a non-branch is CREATED, just
+    #      not force-primary. Silent and correct: this is the delivery-only
+    #      owner adding her only pickup point, and per MEH-213 she legitimately
+    #      has no pin at all. Refusing her would block a valid business shape.
+    if loc.is_primary and loc.kind != "branch":
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+
+    # Single-primary: the first BRANCH is primary; an explicit is_primary=true
+    # on a later one clears the existing primary. A producer whose only rows
+    # are pickups / market stands therefore has no primary — see case 2 above.
+    if existing_count == 0 and loc.kind == "branch":
         loc.is_primary = True
     db.add(loc)
     db.flush()  # assign loc.id before clearing siblings
@@ -2167,18 +2328,25 @@ def create_my_location(
         _sync_producer_city_from_primary(db, user.producer_id)
     db.commit()
     db.refresh(loc)
+    _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)
     return loc
 
 
 @router.put("/locations/{location_id}", response_model=ProducerLocationOwnerOut)
 @limiter.limit("60/hour")
-def update_my_location(
+def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2073 chunk 2 added the notify hop
+    # REUSES: backend/app/routers/producer_recipes.py:231 — same handler
+    # shape, same waiver, same reason (a DI signature is not complexity).
     request: Request,
     location_id: UUID,
     data: ProducerLocationUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2073 chunk 2 — see create_my_location above. Both the promote path
+    # and a city edit on the row that is already primary move Producer.city.
+    signal_before = _snapshot_location_signal(db, user.producer_id)
     loc = _get_owned_location(db, user.producer_id, location_id)
     patch = data.model_dump(exclude_unset=True)
     # Same-city check ONLY when this update actually touches city or label —
@@ -2197,12 +2365,23 @@ def update_my_location(
         setattr(loc, field, value)
 
     if want_primary is True:
+        # MEH-1938 follow-up (Sapir, 02/09): promotion is BRANCH-ONLY, and this
+        # is a NEW constraint rather than a description of what was here. A
+        # primary answers "where is the business" — the navigation target and
+        # the pin. `market_stand` is excluded along with `pickup` because the
+        # repo already classifies both as the SECONDARY layer, hidden by the
+        # /map toggle, in four identical call sites (MEH-1412:
+        # producerPoints.js:28, MiniMap.jsx:70, MapComponent.jsx:375,
+        # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
+        # layer toggle is a third answer to a question that must have one.
+        if loc.kind != "branch":
+            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
         _clear_other_primaries(db, user.producer_id, loc.id)
         loc.is_primary = True
     elif want_primary is False and loc.is_primary:
         # Can't directly demote the sole primary (that would leave zero) — the
         # owner promotes another location instead (which clears this one).
-        raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
+        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
 
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
@@ -2218,37 +2397,61 @@ def update_my_location(
 
     db.commit()
     db.refresh(loc)
+    _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)
     return loc
 
 
 @router.delete("/locations/{location_id}", status_code=204)
 def delete_my_location(
     location_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2073 chunk 2: deleting the last remaining row is ALLOWED and leaves
+    # the business approved with no primary location — no pin on the map, and
+    # nothing to submit. Snapshot here so the post-commit check can see the
+    # true -> false edge on `has_primary` (Sapir's ruling, 02/09 evening).
+    signal_before = _snapshot_location_signal(db, user.producer_id)
     loc = _get_owned_location(db, user.producer_id, location_id)
-    was_primary = loc.is_primary
-    db.delete(loc)
-    db.flush()
-    # Delete-primary: promote the oldest survivor so the producer keeps exactly
-    # one primary while any location remains (map/geo needs a primary anchor).
-    if was_primary:
-        replacement = (
-            db.query(ProducerLocation)
-            .filter(ProducerLocation.producer_id == user.producer_id)
-            .order_by(ProducerLocation.created_at.asc())
+
+    # MEH-1938 follow-up (Sapir, 02/09): the system does not guess which
+    # location becomes primary — the OWNER chooses. This used to promote the
+    # oldest surviving row automatically, with no kind filter, so deleting a
+    # branch could silently make a pickup point the business's navigation
+    # target. Industry precedent for refusing instead: Shopify will not let you
+    # deactivate the default location (change the default first), and Google
+    # Business does the same for the primary address.
+    #
+    # 422 and not 409, deliberately: this is the SAME invariant as the demote
+    # arm above, seen from the other side, so it answers with the same status
+    # and the same message key. Two codes for one violation would itself be a
+    # third answer.
+    if loc.is_primary:
+        others_remain = (
+            db.query(ProducerLocation.id)
+            .filter(
+                ProducerLocation.producer_id == user.producer_id,
+                ProducerLocation.id != loc.id,
+            )
             .first()
+            is not None
         )
-        if replacement is not None:
-            replacement.is_primary = True
-            # MEH-2141: a new row is primary, so the city follows it.
-            #
-            # The `replacement is not None` guard is load-bearing here and not
-            # just a null check: deleting the LAST location leaves no primary,
-            # and the column must then KEEP its last value rather than go NULL.
-            # The helper would decline anyway (it returns early on no primary),
-            # so this is belt and braces on the invariant the 14 readers depend
-            # on — stated twice on purpose, because a NULL city is silent.
-            _sync_producer_city_from_primary(db, user.producer_id)
+        if others_remain:
+            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+
+    # Deleting the LAST remaining location is allowed and leaves no primary.
+    # The business stays approved but is unpinned and cannot submit — STRICT
+    # makes that visible rather than papering over it. `Producer.city` KEEPS
+    # its last value rather than going NULL: the 17 readers depend on it, and
+    # _sync_producer_city_from_primary declines on no-primary anyway, so it is
+    # deliberately not called here.
+    #
+    # The admin ping for this event IS built — MEH-2073 chunk 2 landed on
+    # staging while this branch was open, and its snapshot/fire pair now
+    # brackets this handler. Note what the refusal above means for it: a
+    # rejected delete promotes nothing and moves no city, so it must ping
+    # nothing either. That is asserted, not assumed.
+    db.delete(loc)
     db.commit()
+    _maybe_fire_location_signal(background_tasks, db, user.producer_id, signal_before)

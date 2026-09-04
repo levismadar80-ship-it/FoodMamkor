@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { clamp } from "@/lib/panel-position";
 
 /**
  * Module:   Popover
@@ -48,9 +49,9 @@ import { createPortal } from "react-dom";
 const OVERLAY_GAP = 8;
 const OVERLAY_PAD = 8;
 
-// `max` is floored at `min` so a panel larger than the viewport degrades to
-// "pinned at the near edge" instead of inverting the clamp.
-const clamp = (min, value, max) => Math.min(Math.max(value, min), Math.max(min, max));
+// MEH-2230: `clamp` now lives in lib/panel-position.js so AdminRowMenu reuses
+// this exact geometry instead of growing a second copy (Smell #1). Behaviour is
+// byte-identical — the definition moved, it did not change.
 
 // ProducerCard IS server-rendered on /producers (page.jsx SSR-seeds page 1), so
 // this component renders on the server — where useLayoutEffect logs a React

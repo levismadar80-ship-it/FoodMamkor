@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Star, CaretRight, Truck, Package } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { MAP_REFERRER } from "@/lib/map-view-state";
 import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
@@ -118,7 +119,10 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // MEH-1211: fall back to the category-glyph placeholder when a present-but-dead
   // image URL fails to load (avoids the browser broken-glyph + alt overflow).
   const [imgError, setImgError] = useState(false);
-  const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+  // MEH-1414: every map link carries `?from=map`. The producer page keys its
+  // "חזרה למפה" link on it, and useProducerData.js already reads `?from=` as
+  // the analytics referrer (ProducerCard.jsx does the same via `referrer`).
+  const baseHref = `${p.slug ? `/${p.slug}` : `/producer/${p.id}`}?from=${MAP_REFERRER}`;
   const category = p.categories?.[0];
   // MEH-798/MEH-1243: category color + Phosphor glyph drive the meta line + the
   // pin-echo selected state + the no-photo placeholder.
@@ -138,7 +142,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // inside the <bdi dir="ltr"> below. e.g. "1.2 ק"מ". (MEH-1307 dropped the
   // "ממך" tail everywhere, so no per-call suffix flag is needed anymore.)
   // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
-  // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx).
+  // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx). No
+  // fallback to the columns since chunk 5a — no usable row, no distance.
   const points = producerPoints(p);
   const distanceLabel =
     userLoc && points.length > 0

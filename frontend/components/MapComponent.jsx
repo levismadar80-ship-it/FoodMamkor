@@ -16,6 +16,7 @@ import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { producerPoints } from "@/lib/producerPoints";
+import { readMapViewState, writeMapViewState } from "@/lib/map-view-state";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -365,8 +366,8 @@ function createSingleBusinessClusterIcon(producer, markerCount) {
 }
 
 // MEH-1412: pick the marker style for a single producer_location row.
-// branch (+ the empty-locations fallback synthesised in the marker loop) →
-// the primary category pin; pickup / market_stand → the secondary outline.
+// branch → the primary category pin; pickup / market_stand → the secondary
+// outline. (MEH-1938 chunk 5a: there is no synthesised fallback row any more.)
 // precision flows through to both so an approximate point anchors softly.
 function createLocationIcon(producer, location, state = {}) {
   const kind = location?.kind;
@@ -608,21 +609,35 @@ export default function MapComponent({
   useEffect(() => {
     if (!containerRef.current || mapInstanceRef.current) return;
 
+    // Default view — MEH-932: fixed center on the Israel producer band
+    // [32.4, 34.95] zoom 8, not Jerusalem [31.7683, 35.2137]. The Jerusalem
+    // center pulled half the Mediterranean + Arabic-labelled neighbours into
+    // frame on mobile; this recenters north-west onto the coastal/central
+    // producer cluster. FIXED center/zoom only — the auto-fitBounds was
+    // deliberately removed (see the producers effect below), so this setView
+    // is the single source of the initial camera. Zoom 8 keeps the whole
+    // producer band (incl. north/Golan) in-frame; tighter zoom 9 is an option
+    // pending mobile preview QA (MEH-932 PR notes).
+    //
+    // MEH-1414: a camera the visitor left the map at (saved on her own
+    // moveend below, sessionStorage, 30-min TTL) takes precedence, so
+    // back-navigation from a producer page lands on the same spot instead of
+    // the default (NN/g anti-pogo-sticking). Read INSIDE this effect — never
+    // in render or a useState initializer (MEH-517 hydration lesson). With
+    // nothing saved, or a stale entry, this is byte-for-byte the default
+    // above. The restore is the very first setView, before the moveend
+    // listener is attached, so it can neither fire "search this area" nor
+    // count as a user move.
+    const savedView = readMapViewState();
+    const initialCenter = savedView ? [savedView.lat, savedView.lng] : [32.4, 34.95];
+    const initialZoom = savedView ? savedView.zoom : 8;
     mapInstanceRef.current = L.map(containerRef.current, { zoomControl: true }).setView(
-      // Default view — MEH-932: fixed center on the Israel producer band
-      // [32.4, 34.95] zoom 8, not Jerusalem [31.7683, 35.2137]. The Jerusalem
-      // center pulled half the Mediterranean + Arabic-labelled neighbours into
-      // frame on mobile; this recenters north-west onto the coastal/central
-      // producer cluster. FIXED center/zoom only — the auto-fitBounds was
-      // deliberately removed (see the producers effect below), so this setView
-      // is the single source of the initial camera. Zoom 8 keeps the whole
-      // producer band (incl. north/Golan) in-frame; tighter zoom 9 is an option
-      // pending mobile preview QA (MEH-932 PR notes).
-      [32.4, 34.95],
-      8,
+      initialCenter,
+      initialZoom,
     );
-    // Expose initial center for E2E tests (05-map-navigation.spec.ts)
-    if (typeof window !== "undefined") window.__MAP_CENTER__ = [32.4, 34.95];
+    // Expose the initial center for E2E tests (05-map-navigation.spec.ts) —
+    // the DEFAULT on a fresh visit, the RESTORED camera when one was saved.
+    if (typeof window !== "undefined") window.__MAP_CENTER__ = initialCenter;
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
@@ -719,6 +734,15 @@ export default function MapComponent({
         programmaticMoveRef.current = false;
         return;
       }
+      // MEH-1414: only a USER move is a camera worth restoring later. The
+      // programmatic branches (initial restore, focusProducer, GPS flyTo)
+      // returned above and are deliberately not saved.
+      const savedCenter = mapInstanceRef.current.getCenter();
+      writeMapViewState({
+        lat: savedCenter.lat,
+        lng: savedCenter.lng,
+        zoom: mapInstanceRef.current.getZoom(),
+      });
       onMapMoveRef.current?.();
     });
 
@@ -794,11 +818,11 @@ export default function MapComponent({
 
       // MEH-1412 (MEH-1388 chunk 3): fan a producer's physical presence points
       // (locations[], from chunk 2's serializer) into one marker each — branch
-      // (+ the fallback below) → the primary category pin, pickup/market_stand →
-      // the secondary outline (createLocationIcon). If locations[] is empty OR
-      // no row had usable coords, the post-loop fallback pins the producer's own
-      // lat/lng mirror so no business disappears (parity with the chunk-2
-      // backend COALESCE — Expand overlap + the all-coords-invalid edge).
+      // → the primary category pin, pickup/market_stand → the secondary outline
+      // (createLocationIcon). MEH-1938 chunk 5a: the post-loop fallback that
+      // pinned the producer's own lat/lng mirror when no row had usable coords
+      // is GONE, on both sides (producerPoints() here, the backend COALESCE
+      // there) — a business with no usable location row has no marker.
 
       const markerLabel = p.name || t("marker_singular");
       const entryMarkers = [];
@@ -873,17 +897,14 @@ export default function MapComponent({
       };
 
       // MEH-1412: render each usable location. Secondary points
-      // (pickup/market_stand) are suppressed when the layer toggle is off — but
-      // a suppressed point still COUNTS as a usable location, so the coord
-      // fallback below does not fire for a producer whose only points are hidden
-      // pickups (it stays off-map while the layer is hidden rather than
-      // reappearing as a primary pin).
-      // MEH-1670: the three rules above now live in producerPoints(), so the
-      // /map viewport filter derives points the same way instead of reading
-      // Producer.lat/lng on its own (which dropped a delivery-only business from
-      // the list while its pickup pin was on screen). Behaviour here is
-      // unchanged — including the synthesised fallback row, which the module
-      // builds with the same fields this loop used to inline.
+      // (pickup/market_stand) are suppressed when the layer toggle is off, so a
+      // producer whose only points are hidden pickups stays off-map while the
+      // layer is hidden (hiddenWhenSecondaryOff() is how the UI says so).
+      // MEH-1670: the rules live in producerPoints(), so the /map viewport
+      // filter derives points the same way instead of reading Producer.lat/lng
+      // on its own (which dropped a delivery-only business from the list while
+      // its pickup pin was on screen). MEH-1938 chunk 5a removed the module's
+      // synthesised fallback row; this loop renders exactly what it returns.
       producerPoints(p, { includeSecondary: showSecondaryLayer }).forEach(({ location }) =>
         addMarker(location),
       );

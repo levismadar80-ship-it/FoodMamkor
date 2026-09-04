@@ -96,6 +96,82 @@ TEST_URL=https://staging.mehamakor.online PW_WEBKIT=1 \
 targets. Without it **every request 302s to `vercel.com/sso-api`** and the run fails
 in a way that looks like the site being broken rather than the auth wall.
 
+### Trap 5 — the Chromium half of the pair is broken in this sandbox, and its install fails *silently*
+
+The mobile standard is **webkit AND chromium**, so a working webkit is only half of
+it. Measured 29/08 (MEH-2218): the pre-installed Chromium does **not** satisfy the
+pinned `@playwright/test`.
+
+```
+browserType.launch: Executable doesn't exist at
+  /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+```
+
+The image ships `chromium-1194` / `chromium_headless_shell-1194`; the pinned
+Playwright wants **-1234**. And `npx playwright install chromium` does **not** fix
+it — the download fails at the proxy:
+
+```
+Error: Download failure, code=1
+```
+
+**The fix is not to download.** Point Playwright at the Chromium that is already
+there — this is what the environment's own guidance prescribes for a version-pinned
+project:
+
+```js
+chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })   // → chromium-1194/chrome-linux/chrome
+```
+
+> **The install failure is invisible if you pipe it.** `npx playwright install
+> chromium 2>&1 | tail -6` exits **0** — the pipeline reports `tail`'s status, not
+> the installer's — so a wrapper (or a background-task notification) says
+> "completed, exit code 0" over a failed download. This is the repo's own
+> "green with two causes" rule wearing a shell-plumbing costume. Check for the
+> binary on disk, not the exit code.
+
+### Trap 6 — Chromium against staging needs the TLS-1.2 cap; WebKit does not
+
+With `executablePath` fixed, Chromium then fails differently:
+
+```
+page.goto: net::ERR_CONNECTION_RESET at https://staging.mehamakor.online/he
+```
+
+That is the sandbox TLS trap already documented in
+[`.claude/rules/testing.md`](../../.claude/rules/testing.md) → *"Driving Playwright
+against staging from the CC sandbox"*: the sandbox Chromium offers a TLS-1.3
+ClientHello that the Vercel edge drops. Cap it:
+
+```js
+chromium.launch({
+  executablePath: '/opt/pw-browsers/chromium',
+  args: ['--ssl-version-max=tls1.2'],       // sandbox-only; CI runners do not need it
+})
+```
+
+**WebKit is unaffected** — it completed the handshake and returned 200 with no cap.
+So a run where webkit works and chromium resets is *not* evidence that staging is
+down; it is this trap, on one engine only.
+
+### The measured control for the whole pair
+
+Both engines, live staging, one run (29/08):
+
+```
+webkit-iPhone14: http=200 title="מהמקור — בתי עסק מקומיים בתחום המזו" bodyBox=390x6629
+chromium-375   : http=200 title="מהמקור — בתי עסק מקומיים בתחום המזו" bodyBox=375x6595
+```
+
+Non-zero boxes on both. **Run this control before trusting any mobile QA result** —
+each of traps 5 and 6 produces a failure that reads as "the page is broken".
+
+> **`devices['iPhone 14']` is 390×844, not 375×812.** MEH-2221's mobile standard
+> stated 375×812 for that device; 375×812 is the iPhone SE / 13-mini profile. The
+> card was corrected 29/08. Cover both widths deliberately — 390 from the device
+> profile, 375 from an explicit Chromium viewport — rather than assuming one name
+> gives you the other number.
+
 ---
 
 ## The two projects

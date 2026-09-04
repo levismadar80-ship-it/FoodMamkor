@@ -1727,6 +1727,7 @@ function RegisterProducerPageBody() {
                     !form.producer_license_number.trim()
                   ) {
                     setLicenseRequiredError(true);
+                    requestFocus("producer-license-required");
                     return;
                   }
                   setLicenseRequiredError(false);
@@ -1743,14 +1744,13 @@ function RegisterProducerPageBody() {
         {step === STEP.STORY && (
           <div className="space-y-4" data-testid="register-frame-story">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
-            {/* MEH-2183: step-top expectation line — what we ask for AFTER
-                approval, so the photo is not a surprise on the dashboard.
-                NOTE: overlaps in substance with photo_disclosure further down
-                this same step (he.json:331). Both strings are Sapir-locked, so
-                neither was edited here — flagged for a copy ruling. */}
-            <p data-testid="register-story-photo-hint" className="text-xs text-fg-muted text-start">
-              {t("auth.register.producer.steps.story.photo_next_hint")}
-            </p>
+            {/* MEH-2185: the step-top expectation line (photo_next_hint, added by
+                MEH-2183) is GONE, and deliberately not replaced. It overlapped in
+                substance with photo_disclosure further down this same step, which
+                stays byte-unchanged: that one is the gate ("without a photo the
+                page does not go live") and carries the image-licence side too
+                (MEH-1184), so it is the one that had to survive. The copy ruling
+                the old note asked for is on MEH-2185. */}
             {/* MEH-860: frame-03 tagline (short_description) — the one-line
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
