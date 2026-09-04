@@ -477,7 +477,6 @@ test.describe("manual › /about/process (MEH-534)", () => {
     expect([...seen].sort(), "every group-A category from the copy renders exactly once").toEqual(
       [...expectedLabels].sort(),
     );
-    expect(seen, "the honey row must be present").toContain(CAT_A_HE.honey);
   });
 
   // MT:MEH-534:7 — matrix group B: each category «מוצהר או מאומת» except נרות וארומה = «מוצהר» only + the no-path note; ירקות/פירות carry the "מוצהר: הצהרה…" sub-line.
