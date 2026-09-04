@@ -24,7 +24,13 @@ on:
   # target a run on a branch where the trigger isn't yet present.
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    # MEH-1523: `labeled`/`unlabeled` are load-bearing, exactly as
+    # `ready_for_review` is. The marker gate reads the labels on the event
+    # payload, so WITHOUT these two, adding the label after the last run does
+    # not re-run the gate and the stale green stands — the marker would never
+    # block anything. Removing it would likewise not clear the red without a
+    # push, which rule 30 does not permit CC to manufacture.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     branches: [staging, main]
 
 # MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
@@ -37,7 +43,11 @@ concurrency:
   # MEH-1653: ready_for_review מקבל group נפרד כדי שלא יבטל ריצת synchronize
   # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
   # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event.action == 'ready_for_review' }}
+  # MEH-1523 extends MEH-1653's reasoning to the two label actions. Buckets:
+  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-code
+  # Each action class cancels only its own kind, so a label toggle can never
+  # cancel a synchronize run (cancelled maps to FAIL in the aggregator).
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.action || 'code' }}
   cancel-in-progress: true
 
 jobs:
@@ -64,17 +74,61 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Fail if the PR carries a DO-NOT-MERGE marker (MEH-1155, ADR-016 amendment)
+      - name: Fail if the PR carries the marker label (MEH-1523)
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
+          # Label NAMES only. `.*.name` flattens the label objects to a JSON
+          # array of strings; toJSON keeps it one safe scalar for the shell.
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
           set -euo pipefail
-          if printf '%s\n%s' "$PR_TITLE" "$PR_BODY" | grep -Eiq '(^|[^A-Za-z0-9_-])do[ _-]?not[ _-]?merge([^A-Za-z0-9_-]|$)|DNM-LOCK'; then
-            echo "::error::This PR carries a DO-NOT-MERGE marker. Per ADR-016 (amendment, MEH-1155) auto-merge authority is VOID regardless of risk tier. Only Sapir may remove the marker."
+          # MEH-1523: the marker is a LABEL. This step reads NOTHING else — no
+          # title, no body, no commit messages. That absence is asserted by
+          # scripts/checks/dnm-matcher-guard.sh, which fails if either of the
+          # old text-scanning env vars reappears anywhere in this job — so do
+          # not name them even in a comment, which is how the patch doc's own
+          # wording tripped this gate on first application (04/09).
+          #
+          # Why not text: PR #2637 was blocked by a pasted test name, and
+          # PR #2813 by CC's own prose — and clearing #2813's marker left no
+          # trace on the PR at all, so a cleared accident and a cleared
+          # deliberate block are indistinguishable. A label has an actor and a
+          # timestamp in the PR timeline; a sentence in a body has neither.
+          #
+          # The name DNM_LABEL_RE is load-bearing: the guard detects this patch
+          # by it and switches to the label fixture table. Do not rename it.
+          #
+          # Matched against each label name NORMALISED to lowercase with every
+          # non-alphanumeric stripped, so do-not-merge / DO NOT MERGE /
+          # do_not_merge / don't merge all collapse onto donotmerge|dontmerge.
+          # The two `tr` calls below are mirrored exactly in the guard's
+          # normalise_label(); they must stay identical.
+          # ANCHORED (^...$) deliberately. MEH-1523 acceptance criterion 2
+          # says to match "the normalized form /dono?tmerge/" — unanchored.
+          # Do NOT ship that: normalisation strips non-alphanumerics, so
+          # `audit-do-not-merge-findings` becomes `auditdonotmergefindings`,
+          # which CONTAINS `donotmerge` and would trip this BLOCKING gate on a
+          # documentation label. That is #2637's false positive moved from prose
+          # onto metadata — the swap shipping the very bug it was sent to fix.
+          # The variant-tolerance AC2 actually wants is fully preserved:
+          # `do_not_merge`, `DO NOT MERGE` and `don't merge` all normalise onto
+          # the two strings below.
+          DNM_LABEL_RE='^(dono?tmerge|dnmlock)$'
+          # Fail-closed: a jq error fails the assignment under `set -e` +
+          # pipefail, so a broken parse BLOCKS rather than falling through.
+          # Deliberately NOT a process substitution — that would swallow it.
+          names="$(printf '%s' "$PR_LABELS" | jq -r '.[]')"
+          hit=""
+          while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            norm="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')"
+            [ -n "$norm" ] || continue
+            if printf '%s' "$norm" | grep -Eq "$DNM_LABEL_RE"; then hit="$name"; break; fi
+          done <<< "$names"
+          if [ -n "$hit" ]; then
+            echo "::error::This PR carries the '$hit' label. Per ADR-016 (amendment, MEH-1155) auto-merge authority is VOID regardless of risk tier. Only Sapir may remove the label."
             exit 1
           fi
-          echo "No DO-NOT-MERGE marker. OK."
+          echo "No marker label. OK."
 
   repo-guards:
     name: Repo guards
