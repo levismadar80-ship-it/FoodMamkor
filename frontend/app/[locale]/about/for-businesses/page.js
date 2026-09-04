@@ -200,7 +200,11 @@ export default async function FaqForBusinessesPage({ params }) {
             anatomy of a complete profile, clearly labeled as an example
             (no live-profile link on purpose: MEH-409 swaps the demo for a
             real business after first-10, and a hardcoded slug would rot). */}
-        <section aria-labelledby="showcase-heading" className="mt-14 sm:mt-16">
+        <section
+          aria-labelledby="showcase-heading"
+          data-testid="about-business-showcase"
+          className="mt-14 sm:mt-16"
+        >
           <div className="flex items-center gap-3 mb-4">
             <h2
               id="showcase-heading"
