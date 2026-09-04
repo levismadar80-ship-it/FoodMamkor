@@ -95,7 +95,7 @@ What the first run measured, and what changed because of it:
   errors-only gate. (The inline ESLint hook never fired because its config guard never passed — so this
   was a latent block, never a seen one.)
 - **A Stop hook running pytest on the shared `mehamakor_test` collides with any other run on the box.**
-  The port exports `PYTEST_XDIST_WORKER=gw90` by default; the isolated re-run above was `gw63` on the
+  The port exports `PYTEST_XDIST_WORKER=gw<pid>` by default; the isolated re-run above was `gw63` on the
   coordinator's instruction and is the same mechanism.
 
 Running a hook by hand once before wiring it is what surfaced all three — the exact thing an inline
@@ -132,7 +132,7 @@ Notes on the differences, so none of them is read as accidental:
   explicit. If it proves too tight the fix is the number, not a return to four entries.
 - **ESLint runs `npm run lint`, not `npx eslint . --max-warnings 0`.** Mirrors the CI gate
   (`deploy.yml:146`); see §1.1 for why the inline form was a block-forever in disguise.
-- **pytest runs on an isolated database — `PYTEST_XDIST_WORKER=gw90` by default.** The first
+- **pytest runs on an isolated database — `PYTEST_XDIST_WORKER=gw<pid>` by default.** The first
   real run of the port (03/09) deadlocked for 39 minutes on the shared `mehamakor_test` against
   another agent's pytest (this session `idle in transaction`, theirs waiting on a table lock) and
   had to be killed. `tests/conftest.py:49-98` maps `gw<N>` to `mehamakor_test_gw<N>` and

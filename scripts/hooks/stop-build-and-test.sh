@@ -190,9 +190,15 @@ run_all() {
       # first real run of this hook deadlocked for 39 minutes against another
       # agent's pytest on that same database (this session `idle in
       # transaction`, theirs waiting on a table lock) and had to be killed.
-      # gw90 is above anything `-n auto` hands out on this box; override with
-      # your own gw<N> if two hooks could ever run at once.
-      export PYTEST_XDIST_WORKER="${PYTEST_XDIST_WORKER:-gw90}"
+      # The id is per PROCESS (gw<pid>), not a fixed slot: two Stop hooks
+      # running at once (two CC sessions on one box) would otherwise share
+      # one database and re-create the collision this guard exists for. The
+      # PID is far above anything `-n auto` hands out, conftest accepts any
+      # gw<digits>, and pytest_sessionfinish drops the database — the one
+      # cost is a hook killed mid-run leaving mehamakor_test_gw<pid> behind
+      # (a fixed slot would have re-dropped it on the next run). Override
+      # with your own gw<N> to pin one.
+      export PYTEST_XDIST_WORKER="${PYTEST_XDIST_WORKER:-gw$$}"
       echo "pytest: $py -m pytest tests/test_api.py -q --tb=short  (cwd: repo root, as CI does; PYTEST_XDIST_WORKER=$PYTEST_XDIST_WORKER → isolated db)"
       if ! (cd "$root" && "$py" -m pytest tests/test_api.py -q --tb=short 2>&1 | tail -20); then
         reasons+=("Backend tests failed — fix errors before completing this task")
@@ -306,8 +312,11 @@ EOF
   # on the shared mehamakor_test is the 03/09 deadlock. Asserted on the fake
   # interpreter's echo of PYTEST_XDIST_WORKER, so it proves the export, not the
   # message.
-  printf '%s' "$out" | grep -qF "worker=gw90" && rc=0 || rc=1
-  check "...and pytest ran with PYTEST_XDIST_WORKER=gw90 (isolated database)" 0 "$rc"
+  # The id is gw<pid> of the hook process, so assert the SHAPE conftest
+  # accepts (gw<digits>), and that it is not "unset" — either would be the
+  # shared database.
+  printf '%s' "$out" | grep -qE "worker=gw[0-9]+$" && rc=0 || rc=1
+  check "...and pytest ran with PYTEST_XDIST_WORKER=gw<digits> (isolated database)" 0 "$rc"
 
   # (h) RED + RED: both fail → BOTH reasons reported (run-everything, like
   #     run-all.sh), not just the first.
