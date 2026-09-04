@@ -1471,6 +1471,13 @@ def _otp_test_mode_allowed(db_host: str, railway_env: str, app_env: str) -> bool
     production service pointed at a local-looking host by mistake must still
     never hand out a fixed code. Pure function so the refusal is testable
     without faking an engine.
+
+    TCP hosts only, by design: a Unix-socket DB URL has `engine.url.host` of
+    None, the caller passes "", and the feature stays OFF — dark, with no
+    log line. That is the safe direction for a test-only bypass (the
+    reviewer on PR #3393 asked for a third escape hatch; declined — every
+    added way to say "allowed" is a way to say it by mistake). Local
+    Postgres over TCP, as tests/conftest.py and CI use, is unaffected.
     """
     if app_env.strip().lower() == "production":
         return False
