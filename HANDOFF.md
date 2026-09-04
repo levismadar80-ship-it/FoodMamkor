@@ -3,9 +3,9 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-09-04 ערב — batch חוויות שני MEH-2249/2248 (session `015hizoq…`): #3382 מוזג · #3383 פתוח · ההכרעה שנשארה מ-#3357 סגורה
+## 2026-09-04 ערב — batch חוויות שני MEH-2249/2248 (session `015hizoq…`): שניהם מוזגו · ההכרעה שנשארה מ-#3357 סגורה
 
-**‏שורה אחת:** ‏#3382 (2249) `3013704a` 19:36Z — auto-merge SQUASH, השיטה נקראה מתשובת ה-`enable` ומהתבנית של הקומיט שנחת (כלל 21) · #3383 (2248) פתוח. ‏flip-check על 2249 נקרא חי: Backlog → **Done** `19:36:46.471Z`. שני הענפים מ-`origin/staging` טרי; PR docs זה לא חומש לפני ש-#3383 נחת (כלל 31b).
+**‏שורה אחת:** ‏#3382 (2249) `3013704a` 19:36Z · #3383 (2248) `4d286593` 20:09Z — שניהם auto-merge SQUASH, והשיטה אומתה פעמיים: מתשובת ה-`enable` ומהקומיט שנחת (תבנית `(#N)` + הורה יחיד, כלל 21). ‏**flip-check נקרא חי על שניהם, בשני הכיוונים:** 2249 Backlog → **Done** `19:36:46.471Z` · 2248 Backlog → **Done** `20:09:04.393Z`. שניהם בכיוון הנכון — ה-DoD התקיים, אין מה לפתוח מחדש. שני הענפים מ-`origin/staging` טרי; PR docs זה חומש רק אחרי ששניהם נחתו (כלל 31b).
 
 ### מה שסשן חדש חייב לדעת
 
@@ -22,14 +22,14 @@
 | PR | מה | מצב |
 | -- | -- | -- |
 | #3382 | MEH-2249 — יצירת חוויה לדשבורד, 308, metadata נמחק, 5 מצבי Playwright | `3013704a` (squash, 19:36Z) — Done אוטומטית |
-| #3383 | MEH-2248 — `ExperienceCard` היתום נמחק, 9 הפניות, `experiences.card` + כותרת admin | פתוח — auto-merge SQUASH על CI ירוק |
-| זה | docs backfill — CHANGELOG + HANDOFF + סגירת ההכרעה של #3357 | לא לחמש auto-merge לפני ש-#3383 נחת (כלל 31b) |
+| #3383 | MEH-2248 — `ExperienceCard` היתום נמחק, 9 הפניות, `experiences.card` + כותרת admin | `4d286593` (squash, 20:09Z) — Done אוטומטית |
+| זה | docs backfill — CHANGELOG + HANDOFF + סגירת ההכרעה של #3357 | חומש רק אחרי ששני הקודמים נחתו (כלל 31b) |
 
 ### רשימת ספיר (residual)
 
 * **‏smoke מול staging** לשני ה-PRs — ה-sandbox חסום (MEH-2090); אין preview כי המכסה נגמרה.
-* **‏flip-check על 2248** — לקרוא חי אחרי המיזוג, בשני הכיוונים.
-* **‏הפניה אחת נשארה בכוונה:** ‏`lib/event-categories.js:14` מצביע ל-`NewExperienceClient.jsx` שנמחק ב-#3382. לא תוקן ב-#3383 כי בזמן כתיבתו הקובץ עדיין היה על staging; עכשיו הוא לא — sweep קטן.
+* **‏שלוש הפניות מיושנות ל-`NewExperienceClient.jsx`** נותרו אחרי ש-#3382 מחק אותו: `ExperienceForm.jsx:8,14` ו-`lib/event-categories.js:15`. שני הכרטיסים הוציאו את `ExperienceForm.jsx` מה-scope במפורש, ולכן דווח ולא תוקן מענף שלישי — sweep קטן.
+* **‏E2E על staging** — האדום של `3013704a` לא הוסבר (סעיף 5 מעל). ריצה נקייה אחת על ראש staging תסגור או תפריך אותו.
 
 ## 2026-09-04 צהריים — batch חוויות MEH-2245/2246/2247 (session `015hizoq…`): שלושתם מוזגו · הכרעת UX אחת פתוחה · follow-up MEH-2248
 
