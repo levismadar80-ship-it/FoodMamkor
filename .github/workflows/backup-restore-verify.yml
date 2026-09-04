@@ -6,9 +6,11 @@ name: Backup restore drill
 # WHAT A GREEN HERE MEANS — read before trusting one:
 #   `mechanics` restores a SEEDED, CI-LOCAL database. A green proves the drill tooling and
 #   the assertions work on this schema and would catch a lossy restore. It does NOT prove
-#   the real staging/production backup is restorable — that is the `staging-drill` job in
-#   docs/ci/meh-1517-backup-restore-verify.patch.md §4, which needs the read-only secret
-#   STAGING_DATABASE_URL_READONLY (approved on MEH-1517, 14/08) and is added when it exists.
+#   the real staging/production backup is restorable — that needs a second `staging-drill`
+#   job reading the real database through STAGING_DATABASE_URL_READONLY (approved on
+#   MEH-1517, 14/08; the secret does not exist yet). Its YAML is on MEH-1517, and it is
+#   written to FAIL rather than skip when the secret is missing: a drill that skip-greens
+#   would report the card delivered while verifying nothing.
 #
 # The logic lives in scripts/ci/backup-restore-verify.sh; this file only calls it. The
 # script's --self-test runs FIRST as a control: the drill must be seen going red on the
