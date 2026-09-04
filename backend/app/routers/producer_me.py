@@ -35,7 +35,6 @@ from app.models import (
     User,
 )
 import logging
-import os
 import secrets
 import string
 
@@ -1456,7 +1455,7 @@ def _send_whatsapp_otp(phone: str, code: str) -> bool:
     return send_template(phone, OtpCodeV1(code=code))
 
 
-_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1"})
+_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 def _otp_test_mode_allowed(db_host: str, railway_env: str, app_env: str) -> bool:
@@ -1511,7 +1510,7 @@ def _otp_test_code_for(phone: str) -> str | None:
         return None
     if not _otp_test_mode_allowed(
         engine.url.host or "",
-        os.getenv("RAILWAY_ENVIRONMENT", ""),
+        settings.railway_environment,
         settings.env,
     ):
         return None
