@@ -24,6 +24,18 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+// MEH-1981: the modal now carries a CollectionNotice whose /privacy link is
+// the locale-aware Link from @/i18n/navigation, which needs an intl context the
+// key-echo next-intl mock above does not provide. Same stub the EventForm /
+// Register suites use — the link's behaviour is CollectionNotice.test.jsx's job.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("@/lib/use-focus-return", () => ({ useFocusReturn: vi.fn() }));
 // MEH-685: methods-only object.
 vi.mock("@/lib/toast", () => ({
