@@ -156,8 +156,11 @@ const nextConfig = {
     // MEH-2245: the experiences tab used to live at /events?tab=experiences;
     // it is now the /experiences route. Old deep-links (shares, bookmarks)
     // 308 there. Locale + bare pair, same shape as the /neighbor pair above.
-    // Next forwards unmatched query params to the destination — `tab` is the
-    // matched one and is dropped; ?city= / ?category= survive the hop.
+    // Next forwards the WHOLE request query to the destination (`has:` does
+    // not consume it — measured: Location carries ?tab=experiences), so the
+    // first URL still shows the old param. Nothing reads it; EventsClient's
+    // URL-writer (city/category only) rewrites the query on hydration and
+    // the settled URL is /experiences[?city=…]. Harmless, documented.
     const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
     return [
       { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
