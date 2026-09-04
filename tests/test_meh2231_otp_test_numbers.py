@@ -104,7 +104,8 @@ def test_unlisted_number_still_gets_a_random_code_and_a_send(client, db, monkeyp
     phone, sent = rec.calls[0]
     assert phone == UNLISTED
     assert len(sent) == 6 and sent.isdigit()
-    assert sent != FIXED
+    # No `sent != FIXED` here: a random 6-digit code equals FIXED once in
+    # 10^6 runs (reviewer, PR #3393). The round-trip below is the invariant.
     assert _stored_code(db, producer.id) == sent
 
 
