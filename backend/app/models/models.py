@@ -397,6 +397,24 @@ class Producer(Base):
     # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
     # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
+    # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
+    # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
+    #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,
+    # `"ranges": []` = CLOSED that date. NULL = feature unused.
+    # ORDER-AXIS AUTHORITATIVE: `ranges` overrides `order_window` on that date
+    # only. It does NOT override `opening_hours` — that axis is unbounded free
+    # text (see the column above at :380), so there is nothing to compute
+    # against; `note` is DISPLAY ONLY for the store-hours surface. The repo
+    # already ruled the two are different facts and that the computed surfaces
+    # read the order axis deliberately: services/producer_listing.py:508-514
+    # and routers/producers.py:146.
+    # Ranges reuse `order_window`'s per-day rules verbatim (HH:MM 24h,
+    # close>open, ascending + non-overlapping, ≤3) via _validate_order_day, so
+    # the two fields cannot drift on what a "range" means. Validated in
+    # schemas.ProducerUpdate -> 422. Expand-only per ADR-007.
+    # Precedence at the READERS is chunk B — chunk A stores and validates only.
+    # Paired migration for the COLUMN: c4e81b7a2f96 (MEH-1889).
+    special_hours = Column(JSONB, nullable=True)
     # MEH-213: location mode. Two independent booleans (not an enum) because
     # a producer can have BOTH a physical store AND offer delivery.
     # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.

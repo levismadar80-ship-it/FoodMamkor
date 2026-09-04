@@ -143,6 +143,91 @@ def _order_window_validator(v):
     return normalized
 
 
+# MEH-1889 chunk A. Cap mirrors _MAX_ORDER_RANGES_PER_DAY's reasoning: the
+# editor stays a form, not a scheduler. A year of holidays is ~20 dates; 60
+# leaves room without letting the column become an unbounded log.
+_MAX_SPECIAL_DATES = 60
+_ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _validate_special_date(key, entry) -> dict:
+    """Validate ONE date's entry and return it normalised.
+
+    Split out of `_special_hours_validator` for the same two reasons
+    `_validate_order_day` was split out of `_order_window_validator`: that
+    function hit the C901 ceiling (12 > 10), and "is this one date
+    well-formed?" is a separable question from "is this a well-formed set of
+    dates?".
+    """
+    if not isinstance(key, str) or not _ISO_DATE_REGEX.match(key):
+        raise ValueError(f"תאריך לא תקין: {key} — הפורמט חייב להיות YYYY-MM-DD")
+    try:
+        # Shape is not reality: the regex accepts 2026-02-30 and 2026-13-01,
+        # and only this call rejects them.
+        date.fromisoformat(key)
+    except ValueError:
+        raise ValueError(f"תאריך לא תקין: {key} — הפורמט חייב להיות YYYY-MM-DD")
+
+    if not isinstance(entry, dict) or "ranges" not in entry:
+        raise ValueError(f"התאריך {key} חייב לכלול רשימת טווחים")
+    ranges = entry["ranges"]
+    if not isinstance(ranges, list):
+        raise ValueError(f"התאריך {key} חייב לכלול רשימת טווחים")
+
+    # [] is the CLOSED marker, so it must not reach _validate_order_day — that
+    # function rejects an empty list ("at least one range"), which is the right
+    # rule for a weekly day and the wrong one for a date.
+    day: dict = {"ranges": [] if not ranges else _validate_order_day(key, ranges)}
+
+    note = entry.get("note")
+    if note is not None:
+        if not isinstance(note, str):
+            raise ValueError(f"הערה לא תקינה לתאריך {key}")
+        cleaned = sanitize_text(note, max_length=200)
+        if cleaned:
+            day["note"] = cleaned
+    return day
+
+
+def _special_hours_validator(v):
+    """Validate producers.special_hours on write (MEH-1889 chunk A).
+
+    Shape — date-keyed overrides above the weekly axes:
+
+        {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
+                        "note": "ערב ראש השנה"}}
+
+    `"ranges": []` means CLOSED on that date. `note` is OPTIONAL and is
+    DISPLAY ONLY — the store-hours surface renders it as text and derives
+    nothing from it.
+
+    ORDER-AXIS AUTHORITATIVE: `ranges` overrides `order_window` on that date.
+    It does NOT override `opening_hours`, which is unbounded free text
+    (models.py:380) and therefore has nothing to compute against — the same
+    split services/producer_listing.py:508-514 already draws between the two.
+
+    Ranges are validated by `_validate_order_day`, REUSED VERBATIM rather than
+    reimplemented, so `special_hours` and `order_window` cannot drift on what a
+    valid range is (HH:MM 24h, close>open, ascending + non-overlapping, ≤3).
+    Its messages interpolate the key, which here is the date — "היום 2026-09-22
+    חייב לכלול שעת פתיחה ושעת סגירה" reads correctly.
+
+    Retention — rejecting dates older than today-30 — is chunk B, per Sapir's
+    ruling on the card; chunk A deliberately accepts any real date so the
+    migration is not coupled to a policy still being written.
+
+    None passes through (an explicit null clears the field). Returns the
+    NORMALISED value, so the stored row is always the canonical shape.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("שעות מיוחדות חייבות להיות אובייקט של תאריכים")
+    if len(v) > _MAX_SPECIAL_DATES:
+        raise ValueError(f"אפשר להגדיר עד {_MAX_SPECIAL_DATES} תאריכים מיוחדים")
+    return {key: _validate_special_date(key, entry) for key, entry in v.items()}
+
+
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     # HOT-003 (MEH-772): a stacked `_sanitize_title` validator runs first and
     # returns None when bleach reduces the input to empty (e.g. "<b></b>" or a
@@ -1887,6 +1972,9 @@ class ProducerUpdate(BaseModel):
     # 24h, close>open → 422 Hebrew). Owner-writable path opened in
     # producer_me.py (_PRODUCER_WRITABLE_FIELDS).
     order_window: dict | None = None
+    # MEH-1889 chunk A: per-date overrides above order_window. Validated by
+    # _special_hours_validator; explicit null clears it, same as order_window.
+    special_hours: dict | None = None
     # MEH-1577: structured delivery cost (whole shekels, producer-level).
     # Validated below — both reject negatives, free_delivery_above additionally
     # rejects 0. delivery_fee=0 is ACCEPTED and meaningful ("משלוח חינם"), which
@@ -1995,6 +2083,11 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_order_window(cls, v):
         return _order_window_validator(v)
+
+    @field_validator("special_hours")
+    @classmethod
+    def _validate_special_hours(cls, v):
+        return _special_hours_validator(v)
 
     # MEH-2153: delegates to the shared guard so the count/length/trim rules
     # that MEH-210 Phase 2 wrote inline live in one place, and picks up the
