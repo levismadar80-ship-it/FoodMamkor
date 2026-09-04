@@ -1790,7 +1790,6 @@ class ProducerUpdate(BaseModel):
     # belongs to someone else, and syncs top_product_name from it. Sending
     # `null` clears the vote.
     top_product_id: UUID | None = None
-    starting_price_label: str | None = None
     price_range: str | None = None
     # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
     # bleach-stripped + capped at 300 below (mirrors short_description);
@@ -2183,7 +2182,6 @@ class ProducerListOut(BaseModel):
     # and is DERIVED from the FK in attach_badge_fields when the FK is set.
     top_product_id: UUID | None = None
     top_product_name: str | None = None
-    starting_price_label: str | None = None
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
