@@ -137,9 +137,27 @@ class TestExperienceSubmission:
     def test_requires_authentication(self, client):
         assert client.post("/experiences", json=_payload()).status_code == 401
 
-    def test_consumer_can_submit(self, client, db, monkeypatch):
-        _mock_moderation(monkeypatch, status="APPROVED")
+    # MEH-2246: the submit gate is require_verified_producer (events.py's
+    # gate) — a consumer is rejected on the WRITE side, matching the MEH-1749
+    # read gate that would have hidden her experience forever anyway. This
+    # test inverts the old `test_consumer_can_submit` (201) it replaces.
+    def test_consumer_is_rejected(self, client, db):
+        # No moderation mock on purpose: the gate rejects before
+        # validate_experience is ever called, and the count assertion below
+        # would still hold if it were.
         user = make_user(db, role="consumer", email="c@test.com")
+        resp = client.post(
+            "/experiences", json=_payload(), headers=auth_header(user)
+        )
+        assert resp.status_code == 403, resp.text
+        assert resp.json()["detail"] == "Producer access required"
+        # Nothing persisted — the gate runs before moderation and the insert.
+        assert db.query(Experience).count() == 0
+
+    def test_producer_can_submit(self, client, db, monkeypatch):
+        """The canonical happy path (was `test_producer_can_also_submit`)."""
+        _mock_moderation(monkeypatch, status="APPROVED")
+        user = make_user(db, role="producer", email="p@test.com")
         resp = client.post(
             "/experiences", json=_payload(), headers=auth_header(user)
         )
@@ -152,17 +170,28 @@ class TestExperienceSubmission:
         # spots_left computed
         assert body["spots_left"] == 10
 
-    def test_producer_can_also_submit(self, client, db, monkeypatch):
-        _mock_moderation(monkeypatch, status="APPROVED")
-        user = make_user(db, role="producer", email="p@test.com")
+    def test_unverified_producer_is_rejected(self, client, db):
+        # Mirrors tests/test_verified_email_enforcement.py: the 403 carries the
+        # structured detail so the frontend matches on the stable `code`.
+        # No moderation mock — the gate raises before validate_experience.
+        # NOT the discriminator for MEH-2246: the old require_verified_email
+        # gate produced this exact 403 too (measured: green against both
+        # routers). It guards that the structured email_unverified shape
+        # survives the dependency swap; test_consumer_is_rejected is the test
+        # that goes red against the old code.
+        user = make_user(
+            db, role="producer", email="unverified@test.com", email_verified=False
+        )
         resp = client.post(
             "/experiences", json=_payload(), headers=auth_header(user)
         )
-        assert resp.status_code == 201
+        assert resp.status_code == 403, resp.text
+        assert resp.json()["detail"]["code"] == "email_unverified"
+        assert db.query(Experience).count() == 0
 
     def test_persisted_as_pending(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="APPROVED")
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences", json=_payload(), headers=auth_header(user)
         )
@@ -179,7 +208,7 @@ class TestExperienceSubmission:
             reason="תיאור לא ברור",
             suggestion="הוסיפי פרטים על מה שיהיה בסדנה",
         )
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences", json=_payload(), headers=auth_header(user)
         )
@@ -195,7 +224,7 @@ class TestExperienceSubmission:
             status="REJECTED",
             reason="תוכן לא רלוונטי לפלטפורמה",
         )
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences", json=_payload(), headers=auth_header(user)
         )
@@ -205,7 +234,7 @@ class TestExperienceSubmission:
 
     def test_title_too_short_rejected(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences",
             json=_payload(title="חם"),
@@ -215,7 +244,7 @@ class TestExperienceSubmission:
 
     def test_description_too_short_rejected(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences",
             json=_payload(description="קצר מדי"),
@@ -225,7 +254,7 @@ class TestExperienceSubmission:
 
     def test_invalid_location_type_rejected(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences",
             json=_payload(location_type="farm"),
@@ -238,7 +267,7 @@ class TestExperienceSubmission:
     # blocked too, not just the browser. These four assert the write boundary.
     def test_missing_city_rejected(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         payload = _payload()
         del payload["city"]
         resp = client.post(
@@ -252,7 +281,7 @@ class TestExperienceSubmission:
         only meaning that matters, since the /experiences city filter would
         still never match it."""
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences",
             json=_payload(city="   "),
@@ -268,7 +297,7 @@ class TestExperienceSubmission:
         every direct submission as taking place in a private residence — the
         branch that hides lat/lng (experiences.py:309)."""
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         payload = _payload()
         del payload["location_type"]
         resp = client.post(
@@ -279,7 +308,7 @@ class TestExperienceSubmission:
 
     def test_city_is_stored_stripped(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
-        user = make_user(db)
+        user = make_user(db, role="producer")
         resp = client.post(
             "/experiences",
             json=_payload(city="  תל אביב  "),
