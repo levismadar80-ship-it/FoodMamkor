@@ -26,12 +26,14 @@ import { detailToMessage } from "@/lib/errors";
 import EmptyState from "@/components/ui/EmptyState";
 // MEH-999: shared back link — one owner for target + arrow direction.
 import BackLink from "@/components/ui/BackLink";
+// MEH-1640: shared status colours across the four tools spokes.
+import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 
 const STATUS_STYLE = {
-  approved: "bg-green-50 text-primary",
-  pending: "bg-yellow-100 text-yellow-800",
-  changes_requested: "bg-yellow-100 text-yellow-800",
-  rejected: "bg-red-100 text-red-700",
+  approved: STATUS_CLASSES.success,
+  pending: STATUS_CLASSES.warning,
+  changes_requested: STATUS_CLASSES.warning,
+  rejected: STATUS_CLASSES.error,
 };
 // Experience.status enum (models.py) — labels have he/en twins under
 // manage_experiences.status_*. Any unknown value falls back to the raw string.
@@ -141,11 +143,11 @@ export default function ManageExperiencesPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-semibold text-text truncate">{ex.title}</h2>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[ex.status] || "bg-gray-100 text-gray-700"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[ex.status] || STATUS_CLASSES.neutral}`}>
                       {statusLabel(ex.status)}
                     </span>
                     {cancelled && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_CLASSES.warning}`}>
                         {t("badge_inactive")}
                       </span>
                     )}
