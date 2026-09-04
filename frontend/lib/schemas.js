@@ -88,7 +88,6 @@ export const ProducerListSchema = z.object({
     emoji: z.string().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
-  starting_price_label: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),
   avg_rating: z.number().nullable().optional(),
   reviews_count: z.number().int().nullable().optional(),

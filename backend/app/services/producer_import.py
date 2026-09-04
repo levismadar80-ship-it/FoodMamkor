@@ -278,7 +278,6 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             whatsapp_group=parsed.data["whatsapp_group"],
             slug=slug,
             price_range=parsed.data["price_range"],
-            starting_price_label=parsed.data["price_range"],
             grass_fed=parsed.data["grass_fed"],
             organic_certified=parsed.data["organic_certified"],
             has_delivery=parsed.data["has_delivery"],
