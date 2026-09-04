@@ -22,6 +22,7 @@ from app.models import (
     User,
 )
 from app.rate_limit import limiter
+from app.utils.stack_probe import log_depth
 from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
@@ -338,6 +339,9 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
 @limiter.limit("120/minute")
 def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
+    # MEH-2119 measurement gate — TEMPORARY. Logs the request's frame depth
+    # on staging; see app/utils/stack_probe.py for the read-off and removal.
+    log_depth("producers.by_slug")
     producer = (
         db.query(Producer)
         .options(
@@ -624,6 +628,9 @@ def create_producer(
 def list_categories(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
+    # MEH-2119 measurement gate — TEMPORARY control route (same middleware
+    # chain, no joinedload under it). See app/utils/stack_probe.py.
+    log_depth("categories.list")
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE
