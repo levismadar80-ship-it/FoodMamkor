@@ -4814,6 +4814,17 @@
             ],
             "title": "Referral Source Other"
           },
+          "rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason Code"
+          },
           "report_count": {
             "default": 0,
             "title": "Report Count",
@@ -4829,6 +4840,23 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "resubmission_count": {
+            "default": 0,
+            "title": "Resubmission Count",
+            "type": "integer"
+          },
+          "resubmitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resubmitted At"
           },
           "reviews_count": {
             "default": 0,
@@ -7884,6 +7912,17 @@
             "title": "Products Count",
             "type": "integer"
           },
+          "rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason Code"
+          },
           "report_count": {
             "default": 0,
             "title": "Report Count",
@@ -7899,6 +7938,23 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "resubmission_count": {
+            "default": 0,
+            "title": "Resubmission Count",
+            "type": "integer"
+          },
+          "resubmitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resubmitted At"
           },
           "reviews_count": {
             "default": 0,
@@ -10574,6 +10630,22 @@
               }
             ],
             "title": "Producer Rejection Reason"
+          },
+          "producer_rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Rejection Reason Code"
+          },
+          "producer_resubmission_count": {
+            "default": 0,
+            "title": "Producer Resubmission Count",
+            "type": "integer"
           },
           "producer_status": {
             "anyOf": [
