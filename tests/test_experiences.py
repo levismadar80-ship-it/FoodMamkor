@@ -174,6 +174,11 @@ class TestExperienceSubmission:
         # Mirrors tests/test_verified_email_enforcement.py: the 403 carries the
         # structured detail so the frontend matches on the stable `code`.
         # No moderation mock — the gate raises before validate_experience.
+        # NOT the discriminator for MEH-2246: the old require_verified_email
+        # gate produced this exact 403 too (measured: green against both
+        # routers). It guards that the structured email_unverified shape
+        # survives the dependency swap; test_consumer_is_rejected is the test
+        # that goes red against the old code.
         user = make_user(
             db, role="producer", email="unverified@test.com", email_verified=False
         )
