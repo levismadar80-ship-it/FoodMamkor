@@ -206,6 +206,19 @@ run_drill() {
   n_tables=${#tables[@]}
   [ "$n_tables" -gt 0 ] || die "derived ZERO tables from $MODELS_FILE — refusing to compare nothing"
 
+  # --expect-nonempty is the one operator-supplied name list. Reject a bad name
+  # HERE, at preflight (exit 2, named), so it never reaches row_count() inside
+  # the assertion loop — there, under set -e, the bare rc=1 would kill the
+  # script with no FAIL line and an exit code the contract reserves for
+  # assertions.
+  if [ -n "$EXPECT_NONEMPTY" ]; then
+    local t
+    while IFS= read -r t; do
+      t="${t// /}"; [ -n "$t" ] || continue
+      _ident "$t" 2>/dev/null || die "invalid table name in --expect-nonempty: '$t'"
+    done < <(printf '%s\n' "$EXPECT_NONEMPTY" | tr ',' '\n')
+  fi
+
   echo "backup-restore-verify (MEH-1517)"
   note "models:  $MODELS_FILE → $n_tables tables"
 
@@ -407,7 +420,7 @@ self_test() {
 
   # (e) RED — rows lost from a table that still exists. Table count is still
   #     right, BACKUPS.md's checks would still pass; only row equality sees it.
-  sql_on "$tgt_url" 'DELETE FROM "producer_page_views" WHERE id = 1;'
+  sql_on "$tgt_url" 'DELETE FROM "producer_page_views" WHERE ctid = (SELECT ctid FROM "producer_page_views" LIMIT 1);'
   set +e
   out="$(bash "$0" --compare-only --source "$src_url" --target "$tgt_url" 2>&1)"; rc=$?
   set -e
@@ -445,8 +458,9 @@ self_test() {
   check "a models file deriving ZERO tables is a preflight error, not a pass" 2 "$rc" "derived ZERO tables"
 
   # (i) the identifier guard, exercised on row_count() ITSELF — not through
-  #     the CLI. (g) only proves --expect-nonempty rejects a bad name at the
-  #     option parser; this is the reader every path funnels into. The control
+  #     the CLI. (g) drives the CLI with a valid name and (j) below covers the
+  #     CLI's preflight rejection; this is the reader every path funnels into,
+  #     so it has to refuse on its own without either caller. The control
   #     first: a valid name for a table that does not exist must still read
   #     MISSING (exit 0), so the rejection below cannot be "everything errors".
   set +e
@@ -459,6 +473,15 @@ self_test() {
   check "row_count on a NON-identifier is rc=1 and names the refusal" 1 "$rc" "refusing non-identifier"
   printf '%s' "$out" | grep -qF "MISSING" && rc=1 || rc=0
   check "...and its output does NOT read MISSING (a rejection is not an absence)" 0 "$rc"
+
+  # (j) the CLI side of the same guard: a bad name in --expect-nonempty is a
+  #     PREFLIGHT error (exit 2, named) — not a bare rc=1 from set -e killing
+  #     the assertion loop with no FAIL line. Before the preflight check this
+  #     exact invocation exited 1, the code the contract reserves for assertions.
+  set +e
+  out="$(bash "$0" --compare-only --source "$src_url" --target "$tgt_url" --expect-nonempty 'users" OR 1=1 --' 2>&1)"; rc=$?
+  set -e
+  check "--expect-nonempty with a NON-identifier is a PREFLIGHT error (exit 2, named)" 2 "$rc" "invalid table name in --expect-nonempty"
 
   echo "  $pass/$total self-test cases behaved correctly"
   [ "$pass" -eq "$total" ]
