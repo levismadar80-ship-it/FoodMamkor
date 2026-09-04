@@ -116,7 +116,18 @@ jobs:
           # Fail-closed: a jq error fails the assignment under `set -e` +
           # pipefail, so a broken parse BLOCKS rather than falling through.
           # Deliberately NOT a process substitution — that would swallow it.
-          names="$(printf '%s' "$PR_LABELS" | jq -r '.[]')"
+          #
+          # PR_LABELS is `null` (not an empty array) on `workflow_dispatch` —
+          # this job has no `pull_request` context there, so the expression
+          # above resolves to `toJSON(null)`. That is a legitimate "nothing to
+          # check", not a corrupt parse: `.[]` on a bare `null` is a real jq
+          # error (exit 5, "Cannot iterate over null"), which would have
+          # blocked every manual re-run of this workflow — the exact recovery
+          # path its own `workflow_dispatch` trigger exists for (see the `on:`
+          # block comment above). Guard the type instead of assuming an array;
+          # a non-array still yields zero names, so a PR with no marker label
+          # still passes.
+          names="$(printf '%s' "$PR_LABELS" | jq -r 'if type == "array" then .[] else empty end')"
           hit=""
           while IFS= read -r name; do
             [ -n "$name" ] || continue
