@@ -22,6 +22,15 @@
 
 import { Link } from "@/i18n/navigation";
 
+// MEH-1981 a11y: `underline` at rest, NOT `hover:underline`. axe's
+// link-in-text-block rule passes if EITHER the link contrasts 3:1 against the
+// surrounding text OR it is distinguished without relying on colour. This link
+// sits inside a <p> of body copy, and #2e6853 on #1c1a17 measures 2.66:1 —
+// under the threshold — so the resting underline is the condition that has to
+// hold. Measured red on /forgot-password, desktop and mobile, in
+// e2e/flows/12-axe-a11y.spec.ts before this line changed.
+const LINK_CLASS = "text-primary underline";
+
 /**
  * @param {object}   props
  * @param {string}   props.message     Already-translated notice line.
@@ -50,7 +59,7 @@ export default function CollectionNotice({ message, linkLabel, testId, className
       <Link
         href="/privacy"
         target="_blank"
-        className="text-primary hover:underline"
+        className={LINK_CLASS}
         data-testid={testId ? `${testId}-link` : undefined}
       >
         {linkLabel}

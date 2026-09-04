@@ -1222,6 +1222,9 @@ def get_me(
         if producer:
             out.producer_status = producer.status
             out.producer_rejection_reason = producer.rejection_reason
+            # MEH-2210: the code + resubmission count ride with the reason.
+            out.producer_rejection_reason_code = producer.rejection_reason_code
+            out.producer_resubmission_count = producer.resubmission_count
     return out
 
 
