@@ -170,10 +170,10 @@ class TestExperienceSubmission:
         # spots_left computed
         assert body["spots_left"] == 10
 
-    def test_unverified_producer_is_rejected(self, client, db, monkeypatch):
+    def test_unverified_producer_is_rejected(self, client, db):
         # Mirrors tests/test_verified_email_enforcement.py: the 403 carries the
         # structured detail so the frontend matches on the stable `code`.
-        _mock_moderation(monkeypatch, status="APPROVED")
+        # No moderation mock — the gate raises before validate_experience.
         user = make_user(
             db, role="producer", email="unverified@test.com", email_verified=False
         )
