@@ -728,7 +728,13 @@ jobs:
   linear-mentions:
     name: Linear mention guard (rule 29, warn-only)
     needs: changes
-    if: ${{ needs.changes.outputs.frontend != 'true' && needs.changes.outputs.backend != 'true' && needs.changes.outputs.workflows != 'true' }}
+    # MEH-1949: the docs-only gate was correct for rule 29's TEXT ban and is
+    # wrong for the branch-name consistency check, whose whole population is
+    # code PRs (a `feature/meh-<N>-*` branch is what the Branch name gate
+    # requires of them). Measured 02/09: the job reported `skipped` on #3292
+    # (frontend) and #3294 (backend) — the two shapes it needs to see.
+    # Removed rather than inverted: one job with both scopes beats two jobs
+    # sharing one script. The cost is stated below and it is warnings only.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     continue-on-error: true
@@ -742,7 +748,19 @@ jobs:
           printf '%s' "$PR_TITLE" > "$RUNNER_TEMP/pr_title.txt"
           printf '%s' "$PR_BODY"  > "$RUNNER_TEMP/pr_body.txt"
       - name: Check for bare Linear identifiers (warn-only)
-        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" || true
+        # MEH-1949: third argument = the head branch name. A `meh-<N>` in a
+        # branch name is an auto-link with no closing keyword available, so the
+        # script checks CONSISTENCY (is it declared as `Closes` in the body?)
+        # rather than banning the identifier — banning it would collide with
+        # the Branch name gate, which REQUIRES it.
+        env:
+          # Via env, never interpolated into the `run:` string. A branch name
+          # is attacker-controlled on a fork PR, and `${{ }}` inside `run:`
+          # is substituted before the shell sees it — the standard Actions
+          # script-injection sink. The step above already does this for the
+          # title and body; this is the same discipline for the same reason.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" "$PR_HEAD_REF" || true
 
   # ─────────────────────────────────────────────
   # MEH-1585: backend CVE gate, as a ci-gate LEG.
