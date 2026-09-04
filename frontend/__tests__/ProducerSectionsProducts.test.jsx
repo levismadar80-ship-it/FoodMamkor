@@ -394,10 +394,13 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
   // still carries the old key must render nothing from it.
   describe("MEH-1855 — price_range is the only price-label field the reader consults", () => {
     // The dropped column's name, assembled at runtime ON PURPOSE: chunk 2's
-    // repo-wide absence gate greps backend/frontend/docs for that name and
-    // requires 0 hits, and a literal here would be the one hit — a reference
-    // to a key that no longer exists anywhere in the contract. The test still
-    // sends the real stale key to the component; it just does not spell it.
+    // absence gate greps backend/frontend/docs for that name over *.py, *.js,
+    // *.jsx and *.json (the PR-body command) and requires 0 hits, and a literal
+    // in this .jsx file would be the one hit — a reference to a key that no
+    // longer exists anywhere in the contract. The test still sends the real
+    // stale key to the component; it just does not spell it. The gate does not
+    // scan *.mjs, which is why e2e/qa-meh1855-price-signature.mjs keeps the
+    // literal in its ALIAS_ONLY fixture — a stale payload, not a contract key.
     const STALE_ALIAS_KEY = ["starting", "price", "label"].join("_");
 
     it("price_range-only, NO top_product_name: the signature block still renders (was fully invisible)", () => {
