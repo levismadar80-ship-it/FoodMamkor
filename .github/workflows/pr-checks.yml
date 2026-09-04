@@ -194,6 +194,12 @@ jobs:
         env:
           # Silence telemetry noise in CI logs.
           NEXT_TELEMETRY_DISABLED: "1"
+          # MEH-1754 item 5: NEXT_PUBLIC_API_URL is required by
+          # lib/env.client.js and the build now fails without it. Same Railway
+          # staging value the E2E build uses (e2e.yml:142) — build-time only,
+          # public by definition (NEXT_PUBLIC_* ships in the browser bundle),
+          # so plain env and deliberately not `secrets.*`.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
 
       # MEH-686 Step 18 — design-token drift gate (Flag B). Re-exports tokens
       # from docs/DESIGN.md and fails if the committed tailwind.tokens.json
@@ -244,6 +250,9 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+          # MEH-1754 item 5: required by lib/env.client.js — this job builds
+          # independently of the `build` job, so it needs its own copy.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
 
       - name: "Scan 2a — forbidden AI-artifact filenames in deployable output"
         run: |
