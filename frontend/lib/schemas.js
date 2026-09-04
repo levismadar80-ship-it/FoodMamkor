@@ -86,6 +86,10 @@ export const ProducerListSchema = z.object({
     id: z.union([z.string(), z.number()]).optional(),
     name: z.string().nullable().optional(),
     emoji: z.string().optional(),
+    // MEH-1456 chunk A: seeded-row ownership flag, read-only on every
+    // surface. Declared so the nested-parity guard does not strip it;
+    // chunk 2b's admin UI gates rename/delete on it.
+    is_system: z.boolean().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),
