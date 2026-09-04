@@ -186,4 +186,9 @@ def test_malformed_code_turns_the_feature_off(client, db, monkeypatch):
         r = client.post("/producers/me/verify-phone", headers=auth_header(user))
         assert r.status_code == 200, r.text
         assert len(rec.calls) == 1, bad
-        assert _stored_code(db, producer.id) != bad
+        # Not `!= bad` — no 6-digit string can equal any of these three, so
+        # that read as coverage and could not fail (reviewer, PR #3393).
+        # A real OTP was stored instead: six digits, and the one that went out.
+        stored = _stored_code(db, producer.id)
+        assert len(stored) == 6 and stored.isdigit(), bad
+        assert stored == rec.calls[0][1], bad
