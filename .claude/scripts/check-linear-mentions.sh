@@ -223,7 +223,7 @@ check_closing_line() {
     # First match wins; only used for the message, never for the verdict.
     if [ -z "$near_miss" ]; then
       if printf '%s' "$trimmed" | grep -qE '^[Rr][Ee][Ff][Ss]:?[[:space:]]+MEH-[0-9]+$'; then
-        near_miss="line \"$(printf '%s' "$trimmed" | head -c 80)\" — a Refs line needs the (chunk k/n) suffix; without it nothing says which chunk this is, and rule 29b measured bare Refs closing a card 2 times in 5"
+        near_miss="line \"$(printf '%s' "$trimmed" | head -c 80)\" — a Refs line needs the (chunk k/n) suffix"
       elif printf '%s' "$trimmed" | grep -qE "${CLOSING}MEH-[0-9]+"; then
         near_miss="line \"$(printf '%s' "$trimmed" | head -c 80)\" — the closing word is not on its own line (inside parentheses, backticks, or prose does not count)"
       fi
