@@ -94,9 +94,7 @@ SEED_CATEGORY_NAMES: tuple[str, ...] = (
 def upgrade() -> None:
     op.add_column(
         "categories",
-        sa.Column(
-            "is_system", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("is_system", sa.Boolean(), nullable=False, server_default=sa.false()),
     )
 
     bind = op.get_bind()
@@ -107,6 +105,19 @@ def upgrade() -> None:
     ).rowcount
 
     print(f"[MEH-1456] categories total={total} · marked is_system=true: {marked}")
+    if 0 < marked < len(SEED_CATEGORY_NAMES):
+        # PARTIAL drift is accepted, and reported rather than refused (the CI
+        # reviewer on PR #3392 asked for `marked != 18` to raise). A seed row
+        # renamed by an admin before chunk 2b locks renames would stay
+        # is_system=False — a row that has already been edited by hand is,
+        # by the card's own definition, no longer purely the seed's. Raising
+        # here would fail the Railway boot for a state the product tolerates;
+        # the count above is the audit trail, and a hand reconcile is one
+        # UPDATE by name. Only "none matched" refuses, below.
+        print(
+            f"[MEH-1456] WARNING: only {marked} of {len(SEED_CATEGORY_NAMES)} seed "
+            "names matched — the unmatched seed rows stay is_system=false"
+        )
     if total > 0 and marked == 0:
         # A populated table with no seed name present means CATEGORIES was
         # renamed after this snapshot, or the seed never ran here. Either way
