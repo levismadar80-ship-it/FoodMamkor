@@ -30,6 +30,16 @@ import CitySearch from "@/components/CitySearch";
 import EventForm from "@/components/EventForm";
 import ExperienceForm from "@/components/ExperienceForm";
 
+// MEH-1981: the surface now renders CollectionNotice, whose privacy link is
+// the next-intl Link — stubbed like the register/EventForm suites do, so the
+// key-echo next-intl mock above/below does not drag next/navigation in.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
 }));
