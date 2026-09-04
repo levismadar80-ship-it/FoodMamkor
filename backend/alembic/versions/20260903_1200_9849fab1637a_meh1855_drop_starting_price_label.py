@@ -42,7 +42,7 @@ Same posture as d4e7a92c81b5 (MEH-766 ch6, `is_verified`).
 #        backend/app/data_ownership.py + docs/DATA_OWNERSHIP.md).
 
 Revision ID: 9849fab1637a
-Revises: 7c1e2a9f4b3d
+Revises: e6b2d4f81a37
 Create Date: 2026-09-03 12:00:00
 """
 
@@ -52,7 +52,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "9849fab1637a"
-down_revision: str | None = "7c1e2a9f4b3d"
+down_revision: str | None = "e6b2d4f81a37"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
