@@ -152,9 +152,26 @@ const nextConfig = {
     // INTENT of a quiet redirect home — but no rule was ever added, so stale
     // links 404'd. `:path*` matches zero+ segments (covers bare + deep links).
     // permanent: false — the surface may revive (MEH-543).
+    //
+    // MEH-2245: the experiences tab used to live at /events?tab=experiences;
+    // it is now the /experiences route. Old deep-links (shares, bookmarks)
+    // 308 there. Locale + bare pair, same shape as the /neighbor pair above.
+    // Next forwards the WHOLE request query to the destination (`has:` does
+    // not consume it — measured: Location carries ?tab=experiences), so the
+    // first URL still shows the old param. Nothing reads it; EventsClient's
+    // URL-writer (city/category only) rewrites the query on hydration and
+    // the settled URL is /experiences[?city=…]. Harmless, documented.
+    const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
     return [
       { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
       { source: "/neighbor/:path*", destination: "/", permanent: false },
+      {
+        source: "/:locale(he|en)/events",
+        has: TAB_EXPERIENCES,
+        destination: "/:locale/experiences",
+        permanent: true,
+      },
+      { source: "/events", has: TAB_EXPERIENCES, destination: "/experiences", permanent: true },
     ];
   },
   async rewrites() {
