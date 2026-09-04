@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
+from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import get_db
 from app.rate_limit import limiter
 from app.services.availability_validation import (
@@ -1683,10 +1684,22 @@ def request_producer_review(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    if producer.status != "pending":
+    # MEH-2210: `rejected` is the second admitted status — the resubmit loop.
+    # Fail-closed (MEH-1587 pattern): explicit membership, every other status
+    # (draft / approved / inactive / anything unknown) stays 409.
+    resubmitting = producer.status == "rejected"
+    if producer.status != "pending" and not resubmitting:
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+    # MEH-2210: the cap is checked BEFORE the completeness gate — a business
+    # that has used its three resubmissions is told so, not handed a list of
+    # things to fix for a submission it cannot make.
+    if resubmitting and producer.resubmission_count >= MAX_PRODUCER_RESUBMISSIONS:
+        raise HTTPException(
+            status_code=409,
+            detail="הגעתן למספר השליחות המקסימלי — צרו איתנו קשר",
         )
 
     # MEH-2120: ordered AFTER the status check, matching submit_for_review — an
@@ -1707,6 +1720,34 @@ def request_producer_review(
     # (admin WhatsApp + email, fail-open). Lazy import mirrors the fire_alerts
     # style already used in this file.
     from app.services.auth_notifications import notify_admin_producer_resubmit
+
+    if resubmitting:
+        # MEH-2210: rejected → pending. The gate above already answered the
+        # unverified-phone case with 422 (`missing=["phone_verified"]`), so the
+        # target is always `pending` — `pending_whatsapp` was removed in
+        # MEH-2124 and is not revived here (Phase 0 on the card, 03/09).
+        # `rejection_reason` + `rejection_reason_code` are KEPT: they are the
+        # admin's history and the queue shows "the prior reason" next to the
+        # "שליחה חוזרת #n" badge. Only approve clears them.
+        # Captured BEFORE the commit: the commit expires the ORM row, and every
+        # later attribute read would be a lazy reload round-trip (CI reviewer
+        # on #3333). The literals below are what was just written.
+        new_count = producer.resubmission_count + 1
+        producer.status = "pending"
+        producer.resubmission_count = new_count
+        producer.resubmitted_at = datetime.now(timezone.utc)
+        db.commit()
+        background_tasks.add_task(
+            notify_admin_producer_resubmit,
+            producer.name,
+            producer.city,
+            resubmission_count=new_count,
+        )
+        return {
+            "detail": "נשלח לבדיקה חוזרת",
+            "status": "pending",
+            "resubmission_count": new_count,
+        }
 
     background_tasks.add_task(
         notify_admin_producer_resubmit, producer.name, producer.city
