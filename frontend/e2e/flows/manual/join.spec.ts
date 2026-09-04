@@ -52,6 +52,15 @@ const SHOWCASE_HE = he.about_business.showcase;
 const SHOWCASE_EN = en.about_business.showcase;
 const FIRST_PAINT = { timeout: 15_000 };
 
+// MEH-1792 (re-measured 2026-09-04 on this spec): during the app's page-transition
+// window a second copy of the page tree exists briefly OUTSIDE `#main-content`,
+// so a page-wide `getByTestId` can resolve to TWO elements and fail strict mode
+// ("resolved to 2 elements … unexpected value hidden") — seen on the mobile
+// project in both a red-control run and a green run. Scoping every locator to
+// the `#main-content` landmark (layout.js) names the live tree only. Same fix
+// as e2e/flows/27-delivery-day-discoverability.spec.ts:73.
+const scope = (page: Page) => page.locator("#main-content");
+
 /** Deny-list for item 1 — the hero must not mention premium tiers or fees (MEH-617: the price answer lives in the FAQ, Etsy pattern). */
 const HERO_FEES_VOCAB = ["פרימיום", "עמלה", "עמלות"];
 
@@ -77,19 +86,22 @@ async function computedDirection(el: Locator): Promise<string> {
 
 async function gotoJoin(page: Page): Promise<void> {
   await page.goto("/join");
-  await expect(page.getByTestId("join-hero")).toBeVisible(FIRST_PAINT);
+  // Count gate first (retries; the strict visibility check below would throw
+  // instead of waiting if a stray copy ever landed INSIDE the landmark).
+  await expect(scope(page).getByTestId("join-hero")).toHaveCount(1, FIRST_PAINT);
+  await expect(scope(page).getByTestId("join-hero")).toBeVisible(FIRST_PAINT);
 }
 
 test.describe("manual › /join (MEH-995)", () => {
   // MT:MEH-995:1 — /join is live: hero h1, gold eyebrow, ONE "מצטרפים" CTA with the free-to-join hint; no premium/fees copy in the hero.
   test("hero: h1 + eyebrow, a single CTA with the trust hint, no fees vocabulary", async ({ page }) => {
     await gotoJoin(page);
-    const hero = page.getByTestId("join-hero");
+    const hero = scope(page).getByTestId("join-hero");
     await expect(hero.getByRole("heading", { level: 1 })).toHaveText(COPY.h1);
     await expect(hero).toContainText(COPY.eyebrow);
     // toHaveCount(1) page-wide, not just "visible": the page's whole point is
     // ONE door to the wizard, so a second CTA anywhere must fail here.
-    const cta = page.getByTestId("join-cta");
+    const cta = scope(page).getByTestId("join-cta");
     await expect(cta).toHaveCount(1);
     await expect(hero.getByTestId("join-cta")).toHaveText(COPY.cta);
     await expect(cta).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
@@ -104,7 +116,7 @@ test.describe("manual › /join (MEH-995)", () => {
   test("four steps: numerals 01–04 unclipped at 320px, titles from copy, process link", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 });
     await gotoJoin(page);
-    const how = page.getByTestId("join-how");
+    const how = scope(page).getByTestId("join-how");
     await how.scrollIntoViewIfNeeded();
     await expect(how).toContainText(COPY.how.heading);
 
@@ -143,7 +155,7 @@ test.describe("manual › /join (MEH-995)", () => {
   // MT:MEH-995:3 — FAQ teaser at the end: "כמה זה עולה?" with the locked no-fees answer, link "לכל השאלות" → /about/for-businesses.
   test("FAQ teaser: price question + locked answer, link to the full FAQ", async ({ page }) => {
     await gotoJoin(page);
-    const faq = page.getByTestId("join-faq");
+    const faq = scope(page).getByTestId("join-faq");
     await faq.scrollIntoViewIfNeeded();
     await expect(faq).toContainText(COPY.faq.eyebrow);
     await expect(faq.getByRole("heading", { level: 2 })).toHaveText(COPY.faq.q_cost);
@@ -158,7 +170,7 @@ test.describe("manual › /join (MEH-995)", () => {
   test("showcase section on /about/for-businesses: example card, components, nudge, RTL at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/about/for-businesses");
-    const showcase = page.getByTestId("about-business-showcase");
+    const showcase = scope(page).getByTestId("about-business-showcase");
     await expect(showcase).toBeAttached(FIRST_PAINT);
     await showcase.scrollIntoViewIfNeeded();
     await expect(showcase).toBeVisible();
@@ -198,7 +210,7 @@ test.describe("manual › /join (MEH-995)", () => {
     await page.goto("/en/about/for-businesses");
     await expect(page).toHaveURL(/\/en\/about\/for-businesses(?:[/?#]|$)/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    const showcase = page.getByTestId("about-business-showcase");
+    const showcase = scope(page).getByTestId("about-business-showcase");
     await expect(showcase).toBeAttached(FIRST_PAINT);
     await showcase.scrollIntoViewIfNeeded();
     await expect(showcase.getByRole("heading", { level: 2 })).toHaveText(SHOWCASE_EN.heading);
@@ -210,11 +222,11 @@ test.describe("manual › /join (MEH-995)", () => {
   // MT:MEH-995:6 — clicking "מצטרפים" lands on /register/producer (the MEH-994 pre-flight screen).
   test("CTA → wizard: the join CTA lands on /register/producer's pre-flight screen", async ({ page }) => {
     await gotoJoin(page);
-    await page.getByTestId("join-cta").click();
+    await scope(page).getByTestId("join-cta").click();
     await page.waitForURL(/\/register\/producer(?:[/?#]|$)/);
     // The pre-flight screen itself is covered by RegisterProducerClient.test.jsx;
     // here it is only the landing marker — proof the navigation reached the wizard.
-    await expect(page.getByTestId("register-preflight-start")).toBeVisible(FIRST_PAINT);
+    await expect(scope(page).getByTestId("register-preflight-start")).toBeVisible(FIRST_PAINT);
   });
 
   // MT:MEH-995:7 — footer "הוסיפו את העסק שלכם" → /join: COVERED by frontend/__tests__/FooterNavGroups.test.jsx:62 (not duplicated here).
@@ -224,7 +236,7 @@ test.describe("manual › /join (MEH-995)", () => {
     page,
   }) => {
     await gotoJoin(page);
-    const slot = page.getByTestId("join-testimonial");
+    const slot = scope(page).getByTestId("join-testimonial");
     await slot.scrollIntoViewIfNeeded();
     await expect(slot).toContainText(COPY.testimonial.eyebrow);
     const quote = slot.locator("blockquote");
