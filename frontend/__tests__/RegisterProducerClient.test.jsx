@@ -819,6 +819,25 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
+
+  // MEH-2105: this gate was the only per-step block that never called
+  // requestFocus — on a 375px viewport the red line rendered ~67px below the
+  // fold while every sibling gate (ACCOUNT fields, runRequiredGate) scrolls
+  // its offender to block:"center". Observed the way MEH-1807 observes its
+  // gates: focus landed on the field, and the setup.js scrollIntoView shim
+  // saw the centred scroll. The pre-click control proves the field was NOT
+  // already focused, so the post-click assertion is falsifiable.
+  it("moves focus to the licence field when the gate blocks (MEH-2105)", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    await renderWizard();
+    await reachCategoryAndPick();
+    const licenseInput = screen.getByTestId("register-category-license");
+    expect(document.activeElement).not.toBe(licenseInput); // control
+    fireEvent.click(screen.getByTestId("register-category-next")); // blocked
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
+    expect(document.activeElement).toBe(licenseInput);
+    expect(licenseInput.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+  });
 });
 
 // MEH-1807: cross-step validation. Before this, producer_name / phone /
