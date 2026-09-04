@@ -19,7 +19,7 @@ Example:
 
 ---
 
-## Builder model (MEH-1668)
+## Builder model
 
 Every commit carries a `Builder-Model:` trailer naming the model the session ran
 as. `scripts/checks/builder-model-guard.sh` reads it and fails when it equals the
@@ -62,9 +62,9 @@ remembering.
   - `docs/DEPLOYMENT.md` if env vars or infra changed
   - `docs/MANUAL_TESTING.md` if new user-facing flows added
 
-## Database Checklist (MEH-266 — skip only when truthfully not relevant)
+## Database Checklist (skip only when truthfully not relevant)
 
-Production broke on 2026-04-23 because MEH-206 + MEH-192 added columns to
+Production broke on 2026-04-23 because two tickets added columns to
 the `User` model without an Alembic revision. Railway container booted fine
 but every `/auth/login` returned 500 "column does not exist".
 Full post-mortem: [docs/INCIDENTS/2026-04-migrate-columns-drift.md](../docs/INCIDENTS/2026-04-migrate-columns-drift.md)
