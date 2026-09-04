@@ -307,6 +307,11 @@ cross-hook handlers/effects pulled into the shell.
    dev/CI safety net per MEH-352 — leave behind. The Alembic-only
    policy from `.claude/rules/db.md` means `_migrate_columns` is
    already gone; **do not touch this block** per task constraints.
+   *(MEH-2219 chunk 1, 03/09: the block is intact — it is now wrapped in
+   one `if _schema_is_alembic_owned(settings.env)` so it runs only in
+   development/test; on staging/production boot logs
+   "schema is Alembic-owned … create_all skipped (ADR-003)" instead.
+   A gate around the block is not a deletion of it.)*
 
 3. **App factory + middleware stack** — `main.py:97-101` (FastAPI
    ctor, slowapi limiter, CorrelationId), `:104-111` (CORS),
