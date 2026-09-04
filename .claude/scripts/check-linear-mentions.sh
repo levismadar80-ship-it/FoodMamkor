@@ -110,7 +110,7 @@ CLOSING='([Cc][Ll][Oo][Ss][Ee][Ss]|[Ff][Ii][Xx][Ee][Ss]|[Rr][Ee][Ss][Oo][Ll][Vv]
 # whole (trimmed) line and nothing else. `(closes MEH-1)`, `` `Closes MEH-1` ``
 # and `see Closes MEH-1 above` all fail the anchor; that is the entire check.
 CLOSES_LINE="^${CLOSING}MEH-[0-9]+\$"
-REFS_CHUNK_LINE='^[Rr][Ee][Ff][Ss]:?[[:space:]]+MEH-[0-9]+[[:space:]]+\([Cc]hunk[[:space:]]+[0-9]+/[0-9]+\)$'
+REFS_CHUNK_LINE='^[Rr][Ee][Ff][Ss]:?[[:space:]]+MEH-[0-9]+[[:space:]]+\([Cc][Hh][Uu][Nn][Kk][[:space:]]+[0-9]+/[0-9]+\)$'
 
 # trim_line <string> — strip a trailing CR and leading/trailing whitespace.
 trim_line() {
@@ -386,11 +386,50 @@ run_self_test() {
     fi
   done
 
+  # ---- end-to-end: the REAL dispatch, exit code and all ----
+  # Everything above exercises the functions in isolation, so the main flow's
+  # own logic — the "exit 3 outranks exit 1 when both halves fail" precedence
+  # at the bottom of this file — was untested (CI reviewer, PR #3367). Each row
+  # re-invokes this script as a subprocess with real fixture files and asserts
+  # the process exit code, which is the only thing CI ever reads.
+  local -a e2e_cases=(
+    # fixture|author-login|expected-process-exit
+    "valid-closes||0"
+    "valid-refs-chunk||0"
+    # scan fails (two extra bare ids) AND the closing line passes -> 1 alone
+    "mixed||1"
+    # closing line missing, scan clean -> 3 alone
+    "clean||3"
+    # BOTH halves fail: bare `Refs MEH-N` trips the scan AND is not a
+    # standalone form -> 3 must win over 1
+    "refs-without-chunk||3"
+    "dependabot|dependabot[bot]|0"
+    "dependabot|levismadar80|3"
+  )
+  local self="${BASH_SOURCE[0]}"
+  for c in "${e2e_cases[@]}"; do
+    IFS='|' read -r fx author expected <<<"$c"
+    title="$FIXTURES/$fx.title"
+    body="$FIXTURES/$fx.body"
+    if [ ! -r "$title" ] || [ ! -r "$body" ]; then
+      echo "SELF-TEST ERROR: fixture '$fx' missing ($title / $body)" >&2
+      return 2
+    fi
+    got=0
+    bash "$self" "$title" "$body" "" "$author" >/dev/null 2>&1 || got=$?
+    if [ "$got" -eq "$expected" ]; then
+      echo "  PASS  end-to-end:$fx author='${author:-<none>}' (exit $got)"
+    else
+      echo "  FAIL  end-to-end:$fx author='${author:-<none>}' (expected $expected, got $got)" >&2
+      rc=1
+    fi
+  done
+
   if [ "$rc" -eq 0 ]; then
     # Counts derived, never hardcoded — a literal here goes stale the moment
     # someone adds a case, and a stale claim in a passing message is worse
     # than no claim (CI reviewer, PR #2782).
-    echo "self-test: all ${#cases[@]} text fixtures + ${#branch_cases[@]} branch cases + ${#closing_cases[@]} closing-line fixtures + ${#inline_cases[@]} closing-line inline controls + ${#scan_cases[@]} scan/chunk cases passed"
+    echo "self-test: all ${#cases[@]} text fixtures + ${#branch_cases[@]} branch cases + ${#closing_cases[@]} closing-line fixtures + ${#inline_cases[@]} closing-line inline controls + ${#scan_cases[@]} scan/chunk cases + ${#e2e_cases[@]} end-to-end cases passed"
   else
     echo "self-test: FAILURES above" >&2
   fi
