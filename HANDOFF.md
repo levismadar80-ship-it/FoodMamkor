@@ -3,6 +3,36 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-04 צהריים — batch חוויות MEH-2245/2246/2247 (session `015hizoq…`): שלושתם מוזגו · הכרעת UX אחת פתוחה · follow-up MEH-2248
+
+**‏שורה אחת:** ‏#3353 (2245) `ed59c0a` 12:06Z · #3361 (2247) `783ee3b` 12:23Z · #3357 (2246, RED) `f8447ae6` 14:54Z — ספיר אישרה מיזוג ב-14:21Z, ואז auto-merge SQUASH (השיטה נקראה מתשובת ה-enable, כלל 21). PR docs זה (#3363) חומש רק אחרי ששלושתם נחתו (כלל 31b). כל ענף מ-`origin/staging` @ `18af172`.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏#3357 מחכה להכרעה, לא רק למיזוג.** הכרטיס ביקש לשקף לעמוד `/experiences/new` את שער ה-role של עמוד יצירת האירוע. Phase 0c: השער ה-page-level ההוא (`producer/dashboard/events/new/page.js:30-33`) **מעולם לא נצפה** — `producer/dashboard/layout.js:105-116` (layout משותף) מגדר קודם ומציג לצרכנית מחוברת פאנל «אין לך גישה» **בלי redirect**. ה-mirror המילולי (`push("/login?redirect=/experiences/new")` על role) נבנה, נמדד, ו**מלולפ**: `LoginClient.jsx:90` מחזיר משתמשת מחוברת ל-redirect, שהשער דוחף שוב ל-login. הוחזר. ה-PR הוא backend-only; שלוש אפשרויות ל-UX בגוף ה-PR (א: פאנל denied = קופי חדש, כלל 22 · ב: redirect ל-`/experiences` · ג: להשאיר — 403 בשרת בלבד).
+2. **‏Follow-ups שדווחו ולא בוצעו (scope):** ‏`components/ExperienceCard.jsx` יתום מאז מחיקת `ExperiencesClient` (רק הטסט שלו מייבא אותו; ה-docstring ב-`:14` עדיין אומר «sole consumer») · `lib/event-categories.js:13` `Related:` מצביע לקובץ שנמחק · `app/globals.css:577` הערה · `he.json:1855` «חוויות קהילתיות» (admin) · `he.json:2537` «מארחת קהילתית» (card fallback) · `experiences/new/page.js:6` «שיעור תזונה קהילתי» ב-metadata hardcoded — כולם מילות LOCK מחוץ לרשימות הקופי של שלושת הכרטיסים; כלל 22.
+3. **‏ה-308 מעביר את ה-query.** ‏`has: [{type:"query", key:"tab"}]` לא «צורך» את הפרמטר — `Location: /experiences?tab=experiences`. לא מזיק: ה-URL-writer של `EventsClient` (city/category בלבד) מנקה אחרי hydration, נמדד בשני viewports. ההערה ב-`next.config.js` תוקנה אחרי שהסקירה האדברסרית תפסה שהיא טענה אחרת.
+4. **‏flip-check (כלל 29b) — 2 מתוך 3 באותו session, אותה צורת גוף בדיוק:** ‏#3353 (`Closes MEH-2245`) **לא** סגר — הועבר Done ידנית · #3361 (`Closes MEH-2247`) סגר אוטומטית · #3357 (`Closes MEH-2246`) סגר אוטומטית (`completedAt 14:54:37.021Z`). אותו slug-shape בשלושתם. ההוראה נשארת: לאמת אחרי כל מיזוג בשני הכיוונים, לא לחזות לפני.
+5. **‏#3357 עבר חמישה סבבי CI:** `ruff format` (עטיפת import) · שלושה minors של הבוט (אחד נבדק ונמצא **שגוי** — ה-`count()==0` כבר היה בקובץ) · **שני טסטים ב-`test_meh1176_experience_email_notifications.py`** שמגישים חוויה כצרכנית — קובץ שספירת ה-N של הכרטיס (רק `test_experiences.py`) לא כיסתה · ו-**שער `.ai/diagrams/` (כלל 12)**: ה-node של `POST /experiences` ב-`api-routes.md:112` נשאר בלי סמן תפקיד ליד `POST /events` שנושא ✅👤, וגם ה-legend ב-`:12` לא מנה את `/experiences`. לקחים: blast-radius של שינוי gate = `grep -rn 'post("/experiences"' tests/`, לא קובץ אחד; וממצא של reviewer הוא **מדגם, לא מלאי** — הבוט נקב ב-node, ה-legend נמצא בבדיקה עצמאית.
+5b. **‏staging זזה 12+ קומיטים תוך שעה** (session מקביל). כל תזוזה מחזירה PR ל-behind מול ה-ruleset ועולה סבב CI מלא. **auto-merge הוא הכלי הנכון לחלון כזה** — הוא יורה ברגע שנפתח חלון נקי-וירוק במקום להתחרות בתור ידנית. ‏`update_pull_request_branch` הוא הסנכרון שה-HANDOFF כבר ממליץ עליו לפני מיזוג בתור.
+5c. **‏סשן מקביל דחף merge של staging לענף ה-docs שלי** (`b0943cd6`). זה סנכרון ניטרלי ולא הסרת אילוץ — עשיתי fast-forward אליו ואימתתי שהתוכן שלי שרד (‏CHANGELOG + HANDOFF, שני ה-greps), במקום להילחם בו.
+6. **‏מכשירי sandbox:** ‏Turbopack + symlink `node_modules` = `Symlink [project]/node_modules is invalid` → `npm ci` ב-worktree (26 שניות). ‏`next start` בלי backend נתקע אחרי ECONNREFUSED-ים על ה-proxy — stub python על :8000. ‏`pkill`-free: `next-server` נסגר לפי PID מ-`ps -eo pid,comm`. ‏Playwright: `waitForURL` לא רואה `replaceState` — polling של `location`; `page.locator("form")` תופס את חיפוש ה-Header.
+
+### PRs
+
+| PR | מה | מצב |
+| -- | -- | -- |
+| #3353 | MEH-2245 — route-as-tab, ExperiencesClient נמחק, 308, קופי LOCK, qa-artifacts | `ed59c0a` (squash, 12:06Z) — Done ידנית |
+| #3357 | MEH-2246 — `POST /experiences` → `require_verified_producer`, backend-only | פתוח — **ספיר ממזגת** (RED) + הכרעת UX |
+| #3361 | MEH-2247 — שתי מחרוזות בפרומפט המודרציה | `783ee3b` (squash, 12:23Z) — Done אוטומטית |
+| זה | docs backfill — CHANGELOG + HANDOFF + DATA.md + api-routes + MANUAL_TESTING | לא לחמש auto-merge לפני שלושת הקודמים (כלל 31b) |
+
+### רשימת ספיר (residual)
+
+* **‏#3357:** מיזוג (RED) + הכרעת ה-UX של `/experiences/new` לצרכנית (א/ב/ג בגוף ה-PR).
+* **‏קופי:** שלוש מילות LOCK שנותרו (לקח 2) — כרטיס קופי קטן אם רוצים אפס «קהילתי» ב-he.json.
+* **‏dead code:** `ExperienceCard.jsx` + הטסט שלו — למחוק או לתת צרכן → **MEH-2248** (GREEN, Backlog).
+
 ## 2026-09-03 ערב → 04/09 בוקר — drain כה' (session `01NTrU3k…`): ה-BRIEF של 18:10Z נעבד T0→T8 · 13 PRs נחתו · **ריליז staging→main #3328 בוצע (`0f273bf8`, merge commit, prod booted 09:51Z, 3 probes ×2 תקינים)** · שני drop-PRs + chunk 1 של 2219 ממתינים לספיר
 
 **‏שורה אחת:** ‏#3310 (2242) · #3312 (1944) · #3313 (1980 ch2) · #3315 (2228) · #3311 (2243) · #3319 (1981) · #3320 (413/2135) · #3327 (1523) · #3324 (1517) · #3325 (2117+1839) נחתו כ-squash מאומת. פתוחים לספיר: #3314 (2219 ch1) · #3316 (1855 ch2, DROP) · #3321 (1606, data merge) · #3309 (unlock, Repo guards אדום). T8 אחרי הריליז: #3317 (2105) · #3318 (1621 ch1) · #3322 (1890) — **מוזג 04/09** `a23b696b`.

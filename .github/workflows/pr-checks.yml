@@ -170,7 +170,13 @@ jobs:
             [ -n "$f" ] || continue
             sz=$(git cat-file -s "$HEAD_SHA:$f" 2>/dev/null || echo 0)
             total=$((total + sz))
-          done < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- qa-artifacts/)
+          # MEH-2184: a bare `qa-artifacts/` pathspec is anchored at the repo root, so
+          # it never matched frontend/qa-artifacts/ — which is where Playwright writes,
+          # because e2e.yml runs it with working-directory: frontend. Measured on
+          # staging: 495 tracked files / 14.8 MB were invisible to a 2 MB cap.
+          # `:(glob)` makes the leading `**/` match at any depth, root included.
+          done < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" \
+                     -- ':(glob)**/qa-artifacts/**')
           mb=$(awk -v t="$total" 'BEGIN{printf "%.2f", t/1048576}')
           echo "qa-artifacts added/modified in this PR: ${total} bytes (${mb} MB)"
           if [ "$total" -gt "$MAX_BYTES" ]; then
