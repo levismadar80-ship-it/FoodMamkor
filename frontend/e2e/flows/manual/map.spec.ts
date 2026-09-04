@@ -179,7 +179,15 @@ function icu(msg: string, count: number): string {
   while ((b = re.exec(m[1])) !== null) branches[b[1]] = b[2];
   const key =
     branches[`=${count}`] !== undefined ? `=${count}` : count === 1 ? "one" : count === 2 ? "two" : "other";
-  return (branches[key] ?? branches.other).replace("{count}", String(count)).replace("#", String(count));
+  const chosen = branches[key] ?? branches.other;
+  // Deliberately NOT `?? ""`: a plural string with no `other` branch is a
+  // corrupt message file, and an empty string would satisfy `toHaveText("")`
+  // trivially — a null that is also the reassuring answer (testing.md). Fail by
+  // name rather than on an opaque `undefined.replace`.
+  if (chosen === undefined) {
+    throw new Error(`icu(): no branch matches count=${count} and there is no "other" fallback in ${JSON.stringify(msg)}`);
+  }
+  return chosen.replace("{count}", String(count)).replace("#", String(count));
 }
 
 // ── fixtures ────────────────────────────────────────────────────────────────
@@ -302,7 +310,16 @@ async function stubExternal(page: Page): Promise<TileLog> {
   return tiles;
 }
 
-/** Intercept the two client endpoints. `list` may be a function of the request URL (the geo re-query carries `radius_km`). */
+/**
+ * Intercept the two client endpoints. `list` may be a function of the request
+ * URL (the geo re-query carries `radius_km`).
+ *
+ * MEH-1968 PENDING RULING — every test that calls this is exercising the
+ * frontend state machine against a fixed response, and is NOT evidence of
+ * backend-contract correctness. Condition 3 of the three-condition exception is
+ * argued, not mechanical (see the file header). Do not inherit these as
+ * integration coverage.
+ */
 async function mockCatalog(page: Page, list: Producer[] | ((u: URL) => Producer[]) = PRODUCERS): Promise<Catalog> {
   const seen: URL[] = [];
   await page.route("**/api/categories**", (route: Route) => route.fulfill({ json: CATEGORIES }));
