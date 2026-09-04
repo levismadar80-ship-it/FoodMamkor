@@ -64,6 +64,7 @@ erDiagram
         string availability_status "legacy — preserved during MEH-291 overlap"
         string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation"
         date vacation_until "nullable — required when availability_state=on_vacation"
+        json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         string plan "free|premium"
         boolean grass_fed
         boolean organic_certified
