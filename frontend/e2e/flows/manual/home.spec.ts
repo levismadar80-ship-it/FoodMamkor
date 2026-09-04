@@ -14,7 +14,7 @@ import { ProducersResponseSchema } from "../../../lib/schemas.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CategoriesResponseSchema, StatsSchema } from "../../../lib/api-schemas.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
-import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
+import { FILTER_AXES, homeParamFor } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CHIPS_CONFIG } from "../../../lib/producer-filters.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
@@ -76,11 +76,35 @@ import { CATEGORY_CARDS } from "../../../lib/home-categories.js";
  *           The data-dependent rows INTERCEPT four client endpoints —
  *           `GET /api/producers` (incl. its `/{id}` form for recently-viewed),
  *           `GET /api/categories`, `GET /api/stats`, `GET /api/search` +
- *           `/api/search/trending`. CI runs this same spec against a
- *           `next start` whose proxy reaches the REAL staging backend; the
- *           intercept is what keeps the counter, the grid census, the applied-
- *           filter tags, the region fallback and the day captions deterministic
- *           in both worlds.
+ *           `/api/search/trending`.
+ *
+ *           ⚠️ `page.route` CANNOT REACH THE FIRST PAINT, and this paragraph
+ *           used to claim the opposite ("the intercept is what keeps … all of
+ *           it deterministic in both worlds"). That was false, and it is what
+ *           reddened six rows on CI run 33919310192 while the same six passed
+ *           locally. `app/[locale]/page.js:39-55` SSR-fetches `/producers` +
+ *           `/categories` from the SERVER, which no browser-side route handler
+ *           observes — and `lib/use-home-page.js` then SKIPS the client fetch
+ *           the intercept would have answered:
+ *             · categories — `:265`, `if (!initialCategories)`, unconditional;
+ *             · producers  — `:287`, `serverCoversThisLoad`, whenever the URL
+ *               carries no `category` / `city` / `day` / chip param.
+ *           The CC sandbox has no backend, so both SSR fetches fail soft to
+ *           `null`, the page client-fetches, and the fixture governs. CI sets
+ *           `NEXT_PUBLIC_API_URL` to the live Railway staging backend
+ *           (`e2e.yml:142`), so the SSR fetch SUCCEEDS and the page renders the
+ *           BACKEND's catalog with the fixture entirely inert. Measured both
+ *           ways: a `?category=` load requests `/api/producers` once, a
+ *           param-less load requests it zero times, and `/api/categories` is
+ *           requested zero times either way once the server has seeded it.
+ *
+ *           `gotoFixtureFeed` is the answer to the producers half and
+ *           `activeCategoryFixture` to the categories half — both below, each
+ *           carrying the reasoning at its definition. Same constraint
+ *           `e2e/visual/parity.spec.ts:679` documents for `/[slug]`'s
+ *           `initialProducer` and `e2e/visual/badge-overflow-collision.spec.ts:31`
+ *           for `/producers`; home joined that list when MEH-1832 gave it an
+ *           SSR first paint.
  *
  * Stubs:    Two INCIDENTAL calls are stubbed (not mocks — removing them changes
  *           nothing about what is asserted): OpenStreetMap tiles for the
@@ -351,6 +375,23 @@ const categoryAwareFeed = (u: URL): Producer[] => {
   return PRODUCERS.filter((p) => String((p.categories as Array<{ id: number }>)[0]?.id) === cat);
 };
 
+/**
+ * `categoryAwareFeed`, keyed on the id the seam is ACTUALLY being driven with
+ * rather than on the fixture's own `CAT_A.id` — see `activeCategoryFixture`,
+ * which explains why those two are not always the same number.
+ *
+ * It still discriminates, which is the property `categoryAwareFeed`'s own
+ * comment is about: any OTHER category yields nothing, so a page that ignored
+ * the filter would show 10 cards where 2 are asserted and fail.
+ */
+const feedForCategory =
+  (id: string) =>
+  (u: URL): Producer[] => {
+    const cat = u.searchParams.get("category");
+    if (!cat) return PRODUCERS;
+    return cat === id ? CAT_A_MEMBERS : [];
+  };
+
 const STATS_ABOVE = { producers_count: PRODUCERS.length, categories_count: CATEGORIES.length };
 
 test.beforeAll(() => {
@@ -386,7 +427,11 @@ test.beforeAll(() => {
 });
 
 // ── helpers ─────────────────────────────────────────────────────────────────
-type Seen = { producers: URL[]; search: URL[] };
+/**
+ * `stats` is a COUNT of requests received, not of responses sent, and it is
+ * incremented before `statsDelayMs` is honoured — see `mountEffectRan`.
+ */
+type Seen = { producers: URL[]; search: URL[]; stats: number };
 
 /** Stub the one incidental external host the home page hits (mini-map tiles). */
 async function stubTiles(page: Page): Promise<void> {
@@ -408,7 +453,7 @@ async function mockApi(
     search?: Record<string, unknown>;
   } = {},
 ): Promise<Seen> {
-  const seen: Seen = { producers: [], search: [] };
+  const seen: Seen = { producers: [], search: [], stats: 0 };
   // Registered generic-first: Playwright matches routes in REVERSE registration
   // order, so the specific `/producers/<id>` handler below wins over this one.
   await page.route("**/api/producers**", (route: Route) => {
@@ -424,6 +469,12 @@ async function mockApi(
   });
   await page.route("**/api/categories**", (route: Route) => route.fulfill({ json: CATEGORIES }));
   await page.route("**/api/stats**", async (route: Route) => {
+    // Counted BEFORE the delay: `mountEffectRan` needs "the mount effect issued
+    // this", which the request itself proves. Counting after would make the
+    // gate wait out `statsDelayMs` and defeat the one row that sets it (the
+    // MEH-607 stats skeleton, which asserts the skeleton while stats is still
+    // in flight).
+    seen.stats += 1;
     if (opts.statsDelayMs) await new Promise((r) => setTimeout(r, opts.statsDelayMs));
     return route.fulfill({ json: opts.stats ?? STATS_ABOVE });
   });
@@ -460,7 +511,36 @@ async function gotoHome(page: Page, path = "/"): Promise<void> {
   await expect(scope(page).getByTestId("home-filter-row")).toHaveCount(1, FIRST_PAINT);
 }
 
-/** Mock, navigate, and wait for the fixture feed to land in the grid. */
+/**
+ * Wait until `use-home-page`'s mount effect has actually run.
+ *
+ * That effect is where the URL becomes state — `setFilters(initFilters)` and
+ * `setChips(initChips)` (`:259-260`) — and it ends by issuing `GET /stats`
+ * unconditionally (`:297`), which no other code path requests. So a stats hit
+ * is a positive, causal signal that the URL→state write has happened.
+ *
+ * Why any of this matters: `gotoHome` gates on markup that exists in the SERVER
+ * HTML, so it returns while the page may still be pre-hydration. A chip clicked
+ * in that window is then overwritten when the effect lands, which is the shape
+ * of the intermittence two rows in this file already carry comments about
+ * ("observed once in 5 runs", "2 of 7 runs", both on the mobile project) and of
+ * the MT:T12:4 flake on CI run 33919310192. Gating here fixes the class in ONE
+ * place instead of per row.
+ *
+ * It fails loudly, never silently: if `/stats` were ever to stop being
+ * requested, every caller times out here with this message rather than
+ * quietly going back to racing.
+ */
+async function mountEffectRan(seen: Seen): Promise<void> {
+  await expect
+    .poll(() => seen.stats, {
+      message: "use-home-page's mount effect must have run (it always requests /stats) before the page is driven",
+      timeout: FIRST_PAINT.timeout,
+    })
+    .toBeGreaterThan(0);
+}
+
+/** Mock, navigate, and wait for the page to be past its mount effect. */
 async function gotoWithFeed(
   page: Page,
   path = "/",
@@ -471,10 +551,165 @@ async function gotoWithFeed(
   await stubTiles(page);
   const seen = await mockApi(page, list, opts);
   await gotoHome(page, path);
+  await mountEffectRan(seen);
   return seen;
 }
 
 const cards = (page: Page) => scope(page).getByTestId("producer-card");
+
+// ── the SSR first paint, and how these rows get out from under it ───────────
+// Read the ⚠️ block in the file header first; this is the machinery it names.
+
+/**
+ * The URL params `use-home-page.js:275-287` folds into `initParams` — the set
+ * whose emptiness makes `serverCoversThisLoad` true and cancels the client
+ * fetch. Derived from the app's own taxonomy, so a new axis joins it here for
+ * free. (`day` is deliberately absent: `:241` only honours it beside a `city`.)
+ */
+const FORCING_PARAMS = new Set<string>([
+  "category",
+  "city",
+  ...HOME_CHIPS.map((c) => homeParamFor(c.key) as string),
+]);
+
+/**
+ * Add a filter param unless the path already carries one, so the page CLIENT-
+ * fetches its feed and `mockApi`'s handler is the thing that answers.
+ *
+ * `verified` is the filler: it is PROMOTED, so it shows its active state on its
+ * own chip instead of adding a row to the applied-filters strip
+ * (`HomeProducersGrid.jsx:249-251`), and it is not one of the runtime-gated diet
+ * axes, so it is present on every feed. The mock ignores the query anyway — the
+ * param exists to defeat the skip, not to filter anything.
+ */
+function withForcedFetch(path: string): string {
+  const [base, query = ""] = path.split("?");
+  const params = new URLSearchParams(query);
+  if (![...params.keys()].some((k) => FORCING_PARAMS.has(k))) {
+    params.set(homeParamFor("verified") as string, "1");
+  }
+  const q = params.toString();
+  return q ? `${base}?${q}` : base;
+}
+
+/** A fixture business present in EVERY feed this spec serves (`PRODUCERS` and `CAT_A_MEMBERS` both open with P1). */
+const FIXTURE_SENTINEL = P1.name;
+
+/**
+ * `gotoWithFeed` for the rows whose SUBJECT is the fixture's own contents, with
+ * the two things a runner that has a live backend needs:
+ *
+ *   1. a filter param (`withForcedFetch`), so the client fetch the intercept
+ *      answers actually happens;
+ *   2. a gate on a FIXTURE business being on screen. This half matters as much
+ *      as the first: "8 cards rendered" is equally true of the backend's own
+ *      catalog, so gating on a COUNT is a green with two causes — it is exactly
+ *      how `card photos are object-cover` reached `toHaveCount(PAGE_SIZE)` on
+ *      CI and then failed on the very next line looking for a fixture business.
+ *      Gating on a name the backend cannot supply collapses that to one cause.
+ */
+async function gotoFixtureFeed(
+  page: Page,
+  path = "/",
+  list: Producer[] | ((u: URL) => Producer[]) = categoryAwareFeed,
+  opts: Parameters<typeof mockApi>[2] = {},
+): Promise<Seen> {
+  const seen = await gotoWithFeed(page, withForcedFetch(path), list, opts);
+  await expect(
+    cards(page).filter({ hasText: FIXTURE_SENTINEL }),
+    "the FIXTURE feed must be what rendered — a card count alone is also true of the backend's catalog",
+  ).toHaveCount(1, FIRST_PAINT);
+  return seen;
+}
+
+/**
+ * The category the page can actually resolve an id against, plus its name.
+ *
+ * `activeCategory` is `categories.find((c) => String(c.id) === filters.category)`
+ * (`HomeProducersGrid.jsx:233-235`), so the whole discovery seam depends on the
+ * deep-linked id being IN the list the page holds — and per the header, that
+ * list is the SERVER's whenever the server supplied one, with no client fetch
+ * to intercept. Deep-linking the fixture's `CAT_A.id` against a live backend
+ * therefore resolves to nothing: the heading keeps its default and the tag never
+ * renders, which is precisely how these rows failed on CI.
+ *
+ * The seam itself is sound — measured against a seeded list, an id the page DOES
+ * hold renames the heading to «בתי עסק · {name}» and renders «נקה סינון {name}».
+ * So this asks the page which categories it has instead of assuming.
+ *
+ * `page.request` does NOT pass through `page.route` (measured), which is the
+ * point: it reads past the intercept to the same list the server component read.
+ */
+async function activeCategoryFixture(page: Page): Promise<{ id: string; name: string }> {
+  let seeded: unknown;
+  try {
+    const res = await page.request.get("/api/categories");
+    if (res.ok()) seeded = await res.json();
+  } catch {
+    // No backend at all (the CC sandbox) — handled as the fixture case below.
+  }
+  if (Array.isArray(seeded)) {
+    // An array — even an empty one — is what `page.js:44` returns to
+    // `initialCategories`, so the client fetch is skipped and THIS is the list
+    // the page will hold. Empty means the seam has no resolvable subject on
+    // this backend: fail loudly and say why, never quietly pass.
+    const parsed = CategoriesResponseSchema.safeParse(seeded);
+    if (!parsed.success) throw new Error("the seeded /categories payload does not satisfy CategoriesResponseSchema");
+    if (parsed.data.length === 0)
+      throw new Error(
+        "the backend seeded an EMPTY category list, so no id can resolve and the discovery seam has no subject — " +
+          "this is a data problem on the target, not a flake",
+      );
+    const first = parsed.data[0] as { id: number | string; name: string };
+    return { id: String(first.id), name: first.name };
+  }
+  // No usable payload ⇒ the server's own fetch failed the same way ⇒
+  // `initialCategories` is null ⇒ the page client-fetches `/categories` ⇒ the
+  // CATEGORIES fixture governs and CAT_A is the resolvable one.
+  return { id: String(CAT_A.id), name: CAT_A.name };
+}
+
+/**
+ * A computed colour read only once it has STOPPED changing. Three equal
+ * consecutive samples, no fixed pause — on a settled chip it returns on the
+ * third round-trip.
+ *
+ * ⚠️ The cause of the MT:T12:4 flake is NOT settled, and this comment says so
+ * on purpose rather than shipping a tidy guess. What was MEASURED on CI run
+ * 33919310192 (first attempt failed, retry passed): `aria-pressed` asserted
+ * `"true"`, and the very next round-trip read `background-color:
+ * rgb(255,255,255)` — the INACTIVE fill — so the chip's own state went back
+ * between two reads that are supposed to describe one moment.
+ *
+ * A CSS transition race is the obvious reading and it does NOT hold up:
+ * `playwright.config.ts:97` sets `reducedMotion: "reduce"` and
+ * `app/globals.css:138-144` collapses every `transition-duration` to `0.01ms`
+ * under that media query, so the fill is effectively instant in this
+ * environment. (That is the whole reason this paragraph is a caveat instead of
+ * an explanation — the first draft of this fix asserted the transition cause,
+ * and the stylesheet refutes it.)
+ *
+ * The leading UNVERIFIED hypothesis is the mount effect landing late and
+ * clobbering the click: `use-home-page.js:259-260` runs `setFilters`/`setChips`
+ * from the URL in an effect, so a click that beats that effect is overwritten
+ * by it. It fits the evidence and it is not proven. The fix does not rest on
+ * it either way — the row now gates on the mount effect having run (the fixture
+ * feed cannot land before `loadProducers`, which that same effect calls), and
+ * these settled reads remove any sampling race left between the two round-trips.
+ */
+async function settledBackgroundColor(l: Locator): Promise<string> {
+  const read = () => l.evaluate((el) => getComputedStyle(el as HTMLElement).backgroundColor);
+  let stable = 0;
+  let last = await read();
+  for (let i = 0; i < 60; i++) {
+    const current = await read();
+    stable = current === last ? stable + 1 : 0;
+    last = current;
+    if (stable >= 2) return current;
+  }
+  throw new Error(`background-color never settled over 60 samples (last: ${last})`);
+}
+
 const promotedChip = (page: Page, key: string) => scope(page).getByTestId(`home-promoted-chip-${key}`);
 const filtersButton = (page: Page) => scope(page).getByTestId("home-filters-button");
 const sheetPanel = (page: Page) => page.locator("#filter-sheet-panel"); // portalled to <body> — unscoped
@@ -876,10 +1111,15 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //                        scope line, `filters.sheet.diet_scope` (:279-283).
   //   Both live shapes are asserted, derived from `FILTER_AXES[...].group`.
   test("the FilterSheet gives every toggle a label, keeps every explanation reachable, and Esc closes it", async ({ page }) => {
-    await consent(page);
-    await stubTiles(page);
-    await mockApi(page);
-    await gotoHome(page);
+    // The sheet's diet group is RUNTIME-GATED on the loaded catalog
+    // (`visibleGatedDietKeys`, DIET_CHIP_MIN = 5 — `producer-filters.js:169-176`),
+    // so which toggles exist is a function of the FEED, not of CHIPS_CONFIG
+    // alone. `beforeAll` already guarantees the fixture clears that bar; the
+    // fixture therefore has to be the thing that loaded, which on a live-backend
+    // runner needs `gotoFixtureFeed` rather than a bare `gotoHome`. Without it
+    // the backend's catalog gates `no_added_sugar` off and the loop below asks
+    // for a toggle that was never rendered — the CI failure, verbatim.
+    await gotoFixtureFeed(page, "/", PRODUCERS);
     await filtersButton(page).click();
     const panel = sheetPanel(page);
     await expect(panel).toBeVisible(FIRST_PAINT);
@@ -936,16 +1176,18 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   restyled, and a hex literal here would pin a token rather than the state
   //   machine the row is really about.
   test("a promoted chip toggles its pressed state and its fill", async ({ page }) => {
-    await consent(page);
-    await stubTiles(page);
-    await mockApi(page);
-    await gotoHome(page);
+    // Gate on the mount effect having run before touching a chip: the fixture
+    // feed cannot be on screen until `loadProducers` has been called, and that
+    // is the same effect that writes `setChips` from the URL. Clicking before
+    // it lands leaves the click open to being overwritten — see
+    // `settledBackgroundColor` for what was measured and what is still open.
+    await gotoFixtureFeed(page, "/", PRODUCERS);
     const chip = promotedChip(page, "has_delivery");
     await expect(chip).toHaveAttribute("aria-pressed", "false");
-    const inactiveFill = await chip.evaluate((el) => getComputedStyle(el as HTMLElement).backgroundColor);
+    const inactiveFill = await settledBackgroundColor(chip);
     await chip.click();
     await expect(chip).toHaveAttribute("aria-pressed", "true");
-    const activeFill = await chip.evaluate((el) => getComputedStyle(el as HTMLElement).backgroundColor);
+    const activeFill = await settledBackgroundColor(chip);
     expect(activeFill, "an active chip is filled differently from an inactive one").not.toBe(inactiveFill);
     await chip.click();
     await expect(chip).toHaveAttribute("aria-pressed", "false");
@@ -1021,12 +1263,13 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
 
   // MT:T12:13 — clearing the CATEGORY leaves the attribute chips standing.
   test("clearing the category keeps the attribute chips active", async ({ page }) => {
-    await gotoWithFeed(page, `/?category=${CAT_A.id}`);
+    const cat = await activeCategoryFixture(page);
+    await gotoFixtureFeed(page, `/?category=${cat.id}`, feedForCategory(cat.id));
     await expect(cards(page)).toHaveCount(CAT_A_MEMBERS.length, FIRST_PAINT);
     await promotedChip(page, "has_delivery").click();
     await expect(promotedChip(page, "has_delivery")).toHaveAttribute("aria-pressed", "true");
     await scope(page)
-      .getByRole("button", { name: `${PROD.clear_filter} ${CAT_A.name}` })
+      .getByRole("button", { name: `${PROD.clear_filter} ${cat.name}` })
       .click();
     await expect(scope(page).getByRole("heading", { level: 2, name: PROD.heading })).toBeVisible();
     await expect(promotedChip(page, "has_delivery"), "the chip survives a category clear").toHaveAttribute(
@@ -1062,22 +1305,32 @@ test.describe("manual › discovery seam — dynamic heading + removable tag (ME
   // MT:1174:3 + MT:1174:4 — `/?category=<id>` ⇒ the category heading and a
   //   removable tag; the ✕ clears both.
   test("a category deep-link renames the heading and adds a removable tag whose ✕ clears it", async ({ page }) => {
-    await gotoWithFeed(page, `/?category=${CAT_A.id}`);
-    const named = PROD.heading_category.replace("{name}", CAT_A.name);
+    const cat = await activeCategoryFixture(page);
+    await gotoFixtureFeed(page, `/?category=${cat.id}`, feedForCategory(cat.id));
+    const named = PROD.heading_category.replace("{name}", cat.name);
     await expect(scope(page).getByRole("heading", { level: 2, name: named })).toBeVisible(FIRST_PAINT);
     await expect(cards(page)).toHaveCount(CAT_A_MEMBERS.length);
-    const tag = scope(page).getByRole("button", { name: `${PROD.clear_filter} ${CAT_A.name}` });
+    const tag = scope(page).getByRole("button", { name: `${PROD.clear_filter} ${cat.name}` });
     await expect(tag).toBeVisible();
     await tag.click();
     await expect(scope(page).getByRole("heading", { level: 2, name: PROD.heading })).toBeVisible();
     await expect(tag).toHaveCount(0);
-    await expect(page).toHaveURL(/\/(he\/?)?(\?|$)/);
+    // The ✕ drops `category` from the URL. Asserted as the PARAM's absence, not
+    // as a whole-URL shape: the old `/\/(he\/?)?(\?|$)/` also matched any URL
+    // that still carried a query string, so it could not have distinguished a
+    // cleared category from a surviving one.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.has("category"), {
+        message: "the ✕ must remove the category param from the URL",
+      })
+      .toBe(false);
   });
 
   // MT:1174:5 — a chip AND a category are both listed in the applied row, and
   //   the counter keeps counting.
   test("an active chip and an active category both appear in the applied-filters row", async ({ page }) => {
-    await gotoWithFeed(page, `/?category=${CAT_A.id}`);
+    const cat = await activeCategoryFixture(page);
+    await gotoFixtureFeed(page, `/?category=${cat.id}`, feedForCategory(cat.id));
     await expect(cards(page)).toHaveCount(CAT_A_MEMBERS.length, FIRST_PAINT);
     // `has_delivery` is PROMOTED, so its tag lives on the chip itself
     // (HomeProducersGrid.jsx:249-251 excludes promoted keys from the tag row) —
@@ -1089,16 +1342,17 @@ test.describe("manual › discovery seam — dynamic heading + removable tag (ME
     await sheetPanel(page).getByTestId(`chip-${nonPromoted.key}`).click();
     await page.keyboard.press("Escape");
     await expect(scope(page).getByTestId(`home-active-filter-${nonPromoted.key}`)).toBeVisible();
-    await expect(scope(page).getByRole("button", { name: `${PROD.clear_filter} ${CAT_A.name}` })).toBeVisible();
+    await expect(scope(page).getByRole("button", { name: `${PROD.clear_filter} ${cat.name}` })).toBeVisible();
     await expect(counter(page)).toBeVisible();
   });
 
   // MT:1174:6 — the applied row reads in the RTL direction and nothing overflows.
   test("the applied-filters row is RTL and does not overflow", async ({ page }) => {
-    await gotoWithFeed(page, `/?category=${CAT_A.id}`);
+    const cat = await activeCategoryFixture(page);
+    await gotoFixtureFeed(page, `/?category=${cat.id}`, feedForCategory(cat.id));
     const heading = scope(page).getByRole("heading", {
       level: 2,
-      name: PROD.heading_category.replace("{name}", CAT_A.name),
+      name: PROD.heading_category.replace("{name}", cat.name),
     });
     await expect(heading).toBeVisible(FIRST_PAINT);
     await expect(heading).toHaveCSS("direction", "rtl");
@@ -1604,7 +1858,12 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
   // MT:T9:9 + MT:T9:11 — the photo fills its frame with object-cover, and the
   //   city/category line truncates rather than wrapping.
   test("card photos are object-cover and the city line truncates", async ({ page }) => {
-    await gotoWithFeed(page);
+    // P5 — the deliberately over-long name and the one card carrying a photo —
+    // exists only in the fixture, so this row needs the fixture to be what
+    // rendered. `gotoFixtureFeed` both forces the client fetch and proves the
+    // feed is ours; the count below then measures the fixture's page, not a
+    // backend catalog that also happens to hold ≥ 8 businesses.
+    await gotoFixtureFeed(page);
     await expect(cards(page)).toHaveCount(PAGE_SIZE, FIRST_PAINT);
     const long = cards(page).filter({ has: page.getByRole("heading", { level: 3, name: P5.name, exact: true }) });
     await expect(long).toHaveCount(1);
