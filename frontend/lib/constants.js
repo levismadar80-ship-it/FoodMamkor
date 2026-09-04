@@ -29,3 +29,11 @@ export const SITE_DESCRIPTION =
 // or placeholder profiles here: an unresolvable sameAs is worse than an absent
 // one, because it asserts an identity nobody can verify.
 export const BRAND_SAME_AS = ["https://www.instagram.com/meha_makor"];
+
+// MEH-2192: `founder` for the Organization node. The value is the name as it
+// already appears in the /about signature copy (messages/he.json
+// `about.signature.name`) — organization-jsonld.test.js pins the two together,
+// so a copy edit there reds here instead of leaving the entity disagreeing
+// with the page. Not read from he.json at runtime: seo.js is imported by
+// server metadata paths and must stay free of the messages bundle.
+export const BRAND_FOUNDER_NAME = "ספיר שנפ";

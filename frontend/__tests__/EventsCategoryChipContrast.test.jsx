@@ -12,10 +12,23 @@ import EventsClient from "@/app/[locale]/events/EventsClient";
 // bg-surface-card alone couldn't distinguish "fixed" from "never had the bug",
 // so both sides are pinned (mirrors BadgeRow.test.jsx's MEH-2032 case).
 
-let params = { tab: "experiences" };
+let params = {}; // drives useSearchParams().get(key) — city/category only (MEH-2245)
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+}));
+// MEH-2245: switching tab is a route change through next-intl's router;
+// stub it (HANDOFF lesson: next-intl navigation under vitest needs the
+// 5-line @/i18n/navigation stub, same as the Register suites).
+const pushMock = vi.fn();
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: pushMock, replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/",
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
 }));
 vi.mock("next-intl", () => ({
   useTranslations: (ns) => (k) => (ns ? `${ns}.${k}` : k),
@@ -63,12 +76,13 @@ vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 
 beforeEach(() => {
-  params = { tab: "experiences" };
+  params = {};
 });
 
 describe("EventsClient experience category chip contrast (MEH-2069)", () => {
   it("uses the AA-passing bg-surface-card, not bg-accent/10", async () => {
-    render(<EventsClient />);
+    // MEH-2245: the experiences tab is the /experiences route → prop, not ?tab=.
+    render(<EventsClient initialTab="experiences" />);
     const title = await screen.findByText(EXPERIENCE_TITLE);
     const chip = title.closest("a").querySelector("span.rounded-full");
     expect(chip).not.toBeNull();

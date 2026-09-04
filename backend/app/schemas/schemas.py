@@ -1790,7 +1790,6 @@ class ProducerUpdate(BaseModel):
     # belongs to someone else, and syncs top_product_name from it. Sending
     # `null` clears the vote.
     top_product_id: UUID | None = None
-    starting_price_label: str | None = None
     price_range: str | None = None
     # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
     # bleach-stripped + capped at 300 below (mirrors short_description);
@@ -2183,7 +2182,6 @@ class ProducerListOut(BaseModel):
     # and is DERIVED from the FK in attach_badge_fields when the FK is set.
     top_product_id: UUID | None = None
     top_product_name: str | None = None
-    starting_price_label: str | None = None
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
@@ -2589,6 +2587,13 @@ class ProducerAdminOut(ProducerDetailOut):
     # Both NULL once the producer is approved (approve_producer clears them).
     requested_changes: str | None = None
     changes_requested_at: datetime | None = None
+    # MEH-2210: the rejected → resubmit loop, admin side. The code is the
+    # preset key the admin chose (admin.py::PRODUCER_REJECTION_PRESETS); the
+    # count is history (never reset by approve) and drives the queue's
+    # "שליחה חוזרת #n" badge; the stamp is the latest resubmission.
+    rejection_reason_code: str | None = None
+    resubmission_count: int = 0
+    resubmitted_at: datetime | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
@@ -2642,6 +2647,13 @@ class ProducerOwnerOut(ProducerDetailOut):
     # REUSES: schemas.py:913-914 (ProducerAdminOut declarations).
     requested_changes: str | None = None
     changes_requested_at: datetime | None = None
+    # MEH-2210: the owner sees her OWN rejection trail so the dashboard banner
+    # can branch its copy on the code and render "שליחה {n+1} מתוך 3". Same
+    # owner-private pattern as requested_changes directly above; the free-text
+    # reason itself keeps flowing through GET /auth/me (MEH-283).
+    rejection_reason_code: str | None = None
+    resubmission_count: int = 0
+    resubmitted_at: datetime | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -2927,6 +2939,12 @@ class UserOut(BaseModel):
     # correct business tab state (pending/approved/rejected/suspended).
     producer_status: str | None = None
     producer_rejection_reason: str | None = None
+    # MEH-2210: the structured code beside the free text, plus how many
+    # resubmissions the business has used — the dashboard's rejected banner
+    # already reads its reason from here (MEH-1355), so the two fields it
+    # branches on ride the same response.
+    producer_rejection_reason_code: str | None = None
+    producer_resubmission_count: int = 0
     # MEH-192: email verification status.
     email_verified: bool = False
 

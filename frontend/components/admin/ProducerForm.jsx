@@ -306,7 +306,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
-        price_range: initial.price_range ?? initial.starting_price_label ?? "",
+        price_range: initial.price_range ?? "",
         // MEH-1541: null → "" so the number input stays controlled + empty.
         established_year: initial.established_year ?? "",
         admin_notes: initial.admin_notes ?? "",
