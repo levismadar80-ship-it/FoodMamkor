@@ -2,7 +2,9 @@
  * Module:   event-categories
  * Purpose:  Single source of truth for the /events (4) and /experiences (7)
  *           category sets — previously duplicated across 5 call-sites in 4
- *           files (EventsClient, ExperiencesClient, the two create-forms).
+ *           files (EventsClient, the /experiences client, the two create-forms).
+ *           MEH-2248: the old /experiences client was deleted with the
+ *           route-as-tab merge; /experiences renders through EventsClient.
  * Touches:  nothing — pure data. Labels resolve via next-intl
  *           `events.categories.*` / `experiences.categories.*`.
  * Does NOT: cover PRODUCER categories (that's lib/category-registry.js +
@@ -10,7 +12,6 @@
  *           slug map was unused and deleted in MEH-1567) nor own the
  *           category icon map (EventsClient.jsx CATEGORY_ICON).
  * Related:  frontend/app/[locale]/events/EventsClient.jsx (both filter sets),
- *           frontend/app/[locale]/experiences/ExperiencesClient.jsx (filter),
  *           frontend/app/[locale]/experiences/new/NewExperienceClient.jsx (form),
  *           frontend/app/[locale]/producer/dashboard/events/new/page.js (form).
  * History:  MEH-869 (creation, 2026-06-19 — DRY the duplicated arrays).

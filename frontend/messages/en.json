@@ -1852,7 +1852,7 @@
       "notes_label": "Moderation notes"
     },
     "experiences": {
-      "title": "Community experiences",
+      "title": "Experiences",
       "subtitle": "Moderation for user-submitted experiences",
       "public_link": "Public page →",
       "tabs": {
@@ -2532,12 +2532,6 @@
       "spots_count": "{spots} of {max}",
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences"
-    },
-    "card": {
-      "host_fallback": "Community host",
-      "spots_left": "{n} spots left",
-      "sold_out": "Sold out",
-      "free": "Free"
     },
     "new": {
       "crumb_current": "New experience",
