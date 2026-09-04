@@ -152,9 +152,23 @@ const nextConfig = {
     // INTENT of a quiet redirect home — but no rule was ever added, so stale
     // links 404'd. `:path*` matches zero+ segments (covers bare + deep links).
     // permanent: false — the surface may revive (MEH-543).
+    //
+    // MEH-2245: the experiences tab used to live at /events?tab=experiences;
+    // it is now the /experiences route. Old deep-links (shares, bookmarks)
+    // 308 there. Locale + bare pair, same shape as the /neighbor pair above.
+    // Next forwards unmatched query params to the destination — `tab` is the
+    // matched one and is dropped; ?city= / ?category= survive the hop.
+    const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
     return [
       { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
       { source: "/neighbor/:path*", destination: "/", permanent: false },
+      {
+        source: "/:locale(he|en)/events",
+        has: TAB_EXPERIENCES,
+        destination: "/:locale/experiences",
+        permanent: true,
+      },
+      { source: "/events", has: TAB_EXPERIENCES, destination: "/experiences", permanent: true },
     ];
   },
   async rewrites() {
