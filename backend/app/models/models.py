@@ -253,15 +253,10 @@ class Producer(Base):
         ),
         nullable=True,
     )
-    # LEGACY(2026-10-01, MEH-1855)
-    # MEH-1857: the alias below carried no date and no ticket, so nothing could
-    # ever make it expire. Ownership is also INVERTED today — the public page
-    # reads this alias (ProducerSections.jsx) while the owner writes the
-    # canonical price_range, so a price she fills in renders nowhere. MEH-1855
-    # collapses the pair; the marker makes the deadline enforceable.
-    starting_price_label = Column(
-        String(50), nullable=True
-    )  # legacy alias for price_range
+    # MEH-1855 chunk 2 (contract step, ADR-007 Phase 4): the legacy
+    # price-label alias column that used to sit here is GONE — backfilled into
+    # this column by 97669fe803f5 (Phase 1) and dropped by 9849fab1637a.
+    # price_range is the single price-label field; do not re-add an alias.
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
@@ -466,7 +461,8 @@ class Producer(Base):
     # that composes the text above; a second code dictionary would be
     # workflow.md Smell #1), stored beside the composed text so the owner
     # dashboard can branch its copy on it. NULL on every row rejected before
-    # this column existed and on `other` — the banner falls back to the text.
+    # this column existed (legacy free-text reject with no preset_key); `other`
+    # is stored as the string "other" — the banner falls back to the text.
     # `resubmission_count` is HISTORY: incremented by POST /producers/me/
     # request-review from `rejected`, never reset by approve. Capped at
     # constants.MAX_PRODUCER_RESUBMISSIONS server-side. `resubmitted_at` is
@@ -902,8 +898,8 @@ class Product(Base):
     # fallbacks) — naming it here records who removes this column, not that
     # the removal is ready.
     #
-    # Separate instance from producers.starting_price_label above (MEH-1855) —
-    # same class, different column.
+    # Separate instance from the producer-level price alias MEH-1855 retired
+    # (chunk 2, 9849fab1637a) — same class, different column.
     price_range = Column(String(50))  # legacy: removal tracked in MEH-2064
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
