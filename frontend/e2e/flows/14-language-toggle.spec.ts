@@ -72,24 +72,25 @@ test.describe("Language toggle", () => {
     await expect(page.locator("nav button[aria-label]").last()).toBeVisible();
   });
 
-  // STILL QUARANTINED — Ref MEH-817 (open). The locale round-trip races: under
-  // `as-needed`, one direction lands on the unprefixed default-locale path
-  // whose locale resolves from the NEXT_LOCALE cookie, and router.replace's
-  // cookie-write races the RSC fetch, so useLocale() intermittently keeps the
-  // previous value. Under `--fail-on-flaky-tests` (e2e.yml) un-quarantining
-  // this would red the required E2E gate intermittently for a bug that is not
-  // MEH-1698's.
+  // UN-QUARANTINED (MEH-817, drain 26 — 04/09). The race this test was parked
+  // on no longer exists BY CONSTRUCTION: it needed the middleware to resolve
+  // the unprefixed default-locale path ("/") from the NEXT_LOCALE cookie, so
+  // that router.replace's cookie write could race the RSC fetch. MEH-1045
+  // (#1527, 2026-07-09) set `localeDetection: false` in i18n/routing.js —
+  // three weeks AFTER the 17/06 diagnosis — and with detection off the
+  // middleware reads neither the cookie nor Accept-Language: "/" is `he`,
+  // always, and "/en" is `en`, always. There is nothing left to race.
   //
-  // NOTE, unresolved: MEH-817's prose names EN→HE as the racing direction but
-  // cites the assertion that checks HE→EN. The two disagree and I have not
-  // determined which is right — so this stays quarantined on the ticket's
-  // authority, not on a guess of mine. Un-quarantine when MEH-817 ships.
+  // What this test now guards is the deterministic contract: HE → EN adds
+  // the /en prefix and useLocale() follows; EN → HE drops it and useLocale()
+  // follows. If it ever goes red under --fail-on-flaky-tests, the first
+  // question is whether localeDetection was turned back on — not whether to
+  // re-quarantine.
   //
-  // This quarantine is NOT the anti-pattern this file was rewritten to remove:
-  // the guard above cannot be disabled by the product regressing, and this
-  // test covers a different behaviour (the flip) from the one that broke
-  // (the control's existence).
-  test.fixme("flips he → en and back, preserving the path", async ({ page }) => {
+  // The OTHER half of MEH-817 — bare `next/link` hrefs dropping /en — is a
+  // different, deterministic defect (63 importers on 04/09) and is not what
+  // this test covers.
+  test("flips he → en and back, preserving the path", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
