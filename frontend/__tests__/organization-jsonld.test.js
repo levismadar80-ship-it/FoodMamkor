@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { buildHomeJsonLd, buildJsonLd, buildOrganizationNode } from "@/lib/seo";
-import { BRAND_NAME, BRAND_SAME_AS, SITE_DESCRIPTION } from "@/lib/constants";
+import {
+  BRAND_FOUNDER_NAME,
+  BRAND_NAME,
+  BRAND_NAME_LATIN,
+  BRAND_SAME_AS,
+  SITE_DESCRIPTION,
+} from "@/lib/constants";
+import he from "../messages/he.json";
 
 /**
  * MEH-2192 — the Organization entity, on every surface that emits it.
@@ -51,6 +58,24 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     for (const url of org.sameAs) {
       expect(url).toMatch(/^https:\/\/[^\s]+$/);
     }
+  });
+
+  // MEH-2192 close-out: the two Organization fields the card's acceptance
+  // criteria named that the #3199 enrichment did not carry.
+  it("declares the Latin alternateName the outbound surfaces already use", () => {
+    const org = buildOrganizationNode();
+    expect(org.alternateName).toBe(BRAND_NAME_LATIN);
+    expect(org.alternateName).toBe("Mehamakor");
+  });
+
+  it("names the founder as a Person, spelled exactly as the /about signature", () => {
+    const org = buildOrganizationNode();
+    expect(org.founder).toEqual({ "@type": "Person", name: BRAND_FOUNDER_NAME });
+    // The discriminating half: the entity must agree with the page. A copy
+    // edit to the signature that forgets the constant reds here — the same
+    // "entity disagrees with the page" shape the description test guards.
+    expect(org.founder.name).toBe(he.about.signature.name);
+    expect(org.founder.name.trim().length).toBeGreaterThan(0);
   });
 
   it("is NOT typed as LocalBusiness — this is a directory, not a storefront", () => {
