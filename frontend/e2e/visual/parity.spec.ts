@@ -286,16 +286,33 @@ async function expectCopy(page: Page, key: string): Promise<void> {
  * of a green that has two possible causes.
  */
 async function revealScrollSections(page: Page): Promise<void> {
-  const hidden = (): Promise<number> =>
+  // Tag the gated set ONCE, from the initial state: framer-motion's whileInView
+  // mounts at exactly opacity 0, so `=== 0` is the discriminator (CI reviewer on
+  // #3352 — a decorative element sitting at an intentional 0.5 must not be
+  // counted, or the poll below burns its full budget on something that never
+  // moves). The WAIT then requires those tagged elements to reach 1, not just
+  // to leave 0 — a mid-fade 0.4 is still not a settled frame.
+  const tagGated = (): Promise<number> =>
     page.evaluate(() => {
       let n = 0;
       document.querySelectorAll<HTMLElement>('[style*="opacity"]').forEach((el) => {
+        if (parseFloat(getComputedStyle(el).opacity) === 0) {
+          el.dataset.revealGate = "1";
+          n += 1;
+        }
+      });
+      return n;
+    });
+  const hidden = (): Promise<number> =>
+    page.evaluate(() => {
+      let n = 0;
+      document.querySelectorAll<HTMLElement>("[data-reveal-gate]").forEach((el) => {
         if (parseFloat(getComputedStyle(el).opacity) < 1) n += 1;
       });
       return n;
     });
 
-  const before = await hidden();
+  const before = await tagGated();
   expect(
     before,
     "[reveal-gate] /about mounted no opacity-gated sections — the scroll-reveal " +
