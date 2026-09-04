@@ -263,6 +263,66 @@ async function expectCopy(page: Page, key: string): Promise<void> {
 }
 
 /**
+ * MEH-1514 — /about is a fullPage shot of a page whose sections are scroll
+ * revealed: every `<FadeInSection {...REVEAL_PRESET}>` mounts with an inline
+ * `opacity: 0` and only resolves to 1 once framer-motion's `whileInView`
+ * IntersectionObserver sees it (components/FadeInSection.jsx). A fullPage
+ * capture extends the canvas past the viewport WITHOUT scrolling it, so the
+ * observer never fires for anything below the fold and the baseline freezes a
+ * page that is mostly transparent — the same shape as the MEH-1552
+ * candidate-baseline trap: a PNG that measures the page's HEIGHT while
+ * carrying none of its CONTENT. parity.css cannot help here: it zeroes CSS
+ * animation/transition durations, and this reveal is a JS animation gated on
+ * intersection, not a CSS one.
+ *
+ * So: walk the document once, viewport by viewport, so each section enters
+ * view and its observer fires; return to the top so the shot starts where the
+ * baseline expects; then WAIT for the last inline opacity to resolve, since
+ * the reveal is a 250ms JS tween and a shot taken mid-tween is a flake.
+ *
+ * The `before > 0` control is deliberate (testing.md, MEH-1619): if the page
+ * ever stops mounting hidden sections — a framer upgrade, a refactor away from
+ * whileInView — this helper is dead weight and the assertion says so, instead
+ * of a green that has two possible causes.
+ */
+async function revealScrollSections(page: Page): Promise<void> {
+  const hidden = (): Promise<number> =>
+    page.evaluate(() => {
+      let n = 0;
+      document.querySelectorAll<HTMLElement>('[style*="opacity"]').forEach((el) => {
+        if (parseFloat(getComputedStyle(el).opacity) < 1) n += 1;
+      });
+      return n;
+    });
+
+  const before = await hidden();
+  expect(
+    before,
+    "[reveal-gate] /about mounted no opacity-gated sections — the scroll-reveal " +
+      "premise this helper exists for is gone; re-derive before trusting the shot",
+  ).toBeGreaterThan(0);
+
+  await page.evaluate(async () => {
+    const step = Math.max(200, Math.floor(window.innerHeight * 0.6));
+    const bottom = () => document.documentElement.scrollHeight - window.innerHeight;
+    for (let y = 0; y <= bottom(); y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    window.scrollTo(0, bottom());
+    await new Promise((r) => setTimeout(r, 40));
+    window.scrollTo(0, 0);
+  });
+
+  await expect
+    .poll(hidden, {
+      message: "[reveal-gate] sections still at opacity < 1 after a full scroll pass",
+      timeout: 10_000,
+    })
+    .toBe(0);
+}
+
+/**
  * Wait for fonts + a settle beat so text renders identically run-to-run.
  *
  * MEH-1727 — `document.fonts.ready` is NOT a gate. It resolves even when every
@@ -767,6 +827,9 @@ test.describe("Visual parity — MEH-991", () => {
     // budget of any route here and is the easiest place for a rewrite to hide.
     await expectCopy(page, "about.consumer.hero.heading");
     await expectCopy(page, "about.consumer.hero.subheading");
+    // MEH-1514 — resolve every scroll-revealed section BEFORE the fullPage shot,
+    // or the baseline is a transparent page (see revealScrollSections).
+    await revealScrollSections(page);
     await expect(page).toHaveScreenshot("about.png", {
       ...SHOT,
       fullPage: true,
