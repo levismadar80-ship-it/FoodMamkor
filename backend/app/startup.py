@@ -35,6 +35,25 @@ def _redacted_db_url() -> str:
 # drift branch below, so it gets its own warning.
 _RECOGNIZED_ENVS = ("development", "staging", "production")
 
+# MEH-2219 chunk 1 (ruling 01/09, ADR-003): in the two DEPLOYED environments the
+# schema is owned by Alembic alone — `alembic upgrade head` runs in the container
+# entrypoint before uvicorn (Dockerfile). `Base.metadata.create_all(checkfirst=True)`
+# is not a no-op there: a table added to models without a revision would be
+# CREATED at boot, which is the second schema writer MEH-267 removed. It stays
+# as the dev/CI safety net (MEH-352) everywhere else, including tests.
+_ALEMBIC_OWNED_ENVS = ("staging", "production")
+
+
+def _schema_is_alembic_owned(env: str | None) -> bool:
+    """True when boot must NOT call create_all — the deployed environments.
+
+    Pure helper so the decision is unit-testable without a lifespan. Compared
+    lower-cased so `ENV=Production` behaves like `production`; an unrecognized
+    value (typo) stays on the safety-net side, which is the fail-open reading —
+    _check_frontend_url_consistency already warns about it separately.
+    """
+    return (env or "").lower() in _ALEMBIC_OWNED_ENVS
+
 
 def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
     """MEH-334: defense-in-depth boot guard for FRONTEND_URL drift.
@@ -147,9 +166,17 @@ def _run_db_init_sync() -> None:
     from app.models import models  # noqa: F401
     from app.database import Base, engine
 
-    Base.metadata.create_all(
-        bind=engine
-    )  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
+    if _schema_is_alembic_owned(settings.env):
+        # MEH-2219: the line below is the Railway-log evidence that the second
+        # schema writer is gone in this environment (ADR-003).
+        log.info(
+            "[bg 1/2] schema is Alembic-owned in %s; create_all skipped (ADR-003)",
+            settings.env,
+        )
+    else:
+        Base.metadata.create_all(
+            bind=engine
+        )  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist
     log.info("[bg 1/2] models imported OK")
 
     log.info("[bg 2/2] running seed_data.seed()...")
