@@ -208,13 +208,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 key: "products",
                 label: t("producer.detail.tabs.products"),
                 Icon: Package,
-                // MEH-1855: price_range is the canonical field; starting_price_label
-                // is its legacy alias — either can make the products tab relevant.
+                // MEH-1855: price_range is the only price-label field (the legacy
+                // alias was dropped in chunk 2) — it can make the products tab relevant.
                 show: !!(
                   producer.products?.length > 0 ||
                   producer.top_product_name ||
-                  producer.price_range ||
-                  producer.starting_price_label
+                  producer.price_range
                 ),
               },
               {

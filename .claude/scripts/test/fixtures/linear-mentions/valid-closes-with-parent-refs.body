@@ -1,0 +1,4 @@
+<!-- Exercises ONLY the closing-line check: the bare parent reference on the next line still trips the rule-29 scan, so a full-script run of this fixture exits 1, not 0. The name says the closing line is valid, not that the body is end-to-end green. -->
+Refs MEH-2244
+
+Closes MEH-2250
