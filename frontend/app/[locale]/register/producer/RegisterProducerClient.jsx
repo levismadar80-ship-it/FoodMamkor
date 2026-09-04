@@ -1727,6 +1727,7 @@ function RegisterProducerPageBody() {
                     !form.producer_license_number.trim()
                   ) {
                     setLicenseRequiredError(true);
+                    requestFocus("producer-license-required");
                     return;
                   }
                   setLicenseRequiredError(false);
