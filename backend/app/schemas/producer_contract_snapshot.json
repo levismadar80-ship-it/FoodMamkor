@@ -182,6 +182,7 @@
     "ProducerDetailOut.categories": [
       "emoji",
       "id",
+      "is_system",
       "name",
       "producer_count",
       "slug"
@@ -234,6 +235,7 @@
     "ProducerListOut.categories": [
       "emoji",
       "id",
+      "is_system",
       "name",
       "producer_count",
       "slug"
