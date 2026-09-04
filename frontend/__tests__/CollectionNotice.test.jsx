@@ -29,6 +29,25 @@ vi.mock("@/i18n/navigation", () => ({
 const { default: CollectionNotice } = await import("../components/CollectionNotice.jsx");
 
 describe("CollectionNotice", () => {
+  // MEH-1981 a11y regression guard. axe rule link-in-text-block is satisfied by
+  // EITHER a 3:1 contrast against the surrounding text OR a non-colour cue. The
+  // notice renders inside a <p> of body copy where the link measured 2.66:1, so
+  // the cue is the half that must hold — and `hover:underline` supplies none at
+  // rest. Asserted as "underline present AND hover:underline absent" rather than
+  // a substring match, because `hover:underline` contains `underline` and a
+  // naive contains() passes on the broken class exactly as it does on the fixed
+  // one (shown: this case fails on the pre-fix component).
+  it("links with a resting underline, not a hover-only one (axe link-in-text-block)", () => {
+    render(
+      <CollectionNotice message="NOTICE-LINE" linkLabel="LINK-LABEL" testId="forgot-collection-notice" />,
+    );
+
+    const link = screen.getByTestId("forgot-collection-notice-link");
+    const classes = link.getAttribute("class").split(/\s+/);
+    expect(classes).toContain("underline");
+    expect(classes).not.toContain("hover:underline");
+  });
+
   it("renders the message and a /privacy link that opens in a new tab", () => {
     render(
       <CollectionNotice message="NOTICE-LINE" linkLabel="LINK-LABEL" testId="chat-collection-notice" />,
