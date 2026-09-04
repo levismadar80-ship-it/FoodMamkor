@@ -1,0 +1,3 @@
+Extends the mentions gate with a standalone-line requirement.
+
+Closes MEH-2244
