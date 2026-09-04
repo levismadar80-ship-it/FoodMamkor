@@ -3,6 +3,55 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-03 ערב → 04/09 בוקר — drain כה' (session `01NTrU3k…`): ה-BRIEF של 18:10Z נעבד T0→T8 · 13 PRs נחתו · **ריליז staging→main #3328 בוצע (`0f273bf8`, merge commit, prod booted 09:51Z, 3 probes ×2 תקינים)** · שני drop-PRs + chunk 1 של 2219 ממתינים לספיר
+
+**‏שורה אחת:** ‏#3310 (2242) · #3312 (1944) · #3313 (1980 ch2) · #3315 (2228) · #3311 (2243) · #3319 (1981) · #3320 (413/2135) · #3327 (1523) · #3324 (1517) · #3325 (2117+1839) נחתו כ-squash מאומת. פתוחים לספיר: #3314 (2219 ch1) · #3316 (1855 ch2, DROP) · #3321 (1606, data merge) · #3309 (unlock, Repo guards אדום). T8 אחרי הריליז: #3317 (2105) · #3318 (1621 ch1) · #3322 (1890) — **מוזג 04/09** `a23b696b`.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏T-UNLOCK לא נפתח.** ‏#3309 אדום ב-`Repo guards` על שני guards שהם של ספיר (builder-model trailer חסר על הקומיט שלה; `permissions-patch-guard` מאשר ששלוש שורות ה-deny קיימות). `grep -c 'workflows/\*\*' .claude/settings.json` על staging = 3. כל 11 ה-patch docs נשארו על הדיסק; אף אחד לא הוחל. ה-VRT dispatch (2168) לא רץ מאותה סיבה.
+2. **‏מיזוג סדרתי מול ה-ruleset = re-sync לפני כל מיזוג.** «2 of 2 required status checks are expected» אינו check אדום אלא ענף מאחור. שלושה PRs בתור = שלושה סבבי `update_pull_request_branch` + CI. כל E2E gate «failure» על head קודם היה `R_E2E: cancelled` (supersession), לא כשל.
+3. **‏שתי ריצות pytest על `mehamakor_test` המשותף = deadlock, לא איטיות.** ‏`pg_stat_activity` הראה `idle in transaction` 39 דקות מול drop-table ממתין ל-Lock. ה-Stop hook של ה-harness מריץ `pytest tests/test_api.py` מה-checkout הראשי בסוף כל turn של sub-agent — הוא היה הצד המחזיק. פתרון: `PYTEST_XDIST_WORKER=gwNN` (conftest → `mehamakor_test_gwNN`) לכל ריצה מקבילה, או `-n 4`. ‏`scripts/hooks/stop-build-and-test.sh` (#3325) מייצא `gw$$` — per-process — מסיבה זו בדיוק.
+4. **‏`git cherry-pick -q` אינו דגל.** הפקודה נכשלה עם usage בתוך `&&`, ושתי הפקודות אחריה רצו על הענף הלא-נכון; ה-cwd נשאר ב-worktree קודם. ה-`--force-with-lease` שנדרש לתיקון נחסם ע"י ה-classifier → ענף חדש (`feature/meh-1981-collection-notices`) במקום. הענף הישן (`feature/meh-1981-notice-and-legal-drafts`, שני הקומיטים) נשאר על origin ללא PR — למחיקה ע"י ספיר.
+5. **‏next-intl Link תחת vitest נופל על `next/navigation` בכל suite שממקמת `next-intl` ב-key-echo.** ‏#3319 חשף 8 suites כאלה ברגע ש-`CollectionNotice` (שמייבא `@/i18n/navigation`) נכנס ל-ChatWidget / EventForm / ExperienceForm / CategoryRequestModal. ה-stub של `@/i18n/navigation` (5 שורות, כמו ב-Register suites) הוא הפתרון הביתי — 86 suites כבר נושאות אותו. ה-sub-agent קרא את זה כ-artifact של symlink; זה שוחזר על ה-runner.
+6. **‏flip-check (03/09):** ‏`Closes` סגר 2242 · 1944 · 2243 (2–7 שניות). `Refs` השאיר 1980 · 2228 · 1981 · 1855 · 1606 · 2219 · 2105 · 1621 · 413 במקומם. MEH-725 נסגר ידנית על הפרכה (כלל 34 ב-description). MEH-1615 Done ידנית (cite-and-close).
+8. **‏VRT אדום בבסיס, וה-«ירוק» של staging הוא skip.** הריצה האמיתית האחרונה של E2E על staging (`85519a72`, run 33803879741) נכשלה על 9 צילומי parity (`map`/`about`/`login`/`register` × desktop+mobile, `producer detail` desktop). כל «E2E gate: success» מאז הוא `Playwright E2E: skipped` (paths-filter). #3317 (diff של שורה אחת ב-click handler) נכשל 3/3 על אותם 9 → מוזג על שני השערים הנדרשים עם ההסבר בגוף. ה-re-baseline (`vrt-update.yml`) parked מאחורי T-UNLOCK; residual על MEH-2168. **מיזוגי 04/09 בוקר (T4 + T8):** #3327 · #3324 · #3325 · #3322 · #3318 · #3317, כולם squash מאומת, כרטיסים: 1523/1517/2117/1839/1890/1621 נשארו פתוחים עם residual, **2105 → Done**.
+7. **‏פרודקשן — אחרי הריליז (STEP RELEASE §5, 04/09 09:50Z):** ‏#3328 מוזג כ-merge commit `0f273bf8` ב-09:50:03Z; `/api/health` בפרוד עבר ל-`git_sha 0f273bf8`, `booted_at 09:51:08Z`, `alembic_head b3f7a1c46e92 → 7c1e2a9f4b3d` (המיגרציות רצו ב-boot) — תוך 65 שניות מהמיזוג. שלושת ה-probes, בשתי קריאות (09:51:35Z, 09:51:42Z): `/api/categories` 200 (19) · `/api/producers?limit=1` 200, `x-total-count: 0` (עדיין אפס עסקים מאושרים בפרוד) · by-slug על slug לא-קיים **404** («בית עסק לא נמצא»), לא 500 — baseline ה-500 של MEH-1906 לא חזר, אומת בקריאה שנייה. **לא נפתח revert.** תנאי (1): MEH-2221 Done (ארכיון 31/08) · Vercel staging READY על `14ee3219` (`dpl_HfJL95Fh…`) · CI gate + Deploy gate ירוקים על ה-push. תנאי (2): staging `booted_at 09:34:27Z` על `14ee3219`, 200/200/200/404. E2E gate על ה-release PR אדום = אותה מחלקת VRT-בבסיס (לקח 8).
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3310 | MEH-2242 — `offers_delivery` בפילטר היום | `bdf47989` (squash) |
+| #3312 | MEH-1944 §3 — חשיפת תקרת ה-24 | `0713cac9` (squash) |
+| #3313 | MEH-1980 ch2 — אינוונטר רישיונות | `186adfd8` (squash) |
+| #3315 | MEH-2228 — z-index guard + baseline | `7fcab66a` (squash) |
+| #3311 | MEH-2243 — נעיצת שעון | `85519a72` (squash) |
+| #3319 | MEH-1981 — 5 שורות notice + docs/legal | `6c95273b` (squash) |
+| #3320 | MEH-413/2135 — טיוטות outreach + סקריפט (לא רץ) | `a5070453` (squash) |
+| #3327 | MEH-1523 — patch doc של שער ה-label רוענן (T4) | `c63d6f2f` (squash) |
+| #3324 | MEH-1517 — drill שחזור גיבוי כסקריפט self-tested (15/15) + patch doc (T4) | `ff20f488` (squash) |
+| #3325 | MEH-2117 + MEH-1839 — ה-Stop hook כסקריפטים (14/14 · 11/11) + patch doc (T4) | `89d2f5a3` (squash) |
+| #3314 | MEH-2219 ch1 — `create_all` מותנה env | פתוח — ספיר (HIGH-RISK) |
+| #3316 | MEH-1855 ch2 — הסרת `starting_price_label` | פתוח — ספיר (ADR-007, שאילתת קדם-מיזוג בגוף) |
+| #3321 | MEH-1606 — מיזוג קטגוריה יתומה | פתוח — ספיר (FK count + 18 אחרי) |
+| #3317 | MEH-2105 — requestFocus (T8) | `14ee3219` (squash, 04/09) |
+| #3318 | MEH-1621 ch1 — הערות models.py (T8) | `f4b963e4` (squash, 04/09) |
+| #3322 | MEH-1890 — JWT exp על `datetime.now(timezone.utc)` אחרי סיווג פר-אתר (T8) | `a23b696b` (squash, 04/09) |
+| #3328 | **release: staging → main 2026-09-04** — 124 first-parent commits, STEP RELEASE §5 | `0f273bf8` (**merge commit**, 2 הורים: `790cf871` + `14ee3219`) |
+| זה | docs backfill — CHANGELOG + HANDOFF | — |
+
+### רשימת ספיר (residual מהסשן הזה)
+
+* **‏#3309 (T-UNLOCK):** ה-Repo guards — trailer `Builder-Model:` על הקומיט שלה + `permissions-patch-guard` (מאשר את ה-deny) — שניהם שלה (כלל 32). אחרי המיזוג: `git checkout -- .claude/settings.json` בסוף, כמו ב-ADDENDUM. 11 patch docs ממתינים בסדר: 1706 → 2196 → 1904 → 1949 → 1868-mypy → 1868-knip → 1980 → 2184 → 1754 → 2167 → 2224 (+ 2228 rtl-pointer, + 1647 אחרי ההכרעה).
+* **‏#3316 · #3321:** שני drops — R2 ≤ 24h, השאילתות בגוף ה-PR, מיזוג squash, קריאת הורה-יחיד.
+* **‏#3314:** chunk 1 של 2219 — חלון ה-HIGH-RISK שלה.
+* **‏VRT (2168):** ‏`vrt-update.yml` dispatch על staging הסופי — Actions UI.
+* **‏הכרעות:** ‏MEH-2210 (שתי ההכרעות ב-Phase 0 שעל ה-description) · MEH-1647 (warn על fixture, או `token-ok`) · MEH-2189 (מעבר נייד + פלט seed כפול) · MEH-2073 (בדיקת staging ידנית) · MEH-1687 (triage לדוח).
+* **‏עו"ד:** ‏`docs/legal/*` (1981) + `docs/audits/dependency-licenses.md` §1 (1980) — חבילה אחת.
+* **‏Railway:** ‏`seed_cities` בקונסולה (2241 chunk 0) · חשבון demo-admin.
+* **‏git:** מחיקת `feature/meh-1981-notice-and-legal-drafts` (ענף ללא PR, ראו לקח 4).
+
 ## 2026-09-02 לילה — drain כד' (session `01UJNNqp…`): ארבעה PRs נחתו · Phase 0 שינה את הצורה של שניים מהם · מיזוג אחד נחת כ-merge ולא כ-squash
 
 **‏שורה אחת:** ‏#3292 (WhatsApp href אחד) · #3294 (MEH-2073 chunk 2) · #3295 (MEH-1904 §5.2) · #3296 (MEH-1949 wiring). אפס פארקים, אפס STOP.
