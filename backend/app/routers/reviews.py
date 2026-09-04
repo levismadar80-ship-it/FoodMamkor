@@ -25,7 +25,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, require_admin
+from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
     ContactClick,
@@ -145,6 +145,8 @@ def _serialize(review: ProducerReview) -> ReviewOut:
         # MEH-1039: business-owner reply surfaced in the public GET payload.
         reply=review.reply,
         reply_at=review.reply_at.isoformat() if review.reply_at else None,
+        # MEH-1428: "click" | "invite_link".
+        source=review.source,
     )
 
 
@@ -272,7 +274,23 @@ def create_review_nested(
     # That keeps the pre-existing WhatsApp path identical in both result and
     # query count — the regression criterion this ticket is held to.
     # Both columns are indexed (models.py: producer_id and user_id on each).
-    if not existing_review:
+    #
+    # MEH-1428 chunk 1: a signed "request a review" token (the `rt` param on
+    # the link the owner shares, forwarded as `review_token`) is the THIRD way
+    # through this gate. The owner asking for the review is itself the proof
+    # of contact. The token must verify (signature, expiry, scope — all inside
+    # decode_review_invite_token) AND name THIS producer; a token minted for
+    # another business is a forged claim of contact here and gets the same
+    # 403 as no token at all. It is checked before the click queries so a
+    # link-holder costs zero click reads, and a bad token simply falls through
+    # to the click path — a customer who clicked AND pasted a stale link is
+    # still a customer who clicked. Same detail on every failure: the reviewer
+    # learns nothing about WHICH proof was rejected.
+    invited = False
+    if data.review_token:
+        claims = decode_review_invite_token(data.review_token)
+        invited = bool(claims) and claims.get("producer_id") == str(producer_id)
+    if not existing_review and not invited:
         clicked = (
             db.query(ProducerWhatsAppClick.id)
             .filter(
@@ -316,6 +334,9 @@ def create_review_nested(
             user_id=user.id,
             stars=data.stars,
             body=data.body,
+            # MEH-1428: records HOW the gate was passed, set once at creation.
+            # An edit never rewrites it — the first proof is the one on record.
+            source="invite_link" if invited else "click",
         )
         db.add(review)
         try:
@@ -462,6 +483,8 @@ def admin_list_reviews(
             body=r.body,
             is_hidden=r.is_hidden,
             created_at=r.created_at.isoformat() if r.created_at else "",
+            # MEH-1428: "click" | "invite_link".
+            source=r.source,
         )
         for r in rows
     ]

@@ -2181,6 +2181,8 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
  * All reviews (including hidden) for moderation.
  * @summary Admin List Reviews
  */
+export const adminListReviewsAdminReviewsGetResponseSourceDefault = `click`;
+
 export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
@@ -2188,6 +2190,7 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), adminListReviewsAdminReviewsGetResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "user_id": /*#__PURE__*/ zod.uuid(),
@@ -4647,6 +4650,26 @@ export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PU
 
 
 /**
+ * The owner's shareable "request a review" URL.
+ *
+ * Approved producers only: the public page the link opens exists only once
+ * the business is live, and a pending/draft business has no customers to
+ * ask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py
+ * create_review_invite_token) — not single-use, so one link serves every
+ * customer the owner sends it to; a fresh call re-mints it, which is how a
+ * link is "renewed" after expiry. No DB write.
+ *
+ * URL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a
+ * custom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are
+ * the live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).
+ * @summary Get Review Invite Link
+ */
+export const GetReviewInviteLinkProducersMeReviewLinkGetResponse = /*#__PURE__*/ zod.object({
+  "url": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-1428 chunk 1: GET \/producers\/me\/review-link — the shareable URL\n(public producer page + `?rt=<token>`).'))
+
+
+/**
  * The owner declares her profile ready and hands it to the admin queue.
  *
  * This is the ONLY transition out of `draft` (MEH-2100). All three producer
@@ -4999,6 +5022,8 @@ export const ReportProducerProducersProducerIdReportPostResponse = /*#__PURE__*/
  * Paginated visible reviews for a producer (10 per page, newest first).
  * @summary List Reviews Nested
  */
+export const listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemSourceDefault = `click`;
+
 export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE__*/ zod.object({
   "page": /*#__PURE__*/ zod.int(),
   "pages": /*#__PURE__*/ zod.int(),
@@ -5009,6 +5034,7 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -5028,6 +5054,8 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  *   4. Body is moderated by Haiku (fail-open).
  * @summary Create Review Nested
  */
+export const createReviewNestedProducersProducerIdReviewsPostResponseSourceDefault = `click`;
+
 export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
@@ -5035,6 +5063,7 @@ export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PUR
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), createReviewNestedProducersProducerIdReviewsPostResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -5158,6 +5187,8 @@ export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ z
 /**
  * @summary List Reviews
  */
+export const listReviewsReviewsGetResponseSourceDefault = `click`;
+
 export const ListReviewsReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
@@ -5165,6 +5196,7 @@ export const ListReviewsReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), listReviewsReviewsGetResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -5186,6 +5218,8 @@ export const DeleteReviewReviewsReviewIdDeleteResponse = /*#__PURE__*/ zod.unkno
  * voice. An empty/blank reply clears it.
  * @summary Set Review Reply
  */
+export const setReviewReplyReviewsReviewIdReplyPutResponseSourceDefault = `click`;
+
 export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
@@ -5193,6 +5227,7 @@ export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.o
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), setReviewReplyReviewsReviewIdReplyPutResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
