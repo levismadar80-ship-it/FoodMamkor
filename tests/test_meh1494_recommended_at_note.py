@@ -38,7 +38,9 @@ def test_new_producer_has_no_pick_date_and_no_note(db):
     assert p.recommended_at is None
     assert p.recommended_note is None
     # No backfill from the boolean either: the date is unknown, not "now".
-    assert p.is_recommended in (False, None)
+    # `is False`, not `in (False, None)`: the column carries default=False, so
+    # a None here would mean someone made it nullable (reviewer, PR #3394).
+    assert p.is_recommended is False
 
 
 # ── The privacy guard ─────────────────────────────────────────────────────
