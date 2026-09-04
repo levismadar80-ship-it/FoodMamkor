@@ -235,8 +235,8 @@ class TestResubmitFromRejected:
 
 class TestApproveClearsRejectionTrail:
     def test_approve_clears_reason_and_code_keeps_count(self, client, db):
-        producer, _ = _rejected_owner(db, count=2, code="missing_docs")
-        resp = client.post(REVIEW, headers=auth_header(_owner_of(db, producer)))
+        producer, owner = _rejected_owner(db, count=2, code="missing_docs")
+        resp = client.post(REVIEW, headers=auth_header(owner))
         assert resp.status_code == 200  # rejected → pending, count 3
 
         approve = client.post(
@@ -249,12 +249,6 @@ class TestApproveClearsRejectionTrail:
         assert row.rejection_reason is None
         assert row.rejection_reason_code is None
         assert row.resubmission_count == 3, "history is not reset by approve"
-
-
-def _owner_of(db, producer):
-    from app.models.models import User
-
-    return db.query(User).filter(User.producer_id == producer.id).one()
 
 
 # --- 4. the fields reach the three readers ------------------------------------
