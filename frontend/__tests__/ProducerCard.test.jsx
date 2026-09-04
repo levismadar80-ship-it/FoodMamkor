@@ -181,7 +181,6 @@ const minimalProducer = {
   grass_fed: false,
   kosher: null,
   price_range: null,
-  starting_price_label: null,
   categories: [],
 };
 
@@ -266,12 +265,8 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
-  it("renders no price even when both price fields are set", () => {
-    render(
-      <ProducerCard
-        producer={{ ...fullProducer, price_range: "₪40-80", starting_price_label: "מ-₪25" }}
-      />,
-    );
+  it("renders no price even when price_range is set", () => {
+    render(<ProducerCard producer={{ ...fullProducer, price_range: "₪40-80" }} />);
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 

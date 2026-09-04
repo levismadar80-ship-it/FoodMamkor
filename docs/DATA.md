@@ -158,7 +158,7 @@ producers (
   delivery_fee integer nullable, free_delivery_above integer nullable,
   -- MEH-1471: self-reported attribution (admin-only; English key + free-text "other")
   referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
-  starting_price_label, price_range,
+  price_range,  -- MEH-1855 chunk 2 dropped the legacy alias (9849fab1637a)
   grass_fed bool, organic_certified bool, kosher,
   has_delivery bool, pickup_points bool,
   -- MEH-213 location mode + MEH-1255 nationwide exclusion list
