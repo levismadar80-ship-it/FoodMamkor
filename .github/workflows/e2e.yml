@@ -349,9 +349,10 @@ jobs:
 
             // Reconciled against qa-report-verdict.cjs: `report.counts.executed`
             // and `.skipped` are `number | null` (toCount). The require-failure
-            // fallback above carries no numbers at all, so the two `typeof`
-            // guards are what keep a run that measured nothing from claiming a
-            // drop ("null < 194" is true in JS).
+            // fallback above carries both keys, but as null rather than a
+            // number, so the two `typeof` guards are what keep a run that
+            // measured nothing from claiming a drop ("null < 194" is true in
+            // JS).
             const executed = report.counts.executed;
             const skipped = report.counts.skipped;
             const lines = [body];
