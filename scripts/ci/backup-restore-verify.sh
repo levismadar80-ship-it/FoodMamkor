@@ -173,6 +173,7 @@ base_table_count() {
 # [A-Za-z0-9_]+, but --expect-nonempty is operator-supplied, so refuse anything
 # else here instead of trusting the caller — one guard for both readers.
 _ident() { # $1=candidate → 0 if a plain identifier, else 1 (+ stderr)
+  local LC_ALL=C # bracket ranges follow LC_COLLATE; pin them to ASCII whoever sources this
   case "$1" in
     *[!A-Za-z0-9_]*|"") echo "refusing non-identifier table name: '$1'" >&2; return 1 ;;
   esac
