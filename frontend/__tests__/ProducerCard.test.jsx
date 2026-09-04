@@ -44,7 +44,8 @@ vi.mock("next-intl", () => ({
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). ExperienceCard.test.jsx precedent.
+  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
+  // for this mock shape before MEH-2248 deleted it.
   useLocale: () => "he",
 }));
 

@@ -1852,7 +1852,7 @@
       "notes_label": "Moderation notes"
     },
     "experiences": {
-      "title": "Community experiences",
+      "title": "Experiences",
       "subtitle": "Moderation for user-submitted experiences",
       "public_link": "Public page →",
       "tabs": {
@@ -2533,17 +2533,8 @@
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences"
     },
-    "card": {
-      "host_fallback": "Community host",
-      "spots_left": "{n} spots left",
-      "sold_out": "Sold out",
-      "free": "Free"
-    },
     "new": {
-      "auth_loading": "Loading...",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "breadcrumb_submit": "Submit",
+      "crumb_current": "New experience",
       "title": "Submit a new experience",
       "subtitle": "All submissions are reviewed by the Mehamakor team. We'll get back to you within 3 business days",
       "field_title": "Experience title",
