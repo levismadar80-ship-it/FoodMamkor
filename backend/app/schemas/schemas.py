@@ -1121,6 +1121,14 @@ class CategoryOut(BaseModel):
     # reviewer on PR #3052.)
     slug: str | None = None
     emoji: str | None = None
+    # MEH-1456 chunk A: the seeded-row ownership flag, on the same ADR-006 R1
+    # reasoning as `slug` above — a new non-internal column rides the matching
+    # *Out in the SAME PR (the CI reviewer flagged its absence on PR #3392).
+    # Read-only on every surface; chunk 2b gates rename/delete on it in
+    # update_category / delete_category and the admin UI reads it from here.
+    # `False` default (not Optional) because the column is NOT NULL two-state.
+    # Deliberately NOT on CategoryHit: a search hit never gates an edit.
+    is_system: bool = False
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
     # ProducerOut.categories) serialize unchanged — NOT a DB column.
