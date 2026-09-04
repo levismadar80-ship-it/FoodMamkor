@@ -141,8 +141,10 @@ class TestExperienceSubmission:
     # gate) — a consumer is rejected on the WRITE side, matching the MEH-1749
     # read gate that would have hidden her experience forever anyway. This
     # test inverts the old `test_consumer_can_submit` (201) it replaces.
-    def test_consumer_is_rejected(self, client, db, monkeypatch):
-        _mock_moderation(monkeypatch, status="APPROVED")
+    def test_consumer_is_rejected(self, client, db):
+        # No moderation mock on purpose: the gate rejects before
+        # validate_experience is ever called, and the count assertion below
+        # would still hold if it were.
         user = make_user(db, role="consumer", email="c@test.com")
         resp = client.post(
             "/experiences", json=_payload(), headers=auth_header(user)

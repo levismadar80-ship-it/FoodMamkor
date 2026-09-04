@@ -21,7 +21,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, get_current_user_optional, require_verified_producer
+from app.auth import (
+    get_current_user,
+    get_current_user_optional,
+    require_verified_producer,
+)
 from app.database import get_db
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
