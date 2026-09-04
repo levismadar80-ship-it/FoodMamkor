@@ -452,6 +452,22 @@ zero.
     on a "failing" signal you cannot read logs for. Wait for budget
     resolution before proceeding. (Root cause: MEH-314/317, 2026-04-25 —
     test bug was masked by budget exhaustion and shipped in PR #337.)
+    - **CI on a PR CC opened — what triggers it, and the one trap (MEH-1501).**
+      GitHub never starts a workflow run for an event created with the
+      workflow's own `GITHUB_TOKEN` (recursion guard; `workflow_dispatch` /
+      `repository_dispatch` are the documented exceptions). **The discriminator
+      is the credential the PUSH authenticated with** — not the committer
+      identity, not the event type, not merge-vs-plain commit (all three were
+      measured and refuted on 23/07; do not re-derive them). The CCR git relay
+      the sandbox pushes through, and PRs opened through the GitHub MCP, both
+      trigger normally — measured 04/09: #3352 opened 11:16Z had `Paths filter`
+      / `Adversarial review` / E2E running by 11:20Z, and #3354 / #3355 / #3356
+      the same. **The trap:** a push whose tip SHA already exists on `origin`
+      is a no-op — no ref moves, no push event, no run. To re-trigger you need
+      a NEW SHA (a real commit, or a `git merge origin/staging` sync — never an
+      empty commit, rule 30). **Fallback** when a PR still shows no run: Sapir
+      closes and reopens it. Runbook only — `actions: write` for the GitHub
+      App stays an open Sapir decision on the card.
     - **Superseded-run false-failure.** A `CI gate (required)` failure
       webhook can be a *cancelled* run, not a real one: flipping a PR
       draft→ready (or a rapid second push) starts a new `pr-checks` run
