@@ -132,7 +132,6 @@ scan_source() {
   local lineno=0 found=0 line stripped id
   while IFS= read -r line || [ -n "$line" ]; do
     lineno=$((lineno + 1))
-    line="${line%$'\r'}"                       # tolerate CRLF (Windows / GitHub payload)
     # MEH-2244: a whole-line `Refs MEH-<N> (chunk k/n)` is the trailer the
     # closing-line check REQUIRES, so it cannot also be a bare mention here.
     # Whole-line only — `Refs MEH-<N>` without the suffix, or the same text
@@ -400,6 +399,10 @@ run_self_test() {
     "mixed||1"
     # closing line missing, scan clean -> 3 alone
     "clean||3"
+    # the two forms the old gate accepted and this one must not — pinned at
+    # the dispatch level, not only in closing_cases (CI reviewer, round 3)
+    "closes-in-title-only||3"
+    "closes-in-parens||3"
     # BOTH halves fail: bare `Refs MEH-N` trips the scan AND is not a
     # standalone form -> 3 must win over 1
     "refs-without-chunk||3"
