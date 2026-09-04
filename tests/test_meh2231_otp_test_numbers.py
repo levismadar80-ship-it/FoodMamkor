@@ -26,12 +26,15 @@ new code: delete the `app_env == "production"` line → `production refusal`
 FAILS and the pure-function test FAILS; everything else passes.
 """
 
+import logging
+
 from tests.conftest import auth_header, make_producer, make_user
 
 from app import config
 from app.models.models import PhoneOtpToken, Producer
 from app.routers import producer_me
 
+LOGGER_NAME = "app.routers.producer_me"
 LISTED = "0501234599"
 UNLISTED = "0501234598"
 FIXED = "424242"
@@ -64,6 +67,14 @@ def _arm(monkeypatch, numbers=LISTED, code=FIXED):
     return rec
 
 
+def _warnings(caplog) -> list[str]:
+    return [
+        r.getMessage()
+        for r in caplog.records
+        if r.name == LOGGER_NAME and r.levelno >= logging.WARNING
+    ]
+
+
 def _stored_code(db, producer_id) -> str:
     token = (
         db.query(PhoneOtpToken)
@@ -74,14 +85,21 @@ def _stored_code(db, producer_id) -> str:
 
 
 # ── DoD row 1 — exploit: fails-before / passes-after ─────────────────────
-def test_listed_number_gets_fixed_code_and_confirms(client, db, monkeypatch):
+def test_listed_number_gets_fixed_code_and_confirms(client, db, monkeypatch, caplog):
     rec = _arm(monkeypatch)
     user, producer = _producer_user(db, LISTED)
 
-    r = client.post("/producers/me/verify-phone", headers=auth_header(user))
+    with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
+        r = client.post("/producers/me/verify-phone", headers=auth_header(user))
     assert r.status_code == 200, r.text
     assert rec.calls == [], "a TEST number must never reach WhatsApp"
     assert _stored_code(db, producer.id) == FIXED
+    # The bypass is an audit event: exactly one WARNING, naming the producer
+    # and never the phone or the code.
+    hits = [m for m in _warnings(caplog) if "OTP test mode" in m]
+    assert len(hits) == 1, _warnings(caplog)
+    assert str(producer.id) in hits[0]
+    assert LISTED not in hits[0] and FIXED not in hits[0]
 
     r = client.post(
         "/producers/me/verify-phone/confirm",
@@ -94,13 +112,18 @@ def test_listed_number_gets_fixed_code_and_confirms(client, db, monkeypatch):
 
 
 # ── DoD row 2 — separation: the normal path did not move ─────────────────
-def test_unlisted_number_still_gets_a_random_code_and_a_send(client, db, monkeypatch):
+def test_unlisted_number_still_gets_a_random_code_and_a_send(
+    client, db, monkeypatch, caplog
+):
     rec = _arm(monkeypatch)
     user, producer = _producer_user(db, UNLISTED)
 
-    r = client.post("/producers/me/verify-phone", headers=auth_header(user))
+    with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
+        r = client.post("/producers/me/verify-phone", headers=auth_header(user))
     assert r.status_code == 200, r.text
     assert len(rec.calls) == 1
+    # The normal path leaves no bypass event behind.
+    assert not [m for m in _warnings(caplog) if "OTP test mode" in m]
     phone, sent = rec.calls[0]
     assert phone == UNLISTED
     assert len(sent) == 6 and sent.isdigit()
@@ -118,8 +141,9 @@ def test_production_refuses_even_a_listed_number(client, db, monkeypatch):
     r = client.post("/producers/me/verify-phone", headers=auth_header(user))
     assert r.status_code == 200, r.text
     assert len(rec.calls) == 1, "production must take the normal path"
-    assert rec.calls[0][1] != FIXED
-    assert _stored_code(db, producer.id) != FIXED
+    # No `!= FIXED` on the random code (same 1-in-10^6 reasoning as the
+    # separation test); the send itself is the discriminating fact.
+    assert _stored_code(db, producer.id) == rec.calls[0][1]
 
 
 def test_environment_gate_is_the_seed_script_shape():

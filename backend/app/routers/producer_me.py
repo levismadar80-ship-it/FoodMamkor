@@ -1551,6 +1551,14 @@ def send_phone_otp(
 
     if test_code is None:
         _send_whatsapp_otp(producer.phone, code)
+    else:
+        # MEH-2231: a fixed code is a bypass event. WARNING so it is filterable
+        # in Railway logs and an audit can tell a test run from a real one
+        # (reviewer, PR #3393). Producer id only — never the phone or the code.
+        log.warning(
+            "OTP test mode: fixed code issued, WhatsApp suppressed (producer_id=%s)",
+            producer.id,
+        )
     return {"detail": "קוד נשלח"}
 
 
