@@ -39,9 +39,10 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// EventsClient uses useSearchParams() to keep the ?tab=experiences
-// deep-link in the URL. Next.js 14 requires a Suspense boundary
-// around any component that reads search params in the App Router.
+// EventsClient uses useSearchParams() for the ?city= / ?category= deep-links.
+// Next.js 14 requires a Suspense boundary around any component that reads
+// search params in the App Router. MEH-2245: the tab is the route — this page
+// is the events tab; /experiences mounts the same component on the other tab.
 export default async function EventsPage({ params }) {
   // MEH-858 F2: Suspense fallback was a hardcoded HE string (leaked Hebrew on
   // /en). Wire the existing events.list.loading_events key — same rendered
@@ -56,7 +57,7 @@ export default async function EventsPage({ params }) {
         </div>
       }
     >
-      <EventsClient />
+      <EventsClient initialTab="events" />
     </Suspense>
   );
 }
