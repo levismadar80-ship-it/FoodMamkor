@@ -352,13 +352,23 @@ async function gotoMap(page: Page, path = "/map"): Promise<void> {
   );
 }
 
-/** Mock, navigate, and wait for the fixture list to land in the VISIBLE shell. */
+/**
+ * Mock, navigate, and wait for the fixture list to land in the VISIBLE shell.
+ *
+ * CONTRACT for the function form of `list`: it must return the INITIAL-load
+ * list for a URL carrying no `radius_km`. The settle below derives its expected
+ * count by evaluating `list` against exactly such a URL rather than assuming
+ * `PRODUCERS.length` — a function that returns fewer on first load would
+ * otherwise race past the `__MAP_CENTER__` signal with no card-count
+ * settlement, and the count would be stated rather than measured.
+ */
 async function gotoWithCatalog(page: Page, info: TestInfo, path = "/map", list?: Producer[] | ((u: URL) => Producer[])): Promise<{ catalog: Catalog; tiles: TileLog; shell: Locator }> {
   const tiles = await stubExternal(page);
   const catalog = await mockCatalog(page, list);
   await gotoMap(page, path);
   const shell = shellOf(page, info);
-  const expected = typeof list === "function" ? PRODUCERS.length : (list ?? PRODUCERS).length;
+  const initial = typeof list === "function" ? list(new URL("http://localhost/api/producers")) : (list ?? PRODUCERS);
+  const expected = initial.length;
   if (expected > 0) await expect(shell.getByTestId("map-card")).toHaveCount(expected, FIRST_PAINT);
   return { catalog, tiles, shell };
 }
