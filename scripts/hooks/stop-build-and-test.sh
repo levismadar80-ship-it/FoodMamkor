@@ -226,7 +226,7 @@ self_test() {
   local tmp="$SELFTEST_TMP"
   local real_root; real_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
   # Absolute path resolved once, as stop-git-check.sh does — `$0` is whatever the
-  # caller typed and drifts under a symlink or a cwd change (CI reviewer on #3325).
+  # caller typed and drifts under a symlink or a cwd change (CI reviewer, MEH-2117).
   local SELF; SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 
   check() { # $1=label $2=expected-exit $3=actual-exit [$4=required substring of combined output]
