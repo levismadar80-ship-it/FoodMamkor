@@ -81,7 +81,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # MEH-2224: fetch-depth 2 so builder-model-guard.sh can read the head
+      # commit's parent without a network fetch. Its MEH-2223 exemption branch
+      # needs the parent; on the default depth-1 checkout it must `git fetch`
+      # it, and a runner that cannot reach origin at that moment fails the
+      # guard closed — a false red on a PR with nothing wrong with it.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - name: Run every guard in scripts/checks/ (MEH-999)
         run: bash scripts/checks/run-all.sh
 
