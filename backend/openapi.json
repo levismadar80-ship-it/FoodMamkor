@@ -4907,17 +4907,6 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starting Price Label"
-          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -5802,17 +5791,6 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starting Price Label"
-          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -6489,17 +6467,6 @@
               }
             ],
             "title": "Slug"
-          },
-          "starting_price_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starting Price Label"
           },
           "status": {
             "default": "pending",
@@ -8016,17 +7983,6 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starting Price Label"
-          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -9496,17 +9452,6 @@
               }
             ],
             "title": "Slug"
-          },
-          "starting_price_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starting Price Label"
           },
           "status": {
             "anyOf": [
