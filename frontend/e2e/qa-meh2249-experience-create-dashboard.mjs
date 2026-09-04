@@ -18,7 +18,7 @@ import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-const BASE = process.env.QA_BASE || "http://localhost:3000";
+const BASE = process.env.QA_BASE_URL || "http://localhost:3000";
 const OUT = process.argv[2] || "qa-artifacts/MEH-2249";
 const NEW_ROUTE = "/producer/dashboard/experiences/new";
 fs.mkdirSync(OUT, { recursive: true });
@@ -65,7 +65,12 @@ async function ctxFor(browser, vp, user) {
 // The sandbox ships chromium-1194; this Playwright pins a newer headless
 // shell it has no binary for. Use the pre-installed browser (env guidance)
 // rather than downloading one.
-const EXEC = process.env.QA_CHROMIUM || "/opt/pw-browsers/chromium";
+// QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH are the repo's established harness
+// knobs and are the two names check_env_drift.sh excludes as test-runner
+// config. An earlier version of this file invented QA_BASE / QA_CHROMIUM and
+// reddened the Env drift gate — the same slip qa-meh2193-about-hub.mjs:25
+// already records. Do not rename them.
+const EXEC = process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium";
 const browser = await chromium.launch(
   fs.existsSync(EXEC) ? { executablePath: EXEC } : {}
 );
