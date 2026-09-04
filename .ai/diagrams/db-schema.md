@@ -79,6 +79,9 @@ erDiagram
         date license_expires_at "nullable — MEH-2072, DATE not TIMESTAMP (a licence is valid through a calendar day; compared against israel_today()); admin-only (ProducerAdminOut), never owner-writable; NULL = not captured yet, NEVER no-expiry; feeds GET /admin/license-expiry-reminders (30d window), no enforcement"
         text requested_changes "nullable — MEH-1011, admin completion-request feedback (non-terminal, status stays pending; cleared on approve)"
         timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
+        string rejection_reason_code "nullable — MEH-2210, VARCHAR(40); the admin preset_key (PRODUCER_REJECTION_PRESETS) beside the composed rejection_reason; cleared on approve"
+        int resubmission_count "NOT NULL DEFAULT 0 — MEH-2210, rejected→pending resubmissions used; history, never reset; cap constants.MAX_PRODUCER_RESUBMISSIONS=3"
+        timestamp resubmitted_at "nullable — MEH-2210, tz-aware; latest resubmission"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
