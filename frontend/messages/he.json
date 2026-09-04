@@ -1852,7 +1852,7 @@
       "notes_label": "הערות מודרציה"
     },
     "experiences": {
-      "title": "חוויות קהילתיות",
+      "title": "חוויות",
       "subtitle": "מודרציה לחוויות שהגישו משתמשים",
       "public_link": "דף ציבורי ←",
       "tabs": {
@@ -2532,12 +2532,6 @@
       "spots_count": "{spots} מתוך {max}",
       "breadcrumb_home": "בית",
       "breadcrumb_experiences": "חוויות"
-    },
-    "card": {
-      "host_fallback": "מארחת קהילתית",
-      "spots_left": "נשארו {n} מקומות",
-      "sold_out": "אזל",
-      "free": "חינם"
     },
     "new": {
       "auth_loading": "בטעינה...",

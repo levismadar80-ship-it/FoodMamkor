@@ -43,8 +43,9 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 // date formatting (lib/format-date.js) untouched — layout layer only.
 // EventCard rewritten as the date-rail EntryRow (the page's signature
 // gesture); experiences render through the SAME EntryRow (gold accent),
-// so ExperienceCard.jsx is no longer imported here (MEH-2245 then deleted
-// its last route consumer, the old /experiences client). Calendar view keeps
+// so the old experience card is no longer imported here (the route-as-tab
+// merge deleted its last route consumer, the old /experiences client, and
+// MEH-2248 deleted the component itself). Calendar view keeps
 // CalendarView as-is.
 
 // MEH-788: events hero — license-clean Pexels market-produce photo (3:4
