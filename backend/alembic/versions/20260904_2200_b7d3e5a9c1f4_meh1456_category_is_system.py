@@ -1,7 +1,7 @@
 """meh1456_category_is_system
 
 Revision ID: b7d3e5a9c1f4
-Revises: 9849fab1637a
+Revises: c4e81b7a2f96
 Create Date: 2026-09-04 22:00:00.000000+00:00
 
 MEH-1456 chunk A (night session, 04/09): declared ownership on the seeded
@@ -63,7 +63,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "b7d3e5a9c1f4"
-down_revision: Union[str, None] = "9849fab1637a"
+down_revision: Union[str, None] = "c4e81b7a2f96"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
