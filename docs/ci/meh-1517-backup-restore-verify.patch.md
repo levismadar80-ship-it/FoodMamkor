@@ -56,7 +56,7 @@ mechanics explicitly. So the split here is:
 Exit 0 only when every assertion held; exit 1 on any failed assertion; exit 2 on preflight (missing tool,
 zero tables derived, non-empty target).
 
-### `--self-test` — run 03/09 against the local Postgres, throwaway databases `meh1517_selftest_*` only
+### `--self-test` — run 03/09 (re-run 04/09, see below) against the local Postgres, throwaway databases `meh1517_selftest_*` only
 
 ```
 backup-restore-verify --self-test
@@ -72,10 +72,18 @@ backup-restore-verify --self-test
   ok   wrong --expect-table-count is RED (exit 1)
   ok   --expect-nonempty on an EMPTY table is RED (exit 1)
   ok   a models file deriving ZERO tables is a preflight error, not a pass (exit 2)
-  11/11 self-test cases behaved correctly
+  ok   row_count on a VALID name of an absent table reads MISSING (control) (exit 0)
+  ok   row_count on a NON-identifier is rc=1 and names the refusal (exit 1)
+  ok   ...and its output does NOT read MISSING (a rejection is not an absence) (exit 0)
+  ok   --expect-nonempty with a NON-identifier is a PREFLIGHT error (exit 2, named) (exit 2)
+  15/15 self-test cases behaved correctly
 ```
 
-Two of the eleven are **anchored to real repo files**, not fixtures (MEH-1909): the derivation must find
+_(Re-run 04/09 after the CI-reviewer rounds on PR #3324: cases (i) — three checks on the `row_count()` /
+`_ident` identifier guard — and (j) — the `--expect-nonempty` preflight rejection — are the four new lines.
+The count is what the script prints, not a hand tally.)_
+
+Two of the fifteen are **anchored to real repo files**, not fixtures (MEH-1909): the derivation must find
 ≥ 30 tables in the real `models.py` including the `Table()` form, and the derived count must **equal the
 live `EXPECTED_TABLES`**. If a table is ever added to one source of truth and not the other, this goes red
 before any drill runs on the stale list.
@@ -212,7 +220,7 @@ red there would be a real regression in the seed, not a drill artefact.
 1. Create `.github/workflows/backup-restore-verify.yml` with the block in §2. No ruleset change: this is a
    scheduled job, not a PR check, and it must never become a required context (it does not run on PRs).
 2. `gh workflow run backup-restore-verify.yml` (or Actions → *Backup restore drill* → Run workflow) once.
-   Expected: the self-test step prints the eleven `ok` lines from §1 **including the red cases**; the drill
+   Expected: the self-test step prints the fifteen `ok` lines from §1 **including the red cases**; the drill
    step ends `backup-restore-verify: OK — 42 model tables present, every row count matches.`
 3. Failure surfaces the way `dependency-audit.yml` does — a red scheduled run and the GitHub failure email.
    Nothing else to wire.
