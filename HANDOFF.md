@@ -3,6 +3,33 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-04 צהריים — batch חוויות MEH-2245/2246/2247 (session `015hizoq…`): 3 PRs פתוחים · 0 מוזגו בזמן הכתיבה · הכרעה אחת לספיר
+
+**‏שורה אחת:** ‏#3353 (2245, YELLOW, auto-merge squash חמוש) · #3357 (2246, RED — **ספיר ממזגת**, אין auto-merge) · #3361 (2247, GREEN, auto-merge squash חמוש) · PR docs זה. כל ענף מ-`origin/staging` @ `18af172`.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏#3357 מחכה להכרעה, לא רק למיזוג.** הכרטיס ביקש לשקף לעמוד `/experiences/new` את שער ה-role של עמוד יצירת האירוע. Phase 0c: השער ה-page-level ההוא (`producer/dashboard/events/new/page.js:30-33`) **מעולם לא נצפה** — `producer/dashboard/layout.js:105-116` (layout משותף) מגדר קודם ומציג לצרכנית מחוברת פאנל «אין לך גישה» **בלי redirect**. ה-mirror המילולי (`push("/login?redirect=/experiences/new")` על role) נבנה, נמדד, ו**מלולפ**: `LoginClient.jsx:90` מחזיר משתמשת מחוברת ל-redirect, שהשער דוחף שוב ל-login. הוחזר. ה-PR הוא backend-only; שלוש אפשרויות ל-UX בגוף ה-PR (א: פאנל denied = קופי חדש, כלל 22 · ב: redirect ל-`/experiences` · ג: להשאיר — 403 בשרת בלבד).
+2. **‏Follow-ups שדווחו ולא בוצעו (scope):** ‏`components/ExperienceCard.jsx` יתום מאז מחיקת `ExperiencesClient` (רק הטסט שלו מייבא אותו; ה-docstring ב-`:14` עדיין אומר «sole consumer») · `lib/event-categories.js:13` `Related:` מצביע לקובץ שנמחק · `app/globals.css:577` הערה · `he.json:1855` «חוויות קהילתיות» (admin) · `he.json:2537` «מארחת קהילתית» (card fallback) · `experiences/new/page.js:6` «שיעור תזונה קהילתי» ב-metadata hardcoded — כולם מילות LOCK מחוץ לרשימות הקופי של שלושת הכרטיסים; כלל 22.
+3. **‏ה-308 מעביר את ה-query.** ‏`has: [{type:"query", key:"tab"}]` לא «צורך» את הפרמטר — `Location: /experiences?tab=experiences`. לא מזיק: ה-URL-writer של `EventsClient` (city/category בלבד) מנקה אחרי hydration, נמדד בשני viewports. ההערה ב-`next.config.js` תוקנה אחרי שהסקירה האדברסרית תפסה שהיא טענה אחרת.
+4. **‏flip-check אחרי המיזוגים — טרם בוצע** (אף PR לא מוזג בזמן הכתיבה): `get_issue` על 2245 · 2246 · 2247 בשני הכיוונים. ‏`Closes` בשלושת ה-PRs.
+5. **‏מכשירי sandbox:** ‏Turbopack + symlink `node_modules` = `Symlink [project]/node_modules is invalid` → `npm ci` ב-worktree (26 שניות). ‏`next start` בלי backend נתקע אחרי ECONNREFUSED-ים על ה-proxy — stub python על :8000. ‏`pkill`-free: `next-server` נסגר לפי PID מ-`ps -eo pid,comm`. ‏Playwright: `waitForURL` לא רואה `replaceState` — polling של `location`; `page.locator("form")` תופס את חיפוש ה-Header.
+
+### PRs
+
+| PR | מה | מצב |
+| -- | -- | -- |
+| #3353 | MEH-2245 — route-as-tab, ExperiencesClient נמחק, 308, קופי LOCK, qa-artifacts | פתוח, auto-merge squash חמוש, סקירה אדברסרית ✓ |
+| #3357 | MEH-2246 — `POST /experiences` → `require_verified_producer`, backend-only | פתוח — **ספיר ממזגת** (RED) + הכרעת UX |
+| #3361 | MEH-2247 — שתי מחרוזות בפרומפט המודרציה | פתוח, auto-merge squash חמוש |
+| זה | docs backfill — CHANGELOG + HANDOFF + DATA.md + api-routes + MANUAL_TESTING | לא לחמש auto-merge לפני שלושת הקודמים (כלל 31b) |
+
+### רשימת ספיר (residual)
+
+* **‏#3357:** מיזוג (RED) + הכרעת ה-UX של `/experiences/new` לצרכנית (א/ב/ג בגוף ה-PR).
+* **‏קופי:** שלוש מילות LOCK שנותרו (לקח 2) — כרטיס קופי קטן אם רוצים אפס «קהילתי» ב-he.json.
+* **‏dead code:** `ExperienceCard.jsx` + הטסט שלו — למחוק או לתת צרכן.
+
 ## 2026-09-03 ערב → 04/09 בוקר — drain כה' (session `01NTrU3k…`): ה-BRIEF של 18:10Z נעבד T0→T8 · 13 PRs נחתו · **ריליז staging→main #3328 בוצע (`0f273bf8`, merge commit, prod booted 09:51Z, 3 probes ×2 תקינים)** · שני drop-PRs + chunk 1 של 2219 ממתינים לספיר
 
 **‏שורה אחת:** ‏#3310 (2242) · #3312 (1944) · #3313 (1980 ch2) · #3315 (2228) · #3311 (2243) · #3319 (1981) · #3320 (413/2135) · #3327 (1523) · #3324 (1517) · #3325 (2117+1839) נחתו כ-squash מאומת. פתוחים לספיר: #3314 (2219 ch1) · #3316 (1855 ch2, DROP) · #3321 (1606, data merge) · #3309 (unlock, Repo guards אדום). T8 אחרי הריליז: #3317 (2105) · #3318 (1621 ch1) · #3322 (1890) — **מוזג 04/09** `a23b696b`.
