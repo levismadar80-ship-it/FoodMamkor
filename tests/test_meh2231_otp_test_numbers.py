@@ -154,6 +154,10 @@ def test_environment_gate_is_the_seed_script_shape():
     # local host: always allowed outside production
     assert allowed("localhost", "", "development") is True
     assert allowed("127.0.0.1", "", "test") is True
+    # no host at all (Unix-socket URL): OFF even on Railway staging — the
+    # docstring's "stays OFF" promise, pinned (reviewer, PR #3393)
+    assert allowed("", "staging", "development") is False
+    assert allowed("   ", "staging", "development") is False
     # remote host: only Railway staging
     assert allowed("db.railway.internal", "staging", "development") is True
     assert allowed("db.railway.internal", "STAGING", "development") is True
