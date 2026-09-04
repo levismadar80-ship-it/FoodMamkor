@@ -77,7 +77,7 @@ pg_restore --no-owner --no-acl -d "$DRILL_URL" mehamakor_YYYYMMDD_HHMMSS.dump
 ```
 
 **אימות א' — ספירת טבלאות.** חייבת להתאים ל-`EXPECTED_TABLES` שב-CI gate
-(`.github/workflows/pr-checks.yml`, job "Verify alembic schema"). **נכון ל-14/08/2026: 40** (נמדד מ-`pr-checks.yml:360`). ה-CI gate הוא ה-source of truth — אם הוא עודכן (נוספה/נמחקה
+(`.github/workflows/pr-checks.yml`, job "Verify alembic schema"). **נכון ל-03/09/2026: 42** (נמדד מ-`pr-checks.yml:360`; היה 40 ב-14/08 ו-38 ב-22/07 — שלוש מדידות, שלושה ערכים, ולכן הסקריפט ב-§3א קורא את הערך בזמן ריצה ולא מעתיק אותו). ה-CI gate הוא ה-source of truth — אם הוא עודכן (נוספה/נמחקה
 טבלה), עדכני את המספר כאן לפי הערך שם, לא להיפך.
 
 ```bash
@@ -86,7 +86,7 @@ psql "$DRILL_URL" -tAc \
    WHERE table_schema='public'
      AND table_type='BASE TABLE'
      AND table_name <> 'alembic_version';"
-# מצופה: 40 (או הערך הנוכחי של EXPECTED_TABLES ב-pr-checks.yml)
+# מצופה: 42 (או הערך הנוכחי של EXPECTED_TABLES ב-pr-checks.yml)
 ```
 
 **אימות ב' — data אמיתי קיים.** הטבלאות המרכזיות חייבות להחזיר count > 0
@@ -95,7 +95,7 @@ psql "$DRILL_URL" -tAc \
 ```bash
 psql "$DRILL_URL" -tAc "SELECT COUNT(*) FROM producers;"   # מצופה: > 0
 psql "$DRILL_URL" -tAc "SELECT COUNT(*) FROM users;"       # מצופה: > 0
-psql "$DRILL_URL" -tAc "SELECT COUNT(*) FROM reviews;"     # מצופה: > 0
+psql "$DRILL_URL" -tAc "SELECT COUNT(*) FROM producer_reviews;"   # מצופה: > 0  (השם בפועל — אין טבלה `reviews`; models.py:1641)
 ```
 
 ```bash
@@ -107,6 +107,28 @@ unset DRILL_URL
 **ה-drill נחשב מוצלח רק אם:** `pg_restore` הסתיים ללא שגיאות, ספירת הטבלאות =
 `EXPECTED_TABLES`, ושלוש הספירות > 0. תעדי תוצאה + תאריך ב-Chunk 2 של
 [MEH-1442](https://linear.app/mehamakor/issue/MEH-1442).
+
+### 3א · אותו drill כסקריפט (MEH-1517) — ידני נשאר ה-fallback
+
+`scripts/ci/backup-restore-verify.sh` מריץ את §3 בדיוק — `pg_dump -Fc` →
+`pg_restore --no-owner --no-acl` ל-DB **ריק** → אימות א' (`--expect-table-count auto`
+קורא את `EXPECTED_TABLES` מ-`pr-checks.yml` בזמן ריצה) ואימות ב'
+(`--expect-nonempty producers,users,producer_reviews`) — ומוסיף השוואת ספירת שורות
+לכל טבלה שה-models מגדירים (נגזר מ-`models.py`, לא מוקלד). `--self-test` מוכיח
+שהוא מאדים על טבלה שנמחקה מהעותק ועל שורות שאבדו, וירוק על עותק נאמן.
+
+```bash
+bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRILL_URL" \
+  --expect-table-count auto --expect-nonempty producers,users,producer_reviews
+```
+
+**ה-workflow המתוזמן שמריץ אותו עדיין לא הוחל** — `.github/workflows/**` הוא
+CC-deny (MEH-671); ה-YAML המלא ממתין לספיר ב-
+[docs/ci/meh-1517-backup-restore-verify.patch.md](./ci/meh-1517-backup-restore-verify.patch.md).
+עד אז הצעדים הידניים למעלה הם ה-drill, ואחרי ההחלה הם נשארים ה-fallback
+למקרה שהאוטומציה לא זמינה. שימי לב: ה-job ב-CI מוכיח את **מכניקת** ה-drill על DB
+מזורע; הוא אינו מוכיח שהגיבוי **האמיתי** של staging משוחזר — לזה דרוש ה-secret
+`STAGING_DATABASE_URL_READONLY` (מאושר על MEH-1517 ב-14/08, טרם נוצר).
 
 ---
 
