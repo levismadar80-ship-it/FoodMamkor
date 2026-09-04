@@ -61,6 +61,15 @@ class Settings(BaseSettings):
     whatsapp_access_token: str = ""
     whatsapp_business_id: str = ""
     whatsapp_api_version: str = "v21.0"
+    # MEH-2231: a fixed OTP code for a fixed allow-list of TEST phone numbers,
+    # so a harness can pass the `phone_verified` submission gate outside
+    # production. BOTH empty by default = feature OFF; absence of config is
+    # never an implicit allow. The environment refusal (production is never
+    # honoured, whatever these say) lives in producer_me._otp_test_code_for,
+    # NOT here — config declares the numbers, the route decides whether the
+    # environment may use them.
+    otp_test_numbers: str = ""  # comma-separated, exact match on producer.phone
+    otp_test_code: str = ""  # exactly 6 digits, else the feature stays off
     admin_whatsapp_to: str = ""
 
     # MEH-509 PR2c — inbound webhook receiver (GET challenge + POST receive).
