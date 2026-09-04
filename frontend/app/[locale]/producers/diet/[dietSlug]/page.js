@@ -91,6 +91,16 @@ async function fetchDietProducers(filterParam, limit) {
  *      contradicts its own H1 (see lib/diet-pages.js).
  *   2. `total >= DIET_PAGE_MIN` — the thin-content / doorway-page gate.
  */
+// MEH-1944: React.cache() was implemented here and REVERTED. Measured, not
+// assumed — see the ticket. `cache` is exported from react@18.3.1 only under
+// the `react-server` condition, which Next supplies inside the RSC graph but
+// vitest does not: the wrapped module stops importing under test, and
+// __tests__/DietLandingPage.test.jsx drops from 32 tests to "no tests" while
+// the full suite still reports 0 failed. Silent coverage loss in exchange for
+// eliminating one duplicate read that costs nothing correctness-wise.
+//
+// DO NOT re-apply without first giving vitest a `cache` (an alias or a mock).
+// That is a harness change, outside this ticket's single-file scope.
 async function resolveDietPage(slug) {
   const entry = getDietPage(slug);
   if (!isDietPageBacked(entry)) return null;
@@ -115,7 +125,20 @@ async function fetchServableSiblings(currentSlug) {
     others.map((p) =>
       fetchDietProducers(p.filterParam, 1)
         .then((r) => r.total)
-        .catch(() => 0),
+        // MEH-1944: the fail-open is deliberate and UNCHANGED — 0 still drops
+        // the chip. What was missing is any trace of it. A silent `catch`
+        // here means that if sibling counts start failing, the chip row simply
+        // empties and looks like a legitimately thin catalog; there is no
+        // symptom to notice and nothing to search for. That is the silent-except
+        // class `.claude/rules/` documents, and the cheapest exit from it is a
+        // line naming WHICH sibling failed.
+        .catch((err) => {
+          console.warn(
+            `[diet-page] sibling count failed for filterParam=${p.filterParam} — chip omitted (fail-open):`,
+            err,
+          );
+          return 0;
+        }),
     ),
   );
   return others.filter((_, i) => counts[i] >= DIET_PAGE_MIN);
@@ -167,9 +190,20 @@ export default async function DietLandingPage({ params }) {
 
   const resolved = await resolveDietPage(dietSlug);
   if (!resolved) notFound();
-  const { entry, items } = resolved;
+  const { entry, items, total } = resolved;
 
   const t = await getTranslations({ locale, namespace: "diet_pages" });
+  // MEH-1944 §3: the grid is capped at PER_PAGE with no pagination, so a reader
+  // who sees exactly 24 cannot know there are more (labels.md §Indicators —
+  // truncation without disclosure is a defect). The counter reuses the SAME
+  // key ProducersClient.jsx renders off the same X-Total-Count header
+  // (`producers.discovery.showing_count`), and the link text reuses the map
+  // pane's `show_all` — zero new strings, so rule 22 is satisfied by reuse.
+  // Ruling: MEH-1944 description, 02/09 + 03/09 (option a, no new copy).
+  const [tProducers, tMap] = await Promise.all([
+    getTranslations({ locale, namespace: "producers" }),
+    getTranslations({ locale, namespace: "map" }),
+  ]);
   const label = dietPageLabel(entry);
   const path = dietPagePath(entry.slug);
   const intro = t(`pages.${entry.attribute}.intro`);
@@ -248,6 +282,30 @@ export default async function DietLandingPage({ params }) {
           <ProducerCard key={p.id} producer={p} referrer="diet-landing" />
         ))}
       </div>
+
+      {/*
+        MEH-1944 §3 — truncation disclosure. Rendered ONLY when the header says
+        more exist than the grid shows (total > items.length); a page whose
+        whole set fits gets no counter, so the 0/1/many × shown/hidden cells
+        are: fits → nothing · overflows → "מציגות 24 מתוך N" + a link to the
+        catalog with this diet's own filter already applied (the MEH-293
+        EXISTS filter /producers?<filterParam>=true consumes).
+      */}
+      {total > items.length && (
+        <p className="mt-4 text-sm text-fg-muted" data-testid="diet-truncation">
+          <span>
+            {tProducers("discovery.showing_count", { loaded: items.length, total })}
+          </span>
+          {" · "}
+          <Link
+            href={`/producers?${entry.filterParam}=true`}
+            className="text-primary underline"
+            data-testid="diet-truncation-link"
+          >
+            {tMap("pane.show_all")}
+          </Link>
+        </p>
+      )}
 
       {/*
         MEH-1507 copy-honesty: these are any-product, self-declared labels. The

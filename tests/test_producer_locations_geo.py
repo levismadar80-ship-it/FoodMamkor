@@ -14,7 +14,7 @@ Related:  backend/app/services/producer_queries.py (haversine_min_km),
 History:  MEH-1402 (creation).
 """
 
-from app.models import ProducerLocation
+from app.models import Producer, ProducerLocation
 from app.services.producer_listing import build_producers_query
 from tests.conftest import make_producer
 
@@ -162,11 +162,46 @@ def test_delivery_only_with_pickup_reappears_on_map(db):
     assert total == 1
 
 
-def test_physical_producer_still_pinnable_via_backfilled_point(db):
-    """A normal physical producer with only its Producer.lat/lng (no location
-    row yet — Expand overlap) still appears via the COALESCE fallback."""
+def test_physical_producer_with_only_its_own_point_is_NOT_returned(db):
+    """MEH-1938 chunk 5a (Contract) — THE INVERSION, and the whole point of
+    the chunk.
+
+    This test asserted the OPPOSITE until 02/09: a producer carrying only its
+    `Producer.lat/lng` mirror was returned, via the COALESCE fallback in
+    `haversine_min_km`. That fallback existed for the Expand overlap and is
+    now removed, so location rows are the single source of a map pin.
+
+    The change is safe because the population this used to rescue no longer
+    exists: every write path creates the row (registration MEH-1939, admin
+    MEH-2059, import MEH-2140, both seeds MEH-2056) and revision
+    7c1e2a9f4b3d backfilled the rest — staging measured 0 such producers on
+    02/09, production 0 (no businesses). It is deliberately NOT asserted as
+    "nothing is returned": the row count is pinned at 0 while the producer
+    itself still exists and still carries usable coordinates, so a fallback
+    reintroduced anywhere in the query path turns this red rather than
+    passing on an empty table.
+    """
     p = make_producer(db)  # has_physical_location defaults True
     _set_point(db, p, NEAR)  # own point in range, zero location rows
+    db.commit()
+
+    results, total = _geo(db, require_physical=True)
+
+    assert total == 0
+    assert [r.id for r in results] == []
+    # The control: the producer exists and its own point IS in range, so a 0
+    # above measures the removed fallback and not an empty fixture.
+    refreshed = db.query(Producer).filter(Producer.id == p.id).one()
+    assert (refreshed.lat, refreshed.lng) == NEAR
+
+
+def test_own_point_producer_becomes_visible_once_it_has_a_row(db):
+    """The other half of the inversion: the same producer, given the location
+    row every write path now creates, is returned again. Without this the
+    test above would pass against a query that returns nothing at all."""
+    p = make_producer(db)
+    _set_point(db, p, NEAR)
+    _add_location(db, p, NEAR, is_primary=True)
     db.commit()
 
     results, total = _geo(db, require_physical=True)

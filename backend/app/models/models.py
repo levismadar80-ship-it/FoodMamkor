@@ -38,7 +38,7 @@ from app.utils.clock import israel_today
 class City(Base):
     """MEH-213: canonical Israeli city list seeded from data.gov.il.
     Used to validate delivery_cities on producers — free text is forbidden
-    to prevent duplicates and broken search (e.g. ת״א vs תל אביב-יפו).
+    to prevent duplicates and broken search (e.g. "ת״א" vs "תל אביב-יפו").
     """
 
     __tablename__ = "cities"
@@ -60,6 +60,20 @@ class Producer(Base):
     short_description = Column(Text, nullable=True)
     city = Column(String(100))
     address = Column(String(255), nullable=True)
+    # LEGACY(2026-10-15, MEH-1938) — `lat` / `lng` are the business-level mirror
+    # of the primary `producer_locations` row. Since chunk 5a (02/09) no
+    # CONSUMER SURFACE reads them (geo, submit gate, admin map, producerPoints,
+    # JSON-LD all read the rows, with no fallback) and the owner PUT ignores
+    # them; `ProducerListOut.lat/lng` are DERIVED from the primary row at
+    # serialization. Two readers remain on purpose, in the WRITE direction:
+    # producer_queries.create_primary_branch_location and
+    # upsert_primary_branch_location copy the columns INTO the row, because
+    # admin, import and the seeds still deliver coordinates through them
+    # during the soak. Chunk 5b rewires those helpers to take coordinates
+    # directly and drops both columns — [DESTRUCTIVE], its own revision,
+    # ≥7-day soak, R2 backup ≤24h, the MEH-2056 count query = 0 on production.
+    # DO NOT add a reader of these columns on any consumer path —
+    # producer_queries.haversine_min_km carries the standing "no COALESCE" rule.
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))
@@ -239,7 +253,7 @@ class Producer(Base):
         ),
         nullable=True,
     )
-    # LEGACY(2026-09-01, MEH-1855)
+    # LEGACY(2026-10-01, MEH-1855)
     # MEH-1857: the alias below carried no date and no ticket, so nothing could
     # ever make it expire. Ownership is also INVERTED today — the public page
     # reads this alias (ProducerSections.jsx) while the owner writes the
@@ -276,8 +290,9 @@ class Producer(Base):
     # ProducerListOut.has_X_products (aggregated, computed at attach time).
     has_delivery = Column(Boolean, default=False)
     pickup_points = Column(Boolean, default=False)
-    kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
-    # MEH-530: manufacturer license number (משרד הבריאות). Nullable at the
+    # values: "כשר" / "לא כשר" / "כשר למהדרין"
+    kosher = Column(String(50), nullable=True)
+    # MEH-530: manufacturer license number (Ministry of Health). Nullable at the
     # DB level so existing producer rows stay valid; required-vs-optional
     # is enforced at the application layer (router-level helper
     # app/services/license_validation.py — depends on selected categories).
@@ -375,7 +390,7 @@ class Producer(Base):
     #               {"open": "16:00", "close": "20:00"}], ...}
     # keys a subset of sunday..saturday; a day absent = orders closed that day.
     # Up to 3 ranges per day, ascending and non-overlapping (a lunch break, or
-    # Friday morning + מוצ"ש). The pre-MEH-1869 single-dict form
+    # Friday morning + Saturday night post-Shabbat). The pre-MEH-1869 single-dict form
     # ({"sunday": {"open", "close"}}) is still ACCEPTED on write and normalised
     # to a one-element list, and every reader normalises both — so rows written
     # before the cutover keep working untouched. This was a JSONB VALUE-shape
@@ -860,7 +875,7 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    # LEGACY(2026-09-01, MEH-2064)
+    # LEGACY(2026-10-01, MEH-2064)
     # MEH-2145: the swap MEH-1857 asked for. That marker pointed at ITSELF
     # because the "MEH-295 follow-up" the line below promised had never been
     # opened, and it said in as many words: "whoever opens it should swap the
@@ -1370,14 +1385,15 @@ class HomeProduct(Base):
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
     # --- expanded fields (docs/archive/FIXES_V2.md fix 2) ---
-    category = Column(String(50), nullable=True)  # בשר ועוף / דגים / ירקות / ...
-    prep_date = Column(Date, nullable=True)  # תאריך הכנה / קטיף
-    expiry_date = Column(Date, nullable=True)  # תאריך תפוגה
-    storage_type = Column(String(30), nullable=True)  # מקרר / מקפיא / טמפרטורת חדר
+    category = Column(String(50), nullable=True)  # e.g. "בשר ועוף" / "דגים" / "ירקות"
+    prep_date = Column(Date, nullable=True)  # preparation / harvest date
+    expiry_date = Column(Date, nullable=True)  # expiry date
+    # e.g. "מקרר" / "מקפיא" / "טמפרטורת חדר"
+    storage_type = Column(String(30), nullable=True)
     allergens = Column(Text, nullable=True)  # "חיטה, ביצים, חלב..."
-    kosher = Column(String(30), nullable=True)  # כשר / לא כשר / לא ידוע
+    kosher = Column(String(30), nullable=True)  # values: "כשר" / "לא כשר" / "לא ידוע"
     is_organic = Column(Boolean, default=False)
-    unit = Column(String(30), nullable=True)  # ק״ג / יח׳ / ליטר / מנות
+    unit = Column(String(30), nullable=True)  # e.g. "ק״ג" / "יח׳" / "ליטר" / "מנות"
     delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
     location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
     images = Column(ARRAY(Text), default=[])  # up to 4 photos (Cloudinary URLs)
@@ -1483,7 +1499,9 @@ class Event(Base):
     lat = Column(Float)
     lng = Column(Float)
     image_url = Column(Text)
-    category = Column(String(30), nullable=False)  # שוק|קטיף|טעימות|אחר (MEH-1657)
+    # MEH-1657: one of routers/events.py VALID_CATEGORIES —
+    # "שוק" | "קטיף" | "טעימות" | "אחר".
+    category = Column(String(30), nullable=False)
     price = Column(Integer, default=0)  # 0 = free
     max_participants = Column(Integer, nullable=True)
     registration_url = Column(String(500), nullable=True)  # external signup link
@@ -1542,7 +1560,9 @@ class Experience(Base):
     title = Column(String(300), nullable=False)
     description = Column(Text, nullable=False)
     image_url = Column(Text, nullable=True)
-    category = Column(String(50), nullable=True)  # בישול | תזונה | סיור אוכל | ...
+    # e.g. "בישול" | "תזונה" | "סיור אוכל" — keys mirror
+    # frontend/lib/event-categories.js EXPERIENCE_CATEGORIES.
+    category = Column(String(50), nullable=True)
 
     # Host — any logged-in user (consumer / producer / admin)
     host_user_id = Column(

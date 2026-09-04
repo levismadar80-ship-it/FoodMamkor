@@ -117,7 +117,17 @@ const multiLocationProducer = {
     { kind: "market_stand", label: "דוכן", lat: 32.14, lng: 34.94, is_primary: false, precision: "approximate" },
   ],
 };
-const emptyLocationsProducer = {
+// One primary row. Its Producer.lat/lng mirror is set too, and pins nothing
+// on its own — MEH-1938 chunk 5a removed the fallback.
+const singleRowProducer = {
+  id: "p-single",
+  name: "עסק עם שורה אחת",
+  lat: 31.8,
+  lng: 35.2,
+  locations: [{ kind: "branch", is_primary: true, lat: 31.8, lng: 35.2, precision: "exact" }],
+};
+// Coordinates on the columns and NO rows — the population 7c1e2a9f4b3d emptied.
+const noRowsProducer = {
   id: "p-empty",
   name: "עסק בלי שורות מיקום",
   lat: 31.8,
@@ -145,16 +155,17 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
     expect(atProducerPoint).toHaveLength(1); // the primary row only, not row+fallback
   });
 
-  it("falls back to the producer's own point ONLY when locations[] is empty", () => {
-    render(<MapComponent producers={[emptyLocationsProducer]} />);
-    expect(recorder.markers).toHaveLength(1);
-    expect(recorder.markers[0].latlng).toEqual([31.8, 35.2]);
+  // MEH-1938 chunk 5a — THE INVERSION. Until 02/09 this producer got one
+  // synthesised pin at its column coordinates; the rows are now the only source.
+  it("does NOT pin a producer whose coordinates live only on the columns (MEH-1938 chunk 5a)", () => {
+    render(<MapComponent producers={[noRowsProducer]} />);
+    expect(recorder.markers).toHaveLength(0);
   });
 
   it("cluster badge counts unique businesses, not markers", () => {
-    render(<MapComponent producers={[multiLocationProducer, emptyLocationsProducer]} />);
+    render(<MapComponent producers={[multiLocationProducer, singleRowProducer]} />);
     expect(typeof recorder.iconCreateFunction).toBe("function");
-    // Fake cluster containing all 4 markers (3 fan-out + 1 fallback) — the
+    // Fake cluster containing all 4 markers (3 fan-out + 1 single row) — the
     // badge must read 2 (unique producerIds), not 4.
     const allMarkers = recorder.markers.map((m) => m.marker);
     expect(allMarkers).toHaveLength(4);
@@ -167,7 +178,7 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
   });
 
   it("adds markers via ONE bulk addLayers() call — never per-marker addLayer (the O(N²) load path)", () => {
-    render(<MapComponent producers={[multiLocationProducer, emptyLocationsProducer]} />);
+    render(<MapComponent producers={[multiLocationProducer, singleRowProducer]} />);
     expect(recorder.addLayerCalls).toBe(0);
     expect(recorder.addLayersBatches).toHaveLength(1);
     expect(recorder.addLayersBatches[0]).toHaveLength(4);
@@ -234,7 +245,7 @@ describe("MEH-1568 — cluster dead-zone guards", () => {
   });
 
   it("leaves the multi-business cluster badge untouched (MEH-1412 unique-business count)", () => {
-    render(<MapComponent producers={[multiLocationProducer, emptyLocationsProducer]} />);
+    render(<MapComponent producers={[multiLocationProducer, singleRowProducer]} />);
     const icon = recorder.iconCreateFunction({
       getAllChildMarkers: () => recorder.markers.map((m) => m.marker),
       getChildCount: () => recorder.markers.length,

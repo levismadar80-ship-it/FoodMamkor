@@ -31,7 +31,51 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * Every assertion below is explicit about which mount it means, and the
  * breakpoint test asserts the SPLIT (exactly one visible) rather than a total,
  * so a regression that renders both — or neither — fails.
+ *
+ * ── THE WHATSAPP HREF WAS DEVICE-DEPENDENT. IT IS NOT ANY MORE ──
+ * getWhatsAppHref used to return `https://wa.me/…` on a touch device and
+ * `https://web.whatsapp.com/send?…` on a fine-pointer desktop, so the server
+ * HTML always carried wa.me and hydration rewrote it — a mismatch React does
+ * not patch. That produced everything this header used to warn about: a
+ * `[href*="wa.me"]` locator that could match only the pre-hydration snapshot,
+ * a zero-count assertion that passed on a page full of WhatsApp links, and a
+ * swap that was not deterministic (two runs of this spec on the same commit
+ * and page: one swapped within 500ms, the other held wa.me for the full 20s
+ * budget).
+ *
+ * MEH-2189 ruling ב' (02/09) removed the branch: `getWhatsAppHref` now returns
+ * wa.me in every environment, so server and client agree and the form is no
+ * longer a variable. The measurement behind the ruling is in the function's
+ * own comment — the desktop rewrite was already only landing in 7 of 20 loads.
+ *
+ * WA_PREFIXES below still carries both forms ON PURPOSE. Nothing can emit the
+ * desktop form today, so the second entry costs one array element and asserts
+ * nothing false; what it buys is that this spec does not go red against a
+ * cached page or an older deploy still serving the pre-ruling HTML. If it is
+ * ever removed, remove it because the tolerance is proven unnecessary, not
+ * because the list looks redundant.
+ *
+ * The double-mount note above is unaffected and still load-bearing: every
+ * assertion here is explicit about which mount it means.
  */
+
+/**
+ * Both forms getWhatsAppHref can emit. The regex and the CSS selector are
+ * DERIVED from this one list rather than written twice: a reviewer flagged the
+ * two as parallel definitions that could drift, and deriving them removes the
+ * drift instead of documenting it.
+ */
+const WA_PREFIXES = ["https://wa.me/", "https://web.whatsapp.com/send"] as const;
+const WA_HREF = new RegExp(`^(${WA_PREFIXES.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`);
+const WA_HREF_SELECTOR = WA_PREFIXES.map((p) => `[href^="${p}"]`).join(", ");
+
+/** `[data-testid=<id>]` rows whose href is a WhatsApp link in either form. */
+const waHrefLocator = (page: Page, testid: string, visibleOnly = false) =>
+  page
+    // Quoted attribute value: valid CSS for the plain identifiers both callers
+    // pass today, and still valid if a future testid carries a colon or bracket.
+    .locator(`[data-testid="${testid}"]${visibleOnly ? ":visible" : ""}`)
+    .and(page.locator(WA_HREF_SELECTOR));
 
 const baseURL =
   process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_URL || "http://localhost:3000";
@@ -136,8 +180,20 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
         method
       );
 
+      if (method === "whatsapp") {
+        // Either form (header note): wa.me from SSR, web.whatsapp.com/send
+        // after a desktop re-render, and which one is on screen at any given
+        // moment is not deterministic. Retrying assertion, so a mid-swap read
+        // cannot flake it in either direction.
+        await expect(cta, `${slug}: href must be a WhatsApp link`).toHaveAttribute(
+          "href",
+          WA_HREF
+        );
+      }
       const href = await cta.getAttribute("href");
-      expect(href, `${slug}: href must start with ${hrefPrefix}`).toContain(hrefPrefix);
+      if (method !== "whatsapp") {
+        expect(href, `${slug}: href must start with ${hrefPrefix}`).toContain(hrefPrefix);
+      }
 
       // MEH-1525: the website CTA — and ONLY it — carries referral UTM
       // (PrimaryContactButton.jsx:80 via withReferralParams).
@@ -154,30 +210,38 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     });
   }
 
-  test("MEH-2154 :: non-whatsapp-primary pages carry zero wa.me links in the question chips", async ({
+  test("MEH-2154 :: non-whatsapp-primary pages carry zero WhatsApp links in the question chips", async ({
     page,
   }) => {
     // Positive control FIRST. If the whatsapp-primary page does not produce a
-    // wa.me chip, the locator is wrong and every zero below is meaningless.
+    // WhatsApp chip, the locator is wrong and every zero below is meaningless.
+    // Both href forms count (header note): a desktop run that only looked for
+    // wa.me would find 0 here after hydration — and then every 0 below would
+    // be worthless in exactly the way this control exists to catch.
     await page.goto(url("sdot-zahav"), { waitUntil: "domcontentloaded" });
-    const waChipsOnControl = await page
-      .locator('[data-testid=question-link][href*="wa.me"], [data-testid=escalation-link][href*="wa.me"]')
-      .count();
-    expect(
-      waChipsOnControl,
-      "CONTROL: the whatsapp-primary page MUST produce wa.me chips. " +
+    const controlChips = waHrefLocator(page, "question-link").or(
+      waHrefLocator(page, "escalation-link")
+    );
+    await expect(
+      controlChips,
+      "CONTROL: the whatsapp-primary page MUST produce WhatsApp chips. " +
         "If this is 0 the locator is broken and every 0 below is worthless."
-    ).toBeGreaterThan(0);
+    ).not.toHaveCount(0);
 
-    for (const { slug, method } of MATRIX) {
+    for (const { slug, method, hrefPrefix } of MATRIX) {
       if (method === "whatsapp") continue;
       await page.goto(url(slug), { waitUntil: "domcontentloaded" });
-      const stray = page.locator(
-        '[data-testid=question-link][href*="wa.me"], [data-testid=escalation-link][href*="wa.me"]'
+      // Wait for hydration (the CTA becomes visible only then) so the zero
+      // below is asserted on the FINAL DOM, not the SSR snapshot. The edge
+      // row renders no CTA by design, so it has nothing to wait on.
+      if (hrefPrefix !== null) await expect(visibleCta(page)).toHaveCount(1);
+      const stray = waHrefLocator(page, "question-link").or(
+        waHrefLocator(page, "escalation-link")
       );
       await expect(
         stray,
-        `${slug} (${method}-primary): question chips must contain no wa.me link (MEH-2154)`
+        `${slug} (${method}-primary): question chips must contain no WhatsApp link, ` +
+          "wa.me or web.whatsapp.com (MEH-2154)"
       ).toHaveCount(0);
     }
   });
@@ -195,16 +259,20 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     await page.goto(url("sdot-zahav"), { waitUntil: "domcontentloaded" });
     // `:visible` because the question chips are inside ContactCard, which is
     // mounted twice (see the header note) — `.first()` alone resolves to the
-    // display:none copy and the click times out.
-    const waChip = page
-      .locator('[data-testid=question-link][href*="wa.me"]:visible')
-      .first();
+    // display:none copy and the click times out. The href form is no longer
+    // device-dependent (MEH-2189 ruling ב'), so this is wa.me on both projects;
+    // the locator still accepts either form per the header.
+    const waChip = waHrefLocator(page, "question-link", true).first();
+    await expect(
+      waChip,
+      "CONTROL: a visible WhatsApp question chip must exist on the whatsapp-primary page"
+    ).toBeVisible();
     await waChip.evaluate((el) => el.setAttribute("target", "_blank"));
     await waChip.click({ noWaitAfter: true });
     await expect
       .poll(() => beacons.length, {
         message:
-          "CONTROL: a wa.me chip click MUST fire the beacon. 0 here means the " +
+          "CONTROL: a WhatsApp chip click MUST fire the beacon. 0 here means the " +
           "route interception is broken, so the 0 asserted below proves nothing.",
         timeout: 5_000,
       })

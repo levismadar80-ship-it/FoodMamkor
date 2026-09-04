@@ -651,13 +651,16 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
     );
   });
 
-  it("STORY carries the photo-next hint, and the submit hint sits above the button", async () => {
+  // MEH-2185: this case used to assert the photo-next hint was PRESENT. The copy
+  // ruling deleted it (it overlapped photo_disclosure, which stays), so the
+  // assertion is inverted rather than dropped — a deletion with no guard is one
+  // careless re-add away from coming back. Asserting absence discriminates: put
+  // the <p> back and this reddens.
+  it("STORY has no photo-next hint (deleted, MEH-2185), and the submit hint sits above the button", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByTestId("register-story-photo-hint")).toHaveTextContent(
-      `${K}.steps.story.photo_next_hint`,
-    );
+    expect(screen.queryByTestId("register-story-photo-hint")).not.toBeInTheDocument();
     expect(screen.getByTestId("register-submit-next-hint")).toHaveTextContent(
       `${K}.submit_next_hint`,
     );
@@ -815,6 +818,25 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     fireEvent.click(screen.getByTestId("pick-category")); // deselect id 1
     fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  // MEH-2105: this gate was the only per-step block that never called
+  // requestFocus — on a 375px viewport the red line rendered ~67px below the
+  // fold while every sibling gate (ACCOUNT fields, runRequiredGate) scrolls
+  // its offender to block:"center". Observed the way MEH-1807 observes its
+  // gates: focus landed on the field, and the setup.js scrollIntoView shim
+  // saw the centred scroll. The pre-click control proves the field was NOT
+  // already focused, so the post-click assertion is falsifiable.
+  it("moves focus to the licence field when the gate blocks (MEH-2105)", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    await renderWizard();
+    await reachCategoryAndPick();
+    const licenseInput = screen.getByTestId("register-category-license");
+    expect(document.activeElement).not.toBe(licenseInput); // control
+    fireEvent.click(screen.getByTestId("register-category-next")); // blocked
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
+    expect(document.activeElement).toBe(licenseInput);
+    expect(licenseInput.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
   });
 });
 

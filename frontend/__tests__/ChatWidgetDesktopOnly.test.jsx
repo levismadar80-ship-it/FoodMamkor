@@ -15,6 +15,16 @@ import en from "../messages/en.json";
 // needs a real NextIntlClientProvider (same harness as the EditTab* cards).
 // The Hebrew assertions below are unchanged: the values in he.json are the
 // same strings that used to be hardcoded, which is the point of a move.
+// MEH-1981: the surface now renders CollectionNotice, whose privacy link is
+// the next-intl Link — stubbed like the register/EventForm suites do, so the
+// key-echo next-intl mock above/below does not drag next/navigation in.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 
 import api from "@/lib/api";

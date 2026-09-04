@@ -210,6 +210,25 @@ SEEDED_SURFACES = [
         "table": "producers",
         "where": "gluten_free_facility = 'dedicated'",
     },
+    # --- MEH-1399: the admin pre-approval review checklist ---
+    # Seeded by the MIGRATION, not by either seed script: revision
+    # d4a9c31e6f82 ends in a `bulk_insert` of seven reference rows
+    # (20260821_1700_..._meh1399_admin_review_checklist.py:146), because a
+    # config table shipped empty renders an empty admin surface. Every
+    # environment runs `alembic upgrade head`, so the count holds here for the
+    # same reason it holds on staging — and this gate runs immediately after
+    # that upgrade, which is what makes the assertion checkable rather than
+    # decorative. It is a surface and not an exemption precisely because it can
+    # be asserted: drop the bulk_insert and this goes red.
+    #
+    # Not the `cities` case (exempt below). `cities` is exempt because it is
+    # EMPTY after a local seed, so no count assertion is available at all;
+    # here one is.
+    {
+        "surface": "admin_review_checklist",
+        "table": "admin_checklist_items",
+        "where": None,
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -232,6 +251,12 @@ EXEMPT_TABLES = {
     "category_requests": "admin queue — item 12 (out of scope)",
     "outreach_leads": "admin queue — item 12 (out of scope)",
     "producer_name_change_requests": "admin queue (out of scope)",
+    # MEH-1399 audit record — one row per checklist item an admin actually
+    # ticked. Its own model says "an UNCHECKED item is the ABSENCE of a row,
+    # not a row with a false flag" (models.py:2324), so a seed row here would
+    # not demonstrate a surface — it would assert that an admin reviewed the
+    # demo business when none did. Written at runtime by the approvals queue.
+    "producer_review_checks": "MEH-1399 admin audit trail — written when an admin ticks an item; absence of a row IS the unchecked state, so seeding one would fabricate a review",
     "home_products": "neighbour-products surface — item 13 (out of scope)",
     "home_product_ratings": "neighbour-products surface — item 13 (out of scope)",
     "home_product_whatsapp_clicks": "neighbour-products surface — item 13 (out of scope)",

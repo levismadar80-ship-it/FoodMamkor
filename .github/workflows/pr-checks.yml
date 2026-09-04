@@ -182,7 +182,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -233,7 +233,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -439,6 +439,72 @@ jobs:
           SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
   # ─────────────────────────────────────────────
+  # JOB 2b: seed-coverage (MEH-1706 chunk C)
+  # Runs backend/scripts/check_seed_coverage.py against the CI-local
+  # Postgres, seeded from scratch. Catches code drift — a surface added
+  # to the models with no seed row, or a table nobody classified.
+  # Does NOT protect staging: a wiped staging still passes here.
+  # ─────────────────────────────────────────────
+  seed-coverage:
+    name: Seed coverage contract (MEH-1706)
+    needs: changes
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_seed
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_seed
+      SECRET_KEY: ci-test-secret-not-for-production
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Schema to head
+        run: .venv/bin/alembic upgrade head
+        working-directory: backend
+
+      # seed_data.py first (categories + sample producers + admin), then the
+      # demo business — the same order scripts/local-backend.sh uses. The
+      # DEMO_* passwords are deliberately absent: the seed falls back to a
+      # random unrecorded password (seed_demo_business.py:889-967), which is
+      # exactly right for a throwaway CI database.
+      - name: Seed base + demo
+        working-directory: backend
+        run: |
+          .venv/bin/python seed_data.py
+          .venv/bin/python -m scripts.seed_demo_business --refresh
+
+      - name: Seed coverage contract
+        working-directory: backend
+        run: .venv/bin/python scripts/check_seed_coverage.py
+
+  # ─────────────────────────────────────────────
   # JOB 3: lint-backend (MEH-488 / MEH-505)
   # ruff check + ruff format --check against backend/.
   # `alembic/versions` excluded (auto-generated revisions don't follow
@@ -576,7 +642,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -611,7 +677,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -626,7 +692,7 @@ jobs:
     needs: changes
     if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -635,7 +701,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
@@ -713,6 +779,7 @@ jobs:
       - ai-artifact-scan
       - pytest
       - lint-backend
+      - seed-coverage
       - env-drift
       - backend-mypy
       - frontend-knip
@@ -726,6 +793,13 @@ jobs:
         env:
           FRONTEND_TOUCHED: ${{ needs.changes.outputs.frontend }}
           BACKEND_TOUCHED: ${{ needs.changes.outputs.backend }}
+          # MEH-1907 F-1: this output was never loaded into the step, so the
+          # aggregator could not see it. Every frontend/backend job below
+          # carries `|| workflows == 'true'` in its `if:` — meaning a
+          # workflows-only PR RAN the full suite and enforced none of it.
+          # Nine legs reported, zero read. Not the same as a docs-only PR,
+          # where those jobs are skipped and there is nothing to enforce.
+          WORKFLOWS_TOUCHED: ${{ needs.changes.outputs.workflows }}
           R_CHANGES: ${{ needs.changes.result }}
           R_DNM: ${{ needs.do-not-merge-gate.result }}
           R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
@@ -734,6 +808,7 @@ jobs:
           R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
           R_PYTEST: ${{ needs.pytest.result }}
           R_LINT_BACKEND: ${{ needs.lint-backend.result }}
+          R_SEED_COVERAGE: ${{ needs.seed-coverage.result }}
           R_ENV_DRIFT: ${{ needs.env-drift.result }}
           R_BACKEND_MYPY: ${{ needs.backend-mypy.result }}
           R_FRONTEND_KNIP: ${{ needs.frontend-knip.result }}
@@ -752,8 +827,18 @@ jobs:
             esac
           }
 
+          # MEH-1907: `cancelled` means a newer push superseded this run
+          # before it finished — this workflow's own concurrency group
+          # (cancel-in-progress: true, line ~41) guarantees that. It is an
+          # absence of measurement, not a failed one. Mirror of MEH-1582's
+          # skip-green fix in the opposite direction.
+          # NON-BLOCKING BY DESIGN — see .claude/rules/testing.md for why.
+          is_cancelled() { [ "$1" = "cancelled" ]; }
+
           check() {
-            if ok "$2"; then
+            if is_cancelled "$2"; then
+              echo "  SUPERSEDED $1: $2 (a newer push cancelled this run — not counted as a failure, MEH-1907)"
+            elif ok "$2"; then
               echo "  OK  $1: $2"
             else
               echo "  FAIL $1: $2"
@@ -772,7 +857,9 @@ jobs:
           }
 
           check_ran() {
-            if strict_ok "$2"; then
+            if is_cancelled "$2"; then
+              echo "  SUPERSEDED $1: $2 (a newer push cancelled this run — not counted as a failure, MEH-1907)"
+            elif strict_ok "$2"; then
               echo "  OK  $1: $2"
             else
               echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
@@ -780,7 +867,7 @@ jobs:
             fi
           }
 
-          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED"
+          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED workflows=$WORKFLOWS_TOUCHED"
 
           if ! ok "$R_CHANGES"; then
             echo "::error::Paths-filter job did not succeed (result=$R_CHANGES) — cannot determine stack."
@@ -793,10 +880,14 @@ jobs:
           check_ran "Repo guards" "$R_REPO_GUARDS"
           check_ran "Env drift (.env.example)" "$R_ENV_DRIFT"
 
-          if [ "$BACKEND_TOUCHED" = "true" ]; then
-            echo "Backend stack touched — enforcing backend checks:"
+          # MEH-1907 F-1: mirror the `if:` of the jobs themselves
+          # (`backend == 'true' || workflows == 'true'`). A workflows-only PR
+          # runs pytest and ruff; before this, neither was read.
+          if [ "$BACKEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; then
+            echo "Backend stack touched (or workflows changed) — enforcing backend checks:"
             check_ran "Backend tests (pytest)" "$R_PYTEST"
             check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
+            check_ran "Seed coverage contract (MEH-1706)" "$R_SEED_COVERAGE"
             check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
           else
             echo "Backend stack not touched — backend checks not enforced."
@@ -805,6 +896,10 @@ jobs:
           # MEH-1585: enforced ONLY when a dependency manifest changed. On every
           # other PR the job is `skipped` and this branch is not taken — so the
           # gate neither blocks nor pretends the audit ran.
+          # DELIBERATELY NOT widened to workflows (MEH-1907 F-1): pip-audit's
+          # own `if:` is `deps == 'true'` alone, so on a workflows-only PR it is
+          # skipped. Enforcing it here would demand a leg that never ran and red
+          # every workflow PR — the #2794 class, in reverse.
           if [ "$DEPS_TOUCHED" = "true" ]; then
             echo "Dependency manifest touched — enforcing the CVE audit:"
             check_ran "Backend dependency audit (pip-audit)" "$R_PIP_AUDIT"
@@ -812,8 +907,8 @@ jobs:
             echo "No dependency manifest touched — pip-audit not enforced."
           fi
 
-          if [ "$FRONTEND_TOUCHED" = "true" ]; then
-            echo "Frontend stack touched — enforcing frontend checks:"
+          if [ "$FRONTEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; then
+            echo "Frontend stack touched (or workflows changed) — enforcing frontend checks:"
             check_ran "Frontend build (Next.js)" "$R_BUILD"
             check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
             check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
@@ -823,8 +918,8 @@ jobs:
             echo "Frontend stack not touched — frontend checks not enforced."
           fi
 
-          if [ "$BACKEND_TOUCHED" != "true" ] && [ "$FRONTEND_TOUCHED" != "true" ]; then
-            echo "Neither stack touched (workflows-only / docs-only) — only env-drift enforced."
+          if [ "$BACKEND_TOUCHED" != "true" ] && [ "$FRONTEND_TOUCHED" != "true" ] && [ "$WORKFLOWS_TOUCHED" != "true" ]; then
+            echo "Neither stack touched (docs-only) — only the stack-independent legs enforced."
           fi
 
           if [ "$fail" -ne 0 ]; then

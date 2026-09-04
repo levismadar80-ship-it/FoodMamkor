@@ -1,0 +1,41 @@
+MEH-2148 close-out QA — 2026-08-29T20:12:51.551Z
+target: https://staging.mehamakor.online (live staging, via /api proxy + bypass header)
+slug: teva-pure
+engines: webkit devices['iPhone 14'] 390x844 · chromium 375x812 · chromium 1440x900
+
+PASS  webkit-390/control:not-error-boundary — http=200 errorBoundary=false
+PASS  webkit-390/control:non-zero-body-box — 390x3582
+PASS  webkit-390/control:page-scrolled-mid — scrollY=1791 of docHeight=3949
+PASS  webkit-390/A1:BottomNav-absent-on-slug — nav.nav-pill-glass count=0
+PASS  webkit-390/A2:one-bottom-bar — count=1 :: [{"tag":"div","testid":null,"cls":"lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-white border-t border-border","top":595,"bottom":664,"w":390,"h":69,"gapBelow":0}]
+PASS  webkit-390/A3:StickyContactBar-flush — gapBelow=0px h=69 viewport=390x664
+PASS  webkit-390/A4:CTA-visible-non-zero — 358x44 @y=608
+PASS  webkit-390/A5:CTA-hit-test-unobstructed — elementFromPoint=cta
+PASS  webkit-390/control:not-error-boundary — http=200
+PASS  webkit-390/B1:no-legacy-top-absolutes — legacyStartCorner=0 legacyCentre=0
+PASS  webkit-390/B2a:visible-map-pane-found — pane 390x227, drag origin (195,328)
+PASS  webkit-390/B2:top-slot-is-flex-column (after pan) — display=flex dir=column pointerEvents=none children=1
+PASS  webkit-390/B2b:slot-children-have-non-zero-boxes — [{"text":"חפשו באזור זה","top":322,"bottom":364,"w":153,"h":42}]
+FAIL  webkit-390/B3:PARTIAL-only-one-overlay-rendered — children=1 (חפשו באזור זה); the pickup-layer notice did not co-render, so two-overlay stacking was NOT observed. Structural guarantee (single flex column, verified in B2) is what covers it.
+PASS  webkit-390/B4:sheet-scroller-overscroll-contain — contain-scrollers=1
+PASS  webkit-390/B5:document-scroll-locked-on-map — documentElement.overflow="hidden" body.overflow="hidden"
+PASS  chromium-375/control:not-error-boundary — http=200 errorBoundary=false
+PASS  chromium-375/control:non-zero-body-box — 375x3602
+PASS  chromium-375/control:page-scrolled-mid — scrollY=1801 of docHeight=3969
+PASS  chromium-375/A1:BottomNav-absent-on-slug — nav.nav-pill-glass count=0
+PASS  chromium-375/A2:one-bottom-bar — count=1 :: [{"tag":"div","testid":null,"cls":"lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-white border-t border-border","top":743,"bottom":812,"w":375,"h":69,"gapBelow":0}]
+PASS  chromium-375/A3:StickyContactBar-flush — gapBelow=0px h=69 viewport=375x812
+PASS  chromium-375/A4:CTA-visible-non-zero — 343x44 @y=756
+PASS  chromium-375/A5:CTA-hit-test-unobstructed — elementFromPoint=cta
+PASS  chromium-375/control:not-error-boundary — http=200
+PASS  chromium-375/B1:no-legacy-top-absolutes — legacyStartCorner=0 legacyCentre=0
+PASS  chromium-375/B2a:visible-map-pane-found — pane 375x375, drag origin (188,380)
+PASS  chromium-375/B2:top-slot-is-flex-column (after pan) — display=flex dir=column pointerEvents=none children=1
+PASS  chromium-375/B2b:slot-children-have-non-zero-boxes — [{"text":"חפשו באזור זה","top":322,"bottom":364,"w":153,"h":42}]
+FAIL  chromium-375/B3:PARTIAL-only-one-overlay-rendered — children=1 (חפשו באזור זה); the pickup-layer notice did not co-render, so two-overlay stacking was NOT observed. Structural guarantee (single flex column, verified in B2) is what covers it.
+PASS  chromium-375/B4:sheet-scroller-overscroll-contain — contain-scrollers=1
+PASS  chromium-375/B5:document-scroll-locked-on-map — documentElement.overflow="hidden" body.overflow="hidden"
+PASS  chromium-1440/D1:desktop-renders — http=200
+PASS  chromium-1440/D2:no-mobile-nav-on-desktop — nav.nav-pill-glass=0
+
+34 assertions ran, 2 failed.

@@ -2,7 +2,7 @@
 from the legacy producers.starting_price_label alias.
 
 Data-only migration — does NOT drop starting_price_label. models.py:124-129
-marks that column LEGACY(2026-09-01, MEH-1855): frontend chunk 1 (PR #2895)
+marks that column LEGACY(2026-10-01, MEH-1855): frontend chunk 1 (PR #2895)
 already flips every public reader to price_range-first with alias fallback,
 so the column drop itself is Phase 4 of ADR-007's Expand-Contract sequence
 and requires a >=7-day staging soak with real traffic, an R2 backup check,

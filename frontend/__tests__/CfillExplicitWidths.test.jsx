@@ -163,6 +163,8 @@ const producer = {
   slug: "test-business",
   lat: 32.0853,
   lng: 34.7818,
+  // MEH-1938 chunk 5a: the pin comes from the row; the columns above pin nothing.
+  locations: [{ kind: "branch", is_primary: true, lat: 32.0853, lng: 34.7818, precision: "exact" }],
   images: [CLOUDINARY],
   categories: [{ name: "בשר" }],
 };

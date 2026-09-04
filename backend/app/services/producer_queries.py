@@ -11,7 +11,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import HTTPException
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -48,19 +48,6 @@ def _haversine_expr(lat: float, lng: float, target_lat, target_lng):
     return EARTH_RADIUS_KM * func.acos(func.least(1.0, cos_delta))
 
 
-def haversine_km(lat: float, lng: float):
-    """
-    Haversine distance (in km) between the caller's (lat, lng) and each
-    producer's single `Producer.lat/lng` point. Returns a SQLAlchemy
-    expression usable in SELECT, WHERE, and ORDER BY clauses. Runs entirely
-    in Postgres — no PostGIS required, just standard trig functions.
-
-    Retained as the single-point primitive; the multi-location geo path uses
-    `haversine_min_km` (MEH-1402).
-    """
-    return _haversine_expr(lat, lng, Producer.lat, Producer.lng)
-
-
 def haversine_min_km(lat: float, lng: float):
     """MEH-1402 (MEH-1388 chunk 2): NEAREST-point distance (km) from the
     caller's (lat, lng) to a producer, measured across ALL of that producer's
@@ -73,25 +60,26 @@ def haversine_min_km(lat: float, lng: float):
     count trap (producer_listing.py:104-110). Locations with a NULL lat OR lng
     are excluded from the MIN (no crash, just not a candidate point).
 
-    Expand-Contract overlap (ADR-007): a producer with no usable location row
-    yet — e.g. a brand-new signup created after chunk 1's backfill and before
-    the chunk-4 write path — falls back via COALESCE to its own
-    `Producer.lat/lng` mirror, so it never silently drops off the map/near
-    feed during the overlap. Once chunk 4 dual-writes a primary location on
-    create, the fallback becomes dead weight and can be dropped in Contract.
-    A producer with neither a location nor a Producer point yields NULL, which
-    fails `<= radius` and is correctly excluded.
+    MEH-1938 chunk 5a (Contract): the COALESCE fallback to the producer's own
+    `Producer.lat/lng` mirror is GONE. It existed for the Expand overlap — a
+    business whose coordinates lived only on the producers row — and every
+    write path now creates a `producer_locations` row alongside those columns
+    (registration MEH-1939, admin MEH-2059, import MEH-2140, both seeds
+    MEH-2056), while revision 7c1e2a9f4b3d backfilled the rows that predated
+    them. Measured on staging 02/09 before this landed: zero producers with
+    coordinates and no location row.
 
-    # DO NOT drop the CASE guard on the own-point fallback — Postgres LEAST()
-    #        IGNORES NULL args, so func.least(1.0, cos_delta) returns 1.0 (not
-    #        NULL) when Producer.lat/lng are NULL, making acos(1.0)=0 → a
-    #        coordinate-less producer would falsely match at distance 0. The
-    #        pre-MEH-1402 code guarded this with an explicit
-    #        `Producer.lat IS NOT NULL` filter in _build_base_queries; the CASE
-    #        below re-establishes the same guard inside the coalesced expr so
-    #        NULL correctly propagates to `<= radius` (MEH-1402).
+    A producer with no usable location row therefore yields NULL, which fails
+    `<= radius` and is correctly excluded — the same end state the fallback
+    produced for a producer with neither, now reached for both.
+
+    # DO NOT reintroduce a COALESCE to Producer.lat/lng here. Postgres LEAST()
+    #        IGNORES NULL args, so the old fallback needed a CASE guard around
+    #        it or `acos(1.0)=0` made a coordinate-less producer match at
+    #        distance 0 (MEH-1402). Reading the columns is also what chunk 5b
+    #        drops; a reader added back here would break that revision.
     """
-    nearest_location_km = (
+    return (
         select(
             func.min(
                 _haversine_expr(lat, lng, ProducerLocation.lat, ProducerLocation.lng)
@@ -105,14 +93,6 @@ def haversine_min_km(lat: float, lng: float):
         .correlate(Producer)
         .scalar_subquery()
     )
-    own_point_km = case(
-        (
-            and_(Producer.lat.isnot(None), Producer.lng.isnot(None)),
-            _haversine_expr(lat, lng, Producer.lat, Producer.lng),
-        ),
-        else_=None,
-    )
-    return func.coalesce(nearest_location_km, own_point_km)
 
 
 def attach_badge_fields(producer):
@@ -371,11 +351,13 @@ def create_primary_branch_location(
     `Producer.city/lat/lng` columns keep being written exactly as before — this
     is Expand, not replacement, and nothing reads the new row yet.
 
-    Why this exists at all: `haversine_min_km` below already COALESCEs to
-    `Producer.lat/lng` and its comment (`:75-95`) says the fallback becomes
-    dead weight "once chunk 4 dual-writes a primary location on create".
-    MEH-1421 shipped only the dashboard write path, so that create never
-    happened and the fallback has been carrying the gap since.
+    Why this exists at all: `haversine_min_km` above used to COALESCE to
+    `Producer.lat/lng`, and its comment said the fallback became dead weight
+    "once chunk 4 dual-writes a primary location on create". MEH-1421 shipped
+    only the dashboard write path, so that create never happened and the
+    fallback carried the gap until this helper closed it. MEH-1938 chunk 5a
+    then removed the fallback — which makes this row REQUIRED, not a mirror:
+    a producer created without it is invisible to the map and to "near me".
 
     Returns None — and adds nothing — when either coordinate is missing. That
     is the CONDITION, not an edge case: a location row without coordinates is

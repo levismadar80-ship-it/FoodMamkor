@@ -30,10 +30,13 @@ const DELIVERY_ONLY = {
 
 // A second business outside the committed bounds, same category — the
 // negative control that proves the box below actually excludes something.
+// MEH-1938 chunk 5a: the point must live in a row — with `locations: []` this
+// control would be excluded for having NO point, not for being out of bounds,
+// and the bounds comparison could be deleted without this file noticing.
 const FAR_AWAY = {
   id: "far-away",
   categories: [BAKERY],
-  locations: [],
+  locations: [{ id: "far-1", kind: "branch", is_primary: true, lat: 33.5, lng: 35.5 }],
   lat: 33.5,
   lng: 35.5,
 };

@@ -27,6 +27,7 @@ import {
   chipsForKeys,
   mapEmitsParam,
 } from "@/lib/filter-taxonomy";
+import { DIET_CHIP_MIN } from "@/lib/producer-filters";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
@@ -78,6 +79,71 @@ export const CATEGORY_CHIPS = [
 // scope×evidence note, MEH-2046's pickup predicate, MEH-1259's removed organic
 // and MEH-2047's removed "דל פחמימות". Read the taxonomy for any of them.
 export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
+
+// MEH-2170 (option ב׳, Sapir 25/08): the five diet axes are gated on /map the
+// way /producers already gates them (DIET_CHIP_MIN, MEH-1934) — a toggle that
+// is guaranteed to return "0 businesses" on the current catalog is not
+// rendered. Only these five: verified / kosher / grass_fed / has_delivery /
+// pickup_points / open_for_orders_now stay visible whatever they return
+// (out of scope by decision; option א׳ — an unfiltered source of truth +
+// catalogFullyLoaded — is post-launch).
+//
+// The count source is a ONE-TIME snapshot of the mount catalog
+// (useProducersFeed.catalogSnapshot: the first, unfiltered, non-viewport
+// fetch). NOT feed.allProducers — that is reloaded with the chip params after
+// every toggle, so counting it is the circularity producer-filters.js
+// `openNowChipVisible` warns about, and it is replaced by «חפשי באזור זה»
+// with a viewport-bounded list. Gating from the snapshot is one-directional
+// and never updates, which is exactly what makes both assertions in the
+// e2e spec hold: the visible set is identical before and after a toggle,
+// and before and after a geo-search.
+export const DIET_GATED_KEYS = [
+  "vegan",
+  "vegetarian",
+  "gluten_free",
+  "lactose_free",
+  "no_added_sugar",
+];
+
+// ProducerListOut boolean per axis (lib/schemas.js:215-222) — the same
+// fields /producers counts (MEH-1934 `has_no_added_sugar_products`).
+const DIET_FIELD = {
+  vegan: "has_vegan_products",
+  vegetarian: "has_vegetarian_products",
+  gluten_free: "has_gluten_free_products",
+  lactose_free: "has_lactose_free_products",
+  no_added_sugar: "has_no_added_sugar_products",
+};
+
+/**
+ * The toggle chips FilterSheet should offer on /map, given the mount snapshot.
+ *
+ * - `catalogSnapshot` null/undefined (not loaded yet, or the load failed):
+ *   NO gating — every chip renders. Hiding on an unknown would be the
+ *   "probe never ran" green in the other direction.
+ * - An axis already active (deep link ?vegan=1 post MEH-2049): kept, so the
+ *   visitor is never stranded with a filter she can see and cannot switch
+ *   off — the same carve-out /producers makes.
+ * - Otherwise a diet chip renders iff >= DIET_CHIP_MIN snapshot businesses
+ *   carry its product flag.
+ *
+ * Pure: same snapshot + same chipState => same array, which is what keeps
+ * the sheet stable across toggles and area searches.
+ */
+export function visibleMapToggleChips({
+  catalogSnapshot,
+  chipState = {},
+  chips = TOGGLE_CHIPS,
+}) {
+  if (!Array.isArray(catalogSnapshot)) return chips;
+  return chips.filter((chip) => {
+    if (!DIET_GATED_KEYS.includes(chip.key)) return true;
+    if (chipState[chip.key]) return true;
+    const field = DIET_FIELD[chip.key];
+    const n = catalogSnapshot.filter((p) => p && p[field]).length;
+    return n >= DIET_CHIP_MIN;
+  });
+}
 
 // The /map axes that actually emit a query param. See the note in
 // chipStateToParams and the `mapParam` field in lib/filter-taxonomy.js.

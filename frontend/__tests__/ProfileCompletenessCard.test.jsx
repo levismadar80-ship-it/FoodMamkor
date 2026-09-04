@@ -41,6 +41,8 @@ const base = {
   city: "תל אביב",
   lat: 32.07,
   lng: 34.78,
+  // MEH-1938 chunk 5a: the coords step reads producer_locations, not the columns.
+  locations: [{ kind: "branch", is_primary: true, lat: 32.07, lng: 34.78, precision: "exact" }],
   phone: "0500000000",
   categories: ["dairy"],
   images: ["img1"],

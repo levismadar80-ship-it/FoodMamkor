@@ -11,7 +11,7 @@ sidebar קבוע ב: `frontend/app/admin/layout.js` — 9 דפים
 | משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
-| אנליטיקס | /admin/analytics | גרפים + heat map + top producers |
+| אנליטיקס | /admin/analytics | גרפים + heat map + top producers. ה-heat map (וגם `map_points` ב-`/admin/dashboard`) מצייר כל עסק מאושר בשורת ה-`producer_locations` **הראשית** שלו — לא מ-`producers.lat/lng` (MEH-1938 chunk 5a, `admin_extra._primary_location_points`) |
 | חוויות | /admin/experiences | מיתון חוויות — 5 טאבים (ממתינות לאישור / דרוש תיקון / מאושרות / נדחו / הכל) + כפתורי אישור/דחייה/בקשת שינויים + התראת מייל למארח |
 | מתכונים | /admin/recipes | מיתון מתכונים של בתי עסק (MEH-997) — 5 טאבים (ממתינים / דרוש תיקון / מאושרים / נדחו / הכל) לפי moderation_status + אישור (מפרסם) / בקשת שינויים (הערה חובה) / דחייה. אין התראה לבית העסק — ההערות מוצגות בדשבורד שלו |
 | כשרות | /admin/kashrut | טבלת בקשות badge + אישור/דחייה + הערות דחייה. Badge צהוב ב-sidebar כשיש בקשות ממתינות |

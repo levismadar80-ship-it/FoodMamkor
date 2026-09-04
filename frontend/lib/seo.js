@@ -15,9 +15,9 @@
 // at build time). Re-exported here so existing consumers of @/lib/seo keep
 // working unchanged.
 import { SITE_URL } from "./env";
-import { BRAND_NAME } from "./constants";
+import { BRAND_NAME, BRAND_SAME_AS, SITE_DESCRIPTION } from "./constants";
 import { parseHours, resolveStoreHours } from "./hours";
-import { producerPoints } from "./producerPoints.js";
+import { primaryPoint } from "./producerPoints.js";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -254,13 +254,11 @@ export function buildJsonLd(producer, locale = "he") {
   }
 
   // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
-  // directly — producerPoints() still falls back to Producer.lat/lng when
-  // there is no usable location row, so today's producers are unaffected.
-  // Prefers the PRIMARY point when one exists — Producer.locations has no
-  // `order_by` (models.py:369), so points[0] is arbitrary DB row order, not
-  // necessarily the branch address this structured data should describe.
-  const geoPoints = isDeliveryOnly ? [] : producerPoints(producer);
-  const geoPoint = geoPoints.find((pt) => pt.location?.is_primary) ?? geoPoints[0];
+  // directly. Chunk 5a: the SAME rule as the API's own lat/lng — the
+  // `is_primary` row or nothing (primaryPoint(); ruling 02/09, STRICT). The
+  // `?? geoPoints[0]` that used to sit here was a third answer to "where is
+  // the business" — arbitrary DB row order, possibly a pickup — and is gone.
+  const geoPoint = isDeliveryOnly ? null : primaryPoint(producer);
   if (geoPoint) {
     business.geo = {
       "@type": "GeoCoordinates",
@@ -364,20 +362,43 @@ export function buildJsonLd(producer, locale = "he") {
     publisher: { "@id": `${SITE_URL}#organization` },
   };
 
-  const organization = {
-    "@type": "Organization",
-    "@id": `${SITE_URL}#organization`,
-    name: BRAND_NAME,
-    url: SITE_URL,
-    logo: {
-      "@type": "ImageObject",
-      url: `${SITE_URL}/logo.png`,
-    },
-  };
+  const organization = buildOrganizationNode();
 
   return {
     "@context": "https://schema.org",
     "@graph": [webPage, breadcrumbList, business, webSite, organization],
+  };
+}
+
+/**
+ * MEH-2192: the single Organization node, shared by producer pages
+ * (buildJsonLd) and the homepage (buildHomeJsonLd).
+ *
+ * It was written out twice, identically, in those two builders — two owners
+ * for one entity, and the exact shape that lets a field land on one surface
+ * and not the other. Extracted so `description` and `sameAs` could be added
+ * once rather than twice.
+ *
+ * `Organization`, deliberately NOT `LocalBusiness`: mehamakor is a directory
+ * of businesses, not a business with a storefront. The LocalBusiness subtype
+ * carries address/geo/openingHours semantics that would be false here — the
+ * producers each have their own FoodEstablishment node (see buildJsonLd).
+ *
+ * `description` is the site's shipped meta description, reused verbatim from
+ * lib/constants.js, so the entity and the page agree.
+ */
+export function buildOrganizationNode() {
+  return {
+    "@type": "Organization",
+    "@id": `${SITE_URL}#organization`,
+    name: BRAND_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    },
+    sameAs: BRAND_SAME_AS,
   };
 }
 
@@ -391,16 +412,9 @@ export function buildJsonLd(producer, locale = "he") {
  * describe. SearchAction target uses /search?q= (the real param, SearchClient.jsx:50).
  */
 export function buildHomeJsonLd(locale = "he") {
-  const organization = {
-    "@type": "Organization",
-    "@id": `${SITE_URL}#organization`,
-    name: BRAND_NAME,
-    url: SITE_URL,
-    logo: {
-      "@type": "ImageObject",
-      url: `${SITE_URL}/logo.png`,
-    },
-  };
+  // MEH-2192: was a second, hand-written copy of the same node. Now the one
+  // builder, so the two surfaces cannot describe the entity differently.
+  const organization = buildOrganizationNode();
 
   const webSite = {
     "@type": "WebSite",

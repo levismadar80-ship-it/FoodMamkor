@@ -9,7 +9,13 @@
   "lng": 34.907,
   "status": "approved",
   "plan": "free",
-  "categories": [{ "id": 3, "name": "מאפים ולחמים", "emoji": "🥖" }],
+  "categories": [
+    {
+      "id": 3,
+      "name": "מאפים ולחמים",
+      "emoji": "🥖"
+    }
+  ],
   "images": [
     "https://res.cloudinary.com/demo/image/upload/v1/sample.jpg",
     "https://res.cloudinary.com/demo/image/upload/v1/woman.jpg",
@@ -69,5 +75,19 @@
   "price_range": null,
   "days_since_created": 3,
   "created_at": "2026-07-20T08:00:00Z",
-  "updated_at": null
+  "updated_at": null,
+  "locations": [
+    {
+      "id": "loc-1",
+      "kind": "branch",
+      "label": null,
+      "city": "כפר סבא",
+      "lat": 32.175,
+      "lng": 34.907,
+      "is_primary": true,
+      "precision": "exact",
+      "opening_hours": null,
+      "phone": null
+    }
+  ]
 }

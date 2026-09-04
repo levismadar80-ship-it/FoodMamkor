@@ -6,22 +6,32 @@
 
 /**
  * Build a WhatsApp direct-message URL for a normalised phone number.
- * On desktop (mouse + fine pointer) → web.whatsapp.com/send to avoid the
- * wa.me redirect loop that dead-ends on desktop browsers without the app.
- * On mobile → wa.me to open the native app directly.
- * SSR (window undefined) → falls back to wa.me.
+ * ONE form, every environment: `wa.me`.
+ *
+ * MEH-2189, ruling ב' (02/09): this used to branch on
+ * `matchMedia("(hover: hover) and (pointer: fine)")` and hand desktop a
+ * `web.whatsapp.com/send` URL — the MEH-152 optimisation against a
+ * wa.me dead-end on desktop browsers with no app installed.
+ *
+ * That branch had already stopped working, and the measurement is why it
+ * went rather than being repaired: the SSR HTML always carries wa.me, and
+ * the rewrite only lands if hydration runs before the click. Sampled 20
+ * desktop loads of a live page, the href switched to web.whatsapp.com in
+ * **7 of 20**, never later than +1.5s — so ~65% of desktop visitors were
+ * already being handed wa.me, and no interstitial or redirect loop has
+ * ever been reported. React does not repair an attribute mismatch, so the
+ * branch could not be made reliable without a hook and a visible href
+ * flash across seven call sites; that bought determinism for a failure
+ * mode the data says is not occurring.
+ *
+ * Keep it one form. If a genuine desktop loop is ever observed (an actual
+ * loop, not WhatsApp's ordinary interstitial), the revert is this function.
  *
  * @param {string} phone — normalised digits (output of normalizePhone)
  * @param {string} [text] — pre-filled message text (plain, not encoded)
  */
 export function getWhatsAppHref(phone, text = "") {
-  const encoded = encodeURIComponent(text);
-  const isDesktop =
-    typeof window !== "undefined" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  return isDesktop
-    ? `https://web.whatsapp.com/send?phone=${phone}&text=${encoded}`
-    : `https://wa.me/${phone}?text=${encoded}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
 /**

@@ -1,8 +1,13 @@
+> **✅ Status: APPLIED — as-of 01/09.** Measured against `origin/staging`: `MEH-1604` x3 in `e2e.yml` + x1 in `playwright.config.ts`; the `executed=` marker was observed FIRING in run 33483882305.
+> The banner below is a claim with an as-of date, not the current state — read this line first.
+
 # Check semantics — YAML patch ל-`e2e.yml` + `playwright.config.ts` (MEH-1604)
 
 > **הבלוקים כאן מיועדים לספיר להדבקה ידנית.** `.github/workflows/**` הוא CC-deny
 > (`.claude/settings.json`, MEH-671) — CC כותב את ה-diff בקובץ `.md` הזה בלבד
-> ואינו נוגע ב-workflow. **שום דבר כאן לא הוחל.**
+> ואינו נוגע ב-workflow. ‏**«שום דבר כאן לא הוחל» היה נכון ביום הכתיבה ואינו נכון היום** —
+> ראו שורת ה-Status בראש הקובץ: ה-patch הוחל. המשפט נשאר גלוי ומתוקן במקום להימחק,
+> כי הוא מתעד את מצב הקובץ בזמן שנכתב.
 
 ---
 
@@ -39,7 +44,8 @@ CI אדום דורש היום פרשנות ידנית בכל פעם, ולכן ה
 
 **רצפת הכיסוי לא יכולה לקרוא סטטיסטיקה שלא נכתבת.** לכן שלב 0 הוא שינוי
 ב-`playwright.config.ts` — קובץ שאינו CC-deny, אבל הוא מחוץ ל-scope של MEH-1604
-(מסמך אחד), ולכן הוא מתועד כאן ולא הוחל:
+(מסמך אחד), ולכן הוא תועד כאן כצעד נפרד. **‏נמדד 01/09: הוא נחת** —
+`frontend/playwright.config.ts:43` נושא את ההערה `MEH-1604` ואת ה-JSON reporter:
 
 ```ts
   reporter: process.env.CI

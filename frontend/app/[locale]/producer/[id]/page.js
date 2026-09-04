@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, serializeJsonLd, buildPageUrl, SITE_URL } from "@/lib/seo";
@@ -22,38 +23,59 @@ const ROUTE = "/[locale]/producer/[id]";
 // on it would bury the signal this ticket exists to create. Same threshold as
 // lib/api.js:140.
 async function getProducer(id) {
+  // MEH-2101: `null` means ONE thing — this producer does not exist, and only a
+  // 404 may become notFound(). Every other failure THROWS, so it reaches
+  // app/[locale]/error.js and the response carries a 5xx.
+  //
+  // The old shape returned `null` for every `!res.ok` and swallowed the catch,
+  // so a 404, a 500, a 429 and a timeout were indistinguishable — all four
+  // rendered a soft 404 with no error status. That is not only a debugging
+  // problem: a 404 tells Google the page is GONE and de-indexing starts, while
+  // a 5xx says "try later". §6 of
+  // docs/audits/producer-detail-page-validation.md used to forbid throwing
+  // here; this ticket replaced that ruling with the three-way table.
+  let res;
   try {
-    const res = await serverFetch(`${API_URL}/producers/${id}`, { next: { revalidate: 60 } });
-    if (!res.ok) {
-      if (res.status >= 500) {
-        Sentry.captureMessage("SSR fetch failed", {
-          level: "error",
-          extra: { route: ROUTE, id, status: res.status },
-        });
-      }
-      return null;
-    }
-    const data = await res.json();
-    const parsed = ProducerDetailSchema.safeParse(data);
-    if (!parsed.success) {
-      Sentry.captureMessage("SSR payload failed schema validation", {
-        level: "warning",
-        extra: { route: ROUTE, id, issues: parsed.error.issues },
-      });
-    }
-    // Return `data`, NEVER `parsed.data`: z.object strips undeclared keys, and
-    // ProducerDetailSchema declares 51 of ProducerDetailOut's 81 fields — so
-    // returning the parsed object would delete 30 fields from the JSON-LD
-    // input. That is the MEH-901 stripping class, which this ticket must not
-    // introduce while trying to observe it. safeParse here is a probe, not a
-    // transform.
-    return data;
+    res = await serverFetch(`${API_URL}/producers/${id}`, {
+      next: { revalidate: 60 },
+    });
   } catch (err) {
-    // Was a bare `catch { return null }` — the swallow this ticket removes.
-    // Still returns null (behaviour unchanged); it just stops being silent.
+    // Network failure or timeout — not a missing producer. Report, then rethrow.
     Sentry.captureException(err, { extra: { route: ROUTE, id } });
-    return null;
+    throw err;
   }
+
+  if (res.status === 404) return null;
+
+  if (!res.ok) {
+    Sentry.captureMessage("SSR fetch failed", {
+      level: "error",
+      extra: { route: ROUTE, id, status: res.status },
+    });
+    const err = new Error(
+      `producer lookup failed: ${res.status} ${res.statusText} (id=${id})`
+    );
+    // Read by Sentry in app/[locale]/error.js; keeps id+status on the event.
+    err.status = res.status;
+    err.entityId = id;
+    throw err;
+  }
+
+  const data = await res.json();
+  const parsed = ProducerDetailSchema.safeParse(data);
+  if (!parsed.success) {
+    Sentry.captureMessage("SSR payload failed schema validation", {
+      level: "warning",
+      extra: { route: ROUTE, id, issues: parsed.error.issues },
+    });
+  }
+  // Return `data`, NEVER `parsed.data`: z.object strips undeclared keys, and
+  // ProducerDetailSchema declares 51 of ProducerDetailOut's 81 fields — so
+  // returning the parsed object would delete 30 fields from the JSON-LD
+  // input. That is the MEH-901 stripping class, which this ticket must not
+  // introduce while trying to observe it. safeParse here is a probe, not a
+  // transform.
+  return data;
 }
 
 // MEH-476 PR 3b2: per-page hreflang for producer-by-id route. D1 title
@@ -68,6 +90,12 @@ export async function generateMetadata(props) {
   const params = await props.params;
   const { id, locale } = params;
   const producer = await getProducer(id);
+  // MEH-2101: pre-streaming, so this yields a REAL 404 status. A page-level
+  // notFound() alone streams 200 + 404 UI, because the shared
+  // app/[locale]/loading.js boundary flushes the shell first — bots would
+  // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
+  if (!producer) notFound();
+
   const path = producer ? buildPageUrl(producer).replace(SITE_URL, "") : `/producer/${id}`;
   const alternates = buildAlternates(path, locale);
 
@@ -108,6 +136,8 @@ function ProducerJsonLd({ producer, locale }) {
 export default async function ProducerPage(props) {
   const params = await props.params;
   const producer = await getProducer(params.id);
+  // generateMetadata already 404s this case; belt-and-braces for the body.
+  if (!producer) notFound();
 
   return (
     <>

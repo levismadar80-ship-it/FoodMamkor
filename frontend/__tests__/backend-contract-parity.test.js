@@ -174,6 +174,53 @@ const PAIRS = [
   { backend: "ProducerDetailOut", zodName: "ProducerDetailSchema", zod: ProducerDetailSchema },
 ];
 
+/**
+ * MEH-1896 — nested keys the API serves that the matching `z.object` literal
+ * does not declare, as of 02/09/2026. Same contract as KNOWN_UNDECLARED, one
+ * level down: `.loose()` protects the TOP level only, so a key inside
+ * `categories[]` is stripped by every parse even where the parent schema is
+ * loose. The four rows here are exactly the residue of
+ * docs/audits/nested-schema-stripping.md after MEH-1942 and MEH-2142 closed
+ * `delivery_areas[].delivery_fee` and `locations[].opening_hours/.phone`.
+ *
+ * Keyed `<BackendClass>.<field>`, matching the snapshot's `nested` map. A
+ * parent field that is itself undeclared on the Zod side (e.g. `products`,
+ * `kashrut_certs`) is NOT listed here — the top-level baseline already owns
+ * that gap, and a nested entry for it would count the same hole twice.
+ *
+ * Same rule as above: NEVER add here to make a red build green. Declare the
+ * key in the nested literal, then delete the line.
+ */
+const KNOWN_UNDECLARED_NESTED = {
+  "ProducerListOut.categories": ["producer_count", "slug"],
+  "ProducerDetailOut.categories": ["producer_count", "slug"],
+};
+
+/**
+ * Unwrap zod v4 wrappers until an object (or something that is not one)
+ * surfaces. `optional` / `nullable` / `default` carry the inner schema on
+ * `def.innerType`; `array` carries its element on `def.element`. Anything
+ * else — a string, a union, a number — is "no nested object", returned as
+ * null so the caller can tell "not nested" from "nested with zero keys".
+ */
+function nestedObjectShape(schema) {
+  let cur = schema;
+  for (let depth = 0; depth < 8 && cur; depth += 1) {
+    const type = cur.def?.type;
+    if (type === "object") return Object.keys(cur.shape);
+    if (type === "optional" || type === "nullable" || type === "default") {
+      cur = cur.def.innerType;
+      continue;
+    }
+    if (type === "array") {
+      cur = cur.def.element;
+      continue;
+    }
+    return null;
+  }
+  return null;
+}
+
 describe("MEH-1891 — Pydantic → Zod parity", () => {
   it("the snapshot file is present and shaped as expected", () => {
     expect(Array.isArray(snapshot.ProducerListOut)).toBe(true);
@@ -230,5 +277,78 @@ describe("MEH-1891 — Pydantic → Zod parity", () => {
           "baseline naming fields that do not exist is fiction, not a to-do.",
       ).toEqual([]);
     });
+  });
+});
+
+describe("MEH-1896 — nested Pydantic → Zod parity", () => {
+  // Self-test of the walker on the real library, on a case whose answer is
+  // known: if this cannot see keys through optional().default([]) around an
+  // array of objects — the exact shape lib/schemas.js uses for categories —
+  // every "no nested object" below is a dead probe, not a clean result.
+  it("the walker sees through optional/default/array to the object keys", () => {
+    const listCategories = nestedObjectShape(ProducerListSchema.shape.categories);
+    expect(listCategories).not.toBeNull();
+    expect(listCategories).toEqual(expect.arrayContaining(["id", "name", "emoji"]));
+    // And it says null, not [], for a leaf — the two must stay distinguishable.
+    expect(nestedObjectShape(ProducerListSchema.shape.slug)).toBeNull();
+  });
+
+  it("the snapshot carries the nested map", () => {
+    expect(snapshot.nested && typeof snapshot.nested).toBe("object");
+    expect(Object.keys(snapshot.nested).length).toBeGreaterThan(0);
+  });
+
+  for (const { backend, zodName, zod } of PAIRS) {
+    const entries = Object.entries(snapshot.nested ?? {}).filter(([k]) =>
+      k.startsWith(`${backend}.`),
+    );
+
+    for (const [key, servedKeys] of entries) {
+      const field = key.slice(backend.length + 1);
+      const topBaseline = KNOWN_UNDECLARED[backend] ?? [];
+      // The parent itself is undeclared → the top-level gate owns it.
+      if (topBaseline.includes(field)) continue;
+
+      const baseline = KNOWN_UNDECLARED_NESTED[key] ?? [];
+
+      it(`${key}: every served key is declared in ${zodName}'s nested literal (or baselined)`, () => {
+        const zodKeys = nestedObjectShape(zod.shape[field]);
+        expect(
+          zodKeys,
+          `${zodName}.${field} is declared but is not a z.object / z.array(z.object) — ` +
+            `the backend serves a nested model there (${servedKeys.join(", ")}).`,
+        ).not.toBeNull();
+        const stripped = servedKeys.filter(
+          (k) => !zodKeys.includes(k) && !baseline.includes(k),
+        );
+        expect(
+          stripped,
+          `${key} serves keys the nested Zod literal strips on every parse — ` +
+            `.loose() on the parent does not reach here. Declare them in ` +
+            `lib/schemas.js — do NOT add them to KNOWN_UNDECLARED_NESTED.`,
+        ).toEqual([]);
+      });
+
+      it(`${key}: the nested baseline carries no stale entries`, () => {
+        const zodKeys = nestedObjectShape(zod.shape[field]) ?? [];
+        const stale = baseline.filter((k) => zodKeys.includes(k));
+        expect(
+          stale,
+          `These are declared in ${zodName}.${field} now. Delete them from KNOWN_UNDECLARED_NESTED.`,
+        ).toEqual([]);
+        const gone = baseline.filter((k) => !servedKeys.includes(k));
+        expect(
+          gone,
+          `${key} no longer serves these. Delete them from KNOWN_UNDECLARED_NESTED.`,
+        ).toEqual([]);
+      });
+    }
+  }
+
+  it("every KNOWN_UNDECLARED_NESTED key names a nested field the snapshot carries", () => {
+    const missing = Object.keys(KNOWN_UNDECLARED_NESTED).filter(
+      (k) => !(snapshot.nested ?? {})[k],
+    );
+    expect(missing, "baseline rows for shapes the backend no longer nests").toEqual([]);
   });
 });
