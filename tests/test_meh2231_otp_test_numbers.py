@@ -154,6 +154,7 @@ def test_environment_gate_is_the_seed_script_shape():
     # local host: always allowed outside production
     assert allowed("localhost", "", "development") is True
     assert allowed("127.0.0.1", "", "test") is True
+    assert allowed("::1", "", "development") is True  # IPv6 loopback (reviewer, #3393)
     # no host at all (Unix-socket URL): OFF even on Railway staging — the
     # docstring's "stays OFF" promise, pinned (reviewer, PR #3393)
     assert allowed("", "staging", "development") is False

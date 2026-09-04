@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     # environment may use them.
     otp_test_numbers: str = ""  # comma-separated, exact match on producer.phone
     otp_test_code: str = ""  # exactly 6 digits, else the feature stays off
+    # Railway injects RAILWAY_ENVIRONMENT ("staging" / "production") into every
+    # service; declared here so the OTP test-mode gate reads it through
+    # Settings like every other knob (reviewer, PR #3393). Empty = not Railway.
+    railway_environment: str = ""
     admin_whatsapp_to: str = ""
 
     # MEH-509 PR2c — inbound webhook receiver (GET challenge + POST receive).
