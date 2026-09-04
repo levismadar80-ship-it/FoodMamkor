@@ -584,6 +584,11 @@
             "title": "Id",
             "type": "integer"
           },
+          "is_system": {
+            "default": false,
+            "title": "Is System",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
