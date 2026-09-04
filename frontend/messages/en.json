@@ -2534,10 +2534,7 @@
       "breadcrumb_experiences": "Experiences"
     },
     "new": {
-      "auth_loading": "Loading...",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "breadcrumb_submit": "Submit",
+      "crumb_current": "New experience",
       "title": "Submit a new experience",
       "subtitle": "All submissions are reviewed by the Mehamakor team. We'll get back to you within 3 business days",
       "field_title": "Experience title",

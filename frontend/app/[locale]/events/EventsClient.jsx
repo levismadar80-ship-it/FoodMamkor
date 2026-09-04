@@ -361,7 +361,7 @@ export default function EventsPage({ initialTab = "events" }) {
           </button>
           </div>
           <Link
-            href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
+            href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
             className="ms-auto self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
@@ -578,7 +578,7 @@ function EmptyState({ tab, t }) {
       <div className="mt-6 flex flex-col items-center gap-4 w-full">
         {isExp && (
           <Link
-            href="/experiences/new"
+            href="/producer/dashboard/experiences/new"
             className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <Plus size={18} weight="bold" />

@@ -2534,10 +2534,7 @@
       "breadcrumb_experiences": "חוויות"
     },
     "new": {
-      "auth_loading": "בטעינה...",
-      "breadcrumb_home": "בית",
-      "breadcrumb_experiences": "חוויות",
-      "breadcrumb_submit": "הגשה",
+      "crumb_current": "חוויה חדשה",
       "title": "הגישו חוויה חדשה",
       "subtitle": "כל ההגשות עוברות אישור צוות מהמקור. נחזור עד 3 ימי עסקים",
       "field_title": "כותרת החוויה",
