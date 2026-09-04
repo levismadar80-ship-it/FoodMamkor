@@ -12,7 +12,7 @@
  *           slug map was unused and deleted in MEH-1567) nor own the
  *           category icon map (EventsClient.jsx CATEGORY_ICON).
  * Related:  frontend/app/[locale]/events/EventsClient.jsx (both filter sets),
- *           frontend/app/[locale]/experiences/new/NewExperienceClient.jsx (form),
+ *           frontend/app/[locale]/producer/dashboard/experiences/new/page.js (form),
  *           frontend/app/[locale]/producer/dashboard/events/new/page.js (form).
  * History:  MEH-869 (creation, 2026-06-19 — DRY the duplicated arrays).
  */
