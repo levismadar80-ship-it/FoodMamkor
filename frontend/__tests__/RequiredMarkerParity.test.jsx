@@ -176,6 +176,17 @@ describe("MEH-2015 — the קטגוריה * * bug stays dead", () => {
       },
       useLocale: () => "he",
     }));
+    // MEH-1981: EventForm now carries a CollectionNotice whose /privacy link
+    // is the locale-aware Link from @/i18n/navigation, which needs the intl
+    // context the doMock above deliberately does not provide. Stubbed here
+    // (and un-mocked in the finally) — the link is CollectionNotice.test's job.
+    vi.doMock("@/i18n/navigation", () => ({
+      Link: ({ href, children, ...rest }) => (
+        <a href={typeof href === "string" ? href : "#"} {...rest}>
+          {children}
+        </a>
+      ),
+    }));
     const { default: EventForm } = await import("@/components/EventForm");
     const { render: r } = await import("@testing-library/react");
     r(<EventForm mode="create" onSubmit={() => {}} categories={[]} />);
@@ -187,6 +198,7 @@ describe("MEH-2015 — the קטגוריה * * bug stays dead", () => {
     ).toBe(1);
     } finally {
       vi.doUnmock("next-intl");
+      vi.doUnmock("@/i18n/navigation");
     }
   });
 });

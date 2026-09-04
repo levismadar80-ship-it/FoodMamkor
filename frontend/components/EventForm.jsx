@@ -28,6 +28,7 @@ import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 
 const DEFAULTS = {
@@ -140,6 +141,9 @@ function validateEventForm(f, t) {
 export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
   const t = useTranslations("sweep_tail.event_new");
   const tCat = useTranslations("events.categories");
+  // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
+  const tNotice = useTranslations("privacy.collection_notice");
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -433,6 +437,12 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           placeholder={t("field_registration_url_placeholder")}
           dir="ltr"
           error={fieldErrors.registration_url}
+        />
+
+        <CollectionNotice
+          message={tNotice("event")}
+          linkLabel={tPrivacyLink("privacy_link")}
+          testId="event-collection-notice"
         />
 
         <div className="flex gap-3 pt-4">
