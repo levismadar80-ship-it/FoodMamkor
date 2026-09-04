@@ -1733,14 +1733,16 @@ def request_producer_review(
         # later attribute read would be a lazy reload round-trip (CI reviewer
         # on #3333). The literals below are what was just written.
         new_count = producer.resubmission_count + 1
+        producer_name = producer.name
+        producer_city = producer.city
         producer.status = "pending"
         producer.resubmission_count = new_count
         producer.resubmitted_at = datetime.now(timezone.utc)
         db.commit()
         background_tasks.add_task(
             notify_admin_producer_resubmit,
-            producer.name,
-            producer.city,
+            producer_name,
+            producer_city,
             resubmission_count=new_count,
         )
         return {
