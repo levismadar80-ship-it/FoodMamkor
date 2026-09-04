@@ -21,7 +21,7 @@
 # Related:  .claude/settings.json hooks.Stop (the four inline hooks this
 #           mirrors) · the CI gate workflow's pytest job (`backend/.venv/bin/
 #           python -m pytest tests/` from the REPO ROOT — the invocation this
-#           mirrors; see WORKFLOW_REF below) · tests/test_api.py (the test
+#           mirrors; the file:line citation sits above set -uo pipefail) · tests/test_api.py (the test
 #           file, at the repo root) · scripts/checks/run-all.sh (the
 #           run-everything-then-summarise shape this borrows).
 # History:  MEH-2117 (creation — a hook that cannot be reviewed, versioned or
@@ -70,8 +70,8 @@
 set -uo pipefail
 
 # rtl-ok: a workflow FILENAME (see dnm-matcher-guard.sh for the same false positive), not a padding class
-WORKFLOW_REF=".github/workflows/pr-checks.yml:396-407"   # where CI's pytest invocation lives
-: "$WORKFLOW_REF"
+# CI's pytest invocation, the one the pytest step below mirrors:
+#   .github/workflows/pr-checks.yml:396-407
 
 if [ "${1:-}" = "--self-test" ]; then SELF_TEST=1; else SELF_TEST=0; fi
 
