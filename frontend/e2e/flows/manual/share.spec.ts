@@ -43,6 +43,7 @@ const FIRST_PAINT = { timeout: 15_000 };
 /** The site URL the page itself advertises — the WhatsApp message ends with it. */
 async function advertisedSiteUrl(page: Page): Promise<string> {
   const href = await page.getByTestId("share-whatsapp").getAttribute("href");
+  expect(href, "share-whatsapp must carry an href before it can be parsed").toBeTruthy();
   const text = new URL(href ?? "").searchParams.get("text") ?? "";
   const m = text.match(/(https?:\/\/\S+)$/);
   expect(m, `WhatsApp message must end with the site URL, got: ${text}`).not.toBeNull();
