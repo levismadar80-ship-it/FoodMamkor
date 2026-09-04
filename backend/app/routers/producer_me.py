@@ -1681,7 +1681,17 @@ def request_producer_review(
     MEH-977): a Meta/Resend outage or missing admin config must never affect
     the 200 the owner sees.
     """
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    # MEH-2210 follow-up (CI reviewer on #3343): the cap check and the
+    # `resubmission_count + 1` write are two ORM steps; two concurrent requests
+    # from the same owner at count=2 both read 2 and both write 3, and the
+    # business gets a 4th lifetime resubmission. FOR UPDATE serialises them on
+    # the producer row for the length of this request (released at commit).
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == user.producer_id)
+        .with_for_update()
+        .first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     # MEH-2210: `rejected` is the second admitted status — the resubmit loop.

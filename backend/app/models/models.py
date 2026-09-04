@@ -466,7 +466,8 @@ class Producer(Base):
     # that composes the text above; a second code dictionary would be
     # workflow.md Smell #1), stored beside the composed text so the owner
     # dashboard can branch its copy on it. NULL on every row rejected before
-    # this column existed and on `other` — the banner falls back to the text.
+    # this column existed (legacy free-text reject with no preset_key); `other`
+    # is stored as the string "other" — the banner falls back to the text.
     # `resubmission_count` is HISTORY: incremented by POST /producers/me/
     # request-review from `rejected`, never reset by approve. Capped at
     # constants.MAX_PRODUCER_RESUBMISSIONS server-side. `resubmitted_at` is
