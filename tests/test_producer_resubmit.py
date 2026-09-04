@@ -286,3 +286,75 @@ class TestFieldsAreExposed:
         owner_body = owner_resp.json()
         assert owner_body["rejection_reason_code"] == "not_eligible"
         assert owner_body["resubmission_count"] == 2
+
+
+# --- 5. the rejection email points at the loop (chunk C) ----------------------
+
+
+class TestRejectionEmailPointsAtTheLoop:
+    def test_reject_sends_both_parts_with_the_dashboard_link(
+        self, client, db, monkeypatch
+    ):
+        from app.routers import admin as admin_module
+
+        sent = {}
+
+        def _capture(to_email, subject, body, html=None):
+            sent.update(to=to_email, subject=subject, body=body, html=html)
+
+        monkeypatch.setattr(admin_module, "_send_notification_email", _capture)
+        producer = make_producer(db, status="pending")
+        owner = make_user(db, email="rejected-owner@example.com", role="producer")
+        owner.producer_id = producer.id
+        db.commit()
+
+        resp = client.post(
+            f"/admin/producers/{producer.id}/reject",
+            json={"preset_key": "missing_image", "reason": "רק לוגו"},
+            headers=auth_header(_admin(db)),
+        )
+        assert resp.status_code == 200
+        assert sent["to"] == "rejected-owner@example.com"
+        link = "/producer/dashboard"
+        # Text part: the composed reason (label + free text) and the link line.
+        assert "הסיבה: תמונה ראשית חסרה — רק לוגו" in sent["body"]
+        assert "אפשר לתקן ולשלוח שוב מלוח הבקרה: " in sent["body"]
+        assert link in sent["body"]
+        # HTML part: RTL document, same reason, the link as an anchor.
+        html = sent["html"]
+        assert html is not None and html.startswith("<!DOCTYPE html>")
+        assert '<html dir="rtl" lang="he">' in html
+        assert "תמונה ראשית חסרה — רק לוגו" in html
+        assert 'href="' in html and link in html
+
+    def test_reason_free_reject_has_no_dangling_reason_line_in_either_part(
+        self, client, db, monkeypatch
+    ):
+        from app.routers import admin as admin_module
+
+        sent = {}
+        monkeypatch.setattr(
+            admin_module,
+            "_send_notification_email",
+            lambda to, subject, body, html=None: sent.update(body=body, html=html),
+        )
+        producer = make_producer(db, status="pending")
+        owner = make_user(db, email="rejected-owner-2@example.com", role="producer")
+        owner.producer_id = producer.id
+        db.commit()
+        resp = client.post(
+            f"/admin/producers/{producer.id}/reject",
+            json={},
+            headers=auth_header(_admin(db)),
+        )
+        assert resp.status_code == 200
+        assert "הסיבה:" not in sent["body"]
+        assert "הסיבה:" not in sent["html"]
+        assert "/producer/dashboard" in sent["html"]
+
+    def test_html_escapes_a_crafted_business_name(self):
+        from app.routers import admin as admin_module
+
+        html = admin_module._producer_rejected_html("<b>x</b> & co", "r", "https://x/d")
+        assert "<b>x</b>" not in html
+        assert "&lt;b&gt;x&lt;/b&gt; &amp; co" in html
