@@ -1,7 +1,7 @@
 """meh1428_review_source
 
 Revision ID: 3f9a7c2e5d18
-Revises: e6b2d4f81a37
+Revises: 2c1033ca5745
 Create Date: 2026-09-04 11:54:00.000000+00:00
 
 MEH-1428 chunk 1: adds `producer_reviews.source` — how the reviewer passed
@@ -16,11 +16,9 @@ row reads "click" with no backfill step and no table rewrite beyond the
 metadata change — Expand-only (ADR-007). EXPECTED_TABLES unchanged (a
 column, not a table).
 
-Chained on e6b2d4f81a37 — the single head on origin/staging at authoring
-time (04/09). PR #3333 (unmerged) adds 2c1033ca5745 on top of the same
-parent; if it lands first this down_revision must be re-pointed at
-2c1033ca5745, otherwise `alembic heads` reports two heads and the boot
-upgrade refuses to run.
+Chained on 2c1033ca5745 (MEH-2210 chunk A, #3333 → staging `cd766944`,
+04/09 12:38Z). Authored on e6b2d4f81a37 and re-pointed once #3333 landed,
+so `alembic heads` stays at one head (CI reviewer on #3368).
 
 # DO NOT change nullability or the default without an explicit MEH ticket —
 #        Alembic is the sole schema authority since MEH-267.
@@ -33,7 +31,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "3f9a7c2e5d18"
-down_revision: Union[str, None] = "e6b2d4f81a37"
+down_revision: Union[str, None] = "2c1033ca5745"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
