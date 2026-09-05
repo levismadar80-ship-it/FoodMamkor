@@ -189,6 +189,42 @@ class TestResubmitFromRejected:
         assert row.status == "rejected"
         assert row.resubmission_count == MAX_PRODUCER_RESUBMISSIONS
 
+    def test_resubmit_lookup_locks_the_producer_row(self, client, db):
+        """Guard for the cap race (CI reviewer on #3343/#3373): the check and
+        the `+ 1` are two ORM steps, so the producer lookup that precedes them
+        must carry FOR UPDATE. A concurrency test cannot run on the per-test
+        fixture; this captures the SQL the endpoint actually emits and asserts
+        the lock is on the producers SELECT. Drop `.with_for_update()` and the
+        captured statement has no FOR UPDATE — red by construction."""
+        from sqlalchemy import event
+
+        from app.database import engine
+
+        producer, user = _rejected_owner(db)
+        seen: list[str] = []
+
+        def _capture(conn, cursor, statement, parameters, context, executemany):
+            seen.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _capture)
+        try:
+            resp = client.post(REVIEW, headers=auth_header(user))
+        finally:
+            event.remove(engine, "before_cursor_execute", _capture)
+
+        assert resp.status_code == 200, resp.text
+        producer_selects = [
+            s
+            for s in seen
+            if s.lstrip().upper().startswith("SELECT") and "FROM producers" in s
+        ]
+        assert producer_selects, (
+            "no SELECT on producers captured — the listener saw nothing"
+        )
+        assert any("FOR UPDATE" in s.upper() for s in producer_selects), (
+            "the producer lookup in request_producer_review is not row-locked"
+        )
+
     def test_cap_wins_over_the_completeness_gate(self, client, db):
         """A capped business with a gap gets the cap message, not a fix-it
         list for a submission it cannot make."""

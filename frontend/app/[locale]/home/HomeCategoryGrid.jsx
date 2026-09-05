@@ -48,7 +48,7 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 export function HomeCategoryGrid({ categoryCards }) {
   const t = useTranslations();
   return (
-    <section className="max-w-7xl mx-auto px-4 section-y">
+    <section className="max-w-7xl mx-auto px-4 section-y" data-testid="home-category-grid">
       <FadeInSection className="mb-10">
         {/* MEH-1032 (HOME-17): eyebrow+rule pattern mirrors HomeStaticBlocks §10 — DM-Sans, 32×1px gold rule, start-aligned. */}
         <span className="flex items-center gap-3 font-medium text-[11px] text-accent mb-1">
@@ -103,8 +103,9 @@ export function HomeCategoryGrid({ categoryCards }) {
                   overflow-hidden aspect wrapper both locks the frame proportion
                   (zero CLS) and clips the motion-safe hover zoom. alt = Hebrew
                   category name. */}
-              <div className={["relative overflow-hidden", aspectClassName].join(" ")}>
+              <div className={["relative overflow-hidden", aspectClassName].join(" ")} data-testid="home-category-image-frame">
                 <Image
+                  data-testid="home-category-image"
                   src={card.image}
                   alt={card.name}
                   fill
@@ -118,7 +119,7 @@ export function HomeCategoryGrid({ categoryCards }) {
               {/* Caption strip — solid surface-card (from the card bg), sits BELOW
                   the photo so the numeral + name are never over a busy image.
                   Same tokens/position as the glyph path. */}
-              <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6">
+              <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6" data-testid="home-category-caption">
                 {caption}
               </div>
             </>
@@ -126,7 +127,7 @@ export function HomeCategoryGrid({ categoryCards }) {
             <>
               {/* Glyph panel — cream background, geometric line glyph in brand
                   green (MEH-683 unified set); Phosphor Leaf if name is unmapped. */}
-              <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")}>
+              <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")} data-testid="home-category-image-frame">
                 {LineArt ? (
                   <LineArt
                     className={
@@ -141,7 +142,7 @@ export function HomeCategoryGrid({ categoryCards }) {
               </div>
 
               {/* Body — gold Cormorant numeral (LTR-isolated) + display-font name. */}
-              <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6">
+              <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6" data-testid="home-category-caption">
                 {caption}
               </div>
             </>
@@ -160,13 +161,14 @@ export function HomeCategoryGrid({ categoryCards }) {
                   href={`/producers?category=${card.categoryId}`}
                   aria-label={t("home.categories.aria", { name: card.name })}
                   className={cardClassName}
+                  data-testid="home-category-card"
                 >
                   {cardBody}
                 </Link>
               ) : (
                 // id not resolved (categories loading / absent in this env) —
                 // same visual, no dead link (MEH-1080).
-                <div className={cardClassName}>{cardBody}</div>
+                <div className={cardClassName} data-testid="home-category-card">{cardBody}</div>
               )}
             </motion.div>
           );

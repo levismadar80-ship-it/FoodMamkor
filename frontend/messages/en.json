@@ -876,6 +876,8 @@
         "show_week": "Full week",
         "hide_week": "Hide full week",
         "today": "Today",
+        "special_heading": "Special hours",
+        "special_closed": "Not accepting orders",
         "days": {
           "sun": "Sunday",
           "mon": "Monday",
@@ -1852,7 +1854,7 @@
       "notes_label": "Moderation notes"
     },
     "experiences": {
-      "title": "Community experiences",
+      "title": "Experiences",
       "subtitle": "Moderation for user-submitted experiences",
       "public_link": "Public page →",
       "tabs": {
@@ -2533,17 +2535,8 @@
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences"
     },
-    "card": {
-      "host_fallback": "Community host",
-      "spots_left": "{n} spots left",
-      "sold_out": "Sold out",
-      "free": "Free"
-    },
     "new": {
-      "auth_loading": "Loading...",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "breadcrumb_submit": "Submit",
+      "crumb_current": "New experience",
       "title": "Submit a new experience",
       "subtitle": "All submissions are reviewed by the Mehamakor team. We'll get back to you within 3 business days",
       "field_title": "Experience title",
@@ -4113,11 +4106,19 @@
           "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster."
         },
         "rejected": {
-          "title": "Application not approved",
-          "body": "Contact us for more details and a re-review.",
-          "tip_details": "Make sure all business details are complete and accurate",
-          "tip_photos": "Add clear product photos",
-          "tip_address": "Check that the business address is correct",
+          "title": "Application not approved — you can fix it and resubmit",
+          "by_code": {
+            "missing_docs": "Documents are missing or unreadable",
+            "missing_image": "The main photo is missing",
+            "incomplete_info": "Business details are incomplete (address / phone / description)",
+            "not_eligible": "The business does not meet the platform terms",
+            "not_eligible_hint": "If things changed (for example, a licence was issued) — update and resubmit"
+          },
+          "resubmit_cta": "Resubmit for review",
+          "resubmit_caption": "Submission {n} of {max}",
+          "resubmit_toast": "Sent for re-review",
+          "resubmit_error": "Couldn't send. Please try again.",
+          "capped": "You have reached the maximum number of submissions.",
           "support_cta": "Talk to us →"
         },
         "inactive": {
@@ -4518,6 +4519,22 @@
         "clear_cta": "Clear all",
         "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 day a week} other {# days a week}}"
+      },
+      "special_hours": {
+        "heading": "Special hours for holidays",
+        "subtitle": "A specific date that overrides the weekly schedule — a holiday eve or a closed day, for example",
+        "empty_state": "No special hours yet. Add a date or pick a holiday from the list",
+        "chips_label": "Upcoming holidays:",
+        "add_date": "Add a date",
+        "remove_date": "Remove this date",
+        "date_label": "Date",
+        "closed_toggle": "Closed for orders on this date",
+        "note_label": "Note",
+        "note_placeholder": "For example: Rosh Hashana eve",
+        "invalid_date": "Invalid or duplicate date",
+        "save_success": "Special hours saved",
+        "summary_empty": "Not set",
+        "summary_set": "{count, plural, one {1 date} other {# dates}}"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
