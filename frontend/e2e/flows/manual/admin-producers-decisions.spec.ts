@@ -544,7 +544,7 @@ test.describe("review checklist", () => {
 test.describe("review checklist — evidence dossier", () => {
   test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 
-  const dossier = (page: Page) => page.locator("div").filter({ has: page.getByText("תיק בדיקה", { exact: true }) }).last();
+  const dossier = (page: Page) => page.getByTestId("review-evidence");
 
   // MT:MEH-1399:20 · MT:MEH-1399:22 — the licence section: registry link, copy button, number, expiry; every external link opens a new tab.
   test("the dossier lists the registry link, the copy button, the licence number and its expiry, and every external link opens a new tab", async ({ page }) => {
