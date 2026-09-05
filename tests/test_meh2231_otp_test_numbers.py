@@ -28,6 +28,8 @@ FAILS and the pure-function test FAILS; everything else passes.
 
 import logging
 
+import pytest
+
 from tests.conftest import auth_header, make_producer, make_user
 
 from app import config
@@ -133,17 +135,21 @@ def test_unlisted_number_still_gets_a_random_code_and_a_send(
 
 
 # ── DoD row 3 — production refusal: the ONE assertion that makes this RED ─
-def test_production_refuses_even_a_listed_number(client, db, monkeypatch):
+def test_production_refuses_even_a_listed_number(client, db, monkeypatch, caplog):
     rec = _arm(monkeypatch)
     monkeypatch.setattr(config.settings, "env", "production")
     user, producer = _producer_user(db, LISTED)
 
-    r = client.post("/producers/me/verify-phone", headers=auth_header(user))
+    with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
+        r = client.post("/producers/me/verify-phone", headers=auth_header(user))
     assert r.status_code == 200, r.text
     assert len(rec.calls) == 1, "production must take the normal path"
     # No `!= FIXED` on the random code (same 1-in-10^6 reasoning as the
     # separation test); the send itself is the discriminating fact.
     assert _stored_code(db, producer.id) == rec.calls[0][1]
+    # And no bypass event was logged — the refusal is exhaustive, not
+    # inferred from the send count alone (reviewer round 7, PR #3393).
+    assert not [m for m in _warnings(caplog) if "OTP test mode" in m]
 
 
 def test_environment_gate_is_the_seed_script_shape():
@@ -177,18 +183,22 @@ def test_empty_config_is_off(client, db, monkeypatch):
     assert _stored_code(db, producer.id) == rec.calls[0][1]
 
 
-def test_malformed_code_turns_the_feature_off(client, db, monkeypatch):
+# One test per malformed value, not a loop: /verify-phone is limited to
+# 3/10minute per client IP and conftest's autouse _reset_rate_limiter only
+# runs between test FUNCTIONS, so a 3-call loop sat exactly on the cap and a
+# tighter limit would have turned it into a 429 (reviewer round 7, PR #3393).
+@pytest.mark.parametrize("bad", ["42424", "4242a2", " "])
+def test_malformed_code_turns_the_feature_off(client, db, monkeypatch, bad):
     # 5 digits, letters — a code the confirm handler could never match is a
     # trap, so it disables the feature instead of half-enabling it.
-    for bad in ("42424", "4242a2", " "):
-        rec = _arm(monkeypatch, code=bad)
-        user, producer = _producer_user(db, LISTED)
-        r = client.post("/producers/me/verify-phone", headers=auth_header(user))
-        assert r.status_code == 200, r.text
-        assert len(rec.calls) == 1, bad
-        # Not `!= bad` — no 6-digit string can equal any of these three, so
-        # that read as coverage and could not fail (reviewer, PR #3393).
-        # A real OTP was stored instead: six digits, and the one that went out.
-        stored = _stored_code(db, producer.id)
-        assert len(stored) == 6 and stored.isdigit(), bad
-        assert stored == rec.calls[0][1], bad
+    rec = _arm(monkeypatch, code=bad)
+    user, producer = _producer_user(db, LISTED)
+    r = client.post("/producers/me/verify-phone", headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    assert len(rec.calls) == 1, bad
+    # Not `!= bad` — no 6-digit string can equal any of these three, so
+    # that read as coverage and could not fail (reviewer, PR #3393).
+    # A real OTP was stored instead: six digits, and the one that went out.
+    stored = _stored_code(db, producer.id)
+    assert len(stored) == 6 and stored.isdigit(), bad
+    assert stored == rec.calls[0][1], bad
