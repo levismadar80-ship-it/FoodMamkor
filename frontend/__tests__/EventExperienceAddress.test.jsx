@@ -117,11 +117,12 @@ describe("MEH-1404 — event create form sends lat/lng", () => {
 
 describe("MEH-1404 — experience create form sends lat/lng", () => {
   it("includes picked coords in the POST /experiences body", async () => {
-    const { default: NewExperienceClient } = await import(
-      "@/app/[locale]/experiences/new/NewExperienceClient"
+    // MEH-2249: creation moved to the dashboard; same ExperienceForm, new host.
+    const { default: NewExperiencePage } = await import(
+      "@/app/[locale]/producer/dashboard/experiences/new/page"
     );
     const N = he.experiences.new;
-    wrap(<NewExperienceClient />);
+    wrap(<NewExperiencePage />);
 
     fireEvent.change(screen.getByLabelText(new RegExp(N.field_title)), { target: { value: "סדנת בישול קהילתית" } });
     fireEvent.change(screen.getByPlaceholderText(N.field_description_placeholder), {

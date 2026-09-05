@@ -397,8 +397,10 @@ def require_verified_email(user: User = Depends(get_current_user)) -> User:
 
 def require_verified_producer(user: User = Depends(require_producer)) -> User:
     # MEH-1164 F5: role check first (require_producer → "Producer access
-    # required"), then the email-verified gate. experiences.py already uses
-    # require_verified_email directly and is left unchanged.
+    # required"), then the email-verified gate. MEH-2246: events.py AND
+    # experiences.py both submit through this gate — the MEH-1164 decision to
+    # leave experiences on require_verified_email predated MEH-1749, after
+    # which only a business's experience is ever publicly visible.
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
