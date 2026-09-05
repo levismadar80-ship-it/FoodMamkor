@@ -206,7 +206,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
           const issueReason = issueByRow.get(i);
           return (
             <div
-              key={`${row.date || "new"}-${i}`}
+              key={row.id}
               className="rounded-md border border-border p-3"
               data-testid="special-hours-row"
               data-date={row.date || undefined}

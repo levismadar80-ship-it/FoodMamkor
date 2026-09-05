@@ -343,6 +343,9 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
                 {d.closed ? (
                   <span className="text-end">{t("special_closed")}</span>
                 ) : (
+                  // dir="ltr" keeps the numerals in reading order on the RTL
+                  // page; text-end then aligns them to the row's END edge —
+                  // the same pair the weekly rows above use. rtl-ok
                   <span dir="ltr" className="text-end">
                     <RangeList ranges={d.ranges} />
                   </span>
