@@ -155,7 +155,7 @@ def _provenance(counts: collections.Counter[tuple[str, str]]) -> str:
     return (
         f"# Frozen {datetime.date.today().isoformat()} from mypy {version} over "
         f"`mypy {' '.join(MYPY_ARGV)}` (that file AND its import tree — mypy follows\n"
-        f"# imports, so a module auth.py reaches transitively appears here too):\n"
+        f"# imports, so any module auth.py reaches transitively also appears here):\n"
         f"# {total} errors, {files} files, {len(counts)} keys. Every number on this\n"
         f"# line is computed from the rows below, so it cannot drift from them.\n"
     )
