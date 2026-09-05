@@ -133,7 +133,13 @@ function LoginPageBody() {
   // minimum on /login — login validates against the stored hash, which
   // may be any length for legacy accounts). Keep a >= 1 defensive gate
   // so the submit button stays disabled on empty fields.
-  const passwordInvalid = passwordTouched && password.length > 0 && password.length < 1;
+  // MEH-2256: the floor removal left `length > 0 && length < 1`, which no
+  // integer satisfies — so «הזינו סיסמה» and the field's aria-invalid were
+  // unreachable in every state a user can produce (measured in
+  // e2e/flows/manual/auth.spec.ts). The intended predicate is "touched and
+  // still empty": a screen reader now gets aria-invalid + the message on a
+  // blurred empty password, mirroring the name field on /register.
+  const passwordInvalid = passwordTouched && password.length === 0;
   const passwordValidLength = passwordTouched && password.length >= 1;
   const formIsValid = validateEmail(email) && password.length >= 1;
 
