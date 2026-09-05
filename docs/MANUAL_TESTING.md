@@ -883,7 +883,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 - [ ] **ציטוט ביקורת מעל הקפל** — עסק שהביקורת האחרונה שלו כוללת טקסט — **תוצאה מצופה:** מתחת לתת-הכותרת מופיע ציטוט קצר (אייקון מרכאות זהב, נטוי) חתוך ל-≤120 תווים עם "…"; לחיצה גוללת לביקורות.
 - [ ] **ביקורת אחרונה בלי טקסט (דירוג בלבד)** — עסק עם ביקורות שכולן דירוג בלבד — **תוצאה מצופה:** הצ'יפ מופיע, אבל **אין** ציטוט (fall-through לא מצא טקסט). ללא רווח ריק.
 - [ ] **אפס ביקורות** — עסק ללא ביקורות — **תוצאה מצופה:** אין צ'יפ דירוג, אין ציטוט, ואין קריאת רשת ל-`/reviews` (Network). שום "0 ביקורות".
-- [ ] **ללא התנגשות עם ה-hero grid** — עסק עם תמונות + ביקורות (375px) — **תוצאה מצופה:** ה-trust strip יושב בשורת ה-badges ליד השם בלי לשבור שורה בצורה מכוערת / להתנגש עם ה-grid של MEH-1047.
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-1048:5) — ללא התנגשות עם ה-hero grid — ה-trust strip נשאר בתוך ה-viewport ב-375px ומרונדר פעם אחת בלבד (דירוג או "אין ביקורות עדיין", לא שניהם)
 
 ## MEH-1490 — שורת "דירוג ב-Google" שקטה (live-fetch בלבד)
 
@@ -909,8 +909,8 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 עמוד עסק `/producer/[id]`. בדקי מובייל 375px + דסקטופ.
 
-- [ ] **כותרת דו-שכבתית** — עסק כלשהו — **תוצאה מצופה:** שורת זהות (שם + תגי אמון/אימות) מעל שורת לוגיסטיקה אחת: "עיר · קטגוריה · סטטוס" (הזמינות באותה שורה, לא בשורה נפרדת). אין "המוצר החתום" בכותרת.
-- [ ] **פירורי לחם בלבד** — **תוצאה מצופה:** אין כפתור "→ חזרה" ליד הפירורים; רק נתיב הפירורים (בית › קטגוריה › שם).
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-1146B:1) — כותרת דו-שכבתית — שורת זהות מעל שורת לוגיסטיקה אחת "עיר · קטגוריה · סטטוס" (סטטוס אחד בלבד מארבעת ענפי `order-status.js`); אין "המוצר החתום" בכותרת
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-1146B:2) — פירורי לחם בלבד — אין כפתור "→ חזרה" ליד הפירורים; רק נתיב הפירורים
 - [ ] **סדר סקציות** — גללי מלמעלה למטה — **תוצאה מצופה:** אודות → מוצרים → משלוחים → ביקורות → מיקום (מפת Leaflet + "פתיחה במפות Google", **אחרונה**). המפה תמיד בסוף.
 - [ ] **מוצר חתום בראש המוצרים** — עסק עם top_product_name — **תוצאה מצופה:** שם המוצר + מחיר התחלה מופיעים בתיבה בראש סקציית המוצרים (מעל הרשת). אם אין רשומות מוצרים אבל יש מוצר חתום — הסקציה עדיין מוצגת עם המוצר החתום.
 - [ ] **משלוח: מינימום + יום לפי עיר** — עסק עם delivery_areas — **תוצאה מצופה:** כל עיר בשורה: "עיר · מינימום ₪X · יום". מחיר בפורמט הקנוני (₪ אחרי הספרה).
@@ -935,12 +935,12 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 עמוד עסק `/producer/[id]`. בדקי מובייל 375px + דסקטופ.
 
-- [ ] **פעולה ראשית אחת בכל מסך** — גללי לאורך כל העמוד (מובייל + דסקטופ) — **תוצאה מצופה:** רואים בכל רגע רק כפתור ירוק/ראשי אחד של יצירת קשר. דסקטופ: הכרטיס הדביק בצד. מובייל: הכרטיס למעלה, ואחרי שהוא נגלל מהמסך — פס דביק תחתון עם אותה CTA. (הערה: כפתור ה-WhatsApp של אזור המשלוח עדיין ראשי — יורד לטרשיארי ב-Chunk B.)
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-1146A:1) — פעולה ראשית אחת בכל מסך — דסקטופ: ה-CTA היחיד הנגיש הוא בכרטיס הדביק בצד; מובייל: הפס התחתון parked (`inert`) עד שהכרטיס נגלל מהמסך
 - [ ] **מבנה הכרטיס** — עסק פעיל — **תוצאה מצופה:** שורת סטטוס "● פתוח להזמנות" → CTA ראשית אחת → 3 שאלות מוכנות כקישורי טקסט שקטים → שורת אייקונים שקטה (טלפון/אינסטגרם/אתר/מייל וכו') → מעקב + שיתוף כפעולות משניות.
 - [ ] **שאלה דינמית לפי עיר** — עסק בעיר כלשהי — **תוצאה מצופה:** השאלה הראשונה = "אפשר משלוח ל-{עיר}?" עם שם העיר של העסק; לחיצה פותחת WhatsApp עם הטקסט.
 - [ ] **צבע CTA לפי ערוץ** — עסק עם primary_contact_method שונה (whatsapp מול טלפון/אתר) — **תוצאה מצופה:** ירוק WhatsApp רק כשהערוץ הוא WhatsApp; שאר הערוצים בצבע primary. הערוץ הראשי לא מופיע שוב בשורת האייקונים.
 - [ ] **שורת סטטוס במצבים** — עסק "עמוס כרגע"/בחופשה — **תוצאה מצופה:** אין "פתוח להזמנות" בכרטיס (הכרטיס מעומעם בחופשה); הבאנר בראש העמוד ממשיך לשקף את המצב.
-- [ ] **אין כפתורי מפה/שיתוף כפולים בעמודה הראשית** — **תוצאה מצופה:** "הצג במפה" והשיתוף הכפול הוסרו מהעמודה הראשית; שיתוף קיים בתוך הכרטיס.
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-1146A:6) — אין כפתורי מפה/שיתוף כפולים בעמודה הראשית — אין קישור ל-/map בעמודה הראשית, ובדיוק פקד שיתוף אחד נגיש לכל viewport (**drift:** מאז MEH-1334 השיתוף חי בשורת הפעולות השקטה / ה-overlay של הגלריה, לא בתוך הכרטיס)
 
 ## MEH-1047 — עמוד עסק: גלריית hero חדשה (grid, מצב עם תמונות)
 
@@ -1015,10 +1015,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 עסק **ללא תמונות גלריה** (`producer.images` ריק). פתחי את עמוד העסק (375px מובייל).
 
 - [ ] **Masthead במקום הפלייסהולדר** — עסק בלי תמונות — **תוצאה מצופה:** במקום קופסת האמוג'י+ראשי-תיבות הישנה מופיע hero טקסטואלי: שם העסק (Frank Ruhl Libre שחור/900) על רקע קרם עם גוון ירוק עדין (6%). אין אמוג'י.
-- [ ] **שם פעם אחת בלבד** — אותו עסק — **תוצאה מצופה:** שם העסק מופיע פעם אחת (ב-masthead, ככותרת h1); אינו חוזר שוב מתחת בכותרת ProducerHeader. הקטגוריה/עיר/תיאור/תגיות כן נשארים מתחת.
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-815:2) — שם פעם אחת בלבד — h1 יחיד בעמוד, ב-masthead כשאין תמונות וב-ProducerHeader כשיש (שני המצבים נבדקים)
 - [ ] **מונוגרם מ·ה** — פינה עליונה (צד end, נגדי לכפתור המועדפים) — **תוצאה מצופה:** סימן מותג מ·ה קטן בזהב, עמום, לא דומיננטי, ללא התנגשות עם הלב.
 - [ ] **כפתור מועדפים** — פינה עליונה start — **תוצאה מצופה:** כפתור הלב נשאר ופועל (top-start), נפרד מהמונוגרם.
-- [ ] **גובה קצר מהגלריה** — השוו לעסק עם תמונות — **תוצאה מצופה:** ה-masthead נמוך יותר מקרוסלת התמונות (h-52).
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:MEH-815:5) — גובה קצר מהגלריה — השוואת boundingBox בין masthead של עסק ללא תמונות לקרוסלה של עסק עם תמונות, באותה ריצה
 - [ ] **Regression: מצב עם תמונה אחת** — עסק עם תמונה יחידה — **תוצאה מצופה:** באנר מלא-רוחב כמו קודם (אפס שינוי), שם h1 בכותרת כרגיל. **(2+ תמונות → הגלריה עוצבה מחדש ב-MEH-1047, ראו הסעיף בראש הקובץ.)**
 
 ---
@@ -1893,19 +1893,19 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ## Producer Detail Page (feature/meh-producer-detail-redesign, 2026-04-18)
 
-- [ ] Mobile 375px: producer name visible above fold without scrolling — פתחי דף עסק ב-DevTools מובייל 375px → h1 נראה מבלי לגלול
-- [ ] Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם
-- [ ] Mobile: scroll past CTA → sticky bar slides in — גלולי מתחת לכפתור → StickyContactBar מגלשת מלמטה
-- [ ] Mobile: scroll back to CTA → sticky bar slides out — גלולי חזרה למעלה → הבר נעלמת
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:1) — Mobile: producer name visible above fold without scrolling (הפרויקט הנייד הוא Pixel 5 393×851; ה-375 שבשורה הוא הכוונה, לא רוחב הריצה)
+- [ ] Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם **(⚠️ לא הומר — נמדד 04/09 ונכשל מול המוצר: ב-Pixel 5 (393×727) תחתית ה-CTA היא 828, כלומר 101px מתחת לקפל, על fixture דל במכוון. האם זו רגרסיה או דרישה שהוחלפה ע"י הפס הדביק של MEH-1146 chunk A — אינה הכרעה של הצ'אנק הזה; ראו docs/qa/conversion-progress.md chunk 8)**
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3) — Mobile: scroll past CTA → sticky bar slides in
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:4) — Mobile: scroll back to CTA → sticky bar slides out
 - [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
 - [ ] No images: category emoji + initials placeholder (not leaf) — עסק ללא תמונות → placeholder 120px עם emoji + 2 אותיות ראשונות
-- [ ] With images: first image loads eagerly — פתחי Network tab → `images[0]` נטען עם `priority` (preload link בhead)
-- [ ] Desktop: no duplicate PrimaryContactButton — ב-lg viewport → CTA רק בsidebar, לא בcolumn הראשי
-- [ ] Reviews: not fetched until section scrolls into view — פתחי Network tab → אין בקשה ל-`/reviews` בטעינה; מופיעה רק כשגוללים לביקורות
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:7) — With images: first image loads eagerly — `fetchpriority=high` + לא `loading=lazy` על התא הראשון, ולא-eager על תא משני (הבקרה שמבדילה)
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:8) — Desktop: no duplicate PrimaryContactButton — שני mounts, אחד נגיש, והוא של ה-sidebar
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:9) — Reviews: not fetched until section scrolls into view — עם בקרת מקליט (ה-fetch של הפרטים חייב להיקלט, אחרת האפס חסר משמעות)
 - [ ] Gallery dots: 44px tap targets on mobile — Inspect element → כל dot button `min-h-[44px] min-w-[44px]`
-- [ ] Review dates: display correctly in RTL — ביקורת עם תאריך → התאריך מוצג ב-`dir="ltr"` (לא הפוך)
-- [ ] contact_name shows in main column — עסק עם contact_name → "מאחורי העסק: [שם]" מתחת ל-short_description
-- [ ] highlights strip shows correct chips — grass_fed=true → 🌾 מרעה חופשי; delivery_areas non-empty → 🚚 משלוח
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:11) — Review dates: display correctly in RTL — כל תאריך ביקורת נושא `dir="ltr"`
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:12) — contact_name shows in main column (**drift:** מאז MEH-1334 החלטה 4 זו סקציית OwnerCard "מאחורי העסק" עם השם ככותרת h3, לא שורה מתחת ל-short_description; נבדקים שני המצבים — יש שם / אין שם)
+- [ ] highlights strip shows correct chips — grass_fed=true → 🌾 מרעה חופשי; delivery_areas non-empty → 🚚 משלוח **(STALE — MEH-1334 החלטה 4 הסירה את רצועת ה-highlight chips מהכותרת; מדווח, לא הומר; ראו docs/qa/conversion-progress.md chunk 8)**
 
 ---
 
@@ -2477,11 +2477,9 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Share a slug URL (e.g. `/havat-hashikma`) → same preview quality
 
 ### Share button text
-- [ ] Click share on producer page (desktop, no native share) → clipboard contains multi-line message:
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:OG:share-text:1) — Click share on producer page (desktop, no native share) (**drift:** MEH-1290 החליף את מסלול ה-clipboard — היום הכפתור פותח `wa.me` עם `waText` = שורת העסק + `👉 [URL]`; ההודעה הרב-שורתית עם התיאור והעיר נשארה במסלול `navigator.share` בלבד. הטקסט הנפתח נבדק מילה במילה)
   ```
   גיליתי את [name] במהמקור 🌿
-  [first 80 chars of description]...
-  ב[city] • [category]
   👉 [URL]
   ```
 - [ ] Mobile: native share sheet opens with the formatted text
@@ -2557,15 +2555,15 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 ## Share button on producer page (task 14)
 
 ### Share button (copy link)
-- [ ] `/producer/:id` — sticky sidebar has a share button with a **ShareNetwork** icon (not a Link icon)
-- [ ] Click share button (desktop, no native share) → toast **"הקישור הועתק ✓"**
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:TASK14:copy-link:1) — `/producer/:id` — a share button with a ShareNetwork icon (**drift:** מאז MEH-1334 הוא יושב בשורת הפעולות השקטה של הכותרת בדסקטופ ובעיגול ה-overlay של הגלריה במובייל, לא ב-sticky sidebar; זהות האייקון מובטחת ע"י הרכיב המשותף ונבדקת ב-`__tests__/ShareButton.test.jsx`)
+- [ ] Click share button (desktop, no native share) → toast **"הקישור הועתק ✓"** **(STALE — MEH-1290 הסיר את ה-clipboard ואת ה-toast; המסלול החי הוא `wa.me`, מומר תחת MT:OG:share-text:1)**
 - [ ] Clipboard contains the producer page URL
 - [ ] Mobile (with native share API) → native share sheet opens
 
 ### WhatsApp share
-- [ ] WhatsApp share button visible in the sidebar
-- [ ] Click → opens `wa.me` with text: **"גיליתי את [שם העסק] במהמקור — [URL]"**
-- [ ] Text contains the correct producer name and URL
+- [ ] WhatsApp share button visible in the sidebar **(STALE — `components/WhatsAppShareButton.jsx` אינו מרונדר באף מקום ב-`frontend/app` היום; יש פקד שיתוף אחד, ומסלול ה-wa.me שלו מומר תחת MT:OG:share-text:1)**
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:TASK14:whatsapp:2) — Click → opens `wa.me` with the business line + URL (**drift:** המפריד "—" הוא היום `🌿` + שורה חדשה + `👉`, לפי `share.wa_message_with_meta` ב-he.json)
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:TASK14:whatsapp:3) — Text contains the correct producer name and URL
 
 ### Regression checks
 - [ ] Other ShareButton consumers (if any) also get the updated icon + toast

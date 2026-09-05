@@ -51,7 +51,7 @@ tier sidecar; unlisted heading fails the generator).
 | 5 | `/producers` | 9 | 70 | 18 | 52 | not started |
 | 6 | `/map` | 14 | 96 | 75 | 21 | not started |
 | 7 | `/` (home) | 21 | 184 | 137 | 47 | not started |
-| 8 | `/producer/[id]` | 26 | 203 | 87 | 116 | not started |
+| 8 | `/producer/[id]` | 26 | 203 | 87 | 116 | in branch — **22 passed · 0 failed · 6 skipped**, green ×3, shown failing first (see the chunk 8 note) |
 | 9 | `/register/producer` | 13 | 89 | 33 | 56 | not started |
 | 10 | `/login` + `/register` | 9 | 85 | 80 | 5 | not started |
 | 11 | `/producer/dashboard/*` | 39 | 327 | 161 | 166 | not started |
@@ -107,6 +107,240 @@ _Chunk 7 counts, DERIVED not stated: 21 sections · 184 items (both re-parsed fr
 _**11 attribute-only testids added** (zero behaviour change, no copy, no structure): `home-hero` + `hero-image-layer` (`app/[locale]/home/HomeHero.jsx:183,192`); `home-trust-band` ×2 branches (`HomeClient.jsx:141,148`); `home-producers-grid` (`HomeProducersGrid.jsx:489`); `home-category-grid` · `home-category-card` ×2 branches · `home-category-image-frame` ×2 branches · `home-category-image` · `home-category-caption` ×2 branches (`HomeCategoryGrid.jsx`); `home-how-it-works` · `home-how-step` · `home-comparison-teaser` · `home-cta` · `home-recently-viewed` · `home-recent-rail` · `home-recent-card` · `home-recent-card-image` (`HomeStaticBlocks.jsx`); `home-minimap` (`components/HomepageMiniMap.jsx` + `HomepageMiniMapSkeleton.jsx`, BOTH — the dynamic import swaps one for the other); `back-to-top` (`components/BackToTop.jsx:82`); `onboarding-tip` (`components/OnboardingTip.jsx`); `bottom-nav` (`components/BottomNav.jsx:387`)._
 
 _Chunk 4 note (04/09): the placeholder row was replaced, as chunks 2 and 3's branches did; chunks 1–3 land their own rows via their PRs and whichever merges last reconciles this table. **Both generators (`tier-manual-testing.py`, `page-map-manual-testing.py`) were NOT re-run on this branch** — same reasoning as chunks 1–3; whichever chunk merges last re-runs both after syncing `staging`._
+| `MEH-1048 — עמוד עסק: trust strip ליד ה-h1` (chunk 8 — `/producer/[id]`, 04/09) | 5 rows · **1 converted** (row 5 → 1 `test(` block, mobile-gated) · **4 COVERED, cited not duplicated** — rows 1 + 4 `__tests__/ProducerHeaderTrustStrip.test.jsx:48-61` / `:63`, rows 2 + 3 `__tests__/ReviewExcerpt.test.jsx:28-39`/`:58-66`/`:41-56` · **doc-vs-code drift found, not fixed:** row 5 says the strip «יושב בשורת ה-badges ליד השם» — since the MEH-1334 restructure the rating is its OWN group under the badge row (ProducerHeader.jsx group 3), so what the test asserts is the regression-bearing residue: the trust element renders exactly ONCE (rating anchor XOR «אין ביקורות עדיין» pill) and neither it nor the header block overflows the viewport | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+| `MEH-1146 — עמוד עסק: לולאת גילוי "עוד בתי עסק באזור" (Chunk C)` (chunk 8, 04/09) | 4 rows, **0 CONVERT-PW · 4 COVERED, cited not duplicated** — rows 1 + 3 `__tests__/ProducerSectionsOrder.test.jsx:87-93`, row 2 `:82-86`, row 4 `__tests__/ProducerCard.test.jsx:196-207` + `__tests__/ContactCard.test.jsx`. No PW duplicate written | — | not converted (COVERED) |
+| `MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B)` (chunk 8, 04/09) | 7 rows · **2 converted** (rows 1, 2 → 2 `test(` blocks) · **5 COVERED** — row 3 `__tests__/ProducerSectionsOrder.test.jsx:37-80`, row 4 `:95`, rows 5–6 `__tests__/DeliveryBlock.test.jsx:37-50`/`:52-61`, row 7 `DeliveryBlock.test.jsx:63` + `ContactCard.test.jsx:82` · row 1's status half is asserted as «exactly one of the four `order-status.js` branches renders», which is the MEH-1546 one-status-home invariant rather than a copy check | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+| `MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A)` (chunk 8, 04/09) | 6 rows · **2 converted** (rows 1, 6 → row 1 is two `test(` blocks, desktop + mobile, because the row states a different rule per viewport) · **4 COVERED** — row 2 `__tests__/ContactCard.test.jsx:82-135`, row 3 `:103-109`, row 4 `__tests__/PrimaryContactButton.test.jsx:31-75`, row 5 `ContactCard.test.jsx:87-102` · **doc-vs-code drift found, not fixed:** row 6 ends «שיתוף קיים בתוך הכרטיס» — it is not: MEH-1334 moved share OUT of ContactCard to the header quiet-actions row (desktop) and the gallery overlay circle (mobile). The test asserts what that change actually guarantees — **two** share mounts in the DOM, **exactly one reachable per viewport** — plus zero `/map` links in the main column | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+| `MEH-1047 — עמוד עסק: גלריית hero חדשה (grid, מצב עם תמונות)` (chunk 8, 04/09) | 7 rows, **0 CONVERT-PW · 7 COVERED, cited not duplicated** — rows 1–4, 6, 7 `__tests__/ImageGalleryGrid.test.jsx:73-79`/`:63-71`/`:51-61`/`:46-49`+`:121`/`:108-126`/`:93-105`, row 5 `e2e/flows/06-lightbox.spec.ts:9`. No PW duplicate written | — | not converted (COVERED) |
+| `MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות` (chunk 8, 04/09) | 6 rows · **2 converted** (rows 2, 5 → 2 `test(` blocks; row 5 loads an imaged and an imageless business in one test and compares boundingBox heights) · **4 COVERED** — row 1 `__tests__/ImageGalleryEmpty.test.jsx:40-67`, row 3 `:53-57`, row 4 `:78-88`, row 6 `__tests__/ImageGalleryGrid.test.jsx:46-49` · row 2 is asserted as a page-level invariant (exactly one `h1`, and it belongs to the masthead **iff** the business is imageless) because that is the property the row protects and neither half is checkable at component level | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+| `Producer Detail Page (feature/meh-producer-detail-redesign, 2026-04-18)` (chunk 8, 04/09; tagged `MT:PDP:<n>` — the section has no ticket id) | 13 rows · **9 converted** (rows 1, 2, 3, 4, 7, 8, 9, 11, 12 → 8 `test(` blocks; rows 3+4 are one block because the bar sliding out is only meaningful after it slid in) · **2 STALE per the matrix**, left untouched for the deletion pass · **1 destructive, residual** — row 5 (vacation state) is matrix `destructive = yes`: it needs an `availability_status` mutation, and Sapir's 13/07 decision confines that to a local backend + ephemeral Postgres while this suite runs against the deployed backend on CI (`e2e.yml:142`). **It is ALSO partly stale** and that is worth recording before anyone runs it: MEH-1334 chunk 3 REMOVED the vacation banner the row's first clause asks for (ProducerHeader.jsx, "the vacation banner was REMOVED — it repeated the return date the gold meta status already owns"); the muted CTA (`ContactCard.jsx` `opacity-50`) and the muted bar (`StickyContactBar.jsx` `opacity: 0.85`) do still exist · **1 residual, surface gone** — row 13 (highlights strip: `grass_fed → 🌾`, `delivery_areas → 🚚`): MEH-1334 decision 4 removed the highlight chips from the header, so there is nothing to assert; reported, row left in place for the deletion pass · **doc-vs-code drift found, not fixed:** row 12 says «"מאחורי העסק: [שם]" מתחת ל-short_description» — it is now the OwnerCard SECTION (`OwnerCard.jsx`, heading + the name as its own `h3`, mounted after DeliveryBlock), and the test asserts the POSITIVE half only (name present → card renders with the heading and the name as h3); the negative half is `__tests__/OwnerCard.test.jsx:28` — cited, not duplicated, because a second live fixture the catalog may not hold would have needed an `if (found)` around it, which passes identically whether the rule holds or the fixture is absent | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+| `WhatsApp phone normalization` (chunk 8, 04/09) | 17 rows · **0 converted** · **11 COVERED, cited not duplicated** — rows 1–8 `frontend/lib/utils.test.mjs` (the normalizePhone suite, `:37`/`:41`/`:49`/`:58`/`:53`/`:76`/`:71` + the wa.me integration at `:99-107`), row 9 `__tests__/PrimaryContactButton.test.jsx:39`, row 10 `e2e/flows/04-whatsapp-click.spec.ts`, row 13 `__tests__/contactMethod.test.js:70-84` · **2 STALE + 1 UNCLEAR** per the matrix, untouched · **1 destructive, residual** — row 11 (`/map` mobile sheet card → pinned card WhatsApp link) is matrix `destructive = yes`, and its surface is `/map`, chunk 6's route, not this one · **2 residual** — rows 14 and 15 (`phone: ""` and `phone: "abc"` → button hidden): the subject is `lib/utils.js normalizePhone`, the matrix's own notes say "one-line vitest addition" / "add letters-only case as vitest", and a Playwright form would be **vacuous** unless the live catalog happens to hold a business whose phone does not normalize — a green with two causes, so it is reported rather than written | — | not converted (see reasons) |
+| `Dynamic OG tags + share message (social sharing)` (chunk 8, 04/09; tagged `MT:OG:<sub>:<n>`) | 13 rows · **1 converted** (`share-text:1`, folded into the share test below so the wa.me href is read once) · **7 COVERED** — the four `og:*` rows by `__tests__/seo.test.js:366`/`:81-94`/`:107-113`/`:369`, the three Regression rows by `e2e/flows/03-view-producer-detail.spec.ts:4-22`, `__tests__/WhatsAppShareButton.test.jsx:26-41` and `__tests__/seo.test.js:138-299` · **3 DEVICE-ONLY** (the real WhatsApp link-preview crawler, the native share sheet) · **2 residual** — `share-text:3` and `:4` (description / location line omitted): those lines exist only on the `navigator.share` payload, and exercising the OMISSION needs a business with no description or no city, which the route cannot be given without intercepting the client fetch; the component-level home is `__tests__/ShareButton.test.jsx` · **doc-vs-code drift found, not fixed:** `share-text:1` says the desktop path fills the CLIPBOARD with the four-line message. MEH-1290 replaced that path — with no native share the button now opens `wa.me` with `waText` (business line + `👉 URL`, `ShareButton.jsx:33-36`, `:51-52`), and there is no clipboard write and no toast at all. The checklist's code fence was corrected to the two lines that actually go out | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+| `Share button on producer page (task 14)` (chunk 8, 04/09; tagged `MT:TASK14:<sub>:<n>`) | 9 rows · **3 converted** (`copy-link:1` — placement + accessible name; `whatsapp:2` + `:3` — the wa.me text, asserted word-for-word against a derivation from `share.wa_message_with_meta` in he.json) · **1 COVERED** (`Regression:2`, `e2e/flows/03-view-producer-detail.spec.ts:4-22`) · **2 STALE + 1 DEVICE-ONLY** per the matrix, untouched · **2 residual, surface gone** — `copy-link:2` («toast הקישור הועתק ✓») died with MEH-1290 above, and `whatsapp:1` («WhatsApp share button visible in the sidebar») describes `components/WhatsAppShareButton.jsx`, which has **zero render sites** in `frontend/app` today (`grep -rn "WhatsAppShareButton" frontend/`, 04/09 — the only hits are its own file, two comment references in `share/ShareClient.jsx`, and its vitest). There is one share control, and its desktop no-native-share path IS the wa.me link, which is what `whatsapp:2`/`:3` now assert · **doc-vs-code drift found, not fixed (2):** `copy-link:1` says «sticky sidebar» — the control moved to the header quiet-actions row (desktop) / the gallery overlay circle (mobile) under MEH-1334; `whatsapp:2` quotes the separator «—», which is `🌿` + a newline + `👉` in the live copy | `frontend/e2e/flows/manual/producer-detail.spec.ts` | green ×3 (see the chunk 8 note) |
+
+### Chunk 8 note (04/09) — read this before trusting the rows above
+
+**Run result: 22 passed · 0 failed · 6 skipped, green ×3, and shown failing first.**
+
+> **A correction that matters more than the number, recorded because the wrong version
+> was written into this file first.** An earlier draft of this note opened *"the spec has
+> NEVER BEEN RUN … there is no browser in this sandbox at all"*, on the strength of
+> `npx playwright install chromium` returning `403 … no rule or allowlist entry allows
+> host "cdn.playwright.dev"`. **That conclusion was false.** A browser was already
+> provisioned the whole time — `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers` is exported in
+> the environment and `/opt/pw-browsers/chromium` symlinks to a working Chromium
+> 141.0.7390.37. The `install` command is a **download**, which is the one thing the proxy
+> blocks; it was never the way in. The failure was reading one tool's error as a property
+> of the sandbox without checking the sandbox — this file's own "an instrument you have
+> not checked" rule, applied to a *negative* claim and made the headline of a report.
+> **Before concluding a tool is unavailable, check the environment for it.**
+
+**How it is run here** (sandbox-only, and the config is deliberately **untracked**): the
+npm-pinned Playwright expects browser build v1234 and will not resolve the provisioned
+one by version, so `frontend/playwright.sandbox.config.ts` spreads the tracked config and
+overrides `launchOptions.executablePath: "/opt/pw-browsers/chromium"` per project. Nothing
+else changes — same projects, viewports, timeouts. Target: `next start` on `:3120` with
+the Node stub backend on `:8000`.
+
+**Build ownership was proven, not assumed** — a green against a stale server is a green
+with two causes. `GET /_next/static/$(cat .next/BUILD_ID)/_buildManifest.js` → **200**,
+with a bogus build id → **404** as the control. Re-checked after every rebuild; the
+broken-build run below served a different `BUILD_ID` (`-wWBQ353…` vs `XIMSOITvs…`), which
+is what proves the red control ran against the broken tree and not the good one.
+
+| Check | Result |
+|---|---|
+| Suite, green ×3 | **22 passed · 0 failed · 6 skipped** (20.1s · 19.3s · 25.2s) |
+| Red control (MEH-1619) | **5 failed · 17 passed** — exactly the three broken behaviours × their projects |
+| `npx tsc -p tsconfig.e2e.json` | **0 errors in the new file** (the run is noisy — 15 pre-existing errors in four other specs and `playwright.config.ts`) |
+| Locator viability probe (fake-id control must be ABSENT, known-good id PRESENT) | all 24 `data-testid` values and all 3 DOM ids resolve. The probe's first pass reported the four `status-*` ids MISSING — they are set as `data-testid={status.testid}` from `lib/order-status.js`, the same dynamic-id false positive the 01/09 viability probe hit on `category-chip-1`; the probe was widened and re-run |
+| `npm run build` | green |
+| `npx eslint` on the new spec + the edited files | **0 errors** (the spec is inside eslint's ignore set; the `.jsx` warnings are pre-existing) |
+
+**The 6 skips are all static project-identity gates** — 4 mobile-only tests skipping on
+desktop, 2 desktop-only tests skipping on mobile, every one `test.skip(isDesktop(info))`
+or its negation on `testInfo.project.name`. That is the form `testing.md` sanctions
+(`parity.spec.ts:585`); **none consults a DOM subject**, so none can convert "the element
+is gone" into "nothing to check".
+
+### Shown failing, with the discrimination stated (MEH-1619)
+
+Three one-line breaks, applied together, rebuilt, re-served, re-run:
+
+| Break | Where | Reds it produced |
+|---|---|---|
+| **A** — remove `priority` from the gallery's first image | `ImageGallery.jsx` (grid hero + carousel slide 0) | eager-image test, desktop **and** mobile |
+| **B** — `useState(false)` → `useState(true)` | `useLazyReviews.js` (outer lazy gate) | lazy-reviews test, desktop **and** mobile |
+| **C** — `setIsBarVisible(!entry.isIntersecting)` → `setIsBarVisible(true)` | `useStickyBar.js` | sticky-bar test, mobile (the test is mobile-gated) |
+
+**5 red, 17 green** — nothing else moved, so the breaks are attributable. Restored,
+rebuilt, green ×2 again.
+
+**Does it discriminate? Yes, and unusually cleanly — because in all three cases the
+PREVIOUS assertion was red against CORRECT code**, i.e. carried no information in either
+direction:
+
+| Assertion | Old form, on correct code | New form |
+|---|---|---|
+| eager first image | `fetchpriority === "high"` → **red** (Next never emits that attribute here) | green on correct, red on Break A |
+| lazy reviews | `list[0]` + `scrollIntoViewIfNeeded` → **red** (ReviewExcerpt's eager fetch counted; the scroll no-opped on a zero-height target) | green on correct, red on Break B |
+| sticky bar | `inert` present at rest → **red** (the attribute is never rendered — see the finding below) | green on correct, red on Break C |
+
+### Break B is the one worth reading — it exposed a defect in my own test
+
+Break B **initially passed**. The reviews request is protected by **two independent
+gates**, and either alone keeps the network quiet:
+
+- **outer** — `useLazyReviews` (`rootMargin: 300px`) decides whether `ReviewsSection`
+  **mounts**. Observable: the DOM.
+- **inner** — `ReviewsSection`'s own IntersectionObserver (`ReviewsSection.jsx:301`,
+  `threshold: 0.1`) decides whether it **fetches**. Observable: the network.
+
+With the outer gate defeated the component mounted immediately and the inner IO still
+held the fetch, so a network-only assertion stayed green on broken code. That is the
+`||`-shaped pass condition `testing.md` warns about — one cue silently carrying the whole
+assertion. The test now makes **two named checks**, one per gate, so the failure message
+says which one went missing; Break B then reds on the outer check by name. Worth stating
+plainly: **the row's headline subject ("not fetched until scrolled into view") is enforced
+by the INNER gate**; the outer one is a mount optimisation, and nothing was testing it.
+
+**Both worlds, measured — this is the constraint chunk 4 deferred row 13 for, and it is
+real.** `/producer/[id]` SSR-fetches at `app/[locale]/producer/[id]/page.js:39` and `:44`
+RETHROWS a network failure. One `next start` build, two worlds, a Node stub backend on
+`localhost:8000` (the default both `API_URL` and `next.config.js` `rewrites()` fall back to,
+so no env var was needed):
+
+| world | `GET /producer/{id}` | `application/ld+json` blocks | business name in HTML | `GET /api/producers/{id}` |
+|---|---|---|---|---|
+| stub backend up | **200** | **2** | **18×** | 200 |
+| no backend | **200** | **0** | **0×** | **500** |
+
+**The status is 200 in BOTH worlds** — Next streams `app/[locale]/loading.js` and the error
+surfaces client-side — so an HTTP-status probe cannot tell them apart. The discriminator is
+the JSON-LD block. This is exactly the "green with two possible causes" shape, met head-on:
+a session that probed only the status code would have concluded the page renders fine with
+no backend.
+
+`scripts/local-backend.sh` was NOT used: it requires `backend/.venv`, which this sandbox does
+not have (`fastapi` is absent and `uv sync` was not run). The Node stub lived in the
+scratchpad and is deliberately **not committed** — a second local-backend mechanism competing
+with the sanctioned script is MEH-271 Smell #1.
+
+**Two premises corrected (meta-patterns §1 — surfaced, not silently accepted):**
+
+1. **`page.route` is NOT inert on this route, and the dispatch brief said it was.** The brief
+   stated that on CI the SSR fetch succeeds so a `page.route` fixture governs nothing.
+   Measured: `page.js:143` renders `<ProducerDetail />` with **no props**, so
+   `initialProducer` is null and `hooks/useProducerData.js:56-58` does the fetch that feeds
+   the **rendered DOM**; the SSR payload feeds only `generateMetadata` + JSON-LD. The
+   measurement above is consistent with that — the name appears 18× in the HTML while the
+   visible body is still the loading shell. So an intercept of `GET /api/producers/{id}`
+   WOULD govern the tree in both worlds, with the SSR gate still needing a real backend for
+   the URL's own id. **This chunk did not use one anyway** (it follows
+   `26-delivery-checker.spec.ts`'s derive-from-live-payload pattern, so MEH-417 is untouched
+   and the MEH-1968 exception is not invoked) — but the option is real and the next chunk
+   should not inherit the brief's claim. _Derived from file:line plus the HTML
+   measurement; not exercised as an intercept in this chunk, which uses live data._
+2. **`ProducerDetail.jsx` is NOT a central component.** The brief said
+   `.claude/central-components.json` lists it, and therefore that the MEH-1511 carve-out (a)
+   applies. It does not: the registry's 13 entries are MapClient, MapComponent,
+   `producers/page.jsx`, `[locale]/page.js`, `layout.js`, `language-context.js`,
+   ProducerCard, Header, BottomNav, Footer, `main.py`, `auth.py`, `config.py`. None is
+   touched by this branch.
+
+**Fixture preconditions — asserted, never skipped.** Four rows need a business in a
+particular state, and the spec turns a missing state into a NAMED red rather than a skip
+(`pick()`), deliberately departing from `26-delivery-checker.spec.ts`, which skips with a
+reason: "the catalog has no such business" and "my query is wrong" print the same skip, which
+is the null-that-is-also-the-reassuring-answer shape. **Check these against a target before
+pointing the suite at it:** (a) ≥1 business with a renderable image, a city and a category;
+(b) ≥1 imageless business (`getRenderableImages` semantics — an array of blank strings counts
+as imageless); (c) ≥1 business with ≥2 images; (d) ≥1 business with `reviews_count > 0`; (e)
+≥1 business with a `contact_name` inside the first 8 of the listing. **Whether the Railway
+staging catalog satisfies all five is UNVERIFIED — the sandbox cannot reach it (MEH-2090).**
+
+**11 attribute-only `data-testid`s added** — no copy, structure or logic changed, diff
+reviewed line by line: `producer-detail-root`, `producer-breadcrumb-block`,
+`producer-main-column` (`ProducerDetail.jsx`); `producer-header`, `producer-header-meta`,
+`producer-actions-row`, `trust-strip-rating` (`ProducerHeader.jsx`); `contact-sidebar`
+(`ContactSidebar.jsx`); `sticky-contact-bar` (`StickyContactBar.jsx`); `gallery-carousel`
+(`ImageGallery.jsx`); `review-date` (`ReviewsSection.jsx`).
+
+`trust-strip-rating` earned its place by catching a defect in the spec before it shipped:
+the rating anchor was first located as `a[href="#reviews"]`, and **ReviewExcerpt's
+pull-quote inside the same header is a second anchor with that exact href**
+(`ReviewExcerpt.jsx:69-71`). The "exactly one trust element renders" count would have
+measured two elements and read as a page defect. Found by reading the component, not by a
+run — there is no run.
+
+**RESIDUAL — 116 items across 16 of this chunk's 26 sections carry NO matrix verdict at all**
+(`rows=0 · uncovered=N` in `conversion-page-map.md`). Chunk 8 is the first chunk where the
+unverdicted share is the **majority** — 116 of 203 items, 57% — and it is the largest single
+input anyone has measured to the open question MEH-1249's description raises ("האם ההמרה
+מכסה את 1,074 השורות שאושרו ב-05/08 … או שהמטריצה מתרעננת קודם?"). **Not resolved here**, by
+the same convention chunks 1–7 used. The 16 sections, with item counts: MEH-1938 chunk 5a
+(6) · MEH-1840 (6) · MEH-1692 (10) · MEH-1551 (4) · MEH-1583 (5) · MEH-1536 (7) · MEH-1435
+(3) · MEH-1772 (5) · MEH-1334 Quiet Direction v3 (22) · MEH-1325 (5) · MEH-1291 (5) ·
+MEH-1209 (5) · MEH-1490 (6) · MEH-2045 (9) · MEH-1917 (10) · MEH-1916 (8).
+
+**Conversion tally for the 29 CONVERT-PW rows: 19 converted · 10 not.** The 10, by reason —
+**destructive (2):** PDP:5 (vacation) and WhatsApp-normalization:11 (`/map` sheet card);
+**surface gone (3):** PDP:13 (highlight chips), TASK14 copy-link:2 (the toast), TASK14
+whatsapp:1 (the separate WhatsApp share button); **vacuous against live data (2):**
+WhatsApp-normalization:14 and :15; **needs a payload the route cannot be given (2):** OG
+share-text:3 and :4; **fails against the product (1):** PDP:2 — see finding 2 below.
+
+### Two APP findings the run surfaced — reported, NOT fixed
+
+Both are code-vs-checklist, not doc drift, and neither is this chunk's to fix (an app bug
+is a reported finding, never an inline fix).
+
+**Finding 1 — the sticky bar's `inert` never renders, so MEH-1333's a11y fix is not in
+effect.** `StickyContactBar.jsx` writes `inert={!isBarVisible ? "" : undefined}` to keep
+the parked CTA out of the tab order **and** the accessibility tree; the comment cites
+MEH-1333 and React 18.3.1's "string idiom". Measured at five scroll positions on the
+mobile project:
+
+| card intersecting? | `style.transform` | `inert` |
+|---|---|---|
+| no (at rest) | `translateY(0px)` | **absent** |
+| yes | `translateY(100%)` | **absent** |
+| no (scrolled past) | `translateY(0px)` | **absent** |
+
+`transform` tracks the observer exactly, so the hook, the IO and the slide are all
+**correct** — the attribute alone is never emitted, at any state. React and react-dom are
+both 18.3.1 (measured), i.e. the version the comment assumes, so the cause is not a React
+19 boolean-`inert` upgrade; it is unexplained and stated as such. Consequence: the parked
+sticky CTA stays focusable and announced off-screen — the `aria-hidden-focus` class
+MEH-1333 exists to close. The spec asserts `transform` instead and says why inline;
+asserting `inert` would red the suite on a bug these rows are not about.
+
+**Finding 2 — the mobile inline CTA is below the fold, so checklist row PDP:2 does not
+hold.** Measured at Pixel 5 (393×**727** — the viewport, not the 851 screen height), on a
+deliberately thin fixture: gallery 142→350, header 471→739, `#section-contact` 755→1182,
+**inline CTA 780→828**. 101px below the fold, and every field a richer business carries
+pushes it further. **Whether this is a regression or a superseded requirement is not this
+chunk's call** — the row dates from 2026-04-18 and MEH-1146 chunk A later redesigned this
+surface around a sticky bottom bar that exists *because* the inline card scrolls away.
+Converting it would ship a red test; weakening it to "somewhere on the page" would ship an
+assertion that cannot fail. Escalated with numbers instead; the checklist row is left
+unchecked and annotated.
+
+### A stub-fixture defect worth recording, because it has the shape this file warns about
+
+The first version of the scratchpad stub keyed the reviews list under `items`. The
+contract — re-derived from `backend/openapi.json`, not from a consumer — is
+`ReviewsPage.required = ["reviews", "total", "page", "pages"]`, and
+`ReviewsSection.jsx:278` reads `r.data?.reviews`. So the component received `[]`, rendered
+the empty state, and no `review-date` node ever existed — **while the endpoint answered
+HTTP 200 with well-formed JSON**. A status-level probe says reviews work. Same
+two-causes-one-green shape as the page's own 200 documented above, one layer down, and it
+cost two red tests that looked like product failures.
+
+**Both generators (`tier-manual-testing.py`, `page-map-manual-testing.py`) were NOT re-run on
+this branch** — same reasoning as chunks 1–4; whichever chunk merges last re-runs both after
+syncing `staging`. The COVERED citations above are the matrix's own; the **files** were all
+verified to exist on 04/09, the **line numbers** were not re-derived.
 
 ## Prior work — 13 specs + 15 pytest tests exist unmerged. Read this before starting.
 
