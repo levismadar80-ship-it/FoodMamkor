@@ -396,13 +396,13 @@
 
 ## MEH-1405 — ניהול אירועים וחוויות בדשבורד (רשימת "שלי" + עריכה + ביטול/מחיקה)
 
-- [ ] **רשימת האירועים שלי** — היכנסי כבעלת-עסק → `/producer/dashboard/tools` → כרטיס "האירועים שלי" (או ישירות `/producer/dashboard/events`) — **תוצאה מצופה:** רשימת האירועים שלך, כולל מבוטלים; לכל שורה תג "פעיל" (ירוק) / "מבוטל" (צהוב), תאריך+עיר, וכפתורי "עריכה · ביטול/הפעלה · מחיקה". CTA "אירוע חדש" בראש.
-- [ ] **עריכת אירוע** — הקישי "עריכה" על אירוע — **תוצאה מצופה:** טופס זהה לטופס היצירה, מלא מראש (כותרת/תיאור/תאריך/שעה/מיקום+כתובת/עיר/קטגוריה/מחיר/משתתפים). שני את הכותרת → "שמירה" → חזרה לרשימה, השינוי נראה.
-- [ ] **ביטול/הפעלה (is_active)** — הקישי "ביטול" על אירוע פעיל — **תוצאה מצופה:** התג הופך ל"מבוטל" מיד (אופטימי), הכפתור הופך ל"הפעלה". בדקי שהאירוע לא מופיע ב-`/events` הציבורי. הקישי "הפעלה" — חוזר ל"פעיל".
-- [ ] **מחיקת אירוע** — הקישי "מחיקה" → אשרי בדיאלוג — **תוצאה מצופה:** השורה נעלמת; ביטול הדיאלוג משאיר אותה.
-- [ ] **רשימת החוויות שלי** — `/producer/dashboard/experiences` — **תוצאה מצופה:** רשימת החוויות שלך עם תג סטטוס (מאושרת/בבדיקה/נדחתה/נדרשים תיקונים) + "עריכה · מחיקה". **אין** טוגל ביטול (לחוויה אין `is_active` — מחיקה היא ההסרה; ראו הערת ה-PR על follow-up סכמה).
-- [ ] **עריכת חוויה** — "עריכה" על חוויה — **תוצאה מצופה:** טופס היצירה מלא מראש (כולל שדה כתובת + בדיקת מודרציה חיה); "שמירה" → חזרה לרשימה.
-- [ ] **נגישות שדה כתובת** — בטופס אירוע/חוויה, שדה "מיקום ספציפי"/"כתובת" — **תוצאה מצופה:** תווית אחת בלבד (בלי הכפלת הכרזה בקורא-מסך).
+- ✅ → dashboard-manage-events.spec.ts (the tools card leads to «האירועים שלי», and the list shows active and cancelled events with their tags) — **רשימת האירועים שלי** — היכנסי כבעלת-עסק → `/producer/dashboard/tools` → כרטיס "האירועים שלי" (או ישירות `/producer/dashboard/events`) — **תוצאה מצופה:** רשימת האירועים שלך, כולל מבוטלים; לכל שורה תג "פעיל" (ירוק) / "מבוטל" (צהוב), תאריך+עיר, וכפתורי "עריכה · ביטול/הפעלה · מחיקה". CTA "אירוע חדש" בראש.
+- ✅ → dashboard-manage-events.spec.ts (editing an event opens the form prefilled, and saving a new title returns to the list showing it — the PUT is captured, never sent) — **עריכת אירוע** — הקישי "עריכה" על אירוע — **תוצאה מצופה:** טופס זהה לטופס היצירה, מלא מראש (כותרת/תיאור/תאריך/שעה/מיקום+כתובת/עיר/קטגוריה/מחיר/משתתפים). שני את הכותרת → "שמירה" → חזרה לרשימה, השינוי נראה.
+- ✅ → dashboard-manage-events.spec.ts (cancelling flips the tag to «מבוטל» and the button to «הפעלה», and reactivating flips both back — the public /events check is the /events page group's, not asserted here) — **ביטול/הפעלה (is_active)** — הקישי "ביטול" על אירוע פעיל — **תוצאה מצופה:** התג הופך ל"מבוטל" מיד (אופטימי), הכפתור הופך ל"הפעלה". בדקי שהאירוע לא מופיע ב-`/events` הציבורי. הקישי "הפעלה" — חוזר ל"פעיל".
+- ✅ → dashboard-manage-events.spec.ts (delete asks first — dismissing keeps the row and sends nothing; accepting removes it and DELETEs) — **מחיקת אירוע** — הקישי "מחיקה" → אשרי בדיאלוג — **תוצאה מצופה:** השורה נעלמת; ביטול הדיאלוג משאיר אותה.
+- ✅ → dashboard-manage-events.spec.ts (the experiences list shows the four status tags with edit + delete on every row — ⚠️ STALE: an APPROVED experience DOES carry a cancel/reactivate toggle since MEH-1419 (`experiences/page.js:167-184`); only non-approved rows have none) — **רשימת החוויות שלי** — `/producer/dashboard/experiences` — **תוצאה מצופה:** רשימת החוויות שלך עם תג סטטוס (מאושרת/בבדיקה/נדחתה/נדרשים תיקונים) + "עריכה · מחיקה". **אין** טוגל ביטול (לחוויה אין `is_active` — מחיקה היא ההסרה; ראו הערת ה-PR על follow-up סכמה).
+- ✅ → dashboard-manage-events.spec.ts (editing an experience opens the form prefilled including the address, the live moderation check fires, and saving returns to the list) — **עריכת חוויה** — "עריכה" על חוויה — **תוצאה מצופה:** טופס היצירה מלא מראש (כולל שדה כתובת + בדיקת מודרציה חיה); "שמירה" → חזרה לרשימה.
+- ✅ → dashboard-manage-events.spec.ts (the address field carries exactly one label in both forms — one accessible name, no sr-only twin) — **נגישות שדה כתובת** — בטופס אירוע/חוויה, שדה "מיקום ספציפי"/"כתובת" — **תוצאה מצופה:** תווית אחת בלבד (בלי הכפלת הכרזה בקורא-מסך).
 ## MEH-1401 — מייל "ברוכה הבאה" ב-RTL HTML (21/07)
 
 - [ ] **BiDi תקין בג'ימייל** — הירשמי עם מייל בדיקה (צרכנית) ב-staging → פתחי את מייל ה-welcome בג'ימייל נייד — **תוצאה מצופה:** כותרת "שלום {שם פרטי}," מיושרת לימין; "ברוכה הבאה למהמקור! 🌿" עם סימן הקריאה בקצה השמאלי (לא בהתחלה); כפתור CTA ירוק מרוכז "גלו בתי עסק"; קישור מפה inline; ללא פיסוק שבור.
@@ -2839,14 +2839,14 @@ Added with `feature/session-handoff`.
 ## MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026)
 
 ### Producer dashboard (/producer/dashboard)
-- [ ] Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
-- [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
-- [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
-- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
-- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
-- [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
+- ✅ → dashboard-availability.spec.ts (the card shows four pills in the locked order, the saved state checked and all enabled — ⚠️ STALE: the live heading is «מצב נוכחי», not «מצב זמינות») — Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
+- ✅ → dashboard-availability.spec.ts (clicking «פתוח להזמנות» checks it, posts accepting_orders and shows no date input) — Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
+- ✅ → dashboard-availability.spec.ts (clicking «זמין היום» … — ⚠️ STALE: live label is «זמין היום», no emoji, masculine) — Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «עמוס השבוע» … — ⚠️ STALE: live label is «עמוס השבוע», no emoji) — Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «בהפסקה» reveals the return-date input and «שמרו» without posting — zero captured POSTs) — Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- ✅ → dashboard-availability.spec.ts («שמרו» with an empty date shows the inline error and posts nothing — aria-invalid asserted too) — Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- ✅ → dashboard-availability.spec.ts (a future date + «שמרו» posts state and date, and a reload re-seeds both — the reload reads a stateful stub, not a real backend) — Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
+- ✅ → dashboard-availability.spec.ts (switching back to «פתוח להזמנות» clears the return date — in place and after a reload) — Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
 - [ ] /map or /producers list, look at a producer with `availability_state='available_today'` — תוצאה מצופה: green dot next to the location line.
