@@ -255,6 +255,40 @@ async function openProducer(page: Page, id: string): Promise<Locator> {
 const primaryCta = (root: Locator) => root.getByTestId("primary-contact-button");
 
 /**
+ * Fixture precondition for the two CTA rows, established by OBSERVATION rather
+ * than by predicting it from the listing payload.
+ *
+ * `PrimaryContactButton` returns null when `getPrimaryContactHref` does
+ * (`lib/contact-method.js:35` — nine method branches, each with its own null
+ * case), and `StickyContactBar`'s CTA is gated on the same href. So a business
+ * whose `primary_contact_method` has no value behind it renders NO primary CTA
+ * anywhere and cannot exercise either row. Deciding that from the listing would
+ * mean mirroring fifty lines of branch logic in this file, where it would drift
+ * silently; opening the page and asking is both shorter and exact.
+ *
+ * Measured 04/09 on the CI catalog: `list[0]` is such a business — both rows
+ * read `primary-contact-button` / `sticky-primary-cta` count 0 while passing
+ * locally against a fixture whose first entry had a phone.
+ *
+ * A missing state is a NAMED red, never a skip, and the message names every
+ * business it probed so the failure is actionable against whatever catalog the
+ * run is pointed at.
+ */
+async function openWithPrimaryCta(page: Page, list: Producer[], limit = 6): Promise<Locator> {
+  const probed: string[] = [];
+  for (const cand of list.slice(0, limit)) {
+    const root = await openProducer(page, cand.id);
+    if ((await primaryCta(root).count()) > 0) return root;
+    probed.push(`${cand.name} (${cand.id})`);
+  }
+  expect(
+    probed.length,
+    `this row needs a business whose primary contact method resolves to a link, so the CTA renders at all; none of the ${probed.length} probed did: ${probed.join(" · ")}`,
+  ).toBe(-1);
+  throw new Error("unreachable — the expect above always fails here");
+}
+
+/**
  * Both ShareButton mounts carry the same accessible name (ShareButton.jsx
  * `aria-label={t("modal_title")}` on every variant).
  *
@@ -381,7 +415,7 @@ test.describe("manual › /producer/[id] — one primary action per screen", () 
   }, info) => {
     test.skip(!isDesktop(info), "desktop-only layout assertion (project identity, not a DOM read)");
     const list = await catalog(page);
-    const root = await openProducer(page, list[0].id);
+    const root = await openWithPrimaryCta(page, list);
 
     const sidebar = root.getByTestId("contact-sidebar");
     await expect(sidebar).toBeVisible(FIRST_PAINT);
@@ -414,7 +448,7 @@ test.describe("manual › /producer/[id] — one primary action per screen", () 
   }, info) => {
     test.skip(isDesktop(info), "mobile-only layout assertion (project identity, not a DOM read)");
     const list = await catalog(page);
-    const root = await openProducer(page, list[0].id);
+    const root = await openWithPrimaryCta(page, list);
 
     const bar = root.getByTestId("sticky-contact-bar");
     await expect(bar).toHaveCount(1, FIRST_PAINT);
@@ -736,21 +770,58 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
     // 0 the excerpt is silent and every recorded request is the section's.
     // An earlier draft used `list[0]` and counted the excerpt's deliberate
     // eager fetch as a laziness violation — red against correct code.
-    const target = pick(
-      list,
-      (p) => (p.reviews_count ?? 0) === 0,
-      "a business with zero reviews (so ReviewExcerpt's eager fetch is guarded off)",
+    const zeroReview = list.filter((p) => (p.reviews_count ?? 0) === 0);
+    expect(
+      zeroReview.length,
+      "this row needs a business with zero reviews (so ReviewExcerpt's eager fetch is guarded off); the catalog served none",
+    ).toBeGreaterThan(0);
+
+    // SECOND precondition, and it selects the fixture rather than merely
+    // asserting it afterwards: `useLazyReviews` observes with
+    // `rootMargin: "300px"`, so on a page where `#reviews` starts inside that
+    // band the section is SUPPOSED to load at once and the row cannot be
+    // measured at all. Zero reviews does not imply a tall page — measured
+    // 04/09 on the CI catalog, the first zero-review business put `#reviews`
+    // at 935 on a 900px desktop fold, i.e. inside the band, and the assertion
+    // below correctly went red on a page that could not answer the question.
+    //
+    // A gallery is what pushes the section down, so candidates are probed
+    // image-richest first; the loop measures the real page instead of guessing
+    // from the payload. Bounded at six loads, and a catalog that holds no such
+    // business is a NAMED red carrying every measurement — never a skip, which
+    // would print the same thing whether the catalog is thin or the gate broke.
+    const viewportHeight = page.viewportSize()!.height;
+    const candidates = [...zeroReview].sort(
+      (a, b) => renderableImages(b.images).length - renderableImages(a.images).length,
     );
+    const measured: string[] = [];
+    let target: Producer | undefined;
+    for (const cand of candidates.slice(0, 6)) {
+      const probe = await openProducer(page, cand.id);
+      const top = await probe
+        .locator("#reviews")
+        .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+      measured.push(`${cand.name}: ${Math.round(top)}`);
+      if (top > viewportHeight + 300) {
+        target = cand;
+        break;
+      }
+    }
+    expect(
+      target,
+      `this row can only be measured when #reviews starts beyond the 300px rootMargin (fold ${viewportHeight} + 300); no zero-review business probed put it there — tops measured: ${measured.join(" · ")}`,
+    ).toBeTruthy();
+    const chosen = target as Producer;
 
     const reviewRequests: string[] = [];
     const detailRequests: string[] = [];
     page.on("request", (req) => {
       const url = req.url();
-      if (url.includes(`/producers/${target.id}/reviews`)) reviewRequests.push(url);
-      else if (url.endsWith(`/api/producers/${target.id}`)) detailRequests.push(url);
+      if (url.includes(`/producers/${chosen.id}/reviews`)) reviewRequests.push(url);
+      else if (url.endsWith(`/api/producers/${chosen.id}`)) detailRequests.push(url);
     });
 
-    const root = await openProducer(page, target.id);
+    const root = await openProducer(page, chosen.id);
 
     // CONTROL, run first: a recorder that never attached prints the same empty
     // array as a page that genuinely made no reviews call. The page's own
@@ -761,16 +832,15 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
       "recorder control: the client detail fetch must have been observed — if this is 0 the reviews count below means nothing",
     ).toBeGreaterThan(0);
 
-    // PRECONDITION, asserted rather than assumed: `useLazyReviews` observes
-    // with `rootMargin: "300px"`, so a section that starts inside that band is
-    // SUPPOSED to load at once. Without this line a green would mean either
-    // "the gate works" or "the page was too short to test it" — measured 04/09
-    // on a thin fixture, `#reviews` sat 580px below a 900px desktop fold and
-    // the section loaded immediately, correctly.
+    // The same precondition, re-measured on the load the recorder is watching.
+    // Not entailed by the selection loop above: that measurement was taken on a
+    // SEPARATE navigation, and the value is needed here anyway to drive the
+    // scroll. If the two loads ever disagree, this is the one that decides
+    // whether the zeros below mean "the gate held" or "the page was too short
+    // to tell" — the green-with-two-causes this row exists to avoid.
     const reviewsTop = await root
       .locator("#reviews")
       .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
-    const viewportHeight = page.viewportSize()!.height;
     expect(
       reviewsTop,
       `this row can only be measured when #reviews starts beyond the 300px rootMargin; it is at ${Math.round(reviewsTop)} on a ${viewportHeight}px fold, so the page is too short to tell a lazy gate from an eager one`,
