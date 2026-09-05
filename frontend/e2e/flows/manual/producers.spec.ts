@@ -265,6 +265,13 @@ async function mockCatalog(page: Page, list: Producer[] | ((u: URL) => Producer[
   await page.route("**/api/producers**", (route: Route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith("/producers/count")) {
+      // Deliberately NOT tied to `list`: the app reads this endpoint only in
+      // the MEH-159 `visibilitychange` refresh (ProducersClient.jsx:396), and
+      // there it feeds the SITE-WIDE total, not the filtered results counter
+      // — that one comes from `x-total-count` on the list response below. No
+      // test here fires visibilitychange, so this value is never rendered; a
+      // fixed count keeps the zero-result fixture (`() => []`) honest about
+      // which header the results line actually reads.
       return route.fulfill({ json: { count: PRODUCERS.length } });
     }
     seen.push(url);
