@@ -3072,8 +3072,8 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 ## UIS Pattern A (MEH-228) — admin double-submit protection
 
-- [ ] `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בזמן הבקשה
-- [ ] `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה
+- ✅ → admin-settings-licence-actions.spec.ts (/admin/reports — a double click on «השהה עסק» fires one toggle-status · a double click on the dismiss confirm sends one dismiss per report — ⚠️ STALE on «אשר»/«הסר»/«שחזר»: the flagged and auto-hidden home-product tabs were removed with the home-products feature (MEH-1406); only «השהה עסק» and «התעלם» remain) — `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בזמן הבקשה
+- ✅ → admin-settings-licence-actions.spec.ts (/admin/users — a double click on «חסום» fires one block) — `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה
 - [ ] `/admin/content` (מוצרי בית מוסתרים) — לחיצה כפולה על "שחזר"/"מחק" — תוצאה: בקשה אחת
 - ✅ → admin-producers-decisions.spec.ts (a double click on «✓ אשר» fires one POST and disables the button while it flies — the approve button; suspend / ambassador / delete stay unconverted (writes on approved rows, chunk 12c)) — `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
 - ✅ → admin-producers-decisions.spec.ts (a network failure on approve shows the Hebrew connection toast — the approve action; the other pages are chunk 12c) — כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט)
@@ -3425,12 +3425,12 @@ _(פסקה זו קודם אמרה «ה-Playwright QA נמחק ולא הוגש…
 
 ### טופס האדמין
 
-- [ ] `/admin/producers` → עריכת עסק → השדה «תוקף רישיון (מהמסמך)» מופיע ליד מספר הרישיון — איך לבדוק: פותחים עסק עם רישיון — תוצאה מצופה: שדה תאריך + משפט הסבר מתחתיו
-- [ ] לעסק **בלי** רישיון ובלי תאריך — השדה מוסתר מאחורי «יש לי רישיון יצרן ↓» — תוצאה מצופה: לחיצה על ה-toggle חושפת את שני השדות
-- [ ] לעסק שיש לו **תאריך אבל לא מספר** — הבלוק נפתח מעצמו — תוצאה מצופה: התאריך גלוי בלי ללחוץ על ה-toggle (אחרת ערך שמשפיע על תור התזכורות אינו ניתן לצפייה או לתיקון)
-- [ ] שמירה → רענון → התאריך נטען חזרה — תוצאה מצופה: אותו תאריך, לא ריק
-- [ ] ניקוי השדה ושמירה — תוצאה מצופה: התאריך נמחק (נשלח `null`), לא נשאר הערך הישן
-- [ ] הזנת תאריך **בעבר** — תוצאה מצופה: **נשמר בהצלחה**. זה מכוון: אדמין שסוקרת עסק שהרישיון שלו כבר פג חייבת יכולת לרשום מה שכתוב במסמך
+- ✅ → admin-settings-licence-actions.spec.ts (a licensed business shows the expiry date field with its hint sentence — the field sits below the number, in the same block) — `/admin/producers` → עריכת עסק → השדה «תוקף רישיון (מהמסמך)» מופיע ליד מספר הרישיון — איך לבדוק: פותחים עסק עם רישיון — תוצאה מצופה: שדה תאריך + משפט הסבר מתחתיו
+- ✅ → admin-settings-licence-actions.spec.ts (with neither number nor date the fields hide behind «יש לי רישיון יצרן ↓», which reveals both) — לעסק **בלי** רישיון ובלי תאריך — השדה מוסתר מאחורי «יש לי רישיון יצרן ↓» — תוצאה מצופה: לחיצה על ה-toggle חושפת את שני השדות
+- ✅ → admin-settings-licence-actions.spec.ts (a date with no number opens the block without a click) — לעסק שיש לו **תאריך אבל לא מספר** — הבלוק נפתח מעצמו — תוצאה מצופה: התאריך גלוי בלי ללחוץ על ה-toggle (אחרת ערך שמשפיע על תור התזכורות אינו ניתן לצפייה או לתיקון)
+- ✅ → admin-settings-licence-actions.spec.ts (a saved date is sent on the PUT and read back on the next load) — שמירה → רענון → התאריך נטען חזרה — תוצאה מצופה: אותו תאריך, לא ריק
+- ✅ → admin-settings-licence-actions.spec.ts (clearing the date sends null) — ניקוי השדה ושמירה — תוצאה מצופה: התאריך נמחק (נשלח `null`), לא נשאר הערך הישן
+- ✅ → admin-settings-licence-actions.spec.ts (a date in the past saves — the form does not block it) — הזנת תאריך **בעבר** — תוצאה מצופה: **נשמר בהצלחה**. זה מכוון: אדמין שסוקרת עסק שהרישיון שלו כבר פג חייבת יכולת לרשום מה שכתוב במסמך
 
 ### רשימת התזכורות
 
@@ -3463,15 +3463,15 @@ WHERE table_name = 'producers' AND column_name = 'license_expires_at';
 
 ### עריכת הרשימה — `/admin/settings`
 
-- [ ] הבלוק «רשימת בדיקה לפני אישור» מופיע בהגדרות — איך לבדוק: נכנסים כאדמין — תוצאה מצופה: 7 הסעיפים המקוריים, כל אחד עם שדה סעיף ושדה הסבר
-- [ ] שינוי ניסוח + «שמירת הרשימה» → רענון — תוצאה מצופה: הניסוח החדש נטען חזרה
-- [ ] «שמירת הרשימה» → מופיע «נשמר ✓» → מקלידים אות אחת בכל שדה — תוצאה מצופה: ה-«נשמר ✓» **נעלם מיד** (אישור על עבודה שלא נשמרה הוא אישור שקרי)
-- [ ] אותה בדיקה עם חיצי הסדר ועם «הוספת סעיף» — תוצאה מצופה: גם שם ה-«נשמר ✓» נעלם
-- [ ] חיצי ↑/↓ משנים סדר → שמירה → רענון — תוצאה מצופה: הסדר החדש נשמר
-- [ ] מרוקנים שדה סעיף — תוצאה מצופה: כפתור השמירה מושבת + «לכל סעיף חייב להיות טקסט.»
-- [ ] «הוספת סעיף» → ניסוח → שמירה — תוצאה מצופה: הסעיף החדש מופיע בסוף, ומופיע גם בזרימת הסקירה
-- [ ] **אין כפתור מחיקה בשום מקום** — תוצאה מצופה: רק תיבת «בשימוש». זה מכוון: המפתח הזר הוא `ON DELETE RESTRICT`, ולכן כפתור מחיקה היה יכול רק להחזיר 500 בדיוק על הסעיפים שיש להם היסטוריה
-- [ ] מבטלים «בשימוש» לסעיף → שמירה — תוצאה מצופה: הסעיף נשאר **גלוי בהגדרות** (מעומעם, «הופסק השימוש») אך **נעלם מזרימת הסקירה**. סעיף שלא רואים אי אפשר להחזיר לשימוש
+- ✅ → admin-settings-licence-actions.spec.ts (the block lists the seven items, each with a «סעיף» field and an «הסבר» field) — הבלוק «רשימת בדיקה לפני אישור» מופיע בהגדרות — איך לבדוק: נכנסים כאדמין — תוצאה מצופה: 7 הסעיפים המקוריים, כל אחד עם שדה סעיף ושדה הסבר
+- ✅ → admin-settings-licence-actions.spec.ts (a reworded item is PUT and comes back after a reload) — שינוי ניסוח + «שמירת הרשימה» → רענון — תוצאה מצופה: הניסוח החדש נטען חזרה
+- ✅ → admin-settings-licence-actions.spec.ts («נשמר ✓» disappears the moment a field is typed into) — «שמירת הרשימה» → מופיע «נשמר ✓» → מקלידים אות אחת בכל שדה — תוצאה מצופה: ה-«נשמר ✓» **נעלם מיד** (אישור על עבודה שלא נשמרה הוא אישור שקרי)
+- ✅ → admin-settings-licence-actions.spec.ts («נשמר ✓» also disappears on an arrow and on «הוספת סעיף») — אותה בדיקה עם חיצי הסדר ועם «הוספת סעיף» — תוצאה מצופה: גם שם ה-«נשמר ✓» נעלם
+- ✅ → admin-settings-licence-actions.spec.ts (the arrows reorder, the PUT carries the new order, and a reload keeps it) — חיצי ↑/↓ משנים סדר → שמירה → רענון — תוצאה מצופה: הסדר החדש נשמר
+- ✅ → admin-settings-licence-actions.spec.ts (an emptied label disables the save and shows the too-short message — ⚠️ STALE on the copy: the message is «תווית קצרה מדי — לפחות 3 אותיות» and the rule is ≥ 3 letters, not non-empty) — מרוקנים שדה סעיף — תוצאה מצופה: כפתור השמירה מושבת + «לכל סעיף חייב להיות טקסט.»
+- ✅ → admin-settings-licence-actions.spec.ts («הוספת סעיף» + save appends the item, and the review flow shows it) — «הוספת סעיף» → ניסוח → שמירה — תוצאה מצופה: הסעיף החדש מופיע בסוף, ומופיע גם בזרימת הסקירה
+- ✅ → admin-settings-licence-actions.spec.ts (there is no delete control — only a «בשימוש» checkbox per item) — **אין כפתור מחיקה בשום מקום** — תוצאה מצופה: רק תיבת «בשימוש». זה מכוון: המפתח הזר הוא `ON DELETE RESTRICT`, ולכן כפתור מחיקה היה יכול רק להחזיר 500 בדיוק על הסעיפים שיש להם היסטוריה
+- ✅ → admin-settings-licence-actions.spec.ts (a deactivated item stays here dimmed as «הופסק השימוש» and leaves the review flow) — מבטלים «בשימוש» לסעיף → שמירה — תוצאה מצופה: הסעיף נשאר **גלוי בהגדרות** (מעומעם, «הופסק השימוש») אך **נעלם מזרימת הסקירה**. סעיף שלא רואים אי אפשר להחזיר לשימוש
 
 ### זרימת הסקירה — `/admin/producers`
 
