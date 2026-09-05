@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from typing import Annotated, Literal
 from urllib.parse import urlparse
@@ -57,7 +57,7 @@ _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 # MEH-1869: a day may carry several disjoint ranges (morning + evening, the
-# Israeli לunch-break and Friday/מוצ"ש patterns). Capped so the editor stays a
+# Israeli lunch-break and Friday/Saturday-night patterns). Capped so the editor stays a
 # form rather than a scheduler.
 _MAX_ORDER_RANGES_PER_DAY = 3
 
@@ -147,6 +147,10 @@ def _order_window_validator(v):
 # editor stays a form, not a scheduler. A year of holidays is ~20 dates; 60
 # leaves room without letting the column become an unbounded log.
 _MAX_SPECIAL_DATES = 60
+# MEH-1889 chunk B (ruling ג): how far back a special date may reach on WRITE.
+# 30 days lets an owner re-save a form that still carries last week's holiday
+# without a 422, while keeping the column from becoming an unbounded log.
+_SPECIAL_HOURS_RETENTION_DAYS = 30
 _ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -212,9 +216,15 @@ def _special_hours_validator(v):
     Its messages interpolate the key, which here is the date — "היום 2026-09-22
     חייב לכלול שעת פתיחה ושעת סגירה" reads correctly.
 
-    Retention — rejecting dates older than today-30 — is chunk B, per Sapir's
-    ruling on the card; chunk A deliberately accepts any real date so the
-    migration is not coupled to a policy still being written.
+    Retention (MEH-1889 chunk B, Sapir's ruling ג): a date older than
+    `israel_today() - 30` is REJECTED on write, and readers ignore past dates.
+    Chunk A deliberately accepted any real date so the migration was not
+    coupled to this policy. The boundary is inclusive — exactly today-30 is
+    still accepted — and the check runs AFTER the shape checks, so a malformed
+    key still gets the format message, never the retention one. The clock is
+    `israel_today()`, the codebase's Asia/Jerusalem primitive (not
+    `date.today()`, which is UTC on Railway), so a test freezes it through
+    `schemas.israel_today` — the same idiom test_availability_validation.py uses.
 
     None passes through (an explicit null clears the field). Returns the
     NORMALISED value, so the stored row is always the canonical shape.
@@ -225,7 +235,18 @@ def _special_hours_validator(v):
         raise ValueError("שעות מיוחדות חייבות להיות אובייקט של תאריכים")
     if len(v) > _MAX_SPECIAL_DATES:
         raise ValueError(f"אפשר להגדיר עד {_MAX_SPECIAL_DATES} תאריכים מיוחדים")
-    return {key: _validate_special_date(key, entry) for key, entry in v.items()}
+    normalized = {key: _validate_special_date(key, entry) for key, entry in v.items()}
+    oldest_allowed = israel_today() - timedelta(days=_SPECIAL_HOURS_RETENTION_DAYS)
+    for key in normalized:
+        # Every key here already passed _validate_special_date, which parsed it
+        # with date.fromisoformat — so this call cannot raise. Keep the two in
+        # this order: shape first, then policy.
+        if date.fromisoformat(key) < oldest_allowed:
+            raise ValueError(
+                f"התאריך {key} כבר עבר — אפשר להגדיר שעות מיוחדות רק לתאריכים "
+                f"מה-{_SPECIAL_HOURS_RETENTION_DAYS} הימים האחרונים ואילך"
+            )
+    return normalized
 
 
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
@@ -1840,7 +1861,7 @@ class ProducerImportResult(BaseModel):
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
 AVAILABILITY_STATES = (
     "accepting_orders",  # default — "פתוח להזמנות"
-    "available_today",  # superset — זמין + פתוח
+    "available_today",  # superset — available today + open for orders
     "full_this_week",  # "עמוסה השבוע"
     "on_vacation",  # "בהפסקה" (requires vacation_until)
 )
@@ -2333,7 +2354,7 @@ class ProducerListOut(BaseModel):
     # what a card claims about itself.
     delivers: bool = False
     offers_pickup: bool = False
-    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
+    # MEH-986 ch3b (P0 legal — Kashrut Fraud Prohibition Law): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
     # (admin-internal + owner's own view). Public kosher signal is verified-only
@@ -2356,6 +2377,15 @@ class ProducerListOut(BaseModel):
     # while the producer PAGE already could. Defaults to None, so every
     # existing response is byte-identical for a producer that has no window.
     order_window: dict | None = None
+    # MEH-1889 chunk B (MEH-2264): per-date overrides above order_window,
+    # order-axis authoritative — `{"YYYY-MM-DD": {"ranges": [...], "note"?}}`,
+    # `"ranges": []` = closed that date. On the LIST contract, not only the
+    # detail one, for the MEH-1880 reason: ProducerCard's "open for orders"
+    # line and the open-now chip evaluator read the order axis from list
+    # data, and a card saying "open" on Yom Kippur is exactly the drift this
+    # field exists to prevent. Defaults to None; every existing response is
+    # byte-identical for a producer with no overrides.
+    special_hours: dict | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -3065,7 +3095,7 @@ class FavoriteOut(BaseModel):
 # backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
-# --- Home Product (מהמטבח של השכן) ---
+# --- Home Product ("from the neighbor's kitchen" listings) ---
 class HomeProductCreate(BaseModel):
     title: str
     description: str | None = None
