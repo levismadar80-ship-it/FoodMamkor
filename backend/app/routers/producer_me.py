@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
-from app.config import settings
 from app.database import engine, get_db
 from app.rate_limit import limiter
 from app.services.availability_validation import (
