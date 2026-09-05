@@ -26,7 +26,7 @@ import { Warning, CheckCircle, Plus, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
-import { nextOrderRange, canAddOrderRange } from "@/lib/order-window";
+import { nextOrderRange } from "@/lib/order-window";
 import {
   MAX_SPECIAL_DATES,
   MAX_SPECIAL_NOTE_LENGTH,
@@ -36,6 +36,7 @@ import {
   rowsFromSpecialHours,
   serializeSpecialHours,
   specialHoursIssues,
+  canAddSpecialRange,
 } from "@/lib/special-hours";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
@@ -111,7 +112,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
   const addRange = (i) => {
     setRows((prev) =>
       prev.map((row, idx) =>
-        idx === i && canAddOrderRange(row)
+        idx === i && canAddSpecialRange(row)
           ? { ...row, ranges: [...row.ranges, nextOrderRange(row.ranges[row.ranges.length - 1])] }
           : row,
       ),
@@ -284,7 +285,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                       )}
                     </div>
                   ))}
-                  {canAddOrderRange(row) && (
+                  {canAddSpecialRange(row) && (
                     <button
                       type="button"
                       onClick={() => addRange(i)}

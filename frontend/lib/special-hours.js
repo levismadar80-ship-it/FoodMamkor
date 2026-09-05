@@ -19,7 +19,7 @@
 
 import { israelToday } from "@/lib/israel-date";
 import { HOLIDAYS } from "@/lib/holidays";
-import { emptyOrderRange, orderDayIssues } from "@/lib/order-window";
+import { canAddOrderRange, emptyOrderRange, orderDayIssues } from "@/lib/order-window";
 
 export const MAX_SPECIAL_NOTE_LENGTH = 200;
 // Mirrors `_MAX_SPECIAL_DATES` in the backend validator.
@@ -100,6 +100,29 @@ export function serializeSpecialHours(rows) {
 }
 
 /**
+ * A special-hours row in the shape the order-window helpers read. The two
+ * editors model "is this row taking orders" with OPPOSITE keys — a weekly day
+ * carries `open: boolean`, a special row `closed: boolean` (a date is closed by
+ * default, a weekday is open by default) — so every order-window helper that
+ * takes a day MUST go through this adapter. Passing a special row straight in
+ * is not a type error, it is a silent `false`: `canAddOrderRange` reads
+ * `day.open`, finds `undefined`, and hides the control on every open row
+ * (reviewer finding on PR #3417 — `canAddSpecialRange` below is the fix).
+ */
+function asOrderDay(row) {
+  return { open: !row?.closed, ranges: row?.ranges ?? [] };
+}
+
+/**
+ * Whether "+ range" is offered on a special row: open, under the cap, and with
+ * room left in the day — `canAddOrderRange` through the adapter, so the two
+ * editors cannot disagree on when another range fits.
+ */
+export function canAddSpecialRange(row) {
+  return canAddOrderRange(asOrderDay(row));
+}
+
+/**
  * The client mirror of the backend's rejections, per row:
  *   - `invalid_date`   — empty, malformed, in the past, or a duplicate of an
  *                        earlier row (two rows for one date cannot both win)
@@ -119,8 +142,7 @@ export function specialHoursIssues(rows, today = israelToday()) {
     seen.add(date);
   });
   // Range rules: a closed row's ranges are ignored, like a closed weekly day.
-  const asDays = rows.map((row) => ({ open: !row?.closed, ranges: row?.ranges ?? [] }));
-  for (const issue of orderDayIssues(asDays)) {
+  for (const issue of orderDayIssues(rows.map(asOrderDay))) {
     if (!issues.some((existing) => existing.index === issue.index)) issues.push(issue);
   }
   return issues.sort((a, b) => a.index - b.index);
