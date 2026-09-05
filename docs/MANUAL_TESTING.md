@@ -2321,10 +2321,10 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 
 ### Inline validation — /register (task 8)
 
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:19) — /register submit is disabled on load — `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:20) — an empty name blurs to «שם מלא הוא שדה חובה» — Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:17) — /register submit is disabled on load — `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:18) — an empty name blurs to «שם מלא הוא שדה חובה» — Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
 - [ ] Name — type `שרה` → green border + `"✓ תקין"`
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:22) — the email error behaves as it does on /login — Email — same pattern as /login (`"האימייל לא תקין"` error)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:20) — the email error behaves as it does on /login — Email — same pattern as /login (`"האימייל לא תקין"` error)
 - [ ] Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error)
 - [ ] Password — **strength indicator** appears below the input as soon as the user types anything:
   - 1 rule passes (e.g. `"abc"` — only len fails, no upper, no digit: **0 rules**) — strength bar shows no color, no label (field still effectively too short)
@@ -2336,7 +2336,7 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 - [ ] Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"`
 - [ ] Phone — fix to `0501234567` → green border + `"✓ תקין"`
 - [ ] City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional)
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:34) — all four conditions gate submit, and unticking terms re-disables it — Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:28) — all four conditions gate submit, and unticking terms re-disables it — Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
   - Name non-empty ✓
   - Email valid format ✓
   - Password ≥8 chars ✓
@@ -2354,8 +2354,8 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ### Accessibility checks
 
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:41) — aria-label swaps and aria-pressed follows — Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:42) — an invalid email carries aria-invalid="true" — Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:33) — aria-label swaps and aria-pressed follows — Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:34) — an invalid email carries aria-invalid="true" — Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
 - [ ] Error messages are rendered in the same `<div>` as the input so screen readers pick them up
 - [ ] `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works smoothly under reduce-motion (it uses only a CSS `transition` on the icon color — no transform/opacity)
 
