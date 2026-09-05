@@ -103,6 +103,7 @@ export default function FilterChipsBar({
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
+            data-testid="map-filters-button"
             aria-expanded={sheetOpen}
             aria-controls="filter-sheet-panel"
             // REUSES: frontend/components/ChipScrollRow.jsx:118-122 — chip
@@ -160,6 +161,7 @@ export default function FilterChipsBar({
       {activeFilterTags.length > 0 && (
         <div
           dir="rtl"
+          data-testid="map-active-filter-tags"
           className="mt-2 flex flex-wrap items-center gap-1.5"
           aria-live="polite"
         >
@@ -174,6 +176,7 @@ export default function FilterChipsBar({
               // selection is exited via the "כל" chip, never shown as a tag),
               // so every removable tag is a toggle-off.
               onClick={() => onToggleChipClick(tag.key)}
+              data-testid="map-active-filter-tag"
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
               className="group inline-flex items-center min-h-[44px] -my-2.5"
             >
@@ -186,6 +189,7 @@ export default function FilterChipsBar({
           <button
             type="button"
             onClick={resetAllFilters}
+            data-testid="map-clear-all"
             className="inline-flex items-center min-h-[44px] -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
           >
             {t("map.filter.clear_all")}
