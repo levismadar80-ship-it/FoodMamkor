@@ -149,7 +149,6 @@ const INCOMPLETE_PROFILE = {
   ...COMPLETE_PROFILE,
   city: null,
   phone: null,
-  instagram: null,
   categories: [],
   images: [],
   locations: [],
@@ -289,7 +288,12 @@ async function openOverview(page: Page): Promise<void> {
 // ── MT:MEH-1599 + MT:MEH-964-1A:1 — the one UX gate ────────────────────────
 
 test.describe("dashboard shell — access control", () => {
-  // MT:MEH-1599:4, MT:MEH-1599:5
+  // MT:MEH-1599:4 only — NOT row 5. This asserts the redirect PARAM; row 5 is
+  // the post-login leg ("נוחתות על /producer/dashboard, לא על דף הבית"), and a
+  // /login that ignored the param entirely would leave this test green while
+  // row 5's outcome broke. That leg is already covered, by a REAL seeded login
+  // in flows/25-role-reachability.spec.ts:196, so the row is re-pointed there
+  // rather than claimed here.
   test("an unauthenticated visitor is sent to /login carrying the target back", async ({
     page,
   }) => {

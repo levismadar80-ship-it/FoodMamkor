@@ -212,7 +212,7 @@
 - [ ] אותה צרכנית באזור הניהול — כניסה ל-`/admin` — **תוצאה מצופה:** נשארות ב-`/admin`, מסך "אין לך גישה לאזור הניהול" עם כפתור "חזרו לדף הבית"
 - [ ] בעלת עסק באזור הניהול — התחברות כבעלת עסק → `/admin` — **תוצאה מצופה:** אותו מסך "אין לך גישה לאזור הניהול"; ומיד אחריו `/producer/dashboard` נטען כרגיל (הדחייה היא לפי תפקיד, לא התחברות שבורה)
 - ✅ → dashboard-shell.spec.ts (an unauthenticated visitor is sent to /login carrying the target back) — מבקרת לא מחוברת — יציאה מהחשבון → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** מועברות ל-`/login?redirect=/producer/dashboard` (הכתובת מכילה את היעד)
-- ✅ → dashboard-shell.spec.ts (an unauthenticated visitor is sent to /login carrying the target back) — חזרה ליעד אחרי התחברות — מאותו מסך התחברות, כניסה עם חשבון בעלת עסק — **תוצאה מצופה:** נוחתות על `/producer/dashboard`, לא על דף הבית
+- ✅ → 25-role-reachability.spec.ts (logging in from that /login returns her to the dashboard — a REAL seeded login, gated on DEMO_OWNER_PASSWORD which CI sets; the post-login leg is that spec's, not dashboard-shell's, which only asserts the redirect PARAM) — חזרה ליעד אחרי התחברות — מאותו מסך התחברות, כניסה עם חשבון בעלת עסק — **תוצאה מצופה:** נוחתות על `/producer/dashboard`, לא על דף הבית
 - ✅ → dashboard-shell.spec.ts (a producer gets the dashboard with no denial anywhere) — בעלת עסק תקינה — התחברות כבעלת עסק → `/producer/dashboard` — **תוצאה מצופה:** הלוח נטען כרגיל, בלי שום מסך דחייה
 - [ ] נייד 375px — כל התרחישים לעיל — **תוצאה מצופה:** המסך מרוכז, הכפתורים מלאי-רוחב ונלחצים, אין גלילה אופקית
 
