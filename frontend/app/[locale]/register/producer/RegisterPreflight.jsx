@@ -59,6 +59,7 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         <p className="text-text">{t("after_body")}</p>
         <Link
           href="/about/process"
+          data-testid="register-preflight-process-link"
           className="inline-flex items-center gap-1 text-primary font-semibold hover:underline mt-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("after_link")}

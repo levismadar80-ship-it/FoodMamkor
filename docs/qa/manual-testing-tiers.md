@@ -1,7 +1,7 @@
 # MEH-1249 — risk tiers for docs/MANUAL_TESTING.md
 
 > **GENERATED — do not hand-edit.** Re-run `python3 scripts/qa/tier-manual-testing.py`.
-> Source: `docs/MANUAL_TESTING.md` · as-of **2026-09-04** · **1627** checklist items.
+> Source: `docs/MANUAL_TESTING.md` · as-of **2026-09-05** · **1417** checklist items.
 
 Sapir's ruling (01/09) is **risk-based, not coverage-based**: the 580 items the
 1,074-row matrix never classified do not get filled in. Every item is tagged, and
@@ -13,12 +13,12 @@ this file.
 
 | Tier | Meaning | Pre-launch | Count |
 |---|---|---|---|
-| **1** | critical user journey | **verify** | **579** |
-| **2** | LOCK — licensed businesses · manual approval · no transaction fees | **verify** | **98** |
-| **3** | everything else | `not verified — accepted, 2026-09-04` | **950** |
-| | | **total** | **1627** |
+| **1** | critical user journey | **verify** | **447** |
+| **2** | LOCK — licensed businesses · manual approval · no transaction fees | **verify** | **89** |
+| **3** | everything else | `not verified — accepted, 2026-09-05` | **881** |
+| | | **total** | **1417** |
 
-**Tier 1 + 2 = 677 items — that number is what pre-launch QA costs.**
+**Tier 1 + 2 = 536 items — that number is what pre-launch QA costs.**
 
 ## How an item was tagged
 
@@ -31,7 +31,7 @@ already treats as canonical (`e2e/flows/01`–`05`, `18`), not invented here.
 The classifier ships with `--self-test`, and `main()` refuses to emit this file if
 it fails. Four of its cases are lifted from the real document.
 
-## Tier 1 — critical user journey · VERIFY (579)
+## Tier 1 — critical user journey · VERIFY (447)
 
 | line | section | item |
 |---|---|---|
@@ -68,17 +68,12 @@ it fails. Four of its cases are lifted from the real document.
 | 97 | MEH-226 — דחיית בית עסק: סיבה נשמרת, נראית לבעלים, ונשלחת במ… | **תיקון טעות** — עסק שנדחה בטעות: `/admin/producers/<id>/edit` → החזירי סטטוס — **תוצאה מצופה:** אפשרי. אין צו… |
 | 105 | MEH-1872 — שינוי שם עסק עובר מודרציה חוזרת (09/08) | **הגשת בקשה לא משנה את השם הציבורי** — כבעלת עסק, שלחי בקשת שינוי שם → פתחי את עמוד העסק שלך בטאב אחר (או בגלי… |
 | 106 | MEH-1872 — שינוי שם עסק עובר מודרציה חוזרת (09/08) | **אישור אדמין הוא מה שמזיז את השם** — כאדמין, אשרי את הבקשה → רענני את עמוד העסק — **תוצאה מצופה:** עכשיו מופי… |
-| 127 | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | **שם מלא — אין שום סימן "תקין"** — `/register` (390px) → מלאי "שם מלא" → לחצי מחוץ לשדה (blur) — **תוצאה מצופה… |
-| 128 | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | **אימייל — כלום בזמן הקלדה** — באותו עמוד, הקלידי אימייל תקין **בלי** לצאת מהשדה — **תוצאה מצופה:** אין מסגרת … |
 | 129 | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | **אימייל — מסגרת ירוקה רק אחרי יציאה מהשדה** — צאי מהשדה (blur) עם ערך תקין — **תוצאה מצופה:** המסגרת ירוקה, *… |
 | 130 | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | **אימייל — חזרה להקלדה מכבה את הסימן** — חזרי לשדה והוסיפי תו — **תוצאה מצופה:** סימן ההצלחה נעלם עד ה-blur הב… |
-| 131 | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | **שגיאות לא זזו** — blur על "שם מלא" ריק, ו-blur על אימייל לא תקין — **תוצאה מצופה:** מסגרת אדומה + "שם מלא הו… |
 | 142 | MEH-1884 — שעות פתיחה נספרות בהשלמת הפרופיל (04/08) | **הרמז במצב ריק** — `/producer/dashboard/edit` → "שעות פתיחה" של עסק **שטרם שמר שעות** — **תוצאה מצופה:** מתחת… |
 | 160 | MEH-1807 — ולידציה חוצת-שלבים באשף הרשמת עסק (31/07) | **שלב 2 לא מתקדם בלי שם עסק** — `/register/producer` → "בואו נתחיל" → שלב 2 → השאירי את "שם העסק" ריק, מלאי טל… |
 | 175 | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות … | **`/producers` — שדה החיפוש** — פתחי את הדף, קראי את ה-placeholder (`מאפיית המחמצת`), **הקלידי אותו בדיוק** → … |
 | 176 | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות … | **`/search` — שדה החיפוש** — אותו דבר עם ה-placeholder `לחם מחמצת` → **תוצאה מצופה:** לפחות תוצאה אחת |
-| 177 | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות … | **דף הבית — ארבע המחרוזות המתחלפות** — עמדי על ה-hero **בלי ללחוץ על השדה** (הרוטציה נעצרת בפוקוס) ותני לה להח… |
-| 178 | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות … | **המחרוזת השבורה המוכרת** — הקלידי `גבינת עיזים` → **תוצאה מצופה:** אפס תוצאות. **זה תקין ומכוון** — `עיזים` ל… |
 | 179 | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות … | **`/en` — פער ידוע, לא באג חדש** — עברי ל-`/en` והקלידי את ה-placeholder → **תוצאה מצופה:** אפס תוצאות. שמות ע… |
 | 187 | MEH-1692 — רצועת האמון: משפט מתחת לסף, ספירה מעליו (31/07) | **מתחת ל-5 עסקים מאושרים** — פתחי את דף הבית — **תוצאה מצופה:** שורה **אחת** בלבד: `בלי מתווך באמצע · איסוף עצ… |
 | 200 | MEH-1769 — באנר "שמרנו טיוטה" באשף ההרשמה (29/07) | **גלישה ראשונה, storage ריק** — חלון incognito → `/register/producer` → "בואו נתחיל" — **תוצאה מצופה:** **אין*… |
@@ -134,7 +129,6 @@ it fails. Four of its cases are lifted from the real document.
 | 342 | MEH-1439 — סמנטיקת dietary: tooltips + מודעות בעלת עסק | **Helper מתחת לצ'יפים** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "מוצרים" → "מוצר חדש" (וגם עריכת מוצר… |
 | 369 | MEH-1388 — מרובי-מיקום מקצה-לקצה (epic — chunk 5, E2E + docs… | **פין פר-מיקום** — עסק עם 3 מיקומים (2 סניפים + נקודת איסוף) על /map — **תוצאה מצופה:** 3 פינים; כל פין פותח א… |
 | 370 | MEH-1388 — מרובי-מיקום מקצה-לקצה (epic — chunk 5, E2E + docs… | **cluster לפי עסקים** — עסק עם 10 נקודות איסוף באותה עיר, הרחיקי zoom — **תוצאה מצופה:** תג ה-cluster מציג **1… |
-| 373 | MEH-1388 — מרובי-מיקום מקצה-לקצה (epic — chunk 5, E2E + docs… | **שכבת נקודות איסוף** — טוגל "נקודות איסוף" על /map — **תוצאה מצופה:** מסתיר/מציג את הפינים המשניים (pickup/ma… |
 | 379 | MEH-1421 — עורך מיקומים בדשבורד + סימן dedup באדמין (chunk 4… | **תווית חובה באותו יישוב** — הוסיפי מיקום שני באותו יישוב בלי תווית — **תוצאה מצופה:** הודעת שגיאה שמזכירה את … |
 | 426 | MEH-1396 — צ'קליסט בדיקה לפני אישור בית עסק (אדמין, Phase 1) | **הצ'קליסט מופיע לעסק ממתין** — Admin → בתי עסק → עסק בסטטוס "ממתינה לאישור" / "ממתינה לאימות WhatsApp" — **תו… |
 | 427 | MEH-1396 — צ'קליסט בדיקה לפני אישור בית עסק (אדמין, Phase 1) | **פתיחה/סגירה + 7 סעיפים** — הקישי על הכותרת — **תוצאה מצופה:** נפתחים 7 סעיפים עם checkbox, חלקם עם רמז אפור … |
@@ -159,8 +153,6 @@ it fails. Four of its cases are lifted from the real document.
 | 497 | MEH-1291 — "עודכן לאחרונה" בעמוד העסק (18/07) | **עריכת אדמין → מעדכנת גם היא** — פאנל אדמין → עריכת אותו עסק ושמירה — **תוצאה מצופה:** התאריך מתעדכן לחודש הנ… |
 | 498 | MEH-1291 — "עודכן לאחרונה" בעמוד העסק (18/07) | **אנגלית** — `/en/producer/[id]` של עסק שנערך — **תוצאה מצופה:** "Last updated: {Month} {Year}" (חודש באנגלית,… |
 | 499 | MEH-1291 — "עודכן לאחרונה" בעמוד העסק (18/07) | **מובייל 375px** — העמוד בעריכה שנערכה — **תוצאה מצופה:** השורה עדינה (טקסט קטן, אפור), לא שוברת פריסה, לא זזה… |
-| 606 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **הופעה** — טעני את דף הבית — **תוצאה מצופה:** כפתור "קרוב אליי" (Crosshair) מופיע ליד "גלו עסקים"; אין צ'יפ מ… |
-| 607 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **אישור מיקום (granted)** — לחצי "קרוב אליי" ואשרי את בקשת הדפדפן — **תוצאה מצופה:** הכפתור מציג "בחיפוש..." ע… |
 | 620 | MEH-1255 — משלוחים לכל הארץ חוץ מ־ (exclusion mode) (17/07) | **שמירה של רשימת החרגה** — הוסיפי "אילת" + "ערד" לשדה ההחרגה → שמירה → רענון — **תוצאה מצופה:** הערים נשמרו; ע… |
 | 623 | MEH-1255 — משלוחים לכל הארץ חוץ מ־ (exclusion mode) (17/07) | **פילטר צרכני מחריג** — עסק "לכל הארץ למעט אילת" → חיפוש `?delivery_city=אילת` (או פילטר עיר) — **תוצאה מצופה:… |
 | 630 | MEH-1256 — בחירה מהירה לפי אזור בשדה ערי משלוח (17/07) | **chips של אזורים מופיעים רק בהקשר משלוחים** — `/producer/dashboard/edit` → "משלוחים ואיסוף" → סמני "משלוחים" … |
@@ -173,10 +165,6 @@ it fails. Four of its cases are lifted from the real document.
 | 687 | MEH sweep 16/07 — דשבורד בעלת עסק (1234/1236/1237/1238/1239) | **חיפוש כתובת (MEH-1234, אחרי הוספת המפתח ב-Vercel)** — עריכה → מיקום → הקלידי "דרך שרה" — **תוצאה מצופה:** הצ… |
 | 693 | MEH-1229 — עקביות תמונות בתי-עסק (optimizeCloudinary + מפת י… | **אין תמונות שבורות / 404** — עברי על `/`, `/producers`, `/producer/[id]` (עסק עם מוצרים+אירועים), `/map`, `/e… |
 | 698 | MEH-1229 — עקביות תמונות בתי-עסק (optimizeCloudinary + מפת י… | **thumbnail לוגו במפה ללא שינוי** — `/map`, כרטיס עסק עם לוגו רחב — **תוצאה מצופה:** לוגו רחב עדיין ב-object-c… |
-| 706 | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטג… | **כיתוב על רצועה מלאה, לא על התמונה** — פתחי `/` והביטי בכרטיסי הקטגוריה שיש להם תמונה — **תוצאה מצופה:** המספ… |
-| 707 | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטג… | **זום עדין ב-hover (דסקטופ)** — @1440px, העבירי עכבר מעל כרטיס עם תמונה — **תוצאה מצופה:** התמונה מתקרבת מעט (… |
-| 708 | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטג… | **אין זום ב-reduced-motion** — הפעילי "Reduce motion" במערכת ההפעלה, ורחפי מעל כרטיס — **תוצאה מצופה:** התמונה… |
-| 709 | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטג… | **אפס קפיצת פריסה (CLS)** — טעני מחדש את `/` בחיבור איטי (DevTools → Network → Slow) — **תוצאה מצופה:** מסגרת … |
 | 710 | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטג… | **כרטיסי גליף ללא שינוי** — הביטי בכרטיסים ללא תמונה (גליף/עלה) — **תוצאה מצופה:** הפריסה זהה לקודם; הגליף לא … |
 | 720 | MEH-1190…1196 — sweep (טלפון בהגדרות · opt-in וואטסאפ · Loca… | **MEH-1190 טלפון ב-/settings** — פתחי `/settings` (טאב פרופיל) @375px, שני את הטלפון בלבד — **תוצאה מצופה:** כ… |
 | 721 | MEH-1190…1196 — sweep (טלפון בהגדרות · opt-in וואטסאפ · Loca… | **MEH-1191 opt-in וואטסאפ בלי טלפון** — ב-/favorites פתחי פאנל התראות על עסק, הדליקי "שלחו ב-WhatsApp" בחשבון … |
@@ -202,19 +190,8 @@ it fails. Four of its cases are lifted from the real document.
 | 755 | MEH-1186 — היררכיה ויזואלית ב-/producers (שפה אחת לכל התנהגו… | **דף הבית לא נפגע** — פתחי `/` בנייד — **תוצאה מצופה:** רצועת "צפית לאחרונה" בדף הבית ללא שינוי (השינוי מבודד … |
 | 761 | MEH-1173 — כרטיס "תיאור העסק" (עוזר AI בתוך השדה + משפט תדמי… | **מבט ראשון (3 שניות)** — פתחי את הכרטיס בנייד 375px — **תוצאה מצופה:** שדה גיבור אחד "תיאור מלא" עם תווית קבו… |
 | 766 | MEH-1173 — כרטיס "תיאור העסק" (עוזר AI בתוך השדה + משפט תדמי… | **שמירה אחת לשני השדות** — מלאי תיאור + משפט תדמית ולחצי "שמרו" — **תוצאה מצופה:** בקשת `PUT /producers/me` אח… |
-| 785 | map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map | **אין FAB על המפה (דסקטופ)** — פתחי `/map` ב-1440px — **תוצאה מצופה:** אין כפתור "שאלה? שאלו אותי" בפינה השמאל… |
 | 786 | map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map | **אין FAB על המפה (מובייל)** — `/map` ב-375px — **תוצאה מצופה:** אין FAB צף מעל הגיליון/המפה. |
-| 787 | map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map | **כל הלוקאלים** — `/en/map` — **תוצאה מצופה:** גם באנגלית אין FAB על המפה. |
-| 788 | map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map | **FAB נשאר בשאר האתר** — דף הבית, עמוד עסק — **תוצאה מצופה:** ה-FAB מופיע ומתפקד כרגיל (אותו מיקום, אותה התנהג… |
-| 792 | MEH-1230 — GPS fix persists → "מרחק" + distance labels (/map… | **GPS מפעיל מיון "מרחק" בלי reload** — פתחי `/map`, לחצי "קרוב אליי" (גלולת המובייל או כפתור ה-GPS בדסקטופ) וא… |
 | 793 | MEH-1230 — GPS fix persists → "מרחק" + distance labels (/map… | **טבעת פוקוס של פקד המיון לא נחתכת** — הקישי Tab עד ל-select "מיון" בראש רשימת /map (דסקטופ) — **תוצאה מצופה:*… |
-| 797 | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | **ברירת מחדל בלי GPS** — פתחי `/map` בדסקטופ (1440px) בלי אישור מיקום — **תוצאה מצופה:** ליד הספירה מופיע "מיו… |
-| 798 | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | **ברירת מחדל עם GPS** — אשרי מיקום (או לחצי "קרוב אליי") ואז היכנסי שוב ל-`/map` — **תוצאה מצופה:** ברירת המחד… |
-| 799 | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | **מיון לפי דירוג** — בחרי "הכי מדורגות" — **תוצאה מצופה:** מהדירוג הגבוה לנמוך; בשוויון דירוג — יותר ביקורות ק… |
-| 800 | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | **חזרה ל"חדש בשוק"** — **תוצאה מצופה:** הרשימה חוזרת לסדר השרת (חדשים קודם). |
-| 801 | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | **subhead נקי** — מתחת לספירה — **תוצאה מצופה:** מופיע רק שם האזור (למשל "ירושלים"), בלי "קרוב · " לפניו. |
-| 802 | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | **כתיב "קרוב אליי" אחיד** — כפתור/גלולת ה-GPS — **תוצאה מצופה:** בכל המופעים "קרוב אליי" (שתי יו"ד); תווית המי… |
-| 806 | map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | **גבהים אחידים** — פתחי `/map` (375px + 1440px) עם עסקים "מלאים" (קטגוריה, דירוג, מחיר) ולצדם עסק דל נתונים — … |
 | 807 | map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | **טיפוגרפיית מחיר** — עסק עם תווית מחיר הכוללת יחידה בעברית (למשל "מ-25/בקבוק") — **תוצאה מצופה:** רק הספרות (… |
 | 808 | map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | **שורת מטא אחת** — בכל כרטיס — **תוצאה מצופה:** שורה אחת: עיר · מרחק (רק עם GPS) · מחיר; אין שורת שעות פתיחה (… |
 | 810 | map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | **נקודת צבע הוסרה** — תמונת כרטיס — **תוצאה מצופה:** אין עיגול צבע קטן בפינת התמונה הממוזערת. |
@@ -225,7 +202,6 @@ it fails. Four of its cases are lifted from the real document.
 | 835 | MEH-1145 Wave E2 — אימוץ ui/Input במשטחים ציבוריים | **Footer newsletter — ללא שינוי** — כל דף, אזור ה-footer — **תוצאה מצופה:** שדה הרשמה לניוזלטר נשאר בסגנון הקו… |
 | 840 | MEH-435 chunk A — funnel events ב-/register/producer (PostHo… | **step_viewed בקונסול (dev)** — פתחי DevTools → Console ב-`/register/producer`, לחצי "בואו נתחיל" ואז עברי בין… |
 | 841 | MEH-435 chunk A — funnel events ב-/register/producer (PostHo… | **submitted + error** — השלימי טופס תקין ושלחי — **תוצאה מצופה:** `[track] producer_register_submitted`. בכשל … |
-| 842 | MEH-435 chunk A — funnel events ב-/register/producer (PostHo… | **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostH… |
 | 847 | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | **גבהים אחידים במשטחים נוספים** — `/producers`, `/search`, ורצועת "עסקים חדשים" בבית — **תוצאה מצופה:** אותה א… |
 | 849 | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | **מועדפים — אין FAB צ'אט (MEH-1203)** — `/favorites` בנייד — **תוצאה מצופה:** כפתור הצ'אט הצף אינו מרונדר (כמו… |
 | 851 | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | **אין אייקון method-hint** — כל כרטיס עסק (בית/מועדפים/חיפוש) — **תוצאה מצופה:** אין אייקון וואטסאפ/טלפון/אתר … |
@@ -234,33 +210,20 @@ it fails. Four of its cases are lifted from the real document.
 | 876 | MEH-1103 — כיול גדלים: טקסט אינטראקטיבי ומטרות מגע (6 PRs) | **חיפוש — כותרות קבוצות בהצעות** — פתחי הצעות חיפוש — **תוצאה מצופה:** כותרות הקבוצות ללא ריווח-אותיות (tracki… |
 | 918 | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | **CTA משלוח מודגם למטה (tertiary)** — **תוצאה מצופה:** כפתור ה-WhatsApp בסקציית המשלוח הוא מסגרת ניטרלית (לא י… |
 | 931 | MEH-2045 — ProductSheet: ניווט קודם/הבא בין מוצרים | **WhatsApp מעודכן** — דפדפי למוצר אחר ולחצי על ה-CTA — **תוצאה מצופה:** ההודעה המוכנה מזכירה את שם המוצר **הנו… |
-| 938 | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | **פעולה ראשית אחת בכל מסך** — גללי לאורך כל העמוד (מובייל + דסקטופ) — **תוצאה מצופה:** רואים בכל רגע רק כפתור … |
 | 939 | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | **מבנה הכרטיס** — עסק פעיל — **תוצאה מצופה:** שורת סטטוס "● פתוח להזמנות" → CTA ראשית אחת → 3 שאלות מוכנות כקי… |
 | 940 | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | **שאלה דינמית לפי עיר** — עסק בעיר כלשהי — **תוצאה מצופה:** השאלה הראשונה = "אפשר משלוח ל-{עיר}?" עם שם העיר ש… |
 | 941 | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | **צבע CTA לפי ערוץ** — עסק עם primary_contact_method שונה (whatsapp מול טלפון/אתר) — **תוצאה מצופה:** ירוק Wha… |
 | 942 | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | **שורת סטטוס במצבים** — עסק "עמוס כרגע"/בחופשה — **תוצאה מצופה:** אין "פתוח להזמנות" בכרטיס (הכרטיס מעומעם בחו… |
-| 943 | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | **אין כפתורי מפה/שיתוף כפולים בעמודה הראשית** — **תוצאה מצופה:** "הצג במפה" והשיתוף הכפול הוסרו מהעמודה הראשית… |
 | 979 | MEH-991 — design-parity sweep (Chunk 2, PRs #1468/#1472/#147… | **G2 ProducerCard (#1472)** — כרטיס עסק עם 3+ תגי אמון → התג השלישי מתקפל ל-"+N" · שלד טעינה (skeleton) פינות … |
 | 980 | MEH-991 — design-parity sweep (Chunk 2, PRs #1468/#1472/#147… | **G3 בית (#1476)** — כותרת ה-hero כבדה יותר (900) · חיפוש = כרטיס קרם עם שדה לבן + כפתור ריבוע ירוק · אריח קטג… |
 | 982 | MEH-991 — design-parity sweep (Chunk 2, PRs #1468/#1472/#147… | **G5 (#1479)** — עסק שסגור עכשיו: נקודת סטטוס + "סגור" באפור (fg-muted), לא אדום — `/[slug]` (עמוד עסק, שעות פ… |
 | 989 | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-fligh… | **CTA → פריים 01** — לחצו "מתחילים" — **תוצאה מצופה:** נכנסים לפריים ACCOUNT הרגיל (stepper 01–04 ללא שינוי; ה… |
 | 990 | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-fligh… | **מסלול upgrade** — משתמשת מחוברת פותחת `/register/producer` — **תוצאה מצופה:** ה-pre-flight מוצג גם כן, אבל *… |
-| 991 | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-fligh… | **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`. |
-| 992 | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-fligh… | **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage … |
 | 997 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **פתיחת גיליון** — לחצו "סינון" — תוצאה: גיליון תחתון נפתח מלמטה עם backdrop; 3 קבוצות עם כותרות (תזונה · מקור… |
 | 998 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **סינון חי** — סמנו טבעוני + ללא גלוטן — תוצאה: כפתור האישור מציג "הצגת {N} בתי עסק" עם ספירה חיה (עדכון אחרי … |
-| 999 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **אישור** — לחצו "הצגת N בתי עסק" — תוצאה: הגיליון נסגר; באדג' "2" על כפתור סינון; רצועת התגיות מציגה ×טבעוני … |
-| 1000 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **סנכרון תגית↔גיליון** — הסירו תגית × — תוצאה: באדג' יורד ל-1; פתיחת הגיליון מציגה את הצ'יפ כבוי. |
 | 1001 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **ניקוי הכל בגיליון** — תוצאה: 7 הטוגלים מתאפסים; קטגוריה + עיר נשארות; רצועת התגיות + "נקו הכל" הקיימת ללא שי… |
 | 1002 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **סגירה** — ESC / לחיצה על ה-backdrop / גרירת הידית מטה — תוצאה: הגיליון נסגר בכל אחת מהדרכים. |
-| 1003 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **משלוח אליי מהגיליון ללא עיר שמורה** — תוצאה: CityPickerModal נפתח מעל הגיליון; בחירת עיר מפעילה את הסינון. |
-| 1004 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **דסקטופ (md+)** — לחצו "סינון" — תוצאה: פאנל מעוגן מתחת לכפתור (לא גיליון תחתון), אותו תוכן; לחיצה מחוץ לפאנל… |
 | 1005 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **אין רגרסיה** — שורת הקטגוריות, סמני המפה, גיליון העסקים התחתון ו"קרוב אליי" מתנהגים כרגיל. |
-| 1008 | MEH-970 chunk 2-lite — /map near-me pill + empty-near-me gua… | **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה… |
-| 1009 | MEH-970 chunk 2-lite — /map near-me pill + empty-near-me gua… | **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם … |
-| 1010 | MEH-970 chunk 2-lite — /map near-me pill + empty-near-me gua… | **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עד… |
-| 1011 | MEH-970 chunk 2-lite — /map near-me pill + empty-near-me gua… | **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא t… |
-| 1028 | MEH-853 — /register/producer frame 01 (DETAILS): city + addr… | **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נ… |
 | 1029 | MEH-853 — /register/producer frame 01 (DETAILS): city + addr… | **city בpayload** — מלאי יישוב + השלימי הרשמה — **תוצאה מצופה:** ב-DevTools Network, ה-POST ל-`/auth/register/… |
 | 1030 | MEH-853 — /register/producer frame 01 (DETAILS): city + addr… | **address free-text** — שדה "כתובת" מקבל טקסט חופשי (לא חובה) — **תוצאה מצופה:** נשמר ב-`form.address` ונשלח כ… |
 | 1031 | MEH-853 — /register/producer frame 01 (DETAILS): city + addr… | **שני המסלולים** — גם בהרשמה חדשה וגם במסלול upgrade (משתמשת מחוברת) — **תוצאה מצופה:** city+address נשלחים בש… |
@@ -277,22 +240,10 @@ it fails. Four of its cases are lifted from the real document.
 | 1155 | MEH-288 — ProfileCompletenessCard on producer dashboard | **MEH-964 1C — activity pulse בסקירה** — עסק עם פניות וואטסאפ ב-7 הימים האחרונים → מתחת ל-KPI strip כרטיס פעיל… |
 | 1179 | MEH-805 — post-login redirect (3 senders → ?redirect=) | **Favorite gate** — לא מחוברת, לחצי ❤ על כרטיס בית עסק → toast "התחברי", לחצי על הלינק → אחרי login חוזרת לעמו… |
 | 1180 | MEH-805 — post-login redirect (3 senders → ?redirect=) | **Login modal** — טריגר ל-LoginPromptModal, לחצי "היכנסי" → אחרי login חוזרת ליעד. |
-| 1181 | MEH-805 — post-login redirect (3 senders → ?redirect=) | **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (… |
 | 1182 | MEH-805 — post-login redirect (3 senders → ?redirect=) | **Regression** — `/register/producer` (כבר היה תקין) עדיין מחזיר ל-`/register/producer` אחרי login. |
 | 1190 | MEH-841 — comparison moved home→/about + layout A + copy ref… | **דף הבית — טיזר** — במקום הטבלה הישנה (אחרי "איך זה עובד") יש טיזר ממורכז: eyebrow "ההבדל" + כותרת "מה שמשתנה… |
 | 1195 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | רצועת אמון (MEH-524) — דף הבית עם ≥5 עסקים ב-/stats — רצועה בקרם עם מספרים בזהב נטוי: "N בתי עסק שהצטרפו עד הי… |
-| 1248 | Friday-strip i18n fix (סרגל שישי) | בחלון שוק שישי (ד׳ 18:00–ו׳ 14:00, או עקיפת אדמין) + יש בתי עסק עם משלוח היום — סרגל "בתי עסק עם משלוח היום" ב… |
-| 1253 | MEH-788 — /register split-editorial (תמונה + טופס) | כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) ל… |
-| 1254 | MEH-788 — /register split-editorial (תמונה + טופס) | `/register` בדסקטופ ≥1024px — שני פאנלים: טופס מימין (START), תמונת ארגז תוצרת משמאל (END) — תוצאה: כמו /login… |
-| 1255 | MEH-788 — /register split-editorial (תמונה + טופס) | overlay "טרי · מקומי · מהמקור" בתחתית התמונה — תוצאה: קריא על השכבה הירוקה הכהה |
-| 1256 | MEH-788 — /register split-editorial (תמונה + טופס) | `/register` במובייל 375/360/390 — רצועת תמונה למעלה (~30vh) + הטופס מתחת — תוצאה: אין גלילה אופקית, הטופס שמיש |
 | 1257 | MEH-788 — /register split-editorial (תמונה + טופס) | הרשמה מלאה (שם+אימייל+סיסמה+תנאים) — תוצאה: מסך "בדקי את המייל" כרגיל (ללא פאנל תמונה — מכוון) |
-| 1258 | MEH-788 — /register split-editorial (תמונה + טופס) | `/en/register` — overlay "Fresh · Local · From the source" — תוצאה: אנגלית, אותו עיצוב |
-| 1262 | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | בית `/he` — ה-hero מציג את תמונת התוצרת (Cloudinary) ברוחב מלא עם דריפט איטי — תוצאה: לא תמונת הסטוק הישנה, תנ… |
-| 1263 | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | כותרת + תת-כותרת + CTAs קריאים מעל התמונה ב-375/360/390 — תוצאה: טקסט לבן קריא על השכבה הירוקה, אין אזור "מסונ… |
-| 1264 | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | חיפוש hero: להקליד 2+ תווים — תוצאה: ה-dropdown נפתח מלא וגולש מעבר לקצה ה-hero (לא נחתך) |
-| 1265 | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | הגדרות מכשיר → reduce motion — תוצאה: התמונה סטטית (אין דריפט), הכל עדיין קריא |
-| 1266 | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | גלילה אופקית ב-375px — תוצאה: אין overflow אופקי |
 | 1270 | MEH-731 — navbar homepage-state (locale-path) + verify-banne… | בית `/he` בראש (לפני גלילה) — navbar **שקוף** + לוגו/קישורים בהירים מעל ה-hero — תוצאה: לא cream pill |
 | 1271 | MEH-731 — navbar homepage-state (locale-path) + verify-banne… | בית `/en` בראש — אותו מצב transparent (התיקון עובד גם ב-locale השני) — תוצאה: transparent |
 | 1272 | MEH-731 — navbar homepage-state (locale-path) + verify-banne… | בית אחרי גלילה >80px — הופך ל-cream pill — תוצאה: מעבר נכון |
@@ -321,202 +272,141 @@ it fails. Four of its cases are lifted from the real document.
 | 1359 | Test 4 — Regression: anonymous can still sign up as producer | Navigate to `/register/producer` → form renders |
 | 1360 | Test 4 — Regression: anonymous can still sign up as producer | Complete step 1 (email + name + password + producer fields) → **expected:** 200, OWASP anti-enumeration Regist… |
 | 1366 | Test 5 — Frontend CTAs hidden from admins | Log out → all 3 surfaces SHOULD show the CTA (anonymous can still register) |
-| 1515 | Stats counter reframe + skeleton (MEH-607) | 375px wrap — open Vercel preview at exactly 375px viewport → counter wraps cleanly if it wraps at all. Watch f… |
-| 1524 | HomepageMiniMap above the fold (MEH-604) | Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Loca… |
-| 1525 | HomepageMiniMap above the fold (MEH-604) | Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map… |
-| 1526 | HomepageMiniMap above the fold (MEH-604) | Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https… |
-| 1527 | HomepageMiniMap above the fold (MEH-604) | Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leafle… |
-| 1535 | /map legend — disable empty-viewport categories (MEH-722) | Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a … |
-| 1536 | /map legend — disable empty-viewport categories (MEH-722) | Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable … |
-| 1537 | /map legend — disable empty-viewport categories (MEH-722) | Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled… |
-| 1538 | /map legend — disable empty-viewport categories (MEH-722) | Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still c… |
-| 1546 | Hide /neighbor pre-launch (MEH-598) | Header nav (desktop ≥768px) — visit `/`, `/about`, `/map`, `/events` → top nav shows 3 items: גלה / מפה / אודו… |
-| 1551 | Hide /neighbor pre-launch (MEH-598) | Homepage section absence — visit `/` → between `<HomeHowItWorks>` (איך זה עובד) and the parallax divider, the … |
-| 1552 | Hide /neighbor pre-launch (MEH-598) | DOM grep — load any page → DevTools → Search for "/neighbor" in DOM → returns 0 (excluding code comments not r… |
-| 1576 | MEH-1046 — pagination בטבלת /admin/users | שינוי פילטר מאפס — עברי לעמוד 2 ואז שני role או הריצי חיפוש; **תוצאה מצופה:** חוזרים לעמוד 1 עם התוצאות המסוננ… |
-| 1632 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | **MEH-1051 WhatsApp לבעלת העסק** — שלחי בקשת השלמה לעסק ממתין **עם טלפון**; **תוצאה מצופה:** בנוסף למייל מגיעה… |
-| 1720 | Tier 3 — Smadar (mobile real device) | Perceived latency on async actions (newsletter submit, login, search) |
-| 1721 | Tier 3 — Smadar (mobile real device) | RTL overflow @ narrow viewports (360px-375px range) |
-| 1749 | ProductsSection mount in the edit tab (MEH-999 follow-up) | Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת ל… |
-| 1757 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נ… |
-| 1773 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — fresh signup — איך לבדוק: `/register/producer` במובייל; **תוצאה מצופה:** הטופס לא מציג checkboxes לתזו… |
-| 1774 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — add product with vegan checked → card badge — איך לבדוק: התחברי כיוצרת חדשה, `/settings` → "מוצרים" → … |
-| 1795 | Dietary checkboxes per product (MEH-293 PR #2) | Register form — אין יותר checkboxes — איך לבדוק: `/register/producer`; **תוצאה מצופה:** לא מופיעים יותר 3 ה-ch… |
-| 1797 | Dietary checkboxes per product (MEH-293 PR #2) | Legacy producer (overlap) — איך לבדוק: בעלת עסק שנרשמה לפני MEH-293 ויש לה `producer.vegan=true` אבל אין מוצרי… |
-| 1825 | Producer status labels (MEH-294) | Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending` → `/producer/dashboard`; **תוצאה מצופה:**… |
-| 1834 | Password policy wire-up (MEH-306 sub-A backend) | Existing user login regression — איך לבדוק: התחברי עם user שנוצר לפני ה-PR (DB: `password_changed_at IS NULL`)… |
-| 1835 | Password policy wire-up (MEH-306 sub-A backend) | Fresh signup floor — `POST /auth/register` עם `password` באורך 8 תווים → **422** עם `{"detail":[{"loc":["body"… |
-| 1836 | Password policy wire-up (MEH-306 sub-A backend) | Fresh signup deny-list — `POST /auth/register` עם `password=unbelievable` (12 תווים, ב-deny_list_10k) → **422*… |
-| 1837 | Password policy wire-up (MEH-306 sub-A backend) | /auth/check-password live preview — `POST /auth/check-password {"candidate":"unbelievable"}` → **200** עם `{"o… |
-| 1838 | Password policy wire-up (MEH-306 sub-A backend) | Reset reuse block — בקשי reset על account עם סיסמה `Foo!Bar123Bz`; פתחי את הקישור; שלחי `new_password=Foo!Bar1… |
-| 1839 | Password policy wire-up (MEH-306 sub-A backend) | Reset session invalidation — login → קבלי JWT — בקשי reset → השלימי reset עם סיסמה חדשה → ה-JWT הקודם על `/aut… |
-| 1840 | Password policy wire-up (MEH-306 sub-A backend) | Change password — `PATCH /users/me/password` עם current לא נכון → **403**; עם current ו-new זהים → **422** `sa… |
-| 1841 | Password policy wire-up (MEH-306 sub-A backend) | Forgot-password rate limit (per-email) — שלחי 6 בקשות `/auth/forgot-password` עם אותו email תוך פחות מ-15 דקות… |
-| 1842 | Password policy wire-up (MEH-306 sub-A backend) | Forgot-password rate limit (per-IP) — שלחי 11 בקשות עם 11 emails שונים מאותה כתובת IP → 10 ראשונות **200**, ה-… |
-| 1843 | Password policy wire-up (MEH-306 sub-A backend) | MEH-395 length-check bypass (security-critical) — `POST /auth/register {"password":"          aa"}` (12 raw ch… |
-| 1844 | Password policy wire-up (MEH-306 sub-A backend) | MEH-395 deny-list strip — `POST /auth/check-password {"candidate":"unbelievable    "}` (16 תווים: 12 + 4 רווחי… |
-| 1896 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Mobile 375px: producer name visible above fold without scrolling — פתחי דף עסק ב-DevTools מובייל 375px → h1 נר… |
-| 1897 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם |
-| 1898 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Mobile: scroll past CTA → sticky bar slides in — גלולי מתחת לכפתור → StickyContactBar מגלשת מלמטה |
-| 1899 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Mobile: scroll back to CTA → sticky bar slides out — גלולי חזרה למעלה → הבר נעלמת |
-| 1900 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → ba… |
-| 1901 | Producer Detail Page (feature/meh-producer-detail-redesign, … | No images: category emoji + initials placeholder (not leaf) — עסק ללא תמונות → placeholder 120px עם emoji + 2 … |
-| 1902 | Producer Detail Page (feature/meh-producer-detail-redesign, … | With images: first image loads eagerly — פתחי Network tab → `images[0]` נטען עם `priority` (preload link בhead… |
-| 1903 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Desktop: no duplicate PrimaryContactButton — ב-lg viewport → CTA רק בsidebar, לא בcolumn הראשי |
-| 1904 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Reviews: not fetched until section scrolls into view — פתחי Network tab → אין בקשה ל-`/reviews` בטעינה; מופיעה… |
-| 1905 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Gallery dots: 44px tap targets on mobile — Inspect element → כל dot button `min-h-[44px] min-w-[44px]` |
-| 1906 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Review dates: display correctly in RTL — ביקורת עם תאריך → התאריך מוצג ב-`dir="ltr"` (לא הפוך) |
-| 1907 | Producer Detail Page (feature/meh-producer-detail-redesign, … | contact_name shows in main column — עסק עם contact_name → "מאחורי העסק: [שם]" מתחת ל-short_description |
-| 1908 | Producer Detail Page (feature/meh-producer-detail-redesign, … | highlights strip shows correct chips — grass_fed=true → 🌾 מרעה חופשי; delivery_areas non-empty → 🚚 משלוח |
-| 1936 | Security — POST /producers auth (PR #33) | הזרימה הציבורית `POST /auth/register/producer` עדיין עובדת ללא אימות (לא הושפעה מהתיקון) |
-| 1943 | Events (קהילה — אירועים מקומיים) | /events/new — טופס עם 12 שדות בעברית (שם, תיאור, עיר, תאריך, שעה, מחיר, קיבולת, קטגוריה, תמונה, אימייל יצירת ק… |
-| 1962 | /map — mobile (375px) | שתי שורות — edge-fade משני הצדדים (ימין + שמאל) |
-| 1963 | /map — mobile (375px) | גללי בשורת הקטגוריות שמאלה — גריד נגלל, הצ'יפ הראשון לא נכרת (סיום עם w-8 spacer) |
-| 1964 | /map — mobile (375px) | לחצי על "לחם ומאפה" (הצ'יפ בקצה שמאל) — הצ'יפ נצבע bg-primary **ומתגלל אוטומטית לתוך ה-viewport** (scrollIntoV… |
-| 1965 | /map — mobile (375px) | לחצי על "בשר ועוף" — הצ'יפ נצבע bg-primary; תחת שורת התכונות מופיע tag ירוק "× בשר ועוף" + קישור "× נקי הכל" |
-| 1966 | /map — mobile (375px) | לחצי על "🌿 אורגני" — tag נוסף "× 🌿 אורגני" מופיע ליד הקודם |
-| 1967 | /map — mobile (375px) | לחצי על × בתוך ה-tag "× בשר ועוף" — הסינון מוסר, הצ'יפ "בשר ועוף" כבה, "כל" שוב פעיל |
-| 1968 | /map — mobile (375px) | לחצי על "× נקי הכל" — כל הסינונים מאופסים, אזור ה-tags נעלם |
-| 1969 | /map — mobile (375px) | בדיקת responsive — פתחי ב-375 / 430 / 768 / 1024 / 1280px — בכל גודל אין צ'יפ שנכרת ללא fade נראה, הצ'יפ הפעיל… |
-| 1972 | /map — desktop | פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל |
-| 1975 | /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED… | /map → לחצי על כפתור ה-GPS (🎯 "קרוב אליי") → **סרבי** להרשאת מיקום בדפדפן — איך לבדוק: בדפדפן/מובייל בחרי "Blo… |
-| 1976 | /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED… | בחרי עיר ב-modal שנפתח (חיפוש או צ'יפ עיר פופולרית) — **תוצאה מצופה:** ה-modal נסגר, רשימת בתי העסק ב-/map מסו… |
-| 1977 | /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED… | /map → GPS → סרבי, ואז סגרי את ה-modal — **תוצאה מצופה:** אין בקשת הרשאה חוזרת אוטומטית (no re-prompt); הדפדפן… |
-| 1978 | /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED… | /map → GPS → סמלצי כשל טכני (timeout/מיקום לא זמין, לא סירוב) — איך לבדוק: DevTools → Sensors → Location: "Una… |
-| 1979 | /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED… | חזרי על הסירוב גם דרך כפתור ה-GPS בשורת הסינון (mobile sticky bar) וגם דרך ה-flow השני — שני ה-paths פותחים את… |
-| 1983 | דף הבית — filters מעל גריד היצרנים | לחצי "אורגני" — הצ'יפ נצבע; שורת סיכום "מסנן לפי: אורגני" מופיעה מעל הגריד |
-| 1984 | דף הבית — filters מעל גריד היצרנים | הפעילי 2 צ'יפים — הסיכום מציג את שניהם מופרדים ב-· |
-| 1985 | דף הבית — filters מעל גריד היצרנים | כבי את כל הצ'יפים — שורת הסיכום נעלמת |
-| 1993 | Tracking infrastructure | GET /producers/{id}?from=search — פתחי עם ה-param — שורה חדשה עם `referrer='search'` |
-| 1996 | Tracking infrastructure | POST /producers/{id}/whatsapp-click — 200 + שורה ב-`producer_whatsapp_clicks` |
-| 1998 | Tracking infrastructure | POST /producers/bad-uuid/whatsapp-click — 404, אין שורה |
-| 2001 | Producer dashboard (/producer/dashboard) | התחברי כיצרן — הדף מציג שם + כפתור זמינות היום + 6 כרטיסיות סטטיסטיקה + 2 תרשימים + 3 quick links |
-| 2003 | Producer dashboard (/producer/dashboard) | כרטיסיית "הופעות בחיפוש" מציגה את אותו פורמט (רק צפיות עם `referrer='search'`) |
-| 2004 | Producer dashboard (/producer/dashboard) | כרטיסיית "לחיצות ווטסאפ" מציגה 3 מספרים מ-`producer_whatsapp_clicks` |
-| 2010 | Producer dashboard (/producer/dashboard) | לחיצה על WhatsApp בעמוד יצרן (לא משלך) — ב-Network tab רואים POST /whatsapp-click sendBeacon נשלח לפני פתיחת ח… |
-| 2011 | Producer dashboard (/producer/dashboard) | חזרה ל-/producer/dashboard — ספירת whatsapp_clicks עלתה ב-1 |
-| 2027 | AI risk-score badge (MEH-509 PR3 — admin only) | Fresh signup — sign up a new test producer with phone via `/auth/register/producer` → wait ~10 seconds → `/adm… |
-| 2034 | WhatsApp webhook receiver (MEH-509 PR2c) | GET challenge in staging — `curl 'https://<staging-railway-url>/webhook/whatsapp?hub.mode=subscribe&hub.verify… |
-| 2035 | WhatsApp webhook receiver (MEH-509 PR2c) | Meta Console verify — Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL `https:/… |
-| 2036 | WhatsApp webhook receiver (MEH-509 PR2c) | Subscribe to messages field — Meta Console → toggle "messages" subscription on. |
-| 2037 | WhatsApp webhook receiver (MEH-509 PR2c) | Real inbound smoke — send a WhatsApp message from your personal phone to `+972 55-255-3744`. Within ~5 seconds… |
-| 2038 | WhatsApp webhook receiver (MEH-509 PR2c) | Forged signature rejection — `curl -X POST https://<staging-railway-url>/webhook/whatsapp -H 'X-Hub-Signature-… |
-| 2039 | WhatsApp webhook receiver (MEH-509 PR2c) | Production promotion — repeat steps 1-4 with the production Railway URL; only after staging smoke passes. |
-| 2042 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Post-PR2c smoke — set `WATCHDOG_ENABLED=true` in Railway **staging** env. `psql $DATABASE_URL_STAGING -c "INSE… |
-| 2082 | Registration forms — RTL + dashboard copy | `/register` — פתחי במובייל — שדה "שם מלא" מיישר ימין ונכתב מימין לשמאל |
-| 2083 | Registration forms — RTL + dashboard copy | `/register` — שדה "אימייל" — עדיין LTR (תווים לטיניים, intentional) |
-| 2084 | Registration forms — RTL + dashboard copy | `/register` — שדה "סיסמה" — עדיין LTR (intentional) |
-| 2085 | Registration forms — RTL + dashboard copy | `/register` — שדה "עיר" (CitySearch) — RTL, placeholder "חפשי עיר..." מיושר ימין, התוצאות באוטוקומפליט RTL |
-| 2086 | Registration forms — RTL + dashboard copy | `/register` — שדה "טלפון" — עדיין LTR (intentional) |
-| 2087 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 1 — שדה "שם מלא" — RTL |
-| 2088 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 2 — שדה "שם העסק" — RTL |
-| 2089 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 2 — textarea "תיאור העסק" — RTL |
-| 2090 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 2 — שדה "עיר" — RTL |
-| 2091 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 3 — שדות "עיר משלוח" ו-"יום משלוח" — RTL |
-| 2092 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 2 — "אינסטגרם" / "אתר" — עדיין LTR (intentional) |
-| 2107 | Map city search width + dropdown z-index | `/map` על דסקטופ (חלון ≥ 768px) — הקלידי "ראשון לציון" בשדה החיפוש — הטקסט המלא נראה לגמרי, אין חיתוך (truncat… |
-| 2108 | Map city search width + dropdown z-index | `/map` על דסקטופ — הקלידי "ראש" — ה-autocomplete dropdown מציג "ראשון לציון" ו-"ראש העין" בשורה מלאה כל אחת, ל… |
-| 2109 | Map city search width + dropdown z-index | `/map` על דסקטופ — לחצי על "ראשון לציון" ב-dropdown — השדה מתמלא עם הערך המלא |
-| 2110 | Map city search width + dropdown z-index | `/map` על דסקטופ — הקלידי "מעלה אדומים" ידנית — הטקסט המלא גלוי בשדה |
-| 2111 | Map city search width + dropdown z-index | `/map` על מובייל (< 768px) — שדה החיפוש עדיין תופס את כל רוחב הפיד (`w-full`), לא התווסף regression |
-| 2112 | Map city search width + dropdown z-index | `/map` — הקלידי "זכ" — ה-dropdown מצויר **מעל** המפה, רקע לבן אטום, אין טקסט ערבי/עברי של תוויות OSM שמבצבץ דר… |
-| 2113 | Map city search width + dropdown z-index | `/register` ו-`/register/producer` — שדה "עיר" — ה-dropdown עדיין עובד נכון (אין regression מה-z-[1000]), אין … |
-| 2121 | Category card images — dairy + care | דף הבית — גלילי לגריד הקטגוריות — **חלב וגבינות** מציג תמונה אמיתית של גבינה (לא צבע ירוק אחיד) עם שכבת גוון י… |
-| 2122 | Category card images — dairy + care | דף הבית — **חלב וגבינות** — אין טקסט/לוגו/סימן מסחרי גלוי בתמונה |
-| 2123 | Category card images — dairy + care | דף הבית — **טיפוח וסבונים** — מציג תמונה אמיתית של סבון/מוצר טיפוח ללא טקסט Act+Acre (או כל מותג אחר) גלוי מעב… |
-| 2124 | Category card images — dairy + care | דף הבית — **טיפוח וסבונים** — אין טקסט/לוגו בתמונה |
-| 2125 | Category card images — dairy + care | דף הבית על מובייל — שני הכרטיסים נטענים נכון (אין broken-image icon או ריק) |
-| 2137 | iOS Safari parallax verification | דף הבית — iOS Safari — ה-hero הטעון (תמונת רקע) מציג את אנימציית ה-Ken Burns (pan/zoom איטי); התמונה לא קפואה/… |
-| 2138 | iOS Safari parallax verification | דף הבית — iOS Safari — כאשר גוללים את הדף למטה ה-hero נשאר חלק ואין jitter/stutter על הטרנספורמציה |
-| 2139 | iOS Safari parallax verification | דף הבית — Chrome iOS — אותה בדיקה (Chrome iOS הוא Safari WebView תחת מכסה המנוע אבל שווה לאמת) |
-| 2140 | iOS Safari parallax verification | דף הבית — שני בלוקי ParallaxQuote בין הסקשנים — Ken Burns רץ, הציטוט קריא מעל overlay ירוק 60% |
-| 2160 | End-to-end: the wa.me link actually works for every input fo… | Plain local format `"0501234567"` → `/producer/:id` → WhatsApp button opens `wa.me/972501234567` (not `wa.me/0… |
-| 2161 | End-to-end: the wa.me link actually works for every input fo… | Dashes `"052-123-4567"` → `wa.me/972521234567` |
-| 2162 | End-to-end: the wa.me link actually works for every input fo… | Parentheses `"(050) 123-4567"` → `wa.me/972501234567` |
-| 2163 | End-to-end: the wa.me link actually works for every input fo… | E.164 with `+` `"+972501234567"` → `wa.me/972501234567` (no stray `+` in the URL) |
-| 2164 | End-to-end: the wa.me link actually works for every input fo… | Dots `"050.123.4567"` → `wa.me/972501234567` |
-| 2165 | End-to-end: the wa.me link actually works for every input fo… | **Leading whitespace** `" 0501234567"` → `wa.me/972501234567` (this was the ProducerCard/ProducerDetail order-… |
-| 2166 | End-to-end: the wa.me link actually works for every input fo… | Already normalized `"972501234567"` → `wa.me/972501234567` (no double-prefix) |
-| 2172 | All 4 call sites must be tested | **Homepage producer grid** → click the WhatsApp icon on a `ProducerCard` → correct wa.me URL |
-| 2173 | All 4 call sites must be tested | **`/producer/:id` detail page** → click the big green WhatsApp button in the sticky contact sidebar → correct … |
-| 2174 | All 4 call sites must be tested | **`/map` mobile sheet card** → tap a producer marker (mobile) → pinned sheet card has a WhatsApp link → opens … |
-| 2175 | All 4 call sites must be tested | **`/neighbor` home-product cards** → click the green WhatsApp CTA (the `WhatsAppButton` component) → correct w… |
-| 2179 | Empty-input guards still work | Producer with `phone: null` → no WhatsApp button rendered on ProducerCard, ProducerDetail, MapComponent popup,… |
-| 2186 | Regression guards (grep-based, safe to automate) | `grep -rn "normalizePhone" frontend/` → exactly 4 imports (WhatsAppButton, ProducerCard, ProducerDetail, MapCo… |
-| 2198 | /login | `/login` — fill email + password → tap "כניסה" → **button disables immediately** (can't tap again), spinner + … |
-| 2199 | /login | `/login` — wrong password → after the server returns an error, button re-enables and the original text "כניסה"… |
-| 2200 | /login | `/login` — slow-3G (DevTools network throttling) — verify spinner is visible for ~2+ seconds |
-| 2204 | /register | `/register` — fill all fields + agree to terms → tap "הצטרפי" → button shows spinner + "נרשמת..." |
-| 2205 | /register | `/register` — trigger a client validation failure (wrong password shape) → button doesn't go into loading stat… |
-| 2206 | /register | `/register` — server error (duplicate email) → button recovers to "הצטרפי" |
-| 2210 | /register/producer | `/register/producer` → progress through step 1 + step 2 → on step 3, check both compliance checkboxes → tap **… |
-| 2211 | /register/producer | `/register/producer` step 3 → during submit the button shows spinner + **"שולחת..."** (NOTE: was "שולח..." — m… |
-| 2212 | /register/producer | `/register/producer` — server error (e.g. duplicate email at step 1 surfacing here) → button recovers to "שלחי… |
-| 2235 | Regression guards (grep-based) | `grep -rn 'ButtonSpinner' frontend/` → 5 imports (login, register, register/producer, AboutClient, Footer) + 5… |
-| 2249 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | `/login` Google OAuth still works (regression check — we touched the same CSP block as Google's GSI whitelist) |
-| 2250 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Apple Sign-In button on `/login` still works (regression check — same reason) |
-| 2251 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Unsplash images on the homepage category grid still load (regression check — `img-src` gained an entry so orde… |
-| 2253 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | OpenStreetMap Leaflet tiles still render on `/map` (regression check — same directive) |
-| 2270 | Suggested prompts — order + copy | Open the widget from desktop homepage — the 8 suggested prompts appear in this exact order: `איך נרשמים כבעלת … |
-| 2271 | Suggested prompts — order + copy | `איך מדווחים על בעיה?` and `האם ההרשמה בחינם?` and `כמה זמן לוקח האישור?` (bare, without "של העסק") should NOT… |
-| 2274 | Hardcoded answers — instant + plain Hebrew | Click `איך נרשמים כבעלת עסק?` — instant response (no typing dots), text contains `"תוך יום-יומיים"` and `"העסק… |
-| 2275 | Hardcoded answers — instant + plain Hebrew | Click `איך מוצאים עסקים קרובים אליי?` — instant response mentioning both המפה + דף הבית and the WhatsApp butto… |
-| 2283 | Freeform questions — backend KB sections | Type `איך יוצרים קשר עם בית עסק?` — response mentions WhatsApp button + phone/Instagram/site |
-| 2287 | Regression guards (grep-based) | `grep -n 'מודרציה' backend/app/routers/chat.py` — every match must be either inside a `#` comment block or ins… |
-| 2300 | Password visibility toggle (task 7) — both pages | `/login` — password field has a small eye icon on its left side (visual LEFT of the LTR input, which is the EN… |
-| 2301 | Password visibility toggle (task 7) — both pages | `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible |
-| 2302 | Password visibility toggle (task 7) — both pages | `/login` — tap again → flips back to `password` → characters become dots |
-| 2303 | Password visibility toggle (task 7) — both pages | `/login` — icon changes: closed eye (`Eye`) when hidden, slashed eye (`EyeSlash`) when visible |
-| 2304 | Password visibility toggle (task 7) — both pages | `/register` — same 4 checks on the password field there |
-| 2305 | Password visibility toggle (task 7) — both pages | Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles |
-| 2306 | Password visibility toggle (task 7) — both pages | Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` r… |
-| 2310 | Inline validation — /login (task 8) | `/login` — load page — submit button is **disabled** (form is empty) |
-| 2311 | Inline validation — /login (task 8) | Email field — tap then tap away without typing → no error (touched but empty is neutral) |
-| 2312 | Inline validation — /login (task 8) | Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field |
-| 2313 | Inline validation — /login (task 8) | Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below |
-| 2314 | Inline validation — /login (task 8) | Password — tap then tap away empty → no error |
-| 2315 | Inline validation — /login (task 8) | Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"` |
-| 2316 | Inline validation — /login (task 8) | Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"` |
-| 2317 | Inline validation — /login (task 8) | Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled |
-| 2318 | Inline validation — /login (task 8) | Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-en… |
-| 2322 | Inline validation — /register (task 8) | `/register` — load page — submit button is **disabled** (form is empty + terms not agreed) |
-| 2323 | Inline validation — /register (task 8) | Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"` |
-| 2324 | Inline validation — /register (task 8) | Name — type `שרה` → green border + `"✓ תקין"` |
-| 2325 | Inline validation — /register (task 8) | Email — same pattern as /login (`"האימייל לא תקין"` error) |
-| 2326 | Inline validation — /register (task 8) | Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error) |
-| 2327 | Inline validation — /register (task 8) | Password — **strength indicator** appears below the input as soon as the user types anything: |
-| 2332 | Inline validation — /register (task 8) | Password — the existing rule checklist is still visible below the strength bar (one ✓/○ per rule) |
-| 2333 | Inline validation — /register (task 8) | Phone — **optional field** — tap and tap away empty → no error, no green check (empty is fine) |
-| 2334 | Inline validation — /register (task 8) | Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"` |
-| 2335 | Inline validation — /register (task 8) | Phone — fix to `0501234567` → green border + `"✓ תקין"` |
-| 2336 | Inline validation — /register (task 8) | City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional) |
-| 2337 | Inline validation — /register (task 8) | Submit button — disabled until ALL required fields pass AND terms checkbox is ticked: |
-| 2348 | Task-spec exactness — error message wording | `grep -rn 'האימייל לא תקין' frontend/app/login frontend/app/register` → 2 matches (1 per page, in the inline v… |
-| 2349 | Task-spec exactness — error message wording | `grep -rn 'סיסמא חייבת להכיל לפחות 8 תווים' frontend/app/login frontend/app/register` → 2 matches |
-| 2350 | Task-spec exactness — error message wording | `grep -rn 'שם מלא הוא שדה חובה' frontend/app/register` → 1 match |
-| 2351 | Task-spec exactness — error message wording | `grep -rn 'מספר טלפון לא תקין' frontend/app/register` → 1 match |
-| 2362 | Regression checks — do NOT break existing behavior | `/login` Google OAuth button still works (we imported a new icon but didn't touch the OAuth block) |
-| 2363 | Regression checks — do NOT break existing behavior | `/login` Apple Sign-In button still works |
-| 2364 | Regression checks — do NOT break existing behavior | `/register/producer` step 1 still works — the `PasswordStrength` upgrade (tier indicator) propagates to its pa… |
-| 2365 | Regression checks — do NOT break existing behavior | `/register` → submit with invalid data server-side (e.g. email already exists) → error banner at the bottom of… |
-| 2366 | Regression checks — do NOT break existing behavior | `/register` → form validation AFTER clearing a field (e.g. type valid email then backspace to nothing) → red b… |
-| 2373 | Mobile 2-column layout (< 768px) | Homepage — open on a mobile device / narrow viewport (< 768px) — producer cards display in **2 columns** inste… |
-| 2374 | Mobile 2-column layout (< 768px) | Homepage — gap between cards is tighter on mobile (~12px) vs tablet+ (~24px) |
-| 2375 | Mobile 2-column layout (< 768px) | Homepage — "עסקים חדשים ✨" section also shows 2-column grid on mobile |
-| 2376 | Mobile 2-column layout (< 768px) | `/map` — scroll down to the producer list below the map — same 2-column grid on mobile |
-| 2394 | Regression checks | WhatsApp / phone / Instagram icon row in footer still clickable |
-| 2432 | Bug fixes | Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000) |
-| 2433 | Bug fixes | Desktop: hover marker → only ONE tooltip (no browser-native duplicate) |
-| 2437 | Bug fixes | Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, … |
-| 2442 | Regression | CitySearch dropdown above map tiles |
-| 2443 | Regression | Map pan/zoom works above the sheet |
-| 2460 | /map desktop — marker click = card-sync (MEH-1010) | Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the… |
-| 2461 | /map desktop — marker click = card-sync (MEH-1010) | Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until anothe… |
-| 2462 | /map desktop — marker click = card-sync (MEH-1010) | Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+h… |
-| 2463 | /map desktop — marker click = card-sync (MEH-1010) | Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (M… |
-| 2464 | /map desktop — marker click = card-sync (MEH-1010) | Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filt… |
-| 2465 | /map desktop — marker click = card-sync (MEH-1010) | Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצ… |
-| 2476 | OG tags on /producer/:id and /:slug | Share a producer link on WhatsApp → preview shows producer photo + name + description snippet |
+| 1517 | Stats counter reframe + skeleton (MEH-607) | 375px wrap — open Vercel preview at exactly 375px viewport → counter wraps cleanly if it wraps at all. Watch f… |
+| 1527 | HomepageMiniMap above the fold (MEH-604) | Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map… |
+| 1529 | HomepageMiniMap above the fold (MEH-604) | Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leafle… |
+| 1548 | Hide /neighbor pre-launch (MEH-598) | Header nav (desktop ≥768px) — visit `/`, `/about`, `/map`, `/events` → top nav shows 3 items: גלה / מפה / אודו… |
+| 1553 | Hide /neighbor pre-launch (MEH-598) | Homepage section absence — visit `/` → between `<HomeHowItWorks>` (איך זה עובד) and the parallax divider, the … |
+| 1554 | Hide /neighbor pre-launch (MEH-598) | DOM grep — load any page → DevTools → Search for "/neighbor" in DOM → returns 0 (excluding code comments not r… |
+| 1578 | MEH-1046 — pagination בטבלת /admin/users | שינוי פילטר מאפס — עברי לעמוד 2 ואז שני role או הריצי חיפוש; **תוצאה מצופה:** חוזרים לעמוד 1 עם התוצאות המסוננ… |
+| 1634 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | **MEH-1051 WhatsApp לבעלת העסק** — שלחי בקשת השלמה לעסק ממתין **עם טלפון**; **תוצאה מצופה:** בנוסף למייל מגיעה… |
+| 1722 | Tier 3 — Smadar (mobile real device) | Perceived latency on async actions (newsletter submit, login, search) |
+| 1723 | Tier 3 — Smadar (mobile real device) | RTL overflow @ narrow viewports (360px-375px range) |
+| 1751 | ProductsSection mount in the edit tab (MEH-999 follow-up) | Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת ל… |
+| 1759 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נ… |
+| 1775 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — fresh signup — איך לבדוק: `/register/producer` במובייל; **תוצאה מצופה:** הטופס לא מציג checkboxes לתזו… |
+| 1776 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — add product with vegan checked → card badge — איך לבדוק: התחברי כיוצרת חדשה, `/settings` → "מוצרים" → … |
+| 1797 | Dietary checkboxes per product (MEH-293 PR #2) | Register form — אין יותר checkboxes — איך לבדוק: `/register/producer`; **תוצאה מצופה:** לא מופיעים יותר 3 ה-ch… |
+| 1799 | Dietary checkboxes per product (MEH-293 PR #2) | Legacy producer (overlap) — איך לבדוק: בעלת עסק שנרשמה לפני MEH-293 ויש לה `producer.vegan=true` אבל אין מוצרי… |
+| 1827 | Producer status labels (MEH-294) | Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending` → `/producer/dashboard`; **תוצאה מצופה:**… |
+| 1836 | Password policy wire-up (MEH-306 sub-A backend) | Existing user login regression — איך לבדוק: התחברי עם user שנוצר לפני ה-PR (DB: `password_changed_at IS NULL`)… |
+| 1837 | Password policy wire-up (MEH-306 sub-A backend) | Fresh signup floor — `POST /auth/register` עם `password` באורך 8 תווים → **422** עם `{"detail":[{"loc":["body"… |
+| 1838 | Password policy wire-up (MEH-306 sub-A backend) | Fresh signup deny-list — `POST /auth/register` עם `password=unbelievable` (12 תווים, ב-deny_list_10k) → **422*… |
+| 1839 | Password policy wire-up (MEH-306 sub-A backend) | /auth/check-password live preview — `POST /auth/check-password {"candidate":"unbelievable"}` → **200** עם `{"o… |
+| 1840 | Password policy wire-up (MEH-306 sub-A backend) | Reset reuse block — בקשי reset על account עם סיסמה `Foo!Bar123Bz`; פתחי את הקישור; שלחי `new_password=Foo!Bar1… |
+| 1841 | Password policy wire-up (MEH-306 sub-A backend) | Reset session invalidation — login → קבלי JWT — בקשי reset → השלימי reset עם סיסמה חדשה → ה-JWT הקודם על `/aut… |
+| 1842 | Password policy wire-up (MEH-306 sub-A backend) | Change password — `PATCH /users/me/password` עם current לא נכון → **403**; עם current ו-new זהים → **422** `sa… |
+| 1843 | Password policy wire-up (MEH-306 sub-A backend) | Forgot-password rate limit (per-email) — שלחי 6 בקשות `/auth/forgot-password` עם אותו email תוך פחות מ-15 דקות… |
+| 1844 | Password policy wire-up (MEH-306 sub-A backend) | Forgot-password rate limit (per-IP) — שלחי 11 בקשות עם 11 emails שונים מאותה כתובת IP → 10 ראשונות **200**, ה-… |
+| 1845 | Password policy wire-up (MEH-306 sub-A backend) | MEH-395 length-check bypass (security-critical) — `POST /auth/register {"password":"          aa"}` (12 raw ch… |
+| 1846 | Password policy wire-up (MEH-306 sub-A backend) | MEH-395 deny-list strip — `POST /auth/check-password {"candidate":"unbelievable    "}` (16 תווים: 12 + 4 רווחי… |
+| 1899 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם **(⚠️ לא הומר — נמדד 04/09 ונכשל מול… |
+| 1902 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → ba… |
+| 1903 | Producer Detail Page (feature/meh-producer-detail-redesign, … | No images: category emoji + initials placeholder (not leaf) — עסק ללא תמונות → placeholder 120px עם emoji + 2 … |
+| 1907 | Producer Detail Page (feature/meh-producer-detail-redesign, … | Gallery dots: 44px tap targets on mobile — Inspect element → כל dot button `min-h-[44px] min-w-[44px]` |
+| 1910 | Producer Detail Page (feature/meh-producer-detail-redesign, … | highlights strip shows correct chips — grass_fed=true → 🌾 מרעה חופשי; delivery_areas non-empty → 🚚 משלוח **(ST… |
+| 1938 | Security — POST /producers auth (PR #33) | הזרימה הציבורית `POST /auth/register/producer` עדיין עובדת ללא אימות (לא הושפעה מהתיקון) |
+| 1945 | Events (קהילה — אירועים מקומיים) | /events/new — טופס עם 12 שדות בעברית (שם, תיאור, עיר, תאריך, שעה, מחיר, קיבולת, קטגוריה, תמונה, אימייל יצירת ק… |
+| 1964 | /map — mobile (375px) | שתי שורות — edge-fade משני הצדדים (ימין + שמאל) |
+| 1967 | /map — mobile (375px) | לחצי על "בשר ועוף" — הצ'יפ נצבע bg-primary; תחת שורת התכונות מופיע tag ירוק "× בשר ועוף" + קישור "× נקי הכל" |
+| 1968 | /map — mobile (375px) | לחצי על "🌿 אורגני" — tag נוסף "× 🌿 אורגני" מופיע ליד הקודם |
+| 1969 | /map — mobile (375px) | לחצי על × בתוך ה-tag "× בשר ועוף" — הסינון מוסר, הצ'יפ "בשר ועוף" כבה, "כל" שוב פעיל |
+| 1971 | /map — mobile (375px) | בדיקת responsive — פתחי ב-375 / 430 / 768 / 1024 / 1280px — בכל גודל אין צ'יפ שנכרת ללא fade נראה, הצ'יפ הפעיל… |
+| 1985 | דף הבית — filters מעל גריד היצרנים | לחצי "אורגני" — הצ'יפ נצבע; שורת סיכום "מסנן לפי: אורגני" מופיעה מעל הגריד |
+| 1986 | דף הבית — filters מעל גריד היצרנים | הפעילי 2 צ'יפים — הסיכום מציג את שניהם מופרדים ב-· |
+| 1987 | דף הבית — filters מעל גריד היצרנים | כבי את כל הצ'יפים — שורת הסיכום נעלמת |
+| 1995 | Tracking infrastructure | GET /producers/{id}?from=search — פתחי עם ה-param — שורה חדשה עם `referrer='search'` |
+| 1998 | Tracking infrastructure | POST /producers/{id}/whatsapp-click — 200 + שורה ב-`producer_whatsapp_clicks` |
+| 2000 | Tracking infrastructure | POST /producers/bad-uuid/whatsapp-click — 404, אין שורה |
+| 2003 | Producer dashboard (/producer/dashboard) | התחברי כיצרן — הדף מציג שם + כפתור זמינות היום + 6 כרטיסיות סטטיסטיקה + 2 תרשימים + 3 quick links |
+| 2005 | Producer dashboard (/producer/dashboard) | כרטיסיית "הופעות בחיפוש" מציגה את אותו פורמט (רק צפיות עם `referrer='search'`) |
+| 2006 | Producer dashboard (/producer/dashboard) | כרטיסיית "לחיצות ווטסאפ" מציגה 3 מספרים מ-`producer_whatsapp_clicks` |
+| 2012 | Producer dashboard (/producer/dashboard) | לחיצה על WhatsApp בעמוד יצרן (לא משלך) — ב-Network tab רואים POST /whatsapp-click sendBeacon נשלח לפני פתיחת ח… |
+| 2013 | Producer dashboard (/producer/dashboard) | חזרה ל-/producer/dashboard — ספירת whatsapp_clicks עלתה ב-1 |
+| 2029 | AI risk-score badge (MEH-509 PR3 — admin only) | Fresh signup — sign up a new test producer with phone via `/auth/register/producer` → wait ~10 seconds → `/adm… |
+| 2036 | WhatsApp webhook receiver (MEH-509 PR2c) | GET challenge in staging — `curl 'https://<staging-railway-url>/webhook/whatsapp?hub.mode=subscribe&hub.verify… |
+| 2037 | WhatsApp webhook receiver (MEH-509 PR2c) | Meta Console verify — Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL `https:/… |
+| 2038 | WhatsApp webhook receiver (MEH-509 PR2c) | Subscribe to messages field — Meta Console → toggle "messages" subscription on. |
+| 2039 | WhatsApp webhook receiver (MEH-509 PR2c) | Real inbound smoke — send a WhatsApp message from your personal phone to `+972 55-255-3744`. Within ~5 seconds… |
+| 2040 | WhatsApp webhook receiver (MEH-509 PR2c) | Forged signature rejection — `curl -X POST https://<staging-railway-url>/webhook/whatsapp -H 'X-Hub-Signature-… |
+| 2041 | WhatsApp webhook receiver (MEH-509 PR2c) | Production promotion — repeat steps 1-4 with the production Railway URL; only after staging smoke passes. |
+| 2044 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Post-PR2c smoke — set `WATCHDOG_ENABLED=true` in Railway **staging** env. `psql $DATABASE_URL_STAGING -c "INSE… |
+| 2084 | Registration forms — RTL + dashboard copy | `/register` — פתחי במובייל — שדה "שם מלא" מיישר ימין ונכתב מימין לשמאל |
+| 2085 | Registration forms — RTL + dashboard copy | `/register` — שדה "אימייל" — עדיין LTR (תווים לטיניים, intentional) |
+| 2086 | Registration forms — RTL + dashboard copy | `/register` — שדה "סיסמה" — עדיין LTR (intentional) |
+| 2087 | Registration forms — RTL + dashboard copy | `/register` — שדה "עיר" (CitySearch) — RTL, placeholder "חפשי עיר..." מיושר ימין, התוצאות באוטוקומפליט RTL |
+| 2088 | Registration forms — RTL + dashboard copy | `/register` — שדה "טלפון" — עדיין LTR (intentional) |
+| 2094 | Registration forms — RTL + dashboard copy | `/register/producer` שלב 2 — "אינסטגרם" / "אתר" — עדיין LTR (intentional) |
+| 2115 | Map city search width + dropdown z-index | `/register` ו-`/register/producer` — שדה "עיר" — ה-dropdown עדיין עובד נכון (אין regression מה-z-[1000]), אין … |
+| 2123 | Category card images — dairy + care | דף הבית — גלילי לגריד הקטגוריות — **חלב וגבינות** מציג תמונה אמיתית של גבינה (לא צבע ירוק אחיד) עם שכבת גוון י… |
+| 2124 | Category card images — dairy + care | דף הבית — **חלב וגבינות** — אין טקסט/לוגו/סימן מסחרי גלוי בתמונה |
+| 2125 | Category card images — dairy + care | דף הבית — **טיפוח וסבונים** — מציג תמונה אמיתית של סבון/מוצר טיפוח ללא טקסט Act+Acre (או כל מותג אחר) גלוי מעב… |
+| 2126 | Category card images — dairy + care | דף הבית — **טיפוח וסבונים** — אין טקסט/לוגו בתמונה |
+| 2127 | Category card images — dairy + care | דף הבית על מובייל — שני הכרטיסים נטענים נכון (אין broken-image icon או ריק) |
+| 2139 | iOS Safari parallax verification | דף הבית — iOS Safari — ה-hero הטעון (תמונת רקע) מציג את אנימציית ה-Ken Burns (pan/zoom איטי); התמונה לא קפואה/… |
+| 2140 | iOS Safari parallax verification | דף הבית — iOS Safari — כאשר גוללים את הדף למטה ה-hero נשאר חלק ואין jitter/stutter על הטרנספורמציה |
+| 2141 | iOS Safari parallax verification | דף הבית — Chrome iOS — אותה בדיקה (Chrome iOS הוא Safari WebView תחת מכסה המנוע אבל שווה לאמת) |
+| 2142 | iOS Safari parallax verification | דף הבית — שני בלוקי ParallaxQuote בין הסקשנים — Ken Burns רץ, הציטוט קריא מעל overlay ירוק 60% |
+| 2162 | End-to-end: the wa.me link actually works for every input fo… | Plain local format `"0501234567"` → `/producer/:id` → WhatsApp button opens `wa.me/972501234567` (not `wa.me/0… |
+| 2163 | End-to-end: the wa.me link actually works for every input fo… | Dashes `"052-123-4567"` → `wa.me/972521234567` |
+| 2164 | End-to-end: the wa.me link actually works for every input fo… | Parentheses `"(050) 123-4567"` → `wa.me/972501234567` |
+| 2165 | End-to-end: the wa.me link actually works for every input fo… | E.164 with `+` `"+972501234567"` → `wa.me/972501234567` (no stray `+` in the URL) |
+| 2166 | End-to-end: the wa.me link actually works for every input fo… | Dots `"050.123.4567"` → `wa.me/972501234567` |
+| 2167 | End-to-end: the wa.me link actually works for every input fo… | **Leading whitespace** `" 0501234567"` → `wa.me/972501234567` (this was the ProducerCard/ProducerDetail order-… |
+| 2168 | End-to-end: the wa.me link actually works for every input fo… | Already normalized `"972501234567"` → `wa.me/972501234567` (no double-prefix) |
+| 2174 | All 4 call sites must be tested | **Homepage producer grid** → click the WhatsApp icon on a `ProducerCard` → correct wa.me URL |
+| 2175 | All 4 call sites must be tested | **`/producer/:id` detail page** → click the big green WhatsApp button in the sticky contact sidebar → correct … |
+| 2176 | All 4 call sites must be tested | **`/map` mobile sheet card** → tap a producer marker (mobile) → pinned sheet card has a WhatsApp link → opens … |
+| 2177 | All 4 call sites must be tested | **`/neighbor` home-product cards** → click the green WhatsApp CTA (the `WhatsAppButton` component) → correct w… |
+| 2181 | Empty-input guards still work | Producer with `phone: null` → no WhatsApp button rendered on ProducerCard, ProducerDetail, MapComponent popup,… |
+| 2188 | Regression guards (grep-based, safe to automate) | `grep -rn "normalizePhone" frontend/` → exactly 4 imports (WhatsAppButton, ProducerCard, ProducerDetail, MapCo… |
+| 2200 | /login | `/login` — fill email + password → tap "כניסה" → **button disables immediately** (can't tap again), spinner + … |
+| 2201 | /login | `/login` — wrong password → after the server returns an error, button re-enables and the original text "כניסה"… |
+| 2202 | /login | `/login` — slow-3G (DevTools network throttling) — verify spinner is visible for ~2+ seconds |
+| 2206 | /register | `/register` — fill all fields + agree to terms → tap "הצטרפי" → button shows spinner + "נרשמת..." |
+| 2207 | /register | `/register` — trigger a client validation failure (wrong password shape) → button doesn't go into loading stat… |
+| 2208 | /register | `/register` — server error (duplicate email) → button recovers to "הצטרפי" |
+| 2212 | /register/producer | `/register/producer` → progress through step 1 + step 2 → on step 3, check both compliance checkboxes → tap **… |
+| 2213 | /register/producer | `/register/producer` step 3 → during submit the button shows spinner + **"שולחת..."** (NOTE: was "שולח..." — m… |
+| 2214 | /register/producer | `/register/producer` — server error (e.g. duplicate email at step 1 surfacing here) → button recovers to "שלחי… |
+| 2237 | Regression guards (grep-based) | `grep -rn 'ButtonSpinner' frontend/` → 5 imports (login, register, register/producer, AboutClient, Footer) + 5… |
+| 2251 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | `/login` Google OAuth still works (regression check — we touched the same CSP block as Google's GSI whitelist) |
+| 2252 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Apple Sign-In button on `/login` still works (regression check — same reason) |
+| 2253 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Unsplash images on the homepage category grid still load (regression check — `img-src` gained an entry so orde… |
+| 2255 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | OpenStreetMap Leaflet tiles still render on `/map` (regression check — same directive) |
+| 2272 | Suggested prompts — order + copy | Open the widget from desktop homepage — the 8 suggested prompts appear in this exact order: `איך נרשמים כבעלת … |
+| 2273 | Suggested prompts — order + copy | `איך מדווחים על בעיה?` and `האם ההרשמה בחינם?` and `כמה זמן לוקח האישור?` (bare, without "של העסק") should NOT… |
+| 2276 | Hardcoded answers — instant + plain Hebrew | Click `איך נרשמים כבעלת עסק?` — instant response (no typing dots), text contains `"תוך יום-יומיים"` and `"העסק… |
+| 2277 | Hardcoded answers — instant + plain Hebrew | Click `איך מוצאים עסקים קרובים אליי?` — instant response mentioning both המפה + דף הבית and the WhatsApp butto… |
+| 2285 | Freeform questions — backend KB sections | Type `איך יוצרים קשר עם בית עסק?` — response mentions WhatsApp button + phone/Instagram/site |
+| 2289 | Regression guards (grep-based) | `grep -n 'מודרציה' backend/app/routers/chat.py` — every match must be either inside a `#` comment block or ins… |
+| 2302 | Password visibility toggle (task 7) — both pages | `/login` — password field has a small eye icon on its left side (visual LEFT of the LTR input, which is the EN… |
+| 2305 | Password visibility toggle (task 7) — both pages | `/login` — icon changes: closed eye (`Eye`) when hidden, slashed eye (`EyeSlash`) when visible |
+| 2317 | Inline validation — /login (task 8) | Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"` |
+| 2318 | Inline validation — /login (task 8) | Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"` |
+| 2320 | Inline validation — /login (task 8) | Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-en… |
+| 2326 | Inline validation — /register (task 8) | Name — type `שרה` → green border + `"✓ תקין"` |
+| 2328 | Inline validation — /register (task 8) | Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error) |
+| 2329 | Inline validation — /register (task 8) | Password — **strength indicator** appears below the input as soon as the user types anything: |
+| 2334 | Inline validation — /register (task 8) | Password — the existing rule checklist is still visible below the strength bar (one ✓/○ per rule) |
+| 2335 | Inline validation — /register (task 8) | Phone — **optional field** — tap and tap away empty → no error, no green check (empty is fine) |
+| 2336 | Inline validation — /register (task 8) | Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"` |
+| 2337 | Inline validation — /register (task 8) | Phone — fix to `0501234567` → green border + `"✓ תקין"` |
+| 2338 | Inline validation — /register (task 8) | City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional) |
+| 2350 | Task-spec exactness — error message wording | `grep -rn 'האימייל לא תקין' frontend/app/login frontend/app/register` → 2 matches (1 per page, in the inline v… |
+| 2351 | Task-spec exactness — error message wording | `grep -rn 'סיסמא חייבת להכיל לפחות 8 תווים' frontend/app/login frontend/app/register` → 2 matches |
+| 2352 | Task-spec exactness — error message wording | `grep -rn 'שם מלא הוא שדה חובה' frontend/app/register` → 1 match |
+| 2353 | Task-spec exactness — error message wording | `grep -rn 'מספר טלפון לא תקין' frontend/app/register` → 1 match |
+| 2364 | Regression checks — do NOT break existing behavior | `/login` Google OAuth button still works (we imported a new icon but didn't touch the OAuth block) |
+| 2365 | Regression checks — do NOT break existing behavior | `/login` Apple Sign-In button still works |
+| 2366 | Regression checks — do NOT break existing behavior | `/register/producer` step 1 still works — the `PasswordStrength` upgrade (tier indicator) propagates to its pa… |
+| 2367 | Regression checks — do NOT break existing behavior | `/register` → submit with invalid data server-side (e.g. email already exists) → error banner at the bottom of… |
+| 2368 | Regression checks — do NOT break existing behavior | `/register` → form validation AFTER clearing a field (e.g. type valid email then backspace to nothing) → red b… |
+| 2377 | Mobile 2-column layout (< 768px) | Homepage — "עסקים חדשים ✨" section also shows 2-column grid on mobile |
+| 2378 | Mobile 2-column layout (< 768px) | `/map` — scroll down to the producer list below the map — same 2-column grid on mobile |
+| 2396 | Regression checks | WhatsApp / phone / Instagram icon row in footer still clickable |
+| 2464 | /map desktop — marker click = card-sync (MEH-1010) | Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+h… |
+| 2478 | OG tags on /producer/:id and /:slug | Share a producer link on WhatsApp → preview shows producer photo + name + description snippet |
 | 2493 | Regression | WhatsApp share button still works separately |
 | 2513 | Bundle size | `npm run build` — homepage first load JS < 200kB |
 | 2526 | ProducerCard — Phase A → B → C redesign (2026-04-18) | **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` break… |
@@ -524,17 +414,9 @@ it fails. Four of its cases are lifted from the real document.
 | 2533 | ProducerCard — Phase A → B → C redesign (2026-04-18) | **Heart — guest flow** — tap heart while logged out → heart fills red, snackbar appears with "שמרתי — התחברי ל… |
 | 2537 | ProducerCard — Phase A → B → C redesign (2026-04-18) | **Heart — click doesn't navigate** — tapping the heart does NOT open the producer detail page. |
 | 2539 | ProducerCard — Phase A → B → C redesign (2026-04-18) | **onClick preserved** — on `/map`, tapping a card body (outside heart / Link) still pans the map. |
-| 2566 | WhatsApp share | WhatsApp share button visible in the sidebar |
-| 2567 | WhatsApp share | Click → opens `wa.me` with text: **"גיליתי את [שם העסק] במהמקור — [URL]"** |
-| 2568 | WhatsApp share | Text contains the correct producer name and URL |
+| 2561 | Share button (copy link) | Click share button (desktop, no native share) → toast **"הקישור הועתק ✓"** **(STALE — MEH-1290 הסיר את ה-clipb… |
+| 2566 | WhatsApp share | WhatsApp share button visible in the sidebar **(STALE — `components/WhatsAppShareButton.jsx` אינו מרונדר באף מ… |
 | 2572 | Regression checks | Producer detail page still loads and renders correctly |
-| 2585 | Homepage "ביקרת לאחרונה" section | Homepage — with at least 1 recently viewed producer: **"ביקרת לאחרונה"** section appears above the main produc… |
-| 2586 | Homepage "ביקרת לאחרונה" section | Section shows small cards in a horizontal scroll row (image + name + city) |
-| 2587 | Homepage "ביקרת לאחרונה" section | Cards are 160px wide with 100px tall images |
-| 2588 | Homepage "ביקרת לאחרונה" section | Long producer names truncate with `…` |
-| 2589 | Homepage "ביקרת לאחרונה" section | Click a card → navigates to that producer's page |
-| 2590 | Homepage "ביקרת לאחרונה" section | Mobile: cards scroll horizontally |
-| 2593 | Edge cases | Clear localStorage (`recently_viewed`) → refresh homepage → section is hidden |
 | 2598 | Regression checks | Producer detail page still loads correctly (the useEffect doesn't break anything) |
 | 2599 | Regression checks | Homepage producer grid still renders below the recently-viewed section |
 | 2600 | Regression checks | Category cards + search + geolocation all still work |
@@ -542,7 +424,6 @@ it fails. Four of its cases are lifted from the real document.
 | 2620 | Composability with other filters | Activate "משלוח" chip → search a city in the search bar → both `has_delivery=true` and `delivery_city=` sent |
 | 2631 | Regression checks | Homepage search still works without any chips active |
 | 2633 | Regression checks | `/map` city search + legend category filter still work |
-| 2641 | Button appearance | Homepage hero section — below the search bar there's a **"קרוב אלי"** button with a Crosshair icon |
 | 2660 | Regression checks | Search bar still works (type a city → Enter → producers filtered) |
 | 2674 | City-filtered empty state | Subtext (logged out): **"התחברי כדי לפרסם מוצר משלך."** |
 | 2694 | Login page — eye toggle | `/login` — password field — eye toggle button appears on the **right** side of the input (physical right, insi… |
@@ -551,15 +432,7 @@ it fails. Four of its cases are lifted from the real document.
 | 2704 | ProducerCard badges (start-3) | Homepage — if a "פרמיום" or "זמין היום" badge appears on a card, it is in the **top-right** corner of the card… |
 | 2750 | ProducerDetail — 4 location modes | DeliveryBlock WhatsApp button → tapping opens WhatsApp correctly; Network tab shows POST /producers/:id/whatsa… |
 | 2757 | Geo-search (map) exclusion | Open /map → delivery-only producer does NOT appear as a pin; physical producer at same coords DOES appear |
-| 2773 | Hero search pill — recent / trending dropdown | Homepage — click the search pill without typing → if there are recent searches (localStorage `mehamakor_recent… |
-| 2774 | Hero search pill — recent / trending dropdown | Homepage — click search pill with no recent searches → dropdown shows "חיפושים פופולריים" items from `GET /sea… |
-| 2775 | Hero search pill — recent / trending dropdown | Homepage — type a single character → no autocomplete fired (debounce requires ≥ 2 chars) |
-| 2776 | Hero search pill — recent / trending dropdown | Homepage — type 2+ chars → after 300ms debounce, dropdown shows grouped results: יצרנים / מוצרים / ערים / קטגו… |
-| 2777 | Hero search pill — recent / trending dropdown | Homepage — keyboard nav: ArrowDown/Up cycles through all items in the flat list; Enter submits the highlighted… |
 | 2778 | Hero search pill — recent / trending dropdown | Homepage — type "חוו" → press Enter → navigates to `/producers?q=חוו` |
-| 2779 | Hero search pill — recent / trending dropdown | Homepage — successful search term is saved to `mehamakor_recent_searches` (max 5, most recent first) |
-| 2780 | Hero search pill — recent / trending dropdown | Network tab: `GET /search?q=...` fires at most once per 300ms burst (debounce guard) |
-| 2781 | Hero search pill — recent / trending dropdown | Network tab: rapid type-delete → old in-flight request is aborted (AbortController), no stale results |
 | 2793 | Rate limiting | Fire > 60 requests to `GET /search?q=x` in 1 minute → 429 response |
 | 2794 | Rate limiting | Fire > 30 requests to `GET /search/trending` in 1 minute → 429 response |
 | 2800 | Google OAuth / CSP (fix #173, 2026-04-19) | /login — open DevTools Console → zero CSP violations when page loads |
@@ -580,12 +453,7 @@ it fails. Four of its cases are lifted from the real document.
 | 2869 | Friday delivery strip (homepage) | Load homepage on a Thursday/Friday window — תוצאה מצופה: strip shows producers where `availability_state='avai… |
 | 3085 | /map producer card — distance from user (MEH-826 Gap 2) | **GPS פעיל** — `/he/map` אחרי אישור מיקום → כל כרטיס בית עסק עם קואורדינטות מציג שורת מרחק, למשל `2.5 ק"מ ממך`… |
 | 3086 | /map producer card — distance from user (MEH-826 Gap 2) | **אין GPS** — `/he/map` בלי אישור מיקום (או דחייה) → אף כרטיס לא מציג שורת מרחק — תוצאה מצופה: השורה נעלמת בחן… |
-| 3087 | /map producer card — distance from user (MEH-826 Gap 2) | **/en** — אותו כרטיס באנגלית → המרחק עדיין בפורמט העברי המשותף (`formatDistance`), עקבי עם `ProducerCard` |
 | 3093 | MEH-848 — error toasts collapsed to error.generic (i18n refa… | **התחברות נכשלת** — `/he/login` עם פרטים שגויים → הודעת "משהו השתבש, נסו שוב" (או ה-detail מהשרת) — לא מחרוזת … |
-| 3102 | /map list heading + subhead (MEH-826 Gap 3) | **שורת ספירה** — `/he/map` desktop → מעל רשימת הכרטיסים מופיע "{N} בתי עסק מקומיים באזור" (לא "{N} בתי עסק" בל… |
-| 3103 | /map list heading + subhead (MEH-826 Gap 3) | **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead … |
-| 3104 | /map list heading + subhead (MEH-826 Gap 3) | **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מו… |
-| 3105 | /map list heading + subhead (MEH-826 Gap 3) | **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}" |
 | 3120 | MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes) | **קישור בסיידבר** — התחברי כמנהלת → בסיידבר של האדמין מופיע "מתכונים" (אייקון לחם) בין "חוויות" ל"משתמשים" — ת… |
 | 3129 | MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes) | MAP-16 שלד טעינה ב-bottom sheet — פתחי /map במובייל עם רשת איטית (throttle) — בזמן הטעינה מופיעות 4 שורות שלד … |
 | 3145 | MEH-1116 — טאב עריכה כאקורדיון + עוגני URL | **טעינה** — כל הכרטיסים (ביו / שאלות / ערוצי קשר / קטגוריות / תמונות / מיקום / מוצרים) סגורים; בכל כותרת מופיע… |
@@ -615,7 +483,7 @@ it fails. Four of its cases are lifted from the real document.
 | 3391 | מסך ההרשמה | הכותרת היא «נרשמתם! נשאר צעד אחד» — **לא** «הבקשה נשלחה», לא «בבדיקה», וגם **לא** «ברוכים הבאים למהמקור». ההרש… |
 | 3392 | מסך ההרשמה | הגוף מפנה להשלמת הפרופיל בלוח הבקרה, בלי הבטחת «עד 3 ימי עסקים» |
 
-## Tier 2 — LOCK · VERIFY (98)
+## Tier 2 — LOCK · VERIFY (89)
 
 | line | section | item |
 |---|---|---|
@@ -638,12 +506,8 @@ it fails. Four of its cases are lifted from the real document.
 | 525 | MEH-1164 Chunk 2A — אכיפת אימות מייל לפני פרסום תוכן (17/07) | רגרסיה — `POST /experiences` כבעלת-עסק לא-מאומתת עדיין **403** `{"code":"email_unverified"}` (מאז MEH-2246 השע… |
 | 526 | MEH-1164 Chunk 2A — אכיפת אימות מייל לפני פרסום תוכן (17/07) | MEH-2246 — `POST /experiences` כמשתמשת רגילה (consumer) **מאומתת** — **403 "Producer access required"**; כבעלת… |
 | 533 | sub-chunk B — פרונט: הודעת 403 + CTA "שלחו שוב" בטפסי היצירה… | יצירת אירוע/מתכון/קבוצת-רכש/חוויה — שליחה כבעלת-עסק לא-מאומתת — **תוצאה מצופה:** הודעה מודגשת עם אייקון מעטפה … |
-| 590 | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + … | **אייקונים בבית** — פתחי `/` וגללי לשורת צ'יפי הסינון — **תוצאה מצופה:** כל צ'יפ toggle מציג אייקון 16px לפני … |
-| 591 | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + … | **לייבל "רישוי מאומת"** — **תוצאה מצופה:** הצ'יפ שקודם נקרא "מאומתים" נקרא עכשיו "רישוי מאומת" בכל שלושת המשטח… |
 | 592 | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + … | **לייבל כשרות אחיד** — השוו את צ'יפ הכשרות ב-`/producers` (היה "כשר") מול `/map` — **תוצאה מצופה:** שניהם "כשר… |
 | 593 | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + … | **צ'יפים מהירים ב-/map** — פתחי `/map` — **תוצאה מצופה:** שורת הצ'יפים המהירים ([רישוי מאומת] [משלוח]) עם אייק… |
-| 594 | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + … | **FilterSheet — שורות הסבר** — לחצי "סינון" ב-/map — **תוצאה מצופה:** כל toggle בגיליון מציג אייקון+לייבל ומתח… |
-| 595 | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + … | **a11y** — קורא מסך על צ'יפ toggle — **תוצאה מצופה:** נקרא הלייבל בלבד (רישוי מאומת), האייקון aria-hidden; שור… |
 | 640 | MEH-1259 — הסתרת badge "אורגני" מכל משטח ציבורי (17/07) | **אין badge "אורגני" בכרטיס עסק** — דף גילוי / חיפוש → כרטיס של עסק אורגני — **תוצאה מצופה:** אין צ'יפ "אורגני… |
 | 660 | MEH-1258 — כרטיס "רישיון יצרן" בטאב עריכה (17/07) | **כרטיס רישיון מופיע ונשמר** — `/producer/dashboard/edit` → כרטיס "רישיון יצרן" (אחרי קטגוריות) → מלאי מספר 7-… |
 | 661 | MEH-1258 — כרטיס "רישיון יצרן" בטאב עריכה (17/07) | **אזהרת פורמט לא חוסמת** — הקלידי "123" — **תוצאה מצופה:** אזהרה כתומה "מספר רישיון יצרן הוא 7-10 ספרות"; כפתו… |
@@ -661,54 +525,49 @@ it fails. Four of its cases are lifted from the real document.
 | 860 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **תוויות סינון אחידות /producers ↔ /map (MEH-1082)** — השווי את שם הצ'יפ בשני המסכים — **תוצאה מצופה:** ב-/pro… |
 | 862 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **/producers צ'יפים = replace (MEH-1084)** — בחרי קטגוריה, ואז הדליקי 3 צ'יפים (אורגני/משלוח/מאומתים) — **תוצא… |
 | 988 | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-fligh… | **מסך פתיחה לפני הטופס** — פתחו `/register/producer` (לא מחוברות) — **תוצאה מצופה:** במקום טופס החשבון מופיע מ… |
-| 996 | MEH-1075 — /map filter IA: quick chips + FilterSheet | **שורת סינון מהירה (375px)** — פתחו `/map` במובייל — תוצאה: שורה 1 קטגוריות (ללא שינוי); שורה 2 = [מאומתים] [מ… |
 | 1032 | MEH-853 — /register/producer frame 01 (DETAILS): city + addr… | **Regression** — OAuth עדיין נוחת על DETAILS; declarations עדיין חוסמות submit; שדה רישיון עדיין מופיע ל-ירקות… |
 | 1176 | MEH-773 Chunk B — DB integrity constraints (backend) | מחיקת עסק עם נתונים נלווים — עסק עם OTP token + בקשת תו כשרות + משתמש מקושר → מחיקה דרך אדמין מצליחה (אין 500)… |
 | 1276 | MEH-731 — navbar homepage-state (locale-path) + verify-banne… | verify-banner: משתמש מחובר לא מאומת — banner צהוב מתחת ל-hero (לא בתוך ה-pill הצף) — תוצאה: ה-pill נשאר נקי; b… |
 | 1301 | Mobile (375px) | email-verify banner (משתמש לא מאומת) עדיין מופיע מתחת ל-pill — תוצאה: banner צהוב + resend |
-| 1513 | Stats counter reframe + skeleton (MEH-607) | Hebrew copy renders — visit `/he` → stats bar reads *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. Mo… |
-| 1561 | Producer license number (MEH-530) | Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper… |
-| 1562 | Producer license number (MEH-530) | Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגו… |
-| 1563 | Producer license number (MEH-530) | Register vegetables — בחרי "ירקות ופירות" בלבד → שדה השתוקק לא מופיע, במקומו toggle "יש לי רישיון יצרן ↓". לחי… |
-| 1564 | Producer license number (MEH-530) | Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text. |
-| 1565 | Producer license number (MEH-530) | Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על su… |
-| 1566 | Producer license number (MEH-530) | Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`). |
-| 1567 | Producer license number (MEH-530) | Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר" (או "דגים") → השדה מופיע inline ע… |
-| 1568 | Producer license number (MEH-530) | Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנו… |
-| 1569 | Producer license number (MEH-530) | Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_numb… |
-| 1570 | Producer license number (MEH-530) | Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_prod… |
-| 1630 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בק… |
-| 1634 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` sw… |
-| 1635 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן. |
-| 1636 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inlin… |
-| 1637 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | **MEH-743 honey required** — בחרי "דבש" → השדה "מספר רישיון יצרן (חובה)" מופיע inline. submit ללא ערך → 422 "מ… |
-| 1778 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Regression — badge fixture stale — איך לבדוק: ה-jest test `MEH-479 guard — legacy producer.vegan alone does NO… |
-| 1796 | Dietary checkboxes per product (MEH-293 PR #2) | Admin form — אין יותר checkboxes — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** הסטריפ של הצ'קב… |
-| 1870 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard… |
-| 1871 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge |
-| 1872 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill |
-| 1873 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerDetail: TrustBadge shows next to name in header badge row |
-| 1874 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut… |
-| 1875 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים… |
-| 1876 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | KashrutBadgeStrip: no strip rendered when kashrut_badges empty (no regression to kosher text) |
-| 1877 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: phone verification step 4 appears after submit if producer has phone |
-| 1878 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: "שלחי לי קוד" button → POST /producers/me/verify-phone (check Twilio logs or check DB phon… |
-| 1879 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: correct OTP code → phone_verified=true in DB |
-| 1880 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: wrong OTP code → "קוד שגוי או פג תוקף" error message |
-| 1881 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: "אאמת מאוחר יותר" → skips to confirmation (step 5) |
-| 1882 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: page loads with pending requests list — צרי בקשה דרך POST /producers/me/kashrut-request → מופי… |
-| 1883 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set |
-| 1884 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB |
-| 1885 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: filter by status (pending/approved/rejected) |
-| 1886 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response |
-| 1887 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; c… |
-| 1961 | /map — mobile (375px) | פתחי /map בחלון 375px — שורת קטגוריות מוצגת (כל · בשר ועוף · ...) ושורת תכונות מוצגת מתחתיה (🚚 משלוח אליי · ✓ … |
-| 1982 | דף הבית — filters מעל גריד היצרנים | פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל |
-| 2393 | Regression checks | "מאומת" / "פרמיום" / "זמין היום" badges still visible on the image |
-| 2453 | Mobile top-banner height reservation (MEH-1019) | Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → op… |
-| 2454 | Mobile top-banner height reservation (MEH-1019) | Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap… |
+| 1563 | Producer license number (MEH-530) | Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper… |
+| 1564 | Producer license number (MEH-530) | Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגו… |
+| 1565 | Producer license number (MEH-530) | Register vegetables — בחרי "ירקות ופירות" בלבד → שדה השתוקק לא מופיע, במקומו toggle "יש לי רישיון יצרן ↓". לחי… |
+| 1566 | Producer license number (MEH-530) | Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text. |
+| 1567 | Producer license number (MEH-530) | Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על su… |
+| 1568 | Producer license number (MEH-530) | Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`). |
+| 1569 | Producer license number (MEH-530) | Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר" (או "דגים") → השדה מופיע inline ע… |
+| 1570 | Producer license number (MEH-530) | Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנו… |
+| 1571 | Producer license number (MEH-530) | Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_numb… |
+| 1572 | Producer license number (MEH-530) | Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_prod… |
+| 1632 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בק… |
+| 1636 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` sw… |
+| 1637 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן. |
+| 1638 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inlin… |
+| 1639 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | **MEH-743 honey required** — בחרי "דבש" → השדה "מספר רישיון יצרן (חובה)" מופיע inline. submit ללא ערך → 422 "מ… |
+| 1780 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Regression — badge fixture stale — איך לבדוק: ה-jest test `MEH-479 guard — legacy producer.vegan alone does NO… |
+| 1798 | Dietary checkboxes per product (MEH-293 PR #2) | Admin form — אין יותר checkboxes — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** הסטריפ של הצ'קב… |
+| 1872 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard… |
+| 1873 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge |
+| 1874 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill |
+| 1875 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerDetail: TrustBadge shows next to name in header badge row |
+| 1876 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut… |
+| 1877 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים… |
+| 1878 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | KashrutBadgeStrip: no strip rendered when kashrut_badges empty (no regression to kosher text) |
+| 1879 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: phone verification step 4 appears after submit if producer has phone |
+| 1880 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: "שלחי לי קוד" button → POST /producers/me/verify-phone (check Twilio logs or check DB phon… |
+| 1881 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: correct OTP code → phone_verified=true in DB |
+| 1882 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: wrong OTP code → "קוד שגוי או פג תוקף" error message |
+| 1883 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /register/producer: "אאמת מאוחר יותר" → skips to confirmation (step 5) |
+| 1884 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: page loads with pending requests list — צרי בקשה דרך POST /producers/me/kashrut-request → מופי… |
+| 1885 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set |
+| 1886 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB |
+| 1887 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: filter by status (pending/approved/rejected) |
+| 1888 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response |
+| 1889 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; c… |
+| 1984 | דף הבית — filters מעל גריד היצרנים | פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל |
+| 2395 | Regression checks | "מאומת" / "פרמיום" / "זמין היום" badges still visible on the image |
+| 2455 | Mobile top-banner height reservation (MEH-1019) | Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → op… |
 | 2531 | ProducerCard — Phase A → B → C redesign (2026-04-18) | **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly… |
-| 2607 | Chip appearance (both pages) | Homepage — below "בתי עסק מומלצים" heading, 4 filter chips: ✡️ כשר · 🌿 אורגני · 🚚 משלוח · ✅ מאומת בלבד |
 | 2621 | Composability with other filters | Activate "מאומת בלבד" chip → click a category card → both `verified=true` and `category=` sent |
 | 2628 | Backend params (new) | Both compose with existing params (`lat`, `lng`, `radius_km`, `category`, `delivery_city`, `verified`) |
 | 3383 | אימות הוואטסאפ מתוך הטיוטה — הבדיקה הקריטית ביותר ברשימה | כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף |
@@ -718,7 +577,7 @@ it fails. Four of its cases are lifted from the real document.
 | 3437 | רשימת התזכורות | `GET /admin/license-expiry-reminders` — איך לבדוק: קובעים תוקף 20 יום קדימה לעסק **מאושר** — תוצאה מצופה: העסק… |
 | 3491 | תיק בדיקה (chunk 4) | מתחת לרשימה מופיע «תיק בדיקה» — תוצאה מצופה: קישור למאגר משרד הבריאות, «העתקת שם העסק», מספר הרישיון ותוקפו |
 
-## Tier 3 — not verified, accepted 2026-09-04 (950)
+## Tier 3 — not verified, accepted 2026-09-05 (881)
 
 Listed by line so the acceptance is auditable — not silently blank.
 
@@ -728,14 +587,6 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 12 | MEH-1938 chunk 5a — מיקום העסק: שורות `producer_locations` ה… | **מפת האדמין** — `/admin/analytics` (heat map) ו-`/admin/dashboard` (map_points) — הנקודות תואמות לשורה הראשית… |
 | 13 | MEH-1938 chunk 5a — מיקום העסק: שורות `producer_locations` ה… | **עורך אדמין** — `/admin/producers/{id}/edit`: שדות lat/lng ממולאים מהשורה הראשית; שמירה עדיין מנתבת אותם לשור… |
 | 14 | MEH-1938 chunk 5a — מיקום העסק: שורות `producer_locations` ה… | **בעלת עסק, `PUT /producers/me` עם `city`** — דרך ה-API בלבד (אין UI): 200, העיר לא משתנה, אין ping לאדמין. הע… |
-| 21 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **ההודעה קומפקטית** — עיר + יום ללא משלוח — **תוצאה מצופה:** שורה אחת דקה (`text-sm`, אפור), מיושרת לתחילת השו… |
-| 22 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **הכותרת לא משקרת** — באותו מצב, מתחת להודעה — **תוצאה מצופה:** «בינתיים — בתי עסק שמגיעים לאזור {אזור}:». **א… |
-| 23 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **מצב אפס אחד בלבד** — עיר+יום שמתאפס **ובלי** עסקים באזור — **תוצאה מצופה:** רק שורת ההודעה. אין מתחתיה בלוק … |
-| 24 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **מסלול העיר לבדה לא השתנה** — בחרי **רק עיר** (בלי יום) שאין בה משלוח — **תוצאה מצופה:** הכותרת הישנה «אין עד… |
-| 25 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **כיתוב ימים על כרטיסי ה-fallback** — במצב עיר+יום, על כרטיס שיש לו שורת משלוח לאותה עיר — **תוצאה מצופה:** מת… |
-| 26 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **בתיאום מראש** — כרטיס שיש לו שורה לעיר אך בלי יום מוגדר — **תוצאה מצופה:** «משלוח ל{עיר} בתיאום מראש» |
-| 27 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **‏🪤 בלי שורה לעיר — אין כיתוב כלל** — כרטיס באזור שאין לו שורת `delivery_areas` לעיר הפעילה (למשל ספק ארצי) —… |
-| 28 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **הכיתוב אינו גולש** — 375, גללי עד הגריד — **תוצאה מצופה:** הכיתוב יושב **בתוך** תא הכרטיס שלו ואינו נוגע/מכס… |
 | 29 | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לס… | **‏ידוע ולא תקלה:** בתוך שורה, כרטיס עם כיתוב מסתיים גבוה יותר מכרטיס בלעדיו — תחתיות הכרטיסים אינן מיושרות. נ… |
 | 37 | MEH-2138 chunk F — מסך ההצלחה נוחת מול העיניים, לא מתחת לפוט… | **נייד** — 375, אותו תרחיש — **תוצאה מצופה:** זהה. הכותרת והצ'קמארק בתוך המסך |
 | 38 | MEH-2138 chunk F — מסך ההצלחה נוחת מול העיניים, לא מתחת לפוט… | **מסלול המייל (בלי חשבון קיים)** — הירשמי כאורחת (בלי להיות מחוברת) → «הצטרפו» — **תוצאה מצופה:** מסך «בדקי את… |
@@ -873,22 +724,12 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 463 | MEH-1682 — tooltip של פין במיני-מפה צמוד לפין ב-RTL (27/07) | **גם במסך מלא** — פתחי את המפה למסך מלא (MEH-1659) ואז hover על פין — **תוצאה מצופה:** אותה הצמדה בדיוק; ההגדל… |
 | 472 | MEH-1325 — לב עמוד בית העסק: סנכרון favorites-cache + ירוק (… | **הסרה + כשל רשת** — שמרי ואז הסירי (הלב מתרוקן מיד); אם ההסרה נכשלת (למעט 404) — **תוצאה מצופה:** הלב חוזר למ… |
 | 478 | MEH-1310 — שורת "מועדפים" בתפריט האווטאר הדסקטופי (18/07) | **ללא רגרסיה במובייל** — @375px פתחי את תפריט החשבון (טאב חשבון ב-BottomNav) — **תוצאה מצופה:** ה-AccountSheet… |
-| 485 | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | **מוסתר בטעינה** — טעני את `/` בלי לגלול — **תוצאה מצופה:** אין כפתור "חזרה לראש העמוד". |
-| 486 | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | **מופיע אחרי גלילה** — גללי מטה יותר משני גבהי-מסך — **תוצאה מצופה:** כפתור עגול (חץ למעלה, ArrowUp) מופיע בפי… |
-| 487 | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | **אין חפיפה עם צ'אט / באנר עוגיות / BottomNav** — כשהבאנר עוגיות מוצג, הכפתור עולה מעליו (דרך `--cookie-banner… |
-| 488 | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | **לחיצה → גלילה חלקה לראש** — לחצי — **תוצאה מצופה:** העמוד נגלל חלק לראש; עם `prefers-reduced-motion` הקפיצה … |
 | 489 | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | **`/producers`** — חזרי על הבדיקות ב-`/producers` (רשימה מעומדת) — **תוצאה מצופה:** אותה התנהגות. |
 | 527 | MEH-1164 Chunk 2A — אכיפת אימות מייל לפני פרסום תוכן (17/07) | ללא-רגרסיה — עריכה (`PUT /events/{id}`) וניתובי-בעלים אחרים נשארים על `require_producer` (לא מחייבים אימות מיי… |
 | 534 | sub-chunk B — פרונט: הודעת 403 + CTA "שלחו שוב" בטפסי היצירה… | לחיצה על "שלחו שוב" — **תוצאה מצופה:** נשלח מייל אימות; הקישור מתחלף ל-"✓ נשלח!". לחיצה חוזרת מהירה (429) → "ה… |
 | 535 | sub-chunk B — פרונט: הודעת 403 + CTA "שלחו שוב" בטפסי היצירה… | אחרי אימות המייל — שליחה חוזרת → נוצר (201), ההודעה נעלמה. |
 | 536 | sub-chunk B — פרונט: הודעת 403 + CTA "שלחו שוב" בטפסי היצירה… | EN — אותו מסך ב-`/en` — **תוצאה מצופה:** "Please verify your email address first to publish." + "Resend" (לא מ… |
 | 537 | sub-chunk B — פרונט: הודעת 403 + CTA "שלחו שוב" בטפסי היצירה… | ללא-רגרסיה — 403 של תפקיד ("Producer access required") ושגיאות אחרות מציגות את הנתיב הקיים (בלי ה-CTA). |
-| 608 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **צ'יפ נשלף** — לחצי על ה-✕ בצ'יפ — **תוצאה מצופה:** הצ'יפ נעלם, הגריד נטען מחדש בלי סינון המיקום (סינון קטגור… |
-| 609 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **דחיית הרשאה (denied, code 1)** — דחי את בקשת המיקום — **תוצאה מצופה:** נפתח מודל בחירת העיר (fallback הקיים)… |
-| 610 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **כשל טכני (codes 2/3)** — מיקום לא זמין / timeout — **תוצאה מצופה:** טוסט "לא הצלחנו לזהות את המיקום — אפשר ל… |
-| 611 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **guard לגריד ריק** — אזור בלי עסקים ברדיוס 15 ק"מ — **תוצאה מצופה:** ניסיון חוזר אוטומטי אחד ב-30 ק"מ; אם עדי… |
-| 612 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **צ'יפ עיר ממודל/באנר** — פתחי את מודל המיקום מהבאנר ובחרי עיר — **תוצאה מצופה:** מסונן לפי העיר + צ'יפ "עסקים… |
-| 613 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **מיקום שמור בסשן** — אחרי איתור מוצלח, לחצי "קרוב אליי" שוב — **תוצאה מצופה:** סינון מיידי לפי המיקום השמור (… |
 | 614 | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (1… | **רגרסיה** — שורת הצ'יפים (כשר/טבעוני/משלוח), סינון קטגוריה, ו"עוד בתי עסק" מתנהגים כרגיל; המפה המיני והבאנרים… |
 | 619 | MEH-1255 — משלוחים לכל הארץ חוץ מ־ (exclusion mode) (17/07) | **שדה החרגה מופיע רק במצב "לכל הארץ"** — `/producer/dashboard/edit` → "משלוחים ואיסוף" → סמני "משלוחים" + "משל… |
 | 621 | MEH-1255 — משלוחים לכל הארץ חוץ מ־ (exclusion mode) (17/07) | **החרגה בלי לכל-הארץ נחסמת** — נסי (דרך אדמין או API) לשמור ערים מוחרגות עם "לכל הארץ" מכובה — **תוצאה מצופה:*… |
@@ -921,23 +762,15 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 765 | MEH-1173 — כרטיס "תיאור העסק" (עוזר AI בתוך השדה + משפט תדמי… | **מגבלת קצב** — לחיצה על "צרו תיאור" 6 פעמים בשעה — **תוצאה מצופה:** "נוצרו כבר כמה תיאורים בשעה האחרונה. נסו … |
 | 767 | MEH-1173 — כרטיס "תיאור העסק" (עוזר AI בתוך השדה + משפט תדמי… | **ברירת מחדל של MEH-532 = אין תיאור** — בעסק שהתיאור שלו עדיין "בית עסק מקומי. עוד פרטים בקרוב." — **תוצאה מצו… |
 | 768 | MEH-1173 — כרטיס "תיאור העסק" (עוזר AI בתוך השדה + משפט תדמי… | **RTL + bidi** — 375px + 1440px — **תוצאה מצופה:** כל השדות מיושרים לימין; שדות התיאור/תדמית/3-השאלות `dir="au… |
-| 774 | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + … | **טיפ ההדרכה מעל הכותרת** — נקי localStorage (גלישה ראשונה) ופתחי `/` בנייד, גללי לסקציית בתי העסק והמתיני ~2 … |
-| 775 | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + … | **כותרת ברירת מחדל** — בבית ללא קטגוריה פעילה — **תוצאה מצופה:** הכותרת = "בתי עסק מקומיים" (he) / "Local busi… |
-| 776 | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + … | **כותרת דינמית לפי קטגוריה** — פתחי `/?category=<id>` של קטגוריה קיימת — **תוצאה מצופה:** הכותרת = "בתי עסק · … |
-| 777 | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + … | **תג קטגוריה נשלף** — עם קטגוריה פעילה — **תוצאה מצופה:** בשורת "מסנן לפי:" מופיע תג ירוק נשלף "<שם הקטגוריה> … |
-| 778 | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + … | **צ'יפים לצד קטגוריה** — עם קטגוריה + צ'יפ (למשל `?category=<id>&kosher=1`) — **תוצאה מצופה:** שורת "מסנן לפי:… |
-| 779 | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + … | **RTL** — 375px + 1440px — **תוצאה מצופה:** הכותרת מיושרת לימין, ה-× בתג יושב בקצה ההתחלתי-נגדי (שמאל ב-RTL), … |
 | 820 | MEH-1160 — דף /share "ספרו עלינו" | **קישור ב-Footer** — בכל דף, בעמודת הניווט ב-footer — **תוצאה מצופה:** קישור "ספרו עלינו" מופיע (בין "FAQ לבתי… |
 | 825 | MEH-1145 Wave E3 — אימוץ ui/Input בטפסים כבדים (הגל האחרון) | **מחיקת חשבון (`/settings` → אבטחה)** — **תוצאה מצופה:** שדה אישור-אימייל האדום נשאר במסגרת אדומה (danger) — ל… |
 | 830 | MEH-1145 Wave E2 — אימוץ ui/Input במשטחים ציבוריים | **טופס צור-קשר (/contact)** — פתחי `/contact` בנייד (375px) — **תוצאה מצופה:** שדות "שם" ו"אימייל" נראים כשדה … |
 | 831 | MEH-1145 Wave E2 — אימוץ ui/Input במשטחים ציבוריים | **טופס צור-קשר ב-/about** — גללי לתחתית `/about` — **תוצאה מצופה:** "שם" ו"אימייל" בסגנון הקנוני; ה-select "נו… |
 | 832 | MEH-1145 Wave E2 — אימוץ ui/Input במשטחים ציבוריים | **דירוג מוצר (/rate/[token])** — פתחי קישור דירוג תקין — **תוצאה מצופה:** שדה התגובה ממורכז (`text-center`), מ… |
 | 834 | MEH-1145 Wave E2 — אימוץ ui/Input במשטחים ציבוריים | **רכישה קבוצתית (/group-buys/[id])** — פתחי קבוצת רכש פתוחה — **תוצאה מצופה:** שדה כמות (מספרי, ספרות מיושרות … |
-| 846 | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | **גבהים אחידים בבית** — `/`, סקציית "בתי עסק מומלצים", דסקטופ (4 טורים) ונייד (2 טורים) — **תוצאה מצופה:** כל … |
 | 848 | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | **מועדפים — רשת 2/3/4 (MEH-1203)** — `/favorites` (מחוברת) — **תוצאה מצופה:** 2 עמודות בנייד (375px), 3 ב-lg, … |
 | 850 | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | **מועדפים — פאנל התראות פתוח** — `/favorites` (מחוברת), לחיצה על פעמון בכרטיס אחד לפתיחת AlertPrefsPanel — **ת… |
 | 857 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **empty state עם קטגוריה פעילה** — בבית, פתחי `/?category=<id בלי עסקים>` (או סינון קטגוריה שמחזיר 0) — **תוצא… |
-| 858 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **"נקו את הסינון" מחזיר את הגריד** — לחיצה על הכפתור ב-empty state — **תוצאה מצופה:** הקטגוריה נעלמת מה-URL, ה… |
 | 859 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **empty state גיאוגרפי ללא שינוי** — סינון עיר בלי עסקים, בלי קטגוריה — **תוצאה מצופה:** ה-copy הישן ("באזור ה… |
 | 861 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **/producers בחירת קטגוריה → Back מבטל (MEH-1084)** — ב-`/producers` בחרי קטגוריה מהשורה — **תוצאה מצופה:** ה-… |
 | 863 | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | **פילטרי /events ב-URL** — בחרי עיר + קטגוריה ב-/events — **תוצאה מצופה:** ה-URL מקבל `?city=…&category=…`; re… |
@@ -950,7 +783,6 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 883 | MEH-1048 — עמוד עסק: trust strip ליד ה-h1 (דירוג + מספר ביקו… | **ציטוט ביקורת מעל הקפל** — עסק שהביקורת האחרונה שלו כוללת טקסט — **תוצאה מצופה:** מתחת לתת-הכותרת מופיע ציטוט… |
 | 884 | MEH-1048 — עמוד עסק: trust strip ליד ה-h1 (דירוג + מספר ביקו… | **ביקורת אחרונה בלי טקסט (דירוג בלבד)** — עסק עם ביקורות שכולן דירוג בלבד — **תוצאה מצופה:** הצ'יפ מופיע, אבל … |
 | 885 | MEH-1048 — עמוד עסק: trust strip ליד ה-h1 (דירוג + מספר ביקו… | **אפס ביקורות** — עסק ללא ביקורות — **תוצאה מצופה:** אין צ'יפ דירוג, אין ציטוט, ואין קריאת רשת ל-`/reviews` (N… |
-| 886 | MEH-1048 — עמוד עסק: trust strip ליד ה-h1 (דירוג + מספר ביקו… | **ללא התנגשות עם ה-hero grid** — עסק עם תמונות + ביקורות (375px) — **תוצאה מצופה:** ה-trust strip יושב בשורת ה… |
 | 892 | MEH-1490 — שורת "דירוג ב-Google" שקטה (live-fetch בלבד) | **מיפוי אדמין** — אדמין → עריכת עסק → שדה "מזהה Google Place" → הדביקי place_id של עסק עם ≥20 ביקורות ב-Google… |
 | 893 | MEH-1490 — שורת "דירוג ב-Google" שקטה (live-fetch בלבד) | **שורה מוצגת (eligible)** — עסק ממופה עם ≥20 ביקורות — **תוצאה מצופה:** מתחת לבלוק הביקורות הטבעי (עם קו מפריד… |
 | 894 | MEH-1490 — שורת "דירוג ב-Google" שקטה (live-fetch בלבד) | **הפרדה ויזואלית** — אותו עסק — **תוצאה מצופה:** השורה מנותקת ויזואלית מבלוק הביקורות שלנו (border/מרווח), לא … |
@@ -961,8 +793,6 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 904 | MEH-1146 — עמוד עסק: לולאת גילוי "עוד בתי עסק באזור" (Chunk … | **מוסתרת מתחת ל-4** — עסק בעיר עם ≤3 עסקים אחרים — **תוצאה מצופה:** הסקציה **לא** מופיעה כלל (בלי שורה דלילה ש… |
 | 905 | MEH-1146 — עמוד עסק: לולאת גילוי "עוד בתי עסק באזור" (Chunk … | **דיווח מתחת ללולאה** — משתמשת מחוברת — **תוצאה מצופה:** קישור "דיווח על בית העסק" נשאר בסוף העמוד, **מתחת** ל… |
 | 906 | MEH-1146 — עמוד עסק: לולאת גילוי "עוד בתי עסק באזור" (Chunk … | **פעולה ראשית אחת עדיין** — גללי דרך הלולאה — **תוצאה מצופה:** כרטיסי העסק בלולאה לא מוסיפים כפתור ירוק ראשי מ… |
-| 912 | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | **כותרת דו-שכבתית** — עסק כלשהו — **תוצאה מצופה:** שורת זהות (שם + תגי אמון/אימות) מעל שורת לוגיסטיקה אחת: "עי… |
-| 913 | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | **פירורי לחם בלבד** — **תוצאה מצופה:** אין כפתור "→ חזרה" ליד הפירורים; רק נתיב הפירורים (בית › קטגוריה › שם). |
 | 914 | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | **סדר סקציות** — גללי מלמעלה למטה — **תוצאה מצופה:** אודות → מוצרים → משלוחים → ביקורות → מיקום (מפת Leaflet +… |
 | 915 | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | **מוצר חתום בראש המוצרים** — עסק עם top_product_name — **תוצאה מצופה:** שם המוצר + מחיר התחלה מופיעים בתיבה בר… |
 | 916 | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | **משלוח: מינימום + יום לפי עיר** — עסק עם delivery_areas — **תוצאה מצופה:** כל עיר בשורה: "עיר · מינימום ₪X · … |
@@ -989,10 +819,8 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 972 | MEH-995 — /join: דף הצטרפות כבית עסק | **Footer** — בכל עמוד — **תוצאה מצופה:** "הוסיפו את העסק שלך" מוביל עכשיו ל-`/join` (לא ישירות ל-wizard). |
 | 981 | MEH-991 — design-parity sweep (Chunk 2, PRs #1468/#1472/#147… | **G4 ניווט (#1477)** — סרגל תחתון מחובר: לשונית חשבון מציגה את השם הפרטי שלך (מקוצר עם … אם ארוך), "חשבון" כשמ… |
 | 1017 | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | **Masthead במקום הפלייסהולדר** — עסק בלי תמונות — **תוצאה מצופה:** במקום קופסת האמוג'י+ראשי-תיבות הישנה מופיע … |
-| 1018 | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | **שם פעם אחת בלבד** — אותו עסק — **תוצאה מצופה:** שם העסק מופיע פעם אחת (ב-masthead, ככותרת h1); אינו חוזר שוב… |
 | 1019 | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | **מונוגרם מ·ה** — פינה עליונה (צד end, נגדי לכפתור המועדפים) — **תוצאה מצופה:** סימן מותג מ·ה קטן בזהב, עמום, … |
 | 1020 | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | **כפתור מועדפים** — פינה עליונה start — **תוצאה מצופה:** כפתור הלב נשאר ופועל (top-start), נפרד מהמונוגרם. |
-| 1021 | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | **גובה קצר מהגלריה** — השוו לעסק עם תמונות — **תוצאה מצופה:** ה-masthead נמוך יותר מקרוסלת התמונות (h-52). |
 | 1022 | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | **Regression: מצב עם תמונה אחת** — עסק עם תמונה יחידה — **תוצאה מצופה:** באנר מלא-רוחב כמו קודם (אפס שינוי), ש… |
 | 1041 | MEH-964 chunk 1A — producer dashboard nested-route shell | **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`… |
 | 1042 | MEH-964 chunk 1A — producer dashboard nested-route shell | **סקירה** (`/producer/dashboard`) — ברכה + באנרי סטטוס + כרטיס השלמת פרופיל + מתג זמינות + AnalyticsSection נש… |
@@ -1062,10 +890,6 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 1174 | MEH-773 Chunk B — DB integrity constraints (backend) | דיווח כפול על עסק — לדווח על אותו עסק פעמיים (אותו משתמש) — הדיווח השני מחזיר **409** עם הודעה "כבר דיווחת על … |
 | 1175 | MEH-773 Chunk B — DB integrity constraints (backend) | הפניה כפולה (referral) — לקרוא ל-`/referral/claim` פעמיים עם אותו קוד — שתי הפעמים **200**; השנייה מחזירה `ref… |
 | 1177 | MEH-773 Chunk B — DB integrity constraints (backend) | קיבולת רכש קבוצתי — רכש עם `max_participants=2`, להצטרף עם 3 משתמשים שונים → השלישי מקבל **400** "קבוצת הרכש מ… |
-| 1196 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | רצועת השוואה (MEH-525) — גלילה אחרי "שלושה צעדים" — טבלת סופר\|מהמקור, 3 שורות, קווי שיער בלבד, ללא צל; RTL תקי… |
-| 1197 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | איך זה עובד (copy-Δ #1080) — eyebrow "איך זה עובד" + כותרת "שלושה צעדים" + צעדים מצאי/צרי קשר/קנייה — ללא נקוד… |
-| 1198 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | בלוק עסקים (copy-Δ #1080) — "יש לך עסק? בואו אלינו" + 3 שורות גוף + כפתור "הוסיפו את העסק שלך" |
-| 1199 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | פוטר (copy-Δ #1080) — tagline בלי "אליך" ובלי נקודה; ניוזלטר בלי נקודה; שורה תחתונה "© 2026 מהמקור" בלי 🌿 |
 | 1200 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | תגיות BadgeRow (MEH-730) — עמוד עסק + כרטיס — צ'יפים ירוקים עם טקסט קרם, צ'יפ זהב עם טקסט לבן, נייטרלי על surf… |
 | 1201 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | גיליון חשבון (MEH-730) — אייקון Storefront + ↗ בגוון gold-on-dark החדש על הירוק הכהה |
 | 1202 | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | TrustBadge tooltip (MEH-792) — לחיצה על תגית tier בעמוד עסק פותחת tooltip (היה title שלא עבד במובייל) |
@@ -1083,7 +907,6 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 1241 | MEH-685 — Toast semantic icon API (Category D2 emoji strip) | **Info + action (session expiry)** — אחרי פג תוקף JWT — toast info + אייקון Info + |
 | 1243 | MEH-685 — Toast semantic icon API (Category D2 emoji strip) | **RTL position (he)** — בכל ה־toasts: האייקון בצד ימין (start), צמוד לטקסט עם gap, לבן |
 | 1244 | MEH-685 — Toast semantic icon API (Category D2 emoji strip) | **EN locale** — אותם toasts ב־/en — אייקונים זהים, טקסט אנגלי בלי אימוג'י |
-| 1249 | Friday-strip i18n fix (סרגל שישי) | אותו סרגל ב-`/en` — תוצאה: "Businesses delivering today" + "today" |
 | 1284 | Desktop (≥768px) | בית `/` למעלה — navbar שקוף מעל ה-hero, דיו בהיר, לוגו לבן — איך לבדוק: לטעון `/` — תוצאה: pill שקוף, טקסט בהי… |
 | 1285 | Desktop (≥768px) | גלילה מעל 80px — navbar הופך ל-cream pill צף (border + צל יחיד, ללא קפיצת-צל ב-hover) — תוצאה: מעבר חלק 420ms |
 | 1288 | Desktop (≥768px) | אורח: ghost `כניסה לחשבון` + green `הוסיפו עסק ↗` — תוצאה: שניהם מופיעים |
@@ -1103,269 +926,252 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 1358 | Test 4 — Regression: anonymous can still sign up as producer | Log out completely (clear localStorage) |
 | 1364 | Test 5 — Frontend CTAs hidden from admins | Log in as admin → check Header (mobile drawer), Footer (CTA panel "יש לך עסק?"), and `/producers` empty state … |
 | 1365 | Test 5 — Frontend CTAs hidden from admins | Log in as consumer → all 3 surfaces SHOULD show the CTA |
-| 1514 | Stats counter reframe + skeleton (MEH-607) | Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first few hundred ms… |
-| 1516 | Stats counter reframe + skeleton (MEH-607) | Empty-DB state — if `/stats` returns `{ producers_count: 0 }` → after the skeleton dismisses, the stats sectio… |
-| 1547 | Hide /neighbor pre-launch (MEH-598) | Footer nav — scroll to footer on any page → 5 items: גלה / מפה / אירועים / אודות / FAQ לבתי עסק. "מהמטבח של הש… |
-| 1548 | Hide /neighbor pre-launch (MEH-598) | BottomNav (mobile <768px) — visit `/` on mobile → 3 tabs visible: בית / מפה / פרופיל. "מהשכן" tab **absent** (… |
-| 1549 | Hide /neighbor pre-launch (MEH-598) | Direct route redirect — visit `https://staging.mehamakor.online/neighbor` (or `/he/neighbor`) → redirects to `… |
-| 1550 | Hide /neighbor pre-launch (MEH-598) | Direct route on mobile — same as above on mobile browser → no broken intermediate render, clean redirect. |
-| 1553 | Hide /neighbor pre-launch (MEH-598) | No console errors — DevTools console on `/`, `/neighbor` redirect target, mobile + desktop → no `Missing messa… |
-| 1573 | MEH-1046 — pagination בטבלת /admin/users | ברירת מחדל 25 — `/admin/users` (500+ משתמשים); **תוצאה מצופה:** 25 שורות בלבד, "עמוד 1 מתוך N", "הקודם" מושבת,… |
-| 1574 | MEH-1046 — pagination בטבלת /admin/users | "הבא" מתקדם — לחצי "הבא"; **תוצאה מצופה:** 25 השורות הבאות; בעמוד האחרון "הבא" מושבת. |
-| 1575 | MEH-1046 — pagination בטבלת /admin/users | בורר גודל עמוד — שני ל-50/100; **תוצאה מצופה:** מספר השורות משתנה וחוזרים לעמוד 1. |
-| 1577 | MEH-1046 — pagination בטבלת /admin/users | פעולות שורה בעמוד 2 — חסימה / תפריט ⋮ / דיאלוג אישור; **תוצאה מצופה:** עובדים כרגיל, והחסימה לא מחזירה לעמוד 1… |
-| 1578 | MEH-1046 — pagination בטבלת /admin/users | נייד — הפקדים נשברים לשתי שורות (flex-col) בלי גלישה אופקית. |
-| 1581 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay … |
-| 1582 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה. |
-| 1583 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE. |
-| 1584 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת +… |
-| 1585 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח. |
-| 1588 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dial… |
-| 1589 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | שם הקטגוריה בדיאלוג — **תוצאה מצופה (עודכן ב-MEH-1034):** הטקסט הוא "מחיקת '<שם הקטגוריה>' — N בתי עסק משויכים… |
-| 1590 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE. |
-| 1591 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשי… |
-| 1592 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | הערה — ~~מספר בתי-העסק המשויכים לא מוצג~~ **טופל ב-MEH-1034:** הדיאלוג מציג את ה-count. מחיקת קטגוריה עדיין מנ… |
-| 1595 | MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן") | Count בכל שורה — `/admin` → טאב "תוכן" → "קטגוריות"; **תוצאה מצופה:** בכל שורת קטגוריה מופיע "N בתי עסק" (0 לק… |
-| 1596 | MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן") | Count בדיאלוג המחיקה — לחצי "מחקו" על קטגוריה עם בתי עסק משויכים; **תוצאה מצופה:** הדיאלוג מציג "מחיקת '<שם>' … |
-| 1597 | MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן") | API — DevTools Network → `GET /admin/categories`; **תוצאה מצופה:** כל שורה כוללת `producer_count`. ה-endpoint … |
-| 1600 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | פתיחה — `/admin/producers` → ⋮ בשורה → "מחקו"; **תוצאה מצופה:** dialog מודאלי (overlay כהה + כרטיס לבן, אותו v… |
-| 1601 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה). |
-| 1602 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתר… |
-| 1603 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול. |
-| 1604 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגר… |
-| 1605 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'. |
-| 1608 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפע… |
-| 1609 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט… |
-| 1610 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger). |
-| 1611 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא … |
-| 1612 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפרי… |
-| 1613 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון c… |
-| 1614 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי … |
-| 1615 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט. |
-| 1618 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלו… |
-| 1619 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ… |
-| 1620 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | Promote דרך התפריט — על משתמש שאינו אדמין פתחי ⋮ → "העלי לאדמין"; **תוצאה מצופה:** נפתח **אותו** דיאלוג אישור … |
-| 1621 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | Demote דרך התפריט — על אדמין רגיל (לא ראשי, לא את עצמך) פתחי ⋮ → "הסירי הרשאות" (אדום); **תוצאה מצופה:** דיאלו… |
-| 1622 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | אדמין ראשי (super-admin) — בשורת `levismadar80@gmail.com`; **תוצאה מצופה:** אין תפריט ⋮ (או ריק) — אין מה להצי… |
-| 1623 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | השורה של עצמך (אדמין) — **תוצאה מצופה:** אין "הסירי הרשאות" בתפריט (isMe guard) — לא ניתן להוריד את עצמך. |
-| 1624 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | נגישות מקלדת — Tab ל-⋮ → Enter/Space פותח → פריטי התפריט נגישים ב-Tab, `aria-expanded` מתחלף. |
-| 1625 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | נייד (iOS Safari + Chrome) — התפריט נפתח מעל/מתחת לשורה בלי לגלוש מהמסך; טאץ' מחוץ לתפריט סוגר. |
-| 1628 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | כפתור בקשת השלמה — `/admin/producers` (סנני `pending`) — איך לבדוק: בשורת עסק ממתין יש כפתור "בקשת השלמה" ליד … |
-| 1629 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast ה… |
-| 1631 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (appro… |
-| 1633 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | feedback ריק — במודל השאירי ריק → "שלחו בקשה"; **תוצאה מצופה:** toast שגיאה "יש לפרט מה נדרש להשלים." והבקשה ל… |
-| 1638 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | **MEH-743 olive-oil only optional** — בחרי "שמנים" בלבד → השדה לא מופיע, במקומו toggle אופציונלי. submit ללא ע… |
-| 1660 | Tier 1 — Claude (chat assistant) | Strings present/correct (translations, Q7 plurals, brand voice) |
-| 1661 | Tier 1 — Claude (chat assistant) | RTL `dir="rtl"` + `lang="he"` ב-html element |
-| 1662 | Tier 1 — Claude (chat assistant) | ARIA labels (`aria-label`, `aria-describedby`) |
-| 1663 | Tier 1 — Claude (chat assistant) | Meta tags (description, keywords, og:*, twitter:*) |
-| 1664 | Tier 1 — Claude (chat assistant) | hreflang alternates (per Wave 6 SEO requirements) |
-| 1665 | Tier 1 — Claude (chat assistant) | Tailwind responsive classes present (md:, lg:, sm:) |
-| 1666 | Tier 1 — Claude (chat assistant) | RSC payload structure (component hierarchy, locale, messages namespace) |
-| 1667 | Tier 1 — Claude (chat assistant) | Specific link hrefs (CTA targets, nav links) |
-| 1686 | Tier 2 — Claude Code (CC) | Build clean (npm run build) |
-| 1687 | Tier 2 — Claude Code (CC) | All test suites green (pytest, jest, playwright) |
-| 1688 | Tier 2 — Claude Code (CC) | Code-level grep patterns (forbidden imports absent, required present) |
-| 1689 | Tier 2 — Claude Code (CC) | /adversarial-review on central components |
-| 1690 | Tier 2 — Claude Code (CC) | EN/HE messages parity (jq diff) |
-| 1691 | Tier 2 — Claude Code (CC) | Residual hardcoded count (.claude/scripts/i18n-scan.py) |
-| 1692 | Tier 2 — Claude Code (CC) | Schema/migration consistency (alembic check) |
-| 1693 | Tier 2 — Claude Code (CC) | Playwright smoke: critical pages load, expected text present |
-| 1694 | Tier 2 — Claude Code (CC) | Playwright form submit: fetch fires (mock backend) |
-| 1695 | Tier 2 — Claude Code (CC) | Screenshots @ 375px / 768px / 1440px → /tmp/screenshots/ |
-| 1717 | Tier 3 — Smadar (mobile real device) | Touch target tap-feel @ 375px (BottomNav, filter chips, CTAs) |
-| 1718 | Tier 3 — Smadar (mobile real device) | Animation smoothness on real device (hero parallax, marquee, dropdowns) |
-| 1719 | Tier 3 — Smadar (mobile real device) | Font rendering on Frank Ruhl Libre headlines (anti-aliasing) |
-| 1722 | Tier 3 — Smadar (mobile real device) | Color contrast on real screen (category card overlays, footer links) |
-| 1737 | Product price validation (MEH-295 backend) | POST `price_min=0` — איך לבדוק: `curl -X POST -H "Authorization: Bearer $JWT" -d '{"name":"בדיקה","price_min":… |
-| 1738 | Product price validation (MEH-295 backend) | POST `price_min=10001` — איך לבדוק: same shape, body `{"name":"בדיקה","price_min":10001}`; **תוצאה מצופה:** 42… |
-| 1739 | Product price validation (MEH-295 backend) | POST `price_min=50, price_max=30` — איך לבדוק: `{"name":"בדיקה","price_min":50,"price_max":30}`; **תוצאה מצופה… |
-| 1740 | Product price validation (MEH-295 backend) | POST `price_min` only — איך לבדוק: `{"name":"בדיקה","price_min":50}`; **תוצאה מצופה:** 201; response body has … |
-| 1741 | Product price validation (MEH-295 backend) | POST `price_min` + `price_max` — איך לבדוק: `{"name":"בדיקה","price_min":50,"price_max":80}`; **תוצאה מצופה:**… |
-| 1742 | Product price validation (MEH-295 backend) | PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PU… |
-| 1743 | Product price validation (MEH-295 backend) | Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **ת… |
-| 1750 | ProductsSection mount in the edit tab (MEH-999 follow-up) | Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA… |
-| 1751 | ProductsSection mount in the edit tab (MEH-999 follow-up) | Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעו… |
-| 1758 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "… |
-| 1759 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; … |
-| 1760 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקש… |
-| 1761 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪". |
-| 1762 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪"… |
-| 1763 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-". |
-| 1764 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (ל… |
-| 1765 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא… |
-| 1766 | Phase 3 — frontend form + display (MEH-295 Phase 3) | RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, ש… |
-| 1772 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — `\d producers` — איך לבדוק: `railway connect Postgres` (staging), `\d producers`; **תוצאה מצופה:** טור… |
-| 1775 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — `?vegan=true` filter — איך לבדוק: `/producers?vegan=true`; **תוצאה מצופה:** רק יוצרות עם לפחות מוצר אח… |
-| 1776 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Regression — admin form — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** עדיין אין checkboxes לתז… |
-| 1777 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Regression — `/admin` listing — איך לבדוק: `/admin/producers`; **תוצאה מצופה:** טבלה לא תופסת 5xx (ה-`Producer… |
-| 1786 | Dietary checkboxes per product (MEH-293 PR #2) | Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת ה… |
-| 1787 | Dietary checkboxes per product (MEH-293 PR #2) | Add form — 375px layout — איך לבדוק: באותו טופס במובייל (≤640px); **תוצאה מצופה:** 3 ה-checkboxes מסודרות בעמו… |
-| 1788 | Dietary checkboxes per product (MEH-293 PR #2) | Add form — ≥640px layout — איך לבדוק: באותו טופס בדסקטופ (≥640px); **תוצאה מצופה:** 3 ה-checkboxes ב-3 עמודות … |
-| 1789 | Dietary checkboxes per product (MEH-293 PR #2) | Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצ… |
-| 1790 | Dietary checkboxes per product (MEH-293 PR #2) | Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כו… |
-| 1791 | Dietary checkboxes per product (MEH-293 PR #2) | Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצ… |
-| 1792 | Dietary checkboxes per product (MEH-293 PR #2) | Card aggregation — איך לבדוק: אחרי הוספת מוצר עם `is_vegan=true`, פתחי `/producers` כצרכן; **תוצאה מצופה:** ה-… |
-| 1793 | Dietary checkboxes per product (MEH-293 PR #2) | Card aggregation — toggle off — איך לבדוק: ערכי את המוצר היחיד עם `is_vegan=true` והסירי את הסימון; **תוצאה מצ… |
-| 1794 | Dietary checkboxes per product (MEH-293 PR #2) | Filter on /producers — איך לבדוק: `/producers?vegan=true` (או דרך ה-chip); **תוצאה מצופה:** רק בעלות עסק עם לפ… |
-| 1805 | Product Edit flow (MEH-470) | Open edit — איך לבדוק: לחצי על כפתור Pencil ("ערכי") ליד מוצר קיים; **תוצאה מצופה:** השורה מוחלפת בטופס עריכה … |
-| 1806 | Product Edit flow (MEH-470) | Edit name only — איך לבדוק: שני את השם, לחצי "שמרי שינויים"; **תוצאה מצופה:** השורה חוזרת ל-display mode עם הש… |
-| 1807 | Product Edit flow (MEH-470) | Legacy fallback edit — איך לבדוק: ערכי מוצר ישן עם price_range="₪45/ק״ג" ו-price_min=NULL; **תוצאה מצופה:** מע… |
-| 1808 | Product Edit flow (MEH-470) | Validation — min=0 — איך לבדוק: בעריכה הזיני 0 ב-price_min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪", לא … |
-| 1809 | Product Edit flow (MEH-470) | Validation — max < min — איך לבדוק: בעריכה min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-"… |
-| 1810 | Product Edit flow (MEH-470) | Cancel — איך לבדוק: לחצי "ערכי" על מוצר A, שני את השם, לחצי "בטלי"; **תוצאה מצופה:** הטופס נסגר, השם בתצוגה לא… |
-| 1811 | Product Edit flow (MEH-470) | Switch edit rows — איך לבדוק: לחצי "ערכי" על A (אל תשמרי), לחצי "ערכי" על B; **תוצאה מצופה:** A חוזר ל-display… |
-| 1819 | Producer status labels (MEH-294) | Admin chip — `draft` — איך לבדוק: `/admin/producers`, שורה של עסק שנרשם ולא שלח לבדיקה; **תוצאה מצופה:** chip … |
-| 1820 | Producer status labels (MEH-294) | Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`. |
-| 1821 | Producer status labels (MEH-294) | Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט). |
-| 1822 | Producer status labels (MEH-294) | Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`. |
-| 1823 | Producer status labels (MEH-294) | Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`. |
-| 1824 | Producer status labels (MEH-294) | Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(l… |
-| 1826 | Producer status labels (MEH-294) | Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד… |
-| 1850 | XSS sanitization sweep (MEH-329) | HTML stripped server-side — איך לבדוק: |
-| 1854 | XSS sanitization sweep (MEH-329) | טופס "מהמטבח של השכן" — אותו דבר על `description` ו-`location_notes` |
-| 1855 | XSS sanitization sweep (MEH-329) | טופס "צרי קשר" (`/contact`) — הזיני `<img src=x onerror=alert(1)>` בתוכן ההודעה; **תוצאה:** ההודעה נשמרת ב-DB … |
-| 1916 | Legal pages (אפריל 2026) | /contact — מלאי טופס ושלחי — התגובה "תודה! נחזור אליך בקרוב 🌿" |
-| 1917 | Legal pages (אפריל 2026) | /contact — אחרי שליחה — מגיע אימייל ל-`CONTACT_EMAIL` (`levismadar80@gmail.com`) עם שם/אימייל/הודעה בגוף, `Fro… |
-| 1918 | Legal pages (אפריל 2026) | /contact — אחרי שליחה — יש שורה ב-`contact_messages` עם הערכים הנכונים (בדקי דרך `/admin` או `psql`) |
-| 1919 | Legal pages (אפריל 2026) | /contact — שלחי 6 פניות ברצף מאותה IP — השישית מחזירה 429 |
-| 1920 | Legal pages (אפריל 2026) | /contact — זמני השבת של SMTP (או SMTP_USER ריק) — הטופס עדיין מחזיר 200 וה-DB שומר את השורה (fail-open) |
-| 1925 | Legal pages (אפריל 2026) | Producer registration — נסי לשלוח בלי checkboxes — כפתור disabled (גם checkbox הרישיונות וגם checkbox תנאי השי… |
-| 1926 | Legal pages (אפריל 2026) | DirectoryDisclaimer — כנסי לדף יצרן — disclaimer מוצג מעל כפתור הדיווח |
-| 1927 | Legal pages (אפריל 2026) | DirectoryDisclaimer — גללי את גריד "מהמטבח של השכן" — כל כרטיסייה מציגה את ה-disclaimer בתחתית |
-| 1933 | Security — POST /producers auth (PR #33) | `curl -X POST /api/producers -d '{...}' -H "Content-Type: application/json"` ללא Authorization — 401 |
-| 1934 | Security — POST /producers auth (PR #33) | אותה קריאה עם JWT תקף — 201, שורה חדשה ב-`producers` עם `status=pending` |
-| 1935 | Security — POST /producers auth (PR #33) | `pytest tests/test_api.py::TestProducers -v` על staging — כל 9 הבדיקות ירוקות כולל 4 החדשות: `test_post_produc… |
-| 1942 | Events (קהילה — אירועים מקומיים) | /events — נטען עם פילטרים לפי עיר + תאריך |
-| 1944 | Events (קהילה — אירועים מקומיים) | שלחי אירוע בדיקה — מגיע pending ב-/admin/events |
-| 1945 | Events (קהילה — אירועים מקומיים) | אשרי — מופיע ב-/events הציבורי |
-| 1946 | Events (קהילה — אירועים מקומיים) | "נשארו X מקומות" — מופיע כשנשאר מקום |
-| 1947 | Events (קהילה — אירועים מקומיים) | אימייל ל-`ADMIN_EMAIL` — מגיע כשמוגש אירוע חדש |
-| 1948 | Events (קהילה — אירועים מקומיים) | אימייל למארח — מגיע כשמאושר/נדחה |
-| 1951 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | עסק pending יוצר אירוע — איך לבדוק: היכנסי כבעלת עסק שטרם אושר, פרסמי אירוע — תוצאה מצופה: מסך הצלחה עם "האירו… |
-| 1952 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | /events בגלישה אנונימית — תוצאה מצופה: האירוע של העסק הממתין לא מופיע ברשימה ולא בכרטיסי "אירועים קרובים" בבית |
-| 1953 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | כתובת האירוע ישירה (UUID) בגלישה אנונימית — תוצאה מצופה: עמוד "לא נמצא" (404), שם העסק לא נחשף |
-| 1954 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | אחרי אישור העסק ב-/admin — תוצאה מצופה: האירוע מופיע ב-/events ובעמוד האירוע |
-| 1992 | Tracking infrastructure | GET /producers/{id} — פתחי את עמוד היצרן פעם אחת — יש שורה חדשה ב-`producer_page_views` עם `viewer_ip_hash` שא… |
-| 1994 | Tracking infrastructure | GET /producers/{id} עם Authorization header של משתמשת שלה city='תל אביב' — שורה חדשה עם `city='תל אביב'` |
-| 1995 | Tracking infrastructure | `curl -H "User-Agent: Googlebot/2.1" /producers/{id}` — 200 תקין אבל **אין** שורה חדשה (bot filter) |
-| 1997 | Tracking infrastructure | POST 11 קריאות ברצף מאותה IP — השישית עד ה-עשירית: 200; ה-11: 429 (rate limit 10/min) |
-| 2002 | Producer dashboard (/producer/dashboard) | כרטיסיית "צפיות בפרופיל" מציגה 3 מספרים: `last_7d / last_30d / total` |
-| 2005 | Producer dashboard (/producer/dashboard) | כרטיסיית "עוקבות" מציגה את הספירה הכללית + `+X השבוע` |
-| 2006 | Producer dashboard (/producer/dashboard) | כרטיסיית "דירוג ממוצע" מציגה מספר עם decimal + "מתוך X ביקורות" |
-| 2007 | Producer dashboard (/producer/dashboard) | כרטיסיית "מוצרים פעילים במטבח" סופרת רק home_products של **המשתמשת המחוברת** עם `is_active=true` |
-| 2008 | Producer dashboard (/producer/dashboard) | תרשים "צפיות ב-30 הימים האחרונים" — SVG line chart עם 30 נקודות, תוויות תאריך בהתחלה/אמצע/סוף |
-| 2009 | Producer dashboard (/producer/dashboard) | תרשים "ערים מובילות" — horizontal bars עד 5 ערים; אם אין נתונים מציג טקסט fallback |
-| 2014 | Admin dashboard (/admin) | סה״כ תצוגה: 4 stat cards ראשיים + 4 משניים (new_users_this_week, new_producers_this_week, total_events, total_… |
-| 2015 | Admin dashboard (/admin) | "DAU — 30 ימים אחרונים" — line chart עם 30 נקודות, מבוסס `users.last_active_at` |
-| 2016 | Admin dashboard (/admin) | ערים מובילות (עד 10) — מצטבר מ-`producer_page_views.city` על פני **כל** היצרנים |
-| 2017 | Admin dashboard (/admin) | פאנל בריאות שרת מציג `response_time_avg_ms` ו-`requests_per_minute` + הערה "per-process בזיכרון" |
-| 2018 | Admin dashboard (/admin) | על בוט עם traffic בסיסי (curl /producers), ספירת `sample_count` עולה, avg וכו׳ מתעדכנים |
-| 2019 | Admin dashboard (/admin) | אחרי redeploy של Railway — הפאנל מתאפס (ok) |
-| 2022 | Vacation mode toggle (/admin/settings) — MEH-509 PR2a | מצב חופשה — /admin/settings → toggle on → set date → save → toast → refresh → state persists. Toggle off → toa… |
-| 2023 | Vacation mode toggle (/admin/settings) — MEH-509 PR2a | Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תא… |
-| 2024 | Vacation mode toggle (/admin/settings) — MEH-509 PR2a | Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` →… |
-| 2028 | AI risk-score badge (MEH-509 PR3 — admin only) | Tooltip — hover the risk badge → תוצאה מצופה: tooltip surfaces the full Hebrew reasoning text (or "טרם דורג" i… |
-| 2029 | AI risk-score badge (MEH-509 PR3 — admin only) | Direct endpoint — `curl -H "Authorization: Bearer <admin-jwt>" https://<staging>/admin/producers/<id>/risk-sco… |
-| 2030 | AI risk-score badge (MEH-509 PR3 — admin only) | Auth gate — same curl without JWT → תוצאה מצופה: 401/403; with consumer-role JWT → 403. |
-| 2031 | AI risk-score badge (MEH-509 PR3 — admin only) | Fail-open smoke — temporarily unset `ANTHROPIC_API_KEY` in Railway staging, sign up a producer, restore the ke… |
-| 2043 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Vacation routing — POST `/admin/settings/vacation {"active": true, "return_date": "2026-08-01"}` in staging; i… |
-| 2044 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Within-hours skip — POST `/admin/settings/vacation {"active": false}` to clear vacation; insert a fake inbound… |
-| 2045 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Production promotion — only after staging smoke passes, set `WATCHDOG_ENABLED=true` in Railway production env.… |
-| 2048 | Sidebar pending moderation badge | צרי יצרנית חדשה עם status=pending + דיווח פתוח אחד + מוצר ביתי FLAGGED אחד + חוויה pending אחת |
-| 2049 | Sidebar pending moderation badge | /admin/dashboard — כרטיסיות alerts מפרטות את ה-4 |
-| 2050 | Sidebar pending moderation badge | ב-sidebar על "לוח מחוונים" מופיע pill צהוב עם המספר 4 |
-| 2051 | Sidebar pending moderation badge | מעבר ל-/admin/producers, ה-badge עדיין מופיע עם 4 (ה-layout טוען מחדש על כל שינוי pathname) |
-| 2052 | Sidebar pending moderation badge | אישור כל ה-4 → הרענון הבא: ה-badge נעלם |
-| 2055 | Privacy invariant | `SELECT viewer_ip_hash FROM producer_page_views LIMIT 10` — כל הערכים הם hex 64-תווים (SHA-256), אף אחד לא נרא… |
-| 2056 | Privacy invariant | `SELECT column_name FROM information_schema.columns WHERE table_name='producer_page_views'` — אין עמודה `viewe… |
-| 2067 | Experiences (קהילה — חוויות קולינריות) | /experiences — נטען עם פילטרים |
-| 2068 | Experiences (קהילה — חוויות קולינריות) | /experiences/new — טופס זמין למשתמשים מחוברים (ולא לאנונימיים) |
-| 2069 | Experiences (קהילה — חוויות קולינריות) | שלחי חוויה בדיקה — נכנסת ל-Claude Haiku pre-check; אם pass → `pending` ב-/admin/experiences; אם fail → `change… |
-| 2070 | Experiences (קהילה — חוויות קולינריות) | /admin/experiences — 5 טאבים: "ממתינות לאישור" / "דרוש תיקון" / "מאושרות" / "נדחו" / "הכל" |
-| 2071 | Experiences (קהילה — חוויות קולינריות) | אשרי חוויה — מופיעה ב-/experiences הציבורי |
-| 2072 | Experiences (קהילה — חוויות קולינריות) | "בקשי שינויים" — אימייל למארח עם ההערות שלך מה-modal |
-| 2073 | Experiences (קהילה — חוויות קולינריות) | "דחי" — אימייל למארח עם סיבת הדחייה |
-| 2074 | Experiences (קהילה — חוויות קולינריות) | Claude Haiku לא זמין (ANTHROPIC_API_KEY ריק) — החוויה עוברת ישירות ל-`pending` (fail-open), הגשה לא נכשלת |
-| 2096 | Registration forms — RTL + dashboard copy | `/producer/dashboard` — שלום משתמשת — הטקסט מתחת לכותרת קורא "ברוכה הבאה לניהול העסק של [שם העסק]" (לא "דשבורד… |
-| 2097 | Registration forms — RTL + dashboard copy | `/producer/dashboard/events/new` — breadcrumb בראש הדף — הקישור הראשון קורא "ניהול העסק" (לא "דשבורד"), קליק מ… |
-| 2098 | Registration forms — RTL + dashboard copy | Footer — עמודת "בתי עסק" — הלינק השלישי קורא "ניהול העסק" (לא "דשבורד"), ה-`href` עדיין `/producer/dashboard` |
-| 2099 | Registration forms — RTL + dashboard copy | `grep -rn 'דשבורד' frontend/` → אפס תוצאות (ניתן להריץ אוטומטית לפני merge) |
-| 2126 | Category card images — dairy + care | DevTools → Network — הטעינה של `photo-1771578742735-36009188c207` (dairy) ו-`photo-1600857544200-b2f666a9a2ec`… |
-| 2127 | Category card images — dairy + care | 4 הקטגוריות האחרות (בשר / ירקות / לחמים / שמנים) לא התשנו — regression guard |
-| 2141 | iOS Safari parallax verification | iOS Settings → Accessibility → Motion → **Reduce Motion: ON** — טוענים את הדף מחדש — אנימציות ה-Ken Burns נעצר… |
-| 2142 | iOS Safari parallax verification | iOS Settings → Reduce Motion: OFF — אנימציות חוזרות לפעול אחרי רענון |
-| 2143 | iOS Safari parallax verification | iPad בלנדסקייפ (lot > 768px) — אנימציות עדיין פעילות, אין regression מהסרת `.parallax-bg` המיותר |
-| 2144 | iOS Safari parallax verification | `grep -rn 'background-attachment' frontend/` → שימוש פעיל **יחיד ומכוון**: `.hero-parallax` ב-`globals.css` (`… |
-| 2154 | Unit tests (run locally before merge) | `cd frontend && node lib/utils.test.mjs` → `19 passed, 0 failed` ← pure Node, no Jest/Vitest needed |
-| 2180 | Empty-input guards still work | Producer with `phone: ""` → same: button hidden |
-| 2181 | Empty-input guards still work | Producer with `phone: "abc"` (letters only) → `normalizePhone("abc") === ""` → button hidden |
-| 2185 | Regression guards (grep-based, safe to automate) | `grep -rn "replace(/\^0" frontend/` → zero matches outside `lib/utils.js` + `lib/utils.test.mjs` (no residual … |
-| 2216 | /about contact form | `/about` → scroll to contact form → fill name/email/message → tap "שלחי" → button shows spinner + "שולחת..." |
-| 2217 | /about contact form | `/about` — success → button disappears or recovers, success message below the form |
-| 2218 | /about contact form | `/about` — server error → button recovers to "שלחי", error message shows |
-| 2222 | Footer newsletter | Any page → scroll to footer → enter email → tap "הצטרפי" → button shows spinner + **"מצטרפת..."** (NOTE: was t… |
-| 2223 | Footer newsletter | Footer — success → feminine Hebrew "welcome" message appears below |
-| 2224 | Footer newsletter | Footer — rate-limit error (429, after 6 quick signups) → button recovers to "הצטרפי" |
-| 2228 | Cross-cutting accessibility checks | `prefers-reduced-motion: reduce` — the spinner's CSS `animate-spin` is a simple rotation, not a content-shifti… |
-| 2229 | Cross-cutting accessibility checks | Keyboard-only — tab to any submit button, press Enter, confirm button disables via the same loading branch |
-| 2230 | Cross-cutting accessibility checks | Screen reader — the spinner has `aria-hidden="true"` so it doesn't announce; the button label + disabled state… |
-| 2234 | Regression guards (grep-based) | `grep -rn 'שולח\.\.\.' frontend/` → zero matches (the masculine form should not exist anywhere) |
-| 2245 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Open any Vercel **preview URL** → DevTools → Console → reload → **zero** `"Loading the script ... violates the… |
-| 2246 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Same preview → bottom-left → Vercel feedback widget button loads and is clickable |
-| 2247 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | **Production** `mehamakor.online` → DevTools → Network tab → no requests to `vercel.live/*` at all (widget is … |
-| 2248 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Production → DevTools → Response Headers on any page → `Content-Security-Policy` does NOT contain `vercel.live… |
-| 2252 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Cloudinary producer photos still render (regression check — `img-src` again) |
-| 2276 | Hardcoded answers — instant + plain Hebrew | Click `איך מפרסמים מוצר ביתי?` — instant response contains `"המוצר שלך"` and `"תוך שעות ספורות"`, does NOT con… |
-| 2277 | Hardcoded answers — instant + plain Hebrew | Network tab: clicking any of the 3 canonical prompts does NOT fire a request to `/api/chat` |
-| 2280 | Freeform questions — backend KB sections | Type `מה זה מהמקור?` — response explains the directory concept + categories + map (may use slight model rephra… |
-| 2281 | Freeform questions — backend KB sections | Type `האם האתר בחינם?` — response confirms free for both buyers + sellers and mentions premium as optional |
-| 2282 | Freeform questions — backend KB sections | Type `כמה זמן לוקח האישור של העסק?` — response mentions `"יום-יומיים"` and `"העסק"` explicitly |
-| 2284 | Freeform questions — backend KB sections | Type `מה זה "מהמטבח של השכן"?` — response mentions neighbors cooking at home + review by team, does NOT use "מ… |
-| 2288 | Regression guards (grep-based) | `grep -n 'הפרופיל' backend/app/routers/chat.py` — must only appear in the comment (`never say "הפרופיל מאושר"`… |
-| 2289 | Regression guards (grep-based) | `grep -n 'מודרציה\\|הפרופיל' frontend/components/ChatWidget.jsx` — must only appear in the `//` comment block a… |
-| 2290 | Regression guards (grep-based) | Backend + frontend approvals of businesses must always say `"העסק שלך"`: `grep -c 'העסק שלך' frontend/componen… |
-| 2355 | Accessibility checks | Eye button has `aria-label` that swaps + `aria-pressed` that reflects state |
-| 2356 | Accessibility checks | Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab) |
-| 2357 | Accessibility checks | Error messages are rendered in the same `<div>` as the input so screen readers pick them up |
-| 2358 | Accessibility checks | `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works sm… |
-| 2377 | Mobile 2-column layout (< 768px) | Tablet (768px–1023px) — grids stay 2-column (unchanged from before) |
-| 2378 | Mobile 2-column layout (< 768px) | Desktop (1024px+) — grids stay 4-column (unchanged from before) |
-| 2381 | Shorter card images on mobile | Mobile — card image height is **140px** (shorter than desktop) |
-| 2382 | Shorter card images on mobile | Desktop — card image height is **200px** (unchanged) |
-| 2383 | Shorter card images on mobile | Images are not squished or stretched — `object-cover` fills the shorter container |
-| 2386 | Text truncation | Long producer name (e.g. "חוות השקמה של משפחת אברהמי מרחובות") truncates with `…` instead of wrapping to a sec… |
-| 2387 | Text truncation | Long city + category line truncates with `…` |
-| 2388 | Text truncation | Long top product name truncates with `…` |
-| 2391 | Regression checks | `/favorites` grid = **parity with /producers** (MEH-1203) — 2-col on mobile, 3-col at lg, 4-col at xl (was 1/m… |
-| 2392 | Regression checks | Card hover shadow + lift effect still works on desktop |
-| 2395 | Regression checks | "מידע נוסף" CTA button still works |
-| 2402 | ESLint | `cd frontend && npx eslint . --ext .js,.jsx` → 0 errors |
-| 2405 | Skip navigation (IS 5568) | Tab once from page load → "דלג לתוכן הראשי" link appears → Enter → focus jumps to main content |
-| 2408 | Business disclosures | Footer shows ח.פ., address, email |
-| 2411 | RTL dir="ltr" | Admin settings email input: cursor starts on left |
-| 2412 | RTL dir="ltr" | Footer newsletter email: cursor starts on left |
-| 2413 | RTL dir="ltr" | Experiences/new image URL: cursor starts on left |
-| 2416 | Accessibility statement | `/accessibility` — coordinator name "צוות מהמקור" visible |
-| 2417 | Accessibility statement | Phone placeholder "להשלים" visible |
-| 2418 | Accessibility statement | Link to gov.il accessibility authority present |
-| 2419 | Accessibility statement | Date label: "תאריך בדיקה אחרונה" (not "עדכון אחרון") |
-| 2422 | Admin tables RTL | Admin tables use `text-end` (not `text-right`) — text aligns correctly in RTL |
-| 2434 | Bug fixes | Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding |
-| 2435 | Bug fixes | Mobile: X close button stays at top-left during scroll → tap → closes |
-| 2436 | Bug fixes | Mobile: category legend NOT visible (hidden, filter chips serve this role) |
-| 2440 | Regression | "חפשי באזור זה" button works (z-1000) |
-| 2441 | Regression | "קרוב אלי" clickable with sheet open |
-| 2446 | Leaflet attribution rides the sheet edge (MEH-1365) | נייד, sheet ב-PEEK — `Leaflet \| © OpenStreetMap` גלוי **מעל** קצה ה-sheet, בלי לגעת בתוכן — תוצאה מצופה: פער ק… |
-| 2447 | Leaflet attribution rides the sheet edge (MEH-1365) | נייד, sheet ב-HALF — ה-attribution רוכב למעלה עם הקצה, אפס חפיפה עם כרטיסים — תוצאה מצופה: הכיתוב צף מעל קצה ה… |
-| 2448 | Leaflet attribution rides the sheet edge (MEH-1365) | נייד, באמצע drag — ה-attribution עוקב אחרי הקצה בלי קפיצות (drag=0ms, snap=300ms) |
-| 2449 | Leaflet attribution rides the sheet edge (MEH-1365) | דסקטופ (lg+) — ה-attribution בפינה התחתונה בדיוק כמו היום (הכלל scoped ל-<1024px) |
-| 2472 | OG tags on /producer/:id and /:slug | View page source or `curl -s https://mehamakor.online/producer/1 \| grep 'og:'` — `og:title` is the producer na… |
-| 2473 | OG tags on /producer/:id and /:slug | `og:description` is the first 120 chars of producer description |
-| 2474 | OG tags on /producer/:id and /:slug | `og:image` is a Cloudinary URL with `w_1200,h_630,c_fill` transform |
-| 2475 | OG tags on /producer/:id and /:slug | `og:url` matches the configured production canonical (NEXT_PUBLIC_SITE_URL / SITE_URL / fallback per `frontend… |
-| 2477 | OG tags on /producer/:id and /:slug | Share a slug URL (e.g. `/havat-hashikma`) → same preview quality |
-| 2480 | Share button text | Click share on producer page (desktop, no native share) → clipboard contains multi-line message: |
+| 1518 | Stats counter reframe + skeleton (MEH-607) | Empty-DB state — if `/stats` returns `{ producers_count: 0 }` → after the skeleton dismisses, the stats sectio… |
+| 1549 | Hide /neighbor pre-launch (MEH-598) | Footer nav — scroll to footer on any page → 5 items: גלה / מפה / אירועים / אודות / FAQ לבתי עסק. "מהמטבח של הש… |
+| 1550 | Hide /neighbor pre-launch (MEH-598) | BottomNav (mobile <768px) — visit `/` on mobile → 3 tabs visible: בית / מפה / פרופיל. "מהשכן" tab **absent** (… |
+| 1551 | Hide /neighbor pre-launch (MEH-598) | Direct route redirect — visit `https://staging.mehamakor.online/neighbor` (or `/he/neighbor`) → redirects to `… |
+| 1552 | Hide /neighbor pre-launch (MEH-598) | Direct route on mobile — same as above on mobile browser → no broken intermediate render, clean redirect. |
+| 1555 | Hide /neighbor pre-launch (MEH-598) | No console errors — DevTools console on `/`, `/neighbor` redirect target, mobile + desktop → no `Missing messa… |
+| 1575 | MEH-1046 — pagination בטבלת /admin/users | ברירת מחדל 25 — `/admin/users` (500+ משתמשים); **תוצאה מצופה:** 25 שורות בלבד, "עמוד 1 מתוך N", "הקודם" מושבת,… |
+| 1576 | MEH-1046 — pagination בטבלת /admin/users | "הבא" מתקדם — לחצי "הבא"; **תוצאה מצופה:** 25 השורות הבאות; בעמוד האחרון "הבא" מושבת. |
+| 1577 | MEH-1046 — pagination בטבלת /admin/users | בורר גודל עמוד — שני ל-50/100; **תוצאה מצופה:** מספר השורות משתנה וחוזרים לעמוד 1. |
+| 1579 | MEH-1046 — pagination בטבלת /admin/users | פעולות שורה בעמוד 2 — חסימה / תפריט ⋮ / דיאלוג אישור; **תוצאה מצופה:** עובדים כרגיל, והחסימה לא מחזירה לעמוד 1… |
+| 1580 | MEH-1046 — pagination בטבלת /admin/users | נייד — הפקדים נשברים לשתי שורות (flex-col) בלי גלישה אופקית. |
+| 1583 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay … |
+| 1584 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה. |
+| 1585 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE. |
+| 1586 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת +… |
+| 1587 | MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews | כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח. |
+| 1590 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dial… |
+| 1591 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | שם הקטגוריה בדיאלוג — **תוצאה מצופה (עודכן ב-MEH-1034):** הטקסט הוא "מחיקת '<שם הקטגוריה>' — N בתי עסק משויכים… |
+| 1592 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE. |
+| 1593 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשי… |
+| 1594 | MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טא… | הערה — ~~מספר בתי-העסק המשויכים לא מוצג~~ **טופל ב-MEH-1034:** הדיאלוג מציג את ה-count. מחיקת קטגוריה עדיין מנ… |
+| 1597 | MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן") | Count בכל שורה — `/admin` → טאב "תוכן" → "קטגוריות"; **תוצאה מצופה:** בכל שורת קטגוריה מופיע "N בתי עסק" (0 לק… |
+| 1598 | MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן") | Count בדיאלוג המחיקה — לחצי "מחקו" על קטגוריה עם בתי עסק משויכים; **תוצאה מצופה:** הדיאלוג מציג "מחיקת '<שם>' … |
+| 1599 | MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן") | API — DevTools Network → `GET /admin/categories`; **תוצאה מצופה:** כל שורה כוללת `producer_count`. ה-endpoint … |
+| 1602 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | פתיחה — `/admin/producers` → ⋮ בשורה → "מחקו"; **תוצאה מצופה:** dialog מודאלי (overlay כהה + כרטיס לבן, אותו v… |
+| 1603 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה). |
+| 1604 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתר… |
+| 1605 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול. |
+| 1606 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגר… |
+| 1607 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'. |
+| 1610 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפע… |
+| 1611 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט… |
+| 1612 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger). |
+| 1613 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא … |
+| 1614 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפרי… |
+| 1615 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון c… |
+| 1616 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי … |
+| 1617 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט. |
+| 1620 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלו… |
+| 1621 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ… |
+| 1622 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | Promote דרך התפריט — על משתמש שאינו אדמין פתחי ⋮ → "העלי לאדמין"; **תוצאה מצופה:** נפתח **אותו** דיאלוג אישור … |
+| 1623 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | Demote דרך התפריט — על אדמין רגיל (לא ראשי, לא את עצמך) פתחי ⋮ → "הסירי הרשאות" (אדום); **תוצאה מצופה:** דיאלו… |
+| 1624 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | אדמין ראשי (super-admin) — בשורת `levismadar80@gmail.com`; **תוצאה מצופה:** אין תפריט ⋮ (או ריק) — אין מה להצי… |
+| 1625 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | השורה של עצמך (אדמין) — **תוצאה מצופה:** אין "הסירי הרשאות" בתפריט (isMe guard) — לא ניתן להוריד את עצמך. |
+| 1626 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | נגישות מקלדת — Tab ל-⋮ → Enter/Space פותח → פריטי התפריט נגישים ב-Tab, `aria-expanded` מתחלף. |
+| 1627 | MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/adm… | נייד (iOS Safari + Chrome) — התפריט נפתח מעל/מתחת לשורה בלי לגלוש מהמסך; טאץ' מחוץ לתפריט סוגר. |
+| 1630 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | כפתור בקשת השלמה — `/admin/producers` (סנני `pending`) — איך לבדוק: בשורת עסק ממתין יש כפתור "בקשת השלמה" ליד … |
+| 1631 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast ה… |
+| 1633 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (appro… |
+| 1635 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | feedback ריק — במודל השאירי ריק → "שלחו בקשה"; **תוצאה מצופה:** toast שגיאה "יש לפרט מה נדרש להשלים." והבקשה ל… |
+| 1640 | MEH-1011 Chunk 2 — בקשת השלמה (admin UI) | **MEH-743 olive-oil only optional** — בחרי "שמנים" בלבד → השדה לא מופיע, במקומו toggle אופציונלי. submit ללא ע… |
+| 1662 | Tier 1 — Claude (chat assistant) | Strings present/correct (translations, Q7 plurals, brand voice) |
+| 1663 | Tier 1 — Claude (chat assistant) | RTL `dir="rtl"` + `lang="he"` ב-html element |
+| 1664 | Tier 1 — Claude (chat assistant) | ARIA labels (`aria-label`, `aria-describedby`) |
+| 1665 | Tier 1 — Claude (chat assistant) | Meta tags (description, keywords, og:*, twitter:*) |
+| 1666 | Tier 1 — Claude (chat assistant) | hreflang alternates (per Wave 6 SEO requirements) |
+| 1667 | Tier 1 — Claude (chat assistant) | Tailwind responsive classes present (md:, lg:, sm:) |
+| 1668 | Tier 1 — Claude (chat assistant) | RSC payload structure (component hierarchy, locale, messages namespace) |
+| 1669 | Tier 1 — Claude (chat assistant) | Specific link hrefs (CTA targets, nav links) |
+| 1688 | Tier 2 — Claude Code (CC) | Build clean (npm run build) |
+| 1689 | Tier 2 — Claude Code (CC) | All test suites green (pytest, jest, playwright) |
+| 1690 | Tier 2 — Claude Code (CC) | Code-level grep patterns (forbidden imports absent, required present) |
+| 1691 | Tier 2 — Claude Code (CC) | /adversarial-review on central components |
+| 1692 | Tier 2 — Claude Code (CC) | EN/HE messages parity (jq diff) |
+| 1693 | Tier 2 — Claude Code (CC) | Residual hardcoded count (.claude/scripts/i18n-scan.py) |
+| 1694 | Tier 2 — Claude Code (CC) | Schema/migration consistency (alembic check) |
+| 1695 | Tier 2 — Claude Code (CC) | Playwright smoke: critical pages load, expected text present |
+| 1696 | Tier 2 — Claude Code (CC) | Playwright form submit: fetch fires (mock backend) |
+| 1697 | Tier 2 — Claude Code (CC) | Screenshots @ 375px / 768px / 1440px → /tmp/screenshots/ |
+| 1719 | Tier 3 — Smadar (mobile real device) | Touch target tap-feel @ 375px (BottomNav, filter chips, CTAs) |
+| 1720 | Tier 3 — Smadar (mobile real device) | Animation smoothness on real device (hero parallax, marquee, dropdowns) |
+| 1721 | Tier 3 — Smadar (mobile real device) | Font rendering on Frank Ruhl Libre headlines (anti-aliasing) |
+| 1724 | Tier 3 — Smadar (mobile real device) | Color contrast on real screen (category card overlays, footer links) |
+| 1739 | Product price validation (MEH-295 backend) | POST `price_min=0` — איך לבדוק: `curl -X POST -H "Authorization: Bearer $JWT" -d '{"name":"בדיקה","price_min":… |
+| 1740 | Product price validation (MEH-295 backend) | POST `price_min=10001` — איך לבדוק: same shape, body `{"name":"בדיקה","price_min":10001}`; **תוצאה מצופה:** 42… |
+| 1741 | Product price validation (MEH-295 backend) | POST `price_min=50, price_max=30` — איך לבדוק: `{"name":"בדיקה","price_min":50,"price_max":30}`; **תוצאה מצופה… |
+| 1742 | Product price validation (MEH-295 backend) | POST `price_min` only — איך לבדוק: `{"name":"בדיקה","price_min":50}`; **תוצאה מצופה:** 201; response body has … |
+| 1743 | Product price validation (MEH-295 backend) | POST `price_min` + `price_max` — איך לבדוק: `{"name":"בדיקה","price_min":50,"price_max":80}`; **תוצאה מצופה:**… |
+| 1744 | Product price validation (MEH-295 backend) | PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PU… |
+| 1745 | Product price validation (MEH-295 backend) | Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **ת… |
+| 1752 | ProductsSection mount in the edit tab (MEH-999 follow-up) | Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA… |
+| 1753 | ProductsSection mount in the edit tab (MEH-999 follow-up) | Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעו… |
+| 1760 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "… |
+| 1761 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; … |
+| 1762 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקש… |
+| 1763 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪". |
+| 1764 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪"… |
+| 1765 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-". |
+| 1766 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (ל… |
+| 1767 | Phase 3 — frontend form + display (MEH-295 Phase 3) | Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא… |
+| 1768 | Phase 3 — frontend form + display (MEH-295 Phase 3) | RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, ש… |
+| 1774 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — `\d producers` — איך לבדוק: `railway connect Postgres` (staging), `\d producers`; **תוצאה מצופה:** טור… |
+| 1777 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Smoke — `?vegan=true` filter — איך לבדוק: `/producers?vegan=true`; **תוצאה מצופה:** רק יוצרות עם לפחות מוצר אח… |
+| 1778 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Regression — admin form — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** עדיין אין checkboxes לתז… |
+| 1779 | Dietary cleanup verification (MEH-479 — closes MEH-293) | Regression — `/admin` listing — איך לבדוק: `/admin/producers`; **תוצאה מצופה:** טבלה לא תופסת 5xx (ה-`Producer… |
+| 1788 | Dietary checkboxes per product (MEH-293 PR #2) | Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת ה… |
+| 1789 | Dietary checkboxes per product (MEH-293 PR #2) | Add form — 375px layout — איך לבדוק: באותו טופס במובייל (≤640px); **תוצאה מצופה:** 3 ה-checkboxes מסודרות בעמו… |
+| 1790 | Dietary checkboxes per product (MEH-293 PR #2) | Add form — ≥640px layout — איך לבדוק: באותו טופס בדסקטופ (≥640px); **תוצאה מצופה:** 3 ה-checkboxes ב-3 עמודות … |
+| 1791 | Dietary checkboxes per product (MEH-293 PR #2) | Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצ… |
+| 1792 | Dietary checkboxes per product (MEH-293 PR #2) | Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כו… |
+| 1793 | Dietary checkboxes per product (MEH-293 PR #2) | Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצ… |
+| 1794 | Dietary checkboxes per product (MEH-293 PR #2) | Card aggregation — איך לבדוק: אחרי הוספת מוצר עם `is_vegan=true`, פתחי `/producers` כצרכן; **תוצאה מצופה:** ה-… |
+| 1795 | Dietary checkboxes per product (MEH-293 PR #2) | Card aggregation — toggle off — איך לבדוק: ערכי את המוצר היחיד עם `is_vegan=true` והסירי את הסימון; **תוצאה מצ… |
+| 1796 | Dietary checkboxes per product (MEH-293 PR #2) | Filter on /producers — איך לבדוק: `/producers?vegan=true` (או דרך ה-chip); **תוצאה מצופה:** רק בעלות עסק עם לפ… |
+| 1807 | Product Edit flow (MEH-470) | Open edit — איך לבדוק: לחצי על כפתור Pencil ("ערכי") ליד מוצר קיים; **תוצאה מצופה:** השורה מוחלפת בטופס עריכה … |
+| 1808 | Product Edit flow (MEH-470) | Edit name only — איך לבדוק: שני את השם, לחצי "שמרי שינויים"; **תוצאה מצופה:** השורה חוזרת ל-display mode עם הש… |
+| 1809 | Product Edit flow (MEH-470) | Legacy fallback edit — איך לבדוק: ערכי מוצר ישן עם price_range="₪45/ק״ג" ו-price_min=NULL; **תוצאה מצופה:** מע… |
+| 1810 | Product Edit flow (MEH-470) | Validation — min=0 — איך לבדוק: בעריכה הזיני 0 ב-price_min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪", לא … |
+| 1811 | Product Edit flow (MEH-470) | Validation — max < min — איך לבדוק: בעריכה min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-"… |
+| 1812 | Product Edit flow (MEH-470) | Cancel — איך לבדוק: לחצי "ערכי" על מוצר A, שני את השם, לחצי "בטלי"; **תוצאה מצופה:** הטופס נסגר, השם בתצוגה לא… |
+| 1813 | Product Edit flow (MEH-470) | Switch edit rows — איך לבדוק: לחצי "ערכי" על A (אל תשמרי), לחצי "ערכי" על B; **תוצאה מצופה:** A חוזר ל-display… |
+| 1821 | Producer status labels (MEH-294) | Admin chip — `draft` — איך לבדוק: `/admin/producers`, שורה של עסק שנרשם ולא שלח לבדיקה; **תוצאה מצופה:** chip … |
+| 1822 | Producer status labels (MEH-294) | Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`. |
+| 1823 | Producer status labels (MEH-294) | Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט). |
+| 1824 | Producer status labels (MEH-294) | Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`. |
+| 1825 | Producer status labels (MEH-294) | Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`. |
+| 1826 | Producer status labels (MEH-294) | Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(l… |
+| 1828 | Producer status labels (MEH-294) | Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד… |
+| 1852 | XSS sanitization sweep (MEH-329) | HTML stripped server-side — איך לבדוק: |
+| 1856 | XSS sanitization sweep (MEH-329) | טופס "מהמטבח של השכן" — אותו דבר על `description` ו-`location_notes` |
+| 1857 | XSS sanitization sweep (MEH-329) | טופס "צרי קשר" (`/contact`) — הזיני `<img src=x onerror=alert(1)>` בתוכן ההודעה; **תוצאה:** ההודעה נשמרת ב-DB … |
+| 1918 | Legal pages (אפריל 2026) | /contact — מלאי טופס ושלחי — התגובה "תודה! נחזור אליך בקרוב 🌿" |
+| 1919 | Legal pages (אפריל 2026) | /contact — אחרי שליחה — מגיע אימייל ל-`CONTACT_EMAIL` (`levismadar80@gmail.com`) עם שם/אימייל/הודעה בגוף, `Fro… |
+| 1920 | Legal pages (אפריל 2026) | /contact — אחרי שליחה — יש שורה ב-`contact_messages` עם הערכים הנכונים (בדקי דרך `/admin` או `psql`) |
+| 1921 | Legal pages (אפריל 2026) | /contact — שלחי 6 פניות ברצף מאותה IP — השישית מחזירה 429 |
+| 1922 | Legal pages (אפריל 2026) | /contact — זמני השבת של SMTP (או SMTP_USER ריק) — הטופס עדיין מחזיר 200 וה-DB שומר את השורה (fail-open) |
+| 1927 | Legal pages (אפריל 2026) | Producer registration — נסי לשלוח בלי checkboxes — כפתור disabled (גם checkbox הרישיונות וגם checkbox תנאי השי… |
+| 1928 | Legal pages (אפריל 2026) | DirectoryDisclaimer — כנסי לדף יצרן — disclaimer מוצג מעל כפתור הדיווח |
+| 1929 | Legal pages (אפריל 2026) | DirectoryDisclaimer — גללי את גריד "מהמטבח של השכן" — כל כרטיסייה מציגה את ה-disclaimer בתחתית |
+| 1935 | Security — POST /producers auth (PR #33) | `curl -X POST /api/producers -d '{...}' -H "Content-Type: application/json"` ללא Authorization — 401 |
+| 1936 | Security — POST /producers auth (PR #33) | אותה קריאה עם JWT תקף — 201, שורה חדשה ב-`producers` עם `status=pending` |
+| 1937 | Security — POST /producers auth (PR #33) | `pytest tests/test_api.py::TestProducers -v` על staging — כל 9 הבדיקות ירוקות כולל 4 החדשות: `test_post_produc… |
+| 1944 | Events (קהילה — אירועים מקומיים) | /events — נטען עם פילטרים לפי עיר + תאריך |
+| 1946 | Events (קהילה — אירועים מקומיים) | שלחי אירוע בדיקה — מגיע pending ב-/admin/events |
+| 1947 | Events (קהילה — אירועים מקומיים) | אשרי — מופיע ב-/events הציבורי |
+| 1948 | Events (קהילה — אירועים מקומיים) | "נשארו X מקומות" — מופיע כשנשאר מקום |
+| 1949 | Events (קהילה — אירועים מקומיים) | אימייל ל-`ADMIN_EMAIL` — מגיע כשמוגש אירוע חדש |
+| 1950 | Events (קהילה — אירועים מקומיים) | אימייל למארח — מגיע כשמאושר/נדחה |
+| 1953 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | עסק pending יוצר אירוע — איך לבדוק: היכנסי כבעלת עסק שטרם אושר, פרסמי אירוע — תוצאה מצופה: מסך הצלחה עם "האירו… |
+| 1954 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | /events בגלישה אנונימית — תוצאה מצופה: האירוע של העסק הממתין לא מופיע ברשימה ולא בכרטיסי "אירועים קרובים" בבית |
+| 1955 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | כתובת האירוע ישירה (UUID) בגלישה אנונימית — תוצאה מצופה: עמוד "לא נמצא" (404), שם העסק לא נחשף |
+| 1956 | MEH-1161 — אירוע של עסק ממתין לא ציבורי | אחרי אישור העסק ב-/admin — תוצאה מצופה: האירוע מופיע ב-/events ובעמוד האירוע |
+| 1994 | Tracking infrastructure | GET /producers/{id} — פתחי את עמוד היצרן פעם אחת — יש שורה חדשה ב-`producer_page_views` עם `viewer_ip_hash` שא… |
+| 1996 | Tracking infrastructure | GET /producers/{id} עם Authorization header של משתמשת שלה city='תל אביב' — שורה חדשה עם `city='תל אביב'` |
+| 1997 | Tracking infrastructure | `curl -H "User-Agent: Googlebot/2.1" /producers/{id}` — 200 תקין אבל **אין** שורה חדשה (bot filter) |
+| 1999 | Tracking infrastructure | POST 11 קריאות ברצף מאותה IP — השישית עד ה-עשירית: 200; ה-11: 429 (rate limit 10/min) |
+| 2004 | Producer dashboard (/producer/dashboard) | כרטיסיית "צפיות בפרופיל" מציגה 3 מספרים: `last_7d / last_30d / total` |
+| 2007 | Producer dashboard (/producer/dashboard) | כרטיסיית "עוקבות" מציגה את הספירה הכללית + `+X השבוע` |
+| 2008 | Producer dashboard (/producer/dashboard) | כרטיסיית "דירוג ממוצע" מציגה מספר עם decimal + "מתוך X ביקורות" |
+| 2009 | Producer dashboard (/producer/dashboard) | כרטיסיית "מוצרים פעילים במטבח" סופרת רק home_products של **המשתמשת המחוברת** עם `is_active=true` |
+| 2010 | Producer dashboard (/producer/dashboard) | תרשים "צפיות ב-30 הימים האחרונים" — SVG line chart עם 30 נקודות, תוויות תאריך בהתחלה/אמצע/סוף |
+| 2011 | Producer dashboard (/producer/dashboard) | תרשים "ערים מובילות" — horizontal bars עד 5 ערים; אם אין נתונים מציג טקסט fallback |
+| 2016 | Admin dashboard (/admin) | סה״כ תצוגה: 4 stat cards ראשיים + 4 משניים (new_users_this_week, new_producers_this_week, total_events, total_… |
+| 2017 | Admin dashboard (/admin) | "DAU — 30 ימים אחרונים" — line chart עם 30 נקודות, מבוסס `users.last_active_at` |
+| 2018 | Admin dashboard (/admin) | ערים מובילות (עד 10) — מצטבר מ-`producer_page_views.city` על פני **כל** היצרנים |
+| 2019 | Admin dashboard (/admin) | פאנל בריאות שרת מציג `response_time_avg_ms` ו-`requests_per_minute` + הערה "per-process בזיכרון" |
+| 2020 | Admin dashboard (/admin) | על בוט עם traffic בסיסי (curl /producers), ספירת `sample_count` עולה, avg וכו׳ מתעדכנים |
+| 2021 | Admin dashboard (/admin) | אחרי redeploy של Railway — הפאנל מתאפס (ok) |
+| 2024 | Vacation mode toggle (/admin/settings) — MEH-509 PR2a | מצב חופשה — /admin/settings → toggle on → set date → save → toast → refresh → state persists. Toggle off → toa… |
+| 2025 | Vacation mode toggle (/admin/settings) — MEH-509 PR2a | Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תא… |
+| 2026 | Vacation mode toggle (/admin/settings) — MEH-509 PR2a | Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` →… |
+| 2030 | AI risk-score badge (MEH-509 PR3 — admin only) | Tooltip — hover the risk badge → תוצאה מצופה: tooltip surfaces the full Hebrew reasoning text (or "טרם דורג" i… |
+| 2031 | AI risk-score badge (MEH-509 PR3 — admin only) | Direct endpoint — `curl -H "Authorization: Bearer <admin-jwt>" https://<staging>/admin/producers/<id>/risk-sco… |
+| 2032 | AI risk-score badge (MEH-509 PR3 — admin only) | Auth gate — same curl without JWT → תוצאה מצופה: 401/403; with consumer-role JWT → 403. |
+| 2033 | AI risk-score badge (MEH-509 PR3 — admin only) | Fail-open smoke — temporarily unset `ANTHROPIC_API_KEY` in Railway staging, sign up a producer, restore the ke… |
+| 2045 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Vacation routing — POST `/admin/settings/vacation {"active": true, "return_date": "2026-08-01"}` in staging; i… |
+| 2046 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Within-hours skip — POST `/admin/settings/vacation {"active": false}` to clear vacation; insert a fake inbound… |
+| 2047 | After-hours watchdog (MEH-509 PR2b — gated off until PR2c we… | Production promotion — only after staging smoke passes, set `WATCHDOG_ENABLED=true` in Railway production env.… |
+| 2050 | Sidebar pending moderation badge | צרי יצרנית חדשה עם status=pending + דיווח פתוח אחד + מוצר ביתי FLAGGED אחד + חוויה pending אחת |
+| 2051 | Sidebar pending moderation badge | /admin/dashboard — כרטיסיות alerts מפרטות את ה-4 |
+| 2052 | Sidebar pending moderation badge | ב-sidebar על "לוח מחוונים" מופיע pill צהוב עם המספר 4 |
+| 2053 | Sidebar pending moderation badge | מעבר ל-/admin/producers, ה-badge עדיין מופיע עם 4 (ה-layout טוען מחדש על כל שינוי pathname) |
+| 2054 | Sidebar pending moderation badge | אישור כל ה-4 → הרענון הבא: ה-badge נעלם |
+| 2057 | Privacy invariant | `SELECT viewer_ip_hash FROM producer_page_views LIMIT 10` — כל הערכים הם hex 64-תווים (SHA-256), אף אחד לא נרא… |
+| 2058 | Privacy invariant | `SELECT column_name FROM information_schema.columns WHERE table_name='producer_page_views'` — אין עמודה `viewe… |
+| 2069 | Experiences (קהילה — חוויות קולינריות) | /experiences — נטען עם פילטרים |
+| 2070 | Experiences (קהילה — חוויות קולינריות) | /experiences/new — טופס זמין למשתמשים מחוברים (ולא לאנונימיים) |
+| 2071 | Experiences (קהילה — חוויות קולינריות) | שלחי חוויה בדיקה — נכנסת ל-Claude Haiku pre-check; אם pass → `pending` ב-/admin/experiences; אם fail → `change… |
+| 2072 | Experiences (קהילה — חוויות קולינריות) | /admin/experiences — 5 טאבים: "ממתינות לאישור" / "דרוש תיקון" / "מאושרות" / "נדחו" / "הכל" |
+| 2073 | Experiences (קהילה — חוויות קולינריות) | אשרי חוויה — מופיעה ב-/experiences הציבורי |
+| 2074 | Experiences (קהילה — חוויות קולינריות) | "בקשי שינויים" — אימייל למארח עם ההערות שלך מה-modal |
+| 2075 | Experiences (קהילה — חוויות קולינריות) | "דחי" — אימייל למארח עם סיבת הדחייה |
+| 2076 | Experiences (קהילה — חוויות קולינריות) | Claude Haiku לא זמין (ANTHROPIC_API_KEY ריק) — החוויה עוברת ישירות ל-`pending` (fail-open), הגשה לא נכשלת |
+| 2098 | Registration forms — RTL + dashboard copy | `/producer/dashboard` — שלום משתמשת — הטקסט מתחת לכותרת קורא "ברוכה הבאה לניהול העסק של [שם העסק]" (לא "דשבורד… |
+| 2099 | Registration forms — RTL + dashboard copy | `/producer/dashboard/events/new` — breadcrumb בראש הדף — הקישור הראשון קורא "ניהול העסק" (לא "דשבורד"), קליק מ… |
+| 2100 | Registration forms — RTL + dashboard copy | Footer — עמודת "בתי עסק" — הלינק השלישי קורא "ניהול העסק" (לא "דשבורד"), ה-`href` עדיין `/producer/dashboard` |
+| 2101 | Registration forms — RTL + dashboard copy | `grep -rn 'דשבורד' frontend/` → אפס תוצאות (ניתן להריץ אוטומטית לפני merge) |
+| 2128 | Category card images — dairy + care | DevTools → Network — הטעינה של `photo-1771578742735-36009188c207` (dairy) ו-`photo-1600857544200-b2f666a9a2ec`… |
+| 2129 | Category card images — dairy + care | 4 הקטגוריות האחרות (בשר / ירקות / לחמים / שמנים) לא התשנו — regression guard |
+| 2144 | iOS Safari parallax verification | iOS Settings → Reduce Motion: OFF — אנימציות חוזרות לפעול אחרי רענון |
+| 2145 | iOS Safari parallax verification | iPad בלנדסקייפ (lot > 768px) — אנימציות עדיין פעילות, אין regression מהסרת `.parallax-bg` המיותר |
+| 2146 | iOS Safari parallax verification | `grep -rn 'background-attachment' frontend/` → שימוש פעיל **יחיד ומכוון**: `.hero-parallax` ב-`globals.css` (`… |
+| 2156 | Unit tests (run locally before merge) | `cd frontend && node lib/utils.test.mjs` → `19 passed, 0 failed` ← pure Node, no Jest/Vitest needed |
+| 2182 | Empty-input guards still work | Producer with `phone: ""` → same: button hidden |
+| 2183 | Empty-input guards still work | Producer with `phone: "abc"` (letters only) → `normalizePhone("abc") === ""` → button hidden |
+| 2187 | Regression guards (grep-based, safe to automate) | `grep -rn "replace(/\^0" frontend/` → zero matches outside `lib/utils.js` + `lib/utils.test.mjs` (no residual … |
+| 2218 | /about contact form | `/about` → scroll to contact form → fill name/email/message → tap "שלחי" → button shows spinner + "שולחת..." |
+| 2219 | /about contact form | `/about` — success → button disappears or recovers, success message below the form |
+| 2220 | /about contact form | `/about` — server error → button recovers to "שלחי", error message shows |
+| 2224 | Footer newsletter | Any page → scroll to footer → enter email → tap "הצטרפי" → button shows spinner + **"מצטרפת..."** (NOTE: was t… |
+| 2225 | Footer newsletter | Footer — success → feminine Hebrew "welcome" message appears below |
+| 2226 | Footer newsletter | Footer — rate-limit error (429, after 6 quick signups) → button recovers to "הצטרפי" |
+| 2230 | Cross-cutting accessibility checks | `prefers-reduced-motion: reduce` — the spinner's CSS `animate-spin` is a simple rotation, not a content-shifti… |
+| 2231 | Cross-cutting accessibility checks | Keyboard-only — tab to any submit button, press Enter, confirm button disables via the same loading branch |
+| 2232 | Cross-cutting accessibility checks | Screen reader — the spinner has `aria-hidden="true"` so it doesn't announce; the button label + disabled state… |
+| 2236 | Regression guards (grep-based) | `grep -rn 'שולח\.\.\.' frontend/` → zero matches (the masculine form should not exist anywhere) |
+| 2247 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Open any Vercel **preview URL** → DevTools → Console → reload → **zero** `"Loading the script ... violates the… |
+| 2248 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Same preview → bottom-left → Vercel feedback widget button loads and is clickable |
+| 2249 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | **Production** `mehamakor.online` → DevTools → Network tab → no requests to `vercel.live/*` at all (widget is … |
+| 2250 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Production → DevTools → Response Headers on any page → `Content-Security-Policy` does NOT contain `vercel.live… |
+| 2254 | CSP — Vercel Live feedback widget on preview URLs (fix/csp-a… | Cloudinary producer photos still render (regression check — `img-src` again) |
+| 2278 | Hardcoded answers — instant + plain Hebrew | Click `איך מפרסמים מוצר ביתי?` — instant response contains `"המוצר שלך"` and `"תוך שעות ספורות"`, does NOT con… |
+| 2279 | Hardcoded answers — instant + plain Hebrew | Network tab: clicking any of the 3 canonical prompts does NOT fire a request to `/api/chat` |
+| 2282 | Freeform questions — backend KB sections | Type `מה זה מהמקור?` — response explains the directory concept + categories + map (may use slight model rephra… |
+| 2283 | Freeform questions — backend KB sections | Type `האם האתר בחינם?` — response confirms free for both buyers + sellers and mentions premium as optional |
+| 2284 | Freeform questions — backend KB sections | Type `כמה זמן לוקח האישור של העסק?` — response mentions `"יום-יומיים"` and `"העסק"` explicitly |
+| 2286 | Freeform questions — backend KB sections | Type `מה זה "מהמטבח של השכן"?` — response mentions neighbors cooking at home + review by team, does NOT use "מ… |
+| 2290 | Regression guards (grep-based) | `grep -n 'הפרופיל' backend/app/routers/chat.py` — must only appear in the comment (`never say "הפרופיל מאושר"`… |
+| 2291 | Regression guards (grep-based) | `grep -n 'מודרציה\\|הפרופיל' frontend/components/ChatWidget.jsx` — must only appear in the `//` comment block a… |
+| 2292 | Regression guards (grep-based) | Backend + frontend approvals of businesses must always say `"העסק שלך"`: `grep -c 'העסק שלך' frontend/componen… |
+| 2359 | Accessibility checks | Error messages are rendered in the same `<div>` as the input so screen readers pick them up |
+| 2360 | Accessibility checks | `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works sm… |
+| 2383 | Shorter card images on mobile | Mobile — card image height is **140px** (shorter than desktop) |
+| 2384 | Shorter card images on mobile | Desktop — card image height is **200px** (unchanged) |
+| 2388 | Text truncation | Long producer name (e.g. "חוות השקמה של משפחת אברהמי מרחובות") truncates with `…` instead of wrapping to a sec… |
+| 2390 | Text truncation | Long top product name truncates with `…` |
+| 2393 | Regression checks | `/favorites` grid = **parity with /producers** (MEH-1203) — 2-col on mobile, 3-col at lg, 4-col at xl (was 1/m… |
+| 2394 | Regression checks | Card hover shadow + lift effect still works on desktop |
+| 2397 | Regression checks | "מידע נוסף" CTA button still works |
+| 2404 | ESLint | `cd frontend && npx eslint . --ext .js,.jsx` → 0 errors |
+| 2407 | Skip navigation (IS 5568) | Tab once from page load → "דלג לתוכן הראשי" link appears → Enter → focus jumps to main content |
+| 2410 | Business disclosures | Footer shows ח.פ., address, email |
+| 2413 | RTL dir="ltr" | Admin settings email input: cursor starts on left |
+| 2414 | RTL dir="ltr" | Footer newsletter email: cursor starts on left |
+| 2415 | RTL dir="ltr" | Experiences/new image URL: cursor starts on left |
+| 2418 | Accessibility statement | `/accessibility` — coordinator name "צוות מהמקור" visible |
+| 2419 | Accessibility statement | Phone placeholder "להשלים" visible |
+| 2420 | Accessibility statement | Link to gov.il accessibility authority present |
+| 2421 | Accessibility statement | Date label: "תאריך בדיקה אחרונה" (not "עדכון אחרון") |
+| 2424 | Admin tables RTL | Admin tables use `text-end` (not `text-right`) — text aligns correctly in RTL |
+| 2450 | Leaflet attribution rides the sheet edge (MEH-1365) | נייד, באמצע drag — ה-attribution עוקב אחרי הקצה בלי קפיצות (drag=0ms, snap=300ms) |
+| 2474 | OG tags on /producer/:id and /:slug | View page source or `curl -s https://mehamakor.online/producer/1 \| grep 'og:'` — `og:title` is the producer na… |
+| 2475 | OG tags on /producer/:id and /:slug | `og:description` is the first 120 chars of producer description |
+| 2476 | OG tags on /producer/:id and /:slug | `og:image` is a Cloudinary URL with `w_1200,h_630,c_fill` transform |
+| 2477 | OG tags on /producer/:id and /:slug | `og:url` matches the configured production canonical (NEXT_PUBLIC_SITE_URL / SITE_URL / fallback per `frontend… |
+| 2479 | OG tags on /producer/:id and /:slug | Share a slug URL (e.g. `/havat-hashikma`) → same preview quality |
 | 2487 | Share button text | Mobile: native share sheet opens with the formatted text |
 | 2488 | Share button text | Producer with no description → description line is omitted |
 | 2489 | Share button text | Producer with no city/category → location line is omitted |
@@ -1401,8 +1207,6 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 2551 | FavoriteButton (4 tests) | Returns null when no user logged in |
 | 2552 | FavoriteButton (4 tests) | Shows 🤍 heart when logged in (unfavorited) |
 | 2553 | FavoriteButton (4 tests) | Correct aria-label and aria-pressed |
-| 2560 | Share button (copy link) | `/producer/:id` — sticky sidebar has a share button with a **ShareNetwork** icon (not a Link icon) |
-| 2561 | Share button (copy link) | Click share button (desktop, no native share) → toast **"הקישור הועתק ✓"** |
 | 2562 | Share button (copy link) | Clipboard contains the producer page URL |
 | 2563 | Share button (copy link) | Mobile (with native share API) → native share sheet opens |
 | 2571 | Regression checks | Other ShareButton consumers (if any) also get the updated icon + toast |
@@ -1410,28 +1214,14 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 2580 | localStorage persistence | Visit a second producer → `recently_viewed` is `[2, 1]` (most recent first) |
 | 2581 | localStorage persistence | Visit the same producer again → no duplicates, ID moves to front |
 | 2582 | localStorage persistence | Visit 6 different producers → only the 5 most recent are stored |
-| 2594 | Edge cases | Fresh browser with no localStorage data → section is hidden (no empty state) |
-| 2595 | Edge cases | If a stored producer ID no longer exists (deleted) → that card is silently skipped |
 | 2609 | Chip appearance (both pages) | Mobile — chips row is horizontally scrollable (no line wrap) |
-| 2610 | Chip appearance (both pages) | Inactive chip: white bg, border, dark text |
-| 2611 | Chip appearance (both pages) | Active chip: primary-green bg, white text |
-| 2614 | Toggle behavior | Click "כשר" → chip turns green → grid reloads with only kosher producers |
-| 2615 | Toggle behavior | Click "כשר" again → chip turns white → grid reloads without kosher filter |
-| 2616 | Toggle behavior | Multi-select: activate "כשר" + "אורגנ��" simultaneously → grid shows only kosher AND organic producers |
-| 2617 | Toggle behavior | Network tab: `GET /producers?kosher=true&organic=true` fires (both params) |
 | 2622 | Composability with other filters | "קרוב אלי" button → with "אורגני" active → `lat=&lng=&radius_km=15&organic=true` sent |
-| 2623 | Composability with other filters | Clear category filter ("נקה סינון") → chip filters preserved |
 | 2626 | Backend params (new) | `GET /producers?organic=true` → only producers with `organic_certified=true` |
 | 2627 | Backend params (new) | `GET /producers?kosher=true` → only producers with a non-empty `kosher` field |
 | 2632 | Regression checks | Category card clicks still work |
-| 2634 | Regression checks | "הצגי עוד" load-more button works after chip-filtered results |
 | 2642 | Button appearance | Button styled as a frosted-glass pill (semi-transparent white with backdrop blur) |
 | 2643 | Button appearance | Button fades in with the rest of the hero content (Framer Motion stagger) |
 | 2646 | Geolocation flow — permission granted | Click "קרוב אלי" → browser asks for location permission |
-| 2647 | Geolocation flow — permission granted | While waiting: button shows **"מחפשת..."** with a spinning Crosshair icon + disabled state |
-| 2648 | Geolocation flow — permission granted | On success: page scrolls to the producer grid, which now shows only nearby producers (radius 15km) |
-| 2649 | Geolocation flow — permission granted | Network tab: `GET /producers?lat=...&lng=...&radius_km=15` fires |
-| 2652 | Geolocation flow — permission denied | Click "קרוב אלי" → deny the browser permission prompt |
 | 2653 | Geolocation flow — permission denied | Toast appears: **"אפשרי גישה למיקום בהגדרות הדפדפן"** |
 | 2654 | Geolocation flow — permission denied | Button returns to normal state (not stuck on "מחפשת...") |
 | 2657 | Geolocation unavailable | In a browser/context without geolocation API — same toast message appears |
