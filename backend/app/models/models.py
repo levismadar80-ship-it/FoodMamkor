@@ -193,6 +193,16 @@ class Producer(Base):
     # DO NOT expose recommended_note on any public serializer.
     recommended_at = Column(DateTime(timezone=True), nullable=True)
     recommended_note = Column(Text, nullable=True)
+    # MEH-1287 chunk A: date-bounded editorial curation for the "עכשיו בעונה"
+    # homepage module. The business is in season UNTIL this date (inclusive,
+    # Israel calendar day — compare with israel_today(), never date.today()).
+    # NULL = not curated. A DATE rather than a boolean so it expires by itself
+    # instead of being a flag someone forgets in winter; same clock-not-flag
+    # shape as recommended_at above. Admin-only, NOT on ProducerUpdate —
+    # seasonality is the editor's call, not the owner's declaration (guard
+    # test asserts absence). Chunk B reads it with a count >= 3 render gate
+    # (ADDENDUM-4). Paired migration: f5b8d2c7a3e9.
+    in_season_until = Column(Date, nullable=True)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
     # MEH-1335: owner story fields consumed by the public OwnerCard
