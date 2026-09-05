@@ -473,7 +473,21 @@ async function clickCanvasCorner(shell: Locator): Promise<void> {
   await mapCanvas(shell).click({ position: { x: c.width - 40, y: 40 } });
 }
 
-/** Wait for the bottom sheet to settle at a snap (the 300 ms height transition, MapBottomSheet.jsx), then return the fraction of the viewport it covers. */
+/**
+ * Wait until the bottom sheet REACHES a snap fraction of the viewport — it does
+ * NOT wait for the 300ms height transition to stop, and it returns nothing.
+ *
+ * The tolerance is `toBeCloseTo(fraction, 2)`, i.e. ±0.005 of the viewport =
+ * ±3.6px at 393×727, so this resolves while the sheet is still moving. That is
+ * the right instrument for "the sheet opened to HALF / PEEK" and the WRONG one
+ * before any geometry is measured against the sheet: use `settleSheet` for
+ * that (two consecutive equal heights), as `attributionRide` does. Reading a
+ * rect after this function alone is what made the attribution row flaky on CI.
+ *
+ * (The name and the previous one-line docstring both implied stability, and
+ * the docstring additionally claimed a return value the signature does not
+ * have. Both corrected here rather than left to mislead the next reader.)
+ */
 async function sheetSettledAt(page: Page, shell: Locator, fraction: number): Promise<void> {
   await expect
     .poll(async () => (await box(bottomSheet(shell))).height / (await page.evaluate(() => window.innerHeight)), { message: `sheet at ${fraction * 100}vh` })
