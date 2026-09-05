@@ -616,10 +616,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק (וגם באדמין).
 
-- [ ] **שדה החרגה מופיע רק במצב "לכל הארץ"** — `/producer/dashboard/edit` → "משלוחים ואיסוף" → סמני "משלוחים" + "משלוחים לכל הארץ" — **תוצאה מצופה:** נחשף שדה "חוץ מ:" עם helper "אופציונלי — ערים שלא משלחים אליהן" (CitiesAutocomplete + chips אזורים); שדה "ערים שמשלוחים אליהן" מוסתר.
-- [ ] **שמירה של רשימת החרגה** — הוסיפי "אילת" + "ערד" לשדה ההחרגה → שמירה → רענון — **תוצאה מצופה:** הערים נשמרו; עמוד העסק הציבורי מציג "משלוחים לכל הארץ (למעט אילת, ערד)".
+- ✅ → dashboard-delivery.spec.ts (the exclusion field appears only once «לכל הארץ» is on, and the cities field leaves — live label «משלוחים לכל הארץ, חוץ מהערים האלה:», hint «אופציונלי — ערים שלא משלחים אליהן») — **שדה החרגה מופיע רק במצב "לכל הארץ"** — `/producer/dashboard/edit` → "משלוחים ואיסוף" → סמני "משלוחים" + "משלוחים לכל הארץ" — **תוצאה מצופה:** נחשף שדה "חוץ מ:" עם helper "אופציונלי — ערים שלא משלחים אליהן" (CitiesAutocomplete + chips אזורים); שדה "ערים שמשלוחים אליהן" מוסתר.
+- ✅ → dashboard-delivery.spec.ts (adding an excluded city puts it on the wire alongside the existing one — the PUT is captured, never sent, and the «נשמר» confirmation is asserted; the public-page «למעט» rendering is not) — **שמירה של רשימת החרגה** — הוסיפי "אילת" + "ערד" לשדה ההחרגה → שמירה → רענון — **תוצאה מצופה:** הערים נשמרו; עמוד העסק הציבורי מציג "משלוחים לכל הארץ (למעט אילת, ערד)".
 - [ ] **החרגה בלי לכל-הארץ נחסמת** — נסי (דרך אדמין או API) לשמור ערים מוחרגות עם "לכל הארץ" מכובה — **תוצאה מצופה:** שגיאה עברית "ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ" (422), לא 500.
-- [ ] **כיבוי "לכל הארץ" מנקה החרגות** — עסק עם החרגות → כבי "משלוחים לכל הארץ" → שמירה — **תוצאה מצופה:** ההחרגות נמחקו; חוזרים לשדה ערי משלוח רגיל.
+- ✅ → dashboard-delivery.spec.ts (turning «לכל הארץ» off clears the exclusions and requires a city again) — **כיבוי "לכל הארץ" מנקה החרגות** — עסק עם החרגות → כבי "משלוחים לכל הארץ" → שמירה — **תוצאה מצופה:** ההחרגות נמחקו; חוזרים לשדה ערי משלוח רגיל.
 - [ ] **פילטר צרכני מחריג** — עסק "לכל הארץ למעט אילת" → חיפוש `?delivery_city=אילת` (או פילטר עיר) — **תוצאה מצופה:** העסק לא מוצג; חיפוש עיר אחרת (חיפה) — כן מציג אותו.
 - [ ] **אותו pattern באדמין** — טופס עסק באדמין → "משלוחים לכל הארץ" → שדה "חוץ מ:" נחשף ונשמר.
 
@@ -627,10 +627,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדקי בנייד (375px) + דסקטופ.
 
-- [ ] **chips של אזורים מופיעים רק בהקשר משלוחים** — `/producer/dashboard/edit` → "משלוחים ואיסוף" → סמני "משלוחים" בלי "לכל הארץ" — **תוצאה מצופה:** שורת chips (הצפון · חיפה והקריות · השרון · גוש דן · השפלה · ירושלים והסביבה · הדרום) מעל שדה הערים. בפילטרים צרכניים (למשל /map) — אין chips.
-- [ ] **קליק על אזור מוסיף את כל עריו** — לחצי "השרון" — **תוצאה מצופה:** כל ערי השרון נוספות כ-chips בשדה; שמירה עוברת ועמוד העסק מציג אותן.
-- [ ] **dedupe** — הוסיפי ידנית "נתניה", ואז לחצי "השרון" — **תוצאה מצופה:** "נתניה" מופיעה פעם אחת בלבד.
-- [ ] **אזור שכולו נבחר → מושבת** — אחרי הוספת כל ערי אזור — **תוצאה מצופה:** ה-chip מציג "· נוסף" ולא לחיץ.
+- ✅ → dashboard-delivery.spec.ts (the region chips appear only in a delivery context — all seven, in order — seven regions per data/regions.js, asserted as the exact ordered list) — **chips של אזורים מופיעים רק בהקשר משלוחים** — `/producer/dashboard/edit` → "משלוחים ואיסוף" → סמני "משלוחים" בלי "לכל הארץ" — **תוצאה מצופה:** שורת chips (הצפון · חיפה והקריות · השרון · גוש דן · השפלה · ירושלים והסביבה · הדרום) מעל שדה הערים. בפילטרים צרכניים (למשל /map) — אין chips.
+- ✅ → dashboard-delivery.spec.ts (clicking «השרון» adds all of its cities, and the save carries them as rows — the public page is not asserted) — **קליק על אזור מוסיף את כל עריו** — לחצי "השרון" — **תוצאה מצופה:** כל ערי השרון נוספות כ-chips בשדה; שמירה עוברת ועמוד העסק מציג אותן.
+- ✅ → dashboard-delivery.spec.ts (a hand-added «נתניה» stays a single chip after «השרון» is clicked) — **dedupe** — הוסיפי ידנית "נתניה", ואז לחצי "השרון" — **תוצאה מצופה:** "נתניה" מופיעה פעם אחת בלבד.
+- ✅ → dashboard-delivery.spec.ts (a fully-selected region reads «· ✓ נוסף», is pressed, and clicking it again removes its cities — ⚠️ STALE: MEH-1346 made the chip a toggle — it is clickable and removes the region, not disabled) — **אזור שכולו נבחר → מושבת** — אחרי הוספת כל ערי אזור — **תוצאה מצופה:** ה-chip מציג "· נוסף" ולא לחיץ.
 - [ ] **גם באדמין** — טופס עסק באדמין → "משלוחים" בלי "לכל הארץ" — **תוצאה מצופה:** אותה שורת chips ואותה התנהגות.
 
 ## MEH-1259 — הסתרת badge "אורגני" מכל משטח ציבורי (17/07)
@@ -758,12 +758,12 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב עריכה (`/producer/dashboard/edit`), כרטיס "תיאור העסק" (לשעבר "ביו AI").
 
-- [ ] **מבט ראשון (3 שניות)** — פתחי את הכרטיס בנייד 375px — **תוצאה מצופה:** שדה גיבור אחד "תיאור מלא" עם תווית קבועה + "מופיע בעמוד העסק" + מונה 0/150; מתחתיו כפתור טקסט "צרו תיאור עם AI" (אייקון Sparkle); שדה "משפט תדמית" + "מופיע על כרטיס העסק בחיפוש וברשימות" + מונה 0/160; כפתור "שמרו" יחיד. ברור מיד היכן כותבים.
-- [ ] **כפתור מושבת עם סיבה** — לחצי "צרו תיאור עם AI" ואל תמלאי כלום — **תוצאה מצופה:** נפתח טופס 3 שאלות; כפתור "צרו תיאור" מושבת ומתחתיו השורה "ענו על השאלה הראשונה כדי להתחיל." מילוי "מה אתם מוכרים?" מפעיל את הכפתור והשורה נעלמת.
-- [ ] **יצירה מוצלחת** — מלאי את השאלות ולחצי "צרו תיאור" — **תוצאה מצופה:** התיאור נוחת בשדה הגיבור עם הדגשה חולפת (גוון primary) + toast "נוצר תיאור — עברו עליו ושמרו"; הטופס נסגר; "שמרו" נדלק. השמירה נשארת ידנית.
-- [ ] **תוצאה ריקה לא מוחקת** — בעסק עם תיאור קיים, כשה-AI מחזיר ריק (fail-open) — **תוצאה מצופה:** הטקסט הקיים בשדה נשמר; מופיעה ההודעה "העזרה בכתיבה לא זמינה כרגע. אפשר לכתוב את התיאור ידנית למעלה, או לנסות שוב מאוחר יותר."
-- [ ] **מגבלת קצב** — לחיצה על "צרו תיאור" 6 פעמים בשעה — **תוצאה מצופה:** "נוצרו כבר כמה תיאורים בשעה האחרונה. נסו שוב בעוד שעה — או המשיכו לערוך ידנית."
-- [ ] **שמירה אחת לשני השדות** — מלאי תיאור + משפט תדמית ולחצי "שמרו" — **תוצאה מצופה:** בקשת `PUT /producers/me` אחת עם `description` + `short_description`; הכפתור מציג "נשמר". משפט התדמית מופיע בכרטיס הציבורי בחיפוש/רשימות.
+- ✅ → dashboard-edit-cards.spec.ts (the card leads with one hero field and one tagline field — both projects incl. Pixel 5; the «3 שניות» is a human read, not measured) — **מבט ראשון (3 שניות)** — פתחי את הכרטיס בנייד 375px — **תוצאה מצופה:** שדה גיבור אחד "תיאור מלא" עם תווית קבועה + "מופיע בעמוד העסק" + מונה 0/150; מתחתיו כפתור טקסט "צרו תיאור עם AI" (אייקון Sparkle); שדה "משפט תדמית" + "מופיע על כרטיס העסק בחיפוש וברשימות" + מונה 0/160; כפתור "שמרו" יחיד. ברור מיד היכן כותבים.
+- ✅ → dashboard-edit-cards.spec.ts (generate is disabled with a stated reason until the first question is answered) — **כפתור מושבת עם סיבה** — לחצי "צרו תיאור עם AI" ואל תמלאי כלום — **תוצאה מצופה:** נפתח טופס 3 שאלות; כפתור "צרו תיאור" מושבת ומתחתיו השורה "ענו על השאלה הראשונה כדי להתחיל." מילוי "מה אתם מוכרים?" מפעיל את הכפתור והשורה נעלמת.
+- ✅ → dashboard-edit-cards.spec.ts (a generated description lands in the hero field — the generator is stubbed (MEH-1968 conditions in the spec header); the transient highlight and the toast are NOT asserted) — **יצירה מוצלחת** — מלאי את השאלות ולחצי "צרו תיאור" — **תוצאה מצופה:** התיאור נוחת בשדה הגיבור עם הדגשה חולפת (גוון primary) + toast "נוצר תיאור — עברו עליו ושמרו"; הטופס נסגר; "שמרו" נדלק. השמירה נשארת ידנית.
+- ✅ → dashboard-edit-cards.spec.ts (an empty AI result keeps the existing text and says the service is unavailable) — **תוצאה ריקה לא מוחקת** — בעסק עם תיאור קיים, כשה-AI מחזיר ריק (fail-open) — **תוצאה מצופה:** הטקסט הקיים בשדה נשמר; מופיעה ההודעה "העזרה בכתיבה לא זמינה כרגע. אפשר לכתוב את התיאור ידנית למעלה, או לנסות שוב מאוחר יותר."
+- ✅ → dashboard-edit-cards.spec.ts (a 429 from the generator shows the rate-limit copy — the 429 is stubbed, not produced by six real calls) — **מגבלת קצב** — לחיצה על "צרו תיאור" 6 פעמים בשעה — **תוצאה מצופה:** "נוצרו כבר כמה תיאורים בשעה האחרונה. נסו שוב בעוד שעה — או המשיכו לערוך ידנית."
+- ✅ → dashboard-edit-cards.spec.ts (one save request carries both the description and the tagline — the PUT body is captured from a stub; nothing is written) — **שמירה אחת לשני השדות** — מלאי תיאור + משפט תדמית ולחצי "שמרו" — **תוצאה מצופה:** בקשת `PUT /producers/me` אחת עם `description` + `short_description`; הכפתור מציג "נשמר". משפט התדמית מופיע בכרטיס הציבורי בחיפוש/רשימות.
 - [ ] **ברירת מחדל של MEH-532 = אין תיאור** — בעסק שהתיאור שלו עדיין "בית עסק מקומי. עוד פרטים בקרוב." — **תוצאה מצופה:** סיכום האקורדיון מציג "עוד אין תיאור" ונקודת ההשלמה מפנה לכרטיס (וגם ב-admin producers הנקודה מסומנת כלא-מלאה).
 - [ ] **RTL + bidi** — 375px + 1440px — **תוצאה מצופה:** כל השדות מיושרים לימין; שדות התיאור/תדמית/3-השאלות `dir="auto"` (עברית זורמת ימינה); שדה האינסטגרם בלבד `dir="ltr"`; אין גלישה אופקית; אפס אימוג'י.
 
@@ -1133,23 +1133,23 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב עריכה (`/producer/dashboard/edit`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **דף נקי** — כניסה לעורך ומעבר לטאב אחר בלי לערוך — **תוצאה מצופה:** אין באנר, אין דיאלוג, המעבר חופשי
-- [ ] **עריכה → באנר** — הקלדה בשדה כלשהו (למשל טלפון) — **תוצאה מצופה:** באנר "יש שינויים שלא נשמרו" מופיע מתחת לטאבים ונשאר בגלילה
-- [ ] **ניווט עם שינויים** — לחיצה על טאב/קישור אחר — **תוצאה מצופה:** דיאלוג אישור; ביטול משאיר בעמוד, אישור עוזב
+- ✅ → dashboard-edit-cards.spec.ts (a clean page shows no banner and lets navigation through) — **דף נקי** — כניסה לעורך ומעבר לטאב אחר בלי לערוך — **תוצאה מצופה:** אין באנר, אין דיאלוג, המעבר חופשי
+- ✅ → dashboard-edit-cards.spec.ts (typing in a field raises the banner, naming the card — the banner reads «שינויים שלא נשמרו ב:» + the card's name (MEH-1237), not the doc's «יש שינויים שלא נשמרו»; «נשאר בגלילה» (sticky) is NOT asserted) — **עריכה → באנר** — הקלדה בשדה כלשהו (למשל טלפון) — **תוצאה מצופה:** באנר "יש שינויים שלא נשמרו" מופיע מתחת לטאבים ונשאר בגלילה
+- ✅ → dashboard-edit-cards.spec.ts (navigating away with changes prompts; cancel stays, accept leaves) — **ניווט עם שינויים** — לחיצה על טאב/קישור אחר — **תוצאה מצופה:** דיאלוג אישור; ביטול משאיר בעמוד, אישור עוזב
 - [ ] **סגירת טאב/רענון עם שינויים** — **תוצאה מצופה:** דפדפן מציג את חלון האזהרה המובנה
-- [ ] **שמירה מנקה** — שמירת הכרטיס שנערך — **תוצאה מצופה:** הבאנר נעלם והניווט חופשי שוב
+- ✅ → dashboard-edit-cards.spec.ts (saving clears the banner and frees navigation — the PUT is stubbed; the clear is asserted, the persistence is not) — **שמירה מנקה** — שמירת הכרטיס שנערך — **תוצאה מצופה:** הבאנר נעלם והניווט חופשי שוב
 - [ ] **נייד (375px)** — הבאנר נקרא, הדיאלוג עובד
 
 ## MEH-288 — ProfileCompletenessCard on producer dashboard
 
 כרטיס "השלמת פרופיל" בראש `/producer/dashboard`, מעל קלפי ה-analytics. נכנסות כבעלת עסק (role=producer).
 
-- [ ] **State red** — עסק חסר עיר / מיקום / פרטי קשר → כותרת "הפרופיל שלך חסר פרטים קריטיים" + טבעת אדומה + כפתור "השלימי פרופיל →" שמוביל ל-`/settings`
-- [ ] **State yellow ≤70%** — עסק עם עיר+מיקום+קשר אבל בלי קטגוריה/תמונה → כותרת "הפרופיל שלך X% מוכן", שורת "השלב הבא:" מציגה את השדה החסר הראשון
-- [ ] **State yellow >70%** — חסר רק שדה אחד (למשל תמונה) → כותרת "כמעט שם — X% מוכן" + "רק N פרטים עד שהפרופיל מלא"
-- [ ] **State green** — כל השדות מלאים → הכרטיס מתכווץ לשורה אחת "✓ הפרופיל מלא" (לא נעלם)
+- ✅ → dashboard-edit-cards.spec.ts (a profile missing city, coords and contact is NOT red — the dead red keys never render — ⚠️ STALE: no red state exists; `red_headline`/`red_sub` have zero references in the component, and the CTA goes to the editor, not `/settings`) — **State red** — עסק חסר עיר / מיקום / פרטי קשר → כותרת "הפרופיל שלך חסר פרטים קריטיים" + טבעת אדומה + כפתור "השלימי פרופיל →" שמוביל ל-`/settings`
+- ✅ → dashboard-edit-cards.spec.ts (three steps missing → 50% with the neutral headline) — **State yellow ≤70%** — עסק עם עיר+מיקום+קשר אבל בלי קטגוריה/תמונה → כותרת "הפרופיל שלך X% מוכן", שורת "השלב הבא:" מציגה את השדה החסר הראשון
+- ✅ → dashboard-edit-cards.spec.ts (one step missing → 83%, «כמעט שם», exactly one todo — ⚠️ STALE: the «רק N פרטים» sub-line is the unreferenced `yellow_high_sub`; the card renders `checklist_sub` («עוד כמה צעדים…») unconditionally) — **State yellow >70%** — חסר רק שדה אחד (למשל תמונה) → כותרת "כמעט שם — X% מוכן" + "רק N פרטים עד שהפרופיל מלא"
+- ✅ → dashboard-edit-cards.spec.ts (6/6 collapses to the single green row) — **State green** — כל השדות מלאים → הכרטיס מתכווץ לשורה אחת "✓ הפרופיל מלא" (לא נעלם)
 - [ ] **נייד (375px)** — הכרטיס נקרא, הטבעת + הכותרת לא נשברות; אין horizontal scroll
-- [ ] **a11y** — קורא-מסך מכריז על אחוז ההשלמה (role=progressbar) ועל ה-CTA ("השלימי את הפרופיל שלך")
+- ✅ → dashboard-edit-cards.spec.ts (the ring is a progressbar with the percentage, and the CTA has its own name) — **a11y** — קורא-מסך מכריז על אחוז ההשלמה (role=progressbar) ועל ה-CTA ("השלימי את הפרופיל שלך")
 - [ ] **/en** — אותו כרטיס באנגלית (Your profile is X% ready / Complete profile) — אין מחרוזות עבריות גולמיות
 - [ ] **Regression** — קלפי ה-analytics, חוזק פרופיל, וכל שאר ה-dashboard נשארים מתחת לכרטיס ללא שינוי
 - [ ] **MEH-964 1C — activity pulse בסקירה** — עסק עם פניות וואטסאפ ב-7 הימים האחרונים → מתחת ל-KPI strip כרטיס פעילות: שורת hero ("N פניות חדשות בוואטסאפ — פתחי כדי לענות"), עד 2 שורות אירועים אנונימיות (פנייה בוואטסאפ · צפייה בפרופיל — בלי שמות, בלי עיר, בלי זמן יחסי), כפתור אחד "פתחי וואטסאפ לענות" → wa.me. אפס וואטסאפ אבל יש צפיות → רק שורת צפייה, בלי hero ובלי CTA. אפס הכל → "עוד אין פעילות — שתפי את העמוד כדי להתחיל". אין שורת ביקורות (נדחה ל-MEH-966).
@@ -1159,12 +1159,12 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 הכרטיס ב-`/producer/dashboard` הפך לצ'קליסט 4-צעדים: ① תמונה ראשית ② קטגוריות ומיקום ③ 3 מוצרים בקטלוג ④ פרטי קשר. נכנסות כבעלת עסק (role=producer).
 
-- [ ] **4/4 הושלמו** — עסק עם תמונה + קטגוריה+מיקום + ≥3 מוצרים + קשר → הכרטיס מתכווץ לשורה אחת "✓ הפרופיל מלא"
-- [ ] **חסרה תמונה (75%)** — טבעת זהב 75% (לא אדום), כותרת "כמעט שם — 75% מוכן", צ'קליסט 4 שורות (3 עם ✓ + "תמונה ראשית" חסרה), קופסת "השלב הבא: תמונה ראשית", CTA
-- [ ] **חסרים 2 צעדים (50%)** — כותרת "הפרופיל שלך 50% מוכן", טבעת זהב
-- [ ] **חסרים רק מוצרים (<3)** — צעד "3 מוצרים בקטלוג" מסומן כחסר; זהו signal card-only — **רשימת האדמין לא מושפעת** (המוצרים לא ב-heuristic המשותף)
-- [ ] **deep-link לכל צעד** — לחיצה על שורה → `/producer/dashboard/edit#profile-images|profile-categories|profile-products|profile-contact` (הסקשן הרלוונטי נגלל לתצוגה)
-- [ ] **delivery-only** — עסק משלוחים בלבד עם אזורי משלוח → צעד המיקום הושלם דרך "אזורי משלוח" (לא דורש קואורדינטות)
+- ✅ → dashboard-edit-cards.spec.ts (6/6 collapses to the single green row — ⚠️ STALE: six steps, not four — image · location · products · contact · phone_verified · hours) — **4/4 הושלמו** — עסק עם תמונה + קטגוריה+מיקום + ≥3 מוצרים + קשר → הכרטיס מתכווץ לשורה אחת "✓ הפרופיל מלא"
+- ✅ → dashboard-edit-cards.spec.ts (one step missing → 83%, «כמעט שם», exactly one todo — ⚠️ STALE: 83% with six steps, not 75%; the «השלב הבא» box is NOT asserted) — **חסרה תמונה (75%)** — טבעת זהב 75% (לא אדום), כותרת "כמעט שם — 75% מוכן", צ'קליסט 4 שורות (3 עם ✓ + "תמונה ראשית" חסרה), קופסת "השלב הבא: תמונה ראשית", CTA
+- ✅ → dashboard-edit-cards.spec.ts (three steps missing → 50% with the neutral headline — three missing of six, not two of four) — **חסרים 2 צעדים (50%)** — כותרת "הפרופיל שלך 50% מוכן", טבעת זהב
+- ✅ → dashboard-edit-cards.spec.ts (products: zero is a todo, one is done — ⚠️ STALE: `CHECKLIST_PRODUCTS_MIN = 1`, not 3; the admin-list independence is a backend claim, not asserted here) — **חסרים רק מוצרים (<3)** — צעד "3 מוצרים בקטלוג" מסומן כחסר; זהו signal card-only — **רשימת האדמין לא מושפעת** (המוצרים לא ב-heuristic המשותף)
+- ✅ → dashboard-edit-cards.spec.ts (each checklist step deep-links to the editor that owns it — ⚠️ STALE: the hrefs today are #profile-images · #locations ×2 · #profile-products · #profile-contact · #phone-verify; `#profile-categories` no longer exists) — **deep-link לכל צעד** — לחיצה על שורה → `/producer/dashboard/edit#profile-images|profile-categories|profile-products|profile-contact` (הסקשן הרלוונטי נגלל לתצוגה)
+- ✅ → dashboard-edit-cards.spec.ts (a delivery-only business completes the location step through its delivery areas) — **delivery-only** — עסק משלוחים בלבד עם אזורי משלוח → צעד המיקום הושלם דרך "אזורי משלוח" (לא דורש קואורדינטות)
 - [ ] **נייד (375px)** — הכרטיס + 4 השורות + הקופסה + CTA נקראים, אין horizontal scroll
 - [ ] **/en** — הצ'קליסט מוצג באנגלית (Main photo / Categories & location / 3 products in your catalog / Contact details) — אין gate של he בלבד
 - [ ] **Regression — ChangesRequestedBanner** — באנר "נשאר להשלים" (ערוץ אדמין נפרד) ממשיך להופיע עצמאית כשיש `requested_changes`; לא נגעו בו
@@ -3132,11 +3132,11 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 בטאב עריכה (`/producer/dashboard/edit`) ובעמוד קבוצות הרכש (`/producer/dashboard/group-buys`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **ערוץ ראשי** — פותחות את כרטיס "ערוצי קשר"; מתחת לכותרת "הערוץ הראשי" מופיע קישור "מה זה?" — **תוצאה מצופה:** הקשה פותחת פאנל הסבר קצר מתחתיו; הקשה נוספת סוגרת
-- [ ] **טופס הזמנות** — מתחת לשדה "טופס הזמנות (קישור)" — "מה זה?" נפתח/נסגר באותו אופן
-- [ ] **קבוצת רכש** — בראש עמוד קבוצות הרכש, מתחת לכותרת — "מה זה?" מסביר מהי הזמנה מרוכזת
+- ✅ → dashboard-edit-cards.spec.ts (primary channel — opens and closes) — **ערוץ ראשי** — פותחות את כרטיס "ערוצי קשר"; מתחת לכותרת "הערוץ הראשי" מופיע קישור "מה זה?" — **תוצאה מצופה:** הקשה פותחת פאנל הסבר קצר מתחתיו; הקשה נוספת סוגרת
+- ✅ → dashboard-edit-cards.spec.ts (order form — opens and closes) — **טופס הזמנות** — מתחת לשדה "טופס הזמנות (קישור)" — "מה זה?" נפתח/נסגר באותו אופן
+- ✅ → dashboard-edit-cards.spec.ts (group-buys page — opens and closes) — **קבוצת רכש** — בראש עמוד קבוצות הרכש, מתחת לכותרת — "מה זה?" מסביר מהי הזמנה מרוכזת
 - [ ] **מובייל 375px** — שלושת הטריגרים לחיצים בקלות (יעד הקשה ≥44px); הפאנל לא שובר את הפריסה
-- [ ] **/en** — הטריגר "What's this?" והפאנלים באנגלית (לא עברית)
+- ✅ → dashboard-edit-cards.spec.ts (/en — the trigger reads «What's this?» — trigger only; the panels' English text is NOT asserted) — **/en** — הטריגר "What's this?" והפאנלים באנגלית (לא עברית)
 
 ## MEH-1116 — טאב עריכה כאקורדיון + עוגני URL
 
@@ -3144,8 +3144,8 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 - ✅ → dashboard-edit.spec.ts (with no hash every card in the group is closed and still summarised — only the LIVE half: the row's flat seven-card enumeration is the pre-hub shape (drift D4)) — **טעינה** — כל הכרטיסים (ביו / שאלות / ערוצי קשר / קטגוריות / תמונות / מיקום / מוצרים) סגורים; בכל כותרת מופיע סיכום סטטוס בשורה אחת (למשל "טלפון ✓ · וואטסאפ ראשי", "2 קטגוריות")
 - ✅ → dashboard-edit.spec.ts (opening a second card closes the first · changing the hash in place moves the open card) — **אחד פתוח בכל רגע** — פתיחת כרטיס שני סוגרת את הראשון
-- [ ] **שימור מצב** — פותחים כרטיס, מקלידים בלי לשמור, סוגרים ופותחים שוב — **תוצאה מצופה:** הטקסט שהוקלד נשמר; באנר "שינויים שלא נשמרו" נשאר גם כשהכרטיס סגור
-- [ ] **שומר הניווט (MEH-1100)** — עם שדה שלא נשמר, לוחצות על טאב אחר — **תוצאה מצופה:** דיאלוג אישור עוצר את הניווט
+- ✅ → dashboard-edit-cards.spec.ts (typed text survives closing and reopening the card, and the banner stays up meanwhile) — **שימור מצב** — פותחים כרטיס, מקלידים בלי לשמור, סוגרים ופותחים שוב — **תוצאה מצופה:** הטקסט שהוקלד נשמר; באנר "שינויים שלא נשמרו" נשאר גם כשהכרטיס סגור
+- ✅ → dashboard-edit-cards.spec.ts (navigating away with changes prompts; cancel stays, accept leaves — the same test as row 3 of the MEH-1100 section) — **שומר הניווט (MEH-1100)** — עם שדה שלא נשמר, לוחצות על טאב אחר — **תוצאה מצופה:** דיאלוג אישור עוצר את הניווט
 - ✅ → dashboard-edit.spec.ts (a #anchor deep link opens that card, through its group · changing the hash in place moves the open card) — **עוגן URL** — כניסה ישירה ל-`/producer/dashboard/edit#categories` — **תוצאה מצופה:** כרטיס הקטגוריות נפתח אוטומטית והדף נגלל אליו; עובד גם בשינוי hash תוך כדי שהייה בדף
 - [ ] **מקלדת** — Tab מגיע לכותרות הכרטיסים; Enter/רווח פותח וסוגר; חץ הכיוון (CaretDown) מתהפך כשפתוח
 - [ ] **מובייל 375px** — הכותרות + הסיכומים נקראים בלי חיתוך; אין גלילה אופקית
@@ -3173,12 +3173,12 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - [ ] **עלות בלבד** — עלות 35, סף ריק — **תוצאה מצופה:** "משלוח: 35₪" בלי החלק של "מעל"
 - [ ] **סף בלבד** — עלות ריקה, סף 250 — **תוצאה מצופה:** "מעל 250₪ — חינם" לבד. זה מצב חוקי, לא באג
 - [ ] **עלות 0 = חינם** — מקלידות 0 בעלות המשלוח — **תוצאה מצופה:** "משלוח חינם". **לעולם לא** "משלוח: 0₪"
-- [ ] **0 שורד רענון** — אחרי שמירת 0, מרעננות את הדשבורד — **תוצאה מצופה:** השדה מציג 0, לא ריק (אם הוא ריק — ה-0 נמחק בדרך)
+- ✅ → dashboard-delivery.spec.ts (a stored fee of 0 renders as 0, and the threshold as its number — seeded from the stubbed profile, not a real reload) — **0 שורד רענון** — אחרי שמירת 0, מרעננות את הדשבורד — **תוצאה מצופה:** השדה מציג 0, לא ריק (אם הוא ריק — ה-0 נמחק בדרך)
 - [ ] **שני השדות ריקים** — מנקות את שניהם ושומרות — **תוצאה מצופה:** אין שורת עלות בכלל בעמוד העסק (לא שורה ריקה, לא "0")
 - [ ] **0 יחד עם נקודות איסוף** — עלות 0 + לעסק יש נקודות איסוף — **תוצאה מצופה:** "משלוח חינם" בשורת העלות, ו"חינם" (בלי מילת נושא) על שורות האיסוף. שתי המילים מופיעות אבל כל אחת תחת הכותרת והאייקון שלה — אם קוראות "חינם" פעמיים בלי להבין למה זה מתייחס, זה באג
 - [ ] **ערכים שליליים** — מנסות -1 בעלות — **תוצאה מצופה:** שגיאת שמירה (422), לא נשמר
 - [ ] **סף 0** — מנסות 0 בסף משלוח חינם — **תוצאה מצופה:** שגיאת שמירה (422). בניגוד לעלות, 0 כאן אסור
-- [ ] **עסק בלי משלוחים** — מבטלות "משלוחים" בכרטיס — **תוצאה מצופה:** שדות העלות נעלמים מהטופס, והערכים מתאפסים בשמירה
+- ✅ → dashboard-delivery.spec.ts (turning «משלוחים» off hides the cost fields and the save resets every delivery field) — **עסק בלי משלוחים** — מבטלות "משלוחים" בכרטיס — **תוצאה מצופה:** שדות העלות נעלמים מהטופס, והערכים מתאפסים בשמירה
 - [ ] **מובייל 375px** — השורה המשולבת ("משלוח: 35₪ · מעל 250₪ — חינם") נקראת בשורה אחת בלי חיתוך ובלי גלילה אופקית; הסכומים מוצגים "35₪" ולא "₪35"
 
 ## MEH-1869 — חלון הזמנות: כמה טווחים ביום (03/08)
@@ -3186,13 +3186,13 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 "מתי מקבלים הזמנות" בדשבורד תומך עד 3 טווחים ליום — הפסקת צהריים, שישי בוקר + מוצ"ש.
 הפורמט ב-DB הפך למערך; שורות ישנות (טווח יחיד) ממשיכות לעבוד בלי המרה.
 
-- [ ] **הוספת טווח שני** — דשבורד → "מתי מקבלים הזמנות" → סמני יום → "+ טווח נוסף" — **תוצאה מצופה:** נוספת שורת שעות שנייה **שממשיכה** מהטווח הקודם (למשל אחרי 13:00 נפתח 13:00–15:00). **לא** 09:00–14:00 שמתנגש עם מה שכבר קיים
-- [ ] **שמירה ורענון** — הגדירי ראשון 09:00–13:00 ו-16:00–20:00, שמרי, רענני את העמוד — **תוצאה מצופה:** שני הטווחים חוזרים בדיוק, בסדר הנכון
-- [ ] **תקרה של 3** — הוסיפי טווח שלישי — **תוצאה מצופה:** כפתור "+ טווח נוסף" נעלם. יש X לכל אחד משלושת הטווחים
-- [ ] **הסרת טווח** — הקישי X על הטווח האמצעי — **תוצאה מצופה:** רק הוא נמחק, השאר נשארים. לטווח בודד אין X (סוגרים יום דרך הצ'קבוקס)
-- [ ] **חפיפה נחסמת** — הגדירי 09:00–13:00 ואז טווח שמתחיל ב-12:00, נסי לשמור — **תוצאה מצופה:** הודעה "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם" והשמירה **לא** נשלחת
-- [ ] **צמידות מותרת** — 09:00–13:00 ואז 13:00–17:00 — **תוצאה מצופה:** נשמר בלי שגיאה. זה רצף, לא חפיפה
-- [ ] **עסק ותיק (שורה ישנה)** — עסק שהגדיר טווח יחיד לפני העדכון — **תוצאה מצופה:** העורך נפתח עם טווח אחד, בלי שגיאה ובלי שדות ריקים
+- ✅ → dashboard-order-window.spec.ts («+ טווח נוסף» adds a second row that starts where the first one ended — the end time is asserted from lib/order-window.js `nextOrderRange`, not the doc's 15:00) — **הוספת טווח שני** — דשבורד → "מתי מקבלים הזמנות" → סמני יום → "+ טווח נוסף" — **תוצאה מצופה:** נוספת שורת שעות שנייה **שממשיכה** מהטווח הקודם (למשל אחרי 13:00 נפתח 13:00–15:00). **לא** 09:00–14:00 שמתנגש עם מה שכבר קיים
+- ✅ → dashboard-order-window.spec.ts (two ranges save as an ordered array and re-seed the editor after a reload — the reload round-trips through the stubbed GET (client seed parsing), not persistence) — **שמירה ורענון** — הגדירי ראשון 09:00–13:00 ו-16:00–20:00, שמרי, רענני את העמוד — **תוצאה מצופה:** שני הטווחים חוזרים בדיוק, בסדר הנכון
+- ✅ → dashboard-order-window.spec.ts (at the cap the add button disappears and every range has an X) — **תקרה של 3** — הוסיפי טווח שלישי — **תוצאה מצופה:** כפתור "+ טווח נוסף" נעלם. יש X לכל אחד משלושת הטווחים
+- ✅ → dashboard-order-window.spec.ts (the X removes only its own range, and the last range cannot be removed) — **הסרת טווח** — הקישי X על הטווח האמצעי — **תוצאה מצופה:** רק הוא נמחק, השאר נשארים. לטווח בודד אין X (סוגרים יום דרך הצ'קבוקס)
+- ✅ → dashboard-order-window.spec.ts (an overlapping range shows the overlap message and the save never leaves) — **חפיפה נחסמת** — הגדירי 09:00–13:00 ואז טווח שמתחיל ב-12:00, נסי לשמור — **תוצאה מצופה:** הודעה "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם" והשמירה **לא** נשלחת
+- ✅ → dashboard-order-window.spec.ts (a range that starts exactly when the previous one ends saves without an error) — **צמידות מותרת** — 09:00–13:00 ואז 13:00–17:00 — **תוצאה מצופה:** נשמר בלי שגיאה. זה רצף, לא חפיפה
+- ✅ → dashboard-order-window.spec.ts (a legacy single-object record opens as one range with nothing to save) — **עסק ותיק (שורה ישנה)** — עסק שהגדיר טווח יחיד לפני העדכון — **תוצאה מצופה:** העורך נפתח עם טווח אחד, בלי שגיאה ובלי שדות ריקים
 - [ ] **סטטוס בעמוד העסק בין טווחים** — לעסק עם 09:00–13:00 ו-16:00–20:00, פתחי את עמוד העסק ב-14:30 — **תוצאה מצופה:** "לא מקבלים הזמנות עכשיו" + הפתיחה הבאה **היום** ב-16:00 (לא מחר)
 - [ ] **מובייל 375px** — שורת יום עם 3 טווחים נקראת בלי גלילה אופקית; שדות השעה נשארים LTR
 
