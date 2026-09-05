@@ -139,7 +139,7 @@ const rec = (r: Route, writes?: Rec[]): unknown => {
   let body: unknown = null;
   try { body = req.postDataJSON(); } catch { body = req.postData(); }
   // Strip the proxy prefix up to the FIRST "/api" — a greedy `.*\/api` would eat a
-  // later "/api" segment too (reviewer, PR #3431). Nothing before it is asserted on.
+  // later "/api" segment too. Nothing before it is asserted on.
   const pathname = new URL(req.url()).pathname;
   writes?.push({ method: req.method(), url: pathname.slice(pathname.indexOf("/api") + "/api".length), body });
   return body;
