@@ -495,15 +495,6 @@ async function sheetSettledAt(page: Page, shell: Locator, fraction: number): Pro
 }
 
 /**
- * MEH-1365: the attribution's `bottom` is `var(--map-sheet-h) + 6px`, measured
- * from the MAP CONTAINER's bottom (globals.css, scoped < 1024px). Returns the
- * gap between the attribution's bottom edge and where the rule puts it, plus
- * the container's spill below the fold — on this project's 393×727 viewport the
- * container's `min-h-[500px]` (MapComponent.jsx) overshoots the shell by ~22px,
- * and the attribution rides the CONTAINER edge, so it sits that many px lower
- * than the sheet's real top. Reported as a finding; asserted as the mechanism.
- */
-/**
  * The sheet's height must STOP MOVING before the attribution is measured
  * against it, and that is the fix for a measured flake rather than a
  * precaution.
@@ -538,6 +529,15 @@ async function settleSheet(shell: Locator): Promise<void> {
     .toBe(true);
 }
 
+/**
+ * MEH-1365: the attribution's `bottom` is `var(--map-sheet-h) + 6px`, measured
+ * from the MAP CONTAINER's bottom (globals.css, scoped < 1024px). Returns the
+ * gap between the attribution's bottom edge and where the rule puts it, plus
+ * the container's spill below the fold — on this project's 393×727 viewport the
+ * container's `min-h-[500px]` (MapComponent.jsx) overshoots the shell by ~22px,
+ * and the attribution rides the CONTAINER edge, so it sits that many px lower
+ * than the sheet's real top. Reported as a finding; asserted as the mechanism.
+ */
 async function attributionRide(page: Page, shell: Locator): Promise<{ ruleGap: number; spill: number; overCards: boolean }> {
   await settleSheet(shell);
   const attr = await box(attribution(shell));
