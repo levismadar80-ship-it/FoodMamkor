@@ -1748,23 +1748,23 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > The product-catalog editor (`ProductsSection`) was defined but never mounted (0 render sites). It is now a card in the producer **edit tab**. NOTE: the Phase-3 QA lines below say `/settings` → "מוצרים" — that path never actually rendered the section; use the edit-tab path (`/producer/dashboard/edit`) instead until those lines are refreshed.
 
-- [ ] Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
-- [ ] Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
-- [ ] Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
+- ✅ → dashboard-products.spec.ts (the products card mounts in the edit tab with its heading and where-line) — Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
+- ✅ → dashboard-products.spec.ts (with no products the empty state shows the sample card and one CTA — ⚠️ STALE: live copy is «הוסיפו את המוצר הראשון שלכם», not «מוצר ראשון = בית עסק חי») — Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
+- ✅ → dashboard-products.spec.ts (delete asks in a dialog — cancel keeps the row and sends nothing; confirm DELETEs and removes it — add and edit are rows 11-12 and 41; all three write to a stateful stub, not a backend) — Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
 
 ### Phase 3 — frontend form + display (MEH-295 Phase 3)
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer → the edit tab (`/producer/dashboard/edit`) → "מוצרים" section → "הוסיפו מוצר". (Historically read `/settings`; the section was never mounted there.)
 
-- [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
-- [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
-- [ ] Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; **תוצאה מצופה:** card מציג את הטקסט הישן `"₪45/ק״ג"` ראו שפלא — fallback לעמודה הישנה. (אין need לעדכן ידנית; המוצר הישן ממשיך כמות שהוא עד עריכה עתידית.)
-- [ ] Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקשה.
-- [ ] Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪".
-- [ ] Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪".
-- [ ] Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-".
-- [ ] Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (לא placeholder שנעלם). Bug-2 fix.
-- [ ] Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
+- ✅ → dashboard-products.spec.ts (adding a range shows «50₪–80₪» on the new row and posts both prices) — Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
+- ✅ → dashboard-products.spec.ts (adding a single price shows «45₪» and posts price_max null) — Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
+- ✅ → dashboard-products.spec.ts (a legacy product with only price_range shows that string on its row — seeded from the stub, not a real DB row) — Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; **תוצאה מצופה:** card מציג את הטקסט הישן `"₪45/ק״ג"` ראו שפלא — fallback לעמודה הישנה. (אין need לעדכן ידנית; המוצר הישן ממשיך כמות שהוא עד עריכה עתידית.)
+- ✅ → dashboard-products.spec.ts (row 14: an empty min price is refused with «הכניסו מחיר» — and no POST leaves) — Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקשה.
+- ✅ → dashboard-products.spec.ts (row 15: a min price below 1 is refused — 0 asserted; 0.5 not exercised) — Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪".
+- ✅ → dashboard-products.spec.ts (row 16: a price over the 10,000 cap is refused — via min; the max path shares the validator) — Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪".
+- ✅ → dashboard-products.spec.ts (row 17: a max below the min is refused) — Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-".
+- ✅ → dashboard-products.spec.ts (labels stay visible above name, description and price while typing) — Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (לא placeholder שנעלם). Bug-2 fix.
+- ✅ → dashboard-products.spec.ts (the submit reads «הוסיפו מוצר», and «בהוספה...» while the POST is in flight — ⚠️ STALE: the doc's «הוסיפי מוצר» / «מוסיפה...» is the pre-neutral copy) — Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
 - [ ] RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, שני שדות המחיר ב-grid 2-עמודות נכנסים.
 
 ### Dietary cleanup verification (MEH-479 — closes MEH-293)
@@ -1785,12 +1785,12 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים". Backend live with `is_X` columns + `has_X_products` aggregated read (PR #1 already merged).
 
-- [ ] Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת המחיר (price_min / price_max) ולפני העלאת התמונה מופיעה כותרת "סימוני תזונה (אופציונלי)" + 3 checkboxes (🌾 ללא גלוטן, 🥦 טבעוני, 🥛 ללא לקטוז).
+- ✅ → dashboard-products.spec.ts (the add form carries five diet chips, all unpressed, under the diet heading — ⚠️ STALE: not 3 checkboxes; five aria-pressed chips incl. ללא לקטוז + ללא סוכר מוסף) — Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת המחיר (price_min / price_max) ולפני העלאת התמונה מופיעה כותרת "סימוני תזונה (אופציונלי)" + 3 checkboxes (🌾 ללא גלוטן, 🥦 טבעוני, 🥛 ללא לקטוז).
 - [ ] Add form — 375px layout — איך לבדוק: באותו טופס במובייל (≤640px); **תוצאה מצופה:** 3 ה-checkboxes מסודרות בעמודה אחת (1-col), לא דחוסות.
 - [ ] Add form — ≥640px layout — איך לבדוק: באותו טופס בדסקטופ (≥640px); **תוצאה מצופה:** 3 ה-checkboxes ב-3 עמודות (`grid-cols-3`).
-- [ ] Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצאה מצופה:** ב-network tab, ה-POST `/producers/me/products` כולל `is_vegan: true, is_gluten_free: false, is_lactose_free: false`. ה-response מכיל `is_vegan: true`.
-- [ ] Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כולל את אותו block של 3 checkboxes באותו מיקום (אחרי המחיר, לפני התמונה). אם המוצר נשמר עם `is_vegan=true`, ה-checkbox טעון מסומן.
-- [ ] Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצאה מצופה:** ה-PUT body כולל `is_vegan: false`. השורה חוזרת ל-display mode.
+- ✅ → dashboard-products.spec.ts (pressing «טבעוני» posts is_vegan true and leaves the other flags false) — Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצאה מצופה:** ב-network tab, ה-POST `/producers/me/products` כולל `is_vegan: true, is_gluten_free: false, is_lactose_free: false`. ה-response מכיל `is_vegan: true`.
+- ✅ → dashboard-products.spec.ts (the edit form shows the five chips with the saved state, and unpressing «טבעוני» PUTs is_vegan false — same test as row 33) — Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כולל את אותו block של 3 checkboxes באותו מיקום (אחרי המחיר, לפני התמונה). אם המוצר נשמר עם `is_vegan=true`, ה-checkbox טעון מסומן.
+- ✅ → dashboard-products.spec.ts (same test — the PUT body carries is_vegan false) — Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצאה מצופה:** ה-PUT body כולל `is_vegan: false`. השורה חוזרת ל-display mode.
 - [ ] Card aggregation — איך לבדוק: אחרי הוספת מוצר עם `is_vegan=true`, פתחי `/producers` כצרכן; **תוצאה מצופה:** ה-ProducerCard של אותה בעלת עסק מציג badge "טבעוני" (זה מ-`has_vegan_products: true` שה-backend מחזיר).
 - [ ] Card aggregation — toggle off — איך לבדוק: ערכי את המוצר היחיד עם `is_vegan=true` והסירי את הסימון; **תוצאה מצופה:** רענני `/producers` — ה-card כבר לא מציג badge "טבעוני" (כי `has_vegan_products` הפך ל-`false`).
 - [ ] Filter on /producers — איך לבדוק: `/producers?vegan=true` (או דרך ה-chip); **תוצאה מצופה:** רק בעלות עסק עם לפחות מוצר אחד שמסומן `is_vegan=true` מופיעות. בעלות עסק עם 0 מוצרים נופלות (התנהגות מכוונת — MEH-293 fix).
@@ -1804,13 +1804,13 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer with at least 2 existing products → `/settings` → "מוצרים".
 
-- [ ] Open edit — איך לבדוק: לחצי על כפתור Pencil ("ערכי") ליד מוצר קיים; **תוצאה מצופה:** השורה מוחלפת בטופס עריכה inline (לא modal); השדות populated עם הערכים הנוכחיים (שם / תיאור / price_min / price_max / image_url).
-- [ ] Edit name only — איך לבדוק: שני את השם, לחצי "שמרי שינויים"; **תוצאה מצופה:** השורה חוזרת ל-display mode עם השם החדש; price_range / price_min / price_max ללא שינוי בתצוגה.
-- [ ] Legacy fallback edit — איך לבדוק: ערכי מוצר ישן עם price_range="₪45/ק״ג" ו-price_min=NULL; **תוצאה מצופה:** מעל הטופס מופיע ה-hint: "המחיר הקיים: ₪45/ק״ג (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)". הזיני price_min=45, שמרי; **תוצאה:** התצוגה עוברת ל-"₪45" (פורמט חדש).
-- [ ] Validation — min=0 — איך לבדוק: בעריכה הזיני 0 ב-price_min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪", לא נשלחה PUT.
-- [ ] Validation — max < min — איך לבדוק: בעריכה min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-", לא נשלחה PUT.
-- [ ] Cancel — איך לבדוק: לחצי "ערכי" על מוצר A, שני את השם, לחצי "בטלי"; **תוצאה מצופה:** הטופס נסגר, השם בתצוגה לא השתנה, אין PUT ב-network tab.
-- [ ] Switch edit rows — איך לבדוק: לחצי "ערכי" על A (אל תשמרי), לחצי "ערכי" על B; **תוצאה מצופה:** A חוזר ל-display mode, B נפתח עם הערכים הנכונים שלו (לא של A).
+- ✅ → dashboard-products.spec.ts («ערכו» replaces the row with a prefilled inline form headed «עריכת מוצר») — Open edit — איך לבדוק: לחצי על כפתור Pencil ("ערכי") ליד מוצר קיים; **תוצאה מצופה:** השורה מוחלפת בטופס עריכה inline (לא modal); השדות populated עם הערכים הנוכחיים (שם / תיאור / price_min / price_max / image_url).
+- ✅ → dashboard-products.spec.ts (changing only the name and saving returns the row in display mode with the new name — one PUT) — Edit name only — איך לבדוק: שני את השם, לחצי "שמרי שינויים"; **תוצאה מצופה:** השורה חוזרת ל-display mode עם השם החדש; price_range / price_min / price_max ללא שינוי בתצוגה.
+- ✅ → dashboard-products.spec.ts (editing a legacy product shows the legacy-price note and an empty min field) — Legacy fallback edit — איך לבדוק: ערכי מוצר ישן עם price_range="₪45/ק״ג" ו-price_min=NULL; **תוצאה מצופה:** מעל הטופס מופיע ה-hint: "המחיר הקיים: ₪45/ק״ג (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)". הזיני price_min=45, שמרי; **תוצאה:** התצוגה עוברת ל-"₪45" (פורמט חדש).
+- ✅ → dashboard-products.spec.ts (row 43: min 0 on edit is refused — no PUT) — Validation — min=0 — איך לבדוק: בעריכה הזיני 0 ב-price_min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪", לא נשלחה PUT.
+- ✅ → dashboard-products.spec.ts (row 44: max below min on edit is refused — no PUT) — Validation — max < min — איך לבדוק: בעריכה min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-", לא נשלחה PUT.
+- ✅ → dashboard-products.spec.ts (cancelling an edit closes the form and keeps the original name, with no PUT) — Cancel — איך לבדוק: לחצי "ערכי" על מוצר A, שני את השם, לחצי "בטלי"; **תוצאה מצופה:** הטופס נסגר, השם בתצוגה לא השתנה, אין PUT ב-network tab.
+- ✅ → dashboard-products.spec.ts (opening a second row's editor returns the first to display mode) — Switch edit rows — איך לבדוק: לחצי "ערכי" על A (אל תשמרי), לחצי "ערכי" על B; **תוצאה מצופה:** A חוזר ל-display mode, B נפתח עם הערכים הנכונים שלו (לא של A).
 
 ---
 
