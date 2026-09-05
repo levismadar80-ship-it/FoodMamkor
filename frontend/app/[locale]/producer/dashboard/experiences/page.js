@@ -110,7 +110,7 @@ export default function ManageExperiencesPage() {
             CTA on an empty result. */}
         {Array.isArray(items) && items.length > 0 && (
           <Link
-            href="/experiences/new"
+            href="/producer/dashboard/experiences/new"
             className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
           >
             <Sparkle size={18} weight="bold" aria-hidden="true" />
@@ -127,7 +127,7 @@ export default function ManageExperiencesPage() {
           title={t("empty_title")}
           description={t("empty_description")}
           ctaLabel={t("empty_cta")}
-          ctaHref="/experiences/new"
+          ctaHref="/producer/dashboard/experiences/new"
         />
       ) : (
         <ul className="space-y-3">

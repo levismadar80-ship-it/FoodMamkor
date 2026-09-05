@@ -259,7 +259,7 @@ function RegisterPageBody() {
 
       {/* Image pane — END (left) on desktop, top band on mobile.
           REUSES: app/[locale]/login/LoginClient.jsx:129 (split pane + scrim + overlay) */}
-      <div className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+      <div data-testid="register-hero-pane" className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
         <Image
           src={heroSrc}
           alt=""
@@ -283,7 +283,7 @@ function RegisterPageBody() {
       </div>
 
       {/* Form pane — START (right) on desktop */}
-      <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+      <div data-testid="register-form-pane" className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
       {/* MEH-839: de-boxed to match /login (LoginClient.jsx:157) — open form on
           cream, no floating white card. Children order UNCHANGED: form-first,
           OAuth below (MEH-132 #3 auth-order freeze respected). */}
