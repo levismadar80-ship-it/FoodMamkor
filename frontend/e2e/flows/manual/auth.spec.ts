@@ -154,8 +154,11 @@ test.describe("manual › auth chrome is noindex, and the public pages are not (
 // ────────────────────────────────────────────────────────────────────────────
 
 test.describe("manual › the password eye toggle on both auth pages", () => {
-  // MT:eye-toggle:1-4 — /login: the icon exists, flips the input type both
-  // ways, and its accessible name + `aria-pressed` follow the state.
+  // MT:eye-toggle:2-3 + :33 — /login: the eye flips the input type both ways,
+  // and its accessible name + `aria-pressed` follow the state. NOT row 1 (the
+  // icon's POSITION — see the file header's note on what is not asserted) and
+  // NOT row 4 (which phosphor component renders): neither is read here, so
+  // neither is claimed.
   test("/login: the eye flips the field between password and text, and says which state it is in", async ({
     page,
   }) => {
@@ -226,7 +229,9 @@ test.describe("manual › the password eye toggle on both auth pages", () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 test.describe("manual › /login inline validation and submit gating", () => {
-  // MT:eye-toggle:8-12 + :16 — the email field's three states and the gate.
+  // MT:eye-toggle:8-12 + :34 — the email field's three states, the gate, and
+  // the `aria-invalid` row. NOT row 16 (the server-error path): that submits
+  // credentials, which this file never does.
   test("email: neutral while untouched-empty, red with a message when malformed, green once fixed", async ({
     page,
   }) => {
@@ -261,7 +266,8 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await expect(submit).toBeEnabled();
   });
 
-  // MT:eye-toggle:13-15 — the doc describes an 8-character floor here with the
+  // MT:eye-toggle:15 — and rows 13-14 are STALE rather than converted, which is
+  // the subject of this comment. The doc describes an 8-character floor with the
   // message «סיסמא חייבת להכיל לפחות 8 תווים». There is no floor on /login and
   // that string is not this page's copy: MEH-835 removed the minimum on
   // purpose, because login validates a stored hash and legacy short passwords
@@ -286,8 +292,9 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await expect(page.getByTestId("login-submit")).toBeEnabled();
   });
 
-  // MT:eye-toggle:17 — the finding, asserted as behaviour AND filed (MEH-2256)
-  // rather than fixed here: MEH-1249 forbids application-code changes inside a
+  // NO MT row — this discharges nothing in the checklist; it records a finding
+  // the conversion turned up, asserted as behaviour AND filed (MEH-2256) rather
+  // than fixed here, since MEH-1249 forbids application-code changes inside a
   // conversion chunk. `LoginClient.jsx:136` reads
   //   passwordTouched && password.length > 0 && password.length < 1
   // whose last two clauses cannot both hold, so «הזינו סיסמה» and the field's
@@ -340,7 +347,8 @@ test.describe("manual › /register says nothing when a field is merely correct 
     await expect(email).not.toHaveAttribute("aria-invalid", "true");
   });
 
-  // MT:MEH-1919:5 — errors were explicitly NOT part of what that ticket
+  // MT:MEH-1919:5 + MT:eye-toggle:18 + :20 — errors were explicitly NOT part of
+  // what that ticket
   // silenced, and they persist while the value is still wrong.
   test("errors still appear on blur, and stay put while the value is still wrong", async ({ page }) => {
     await stubBreachCheck(page);
@@ -364,9 +372,12 @@ test.describe("manual › /register says nothing when a field is merely correct 
     await expect(emailError).toHaveCount(0);
   });
 
-  // MT:eye-toggle:18-27 — the register gate. Four conditions, and the test
-  // walks the last one on its own so the assertion is falsifiable by dropping
-  // any single condition rather than by dropping the whole gate.
+  // MT:eye-toggle:17 + :28 — the register gate: row 17 is «disabled on load»,
+  // row 28 the four-condition rule. The test walks the last condition on its own
+  // so the assertion is falsifiable by dropping any single one rather than only
+  // by dropping the whole gate. Rows 19-27 in between are STALE or absent from
+  // the page (the success affordance, the strength bar, phone, city) and are
+  // reported in `docs/qa/conversion-progress.md`, not converted.
   test("submit stays disabled until name, email, password AND the terms box are all satisfied", async ({
     page,
   }) => {
