@@ -62,6 +62,13 @@ class _Recorder:
 
 
 def _arm(monkeypatch, numbers=LISTED, code=FIXED):
+    # Prerequisite, stated where it bites: the bypass only arms against a LOCAL
+    # DB host (`_otp_test_mode_allowed`). A remote test database would make the
+    # exploit test fail on its own assertion with no hint why — so the
+    # environment mismatch is named here, before any request is made.
+    assert producer_me.engine.url.host in producer_me._LOCAL_DB_HOSTS, (
+        "test DB must be local for the OTP test-number bypass to arm"
+    )
     monkeypatch.setattr(config.settings, "otp_test_numbers", numbers)
     monkeypatch.setattr(config.settings, "otp_test_code", code)
     rec = _Recorder()
@@ -110,7 +117,7 @@ def test_listed_number_gets_fixed_code_and_confirms(client, db, monkeypatch, cap
     )
     assert r.status_code == 200, r.text
     db.expire_all()
-    assert db.query(Producer).get(producer.id).phone_verified is True
+    assert db.get(Producer, producer.id).phone_verified is True
 
 
 # ── DoD row 2 — separation: the normal path did not move ─────────────────
