@@ -218,3 +218,39 @@ describe("MEH-2131 — self-test: the fixtures mean what the cases assume", () =
     ).toBe(false);
   });
 });
+
+describe("MEH-2264 — special_hours overrides reach the chip gate", () => {
+  // SUNDAY_MIDDAY is 2026-08-16 in Jerusalem; that key is "today" for the gate.
+  const TODAY_KEY = "2026-08-16";
+  const OPEN_TODAY = { [TODAY_KEY]: { ranges: [{ open: "09:00", close: "17:00" }] } };
+  const CLOSED_TODAY = { [TODAY_KEY]: { ranges: [], note: "חג" } };
+
+  it("override-only businesses pay into the coverage gate and can show the chip", () => {
+    // No weekly window anywhere — before MEH-2264 `declared` was 0 and the
+    // chip was hidden regardless of the clock.
+    const producers = Array.from({ length: OPEN_NOW_CHIP_MIN }, (_, i) => ({
+      id: 500 + i,
+      order_window: null,
+      special_hours: OPEN_TODAY,
+    }));
+    expect(openNowChipVisible({ producers, ...FULLY_LOADED })).toBe(true);
+  });
+
+  it("an EMPTY override map does not pay into coverage (the validator stores {} as-is)", () => {
+    const producers = Array.from({ length: OPEN_NOW_CHIP_MIN }, (_, i) => ({
+      id: 600 + i,
+      order_window: null,
+      special_hours: {},
+    }));
+    expect(openNowChipVisible({ producers, ...FULLY_LOADED })).toBe(false);
+  });
+
+  it("weekly-open businesses all overridden CLOSED today hide the chip (zero results)", () => {
+    // Coverage passes (they all declare a window) but nobody is open right now,
+    // because today's override wins — the pre-2264 scan would have said open.
+    const producers = withWindow(OPEN_NOW_CHIP_MIN).map((p) => ({ ...p, special_hours: CLOSED_TODAY }));
+    expect(openNowChipVisible({ producers, ...FULLY_LOADED })).toBe(false);
+    // Control: the same rows with no override are open at midday → visible.
+    expect(openNowChipVisible({ producers: withWindow(OPEN_NOW_CHIP_MIN), ...FULLY_LOADED })).toBe(true);
+  });
+});

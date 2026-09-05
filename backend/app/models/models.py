@@ -180,6 +180,29 @@ class Producer(Base):
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
+    # MEH-1494 chunk A: the editor's pick gets a DATE and a REASON (TripAdvisor
+    # Travelers' Choice = 12-month window; MICHELIN re-inspects every 12-18
+    # months and withdraws stars). Both nullable, NO backfill — rows already
+    # recommended keep recommended_at NULL, read by chunk B's review list as
+    # "picked before the clock existed, due now" rather than a fabricated date.
+    # recommended_note is ADMIN-ONLY: the editor's internal reasoning about a
+    # real business. Never on ProducerListOut / ProducerDetailOut — the guard
+    # test asserts its absence by name. Chunk B stamps recommended_at on the
+    # admin toggle and adds the note field to the admin form; chunk A only
+    # creates the two facts. Paired migration: e2a7c9d4b6f1.
+    # DO NOT expose recommended_note on any public serializer.
+    recommended_at = Column(DateTime(timezone=True), nullable=True)
+    recommended_note = Column(Text, nullable=True)
+    # MEH-1287 chunk A: date-bounded editorial curation for the "עכשיו בעונה"
+    # homepage module. The business is in season UNTIL this date (inclusive,
+    # Israel calendar day — compare with israel_today(), never date.today()).
+    # NULL = not curated. A DATE rather than a boolean so it expires by itself
+    # instead of being a flag someone forgets in winter; same clock-not-flag
+    # shape as recommended_at above. Admin-only, NOT on ProducerUpdate —
+    # seasonality is the editor's call, not the owner's declaration (guard
+    # test asserts absence). Chunk B reads it with a count >= 3 render gate
+    # (ADDENDUM-4). Paired migration: f5b8d2c7a3e9.
+    in_season_until = Column(Date, nullable=True)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
     # MEH-1335: owner story fields consumed by the public OwnerCard
@@ -253,15 +276,10 @@ class Producer(Base):
         ),
         nullable=True,
     )
-    # LEGACY(2026-10-01, MEH-1855)
-    # MEH-1857: the alias below carried no date and no ticket, so nothing could
-    # ever make it expire. Ownership is also INVERTED today — the public page
-    # reads this alias (ProducerSections.jsx) while the owner writes the
-    # canonical price_range, so a price she fills in renders nowhere. MEH-1855
-    # collapses the pair; the marker makes the deadline enforceable.
-    starting_price_label = Column(
-        String(50), nullable=True
-    )  # legacy alias for price_range
+    # MEH-1855 chunk 2 (contract step, ADR-007 Phase 4): the legacy
+    # price-label alias column that used to sit here is GONE — backfilled into
+    # this column by 97669fe803f5 (Phase 1) and dropped by 9849fab1637a.
+    # price_range is the single price-label field; do not re-add an alias.
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
@@ -402,6 +420,24 @@ class Producer(Base):
     # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
     # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
+    # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
+    # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
+    #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,
+    # `"ranges": []` = CLOSED that date. NULL = feature unused.
+    # ORDER-AXIS AUTHORITATIVE: `ranges` overrides `order_window` on that date
+    # only. It does NOT override `opening_hours` — that axis is unbounded free
+    # text (see the column above at :380), so there is nothing to compute
+    # against; `note` is DISPLAY ONLY for the store-hours surface. The repo
+    # already ruled the two are different facts and that the computed surfaces
+    # read the order axis deliberately: services/producer_listing.py:508-514
+    # and routers/producers.py:146.
+    # Ranges reuse `order_window`'s per-day rules verbatim (HH:MM 24h,
+    # close>open, ascending + non-overlapping, ≤3) via _validate_order_day, so
+    # the two fields cannot drift on what a "range" means. Validated in
+    # schemas.ProducerUpdate -> 422. Expand-only per ADR-007.
+    # Precedence at the READERS is chunk B — chunk A stores and validates only.
+    # Paired migration for the COLUMN: c4e81b7a2f96 (MEH-1889).
+    special_hours = Column(JSONB, nullable=True)
     # MEH-213: location mode. Two independent booleans (not an enum) because
     # a producer can have BOTH a physical store AND offer delivery.
     # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
@@ -855,6 +891,22 @@ class Category(Base):
     # nobody "simplifies" the explicit value back out.
     slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
+    # MEH-1456 chunk A: declared ownership ON THE ROW (Oracle Siebel "Protect
+    # Seed Data", IBM RDU WRITE_PROTECTED — and, measured 04/09, GBP's closed
+    # taxonomy / Etsy's immutable taxonomy_id). TRUE for exactly the rows
+    # seed_data.CATEGORIES owns, FALSE for admin-created rows. Two writers, on
+    # purpose: revision b7d3e5a9c1f4 backfills existing databases by name
+    # (name is UNIQUE and the seed's own conflict key, so a seed-named row IS
+    # the seed row); seed_categories writes True on its own INSERT for fresh
+    # ones, where migrations run BEFORE the boot seed inserts anything.
+    # Two-state by design (NOT NULL + server_default false) — ownership has no
+    # "unknown". Chunk 2b makes update_category / delete_category refuse a
+    # rename or delete while this is True; chunk A only creates the fact.
+    # DO NOT expose this as admin-editable — a flag the second authority can
+    #        clear is not a lock (the whole point of the column).
+    is_system = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
@@ -903,8 +955,8 @@ class Product(Base):
     # fallbacks) — naming it here records who removes this column, not that
     # the removal is ready.
     #
-    # Separate instance from producers.starting_price_label above (MEH-1855) —
-    # same class, different column.
+    # Separate instance from the producer-level price alias MEH-1855 retired
+    # (chunk 2, 9849fab1637a) — same class, different column.
     price_range = Column(String(50))  # legacy: removal tracked in MEH-2064
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)

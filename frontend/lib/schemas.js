@@ -86,9 +86,12 @@ export const ProducerListSchema = z.object({
     id: z.union([z.string(), z.number()]).optional(),
     name: z.string().nullable().optional(),
     emoji: z.string().optional(),
+    // MEH-1456 chunk A: seeded-row ownership flag, read-only on every
+    // surface. Declared so the nested-parity guard does not strip it;
+    // chunk 2b's admin UI gates rename/delete on it.
+    is_system: z.boolean().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
-  starting_price_label: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),
   avg_rating: z.number().nullable().optional(),
   reviews_count: z.number().int().nullable().optional(),
@@ -299,6 +302,33 @@ export const ProducerListSchema = z.object({
   // (lib/orderWindow.js:93) already drops any range that is not valid HH:MM.
   order_window: z
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
+    .nullable()
+    .optional(),
+  // MEH-1889 chunk B (MEH-2264): per-date overrides ABOVE `order_window`,
+  // order-axis authoritative — `{"YYYY-MM-DD": {ranges: [...], note?}}`, and
+  // `ranges: []` means closed on that date. Declared on the LIST schema for the
+  // MEH-1880 reason: ProducerCard's "open for orders" line and the open-now
+  // chip evaluator (lib/producer-filters.js) read the order axis from the two
+  // Zod-parsed list feeds, and an undeclared key is stripped by z.object. Inner
+  // shape stays permissive (same all-or-nothing-feed argument as order_window
+  // above); `normalizeDayEntries` drops any malformed range at read time.
+  // The per-date entry is `.nullable()` ON PURPOSE even though the backend
+  // validator never writes a null entry: this literal guards two all-or-nothing
+  // feeds, and a hand-edited or imported row with one null entry must cost that
+  // one date (the readers skip it — orderWindow.js `overrideFor`), never the
+  // whole business. Tightening it here would turn a data blemish into a
+  // vanished producer, which is the exact failure the permissive inner shape
+  // above exists to prevent.
+  special_hours: z
+    .record(
+      z.string(),
+      z
+        .object({
+          ranges: z.array(OrderWindowRange),
+          note: z.string().nullable().optional(),
+        })
+        .nullable(),
+    )
     .nullable()
     .optional(),
   // MEH-1678: the producer-level pair from ProducerListOut

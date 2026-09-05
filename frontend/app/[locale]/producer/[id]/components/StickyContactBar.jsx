@@ -77,6 +77,7 @@ export default function StickyContactBar({
       // rendering as a strip of dead page showing under the CTA. Measured at
       // 375px before the change: bar bottom 748, viewport 812, 64px of gap.
       className="lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-white border-t border-border"
+      data-testid="sticky-contact-bar"
       style={{
         // MEH-2148: with the bar flush, its own height is the whole distance it
         // has to travel, so the plain slide clears the viewport. The previous
