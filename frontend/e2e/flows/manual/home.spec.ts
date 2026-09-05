@@ -1881,6 +1881,46 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
   });
 });
 
+/**
+ * The blocks sitting between the hero and the mini-map, as DESCRIPTIONS rather
+ * than a bare count: a red that prints "1" says nothing about what is there,
+ * and this row's whole subject is which block is second.
+ *
+ * `template` and the other non-rendering tags are skipped, and that is the fix
+ * for a MEASURED flake rather than a convenience. On CI the order row went red
+ * once and passed on retry with exactly ONE element between the two sections;
+ * sampling the live DOM 40x over a second (04/09, mobile, 1 run in 8) caught it
+ * at t0 and it was gone by t+25ms: `template.(no class)` — React's streaming-SSR
+ * placeholder, which renders nothing and is removed as hydration completes. A
+ * `<template>` is not a block, so counting it was the bug; skipping it makes the
+ * read deterministic instead of racing hydration.
+ *
+ * Its own self-test lives in the test below, and drives THIS function — not a
+ * copy of it — on three inputs whose answers are known.
+ */
+const NON_RENDERING = ["template", "script", "style", "link", "noscript"];
+
+function strangersBetweenHeroAndMap(page: Page): Promise<string[]> {
+  return page.evaluate((skip) => {
+    const heroEl = document.querySelector('[data-testid="home-hero"]');
+    const mapEl = document.querySelector('[data-testid="home-minimap"]');
+    if (!heroEl || !mapEl) return ["(hero or mini-map is not in the document)"];
+    const hero = heroEl.closest("section")!;
+    const mapSection = mapEl.closest("section") ?? mapEl;
+    const out: string[] = [];
+    let n: Element | null = hero.nextElementSibling;
+    while (n && n !== mapSection && !n.contains(mapSection)) {
+      const tag = n.tagName.toLowerCase();
+      if (!skip.includes(tag)) {
+        const testid = n.getAttribute("data-testid");
+        out.push(`${tag}${testid ? `[${testid}]` : ""}.${n.className || "(no class)"}`.slice(0, 90));
+      }
+      n = n.nextElementSibling;
+    }
+    return n ? out : ["(the mini-map is not a following sibling of the hero at all)"];
+  }, NON_RENDERING);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-607)", () => {
   // MT:604:1 — the map is the SECOND block, not section #7. Asserted as DOM
@@ -1894,19 +1934,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     for (const id of ["home-hero", "home-minimap", "home-trust-band"]) {
       await expect(scope(page).getByTestId(id), `${id} renders exactly once`).toHaveCount(1, FIRST_PAINT);
     }
-    const between = await page.evaluate(() => {
-      const hero = document.querySelector('[data-testid="home-hero"]')!.closest("section")!;
-      const map = document.querySelector('[data-testid="home-minimap"]')!;
-      const mapSection = map.closest("section") ?? map;
-      let n: Element | null = hero.nextElementSibling;
-      let count = 0;
-      while (n && n !== mapSection && !n.contains(mapSection)) {
-        count += 1;
-        n = n.nextElementSibling;
-      }
-      return n ? count : -1;
-    });
-    expect(between, "the mini-map is the hero's immediate next block").toBe(0);
+    expect(
+      (await strangersBetweenHeroAndMap(page)).join(" | "),
+      "the mini-map is the hero's immediate next block; these sat between them",
+    ).toBe("");
     // …and the trust band comes after it, not before.
     // `home-minimap` is a `dynamic({ ssr:false, loading })` slot: the skeleton is
     // REPLACED by the live map, which detaches the node a boundingBox() read was
@@ -1921,6 +1952,62 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     });
     expect(Number.isNaN(tops.map) || Number.isNaN(tops.trust), "both blocks are in the document").toBe(false);
     expect(tops.map, "the mini-map is above the trust band").toBeLessThan(tops.trust);
+  });
+
+  /**
+   * SELF-TEST for the reader above, run against the REAL function on three
+   * inputs whose answers are known — the testing.md rule for an assertion that
+   * is a classifier. It exercises `strangersBetweenHeroAndMap`, never a copy,
+   * so the two cannot drift.
+   *
+   * Without it the skip-list is a green of unknown wiring: a reader that
+   * returned `[]` unconditionally would satisfy the order row above just as
+   * well as a correct one, and nothing in that row's output would say which it
+   * was. Case 3 is what discriminates — it is the case a broken reader fails.
+   */
+  test("the block-order reader skips non-rendering placeholders and still catches a real block", async ({
+    page,
+  }) => {
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    await expect(scope(page).getByTestId("home-minimap")).toHaveCount(1, FIRST_PAINT);
+
+    const insert = (tag: string, testid?: string) =>
+      page.evaluate(
+        ([t, id]) => {
+          const hero = document.querySelector('[data-testid="home-hero"]')!.closest("section")!;
+          const el = document.createElement(t as string);
+          if (id) el.setAttribute("data-testid", id as string);
+          hero.after(el);
+        },
+        [tag, testid ?? ""] as const,
+      );
+    const remove = (selector: string) =>
+      page.evaluate((sel) => document.querySelector(sel)?.remove(), selector);
+
+    // 1 — the settled page: nothing between them.
+    expect(await strangersBetweenHeroAndMap(page), "control: the settled page has no strangers").toEqual([]);
+
+    // 2 — the measured flake, injected deterministically: React's streaming
+    //     placeholder renders nothing, so it must not count as a block.
+    await insert("template");
+    expect(
+      await strangersBetweenHeroAndMap(page),
+      "a <template> renders nothing and must not read as a block",
+    ).toEqual([]);
+    await remove("section[data-testid] + template, template");
+
+    // 3 — a REAL block in the same position must be caught, and must name
+    //     itself. This is the case that fails against a reader that skips
+    //     everything, which is the way the fix above could be inert.
+    await insert("div", "interloper");
+    const caught = await strangersBetweenHeroAndMap(page);
+    expect(caught.join(" | "), "a real element between the two must be reported by name").toContain(
+      "div[interloper]",
+    );
+    await remove('[data-testid="interloper"]');
   });
 
   // MT:604:3 — three tile preconnect links, all crossOrigin="anonymous".
