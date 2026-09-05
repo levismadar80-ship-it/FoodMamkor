@@ -231,6 +231,34 @@ describe("SpecialHoursEditor — the state matrix", () => {
     expect(screen.getAllByRole("alert").some((el) => el.textContent.includes("invalid_range"))).toBe(true);
   });
 
+  it("surfaces the backend's Hebrew 422 detail and never shows success on a rejected save", async () => {
+    api.put.mockImplementationOnce(() =>
+      Promise.reject({
+        response: {
+          data: {
+            detail: [
+              {
+                loc: ["body", "special_hours"],
+                msg: "Value error, התאריך 2026-08-05 כבר עבר — אפשר להגדיר שעות מיוחדות רק לתאריכים מה-30 הימים האחרונים ואילך",
+                type: "value_error",
+              },
+            ],
+          },
+        },
+      }),
+    );
+    renderEditor(ONE);
+    fireEvent.change(screen.getByTestId("special-hours-note-0"), { target: { value: "x" } });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("special-hours-save"));
+    });
+    expect(api.put).toHaveBeenCalledTimes(1);
+    const alerts = screen.getAllByRole("alert").map((el) => el.textContent);
+    expect(alerts.some((t) => t.includes("התאריך 2026-08-05 כבר עבר"))).toBe(true);
+    expect(alerts.some((t) => t.startsWith("Value error"))).toBe(false);
+    expect(screen.queryByTestId("special-hours-save-success")).toBeNull();
+  });
+
   it("revert restores the seeded rows", () => {
     renderEditor(ONE);
     fireEvent.click(screen.getByTestId("special-hours-remove-0"));

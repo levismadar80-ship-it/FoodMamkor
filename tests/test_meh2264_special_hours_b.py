@@ -37,7 +37,9 @@ ISRAEL = ZoneInfo("Asia/Jerusalem")
 
 # 2026-09-06 is a SUNDAY — asserted in the first filter test, not assumed.
 SUNDAY = datetime(2026, 9, 6, 10, 0, tzinfo=ISRAEL)
-TODAY = date(2026, 9, 5)
+# Deliberately NOT the authoring day (05/09): frozen to 01/10 so the boundary
+# cases below cannot pass by coincidence of the wall clock.
+TODAY = date(2026, 10, 1)
 
 WEEKLY_SUNDAY_OPEN = {"sunday": [{"open": "09:00", "close": "13:00"}]}
 WEEKLY_MONDAY_ONLY = {"monday": [{"open": "09:00", "close": "13:00"}]}
@@ -138,11 +140,11 @@ def test_list_row_without_overrides_serialises_null_not_missing(client, db):
 
 # ── Retention (ruling ג): today-30 inclusive, today-31 rejected ───────────────
 def test_retention_boundary_is_inclusive_at_today_minus_30(client, db, monkeypatch):
-    _freeze_today(monkeypatch, TODAY)  # 2026-09-05 → oldest allowed 2026-08-06
+    _freeze_today(monkeypatch, TODAY)  # 2026-10-01 → oldest allowed 2026-09-01
     user, _ = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={"special_hours": {"2026-08-06": {"ranges": []}}},
+        json={"special_hours": {"2026-09-01": {"ranges": []}}},
         headers=auth_header(user),
     )
     assert resp.status_code == 200, resp.text
@@ -155,11 +157,11 @@ def test_retention_rejects_today_minus_31_with_the_approved_copy(
     user, producer = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={"special_hours": {"2026-08-05": {"ranges": []}}},
+        json={"special_hours": {"2026-08-31": {"ranges": []}}},
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
-    assert "התאריך 2026-08-05 כבר עבר" in resp.text
+    assert "התאריך 2026-08-31 כבר עבר" in resp.text
     assert "30 הימים האחרונים" in resp.text
     db.refresh(producer)
     assert producer.special_hours is None, "a rejected body must write nothing"
@@ -181,9 +183,9 @@ def test_malformed_key_still_gets_the_format_message_not_retention(monkeypatch):
 def test_retention_reads_the_israel_clock_not_the_server_clock(monkeypatch):
     # Frozen to a different day: what was rejected above is accepted here, so
     # the rule is a function of the injected clock and not of the wall clock.
-    _freeze_today(monkeypatch, date(2026, 8, 20))
-    assert schemas._special_hours_validator({"2026-08-05": {"ranges": []}}) == {
-        "2026-08-05": {"ranges": []}
+    _freeze_today(monkeypatch, date(2026, 9, 15))
+    assert schemas._special_hours_validator({"2026-08-31": {"ranges": []}}) == {
+        "2026-08-31": {"ranges": []}
     }
 
 
