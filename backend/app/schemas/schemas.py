@@ -238,6 +238,9 @@ def _special_hours_validator(v):
     normalized = {key: _validate_special_date(key, entry) for key, entry in v.items()}
     oldest_allowed = israel_today() - timedelta(days=_SPECIAL_HOURS_RETENTION_DAYS)
     for key in normalized:
+        # Every key here already passed _validate_special_date, which parsed it
+        # with date.fromisoformat — so this call cannot raise. Keep the two in
+        # this order: shape first, then policy.
         if date.fromisoformat(key) < oldest_allowed:
             raise ValueError(
                 f"התאריך {key} כבר עבר — אפשר להגדיר שעות מיוחדות רק לתאריכים "

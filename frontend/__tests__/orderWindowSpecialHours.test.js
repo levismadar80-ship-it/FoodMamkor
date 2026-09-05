@@ -65,6 +65,21 @@ describe("getOrderWindowStatus — today's override wins (MEH-2264)", () => {
     expect(closed.nextChange).toBeNull();
   });
 
+  it("an override-only producer scanning days with NO override falls through to the (null) weekly map", () => {
+    // Today is overridden closed; the next 14 days carry no override and there
+    // is no weekly map at all, so `dayRanges(null, …)` must answer "closed"
+    // for each of them and the scan ends with no reopening time.
+    const s = getOrderWindowStatus(null, SUNDAY("07:00"), CLOSED_SUNDAY);
+    expect(s).toEqual({ state: "closed", nextChange: null });
+    // …and an override eight days out is still found by the 14-day scan.
+    const s2 = getOrderWindowStatus(null, SUNDAY("07:00"), {
+      ...CLOSED_SUNDAY,
+      "2026-09-14": { ranges: [{ open: "10:00", close: "12:00" }] },
+    });
+    expect(s2.state).toBe("closed");
+    expect(s2.nextChange.toISOString()).toBe("2026-09-14T07:00:00.000Z");
+  });
+
   it("stays null when there is neither a weekly map nor any override", () => {
     for (const empty of [null, undefined, {}]) {
       expect(getOrderWindowStatus(null, SUNDAY("07:00"), empty)).toBeNull();
