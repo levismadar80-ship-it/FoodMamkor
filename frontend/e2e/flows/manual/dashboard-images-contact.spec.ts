@@ -10,9 +10,10 @@ import { test, expect, type Page, type Route } from "../_cloudinary-stub";
  *                                the conditional kosher hint
  *             MT:MEH-1537:4-5    contact channels: what the client puts on the
  *                                wire (empty email → null; the payload shape)
- *             MT:MEH sweep 16/07 rows 1, 3, 5 — upload saves without «שמור»,
- *                                the banner names several cards, the product
- *                                form's guidance
+ *             MT:MEH-SWEEP1607:1,3,5 — the 16/07 sweep (heading has no card
+ *                                id; SWEEP1607 is its marker name): upload saves
+ *                                without «שמור», the banner names several cards,
+ *                                the product form's guidance
  *             MT:MEH-1884:1-3    hours as a completeness step (Overview)
  * Touches:  NO real backend. Reads route-fulfilled as chunks 11a–11g do; the
  *           GET answers with the last captured PUT merged in. POST /upload/image
@@ -168,7 +169,7 @@ test.describe("images card", () => {
     expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
-  // sweep row 1 (MEH-1236) — an upload persists on its own: the PUT fires without «שמירת תמונות».
+  // MT:MEH-SWEEP1607:1 (MEH-1236) — an upload persists on its own: the PUT fires without «שמירת תמונות».
   test("an upload saves without pressing save — the PUT carries the new image", async ({ page }) => {
     const writes: Rec[] = [];
     await stubEdit(page, { writes });
@@ -198,7 +199,7 @@ test.describe("diet semantics in the edit tab", () => {
     await expect(page.getByTestId("kashrut-filter-hint")).toHaveCount(0);
   });
 
-  // MT:MEH-1439:2 · sweep row 5 (MEH-1239) — the add-product form carries the diet helper, the placeholders and the price hint.
+  // MT:MEH-1439:2 · MT:MEH-SWEEP1607:5 (MEH-1239) — the add-product form carries the diet helper, the placeholders and the price hint.
   test("the new-product form explains the diet chips and guides name, description and price", async ({ page }) => {
     await stubEdit(page);
     await openAt(page, "products");
@@ -245,8 +246,9 @@ test.describe("contact channels — the wire", () => {
   });
 });
 
-// ── sweep row 3 (MEH-1237) — the banner names every dirty card ─────────────
+// ── MT:MEH-SWEEP1607:3 (MEH-1237) — the banner names every dirty card ───────
 
+// MT:MEH-SWEEP1607:3
 test("edits in two cards put both names in the unsaved banner, in card order", async ({ page }) => {
   await stubEdit(page);
   await openAt(page, "bio");
