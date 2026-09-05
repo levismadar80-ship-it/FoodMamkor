@@ -26,12 +26,24 @@ export const MAX_SPECIAL_NOTE_LENGTH = 200;
 export const MAX_SPECIAL_DATES = 60;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// PARSE filter only — "does this stored range have the HH:MM shape". It is not
+// the validity gate: that is `orderDayIssues` (close > open, order, cap), run by
+// specialHoursIssues before every save. The two can disagree on a hand-edited
+// row such as open === close, which then loads as a row carrying an
+// `invalid_range` message until the owner fixes or removes it — the backend
+// validator refuses that shape on write, so no API path produces one.
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Stable React keys for rows that have no date yet (a date, once set, is the
+// natural key). A counter, not the array index: adding a chip re-sorts the
+// list, and index keys would remount every sibling that shifted.
+let rowSeq = 0;
+
 /** A fresh row: closed on the given date, no note. */
 export function emptySpecialRow(date = "") {
-  return { date, closed: true, ranges: [emptyOrderRange()], note: "" };
+  rowSeq += 1;
+  return { id: `row-${rowSeq}`, date, closed: true, ranges: [emptyOrderRange()], note: "" };
 }
 
 /**
@@ -55,6 +67,7 @@ export function rowsFromSpecialHours(specialHours, today = israelToday()) {
         .filter((r) => HHMM.test(r?.open ?? "") && HHMM.test(r?.close ?? ""))
         .map((r) => ({ from: r.open, to: r.close }));
       return {
+        id: `stored-${date}`,
         date,
         closed: ranges.length === 0,
         ranges: ranges.length > 0 ? ranges : [emptyOrderRange()],

@@ -229,6 +229,18 @@ def test_override_for_another_date_leaves_the_weekly_answer_unchanged(
     assert _names(client.get("/producers?open_for_orders_now=false")) == set()
 
 
+def test_json_null_today_entry_reads_closed_not_missing(client, db, monkeypatch):
+    # The validator never writes `{"<date>": null}` (it demands a ranges list),
+    # but a direct DB write could. `has_key` is TRUE, the subscript chain yields
+    # SQL NULL, jsonb_path_exists(NULL, …) is NULL, and CASE … IS TRUE is false
+    # — so the producer lands on the CLOSED side, not missing from both.
+    _freeze_now(monkeypatch, SUNDAY)
+    _approved(db, "דריסה null", WEEKLY_SUNDAY_OPEN, {"2026-09-06": None})
+
+    assert _names(client.get("/producers?open_for_orders_now=true")) == set()
+    assert _names(client.get("/producers?open_for_orders_now=false")) == {"דריסה null"}
+
+
 def test_override_alone_is_a_declaration_even_without_a_weekly_window(
     client, db, monkeypatch
 ):
