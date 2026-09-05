@@ -412,12 +412,12 @@ async function openNewProducer(page: Page): Promise<void> {
   await expect(page.getByRole("checkbox", { name: "לחמים ואפייה" })).toBeVisible();
 }
 const saveBtn = (page: Page) => page.getByRole("button", { name: "צור עסק" });
-const typeSection = (page: Page) => page.locator("div").filter({ has: page.getByRole("heading", { name: "סוג העסק" }) }).last();
+const typeSection = (page: Page) => page.getByTestId("business-type-section");
 const physical = (page: Page) => page.getByRole("checkbox", { name: "חנות פיזית (קבלת לקוחות)" });
 const delivery = (page: Page) => page.getByRole("checkbox", { name: "משלוחים", exact: true });
 const nationwide = (page: Page) => page.getByRole("checkbox", { name: "משלוחים לכל הארץ" });
 /** The delivery-cities block (not the nationwide exclusion block, which has its own combobox). */
-const citiesBlock = (page: Page) => typeSection(page).locator("div").filter({ has: page.getByText("ערים שמשלוחים אליהן") }).last();
+const citiesBlock = (page: Page) => typeSection(page).getByTestId("delivery-cities-block");
 const cityInput = (page: Page) => citiesBlock(page).getByRole("combobox");
 const chip = (page: Page, city: string) => citiesBlock(page).getByRole("button", { name: `הסר ${city}` });
 /**
