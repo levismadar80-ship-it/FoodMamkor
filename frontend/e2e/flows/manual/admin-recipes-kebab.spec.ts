@@ -226,7 +226,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
 
 const recipeRows = (page: Page) => page.getByTestId("admin-recipes-row");
 const tab = (page: Page, v: string) => page.getByTestId(`admin-recipes-tab-${v}`);
-const recipeModal = (page: Page) => page.locator("div.fixed").filter({ has: page.getByRole("heading", { name: /בקשי שינויים|דחי מתכון/ }) });
+const recipeModal = (page: Page) => page.getByTestId("admin-recipes-feedback-modal");
 const posts = (writes: Rec[], tail: string) => writes.filter((w) => w.method === "POST" && w.url.endsWith(tail));
 
 async function openRecipes(page: Page): Promise<void> {
