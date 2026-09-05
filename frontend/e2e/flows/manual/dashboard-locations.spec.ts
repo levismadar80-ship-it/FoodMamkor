@@ -13,9 +13,9 @@ import { test, expect, type Page, type Route } from "../_cloudinary-stub";
  *           appends, PUT merges (and flips `is_primary` exclusively), DELETE
  *           removes — or answers the status a test asks for. Every write is
  *           captured; no byte reaches a server.
- * Does NOT: cover promotion after deleting the primary (MT:MEH-1421:10 — the
+ * Does NOT: cover promotion after deleting the primary (MT:MEH-1421:11 — the
  *           server picks the successor; backend/tests own it), the admin dedup
- *           badge (MT:MEH-1421:11 — /admin), or geocoding (the address field is
+ *           badge (MT:MEH-1421:12 — /admin), or geocoding (the address field is
  *           left empty; city alone is a valid location).
  * Related:  app/[locale]/producer/dashboard/edit/LocationsEditor.jsx ·
  *           lib/errors.js sameCityLabelParams · lib/schemas.js
@@ -33,7 +33,7 @@ import { test, expect, type Page, type Route } from "../_cloudinary-stub";
  *      to the shared staging backend CI points at — forbidden (Sapir 13/07).
  *
  * ─── Doc-vs-code drift found, REPORTED and not fixed ───────────────────────
- * D1 · MT:MEH-1421:9 expects a TOAST for an invalid latitude. The client check
+ * D1 · MT:MEH-1421:10 expects a TOAST for an invalid latitude. The client check
  *      is LocationInputSchema (Zod, "קו רוחב לא תקין") and its message renders
  *      IN THE FORM via setSaveError → data-testid="location-form-error"
  *      (LocationsEditor.jsx handleCreate), not as a toast. Asserted where it
@@ -250,7 +250,7 @@ test.describe("locations editor — the same-town label rule", () => {
     await expect(formError(page)).toContainText("לפחות שלוש אותיות");
   });
 
-  // MT:MEH-1421:7 — the message is IN the form, under the label field, and it persists until she types.
+  // MT:MEH-1421:7 · MT:MEH-1421:8 — the message is IN the form, under the label field, and it persists until she types.
   test("the message renders inside the form, survives waiting, and clears on typing in «תווית»", async ({ page }) => {
     await stubEdit(page, { postFails: sameCity({ city: "חיפה", existing_count: 1, existing_label: "החנות" }) });
     await openLocations(page);
@@ -269,7 +269,7 @@ test.describe("locations editor — the same-town label rule", () => {
     await expect(formError(page)).toHaveCount(0);
   });
 
-  // MT:MEH-1421:8 — a row-level failure has no open form, so it stays a toast.
+  // MT:MEH-1421:9 — a row-level failure has no open form, so it stays a toast.
   test("a failed delete is a toast, not an in-form message", async ({ page }) => {
     await stubEdit(page, { locations: [loc({ id: 1, is_primary: true, label: "החנות" }), loc({ id: 2, kind: "pickup", city: "עכו", label: "הדוכן" })], deleteFails: { status: 500, detail: null } });
     await openLocations(page);
@@ -279,7 +279,7 @@ test.describe("locations editor — the same-town label rule", () => {
     await expect(rowsOf(page), "the row must survive a failed delete").toHaveCount(2);
   });
 
-  // MT:MEH-1421:9 — drift D1: the latitude check is client-side and renders in the form; nothing is sent.
+  // MT:MEH-1421:10 — drift D1: the latitude check is client-side and renders in the form; nothing is sent.
   test("a latitude of 200 is refused in the form and never sent", async ({ page }) => {
     const writes: Rec[] = [];
     await stubEdit(page, { writes });
