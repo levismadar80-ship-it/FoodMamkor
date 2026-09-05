@@ -141,7 +141,9 @@ const rec = (r: Route, writes?: Rec[]): unknown => {
   // Strip the proxy prefix up to the FIRST "/api" — a greedy `.*\/api` would eat a
   // later "/api" segment too. Nothing before it is asserted on.
   const pathname = new URL(req.url()).pathname;
-  writes?.push({ method: req.method(), url: pathname.slice(pathname.indexOf("/api") + "/api".length), body });
+  const at = pathname.indexOf("/api");
+  if (at < 0) throw new Error(`rec(): no /api segment in ${pathname}`);
+  writes?.push({ method: req.method(), url: pathname.slice(at + "/api".length), body });
   return body;
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
