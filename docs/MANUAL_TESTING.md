@@ -2839,14 +2839,14 @@ Added with `feature/session-handoff`.
 ## MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026)
 
 ### Producer dashboard (/producer/dashboard)
-- [ ] Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
-- [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
-- [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
-- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
-- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
-- [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
+- ✅ → dashboard-availability.spec.ts (the card shows four pills in the locked order, the saved state checked and all enabled — ⚠️ STALE: the live heading is «מצב נוכחי», not «מצב זמינות») — Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
+- ✅ → dashboard-availability.spec.ts (clicking «פתוח להזמנות» checks it, posts accepting_orders and shows no date input) — Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
+- ✅ → dashboard-availability.spec.ts (clicking «זמין היום» … — ⚠️ STALE: live label is «זמין היום», no emoji, masculine) — Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «עמוס השבוע» … — ⚠️ STALE: live label is «עמוס השבוע», no emoji) — Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «בהפסקה» reveals the return-date input and «שמרו» without posting — zero captured POSTs) — Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- ✅ → dashboard-availability.spec.ts («שמרו» with an empty date shows the inline error and posts nothing — aria-invalid asserted too) — Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- ✅ → dashboard-availability.spec.ts (a future date + «שמרו» posts state and date, and a reload re-seeds both — the reload reads a stateful stub, not a real backend) — Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
+- ✅ → dashboard-availability.spec.ts (switching back to «פתוח להזמנות» clears the return date — in place and after a reload) — Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
 - [ ] /map or /producers list, look at a producer with `availability_state='available_today'` — תוצאה מצופה: green dot next to the location line.
