@@ -24,7 +24,8 @@ const EXPECTED_5787 = {
   shavuot: { start: "2027-06-10", end: "2027-06-11" },
 };
 
-// Israel is UTC+3 in September (IDT) and UTC+2 in winter (IST).
+// IDT (+03:00) — Israel summer time, correct for the September dates below.
+// Do NOT reuse for winter dates (Chanuka, Tu Bishvat): those are IST (+02:00).
 const israelNoon = (isoDay) => new Date(`${isoDay}T12:00:00+03:00`);
 
 describe("holidays.js — 5787 dates (MEH-2263)", () => {
@@ -55,7 +56,7 @@ describe("holiday banner — frozen clock (MEH-2263)", () => {
     expect(h?.upcoming).toBe(false);
   });
 
-  it("is already announcing rosh_hashana a week ahead — on 2026-09-05 it is upcoming", () => {
+  it("is already announcing rosh_hashana six days ahead — on 2026-09-05 it is upcoming", () => {
     const h = getActiveHoliday(null, israelNoon("2026-09-05"));
     expect(h?.key).toBe("rosh_hashana");
     expect(h?.upcoming).toBe(true);
