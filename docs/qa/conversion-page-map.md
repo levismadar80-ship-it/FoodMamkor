@@ -2,7 +2,7 @@
 
 > **GENERATED — do not hand-edit.** Re-run `python3 scripts/qa/page-map-manual-testing.py`
 > (it self-tests first and refuses to emit if the join does not resolve).
-> Source: `docs/MANUAL_TESTING.md` + `docs/qa/manual-testing-matrix.md` · as-of **2026-09-04**.
+> Source: `docs/MANUAL_TESTING.md` + `docs/qa/manual-testing-matrix.md` · as-of **2026-09-05**.
 
 **Status:** chunk 0 of the stage-2 conversion (MEH-1249). This file is the plan's index; the
 per-chunk log lives in `docs/qa/conversion-progress.md`.
@@ -33,10 +33,10 @@ never regenerated. "Uncovered" below therefore means *not yet triaged*, not *not
 | Stat | Value |
 |---|---|
 | `##` sections (outside code fences) | **205** |
-| checklist items (`- [ ]` / `- [x]`) | **1,627** |
+| checklist items (`- [ ]` / `- [x]`) | **1,417** |
 | matrix rows | **1,074** (1,074 joined to a live section, 0 unresolved) |
-| items with a matrix row (covered by the frozen triage) | **1,028** |
-| items with no matrix row (verdict owed by the chunk that touches them) | **599** |
+| items with a matrix row (covered by the frozen triage) | **873** |
+| items with no matrix row (verdict owed by the chunk that touches them) | **544** |
 | destructive rows (matrix `yes`) | **183** |
 
 Per page (sections · items · items with a matrix row · items without · destructive rows):
@@ -48,15 +48,15 @@ Per page (sections · items · items with a matrix row · items without · destr
 | chunk 3 | /about/process (+ /about, /about/why-local) | 4 | 7 | 2 | 5 | 0 |
 | chunk 4 | legal — /privacy · /terms · /contact · /accessibility | 1 | 8 | 8 | 0 | 5 |
 | chunk 5 | /producers | 9 | 70 | 18 | 52 | 11 |
-| chunk 6 | /map | 14 | 96 | 75 | 21 | 1 |
-| chunk 7 | / (home) | 21 | 184 | 137 | 47 | 0 |
-| chunk 8 | /producer/[id] | 26 | 203 | 87 | 116 | 11 |
-| chunk 9 | /register/producer | 13 | 89 | 33 | 56 | 10 |
-| chunk 10 | /login + /register | 9 | 85 | 80 | 5 | 16 |
+| chunk 6 | /map | 14 | 31 | 25 | 6 | 1 |
+| chunk 7 | / (home) | 21 | 93 | 83 | 10 | 0 |
+| chunk 8 | /producer/[id] | 26 | 184 | 68 | 116 | 11 |
+| chunk 9 | /register/producer | 13 | 80 | 24 | 56 | 10 |
+| chunk 10 | /login + /register | 9 | 59 | 57 | 2 | 16 |
 | chunk 11 | /producer/dashboard/* | 39 | 327 | 161 | 166 | 30 |
 | chunk 12 | /admin/* | 13 | 233 | 170 | 63 | 49 |
 | no chunk | cross-cutting / not a page (component tests, emails, backend-only, CI, runbooks, other routes) | 54 | 323 | 255 | 68 | 50 |
-| | **total** | **205** | **1,627** | **1,028** | **599** | **183** |
+| | **total** | **205** | **1,417** | **873** | **544** | **183** |
 
 ## The map
 
@@ -90,7 +90,7 @@ Per page (sections · items · items with a matrix row · items without · destr
 
 | page | MT section (verbatim heading) | line | items | matrix coverage (rows / CONVERT / COVERED / STALE / other / uncovered) | destructive (from matrix) |
 |---|---|---|---|---|---|
-| legal | Legal pages (אפריל 2026) | 1912 | 8 | rows=14 · CONVERT=10+1py · COVERED=2 · STALE=0 · other=1 · uncovered=0 (matrix has 6 more item-rows than live items) | yes (5) |
+| legal | Legal pages (אפריל 2026) | 1914 | 8 | rows=14 · CONVERT=10+1py · COVERED=2 · STALE=0 · other=1 · uncovered=0 (matrix has 6 more item-rows than live items) | yes (5) |
 
 ### /producers — chunk 5 (9 sections · 70 items)
 
@@ -102,56 +102,56 @@ Per page (sections · items · items with a matrix row · items without · destr
 | /producers | MEH-1452 — tint אייקון קטגוריה בצבע הקטגוריה (צ'יפים, inactive בלבד) (22/07) | 319 | 6 | rows=0 · uncovered=6 | — |
 | /producers | MEH-1438 — סינון "צמחוני" (is_vegetarian ברמת מוצר) | 330 | 6 | rows=0 · uncovered=6 | — |
 | /producers | MEH-1186 — היררכיה ויזואלית ב-/producers (שפה אחת לכל התנהגות) | 746 | 6 | rows=0 · uncovered=6 | — |
-| /producers | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | 1868 | 18 | rows=18 · CONVERT=6+1py · COVERED=6 · STALE=5 · other=0 · uncovered=0 | yes (11) |
+| /producers | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | 1870 | 18 | rows=18 · CONVERT=6+1py · COVERED=6 · STALE=5 · other=0 · uncovered=0 | yes (11) |
 | /producers | MEH-1871 — פאנל overlay נסגר בגלילה (03/08) | 3199 | 5 | rows=0 · uncovered=5 | — |
 | /producers | MEH-1880 — שורת "פתוח להזמנות" על כרטיס העסק (04/08) | 3224 | 7 | rows=0 · uncovered=7 | — |
 
-### /map — chunk 6 (14 sections · 96 items)
+### /map — chunk 6 (14 sections · 31 items)
 
 | page | MT section (verbatim heading) | line | items | matrix coverage (rows / CONVERT / COVERED / STALE / other / uncovered) | destructive (from matrix) |
 |---|---|---|---|---|---|
-| /map | MEH-1388 — מרובי-מיקום מקצה-לקצה (epic — chunk 5, E2E + docs) | 368 | 5 | rows=0 · uncovered=5 | — |
-| /map | map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map | 783 | 4 | rows=0 · uncovered=4 | — |
-| /map | MEH-1230 — GPS fix persists → "מרחק" + distance labels (/map) | 790 | 2 | rows=0 · uncovered=2 | — |
-| /map | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | 795 | 6 | rows=0 · uncovered=6 | — |
-| /map | map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 804 | 6 | rows=6 · CONVERT=2 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | MEH-1075 — /map filter IA: quick chips + FilterSheet | 994 | 10 | rows=10 · CONVERT=5 · COVERED=5 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | MEH-970 chunk 2-lite — /map near-me pill + empty-near-me guard (mobile) | 1007 | 4 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | /map legend — disable empty-viewport categories (MEH-722) | 1531 | 4 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | Filter chips — two-row layout (feature/meh-two-row-filter-chips, אפריל 2026) | 1958 | 19 | rows=19 · CONVERT=18 · COVERED=0 · STALE=1 · other=0 · uncovered=0 | no |
-| /map | Map city search width + dropdown z-index | 2103 | 7 | rows=7 · CONVERT=7 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | Map z-index token system + UI bugfixes | 2426 | 16 | rows=12 · CONVERT=12 · COVERED=0 · STALE=0 · other=0 · uncovered=4 | yes (1) |
-| /map | /map desktop — marker click = card-sync (MEH-1010) | 2458 | 6 | rows=6 · CONVERT=6 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | /map producer card — distance from user (MEH-826 Gap 2) | 3081 | 3 | rows=3 · CONVERT=1 · COVERED=2 · STALE=0 · other=0 · uncovered=0 | no |
-| /map | /map list heading + subhead (MEH-826 Gap 3) | 3098 | 4 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
+| /map | MEH-1388 — מרובי-מיקום מקצה-לקצה (epic — chunk 5, E2E + docs) | 368 | 4 | rows=0 · uncovered=4 | — |
+| /map | map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map | 783 | 1 | rows=0 · uncovered=1 | — |
+| /map | MEH-1230 — GPS fix persists → "מרחק" + distance labels (/map) | 790 | 1 | rows=0 · uncovered=1 | — |
+| /map | map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ) | 795 | 0 | rows=0 · uncovered=0 | — |
+| /map | map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 804 | 5 | rows=6 · CONVERT=2 · COVERED=4 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
+| /map | MEH-1075 — /map filter IA: quick chips + FilterSheet | 994 | 5 | rows=10 · CONVERT=5 · COVERED=5 · STALE=0 · other=0 · uncovered=0 (matrix has 5 more item-rows than live items) | no |
+| /map | MEH-970 chunk 2-lite — /map near-me pill + empty-near-me guard (mobile) | 1007 | 0 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 4 more item-rows than live items) | no |
+| /map | /map legend — disable empty-viewport categories (MEH-722) | 1533 | 0 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 4 more item-rows than live items) | no |
+| /map | Filter chips — two-row layout (feature/meh-two-row-filter-chips, אפריל 2026) | 1960 | 9 | rows=19 · CONVERT=18 · COVERED=0 · STALE=1 · other=0 · uncovered=0 (matrix has 10 more item-rows than live items) | no |
+| /map | Map city search width + dropdown z-index | 2105 | 1 | rows=7 · CONVERT=7 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 6 more item-rows than live items) | no |
+| /map | Map z-index token system + UI bugfixes | 2428 | 2 | rows=12 · CONVERT=12 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 10 more item-rows than live items) | yes (1) |
+| /map | /map desktop — marker click = card-sync (MEH-1010) | 2460 | 1 | rows=6 · CONVERT=6 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 5 more item-rows than live items) | no |
+| /map | /map producer card — distance from user (MEH-826 Gap 2) | 3081 | 2 | rows=3 · CONVERT=1 · COVERED=2 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
+| /map | /map list heading + subhead (MEH-826 Gap 3) | 3098 | 0 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 4 more item-rows than live items) | no |
 
-### / (home) — chunk 7 (21 sections · 184 items)
+### / (home) — chunk 7 (21 sections · 93 items)
 
 | page | MT section (verbatim heading) | line | items | matrix coverage (rows / CONVERT / COVERED / STALE / other / uncovered) | destructive (from matrix) |
 |---|---|---|---|---|---|
-| / | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לסיבה, עם ימי משלוח (27/08) | 17 | 9 | rows=0 · uncovered=9 | — |
-| / | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות (31/07) | 171 | 5 | rows=0 · uncovered=5 | — |
-| / | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | 480 | 5 | rows=0 · uncovered=5 | — |
-| / | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + שורות הסבר ב-FilterSheet (21/07) | 586 | 6 | rows=0 · uncovered=6 | — |
-| / | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (17/07) | 599 | 9 | rows=0 · uncovered=9 | — |
-| / | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטגוריה בבית) | 702 | 5 | rows=0 · uncovered=5 | — |
-| / | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + תג קטגוריה נשלף) | 772 | 6 | rows=0 · uncovered=6 | — |
-| / | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | 844 | 6 | rows=4 · CONVERT=3 · COVERED=1 · STALE=0 · other=0 · uncovered=2 | no |
-| / | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | 853 | 9 | rows=9 · CONVERT=1 · COVERED=8 · STALE=0 · other=0 · uncovered=0 | no |
-| / | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | 1193 | 9 | rows=9 · CONVERT=6 · COVERED=1 · STALE=2 · other=0 · uncovered=0 | no |
-| / | Friday-strip i18n fix (סרגל שישי) | 1246 | 2 | rows=2 · CONVERT=2 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| / | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | 1260 | 5 | rows=5 · CONVERT=5 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| / | Stats counter reframe + skeleton (MEH-607) | 1509 | 4 | rows=4 · CONVERT=1 · COVERED=0 · STALE=3 · other=0 · uncovered=0 | no |
-| / | HomepageMiniMap above the fold (MEH-604) | 1520 | 4 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| / | Category card images — dairy + care | 2117 | 7 | rows=7 · CONVERT=0 · COVERED=0 · STALE=7 · other=0 · uncovered=0 | no |
-| / | iOS Safari parallax verification | 2131 | 8 | rows=8 · CONVERT=0 · COVERED=0 · STALE=1 · other=7 · uncovered=0 | no |
-| / | Producer cards — 2-column mobile grid (task 9) | 2370 | 17 | rows=17 · CONVERT=7 · COVERED=1 · STALE=9 · other=0 · uncovered=0 | no |
-| / | Recently viewed businesses (task 13) | 2576 | 16 | rows=16 · CONVERT=10 · COVERED=5 · STALE=1 · other=0 · uncovered=0 | no |
-| / | Advanced filter chips — homepage + /map (task 12) | 2604 | 20 | rows=20 · CONVERT=13+2py · COVERED=2 · STALE=3 · other=0 · uncovered=0 | no |
-| / | "קרוב אלי" geolocation button on homepage (task 11) | 2638 | 14 | rows=14 · CONVERT=2 · COVERED=2 · STALE=9 · other=1 · uncovered=0 | no |
-| / | Smart Search — HeroSearch + /producers?q= (MEH-99, PR #199) | 2770 | 18 | rows=18 · CONVERT=11+3py · COVERED=3 · STALE=1 · other=0 · uncovered=0 | no |
+| / | MEH-2197 + MEH-2198 — מצב אפס של סינון-יום: קומפקטי, מודע-לסיבה, עם ימי משלוח (27/08) | 17 | 1 | rows=0 · uncovered=1 | — |
+| / | MEH-1800 — מחרוזות ה-placeholder בשדה החיפוש מחזירות תוצאות (31/07) | 171 | 3 | rows=0 · uncovered=3 | — |
+| / | MEH-1309 — כפתור "חזרה לראש העמוד" צף (18/07) | 480 | 1 | rows=0 · uncovered=1 | — |
+| / | MEH-1418 — צ'יפי toggle: אייקוני Phosphor + "רישוי מאומת" + שורות הסבר ב-FilterSheet (21/07) | 586 | 2 | rows=0 · uncovered=2 | — |
+| / | MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (17/07) | 599 | 1 | rows=0 · uncovered=1 | — |
+| / | MEH-1224 — רצועת כיתוב מתחת לתמונה + זום ב-hover (כרטיסי קטגוריה בבית) | 702 | 1 | rows=0 · uncovered=1 | — |
+| / | MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + תג קטגוריה נשלף) | 772 | 0 | rows=0 · uncovered=0 | — |
+| / | MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint | 844 | 5 | rows=4 · CONVERT=3 · COVERED=1 · STALE=0 · other=0 · uncovered=1 | no |
+| / | MEH-1085 — empty state מודע-סיבה בבית + פילטרי /events ב-URL | 853 | 8 | rows=9 · CONVERT=1 · COVERED=8 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
+| / | Overnight design batch 2026-06-12/13 (PRs #1073–#1080) | 1193 | 5 | rows=9 · CONVERT=6 · COVERED=1 · STALE=2 · other=0 · uncovered=0 (matrix has 4 more item-rows than live items) | no |
+| / | Friday-strip i18n fix (סרגל שישי) | 1246 | 0 | rows=2 · CONVERT=2 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
+| / | MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns | 1260 | 0 | rows=5 · CONVERT=5 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 5 more item-rows than live items) | no |
+| / | Stats counter reframe + skeleton (MEH-607) | 1511 | 2 | rows=4 · CONVERT=1 · COVERED=0 · STALE=3 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
+| / | HomepageMiniMap above the fold (MEH-604) | 1522 | 2 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
+| / | Category card images — dairy + care | 2119 | 7 | rows=7 · CONVERT=0 · COVERED=0 · STALE=7 · other=0 · uncovered=0 | no |
+| / | iOS Safari parallax verification | 2133 | 7 | rows=8 · CONVERT=0 · COVERED=0 · STALE=1 · other=7 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
+| / | Producer cards — 2-column mobile grid (task 9) | 2372 | 11 | rows=17 · CONVERT=7 · COVERED=1 · STALE=9 · other=0 · uncovered=0 (matrix has 6 more item-rows than live items) | no |
+| / | Recently viewed businesses (task 13) | 2576 | 7 | rows=16 · CONVERT=10 · COVERED=5 · STALE=1 · other=0 · uncovered=0 (matrix has 9 more item-rows than live items) | no |
+| / | Advanced filter chips — homepage + /map (task 12) | 2604 | 11 | rows=20 · CONVERT=13+2py · COVERED=2 · STALE=3 · other=0 · uncovered=0 (matrix has 9 more item-rows than live items) | no |
+| / | "קרוב אלי" geolocation button on homepage (task 11) | 2638 | 9 | rows=14 · CONVERT=2 · COVERED=2 · STALE=9 · other=1 · uncovered=0 (matrix has 5 more item-rows than live items) | no |
+| / | Smart Search — HeroSearch + /producers?q= (MEH-99, PR #199) | 2770 | 10 | rows=18 · CONVERT=11+3py · COVERED=3 · STALE=1 · other=0 · uncovered=0 (matrix has 8 more item-rows than live items) | no |
 
-### /producer/[id] — chunk 8 (26 sections · 203 items)
+### /producer/[id] — chunk 8 (26 sections · 184 items)
 
 | page | MT section (verbatim heading) | line | items | matrix coverage (rows / CONVERT / COVERED / STALE / other / uncovered) | destructive (from matrix) |
 |---|---|---|---|---|---|
@@ -167,22 +167,22 @@ Per page (sections · items · items with a matrix row · items without · destr
 | /producer/[id] | MEH-1325 — לב עמוד בית העסק: סנכרון favorites-cache + ירוק (18/07) | 466 | 5 | rows=0 · uncovered=5 | — |
 | /producer/[id] | MEH-1291 — "עודכן לאחרונה" בעמוד העסק (18/07) | 491 | 5 | rows=0 · uncovered=5 | — |
 | /producer/[id] | MEH-1209 — כניסה לעריכת העסק מעמוד העסק הציבורי (owner-bar) | 736 | 5 | rows=0 · uncovered=5 | — |
-| /producer/[id] | MEH-1048 — עמוד עסק: trust strip ליד ה-h1 (דירוג + מספר ביקורות + ציטוט) | 878 | 5 | rows=5 · CONVERT=1 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | no |
+| /producer/[id] | MEH-1048 — עמוד עסק: trust strip ליד ה-h1 (דירוג + מספר ביקורות + ציטוט) | 878 | 4 | rows=5 · CONVERT=1 · COVERED=4 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
 | /producer/[id] | MEH-1490 — שורת "דירוג ב-Google" שקטה (live-fetch בלבד) | 888 | 6 | rows=0 · uncovered=6 | — |
 | /producer/[id] | MEH-1146 — עמוד עסק: לולאת גילוי "עוד בתי עסק באזור" (Chunk C) | 899 | 4 | rows=4 · CONVERT=0 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | no |
-| /producer/[id] | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | 908 | 7 | rows=7 · CONVERT=2 · COVERED=5 · STALE=0 · other=0 · uncovered=0 | no |
+| /producer/[id] | MEH-1146 — עמוד עסק: כותרת דו-שכבתית + סדר סקציות (Chunk B) | 908 | 5 | rows=7 · CONVERT=2 · COVERED=5 · STALE=0 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
 | /producer/[id] | MEH-2045 — ProductSheet: ניווט קודם/הבא בין מוצרים | 920 | 9 | rows=0 · uncovered=9 | — |
-| /producer/[id] | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | 934 | 6 | rows=6 · CONVERT=2 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | no |
+| /producer/[id] | MEH-1146 — עמוד עסק: כרטיס יצירת קשר עריכתי (Chunk A) | 934 | 4 | rows=6 · CONVERT=2 · COVERED=4 · STALE=0 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
 | /producer/[id] | MEH-1047 — עמוד עסק: גלריית hero חדשה (grid, מצב עם תמונות) | 945 | 7 | rows=7 · CONVERT=0 · COVERED=7 · STALE=0 · other=0 · uncovered=0 | no |
-| /producer/[id] | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | 1013 | 6 | rows=6 · CONVERT=2 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | no |
-| /producer/[id] | Producer Detail Page (feature/meh-producer-detail-redesign, 2026-04-18) | 1894 | 13 | rows=13 · CONVERT=11 · COVERED=0 · STALE=2 · other=0 · uncovered=0 | yes (1) |
-| /producer/[id] | WhatsApp phone normalization | 2148 | 17 | rows=17 · CONVERT=3 · COVERED=11 · STALE=2 · other=1 · uncovered=0 | yes (10) |
-| /producer/[id] | Dynamic OG tags + share message (social sharing) | 2469 | 13 | rows=13 · CONVERT=3 · COVERED=7 · STALE=0 · other=3 · uncovered=0 | no |
-| /producer/[id] | Share button on producer page (task 14) | 2557 | 9 | rows=9 · CONVERT=5 · COVERED=1 · STALE=2 · other=1 · uncovered=0 | no |
+| /producer/[id] | MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות | 1013 | 4 | rows=6 · CONVERT=2 · COVERED=4 · STALE=0 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
+| /producer/[id] | Producer Detail Page (feature/meh-producer-detail-redesign, 2026-04-18) | 1896 | 5 | rows=13 · CONVERT=11 · COVERED=0 · STALE=2 · other=0 · uncovered=0 (matrix has 8 more item-rows than live items) | yes (1) |
+| /producer/[id] | WhatsApp phone normalization | 2150 | 17 | rows=17 · CONVERT=3 · COVERED=11 · STALE=2 · other=1 · uncovered=0 | yes (10) |
+| /producer/[id] | Dynamic OG tags + share message (social sharing) | 2471 | 12 | rows=13 · CONVERT=3 · COVERED=7 · STALE=0 · other=3 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
+| /producer/[id] | Share button on producer page (task 14) | 2557 | 6 | rows=9 · CONVERT=5 · COVERED=1 · STALE=2 · other=1 · uncovered=0 (matrix has 3 more item-rows than live items) | no |
 | /producer/[id] | MEH-1917 — חלון הזמנות: פריסה שבועית מלאה מאחורי disclosure (06/08) | 3259 | 10 | rows=0 · uncovered=10 | — |
 | /producer/[id] | MEH-1916 — ה-CTA בגיליון המוצר הולך אחרי הערוץ שבחרה בעלת העסק (06/08) | 3283 | 8 | rows=0 · uncovered=8 | — |
 
-### /register/producer — chunk 9 (13 sections · 89 items)
+### /register/producer — chunk 9 (13 sections · 80 items)
 
 | page | MT section (verbatim heading) | line | items | matrix coverage (rows / CONVERT / COVERED / STALE / other / uncovered) | destructive (from matrix) |
 |---|---|---|---|---|---|
@@ -193,24 +193,24 @@ Per page (sections · items · items with a matrix row · items without · destr
 | /register/producer | MEH-1769 — באנר "שמרנו טיוטה" באשף ההרשמה (29/07) | 198 | 6 | rows=0 · uncovered=6 | — |
 | /register/producer | MEH-1489 — משטחי הרשמה מודעי-התחברות (early gate + adaptive CTA + redirect) (23/07) | 273 | 11 | rows=0 · uncovered=11 | — |
 | /register/producer | MEH-1471 — שדה "מאיפה שמעת עלינו?" בהרשמת בית עסק (22/07) | 647 | 4 | rows=0 · uncovered=4 | — |
-| /register/producer | MEH-435 chunk A — funnel events ב-/register/producer (PostHog) | 838 | 3 | rows=3 · CONVERT=3 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | yes (1) |
-| /register/producer | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-flight) | 986 | 5 | rows=5 · CONVERT=2 · COVERED=3 · STALE=0 · other=0 · uncovered=0 | no |
-| /register/producer | MEH-853 — /register/producer frame 01 (DETAILS): city + address | 1026 | 5 | rows=5 · CONVERT=3 · COVERED=2 · STALE=0 · other=0 · uncovered=0 | yes (4) |
-| /register/producer | Registration forms — RTL + dashboard copy | 2078 | 15 | rows=15 · CONVERT=11 · COVERED=0 · STALE=4 · other=0 · uncovered=0 | no |
+| /register/producer | MEH-435 chunk A — funnel events ב-/register/producer (PostHog) | 838 | 2 | rows=3 · CONVERT=3 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | yes (1) |
+| /register/producer | MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-flight) | 986 | 3 | rows=5 · CONVERT=2 · COVERED=3 · STALE=0 · other=0 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
+| /register/producer | MEH-853 — /register/producer frame 01 (DETAILS): city + address | 1026 | 4 | rows=5 · CONVERT=3 · COVERED=2 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | yes (4) |
+| /register/producer | Registration forms — RTL + dashboard copy | 2080 | 10 | rows=15 · CONVERT=11 · COVERED=0 · STALE=4 · other=0 · uncovered=0 (matrix has 5 more item-rows than live items) | no |
 | /register/producer | MEH-287 — Producer registration WhatsApp welcome | 2806 | 5 | rows=5 · CONVERT=2+1py · COVERED=1 · STALE=0 · other=1 · uncovered=0 | yes (5) |
 | /register/producer | MEH-1297 — ריבוי קטגוריות: סדר, cap 3, ותג "ראשית" | 3153 | 9 | rows=0 · uncovered=9 | — |
 
-### /login + /register — chunk 10 (9 sections · 85 items)
+### /login + /register — chunk 10 (9 sections · 59 items)
 
 | page | MT section (verbatim heading) | line | items | matrix coverage (rows / CONVERT / COVERED / STALE / other / uncovered) | destructive (from matrix) |
 |---|---|---|---|---|---|
-| /login + /register | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | 125 | 5 | rows=0 · uncovered=5 | — |
-| /login + /register | MEH-805 — post-login redirect (3 senders → ?redirect=) | 1178 | 4 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
-| /login + /register | MEH-788 — /register split-editorial (תמונה + טופס) | 1251 | 6 | rows=6 · CONVERT=6 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | yes (1) |
+| /login + /register | MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08) | 125 | 2 | rows=0 · uncovered=2 | — |
+| /login + /register | MEH-805 — post-login redirect (3 senders → ?redirect=) | 1178 | 3 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
+| /login + /register | MEH-788 — /register split-editorial (תמונה + טופס) | 1251 | 1 | rows=6 · CONVERT=6 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 5 more item-rows than live items) | yes (1) |
 | /login + /register | MEH-641 PR-A — auth chrome noindex verification | 1422 | 0 | rows=1 · CONVERT=1 · COVERED=0 · STALE=0 · other=0 · uncovered=0 (matrix has 1 more item-rows than live items) | no |
-| /login + /register | Anti-enumeration registration smoke test (MEH-328) | 1433 | 0 | rows=5 · CONVERT=0 · COVERED=4 · STALE=0 · other=1 · uncovered=0 (matrix has 5 more item-rows than live items) | yes (4) |
-| /login + /register | Password policy wire-up (MEH-306 sub-A backend) | 1830 | 11 | rows=11 · CONVERT=0 · COVERED=11 · STALE=0 · other=0 · uncovered=0 | yes (8) |
-| /login + /register | Eye toggle + inline form validation on /login + /register | 2294 | 41 | rows=41 · CONVERT=25 · COVERED=1 · STALE=13 · other=2 · uncovered=0 | yes (1) |
+| /login + /register | Anti-enumeration registration smoke test (MEH-328) | 1435 | 0 | rows=5 · CONVERT=0 · COVERED=4 · STALE=0 · other=1 · uncovered=0 (matrix has 5 more item-rows than live items) | yes (4) |
+| /login + /register | Password policy wire-up (MEH-306 sub-A backend) | 1832 | 11 | rows=11 · CONVERT=0 · COVERED=11 · STALE=0 · other=0 · uncovered=0 | yes (8) |
+| /login + /register | Eye toggle + inline form validation on /login + /register | 2296 | 24 | rows=41 · CONVERT=25 · COVERED=1 · STALE=13 · other=2 · uncovered=0 (matrix has 17 more item-rows than live items) | yes (1) |
 | /login + /register | Google OAuth / CSP (fix #173, 2026-04-19) | 2798 | 3 | rows=3 · CONVERT=2 · COVERED=0 · STALE=0 · other=1 · uncovered=0 | no |
 | /login + /register | MEH-326 — JWT refresh token flow | 2816 | 15 | rows=15 · CONVERT=11 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | yes (2) |
 
@@ -246,7 +246,7 @@ Per page (sections · items · items with a matrix row · items without · destr
 | /producer/dashboard/* | MEH-1100 — עורך הפרופיל: הגנת שינויים לא שמורים | 1132 | 6 | rows=6 · CONVERT=3 · COVERED=3 · STALE=0 · other=0 · uncovered=0 | yes (1) |
 | /producer/dashboard/* | MEH-288 — ProfileCompletenessCard on producer dashboard | 1143 | 10 | rows=10 · CONVERT=2 · COVERED=4 · STALE=4 · other=0 · uncovered=0 | no |
 | /producer/dashboard/* | MEH-1106 — ProfileCompletenessCard צ'קליסט 4-צעדים (card-only products, B1) | 1158 | 9 | rows=9 · CONVERT=2 · COVERED=7 · STALE=0 · other=0 · uncovered=0 | no |
-| /producer/dashboard/* | Product price validation (MEH-295 backend) | 1733 | 46 | rows=46 · CONVERT=24+2py · COVERED=16 · STALE=3 · other=1 · uncovered=0 | yes (16) |
+| /producer/dashboard/* | Product price validation (MEH-295 backend) | 1735 | 46 | rows=46 · CONVERT=24+2py · COVERED=16 · STALE=3 · other=1 · uncovered=0 | yes (16) |
 | /producer/dashboard/* | MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026) | 2839 | 23 | rows=23 · CONVERT=11 · COVERED=12 · STALE=0 · other=0 · uncovered=0 | yes (7) |
 | /producer/dashboard/* | MEH-992 — group-buy dashboard form clarity | 3107 | 4 | rows=4 · CONVERT=4 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
 | /producer/dashboard/* | MEH-1115 — הסברי "מה זה?" בלוח הבקרה | 3131 | 5 | rows=5 · CONVERT=5 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | no |
@@ -267,9 +267,9 @@ Per page (sections · items · items with a matrix row · items without · destr
 | /admin/* | MEH-1396 — צ'קליסט בדיקה לפני אישור בית עסק (אדמין, Phase 1) | 424 | 6 | rows=0 · uncovered=6 | — |
 | /admin/* | MEH-1232 — Admin pending queue: photo thumbnails before approval | 1323 | 5 | rows=0 · uncovered=5 | — |
 | /admin/* | MEH-669 — Admin producer-lockout fix | 1335 | 14 | rows=14 · CONVERT=1 · COVERED=10 · STALE=3 · other=0 · uncovered=0 | yes (2) |
-| /admin/* | Producer license number (MEH-530) | 1557 | 62 | rows=62 · CONVERT=17+2py · COVERED=38 · STALE=1 · other=4 · uncovered=0 | yes (17) |
-| /admin/* | Producer status labels (MEH-294) | 1815 | 8 | rows=8 · CONVERT=6 · COVERED=0 · STALE=1 · other=1 · uncovered=0 | no |
-| /admin/* | Analytics — Producer + Admin dashboards (feature/producer-analytics, April 2026) | 1989 | 49 | rows=49 · CONVERT=14+2py · COVERED=23 · STALE=3 · other=7 · uncovered=0 | yes (18) |
+| /admin/* | Producer license number (MEH-530) | 1559 | 62 | rows=62 · CONVERT=17+2py · COVERED=38 · STALE=1 · other=4 · uncovered=0 | yes (17) |
+| /admin/* | Producer status labels (MEH-294) | 1817 | 8 | rows=8 · CONVERT=6 · COVERED=0 · STALE=1 · other=1 · uncovered=0 | no |
+| /admin/* | Analytics — Producer + Admin dashboards (feature/producer-analytics, April 2026) | 1991 | 49 | rows=49 · CONVERT=14+2py · COVERED=23 · STALE=3 · other=7 · uncovered=0 | yes (18) |
 | /admin/* | MEH-213: Business location types + cities autocomplete (PR #242) | 2731 | 23 | rows=23 · CONVERT=16 · COVERED=7 · STALE=0 · other=0 · uncovered=0 | yes (1) |
 | /admin/* | UIS Pattern A (MEH-228) — admin double-submit protection | 3073 | 5 | rows=5 · CONVERT=1 · COVERED=4 · STALE=0 · other=0 · uncovered=0 | yes (5) |
 | /admin/* | MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes) | 3116 | 9 | rows=9 · CONVERT=1 · COVERED=8 · STALE=0 · other=0 · uncovered=0 | yes (6) |
@@ -301,20 +301,20 @@ Per page (sections · items · items with a matrix row · items without · destr
 | cross-cutting / not a page | MEH-643 chunk 4 — Navbar floating-pill (FloatingNavbar v5) | 1281 | 16 | rows=14 · CONVERT=6 · COVERED=0 · STALE=8 · other=0 · uncovered=2 | yes (1) |
 | cross-cutting / not a page | MEH-671 — Producer-signup smoke (now automated) | 1305 | 6 | rows=6 · CONVERT=0 · COVERED=6 · STALE=0 · other=0 · uncovered=0 | yes (2) |
 | cross-cutting / not a page | MEH-669 recovery — for Smadar's local terminal only | 1370 | 0 | rows=1 · CONVERT=0 · COVERED=0 · STALE=0 · other=1 · uncovered=0 (matrix has 1 more item-rows than live items) | yes (1) |
-| cross-cutting / not a page | Hide /neighbor pre-launch (MEH-598) | 1542 | 8 | rows=8 · CONVERT=5 · COVERED=1 · STALE=0 · other=2 · uncovered=0 | no |
-| cross-cutting / not a page | Tier 1 — Claude (chat assistant) | 1648 | 8 | rows=8 · CONVERT=0 · COVERED=0 · STALE=0 · other=8 · uncovered=0 | no |
-| cross-cutting / not a page | Tier 2 — Claude Code (CC) | 1675 | 10 | rows=10 · CONVERT=0 · COVERED=0 · STALE=0 · other=10 · uncovered=0 | no |
-| cross-cutting / not a page | Tier 3 — Smadar (mobile real device) | 1710 | 6 | rows=6 · CONVERT=0 · COVERED=0 · STALE=0 · other=6 · uncovered=0 | no |
-| cross-cutting / not a page | Anti-patterns (forbidden) | 1724 | 0 | rows=1 · CONVERT=0 · COVERED=0 · STALE=0 · other=1 · uncovered=0 | no |
-| cross-cutting / not a page | XSS sanitization sweep (MEH-329) | 1848 | 3 | rows=3 · CONVERT=0 · COVERED=3 · STALE=0 · other=0 · uncovered=0 | yes (3) |
-| cross-cutting / not a page | ~~Recipe ingredient cascade (MEH-311)~~ | 1859 | 0 | rows=1 · CONVERT=0 · COVERED=0 · STALE=1 · other=0 · uncovered=0 | no |
-| cross-cutting / not a page | Security — POST /producers auth (PR #33) | 1931 | 4 | rows=4 · CONVERT=0 · COVERED=3 · STALE=0 · other=1 · uncovered=0 | yes (2) |
-| cross-cutting / not a page | Events (קהילה — אירועים מקומיים) | 1940 | 11 | rows=11 · CONVERT=2 · COVERED=3 · STALE=6 · other=0 · uncovered=0 | yes (6) |
-| cross-cutting / not a page | Experiences (קהילה — חוויות קולינריות) | 2060 | 8 | rows=8 · CONVERT=3+2py · COVERED=2 · STALE=1 · other=0 · uncovered=0 | yes (5) |
-| cross-cutting / not a page | Form submit loading state — 5 forms | 2190 | 20 | rows=20 · CONVERT=20 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | yes (9) |
-| cross-cutting / not a page | CSP — Vercel Live feedback widget on preview URLs (fix/csp-allow-vercel-live-preview) | 2239 | 9 | rows=11 · CONVERT=8 · COVERED=0 · STALE=1 · other=2 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
-| cross-cutting / not a page | Chat widget — plain Hebrew (feature/chatbot-plain-hebrew-v2) | 2267 | 15 | rows=15 · CONVERT=4+7py · COVERED=0 · STALE=4 · other=0 · uncovered=0 | no |
-| cross-cutting / not a page | Compliance fixes (ESLint + RTL + accessibility + disclosures) | 2399 | 11 | rows=11 · CONVERT=4 · COVERED=1 · STALE=5 · other=1 · uncovered=0 | no |
+| cross-cutting / not a page | Hide /neighbor pre-launch (MEH-598) | 1544 | 8 | rows=8 · CONVERT=5 · COVERED=1 · STALE=0 · other=2 · uncovered=0 | no |
+| cross-cutting / not a page | Tier 1 — Claude (chat assistant) | 1650 | 8 | rows=8 · CONVERT=0 · COVERED=0 · STALE=0 · other=8 · uncovered=0 | no |
+| cross-cutting / not a page | Tier 2 — Claude Code (CC) | 1677 | 10 | rows=10 · CONVERT=0 · COVERED=0 · STALE=0 · other=10 · uncovered=0 | no |
+| cross-cutting / not a page | Tier 3 — Smadar (mobile real device) | 1712 | 6 | rows=6 · CONVERT=0 · COVERED=0 · STALE=0 · other=6 · uncovered=0 | no |
+| cross-cutting / not a page | Anti-patterns (forbidden) | 1726 | 0 | rows=1 · CONVERT=0 · COVERED=0 · STALE=0 · other=1 · uncovered=0 | no |
+| cross-cutting / not a page | XSS sanitization sweep (MEH-329) | 1850 | 3 | rows=3 · CONVERT=0 · COVERED=3 · STALE=0 · other=0 · uncovered=0 | yes (3) |
+| cross-cutting / not a page | ~~Recipe ingredient cascade (MEH-311)~~ | 1861 | 0 | rows=1 · CONVERT=0 · COVERED=0 · STALE=1 · other=0 · uncovered=0 | no |
+| cross-cutting / not a page | Security — POST /producers auth (PR #33) | 1933 | 4 | rows=4 · CONVERT=0 · COVERED=3 · STALE=0 · other=1 · uncovered=0 | yes (2) |
+| cross-cutting / not a page | Events (קהילה — אירועים מקומיים) | 1942 | 11 | rows=11 · CONVERT=2 · COVERED=3 · STALE=6 · other=0 · uncovered=0 | yes (6) |
+| cross-cutting / not a page | Experiences (קהילה — חוויות קולינריות) | 2062 | 8 | rows=8 · CONVERT=3+2py · COVERED=2 · STALE=1 · other=0 · uncovered=0 | yes (5) |
+| cross-cutting / not a page | Form submit loading state — 5 forms | 2192 | 20 | rows=20 · CONVERT=20 · COVERED=0 · STALE=0 · other=0 · uncovered=0 | yes (9) |
+| cross-cutting / not a page | CSP — Vercel Live feedback widget on preview URLs (fix/csp-allow-vercel-live-preview) | 2241 | 9 | rows=11 · CONVERT=8 · COVERED=0 · STALE=1 · other=2 · uncovered=0 (matrix has 2 more item-rows than live items) | no |
+| cross-cutting / not a page | Chat widget — plain Hebrew (feature/chatbot-plain-hebrew-v2) | 2269 | 15 | rows=15 · CONVERT=4+7py · COVERED=0 · STALE=4 · other=0 · uncovered=0 | no |
+| cross-cutting / not a page | Compliance fixes (ESLint + RTL + accessibility + disclosures) | 2401 | 11 | rows=11 · CONVERT=4 · COVERED=1 · STALE=5 · other=1 · uncovered=0 | no |
 | cross-cutting / not a page | Performance — Core Web Vitals (CWV audit) | 2498 | 10 | rows=10 · CONVERT=1 · COVERED=0 · STALE=7 · other=2 · uncovered=0 | no |
 | cross-cutting / not a page | Component tests — vitest (automated) | 2518 | 27 | rows=27 · CONVERT=1 · COVERED=17 · STALE=8 · other=1 · uncovered=0 | no |
 | cross-cutting / not a page | /neighbor empty state (task 10) | 2666 | 13 | rows=13 · CONVERT=0 · COVERED=0 · STALE=13 · other=0 · uncovered=0 | no |

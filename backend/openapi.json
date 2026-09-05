@@ -584,6 +584,11 @@
             "title": "Id",
             "type": "integer"
           },
+          "is_system": {
+            "default": false,
+            "title": "Is System",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -4907,6 +4912,18 @@
             ],
             "title": "Slug"
           },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
+          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -5791,6 +5808,18 @@
             ],
             "title": "Slug"
           },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
+          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -6467,6 +6496,18 @@
               }
             ],
             "title": "Slug"
+          },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -7983,6 +8024,18 @@
             ],
             "title": "Slug"
           },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
+          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -9452,6 +9505,18 @@
               }
             ],
             "title": "Slug"
+          },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
           },
           "status": {
             "anyOf": [
@@ -18525,7 +18590,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {

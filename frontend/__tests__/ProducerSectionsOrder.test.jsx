@@ -33,6 +33,9 @@ vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span />,
   FacebookLogo: () => <span />,
   Receipt: () => <span />,
+  // MEH-2264: OrderWindowScheduleBlock's card icon + disclosure chevron.
+  CalendarCheck: () => <span />,
+  CaretDown: () => <span />,
 }));
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));
@@ -223,5 +226,43 @@ describe("ProducerSections last-updated line (MEH-1291)", () => {
   it("renders nothing when updated_at is null (untouched producer)", () => {
     render(<ProducerSections {...freshnessProps({ updated_at: null })} />);
     expect(screen.queryByText("producer.detail.last_updated")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProducerSections → OrderWindowScheduleBlock special_hours pass-through (MEH-2264)", () => {
+  it("renders the upcoming special-dates layer from producer.special_hours", () => {
+    // Clock pinned: "upcoming" is time-derived. Saturday 05/09/2026 10:00 Israel.
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: new Date("2026-09-05T07:00:00Z") });
+    try {
+      render(
+        <ProducerSections
+          producer={{
+            id: 2,
+            name: "חוות",
+            slug: "y",
+            description: "תיאור",
+            products: [],
+            offers_delivery: false,
+            delivery_areas: [],
+            categories: [],
+            order_window: { sunday: [{ open: "09:00", close: "14:00" }] },
+            special_hours: {
+              "2026-09-21": { ranges: [], note: "יום כיפור" },
+              "2026-08-01": { ranges: [] },
+            },
+          }}
+          events={[]}
+          similarProducers={[]}
+          sectionRefs={{ current: {} }}
+          reviewsContainerRef={{ current: null }}
+          reviewsVisible={true}
+        />,
+      );
+      const rows = screen.getAllByTestId("order-window-special-row");
+      expect(rows.map((r) => r.dataset.date)).toEqual(["2026-09-21"]);
+      expect(rows[0].textContent).toContain("יום כיפור");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
