@@ -489,7 +489,43 @@ async function sheetSettledAt(page: Page, shell: Locator, fraction: number): Pro
  * and the attribution rides the CONTAINER edge, so it sits that many px lower
  * than the sheet's real top. Reported as a finding; asserted as the mechanism.
  */
+/**
+ * The sheet's height must STOP MOVING before the attribution is measured
+ * against it, and that is the fix for a measured flake rather than a
+ * precaution.
+ *
+ * The attribution's `margin-bottom` tracks `--map-sheet-h` (the MEH-1365 rule
+ * in globals.css), so the two are only in agreement once the open animation
+ * has settled. On CI (run 33933955198, mobile) the four rects below were read
+ * across four separate round-trips while the sheet was still moving, and the
+ * attribution came out one frame behind the sheet it is compared to:
+ * `ruleGap` 16.3px on the first attempt, inside tolerance on the retry.
+ *
+ * Two consecutive equal heights, bounded. This does NOT weaken the assertion:
+ * it gates on the SHEET, never on the attribution the assertion is about, so a
+ * geometry that is permanently wrong still fails — with the same numbers and
+ * the same 2px tolerance.
+ */
+async function settleSheet(shell: Locator): Promise<void> {
+  let previous = -1;
+  await expect
+    .poll(
+      async () => {
+        const height = (await bottomSheet(shell).boundingBox())?.height ?? -1;
+        const stable = height > 0 && height === previous;
+        previous = height;
+        return stable;
+      },
+      {
+        message: "the bottom sheet's height must stop moving before the attribution is measured against it",
+        timeout: 5_000,
+      },
+    )
+    .toBe(true);
+}
+
 async function attributionRide(page: Page, shell: Locator): Promise<{ ruleGap: number; spill: number; overCards: boolean }> {
+  await settleSheet(shell);
   const attr = await box(attribution(shell));
   const container = await box(mapCanvas(shell));
   const sheet = await box(bottomSheet(shell));
