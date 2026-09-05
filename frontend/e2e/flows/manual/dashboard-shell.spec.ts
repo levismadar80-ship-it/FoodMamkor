@@ -522,13 +522,19 @@ test.describe("dashboard shell — card order", () => {
     await expect(completeness).toBeVisible();
     await expect(hint, "pending keeps the availability pills disabled with a reason").toBeVisible();
 
-    // Order by document position, which is what "above" means here.
-    const order = await completeness.evaluate(
-      (el, other) =>
-        el.compareDocumentPosition(other as Node) & Node.DOCUMENT_POSITION_FOLLOWING ? "before" : "after",
-      await hint.elementHandle(),
-    );
-    expect(order, "the actionable card must precede the disabled one").toBe("before");
+    // Order by RENDERED position, not by document position. The row is about
+    // what the owner sees ("מעל כרטיס הזמינות"), and the two can diverge —
+    // `order`, grid placement or absolute positioning all move a box without
+    // moving the node. `y` is top-to-bottom whatever the writing direction, so
+    // "above" stays unambiguous on this dir=rtl page.
+    const cardBox = await completeness.boundingBox();
+    const hintBox = await hint.boundingBox();
+    expect(cardBox, "the completeness card has no box — it is not rendered").not.toBeNull();
+    expect(hintBox, "the availability hint has no box — it is not rendered").not.toBeNull();
+    expect(
+      cardBox!.y,
+      "the actionable card must render ABOVE the disabled availability card",
+    ).toBeLessThan(hintBox!.y);
   });
 
   // MT:MEH-1134:2, MT:MEH-1134:3 — drift D3: row 2 describes a slot MEH-1397
