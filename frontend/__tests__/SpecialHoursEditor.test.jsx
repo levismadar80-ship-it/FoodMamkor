@@ -35,11 +35,18 @@ vi.mock("@/lib/api", () => ({
   default: { put: vi.fn(() => Promise.resolve({ data: {} })) },
 }));
 
-// Saturday 05/09/2026, 10:00 Israel. Rosh Hashana in holidays.js starts on
-// 2026-09-20, so it is an UPCOMING chip on this date (whatever MEH-2263 does
-// to the dates themselves, the chip reads them off HOLIDAYS).
+// Saturday 05/09/2026, 10:00 Israel. Every chip expectation below is DERIVED
+// from HOLIDAYS rather than naming dates: the chips read that file as-is, so a
+// date fix there (MEH-2263) must move the chips and not this suite.
 const NOW = new Date("2026-09-05T07:00:00Z");
 const TODAY = "2026-09-05";
+
+/** The keys holidays.js says are still ahead of TODAY, oldest first. */
+const UPCOMING_KEYS = Object.entries(HOLIDAYS)
+  .filter(([, h]) => h.end >= TODAY)
+  .sort(([, a], [, b]) => a.start.localeCompare(b.start))
+  .map(([key]) => key);
+const PAST_KEYS = Object.keys(HOLIDAYS).filter((k) => !UPCOMING_KEYS.includes(k));
 
 const ONE = { "2026-09-21": { ranges: [], note: "יום כיפור" } };
 const MANY = {
@@ -106,13 +113,17 @@ describe("lib/special-hours — rows ⇄ payload", () => {
 describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
   it("lists only holidays that have not ended, oldest first, with their remaining dates", () => {
     const chips = holidayChips([], TODAY);
-    // Pesach (April) and Shavuot (May) 2026 are over; Rosh Hashana is next.
-    expect(chips.map((c) => c.key)).not.toContain("pesach");
-    expect(chips[0].key).toBe("rosh_hashana");
-    expect(chips[0].name).toBe(HOLIDAYS.rosh_hashana.name);
-    expect(chips[0].dates[0]).toBe(HOLIDAYS.rosh_hashana.start);
-    expect(chips[0].dates[chips[0].dates.length - 1]).toBe(HOLIDAYS.rosh_hashana.end);
-    expect(chips[0].added).toBe(false);
+    expect(chips.map((c) => c.key)).toEqual(UPCOMING_KEYS);
+    for (const past of PAST_KEYS) expect(chips.map((c) => c.key)).not.toContain(past);
+    // The self-test of the fixture: on 05/09/2026 the file must have at least
+    // one holiday ahead, or every case below is vacuous.
+    expect(chips.length).toBeGreaterThan(0);
+    const first = chips[0];
+    const h = HOLIDAYS[first.key];
+    expect(first.name).toBe(h.name);
+    expect(first.dates[0]).toBe(h.start < TODAY ? TODAY : h.start);
+    expect(first.dates[first.dates.length - 1]).toBe(h.end);
+    expect(first.added).toBe(false);
   });
 
   it("a chip whose every date is already a row reads as taken; a partial one does not", () => {
@@ -173,10 +184,11 @@ describe("SpecialHoursEditor — the state matrix", () => {
 
   it("tapping a chip ADDS closed rows (never applies anything by itself) and the chip turns taken", async () => {
     renderEditor(null);
-    const chip = screen.getByTestId("special-hours-chip-rosh_hashana");
+    const firstKey = UPCOMING_KEYS[0];
+    const chip = screen.getByTestId(`special-hours-chip-${firstKey}`);
     expect(chip).not.toBeDisabled();
     fireEvent.click(chip);
-    const expected = holidayChips([], TODAY).find((c) => c.key === "rosh_hashana").dates;
+    const expected = holidayChips([], TODAY).find((c) => c.key === firstKey).dates;
     expect(rows().map((r) => r.dataset.date)).toEqual(expected);
     expect(chip).toBeDisabled();
     expect(chip.getAttribute("aria-pressed")).toBe("true");
