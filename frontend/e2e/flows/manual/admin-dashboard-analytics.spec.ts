@@ -444,9 +444,11 @@ test.describe("admin nav — the pending-moderation pill", () => {
     const stub = await stubAdmin(page);
     await openDashboard(page);
     const before = stub.dashboardCalls();
-    await page.getByRole("link", { name: /^בתי עסק$/ }).locator(":visible").first().click().catch(async () => {
-      await page.locator('a[href="/admin/producers"]:visible').first().click();
-    });
+    // getByRole excludes hidden elements, so of the two navs (sidebar hidden on the
+    // phone, mobile strip hidden on desktop) exactly one «בתי עסק» link resolves.
+    const producersLink = page.getByRole("link", { name: "בתי עסק", exact: true });
+    await expect(producersLink, "the nav link to the queue is visible").toBeVisible();
+    await producersLink.click();
     await expect(page).toHaveURL(/\/admin\/producers$/);
     await expect(page.getByRole("heading", { name: /בתי עסק/ }).first()).toBeVisible();
     await expect(pill(page, 4)).toHaveText("4");
@@ -466,3 +468,4 @@ test.describe("admin nav — the pending-moderation pill", () => {
     await expect(page.getByRole("link", { name: /ממתינים לאישור/ }).filter({ hasText: "לחצו לטיפול" }), "no alert card either").toHaveCount(0);
   });
 });
+
