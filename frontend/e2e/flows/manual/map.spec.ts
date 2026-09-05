@@ -177,6 +177,13 @@ function icu(msg: string, count: number): string {
   const re = /(=\d+|one|two|other)\s*\{((?:[^{}]|\{count\})*)\}/g;
   let b: RegExpExecArray | null;
   while ((b = re.exec(m[1])) !== null) branches[b[1]] = b[2];
+  // KNOWN GAP, stated so the next reader does not have to work it out: Hebrew's
+  // CLDR plural set plus this file's own `two` includes a `many` category, and
+  // this selector has no branch for it — a `many {...}` form in `he.json` would
+  // fall through to `other`. Harmless at every count this spec asserts (0, 1, 6)
+  // and at every plural string it reads today; it becomes wrong the moment a
+  // message gains that form, which is why it is named here rather than left to
+  // be rediscovered from a confusing mismatch.
   const key =
     branches[`=${count}`] !== undefined ? `=${count}` : count === 1 ? "one" : count === 2 ? "two" : "other";
   const chosen = branches[key] ?? branches.other;
@@ -873,6 +880,22 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     mobileOnly(info, "the pill is mounted inside the mobile shell only");
     await grantGps(context, GPS_FAR);
     const { shell, tiles } = await gotoWithCatalog(page, info);
+    // CONTROL FIRST (testing.md — "Run the control first. If the probe cannot
+    // see the thing it is aimed at, nothing it reports afterwards is worth
+    // reading"). Stated from the measurement rather than from the obvious guess,
+    // because the guess was wrong: with the tile route never registered the zoom
+    // census below still PASSES — it reads the DOM, not this log — so the
+    // trailing form produced a green census beside a red control, which reads
+    // like a flaky control rather than a void run. Ordering the control first
+    // means no census result is ever produced from an uninstrumented run.
+    // Bounded, because tiles arrive asynchronously after the cards
+    // `gotoWithCatalog` already waited for.
+    await expect
+      .poll(() => tiles.length, {
+        message: "control: the tile route must be recording — every zoom census in this test is void if this stays 0",
+        timeout: 10_000,
+      })
+      .toBeGreaterThan(0);
     await shell.getByTestId("map-near-me-pill").click();
     await expect(page.getByText(NM.empty, { exact: true })).toBeVisible();
     await expect(shell.locator("path.leaflet-interactive")).toHaveCount(1);
@@ -886,7 +909,6 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
         return zs.length > 0 && zs.every((z) => z === String(NEAR_ME_DEFAULT_ZOOM));
       }, { message: "the camera must settle on the default zoom" })
       .toBe(true);
-    expect(tiles.length, "control: the tile route must be recording").toBeGreaterThan(0);
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length);
   });
