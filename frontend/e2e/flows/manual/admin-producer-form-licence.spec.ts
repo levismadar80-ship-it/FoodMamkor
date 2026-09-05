@@ -253,7 +253,7 @@ async function gotoCategoryFrame(page: Page): Promise<void> {
   await page.getByTestId("register-preflight-start").click();
   await expect(page.getByTestId("register-frame-account")).toBeVisible();
   await page.getByTestId("register-account-name").fill("טסט בדיקה");
-  await page.getByTestId("register-account-email").fill(`c12f+${Date.now()}@mehamakor.online`);
+  await page.getByTestId("register-account-email").fill(`c12f+${Date.now()}@example.com`);
   await page.getByTestId("register-account-password").fill("Abcdefgh1234");
   await page.getByTestId("register-account-next").click();
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
