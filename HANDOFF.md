@@ -100,6 +100,60 @@
 - שלוש ההכרעות של T12 פריט 2: שלושת שדות הפרטיות הרכים של MEH-966 · האם הקופי של MEH-1679 מאושר מראש (כלל 22) · האם MEH-2135 היא עבודת CC בכלל.
 - ‏MEH-2253 (‏`inert` לא מרונדר — תיקון נגישות לא בתוקף, סיבה לא ידועה) ו-MEH-2254 (‏decision-first: ‏CTA אינליין 101px מתחת לקפל).
 
+## 2026-09-04 צהריים — drain כו' (session `01HDS31i…`): BRIEF 10:04Z + ADDENDUM 10:08Z · T1 פוצל ל-session נפרד (10:22Z) · MEH-2210 chunk A נחת · 1428 chunk 1 + 2076 + 2244 ×4 ב-PR · שרשרת מיזוג סדרתית
+
+**‏שורה אחת:** ‏#3354 (2054 re-land) · #3333 (2210 A) נחתו כ-squash מאומת; ‏#3370 (2244 D — `3b1f9d76`). פתוחים ירוקים בתור סדרתי: #3356 (2192) · #3352 (1514) · #3364 (1985) · #3358 (2052) · #3360 (1930) · #3362 (1501) · #3359 (1742) · #3367 (2244 A) · #3365 (2244 B) · #3371 (2244 C) · #3349 (1647) · #3344 (1981) — auto-merge SQUASH armed על 9 מהם; כל אחד צריך `update-branch` אחרי שהקודם נוחת (ruleset strict). לספיר: #3368 (1428 ch1, revision) · #3369 (2076, post-launch) · #3366 (1640, screenshots) · #3336/#3343 (2210 B/C, self-QA) · #3345–#3348 (1687) · #3350 (2119 RED) · #3355 (1621 ch2) · #3314/#3316/#3321 · T1 PRs (#3330–#3342, session אחר).
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏ה-ruleset הופך כל מיזוג לסבב CI מלא של כל השאר.** «2 of 2 required status checks are expected» = הענף מאחורי staging, לא check אדום. עם שני sessions ממזגים במקביל (T1 + כו') #3333 נדחה ב-405 **פעמיים** אחרי שני `update_pull_request_branch` מלאים. הפתרון שעבד: `enable_pr_auto_merge` עם `SQUASH` **וקריאת ה-method מהתשובה** (כלל 21) — ה-PR נוחת ברגע שהשערים ירוקים, בלי חלון בין «ירוק» ל-«merge». עדיין סדרתי: auto-merge לא מעדכן ענף; PR הבא צריך `update-branch` אחרי כל נחיתה.
+2. **‏`ruff format` על קובץ טסט קיים = diff מנופח שה-reviewer מסמן.** ‏#3369 נבנה מחדש מ-staging עם הבלוק החדש בלבד (2 שורות import הורחבו, שאר ה-diff תוספות). לפני `ruff format` על קובץ שלא נגעת בו — `--check` בלבד.
+3. **‏docstring של handler = OpenAPI description.** הוספת שורה ל-docstring של `create_review_nested` הסיטה את `backend/openapi.json`; `openapi-codegen-drift-guard.sh` tier C תפס מקומית לפני ש-`Repo guards` היה מאדים. אחרי כל שינוי docstring ב-router: `--write` + commit של spec + generated + manifest יחד.
+4. **‏שני revisions על אותו parent = שני heads ברגע שהראשון נוחת.** ‏1428 (`3f9a7c2e5d18`) נכתב על `e6b2d4f81a37`; #3333 (`2c1033ca5745`) נחת קודם → re-chain בקומיט נפרד (`3fad3a89`), `alembic heads` → אחד. ה-docstring של ה-revision נשא את ההוראה מראש — אבל הערה אינה שער; ה-reviewer דרש אימות בזמן המיזוג.
+5. **‏worktrees של agents משאירים index מלוכלך.** ‏`git checkout` של ענף ש-worktree של agent מחזיק נכשל עם «already used by worktree»; בתוך ה-worktree ה-index הכיל שינויים staged זרים (כולל `D docs/overnight/…`). `git reset` (mixed) + `git checkout -- .` לפני כל merge שם. ‏`scratchpad/commit-msg.txt` משותף בין agents — agent 1428 קיבל הודעת commit של 2244 ותיקן ב-amend; שם קובץ פר-כרטיס.
+6. **‏סט ה-E2E האדום בבסיס (04/09): 12** — VRT `map`×2 · `producer detail` · `about`×2 · `login`×2 · `register`×2 · axe `/forgot-password`×2 · `outreach-prefill:285`. כל PR היום קיבל תת-קבוצה שלו (7 או 12). תגובה אחת לכל PR, לא תיקון: אין fix על staging (VRT re-baseline + axe = כרטיסים משלהם), E2E gate לא required.
+7. **‏flip-check (04/09):** ‏#3333 עם `Refs` השאיר 2210 ב-Todo. #3354 סגר 2054.
+
+### PRs
+
+| PR | מה | נחת |
+| -- | -- | -- |
+| #3354 | MEH-2054 — `docs/overnight/session-a-x8nq5w.md` re-land (T0) | `66d2668c` (squash) |
+| #3333 | MEH-2210 chunk A — resubmit loop, revision `2c1033ca5745` | `cd766944` (squash, auto-merge SQUASH) |
+| #3370 | MEH-2244 chunk D — `pr-reconcile.mjs` + tests 18/18 + patch doc | `3b1f9d76` (squash) |
+| #3356 | MEH-2192 — Organization `founder` + `alternateName` | ירוק, auto-merge armed, סבב CI אחרי update-branch |
+| #3352 | MEH-1514 — `/about` VRT reveal helper (control + poll) | ירוק, armed |
+| #3364 | MEH-1985 — vite 8.2.2 lockfile-only | ירוק, armed |
+| #3358 | MEH-2052 — hook regex patch doc + self-test על ה-hook האמיתי | ירוק, armed |
+| #3360 | MEH-1930 — `shown-failing-guard.sh` (warn-only, 17 cases) | ירוק, armed |
+| #3362 | MEH-1501 — runbook ב-workflow.md (cite-and-close) | ירוק, armed |
+| #3359 | MEH-1742 item 2 — Deploy gate strict-skip patch doc | ירוק, armed |
+| #3367 | MEH-2244 chunk A — שער גוף-PR (3 סבבי reviewer) | ירוק, armed |
+| #3365 | MEH-2244 chunk B — כלל 36 + תבנית 06 | ירוק, armed |
+| #3371 | MEH-2244 chunk C — stale bot patch doc | ירוק אחרי rewording של הגוף (שער ה-marker נפל על הפרוזה); ממתין ל-base move |
+| #3349 | MEH-1647 — palette-selector patch doc + fixture opt-out | ירוק |
+| #3344 | MEH-1981 — underline על קישור ה-notice | ירוק |
+| #3368 | MEH-1428 chunk 1 — קישור ביקורת חתום, revision `3f9a7c2e5d18` על `2c1033ca5745` | פתוח — ספיר (revision) |
+| #3369 | MEH-2076 — same-category review guard | פתוח — ספיר (post-launch, שינוי התנהגות) |
+| #3366 | MEH-1640 — איחוד 4 spokes | פתוח — ספיר (screenshots 375/1440 לא צולמו) |
+| #3336 / #3343 | MEH-2210 B / C | פתוחים — ספיר (self-QA rig לא הוקם) |
+| #3345–#3348 | MEH-1687 — 4 יעדי מגע 44px | פתוחים — ספיר (UI) |
+| #3350 | MEH-2119 — probe זמני | פתוח — ספיר (RED) |
+| #3355 | MEH-1621 chunk 2 — הערות schemas.py | פתוח — post-launch |
+| #3351 | MEH-817 — un-quarantine toggle round-trip | פתוח — רק אחרי ש-spec 14 ירוק ב-E2E |
+
+### רשימת ספיר (residual מהסשן הזה)
+
+1. **שרשרת המיזוג הסדרתית** — 12 PRs ירוקים (טבלה למעלה). auto-merge SQUASH armed; אחרי כל נחיתה: `update-branch` לבא בתור (או session הבא). #3370 מוזג מחוץ לתור ושבר סבב CI של #3356 — לא לחזור על זה.
+2. **#3368 (1428 chunk 1)** — merge = החלת revision `3f9a7c2e5d18` ב-deploy. אחריו chunk 2 (frontend: `?rt=` + כפתור «העתק קישור»).
+3. **#3369 (2076)** — post-launch; מועד המיזוג שלך. **#3366 (1640)** — screenshots 375/1440 × 4 spokes (או preview).
+4. **MEH-2210 B/C** — preview + merge, או «go screenshots» ל-rig.
+5. **MEH-2244** — Linear Settings → Workflow → auto-close parent issues; שני patch docs (stale · reconcile) ל-`.github/workflows/` (token session); שורת RTL allowlist ל-`scripts/oneoff/pr-*`.
+6. **קופי 409 של resubmit** («…בהמתנה לאישור או נדחה») — הכרעת כלל 22, שורה אחת.
+7. **VRT re-baseline** ל-`about` (אחרי #3352) + `map`/`login`/`register`/`producer detail` — `vrt-update.yml` dispatch; axe `/forgot-password` ו-`outreach-prefill:285` — כרטיסים משלהם.
+8. **מ-drain כה' (עדיין פתוח):** #3309 branch delete · #3314/#3316/#3321 · seed double-run · admin-notification manual check · lawyer package §14 · 413 voice read · 2135 script run · `actions: write` decision · 2052 hook paste · e2e/deploy gate patches · 1868/1980/2117 baselines · GH_WORKFLOW_TOKEN revoke · 1249 scope (1,654) → /goal הבא.
+9. **T1 (session הטוקן):** #3330–#3342 — לא נגעתי (פיצול 10:22Z).
+
 ## 2026-09-04 ערב — batch חוויות שני MEH-2249/2248 (session `015hizoq…`): שניהם מוזגו · ההכרעה שנשארה מ-#3357 סגורה
 
 **‏שורה אחת:** ‏#3382 (2249) `3013704a` 19:36Z · #3383 (2248) `4d286593` 20:09Z — שניהם auto-merge SQUASH, והשיטה אומתה פעמיים: מתשובת ה-`enable` ומהקומיט שנחת (תבנית `(#N)` + הורה יחיד, כלל 21). ‏**flip-check נקרא חי על שניהם, בשני הכיוונים:** 2249 Backlog → **Done** `19:36:46.471Z` · 2248 Backlog → **Done** `20:09:04.393Z`. שניהם בכיוון הנכון — ה-DoD התקיים, אין מה לפתוח מחדש. שני הענפים מ-`origin/staging` טרי; PR docs זה חומש רק אחרי ששניהם נחתו (כלל 31b).
