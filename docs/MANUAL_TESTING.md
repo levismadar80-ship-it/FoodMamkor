@@ -839,7 +839,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 - [ ] **step_viewed בקונסול (dev)** — פתחי DevTools → Console ב-`/register/producer`, לחצי "בואו נתחיל" ואז עברי בין השלבים — **תוצאה מצופה:** על כל מעבר שלב מודפס `[track] producer_register_step_viewed { step: "account"|"details"|"category"|"story"|"confirm" }` (רק אחרי אישור עוגיות "all"; אם דחית עוגיות — אין לוג).
 - [ ] **submitted + error** — השלימי טופס תקין ושלחי — **תוצאה מצופה:** `[track] producer_register_submitted`. בכשל שליחה (למשל שרת מחזיר שגיאה) — `[track] producer_register_error { step: "story" }`.
-- [ ] **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-435:3) — **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
 
 ## MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint
 
@@ -988,8 +988,8 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 - [ ] **מסך פתיחה לפני הטופס** — פתחו `/register/producer` (לא מחוברות) — **תוצאה מצופה:** במקום טופס החשבון מופיע מסך "לפני שמתחילים": כותרת העמוד + subtitle נשארים, ואז צ'קליסט "מה כדאי להכין" (אימייל, סיפור קצר, 2–3 תמונות, רישיון יצרן אם נדרש), שורת משך "בערך 10 דקות", בלוק "מה קורה אחרי" עם קישור ל-`/about/process`, וכפתור "מתחילים" אחד.
 - [ ] **CTA → פריים 01** — לחצו "מתחילים" — **תוצאה מצופה:** נכנסים לפריים ACCOUNT הרגיל (stepper 01–04 ללא שינוי; ה-pre-flight לא נספר כצעד).
 - [ ] **מסלול upgrade** — משתמשת מחוברת פותחת `/register/producer` — **תוצאה מצופה:** ה-pre-flight מוצג גם כן, אבל **בלי** שורת "כתובת אימייל ליצירת חשבון"; "מתחילים" מוביל ישר ל-DETAILS.
-- [ ] **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
-- [ ] **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-994:4) — **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-994:5) — **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
 
 ## MEH-1075 — /map filter IA: quick chips + FilterSheet
 
@@ -1025,7 +1025,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## MEH-853 — /register/producer frame 01 (DETAILS): city + address
 
-- [ ] **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-853:1) — **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
 - [ ] **city בpayload** — מלאי יישוב + השלימי הרשמה — **תוצאה מצופה:** ב-DevTools Network, ה-POST ל-`/auth/register/producer` נושא `"city": "<העיר>"`.
 - [ ] **address free-text** — שדה "כתובת" מקבל טקסט חופשי (לא חובה) — **תוצאה מצופה:** נשמר ב-`form.address` ונשלח כ-`"address"` ב-payload.
 - [ ] **שני המסלולים** — גם בהרשמה חדשה וגם במסלול upgrade (משתמשת מחוברת) — **תוצאה מצופה:** city+address נשלחים בשניהם (ה-body משותף מעל ענף `!isUpgrade`).
@@ -2084,11 +2084,11 @@ RTL tests (Task 1) — verify on a mobile viewport (iOS Safari / Android Chrome)
 - [ ] `/register` — שדה "סיסמה" — עדיין LTR (intentional)
 - [ ] `/register` — שדה "עיר" (CitySearch) — RTL, placeholder "חפשי עיר..." מיושר ימין, התוצאות באוטוקומפליט RTL
 - [ ] `/register` — שדה "טלפון" — עדיין LTR (intentional)
-- [ ] `/register/producer` שלב 1 — שדה "שם מלא" — RTL
-- [ ] `/register/producer` שלב 2 — שדה "שם העסק" — RTL
-- [ ] `/register/producer` שלב 2 — textarea "תיאור העסק" — RTL
-- [ ] `/register/producer` שלב 2 — שדה "עיר" — RTL
-- [ ] `/register/producer` שלב 3 — שדות "עיר משלוח" ו-"יום משלוח" — RTL
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:6) — `/register/producer` שלב 1 — שדה "שם מלא" — RTL (נבדק יחד עם אימייל/סיסמה שנשארים LTR, כדי שהבדיקה לא תעבור רק בגלל dir של המסמך)
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:7) — `/register/producer` שלב 2 — שדה "שם העסק" — RTL
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:8) — `/register/producer` — textarea התיאור — RTL. **דריפט:** ה-textarea יושב על פריים STORY (שלב 4), לא על שלב 2, והתווית קוראת «ספרו על העסק שלך»
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:9) — `/register/producer` שלב 2 — שדה היישוב — RTL (התווית קוראת «יישוב»)
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:10 — חצי) — `/register/producer` — רשימת ערי המשלוח («ערים שמשלוחים אליהן») — RTL. **דריפט:** הבלוק יושב על שלב 2 (DETAILS) ולא על שלב 3, ומופיע רק אחרי סימון "משלוחים". **חצי שני לא הומר:** אין שדה "יום משלוח" באשף כלל (0 מופעים)
 - [ ] `/register/producer` שלב 2 — "אינסטגרם" / "אתר" — עדיין LTR (intentional)
 
 Dashboard copy tests (Task 2):
