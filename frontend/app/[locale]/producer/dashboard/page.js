@@ -17,6 +17,7 @@ import WhatsThis from "@/components/WhatsThis";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
+import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
@@ -533,37 +534,30 @@ export default function ProducerDashboardPage() {
         </div>
       )}
 
-      {/* MEH-1355: rejected banner absorbs the deltas from the removed /settings
-          business tab — the admin rejection_reason (from /auth/me, rendered as-is
-          like ChangesRequestedBanner's requested_changes) plus the 3 fix-it tips,
-          and a support entry (wa.me + mailto) in place of the bare /contact link. */}
+      {/* MEH-2210 chunk B: the rejected banner is now the exit from `rejected`
+          — reason-driven copy keyed on the admin's preset code (with a deep
+          link to the card that fixes it), the free text as a quote, and the
+          "שליחה לבדיקה חוזרת" CTA capped at 3. Replaces the MEH-1355 block
+          whose three generic tips did not depend on the reason. Code + count
+          come from /producers/me (ProducerOwnerOut) with /auth/me as the
+          first-render fallback; the free text keeps coming from /auth/me
+          (MEH-283). On success the local status flips to "pending" with no
+          reload, so the pending banner takes over in the same session. */}
       {producer.status === "rejected" && (
-        <div
-          className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
-          role="alert"
-          data-testid="status-rejected-banner"
-        >
-          <p className="font-semibold text-red-800">{t("status.rejected.title")}</p>
-          {user.producer_rejection_reason && (
-            <p className="text-red-600" data-testid="status-rejected-reason">
-              {user.producer_rejection_reason}
-            </p>
-          )}
-          <p className="text-red-700">{t("status.rejected.body")}</p>
-          <ul className="space-y-1 text-red-700">
-            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_details")}</span></li>
-            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_photos")}</span></li>
-            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_address")}</span></li>
-          </ul>
-          <button
-            type="button"
-            onClick={() => setSupportOpen(true)}
-            className="text-primary hover:underline font-medium"
-            data-testid="status-rejected-support"
-          >
-            {t("status.rejected.support_cta")}
-          </button>
-        </div>
+        <RejectedBanner
+          reason={user.producer_rejection_reason}
+          code={profile?.rejection_reason_code ?? user.producer_rejection_reason_code ?? null}
+          count={profile?.resubmission_count ?? user.producer_resubmission_count ?? 0}
+          onSupport={() => setSupportOpen(true)}
+          onResubmitted={(n) => {
+            setData((prev) =>
+              prev ? { ...prev, producer: { ...prev.producer, status: "pending" } } : prev,
+            );
+            setProfile((prev) =>
+              prev ? { ...prev, status: "pending", resubmission_count: n } : prev,
+            );
+          }}
+        />
       )}
 
       {/* MEH-1355: inactive banner migrated from the removed /settings business
