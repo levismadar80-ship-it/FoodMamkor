@@ -138,7 +138,10 @@ const rec = (r: Route, writes?: Rec[]): unknown => {
   const req = r.request();
   let body: unknown = null;
   try { body = req.postDataJSON(); } catch { body = req.postData(); }
-  writes?.push({ method: req.method(), url: new URL(req.url()).pathname.replace(/^.*\/api/, ""), body });
+  // Strip the proxy prefix up to the FIRST "/api" — a greedy `.*\/api` would eat a
+  // later "/api" segment too (reviewer, PR #3431). Nothing before it is asserted on.
+  const pathname = new URL(req.url()).pathname;
+  writes?.push({ method: req.method(), url: pathname.slice(pathname.indexOf("/api") + "/api".length), body });
   return body;
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
