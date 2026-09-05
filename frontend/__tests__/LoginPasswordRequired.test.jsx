@@ -68,6 +68,6 @@ describe("MEH-2256 — /login password touched-empty is an accessible error stat
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(pw).not.toHaveAttribute("aria-invalid");
-    expect(screen.getByText("valid")).toBeInTheDocument();
+    expect(screen.getByTestId("login-password-valid")).toBeInTheDocument();
   });
 });

@@ -327,7 +327,7 @@ function LoginPageBody() {
               <p className="text-xs text-red-500 text-start" role="alert">{t("password_required")}</p>
             )}
             {passwordValidLength && (
-              <p className="text-xs text-primary text-start">{t("valid")}</p>
+              <p className="text-xs text-primary text-start" data-testid="login-password-valid">{t("valid")}</p>
             )}
           </div>
 
