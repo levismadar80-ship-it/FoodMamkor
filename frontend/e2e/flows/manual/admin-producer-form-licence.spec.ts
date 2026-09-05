@@ -177,7 +177,9 @@ const rec = (r: Route, writes?: Rec[]): unknown => {
   let body: unknown = null;
   try { body = req.postDataJSON(); } catch { body = req.postData(); }
   const pathname = new URL(req.url()).pathname;
-  writes?.push({ method: req.method(), url: pathname.slice(pathname.indexOf("/api") + "/api".length), body });
+  const at = pathname.indexOf("/api");
+  if (at < 0) throw new Error(`rec(): no /api segment in ${pathname}`);
+  writes?.push({ method: req.method(), url: pathname.slice(at + "/api".length), body });
   return body;
 };
 
@@ -266,7 +268,8 @@ async function gotoCategoryFrame(page: Page): Promise<void> {
 
 /** Pick a chip by its catalogue name; non-popular ones are reached through the search box. */
 async function pickCategory(page: Page, name: string): Promise<void> {
-  const cat = CATEGORIES.find((c) => c.name === name)!;
+  const cat = CATEGORIES.find((c) => c.name === name);
+  if (!cat) throw new Error(`pickCategory(): «${name}» is not in the CATEGORIES fixture`);
   const chip = page.getByTestId(`category-chip-${cat.id}`);
   if ((await chip.count()) === 0) await page.getByTestId("category-search").fill(name);
   await chip.click();
