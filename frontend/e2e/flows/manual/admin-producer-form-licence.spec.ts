@@ -418,6 +418,19 @@ const nationwide = (page: Page) => page.getByRole("checkbox", { name: "משלו�
 const citiesBlock = (page: Page) => typeSection(page).locator("div").filter({ has: page.getByText("ערים שמשלוחים אליהן") }).last();
 const cityInput = (page: Page) => citiesBlock(page).getByRole("combobox");
 const chip = (page: Page, city: string) => citiesBlock(page).getByRole("button", { name: `הסר ${city}` });
+/**
+ * Remove a city chip by keyboard. On the CI mobile runner a pointer click on the
+ * 12px × was intercepted for 20 s by the chip wrapper / the chip itself (measured
+ * 05/09/2026, not reproduced locally) — geometry the row does not claim anything
+ * about. Focus + Enter activates the same native <button>, and the chip's absence
+ * is asserted afterwards, so a swallowed activation still fails.
+ */
+async function removeChip(page: Page, city: string): Promise<void> {
+  const btn = chip(page, city);
+  await btn.focus();
+  await btn.press("Enter");
+  await expect(btn).toHaveCount(0);
+}
 
 /**
  * Toggle a form checkbox by keyboard. On the CI mobile runner a pointer
@@ -584,8 +597,7 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await expect(page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ")).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
     // MT:MEH-213:7
-    await chip(page, "תל אביב-יפו").click();
-    await expect(chip(page, "תל אביב-יפו")).toHaveCount(0);
+    await removeChip(page, "תל אביב-יפו");
     await expect(page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ")).toBeVisible();
   });
 
