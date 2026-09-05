@@ -153,7 +153,7 @@ type StubOpts = {
   rows?: Row[];
   items?: Item[];
   /** producerId → item ids already recorded server-side. */
-  checks?: Record<number, string[]>;
+  checks?: Record<string, string[]>;
   approve?: Answer;
   writes?: Rec[];
 };
