@@ -416,9 +416,23 @@ const citiesBlock = (page: Page) => typeSection(page).locator("div").filter({ ha
 const cityInput = (page: Page) => citiesBlock(page).getByRole("combobox");
 const chip = (page: Page, city: string) => citiesBlock(page).getByRole("button", { name: `הסר ${city}` });
 
+/**
+ * Toggle a form checkbox by keyboard. On the CI mobile runner a pointer
+ * `check()`/`uncheck()` on these 16px inputs was intercepted for 20 s by a
+ * sibling <label> / the Section card (measured on PR #3432's first run, not
+ * reproduced locally) — geometry the row does not claim anything about. Focus
+ * + Space toggles the same native input regardless of what paints over it,
+ * and the state is asserted afterwards, so a swallowed toggle still fails.
+ */
+async function setChecked(cb: Locator, on: boolean): Promise<void> {
+  await cb.scrollIntoViewIfNeeded();
+  if ((await cb.isChecked()) !== on) await cb.press("Space");
+  await expect(cb).toBeChecked({ checked: on });
+}
+
 async function deliveryOnly(page: Page): Promise<void> {
-  await physical(page).uncheck();
-  await delivery(page).check();
+  await setChecked(physical(page), false);
+  await setChecked(delivery(page), true);
   await expect(nationwide(page)).toBeVisible();
 }
 
@@ -437,7 +451,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     await stubAdmin(page, { writes, postStatus: 422 });
     await openNewProducer(page);
     await expect(page.getByRole("button", { name: "יש לי רישיון יצרן ↓" })).toBeVisible();
-    await page.getByRole("checkbox", { name: "בשר" }).check();
+    await setChecked(page.getByRole("checkbox", { name: "בשר" }), true);
     const field = page.locator("#admin-producer-license");
     await expect(field).toBeVisible();
     await expect(page.getByText("מספר רישיון יצרן (חובה)")).toBeVisible();
@@ -457,7 +471,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     const writes: Rec[] = [];
     await stubAdmin(page, { writes, postStatus: 201 });
     await openNewProducer(page);
-    await page.getByRole("checkbox", { name: "בשר" }).check();
+    await setChecked(page.getByRole("checkbox", { name: "בשר" }), true);
     await page.locator("#admin-producer-license").fill("abc");
     await expect(page.getByText("מספר רישיון יצרן הוא 7-10 ספרות")).toHaveClass(/text-amber-600/);
     await page.locator("#admin-producer-license").fill("1234567");
@@ -500,12 +514,12 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
   test("unticking both shows «חייב לסמן לפחות אחד מהשניים» and disables save", async ({ page }) => {
     await stubAdmin(page);
     await openNewProducer(page);
-    await physical(page).uncheck();
+    await setChecked(physical(page), false);
     const err = page.getByText("חייב לסמן לפחות אחד מהשניים");
     await expect(err).toBeVisible();
     await expect(err).toHaveClass(/text-red-600/);
     await expect(saveBtn(page)).toBeDisabled();
-    await physical(page).check();
+    await setChecked(physical(page), true);
     await expect(err).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
   });
@@ -527,7 +541,7 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await openNewProducer(page);
     await deliveryOnly(page);
     await expect(saveBtn(page), "no cities yet — disabled").toBeDisabled();
-    await nationwide(page).check();
+    await setChecked(nationwide(page), true);
     await expect(page.getByText("ערים שמשלוחים אליהן")).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
     await expect(page.getByText("חוץ מ:")).toBeVisible();
@@ -540,8 +554,8 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await stubAdmin(page);
     await openNewProducer(page);
     await deliveryOnly(page);
-    await nationwide(page).check();
-    await nationwide(page).uncheck();
+    await setChecked(nationwide(page), true);
+    await setChecked(nationwide(page), false);
     const err = page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ");
     await expect(err).toBeVisible();
     await expect(err).toHaveClass(/text-red-600/);
@@ -609,9 +623,9 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await stubAdmin(page, { writes, postStatus: 201 });
     await openNewProducer(page);
     await page.getByLabel("שם העסק").fill("משלוחי הגליל");
-    await page.getByRole("checkbox", { name: "פירות וירקות" }).check();
+    await setChecked(page.getByRole("checkbox", { name: "פירות וירקות" }), true);
     await deliveryOnly(page);
-    await nationwide(page).check();
+    await setChecked(nationwide(page), true);
     await saveBtn(page).click();
     await expect.poll(() => writes.length).toBe(1);
     const body = writes[0].body as Record<string, unknown>;
