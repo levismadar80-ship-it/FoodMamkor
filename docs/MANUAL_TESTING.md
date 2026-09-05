@@ -1599,21 +1599,21 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] API — DevTools Network → `GET /admin/categories`; **תוצאה מצופה:** כל שורה כוללת `producer_count`. ה-endpoint הציבורי `GET /categories` מחזיר `producer_count: null` (לא נשבר).
 
 ### MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/producers
-- [ ] פתיחה — `/admin/producers` → ⋮ בשורה → "מחקו"; **תוצאה מצופה:** dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה/ביקורת) עם 'למחוק את "<שם בית העסק>"? פעולה זו אינה הפיכה.' — **לא** confirm של הדפדפן, ועדיין אין DELETE.
-- [ ] ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה).
-- [ ] אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתרעננת. התנהגות MEH-747 (FK מנותק) ללא שינוי.
-- [ ] כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול.
-- [ ] a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
+- ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — פתיחה — `/admin/producers` → ⋮ בשורה → "מחקו"; **תוצאה מצופה:** dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה/ביקורת) עם 'למחוק את "<שם בית העסק>"? פעולה זו אינה הפיכה.' — **לא** confirm של הדפדפן, ועדיין אין DELETE.
+- ✅ → admin-recipes-kebab.spec.ts («ביטול» and Escape close without deleting; Escape mid-delete does nothing) — ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה).
+- ✅ → admin-recipes-kebab.spec.ts (confirming deletes: one DELETE, «מוחקים…» with both buttons locked, then the row is gone) — אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתרעננת. התנהגות MEH-747 (FK מנותק) ללא שינוי.
+- ✅ → admin-recipes-kebab.spec.ts (a failed DELETE shows the error toast and keeps the dialog open) — כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול.
+- ✅ → admin-recipes-kebab.spec.ts (a busy menu item is aria-disabled, still focusable, and a click on it fires nothing — exercised on the ambassador toggle, the one busy item reachable while the menu is open) — a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
 - [ ] נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'.
 
 ### MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/producers
-- [ ] Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "שגריר", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
-- [ ] שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
-- [ ] שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger).
-- [ ] סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
-- [ ] שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
-- [ ] מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
-- [ ] פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
+- ✅ → admin-recipes-kebab.spec.ts (suspend / ambassador / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are) — Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "שגריר", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
+- ✅ → admin-recipes-kebab.spec.ts (a pending row's menu holds «דחייה» and «מחקו» only — ⚠️ STALE: «דחייה» joined the menu in MEH-226; it is no longer «מחקו» alone) — שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
+- ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, ambassador, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger).
+- ✅ → admin-recipes-kebab.spec.ts («סטורי» opens the story-card panel under the row; its close button removes it) — סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
+- ✅ → admin-recipes-kebab.spec.ts («הגדרה כשגרירה» POSTs ambassador:true and the menu then offers the removal) — שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
+- ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
+- ✅ → admin-recipes-kebab.spec.ts (a second click, a click outside and Escape close the menu; Escape returns focus to ⋮) — פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
 - [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.
 
 ### MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/admin/users
@@ -1627,10 +1627,10 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] נייד (iOS Safari + Chrome) — התפריט נפתח מעל/מתחת לשורה בלי לגלוש מהמסך; טאץ' מחוץ לתפריט סוגר.
 
 ### MEH-1011 Chunk 2 — בקשת השלמה (admin UI)
-- [ ] כפתור בקשת השלמה — `/admin/producers` (סנני `pending`) — איך לבדוק: בשורת עסק ממתין יש כפתור "בקשת השלמה" ליד "✓ אשר"; **תוצאה מצופה:** לחיצה פותחת מודל "בקשת השלמה מבית העסק" עם textarea + 2 צ'יפים מהירים.
-- [ ] שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast הצלחה, המודל נסגר, ובשורה מופיע badge "ממתין להשלמה" + תאריך (התאריך מיושר LTR, לא נשבר ב-RTL). מייל נשלח לבעלת העסק (לוג/Resend).
-- [ ] 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בקשת השלמה עם "חסרה תמונה — יש להעלות לפחות תמונה אחת" ממולא מראש + toast מידע "לא ניתן לאשר עדיין…". עסק בקטגוריית רישיון ללא מספר → prefill "חסר מספר רישיון יצרן".
-- [ ] ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (approve מנקה `requested_changes`).
+- ✅ → admin-recipes-kebab.spec.ts («בקשת השלמה» opens the decision modal with the completion group focused — ⚠️ STALE: since MEH-2209 it is the unified decision modal («החלטה על הבקשה של…»), not a «בקשת השלמה» modal with chips) — כפתור בקשת השלמה — `/admin/producers` (סנני `pending`) — איך לבדוק: בשורת עסק ממתין יש כפתור "בקשת השלמה" ליד "✓ אשר"; **תוצאה מצופה:** לחיצה פותחת מודל "בקשת השלמה מבית העסק" עם textarea + 2 צ'יפים מהירים.
+- ✅ → admin-recipes-kebab.spec.ts (sending a completion request POSTs the label and the row gains the «ממתין להשלמה» badge — ⚠️ STALE: the reasons are radios, not chips, and the completion path shows no success toast (use-reject-flow.js submitChanges closes and reloads)) — שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast הצלחה, המודל נסגר, ובשורה מופיע badge "ממתין להשלמה" + תאריך (התאריך מיושר LTR, לא נשבר ב-RTL). מייל נשלח לבעלת העסק (לוג/Resend).
+- ✅ → admin-producers-decisions.spec.ts (a 422 from the photo / license gate opens the decision modal with the matching chip preselected and the chip text prefilled — chunk 12b) — 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בקשת השלמה עם "חסרה תמונה — יש להעלות לפחות תמונה אחת" ממולא מראש + toast מידע "לא ניתן לאשר עדיין…". עסק בקטגוריית רישיון ללא מספר → prefill "חסר מספר רישיון יצרן".
+- ✅ → admin-recipes-kebab.spec.ts (a successful approve clears the «ממתין להשלמה» trail) — ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (approve מנקה `requested_changes`).
 - [ ] **MEH-1051 WhatsApp לבעלת העסק** — שלחי בקשת השלמה לעסק ממתין **עם טלפון**; **תוצאה מצופה:** בנוסף למייל מגיעה הודעת WhatsApp מתבנית `producer_changes_requested_v1` עם שם העסק + הטקסט שהוזן בשורה אחת (בלי ירידות שורה). עסק **בלי טלפון** → הבקשה עדיין מצליחה (200), רק מייל, ולוג `[WHATSAPP] Producer changes_requested SKIPPED`.
 - [ ] feedback ריק — במודל השאירי ריק → "שלחו בקשה"; **תוצאה מצופה:** toast שגיאה "יש לפרט מה נדרש להשלים." והבקשה לא נשלחת.
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
@@ -3117,14 +3117,14 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 ה-backend של מודרציית מתכונים (MEH-589) חי מאז האפיק של המתכונים, אבל עמוד האדמין מעולם לא נבנה — מתכון שהוגש ישב ב-pending בלי שום מסך שמציג אותו. העמוד החדש משקף 1:1 את `/admin/experiences`.
 
-- [ ] **קישור בסיידבר** — התחברי כמנהלת → בסיידבר של האדמין מופיע "מתכונים" (אייקון לחם) בין "חוויות" ל"משתמשים" — תוצאה מצופה: לחיצה מובילה ל-`/admin/recipes`
-- [ ] **תור ממתינים** — צרי מתכון כבעלת עסק (`/producer/dashboard/recipes`) → פתחי `/admin/recipes` כמנהלת → תוצאה מצופה: המתכון מופיע בטאב "ממתינים" עם סטטוס "ממתין" ו"לא פורסם"
-- [ ] **badge בסיידבר** — כשיש מתכון ממתין → תוצאה מצופה: המונה ליד "לוח מחוונים" בסיידבר כולל אותו (pending_moderation_count)
-- [ ] **אישור** — לחצי "אשרי" → תוצאה מצופה: toast "המתכון אושר ופורסם"; המתכון עובר לטאב "מאושרים"; מופיע בעמוד הציבורי של בית העסק
-- [ ] **בקשת שינויים** — "שינויים" בלי הערה → נחסם ("יש למלא הערה"); עם הערה → המתכון עובר ל"דרוש תיקון" ובעלת העסק רואה את ההערה בדשבורד שלה
-- [ ] **דחייה** — "דחי" עם סיבה → המתכון עובר ל"נדחו" ולא מופיע בעמוד הציבורי
-- [ ] **טאבים** — מעבר בין 5 הטאבים (ממתינים / דרוש תיקון / מאושרים / נדחו / הכל) — תוצאה מצופה: כל טאב מסנן לפי הסטטוס שלו; טאב ריק מציג "אין מתכונים בסטטוס הזה"
-- [ ] **מובייל 375px** — העמוד נטען, הטבלה נגללת אופקית בתוך הכרטיס, הטאבים נגללים — תוצאה מצופה: אין גלילה אופקית של העמוד כולו
+- ✅ → admin-recipes-kebab.spec.ts (the admin nav links «מתכונים» to /admin/recipes — ⚠️ the neighbours moved: since MEH-1016 the link sits in the CONTENT group after «חוויות»; «משתמשים» is in CORE) — **קישור בסיידבר** — התחברי כמנהלת → בסיידבר של האדמין מופיע "מתכונים" (אייקון לחם) בין "חוויות" ל"משתמשים" — תוצאה מצופה: לחיצה מובילה ל-`/admin/recipes`
+- ✅ → admin-recipes-kebab.spec.ts (a pending recipe shows under «ממתינים» as «ממתין» and «לא פורסם» — the recipe is served by the stub, not created through the owner dashboard) — **תור ממתינים** — צרי מתכון כבעלת עסק (`/producer/dashboard/recipes`) → פתחי `/admin/recipes` כמנהלת → תוצאה מצופה: המתכון מופיע בטאב "ממתינים" עם סטטוס "ממתין" ו"לא פורסם"
+- ✅ → admin-recipes-kebab.spec.ts (the dashboard badge renders the pending-moderation count — the client half: the count the dashboard endpoint reports is what the badge shows; the server's inclusion of recipes is a backend row) — **badge בסיידבר** — כשיש מתכון ממתין → תוצאה מצופה: המונה ליד "לוח מחוונים" בסיידבר כולל אותו (pending_moderation_count)
+- ✅ → admin-recipes-kebab.spec.ts («אשרי» approves: toast, gone from pending, present under «מאושרים» as «פורסם» — the public page is not asserted) — **אישור** — לחצי "אשרי" → תוצאה מצופה: toast "המתכון אושר ופורסם"; המתכון עובר לטאב "מאושרים"; מופיע בעמוד הציבורי של בית העסק
+- ✅ → admin-recipes-kebab.spec.ts («שינויים» refuses an empty note, then moves the recipe to «דרוש תיקון» with the note — the owner's dashboard view is not asserted) — **בקשת שינויים** — "שינויים" בלי הערה → נחסם ("יש למלא הערה"); עם הערה → המתכון עובר ל"דרוש תיקון" ובעלת העסק רואה את ההערה בדשבורד שלה
+- ✅ → admin-recipes-kebab.spec.ts («דחי» with a reason moves the recipe to «נדחו» — the public page is not asserted) — **דחייה** — "דחי" עם סיבה → המתכון עובר ל"נדחו" ולא מופיע בעמוד הציבורי
+- ✅ → admin-recipes-kebab.spec.ts (the five tabs each request their own status and an empty tab reads «אין מתכונים בסטטוס הזה») — **טאבים** — מעבר בין 5 הטאבים (ממתינים / דרוש תיקון / מאושרים / נדחו / הכל) — תוצאה מצופה: כל טאב מסנן לפי הסטטוס שלו; טאב ריק מציג "אין מתכונים בסטטוס הזה"
+- ✅ → admin-recipes-kebab.spec.ts (on the phone project the page has no horizontal scroll of its own — measured at 393px (Pixel 5), not 375) — **מובייל 375px** — העמוד נטען, הטבלה נגללת אופקית בתוך הכרטיס, הטאבים נגללים — תוצאה מצופה: אין גלילה אופקית של העמוד כולו
 
 - [ ] MAP-16 שלד טעינה ב-bottom sheet — פתחי /map במובייל עם רשת איטית (throttle) — בזמן הטעינה מופיעות 4 שורות שלד מהבהבות + פס במקום המונה; עם הגעת הנתונים הרשימה והמונה מחליפים אותן (בלי הבזק "0 בתי עסק")
 
