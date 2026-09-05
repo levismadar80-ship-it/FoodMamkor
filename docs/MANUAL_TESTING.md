@@ -18,14 +18,14 @@
 
 > **להגיע למצב:** בעמוד הבית בחרי **עיר** ואז **יום** שאין בו משלוח לאותה עיר — הגריד מתאפס בעוד העיר עצמה כן מקבלת שירות. זה בדיוק המצב שהיה מציג קודם **שני** מצבי-אפס מוערמים וכותרת ששוללת משלוח לעיר.
 
-- [ ] **ההודעה קומפקטית** — עיר + יום ללא משלוח — **תוצאה מצופה:** שורה אחת דקה (`text-sm`, אפור), מיושרת לתחילת השורה, עם «הסרת סינון היום» כקישור מודגש-קו בתוכה. **אין כפתור ירוק מלא.** נמדד: 36px ב-1440, 56px ב-375 (השורה נשברת)
-- [ ] **הכותרת לא משקרת** — באותו מצב, מתחת להודעה — **תוצאה מצופה:** «בינתיים — בתי עסק שמגיעים לאזור {אזור}:». **אסור** שתופיע «אין עדיין משלוחים ל{עיר}» — העיר כן מקבלת שירות, רק היום לא
-- [ ] **מצב אפס אחד בלבד** — עיר+יום שמתאפס **ובלי** עסקים באזור — **תוצאה מצופה:** רק שורת ההודעה. אין מתחתיה בלוק «לא מצאנו בתי עסק» עם עלה וכפתור מפה
-- [ ] **מסלול העיר לבדה לא השתנה** — בחרי **רק עיר** (בלי יום) שאין בה משלוח — **תוצאה מצופה:** הכותרת הישנה «אין עדיין משלוחים ל{עיר} — בתי עסק שמגיעים לאזור {אזור}:», בדיוק כמו קודם, ו**אפס כיתובי ימים** על הכרטיסים
-- [ ] **כיתוב ימים על כרטיסי ה-fallback** — במצב עיר+יום, על כרטיס שיש לו שורת משלוח לאותה עיר — **תוצאה מצופה:** מתחת לכרטיס «משלוח ל{עיר}: {ימים}», הימים **בסדר השבוע** (ראשון→שבת) ומופרדים ב-`·`
-- [ ] **בתיאום מראש** — כרטיס שיש לו שורה לעיר אך בלי יום מוגדר — **תוצאה מצופה:** «משלוח ל{עיר} בתיאום מראש»
-- [ ] **‏🪤 בלי שורה לעיר — אין כיתוב כלל** — כרטיס באזור שאין לו שורת `delivery_areas` לעיר הפעילה (למשל ספק ארצי) — **תוצאה מצופה:** הכרטיס מוצג **בלי שום כיתוב**. כיתוב מנוחש שם הוא הבטחת משלוח שאי אפשר לאמת. אם מופיע כיתוב על כרטיס כזה — זו תקלה, דווחי
-- [ ] **הכיתוב אינו גולש** — 375, גללי עד הגריד — **תוצאה מצופה:** הכיתוב יושב **בתוך** תא הכרטיס שלו ואינו נוגע/מכסה את שורת הכרטיסים שמתחתיו. (זה בדיוק הפגם שנתפס ותוקן — 44px גלישה)
+- ✅ → home.spec.ts (a day that nobody delivers on shows one compact line with an inline clear-day link, and no second empty block) — **ההודעה קומפקטית** — עיר + יום ללא משלוח — **תוצאה מצופה:** שורה אחת דקה (`text-sm`, אפור), מיושרת לתחילת השורה, עם «הסרת סינון היום» כקישור מודגש-קו בתוכה. **אין כפתור ירוק מלא.** נמדד: 36px ב-1440, 56px ב-375 (השורה נשברת)
+- ✅ → home.spec.ts (with a day active the fallback header is the region variant, not the unserved-city one) — **הכותרת לא משקרת** — באותו מצב, מתחת להודעה — **תוצאה מצופה:** «בינתיים — בתי עסק שמגיעים לאזור {אזור}:». **אסור** שתופיע «אין עדיין משלוחים ל{עיר}» — העיר כן מקבלת שירות, רק היום לא
+- ✅ → home.spec.ts (a day that nobody delivers on shows one compact line with an inline clear-day link, and no second empty block) — **מצב אפס אחד בלבד** — עיר+יום שמתאפס **ובלי** עסקים באזור — **תוצאה מצופה:** רק שורת ההודעה. אין מתחתיה בלוק «לא מצאנו בתי עסק» עם עלה וכפתור מפה
+- ✅ → home.spec.ts (the city-only path keeps the old header and shows no day captions) — **מסלול העיר לבדה לא השתנה** — בחרי **רק עיר** (בלי יום) שאין בה משלוח — **תוצאה מצופה:** הכותרת הישנה «אין עדיין משלוחים ל{עיר} — בתי עסק שמגיעים לאזור {אזור}:», בדיוק כמו קודם, ו**אפס כיתובי ימים** על הכרטיסים
+- ✅ → home.spec.ts (fallback captions: week-ordered days · by-arrangement · and NO caption for a business with no row for the city) — **כיתוב ימים על כרטיסי ה-fallback** — במצב עיר+יום, על כרטיס שיש לו שורת משלוח לאותה עיר — **תוצאה מצופה:** מתחת לכרטיס «משלוח ל{עיר}: {ימים}», הימים **בסדר השבוע** (ראשון→שבת) ומופרדים ב-`·`
+- ✅ → home.spec.ts (fallback captions: week-ordered days · by-arrangement · and NO caption for a business with no row for the city) — **בתיאום מראש** — כרטיס שיש לו שורה לעיר אך בלי יום מוגדר — **תוצאה מצופה:** «משלוח ל{עיר} בתיאום מראש»
+- ✅ → home.spec.ts (fallback captions: week-ordered days · by-arrangement · and NO caption for a business with no row for the city) — **‏🪤 בלי שורה לעיר — אין כיתוב כלל** — כרטיס באזור שאין לו שורת `delivery_areas` לעיר הפעילה (למשל ספק ארצי) — **תוצאה מצופה:** הכרטיס מוצג **בלי שום כיתוב**. כיתוב מנוחש שם הוא הבטחת משלוח שאי אפשר לאמת. אם מופיע כיתוב על כרטיס כזה — זו תקלה, דווחי
+- ✅ → home.spec.ts (a caption stays inside its own grid cell) — **הכיתוב אינו גולש** — 375, גללי עד הגריד — **תוצאה מצופה:** הכיתוב יושב **בתוך** תא הכרטיס שלו ואינו נוגע/מכסה את שורת הכרטיסים שמתחתיו. (זה בדיוק הפגם שנתפס ותוקן — 44px גלישה)
 - [ ] **‏ידוע ולא תקלה:** בתוך שורה, כרטיס עם כיתוב מסתיים גבוה יותר מכרטיס בלעדיו — תחתיות הכרטיסים אינן מיושרות. נובע מהצבת הכיתוב בתוך התא; מדווח ולא תוקן
 
 ---
@@ -174,8 +174,8 @@
 
 - [ ] **`/producers` — שדה החיפוש** — פתחי את הדף, קראי את ה-placeholder (`מאפיית המחמצת`), **הקלידי אותו בדיוק** → **תוצאה מצופה:** לפחות בית עסק אחד ברשימה. **זה מה שהיה שבור:** לפני התיקון היה כתוב שם `לחם מחמצת, גבינת עזים, ירקות אורגניים` — רשימה מופרדת בפסיקים שמחזירה **אפס**
 - [ ] **`/search` — שדה החיפוש** — אותו דבר עם ה-placeholder `לחם מחמצת` → **תוצאה מצופה:** לפחות תוצאה אחת
-- [ ] **דף הבית — ארבע המחרוזות המתחלפות** — עמדי על ה-hero **בלי ללחוץ על השדה** (הרוטציה נעצרת בפוקוס) ותני לה להחליף. הקלידי כל אחת מארבע: `לחם מחמצת` · `לחמים ואפייה` · `זכרון יעקב` · `מאפיית המחמצת` → **תוצאה מצופה:** כל אחת מחזירה לפחות תוצאה אחת
-- [ ] **המחרוזת השבורה המוכרת** — הקלידי `גבינת עיזים` → **תוצאה מצופה:** אפס תוצאות. **זה תקין ומכוון** — `עיזים` לא קיים באף שדה בדאטה, והחיפוש הוא AND על טוקנים (MEH-1664), כך שדי בטוקן אחד שלא פוגע. הבדיקה כאן היא שהמחרוזת הזאת **לא** חזרה לשדה
+- ✅ → home.spec.ts (the hero rotates exactly the four he.json placeholders and pauses on focus) — **דף הבית — ארבע המחרוזות המתחלפות** — עמדי על ה-hero **בלי ללחוץ על השדה** (הרוטציה נעצרת בפוקוס) ותני לה להחליף. הקלידי כל אחת מארבע: `לחם מחמצת` · `לחמים ואפייה` · `זכרון יעקב` · `מאפיית המחמצת` → **תוצאה מצופה:** כל אחת מחזירה לפחות תוצאה אחת
+- ✅ → home.spec.ts (the broken query is not in the placeholder pool) — **המחרוזת השבורה המוכרת** — הקלידי `גבינת עיזים` → **תוצאה מצופה:** אפס תוצאות. **זה תקין ומכוון** — `עיזים` לא קיים באף שדה בדאטה, והחיפוש הוא AND על טוקנים (MEH-1664), כך שדי בטוקן אחד שלא פוגע. הבדיקה כאן היא שהמחרוזת הזאת **לא** חזרה לשדה
 - [ ] **`/en` — פער ידוע, לא באג חדש** — עברי ל-`/en` והקלידי את ה-placeholder → **תוצאה מצופה:** אפס תוצאות. שמות עסקים, מוצרים, ערים וקטגוריות כולם בעברית, ולכן **שום** מחרוזת אנגלית לא מחזירה דבר. מתועד ב-`scripts/search-placeholder-keys.json`; ההכרעה טרם התקבלה
 
 > **בדיקה אוטומטית במקום העיניים:** `python3 scripts/check_placeholder_search.py` (צריך `VERCEL_AUTOMATION_BYPASS_SECRET` מול staging) — עובר על כל המחרוזות הרשומות ויוצא 1 עם רשימת השבורות. יציאה **2** = לא הצליח לשאול, לא "הכול תקין".
@@ -482,10 +482,10 @@ hover הוא affordance של דסקטופ — הבדיקות האלה רצות �
 בדקי בנייד (375px) + דסקטופ (1440px), בדף הבית `/` וב-`/producers`. הכפתור
 מופיע רק בשני העמודים האלה (לא ב-`/map`, לא בשאר האתר).
 
-- [ ] **מוסתר בטעינה** — טעני את `/` בלי לגלול — **תוצאה מצופה:** אין כפתור "חזרה לראש העמוד".
-- [ ] **מופיע אחרי גלילה** — גללי מטה יותר משני גבהי-מסך — **תוצאה מצופה:** כפתור עגול (חץ למעלה, ArrowUp) מופיע בפינה התחתונה בצד ה-inline-end (שמאל ב-RTL), **מעל** כפתור הצ'אט הצף — בלי חפיפה.
-- [ ] **אין חפיפה עם צ'אט / באנר עוגיות / BottomNav** — כשהבאנר עוגיות מוצג, הכפתור עולה מעליו (דרך `--cookie-banner-h`) ונשאר מעל כפתור הצ'אט — **תוצאה מצופה:** שלושת האלמנטים הצפים לא נוגעים זה בזה בשום breakpoint.
-- [ ] **לחיצה → גלילה חלקה לראש** — לחצי — **תוצאה מצופה:** העמוד נגלל חלק לראש; עם `prefers-reduced-motion` הקפיצה מיידית.
+- ✅ → home.spec.ts (it is absent before the page is scrolled) — **מוסתר בטעינה** — טעני את `/` בלי לגלול — **תוצאה מצופה:** אין כפתור "חזרה לראש העמוד".
+- ✅ → home.spec.ts (past two viewport heights it appears in the bottom inline-end corner, clear of the chat FAB) — **מופיע אחרי גלילה** — גללי מטה יותר משני גבהי-מסך — **תוצאה מצופה:** כפתור עגול (חץ למעלה, ArrowUp) מופיע בפינה התחתונה בצד ה-inline-end (שמאל ב-RTL), **מעל** כפתור הצ'אט הצף — בלי חפיפה.
+- ✅ → home.spec.ts (with the cookie banner showing, back-to-top clears the banner and its corner neighbour) — **אין חפיפה עם צ'אט / באנר עוגיות / BottomNav** — כשהבאנר עוגיות מוצג, הכפתור עולה מעליו (דרך `--cookie-banner-h`) ונשאר מעל כפתור הצ'אט — **תוצאה מצופה:** שלושת האלמנטים הצפים לא נוגעים זה בזה בשום breakpoint.
+- ✅ → home.spec.ts (tapping it returns the page to the top) — **לחיצה → גלילה חלקה לראש** — לחצי — **תוצאה מצופה:** העמוד נגלל חלק לראש; עם `prefers-reduced-motion` הקפיצה מיידית.
 - [ ] **`/producers`** — חזרי על הבדיקות ב-`/producers` (רשימה מעומדת) — **תוצאה מצופה:** אותה התנהגות.
 
 ## MEH-1291 — "עודכן לאחרונה" בעמוד העסק (18/07)
@@ -587,12 +587,12 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדקי בנייד (375px, RTL) + דסקטופ. שלושת המשטחים: בית `/` · `/producers` · `/map`.
 
-- [ ] **אייקונים בבית** — פתחי `/` וגללי לשורת צ'יפי הסינון — **תוצאה מצופה:** כל צ'יפ toggle מציג אייקון 16px לפני הטקסט (רישוי מאומת=חותם ✓, משלוח=משאית, כשרות מאומתת=תעודה, טבעוני=עלה, ללא גלוטן, ללא לקטוז); צ'יפי הקטגוריה נשארים ללא אייקון.
-- [ ] **לייבל "רישוי מאומת"** — **תוצאה מצופה:** הצ'יפ שקודם נקרא "מאומתים" נקרא עכשיו "רישוי מאומת" בכל שלושת המשטחים; אין יותר "מאומתים".
+- ✅ → home.spec.ts (the home filter row is exactly the two promoted chips plus the sheet trigger, each with an aria-hidden glyph) — **אייקונים בבית** — פתחי `/` וגללי לשורת צ'יפי הסינון — **תוצאה מצופה:** כל צ'יפ toggle מציג אייקון 16px לפני הטקסט (רישוי מאומת=חותם ✓, משלוח=משאית, כשרות מאומתת=תעודה, טבעוני=עלה, ללא גלוטן, ללא לקטוז); צ'יפי הקטגוריה נשארים ללא אייקון.
+- ✅ → home.spec.ts (the verification chip carries the taxonomy label and «מאומתים» appears nowhere on the page) — **לייבל "רישוי מאומת"** — **תוצאה מצופה:** הצ'יפ שקודם נקרא "מאומתים" נקרא עכשיו "רישוי מאומת" בכל שלושת המשטחים; אין יותר "מאומתים".
 - [ ] **לייבל כשרות אחיד** — השוו את צ'יפ הכשרות ב-`/producers` (היה "כשר") מול `/map` — **תוצאה מצופה:** שניהם "כשרות מאומתת".
 - [ ] **צ'יפים מהירים ב-/map** — פתחי `/map` — **תוצאה מצופה:** שורת הצ'יפים המהירים ([רישוי מאומת] [משלוח]) עם אייקונים; האייקון לא מגביה את הצ'יפ ולא חותך את השורה (תיאום MEH-1366).
-- [ ] **FilterSheet — שורות הסבר** — לחצי "סינון" ב-/map — **תוצאה מצופה:** כל toggle בגיליון מציג אייקון+לייבל ומתחתיו שורת הסבר עמומה (למשל "בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית." תחת רישוי מאומת); הגיליון נפתח/נסגר כרגיל (Esc/רקע), הפוקוס נלכד.
-- [ ] **a11y** — קורא מסך על צ'יפ toggle — **תוצאה מצופה:** נקרא הלייבל בלבד (רישוי מאומת), האייקון aria-hidden; שורת ההסבר נראית אך אינה חלק מהשם הנגיש של הכפתור.
+- ✅ → home.spec.ts (the FilterSheet gives every toggle a label, keeps every explanation reachable, and Esc closes it) — **FilterSheet — שורות הסבר** — לחצי "סינון" ב-/map — **תוצאה מצופה:** כל toggle בגיליון מציג אייקון+לייבל ומתחתיו שורת הסבר עמומה (למשל "בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית." תחת רישוי מאומת); הגיליון נפתח/נסגר כרגיל (Esc/רקע), הפוקוס נלכד.
+- ✅ → home.spec.ts (a toggle's accessible name is its label alone — not the glyph, not the explanation) — **a11y** — קורא מסך על צ'יפ toggle — **תוצאה מצופה:** נקרא הלייבל בלבד (רישוי מאומת), האייקון aria-hidden; שורת ההסבר נראית אך אינה חלק מהשם הנגיש של הכפתור.
 
 ---
 
@@ -603,14 +603,14 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 הכפתור מפעיל גאו-לוקיישן אמיתי (lat/lng/radius_km=15) ומציג צ'יפ נשלף מעל
 הגריד. הכרטיסים ממשיכים לחשב את תווית ה-ק"מ בצד-לקוח מה-GPS (MEH-1210).
 
-- [ ] **הופעה** — טעני את דף הבית — **תוצאה מצופה:** כפתור "קרוב אליי" (Crosshair) מופיע ליד "גלו עסקים"; אין צ'יפ מיקום עדיין.
-- [ ] **אישור מיקום (granted)** — לחצי "קרוב אליי" ואשרי את בקשת הדפדפן — **תוצאה מצופה:** הכפתור מציג "בחיפוש..." עם ספינר בזמן האיתור; אחר כך הגריד נגלל אליו + נטען מחדש לפי מרחק; צ'יפ ירוק "עסקים ליד המיקום שלך ✕" מופיע מעל הגריד; תוויות ק"מ נדלקות על הכרטיסים.
-- [ ] **צ'יפ נשלף** — לחצי על ה-✕ בצ'יפ — **תוצאה מצופה:** הצ'יפ נעלם, הגריד נטען מחדש בלי סינון המיקום (סינון קטגוריה/צ'יפים נשמר אם היה).
-- [ ] **דחיית הרשאה (denied, code 1)** — דחי את בקשת המיקום — **תוצאה מצופה:** נפתח מודל בחירת העיר (fallback הקיים), לא alert; בחירת עיר מציגה צ'יפ "עסקים באזור {עיר} ✕".
-- [ ] **כשל טכני (codes 2/3)** — מיקום לא זמין / timeout — **תוצאה מצופה:** טוסט "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית"; הגריד לא משתנה.
-- [ ] **guard לגריד ריק** — אזור בלי עסקים ברדיוס 15 ק"מ — **תוצאה מצופה:** ניסיון חוזר אוטומטי אחד ב-30 ק"מ; אם עדיין ריק — הצ'יפ נעלם, מוצגים כל בתי העסק, וטוסט "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק". הגריד לעולם לא נשאר ריק בלי הודעה.
-- [ ] **צ'יפ עיר ממודל/באנר** — פתחי את מודל המיקום מהבאנר ובחרי עיר — **תוצאה מצופה:** מסונן לפי העיר + צ'יפ "עסקים באזור {עיר} ✕"; לחיצה על ה-✕ מנקה.
-- [ ] **מיקום שמור בסשן** — אחרי איתור מוצלח, לחצי "קרוב אליי" שוב — **תוצאה מצופה:** סינון מיידי לפי המיקום השמור (בלי בקשת דפדפן חוזרת).
+- ✅ → home.spec.ts (the near-me button is in the hero chips row and no location chip exists yet) — **הופעה** — טעני את דף הבית — **תוצאה מצופה:** כפתור "קרוב אליי" (Crosshair) מופיע ליד "גלו עסקים"; אין צ'יפ מיקום עדיין.
+- ✅ → home.spec.ts (granting location re-queries at radius 15 and raises the location chip, with no reload) — **אישור מיקום (granted)** — לחצי "קרוב אליי" ואשרי את בקשת הדפדפן — **תוצאה מצופה:** הכפתור מציג "בחיפוש..." עם ספינר בזמן האיתור; אחר כך הגריד נגלל אליו + נטען מחדש לפי מרחק; צ'יפ ירוק "עסקים ליד המיקום שלך ✕" מופיע מעל הגריד; תוויות ק"מ נדלקות על הכרטיסים.
+- ✅ → home.spec.ts (the location chip's ✕ clears the filter and reloads the full grid) — **צ'יפ נשלף** — לחצי על ה-✕ בצ'יפ — **תוצאה מצופה:** הצ'יפ נעלם, הגריד נטען מחדש בלי סינון המיקום (סינון קטגוריה/צ'יפים נשמר אם היה).
+- ✅ → home.spec.ts (a denied prompt opens the city modal, not a toast) — **דחיית הרשאה (denied, code 1)** — דחי את בקשת המיקום — **תוצאה מצופה:** נפתח מודל בחירת העיר (fallback הקיים), לא alert; בחירת עיר מציגה צ'יפ "עסקים באזור {עיר} ✕".
+- ✅ → home.spec.ts (a technical geolocation failure toasts and does not change the grid) — **כשל טכני (codes 2/3)** — מיקום לא זמין / timeout — **תוצאה מצופה:** טוסט "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית"; הגריד לא משתנה.
+- ✅ → home.spec.ts (an empty near-me result retries once at 30 km, then falls back to the full list with a notice) — **guard לגריד ריק** — אזור בלי עסקים ברדיוס 15 ק"מ — **תוצאה מצופה:** ניסיון חוזר אוטומטי אחד ב-30 ק"מ; אם עדיין ריק — הצ'יפ נעלם, מוצגים כל בתי העסק, וטוסט "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק". הגריד לעולם לא נשאר ריק בלי הודעה.
+- ✅ → home.spec.ts (choosing a city from the modal raises the city chip, and its ✕ clears it) — **צ'יפ עיר ממודל/באנר** — פתחי את מודל המיקום מהבאנר ובחרי עיר — **תוצאה מצופה:** מסונן לפי העיר + צ'יפ "עסקים באזור {עיר} ✕"; לחיצה על ה-✕ מנקה.
+- ✅ → home.spec.ts (a stored fix filters immediately and never re-prompts the browser) — **מיקום שמור בסשן** — אחרי איתור מוצלח, לחצי "קרוב אליי" שוב — **תוצאה מצופה:** סינון מיידי לפי המיקום השמור (בלי בקשת דפדפן חוזרת).
 - [ ] **רגרסיה** — שורת הצ'יפים (כשר/טבעוני/משלוח), סינון קטגוריה, ו"עוד בתי עסק" מתנהגים כרגיל; המפה המיני והבאנרים ללא שינוי.
 ## MEH-1255 — משלוחים לכל הארץ חוץ מ־ (exclusion mode) (17/07)
 
@@ -703,10 +703,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדף הבית `/` (וכן `/he`), סקציית "קטגוריות". נייד 375px + דסקטופ 1440px.
 
-- [ ] **כיתוב על רצועה מלאה, לא על התמונה** — פתחי `/` והביטי בכרטיסי הקטגוריה שיש להם תמונה — **תוצאה מצופה:** המספר הזהב + שם הקטגוריה יושבים על רצועה אחידה בצבע `surface-card` **מתחת** לתמונה; אין שום טקסט על גבי התמונה; השמות קריאים לחלוטין גם מעל תמונה עמוסה. אין scrim/gradient/tint על אף תמונה.
-- [ ] **זום עדין ב-hover (דסקטופ)** — @1440px, העבירי עכבר מעל כרטיס עם תמונה — **תוצאה מצופה:** התמונה מתקרבת מעט (scale ~1.05) בצורה חלקה, נחתכת בתוך גבול הכרטיס (לא גולשת על הרצועה); במקביל הגבול הופך ירוק וקו זהב מופיע תחת השם. הרצועה והכיתוב לא זזים.
-- [ ] **אין זום ב-reduced-motion** — הפעילי "Reduce motion" במערכת ההפעלה, ורחפי מעל כרטיס — **תוצאה מצופה:** התמונה לא מתקרבת כלל; הגבול הירוק + קו הזהב תחת השם עדיין עובדים.
-- [ ] **אפס קפיצת פריסה (CLS)** — טעני מחדש את `/` בחיבור איטי (DevTools → Network → Slow) — **תוצאה מצופה:** מסגרת התמונה שומרת על הפרופורציה מהרגע הראשון (hero `16/7`→`4/3`→`16/9`; קטן `square`→`4/3`→`square`); אין קפיצה של הכרטיסים כשהתמונות נטענות.
+- ✅ → home.spec.ts (the caption sits on a solid strip below the photo, never over it) — **כיתוב על רצועה מלאה, לא על התמונה** — פתחי `/` והביטי בכרטיסי הקטגוריה שיש להם תמונה — **תוצאה מצופה:** המספר הזהב + שם הקטגוריה יושבים על רצועה אחידה בצבע `surface-card` **מתחת** לתמונה; אין שום טקסט על גבי התמונה; השמות קריאים לחלוטין גם מעל תמונה עמוסה. אין scrim/gradient/tint על אף תמונה.
+- ✅ → home.spec.ts (hovering an image card zooms the photo when motion is allowed) — **זום עדין ב-hover (דסקטופ)** — @1440px, העבירי עכבר מעל כרטיס עם תמונה — **תוצאה מצופה:** התמונה מתקרבת מעט (scale ~1.05) בצורה חלקה, נחתכת בתוך גבול הכרטיס (לא גולשת על הרצועה); במקביל הגבול הופך ירוק וקו זהב מופיע תחת השם. הרצועה והכיתוב לא זזים.
+- ✅ → home.spec.ts (under reduce-motion the photo does not zoom on hover) — **אין זום ב-reduced-motion** — הפעילי "Reduce motion" במערכת ההפעלה, ורחפי מעל כרטיס — **תוצאה מצופה:** התמונה לא מתקרבת כלל; הגבול הירוק + קו הזהב תחת השם עדיין עובדים.
+- ✅ → home.spec.ts (every image frame locks an aspect ratio, so the cards cannot jump as photos load) — **אפס קפיצת פריסה (CLS)** — טעני מחדש את `/` בחיבור איטי (DevTools → Network → Slow) — **תוצאה מצופה:** מסגרת התמונה שומרת על הפרופורציה מהרגע הראשון (hero `16/7`→`4/3`→`16/9`; קטן `square`→`4/3`→`square`); אין קפיצה של הכרטיסים כשהתמונות נטענות.
 - [ ] **כרטיסי גליף ללא שינוי** — הביטי בכרטיסים ללא תמונה (גליף/עלה) — **תוצאה מצופה:** הפריסה זהה לקודם; הגליף לא מתקרב ב-hover.
 
 ---
@@ -771,12 +771,12 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + תג קטגוריה נשלף)
 
-- [ ] **טיפ ההדרכה מעל הכותרת** — נקי localStorage (גלישה ראשונה) ופתחי `/` בנייד, גללי לסקציית בתי העסק והמתיני ~2 שניות — **תוצאה מצופה:** בועת ההדרכה (step 0) מופיעה **מעל** כותרת הסקציה "בתי עסק מקומיים", לא בין הכותרת לשורת הצ'יפים. לחיצה על "הבנתי" מקדמת את הסיור לשלב 1 (הבועה הבאה מופיעה ליד הצ'יפים).
-- [ ] **כותרת ברירת מחדל** — בבית ללא קטגוריה פעילה — **תוצאה מצופה:** הכותרת = "בתי עסק מקומיים" (he) / "Local businesses" (en).
-- [ ] **כותרת דינמית לפי קטגוריה** — פתחי `/?category=<id>` של קטגוריה קיימת — **תוצאה מצופה:** הכותרת = "בתי עסק · <שם הקטגוריה>" עם שם הקטגוריה בעברית בשני ה-locales.
-- [ ] **תג קטגוריה נשלף** — עם קטגוריה פעילה — **תוצאה מצופה:** בשורת "מסנן לפי:" מופיע תג ירוק נשלף "<שם הקטגוריה> ×"; לחיצה על ה-× מנקה את הקטגוריה (הכותרת חוזרת לברירת המחדל והתג נעלם). שורת "מציג:" הנפרדת הישנה כבר לא קיימת.
-- [ ] **צ'יפים לצד קטגוריה** — עם קטגוריה + צ'יפ (למשל `?category=<id>&kosher=1`) — **תוצאה מצופה:** שורת "מסנן לפי:" מציגה גם את תווית הצ'יפ וגם את תג הקטגוריה; החלפת צ'יפ ממשיכה לעבוד. המונה "מציגים X מתוך Y" ללא שינוי.
-- [ ] **RTL** — 375px + 1440px — **תוצאה מצופה:** הכותרת מיושרת לימין, ה-× בתג יושב בקצה ההתחלתי-נגדי (שמאל ב-RTL), אין גלישה אופקית.
+- ✅ → home.spec.ts (the onboarding tip opens above the section heading and advances) — **טיפ ההדרכה מעל הכותרת** — נקי localStorage (גלישה ראשונה) ופתחי `/` בנייד, גללי לסקציית בתי העסק והמתיני ~2 שניות — **תוצאה מצופה:** בועת ההדרכה (step 0) מופיעה **מעל** כותרת הסקציה "בתי עסק מקומיים", לא בין הכותרת לשורת הצ'יפים. לחיצה על "הבנתי" מקדמת את הסיור לשלב 1 (הבועה הבאה מופיעה ליד הצ'יפים).
+- ✅ → home.spec.ts (with no category active the section heading is the default) — **כותרת ברירת מחדל** — בבית ללא קטגוריה פעילה — **תוצאה מצופה:** הכותרת = "בתי עסק מקומיים" (he) / "Local businesses" (en).
+- ✅ → home.spec.ts (a category deep-link renames the heading and adds a removable tag whose ✕ clears it) — **כותרת דינמית לפי קטגוריה** — פתחי `/?category=<id>` של קטגוריה קיימת — **תוצאה מצופה:** הכותרת = "בתי עסק · <שם הקטגוריה>" עם שם הקטגוריה בעברית בשני ה-locales.
+- ✅ → home.spec.ts (a category deep-link renames the heading and adds a removable tag whose ✕ clears it) — **תג קטגוריה נשלף** — עם קטגוריה פעילה — **תוצאה מצופה:** בשורת "מסנן לפי:" מופיע תג ירוק נשלף "<שם הקטגוריה> ×"; לחיצה על ה-× מנקה את הקטגוריה (הכותרת חוזרת לברירת המחדל והתג נעלם). שורת "מציג:" הנפרדת הישנה כבר לא קיימת.
+- ✅ → home.spec.ts (an active chip and an active category both appear in the applied-filters row) — **צ'יפים לצד קטגוריה** — עם קטגוריה + צ'יפ (למשל `?category=<id>&kosher=1`) — **תוצאה מצופה:** שורת "מסנן לפי:" מציגה גם את תווית הצ'יפ וגם את תג הקטגוריה; החלפת צ'יפ ממשיכה לעבוד. המונה "מציגים X מתוך Y" ללא שינוי.
+- ✅ → home.spec.ts (the applied-filters row is RTL and does not overflow) — **RTL** — 375px + 1440px — **תוצאה מצופה:** הכותרת מיושרת לימין, ה-× בתג יושב בקצה ההתחלתי-נגדי (שמאל ב-RTL), אין גלישה אופקית.
 
 ---
 
@@ -843,7 +843,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint
 
-- [ ] **גבהים אחידים בבית** — `/`, סקציית "בתי עסק מומלצים", דסקטופ (4 טורים) ונייד (2 טורים) — **תוצאה מצופה:** כל הכרטיסים באותה שורה בגובה זהה (בלי "מדרגות"), גם כשלכרטיס אין מחיר/דירוג/תיאור. שורת המחיר צמודה לתחתית הכרטיס.
+- ✅ → home.spec.ts (cards in the same row are the same height) — **גבהים אחידים בבית** — `/`, סקציית "בתי עסק מומלצים", דסקטופ (4 טורים) ונייד (2 טורים) — **תוצאה מצופה:** כל הכרטיסים באותה שורה בגובה זהה (בלי "מדרגות"), גם כשלכרטיס אין מחיר/דירוג/תיאור. שורת המחיר צמודה לתחתית הכרטיס.
 - [ ] **גבהים אחידים במשטחים נוספים** — `/producers`, `/search`, ורצועת "עסקים חדשים" בבית — **תוצאה מצופה:** אותה אחידות גבהים.
 - [ ] **מועדפים — רשת 2/3/4 (MEH-1203)** — `/favorites` (מחוברת) — **תוצאה מצופה:** 2 עמודות בנייד (375px), 3 ב-lg, 4 ב-xl — זהה ל-/producers; לא כרטיס אחד רחב לשורה.
 - [ ] **מועדפים — אין FAB צ'אט (MEH-1203)** — `/favorites` בנייד — **תוצאה מצופה:** כפתור הצ'אט הצף אינו מרונדר (כמו ב-/map ו-/producer); לא מכסה את הכרטיס הראשון.
@@ -855,7 +855,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 בית + `/events`. בדקי מובייל 375px + דסקטופ.
 
 - [ ] **empty state עם קטגוריה פעילה** — בבית, פתחי `/?category=<id בלי עסקים>` (או סינון קטגוריה שמחזיר 0) — **תוצאה מצופה:** כותרת "לא מצאנו עסקים בקטגוריה הזו — עדיין" + כפתור ראשי "נקו את הסינון"; אין כפתור "גלו על המפה".
-- [ ] **"נקו את הסינון" מחזיר את הגריד** — לחיצה על הכפתור ב-empty state — **תוצאה מצופה:** הקטגוריה נעלמת מה-URL, הגריד חוזר עם כל העסקים והמונה מתעדכן.
+- ✅ → home.spec.ts («נקו את הסינון» clears the category from the URL and restores the grid) — **"נקו את הסינון" מחזיר את הגריד** — לחיצה על הכפתור ב-empty state — **תוצאה מצופה:** הקטגוריה נעלמת מה-URL, הגריד חוזר עם כל העסקים והמונה מתעדכן.
 - [ ] **empty state גיאוגרפי ללא שינוי** — סינון עיר בלי עסקים, בלי קטגוריה — **תוצאה מצופה:** ה-copy הישן ("באזור הזה") + כפתור "גלו על המפה" — בדיוק כמו קודם.
 - [ ] **תוויות סינון אחידות /producers ↔ /map (MEH-1082)** — השווי את שם הצ'יפ בשני המסכים — **תוצאה מצופה:** ב-/producers צ'יפ האימות = "מאומתים" (לא "מאומת בלבד"); ב-/map הצ'יפ המהיר = "משלוח" (לא "משלוח אליי"); קטגוריות /map = "בשר ודגים" + "לחמים ואפייה". הסינון עצמו (תוצאות) ללא שינוי.
 - [ ] **/producers בחירת קטגוריה → Back מבטל (MEH-1084)** — ב-`/producers` בחרי קטגוריה מהשורה — **תוצאה מצופה:** ה-URL מקבל `?category=<id>`, ואז Back מסיר את הקטגוריה וחוזר ל-`/producers` המלא (לא יוצא מהדף/האתר).
@@ -1193,10 +1193,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 ## Overnight design batch 2026-06-12/13 (PRs #1073–#1080)
 
 - [ ] רצועת אמון (MEH-524) — דף הבית עם ≥5 עסקים ב-/stats — רצועה בקרם עם מספרים בזהב נטוי: "N בתי עסק שהצטרפו עד היום · M קטגוריות · מכל רחבי הארץ"; מתחת לסף — "מתחילות עכשיו · בכל רחבי הארץ"; אף פעם לא "0"
-- [ ] רצועת השוואה (MEH-525) — גלילה אחרי "שלושה צעדים" — טבלת סופר|מהמקור, 3 שורות, קווי שיער בלבד, ללא צל; RTL תקין גם ב-EN
-- [ ] איך זה עובד (copy-Δ #1080) — eyebrow "איך זה עובד" + כותרת "שלושה צעדים" + צעדים מצאי/צרי קשר/קנייה — ללא נקודה בסוף כותרות
-- [ ] בלוק עסקים (copy-Δ #1080) — "יש לך עסק? בואו אלינו" + 3 שורות גוף + כפתור "הוסיפו את העסק שלך"
-- [ ] פוטר (copy-Δ #1080) — tagline בלי "אליך" ובלי נקודה; ניוזלטר בלי נקודה; שורה תחתונה "© 2026 מהמקור" בלי 🌿
+- ✅ → home.spec.ts (home carries the comparison teaser linking to /about, and no comparison table) — רצועת השוואה (MEH-525) — גלילה אחרי "שלושה צעדים" — טבלת סופר|מהמקור, 3 שורות, קווי שיער בלבד, ללא צל; RTL תקין גם ב-EN
+- ✅ → home.spec.ts (how-it-works renders its eyebrow, heading and three steps with no terminal period) — איך זה עובד (copy-Δ #1080) — eyebrow "איך זה עובד" + כותרת "שלושה צעדים" + צעדים מצאי/צרי קשר/קנייה — ללא נקודה בסוף כותרות
+- ✅ → home.spec.ts (the closing CTA renders its heading, three body lines and button) — בלוק עסקים (copy-Δ #1080) — "יש לך עסק? בואו אלינו" + 3 שורות גוף + כפתור "הוסיפו את העסק שלך"
+- ✅ → home.spec.ts (the footer copyright line carries no leaf glyph) — פוטר (copy-Δ #1080) — tagline בלי "אליך" ובלי נקודה; ניוזלטר בלי נקודה; שורה תחתונה "© 2026 מהמקור" בלי 🌿
 - [ ] תגיות BadgeRow (MEH-730) — עמוד עסק + כרטיס — צ'יפים ירוקים עם טקסט קרם, צ'יפ זהב עם טקסט לבן, נייטרלי על surface-card
 - [ ] גיליון חשבון (MEH-730) — אייקון Storefront + ↗ בגוון gold-on-dark החדש על הירוק הכהה
 - [ ] TrustBadge tooltip (MEH-792) — לחיצה על תגית tier בעמוד עסק פותחת tooltip (היה title שלא עבד במובייל)
@@ -1245,8 +1245,8 @@ the toast (right side in he/RTL), inheriting the white text color.
 
 ## Friday-strip i18n fix (סרגל שישי)
 
-- [ ] בחלון שוק שישי (ד׳ 18:00–ו׳ 14:00, או עקיפת אדמין) + יש בתי עסק עם משלוח היום — סרגל "בתי עסק עם משלוח היום" בראש דף הבית — תוצאה: טקסט אמיתי (לא נתיבי מפתח כמו group_buys.friday_delivery.title), badge "🛒 היום" על הכרטיסים
-- [ ] אותו סרגל ב-`/en` — תוצאה: "Businesses delivering today" + "today"
+- ✅ → home.spec.ts (in the Friday window the strip renders real Hebrew copy, not a key path) — בחלון שוק שישי (ד׳ 18:00–ו׳ 14:00, או עקיפת אדמין) + יש בתי עסק עם משלוח היום — סרגל "בתי עסק עם משלוח היום" בראש דף הבית — תוצאה: טקסט אמיתי (לא נתיבי מפתח כמו group_buys.friday_delivery.title), badge "🛒 היום" על הכרטיסים
+- ✅ → home.spec.ts (the same strip renders in English on /en) — אותו סרגל ב-`/en` — תוצאה: "Businesses delivering today" + "today"
 
 ## MEH-788 — /register split-editorial (תמונה + טופס)
 
@@ -1259,11 +1259,11 @@ the toast (right side in he/RTL), inheriting the white text color.
 
 ## MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns
 
-- [ ] בית `/he` — ה-hero מציג את תמונת התוצרת (Cloudinary) ברוחב מלא עם דריפט איטי — תוצאה: לא תמונת הסטוק הישנה, תנועה עדינה בלי קפיצות
-- [ ] כותרת + תת-כותרת + CTAs קריאים מעל התמונה ב-375/360/390 — תוצאה: טקסט לבן קריא על השכבה הירוקה, אין אזור "מסונוור"
-- [ ] חיפוש hero: להקליד 2+ תווים — תוצאה: ה-dropdown נפתח מלא וגולש מעבר לקצה ה-hero (לא נחתך)
-- [ ] הגדרות מכשיר → reduce motion — תוצאה: התמונה סטטית (אין דריפט), הכל עדיין קריא
-- [ ] גלילה אופקית ב-375px — תוצאה: אין overflow אופקי
+- ✅ → home.spec.ts (the hero shows the Cloudinary produce photo and drifts (Ken Burns) when motion is allowed) — בית `/he` — ה-hero מציג את תמונת התוצרת (Cloudinary) ברוחב מלא עם דריפט איטי — תוצאה: לא תמונת הסטוק הישנה, תנועה עדינה בלי קפיצות
+- ✅ → home.spec.ts (the headline, subtitle and chips row sit inside the hero band and in the viewport) — כותרת + תת-כותרת + CTAs קריאים מעל התמונה ב-375/360/390 — תוצאה: טקסט לבן קריא על השכבה הירוקה, אין אזור "מסונוור"
+- ✅ → home.spec.ts (the hero search dropdown opens past the hero's bottom edge and is not clipped) — חיפוש hero: להקליד 2+ תווים — תוצאה: ה-dropdown נפתח מלא וגולש מעבר לקצה ה-hero (לא נחתך)
+- ✅ → home.spec.ts (with reduce-motion the hero photo is static) — הגדרות מכשיר → reduce motion — תוצאה: התמונה סטטית (אין דריפט), הכל עדיין קריא
+- ✅ → home.spec.ts (the page does not scroll horizontally) — גלילה אופקית ב-375px — תוצאה: אין overflow אופקי
 
 ## MEH-731 — navbar homepage-state (locale-path) + verify-banner relocation
 
@@ -1510,8 +1510,8 @@ Cross-check the returned emails against the original admin allowlist (whoever Sm
 
 Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {month} — N בתי עסק · M קטגוריות · מכל רחבי הארץ"* — editorial-cadence framing per synthesis §5.2 Option A. Dynamic month name via `Intl.DateTimeFormat('he-IL', { month: 'long' })`. F10: while `/stats` hasn't returned, a skeleton with matching `bg-primary text-white py-4` dimensions reserves height → zero CLS between loading and the real counter.
 
-- [ ] Hebrew copy renders — visit `/he` → stats bar reads *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. Month name is the **current Hebrew month** (in May → "מאי"; in June → "יוני"). "מאומתים" word is **absent**.
-- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first few hundred ms the stats slot shows the green section with a pulsing white pill (no numbers yet). When `/stats` resolves the pill is replaced by the real counter **with zero layout jump** (no content below shifts).
+- ✅ → home.spec.ts (the trust band renders the he.json lead and, below the count threshold, no counter line) — Hebrew copy renders — visit `/he` → stats bar reads *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. Month name is the **current Hebrew month** (in May → "מאי"; in June → "יוני"). "מאומתים" word is **absent**.
+- ✅ → home.spec.ts (the trust band reserves a busy slot while /stats is in flight and the lead replaces it) — Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first few hundred ms the stats slot shows the green section with a pulsing white pill (no numbers yet). When `/stats` resolves the pill is replaced by the real counter **with zero layout jump** (no content below shifts).
 - [ ] 375px wrap — open Vercel preview at exactly 375px viewport → counter wraps cleanly if it wraps at all. Watch for orphan words (a single word alone on its own line). Synthesis §5.3 acceptance: month+counter on line 1, categories+geography on line 2 if wrap happens.
 - [ ] Empty-DB state — if `/stats` returns `{ producers_count: 0 }` → after the skeleton dismisses, the stats section is **hidden** (no green bar). Acceptable launch-week behavior; not a CLS regression vs pre-MEH-607 (was also hidden).
 
@@ -1521,9 +1521,9 @@ Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {m
 
 Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
 
-- [ ] Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- ✅ → home.spec.ts (the mini-map is the second block on the page, right after the hero) — Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
 - [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
-- [ ] Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
+- ✅ → home.spec.ts (the document head preconnects to all three OSM tile hosts) — Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
 - [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
 
 ---
@@ -2138,7 +2138,7 @@ Test on a **real iOS device** (iPhone Safari + Chrome iOS preferred) — simulat
 - [ ] דף הבית — iOS Safari — כאשר גוללים את הדף למטה ה-hero נשאר חלק ואין jitter/stutter על הטרנספורמציה
 - [ ] דף הבית — Chrome iOS — אותה בדיקה (Chrome iOS הוא Safari WebView תחת מכסה המנוע אבל שווה לאמת)
 - [ ] דף הבית — שני בלוקי ParallaxQuote בין הסקשנים — Ken Burns רץ, הציטוט קריא מעל overlay ירוק 60%
-- [ ] iOS Settings → Accessibility → Motion → **Reduce Motion: ON** — טוענים את הדף מחדש — אנימציות ה-Ken Burns נעצרות, התמונות סטטיות (זה התנהגות מכוונת לפי `@media (prefers-reduced-motion: reduce)` ב-globals.css:161)
+- ✅ → home.spec.ts (with reduce-motion the hero photo is static) — iOS Settings → Accessibility → Motion → **Reduce Motion: ON** — טוענים את הדף מחדש — אנימציות ה-Ken Burns נעצרות, התמונות סטטיות (זה התנהגות מכוונת לפי `@media (prefers-reduced-motion: reduce)` ב-globals.css:161)
 - [ ] iOS Settings → Reduce Motion: OFF — אנימציות חוזרות לפעול אחרי רענון
 - [ ] iPad בלנדסקייפ (lot > 768px) — אנימציות עדיין פעילות, אין regression מהסרת `.parallax-bg` המיותר
 - [ ] `grep -rn 'background-attachment' frontend/` → שימוש פעיל **יחיד ומכוון**: `.hero-parallax` ב-`globals.css` (`background-attachment: fixed` לדסקטופ + fallback `scroll` ב-`@media (pointer: coarse)` — iOS Safari מתעלם מ-fixed). ה-guard הישן ("רק הערות, אין שימוש פעיל") התהפך בכוונה כשה-hero-parallax חזר עם ה-fallback; אל תסירו את הכלל בלי לבדוק את שני הענפים. (MEH-1176 F9)
@@ -2370,21 +2370,21 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 ## Producer cards — 2-column mobile grid (task 9)
 
 ### Mobile 2-column layout (< 768px)
-- [ ] Homepage — open on a mobile device / narrow viewport (< 768px) — producer cards display in **2 columns** instead of 1
-- [ ] Homepage — gap between cards is tighter on mobile (~12px) vs tablet+ (~24px)
+- ✅ → home.spec.ts (the producer grid is 2 columns on mobile and 4 on desktop) — Homepage — open on a mobile device / narrow viewport (< 768px) — producer cards display in **2 columns** instead of 1
+- ✅ → home.spec.ts (the grid gap is tighter on mobile than on desktop) — Homepage — gap between cards is tighter on mobile (~12px) vs tablet+ (~24px)
 - [ ] Homepage — "עסקים חדשים ✨" section also shows 2-column grid on mobile
 - [ ] `/map` — scroll down to the producer list below the map — same 2-column grid on mobile
-- [ ] Tablet (768px–1023px) — grids stay 2-column (unchanged from before)
-- [ ] Desktop (1024px+) — grids stay 4-column (unchanged from before)
+- ✅ → home.spec.ts (the tablet band stays 2 columns) — Tablet (768px–1023px) — grids stay 2-column (unchanged from before)
+- ✅ → home.spec.ts (the producer grid is 2 columns on mobile and 4 on desktop) — Desktop (1024px+) — grids stay 4-column (unchanged from before)
 
 ### Shorter card images on mobile
 - [ ] Mobile — card image height is **140px** (shorter than desktop)
 - [ ] Desktop — card image height is **200px** (unchanged)
-- [ ] Images are not squished or stretched — `object-cover` fills the shorter container
+- ✅ → home.spec.ts (card photos are object-cover and the city line truncates) — Images are not squished or stretched — `object-cover` fills the shorter container
 
 ### Text truncation
 - [ ] Long producer name (e.g. "חוות השקמה של משפחת אברהמי מרחובות") truncates with `…` instead of wrapping to a second line
-- [ ] Long city + category line truncates with `…`
+- ✅ → home.spec.ts (card photos are object-cover and the city line truncates) — Long city + category line truncates with `…`
 - [ ] Long top product name truncates with `…`
 
 ### Regression checks
@@ -2580,17 +2580,17 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Visit 6 different producers → only the 5 most recent are stored
 
 ### Homepage "ביקרת לאחרונה" section
-- [ ] Homepage — with at least 1 recently viewed producer: **"ביקרת לאחרונה"** section appears above the main producer grid
-- [ ] Section shows small cards in a horizontal scroll row (image + name + city)
-- [ ] Cards are 160px wide with 100px tall images
-- [ ] Long producer names truncate with `…`
-- [ ] Click a card → navigates to that producer's page
-- [ ] Mobile: cards scroll horizontally
+- ✅ → home.spec.ts (the recently-viewed band renders from storage, below the grid, and its cards navigate) — Homepage — with at least 1 recently viewed producer: **"ביקרת לאחרונה"** section appears above the main producer grid
+- ✅ → home.spec.ts (the recently-viewed band renders from storage, below the grid, and its cards navigate) — Section shows small cards in a horizontal scroll row (image + name + city)
+- ✅ → home.spec.ts (the cards are 160px wide with 100px images and the row scrolls horizontally) — Cards are 160px wide with 100px tall images
+- ✅ → home.spec.ts (a long business name truncates inside the card) — Long producer names truncate with `…`
+- ✅ → home.spec.ts (the recently-viewed band renders from storage, below the grid, and its cards navigate) — Click a card → navigates to that producer's page
+- ✅ → home.spec.ts (the cards are 160px wide with 100px images and the row scrolls horizontally) — Mobile: cards scroll horizontally
 
 ### Edge cases
-- [ ] Clear localStorage (`recently_viewed`) → refresh homepage → section is hidden
-- [ ] Fresh browser with no localStorage data → section is hidden (no empty state)
-- [ ] If a stored producer ID no longer exists (deleted) → that card is silently skipped
+- ✅ → home.spec.ts (with no stored history the band is absent — no empty state) — Clear localStorage (`recently_viewed`) → refresh homepage → section is hidden
+- ✅ → home.spec.ts (with no stored history the band is absent — no empty state) — Fresh browser with no localStorage data → section is hidden (no empty state)
+- ✅ → home.spec.ts (a stored id that no longer resolves is skipped, and the rest still render) — If a stored producer ID no longer exists (deleted) → that card is silently skipped
 
 ### Regression checks
 - [ ] Producer detail page still loads correctly (the useEffect doesn't break anything)
@@ -2602,23 +2602,23 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 ## Advanced filter chips — homepage + /map (task 12)
 
 ### Chip appearance (both pages)
-- [ ] Homepage — below "בתי עסק מומלצים" heading, 4 filter chips: ✡️ כשר · 🌿 אורגני · 🚚 משלוח · ✅ מאומת בלבד
+- ✅ → home.spec.ts (the home filter row is exactly the two promoted chips plus the sheet trigger, each with an aria-hidden glyph) — Homepage — below "בתי עסק מומלצים" heading, 4 filter chips: ✡️ כשר · 🌿 אורגני · 🚚 משלוח · ✅ מאומת בלבד
 - [ ] `/map` — below the city search, same 4 chips
 - [ ] Mobile — chips row is horizontally scrollable (no line wrap)
-- [ ] Inactive chip: white bg, border, dark text
-- [ ] Active chip: primary-green bg, white text
+- ✅ → home.spec.ts (a promoted chip toggles its pressed state and its fill) — Inactive chip: white bg, border, dark text
+- ✅ → home.spec.ts (a promoted chip toggles its pressed state and its fill) — Active chip: primary-green bg, white text
 
 ### Toggle behavior
-- [ ] Click "כשר" → chip turns green → grid reloads with only kosher producers
-- [ ] Click "כשר" again → chip turns white → grid reloads without kosher filter
-- [ ] Multi-select: activate "כשר" + "אורגנ��" simultaneously → grid shows only kosher AND organic producers
-- [ ] Network tab: `GET /producers?kosher=true&organic=true` fires (both params)
+- ✅ → home.spec.ts (toggling a chip adds its query param, toggling it off removes it) — Click "כשר" → chip turns green → grid reloads with only kosher producers
+- ✅ → home.spec.ts (toggling a chip adds its query param, toggling it off removes it) — Click "כשר" again → chip turns white → grid reloads without kosher filter
+- ✅ → home.spec.ts (two active chips compose into one request carrying both params) — Multi-select: activate "כשר" + "אורגנ��" simultaneously → grid shows only kosher AND organic producers
+- ✅ → home.spec.ts (toggling a chip adds its query param, toggling it off removes it) — Network tab: `GET /producers?kosher=true&organic=true` fires (both params)
 
 ### Composability with other filters
 - [ ] Activate "משלוח" chip → search a city in the search bar → both `has_delivery=true` and `delivery_city=` sent
 - [ ] Activate "מאומת בלבד" chip → click a category card → both `verified=true` and `category=` sent
 - [ ] "קרוב אלי" button → with "אורגני" active → `lat=&lng=&radius_km=15&organic=true` sent
-- [ ] Clear category filter ("נקה סינון") → chip filters preserved
+- ✅ → home.spec.ts (clearing the category keeps the attribute chips active) — Clear category filter ("נקה סינון") → chip filters preserved
 
 ### Backend params (new)
 - [ ] `GET /producers?organic=true` → only producers with `organic_certified=true`
@@ -2629,25 +2629,25 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Homepage search still works without any chips active
 - [ ] Category card clicks still work
 - [ ] `/map` city search + legend category filter still work
-- [ ] "הצגי עוד" load-more button works after chip-filtered results
+- ✅ → home.spec.ts (load-more expands a chip-filtered grid) — "הצגי עוד" load-more button works after chip-filtered results
 
 ---
 
 ## "קרוב אלי" geolocation button on homepage (task 11)
 
 ### Button appearance
-- [ ] Homepage hero section — below the search bar there's a **"קרוב אלי"** button with a Crosshair icon
+- ✅ → home.spec.ts (the near-me button is in the hero chips row and no location chip exists yet) — Homepage hero section — below the search bar there's a **"קרוב אלי"** button with a Crosshair icon
 - [ ] Button styled as a frosted-glass pill (semi-transparent white with backdrop blur)
 - [ ] Button fades in with the rest of the hero content (Framer Motion stagger)
 
 ### Geolocation flow — permission granted
 - [ ] Click "קרוב אלי" → browser asks for location permission
-- [ ] While waiting: button shows **"מחפשת..."** with a spinning Crosshair icon + disabled state
-- [ ] On success: page scrolls to the producer grid, which now shows only nearby producers (radius 15km)
-- [ ] Network tab: `GET /producers?lat=...&lng=...&radius_km=15` fires
+- ✅ → home.spec.ts (while locating, the button shows the searching label and is disabled) — While waiting: button shows **"מחפשת..."** with a spinning Crosshair icon + disabled state
+- ✅ → home.spec.ts (granting location re-queries at radius 15 and raises the location chip, with no reload) — On success: page scrolls to the producer grid, which now shows only nearby producers (radius 15km)
+- ✅ → home.spec.ts (granting location re-queries at radius 15 and raises the location chip, with no reload) — Network tab: `GET /producers?lat=...&lng=...&radius_km=15` fires
 
 ### Geolocation flow — permission denied
-- [ ] Click "קרוב אלי" → deny the browser permission prompt
+- ✅ → home.spec.ts (a denied prompt opens the city modal, not a toast) — Click "קרוב אלי" → deny the browser permission prompt
 - [ ] Toast appears: **"אפשרי גישה למיקום בהגדרות הדפדפן"**
 - [ ] Button returns to normal state (not stuck on "מחפשת...")
 
@@ -2768,15 +2768,15 @@ Added with `feature/session-handoff`.
 ## Smart Search — HeroSearch + /producers?q= (MEH-99, PR #199)
 
 ### Hero search pill — recent / trending dropdown
-- [ ] Homepage — click the search pill without typing → if there are recent searches (localStorage `mehamakor_recent_searches`) → dropdown shows "חיפושים אחרונים" with up to 5 items; each click routes to `/producers?q=<term>`
-- [ ] Homepage — click search pill with no recent searches → dropdown shows "חיפושים פופולריים" items from `GET /search/trending`
-- [ ] Homepage — type a single character → no autocomplete fired (debounce requires ≥ 2 chars)
-- [ ] Homepage — type 2+ chars → after 300ms debounce, dropdown shows grouped results: יצרנים / מוצרים / ערים / קטגוריות
-- [ ] Homepage — keyboard nav: ArrowDown/Up cycles through all items in the flat list; Enter submits the highlighted item
+- ✅ → home.spec.ts (recent searches open on focus, capped at five, and route to /producers?q=) — Homepage — click the search pill without typing → if there are recent searches (localStorage `mehamakor_recent_searches`) → dropdown shows "חיפושים אחרונים" with up to 5 items; each click routes to `/producers?q=<term>`
+- ✅ → home.spec.ts (with no recent searches the dropdown shows trending items) — Homepage — click search pill with no recent searches → dropdown shows "חיפושים פופולריים" items from `GET /search/trending`
+- ✅ → home.spec.ts (one character fires no search; a burst past two characters fires exactly one) — Homepage — type a single character → no autocomplete fired (debounce requires ≥ 2 chars)
+- ✅ → home.spec.ts (two or more characters produce the three grouped result sections) — Homepage — type 2+ chars → after 300ms debounce, dropdown shows grouped results: יצרנים / מוצרים / ערים / קטגוריות
+- ✅ → home.spec.ts (arrow keys walk the flat row list and Enter opens the highlighted row) — Homepage — keyboard nav: ArrowDown/Up cycles through all items in the flat list; Enter submits the highlighted item
 - [ ] Homepage — type "חוו" → press Enter → navigates to `/producers?q=חוו`
-- [ ] Homepage — successful search term is saved to `mehamakor_recent_searches` (max 5, most recent first)
-- [ ] Network tab: `GET /search?q=...` fires at most once per 300ms burst (debounce guard)
-- [ ] Network tab: rapid type-delete → old in-flight request is aborted (AbortController), no stale results
+- ✅ → home.spec.ts (a submitted term is stored most-recent-first and capped at five) — Homepage — successful search term is saved to `mehamakor_recent_searches` (max 5, most recent first)
+- ✅ → home.spec.ts (one character fires no search; a burst past two characters fires exactly one) — Network tab: `GET /search?q=...` fires at most once per 300ms burst (debounce guard)
+- ✅ → home.spec.ts (deleting back below two characters abandons the in-flight request and clears the results) — Network tab: rapid type-delete → old in-flight request is aborted (AbortController), no stale results
 
 ### /producers?q= results page
 - [ ] Navigate to `/producers?q=עגבנייה` → heading **"תוצאות עבור: עגבנייה"** appears above the grid
