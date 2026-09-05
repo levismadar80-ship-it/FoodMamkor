@@ -1709,6 +1709,7 @@
           "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
           "has_delivery": "יש משלוחים",
           "pickup_points": "נקודות איסוף ברחבי הארץ",
+          "pickup_managed_in_locations": "נקודות איסוף מנוהלות בעריכת מיקומים",
           "delivery_area_cities": "ערי משלוח (מופרדות בפסיק)",
           "delivery_area_cities_placeholder": "תל אביב, חיפה, ירושלים",
           "short_description": "תיאור קצר (לכרטיסייה)",
