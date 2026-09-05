@@ -205,7 +205,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
 async function openDashboard(page: Page): Promise<void> {
   await page.goto("/he/admin");
   await expect(page.getByRole("heading", { name: "לוח מחוונים" }), "control: the dashboard never rendered").toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" }), "control: the health panel never rendered").toBeVisible();
 }
 /**
  * The dashboard card whose <h2> reads `heading`, scoped to the page's <main> so
@@ -269,7 +269,7 @@ test.describe("/admin — the dashboard", () => {
     await expect(dateLabels).toHaveText(["08-07", "08-22", "09-05"]);
     // Pinned on purpose: a new <text> node (axis, title, tooltip) is a chart change this row should notice and re-pin.
     await expect(svg.locator("text"), "the chart renders exactly the three date labels").toHaveCount(3);
-    await expect(svg.locator("polyline")).toHaveAttribute("points", /^8\.0,/);
+    await expect(svg.locator("polyline")).toHaveAttribute("points", /^8\.0,\d+(\.\d+)? /);
   });
 
   test("with no DAU data the chart card reads «אין נתונים עדיין»", async ({ page }) => {
