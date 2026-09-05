@@ -249,7 +249,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
 // ── helpers ────────────────────────────────────────────────────────────────
 
 const userRows = (page: Page) => page.getByRole("table").locator("tbody > tr");
-const userRow = (page: Page, name: string) => page.getByRole("row", { name: new RegExp(`(^|\\s)${name}(\\s|$)`) });
+/** Escape a literal for use inside a RegExp — fixture names are Hebrew + digits today, but the helper must not silently mis-match on `.`, `(`, `*` if reused. */
+const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const userRow = (page: Page, name: string) => page.getByRole("row", { name: new RegExp(`(^|\\s)${reEscape(name)}(\\s|$)`) });
 const kebab = (row: Locator) => row.getByRole("button", { name: "פעולות נוספות" });
 const menu = (page: Page) => page.getByRole("menu");
 
