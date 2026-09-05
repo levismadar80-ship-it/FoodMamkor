@@ -86,12 +86,12 @@
 
 > **הבדיקה המרכזית היא שהסיבה מגיעה לבעלת העסק.** לפני הכרטיס הזה הסיבה חיה רק בגוף המייל, והעמודה ב-DB נשארה NULL — כך שבדשבורד שלה הופיע "נדחה" בלי שום הסבר. אם המסך שלה מראה סטטוס בלי סיבה, הפיצ'ר נכשל גם אם המייל הגיע.
 
-- [ ] **"דחייה" מופיע רק לעסק שממתין לאישור** — `/admin/producers` → ⋮ בשורה של עסק `pending` — **תוצאה מצופה:** פריט "דחייה" באדום. באותו תפריט על עסק **מאושר** — הפריט לא קיים
-- [ ] **חמש הסיבות נטענות מהשרת** — פתחי את המודל — **תוצאה מצופה:** חמישה כפתורי רדיו עם הנוסח המדויק ("מסמכים חסרים / לא קריאים" · "תמונה ראשית חסרה" · "מידע עסקי לא מלא (כתובת / טלפון / תיאור)" · "עסק לא עומד בתנאי הפלטפורמה" · "אחר (פירוט חופשי)")
-- [ ] **"אחר" דורש פירוט** — בחרי "אחר" בלי לכתוב כלום — **תוצאה מצופה:** כפתור השליחה מושבת. הקלידי טקסט → נדלק
-- [ ] **אין שליחה בלי אישור** — לחצי "דחה ושלח מייל" — **תוצאה מצופה:** מופיע "פעולה זו תשלח מייל לבית העסק. להמשיך?" ו**שום מייל לא נשלח עדיין**. "ביטול" מחזיר לטופס
+- ✅ → admin-producers-decisions.spec.ts (the kebab offers «דחייה» on a pending row and not on an approved one) — **"דחייה" מופיע רק לעסק שממתין לאישור** — `/admin/producers` → ⋮ בשורה של עסק `pending` — **תוצאה מצופה:** פריט "דחייה" באדום. באותו תפריט על עסק **מאושר** — הפריט לא קיים
+- ✅ → admin-producers-decisions.spec.ts (the modal renders the four server reasons across its two groups, plus an «אחר» in each — ⚠️ STALE: since MEH-2209 it is one modal with two groups; the server's «אחר (פירוט חופשי)» is replaced by an «אחר» radio per group, so six radios, not five) — **חמש הסיבות נטענות מהשרת** — פתחי את המודל — **תוצאה מצופה:** חמישה כפתורי רדיו עם הנוסח המדויק ("מסמכים חסרים / לא קריאים" · "תמונה ראשית חסרה" · "מידע עסקי לא מלא (כתובת / טלפון / תיאור)" · "עסק לא עומד בתנאי הפלטפורמה" · "אחר (פירוט חופשי)")
+- ✅ → admin-producers-decisions.spec.ts («אחר» disables the submit until the free text is filled, and says the field is required) — **"אחר" דורש פירוט** — בחרי "אחר" בלי לכתוב כלום — **תוצאה מצופה:** כפתור השליחה מושבת. הקלידי טקסט → נדלק
+- ✅ → admin-producers-decisions.spec.ts (the reject asks «להמשיך?» first, sends nothing until confirmed, and «ביטול» returns to the form) — **אין שליחה בלי אישור** — לחצי "דחה ושלח מייל" — **תוצאה מצופה:** מופיע "פעולה זו תשלח מייל לבית העסק. להמשיך?" ו**שום מייל לא נשלח עדיין**. "ביטול" מחזיר לטופס
 - [ ] **הסיבה נשמרת ב-DB** — אשרי את הדחייה → `SELECT status, rejection_reason FROM producers WHERE id = '<id>'` — **תוצאה מצופה:** `rejected` + הסיבה **לא NULL**. אם נבחר preset עם פירוט, הערך הוא "<תווית> — <פירוט>"; אם נבחר "אחר", הערך הוא הפירוט לבדו
-- [ ] **בעלת העסק רואה את הסיבה** — התחברי כבעלת העסק שנדחתה → `/producer/dashboard` — **תוצאה מצופה:** באנר אדום עם הסיבה המלאה, לא רק "נדחה"
+- ✅ → admin-producers-decisions.spec.ts (the rejected owner sees the full reason on her dashboard banner) — **בעלת העסק רואה את הסיבה** — התחברי כבעלת העסק שנדחתה → `/producer/dashboard` — **תוצאה מצופה:** באנר אדום עם הסיבה המלאה, לא רק "נדחה"
 - [ ] **המייל מגיע ותואם** — בדקי בתיבה, ופתחי ב-Gmail "Show original" — **תוצאה מצופה:** הנושא ללא שינוי (`מהמקור - עדכון לגבי העסק "<שם>"`), והגוף מכיל את **אותה** מחרוזת שנשמרה ב-DB, עם השורה "אפשר לתקן את הפרטים בלוח הבקרה ולהשיב למייל הזה"
 - [ ] **ההבטחה שבמייל נכונה** — כאותה בעלת עסק שנדחתה, ערכי שדה כלשהו בלוח הבקרה ושמרי — **תוצאה מצופה:** השמירה מצליחה. (המייל מפנה לשם; אם זה נחסם, הקופי שקרי)
 - [ ] **תיקון טעות** — עסק שנדחה בטעות: `/admin/producers/<id>/edit` → החזירי סטטוס — **תוצאה מצופה:** אפשרי. אין צורך בכרטיס נפרד (אומת ב-Phase 0)
@@ -423,12 +423,12 @@
 
 ## MEH-1396 — צ'קליסט בדיקה לפני אישור בית עסק (אדמין, Phase 1)
 
-- [ ] **הצ'קליסט מופיע לעסק ממתין** — Admin → בתי עסק → עסק בסטטוס "ממתינה לאישור" / "ממתינה לאימות WhatsApp" — **תוצאה מצופה:** תחת השורה כותרת מתקפלת "רשימת בדיקה לפני אישור (0/7)" עם אייקון קליפבורד; לעסק מאושר/דחוי — לא מופיע.
-- [ ] **פתיחה/סגירה + 7 סעיפים** — הקישי על הכותרת — **תוצאה מצופה:** נפתחים 7 סעיפים עם checkbox, חלקם עם רמז אפור מתחת (למשל "חשד לתמונת סטוק — בדקי חיפוש הפוך"); הקישי שוב לסגירה.
-- [ ] **סימון + reset בסגירה** — סמני כמה סעיפים (הסעיף מסומן + קו חוצה, המונה עולה) → סגרי את הצ'קליסט → פתחי שוב — **תוצאה מצופה:** כל הסימונים התאפסו (session-local, בלי שמירה).
-- [ ] **אזהרה רכה באישור עם סעיפים לא מסומנים** — השאירי לפחות סעיף אחד לא מסומן והקישי "אשר" — **תוצאה מצופה:** דיאלוג "נשארו X סעיפים לא מסומנים ברשימת הבדיקה. לאשר בכל זאת?" עם "אשרי בכל זאת" / "חזרה לבדיקה" (X = מספר הלא-מסומנים). "חזרה לבדיקה"/Esc סוגר בלי לאשר; "אשרי בכל זאת" ממשיך לאישור הרגיל.
-- [ ] **כל הסעיפים מסומנים → אין דיאלוג** — סמני את כל 7 הסעיפים והקישי "אשר" — **תוצאה מצופה:** האישור ממשיך ישירות בלי דיאלוג נוסף.
-- [ ] **ה-gates הקשיחים לא נשברו** — נסי לאשר עסק בלי תמונה / בלי מספר רישיון בקטגוריה שדורשת — **תוצאה מצופה:** התנהגות ה-422 הקיימת (פתיחת "בקשת השלמה" עם הצ'יפ המתאים) ללא שינוי — הצ'קליסט הרך אינו מחליף את הבדיקות של השרת.
+- ✅ → admin-producers-decisions.spec.ts (a pending row carries the collapsed checklist reading «(?/7)»; an approved row carries none — ⚠️ STALE: the closed header reads «(?/7)» until the ticks are fetched (MEH-1399), and «ממתינה לאימות WhatsApp» no longer exists (MEH-2124)) — **הצ'קליסט מופיע לעסק ממתין** — Admin → בתי עסק → עסק בסטטוס "ממתינה לאישור" / "ממתינה לאימות WhatsApp" — **תוצאה מצופה:** תחת השורה כותרת מתקפלת "רשימת בדיקה לפני אישור (0/7)" עם אייקון קליפבורד; לעסק מאושר/דחוי — לא מופיע.
+- ✅ → admin-producers-decisions.spec.ts (expanding shows the seven items with their hints, and the counter becomes a real number) — **פתיחה/סגירה + 7 סעיפים** — הקישי על הכותרת — **תוצאה מצופה:** נפתחים 7 סעיפים עם checkbox, חלקם עם רמז אפור מתחת (למשל "חשד לתמונת סטוק — בדקי חיפוש הפוך"); הקישי שוב לסגירה.
+- ✅ → admin-producers-decisions.spec.ts (a tick is PUT, survives collapse and a full reload, and an untick removes it — ⚠️ STALE: MEH-1399 inverted this on purpose — ticks persist, nothing resets on collapse) — **סימון + reset בסגירה** — סמני כמה סעיפים (הסעיף מסומן + קו חוצה, המונה עולה) → סגרי את הצ'קליסט → פתחי שוב — **תוצאה מצופה:** כל הסימונים התאפסו (session-local, בלי שמירה).
+- ✅ → admin-producers-decisions.spec.ts (approving with unchecked items asks first, with the count; back and Esc send nothing; «אשרי בכל זאת» approves) — **אזהרה רכה באישור עם סעיפים לא מסומנים** — השאירי לפחות סעיף אחד לא מסומן והקישי "אשר" — **תוצאה מצופה:** דיאלוג "נשארו X סעיפים לא מסומנים ברשימת הבדיקה. לאשר בכל זאת?" עם "אשרי בכל זאת" / "חזרה לבדיקה" (X = מספר הלא-מסומנים). "חזרה לבדיקה"/Esc סוגר בלי לאשר; "אשרי בכל זאת" ממשיך לאישור הרגיל.
+- ✅ → admin-producers-decisions.spec.ts (with every item ticked the approve fires with no dialog) — **כל הסעיפים מסומנים → אין דיאלוג** — סמני את כל 7 הסעיפים והקישי "אשר" — **תוצאה מצופה:** האישור ממשיך ישירות בלי דיאלוג נוסף.
+- ✅ → admin-producers-decisions.spec.ts (a 422 from the photo / license gate opens the decision modal with the matching chip preselected and the chip text prefilled) — **ה-gates הקשיחים לא נשברו** — נסי לאשר עסק בלי תמונה / בלי מספר רישיון בקטגוריה שדורשת — **תוצאה מצופה:** התנהגות ה-422 הקיימת (פתיחת "בקשת השלמה" עם הצ'יפ המתאים) ללא שינוי — הצ'קליסט הרך אינו מחליף את הבדיקות של השרת.
 
 ## MEH-1334 — ProducerDetail Quiet Direction v3 (18/07)
 
@@ -3075,8 +3075,8 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - [ ] `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בזמן הבקשה
 - [ ] `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה
 - [ ] `/admin/content` (מוצרי בית מוסתרים) — לחיצה כפולה על "שחזר"/"מחק" — תוצאה: בקשה אחת
-- [ ] `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
-- [ ] כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט)
+- ✅ → admin-producers-decisions.spec.ts (a double click on «✓ אשר» fires one POST and disables the button while it flies — the approve button; suspend / ambassador / delete stay unconverted (writes on approved rows, chunk 12c)) — `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
+- ✅ → admin-producers-decisions.spec.ts (a network failure on approve shows the Hebrew connection toast — the approve action; the other pages are chunk 12c) — כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט)
 
 ## /map producer card — distance from user (MEH-826 Gap 2)
 
@@ -3475,25 +3475,25 @@ WHERE table_name = 'producers' AND column_name = 'license_expires_at';
 
 ### זרימת הסקירה — `/admin/producers`
 
-- [ ] שורת עסק ב-`pending` נושאת «רשימת בדיקה לפני אישור» — תוצאה מצופה: כפתור מתקפל עם מונה
-- [ ] שורת עסק **מאושר** — תוצאה מצופה: אין רשימת בדיקה כלל
-- [ ] לפני פתיחה, לעסק שכבר יש לו סימונים — תוצאה מצופה: המונה אומר **`(?/7)`**, לא `(0/7)`. הסימונים נטענים רק בפתיחה, ו-`0` שם הוא תשובה בטוחה ושגויה
-- [ ] פותחים את השורה — תוצאה מצופה: המונה הופך למספר אמיתי, והסעיפים שסומנו קודם מגיעים **מסומנים מראש**
-- [ ] מסמנים סעיף → **רענון מלא של הדף** → פותחים שוב — תוצאה מצופה: הסימון עדיין שם (זה כל ההבדל מ-MEH-1396)
-- [ ] מסמנים ומיד מבטלים — תוצאה מצופה: אחרי רענון הסעיף אינו מסומן (שורה נמחקת, לא מסומנת כ-false)
+- ✅ → admin-producers-decisions.spec.ts (a pending row carries the collapsed checklist reading «(?/7)»; an approved row carries none) — שורת עסק ב-`pending` נושאת «רשימת בדיקה לפני אישור» — תוצאה מצופה: כפתור מתקפל עם מונה
+- ✅ → admin-producers-decisions.spec.ts (a pending row carries the collapsed checklist reading «(?/7)»; an approved row carries none) — שורת עסק **מאושר** — תוצאה מצופה: אין רשימת בדיקה כלל
+- ✅ → admin-producers-decisions.spec.ts (a pending row carries the collapsed checklist reading «(?/7)»; an approved row carries none) — לפני פתיחה, לעסק שכבר יש לו סימונים — תוצאה מצופה: המונה אומר **`(?/7)`**, לא `(0/7)`. הסימונים נטענים רק בפתיחה, ו-`0` שם הוא תשובה בטוחה ושגויה
+- ✅ → admin-producers-decisions.spec.ts (items already recorded on the server arrive pre-checked, and the counter says so) — פותחים את השורה — תוצאה מצופה: המונה הופך למספר אמיתי, והסעיפים שסומנו קודם מגיעים **מסומנים מראש**
+- ✅ → admin-producers-decisions.spec.ts (a tick is PUT, survives collapse and a full reload, and an untick removes it) — מסמנים סעיף → **רענון מלא של הדף** → פותחים שוב — תוצאה מצופה: הסימון עדיין שם (זה כל ההבדל מ-MEH-1396)
+- ✅ → admin-producers-decisions.spec.ts (a tick is PUT, survives collapse and a full reload, and an untick removes it) — מסמנים ומיד מבטלים — תוצאה מצופה: אחרי רענון הסעיף אינו מסומן (שורה נמחקת, לא מסומנת כ-false)
 - [ ] מסמנים סעיף, יוצאים ליום אחר, חוזרים ומסמנים אותו שוב — תוצאה מצופה: **החותמת המקורית נשמרת** (סימון חוזר לא מרענן את `checked_at`)
-- [ ] מקפלים את השורה ופותחים שוב — תוצאה מצופה: הסימונים לא נעלמו בקיפול
-- [ ] מאשרים עסק עם **אפס** סימונים — תוצאה מצופה: האישור **עובר**. אם נחסם — תקלה
-- [ ] כשאין אף סעיף פעיל (מבטלים «בשימוש» לכולם) — תוצאה מצופה: «אין סעיפים פעילים. אפשר להוסיף בהגדרות.» ולא רשימה ריקה בלי הסבר
+- ✅ → admin-producers-decisions.spec.ts (a tick is PUT, survives collapse and a full reload, and an untick removes it) — מקפלים את השורה ופותחים שוב — תוצאה מצופה: הסימונים לא נעלמו בקיפול
+- ✅ → admin-producers-decisions.spec.ts (approving with unchecked items asks first … «אשרי בכל זאת» approves · with zero ticks the dialog counts all seven and approval still goes through) — מאשרים עסק עם **אפס** סימונים — תוצאה מצופה: האישור **עובר**. אם נחסם — תקלה
+- ✅ → admin-producers-decisions.spec.ts (with no active items the open list says so, and the approve needs no dialog) — כשאין אף סעיף פעיל (מבטלים «בשימוש» לכולם) — תוצאה מצופה: «אין סעיפים פעילים. אפשר להוסיף בהגדרות.» ולא רשימה ריקה בלי הסבר
 
 ### תיק בדיקה (chunk 4)
 
-- [ ] מתחת לרשימה מופיע «תיק בדיקה» — תוצאה מצופה: קישור למאגר משרד הבריאות, «העתקת שם העסק», מספר הרישיון ותוקפו
-- [ ] לחיצה על «העתקת שם העסק» — תוצאה מצופה: «הועתק ✓» למשך 2 שניות; הדבקה במאגר נותנת את השם המדויק
-- [ ] כל הקישורים החיצוניים — תוצאה מצופה: נפתחים בלשונית חדשה, לא מנווטים מהאדמין
-- [ ] לעסק בלי אתר ובלי אינסטגרם — תוצאה מצופה: «אין אתר או אינסטגרם», לא שורה ריקה
-- [ ] לעסק בלי תמונות — תוצאה מצופה: «אין תמונות»
-- [ ] **במסך 375** — תוצאה מצופה: «מספר: …» ו«תוקף: …» נקראים **בלי גלילה אופקית** של הטבלה
+- ✅ → admin-producers-decisions.spec.ts (the dossier lists the registry link, the copy button, the licence number and its expiry, and every external link opens a new tab) — מתחת לרשימה מופיע «תיק בדיקה» — תוצאה מצופה: קישור למאגר משרד הבריאות, «העתקת שם העסק», מספר הרישיון ותוקפו
+- ✅ → admin-producers-decisions.spec.ts (copying the name puts the exact name on the clipboard and flashes «הועתק ✓») — לחיצה על «העתקת שם העסק» — תוצאה מצופה: «הועתק ✓» למשך 2 שניות; הדבקה במאגר נותנת את השם המדויק
+- ✅ → admin-producers-decisions.spec.ts (the dossier lists the registry link, the copy button, the licence number and its expiry, and every external link opens a new tab) — כל הקישורים החיצוניים — תוצאה מצופה: נפתחים בלשונית חדשה, לא מנווטים מהאדמין
+- ✅ → admin-producers-decisions.spec.ts (no website or Instagram, and no images, each read as a sentence) — לעסק בלי אתר ובלי אינסטגרם — תוצאה מצופה: «אין אתר או אינסטגרם», לא שורה ריקה
+- ✅ → admin-producers-decisions.spec.ts (no website or Instagram, and no images, each read as a sentence) — לעסק בלי תמונות — תוצאה מצופה: «אין תמונות»
+- ✅ → admin-producers-decisions.spec.ts (on the phone project «מספר:» and «תוקף:» sit inside the viewport — ⚠️ measured at 393px (Pixel 5), not 375) — **במסך 375** — תוצאה מצופה: «מספר: …» ו«תוקף: …» נקראים **בלי גלילה אופקית** של הטבלה
 
 ### מה שלא נבדק בסלף-QA
 
