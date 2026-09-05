@@ -161,14 +161,6 @@ const nextConfig = {
     // first URL still shows the old param. Nothing reads it; EventsClient's
     // URL-writer (city/category only) rewrites the query on hydration and
     // the settled URL is /experiences[?city=…]. Harmless, documented.
-    //
-    // MEH-2249: experience creation moved under the dashboard, behind the
-    // layout's 401/403 gate. The public /experiences/new (and its hardcoded
-    // metadata) is gone; old links 308 to the dashboard route. Same locale +
-    // bare pair as the rule above. Chosen over a server `redirect()` — the
-    // precedent for that is app/[locale]/p/[slug]/page.js:18, which issues a
-    // 307; this rule's `permanent: true` is the 308 the ticket asks for, and
-    // it lets the page file (metadata and all) be deleted outright.
     const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
     return [
       { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
@@ -180,16 +172,6 @@ const nextConfig = {
         permanent: true,
       },
       { source: "/events", has: TAB_EXPERIENCES, destination: "/experiences", permanent: true },
-      {
-        source: "/:locale(he|en)/experiences/new",
-        destination: "/:locale/producer/dashboard/experiences/new",
-        permanent: true,
-      },
-      {
-        source: "/experiences/new",
-        destination: "/producer/dashboard/experiences/new",
-        permanent: true,
-      },
     ];
   },
   async rewrites() {

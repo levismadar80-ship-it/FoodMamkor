@@ -204,7 +204,6 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
   return (
     <div
       ref={sheetRef}
-      data-testid="map-bottom-sheet"
       className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-3xl border-t border-border flex flex-col"
       style={{
         height: `${heightVh}vh`,
@@ -267,7 +266,6 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
           `none`: it blocks the chaining, keeps the local rubber-band. */}
       <div
         ref={contentRef}
-        data-testid="map-sheet-content"
         className="flex-1 overflow-y-auto overscroll-y-contain [overflow-anchor:none] px-4 pt-1"
       >
         {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}

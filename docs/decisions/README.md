@@ -52,7 +52,6 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [031](./ADR-031-outbound-contact-unobservable.md) | Outbound contact is unobservable — copy constraint + CI lexicon gate | Accepted | 2026-07-28 | MEH-1652 |
 | [032](./ADR-032-autonomous-remediation-mode.md) | Autonomous remediation mode — CC finds → fixes → proves → merges; Sapir sees exceptions only | Accepted | 2026-07-28 | MEH-1741 |
 | [033](./ADR-033-analytics-single-writer.md) | One choke point for every analytics write, enforced by an AST test | Accepted | 2026-08-23 | MEH-2160 |
-| [034](./ADR-034-data-gate-in-code.md) | A data gate lives in the code as a render threshold, not in Linear as a waiting card | Accepted | 2026-09-04 | MEH-2250 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

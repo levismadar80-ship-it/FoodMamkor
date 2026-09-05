@@ -190,37 +190,9 @@ export async function assertDetailRendered(
   let siblingRoute = "n/a — this producer has no slug, so the requested URL WAS the id route";
   let bySlug = "n/a — no slug to look up";
   let slugBytes = "n/a";
-  // MEH-2252 — address both probes at the origin of the PAGE IN FRONT OF US,
-  // never at the config's `baseURL`. `page.request` resolves a relative path
-  // against `baseURL` and ignores the page's own origin entirely, so a spec
-  // driving this classifier on a stubbed origin — `00-producer-fixture-selftest`,
-  // with its synthetic `{ id: "p2", slug: "bad-slug" }` — sent `GET /producer/p2`
-  // to the real `next start`. The id route rejects a non-integer id, and SSR
-  // printed `producer lookup failed: 422 Unprocessable Entity (id=p2)`
-  // (app/[locale]/producer/[id]/page.js:56) into next-start.log on every E2E run.
-  //
-  // Interception was measured and is NOT available: on Playwright 1.62.1 neither
-  // `page.route()` nor `browserContext.route()` intercepts an APIRequestContext
-  // request — all three combinations reached the network and threw ECONNREFUSED,
-  // while a control proved the same glob DOES intercept a page navigation. So
-  // the address is the only lever.
-  //
-  // For every real flow this is a no-op: the page was served by `baseURL`, so
-  // the origin resolves to the same string. It also makes the diagnostic correct
-  // by construction — a report about "the detail route did not render" must
-  // question the server that served THIS page, not whichever origin the config
-  // happens to name.
-  //
-  // The empty-string fallback is the pre-existing relative behaviour, kept for a
-  // page with no http(s) origin (`about:blank`). That state cannot co-occur with
-  // the branch we are in — reaching here required `#__next_error__` to be
-  // present, i.e. a rendered document — so it is a floor, not a live path, and
-  // it must not throw: a TypeError here would replace the diagnostic with a
-  // crash naming the wrong cause.
-  const probeOrigin = /^https?:\/\//.test(page.url()) ? new URL(page.url()).origin : "";
   if (producer.slug) {
     siblingRoute = await page.request
-      .get(`${probeOrigin}/producer/${producer.id}`)
+      .get(`/producer/${producer.id}`)
       .then((r) => `GET /producer/${producer.id} → HTTP ${r.status()}`)
       .catch((e) => `GET /producer/${producer.id} → probe failed: ${String(e)}`);
 
@@ -235,7 +207,7 @@ export async function assertDetailRendered(
     // `/api/*` proxies to the same backend the middleware queries
     // (next.config.js:154-173), so this reaches the same resolver.
     bySlug = await page.request
-      .get(`${probeOrigin}/api/producers/by-slug/${encodeURIComponent(producer.slug)}`)
+      .get(`/api/producers/by-slug/${encodeURIComponent(producer.slug)}`)
       .then((r) => `GET /api/producers/by-slug/${producer.slug} → HTTP ${r.status()}`)
       .catch((e) => `by-slug probe failed: ${String(e)}`);
 

@@ -5,6 +5,7 @@
  *           hardcoded "he-IL" (so /en/* rendered Hebrew dates — MEH-753).
  * Related:  frontend/app/[locale]/events/EventsClient.jsx,
  *           frontend/app/[locale]/events/[id]/EventDetailClient.jsx,
+ *           frontend/components/ExperienceCard.jsx,
  *           frontend/components/HomeProductCard.jsx
  * Does NOT: handle time-of-day — callers keep their own HH:MM string
  *           slice (locale-independent), and number/price formatting stays
@@ -17,8 +18,7 @@
 // byte-identical; only the en surfaces change (they were Hebrew before).
 const LOCALE_TAG = { he: "he-IL", en: "en-US" };
 
-// Default = the event-card signature EventsClient renders for both events
-// and experiences (one EntryRow since the route-as-tab merge).
+// Default = the event-card signature shared by EventsClient + ExperienceCard.
 const DEFAULT_OPTIONS = { weekday: "long", day: "numeric", month: "long" };
 
 /**

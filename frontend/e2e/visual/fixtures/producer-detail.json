@@ -71,6 +71,7 @@
   "phone_verified": false,
   "ambassador": false,
   "top_product_name": null,
+  "starting_price_label": null,
   "price_range": null,
   "days_since_created": 3,
   "created_at": "2026-07-20T08:00:00Z",

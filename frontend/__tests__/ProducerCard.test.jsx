@@ -44,8 +44,7 @@ vi.mock("next-intl", () => ({
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
-  // for this mock shape before MEH-2248 deleted it.
+  // ('ק"מ' on the Hebrew card). ExperienceCard.test.jsx precedent.
   useLocale: () => "he",
 }));
 
@@ -182,6 +181,7 @@ const minimalProducer = {
   grass_fed: false,
   kosher: null,
   price_range: null,
+  starting_price_label: null,
   categories: [],
 };
 
@@ -266,8 +266,12 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
-  it("renders no price even when price_range is set", () => {
-    render(<ProducerCard producer={{ ...fullProducer, price_range: "₪40-80" }} />);
+  it("renders no price even when both price fields are set", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, price_range: "₪40-80", starting_price_label: "מ-₪25" }}
+      />,
+    );
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 

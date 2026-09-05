@@ -147,8 +147,6 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `WHATSAPP_ACCESS_TOKEN` | Never-expiring System User token from Meta Business Suite. Store in Railway variables, never in `.env` files. |
    | `WHATSAPP_BUSINESS_ID` | WhatsApp Business Account ID (WABA). |
    | `WHATSAPP_API_VERSION` | `v21.0` (hardcoded fallback; override only to pin a different Graph version). |
-   | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send, so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
-   | `OTP_TEST_CODE` | Exactly 6 digits; the fixed code handed to the numbers above. Anything else turns the feature OFF rather than half-on. Every issue is logged at WARNING with the producer id (never the phone or the code). |
    | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
 6. Production environment — verify the GitHub source is pinned to `main`.

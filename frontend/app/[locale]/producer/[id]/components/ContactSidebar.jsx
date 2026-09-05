@@ -10,7 +10,7 @@ import ContactCard from "./ContactCard";
  */
 export default function ContactSidebar({ producer, isVacation }) {
   return (
-    <aside className="hidden lg:block" data-testid="contact-sidebar">
+    <aside className="hidden lg:block">
       <div className="lg:sticky lg:top-24">
         {/* MEH-1649: the MEH-1600 closed-state context line used to mount here,
             directly above the card. It rendered as text floating on the cream

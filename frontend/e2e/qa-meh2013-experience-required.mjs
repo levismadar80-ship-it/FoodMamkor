@@ -3,7 +3,7 @@
  * nowhere: `city`, and `location_type` (which additionally shipped preselected
  * as "בבית פרטי").
  *
- * Drives the REAL /he/producer/dashboard/experiences/new page in Chromium against a `next start`
+ * Drives the REAL /he/experiences/new page in Chromium against a `next start`
  * server, with every /api/** call fulfilled from fixtures (the CC sandbox has
  * no backend and cannot reach Railway — CLAUDE.md "Known Bug Patterns").
  *
@@ -114,9 +114,9 @@ async function shoot(page, vpTag, name) {
 }
 
 async function run(browser, vp) {
-  console.log(`\n== /he/producer/dashboard/experiences/new @ ${vp.width}px ==`);
+  console.log(`\n== /he/experiences/new @ ${vp.width}px ==`);
   const { ctx, page, pageErrors, posted } = await newPage(browser, vp);
-  await page.goto(`${BASE}/he/producer/dashboard/experiences/new`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/he/experiences/new`, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);
 
   const submit = () => page.getByRole("button", { name: /שלחו לאישור/ }).click();

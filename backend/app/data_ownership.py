@@ -31,12 +31,9 @@ DEPRECATED_OWNER_WRITE_FIELDS = frozenset(
         "slug",
         "lactose_free_facility",
         "pickup_points",
-        # MEH-1851 rows 1 · 19 · 39 (Sapir's ruling, 03/08). Row 19 — the
-        # producer-level price alias — is no longer listed: MEH-1855 chunk 2
-        # DROPPED the column (revision 9849fab1637a), and this registry holds
-        # only fields whose column still exists (test_data_ownership.py asserts
-        # exactly that). A dropped column cannot be re-opened by accident.
+        # MEH-1851 rows 1 · 19 · 39 (Sapir's ruling, 03/08)
         "name",
+        "starting_price_label",
         "is_available_today",
         # MEH-1938 batch: B4 and B3 respectively
         "kosher",

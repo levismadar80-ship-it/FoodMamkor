@@ -28,7 +28,7 @@ export function HomeRecentlyViewed({ items }) {
   const [failedImgs, setFailedImgs] = useState({});
   if (!items.length) return null;
   return (
-    <section className="max-w-7xl mx-auto px-4 pb-10" data-testid="home-recently-viewed">
+    <section className="max-w-7xl mx-auto px-4 pb-10">
       <h2 className="font-headline-md text-headline-md text-text mb-4">
         {t("home.recent.heading")}
       </h2>
@@ -37,7 +37,6 @@ export function HomeRecentlyViewed({ items }) {
         <ScrollArrows affordance={affordance} />
         <div
           ref={affordance.scrollRef}
-          data-testid="home-recent-rail"
           className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
         >
           {items.map((p) => {
@@ -47,10 +46,9 @@ export function HomeRecentlyViewed({ items }) {
             <Link
               key={p.id}
               href={href}
-              data-testid="home-recent-card"
               className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
             >
-              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden" data-testid="home-recent-card-image">
+              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc && failedImgs[p.id] !== imgSrc ? (
                   <Image
                     src={imgSrc}
@@ -201,7 +199,7 @@ export function HomeHowItWorks() {
   const t = useTranslations();
   return (
     // id="how-it-works" — anchor target for the hero "איך זה עובד" link (MEH-643).
-    <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y" data-testid="home-how-it-works">
+    <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
         {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
             ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
@@ -218,7 +216,7 @@ export function HomeHowItWorks() {
           { step: "02", title: t("home.how_it_works.step02_title"), text: t("home.how_it_works.step02_text") },
           { step: "03", title: t("home.how_it_works.step03_title"), text: t("home.how_it_works.step03_text") },
         ].map((step, idx) => (
-          <FadeInSection key={step.step} delay={idx * 0.12} data-testid="home-how-step">
+          <FadeInSection key={step.step} delay={idx * 0.12}>
             <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
             <h3 className="font-headline-md text-2xl font-bold mb-2">{step.title}</h3>
             <p className="text-text/85 leading-relaxed">{step.text}</p>
@@ -238,7 +236,7 @@ export function HomeHowItWorks() {
 export function HomeComparisonTeaser() {
   const t = useTranslations("home.comparison_teaser");
   return (
-    <section className="max-w-3xl mx-auto px-4 section-y text-center" data-testid="home-comparison-teaser">
+    <section className="max-w-3xl mx-auto px-4 section-y text-center">
       <FadeInSection>
         <p className="text-sm font-medium text-fg-muted mb-2">
           {t("eyebrow")}
@@ -267,7 +265,7 @@ export function HomeCTA() {
   const t = useTranslations();
   // MEH-1041: HOME-28 light-warm treatment — cream surface, gold rule + green-pill CTA (was dark band + white button).
   return (
-    <section className="bg-background text-text py-20" data-testid="home-cta">
+    <section className="bg-background text-text py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
         <h2 className="font-headline-display text-headline-display mb-4">
           {t("home.cta.heading")}

@@ -92,7 +92,7 @@ LEGACY(YYYY-MM-DD, MEH-1234)
 | קובץ | טיקט | מה זה |
 | -- | -- | -- |
 | `producer_me.py:418` | MEH-1854 | dual-write של MEH-291 — חלון 7 ימים שנמשך ~14 חודשים |
-| ~~`models.py:119`~~ | MEH-1855 | ~~`starting_price_label` — alias שהבעלות עליו **התהפכה**~~ — **הוסר (03/09, chunk 2, revision `9849fab1637a`)**: ה-contract בוצע, העמודה נמחקה והמרקר איתה. הדוגמה הראשונה בריפו של מרקר שהגיע ל-contract לפני התאריך שלו |
+| `models.py:119` | MEH-1855 | `starting_price_label` — alias שהבעלות עליו **התהפכה** (הציבור קורא את ה-alias, הבעלים כותבת את הקנוני) |
 | `models.py:573` | MEH-1857 | `products.price_range` — ה-follow-up שהוא מפנה אליו מעולם לא נפתח; מפנה לטיקט הזה עד שייפתח אחד אמיתי |
 
 ### הרצה

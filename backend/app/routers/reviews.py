@@ -23,14 +23,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, aliased, joinedload
+from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_admin
 from app.database import get_db
 from app.models import (
     ContactClick,
     Producer,
-    ProducerCategory,
     ProducerReview,
     ProducerWhatsAppClick,
     User,
@@ -212,27 +211,6 @@ def list_reviews(
 # ---------------------------------------------------------------------------
 
 
-def _shares_category(db: Session, owner_producer_id: UUID, producer_id: UUID) -> bool:
-    """MEH-2076: True when the two producers' category sets intersect.
-
-    One EXISTS-shaped query over the M2M table (self-join on category_id),
-    so a shared SECONDARY category counts — the check is intersection, not
-    primary-only.
-    """
-    mine = aliased(ProducerCategory)
-    theirs = aliased(ProducerCategory)
-    return (
-        db.query(mine.category_id)
-        .join(theirs, theirs.category_id == mine.category_id)
-        .filter(
-            mine.producer_id == owner_producer_id,
-            theirs.producer_id == producer_id,
-        )
-        .first()
-        is not None
-    )
-
-
 @router.post(
     "/producers/{producer_id}/reviews",
     response_model=ReviewOut,
@@ -251,8 +229,6 @@ def create_review_nested(
     Guards (checked in order):
       1. Producer must exist.
       2. Producer owner cannot review their own business.
-      2b. Producer owner cannot review a business sharing a category with
-          hers (MEH-2076 — conflict of interest; cross-category stays open).
       3. First-time reviewers must have a click on ANY of this producer's
          contact channels — a WhatsApp click OR a contact click (MEH-2204).
       4. Body is moderated by Haiku (fail-open).
@@ -266,21 +242,6 @@ def create_review_nested(
         raise HTTPException(
             status_code=403,
             detail="בעלת עסק לא יכולה לדרג את עצמה",
-        )
-
-    # Guard 2b (MEH-2076): a business owner cannot review a DIRECT competitor —
-    # any business whose category set intersects hers. Policy (Sapir 14/08):
-    # same-category only; cross-category reviews stay allowed, because the
-    # bakery owner really does buy the cheese ("magazine, not marketplace").
-    # Sits BEFORE the contact gate on purpose: it must hold no matter how the
-    # reviewer got past that gate — a click today, a signed invite link once
-    # MEH-1428 lands — so it cannot be attached to either of those paths.
-    if user.producer_id is not None and _shares_category(
-        db, user.producer_id, producer_id
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail="כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות.",
         )
 
     existing_review = (

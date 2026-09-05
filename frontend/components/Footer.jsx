@@ -261,7 +261,7 @@ export default function Footer() {
           <p className="text-green-100" style={{ fontSize: "11px" }}>
             © {new Date().getFullYear()} {t("footer.copyright")}
           </p>
-          <ul className="flex items-center gap-4" data-testid="footer-utility-links">
+          <ul className="flex items-center gap-4">
             {[
               { href: "/login", label: t("nav.footer.login") },
               { href: "/terms", label: t("nav.footer.terms") },

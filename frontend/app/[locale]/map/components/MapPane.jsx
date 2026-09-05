@@ -203,7 +203,7 @@ export default function MapPane({
         <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
           {mapMoved && (
             <div className="pointer-events-auto">
-              <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+              <button type="button" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
                 <MagnifyingGlass size={16} weight="bold" className="text-primary" />
                 {t("map.pane.search_this_area")}
               </button>
@@ -249,7 +249,6 @@ export default function MapPane({
         type="button"
         onClick={onGpsClick}
         disabled={gpsLoading}
-        data-testid="map-gps-button"
         aria-label={t("map.pane.aria.center_on_me")}
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
         className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-md items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
@@ -265,14 +264,14 @@ export default function MapPane({
           so md:block leaked the legend into the 768–1023px band where it overlapped the
           NearMePill. lg matches the desktop GPS button (lg:flex) + desktop shell (lg:grid). */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}
-      <div ref={legendRef} data-testid="map-legend" className="hidden lg:block absolute bottom-4 left-4 z-[800]">
+      <div ref={legendRef} className="hidden lg:block absolute bottom-4 left-4 z-[800]">
         {/* MEH-1217: origin-bottom-left so the panel reads as growing up out
             of the toggle (its near/left edge already shares the button's left
             edge — both block children of the bottom-4 left-4 container).
             rtl-ok: the whole legend is physically anchored left-4 (documented
             map exception), so the physical bottom-left origin is correct. */}
         {legendOpen && (
-          <div className="mb-2 origin-bottom-left bg-surface-floating border border-border rounded-lg p-2 min-w-[180px]" role="group" data-testid="map-legend-panel" aria-label={t("map.pane.aria.categories")}>
+          <div className="mb-2 origin-bottom-left bg-surface-floating border border-border rounded-lg p-2 min-w-[180px]" role="group" aria-label={t("map.pane.aria.categories")}>
             <div className="space-y-0.5">
               {CATEGORY_LEGEND.map((cat) => {
                 const catActive = isCategoryActive(cat.name);
@@ -293,7 +292,7 @@ export default function MapPane({
                 // (F1) — no shadow. Click/aria/opacity behavior unchanged.
                 const Icon = cat.icon;
                 return (
-                  <button key={cat.name} type="button" data-testid="map-legend-row" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
+                  <button key={cat.name} type="button" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
                     <span
                       className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: `${cat.color}1A` }}
@@ -314,7 +313,6 @@ export default function MapPane({
         <button
           type="button"
           onClick={onLegendToggle}
-          data-testid="map-legend-toggle"
           aria-label={t("map.pane.aria.categories")}
           aria-expanded={legendOpen}
           className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"

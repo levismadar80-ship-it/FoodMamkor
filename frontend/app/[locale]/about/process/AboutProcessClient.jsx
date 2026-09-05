@@ -120,7 +120,7 @@ export default function AboutProcessClient() {
   return (
     <div className="relative bg-background">
       {/* ======== 01 — Hero ======== */}
-      <section data-testid="process-hero" className="bg-background py-12 md:py-20 scroll-mt-24">
+      <section className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <span className="inline-flex items-center gap-2 font-body-md font-semibold text-[12px] text-accent mb-4">
             <Path size={15} aria-hidden />
@@ -146,7 +146,7 @@ export default function AboutProcessClient() {
           <p className="font-english italic text-[19px] text-fg-muted mb-8 max-w-[48ch]">
             {t("steps.lead")}
           </p>
-          <ol data-testid="process-steps" className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <ol className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {STEPS.map(({ Icon }, i) => (
               <li
                 key={i}
@@ -173,7 +173,7 @@ export default function AboutProcessClient() {
             ))}
           </ol>
           {/* badge aside — the optional מאומת step is explicitly separate from step 4 */}
-          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4">
+          <div className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4">
             <SealCheck size={20} className="text-accent mt-0.5 shrink-0" aria-hidden />
             <div>
               <div className="font-body-md font-semibold text-[14.5px] text-text mb-1">
@@ -188,7 +188,7 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 03 — What's checked for everyone ======== */}
-      <section data-testid="process-everyone" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
+      <section className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker n="02">{t("everyone.marker")}</Marker>
           <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
@@ -221,7 +221,7 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 04 — The badge: what it adds ======== */}
-      <section data-testid="process-badge" className="bg-background py-12 md:py-20 scroll-mt-24">
+      <section className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker n="03">{t("badge.marker")}</Marker>
           <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
@@ -240,7 +240,7 @@ export default function AboutProcessClient() {
                   <SealCheck size={17} aria-hidden />
                   <span className="ms-[0.14em]">{t("tier.verified")}</span>
                 </span>
-                <span data-testid="process-badge-tooltip" className="inline-flex items-center gap-2 font-english italic text-[15px] text-fg-muted">
+                <span className="inline-flex items-center gap-2 font-english italic text-[15px] text-fg-muted">
                   <Cursor size={14} aria-hidden />
                   {tBadge.rich("verified_tooltip_license", {
                     date: <span className="numeric not-italic text-accent">{EXAMPLE_DATE}</span>,
@@ -265,7 +265,7 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 05 — Public verification matrix ======== */}
-      <section data-testid="process-matrix" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
+      <section className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker n="04">{t("matrix.marker")}</Marker>
           <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
@@ -276,7 +276,7 @@ export default function AboutProcessClient() {
           </p>
 
           {/* GROUP A — license required */}
-          <div data-testid="process-matrix-a" className="mt-9">
+          <div className="mt-9">
             <div className="mb-4">
               <div className="flex items-center gap-2.5 font-headline-md font-bold text-[19px] leading-tight text-text mb-1.5">
                 <Certificate size={18} className="text-accent shrink-0" aria-hidden />
@@ -292,7 +292,6 @@ export default function AboutProcessClient() {
               {CATS_A.map((key) => (
                 <div
                   key={key}
-                  data-testid="process-matrix-row"
                   className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
                 >
                   <div className="font-headline-md font-bold text-[17px] md:text-[18px] leading-tight text-text">
@@ -310,7 +309,7 @@ export default function AboutProcessClient() {
           </div>
 
           {/* GROUP B — exempt */}
-          <div data-testid="process-matrix-b" className="mt-9">
+          <div className="mt-9">
             <div className="mb-4">
               <div className="flex items-center gap-2.5 font-headline-md font-bold text-[19px] leading-tight text-text mb-1.5">
                 <Leaf size={18} className="text-accent shrink-0" aria-hidden />
@@ -326,7 +325,6 @@ export default function AboutProcessClient() {
               {CATS_B.map(({ key, declare, declaredOnly }) => (
                 <div
                   key={key}
-                  data-testid="process-matrix-row"
                   className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
                 >
                   <div className="font-headline-md font-bold text-[17px] md:text-[18px] leading-tight text-text">
@@ -373,7 +371,7 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 06 — Founder closing line ======== */}
-      <section data-testid="process-closing" className="bg-background py-16 md:py-24 scroll-mt-24" aria-label={t("closing.em_mark")}>
+      <section className="bg-background py-16 md:py-24 scroll-mt-24" aria-label={t("closing.em_mark")}>
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <span className="block font-english italic text-[15px] tracking-[0.16em] uppercase text-accent mb-5 ps-6 md:ps-8">
             {t("closing.em_mark")}
@@ -388,7 +386,7 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 07 — CTA → register ======== */}
-      <section id="join" data-testid="process-cta" className="bg-green-50 border-y border-border py-12 md:py-20 scroll-mt-24">
+      <section id="join" className="bg-green-50 border-y border-border py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
             <div>

@@ -87,9 +87,6 @@ import GrassFedCard from "./GrassFedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
-// MEH-2264: per-date overrides above the weekly window (own file, same reason).
-import SpecialHoursEditor from "./SpecialHoursEditor";
-import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
@@ -180,8 +177,6 @@ const KEY_TO_ANCHOR = {
   pricing: "pricing",
   delivery: "delivery",
   orderWindow: "order-window",
-  // MEH-2264: sits directly under the order window it overrides.
-  specialHours: "special-hours",
   // MEH-1823: registered here so #offer deep-links resolve like every other
   // card. These three maps are a guarded registry — a card added to the JSX
   // without an entry renders but is unreachable by anchor, which is the
@@ -219,9 +214,6 @@ const KEY_TO_GROUP = {
   locations: "location",
   delivery: "location",
   orderWindow: "location",
-  // MEH-2264: same group as the order window it overrides; NOT a
-  // GROUP_MEMBERS entry, for exactly orderWindow's reason above.
-  specialHours: "location",
   // MEH-1823: the offer lives in the location group — it is read against the
   // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
   // for the same reason orderWindow isn't: membership drives the hub's
@@ -672,10 +664,6 @@ function EditPageInner() {
       Boolean(profile.offers_delivery),
     // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
     orderWindow: Object.keys(profile.order_window || {}).length > 0,
-    // MEH-2264: "filled" = at least one override still ahead. Clock-derived,
-    // but this page is client-only (the profile is fetched in the browser),
-    // so there is no server pass to disagree with.
-    specialHours: upcomingSpecialCount(profile.special_hours) > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
@@ -734,12 +722,11 @@ function EditPageInner() {
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
     orderWindow: t("order_window.heading"),
-    specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "specialHours", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1190,38 +1177,6 @@ function EditPageInner() {
             testId="whats-this-order-window"
           />
           <OrderWindowEditor
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-
-        {/* MEH-2264 — per-date overrides ABOVE the weekly window ("ערב ראש
-            השנה 09:00–13:00", "כיפור: סגור"). Opt-in like its sibling, and
-            deliberately its own card: a date list and a weekly grid are two
-            different mental models, and MEH-1830's finding was that the time
-            cluster is already confusing when things share a card. The
-            WhatsThis reuses the card's subtitle string on purpose (rule 22 —
-            approved copy, no second sentence to approve). */}
-        <EditAccordionCard
-          anchorId="special-hours"
-          title={t("special_hours.heading")}
-          summary={
-            cardFilled.specialHours
-              ? t("special_hours.summary_set", {
-                  count: upcomingSpecialCount(profile.special_hours),
-                })
-              : t("special_hours.summary_empty")
-          }
-          open={openKey === "specialHours"}
-          onToggle={() => toggleKey("specialHours")}
-        >
-          <WhatsThis
-            content={t("special_hours.subtitle")}
-            className="mb-1"
-            testId="whats-this-special-hours"
-          />
-          <SpecialHoursEditor
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}

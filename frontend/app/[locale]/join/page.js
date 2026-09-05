@@ -45,11 +45,7 @@ export async function generateMetadata({ params }) {
 // flow; leading-none per the FINAL's no-bleed note (verified at 320px).
 function StepNumeral({ children }) {
   return (
-    <div
-      dir="ltr"
-      data-testid="join-step-numeral"
-      className="font-english text-5xl text-accent leading-none mb-3"
-    >
+    <div dir="ltr" className="font-english text-5xl text-accent leading-none mb-3">
       {children}
     </div>
   );
@@ -71,7 +67,7 @@ export default async function JoinPage({ params }) {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* ── Hero — single CTA of the page (positioning-FINAL order:
                eyebrow → H1 → subhead → CTA → trust hint) ── */}
-        <header className="text-center mb-14 sm:mb-20" data-testid="join-hero">
+        <header className="text-center mb-14 sm:mb-20">
           <p className="text-sm font-medium text-accent mb-3">{t("eyebrow")}</p>
           <h1 className="font-headline-lg font-black text-primary-dark leading-[1.15] mb-5 text-[clamp(32px,7vw,52px)]">
             {t("h1")}

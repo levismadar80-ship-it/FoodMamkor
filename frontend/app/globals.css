@@ -574,7 +574,7 @@ body.sheet-open .cookie-banner {
 }
 
 /* Ken Burns — slow parallax zoom/pan on hero/divider layers (HomeHero,
-   EventsClient, GroupBuysClient). Two directions so
+   EventsClient, ExperiencesClient, GroupBuysClient). Two directions so
    adjacent sections don't drift in lock-step. Disabled for
    prefers-reduced-motion.
    MEH-1567: `kenburns-left` currently has NO consumer — its only user was
