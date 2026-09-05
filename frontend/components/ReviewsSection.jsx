@@ -526,11 +526,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS) && (
-                      <p
-                        className="text-[13px] text-fg-muted mt-0.5"
-                        dir="ltr"
-                        data-testid="review-date"
-                      >
+                      <p className="text-[13px] text-fg-muted mt-0.5" dir="ltr">
                         {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS)}
                       </p>
                     )}

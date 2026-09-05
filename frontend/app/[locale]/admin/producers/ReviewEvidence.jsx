@@ -149,10 +149,7 @@ export default function ReviewEvidence({ producer }) {
   // table sideways. `100vw - 3rem` subtracts the containing td's own `px-6`.
   // max-width has no start/end side, so this is direction-neutral.
   return (
-    <div
-      data-testid="review-evidence"
-      className="mt-3 border-t border-border pt-3 space-y-3 max-w-[calc(100vw-3rem)] sm:max-w-xl"
-    >
+    <div className="mt-3 border-t border-border pt-3 space-y-3 max-w-[calc(100vw-3rem)] sm:max-w-xl">
       <p className="text-xs font-semibold text-text">תיק בדיקה</p>
 
       <Section icon={IdentificationCard} title="רישיון">

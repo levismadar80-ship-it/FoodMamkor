@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, case, cast, func, or_
+from sqlalchemy import and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import JSONPATH
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -503,14 +503,6 @@ _ORDER_DAY_KEYS = (
 # expression — the expression itself is a constant.
 _OPEN_NOW_JSONPATH = "$.%s[*] ? (@.open <= $now && @.close > $now)"
 
-# MEH-1889 chunk B (MEH-2264): the same predicate over TODAY's override. The
-# subject is `special_hours -> '<today>' -> 'ranges'`, selected with SQLAlchemy's
-# JSONB subscript operators so the date travels as a bind parameter and this
-# expression stays a constant — same discipline as the weekly path above, where
-# only the day NAME (from a fixed tuple) is ever interpolated. `ranges: []`
-# gives an empty array, over which `[*]` matches nothing → closed.
-_OPEN_NOW_OVERRIDE_JSONPATH = "$[*] ? (@.open <= $now && @.close > $now)"
-
 
 def _open_for_orders_now_condition(open_now: bool):
     """MEH-1881: match on the DECLARED ordering window, not on opening_hours.
@@ -524,17 +516,6 @@ def _open_for_orders_now_condition(open_now: bool):
     NULL rather than false, so both branches use `IS TRUE` / `IS NOT TRUE`
     instead of `== True` / `!= True` — with a bare boolean comparison the NULL
     rows would silently vanish from BOTH sides of the filter.
-
-    MEH-1889 chunk B (MEH-2264): `special_hours` is ORDER-AXIS AUTHORITATIVE on
-    the one date it names (Sapir's ruling א). If today's ISO date is a key, that
-    entry's `ranges` decide and the weekly day is not consulted — `[]` means
-    closed even on a weekly-open day, and a range means open even on a
-    weekly-closed day. No key for today → the weekly answer, byte-identical to
-    before. An override with NO weekly window is still a declaration, so such a
-    producer lands on the closed side rather than vanishing from both — the CASE
-    only falls through to the weekly (NULL-propagating) branch when today has
-    no override. Past dates need no reader-side filter here: the lookup is by
-    today's key alone, so a stale date is simply never read.
     """
     # `israel_now` is the codebase's canonical Asia/Jerusalem primitive, and
     # going through it rather than building a datetime here is what makes the
@@ -542,27 +523,13 @@ def _open_for_orders_now_condition(open_now: bool):
     # `monkeypatch.setattr(producer_listing, "israel_now", ...)`, the same
     # idiom test_availability_validation.py uses for `israel_today`.
     now = israel_now()
-    now_vars = func.jsonb_build_object("now", now.strftime("%H:%M"))
     # weekday() is Monday=0; order_window is keyed Sunday-first.
     day_key = _ORDER_DAY_KEYS[(now.weekday() + 1) % 7]
-    weekly = func.jsonb_path_exists(
+    matches = func.jsonb_path_exists(
         Producer.order_window,
         cast(_OPEN_NOW_JSONPATH % day_key, JSONPATH),
-        now_vars,
+        func.jsonb_build_object("now", now.strftime("%H:%M")),
     )
-    today_key = now.date().isoformat()
-    override = func.jsonb_path_exists(
-        Producer.special_hours[today_key]["ranges"],
-        cast(_OPEN_NOW_OVERRIDE_JSONPATH, JSONPATH),
-        now_vars,
-    )
-    # `has_key` on a NULL column is NULL, and CASE treats a NULL condition as
-    # not-taken, so a producer with no overrides at all takes the weekly branch.
-    # The CASE is load-bearing, not style: PostgreSQL evaluates a THEN arm only
-    # when its WHEN is true, so `override` is never computed against a NULL or
-    # key-less column. Do not "simplify" it into a bare OR/COALESCE that would
-    # evaluate the subscript path on every row.
-    matches = case((Producer.special_hours.has_key(today_key), override), else_=weekly)
     return matches.is_(True) if open_now else matches.isnot(True)
 
 

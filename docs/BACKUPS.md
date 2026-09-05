@@ -122,14 +122,13 @@ bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRI
   --expect-table-count auto --expect-nonempty producers,users,producer_reviews
 ```
 
-**ה-workflow המתוזמן שמריץ אותו הוחל** —
-[`.github/workflows/backup-restore-verify.yml`](../.github/workflows/backup-restore-verify.yml)
-(cron שבועי + `workflow_dispatch`, job `mechanics`). הצעדים הידניים למעלה
-נשארים ה-fallback למקרה שהאוטומציה לא זמינה. שימי לב: ה-job ב-CI מוכיח את
-**מכניקת** ה-drill על DB מזורע (הרצת `--self-test` שלו כבקרה קודם); הוא אינו
-מוכיח שהגיבוי **האמיתי** של staging משוחזר — לזה דרוש job שני, `staging-drill`,
-הקורא דרך ה-secret `STAGING_DATABASE_URL_READONLY` (מאושר על MEH-1517 ב-14/08,
-טרם נוצר) — ה-workflow כותב במפורש שאותו job עדיין חסר.
+**ה-workflow המתוזמן שמריץ אותו עדיין לא הוחל** — `.github/workflows/**` הוא
+CC-deny (MEH-671); ה-YAML המלא ממתין לספיר ב-
+[docs/ci/meh-1517-backup-restore-verify.patch.md](./ci/meh-1517-backup-restore-verify.patch.md).
+עד אז הצעדים הידניים למעלה הם ה-drill, ואחרי ההחלה הם נשארים ה-fallback
+למקרה שהאוטומציה לא זמינה. שימי לב: ה-job ב-CI מוכיח את **מכניקת** ה-drill על DB
+מזורע; הוא אינו מוכיח שהגיבוי **האמיתי** של staging משוחזר — לזה דרוש ה-secret
+`STAGING_DATABASE_URL_READONLY` (מאושר על MEH-1517 ב-14/08, טרם נוצר).
 
 ---
 

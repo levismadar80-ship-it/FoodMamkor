@@ -181,7 +181,6 @@ export function HomeHero({
     <section
       className="relative w-full"
       aria-label={t("home.hero.main_label")}
-      data-testid="home-hero"
     >
       {/* Photo + scrim LAYER — pinned behind the flow content, and the only
           thing that clips (the ≤1.06 Ken Burns drift needs inset -5% room).
@@ -190,7 +189,6 @@ export function HomeHero({
       <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div
           className="kenburns-right absolute"
-          data-testid="hero-image-layer"
           style={{
             inset: "-5%",
             backgroundImage: `url(${HERO_IMAGE})`,

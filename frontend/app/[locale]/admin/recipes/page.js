@@ -193,10 +193,7 @@ export default function AdminRecipesPage() {
       {/* Feedback modal */}
       {modalRecipe && (
         <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
-          <div
-            data-testid="admin-recipes-feedback-modal"
-            className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border"
-          >
+          <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
             <h2 className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("recipes.modal.changes_title") : t("recipes.modal.reject_title")}
             </h2>

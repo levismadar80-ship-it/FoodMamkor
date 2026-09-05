@@ -195,7 +195,6 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
         />
         <input
           id="category-search"
-          data-testid="category-search"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}

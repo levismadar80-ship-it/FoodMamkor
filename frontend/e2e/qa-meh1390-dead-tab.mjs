@@ -44,15 +44,14 @@ const get = (p) =>
   }, p);
 
 // ── pick the two producers by the SECTION conditions, not by eye ────────────
-// products section  ← products.length || top_product_name || price_range
-//   (MEH-1855 chunk 2: price_range is the only price-label field; the alias is gone)
+// products section  ← products.length || top_product_name || starting_price_label
 // delivery section  ← offers_delivery || delivery_areas.length || pickup_points
 const list = (await get("/api/producers?limit=100&offset=0")) || [];
 const rows = [];
 for (const p of list) {
   const d = (await get(`/api/producers/${p.id}`)) || {};
   const hasProducts =
-    (d.products?.length || 0) > 0 || !!d.top_product_name || !!d.price_range;
+    (d.products?.length || 0) > 0 || !!d.top_product_name || !!d.starting_price_label;
   const hasDelivery =
     d.offers_delivery === true || (d.delivery_areas?.length || 0) > 0 || d.pickup_points === true;
   rows.push({ id: p.id, name: p.name, hasProducts, hasDelivery });

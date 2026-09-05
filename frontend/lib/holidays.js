@@ -5,12 +5,6 @@
  *
  * MEH-1988: "today" comes from lib/israel-date, not the browser clock — see
  * todayMs below. Do NOT reintroduce a local date primitive here.
- *
- * MEH-2263: dates are the 5787 calendar (Sep 2026 → Sep 2027), pinned entry by
- * entry in __tests__/holidays.test.js — roll the year there AND here, together.
- * Convention: `start` = the eve (erev), `end` = the last festival day, both
- * inclusive. This file is the ONLY date table: chips, banners and the dashboard
- * hint import from here (MEH-1889 B) — never a second static list.
  */
 import { israelToday } from "@/lib/israel-date";
 
@@ -18,8 +12,8 @@ export const HOLIDAYS = {
   pesach: {
     name: "פסח",
     emoji: "🫓",
-    start: "2027-04-21",
-    end: "2027-04-28",
+    start: "2026-04-01",
+    end: "2026-04-09",
     tagline: "מצאי מוצרים כשרים לפסח ממקורות מקומיים",
     cta: "הצגת עסקים לפסח",
     searchParams: { q: "כשר לפסח" },
@@ -30,8 +24,8 @@ export const HOLIDAYS = {
   shavuot: {
     name: "שבועות",
     emoji: "🧀",
-    start: "2027-06-10",
-    end: "2027-06-11",
+    start: "2026-05-22",
+    end: "2026-05-23",
     tagline: "גבינות ומוצרי חלב איכותיים לחג",
     cta: "הצגת גבינות ומוצרי חלב",
     searchParams: { q: "גבינות" },
@@ -42,8 +36,8 @@ export const HOLIDAYS = {
   rosh_hashana: {
     name: "ראש השנה",
     emoji: "🍎",
-    start: "2026-09-11",
-    end: "2026-09-13",
+    start: "2026-09-20",
+    end: "2026-09-22",
     tagline: "תפוח ודבש, רימון ועוד — מהמיטב המקומי",
     cta: "הצגת מוצרי ראש השנה",
     searchParams: { q: "דבש" },
@@ -54,8 +48,8 @@ export const HOLIDAYS = {
   sukkot: {
     name: "סוכות",
     emoji: "🌿",
-    start: "2026-09-25",
-    end: "2026-10-03",
+    start: "2026-10-05",
+    end: "2026-10-12",
     tagline: "פירות הארץ ומוצרי עונה טריים",
     cta: "הצגת מוצרי סוכות",
     searchParams: { q: "פירות" },
@@ -66,8 +60,8 @@ export const HOLIDAYS = {
   chanuka: {
     name: "חנוכה",
     emoji: "🕎",
-    start: "2026-12-05",
-    end: "2026-12-12",
+    start: "2026-12-14",
+    end: "2026-12-22",
     tagline: "שמן זית כתית מהמיטב — הדליקי אור",
     cta: "הצגת שמן זית",
     searchParams: { q: "שמן זית" },
@@ -78,8 +72,8 @@ export const HOLIDAYS = {
   tu_bishvat: {
     name: "ט\"ו בשבט",
     emoji: "🌳",
-    start: "2027-01-23",
-    end: "2027-01-23",
+    start: "2027-02-02",
+    end: "2027-02-02",
     tagline: "דבש, פירות יבשים ופירות הארץ",
     cta: "הצגת מוצרי ט׳ו בשבט",
     searchParams: { q: "דבש" },

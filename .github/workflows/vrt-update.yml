@@ -12,7 +12,9 @@ name: VRT baseline update
 # single route (e.g. /map) also rewrote the deliberately-frozen home baseline
 # (MEH-1450 Phase 0; PR #2102 hit exactly this and merged the frozen home
 # baseline to staging). The optional `route` dispatch input (--grep) scopes a
-# run to one baseline; empty input keeps the full regen.
+# run to one baseline; empty input keeps the full regen. Dispatch needs a token
+# with actions:write (the GitHub MCP integration in CC sessions does not have
+# it — run it from the Actions tab / gh CLI on a feature branch).
 # It never runs on a schedule and never pushes to staging/main — it commits to
 # the ref it ran on, and both protected branches reject direct pushes at the
 # ruleset level anyway.

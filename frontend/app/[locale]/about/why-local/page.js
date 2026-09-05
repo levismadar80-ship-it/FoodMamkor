@@ -73,7 +73,7 @@ export default async function WhyLocalPage({ params }) {
 
   return (
     <section className="min-h-screen bg-background text-text">
-      <article data-testid="why-local-article" className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+      <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-8 sm:mb-10">
           <h1 className="font-headline-lg mb-5 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {t("h1")}
@@ -126,14 +126,13 @@ export default async function WhyLocalPage({ params }) {
         <div className="mt-12 sm:mt-14">
           <Link
             href="/producers"
-            data-testid="why-local-cta"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
           </Link>
         </div>
 
-        <footer data-testid="why-local-sources" className="mt-12 sm:mt-14 border-t border-border pt-6">
+        <footer className="mt-12 sm:mt-14 border-t border-border pt-6">
           <p className="text-[13px] leading-relaxed text-fg-muted">
             {t("sources_prefix")}{" "}
             <a

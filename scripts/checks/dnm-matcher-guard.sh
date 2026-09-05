@@ -14,11 +14,8 @@
 #           entire purpose. This guard only ASSERTS the workflow's behaviour.
 #           It also does not judge PR bodies - that is the gate's own job.
 # Related:  the `do-not-merge-gate` job in the workflow (see WORKFLOW),
-#           docs/ci/dnm-gate-regex.patch.md (the staged narrowing, superseded),
-#           .claude/rules/workflow.md rule 30b (the label MECHANISM this guard
-#           now pins — MEH-1523, applied; its patch doc was deleted on landing
-#           per the repo's own "a patch doc describing an applied change is a
-#           second owner of one fact" convention),
+#           docs/ci/dnm-gate-regex.patch.md (the staged narrowing, Sapir-applied),
+#           docs/ci/meh-1523-dnm-label-gate.patch.md (the staged MECHANISM swap),
 #           scripts/checks/run-all.sh (dispatcher), scripts/checks/README.md.
 # History:  MEH-1922 (creation - after the #2637 false positive);
 #           MEH-1523 (label mode - after #2813 showed marker removal leaves no trace).
@@ -84,7 +81,7 @@ SELF_TEST=0
 # exists to pin down, one directory over.
 WORKFLOW="${1:-.github/workflows/pr-checks.yml}"
 PATCH_DOC="docs/ci/dnm-gate-regex.patch.md"
-PATCH_DOC_LABEL=".claude/rules/workflow.md rule 30b"  # MEH-1523 applied; the patch doc was deleted on landing
+PATCH_DOC_LABEL="docs/ci/meh-1523-dnm-label-gate.patch.md"
 
 # -- fixture corpus ----------------------------------------------------------
 # Format: <kind>|<expected-pre>|<expected-post>|<label>|<text>
@@ -442,7 +439,7 @@ if [ -n "$LABEL_RE" ]; then
     note "If you INTENDED to change it, update LABEL_FIXTURES in this file in the"
     note "same commit, and say which direction you moved it - widening (more PRs"
     note "blocked) or narrowing (a real marker can slip through)."
-    note "The agreed label mechanism is documented in $PATCH_DOC_LABEL."
+    note "The agreed mechanism is documented in $PATCH_DOC_LABEL."
     exit 1
   fi
 
@@ -522,14 +519,13 @@ if [ "$MODE" = "pre-patch" ]; then
   echo
   echo "WARNING - the live matcher is the PRE-PATCH one. Pinned, but defective:"
   for d in "${KNOWN_DEFECTS[@]}"; do note "- $d"; done
-  note "The label-mechanism swap (MEH-1523) already landed once - if you are"
-  note "seeing this, it was reverted. Its patch doc is gone (deleted on landing,"
-  note "same convention as every applied patch in docs/ci/); re-derive the diff"
-  note "from git history (search staging log for MEH-1523) or from the design"
-  note "record at $PATCH_DOC_LABEL, which closes all THREE known defects,"
-  note "including the audit trail, and drops the text path entirely."
-  note "A narrower, text-scanning-only fix is also staged in $PATCH_DOC, but it"
-  note "is SUPERSEDED by the label swap above - prefer re-applying that."
+  note "TWO patches are staged for Sapir (workflows are CC-deny, MEH-671). They"
+  note "fix different things and the second SUPERSEDES the first:"
+  note "  1. $PATCH_DOC"
+  note "     narrows the regex - closes defects 1 and 2, keeps text scanning."
+  note "  2. $PATCH_DOC_LABEL"
+  note "     swaps the mechanism to a label - closes all THREE, including the"
+  note "     audit trail, and deletes the text path. Apply this one and 1 is moot."
   note "This guard flips to the matching stricter table automatically once applied."
   warn=1
 fi

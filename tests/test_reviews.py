@@ -10,13 +10,8 @@ Guards tested:
 """
 import pytest
 
-from conftest import auth_header, make_category, make_producer, make_user
-from app.models.models import (
-    ContactClick,
-    ProducerCategory,
-    ProducerReview,
-    ProducerWhatsAppClick,
-)
+from conftest import auth_header, make_producer, make_user
+from app.models.models import ContactClick, ProducerReview, ProducerWhatsAppClick
 
 # MEH-2204: imported, not transcribed. The matrix below must widen on its own
 # the day this frozenset does — otherwise adding a method (e.g. when facebook /
@@ -105,95 +100,6 @@ def test_post_review_rejects_producer_owner(client, db):
     )
     assert r.status_code == 403, r.text
     assert "עסק" in r.json().get("detail", "") or "עצמ" in r.json().get("detail", "")
-
-
-# ---------------------------------------------------------------------------
-# MEH-2076: same-category conflict-of-interest guard.
-#
-# A business owner may not review a business that SHARES a category with hers
-# (policy, Sapir 14/08: same-category only — cross-category stays open, the
-# bakery owner really does buy the cheese). Each case carries a click so the
-# contact gate is satisfied and only the guard under test decides the verdict.
-# The 403 detail is asserted by EQUALITY — the copy is locked on the card.
-# ---------------------------------------------------------------------------
-
-SAME_CATEGORY_403 = (
-    "כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות."
-)
-
-
-def _owner_of(db, category, *, email):
-    """A producer owner whose business sits in `category`."""
-    owner = make_user(db, role="producer", email=email)
-    mine = make_producer(db, name=f"העסק של {email}", category=category)
-    owner.producer_id = mine.id
-    db.commit()
-    return owner
-
-
-def test_same_category_owner_is_blocked(client, db):
-    """Owner of a dairy business reviewing ANOTHER dairy business → 403 + locked copy."""
-    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
-    target = make_producer(db, name="מחלבת המתחרה", category=dairy)
-    owner = _owner_of(db, dairy, email="dairy-owner@example.com")
-    _wa_click(db, target, owner)
-    r = client.post(
-        f"/producers/{target.id}/reviews",
-        json={"stars": 1, "body": VALID_BODY},
-        headers=auth_header(owner),
-    )
-    assert r.status_code == 403, r.text
-    assert r.json()["detail"] == SAME_CATEGORY_403
-    assert db.query(ProducerReview).filter_by(producer_id=target.id).count() == 0
-
-
-def test_shared_secondary_category_is_also_blocked(client, db):
-    """Intersection, not primary-only: the target's SECOND category matches the
-    owner's → still 403. Guards a primary-only implementation."""
-    bakery = make_category(db, name="מאפים", emoji="🥐")
-    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
-    target = make_producer(db, name="מאפייה עם גבינות", category=bakery)
-    db.add(ProducerCategory(producer_id=target.id, category_id=dairy.id, position=1))
-    db.commit()
-    owner = _owner_of(db, dairy, email="dairy-owner-2@example.com")
-    _wa_click(db, target, owner)
-    r = client.post(
-        f"/producers/{target.id}/reviews",
-        json={"stars": 2, "body": VALID_BODY},
-        headers=auth_header(owner),
-    )
-    assert r.status_code == 403, r.text
-    assert r.json()["detail"] == SAME_CATEGORY_403
-
-
-def test_cross_category_owner_is_allowed(client, db):
-    """Bakery owner reviewing a dairy → 201, unchanged behaviour (community)."""
-    bakery = make_category(db, name="מאפים", emoji="🥐")
-    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
-    target = make_producer(db, name="מחלבה שכנה", category=dairy)
-    owner = _owner_of(db, bakery, email="bakery-owner@example.com")
-    _wa_click(db, target, owner)
-    r = client.post(
-        f"/producers/{target.id}/reviews",
-        json={"stars": 5, "body": VALID_BODY},
-        headers=auth_header(owner),
-    )
-    assert r.status_code == 201, r.text
-    assert r.json()["stars"] == 5
-
-
-def test_consumer_is_not_affected_by_category_guard(client, db):
-    """A consumer (no producer_id) reviewing a categorised business → 201."""
-    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
-    target = make_producer(db, name="מחלבה", category=dairy)
-    user = make_user(db, email="consumer@example.com")
-    _wa_click(db, target, user)
-    r = client.post(
-        f"/producers/{target.id}/reviews",
-        json={"stars": 4, "body": VALID_BODY},
-        headers=auth_header(user),
-    )
-    assert r.status_code == 201, r.text
 
 
 # ---------------------------------------------------------------------------

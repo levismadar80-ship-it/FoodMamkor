@@ -5,13 +5,13 @@
  * Purpose:  Shared create/edit form for community experiences. Owns form state,
  *           the debounced live-moderation check, and submit (POST /experiences
  *           on create, PUT /experiences/{id} on edit). Extracted from
- *           producer/dashboard/experiences/new/page.js for MEH-1405 so the manage
+ *           experiences/new/NewExperienceClient.jsx for MEH-1405 so the manage
  *           edit page reuses the exact fields + validation.
  * Touches:  POST /experiences/validate (live verdict), POST|PUT /experiences,
  *           POST /upload/image (cover image).
  * Does NOT: own page chrome (breadcrumb/heading) or post-success navigation —
  *           the consuming page passes onSuccess and renders the surrounding UI.
- * Related:  producer/dashboard/experiences/new/page.js (create wrapper),
+ * Related:  experiences/new/NewExperienceClient.jsx (create wrapper),
  *           producer/dashboard/experiences/[id]/edit/page.js (edit wrapper).
  * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
  *           MEH-1809 (all required/range checks evaluated together and rendered

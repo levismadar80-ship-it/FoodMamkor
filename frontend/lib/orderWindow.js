@@ -14,12 +14,6 @@
  *           mirrors), backend/app/schemas/schemas.py (_order_window_validator
  *           — the shape guarantees relied on here).
  * History:  MEH-1546 — chunk 3/3 of the order-window feature.
- *           MEH-2264 (MEH-1889 chunk B) — `special_hours` per-date overrides.
- *           Every clock-facing reader takes an optional third argument; when
- *           the Israel date under test is a key in it, THAT entry's `ranges`
- *           replace the weekly day (`[]` = closed). Order axis only — Sapir's
- *           ruling א: the store-hours axis (`opening_hours`) is free text and
- *           is never overridden here or anywhere.
  *
  * SSR: never call these from render on the server. The status depends on "now"
  * in Asia/Jerusalem, so a server pass and the client hydration can disagree and
@@ -27,8 +21,6 @@
  * guard (MEH-1531 fridayMode precedent — time-dependent UI is also why VRT
  * baselines must not capture a live status).
  */
-
-import { israelToday } from "@/lib/israel-date";
 
 // Index-aligned with lib/hours.js DAY_KEYS (sun…sat) and with the backend's
 // _ORDER_WINDOW_DAYS, so index 0 means Sunday on every axis.
@@ -125,110 +117,16 @@ function dayRanges(orderWindow, dayIndex) {
   }));
 }
 
-// ── MEH-2264: per-date overrides (special_hours) ─────────────────────────────
-
-function hasAnyOverride(specialHours) {
-  return (
-    !!specialHours &&
-    typeof specialHours === "object" &&
-    Object.keys(specialHours).length > 0
-  );
-}
-
-/**
- * The override entry for an ISO date, or `undefined` when that date carries
- * none. A present entry whose `ranges` is `[]` (or absent, or all-malformed)
- * means CLOSED — which is a different answer from "no override", and the
- * reason this returns the entry rather than a possibly-empty range list.
- */
-function overrideFor(specialHours, dateKey) {
-  if (!hasAnyOverride(specialHours)) return undefined;
-  const entry = specialHours[dateKey];
-  return entry && typeof entry === "object" ? entry : undefined;
-}
-
-/**
- * Ranges in force on the Israel calendar day `ahead` days after `now`: the
- * override for that date when one exists, else the weekly day. This is the one
- * place the two axes are merged, so the status scan below cannot consult the
- * weekly map on a date the owner overrode.
- */
-function rangesOnDay(orderWindow, specialHours, now, ahead) {
-  // Calendar arithmetic on the ISO date, not `now + 24h`: across an Israel DST
-  // switch a 24h step lands on the wrong calendar day for an hour, and the
-  // override key and the weekly row would then disagree about which day is
-  // being asked about. Both are derived from the SAME date key here.
-  const dateKey = addDaysIso(israelToday(now), ahead);
-  const override = overrideFor(specialHours, dateKey);
-  if (override) {
-    // An override entry is AUTHORITATIVE for its date even when it carries
-    // nothing usable: no `ranges` array, or only malformed ranges, reads as
-    // CLOSED — never as "fall back to the weekly day". The owner named the
-    // date; the safe reading of a named-but-empty date is closed. The backend
-    // validator never writes a missing `ranges` (it demands the list), so this
-    // branch is only reachable from a hand-edited row.
-    const ranges = Array.isArray(override.ranges) ? override.ranges : [];
-    return normalizeDayEntries(ranges).map((r) => ({
-      openMin: toMinutes(r.open),
-      closeMin: toMinutes(r.close),
-    }));
-  }
-  return dayRanges(orderWindow, weekdayOfIso(dateKey));
-}
-
-/** `YYYY-MM-DD` + n days, in UTC arithmetic on the date only (no clock). */
-function addDaysIso(iso, days) {
-  const [y, m, d] = iso.split("-").map(Number);
-  // guard-ok: UTC date arithmetic on a fixed ISO input, not a clock read
-  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-}
-
-/** Sunday=0 … Saturday=6 for an ISO date — index-aligned with ORDER_DAY_KEYS. */
-function weekdayOfIso(iso) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-}
-
-/**
- * The owner's overrides that are still ahead of us, oldest first:
- *   [{ date: "YYYY-MM-DD", ranges: [{open, close}, …], note?: string, closed: bool }]
- *
- * Past dates are dropped here (Sapir's ruling ג — readers ignore them; the
- * validator only refuses ones older than 30 days, so a row can legitimately
- * still carry last week's holiday). Clock-derived, therefore client-only —
- * same SSR rule as getOrderWindowStatus.
- */
-export function getUpcomingSpecialDates(specialHours, now = new Date()) {
-  if (!hasAnyOverride(specialHours)) return [];
-  const today = israelToday(now);
-  return Object.keys(specialHours)
-    .filter((date) => date >= today && overrideFor(specialHours, date))
-    .sort()
-    .map((date) => {
-      const entry = specialHours[date];
-      const ranges = normalizeDayEntries(entry.ranges).map((r) => ({ open: r.open, close: r.close }));
-      const out = { date, ranges, closed: ranges.length === 0 };
-      if (typeof entry.note === "string" && entry.note.trim()) out.note = entry.note.trim();
-      return out;
-    });
-}
-
 /**
  * Current status of the weekly window.
  *
- * @param {object|null} orderWindow  the weekly map
- * @param {Date} [now]
- * @param {object|null} [specialHours]  MEH-2264 per-date overrides; today's
- *   entry (Israel date) replaces the weekly day, and the forward scan honours
- *   overrides on the days it walks through.
  * @returns {null | {state: 'open'|'closing_soon'|'closed', nextChange: Date|null}}
- *   `null` when the feature is unused (no window AND no overrides) — the
- *   caller renders nothing. `nextChange` is when the state next flips: the
- *   close time while open, the next opening while closed. It is null only if
- *   no day in the coming week is open at all.
+ *   `null` when the feature is unused (no window) — the caller renders nothing.
+ *   `nextChange` is when the state next flips: the close time while open, the
+ *   next opening while closed. It is null only if no day is open at all.
  */
-export function getOrderWindowStatus(orderWindow, now = new Date(), specialHours = null) {
-  if (isEmptyWindow(orderWindow) && !hasAnyOverride(specialHours)) return null;
+export function getOrderWindowStatus(orderWindow, now = new Date()) {
+  if (isEmptyWindow(orderWindow)) return null;
 
   const { dayIndex, minutes } = israelNowParts(now);
   if (dayIndex < 0) return null;
@@ -236,8 +134,7 @@ export function getOrderWindowStatus(orderWindow, now = new Date(), specialHours
   // MEH-1869: a day can hold several disjoint ranges, so "am I inside one?" is
   // a scan, not a single comparison — and "closed" between two ranges of the
   // same day is a real state (the lunch break this feature exists for).
-  // MEH-2264: today's override, when present, IS today's list.
-  const today = rangesOnDay(orderWindow, specialHours, now, 0);
+  const today = dayRanges(orderWindow, dayIndex);
   const current = today.find((r) => minutes >= r.openMin && minutes < r.closeMin);
   if (current) {
     const untilClose = current.closeMin - minutes;
@@ -253,19 +150,14 @@ export function getOrderWindowStatus(orderWindow, now = new Date(), specialHours
   if (laterToday) {
     return { state: "closed", nextChange: dateFromOffset(now, laterToday.openMin - minutes) };
   }
-  // MEH-2264: 14 days, not 7. A weekly map alone repeats every 7, so the old
-  // bound always found the first opening within a week — but an override can
-  // close the ONLY weekly day, and the next opening is then a week later
-  // still. Fourteen covers every weekly day once more past a closed override;
-  // weekly-only worlds still resolve inside the first seven iterations.
-  for (let ahead = 1; ahead <= 2 * 7; ahead += 1) {
-    const [first] = rangesOnDay(orderWindow, specialHours, now, ahead);
+  for (let ahead = 1; ahead <= 7; ahead += 1) {
+    const idx = (dayIndex + ahead) % 7;
+    const [first] = dayRanges(orderWindow, idx);
     if (!first) continue;
     const offset = ahead * MINUTES_PER_DAY - minutes + first.openMin;
     return { state: "closed", nextChange: dateFromOffset(now, offset) };
   }
-  // A window object exists but no day is usable (all invalid), or every day in
-  // the coming two weeks is overridden closed.
+  // A window object exists but no day is usable (all invalid).
   return { state: "closed", nextChange: null };
 }
 

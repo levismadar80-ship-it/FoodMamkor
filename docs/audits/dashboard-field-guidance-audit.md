@@ -245,9 +245,8 @@ surface; **"לא ידוע"** means no renderer was found, not that none exists.
 | 42 | `established_year` | `producers.established_year` | other | `cards.jsx:933` (OwnerStoryCard) | `ProducerHeader.jsx:241` | — | L | תקין | ✗ |
 | 43 | `delivery_fee` | `producers.delivery_fee` | **pricing** | `cards.jsx:1635` (DeliveryCard) | `DeliveryBlock.jsx:357` | `delivery_areas.delivery_fee` (דריסה פר-עיר), `free_delivery_above` | H | **אשכול המשלוחים** — ראו למטה. ברירת מחדל עסקית מול ערך פר-עיר, אותו שם | ✗ |
 | 44 | `free_delivery_above` | `producers.free_delivery_above` | **pricing** | `cards.jsx:1636` | `DeliveryBlock.jsx:385` | `delivery_fee`, `delivery_areas.min_order` | M | "מעל X חינם" מול "מינימום הזמנה X" — שני סכומי-סף על אותה עסקה | ✗ |
-| 45 | `special_hours` | `producers.special_hours` | **schedule** | `SpecialHoursEditor.jsx`, ממוסגר ב-`edit/page.js` (כרטיס «שעות מיוחדות לחגים», WhatsThis משלו) | `ProducerHeader.jsx` (סטטוס — override של היום) · `OrderWindowStrip.jsx` (רשימת «שעות מיוחדות» לתאריכים קרובים) · `ProducerCard.jsx` (שורת «פתוח להזמנות») | `order_window` (36), `opening_hours` (35), `availability_state` | M | **אשכול הזמן** — דורס את `order_window` בתאריך אחד בלבד, לא את שעות החנות (הכרעה א, MEH-1889). התווית אומרת «תאריך ספציפי שגובר על הלו"ז השבועי»; placeholder לדוגמה «ערב ראש השנה»; צ'יפי חג מ-`lib/holidays.js` מציעים תאריך ולא מחילים אותו (MEH-2264) | ✓ |
 
-**Row count: 45** — row 45 (`special_hours`) added by MEH-2264 on 05/09; rows 1–44 are the MEH-1539 freeze. _This line used to read "`len(_PRODUCER_WRITABLE_FIELDS)` = 44"; that stopped being true as fields were closed (MEH-1851/1856/1938 batches) and the ratchet measured 34 writable on 05/09. The writable count is derived at run time by `scripts/checks/dashboard-field-guidance-ratchet.sh` and is not restated here._
+**Row count: 44. `len(_PRODUCER_WRITABLE_FIELDS)` = 44.**
 
 ### Adjunct fields — related, deliberately NOT counted above
 

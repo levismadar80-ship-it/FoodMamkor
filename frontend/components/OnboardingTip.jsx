@@ -42,7 +42,6 @@ export default function OnboardingTip({
           role="status"
           aria-live="polite"
           dir="rtl"
-          data-testid="onboarding-tip"
         >
           <div className="bg-primary-dark text-white rounded-[12px] px-4 py-3 shadow-xl text-start text-sm">
             <button

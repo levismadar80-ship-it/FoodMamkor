@@ -14,10 +14,9 @@
 #           databases whose names ALL begin with `meh1517_`, on the admin URL
 #           it is given (localhost only — it refuses any other host).
 # Does NOT: take backups of staging or production, talk to Railway, upload the
-#           dump anywhere, or decide the schedule. The workflow that wires
-#           this is .github/workflows/backup-restore-verify.yml (weekly cron
-#           + workflow_dispatch, running this script's --self-test as a
-#           control before the real drill).
+#           dump anywhere, or decide the schedule. The workflow that wires this
+#           lives in docs/ci/meh-1517-backup-restore-verify.patch.md (Sapir
+#           applies it — .github/workflows/** is CC-deny, MEH-671).
 #           It is also NOT scripts/restore_from_backup.py, which pulls a dump
 #           out of R2 for the MEH-408 DR drill; this one dumps from a live
 #           connection and compares, and the two share no code.

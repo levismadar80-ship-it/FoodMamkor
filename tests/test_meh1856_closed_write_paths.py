@@ -1,8 +1,8 @@
 """
 Module:   test_meh1856_closed_write_paths
 Purpose:  Lock the ownerless write paths closed — address, slug,
-          lactose_free_facility, pickup_points, name and is_available_today
-          are no longer writable through PUT /producers/me.
+          lactose_free_facility, pickup_points, name, starting_price_label and
+          is_available_today are no longer writable through PUT /producers/me.
           Each was accepted by the API with no editor anywhere in the owner
           dashboard (MEH-1851 dispositions).
 Does NOT: test the admin (`admin.py`) or import (`producer_import.py`) write
@@ -17,15 +17,11 @@ History:  MEH-1856 (creation), implementing the first four REMOVE-WRITE
           dispositions from MEH-1851; MEH-1851 rows 1/19/39 (extension) added
           name, starting_price_label, is_available_today after Sapir's 03/08
           ruling changed the first two from EXPOSE to REMOVE-WRITE.
-          MEH-1855 chunk 2 (revision 9849fab1637a) then DROPPED the
-          starting_price_label column outright — it left CLOSED_FIELDS (a
-          closed write path presumes a column) and is asserted ABSENT below.
 """
 
 import pytest
 
 from app.models import Producer
-from app.schemas.schemas import ProducerDetailOut, ProducerListOut, ProducerUpdate
 from tests.whitelist_source import read_producer_writable_fields
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -38,20 +34,14 @@ CLOSED_FIELDS = {
     "slug": "some-owner-chosen-slug",
     "lactose_free_facility": "dedicated",
     "pickup_points": True,
-    # MEH-1851 rows 1 · 19 · 39 (Sapir's ruling, 03/08). Rows 1 and 39 are
-    # declared on ProducerUpdate (grep `name` / `is_available_today` in
-    # schemas.py), so they parse and are dropped by the handler's whitelist
-    # loop — the same ignored-not-rejected shape as the four above. Row 19
-    # (the price alias) is gone: MEH-1855 chunk 2 dropped its column, see
-    # test_dropped_price_alias_is_absent_everywhere below.
+    # MEH-1851 rows 1 · 19 · 39 (Sapir's ruling, 03/08). All three are declared
+    # on ProducerUpdate (schemas.py :1301 name, :1332 starting_price_label,
+    # :1369 is_available_today), so they parse and are dropped by the handler's
+    # whitelist loop — the same ignored-not-rejected shape as the four above.
     "name": "שם עסק אחר לגמרי",
+    "starting_price_label": "מ-₪999",
     "is_available_today": True,
 }
-
-# MEH-1855 chunk 2: the alias column this file used to lock closed. Kept as a
-# string, never as an attribute, so the absence test below cannot accidentally
-# depend on the thing it asserts is gone.
-DROPPED_PRICE_ALIAS = "starting_price_label"
 
 # Sanity anchor: a field that IS still owner-writable. If the whitelist were
 # emptied wholesale (or the handler stopped writing at all), the closed-field
@@ -71,6 +61,7 @@ def owner_and_producer(db):
     producer.lactose_free_facility = "unknown"
     producer.pickup_points = False
     producer.name = "השם המקורי של העסק"
+    producer.starting_price_label = "מ-₪10"
     producer.is_available_today = False
     db.commit()
     db.refresh(producer)
@@ -108,9 +99,7 @@ def test_all_closed_fields_sent_together_are_ignored(client, db, owner_and_produ
     user, producer = owner_and_producer
     before = {f: getattr(producer, f) for f in CLOSED_FIELDS}
 
-    resp = client.put(
-        "/producers/me", json=dict(CLOSED_FIELDS), headers=auth_header(user)
-    )
+    resp = client.put("/producers/me", json=dict(CLOSED_FIELDS), headers=auth_header(user))
 
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -140,18 +129,19 @@ def test_a_still_writable_field_does_change(client, db, owner_and_producer):
     )
 
 
+
+
 def test_whitelist_does_not_contain_any_closed_field():
     """Absence assertion — every closed field appears 0 times in the whitelist.
 
-    Numeric form (removal spec, per_ticket_protocol.2): 6 fields checked,
+    Numeric form (removal spec, per_ticket_protocol.2): 7 fields checked,
     expected exactly 0 present, not 1. MEH-1856 closed 4; MEH-1851 rows
-    1/19/39 closed 3 more, and MEH-1855 chunk 2 then dropped row 19's column
-    (so it is no longer a "closed write path" — it is no column at all).
+    1/19/39 closed the remaining 3.
     """
     whitelist = read_producer_writable_fields()
 
-    assert len(CLOSED_FIELDS) == 6, (
-        f"expected 6 closed fields, got {len(CLOSED_FIELDS)} — update this count "
+    assert len(CLOSED_FIELDS) == 7, (
+        f"expected 7 closed fields, got {len(CLOSED_FIELDS)} — update this count "
         f"deliberately when a disposition adds one, so the absence assertion "
         f"cannot silently shrink"
     )
@@ -169,38 +159,3 @@ def test_columns_still_exist_on_the_model():
     """REMOVE-WRITE, not CONTRACT: the columns stay for admin/import."""
     for field in CLOSED_FIELDS:
         assert hasattr(Producer, field), f"{field} column was dropped — out of scope"
-
-
-def test_dropped_price_alias_is_absent_everywhere():
-    """MEH-1855 chunk 2 (contract step): removal is verified by ABSENCE.
-
-    The alias is gone from the ORM model, from the owner-update schema, from
-    both public response contracts, and from the owner whitelist — 0 of 5
-    surfaces carry it. `price_range` on the same surfaces is the positive
-    control: if the model/schema imports resolved to the wrong classes, the
-    control fails instead of every absence passing vacuously.
-    """
-    surfaces = {
-        "Producer (ORM)": set(Producer.__table__.columns.keys()),
-        "ProducerUpdate": set(ProducerUpdate.model_fields),
-        "ProducerListOut": set(ProducerListOut.model_fields),
-        "ProducerDetailOut": set(ProducerDetailOut.model_fields),
-        "_PRODUCER_WRITABLE_FIELDS": set(read_producer_writable_fields()),
-    }
-    still_there = sorted(
-        n for n, keys in surfaces.items() if DROPPED_PRICE_ALIAS in keys
-    )
-    assert still_there == [], (
-        f"{DROPPED_PRICE_ALIAS} was dropped by MEH-1855 chunk 2 (9849fab1637a) "
-        f"but is still declared on: {still_there}"
-    )
-    # Positive control — the canonical field is present on every surface that
-    # serves or edits a price label (the whitelist opens price_range to the
-    # owner via PricingCard).
-    missing_control = sorted(
-        n for n, keys in surfaces.items() if "price_range" not in keys
-    )
-    assert missing_control == [], (
-        f"control failed — price_range missing from {missing_control}; the "
-        f"surfaces above were not what this test thinks they are"
-    )

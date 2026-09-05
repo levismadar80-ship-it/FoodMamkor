@@ -1,14 +1,8 @@
 /**
- * MEH-1855 QA harness — the public producer-page signature block renders a
- * price sourced from `price_range` (canonical), driven against a real
+ * MEH-1855 chunk 1 QA harness — the public producer-page signature block
+ * renders a price sourced from `price_range` (canonical) when
+ * `starting_price_label` (legacy alias) is absent, driven against a real
  * `next start` build at 375 and 1440.
- *
- * Chunk 1 asserted (a) price_range-only renders and (b) the legacy alias
- * still rendered. Chunk 2 DROPPED the alias column (revision 9849fab1637a),
- * so (b) is now the INVERSE check: a payload that carries only the old alias
- * key (which the API can no longer emit — it is injected here through the
- * route mock) must render NO price line. If it does, a reader of the dropped
- * key crept back in.
  *
  * WHY IT ROUTES THE API INSTEAD OF SEEDING A DATABASE: same reasoning as
  * qa-meh2045-product-sheet-nav.mjs — useProducerData.js's client fetch feeds
@@ -48,14 +42,14 @@ const base = (id, slug, name, extra = {}) => ({
 });
 
 // (a) price_range-ONLY — the owner-facing bug this chunk fixes. No
-// top_product_name, no legacy alias key: pre-chunk-1, hasSignature was false
+// top_product_name, no starting_price_label: pre-fix, hasSignature was false
 // and the whole block was invisible.
 const PRICE_RANGE_ONLY = base(931, "qa-price-range-only", "מאפיית הקנוני", {
   price_range: "מ-₪20",
 });
 
-// (b) legacy-alias-ONLY — after chunk 2 nothing reads this key, so the
-// signature block must render WITHOUT a price line.
+// (b) starting_price_label-ONLY — the pre-existing alias path, must render
+// unchanged.
 const ALIAS_ONLY = base(932, "qa-alias-only", "מאפיית הלגסי", {
   top_product_name: "לחם מחמצת",
   starting_price_label: "החל מ-25₪",
@@ -90,10 +84,10 @@ async function run(width, height, label) {
   const aSection = page.locator("#section-products");
   await aSection.screenshot({ path: `${OUT}/a-price-range-only-${label}.png` });
 
-  // ---- (b) legacy-alias-only: the dropped key must be inert (chunk 2) ----
+  // ---- (b) starting_price_label-only: unchanged regression ---------------
   await mount(page, ALIAS_ONLY);
-  const bPriceCount = await page.locator("#section-products p.text-accent.font-semibold").count();
-  check(`[${label}] (b) alias-only: NO price line (the dropped alias key is inert)`, bPriceCount === 0, `got ${bPriceCount} price line(s)`, `${bPriceCount}`);
+  const bPriceText = await page.locator("#section-products p.text-accent.font-semibold").first().textContent().catch(() => null);
+  check(`[${label}] (b) alias-only: price line reads starting_price_label value (unchanged)`, bPriceText === "החל מ-25₪", `got "${bPriceText}"`, `"${bPriceText}"`);
   const bSection = page.locator("#section-products");
   await bSection.screenshot({ path: `${OUT}/b-alias-only-${label}.png` });
 

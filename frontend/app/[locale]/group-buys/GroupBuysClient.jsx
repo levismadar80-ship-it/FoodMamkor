@@ -58,8 +58,7 @@ function GroupBuyCard({ gb }) {
 
         {/* Price display */}
         {/* MEH-863 F11: dir="ltr" on currency+number so ₪ + digits render
-            correctly in the RTL context — the same treatment the deleted
-            experience card used for its price span (MEH-2248). */}
+            correctly in the RTL context (mirrors ExperienceCard's price span). */}
         <div className="flex items-baseline gap-2">
           <span dir="ltr" className="text-2xl font-bold text-primary">
             {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}

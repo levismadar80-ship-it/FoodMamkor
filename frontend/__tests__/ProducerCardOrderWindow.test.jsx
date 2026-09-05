@@ -131,39 +131,6 @@ describe("ProducerCard — order-window line (MEH-1880)", () => {
     expect(LINE()).toBeNull();
   });
 
-  // MEH-2264: today's special_hours override wins over the weekly map. Both
-  // cases are DISAGREEMENT cases — against a card that ignores special_hours
-  // each renders the weekly answer, which is exactly the drift they guard.
-  it("renders NOTHING when today is overridden CLOSED although the weekly day is open", () => {
-    vi.setSystemTime(SUNDAY_1000_ISRAEL);
-    render(
-      <ProducerCard
-        producer={{
-          ...base,
-          order_window: OPEN_WINDOW,
-          special_hours: { "2026-08-02": { ranges: [], note: "סגור לחג" } },
-        }}
-      />,
-    );
-    expect(LINE()).toBeNull();
-  });
-
-  it("renders the line, with the override's cutoff, when today is overridden OPEN on a weekly-closed day", () => {
-    vi.setSystemTime(SUNDAY_1000_ISRAEL);
-    render(
-      <ProducerCard
-        producer={{
-          ...base,
-          order_window: { monday: [{ open: "09:00", close: "13:00" }] },
-          special_hours: { "2026-08-02": { ranges: [{ open: "09:00", close: "11:30" }] } },
-        }}
-      />,
-    );
-    const el = LINE();
-    expect(el).toBeTruthy();
-    expect(el.textContent).toContain("11:30");
-  });
-
   it("leaves the rest of the card untouched when no line renders", () => {
     // Guards the "no layout shift / byte-identical" half of the AC: a card with
     // no window must still render its location line exactly as before.

@@ -435,7 +435,7 @@ export default function AboutPage() {
              PARAGRAPH — one h2 per chapter, and two headings in a row would
              have made the quote look like a kicker over the real title. The
              string is unchanged on both locales. */}
-      <FadeInSection as="section" data-testid="about-comparison" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter num="02" label={tAbout("chapter.2.label")} />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6">
@@ -706,7 +706,6 @@ export default function AboutPage() {
             <span aria-hidden="true" className="text-border">·</span>
             <Link
               href="/about/process"
-              data-testid="about-close-process-link"
               className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {tProcess("crosslink_from_about")}
@@ -715,7 +714,6 @@ export default function AboutPage() {
             <span aria-hidden="true" className="text-border">·</span>
             <Link
               href="/about/why-local"
-              data-testid="about-close-why-local-link"
               className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("cta.why_local_link")}

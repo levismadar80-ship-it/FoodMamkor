@@ -1796,7 +1796,6 @@ function RegisterProducerPageBody() {
               </p>
               <textarea
                 id="producer-description"
-                data-testid="register-story-description"
                 value={form.description}
                 onChange={set("description")}
                 disabled={descriptionDisabled}

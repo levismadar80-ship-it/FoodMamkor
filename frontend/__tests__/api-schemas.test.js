@@ -105,7 +105,7 @@ describe("re-exported producer schemas", () => {
 
   // MEH-901 regression: z.object strips undeclared keys, so any field the
   // /map consumers read but the schema didn't declare was silently dropped
-  // (categories, slug, price_range, …) — root cause of the MEH-798
+  // (categories, slug, starting_price_label, …) — root cause of the MEH-798
   // chip never rendering. This guard fails the moment a future refactor
   // re-strips any of the 4 spot-checked fields before consumers read them.
   // Spot-check covers categories + 3 representative sibling fields (a string,
