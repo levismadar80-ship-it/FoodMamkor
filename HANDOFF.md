@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-05 צהריים — MEH-1889 special_hours נסגר (A+B) · ההורה Done · הסשן RED עובר ל-MEH-1508
+
+**‏שורה אחת:** ‏#3417 (MEH-2264, chunk B) מוזג 11:11Z כ-**merge commit** `d042ed0f` — ה-auto-merge של ספיר היה במצב `merge`, לא squash; גוף ה-PR חי ב-history של הענף. ‏staging בוט 11:12:19Z על `d042ed0f`, ‏`alembic_head = f5b8d2c7a3e9` (אין מיגרציה ב-B). ‏flip-check בשני הכיוונים: MEH-2264 → Done שנייה אחרי המיזוג; MEH-1889 נשאר Backlog ונסגר **ידנית** עם טבלת DoD (auto-close-parent לא פעיל — כלל 36). ה-backfill הזה: MEH-2266.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏שני עורכי השעות ממדלים «מקבל הזמנות» במפתחות הפוכים.** יום שבועי הוא `open: boolean` (`lib/order-window.js`), תאריך מיוחד הוא `closed: boolean` (`lib/special-hours.js`) — כי יום שבועי פתוח כברירת מחדל ותאריך מיוחד סגור כברירת מחדל. **כל helper של order-window שמקבל «יום» חייב לקבל שורת special דרך `asOrderDay(row)`.** קריאה ישירה אינה שגיאת טיפוס אלא `false` שקט: `canAddOrderRange` קורא `day.open`, מוצא `undefined`, ומסתיר את הכפתור על כל תאריך פתוח. זה עבר 4 סבבי reviewer, 20 טסטים ו-28 בדיקות harness — ונתפס בסבב 5.
+2. **‏טסט שבודק רק היעדר הוא ירוק משתי סיבות.** «אין כפתור על שורה סגורה» עבר זהה בעולם שבו הכפתור לא קיים בכלל. הטסט שהבחין הוא זה שדרש את **הנוכחות** על שורה פתוחה ואת ה-payload עם שני טווחים. אותה מחלקה כמו `count()===0 → skip` ב-testing.md.
+3. **‏VRT ירוק/אדום על producer-detail אינו ראיה על שכבה מותנית.** ה-fixture (`e2e/visual/fixtures/producer-detail*.json`) לא נושא `special_hours` (grep count 0), ולכן שכבת «שעות מיוחדות» לא מרונדרת בשום פריים של VRT. מי שרוצה כיסוי ויזואלי לשכבה צריך fixture חדש, לא re-baseline.
+4. **‏ה-CASE ב-`_open_for_orders_now_condition` נשען על short-circuit של PostgreSQL.** `case((special_hours.has_key(today), override), else_=weekly)` — ה-jsonpath של ה-override קבוע והתאריך הוא bind parameter; אם מישהו «יפשט» את זה ל-`or_`/`coalesce`, ה-override ירוץ גם על מפתח חסר. ההערה בקוד אומרת את זה.
+5. **‏auto-merge במצב `merge` דורס כל בקשת squash בגוף ה-PR.** #3417 ביקש squash בגוף ונחת כ-merge commit כי הדריכה הייתה `merge` (workflow.md, ה-`enable_auto_merge` no-op). ספיר מעבירה ל-squash; עד שזה נמדד על PR הבא — לקרוא את ה-`method` מהתגובה, לא להניח.
+6. **‏`E2E gate` אדום על staging מאז ה-baseline regen של T5 (MEH-2168):** map/about/producer-detail/login/register + `37-outreach-prefill:285` (429, MEH-2259). כל PR פתוח מקבל את אותם 8 אדומים; ההוכחה ש«לא שלי» היא ריצת e2e.yml על ה-base commit, לא הרגשה. `E2E gate` אינו נדרש — CI gate + Deploy gate ממזגים.
+
+### ‏מה נשאר לספיר
+
+- **‏MEH-2266 (זה) — למזג** (docs-only, שני הקבצים בלבד).
+- **‏תור RED מעודכן (05/09):** ‏MEH-1508 (Phase 0 → תוכנית 3 chunks → go) → 1456 B → 1494 B → 1287 B → MEH-2122 chunk A (OTP observability) → 1854 chunk 1 (אחרי ספירת ה-desync) → אשכול auth 2220/1436/282 → 903/796 expand. ‏#3393 כבר מוזג בבוקר (`14271239`).
+- **‏מהבוקר, ללא שינוי:** הכרעת קופי עין-סיסמה · שלוש ההכרעות של T12 פריט 2 · MEH-2259 — לפתוח מחדש את 1858 או להחזיק כרטיס נפרד.
+
 ## 2026-09-05 בוקר — MEH-1249 פרקים 11a+11b מוזגו · נותרו 11c ו-12 · הסשן עבר ל-fable-5.1
 
 **‏שורה אחת:** ‏#3406 `030b5df7` ‏06:22Z (פרק 11a, מעטפת לוח הבקרה) · #3407 `5fc4e743` ‏07:13Z (פרק 11b, אקורדיון העריכה), שניהם squash מאומת (הורה יחיד). ‏flip-check בשני הכיוונים אחרי כל אחד: MEH-1249 נשאר `Todo` / `completedAt: null`. **המודל הוחלף ל-`claude-fable-5-1` באמצע הסשן** (`user_switched_model`) — ה-trailer `Builder-Model:` מהקומיט הזה ואילך מציין את זה; הקומיטים הקודמים ב-`claude-opus-5` נכונים לזמנם.
