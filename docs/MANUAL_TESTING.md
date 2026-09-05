@@ -370,7 +370,7 @@
 - [ ] **cluster לפי עסקים** — עסק עם 10 נקודות איסוף באותה עיר, הרחיקי zoom — **תוצאה מצופה:** תג ה-cluster מציג **1** (עסק אחד), לא 10.
 - [ ] **הנקודה הקרובה** — "קרוב אליי" מנקודה ליד הסניף השני — **תוצאה מצופה:** העסק נמצא לפי המרחק למיקום הקרוב ביותר (לא רק לנקודה הראשית).
 - [ ] **delivery-only עם נקודת איסוף** — עסק משלוחים-בלבד שיש לו נקודת איסוף — **תוצאה מצופה:** מופיע על המפה (היפוך MEH-213); עסק משלוחים-בלבד ללא מיקומים — נשאר מוסתר.
-- [ ] **שכבת נקודות איסוף** — טוגל "נקודות איסוף" על /map — **תוצאה מצופה:** מסתיר/מציג את הפינים המשניים (pickup/market_stand); הפינים הראשיים נשארים.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1388:5) — **שכבת נקודות איסוף** — טוגל "נקודות איסוף" על /map — **תוצאה מצופה:** מסתיר/מציג את הפינים המשניים (pickup/market_stand); הפינים הראשיים נשארים.
 
 ## MEH-1421 — עורך מיקומים בדשבורד + סימן dedup באדמין (chunk 4a)
 - [ ] **הצגת מיקומים** — דשבורד → עריכה → סעיף "מיקומים" — **תוצאה מצופה:** רשימת המיקומים; למיקום הראשי תג "★ ראשי", לשאר קישור "קבעו כראשי"; כפתור "+ הוסיפו מיקום".
@@ -782,28 +782,28 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map
 
-- [ ] **אין FAB על המפה (דסקטופ)** — פתחי `/map` ב-1440px — **תוצאה מצופה:** אין כפתור "שאלה? שאלו אותי" בפינה השמאלית-תחתונה; כפתור מקרא הקטגוריות נראה ולחיץ (לחיצה פותחת את רשימת הקטגוריות).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR3:1) — **אין FAB על המפה (דסקטופ)** — פתחי `/map` ב-1440px — **תוצאה מצופה:** אין כפתור "שאלה? שאלו אותי" בפינה השמאלית-תחתונה; כפתור מקרא הקטגוריות נראה ולחיץ (לחיצה פותחת את רשימת הקטגוריות).
 - [ ] **אין FAB על המפה (מובייל)** — `/map` ב-375px — **תוצאה מצופה:** אין FAB צף מעל הגיליון/המפה.
-- [ ] **כל הלוקאלים** — `/en/map` — **תוצאה מצופה:** גם באנגלית אין FAB על המפה.
-- [ ] **FAB נשאר בשאר האתר** — דף הבית, עמוד עסק — **תוצאה מצופה:** ה-FAB מופיע ומתפקד כרגיל (אותו מיקום, אותה התנהגות).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR3:3) — **כל הלוקאלים** — `/en/map` — **תוצאה מצופה:** גם באנגלית אין FAB על המפה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR3:4) — **FAB נשאר בשאר האתר** — דף הבית, עמוד עסק — **תוצאה מצופה:** ה-FAB מופיע ומתפקד כרגיל (אותו מיקום, אותה התנהגות).
 
 ## MEH-1230 — GPS fix persists → "מרחק" + distance labels (/map)
 
-- [ ] **GPS מפעיל מיון "מרחק" בלי reload** — פתחי `/map`, לחצי "קרוב אליי" (גלולת המובייל או כפתור ה-GPS בדסקטופ) ואשרי מיקום — **תוצאה מצופה:** מייד (בלי רענון) האופציה "מרחק" נפתחת (לא אפורה), הרשימה ממוינת מהקרוב, ותוויות ק"מ מופיעות על הכרטיסים. לפני התיקון "מרחק" נשארה disabled לתמיד ותוויות המרחק לא הופיעו כלל.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1230:1) — **GPS מפעיל מיון "מרחק" בלי reload** — פתחי `/map`, לחצי "קרוב אליי" (גלולת המובייל או כפתור ה-GPS בדסקטופ) ואשרי מיקום — **תוצאה מצופה:** מייד (בלי רענון) האופציה "מרחק" נפתחת (לא אפורה), הרשימה ממוינת מהקרוב, ותוויות ק"מ מופיעות על הכרטיסים. לפני התיקון "מרחק" נשארה disabled לתמיד ותוויות המרחק לא הופיעו כלל.
 - [ ] **טבעת פוקוס של פקד המיון לא נחתכת** — הקישי Tab עד ל-select "מיון" בראש רשימת /map (דסקטופ) — **תוצאה מצופה:** טבעת הפוקוס נראית במלואה סביב הפקד (לא נחתכת בקצה העליון של אזור הגלילה); שורת הספירה נשארת קומפקטית.
 
 ## map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ)
 
-- [ ] **ברירת מחדל בלי GPS** — פתחי `/map` בדסקטופ (1440px) בלי אישור מיקום — **תוצאה מצופה:** ליד הספירה מופיע "מיון:" + "חדש בשוק"; האופציה "מרחק" אפורה (disabled); הרשימה בסדר החדשים-קודם של השרת.
-- [ ] **ברירת מחדל עם GPS** — אשרי מיקום (או לחצי "קרוב אליי") ואז היכנסי שוב ל-`/map` — **תוצאה מצופה:** ברירת המחדל היא "מרחק" והכרטיס הראשון הוא העסק הקרוב ביותר (תואם את תוויות ה-ק"מ על הכרטיסים).
-- [ ] **מיון לפי דירוג** — בחרי "הכי מדורגות" — **תוצאה מצופה:** מהדירוג הגבוה לנמוך; בשוויון דירוג — יותר ביקורות קודם; עסקים בלי דירוג בסוף.
-- [ ] **חזרה ל"חדש בשוק"** — **תוצאה מצופה:** הרשימה חוזרת לסדר השרת (חדשים קודם).
-- [ ] **subhead נקי** — מתחת לספירה — **תוצאה מצופה:** מופיע רק שם האזור (למשל "ירושלים"), בלי "קרוב · " לפניו.
-- [ ] **כתיב "קרוב אליי" אחיד** — כפתור/גלולת ה-GPS — **תוצאה מצופה:** בכל המופעים "קרוב אליי" (שתי יו"ד); תווית המיון היא "מרחק" (אין יותר התנגשות עם הגלולה).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:1) — **ברירת מחדל בלי GPS** — פתחי `/map` בדסקטופ (1440px) בלי אישור מיקום — **תוצאה מצופה:** ליד הספירה מופיע "מיון:" + "חדש בשוק"; האופציה "מרחק" אפורה (disabled); הרשימה בסדר החדשים-קודם של השרת.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:2) — **ברירת מחדל עם GPS** — אשרי מיקום (או לחצי "קרוב אליי") ואז היכנסי שוב ל-`/map` — **תוצאה מצופה:** ברירת המחדל היא "מרחק" והכרטיס הראשון הוא העסק הקרוב ביותר (תואם את תוויות ה-ק"מ על הכרטיסים).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:3) — **מיון לפי דירוג** — בחרי "הכי מדורגות" — **תוצאה מצופה:** מהדירוג הגבוה לנמוך; בשוויון דירוג — יותר ביקורות קודם; עסקים בלי דירוג בסוף.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:4) — **חזרה ל"חדש בשוק"** — **תוצאה מצופה:** הרשימה חוזרת לסדר השרת (חדשים קודם).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:5) — **subhead נקי** — מתחת לספירה — **תוצאה מצופה:** מופיע רק שם האזור (למשל "ירושלים"), בלי "קרוב · " לפניו.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:6) — **כתיב "קרוב אליי" אחיד** — כפתור/גלולת ה-GPS — **תוצאה מצופה:** בכל המופעים "קרוב אליי" (שתי יו"ד); תווית המיון היא "מרחק" (אין יותר התנגשות עם הגלולה).
 
 ## map-quality batch PR 1 — כרטיס עסק אחיד ב-/map
 
-- [ ] **גבהים אחידים** — פתחי `/map` (375px + 1440px) עם עסקים "מלאים" (קטגוריה, דירוג, מחיר) ולצדם עסק דל נתונים — **תוצאה מצופה:** כל הכרטיסים ברשימה באותו גובה בדיוק; אין כרטיס "מקוצר".
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR1:1) — **גבהים אחידים** — פתחי `/map` (375px + 1440px) עם עסקים "מלאים" (קטגוריה, דירוג, מחיר) ולצדם עסק דל נתונים — **תוצאה מצופה:** כל הכרטיסים ברשימה באותו גובה בדיוק; אין כרטיס "מקוצר".
 - [ ] **טיפוגרפיית מחיר** — עסק עם תווית מחיר הכוללת יחידה בעברית (למשל "מ-25/בקבוק") — **תוצאה מצופה:** רק הספרות ("25") ב-Cormorant נטוי; "מ-" ו-"/בקבוק" בפונט העברי הרגיל; אין ג'יבריש/גליפים שבורים.
 - [ ] **שורת מטא אחת** — בכל כרטיס — **תוצאה מצופה:** שורה אחת: עיר · מרחק (רק עם GPS) · מחיר; אין שורת שעות פתיחה ("פתוח עכשיו"/"סגור עכשיו") ואין שורת מרחק נפרדת.
 - [ ] **שורת קטגוריה משולבת** — עסק מאומת עם דירוג — **תוצאה מצופה:** צ'יפ קטגוריה + כוכב עם "4.8 (12)" + חותם אימות (אייקון בלבד, בלי טקסט "מאומת") באותה שורה; אין פס אמון נפרד מתחת.
@@ -839,7 +839,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 - [ ] **step_viewed בקונסול (dev)** — פתחי DevTools → Console ב-`/register/producer`, לחצי "בואו נתחיל" ואז עברי בין השלבים — **תוצאה מצופה:** על כל מעבר שלב מודפס `[track] producer_register_step_viewed { step: "account"|"details"|"category"|"story"|"confirm" }` (רק אחרי אישור עוגיות "all"; אם דחית עוגיות — אין לוג).
 - [ ] **submitted + error** — השלימי טופס תקין ושלחי — **תוצאה מצופה:** `[track] producer_register_submitted`. בכשל שליחה (למשל שרת מחזיר שגיאה) — `[track] producer_register_error { step: "story" }`.
-- [ ] **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-435:3) — **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
 
 ## MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint
 
@@ -988,27 +988,27 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 - [ ] **מסך פתיחה לפני הטופס** — פתחו `/register/producer` (לא מחוברות) — **תוצאה מצופה:** במקום טופס החשבון מופיע מסך "לפני שמתחילים": כותרת העמוד + subtitle נשארים, ואז צ'קליסט "מה כדאי להכין" (אימייל, סיפור קצר, 2–3 תמונות, רישיון יצרן אם נדרש), שורת משך "בערך 10 דקות", בלוק "מה קורה אחרי" עם קישור ל-`/about/process`, וכפתור "מתחילים" אחד.
 - [ ] **CTA → פריים 01** — לחצו "מתחילים" — **תוצאה מצופה:** נכנסים לפריים ACCOUNT הרגיל (stepper 01–04 ללא שינוי; ה-pre-flight לא נספר כצעד).
 - [ ] **מסלול upgrade** — משתמשת מחוברת פותחת `/register/producer` — **תוצאה מצופה:** ה-pre-flight מוצג גם כן, אבל **בלי** שורת "כתובת אימייל ליצירת חשבון"; "מתחילים" מוביל ישר ל-DETAILS.
-- [ ] **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
-- [ ] **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-994:4) — **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-994:5) — **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
 
 ## MEH-1075 — /map filter IA: quick chips + FilterSheet
 
-- [ ] **שורת סינון מהירה (375px)** — פתחו `/map` במובייל — תוצאה: שורה 1 קטגוריות (ללא שינוי); שורה 2 = [מאומתים] [משלוח אליי] + כפתור "סינון" עם אייקון Faders; אין באדג' כשאין סינונים פעילים מהגיליון.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:1) — **שורת סינון מהירה (375px)** — פתחו `/map` במובייל — תוצאה: שורה 1 קטגוריות (ללא שינוי); שורה 2 = [מאומתים] [משלוח אליי] + כפתור "סינון" עם אייקון Faders; אין באדג' כשאין סינונים פעילים מהגיליון.
 - [ ] **פתיחת גיליון** — לחצו "סינון" — תוצאה: גיליון תחתון נפתח מלמטה עם backdrop; 3 קבוצות עם כותרות (תזונה · מקור ואיכות · שירות ואמון); הפוקוס עובר לגיליון.
 - [ ] **סינון חי** — סמנו טבעוני + ללא גלוטן — תוצאה: כפתור האישור מציג "הצגת {N} בתי עסק" עם ספירה חיה (עדכון אחרי ~300ms); המפה מתעדכנת מאחורי הגיליון.
-- [ ] **אישור** — לחצו "הצגת N בתי עסק" — תוצאה: הגיליון נסגר; באדג' "2" על כפתור סינון; רצועת התגיות מציגה ×טבעוני ×ללא גלוטן; הפוקוס חוזר לכפתור.
-- [ ] **סנכרון תגית↔גיליון** — הסירו תגית × — תוצאה: באדג' יורד ל-1; פתיחת הגיליון מציגה את הצ'יפ כבוי.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:4) — **אישור** — לחצו "הצגת N בתי עסק" — תוצאה: הגיליון נסגר; באדג' "2" על כפתור סינון; רצועת התגיות מציגה ×טבעוני ×ללא גלוטן; הפוקוס חוזר לכפתור.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:5) — **סנכרון תגית↔גיליון** — הסירו תגית × — תוצאה: באדג' יורד ל-1; פתיחת הגיליון מציגה את הצ'יפ כבוי.
 - [ ] **ניקוי הכל בגיליון** — תוצאה: 7 הטוגלים מתאפסים; קטגוריה + עיר נשארות; רצועת התגיות + "נקו הכל" הקיימת ללא שינוי.
 - [ ] **סגירה** — ESC / לחיצה על ה-backdrop / גרירת הידית מטה — תוצאה: הגיליון נסגר בכל אחת מהדרכים.
-- [ ] **משלוח אליי מהגיליון ללא עיר שמורה** — תוצאה: CityPickerModal נפתח מעל הגיליון; בחירת עיר מפעילה את הסינון.
-- [ ] **דסקטופ (md+)** — לחצו "סינון" — תוצאה: פאנל מעוגן מתחת לכפתור (לא גיליון תחתון), אותו תוכן; לחיצה מחוץ לפאנל סוגרת.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:8) — **משלוח אליי מהגיליון ללא עיר שמורה** — תוצאה: CityPickerModal נפתח מעל הגיליון; בחירת עיר מפעילה את הסינון.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:9) — **דסקטופ (md+)** — לחצו "סינון" — תוצאה: פאנל מעוגן מתחת לכפתור (לא גיליון תחתון), אותו תוכן; לחיצה מחוץ לפאנל סוגרת.
 - [ ] **אין רגרסיה** — שורת הקטגוריות, סמני המפה, גיליון העסקים התחתון ו"קרוב אליי" מתנהגים כרגיל.
 
 ## MEH-970 chunk 2-lite — /map near-me pill + empty-near-me guard (mobile)
-- [ ] **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה, מעל ה-bottom sheet); **אין** כפתור צלב (crosshair) נוסף בשורת חיפוש העיר; חיפוש העיר תופס את כל הרוחב.
-- [ ] **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם סמן מיקום; אין toast.
-- [ ] **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עדיין עסקים באזורך — הנה הקרובים" + המפה מתרחקת לתצוגת ברירת המחדל (`[32.4,34.95]` זום 8) ומציגה את **כל** העסקים (לעולם לא מפה ריקה).
-- [ ] **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא toast מת.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:1) — **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה, מעל ה-bottom sheet); **אין** כפתור צלב (crosshair) נוסף בשורת חיפוש העיר; חיפוש העיר תופס את כל הרוחב.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:2) — **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם סמן מיקום; אין toast.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:3) — **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עדיין עסקים באזורך — הנה הקרובים" + המפה מתרחקת לתצוגת ברירת המחדל (`[32.4,34.95]` זום 8) ומציגה את **כל** העסקים (לעולם לא מפה ריקה).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:4) — **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא toast מת.
 
 ## MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות
 
@@ -1025,7 +1025,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## MEH-853 — /register/producer frame 01 (DETAILS): city + address
 
-- [ ] **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-853:1) — **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
 - [ ] **city בpayload** — מלאי יישוב + השלימי הרשמה — **תוצאה מצופה:** ב-DevTools Network, ה-POST ל-`/auth/register/producer` נושא `"city": "<העיר>"`.
 - [ ] **address free-text** — שדה "כתובת" מקבל טקסט חופשי (לא חובה) — **תוצאה מצופה:** נשמר ב-`form.address` ונשלח כ-`"address"` ב-payload.
 - [ ] **שני המסלולים** — גם בהרשמה חדשה וגם במסלול upgrade (משתמשת מחוברת) — **תוצאה מצופה:** city+address נשלחים בשניהם (ה-body משותף מעל ענף `!isUpgrade`).
@@ -1532,10 +1532,10 @@ Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (
 
 Desktop only (≥md) — the collapsible category legend at the map's bottom-start corner. A category with 0 businesses in the **current viewport** renders disabled instead of clicking into an empty list. Count is pre-category-filter (`allProducers ∩ committedBounds`), recomputed on pan.
 
-- [ ] Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a category has no businesses → that row is **grayed (low opacity) and not clickable** (cursor not-allowed, no hover highlight). תוצאה מצופה: שורה מושבתת, לא מובילה לרשימה ריקה.
-- [ ] Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable and filters the map as before. תוצאה מצופה: לחיצה מסננת כרגיל.
-- [ ] Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled state on the pan (not stuck from first render). תוצאה מצופה: עדכון על תזוזת מפה.
-- [ ] Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still clickable** (clicking it deactivates / shows all again, so you're not trapped in an empty filter). תוצאה מצופה: עדיין ניתן לכבות, אין מסך-ריק-תקוע, אין קריסה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:1) — Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a category has no businesses → that row is **grayed (low opacity) and not clickable** (cursor not-allowed, no hover highlight). תוצאה מצופה: שורה מושבתת, לא מובילה לרשימה ריקה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:2) — Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable and filters the map as before. תוצאה מצופה: לחיצה מסננת כרגיל.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:3) — Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled state on the pan (not stuck from first render). תוצאה מצופה: עדכון על תזוזת מפה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:4) — Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still clickable** (clicking it deactivates / shows all again, so you're not trapped in an empty filter). תוצאה מצופה: עדיין ניתן לכבות, אין מסך-ריק-תקוע, אין קריסה.
 
 ---
 
@@ -1958,25 +1958,25 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 ## Filter chips — two-row layout (feature/meh-two-row-filter-chips, אפריל 2026)
 
 ### /map — mobile (375px)
-- [ ] פתחי /map בחלון 375px — שורת קטגוריות מוצגת (כל · בשר ועוף · ...) ושורת תכונות מוצגת מתחתיה (🚚 משלוח אליי · ✓ מאומתים · ...)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m1) — פתחי /map בחלון 375px — שורת קטגוריות מוצגת (כל · בשר ועוף · ...) ושורת תכונות מוצגת מתחתיה (🚚 משלוח אליי · ✓ מאומתים · ...)
 - [ ] שתי שורות — edge-fade משני הצדדים (ימין + שמאל)
-- [ ] גללי בשורת הקטגוריות שמאלה — גריד נגלל, הצ'יפ הראשון לא נכרת (סיום עם w-8 spacer)
-- [ ] לחצי על "לחם ומאפה" (הצ'יפ בקצה שמאל) — הצ'יפ נצבע bg-primary **ומתגלל אוטומטית לתוך ה-viewport** (scrollIntoView)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m3) — גללי בשורת הקטגוריות שמאלה — גריד נגלל, הצ'יפ הראשון לא נכרת (סיום עם w-8 spacer)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m4) — לחצי על "לחם ומאפה" (הצ'יפ בקצה שמאל) — הצ'יפ נצבע bg-primary **ומתגלל אוטומטית לתוך ה-viewport** (scrollIntoView)
 - [ ] לחצי על "בשר ועוף" — הצ'יפ נצבע bg-primary; תחת שורת התכונות מופיע tag ירוק "× בשר ועוף" + קישור "× נקי הכל"
 - [ ] לחצי על "🌿 אורגני" — tag נוסף "× 🌿 אורגני" מופיע ליד הקודם
 - [ ] לחצי על × בתוך ה-tag "× בשר ועוף" — הסינון מוסר, הצ'יפ "בשר ועוף" כבה, "כל" שוב פעיל
-- [ ] לחצי על "× נקי הכל" — כל הסינונים מאופסים, אזור ה-tags נעלם
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m8) — לחצי על "× נקי הכל" — כל הסינונים מאופסים, אזור ה-tags נעלם
 - [ ] בדיקת responsive — פתחי ב-375 / 430 / 768 / 1024 / 1280px — בכל גודל אין צ'יפ שנכרת ללא fade נראה, הצ'יפ הפעיל תמיד גלוי
 
 ### /map — desktop
-- [ ] פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:d1) — פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל
 
 ### /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED)
-- [ ] /map → לחצי על כפתור ה-GPS (🎯 "קרוב אליי") → **סרבי** להרשאת מיקום בדפדפן — איך לבדוק: בדפדפן/מובייל בחרי "Block"/"חסום" בבקשת המיקום — **תוצאה מצופה:** נפתח LocationModal (חיפוש עיר + ערים פופולריות), לא toast בלבד
-- [ ] בחרי עיר ב-modal שנפתח (חיפוש או צ'יפ עיר פופולרית) — **תוצאה מצופה:** ה-modal נסגר, רשימת בתי העסק ב-/map מסוננת לפי אותה עיר (כמו היום, ללא geocoding/זום)
-- [ ] /map → GPS → סרבי, ואז סגרי את ה-modal — **תוצאה מצופה:** אין בקשת הרשאה חוזרת אוטומטית (no re-prompt); הדפדפן לא שואל שוב מעצמו
-- [ ] /map → GPS → סמלצי כשל טכני (timeout/מיקום לא זמין, לא סירוב) — איך לבדוק: DevTools → Sensors → Location: "Unavailable", או נתקי GPS — **תוצאה מצופה:** toast שגיאה בלבד ("המיקום שלך לא זמין" / "לקח יותר מדי זמן"), **ללא** פתיחת modal
-- [ ] חזרי על הסירוב גם דרך כפתור ה-GPS בשורת הסינון (mobile sticky bar) וגם דרך ה-flow השני — שני ה-paths פותחים את אותו modal
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo1) — /map → לחצי על כפתור ה-GPS (🎯 "קרוב אליי") → **סרבי** להרשאת מיקום בדפדפן — איך לבדוק: בדפדפן/מובייל בחרי "Block"/"חסום" בבקשת המיקום — **תוצאה מצופה:** נפתח LocationModal (חיפוש עיר + ערים פופולריות), לא toast בלבד
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo2) — בחרי עיר ב-modal שנפתח (חיפוש או צ'יפ עיר פופולרית) — **תוצאה מצופה:** ה-modal נסגר, רשימת בתי העסק ב-/map מסוננת לפי אותה עיר (כמו היום, ללא geocoding/זום)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo3) — /map → GPS → סרבי, ואז סגרי את ה-modal — **תוצאה מצופה:** אין בקשת הרשאה חוזרת אוטומטית (no re-prompt); הדפדפן לא שואל שוב מעצמו
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo4) — /map → GPS → סמלצי כשל טכני (timeout/מיקום לא זמין, לא סירוב) — איך לבדוק: DevTools → Sensors → Location: "Unavailable", או נתקי GPS — **תוצאה מצופה:** toast שגיאה בלבד ("המיקום שלך לא זמין" / "לקח יותר מדי זמן"), **ללא** פתיחת modal
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo5) — חזרי על הסירוב גם דרך כפתור ה-GPS בשורת הסינון (mobile sticky bar) וגם דרך ה-flow השני — שני ה-paths פותחים את אותו modal
 
 ### דף הבית — filters מעל גריד היצרנים
 - [ ] פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל
@@ -2084,11 +2084,11 @@ RTL tests (Task 1) — verify on a mobile viewport (iOS Safari / Android Chrome)
 - [ ] `/register` — שדה "סיסמה" — עדיין LTR (intentional)
 - [ ] `/register` — שדה "עיר" (CitySearch) — RTL, placeholder "חפשי עיר..." מיושר ימין, התוצאות באוטוקומפליט RTL
 - [ ] `/register` — שדה "טלפון" — עדיין LTR (intentional)
-- [ ] `/register/producer` שלב 1 — שדה "שם מלא" — RTL
-- [ ] `/register/producer` שלב 2 — שדה "שם העסק" — RTL
-- [ ] `/register/producer` שלב 2 — textarea "תיאור העסק" — RTL
-- [ ] `/register/producer` שלב 2 — שדה "עיר" — RTL
-- [ ] `/register/producer` שלב 3 — שדות "עיר משלוח" ו-"יום משלוח" — RTL
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:6) — `/register/producer` שלב 1 — שדה "שם מלא" — RTL (נבדק יחד עם אימייל/סיסמה שנשארים LTR, כדי שהבדיקה לא תעבור רק בגלל dir של המסמך)
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:7) — `/register/producer` שלב 2 — שדה "שם העסק" — RTL
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:8) — `/register/producer` — textarea התיאור — RTL. **דריפט:** ה-textarea יושב על פריים STORY (שלב 4), לא על שלב 2, והתווית קוראת «ספרו על העסק שלך»
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:9) — `/register/producer` שלב 2 — שדה היישוב — RTL (התווית קוראת «יישוב»)
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:10 — חצי) — `/register/producer` — רשימת ערי המשלוח («ערים שמשלוחים אליהן») — RTL. **דריפט:** הבלוק יושב על שלב 2 (DETAILS) ולא על שלב 3, ומופיע רק אחרי סימון "משלוחים". **חצי שני לא הומר:** אין שדה "יום משלוח" באשף כלל (0 מופעים)
 - [ ] `/register/producer` שלב 2 — "אינסטגרם" / "אתר" — עדיין LTR (intentional)
 
 Dashboard copy tests (Task 2):
@@ -2104,12 +2104,12 @@ Dashboard copy tests (Task 2):
 
 The width bug only shows on desktop (≥ `md` breakpoint, 768px+). Mobile was already correct (`w-full`). The z-index bug shows on `/map` specifically because Leaflet's panes (z-index 200–700) were covering the dropdown (z-50).
 
-- [ ] `/map` על דסקטופ (חלון ≥ 768px) — הקלידי "ראשון לציון" בשדה החיפוש — הטקסט המלא נראה לגמרי, אין חיתוך (truncation) של התווים האחרונים
-- [ ] `/map` על דסקטופ — הקלידי "ראש" — ה-autocomplete dropdown מציג "ראשון לציון" ו-"ראש העין" בשורה מלאה כל אחת, ללא טקסט קטוע או גלילה אופקית
-- [ ] `/map` על דסקטופ — לחצי על "ראשון לציון" ב-dropdown — השדה מתמלא עם הערך המלא
-- [ ] `/map` על דסקטופ — הקלידי "מעלה אדומים" ידנית — הטקסט המלא גלוי בשדה
-- [ ] `/map` על מובייל (< 768px) — שדה החיפוש עדיין תופס את כל רוחב הפיד (`w-full`), לא התווסף regression
-- [ ] `/map` — הקלידי "זכ" — ה-dropdown מצויר **מעל** המפה, רקע לבן אטום, אין טקסט ערבי/עברי של תוויות OSM שמבצבץ דרכו (z-index fix — לפני התיקון ה-dropdown היה מאחורי panes של Leaflet z-200 עד z-700)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:1) — `/map` על דסקטופ (חלון ≥ 768px) — הקלידי "ראשון לציון" בשדה החיפוש — הטקסט המלא נראה לגמרי, אין חיתוך (truncation) של התווים האחרונים
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:2) — `/map` על דסקטופ — הקלידי "ראש" — ה-autocomplete dropdown מציג "ראשון לציון" ו-"ראש העין" בשורה מלאה כל אחת, ללא טקסט קטוע או גלילה אופקית
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:3) — `/map` על דסקטופ — לחצי על "ראשון לציון" ב-dropdown — השדה מתמלא עם הערך המלא
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:4) — `/map` על דסקטופ — הקלידי "מעלה אדומים" ידנית — הטקסט המלא גלוי בשדה
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:5) — `/map` על מובייל (< 768px) — שדה החיפוש עדיין תופס את כל רוחב הפיד (`w-full`), לא התווסף regression
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:6) — `/map` — הקלידי "זכ" — ה-dropdown מצויר **מעל** המפה, רקע לבן אטום, אין טקסט ערבי/עברי של תוויות OSM שמבצבץ דרכו (z-index fix — לפני התיקון ה-dropdown היה מאחורי panes של Leaflet z-200 עד z-700)
 - [ ] `/register` ו-`/register/producer` — שדה "עיר" — ה-dropdown עדיין עובד נכון (אין regression מה-z-[1000]), אין אלמנטים אחרים בעמוד שנחסמים על ידו
 
 ---
@@ -2429,40 +2429,40 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - `tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls:1000 → chat:9999`
 
 ### Bug fixes
-- [ ] Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000)
-- [ ] Desktop: hover marker → only ONE tooltip (no browser-native duplicate)
-- [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
-- [ ] Mobile: X close button stays at top-left during scroll → tap → closes
-- [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
-- [ ] Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b1) — Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b2) — Desktop: hover marker → only ONE tooltip (no browser-native duplicate)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b3) — Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b4) — Mobile: X close button stays at top-left during scroll → tap → closes
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b5) — Mobile: category legend NOT visible (hidden, filter chips serve this role)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b6) — Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
 
 ### Regression
-- [ ] "חפשי באזור זה" button works (z-1000)
-- [ ] "קרוב אלי" clickable with sheet open
-- [ ] CitySearch dropdown above map tiles
-- [ ] Map pan/zoom works above the sheet
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r1) — "חפשי באזור זה" button works (z-1000)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r2) — "קרוב אלי" clickable with sheet open
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r3) — CitySearch dropdown above map tiles
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r4) — Map pan/zoom works above the sheet
 
 ### Leaflet attribution rides the sheet edge (MEH-1365)
-- [ ] נייד, sheet ב-PEEK — `Leaflet | © OpenStreetMap` גלוי **מעל** קצה ה-sheet, בלי לגעת בתוכן — תוצאה מצופה: פער קטן (~6px) בין הכיתוב לקצה
-- [ ] נייד, sheet ב-HALF — ה-attribution רוכב למעלה עם הקצה, אפס חפיפה עם כרטיסים — תוצאה מצופה: הכיתוב צף מעל קצה ה-sheet, לא על "שליחת הודעה"
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:a1) — נייד, sheet ב-PEEK — `Leaflet | © OpenStreetMap` גלוי **מעל** קצה ה-sheet, בלי לגעת בתוכן — תוצאה מצופה: פער קטן (~6px) בין הכיתוב לקצה
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:a2) — נייד, sheet ב-HALF — ה-attribution רוכב למעלה עם הקצה, אפס חפיפה עם כרטיסים — תוצאה מצופה: הכיתוב צף מעל קצה ה-sheet, לא על "שליחת הודעה"
 - [ ] נייד, באמצע drag — ה-attribution עוקב אחרי הקצה בלי קפיצות (drag=0ms, snap=300ms)
-- [ ] דסקטופ (lg+) — ה-attribution בפינה התחתונה בדיוק כמו היום (הכלל scoped ל-<1024px)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:a4) — דסקטופ (lg+) — ה-attribution בפינה התחתונה בדיוק כמו היום (הכלל scoped ל-<1024px)
 
 ### Mobile top-banner height reservation (MEH-1019)
 _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → open `/he/map` on a phone → the map + bottom controls (קרוב אליי pill, bottom sheet) sit fully inside the viewport, no spill below the fold, page not scrollable past the map. תוצאה מצופה: המפה מסתיימת בדיוק בתחתית המסך.
-- [ ] Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:1019-2) — Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
 
 ---
 
 ## /map desktop — marker click = card-sync (MEH-1010)
 
-- [ ] Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
-- [ ] Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:1) — Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:2) — Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
 - [ ] Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+highlight. תוצאה מצופה: זהה למרקר בודד.
-- [ ] Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
-- [ ] Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
-- [ ] Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:4) — Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:5) — Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:6) — Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
 
 ---
 
@@ -3082,7 +3082,7 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 - [ ] **GPS פעיל** — `/he/map` אחרי אישור מיקום → כל כרטיס בית עסק עם קואורדינטות מציג שורת מרחק, למשל `2.5 ק"מ ממך` — איך לבדוק: לאשר הרשאת מיקום → לפתוח את רשימת הכרטיסים — תוצאה מצופה: שורת מרחק עם המספר מיושר LTR (ספרה משמאל, "ק"מ ממך" אחריה), בלי שבירת bidi
 - [ ] **אין GPS** — `/he/map` בלי אישור מיקום (או דחייה) → אף כרטיס לא מציג שורת מרחק — תוצאה מצופה: השורה נעלמת בחן, שאר הכרטיס תקין
-- [ ] **/en** — אותו כרטיס באנגלית → המרחק עדיין בפורמט העברי המשותף (`formatDistance`), עקבי עם `ProducerCard`
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G2:3) — **/en** — אותו כרטיס באנגלית → המרחק עדיין בפורמט העברי המשותף (`formatDistance`), עקבי עם `ProducerCard`
 
 ## MEH-848 — error toasts collapsed to error.generic (i18n refactor)
 
@@ -3097,10 +3097,10 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 שורת הספירה ברשימת ה-`/map` (desktop split-view) נושאת את הקופי הנעול + subhead "קרוב אליך · {region}" מתחתיה. ה-h1 הסמנטי ("מפת בתי עסק") נשאר.
 
-- [ ] **שורת ספירה** — `/he/map` desktop → מעל רשימת הכרטיסים מופיע "{N} בתי עסק מקומיים באזור" (לא "{N} בתי עסק" בלבד) — תוצאה מצופה: הקופי הנעול, עם המספר בצורת רבים/יחיד נכונה (0 → "אין בתי עסק מקומיים באזור", 1 → "בית עסק מקומי אחד באזור")
-- [ ] **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead מוצג רק כשיש עיר/region; אין עיר → ה-subhead נעלם (בלי "·" תלוי)
-- [ ] **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מוערמת
-- [ ] **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}"
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:1) — **שורת ספירה** — `/he/map` desktop → מעל רשימת הכרטיסים מופיע "{N} בתי עסק מקומיים באזור" (לא "{N} בתי עסק" בלבד) — תוצאה מצופה: הקופי הנעול, עם המספר בצורת רבים/יחיד נכונה (0 → "אין בתי עסק מקומיים באזור", 1 → "בית עסק מקומי אחד באזור")
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:2) — **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead מוצג רק כשיש עיר/region; אין עיר → ה-subhead נעלם (בלי "·" תלוי)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:3) — **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מוערמת
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:4) — **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}"
 
 ## MEH-992 — group-buy dashboard form clarity
 
