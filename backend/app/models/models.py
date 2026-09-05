@@ -1742,7 +1742,8 @@ class ProducerReview(Base):
     # "invite_link" (a signed "request a review" token, reviews.py guard 3).
     # NOT NULL with a server_default so every pre-existing row reads "click"
     # without a backfill — Expand-only (ADR-007). Alembic revision
-    # 3f9a7c2e5d18 (down_revision e6b2d4f81a37).
+    # 3f9a7c2e5d18 (down_revision f5b8d2c7a3e9 — re-pointed 05/09 when the
+    # branch was synced onto staging; the revision docstring records it).
     source = Column(String(20), nullable=False, server_default="click")
 
     producer = relationship("Producer", back_populates="reviews")

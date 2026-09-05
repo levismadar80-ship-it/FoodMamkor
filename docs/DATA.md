@@ -961,7 +961,7 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 ### Reviews (`app/routers/reviews.py`)
 
 ```
-GET    /producers/{id}/reviews   public
+GET    /producers/{id}/reviews   public — each item carries source: "click" | "invite_link" (MEH-1428; same _serialize as the POST response)
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response carries source: "click" | "invite_link"
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404)
