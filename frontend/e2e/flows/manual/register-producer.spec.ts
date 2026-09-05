@@ -315,6 +315,11 @@ test.describe("/register/producer — MANUAL_TESTING conversion (MEH-1249 chunk 
       }
     });
 
+    // ORDER IS LOAD-BEARING: the recorder attaches BEFORE the first navigation.
+    // `gotoDetails` walks three frames (pre-flight -> ACCOUNT -> DETAILS), and a
+    // refactor that hoisted it above this line would silently narrow the window
+    // the zero below is asserted over — the recorder would still report `[]`,
+    // and it would mean less. Keep the listener first.
     const seen: string[] = [];
     page.on("request", (r) => seen.push(r.url()));
 
