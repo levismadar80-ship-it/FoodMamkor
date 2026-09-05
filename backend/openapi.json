@@ -4912,6 +4912,18 @@
             ],
             "title": "Slug"
           },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
+          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -5796,6 +5808,18 @@
             ],
             "title": "Slug"
           },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
+          },
           "status": {
             "default": "pending",
             "title": "Status",
@@ -6472,6 +6496,18 @@
               }
             ],
             "title": "Slug"
+          },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -7987,6 +8023,18 @@
               }
             ],
             "title": "Slug"
+          },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",

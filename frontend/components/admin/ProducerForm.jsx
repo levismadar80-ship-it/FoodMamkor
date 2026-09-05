@@ -218,9 +218,9 @@ const EMPTY = {
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
-function Section({ title, children }) {
+function Section({ title, children, testId }) {
   return (
-    <div className="bg-white rounded-[12px] border border-border p-6">
+    <div className="bg-white rounded-[12px] border border-border p-6" data-testid={testId}>
       <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
       {children}
     </div>
@@ -865,7 +865,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       {/* MEH-213 — location type */}
-      <Section title={t("producers.form.sections.business_type")}>
+      <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -925,7 +925,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 {t("producers.form.fields.delivery_nationwide")}
               </label>
               {!form.delivery_nationwide && (
-                <div>
+                <div data-testid="delivery-cities-block">
                   <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
                   <CitiesAutocomplete
                     value={form.delivery_cities}
