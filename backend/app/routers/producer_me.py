@@ -645,12 +645,13 @@ def update_my_producer(
         #                          so an APPROVED business could rename itself
         #                          into something else entirely through the raw
         #                          API. An editor with re-moderation is MEH-1872.
-        #   starting_price_label → the owner edits `price_range` (PricingCard);
-        #                          this second, older price string has no editor
-        #                          and is what ProducerSections.jsx:206 actually
-        #                          renders. MEH-1855 owns mirroring price_range
-        #                          into it — deliberately NOT done here, so the
-        #                          two PRs cannot collide in either merge order.
+        #   (price alias)        → the second, older price string that used to
+        #                          sit beside `price_range` was closed here by
+        #                          MEH-1851 and then DROPPED outright by
+        #                          MEH-1855 chunk 2 (revision 9849fab1637a) —
+        #                          `price_range` (PricingCard) is the only
+        #                          price-label field now. Its registry row went
+        #                          with the column (data_ownership.py).
         #   is_available_today   → written by POST /producers/me/availability-state
         #                          (and the legacy /availability toggle), BOTH of
         #                          which mirror `availability_state`. This path
@@ -689,6 +690,18 @@ def update_my_producer(
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
+        # MEH-1889 chunk A: `special_hours` is deliberately NOT in this set yet.
+        # The column, the ORM attribute and the ProducerUpdate validator all
+        # land in chunk A so the migration can be reviewed and applied on its
+        # own; the owner WRITE path opens in chunk B, in the same PR as the
+        # editor — the standing rule the `kosher` block below states ("do not
+        # re-add it without shipping its editor in the same PR"), and the
+        # condition `dashboard-field-guidance-ratchet.sh` enforces (a writable
+        # field must carry a row in the guidance audit: label + where-it-appears
+        # + example placeholder, none of which exist until the editor does).
+        # A body carrying `special_hours` today is therefore VALIDATED (422 on a
+        # malformed shape) and then ignored on write, which is the same
+        # disposition as every other column outside this set.
         # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
         # Same disposition and standing rule as the blocks above — the column
         # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
@@ -699,8 +712,8 @@ def update_my_producer(
         #            of them (חוק איסור הונאה בכשרות — an unverified claim is
         #            a legal exposure, not a missing feature). The owner was
         #            able to fill in a field nobody could ever see: the same
-        #            "I wrote it and it is not displayed" class as
-        #            starting_price_label.
+        #            "I wrote it and it is not displayed" class as the price
+        #            alias MEH-1855 retired.
         #
         #            The kashrut BADGE request flow is the only owner-facing
         #            mechanism, by design (cards.jsx:1263-1264 says so at the
@@ -1681,7 +1694,17 @@ def request_producer_review(
     MEH-977): a Meta/Resend outage or missing admin config must never affect
     the 200 the owner sees.
     """
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    # MEH-2210 follow-up (CI reviewer on #3343): the cap check and the
+    # `resubmission_count + 1` write are two ORM steps; two concurrent requests
+    # from the same owner at count=2 both read 2 and both write 3, and the
+    # business gets a 4th lifetime resubmission. FOR UPDATE serialises them on
+    # the producer row for the length of this request (released at commit).
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == user.producer_id)
+        .with_for_update()
+        .first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     # MEH-2210: `rejected` is the second admitted status — the resubmit loop.
