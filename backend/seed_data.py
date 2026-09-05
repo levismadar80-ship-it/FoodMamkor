@@ -334,7 +334,13 @@ def seed_categories(db):
         # renamed row that still holds `dairy` — see its docstring.
         .values(
             [
-                {"name": name, "emoji": emoji, "slug": _slugs[name]}
+                # MEH-1456 chunk A: the seed declares ownership of its own rows.
+                # Needed HERE and not only in revision b7d3e5a9c1f4's backfill:
+                # on a fresh database migrations run before this INSERT, so a
+                # migration-only backfill would leave every seeded row False.
+                # Insert-only + ON CONFLICT DO NOTHING means an existing row's
+                # flag is never touched from here — the migration owns that.
+                {"name": name, "emoji": emoji, "slug": _slugs[name], "is_system": True}
                 for name, emoji in CATEGORIES
             ]
         )
