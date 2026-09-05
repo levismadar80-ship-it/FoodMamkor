@@ -2013,21 +2013,21 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] חזרה ל-/producer/dashboard — ספירת whatsapp_clicks עלתה ב-1
 
 ### Admin dashboard (/admin)
-- [ ] סה״כ תצוגה: 4 stat cards ראשיים + 4 משניים (new_users_this_week, new_producers_this_week, total_events, total_experiences) + alert cards + 2 גרפים + פאנל בריאות שרת + פעילות
-- [ ] "DAU — 30 ימים אחרונים" — line chart עם 30 נקודות, מבוסס `users.last_active_at`
-- [ ] ערים מובילות (עד 10) — מצטבר מ-`producer_page_views.city` על פני **כל** היצרנים
-- [ ] פאנל בריאות שרת מציג `response_time_avg_ms` ו-`requests_per_minute` + הערה "per-process בזיכרון"
+- ✅ → admin-dashboard-analytics.spec.ts (4 main stat cards, 4 secondary, both alert cards, two chart headings, the health panel and the activity feed — ⚠️ STALE: «2 גרפים» — two SVG line charts plus the top-cities bar list) — סה״כ תצוגה: 4 stat cards ראשיים + 4 משניים (new_users_this_week, new_producers_this_week, total_events, total_experiences) + alert cards + 2 גרפים + פאנל בריאות שרת + פעילות
+- ✅ → admin-dashboard-analytics.spec.ts (the DAU chart draws 30 points and labels the first, middle and last date + with no DAU data the chart card reads «אין נתונים עדיין» — the rendering of a fixed payload; the users.last_active_at aggregation is backend tests) — "DAU — 30 ימים אחרונים" — line chart עם 30 נקודות, מבוסס `users.last_active_at`
+- ✅ → admin-dashboard-analytics.spec.ts (top cities lists the ten rows in order with their counts + with no city data the card explains why — the rendering; the cross-producer aggregation is backend tests) — ערים מובילות (עד 10) — מצטבר מ-`producer_page_views.city` על פני **כל** היצרנים
+- ✅ → admin-dashboard-analytics.spec.ts (the health panel shows avg response time, requests per minute, the sample count and the per-process note + with no samples yet the health panel waits for traffic) — פאנל בריאות שרת מציג `response_time_avg_ms` ו-`requests_per_minute` + הערה "per-process בזיכרון"
 - [ ] על בוט עם traffic בסיסי (curl /producers), ספירת `sample_count` עולה, avg וכו׳ מתעדכנים
 - [ ] אחרי redeploy של Railway — הפאנל מתאפס (ok)
 
 ### Vacation mode toggle (/admin/settings) — MEH-509 PR2a
-- [ ] מצב חופשה — /admin/settings → toggle on → set date → save → toast → refresh → state persists. Toggle off → toast → refresh → date cleared. — תוצאה מצופה: state persists, date cleared on deactivate.
-- [ ] Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תאריך חזרה כשמצב חופשה מופעל". — תוצאה מצופה: cannot submit until date is set.
+- ✅ → admin-dashboard-analytics.spec.ts (toggle on + date + save posts {active,return_date} and persists; toggle off posts active:false and clears the date — against a per-test vacation store, not staging) — מצב חופשה — /admin/settings → toggle on → set date → save → toast → refresh → state persists. Toggle off → toast → refresh → date cleared. — תוצאה מצופה: state persists, date cleared on deactivate.
+- ✅ → admin-dashboard-analytics.spec.ts (toggle on without a date keeps save disabled and shows the red warning) — Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תאריך חזרה כשמצב חופשה מופעל". — תוצאה מצופה: cannot submit until date is set.
 - [ ] Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` → 422. — תוצאה מצופה: Pydantic model_validator rejects.
 
 ### AI risk-score badge (MEH-509 PR3 — admin only)
-- [ ] Fresh signup — sign up a new test producer with phone via `/auth/register/producer` → wait ~10 seconds → `/admin/producers` — תוצאה מצופה: new row appears with color-coded risk badge (green ≤30 / yellow 31-70 / red >70 / grey "אין מידע" if Anthropic was down).
-- [ ] Tooltip — hover the risk badge → תוצאה מצופה: tooltip surfaces the full Hebrew reasoning text (or "טרם דורג" if score is NULL).
+- ✅ → admin-dashboard-analytics.spec.ts (null → grey «אין מידע»; 20 → green; 50 → yellow; 90 → red, each with its score — the badge for a fixed risk_score; the fresh signup + Anthropic call is backend) — Fresh signup — sign up a new test producer with phone via `/auth/register/producer` → wait ~10 seconds → `/admin/producers` — תוצאה מצופה: new row appears with color-coded risk badge (green ≤30 / yellow 31-70 / red >70 / grey "אין מידע" if Anthropic was down).
+- ✅ → admin-dashboard-analytics.spec.ts (the badge's tooltip is the reasoning text, or «טרם דורג» when there is none) — Tooltip — hover the risk badge → תוצאה מצופה: tooltip surfaces the full Hebrew reasoning text (or "טרם דורג" if score is NULL).
 - [ ] Direct endpoint — `curl -H "Authorization: Bearer <admin-jwt>" https://<staging>/admin/producers/<id>/risk-score` → תוצאה מצופה: `{"score": <0-100 or null>, "reasoning": "<hebrew or null>"}`.
 - [ ] Auth gate — same curl without JWT → תוצאה מצופה: 401/403; with consumer-role JWT → 403.
 - [ ] Fail-open smoke — temporarily unset `ANTHROPIC_API_KEY` in Railway staging, sign up a producer, restore the key. תוצאה מצופה: signup completes 200, badge shows grey "אין מידע", logs show `[RISK] ANTHROPIC_API_KEY not set — skipping score`.
@@ -2048,10 +2048,10 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ### Sidebar pending moderation badge
 - [ ] צרי יצרנית חדשה עם status=pending + דיווח פתוח אחד + מוצר ביתי FLAGGED אחד + חוויה pending אחת
-- [ ] /admin/dashboard — כרטיסיות alerts מפרטות את ה-4
-- [ ] ב-sidebar על "לוח מחוונים" מופיע pill צהוב עם המספר 4
-- [ ] מעבר ל-/admin/producers, ה-badge עדיין מופיע עם 4 (ה-layout טוען מחדש על כל שינוי pathname)
-- [ ] אישור כל ה-4 → הרענון הבא: ה-badge נעלם
+- ✅ → admin-dashboard-analytics.spec.ts (with 4 pending items the dashboard shows the two alert cards it has, and the pill still reads 4 (D1) — ⚠️ STALE: the dashboard has TWO alert cards (pending producers, open reports); flagged products and pending experiences have no card) — /admin/dashboard — כרטיסיות alerts מפרטות את ה-4
+- ✅ → admin-dashboard-analytics.spec.ts (the «לוח מחוונים» entry carries a yellow pill with the count) — ב-sidebar על "לוח מחוונים" מופיע pill צהוב עם המספר 4
+- ✅ → admin-dashboard-analytics.spec.ts (moving to /admin/producers keeps the pill — the layout re-reads the count on the new pathname) — מעבר ל-/admin/producers, ה-badge עדיין מופיע עם 4 (ה-layout טוען מחדש על כל שינוי pathname)
+- ✅ → admin-dashboard-analytics.spec.ts (when the count is 0 the next load renders no pill — the count is stubbed to 0; approving the four is the backend's) — אישור כל ה-4 → הרענון הבא: ה-badge נעלם
 
 ### Privacy invariant
 - [ ] `SELECT viewer_ip_hash FROM producer_page_views LIMIT 10` — כל הערכים הם hex 64-תווים (SHA-256), אף אחד לא נראה כמו כתובת IP
