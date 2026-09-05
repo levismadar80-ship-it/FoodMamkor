@@ -26,6 +26,7 @@ export default function HomepageMiniMapSkeleton() {
     <section
       aria-label={t("aria")}
       className="mt-6 mb-12 md:mt-12 md:mb-16 px-4 md:px-6"
+      data-testid="home-minimap"
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
