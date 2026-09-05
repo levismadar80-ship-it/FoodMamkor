@@ -169,6 +169,9 @@ test.describe("images card", () => {
     for (const tip of ["אור טבעי, בלי פלאש", "תוצרת אמיתית כמו שהיא — לא מסוגננת יתר"]) await expect(b.getByText(tip)).toBeVisible();
     const tips = b.getByText(/בלי ת/).filter({ hasText: /סטוק|תמונות/ });
     await expect(tips.first()).toBeVisible();
+    // "three" is the claim, so the COUNT is the assertion — the two strings above would stay
+    // green with a fourth tip added. The list is the <ul> under the zone (cards.jsx:407-416).
+    await expect(b.getByRole("list").filter({ hasText: "אור טבעי" }).getByRole("listitem")).toHaveCount(3);
     const text = await b.innerText();
     expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
   });
@@ -232,7 +235,7 @@ test.describe("contact channels — the wire", () => {
     await email.fill("");
     await save(page).click();
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length, { message: "the PUT never left the browser" }).toBe(1);
-    expect((writes[0].body as Record<string, unknown>).contact_email).toBeNull();
+    expect((writes.find((w) => w.method === "PUT")!.body as Record<string, unknown>).contact_email).toBeNull();
   });
 
   // MT:MEH-1537:5 — drift D1: valid values go out as typed; the hyphen strip is the server's.
@@ -245,7 +248,7 @@ test.describe("contact channels — the wire", () => {
     await b(page).getByLabel("קישור לקבוצת וואטסאפ", { exact: true }).fill("https://chat.whatsapp.com/ABCdef123");
     await save(page).click();
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length).toBe(1);
-    expect(writes[0].body).toMatchObject({ phone: "050-123-4567", contact_email: "owner@example.com", whatsapp_group: "https://chat.whatsapp.com/ABCdef123" });
+    expect(writes.find((w) => w.method === "PUT")!.body).toMatchObject({ phone: "050-123-4567", contact_email: "owner@example.com", whatsapp_group: "https://chat.whatsapp.com/ABCdef123" });
     await expect(save(page)).toHaveText("נשמר");
   });
 });
