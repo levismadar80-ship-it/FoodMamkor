@@ -119,7 +119,10 @@ export default function ProducerHeader({
   // the next navigation/render, which is honest enough for a weekly window.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const orderStatus = mounted ? getOrderWindowStatus(producer.order_window) : null;
+  // MEH-2264: today's special_hours override (if any) wins over the weekly day.
+  const orderStatus = mounted
+    ? getOrderWindowStatus(producer.order_window, new Date(), producer.special_hours)
+    : null;
   const status = resolveHeaderStatus({ isVacation, isClosed, orderStatus });
   const statusLabel = {
     vacation: () =>
