@@ -858,6 +858,41 @@ class TestMeh1428ReviewInviteLink:
         assert r.status_code == 201, r.text
         assert r.json()["source"] == "click"
 
+    def test_edit_never_rewrites_source_in_either_direction(self, client, db):
+        """reviews.py:278 claims "an edit never rewrites it — the first proof is
+        the one on record". Both directions, so a future edit path that
+        re-derives `source` from the CURRENT request goes red: an invite_link
+        row edited with no token stays invite_link, and a click row edited
+        WITH a valid token stays click."""
+        _, producer = self._owner_and_producer(db)
+
+        invited = make_user(db)
+        r = self._post(client, producer, invited, create_review_invite_token(producer.id))
+        assert r.status_code == 201, r.text
+        r = client.post(
+            f"/producers/{producer.id}/reviews",
+            json={"stars": 2, "body": VALID_BODY},
+            headers=auth_header(invited),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["stars"] == 2
+        assert r.json()["source"] == "invite_link"
+
+        clicker = make_user(db)
+        _wa_click(db, producer, clicker)
+        r = self._post(client, producer, clicker)
+        assert r.status_code == 201, r.text
+        assert r.json()["source"] == "click"
+        r = self._post(client, producer, clicker, create_review_invite_token(producer.id))
+        assert r.status_code == 201, r.text
+        assert r.json()["source"] == "click"
+
+        rows = {
+            row.user_id: row.source
+            for row in db.query(ProducerReview).filter(ProducerReview.producer_id == producer.id)
+        }
+        assert rows == {invited.id: "invite_link", clicker.id: "click"}
+
     # ---- GET /producers/me/review-link ------------------------------------
 
     def test_review_link_403_for_non_approved(self, client, db):

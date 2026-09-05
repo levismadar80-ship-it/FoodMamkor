@@ -235,6 +235,21 @@ def _shares_category(db: Session, owner_producer_id: UUID, producer_id: UUID) ->
     )
 
 
+def _invited_by_token(review_token: str | None, producer_id: UUID) -> bool:
+    """MEH-1428: does a signed review-invite token vouch for THIS producer?
+
+    Verification (signature, expiry, scope) lives in
+    decode_review_invite_token; this adds only the producer binding — a token
+    minted for another business is a forged claim of contact here. Extracted
+    from create_review_nested so the handler stays under ruff's C901 budget
+    (it read 11 > 10 with the branch inline).
+    """
+    if not review_token:
+        return False
+    claims = decode_review_invite_token(review_token)
+    return bool(claims) and claims.get("producer_id") == str(producer_id)
+
+
 @router.post(
     "/producers/{producer_id}/reviews",
     response_model=ReviewOut,
@@ -325,10 +340,7 @@ def create_review_nested(
     # to the click path — a customer who clicked AND pasted a stale link is
     # still a customer who clicked. Same detail on every failure: the reviewer
     # learns nothing about WHICH proof was rejected.
-    invited = False
-    if data.review_token:
-        claims = decode_review_invite_token(data.review_token)
-        invited = bool(claims) and claims.get("producer_id") == str(producer_id)
+    invited = _invited_by_token(data.review_token, producer_id)
     if not existing_review and not invited:
         clicked = (
             db.query(ProducerWhatsAppClick.id)
