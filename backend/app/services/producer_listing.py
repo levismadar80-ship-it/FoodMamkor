@@ -558,6 +558,10 @@ def _open_for_orders_now_condition(open_now: bool):
     )
     # `has_key` on a NULL column is NULL, and CASE treats a NULL condition as
     # not-taken, so a producer with no overrides at all takes the weekly branch.
+    # The CASE is load-bearing, not style: PostgreSQL evaluates a THEN arm only
+    # when its WHEN is true, so `override` is never computed against a NULL or
+    # key-less column. Do not "simplify" it into a bare OR/COALESCE that would
+    # evaluate the subscript path on every row.
     matches = case((Producer.special_hours.has_key(today_key), override), else_=weekly)
     return matches.is_(True) if open_now else matches.isnot(True)
 
