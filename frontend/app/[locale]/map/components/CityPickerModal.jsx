@@ -47,10 +47,10 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-surface-floating rounded-lg border border-border w-full max-w-sm p-5 relative">
-        <button type="button" onClick={onClose} className="absolute top-2 start-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
-          <X size={16} weight="bold" />
+        <button type="button" onClick={onClose} className="absolute top-2 end-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
+          <X size={20} weight="bold" />
         </button>
-        <h3 id="city-picker-title" className="font-headline-md text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
+        <h3 id="city-picker-title" className="font-headline-md text-lg font-bold text-text mb-1 pe-14">{t("map.city_picker.heading")}</h3>
         <p className="text-fg-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was
             flex-wrap → 3 + 1 orphan at 390px); sm:flex restores the
