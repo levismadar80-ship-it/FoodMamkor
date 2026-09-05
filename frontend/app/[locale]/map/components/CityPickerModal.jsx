@@ -16,9 +16,11 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * including the chat z-[9999] / cookie z-[9998] tokens — see
  * .claude/rules/rtl.md → "Map z-index tokens").
  *
- * The close button uses logical `start-3` (the modal content is in
- * normal RTL flow; only the map canvas overlays need physical
- * positioning).
+ * The close button sits at logical `end-2` (MEH-1687 / rtl.md § "Close
+ * buttons mirror to the inline-END"): the X mirrors to the end of the
+ * reading direction and the heading reserves `pe-14` for it. The modal
+ * content is in normal RTL flow; only the map canvas overlays need
+ * physical positioning.
  */
 // PR-C4a chunk 4b: consolidated with chunk-3 LocationModal — both surfaces
 // now share `modals.location.popular_cities.*` keys. The `canonical` HE value
