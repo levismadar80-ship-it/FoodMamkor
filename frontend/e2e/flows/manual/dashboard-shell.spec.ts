@@ -632,10 +632,25 @@ test.describe("dashboard shell — tools tab", () => {
   async function openTools(page: Page) {
     await page.goto("/producer/dashboard/tools");
     const grid = page.getByTestId("tools-grid");
+    // Gate on the GRID being ATTACHED — not on a link inside it, and not on the
+    // grid being VISIBLE. All three were measured against a build whose grid
+    // renders with zero links:
+    //
+    //   grid.getByRole("link").first() -> toBeVisible   FAILS "never rendered"
+    //   grid                           -> toBeVisible   FAILS "never rendered"
+    //   grid                           -> toBeAttached  PASSES, count then fails 5 vs 0
+    //
+    // Only the third distinguishes "the grid never mounted" from "the grid
+    // mounted with nothing in it". The second is the OBVIOUS fix and it does not
+    // work: `toBeVisible` requires a non-empty bounding box, so an empty
+    // container reports `hidden` and the control misdiagnoses it exactly as the
+    // link-based form did. Attachment answers mounting and nothing else, which
+    // is what a control is for; the link COUNT is then a separate assertion
+    // carrying its own message rather than being smuggled into the control.
     await expect(
-      grid.getByRole("link").first(),
+      grid,
       "control: the tools grid never rendered — every assertion here is void",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeAttached({ timeout: 15_000 });
     return grid;
   }
 
