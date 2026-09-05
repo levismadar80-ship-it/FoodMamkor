@@ -14,7 +14,7 @@
 # DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
 #
 # Frozen 2026-09-05 from mypy 2.3.1 over `mypy app/auth.py --strict` (that file AND its import tree — mypy follows
-# imports, so a module auth.py reaches transitively appears here too):
+# imports, so any module auth.py reaches transitively also appears here):
 # 21 errors, 4 files, 9 keys. Every number on this
 # line is computed from the rows below, so it cannot drift from them.
 app/auth.py	assignment	1
