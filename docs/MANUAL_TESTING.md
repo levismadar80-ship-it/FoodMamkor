@@ -232,7 +232,7 @@
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:2) — **הפאנל צמוד למונה שלו** — אותה לחיצה — **תוצאה מצופה:** הפאנל נפתח **ליד ה-"+N" שנלחץ**, בתוך אותו כרטיס — לא בצד השני של המסך ולא מעל כרטיס אחר
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:3) — **אין חיתוך בקצה** — כרטיס בעמודה הקיצונית (הימנית ביותר והשמאלית ביותר) → "+N" — **תוצאה מצופה:** הפאנל נשאר שלם בתוך המסך, אף מילה לא נחתכת
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:4) — **פאנל אחד בלבד** — פתחי תגית רגילה (למשל "רישיון יצרן"), ואז לחצי על ה-"+N" — **תוצאה מצופה:** הראשון נסגר, רק הפאנל של ה-"+N" פתוח. וגם הפוך
-- [ ] **גלילה** — פתחי "+N" וגללי את העמוד — **תוצאה מצופה:** הפאנל נשאר צמוד למונה שלו (לא "נתקע" במקום על המסך)
+- ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:5 — ⚠️ STALE: superseded by MEH-1871 — the «+N» panel now CLOSES on scroll; the current behaviour is asserted in the MEH-1871 block) — **גלילה** — פתחי "+N" וגללי את העמוד — **תוצאה מצופה:** הפאנל נשאר צמוד למונה שלו (לא "נתקע" במקום על המסך)
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:6) — **נייד ללא שינוי** — 375px, "+N" — **תוצאה מצופה:** עדיין מגירה תחתונה (bottom sheet) כמו ב-MEH-1547, מעל ה-BottomNav
 
 ## MEH-1537 — ולידציית פרטי קשר (אימייל / טלפון / קבוצת וואטסאפ) (26/07)
@@ -321,7 +321,7 @@
 בדקי בנייד (375px, RTL) + דסקטופ.
 
 - [ ] **צ'יפ לא-פעיל מקבל צבע** — `/producers` שורת הקטגוריות + `/map` שורת הקטגוריות — **תוצאה מצופה:** באייקון של צ'יפ **לא נבחר**, ה-glyph צבוע בצבע הקטגוריה (בשר/דגים אדום `#c04040`, חלב וגבינות כחול `#3b72ad`, לחמים חום `#896714`, שמנים `#bd8013`, דבש `#C8821E`, ירקות/produce ירוק `#2e6853`). הטקסט (הלייבל) נשאר בצבע הרגיל.
-- [ ] **צ'יפ פעיל = לבן** — הקישי צ'יפ קטגוריה — **תוצאה מצופה:** הרקע ירוק, ה-glyph הופך **לבן** (currentColor), לא נשאר בצבע הקטגוריה.
+- ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1452:2 — ⚠️ STALE: since MEH-1465 / MEH-1181-A «Direction A» a SELECTED chip keeps the category colour on its glyph; the spec asserts the current behaviour) — **צ'יפ פעיל = לבן** — הקישי צ'יפ קטגוריה — **תוצאה מצופה:** הרקע ירוק, ה-glyph הופך **לבן** (currentColor), לא נשאר בצבע הקטגוריה.
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1452:3) — **קטגוריה ללא צבע = ניטרלי** — קטגוריה שאין לה רשומת `CATEGORY_STYLES` (למשל ביצים/פירות) — **תוצאה מצופה:** ה-glyph נשאר בצבע הטקסט הרגיל (currentColor), לא צבוע.
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1452:4) — **צ'יפ "הכל"/"כל" ללא אייקון** — **תוצאה מצופה:** נשאר טקסט בלבד (ה-reset).
 - [ ] **ללא שינוי גובה** — השוו גובה שורת הצ'יפים לפני/אחרי — **תוצאה מצופה:** זהה (הצביעה היא `color` על ה-span הקיים, אין קופסה חדשה).
@@ -3233,7 +3233,7 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1880:4) — **בחופשה** — עסק בחופשה שיש לו חלון פתוח עכשיו — **תוצאה מצופה:** **אין** שורת הזמנות. חופשה גוברת — אסור שהכרטיס יזמין הזמנות בזמן שהעסק הודיע שהוא לא כאן
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1880:5) — **בין שני טווחים באותו יום** — עסק עם 09:00–13:00 ו-16:00–20:00, בשעה 14:30 — **תוצאה מצופה:** אין שורה (זה מצב סגור אמיתי, לא הפסקה שמוצגת כפתוח)
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1880:6) — **מובייל 375px** — כרטיס עם חלון פתוח — **תוצאה מצופה:** השורה נשברת לשתי שורות והשעה **נראית במלואה**. אסור שהשעה תיחתך ל-"עד …" — היא כל המידע שבשורה
-- ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1880:7) — **השעה לא הפוכה** — בכל הרוחבים — **תוצאה מצופה:** "05:31" ולא "31:05"
+- ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1880:7 — ⚠️ STALE: `lib/time-format.js` humanTime strips the leading zero, so the card renders "5:31"; the spec asserts "5:31" and that it is never "31:05") — **השעה לא הפוכה** — בכל הרוחבים — **תוצאה מצופה:** "05:31" ולא "31:05"
 
 ## MEH-1898 — הטבה בניסוח חופשי (סוג חמישי) (04/08)
 
