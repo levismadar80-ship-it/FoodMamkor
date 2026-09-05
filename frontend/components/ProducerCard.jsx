@@ -261,8 +261,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // ProducerHeader.jsx:118-120 uses for the identical value.
   const [orderWindowMounted, setOrderWindowMounted] = useState(false);
   useEffect(() => setOrderWindowMounted(true), []);
+  // MEH-2264: today's special_hours override (if any) wins over the weekly day
+  // — a card must not say "open" on a date the owner marked closed.
   const orderStatus = orderWindowMounted
-    ? getOrderWindowStatus(producer.order_window)
+    ? getOrderWindowStatus(producer.order_window, new Date(), producer.special_hours)
     : null;
 
   // Only the OPEN half is shown. `closing_soon` is folded in deliberately —
