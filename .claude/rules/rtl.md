@@ -120,9 +120,19 @@ modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999
 
 **Every `z-[N]` that appears in a className under `frontend/app` +
 `frontend/components`.** The chain above is the mental model; this is the
-inventory. `frontend/__tests__/ZTokenLedgerSync.test.js` fails if code and this
-table disagree in either direction, so the "mirrors it" claim below is now
-mechanically true rather than aspirational.
+inventory. It is **documentation of a machine-checked contract, not the
+contract**: the gate is `scripts/checks/z-index-tokens.sh` (MEH-2228), which
+freezes every literal z-index in `frontend/` — Tailwind `z-[N]`, CSS `z-index:
+N`, inline `zIndex: N` — occurrence by occurrence in
+`scripts/checks/z-index-baseline.txt` and reds the required *Repo guards* job on
+any literal not in that file, or any baseline line that no longer matches (the
+file can only shrink). A new z value therefore needs `--update-baseline` **and
+a reason in the PR body** before it can land; this table then records it.
+`frontend/__tests__/ZTokenLedgerSync.test.js` keeps the rows below in sync with
+the code in both directions, so "mirrors it" stays mechanically true — but a
+table that is in sync is not evidence a value is right for its context
+(MEH-2148: MiniMap's `z-[1000]` was recorded correctly for months while painting
+over a CTA), which is why the gate sits in front of it.
 
 | token | n | representative owner | what it is |
 |---|---|---|---|

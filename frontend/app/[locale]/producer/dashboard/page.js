@@ -986,7 +986,7 @@ function OverviewStatsHero({ analytics }) {
     <div className="space-y-4 mb-10">
       {/* 2x2 KPI strip — identical mobile + desktop, uniform window label,
           no deltas/arrows (data reality; see header). */}
-      <div className="grid grid-cols-2 gap-3">
+      <div data-testid="overview-kpi-strip" className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (
           <div key={kpi.key} className="bg-white border border-border rounded-[16px] p-4 text-center">
             <p className="text-xs text-fg-muted mb-1">{t(`kpi.${kpi.key}`)}</p>
