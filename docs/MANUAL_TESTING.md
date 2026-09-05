@@ -108,7 +108,7 @@
 - [ ] **התור מציג ישן מול חדש** — `/admin` → תור בקשות שינוי שם — **תוצאה מצופה:** כל שורה מראה את **שני** השמות זה לצד זה. בלי זה אי אפשר לשפוט את הבקשה
 - [ ] **בקשה פתוחה אחת בכל רגע** — הגישי בקשה, ואז נסי להגיש עוד אחת בלי שהראשונה הוכרעה — **תוצאה מצופה:** שגיאה "כבר קיימת בקשת שינוי שם שממתינה לאישור"
 - [ ] **אי אפשר להכריע פעמיים** — אשרי בקשה, ואז נסי לדחות את אותה בקשה — **תוצאה מצופה:** שגיאה. אחרת אישור שני היה מזיז את השם הציבורי מהחלטה שכבר התקבלה
-- [ ] **הנתיב הישן נשאר סגור** — בדשבורד, ודאי ששדה "שם העסק" **אינו** ניתן לעריכה ישירה — **תוצאה מצופה:** אין שדה כזה. MEH-1851 הסיר אותו והכרטיס הזה לא מחזיר אותו
+- ✅ → dashboard-trust-cards.spec.ts (the empty state shows the current name read-only, a requested-name field, and an optional reason — «השם הנוכחי» is text, and no input carries the current name) — **הנתיב הישן נשאר סגור** — בדשבורד, ודאי ששדה "שם העסק" **אינו** ניתן לעריכה ישירה — **תוצאה מצופה:** אין שדה כזה. MEH-1851 הסיר אותו והכרטיס הזה לא מחזיר אותו
 
 ---
 
@@ -657,23 +657,23 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק.
 
-- [ ] **כרטיס רישיון מופיע ונשמר** — `/producer/dashboard/edit` → כרטיס "רישיון יצרן" (אחרי קטגוריות) → מלאי מספר 7-10 ספרות → שמירה → רענון — **תוצאה מצופה:** הערך נשמר; בכותרת הכרטיס מוצג צ'יפ ממוסך (•••+4 ספרות אחרונות); בלי ערך — "לא הוזן".
-- [ ] **אזהרת פורמט לא חוסמת** — הקלידי "123" — **תוצאה מצופה:** אזהרה כתומה "מספר רישיון יצרן הוא 7-10 ספרות"; כפתור השמירה עדיין פעיל.
-- [ ] **רמז קטגוריה דורשת-רישיון** — עסק עם קטגוריה מ-LICENSE_REQUIRED (למשל דבש/לחמים) — **תוצאה מצופה:** שורת רמז "אחת הקטגוריות שבחרתם דורשת רישיון יצרן…" מעל השדה; עסק בלי קטגוריה כזו — אין רמז.
-- [ ] **ניקוי בזמן קטגוריה דורשת → 422 עברית** — עסק מאושר עם רישיון + קטגוריה דורשת → רוקני את השדה → שמירה — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת מוצגת inline (לא הודעה גנרית); הערך לא נמחק.
-- [ ] **deep-link מהבאנר** — נווטי אל `/producer/dashboard/edit#license` — **תוצאה מצופה:** אקורדיון הרישיון נפתח וגולל אליו אוטומטית.
+- ✅ → dashboard-trust-cards.spec.ts (a 7-10 digit number saves, confirms, and comes back after a reload — the header previews «•••4567»; ⚠️ the doc's two cards are ONE merged card «אישורים ותעודות» (anchorId trust); #license/#kashrut both open it) — **כרטיס רישיון מופיע ונשמר** — `/producer/dashboard/edit` → כרטיס "רישיון יצרן" (אחרי קטגוריות) → מלאי מספר 7-10 ספרות → שמירה → רענון — **תוצאה מצופה:** הערך נשמר; בכותרת הכרטיס מוצג צ'יפ ממוסך (•••+4 ספרות אחרונות); בלי ערך — "לא הוזן".
+- ✅ → dashboard-trust-cards.spec.ts (a short number shows the format warning without disabling the save) — **אזהרת פורמט לא חוסמת** — הקלידי "123" — **תוצאה מצופה:** אזהרה כתומה "מספר רישיון יצרן הוא 7-10 ספרות"; כפתור השמירה עדיין פעיל.
+- ✅ → dashboard-trust-cards.spec.ts (the required-licence hint appears only for a licence-requiring category — the category is read from lib/license-required-categories.js) — **רמז קטגוריה דורשת-רישיון** — עסק עם קטגוריה מ-LICENSE_REQUIRED (למשל דבש/לחמים) — **תוצאה מצופה:** שורת רמז "אחת הקטגוריות שבחרתם דורשת רישיון יצרן…" מעל השדה; עסק בלי קטגוריה כזו — אין רמז.
+- ✅ → dashboard-trust-cards.spec.ts (a Hebrew 422 from the server renders inline in the card — the 422 is stubbed; the rule lives in backend tests) — **ניקוי בזמן קטגוריה דורשת → 422 עברית** — עסק מאושר עם רישיון + קטגוריה דורשת → רוקני את השדה → שמירה — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת מוצגת inline (לא הודעה גנרית); הערך לא נמחק.
+- ✅ → dashboard-trust-cards.spec.ts (#license opens the merged «אישורים ותעודות» card at its licence section) — **deep-link מהבאנר** — נווטי אל `/producer/dashboard/edit#license` — **תוצאה מצופה:** אקורדיון הרישיון נפתח וגולל אליו אוטומטית.
 
 ## MEH-1167 — כרטיס "תעודת כשרות" בטאב עריכה (21/07)
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק. המסלול המלא דורש אישור אדמין.
 
-- [ ] **הכרטיס מופיע** — `/producer/dashboard/edit` → כרטיס "תעודת כשרות" (אחרי "רישיון יצרן") → פותחת אותו — **תוצאה מצופה:** אינטרו + טופס (select "סוג הכשרות" + "צילום התעודה" + "שליחת בקשה לאישור"). עסק בלי badges ובלי בקשות — שורת empty "עוד אין תג כשרות לעסק".
-- [ ] **שליחת בקשה** — בחרי סוג כשרות → (אופ') העלי צילום תעודה → "שליחת בקשה לאישור" — **תוצאה מצופה:** הודעת הצלחה "הבקשה נשלחה — נעדכן אחרי הבדיקה" נשארת מוצגת; הטופס מתאפס; הבקשה מופיעה עם צ'יפ "ממתינה לאישור".
-- [ ] **בקשה כפולה → 409 inline** — שלחי שוב בקשה לאותו סוג כשרות שכבר pending — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת ("בקשה לbadge זה כבר ממתינה לאישור") מוצגת inline (לא toast נעלם).
-- [ ] **תעודה לא-תמונה נדחית** — נסי להעלות PDF — **תוצאה מצופה:** "רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות".
+- ✅ → dashboard-trust-cards.spec.ts (the card shows the intro, a type select, an upload control, and a disabled submit — ⚠️ the doc's two cards are ONE merged card «אישורים ותעודות» (anchorId trust); #license/#kashrut both open it; the upload label is «צילום התעודה (JPG/PNG, עד 5MB)») — **הכרטיס מופיע** — `/producer/dashboard/edit` → כרטיס "תעודת כשרות" (אחרי "רישיון יצרן") → פותחת אותו — **תוצאה מצופה:** אינטרו + טופס (select "סוג הכשרות" + "צילום התעודה" + "שליחת בקשה לאישור"). עסק בלי badges ובלי בקשות — שורת empty "עוד אין תג כשרות לעסק".
+- ✅ → dashboard-trust-cards.spec.ts (submitting a request posts the badge code, shows the persistent success line, and resets the form — the POST is captured; the success line is checked to survive a 3 s wait) — **שליחת בקשה** — בחרי סוג כשרות → (אופ') העלי צילום תעודה → "שליחת בקשה לאישור" — **תוצאה מצופה:** הודעת הצלחה "הבקשה נשלחה — נעדכן אחרי הבדיקה" נשארת מוצגת; הטופס מתאפס; הבקשה מופיעה עם צ'יפ "ממתינה לאישור".
+- ✅ → dashboard-trust-cards.spec.ts (a duplicate request's 409 renders inline, and no success line appears — the 409 is stubbed) — **בקשה כפולה → 409 inline** — שלחי שוב בקשה לאותו סוג כשרות שכבר pending — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת ("בקשה לbadge זה כבר ממתינה לאישור") מוצגת inline (לא toast נעלם).
+- ✅ → dashboard-trust-cards.spec.ts (a rejected certificate upload surfaces the server's message inline — the 400 is stubbed; the input's accept="image/*" is bypassable and not what the row relies on) — **תעודה לא-תמונה נדחית** — נסי להעלות PDF — **תוצאה מצופה:** "רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות".
 - [ ] **גלריה מלאה לא חוסמת תעודה** — עסק בתוכנית free עם 3 תמונות גלריה — **תוצאה מצופה:** העלאת צילום התעודה מצליחה (אין freemium gate, בניגוד ל-`/upload/image`).
 - [ ] **מסלול מלא (עם אדמין)** — שלחי בקשה → `/admin/kashrut` approve → חזרה לכרטיס — **תוצאה מצופה:** ה-badge עובר ל-zone "תגי הכשרות שלך"; מופיע גם בעמוד העסק הציבורי + ב-filter "כשרות מאומתת" ב-/map.
-- [ ] **דחייה מציגה notes** — אדמין reject עם הערה — **תוצאה מצופה:** צ'יפ "נדחתה" + הערת האדמין מוצגת ליד הבקשה.
+- ✅ → dashboard-trust-cards.spec.ts (a rejected request shows «נדחתה» and the admin's note beside it — the request list is stubbed, not produced by an admin reject) — **דחייה מציגה notes** — אדמין reject עם הערה — **תוצאה מצופה:** צ'יפ "נדחתה" + הערת האדמין מוצגת ליד הבקשה.
 
 ## MEH sweep 16/07 — דשבורד בעלת עסק (1234/1236/1237/1238/1239)
 
@@ -3328,13 +3328,13 @@ CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**�
 
 ### בעלת עסק — דשבורד → עריכה → «שינוי שם העסק»
 
-- [ ] הכרטיס מופיע **ראשון** בקבוצת «פרופיל» — פתחו `/producer/dashboard/edit?group=profile` — «שינוי שם העסק» לפני «תמונות»
-- [ ] מצב ריק (אין בקשה פתוחה) — מוצג טופס עם «השם הנוכחי» לקריאה בלבד + «השם המבוקש» + «סיבה (אופציונלי)»
-- [ ] כפתור «שליחת בקשה לשינוי שם» **מושבת** כשהשדה ריק, וכשהשם המבוקש **זהה** לנוכחי (מופיעה השורה «השם המבוקש זהה לשם הנוכחי.»)
-- [ ] אחרי שליחה — מוצג «הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.»
+- ✅ → dashboard-trust-cards.spec.ts (the card is the last in the profile group — ⚠️ STALE: MEH-2063 moved it LAST; the deep link #business-name is dead (MEH-2262), the card is reached via ?group=profile) — הכרטיס מופיע **ראשון** בקבוצת «פרופיל» — פתחו `/producer/dashboard/edit?group=profile` — «שינוי שם העסק» לפני «תמונות»
+- ✅ → dashboard-trust-cards.spec.ts (the empty state shows the current name read-only, a requested-name field, and an optional reason) — מצב ריק (אין בקשה פתוחה) — מוצג טופס עם «השם הנוכחי» לקריאה בלבד + «השם המבוקש» + «סיבה (אופציונלי)»
+- ✅ → dashboard-trust-cards.spec.ts (submit is disabled when empty and when the requested name equals the current one) — כפתור «שליחת בקשה לשינוי שם» **מושבת** כשהשדה ריק, וכשהשם המבוקש **זהה** לנוכחי (מופיעה השורה «השם המבוקש זהה לשם הנוכחי.»)
+- ✅ → dashboard-trust-cards.spec.ts (submitting posts the requested name and shows the sent confirmation — the POST is captured) — אחרי שליחה — מוצג «הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.»
 - [ ] **פתחו את עמוד העסק הציבורי — השם עדיין הישן.** זו הבדיקה המרכזית
-- [ ] רענון הדף → מצב ממתין: «בקשה לשינוי שם ממתינה לאישור» + השם המבוקש, **והטופס נעלם** (לא ניתן לשלוח בקשה שנייה)
-- [ ] ‏`/en/producer/dashboard/edit?group=profile` — כל המחרוזות באנגלית, אין מפתח גולמי על המסך
+- ✅ → dashboard-trust-cards.spec.ts (with a pending request the card shows the pending block and no form — the pending request comes from a stubbed list, not a real reload after a real save) — רענון הדף → מצב ממתין: «בקשה לשינוי שם ממתינה לאישור» + השם המבוקש, **והטופס נעלם** (לא ניתן לשלוח בקשה שנייה)
+- ✅ → dashboard-trust-cards.spec.ts (/en renders the card without Hebrew and without a raw key) — ‏`/en/producer/dashboard/edit?group=profile` — כל המחרוזות באנגלית, אין מפתח גולמי על המסך
 
 ### אדמין — `/admin/name-change-requests`
 
