@@ -2839,14 +2839,14 @@ Added with `feature/session-handoff`.
 ## MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026)
 
 ### Producer dashboard (/producer/dashboard)
-- [ ] Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
-- [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
-- [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
-- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
-- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
-- [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
+- ✅ → dashboard-availability.spec.ts (the card shows four pills in the locked order, the saved state checked and all enabled — ⚠️ STALE: the live heading is «מצב נוכחי», not «מצב זמינות») — Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
+- ✅ → dashboard-availability.spec.ts (clicking «פתוח להזמנות» checks it, posts accepting_orders and shows no date input) — Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
+- ✅ → dashboard-availability.spec.ts (clicking «זמין היום» … — ⚠️ STALE: live label is «זמין היום», no emoji, masculine) — Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «עמוס השבוע» … — ⚠️ STALE: live label is «עמוס השבוע», no emoji) — Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «בהפסקה» reveals the return-date input and «שמרו» without posting — zero captured POSTs) — Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- ✅ → dashboard-availability.spec.ts («שמרו» with an empty date shows the inline error and posts nothing — aria-invalid asserted too) — Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- ✅ → dashboard-availability.spec.ts (a future date + «שמרו» posts state and date, and a reload re-seeds both — the reload reads a stateful stub, not a real backend) — Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
+- ✅ → dashboard-availability.spec.ts (switching back to «פתוח להזמנות» clears the return date — in place and after a reload) — Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
 - [ ] /map or /producers list, look at a producer with `availability_state='available_today'` — תוצאה מצופה: green dot next to the location line.
@@ -3363,26 +3363,26 @@ CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**�
 
 | | אישור סגור | אישור פתוח |
 |---|---|---|
-| **0 חסרים** | - [ ] כפתור «שליחה לבדיקה» **פעיל**, אין רשימת חסרים בכלל | - [ ] «כן, שלחו» פעיל → POST אחד → טוסט הצלחה → הבאנר מתחלף לבאנר «בבדיקה» |
-| **פריט 1 חסר** | - [ ] הכפתור **מושבת**, מופיעה שורה אחת שמנסחת את הפריט החסר בשמו | - [ ] לא נגיש בזרימה רגילה; נבדק דרך המקרה למטה |
-| **רבים חסרים** | - [ ] הכפתור מושבת, כל פריט חסר מקבל שורה משלו + תג «חובה» | - [ ] כנ"ל |
+| **0 חסרים** | ✅ → flows/34-draft-submit-review.spec.ts (B — data-state-ready=true, no missing list, CTA enabled) — כפתור «שליחה לבדיקה» **פעיל**, אין רשימת חסרים בכלל | ✅ → flows/34-draft-submit-review.spec.ts (B — one POST, the review banner takes over) + dashboard-draft-submit.spec.ts (confirming shows the success toast that names the 3-business-day window) — «כן, שלחו» פעיל → POST אחד → טוסט הצלחה → הבאנר מתחלף לבאנר «בבדיקה» |
+| **פריט 1 חסר** | ✅ → dashboard-draft-submit.spec.ts (one missing item — the CTA is disabled and the list names exactly that item) — הכפתור **מושבת**, מופיעה שורה אחת שמנסחת את הפריט החסר בשמו | ✅ → __tests__/DraftSubmitBanner.test.jsx («confirm-yes is disabled when the profile stops being ready mid-confirm» — unit layer; see the race row below for why no browser path reaches this cell) — לא נגיש בזרימה רגילה; נבדק דרך המקרה למטה |
+| **רבים חסרים** | ✅ → flows/34-draft-submit-review.spec.ts (A — the five codes) + dashboard-draft-submit.spec.ts (five missing items — every row carries its own «חובה» chip) — הכפתור מושבת, כל פריט חסר מקבל שורה משלו + תג «חובה» | ✅ → __tests__/DraftSubmitBanner.test.jsx (same unit-layer guard as the cell above) — כנ"ל |
 
-- [ ] **התא שמגיעים אליו רק במרוץ** — לפתוח את «אישור», ואז לגרום לפרופיל להיטען מחדש כשהוא כבר לא שלם (למחוק תמונה בטאב שני). «כן, שלחו» חייב להיות **מושבת**, לא ללחוץ לריק. זה היה באג אמיתי (`c3acca4f`): הכפתור היה מגודר על `submitting` בלבד, ולחיצה עליו לא שלחה כלום ולא אמרה כלום.
-- [ ] **ביטול** («לא») מחזיר לכפתור פעיל — לא לכפתור תקוע מושבת.
+- ✅ → __tests__/DraftSubmitBanner.test.jsx («confirm-yes is disabled when the profile stops being ready mid-confirm» — ⚠️ STALE precondition: the dashboard fetches /producers/me ONCE per mount (dashboard/page.js:273-279) and onPhoneVerified only patches state locally, so a deletion in a second tab never reloads the first — the guard is pinned at the unit layer and no browser path reaches the cell) — **התא שמגיעים אליו רק במרוץ** — לפתוח את «אישור», ואז לגרום לפרופיל להיטען מחדש כשהוא כבר לא שלם (למחוק תמונה בטאב שני). «כן, שלחו» חייב להיות **מושבת**, לא ללחוץ לריק. זה היה באג אמיתי (`c3acca4f`): הכפתור היה מגודר על `submitting` בלבד, ולחיצה עליו לא שלחה כלום ולא אמרה כלום.
+- ✅ → dashboard-draft-submit.spec.ts (cancelling the confirm returns to an enabled CTA and sends nothing — live copy is «עוד לא», not «לא») — **ביטול** («לא») מחזיר לכפתור פעיל — לא לכפתור תקוע מושבת.
 
 ### מד ההשלמה — שש שורות, לא חמש (16/08)
 
-- [ ] הצ'קליסט מציג **שש** שורות: תמונה ראשית · קטגוריות ומיקום · מוצר ראשון · פרטי קשר · **אימות וואטסאפ** · שעות פתיחה
-- [ ] «אימות וואטסאפ» נושא צ'יפ **חובה**; «שעות פתיחה» היא היחידה עם **מומלץ**
-- [ ] לחיצה על «אימות וואטסאפ» מקפיצה לכרטיס האימות בבאנר (עוגן `#phone-verify`) — **לא** לעמוד העריכה, שאין בו פקד אימות
-- [ ] **התא ששבר את הגרסה הקודמת:** עסק עם טלפון שמור אבל **בלי** אימות — «פרטי קשר» מסומן ✓ **ובו-זמנית** «אימות וואטסאפ» עדיין חסר. שתי השורות אמורות לחלוק על עצמן; לפני הפיצול הן היו שורה אחת שאמרה «פרטי קשר ✓ חובה» בזמן שהבאנר מתחת סירב לשלוח
-- [ ] האחוז מחושב על שישה פריטים (חסר אחד = 83%, לא 80%)
+- ✅ → dashboard-draft-submit.spec.ts (the checklist shows six rows in the locked order) — הצ'קליסט מציג **שש** שורות: תמונה ראשית · קטגוריות ומיקום · מוצר ראשון · פרטי קשר · **אימות וואטסאפ** · שעות פתיחה
+- ✅ → dashboard-draft-submit.spec.ts («אימות וואטסאפ» carries חובה and «שעות פתיחה» is the only מומלץ — counted: 5 חובה, 1 מומלץ) — «אימות וואטסאפ» נושא צ'יפ **חובה**; «שעות פתיחה» היא היחידה עם **מומלץ**
+- ✅ → dashboard-draft-submit.spec.ts (clicking «אימות וואטסאפ» lands on the banner's #phone-verify anchor, not the edit page — pathname unchanged, hash asserted, card in viewport) — לחיצה על «אימות וואטסאפ» מקפיצה לכרטיס האימות בבאנר (עוגן `#phone-verify`) — **לא** לעמוד העריכה, שאין בו פקד אימות
+- ✅ → dashboard-draft-submit.spec.ts (a saved-but-unverified phone reads contact ✓ while the WhatsApp row is still missing — and the banner still lists it) — **התא ששבר את הגרסה הקודמת:** עסק עם טלפון שמור אבל **בלי** אימות — «פרטי קשר» מסומן ✓ **ובו-זמנית** «אימות וואטסאפ» עדיין חסר. שתי השורות אמורות לחלוק על עצמן; לפני הפיצול הן היו שורה אחת שאמרה «פרטי קשר ✓ חובה» בזמן שהבאנר מתחת סירב לשלוח
+- ✅ → dashboard-draft-submit.spec.ts (one missing step is 83%, computed over six — progressbar aria-valuenow + the «כמעט שם» headline) — האחוז מחושב על שישה פריטים (חסר אחד = 83%, לא 80%)
 
 ### אימות הוואטסאפ מתוך הטיוטה — הבדיקה הקריטית ביותר ברשימה
 
-- [ ] כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף
-- [ ] אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
-- [ ] אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
+- ✅ → flows/34-draft-submit-review.spec.ts (A — the OTP card is mounted inside the draft banner; completing it is rows 9-10) — כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף
+- ✅ → dashboard-draft-submit.spec.ts (a successful OTP removes the card and the item, and enables the CTA on the same screen — send → 6-digit code → confirm, both POSTs captured) — אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
+- ✅ → dashboard-draft-submit.spec.ts (same test — after the confirm the CTA is enabled and the checklist collapses to «הפרופיל מלא», no reload) — אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
 
 לפני MEH-2100 הכרטיס הזה היה תלוי בסטטוס `pending_whatsapp` בלבד (סטטוס שהוסר ב-MEH-2124), שטיוטה לעולם לא הגיעה אליו. כלומר `phone_verified` לא יכול היה להתהפך אף פעם, והשער היה **בלתי עביר לכל בית עסק באתר**. אם הכרטיס לא מופיע כאן — הפיצ'ר מת, ואין לזה סימן אחר.
 
