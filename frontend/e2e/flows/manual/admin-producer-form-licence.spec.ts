@@ -180,7 +180,6 @@ const rec = (r: Route, writes?: Rec[]): unknown => {
   writes?.push({ method: req.method(), url: pathname.slice(pathname.indexOf("/api") + "/api".length), body });
   return body;
 };
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type StubOpts = {
   /** What POST /admin/producers answers: 201 with an id, or 422 with the licence detail. */
