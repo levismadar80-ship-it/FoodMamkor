@@ -37,7 +37,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Stable React keys for rows that have no date yet (a date, once set, is the
 // natural key). A counter, not the array index: adding a chip re-sorts the
-// list, and index keys would remount every sibling that shifted.
+// list, and index keys would remount every sibling that shifted. Keys only
+// need to be unique WITHIN one editor's row list, so a module-level counter
+// (reset by an HMR re-evaluation in dev) is enough — and seeded rows use the
+// `stored-<date>` prefix, so they can never collide with it.
 let rowSeq = 0;
 
 /** A fresh row: closed on the given date, no note. */

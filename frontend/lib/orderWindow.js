@@ -161,7 +161,14 @@ function rangesOnDay(orderWindow, specialHours, now, ahead) {
   const dateKey = addDaysIso(israelToday(now), ahead);
   const override = overrideFor(specialHours, dateKey);
   if (override) {
-    return normalizeDayEntries(override.ranges).map((r) => ({
+    // An override entry is AUTHORITATIVE for its date even when it carries
+    // nothing usable: no `ranges` array, or only malformed ranges, reads as
+    // CLOSED — never as "fall back to the weekly day". The owner named the
+    // date; the safe reading of a named-but-empty date is closed. The backend
+    // validator never writes a missing `ranges` (it demands the list), so this
+    // branch is only reachable from a hand-edited row.
+    const ranges = Array.isArray(override.ranges) ? override.ranges : [];
+    return normalizeDayEntries(ranges).map((r) => ({
       openMin: toMinutes(r.open),
       closeMin: toMinutes(r.close),
     }));

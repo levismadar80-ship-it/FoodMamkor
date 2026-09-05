@@ -72,6 +72,12 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
   const issueByRow = new Map(issues.map((issue) => [issue.index, issue.reason]));
   const chips = today ? holidayChips(rows, today) : [];
   const isEmpty = rows.length === 0;
+  // Saving is gated on the clock having been read, EXPLICITLY. Before mount
+  // `issues` is [] only because there is no `today` to validate against — not
+  // because the rows are valid — so an empty issues list must never be what
+  // lets a save through. (Pre-mount `dirty` also happens to be false, but that
+  // is a coincidence of the seed, not the guard.)
+  const canSave = today !== null && dirty && !saving;
 
   useEffect(() => {
     reportDirty("specialHours", dirty);
@@ -148,6 +154,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
   };
 
   const handleSave = async () => {
+    if (!canSave) return;
     if (issues.length > 0) {
       setErrorMsg(issues[0].reason === "invalid_date" ? t("invalid_date") : tRange(issues[0].reason));
       return;
@@ -334,7 +341,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           onClick={handleSave}
-          disabled={saving || !dirty}
+          disabled={!canSave}
           data-testid="special-hours-save"
           className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
         >
