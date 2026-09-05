@@ -6,7 +6,7 @@
  *   - /map MapClient (desktop + mobile filters)
  *   - /map CityPickerModal
  *   - /group-buys filter
- *   - /experiences filter + /experiences/new form
+ *   - /experiences filter + /producer/dashboard/experiences/new form
  *   - /events filter + /producer/dashboard/events/new form
  *   - LocationModal
  *   - /settings (profile city — single field in ProfileTab)

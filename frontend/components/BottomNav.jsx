@@ -387,6 +387,7 @@ export default function BottomNav() {
         <nav
           ref={navRef}
           aria-label={t("nav.mobile_label")}
+          data-testid="bottom-nav"
           className={[
             // MEH-1253: pointer-events-auto re-enables events on the pill (and
             // everything inside it — tabs, account button, onboarding tips)

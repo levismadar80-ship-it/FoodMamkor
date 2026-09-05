@@ -3,13 +3,41 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-04 ערב — batch חוויות שני MEH-2249/2248 (session `015hizoq…`): שניהם מוזגו · ההכרעה שנשארה מ-#3357 סגורה
+
+**‏שורה אחת:** ‏#3382 (2249) `3013704a` 19:36Z · #3383 (2248) `4d286593` 20:09Z — שניהם auto-merge SQUASH, והשיטה אומתה פעמיים: מתשובת ה-`enable` ומהקומיט שנחת (תבנית `(#N)` + הורה יחיד, כלל 21). ‏**flip-check נקרא חי על שניהם, בשני הכיוונים:** 2249 Backlog → **Done** `19:36:46.471Z` · 2248 Backlog → **Done** `20:09:04.393Z`. שניהם בכיוון הנכון — ה-DoD התקיים, אין מה לפתוח מחדש. שני הענפים מ-`origin/staging` טרי; PR docs זה חומש רק אחרי ששניהם נחתו (כלל 31b).
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏ההכרעה של #3357 סגורה: הדשבורד, לא פאנל.** ‏יצירת חוויה עברה ל-`/producer/dashboard/experiences/new`, מאחורי שער ה-layout שכבר מגדר את יצירת האירוע. אפס קוד גישה חדש ואפס קופי חדש — זו בדיוק הסיבה שאופציית הפאנל נדחתה: היא הייתה מחזירה את לולאת MEH-1599 שה-mirror המילולי כבר נתקע בה.
+2. **‏`Env drift` הוא ה-gate ש-probe חדש הכי מפיל, והוא היה שלי.** ‏probe שקורא `process.env.X` בשם חדש מאדים את `CI gate` דרך `check_env_drift.sh`. הידיות הקנוניות — **`QA_BASE_URL`** ו-**`PLAYWRIGHT_CHROMIUM_PATH`** — כבר על רשימת ה-exclude. אל תרחיבו את הרשימה (זה הכיוון האסור, כלל 32): קראו לוריאבל בשם הקיים. ‏`qa-meh2193-about-hub.mjs:25` כבר מתעד קובץ אחר שהמציא `QA_BASE`.
+3. **‏שני מכשירים כשלו באותה מחלקה, ושניהם נתפסו רק כי מישהו הסתכל.** ‏(א) regex רופף ב-i18n מחק מפתחות חיים בשמות-מרחב **אחרים** (`producer.detail.breadcrumb_home`, `events.list.breadcrumb_experiences`) — נתפס בקריאת ה-diff לפני commit. התיקון הקבוע: עריכת i18n ממוקמת לפי מבנה ה-JSON, ומאשרת `before == after` פרט לשינויים המכוונים. זה תפס `"title"` שני מקונן תחת `admin.experiences.columns`. ‏(ב) `grep ... frontend` החזיר **0** מתוך `No such file or directory`, כי ה-shell היה בתוך `frontend/`. **אפס הוא מה ש-grep מדפיס גם כשהוא לא רץ** — כל אימות שסומך על אפס צריך CONTROL על טוקן חי באותה הרצה.
+4. **‏מספר מדוד ששונה מהצפוי הוא דיווח, לא דבר לכוונן.** ‏2249 ציפה ל-`grep experiences/new` = 0 ומדד **8**; 2248 מנה 4 הפניות ומדד **9**. בשני המקרים הפער דווח בגוף ה-PR עם ההסבר, ובמקרה של 2248 גם תוקן — כי ה-`grep → 0` שהכרטיס עצמו דורש לא היה בר-השגה אחרת. ‏אימות שלישי של 2248 (`grep -c "experiences.card"`) **אינו מבחין כלל**: הוא מחזיר `0 0` גם לפני השינוי, כי ה-namespace הוא JSON מקונן ולא מפתח מנוקד.
+5. **‏E2E על staging אדום — כולל על קומיט המיזוג של #3382 — ומה שנקבע ומה שלא.** ‏אחרי המיזוג, ריצת `e2e.yml` על `3013704a` דיווחה **8 נכשלים / 2 flaky / 435 עברו**. ‏**מה שנקבע:** שבעה מתוך השמונה הם VRT ב-`parity.spec.ts` — `map`, `producer detail`, `about`, `login`, `register` (desktop) + `map`, `about` (mobile) — והשמיני הוא `31-favorites-journey-d`. **אף אחד מהם אינו משטח שה-diff נוגע בו**, ו-`home` — ה-route היחיד ב-VRT שעריכת ה-i18n שלי יכלה בכלל להגיע אליו — **עבר**. ‏`about-mobile` נכשל ביחס `0.04` עם הערה בספק עצמו שהפריים כולל דיוקן Cloudinary («external asset, not layout»), ו-`next-start.log` של אותה ריצה מלא ב-`producer lookup failed: 422 (id=p2)` — כלומר מצב נתונים/נכסים של ה-runner. הסט הזה כמעט זהה לסט של MEH-1727 (webfonts חסומים ב-CORS) ש-`testing.md` כבר מתעד באורך. **מה ש**לא** נקבע: שורש הבעיה.** אני לא יודעת למה זה נדלק דווקא עכשיו — הריצה שקדמה (`2dbba69b`) הייתה ירוקה, ולכן «אדום גם על ה-base» אינו תירוץ שאפשר להישען עליו כאן. זה **מדווח כתצפית לא מוסברת ולא כתקלה שיוחסה ל-harness** (Bug Protocol §6). ‏`E2E gate` אינו ב-required set (רק `CI gate` + `Deploy gate`) ולכן auto-merge ירה בלעדיו — התנהגות מתועדת, לא הפתעה, אבל היא גם הסיבה שהאדום הזה נחת על staging בלי לעצור אף אחד.
+5b. **‏הבקרה שכן קיימת:** ‏#3383 — diff של מחיקת קוד מת + הערות + מחרוזת כותרת אחת ב-admin — הפיל **את אותו** `E2E gate`. ‏diff כזה לא יכול לשנות פיקסלים ב-`/map`, `/about`, `/login`, `/register` או בעמוד בית עסק; זו הראיה החזקה ביותר שיש לי שהכשלים אינם תלויי-diff, והיא טיעון מהתוכן של ה-diff ולא טענת «flake».
+6. **‏מכסת ה-deployments של Vercel נגמרה ליום** (`api-deployments-free-per-day`). זו מכסת חשבון, לא בעיה של PR, ואינה required check — אין preview לשני ה-PRs, ו-smoke מול staging נדחה לספיר (MEH-2090).
+
+### PRs
+
+| PR | מה | מצב |
+| -- | -- | -- |
+| #3382 | MEH-2249 — יצירת חוויה לדשבורד, 308, metadata נמחק, 5 מצבי Playwright | `3013704a` (squash, 19:36Z) — Done אוטומטית |
+| #3383 | MEH-2248 — `ExperienceCard` היתום נמחק, 9 הפניות, `experiences.card` + כותרת admin | `4d286593` (squash, 20:09Z) — Done אוטומטית |
+| זה | docs backfill — CHANGELOG + HANDOFF + סגירת ההכרעה של #3357 | חומש רק אחרי ששני הקודמים נחתו (כלל 31b) |
+
+### רשימת ספיר (residual)
+
+* **‏smoke מול staging** לשני ה-PRs — ה-sandbox חסום (MEH-2090); אין preview כי המכסה נגמרה.
+* **‏שלוש הפניות מיושנות ל-`NewExperienceClient.jsx`** נותרו אחרי ש-#3382 מחק אותו: `ExperienceForm.jsx:8,14` ו-`lib/event-categories.js:15`. שני הכרטיסים הוציאו את `ExperienceForm.jsx` מה-scope במפורש, ולכן דווח ולא תוקן מענף שלישי — sweep קטן.
+* **‏E2E על staging** — האדום של `3013704a` לא הוסבר (סעיף 5 מעל). ריצה נקייה אחת על ראש staging תסגור או תפריך אותו.
+
 ## 2026-09-04 צהריים — batch חוויות MEH-2245/2246/2247 (session `015hizoq…`): שלושתם מוזגו · הכרעת UX אחת פתוחה · follow-up MEH-2248
 
 **‏שורה אחת:** ‏#3353 (2245) `ed59c0a` 12:06Z · #3361 (2247) `783ee3b` 12:23Z · #3357 (2246, RED) `f8447ae6` 14:54Z — ספיר אישרה מיזוג ב-14:21Z, ואז auto-merge SQUASH (השיטה נקראה מתשובת ה-enable, כלל 21). PR docs זה (#3363) חומש רק אחרי ששלושתם נחתו (כלל 31b). כל ענף מ-`origin/staging` @ `18af172`.
 
 ### מה שסשן חדש חייב לדעת
 
-1. **‏#3357 מחכה להכרעה, לא רק למיזוג.** הכרטיס ביקש לשקף לעמוד `/experiences/new` את שער ה-role של עמוד יצירת האירוע. Phase 0c: השער ה-page-level ההוא (`producer/dashboard/events/new/page.js:30-33`) **מעולם לא נצפה** — `producer/dashboard/layout.js:105-116` (layout משותף) מגדר קודם ומציג לצרכנית מחוברת פאנל «אין לך גישה» **בלי redirect**. ה-mirror המילולי (`push("/login?redirect=/experiences/new")` על role) נבנה, נמדד, ו**מלולפ**: `LoginClient.jsx:90` מחזיר משתמשת מחוברת ל-redirect, שהשער דוחף שוב ל-login. הוחזר. ה-PR הוא backend-only; שלוש אפשרויות ל-UX בגוף ה-PR (א: פאנל denied = קופי חדש, כלל 22 · ב: redirect ל-`/experiences` · ג: להשאיר — 403 בשרת בלבד).
+1. **‏[הוכרע 04/09 ערב — ראו הסשן שמעל] ‏#3357 חיכה להכרעה, לא רק למיזוג.** ‏**ההכרעה: אופציית הדשבורד. אופציית «פאנל denied על `/experiences/new`» נדחתה** — היא מחזירה את לולאת MEH-1599, ולכן גם אופציה א' (קופי denied חדש, כלל 22) ירדה מהשולחן: אין קופי חדש, ה-layout כבר מרנדר את `errors.access_denied.producer`. מומש ב-MEH-2249 / #3382 (`3013704a`). הפסקה המקורית נשמרת כרשומה של מה שהיה פתוח: הכרטיס ביקש לשקף לעמוד `/experiences/new` את שער ה-role של עמוד יצירת האירוע. Phase 0c: השער ה-page-level ההוא (`producer/dashboard/events/new/page.js:30-33`) **מעולם לא נצפה** — `producer/dashboard/layout.js:105-116` (layout משותף) מגדר קודם ומציג לצרכנית מחוברת פאנל «אין לך גישה» **בלי redirect**. ה-mirror המילולי (`push("/login?redirect=/experiences/new")` על role) נבנה, נמדד, ו**מלולפ**: `LoginClient.jsx:90` מחזיר משתמשת מחוברת ל-redirect, שהשער דוחף שוב ל-login. הוחזר. ה-PR הוא backend-only; שלוש אפשרויות ל-UX בגוף ה-PR (א: פאנל denied = קופי חדש, כלל 22 · ב: redirect ל-`/experiences` · ג: להשאיר — 403 בשרת בלבד).
 2. **‏Follow-ups שדווחו ולא בוצעו (scope):** ‏`components/ExperienceCard.jsx` יתום מאז מחיקת `ExperiencesClient` (רק הטסט שלו מייבא אותו; ה-docstring ב-`:14` עדיין אומר «sole consumer») · `lib/event-categories.js:13` `Related:` מצביע לקובץ שנמחק · `app/globals.css:577` הערה · `he.json:1855` «חוויות קהילתיות» (admin) · `he.json:2537` «מארחת קהילתית» (card fallback) · `experiences/new/page.js:6` «שיעור תזונה קהילתי» ב-metadata hardcoded — כולם מילות LOCK מחוץ לרשימות הקופי של שלושת הכרטיסים; כלל 22.
 3. **‏ה-308 מעביר את ה-query.** ‏`has: [{type:"query", key:"tab"}]` לא «צורך» את הפרמטר — `Location: /experiences?tab=experiences`. לא מזיק: ה-URL-writer של `EventsClient` (city/category בלבד) מנקה אחרי hydration, נמדד בשני viewports. ההערה ב-`next.config.js` תוקנה אחרי שהסקירה האדברסרית תפסה שהיא טענה אחרת.
 4. **‏flip-check (כלל 29b) — 2 מתוך 3 באותו session, אותה צורת גוף בדיוק:** ‏#3353 (`Closes MEH-2245`) **לא** סגר — הועבר Done ידנית · #3361 (`Closes MEH-2247`) סגר אוטומטית · #3357 (`Closes MEH-2246`) סגר אוטומטית (`completedAt 14:54:37.021Z`). אותו slug-shape בשלושתם. ההוראה נשארת: לאמת אחרי כל מיזוג בשני הכיוונים, לא לחזות לפני.
@@ -29,9 +57,10 @@
 
 ### רשימת ספיר (residual)
 
-* **‏#3357:** מיזוג (RED) + הכרעת ה-UX של `/experiences/new` לצרכנית (א/ב/ג בגוף ה-PR).
+* ~~**‏#3357:** מיזוג (RED) + הכרעת ה-UX של `/experiences/new` לצרכנית (א/ב/ג בגוף ה-PR).~~ — **סגור:** מוזג `f8447ae6`, וה-UX הוכרע לטובת הדשבורד (#3382).
 * **‏קופי:** שלוש מילות LOCK שנותרו (לקח 2) — כרטיס קופי קטן אם רוצים אפס «קהילתי» ב-he.json.
-* **‏dead code:** `ExperienceCard.jsx` + הטסט שלו — למחוק או לתת צרכן → **MEH-2248** (GREEN, Backlog).
+* ~~**‏dead code:** `ExperienceCard.jsx` + הטסט שלו → **MEH-2248**.~~ — **סגור:** נמחק ב-#3383.
+* **‏קופי — מה שנשאר אחרי #3383:** ‏`grep קהילתי frontend/messages/he.json` = **0**. המופע האחרון מחוץ ל-messages היה ב-metadata של `experiences/new/page.js`, והעמוד נמחק ב-#3382. אין שאריות LOCK פתוחות מהבאץ' הזה.
 
 ## 2026-09-03 ערב → 04/09 בוקר — drain כה' (session `01NTrU3k…`): ה-BRIEF של 18:10Z נעבד T0→T8 · 13 PRs נחתו · **ריליז staging→main #3328 בוצע (`0f273bf8`, merge commit, prod booted 09:51Z, 3 probes ×2 תקינים)** · שני drop-PRs + chunk 1 של 2219 ממתינים לספיר
 
