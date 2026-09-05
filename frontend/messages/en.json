@@ -876,6 +876,8 @@
         "show_week": "Full week",
         "hide_week": "Hide full week",
         "today": "Today",
+        "special_heading": "Special hours",
+        "special_closed": "Not accepting orders",
         "days": {
           "sun": "Sunday",
           "mon": "Monday",

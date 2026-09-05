@@ -139,7 +139,8 @@ export function openNowChipVisible({
 } = {}) {
   if (active) return true;
 
-  const declared = producers.filter((p) => p?.order_window).length;
+  // MEH-2264: an override-only producer has declared something too.
+  const declared = producers.filter((p) => p?.order_window || p?.special_hours).length;
   if (declared < OPEN_NOW_CHIP_MIN) return false;
 
   // Coverage passed. Zero-result only applies once the catalog is fully loaded
@@ -148,7 +149,7 @@ export function openNowChipVisible({
   if (!catalogFullyLoaded || now === null) return true;
 
   return producers.some((p) => {
-    const status = getOrderWindowStatus(p?.order_window, now);
+    const status = getOrderWindowStatus(p?.order_window, now, p?.special_hours);
     // "closing_soon" is still OPEN — it is a warning band, not a state change
     // (orderWindow.js CLOSING_SOON_MINUTES). Excluding it would hide the chip
     // in the last hour of every window, which is the hour it matters most.

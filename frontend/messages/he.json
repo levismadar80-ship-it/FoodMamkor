@@ -876,6 +876,8 @@
         "show_week": "כל השבוע",
         "hide_week": "הסתרת השבוע",
         "today": "היום",
+        "special_heading": "שעות מיוחדות",
+        "special_closed": "לא מקבלים הזמנות",
         "days": {
           "sun": "ראשון",
           "mon": "שני",

@@ -304,6 +304,26 @@ export const ProducerListSchema = z.object({
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
     .nullable()
     .optional(),
+  // MEH-1889 chunk B (MEH-2264): per-date overrides ABOVE `order_window`,
+  // order-axis authoritative — `{"YYYY-MM-DD": {ranges: [...], note?}}`, and
+  // `ranges: []` means closed on that date. Declared on the LIST schema for the
+  // MEH-1880 reason: ProducerCard's "open for orders" line and the open-now
+  // chip evaluator (lib/producer-filters.js) read the order axis from the two
+  // Zod-parsed list feeds, and an undeclared key is stripped by z.object. Inner
+  // shape stays permissive (same all-or-nothing-feed argument as order_window
+  // above); `normalizeDayEntries` drops any malformed range at read time.
+  special_hours: z
+    .record(
+      z.string(),
+      z
+        .object({
+          ranges: z.array(OrderWindowRange),
+          note: z.string().nullable().optional(),
+        })
+        .nullable(),
+    )
+    .nullable()
+    .optional(),
   // MEH-1678: the producer-level pair from ProducerListOut
   // (backend/app/schemas/schemas.py:2125-2135) — DISTINCT from
   // `delivery_areas[].delivery_fee` above, which is a per-area OVERRIDE of
