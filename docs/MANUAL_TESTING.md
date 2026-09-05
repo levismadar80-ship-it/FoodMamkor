@@ -42,12 +42,12 @@
 ---
 ## MEH-2138 chunk E — מונה SLA בראש תור המנהלת (21/08)
 
-- [ ] **המונה מופיע כשיש ממתינים** — היכנסי ל-`/admin/producers` כשיש לפחות עסק אחד ב-`pending` — **תוצאה מצופה:** מעל סרגל הכלים מופיעה שורה «N ממתינים · הוותיק: X ימי עסקים».
-- [ ] **הוא סופר רק ממתינים** — ודאי שיש גם עסקים מאושרים/טיוטות — **תוצאה מצופה:** ה-N סופר **רק** את אלה בסטטוס «ממתינה לאישור האדמין». טיוטה שממתינה 40 יום אינה נספרת ואינה הופכת ל«הוותיק».
-- [ ] **הצבע תואם את התג בשורה** — **תוצאה מצופה:** 0–1 אפור · 2 ענבר · 3 ומעלה אדום. הצבע של המונה זהה לצבע התג של השורה הוותיקה ביותר.
-- [ ] **תור ריק — אין שורה בכלל** — סנני לסטטוס «מאושר» בלבד — **תוצאה מצופה:** המונה **נעלם**. אין «0 ממתינים».
-- [ ] **המונה סופר את כל התור, לא את העמוד** — עם יותר מ-25 ממתינים (יותר מעמוד אחד) — **תוצאה מצופה:** ה-N הוא המספר הכולל, ולא מספר השורות בעמוד הנוכחי.
-- [ ] **‏375px** — **תוצאה מצופה:** השורה בתוך המסך, שורה אחת, לא נחתכת.
+- ✅ → admin-producers-queue.spec.ts (with pending rows the counter reads the count and the oldest wait) — **המונה מופיע כשיש ממתינים** — היכנסי ל-`/admin/producers` כשיש לפחות עסק אחד ב-`pending` — **תוצאה מצופה:** מעל סרגל הכלים מופיעה שורה «N ממתינים · הוותיק: X ימי עסקים».
+- ✅ → admin-producers-queue.spec.ts (a draft waiting 40 days is on screen and still excluded from the count and the oldest) — **הוא סופר רק ממתינים** — ודאי שיש גם עסקים מאושרים/טיוטות — **תוצאה מצופה:** ה-N סופר **רק** את אלה בסטטוס «ממתינה לאישור האדמין». טיוטה שממתינה 40 יום אינה נספרת ואינה הופכת ל«הוותיק».
+- ✅ → admin-producers-queue.spec.ts (oldest 1 → gray / 2 → amber / 3 → red, on the counter and on the oldest row's badge alike) — **הצבע תואם את התג בשורה** — **תוצאה מצופה:** 0–1 אפור · 2 ענבר · 3 ומעלה אדום. הצבע של המונה זהה לצבע התג של השורה הוותיקה ביותר.
+- ✅ → admin-producers-queue.spec.ts (filtering to approved only removes the counter entirely) — **תור ריק — אין שורה בכלל** — סנני לסטטוס «מאושר» בלבד — **תוצאה מצופה:** המונה **נעלם**. אין «0 ממתינים».
+- ✅ → admin-producers-queue.spec.ts (with 30 pending on a 25-row page the counter says 30 while the page shows 25) — **המונה סופר את כל התור, לא את העמוד** — עם יותר מ-25 ממתינים (יותר מעמוד אחד) — **תוצאה מצופה:** ה-N הוא המספר הכולל, ולא מספר השורות בעמוד הנוכחי.
+- ✅ → admin-producers-queue.spec.ts (on the phone project the counter sits inside the viewport on a single line — ⚠️ measured at 393px (Pixel 5, the suite's phone project), not 375) — **‏375px** — **תוצאה מצופה:** השורה בתוך המסך, שורה אחת, לא נחתכת.
 ## MEH-2138 chunk C — chip «חובה»/«רשות» בכותרת כל סקשן באקורדיון העריכה (21/08)
 
 - ✅ → dashboard-edit.spec.ts (every card in every group carries exactly one chip) — **כל כרטיס נושא chip** — היכנסי ל-`/producer/dashboard/edit`, פתחי כל אחת מארבע הקבוצות — **תוצאה מצופה:** בכותרת של **כל** כרטיס אקורדיון יש תגית קטנה, «חובה» (גוון primary) או «רשות» (אפור מעומעם). אין כרטיס בלי תגית.
@@ -1324,11 +1324,11 @@ What the automation asserts (and what to check manually if it's down):
 
 ב-`/admin/producers` (desktop; סריקה מהירה בנייד מספיקה — admin surface).
 
-- [ ] **תמונות מרונדרות בשורה ממתינה** — פתחי את תור האישורים עם בית עסק בסטטוס `pending` שיש לו תמונות — **תוצאה מצופה:** מתחת לשורה מופיעה רצועת thumbnails (עד 4 + "+N" אם יש יותר) לפני לחיצת "אשרי".
-- [ ] **URL שבור מסומן ⚠** — בית עסק ממתין עם תמונה שבורה (למשל `https://bread.jpg`) — **תוצאה מצופה:** ה-thumbnail מוחלף בסמן ⚠ אדום (לא תמונה ריקה), כך שאפשר לראות במבט אחד שהתמונה שבורה.
-- [ ] **קליק פותח את התמונה המלאה** — לחצי על thumbnail תקין — **תוצאה מצופה:** התמונה המקורית (לא החתוכה) נפתחת בטאב חדש.
-- [ ] **רק לממתינים** — בית עסק `approved` — **תוצאה מצופה:** אין רצועת thumbnails (הרצועה מיועדת לתור האישורים בלבד; כרטיס הסטורי של המאושרים ללא שינוי).
-- [ ] **בלי תמונות = בלי רצועה** — בית עסק ממתין ללא תמונות — **תוצאה מצופה:** אין רצועה ריקה (שער התמונה של MEH-799 חוסם אישור בלי תמונה בנפרד).
+- ✅ → admin-producers-queue.spec.ts (a pending row with six images shows four thumbnails and a «+2» overflow box) — **תמונות מרונדרות בשורה ממתינה** — פתחי את תור האישורים עם בית עסק בסטטוס `pending` שיש לו תמונות — **תוצאה מצופה:** מתחת לשורה מופיעה רצועת thumbnails (עד 4 + "+N" אם יש יותר) לפני לחיצת "אשרי".
+- ✅ → admin-producers-queue.spec.ts (a broken image URL is replaced by the «תמונה שבורה» marker) — **URL שבור מסומן ⚠** — בית עסק ממתין עם תמונה שבורה (למשל `https://bread.jpg`) — **תוצאה מצופה:** ה-thumbnail מוחלף בסמן ⚠ אדום (לא תמונה ריקה), כך שאפשר לראות במבט אחד שהתמונה שבורה.
+- ✅ → admin-producers-queue.spec.ts (clicking a thumbnail opens the original URL in a new tab) — **קליק פותח את התמונה המלאה** — לחצי על thumbnail תקין — **תוצאה מצופה:** התמונה המקורית (לא החתוכה) נפתחת בטאב חדש.
+- ✅ → admin-producers-queue.spec.ts (an approved row with images has no strip) — **רק לממתינים** — בית עסק `approved` — **תוצאה מצופה:** אין רצועת thumbnails (הרצועה מיועדת לתור האישורים בלבד; כרטיס הסטורי של המאושרים ללא שינוי).
+- ✅ → admin-producers-queue.spec.ts (a pending row without images has no strip at all) — **בלי תמונות = בלי רצועה** — בית עסק ממתין ללא תמונות — **תוצאה מצופה:** אין רצועה ריקה (שער התמונה של MEH-799 חוסם אישור בלי תמונה בנפרד).
 
 ---
 
@@ -1339,7 +1339,7 @@ Run on Vercel preview before merging to staging.
 ### Test 1 — Admin blocked on password upgrade path
 
 - [ ] Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`)
-- [ ] Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever rendered)
+- ✅ → admin-producers-queue.spec.ts (an admin on /register/producer gets the terminal gate and no form, on the same URL — ⚠️ STALE: since MEH-1489 it is an in-place gate screen, not a redirect to /admin) — Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever rendered)
 - [ ] In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')}, body: JSON.stringify({producer_name:'X',phone:'0501234567',category_ids:[],primary_contact_method:'whatsapp'})}).then(r => r.json().then(j => console.log(r.status, j)))` → **expected:** `403 {"detail":"מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת."}`
 - [ ] After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/auth/me`
 
@@ -1350,7 +1350,7 @@ Run on Vercel preview before merging to staging.
 ### Test 3 — Regression: consumer can still upgrade to producer
 
 - [ ] Log in as regular consumer (any non-admin, non-producer account)
-- [ ] Navigate to `/register/producer` → **expected:** form renders normally, no redirect
+- ✅ → admin-producers-queue.spec.ts (a consumer on /register/producer sees the pre-flight, not a gate) — Navigate to `/register/producer` → **expected:** form renders normally, no redirect
 - [ ] Submit a valid producer signup → **expected:** 200, role flips to `"producer"`, redirects to `/producer/dashboard`
 
 ### Test 4 — Regression: anonymous can still sign up as producer
@@ -1361,8 +1361,8 @@ Run on Vercel preview before merging to staging.
 
 ### Test 5 — Frontend CTAs hidden from admins
 
-- [ ] Log in as admin → check Header (mobile drawer), Footer (CTA panel "יש לך עסק?"), and `/producers` empty state → **expected:** no "הוסיפי עסק" / "הוסיפי את העסק שלך" link visible anywhere
-- [ ] Log in as consumer → all 3 surfaces SHOULD show the CTA
+- ✅ → admin-producers-queue.spec.ts (the account sheet hides «יש לך בית עסק?» for a admin — ⚠️ STALE on the surfaces: the Header CTA (MEH-907) and the Footer panel (MEH-721) were removed for everyone; the mobile AccountSheet is the surface that still gates by role) — Log in as admin → check Header (mobile drawer), Footer (CTA panel "יש לך עסק?"), and `/producers` empty state → **expected:** no "הוסיפי עסק" / "הוסיפי את העסק שלך" link visible anywhere
+- ✅ → admin-producers-queue.spec.ts (the account sheet offers «יש לך בית עסק?» for a consumer) — Log in as consumer → all 3 surfaces SHOULD show the CTA
 - [ ] Log out → all 3 surfaces SHOULD show the CTA (anonymous can still register)
 
 ---
@@ -1818,14 +1818,14 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Render-only Hebrew labels for `producer.status`. DB values unchanged (intentional per MEH-56). Source of truth: `frontend/lib/producer-status.js`.
 
-- [ ] Admin chip — `draft` — איך לבדוק: `/admin/producers`, שורה של עסק שנרשם ולא שלח לבדיקה; **תוצאה מצופה:** chip קורא "טיוטה" ברקע `bg-slate-100` — **לא** המילה האנגלית `draft` ולא אפור זהה ל"לא פעילה" (MEH-2126).
-- [ ] Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`.
-- [ ] Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
-- [ ] Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
-- [ ] Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`.
-- [ ] Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(label מתורגם)` ולא קוד גולמי.
+- ✅ → admin-producers-queue.spec.ts (the draft chip reads «טיוטה» in its own colour, never the raw code · draft and inactive are two different greys) — Admin chip — `draft` — איך לבדוק: `/admin/producers`, שורה של עסק שנרשם ולא שלח לבדיקה; **תוצאה מצופה:** chip קורא "טיוטה" ברקע `bg-slate-100` — **לא** המילה האנגלית `draft` ולא אפור זהה ל"לא פעילה" (MEH-2126).
+- ✅ → admin-producers-queue.spec.ts (the pending chip reads «ממתינה לאישור האדמין» in its own colour, never the raw code) — Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`.
+- ✅ → admin-producers-queue.spec.ts (the approved chip reads «מאושר» in its own colour, never the raw code) — Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
+- ✅ → admin-producers-queue.spec.ts (the rejected chip reads «נדחה» in its own colour, never the raw code) — Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
+- ✅ → admin-producers-queue.spec.ts (the inactive chip reads «לא פעילה» in its own colour, never the raw code) — Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`.
+- ✅ → admin-producers-queue.spec.ts (the /admin activity feed brackets the translated label next to the business name) — Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(label מתורגם)` ולא קוד גולמי.
 - [ ] Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending` → `/producer/dashboard`; **תוצאה מצופה:** מתחת לכפתור "השלימי פרופיל ←" מופיעה שורה "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"; "עריכת פרופיל" הוא link ל-`/settings`.
-- [ ] Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד הגולמי (לא `undefined`, לא קריסה).
+- ✅ → admin-producers-queue.spec.ts (an unknown status falls back to the raw code in the neutral colour) — Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד הגולמי (לא `undefined`, לא קריסה).
 
 ---
 
