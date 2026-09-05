@@ -13,8 +13,8 @@
 #
 # DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
 #
-# Frozen 2026-08-04 from mypy 2.3.0 over `mypy app/auth.py --strict`:
-# 20 errors, 3 files, 8 keys. Every number on this
+# Frozen 2026-09-05 from mypy 2.3.1 over `mypy app/auth.py --strict`:
+# 21 errors, 4 files, 9 keys. Every number on this
 # line is computed from the rows below, so it cannot drift from them.
 app/auth.py	assignment	1
 app/auth.py	import-untyped	1
@@ -24,3 +24,4 @@ app/database.py	no-untyped-def	2
 app/database.py	type-arg	2
 app/models/models.py	no-untyped-def	1
 app/models/models.py	var-annotated	6
+app/services/category_slug.py	no-untyped-def	1
