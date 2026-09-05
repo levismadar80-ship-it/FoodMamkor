@@ -422,8 +422,8 @@ const chip = (page: Page, city: string) => citiesBlock(page).getByRole("button",
 /**
  * Toggle a form checkbox by keyboard. On the CI mobile runner a pointer
  * `check()`/`uncheck()` on these 16px inputs was intercepted for 20 s by a
- * sibling <label> / the Section card (measured on PR #3432's first run, not
- * reproduced locally) — geometry the row does not claim anything about. Focus
+ * sibling <label> / the Section card (measured on this spec's first CI run,
+ * 05/09/2026 — not reproduced locally) — geometry the row does not claim anything about. Focus
  * + Space toggles the same native input regardless of what paints over it,
  * and the state is asserted afterwards, so a swallowed toggle still fails.
  */
