@@ -1560,14 +1560,14 @@ Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen sect
 
 Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר / דגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)** (MEH-927: "בשר ודגים" split into "בשר" + "דגים", both license-required). Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
 
-- [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
-- [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
-- [ ] Register vegetables — בחרי "ירקות ופירות" בלבד → שדה השתוקק לא מופיע, במקומו toggle "יש לי רישיון יצרן ↓". לחיצה → השדה נפתח אופציונלי. submit ללא ערך → 200 OK.
-- [ ] Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text.
-- [ ] Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על submit — **submit עובר** למרות האזהרה (manual-approval flow). 1234567 → אין warning.
-- [ ] Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`).
-- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר" (או "דגים") → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
-- [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
+- ✅ → admin-producer-form-licence.spec.ts («לחמים ואפייה» reveals «מספר רישיון יצרן (חובה)» with the Ministry-of-Health hint — the field + the advance with a number; the 200/redirect half is a real registration (backend tests)) — Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
+- ✅ → admin-producer-form-licence.spec.ts (an empty licence on «לחמים ואפייה» blocks «הבא» with «מספר רישיון יצרן חובה לקטגוריה זו» — ⚠️ STALE: since card 952 the gate is client-side on CATEGORY and no request leaves; the 422 is the backend's) — Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
+- ✅ → admin-producer-form-licence.spec.ts («פירות וירקות» alone shows the optional toggle; opened, the field is not «(חובה)» and empty still advances — ⚠️ STALE: the category is «פירות וירקות» and the toggle reads «יש לי רישיון יצרן (אם רלוונטי) ↓»; the submit half is backend) — Register vegetables — בחרי "ירקות ופירות" בלבד → שדה השתוקק לא מופיע, במקומו toggle "יש לי רישיון יצרן ↓". לחיצה → השדה נפתח אופציונלי. submit ללא ערך → 200 OK.
+- ✅ → admin-producer-form-licence.spec.ts («פירות וירקות» + «לחמים ואפייה» makes the field required, hint included) — Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text.
+- ✅ → admin-producer-form-licence.spec.ts («abc» shows the 7-10-digits warning without blocking; «1234567» shows none — ⚠️ STALE: the register warning is muted gray (text-fg-muted), not orange; the admin form's is amber) — Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על submit — **submit עובר** למרות האזהרה (manual-approval flow). 1234567 → אין warning.
+- ✅ → admin-producer-form-licence.spec.ts (the field caps at 20 characters) — Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`).
+- ✅ → admin-producer-form-licence.spec.ts («בשר» reveals the required licence field; the 422 for an empty one reaches the toast + a filled licence on «דגים»-class categories posts the number and lands on the queue — the request and the toast; the server's 422/201 is backend tests) — Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר" (או "דגים") → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
+- ✅ → admin-producer-form-licence.spec.ts (the edit page opens the licence field with the stored number — no toggle) — Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
 
@@ -1636,8 +1636,8 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
 - [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
 - [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
-- [ ] **MEH-743 honey required** — בחרי "דבש" → השדה "מספר רישיון יצרן (חובה)" מופיע inline. submit ללא ערך → 422 "מספר רישיון יצרן חובה לקטגוריה זו". submit עם 1234567 → 200 OK.
-- [ ] **MEH-743 olive-oil only optional** — בחרי "שמנים" בלבד → השדה לא מופיע, במקומו toggle אופציונלי. submit ללא ערך → 200 OK.
+- ✅ → admin-producer-form-licence.spec.ts («דבש» (found through the search) requires the licence — the field + the blocked advance; the 422/200 half is backend) — **MEH-743 honey required** — בחרי "דבש" → השדה "מספר רישיון יצרן (חובה)" מופיע inline. submit ללא ערך → 422 "מספר רישיון יצרן חובה לקטגוריה זו". submit עם 1234567 → 200 OK.
+- ✅ → admin-producer-form-licence.spec.ts («שמנים» alone keeps the licence optional and advances empty — the 200 half is backend) — **MEH-743 olive-oil only optional** — בחרי "שמנים" בלבד → השדה לא מופיע, במקומו toggle אופציונלי. submit ללא ערך → 200 OK.
 
 ---
 
@@ -2731,15 +2731,15 @@ Added with `feature/session-handoff`.
 ## MEH-213: Business location types + cities autocomplete (PR #242)
 
 ### Admin ProducerForm — "סוג העסק" section
-- [ ] Create new producer → "סוג העסק" section shows 2 checkboxes: "חנות פיזית" (checked by default) + "משלוחים" (unchecked) — צור עסק button is enabled
-- [ ] Uncheck both checkboxes → inline error "חייב לסמן לפחות אחד מהשניים" appears; save button becomes disabled
-- [ ] Check "משלוחים" only → cascading section appears with "משלוחים לכל הארץ" checkbox + CitiesAutocomplete below it
-- [ ] Check "משלוחים לכל הארץ" → CitiesAutocomplete disappears; save is enabled
-- [ ] Uncheck "משלוחים לכל הארץ" with no cities selected → inline error "יש לבחור לפחות עיר אחת"; save disabled
-- [ ] Type "תל" in CitiesAutocomplete → dropdown shows cities starting with "תל" (requires seeded cities table); click a result → city chip appears
-- [ ] Click × on a city chip → chip is removed
-- [ ] Keyboard: ArrowDown/Up navigates dropdown; Enter adds selected city; Backspace removes last chip when input is empty
-- [ ] Save delivery-only producer (no physical, offers_delivery=true, delivery_nationwide=true) → producer created; confirm in DB
+- ✅ → admin-producer-form-licence.spec.ts (defaults: «חנות פיזית» checked, «משלוחים» unchecked, «צור עסק» enabled) — Create new producer → "סוג העסק" section shows 2 checkboxes: "חנות פיזית" (checked by default) + "משלוחים" (unchecked) — צור עסק button is enabled
+- ✅ → admin-producer-form-licence.spec.ts (unticking both shows «חייב לסמן לפחות אחד מהשניים» and disables save) — Uncheck both checkboxes → inline error "חייב לסמן לפחות אחד מהשניים" appears; save button becomes disabled
+- ✅ → admin-producer-form-licence.spec.ts (delivery only reveals «משלוחים לכל הארץ» and the cities combobox) — Check "משלוחים" only → cascading section appears with "משלוחים לכל הארץ" checkbox + CitiesAutocomplete below it
+- ✅ → admin-producer-form-licence.spec.ts (ticking nationwide removes the delivery-cities combobox, enables save — and shows the «חוץ מ:» exclusion list (D4) — ⚠️ STALE: card 1255 renders a second autocomplete for the exclusion list; only the delivery-cities one disappears) — Check "משלוחים לכל הארץ" → CitiesAutocomplete disappears; save is enabled
+- ✅ → admin-producer-form-licence.spec.ts (unticking nationwide with no cities shows the at-least-one-city error and disables save — ⚠️ STALE: the live copy is «יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ») — Uncheck "משלוחים לכל הארץ" with no cities selected → inline error "יש לבחור לפחות עיר אחת"; save disabled
+- ✅ → admin-producer-form-licence.spec.ts (typing «תל» lists the matching cities, a pick becomes a chip, and × removes it — against a stubbed GET /cities, not the seeded table) — Type "תל" in CitiesAutocomplete → dropdown shows cities starting with "תל" (requires seeded cities table); click a result → city chip appears
+- ✅ → admin-producer-form-licence.spec.ts (typing «תל» lists the matching cities, a pick becomes a chip, and × removes it) — Click × on a city chip → chip is removed
+- ✅ → admin-producer-form-licence.spec.ts (keyboard: ArrowDown/Up highlight, Enter adds, Backspace removes the last chip) — Keyboard: ArrowDown/Up navigates dropdown; Enter adds selected city; Backspace removes last chip when input is empty
+- ✅ → admin-producer-form-licence.spec.ts (saving a delivery-only nationwide business posts the three location flags and no cities — the body on the wire; «confirm in DB» is backend tests) — Save delivery-only producer (no physical, offers_delivery=true, delivery_nationwide=true) → producer created; confirm in DB
 
 ### ProducerDetail — 4 location modes
 - [ ] Physical-only producer → MiniMap visible, Waze/Gmaps buttons visible, no DeliveryBlock
@@ -2757,8 +2757,8 @@ Added with `feature/session-handoff`.
 - [ ] Open /map → delivery-only producer does NOT appear as a pin; physical producer at same coords DOES appear
 
 ### Admin completeness dot
-- [ ] Delivery-only producer with delivery_nationwide=true but no lat/lng → completeness dot is green (not red)
-- [ ] Delivery-only producer with offers_delivery=true but no cities and no nationwide → completeness dot is yellow with "אזורי משלוח" in tooltip
+- ✅ → admin-producer-form-licence.spec.ts (delivery-only + nationwide with no coordinates is «שלם») — Delivery-only producer with delivery_nationwide=true but no lat/lng → completeness dot is green (not red)
+- ✅ → admin-producer-form-licence.spec.ts (delivery-only with no areas is yellow and names «אזורי משלוח») — Delivery-only producer with offers_delivery=true but no cities and no nationwide → completeness dot is yellow with "אזורי משלוח" in tooltip
 
 ### GET /cities?q= endpoint
 - [ ] After running seed script: GET /api/cities?q=תל → returns ["תל אביב-יפו", "תל מונד", ...] (Hebrew sorted)
