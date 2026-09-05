@@ -156,7 +156,7 @@ export default function ProducerHeader({
     .filter((k) => (hasImages ? k !== "verified" : true));
 
   return (
-    <div className="relative">
+    <div className="relative" data-testid="producer-header">
       {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
           MEH-815: imageless profiles carry the h1 in the Tinted Masthead, so
           it is omitted here to keep the name singular. lg:pe-56 reserves the
@@ -190,6 +190,12 @@ export default function ProducerHeader({
       {producer.reviews_count > 0 ? (
         <a
           href="#reviews"
+          // MEH-1249 chunk 8: the rating anchor's twin — ReviewExcerpt's
+          // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
+          // an href selector resolves to two elements. `new-mark` (the other
+          // arm of this ternary) already carries an id for the same test; this
+          // gives the rated arm one too.
+          data-testid="trust-strip-rating"
           className="mt-3 inline-flex items-center gap-1.5 self-start rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
         >
           <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
@@ -223,7 +229,10 @@ export default function ProducerHeader({
       {/* Group 4 — meta line (city · category · status) + one quiet kosher
           line. The status is colored text, no dot, no chip (mockup 1d). */}
       <div className="flex flex-col gap-1 mt-2 mb-1">
-        <p className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-sm text-muted">
+        <p
+          className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-sm text-muted"
+          data-testid="producer-header-meta"
+        >
           {producer.city && <span>{producer.city}</span>}
           {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
           {primaryCategory && <span>{primaryCategory.name}</span>}
@@ -316,7 +325,10 @@ export default function ProducerHeader({
           child's own `hidden lg:inline-flex` wrapper went with it: redundant
           once the row itself is desktop-only, and misleading to the next
           reader. 44px tap target + aria-pressed still live in FavoriteButton. */}
-      <div className="hidden lg:flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0">
+      <div
+        className="hidden lg:flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0"
+        data-testid="producer-actions-row"
+      >
         <FavoriteButton
           producerId={producer.id}
           producerName={producer.name}
