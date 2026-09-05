@@ -132,7 +132,10 @@ const rec = (r: Route, writes?: Rec[]) => {
   const req = r.request();
   let body: unknown = null;
   try { body = req.postDataJSON(); } catch { body = req.postData(); }
-  writes?.push({ method: req.method(), url: new URL(req.url()).pathname.replace(/^.*\/api/, ""), body });
+  const pathname = new URL(req.url()).pathname;
+  const at = pathname.indexOf("/api");
+  if (at < 0) throw new Error(`rec(): no /api segment in ${pathname}`);
+  writes?.push({ method: req.method(), url: pathname.slice(at + "/api".length), body });
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
