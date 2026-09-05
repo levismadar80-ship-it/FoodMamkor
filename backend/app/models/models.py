@@ -180,6 +180,29 @@ class Producer(Base):
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
+    # MEH-1494 chunk A: the editor's pick gets a DATE and a REASON (TripAdvisor
+    # Travelers' Choice = 12-month window; MICHELIN re-inspects every 12-18
+    # months and withdraws stars). Both nullable, NO backfill — rows already
+    # recommended keep recommended_at NULL, read by chunk B's review list as
+    # "picked before the clock existed, due now" rather than a fabricated date.
+    # recommended_note is ADMIN-ONLY: the editor's internal reasoning about a
+    # real business. Never on ProducerListOut / ProducerDetailOut — the guard
+    # test asserts its absence by name. Chunk B stamps recommended_at on the
+    # admin toggle and adds the note field to the admin form; chunk A only
+    # creates the two facts. Paired migration: e2a7c9d4b6f1.
+    # DO NOT expose recommended_note on any public serializer.
+    recommended_at = Column(DateTime(timezone=True), nullable=True)
+    recommended_note = Column(Text, nullable=True)
+    # MEH-1287 chunk A: date-bounded editorial curation for the "עכשיו בעונה"
+    # homepage module. The business is in season UNTIL this date (inclusive,
+    # Israel calendar day — compare with israel_today(), never date.today()).
+    # NULL = not curated. A DATE rather than a boolean so it expires by itself
+    # instead of being a flag someone forgets in winter; same clock-not-flag
+    # shape as recommended_at above. Admin-only, NOT on ProducerUpdate —
+    # seasonality is the editor's call, not the owner's declaration (guard
+    # test asserts absence). Chunk B reads it with a count >= 3 render gate
+    # (ADDENDUM-4). Paired migration: f5b8d2c7a3e9.
+    in_season_until = Column(Date, nullable=True)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
     # MEH-1335: owner story fields consumed by the public OwnerCard
