@@ -208,12 +208,12 @@
 
 ## MEH-1599 — מסך "אין לך גישה" במקום הפניה שקטה (26/07)
 
-- [ ] צרכנית מחוברת בלוח הבקרה — התחברות כלקוחה (לא בעלת עסק) → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** נשארות באותה כתובת ורואות מסך "אין לך גישה ללוח הבקרה" עם הסבר, כפתור "רשמו בית עסק" וכפתור משני "חזרו לדף הבית". **לא** נזרקות לדף הבית ולא ל-`/login`
+- ✅ → dashboard-shell.spec.ts (an authenticated consumer stays on the URL and is told why, in place) — צרכנית מחוברת בלוח הבקרה — התחברות כלקוחה (לא בעלת עסק) → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** נשארות באותה כתובת ורואות מסך "אין לך גישה ללוח הבקרה" עם הסבר, כפתור "רשמו בית עסק" וכפתור משני "חזרו לדף הבית". **לא** נזרקות לדף הבית ולא ל-`/login`
 - [ ] אותה צרכנית באזור הניהול — כניסה ל-`/admin` — **תוצאה מצופה:** נשארות ב-`/admin`, מסך "אין לך גישה לאזור הניהול" עם כפתור "חזרו לדף הבית"
 - [ ] בעלת עסק באזור הניהול — התחברות כבעלת עסק → `/admin` — **תוצאה מצופה:** אותו מסך "אין לך גישה לאזור הניהול"; ומיד אחריו `/producer/dashboard` נטען כרגיל (הדחייה היא לפי תפקיד, לא התחברות שבורה)
-- [ ] מבקרת לא מחוברת — יציאה מהחשבון → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** מועברות ל-`/login?redirect=/producer/dashboard` (הכתובת מכילה את היעד)
-- [ ] חזרה ליעד אחרי התחברות — מאותו מסך התחברות, כניסה עם חשבון בעלת עסק — **תוצאה מצופה:** נוחתות על `/producer/dashboard`, לא על דף הבית
-- [ ] בעלת עסק תקינה — התחברות כבעלת עסק → `/producer/dashboard` — **תוצאה מצופה:** הלוח נטען כרגיל, בלי שום מסך דחייה
+- ✅ → dashboard-shell.spec.ts (an unauthenticated visitor is sent to /login carrying the target back) — מבקרת לא מחוברת — יציאה מהחשבון → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** מועברות ל-`/login?redirect=/producer/dashboard` (הכתובת מכילה את היעד)
+- ✅ → dashboard-shell.spec.ts (an unauthenticated visitor is sent to /login carrying the target back) — חזרה ליעד אחרי התחברות — מאותו מסך התחברות, כניסה עם חשבון בעלת עסק — **תוצאה מצופה:** נוחתות על `/producer/dashboard`, לא על דף הבית
+- ✅ → dashboard-shell.spec.ts (a producer gets the dashboard with no denial anywhere) — בעלת עסק תקינה — התחברות כבעלת עסק → `/producer/dashboard` — **תוצאה מצופה:** הלוח נטען כרגיל, בלי שום מסך דחייה
 - [ ] נייד 375px — כל התרחישים לעיל — **תוצאה מצופה:** המסך מרוכז, הכפתורים מלאי-רוחב ונלחצים, אין גלילה אופקית
 
 ## MEH-1547 — מונה "+N" של תגיות בכרטיס עסק = disclosure לחיץ (26/07)
@@ -1037,36 +1037,36 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 לוח הניהול הפך ל-hub-and-spoke עם `layout.js` משותף (tab nav + שער הזדהות אחד) ו-Overview רזה. נכנסות כבעלת עסק (role=producer).
 
-- [ ] **שער הזדהות** — משתמשת לא-producer (או לא מחוברת) על כל `/producer/dashboard/*` → הפניה ל-`/login`
-- [ ] **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`aria-current="page"`)
+- ✅ → dashboard-shell.spec.ts (an authenticated consumer stays on the URL and is told why, in place — ⚠️ STALE as written: MEH-1599 replaced this redirect with an in-place denied screen; the spec asserts the behaviour that replaced it) — **שער הזדהות** — משתמשת לא-producer (או לא מחוברת) על כל `/producer/dashboard/*` → הפניה ל-`/login`
+- ✅ → dashboard-shell.spec.ts (four tabs in the locked order, and exactly one is aria-current · the active tab follows the route) — **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`aria-current="page"`)
 - [ ] **סקירה** (`/producer/dashboard`) — ברכה + באנרי סטטוס + כרטיס השלמת פרופיל + מתג זמינות + AnalyticsSection נשארים; אין כפול ואין רגרסיה
 - [ ] **עריכה** (`/producer/dashboard/edit`) — 3 טפסי העריכה (ביו AI / שאלות מותאמות / ערוצי קשר) עובדים זהה לקודם (שמירה ב-PUT /producers/me)
 - [ ] **כלים** (`/producer/dashboard/tools`) — גריד הקישורים המהירים; "הוסיפי אירוע" → `/producer/dashboard/events/new`; "צפי בעסק" → `/producer/{id}`
-- [ ] **תובנות** — הטאב **לא** מופיע עדיין ב-1A (נוסף ב-1B); אין טאב מת / "בקרוב"
+- ✅ → dashboard-shell.spec.ts (four tabs in the locked order, and exactly one is aria-current — only the LIVE half: the tab COUNT rejects a dead / «בקרוב» tab. The first clause is a statement about increment 1A, not about today's app, and is not convertible) — **תובנות** — הטאב **לא** מופיע עדיין ב-1A (נוסף ב-1B); אין טאב מת / "בקרוב"
 - [ ] **נייד (375px)** — שורת הטאבים נקראת ללא horizontal scroll; כל טאב נפתח תקין
-- [ ] **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות
+- ✅ → dashboard-shell.spec.ts (/en renders English tab labels, with no raw message keys) — **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות
 
 ## MEH-964 chunk 1B — KPI strip on Overview + תובנות tab
 
 ה-Overview קיבל רצועת 4 KPI נעולה + שורת המרה, והאנליטיקה העמוקה עברה לטאב חדש "תובנות". נכנסות כבעלת עסק (role=producer).
 
-- [ ] **רצועת KPI (סקירה)** — 4 קלפים ב-2×2, סדר RTL ימין→שמאל: פניות בוואטסאפ → צרי קשר → דירוג → צפיות; **זהה בנייד ובדסקטופ**
-- [ ] **ללא דלתות/חצים** — אין מגמה/חץ ליד מספר; תווית חלון אחידה "7 הימים האחרונים" בשלושה הקלפים (דירוג מציג "{N} ביקורות")
+- ✅ → dashboard-shell.spec.ts (four KPIs in the locked DOM order, one uniform window label, no deltas · with no activity at all the strip is replaced) — **רצועת KPI (סקירה)** — 4 קלפים ב-2×2, סדר RTL ימין→שמאל: פניות בוואטסאפ → צרי קשר → דירוג → צפיות; **זהה בנייד ובדסקטופ**
+- ✅ → dashboard-shell.spec.ts (four KPIs in the locked DOM order, one uniform window label, no deltas) — **ללא דלתות/חצים** — אין מגמה/חץ ליד מספר; תווית חלון אחידה "7 הימים האחרונים" בשלושה הקלפים (דירוג מציג "{N} ביקורות")
 - [ ] **שורת המרה** — מתחת לרצועה, שקטה/מוצללת (לא קלף): "X% מהצופות פנו אלייך" (מונה = וואטסאפ בלבד)
 - [ ] **תג "בעלת עסק השבוע"** — נשאר ב-Overview כשמתקיימים התנאים (profile_strength≥80 + rank=1)
-- [ ] **תובנות** (`/producer/dashboard/insights`) — הטאב הרביעי מופיע; מציג את הקלפים החלוניים (צפיות/חיפושים/וואטסאפ/צרי קשר) + עוקבים/דירוג + 2 הגרפים (קו צפיות + ערים מובילות)
-- [ ] **אין כפילות** — רצועת ה-KPI מופיעה רק ב-Overview, לא ב-תובנות (אנטי-MEH-961/963)
+- ✅ → dashboard-shell.spec.ts (four tabs in the locked order · the insights tests below) — **תובנות** (`/producer/dashboard/insights`) — הטאב הרביעי מופיע; מציג את הקלפים החלוניים (צפיות/חיפושים/וואטסאפ/צרי קשר) + עוקבים/דירוג + 2 הגרפים (קו צפיות + ערים מובילות)
+- ✅ → dashboard-shell.spec.ts (the strip renders on Overview and NOWHERE else) — **אין כפילות** — רצועת ה-KPI מופיעה רק ב-Overview, לא ב-תובנות (אנטי-MEH-961/963)
 - [ ] **נייד (375px)** — 4 הטאבים: אם צרים מדי יש גלילה אופקית (overflow-x-auto), בלי חיתוך; רצועת ה-2×2 נקראת
-- [ ] **/en** — תווית הטאב "Insights"; ה-KPI באנגלית (WhatsApp leads / Contact clicks / Rating / Views); אין מחרוזות מפתח גולמיות
+- ✅ → dashboard-shell.spec.ts (/en renders English tab labels, with no raw message keys) — **/en** — תווית הטאב "Insights"; ה-KPI באנגלית (WhatsApp leads / Contact clicks / Rating / Views); אין מחרוזות מפתח גולמיות
 
 ## MEH-1134 — סקירה: סדר כרטיסים מותנה-מצב (completeness מעל availability)
 
 בטאב סקירה (`/producer/dashboard`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **עסק pending (או פרופיל חלקי)** — כרטיס השלמת הפרופיל מופיע מיד מתחת לבאנרי הסטטוס ו**מעל** כרטיס הזמינות (המנוטרל) — **תוצאה מצופה:** הפעולה הרלוונטית למעלה, לא מתחת לכרטיס מת
-- [ ] **עסק מאושר + פרופיל מלא** — הסדר הנוכחי נשמר: זמינות קודם, כרטיס ההשלמה מתחתיו (מעל ה-KPI) — **תוצאה מצופה:** אין שינוי לעסק חי
-- [ ] **מופע יחיד** — כרטיס ההשלמה מופיע פעם אחת בלבד בכל מצב; שאר הכרטיסים (אימות טלפון / לינק / באנרים) לא זזו
-- [ ] **נטרול זמינות נשמר** — עסק pending: פילי הזמינות עדיין מנוטרלים עם רמז "למה נעול"
+- ✅ → dashboard-shell.spec.ts (pending: the completeness card sits above the disabled availability card) — **עסק pending (או פרופיל חלקי)** — כרטיס השלמת הפרופיל מופיע מיד מתחת לבאנרי הסטטוס ו**מעל** כרטיס הזמינות (המנוטרל) — **תוצאה מצופה:** הפעולה הרלוונטית למעלה, לא מתחת לכרטיס מת
+- ✅ → dashboard-shell.spec.ts (approved + complete: the completeness card does not render at all — ⚠️ STALE as written: MEH-1397 deleted that slot, so the card cannot appear in this state) — **עסק מאושר + פרופיל מלא** — הסדר הנוכחי נשמר: זמינות קודם, כרטיס ההשלמה מתחתיו (מעל ה-KPI) — **תוצאה מצופה:** אין שינוי לעסק חי
+- ✅ → dashboard-shell.spec.ts (approved + complete: the completeness card does not render at all) — **מופע יחיד** — כרטיס ההשלמה מופיע פעם אחת בלבד בכל מצב; שאר הכרטיסים (אימות טלפון / לינק / באנרים) לא זזו
+- ✅ → dashboard-shell.spec.ts (pending: the completeness card sits above the disabled availability card) — **נטרול זמינות נשמר** — עסק pending: פילי הזמינות עדיין מנוטרלים עם רמז "למה נעול"
 
 ## MEH-1099 — עורך תמונות: drag-drop + טיפי צילום
 
@@ -1082,19 +1082,19 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב תובנות (`/producer/dashboard/insights`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **לפני אישור (status=pending)** — באנר בראש הדף: "העמוד עדיין לא פורסם" + "ברגע שיאושר, כאן יופיעו צפיות ופניות." + כפתור "להשלמת הפרופיל" → `/producer/dashboard/edit`; קלפי ה-KPI עדיין מוצגים (0) מתחתיו
-- [ ] **אחרי אישור** — הבאנר לא מופיע
-- [ ] **ערים מובילות עם 1-2 ערים** — רשימה טקסטואלית (עיר · מספר) במקום bars; עם 3+ ערים — ה-bars חוזרים
-- [ ] **0 עוקבות** — במקום "0 · +0 השבוע": "עדיין אין עוקבות — שתפו את העמוד"; כשהעסק מאושר "שתפו את העמוד" מקושר לעמוד הציבורי
+- ✅ → dashboard-shell.spec.ts (before approval a banner explains the zeros and routes to the edit tab) — **לפני אישור (status=pending)** — באנר בראש הדף: "העמוד עדיין לא פורסם" + "ברגע שיאושר, כאן יופיעו צפיות ופניות." + כפתור "להשלמת הפרופיל" → `/producer/dashboard/edit`; קלפי ה-KPI עדיין מוצגים (0) מתחתיו
+- ✅ → dashboard-shell.spec.ts (after approval the banner is gone) — **אחרי אישור** — הבאנר לא מופיע
+- ✅ → dashboard-shell.spec.ts (top cities: bars at 3+, a plain list at 1-2) — **ערים מובילות עם 1-2 ערים** — רשימה טקסטואלית (עיר · מספר) במקום bars; עם 3+ ערים — ה-bars חוזרים
+- ✅ → dashboard-shell.spec.ts (zero followers gets an invitation instead of «0 · +0») — **0 עוקבות** — במקום "0 · +0 השבוע": "עדיין אין עוקבות — שתפו את העמוד"; כשהעסק מאושר "שתפו את העמוד" מקושר לעמוד הציבורי
 - [ ] **נייד (375px)** — הבאנר והקלפים נקראים ללא גלילה אופקית
 
 ## MEH-1102 — טאב כלים: ניקוי כפילות + אייקונים
 
 בטאב כלים (`/producer/dashboard/tools`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **אין כרטיס "עריכת פרופיל"** — הגריד מציג 4 כרטיסים בלבד (הוספת אירוע / הצגת העסק באתר / ניהול קבוצות רכש / ניהול מתכונים); עריכה נגישה דרך הטאב בניווט
-- [ ] **אייקון לכל כרטיס** — כל כרטיס עם אייקון Phosphor ירוק מעל הכותרת
-- [ ] **יעדים ללא שינוי** — כל כרטיס מוביל לאותו יעד כמו קודם
+- ✅ → dashboard-shell.spec.ts (the grid holds exactly five cards, and the two removed ones are absent — ⚠️ the doc says FOUR and names «הצגת העסק באתר», which MEH-1357 removed; the count asserted is the measured five) — **אין כרטיס "עריכת פרופיל"** — הגריד מציג 4 כרטיסים בלבד (הוספת אירוע / הצגת העסק באתר / ניהול קבוצות רכש / ניהול מתכונים); עריכה נגישה דרך הטאב בניווט
+- ✅ → dashboard-shell.spec.ts (every card carries an icon above its title) — **אייקון לכל כרטיס** — כל כרטיס עם אייקון Phosphor ירוק מעל הכותרת
+- ✅ → dashboard-shell.spec.ts (the grid holds exactly five cards, and the two removed ones are absent) — **יעדים ללא שינוי** — כל כרטיס מוביל לאותו יעד כמו קודם
 - [ ] **/settings עדיין נגיש** — דרך תפריט החשבון (AccountSheet) ודרך כרטיס השלמת הפרופיל (שדה עיר)
 - [ ] **נייד (375px)** — הגריד נקרא, הכרטיסים לחיצים
 

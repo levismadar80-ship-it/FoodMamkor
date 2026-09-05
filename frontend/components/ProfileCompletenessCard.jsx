@@ -269,6 +269,7 @@ export default function ProfileCompletenessCard({ producer }) {
   if (isComplete) {
     return (
       <div
+        data-testid="profile-completeness-card"
         className="bg-background border border-border rounded-[16px] px-6 py-4 mb-8 flex items-center gap-3"
         role="status"
       >
@@ -290,7 +291,10 @@ export default function ProfileCompletenessCard({ producer }) {
       : t("yellow_low_headline", { percent });
 
   return (
-    <div className="bg-background border border-border rounded-[16px] p-6 md:p-8 mb-8">
+    <div
+      data-testid="profile-completeness-card"
+      className="bg-background border border-border rounded-[16px] p-6 md:p-8 mb-8"
+    >
       <div className="flex items-start gap-4">
         <ProgressRing
           percent={percent}
