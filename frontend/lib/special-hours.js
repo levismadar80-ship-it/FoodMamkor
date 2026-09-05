@@ -115,6 +115,9 @@ function eachDate(start, end) {
   const [ey, em, ed] = end.split("-").map(Number);
   const out = [];
   for (let t = Date.UTC(sy, sm - 1, sd); t <= Date.UTC(ey, em - 1, ed); t += DAY_MS) {
+    // Date ARITHMETIC on UTC-midnight instants built from the ISO dates above —
+    // not a "today" read; israelToday() owns today (see the callers).
+    // guard-ok: UTC date arithmetic on fixed ISO inputs, not a clock read
     out.push(new Date(t).toISOString().slice(0, 10));
   }
   return out;
