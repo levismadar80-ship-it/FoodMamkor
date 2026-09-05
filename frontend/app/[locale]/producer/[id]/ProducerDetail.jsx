@@ -115,7 +115,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const primaryCategory = producer.categories?.[0];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="max-w-6xl mx-auto px-4 py-6" data-testid="producer-detail-root">
       {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in
           the Tinted Masthead for imageless profiles and in ProducerHeader
           otherwise), in-flow, above the fold. Self-gates on ownership; a
@@ -123,7 +123,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       <OwnerEditBar producer={producer} />
       {/* MEH-1146 chunk B: breadcrumb only — the redundant "→ חזרה" button was
           removed (the breadcrumb already provides the home/category path). */}
-      <div className="mb-4">
+      <div className="mb-4" data-testid="producer-breadcrumb-block">
         <Breadcrumb
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
@@ -251,7 +251,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       {/* Two-column layout: main + sticky contact sidebar */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
         {/* ================= Main column ================= */}
-        <div>
+        <div data-testid="producer-main-column">
           <ProducerHeader
             producer={producer}
             isVacation={isVacation}

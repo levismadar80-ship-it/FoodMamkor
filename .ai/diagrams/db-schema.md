@@ -64,6 +64,9 @@ erDiagram
         string availability_status "legacy — preserved during MEH-291 overlap"
         string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation"
         date vacation_until "nullable — required when availability_state=on_vacation"
+        timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
+        text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
+        date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         string plan "free|premium"
         boolean grass_fed
@@ -101,6 +104,7 @@ erDiagram
         string name UK
         string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
+        boolean is_system "NOT NULL, server_default false — MEH-1456 chunk A, revision b7d3e5a9c1f4; TRUE for the 18 seed_data.CATEGORIES rows (backfilled by name + written by the seed), FALSE for admin-created rows. Chunk 2b refuses rename/delete on TRUE"
     }
 
     products {

@@ -180,6 +180,29 @@ class Producer(Base):
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
+    # MEH-1494 chunk A: the editor's pick gets a DATE and a REASON (TripAdvisor
+    # Travelers' Choice = 12-month window; MICHELIN re-inspects every 12-18
+    # months and withdraws stars). Both nullable, NO backfill — rows already
+    # recommended keep recommended_at NULL, read by chunk B's review list as
+    # "picked before the clock existed, due now" rather than a fabricated date.
+    # recommended_note is ADMIN-ONLY: the editor's internal reasoning about a
+    # real business. Never on ProducerListOut / ProducerDetailOut — the guard
+    # test asserts its absence by name. Chunk B stamps recommended_at on the
+    # admin toggle and adds the note field to the admin form; chunk A only
+    # creates the two facts. Paired migration: e2a7c9d4b6f1.
+    # DO NOT expose recommended_note on any public serializer.
+    recommended_at = Column(DateTime(timezone=True), nullable=True)
+    recommended_note = Column(Text, nullable=True)
+    # MEH-1287 chunk A: date-bounded editorial curation for the "עכשיו בעונה"
+    # homepage module. The business is in season UNTIL this date (inclusive,
+    # Israel calendar day — compare with israel_today(), never date.today()).
+    # NULL = not curated. A DATE rather than a boolean so it expires by itself
+    # instead of being a flag someone forgets in winter; same clock-not-flag
+    # shape as recommended_at above. Admin-only, NOT on ProducerUpdate —
+    # seasonality is the editor's call, not the owner's declaration (guard
+    # test asserts absence). Chunk B reads it with a count >= 3 render gate
+    # (ADDENDUM-4). Paired migration: f5b8d2c7a3e9.
+    in_season_until = Column(Date, nullable=True)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
     # MEH-1335: owner story fields consumed by the public OwnerCard
@@ -868,6 +891,22 @@ class Category(Base):
     # nobody "simplifies" the explicit value back out.
     slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
+    # MEH-1456 chunk A: declared ownership ON THE ROW (Oracle Siebel "Protect
+    # Seed Data", IBM RDU WRITE_PROTECTED — and, measured 04/09, GBP's closed
+    # taxonomy / Etsy's immutable taxonomy_id). TRUE for exactly the rows
+    # seed_data.CATEGORIES owns, FALSE for admin-created rows. Two writers, on
+    # purpose: revision b7d3e5a9c1f4 backfills existing databases by name
+    # (name is UNIQUE and the seed's own conflict key, so a seed-named row IS
+    # the seed row); seed_categories writes True on its own INSERT for fresh
+    # ones, where migrations run BEFORE the boot seed inserts anything.
+    # Two-state by design (NOT NULL + server_default false) — ownership has no
+    # "unknown". Chunk 2b makes update_category / delete_category refuse a
+    # rename or delete while this is True; chunk A only creates the fact.
+    # DO NOT expose this as admin-editable — a flag the second authority can
+    #        clear is not a lock (the whole point of the column).
+    is_system = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
