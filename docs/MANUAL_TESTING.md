@@ -134,9 +134,9 @@
 
 ## MEH-1884 — שעות פתיחה נספרות בהשלמת הפרופיל (04/08)
 
-- [ ] **עסק שחסרות לו רק שעות** — כבעלת-עסק עם פרופיל מלא (עיר, קואורדינטות, פרטי קשר, קטגוריה, תמונה, תיאור) אבל **בלי** שעות פתיחה → `/producer/dashboard` — **תוצאה מצופה:** כרטיס השלמת הפרופיל **מופיע**. לפני השינוי הוא לא הופיע כלל, כי השעות לא נספרו — זה עיקר השינוי
-- [ ] **אחרי מילוי השעות** — לאותו עסק, `/producer/dashboard/edit` → כרטיס "שעות פתיחה" → הגדירי שעות ושמרי → חזרה ל-`/producer/dashboard` — **תוצאה מצופה:** כרטיס ההשלמה **נעלם** (הפרופיל שלם)
-- [ ] **הטבעת האחוזים לא זזה** — באותו מסך, לפני ומאחרי מילוי השעות — **תוצאה מצופה:** האחוז בטבעת **זהה** בשני המצבים. רשימת הצעדים בכרטיס קבועה על 4 (תמונה / מיקום / מוצרים / קשר) ושעות **אינן** צעד חמישי — עסק שהיה 100% לא יורד ל-80%
+- ✅ → dashboard-images-contact.spec.ts (a full profile without hours shows the card at 83% with «שעות פתיחה» open — 83% of six steps, not the doc's 4-step framing) — **עסק שחסרות לו רק שעות** — כבעלת-עסק עם פרופיל מלא (עיר, קואורדינטות, פרטי קשר, קטגוריה, תמונה, תיאור) אבל **בלי** שעות פתיחה → `/producer/dashboard` — **תוצאה מצופה:** כרטיס השלמת הפרופיל **מופיע**. לפני השינוי הוא לא הופיע כלל, כי השעות לא נספרו — זה עיקר השינוי
+- ✅ → dashboard-images-contact.spec.ts (with hours filled, an approved business has no completeness card — the hours come from the stubbed primary location, not a real save) — **אחרי מילוי השעות** — לאותו עסק, `/producer/dashboard/edit` → כרטיס "שעות פתיחה" → הגדירי שעות ושמרי → חזרה ל-`/producer/dashboard` — **תוצאה מצופה:** כרטיס ההשלמה **נעלם** (הפרופיל שלם)
+- ✅ → dashboard-images-contact.spec.ts (filling hours moves the ring from 83% to complete — hours is a counted step — ⚠️ STALE: MEH-1895 made hours a counted sixth step; the ring DOES move and the list is six, not four) — **הטבעת האחוזים לא זזה** — באותו מסך, לפני ומאחרי מילוי השעות — **תוצאה מצופה:** האחוז בטבעת **זהה** בשני המצבים. רשימת הצעדים בכרטיס קבועה על 4 (תמונה / מיקום / מוצרים / קשר) ושעות **אינן** צעד חמישי — עסק שהיה 100% לא יורד ל-80%
 - [ ] **התווית באזור הניהול** — כאדמין → `/admin/producers` → ריחוף על מחוון ההשלמה של עסק בלי שעות — **תוצאה מצופה:** ה-tooltip מכיל **"שעות פתיחה"** ברשימת החסרים. זה המשטח היחיד שמציג את התווית עצמה
 - [ ] **דירוג צהוב, לא אדום** — אותו עסק באותה טבלה — **תוצאה מצופה:** השורה **צהובה** ולא אדומה. עסק בלי שעות עדיין נמצא ועדיין ניתן ליצור איתו קשר; אדום שמור לעיר / קואורדינטות / פרטי קשר בלבד
 - [ ] **הרמז במצב ריק** — `/producer/dashboard/edit` → "שעות פתיחה" של עסק **שטרם שמר שעות** — **תוצאה מצופה:** מתחת לכותרת המשנה מופיעה שורה אפורה "שעות שמוגדרות כאן מוצגות בעמוד העסק ונשלחות למנועי החיפוש."
@@ -239,8 +239,8 @@
 - [ ] **אימייל לא תקין (דשבורד)** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "ערוצי קשר" → שדה "אימייל" → הקלידי `not-an-email` → "שמירת ערוצי קשר" — **תוצאה מצופה:** שגיאה אדומה inline "כתובת אימייל לא תקינה" (אייקון אזהרה), לא נשמר.
 - [ ] **טלפון לא תקין (דשבורד)** — אותו כרטיס → שדה "טלפון" → `12345` → שמירה — **תוצאה מצופה:** "מספר טלפון לא תקין" inline.
 - [ ] **קישור קבוצת וואטסאפ שגוי** — שדה "קישור לקבוצת וואטסאפ" → `https://wa.me/123` → שמירה — **תוצאה מצופה:** שגיאה "קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com".
-- [ ] **ניקוי אימייל (ריק)** — מחקי את שדה האימייל לגמרי → שמירה — **תוצאה מצופה:** נשמר (הופך ל-None), אין 422.
-- [ ] **ערכים תקינים** — טלפון `050-123-4567`, אימייל `owner@example.com`, קבוצה `https://chat.whatsapp.com/ABCdef123` → שמירה — **תוצאה מצופה:** "נשמר"; הטלפון נשמר בלי מקפים (`0501234567`).
+- ✅ → dashboard-images-contact.spec.ts (clearing the email sends null, not an empty string — the PUT is captured; the «no 422» half is the server's) — **ניקוי אימייל (ריק)** — מחקי את שדה האימייל לגמרי → שמירה — **תוצאה מצופה:** נשמר (הופך ל-None), אין 422.
+- ✅ → dashboard-images-contact.spec.ts (valid values go out in one payload — the phone exactly as typed — ⚠️ the hyphen strip («0501234567») is server-side; the client sends «050-123-4567») — **ערכים תקינים** — טלפון `050-123-4567`, אימייל `owner@example.com`, קבוצה `https://chat.whatsapp.com/ABCdef123` → שמירה — **תוצאה מצופה:** "נשמר"; הטלפון נשמר בלי מקפים (`0501234567`).
 - [ ] **אדמין** — `/admin/producers` → עריכת בית עסק → שדה טלפון הוא `type="tel"` (מקלדת מספרית במובייל); ערך לא תקין → 422 בעברית.
 
 ---
@@ -339,9 +339,9 @@
 ## MEH-1439 — סמנטיקת dietary: tooltips + מודעות בעלת עסק
 
 - [ ] **Badge tooltip (any-product)** — עמוד עסק `/producer/[id]` עם מוצר אחד טבעוני מתוך כמה → הקישי על תג "טבעוני" — **תוצאה מצופה:** ה-tooltip אומר "לעסק יש מוצרים טבעוניים מסומנים בקטלוג." (לא "כל המוצרים"). אותו דבר ל"ללא גלוטן"/"ללא לקטוז".
-- [ ] **Helper מתחת לצ'יפים** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "מוצרים" → "מוצר חדש" (וגם עריכת מוצר) — **תוצאה מצופה:** מתחת לשורת סימוני התזונה מופיעה שורה אפורה "סימון תווית על מוצר מציג את העסק בסינון המתאים בדפי החיפוש והמפה."
-- [ ] **Kosher hint (מותנה)** — בעלת-עסק עם שדה כשרות חופשי מלא **וללא** תעודה מאומתת → `/producer/dashboard/edit` → כרטיס "אישורים ותעודות" (כשרות) — **תוצאה מצופה:** מופיע רמז "כדי שהעסק יופיע בסינון \"כשר\", יש להעלות תעודת כשרות לאימות."
-- [ ] **Kosher hint נעלם כשמאומת** — לעסק עם `kashrut_verified_at` → אותו כרטיס — **תוצאה מצופה:** הרמז לא מופיע.
+- ✅ → dashboard-images-contact.spec.ts (the new-product form explains the diet chips and guides name, description and price — the add form; the edit form's twin line is not asserted) — **Helper מתחת לצ'יפים** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "מוצרים" → "מוצר חדש" (וגם עריכת מוצר) — **תוצאה מצופה:** מתחת לשורת סימוני התזונה מופיעה שורה אפורה "סימון תווית על מוצר מציג את העסק בסינון המתאים בדפי החיפוש והמפה."
+- ✅ → dashboard-images-contact.spec.ts (a free-text kosher field with no verified certificate shows the filter hint) — **Kosher hint (מותנה)** — בעלת-עסק עם שדה כשרות חופשי מלא **וללא** תעודה מאומתת → `/producer/dashboard/edit` → כרטיס "אישורים ותעודות" (כשרות) — **תוצאה מצופה:** מופיע רמז "כדי שהעסק יופיע בסינון \"כשר\", יש להעלות תעודת כשרות לאימות."
+- ✅ → dashboard-images-contact.spec.ts (the kosher hint disappears once the certificate is verified) — **Kosher hint נעלם כשמאומת** — לעסק עם `kashrut_verified_at` → אותו כרטיס — **תוצאה מצופה:** הרמז לא מופיע.
 
 ## MEH-1536 — בודק "מגיעים אלייך?" (DeliveryChecker ב-DeliveryBlock)
 - [ ] **תשובה חיובית עם פרטים** — עמוד עסק עם משלוחים לערים מוגדרות → הקלידי עיר שמשלחים אליה ובחרי אותה מהרשימה — **תוצאה מצופה:** "כן, מגיעים ל[עיר]" עם ✓ ירוק, ומתחת שורת פרטים "[יום] · מינימום [סכום]₪" (רק שדות שקיימים לעיר הזו).
@@ -396,13 +396,13 @@
 
 ## MEH-1405 — ניהול אירועים וחוויות בדשבורד (רשימת "שלי" + עריכה + ביטול/מחיקה)
 
-- [ ] **רשימת האירועים שלי** — היכנסי כבעלת-עסק → `/producer/dashboard/tools` → כרטיס "האירועים שלי" (או ישירות `/producer/dashboard/events`) — **תוצאה מצופה:** רשימת האירועים שלך, כולל מבוטלים; לכל שורה תג "פעיל" (ירוק) / "מבוטל" (צהוב), תאריך+עיר, וכפתורי "עריכה · ביטול/הפעלה · מחיקה". CTA "אירוע חדש" בראש.
-- [ ] **עריכת אירוע** — הקישי "עריכה" על אירוע — **תוצאה מצופה:** טופס זהה לטופס היצירה, מלא מראש (כותרת/תיאור/תאריך/שעה/מיקום+כתובת/עיר/קטגוריה/מחיר/משתתפים). שני את הכותרת → "שמירה" → חזרה לרשימה, השינוי נראה.
-- [ ] **ביטול/הפעלה (is_active)** — הקישי "ביטול" על אירוע פעיל — **תוצאה מצופה:** התג הופך ל"מבוטל" מיד (אופטימי), הכפתור הופך ל"הפעלה". בדקי שהאירוע לא מופיע ב-`/events` הציבורי. הקישי "הפעלה" — חוזר ל"פעיל".
-- [ ] **מחיקת אירוע** — הקישי "מחיקה" → אשרי בדיאלוג — **תוצאה מצופה:** השורה נעלמת; ביטול הדיאלוג משאיר אותה.
-- [ ] **רשימת החוויות שלי** — `/producer/dashboard/experiences` — **תוצאה מצופה:** רשימת החוויות שלך עם תג סטטוס (מאושרת/בבדיקה/נדחתה/נדרשים תיקונים) + "עריכה · מחיקה". **אין** טוגל ביטול (לחוויה אין `is_active` — מחיקה היא ההסרה; ראו הערת ה-PR על follow-up סכמה).
-- [ ] **עריכת חוויה** — "עריכה" על חוויה — **תוצאה מצופה:** טופס היצירה מלא מראש (כולל שדה כתובת + בדיקת מודרציה חיה); "שמירה" → חזרה לרשימה.
-- [ ] **נגישות שדה כתובת** — בטופס אירוע/חוויה, שדה "מיקום ספציפי"/"כתובת" — **תוצאה מצופה:** תווית אחת בלבד (בלי הכפלת הכרזה בקורא-מסך).
+- ✅ → dashboard-manage-events.spec.ts (the tools card leads to «האירועים שלי», and the list shows active and cancelled events with their tags) — **רשימת האירועים שלי** — היכנסי כבעלת-עסק → `/producer/dashboard/tools` → כרטיס "האירועים שלי" (או ישירות `/producer/dashboard/events`) — **תוצאה מצופה:** רשימת האירועים שלך, כולל מבוטלים; לכל שורה תג "פעיל" (ירוק) / "מבוטל" (צהוב), תאריך+עיר, וכפתורי "עריכה · ביטול/הפעלה · מחיקה". CTA "אירוע חדש" בראש.
+- ✅ → dashboard-manage-events.spec.ts (editing an event opens the form prefilled, and saving a new title returns to the list showing it — the PUT is captured, never sent) — **עריכת אירוע** — הקישי "עריכה" על אירוע — **תוצאה מצופה:** טופס זהה לטופס היצירה, מלא מראש (כותרת/תיאור/תאריך/שעה/מיקום+כתובת/עיר/קטגוריה/מחיר/משתתפים). שני את הכותרת → "שמירה" → חזרה לרשימה, השינוי נראה.
+- ✅ → dashboard-manage-events.spec.ts (cancelling flips the tag to «מבוטל» and the button to «הפעלה», and reactivating flips both back — the public /events check is the /events page group's, not asserted here) — **ביטול/הפעלה (is_active)** — הקישי "ביטול" על אירוע פעיל — **תוצאה מצופה:** התג הופך ל"מבוטל" מיד (אופטימי), הכפתור הופך ל"הפעלה". בדקי שהאירוע לא מופיע ב-`/events` הציבורי. הקישי "הפעלה" — חוזר ל"פעיל".
+- ✅ → dashboard-manage-events.spec.ts (delete asks first — dismissing keeps the row and sends nothing; accepting removes it and DELETEs) — **מחיקת אירוע** — הקישי "מחיקה" → אשרי בדיאלוג — **תוצאה מצופה:** השורה נעלמת; ביטול הדיאלוג משאיר אותה.
+- ✅ → dashboard-manage-events.spec.ts (the experiences list shows the four status tags with edit + delete on every row — ⚠️ STALE: an APPROVED experience DOES carry a cancel/reactivate toggle since MEH-1419 (`experiences/page.js:167-184`); only non-approved rows have none) — **רשימת החוויות שלי** — `/producer/dashboard/experiences` — **תוצאה מצופה:** רשימת החוויות שלך עם תג סטטוס (מאושרת/בבדיקה/נדחתה/נדרשים תיקונים) + "עריכה · מחיקה". **אין** טוגל ביטול (לחוויה אין `is_active` — מחיקה היא ההסרה; ראו הערת ה-PR על follow-up סכמה).
+- ✅ → dashboard-manage-events.spec.ts (editing an experience opens the form prefilled including the address, the live moderation check fires, and saving returns to the list) — **עריכת חוויה** — "עריכה" על חוויה — **תוצאה מצופה:** טופס היצירה מלא מראש (כולל שדה כתובת + בדיקת מודרציה חיה); "שמירה" → חזרה לרשימה.
+- ✅ → dashboard-manage-events.spec.ts (the address field carries exactly one label in both forms — one accessible name, no sr-only twin) — **נגישות שדה כתובת** — בטופס אירוע/חוויה, שדה "מיקום ספציפי"/"כתובת" — **תוצאה מצופה:** תווית אחת בלבד (בלי הכפלת הכרזה בקורא-מסך).
 ## MEH-1401 — מייל "ברוכה הבאה" ב-RTL HTML (21/07)
 
 - [ ] **BiDi תקין בג'ימייל** — הירשמי עם מייל בדיקה (צרכנית) ב-staging → פתחי את מייל ה-welcome בג'ימייל נייד — **תוצאה מצופה:** כותרת "שלום {שם פרטי}," מיושרת לימין; "ברוכה הבאה למהמקור! 🌿" עם סימן הקריאה בקצה השמאלי (לא בהתחלה); כפתור CTA ירוק מרוכז "גלו בתי עסק"; קישור מפה inline; ללא פיסוק שבור.
@@ -679,11 +679,11 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק.
 
-- [ ] **העלאת תמונה נשמרת בלי "שמור" (MEH-1236)** — עריכה → תמונות → העלי תמונה → חזרי לסקירה — **תוצאה מצופה:** צעד התמונה בצ'קליסט מסומן ✓ בלי לחיצת שמור; הסרת תמונה עדיין דורשת "שמרו".
+- ✅ → dashboard-images-contact.spec.ts (an upload saves without pressing save — the PUT carries the new image — the checklist ✓ on the Overview is not re-asserted here (dashboard-edit-cards.spec.ts covers the image step)) — **העלאת תמונה נשמרת בלי "שמור" (MEH-1236)** — עריכה → תמונות → העלי תמונה → חזרי לסקירה — **תוצאה מצופה:** צעד התמונה בצ'קליסט מסומן ✓ בלי לחיצת שמור; הסרת תמונה עדיין דורשת "שמרו".
 - [ ] **"סיימתי להשלים — שלחו לבדיקה" (MEH-1236)** — עסק בהמתנה עם בקשת השלמה מהאדמין → לחצי על הכפתור בבאנר — **תוצאה מצופה:** שורת אישור "נשלח לבדיקה"; לאדמין מגיע מייל/וואטסאפ "העסק X השלים את הפרטים"; עסק מאושר → הכפתור לא רלוונטי (הבאנר לא מוצג).
-- [ ] **באנר שינויים שלא נשמרו מפרט כרטיסים (MEH-1237)** — עריכה → שני שינויים בשני כרטיסים בלי לשמור — **תוצאה מצופה:** הבאנר "שינויים שלא נשמרו ב:" + שמות שני הכרטיסים; לחיצה על שם → האקורדיון נפתח וגולל אליו.
-- [ ] **עסק עם מוצר אחד מגיע ל-100% (MEH-1238)** — פרופיל מלא + מוצר אחד בקטלוג — **תוצאה מצופה:** הצ'קליסט 4/4 = "הפרופיל מלא"; badge "3 מוצרים" לא הושפע.
-- [ ] **טופס מוצר חדש עם הכוונה (MEH-1239)** — עריכה → מוצרים → "הוסיפו מוצר" — **תוצאה מצופה:** placeholders לדוגמה בשם ובתיאור + שורת hint מתחת לזוג המחירים (מחיר אחיד ↔ טווח); שום שינוי בהתנהגות.
+- ✅ → dashboard-images-contact.spec.ts (edits in two cards put both names in the unsaved banner, in card order) — **באנר שינויים שלא נשמרו מפרט כרטיסים (MEH-1237)** — עריכה → שני שינויים בשני כרטיסים בלי לשמור — **תוצאה מצופה:** הבאנר "שינויים שלא נשמרו ב:" + שמות שני הכרטיסים; לחיצה על שם → האקורדיון נפתח וגולל אליו.
+- ✅ → dashboard-edit-cards.spec.ts (COVERED by «products: zero is a todo, one is done» — ⚠️ STALE: six steps, not 4/4; the «3 מוצרים» badge is not asserted) — **עסק עם מוצר אחד מגיע ל-100% (MEH-1238)** — פרופיל מלא + מוצר אחד בקטלוג — **תוצאה מצופה:** הצ'קליסט 4/4 = "הפרופיל מלא"; badge "3 מוצרים" לא הושפע.
+- ✅ → dashboard-images-contact.spec.ts (the new-product form explains the diet chips and guides name, description and price) — **טופס מוצר חדש עם הכוונה (MEH-1239)** — עריכה → מוצרים → "הוסיפו מוצר" — **תוצאה מצופה:** placeholders לדוגמה בשם ובתיאור + שורת hint מתחת לזוג המחירים (מחיר אחיד ↔ טווח); שום שינוי בהתנהגות.
 - [ ] **חיפוש כתובת (MEH-1234, אחרי הוספת המפתח ב-Vercel)** — עריכה → מיקום → הקלידי "דרך שרה" — **תוצאה מצופה:** הצעות רחוב רלוונטיות בעברית, בלי שורות כפולות; בחירה ממלאת עיר/קואורדינטות ו"שמרו" נדלק. בלי מפתח — התנהגות Nominatim כמו היום (כולל dedupe).
 
 ## MEH-1229 — עקביות תמונות בתי-עסק (optimizeCloudinary + מפת יחסים פר-surface)
@@ -1072,10 +1072,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב עריכה (`/producer/dashboard/edit`), סקשן "תמונות". נכנסות כבעלת עסק (role=producer).
 
-- [ ] **גרירת תמונה** — גוררים קובץ תמונה מעל האזור המקווקו — **תוצאה מצופה:** המסגרת נצבעת ירוק והטקסט מתחלף ל"שחררו כאן להעלאה"; שחרור מעלה את התמונה לגריד
-- [ ] **קובץ שאינו תמונה** — גרירת PDF ושחרורו — **תוצאה מצופה:** לא קורה כלום (מסונן בשקט, אין שגיאה)
-- [ ] **Click עדיין עובד** — לחיצה על האזור פותחת בורר קבצים ומעלה כרגיל
-- [ ] **טיפי צילום** — 3 טיפים מוצגים מתחת לאזור ההעלאה (אור טבעי / תוצרת אמיתית / בלי סטוק); בעברית, ללא אימוג'י
+- ✅ → dashboard-images-contact.spec.ts (dragging a file over the zone swaps the copy, and dropping an image uploads it — the «שחררו כאן להעלאה» text is asserted; the green frame colour is not (VRT territory)) — **גרירת תמונה** — גוררים קובץ תמונה מעל האזור המקווקו — **תוצאה מצופה:** המסגרת נצבעת ירוק והטקסט מתחלף ל"שחררו כאן להעלאה"; שחרור מעלה את התמונה לגריד
+- ✅ → dashboard-images-contact.spec.ts (dropping a PDF does nothing — no upload, no error) — **קובץ שאינו תמונה** — גרירת PDF ושחרורו — **תוצאה מצופה:** לא קורה כלום (מסונן בשקט, אין שגיאה)
+- ✅ → dashboard-images-contact.spec.ts (clicking the zone opens the file chooser — the chooser event is asserted, not a real upload) — **Click עדיין עובד** — לחיצה על האזור פותחת בורר קבצים ומעלה כרגיל
+- ✅ → dashboard-images-contact.spec.ts (three photo tips render under the zone, in Hebrew, without emoji) — **טיפי צילום** — 3 טיפים מוצגים מתחת לאזור ההעלאה (אור טבעי / תוצרת אמיתית / בלי סטוק); בעברית, ללא אימוג'י
 - [ ] **נייד (375px)** — האזור לחיץ והטיפים נקראים ללא גלילה אופקית
 
 ## MEH-1101 — תובנות: zero-state לפני פרסום + ערים ועוקבות עם n נמוך
@@ -1748,23 +1748,23 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > The product-catalog editor (`ProductsSection`) was defined but never mounted (0 render sites). It is now a card in the producer **edit tab**. NOTE: the Phase-3 QA lines below say `/settings` → "מוצרים" — that path never actually rendered the section; use the edit-tab path (`/producer/dashboard/edit`) instead until those lines are refreshed.
 
-- [ ] Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
-- [ ] Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
-- [ ] Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
+- ✅ → dashboard-products.spec.ts (the products card mounts in the edit tab with its heading and where-line) — Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
+- ✅ → dashboard-products.spec.ts (with no products the empty state shows the sample card and one CTA — ⚠️ STALE: live copy is «הוסיפו את המוצר הראשון שלכם», not «מוצר ראשון = בית עסק חי») — Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
+- ✅ → dashboard-products.spec.ts (delete asks in a dialog — cancel keeps the row and sends nothing; confirm DELETEs and removes it — add and edit are rows 11-12 and 41; all three write to a stateful stub, not a backend) — Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
 
 ### Phase 3 — frontend form + display (MEH-295 Phase 3)
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer → the edit tab (`/producer/dashboard/edit`) → "מוצרים" section → "הוסיפו מוצר". (Historically read `/settings`; the section was never mounted there.)
 
-- [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
-- [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
-- [ ] Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; **תוצאה מצופה:** card מציג את הטקסט הישן `"₪45/ק״ג"` ראו שפלא — fallback לעמודה הישנה. (אין need לעדכן ידנית; המוצר הישן ממשיך כמות שהוא עד עריכה עתידית.)
-- [ ] Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקשה.
-- [ ] Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪".
-- [ ] Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪".
-- [ ] Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-".
-- [ ] Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (לא placeholder שנעלם). Bug-2 fix.
-- [ ] Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
+- ✅ → dashboard-products.spec.ts (adding a range shows «50₪–80₪» on the new row and posts both prices) — Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
+- ✅ → dashboard-products.spec.ts (adding a single price shows «45₪» and posts price_max null) — Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
+- ✅ → dashboard-products.spec.ts (a legacy product with only price_range shows that string on its row — seeded from the stub, not a real DB row) — Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; **תוצאה מצופה:** card מציג את הטקסט הישן `"₪45/ק״ג"` ראו שפלא — fallback לעמודה הישנה. (אין need לעדכן ידנית; המוצר הישן ממשיך כמות שהוא עד עריכה עתידית.)
+- ✅ → dashboard-products.spec.ts (row 14: an empty min price is refused with «הכניסו מחיר» — and no POST leaves) — Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקשה.
+- ✅ → dashboard-products.spec.ts (row 15: a min price below 1 is refused — 0 asserted; 0.5 not exercised) — Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪".
+- ✅ → dashboard-products.spec.ts (row 16: a price over the 10,000 cap is refused — via min; the max path shares the validator) — Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪".
+- ✅ → dashboard-products.spec.ts (row 17: a max below the min is refused) — Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-".
+- ✅ → dashboard-products.spec.ts (labels stay visible above name, description and price while typing) — Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (לא placeholder שנעלם). Bug-2 fix.
+- ✅ → dashboard-products.spec.ts (the submit reads «הוסיפו מוצר», and «בהוספה...» while the POST is in flight — ⚠️ STALE: the doc's «הוסיפי מוצר» / «מוסיפה...» is the pre-neutral copy) — Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
 - [ ] RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, שני שדות המחיר ב-grid 2-עמודות נכנסים.
 
 ### Dietary cleanup verification (MEH-479 — closes MEH-293)
@@ -1785,12 +1785,12 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים". Backend live with `is_X` columns + `has_X_products` aggregated read (PR #1 already merged).
 
-- [ ] Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת המחיר (price_min / price_max) ולפני העלאת התמונה מופיעה כותרת "סימוני תזונה (אופציונלי)" + 3 checkboxes (🌾 ללא גלוטן, 🥦 טבעוני, 🥛 ללא לקטוז).
+- ✅ → dashboard-products.spec.ts (the add form carries five diet chips, all unpressed, under the diet heading — ⚠️ STALE: not 3 checkboxes; five aria-pressed chips incl. ללא לקטוז + ללא סוכר מוסף) — Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת המחיר (price_min / price_max) ולפני העלאת התמונה מופיעה כותרת "סימוני תזונה (אופציונלי)" + 3 checkboxes (🌾 ללא גלוטן, 🥦 טבעוני, 🥛 ללא לקטוז).
 - [ ] Add form — 375px layout — איך לבדוק: באותו טופס במובייל (≤640px); **תוצאה מצופה:** 3 ה-checkboxes מסודרות בעמודה אחת (1-col), לא דחוסות.
 - [ ] Add form — ≥640px layout — איך לבדוק: באותו טופס בדסקטופ (≥640px); **תוצאה מצופה:** 3 ה-checkboxes ב-3 עמודות (`grid-cols-3`).
-- [ ] Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצאה מצופה:** ב-network tab, ה-POST `/producers/me/products` כולל `is_vegan: true, is_gluten_free: false, is_lactose_free: false`. ה-response מכיל `is_vegan: true`.
-- [ ] Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כולל את אותו block של 3 checkboxes באותו מיקום (אחרי המחיר, לפני התמונה). אם המוצר נשמר עם `is_vegan=true`, ה-checkbox טעון מסומן.
-- [ ] Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצאה מצופה:** ה-PUT body כולל `is_vegan: false`. השורה חוזרת ל-display mode.
+- ✅ → dashboard-products.spec.ts (pressing «טבעוני» posts is_vegan true and leaves the other flags false) — Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצאה מצופה:** ב-network tab, ה-POST `/producers/me/products` כולל `is_vegan: true, is_gluten_free: false, is_lactose_free: false`. ה-response מכיל `is_vegan: true`.
+- ✅ → dashboard-products.spec.ts (the edit form shows the five chips with the saved state, and unpressing «טבעוני» PUTs is_vegan false — same test as row 33) — Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כולל את אותו block של 3 checkboxes באותו מיקום (אחרי המחיר, לפני התמונה). אם המוצר נשמר עם `is_vegan=true`, ה-checkbox טעון מסומן.
+- ✅ → dashboard-products.spec.ts (same test — the PUT body carries is_vegan false) — Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצאה מצופה:** ה-PUT body כולל `is_vegan: false`. השורה חוזרת ל-display mode.
 - [ ] Card aggregation — איך לבדוק: אחרי הוספת מוצר עם `is_vegan=true`, פתחי `/producers` כצרכן; **תוצאה מצופה:** ה-ProducerCard של אותה בעלת עסק מציג badge "טבעוני" (זה מ-`has_vegan_products: true` שה-backend מחזיר).
 - [ ] Card aggregation — toggle off — איך לבדוק: ערכי את המוצר היחיד עם `is_vegan=true` והסירי את הסימון; **תוצאה מצופה:** רענני `/producers` — ה-card כבר לא מציג badge "טבעוני" (כי `has_vegan_products` הפך ל-`false`).
 - [ ] Filter on /producers — איך לבדוק: `/producers?vegan=true` (או דרך ה-chip); **תוצאה מצופה:** רק בעלות עסק עם לפחות מוצר אחד שמסומן `is_vegan=true` מופיעות. בעלות עסק עם 0 מוצרים נופלות (התנהגות מכוונת — MEH-293 fix).
@@ -1804,13 +1804,13 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer with at least 2 existing products → `/settings` → "מוצרים".
 
-- [ ] Open edit — איך לבדוק: לחצי על כפתור Pencil ("ערכי") ליד מוצר קיים; **תוצאה מצופה:** השורה מוחלפת בטופס עריכה inline (לא modal); השדות populated עם הערכים הנוכחיים (שם / תיאור / price_min / price_max / image_url).
-- [ ] Edit name only — איך לבדוק: שני את השם, לחצי "שמרי שינויים"; **תוצאה מצופה:** השורה חוזרת ל-display mode עם השם החדש; price_range / price_min / price_max ללא שינוי בתצוגה.
-- [ ] Legacy fallback edit — איך לבדוק: ערכי מוצר ישן עם price_range="₪45/ק״ג" ו-price_min=NULL; **תוצאה מצופה:** מעל הטופס מופיע ה-hint: "המחיר הקיים: ₪45/ק״ג (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)". הזיני price_min=45, שמרי; **תוצאה:** התצוגה עוברת ל-"₪45" (פורמט חדש).
-- [ ] Validation — min=0 — איך לבדוק: בעריכה הזיני 0 ב-price_min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪", לא נשלחה PUT.
-- [ ] Validation — max < min — איך לבדוק: בעריכה min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-", לא נשלחה PUT.
-- [ ] Cancel — איך לבדוק: לחצי "ערכי" על מוצר A, שני את השם, לחצי "בטלי"; **תוצאה מצופה:** הטופס נסגר, השם בתצוגה לא השתנה, אין PUT ב-network tab.
-- [ ] Switch edit rows — איך לבדוק: לחצי "ערכי" על A (אל תשמרי), לחצי "ערכי" על B; **תוצאה מצופה:** A חוזר ל-display mode, B נפתח עם הערכים הנכונים שלו (לא של A).
+- ✅ → dashboard-products.spec.ts («ערכו» replaces the row with a prefilled inline form headed «עריכת מוצר») — Open edit — איך לבדוק: לחצי על כפתור Pencil ("ערכי") ליד מוצר קיים; **תוצאה מצופה:** השורה מוחלפת בטופס עריכה inline (לא modal); השדות populated עם הערכים הנוכחיים (שם / תיאור / price_min / price_max / image_url).
+- ✅ → dashboard-products.spec.ts (changing only the name and saving returns the row in display mode with the new name — one PUT) — Edit name only — איך לבדוק: שני את השם, לחצי "שמרי שינויים"; **תוצאה מצופה:** השורה חוזרת ל-display mode עם השם החדש; price_range / price_min / price_max ללא שינוי בתצוגה.
+- ✅ → dashboard-products.spec.ts (editing a legacy product shows the legacy-price note and an empty min field) — Legacy fallback edit — איך לבדוק: ערכי מוצר ישן עם price_range="₪45/ק״ג" ו-price_min=NULL; **תוצאה מצופה:** מעל הטופס מופיע ה-hint: "המחיר הקיים: ₪45/ק״ג (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)". הזיני price_min=45, שמרי; **תוצאה:** התצוגה עוברת ל-"₪45" (פורמט חדש).
+- ✅ → dashboard-products.spec.ts (row 43: min 0 on edit is refused — no PUT) — Validation — min=0 — איך לבדוק: בעריכה הזיני 0 ב-price_min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪", לא נשלחה PUT.
+- ✅ → dashboard-products.spec.ts (row 44: max below min on edit is refused — no PUT) — Validation — max < min — איך לבדוק: בעריכה min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-", לא נשלחה PUT.
+- ✅ → dashboard-products.spec.ts (cancelling an edit closes the form and keeps the original name, with no PUT) — Cancel — איך לבדוק: לחצי "ערכי" על מוצר A, שני את השם, לחצי "בטלי"; **תוצאה מצופה:** הטופס נסגר, השם בתצוגה לא השתנה, אין PUT ב-network tab.
+- ✅ → dashboard-products.spec.ts (opening a second row's editor returns the first to display mode) — Switch edit rows — איך לבדוק: לחצי "ערכי" על A (אל תשמרי), לחצי "ערכי" על B; **תוצאה מצופה:** A חוזר ל-display mode, B נפתח עם הערכים הנכונים שלו (לא של A).
 
 ---
 
@@ -2839,14 +2839,14 @@ Added with `feature/session-handoff`.
 ## MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026)
 
 ### Producer dashboard (/producer/dashboard)
-- [ ] Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
-- [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
-- [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
-- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
-- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
-- [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
+- ✅ → dashboard-availability.spec.ts (the card shows four pills in the locked order, the saved state checked and all enabled — ⚠️ STALE: the live heading is «מצב נוכחי», not «מצב זמינות») — Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
+- ✅ → dashboard-availability.spec.ts (clicking «פתוח להזמנות» checks it, posts accepting_orders and shows no date input) — Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
+- ✅ → dashboard-availability.spec.ts (clicking «זמין היום» … — ⚠️ STALE: live label is «זמין היום», no emoji, masculine) — Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «עמוס השבוע» … — ⚠️ STALE: live label is «עמוס השבוע», no emoji) — Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «בהפסקה» reveals the return-date input and «שמרו» without posting — zero captured POSTs) — Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- ✅ → dashboard-availability.spec.ts («שמרו» with an empty date shows the inline error and posts nothing — aria-invalid asserted too) — Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- ✅ → dashboard-availability.spec.ts (a future date + «שמרו» posts state and date, and a reload re-seeds both — the reload reads a stateful stub, not a real backend) — Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
+- ✅ → dashboard-availability.spec.ts (switching back to «פתוח להזמנות» clears the return date — in place and after a reload) — Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
 - [ ] /map or /producers list, look at a producer with `availability_state='available_today'` — תוצאה מצופה: green dot next to the location line.
@@ -3108,10 +3108,10 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 טופס יצירת קבוצת רכש (`/he/producer/dashboard/group-buys` → "+ קבוצת רכש חדשה"). Copy חדש ב-he.json בלבד (functional/neutral, ADR-024); en.json לא נגעו.
 
-- [ ] **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
-- [ ] **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
-- [ ] **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
-- [ ] **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
+- ✅ → dashboard-offer-groupbuy.spec.ts (both price fields carry a ₪ adornment and read LTR — the adornment is the Input's startAdornment (inline start = right in RTL); asserted as rendered + computed direction, not as a pixel side) — **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
+- ✅ → dashboard-offer-groupbuy.spec.ts (the price-rule helper turns red when the group price is not below the regular price — muted → red → muted, pre-submit) — **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
+- ✅ → dashboard-offer-groupbuy.spec.ts (the deadline field explains what the date means, in Israel time) — **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
+- ✅ → dashboard-offer-groupbuy.spec.ts (the form opens with a one-line concept intro under its heading — opened through the empty state's «+ צרו קבוצה ראשונה» (the toggle renders only with ≥1 group buy)) — **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
 
 ## MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes)
 
@@ -3246,13 +3246,13 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**כלום**. הדרישה לכותרת חיה
 בטופס בלבד, כי שם אפשר לתקן אותה.
 
-- [ ] **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
-- [ ] **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
-- [ ] **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
-- [ ] **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
+- ✅ → dashboard-offer-groupbuy.spec.ts (the type select holds the five types plus «אין הטבה פעילה» — six options, custom last — «אין הטבה פעילה» renders FIRST (value ""), the five types after it in code order; the card is reached via ?group=location because #offer is a dead deep link (MEH-2262)) — **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
+- ✅ → dashboard-offer-groupbuy.spec.ts (choosing the custom type removes the threshold amount and unit from the DOM) — **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
+- ✅ → dashboard-offer-groupbuy.spec.ts (a custom offer with an expiry but no headline blocks the save and says why) — **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
+- ✅ → dashboard-offer-groupbuy.spec.ts (typing a headline clears the error and enables the save) — **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
 - [ ] **הטקסט בעמוד העסק** — אחרי שמירה → עמוד העסק — **תוצאה מצופה:** התגית מציגה את המילים שלך **פעם אחת**, עם אייקון המתנה. לא המשפט של הפלטפורמה, ולא אותו טקסט שוב בשורה מתחת
 - [ ] **הצ'יפ בכרטיסייה** — דף הבית / `/producers` — **תוצאה מצופה:** אותן מילים בצ'יפ הקצר (נחתך ב-`truncate` אם ארוך — זה תקין)
-- [ ] **סף שנשאר מסוג קודם** — בוחרות "מתנה", ממלאות 150 ₪, ואז עוברות ל"ניסוח חופשי" ושומרות — **תוצאה מצופה:** הסף **לא** נשמר. שדה מוסתר לא נשלח, וממילא אין לו איפה להופיע
+- ✅ → dashboard-offer-groupbuy.spec.ts (a threshold left over from «מתנה» is not saved once the type is custom — the PUT is captured: threshold_value and threshold_unit are null) — **סף שנשאר מסוג קודם** — בוחרות "מתנה", ממלאות 150 ₪, ואז עוברות ל"ניסוח חופשי" ושומרות — **תוצאה מצופה:** הסף **לא** נשמר. שדה מוסתר לא נשלח, וממילא אין לו איפה להופיע
 - [ ] **מובייל 375px** — כל האמור לעיל — **תוצאה מצופה:** הכותרת נקראת במלואה בתגית, והשגיאה האדומה בטופס לא נחתכת
 - [ ] **סוג לא מוכר (edge, דרך API)** — `PUT /producers/me` עם `offer_type` שאינו אחד מהחמישה — **תוצאה מצופה:** 422 עם "סוג הטבה חייב להיות אחד מ: …" שמונה את כל החמישה כולל `custom`
 
@@ -3363,26 +3363,26 @@ CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**�
 
 | | אישור סגור | אישור פתוח |
 |---|---|---|
-| **0 חסרים** | - [ ] כפתור «שליחה לבדיקה» **פעיל**, אין רשימת חסרים בכלל | - [ ] «כן, שלחו» פעיל → POST אחד → טוסט הצלחה → הבאנר מתחלף לבאנר «בבדיקה» |
-| **פריט 1 חסר** | - [ ] הכפתור **מושבת**, מופיעה שורה אחת שמנסחת את הפריט החסר בשמו | - [ ] לא נגיש בזרימה רגילה; נבדק דרך המקרה למטה |
-| **רבים חסרים** | - [ ] הכפתור מושבת, כל פריט חסר מקבל שורה משלו + תג «חובה» | - [ ] כנ"ל |
+| **0 חסרים** | ✅ → flows/34-draft-submit-review.spec.ts (B — data-state-ready=true, no missing list, CTA enabled) — כפתור «שליחה לבדיקה» **פעיל**, אין רשימת חסרים בכלל | ✅ → flows/34-draft-submit-review.spec.ts (B — one POST, the review banner takes over) + dashboard-draft-submit.spec.ts (confirming shows the success toast that names the 3-business-day window) — «כן, שלחו» פעיל → POST אחד → טוסט הצלחה → הבאנר מתחלף לבאנר «בבדיקה» |
+| **פריט 1 חסר** | ✅ → dashboard-draft-submit.spec.ts (one missing item — the CTA is disabled and the list names exactly that item) — הכפתור **מושבת**, מופיעה שורה אחת שמנסחת את הפריט החסר בשמו | ✅ → __tests__/DraftSubmitBanner.test.jsx («confirm-yes is disabled when the profile stops being ready mid-confirm» — unit layer; see the race row below for why no browser path reaches this cell) — לא נגיש בזרימה רגילה; נבדק דרך המקרה למטה |
+| **רבים חסרים** | ✅ → flows/34-draft-submit-review.spec.ts (A — the five codes) + dashboard-draft-submit.spec.ts (five missing items — every row carries its own «חובה» chip) — הכפתור מושבת, כל פריט חסר מקבל שורה משלו + תג «חובה» | ✅ → __tests__/DraftSubmitBanner.test.jsx (same unit-layer guard as the cell above) — כנ"ל |
 
-- [ ] **התא שמגיעים אליו רק במרוץ** — לפתוח את «אישור», ואז לגרום לפרופיל להיטען מחדש כשהוא כבר לא שלם (למחוק תמונה בטאב שני). «כן, שלחו» חייב להיות **מושבת**, לא ללחוץ לריק. זה היה באג אמיתי (`c3acca4f`): הכפתור היה מגודר על `submitting` בלבד, ולחיצה עליו לא שלחה כלום ולא אמרה כלום.
-- [ ] **ביטול** («לא») מחזיר לכפתור פעיל — לא לכפתור תקוע מושבת.
+- ✅ → __tests__/DraftSubmitBanner.test.jsx («confirm-yes is disabled when the profile stops being ready mid-confirm» — ⚠️ STALE precondition: the dashboard fetches /producers/me ONCE per mount (dashboard/page.js:273-279) and onPhoneVerified only patches state locally, so a deletion in a second tab never reloads the first — the guard is pinned at the unit layer and no browser path reaches the cell) — **התא שמגיעים אליו רק במרוץ** — לפתוח את «אישור», ואז לגרום לפרופיל להיטען מחדש כשהוא כבר לא שלם (למחוק תמונה בטאב שני). «כן, שלחו» חייב להיות **מושבת**, לא ללחוץ לריק. זה היה באג אמיתי (`c3acca4f`): הכפתור היה מגודר על `submitting` בלבד, ולחיצה עליו לא שלחה כלום ולא אמרה כלום.
+- ✅ → dashboard-draft-submit.spec.ts (cancelling the confirm returns to an enabled CTA and sends nothing — live copy is «עוד לא», not «לא») — **ביטול** («לא») מחזיר לכפתור פעיל — לא לכפתור תקוע מושבת.
 
 ### מד ההשלמה — שש שורות, לא חמש (16/08)
 
-- [ ] הצ'קליסט מציג **שש** שורות: תמונה ראשית · קטגוריות ומיקום · מוצר ראשון · פרטי קשר · **אימות וואטסאפ** · שעות פתיחה
-- [ ] «אימות וואטסאפ» נושא צ'יפ **חובה**; «שעות פתיחה» היא היחידה עם **מומלץ**
-- [ ] לחיצה על «אימות וואטסאפ» מקפיצה לכרטיס האימות בבאנר (עוגן `#phone-verify`) — **לא** לעמוד העריכה, שאין בו פקד אימות
-- [ ] **התא ששבר את הגרסה הקודמת:** עסק עם טלפון שמור אבל **בלי** אימות — «פרטי קשר» מסומן ✓ **ובו-זמנית** «אימות וואטסאפ» עדיין חסר. שתי השורות אמורות לחלוק על עצמן; לפני הפיצול הן היו שורה אחת שאמרה «פרטי קשר ✓ חובה» בזמן שהבאנר מתחת סירב לשלוח
-- [ ] האחוז מחושב על שישה פריטים (חסר אחד = 83%, לא 80%)
+- ✅ → dashboard-draft-submit.spec.ts (the checklist shows six rows in the locked order) — הצ'קליסט מציג **שש** שורות: תמונה ראשית · קטגוריות ומיקום · מוצר ראשון · פרטי קשר · **אימות וואטסאפ** · שעות פתיחה
+- ✅ → dashboard-draft-submit.spec.ts («אימות וואטסאפ» carries חובה and «שעות פתיחה» is the only מומלץ — counted: 5 חובה, 1 מומלץ) — «אימות וואטסאפ» נושא צ'יפ **חובה**; «שעות פתיחה» היא היחידה עם **מומלץ**
+- ✅ → dashboard-draft-submit.spec.ts (clicking «אימות וואטסאפ» lands on the banner's #phone-verify anchor, not the edit page — pathname unchanged, hash asserted, card in viewport) — לחיצה על «אימות וואטסאפ» מקפיצה לכרטיס האימות בבאנר (עוגן `#phone-verify`) — **לא** לעמוד העריכה, שאין בו פקד אימות
+- ✅ → dashboard-draft-submit.spec.ts (a saved-but-unverified phone reads contact ✓ while the WhatsApp row is still missing — and the banner still lists it) — **התא ששבר את הגרסה הקודמת:** עסק עם טלפון שמור אבל **בלי** אימות — «פרטי קשר» מסומן ✓ **ובו-זמנית** «אימות וואטסאפ» עדיין חסר. שתי השורות אמורות לחלוק על עצמן; לפני הפיצול הן היו שורה אחת שאמרה «פרטי קשר ✓ חובה» בזמן שהבאנר מתחת סירב לשלוח
+- ✅ → dashboard-draft-submit.spec.ts (one missing step is 83%, computed over six — progressbar aria-valuenow + the «כמעט שם» headline) — האחוז מחושב על שישה פריטים (חסר אחד = 83%, לא 80%)
 
 ### אימות הוואטסאפ מתוך הטיוטה — הבדיקה הקריטית ביותר ברשימה
 
-- [ ] כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף
-- [ ] אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
-- [ ] אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
+- ✅ → flows/34-draft-submit-review.spec.ts (A — the OTP card is mounted inside the draft banner; completing it is rows 9-10) — כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף
+- ✅ → dashboard-draft-submit.spec.ts (a successful OTP removes the card and the item, and enables the CTA on the same screen — send → 6-digit code → confirm, both POSTs captured) — אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
+- ✅ → dashboard-draft-submit.spec.ts (same test — after the confirm the CTA is enabled and the checklist collapses to «הפרופיל מלא», no reload) — אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
 
 לפני MEH-2100 הכרטיס הזה היה תלוי בסטטוס `pending_whatsapp` בלבד (סטטוס שהוסר ב-MEH-2124), שטיוטה לעולם לא הגיעה אליו. כלומר `phone_verified` לא יכול היה להתהפך אף פעם, והשער היה **בלתי עביר לכל בית עסק באתר**. אם הכרטיס לא מופיע כאן — הפיצ'ר מת, ואין לזה סימן אחר.
 
