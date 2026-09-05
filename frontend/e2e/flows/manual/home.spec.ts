@@ -2008,6 +2008,22 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     //     itself. This is the case that fails against a reader that skips
     //     everything, which is the way the fix above could be inert.
     await insert("div", "interloper");
+
+    // PRECONDITION ON THE FIXTURE, not on the subject. This row went flaky in
+    // CI (run 33943227079) reporting «a real element between the two must be
+    // reported by name» with an empty result — a message that blames the
+    // reader for what may be a fixture that did not survive to sample time.
+    // The two are different defects and must not share a failure. React can
+    // still replace the hero's subtree after `home-minimap` first appears, and
+    // an injected sibling goes with it; nothing above guarantees hydration is
+    // finished. So assert the injected node is attached AND still sits between
+    // the two sections before reading anything into what the reader returns.
+    // If this line is what goes red, the reader is not the suspect.
+    await expect(
+      page.locator('[data-testid="interloper"]'),
+      "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
+    ).toHaveCount(1);
+
     const caught = await strangersBetweenHeroAndMap(page);
     expect(caught.join(" | "), "a real element between the two must be reported by name").toContain(
       "div[interloper]",
