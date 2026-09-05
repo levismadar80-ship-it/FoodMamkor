@@ -50,9 +50,9 @@
 - [ ] **‏375px** — **תוצאה מצופה:** השורה בתוך המסך, שורה אחת, לא נחתכת.
 ## MEH-2138 chunk C — chip «חובה»/«רשות» בכותרת כל סקשן באקורדיון העריכה (21/08)
 
-- [ ] **כל כרטיס נושא chip** — היכנסי ל-`/producer/dashboard/edit`, פתחי כל אחת מארבע הקבוצות — **תוצאה מצופה:** בכותרת של **כל** כרטיס אקורדיון יש תגית קטנה, «חובה» (גוון primary) או «רשות» (אפור מעומעם). אין כרטיס בלי תגית.
-- [ ] **החובה הן בדיוק כרטיסי השער** — **תוצאה מצופה:** «חובה» על תמונות · קטגוריות · מוצרים · מיקומים · ערוצי קשר. כל השאר «רשות» (שם העסק, תיאור, שאלות, אמון, מחיר, משלוח, חלון הזמנות, הטבה, סיפור הבעלים).
-- [ ] **ה-chip לא תלוי במצב מילוי** — מלאי כרטיס «רשות» עד הסוף, ורוקני כרטיס «חובה» — **תוצאה מצופה:** התגיות לא זזות. היא אומרת «האם זה חוסם הגשה», לא «האם סיימתי».
+- ✅ → dashboard-edit.spec.ts (every card in every group carries exactly one chip) — **כל כרטיס נושא chip** — היכנסי ל-`/producer/dashboard/edit`, פתחי כל אחת מארבע הקבוצות — **תוצאה מצופה:** בכותרת של **כל** כרטיס אקורדיון יש תגית קטנה, «חובה» (גוון primary) או «רשות» (אפור מעומעם). אין כרטיס בלי תגית.
+- ✅ → dashboard-edit.spec.ts («חובה» marks exactly the five submission gates, and nothing else) — **החובה הן בדיוק כרטיסי השער** — **תוצאה מצופה:** «חובה» על תמונות · קטגוריות · מוצרים · מיקומים · ערוצי קשר. כל השאר «רשות» (שם העסק, תיאור, שאלות, אמון, מחיר, משלוח, חלון הזמנות, הטבה, סיפור הבעלים).
+- ✅ → dashboard-edit.spec.ts (the chip does not move when the card's content does) — **ה-chip לא תלוי במצב מילוי** — מלאי כרטיס «רשות» עד הסוף, ורוקני כרטיס «חובה» — **תוצאה מצופה:** התגיות לא זזות. היא אומרת «האם זה חוסם הגשה», לא «האם סיימתי».
 - [ ] **‏375px — הכותרת לא נשברת** — פתחי ב-375 עם כרטיס שכותרתו ארוכה — **תוצאה מצופה:** הכותרת נחתכת ב-`…` וה-chip נשאר שלם ובשורה אחת עם הכותרת; ה-chevron לא נדחף מהמסך.
 - [ ] **‏RTL** — **תוצאה מצופה:** התגית יושבת מימין לכותרת בעברית (אחריה בכיוון הקריאה), ולא חופפת אליה.
 
@@ -124,11 +124,11 @@
 
 ## MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08)
 
-- [ ] **שם מלא — אין שום סימן "תקין"** — `/register` (390px) → מלאי "שם מלא" → לחצי מחוץ לשדה (blur) — **תוצאה מצופה:** המסגרת נשארת **אפורה**, אין ✓, ואין הכיתוב "✓ תקין" מתחת לשדה. לפני השינוי הופיעו שלושתם
-- [ ] **אימייל — כלום בזמן הקלדה** — באותו עמוד, הקלידי אימייל תקין **בלי** לצאת מהשדה — **תוצאה מצופה:** אין מסגרת ירוקה של הצלחה ואין "✓ תקין". (המסגרת הירוקה של **פוקוס** כן מופיעה — היא קיימת בכל שדה ולא השתנתה)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-1919:1) — the name field stays quiet when it is merely correct — **שם מלא — אין שום סימן "תקין"** — `/register` (390px) → מלאי "שם מלא" → לחצי מחוץ לשדה (blur) — **תוצאה מצופה:** המסגרת נשארת **אפורה**, אין ✓, ואין הכיתוב "✓ תקין" מתחת לשדה. לפני השינוי הופיעו שלושתם
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-1919:2) — nothing appears while the email is being typed — **אימייל — כלום בזמן הקלדה** — באותו עמוד, הקלידי אימייל תקין **בלי** לצאת מהשדה — **תוצאה מצופה:** אין מסגרת ירוקה של הצלחה ואין "✓ תקין". (המסגרת הירוקה של **פוקוס** כן מופיעה — היא קיימת בכל שדה ולא השתנתה)
 - [ ] **אימייל — מסגרת ירוקה רק אחרי יציאה מהשדה** — צאי מהשדה (blur) עם ערך תקין — **תוצאה מצופה:** המסגרת ירוקה, **בלי** "✓ תקין" ובלי ✓
 - [ ] **אימייל — חזרה להקלדה מכבה את הסימן** — חזרי לשדה והוסיפי תו — **תוצאה מצופה:** סימן ההצלחה נעלם עד ה-blur הבא. לפני השינוי הוא הבהב על כל תו
-- [ ] **שגיאות לא זזו** — blur על "שם מלא" ריק, ו-blur על אימייל לא תקין — **תוצאה מצופה:** מסגרת אדומה + "שם מלא הוא שדה חובה" / "האימייל לא תקין", בדיוק כמו קודם; השגיאה **נשארת** בזמן התיקון
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-1919:5) — errors still appear on blur and persist while the value is wrong — **שגיאות לא זזו** — blur על "שם מלא" ריק, ו-blur על אימייל לא תקין — **תוצאה מצופה:** מסגרת אדומה + "שם מלא הוא שדה חובה" / "האימייל לא תקין", בדיוק כמו קודם; השגיאה **נשארת** בזמן התיקון
 
 ---
 
@@ -208,12 +208,12 @@
 
 ## MEH-1599 — מסך "אין לך גישה" במקום הפניה שקטה (26/07)
 
-- [ ] צרכנית מחוברת בלוח הבקרה — התחברות כלקוחה (לא בעלת עסק) → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** נשארות באותה כתובת ורואות מסך "אין לך גישה ללוח הבקרה" עם הסבר, כפתור "רשמו בית עסק" וכפתור משני "חזרו לדף הבית". **לא** נזרקות לדף הבית ולא ל-`/login`
+- ✅ → dashboard-shell.spec.ts (an authenticated consumer stays on the URL and is told why, in place) — צרכנית מחוברת בלוח הבקרה — התחברות כלקוחה (לא בעלת עסק) → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** נשארות באותה כתובת ורואות מסך "אין לך גישה ללוח הבקרה" עם הסבר, כפתור "רשמו בית עסק" וכפתור משני "חזרו לדף הבית". **לא** נזרקות לדף הבית ולא ל-`/login`
 - [ ] אותה צרכנית באזור הניהול — כניסה ל-`/admin` — **תוצאה מצופה:** נשארות ב-`/admin`, מסך "אין לך גישה לאזור הניהול" עם כפתור "חזרו לדף הבית"
 - [ ] בעלת עסק באזור הניהול — התחברות כבעלת עסק → `/admin` — **תוצאה מצופה:** אותו מסך "אין לך גישה לאזור הניהול"; ומיד אחריו `/producer/dashboard` נטען כרגיל (הדחייה היא לפי תפקיד, לא התחברות שבורה)
-- [ ] מבקרת לא מחוברת — יציאה מהחשבון → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** מועברות ל-`/login?redirect=/producer/dashboard` (הכתובת מכילה את היעד)
-- [ ] חזרה ליעד אחרי התחברות — מאותו מסך התחברות, כניסה עם חשבון בעלת עסק — **תוצאה מצופה:** נוחתות על `/producer/dashboard`, לא על דף הבית
-- [ ] בעלת עסק תקינה — התחברות כבעלת עסק → `/producer/dashboard` — **תוצאה מצופה:** הלוח נטען כרגיל, בלי שום מסך דחייה
+- ✅ → dashboard-shell.spec.ts (an unauthenticated visitor is sent to /login carrying the target back) — מבקרת לא מחוברת — יציאה מהחשבון → כניסה ל-`/producer/dashboard` — **תוצאה מצופה:** מועברות ל-`/login?redirect=/producer/dashboard` (הכתובת מכילה את היעד)
+- ✅ → 25-role-reachability.spec.ts (logging in from that /login returns her to the dashboard — a REAL seeded login, gated on DEMO_OWNER_PASSWORD which CI sets; the post-login leg is that spec's, not dashboard-shell's, which only asserts the redirect PARAM) — חזרה ליעד אחרי התחברות — מאותו מסך התחברות, כניסה עם חשבון בעלת עסק — **תוצאה מצופה:** נוחתות על `/producer/dashboard`, לא על דף הבית
+- ✅ → dashboard-shell.spec.ts (a producer gets the dashboard with no denial anywhere) — בעלת עסק תקינה — התחברות כבעלת עסק → `/producer/dashboard` — **תוצאה מצופה:** הלוח נטען כרגיל, בלי שום מסך דחייה
 - [ ] נייד 375px — כל התרחישים לעיל — **תוצאה מצופה:** המסך מרוכז, הכפתורים מלאי-רוחב ונלחצים, אין גלילה אופקית
 
 ## MEH-1547 — מונה "+N" של תגיות בכרטיס עסק = disclosure לחיץ (26/07)
@@ -370,7 +370,7 @@
 - [ ] **cluster לפי עסקים** — עסק עם 10 נקודות איסוף באותה עיר, הרחיקי zoom — **תוצאה מצופה:** תג ה-cluster מציג **1** (עסק אחד), לא 10.
 - [ ] **הנקודה הקרובה** — "קרוב אליי" מנקודה ליד הסניף השני — **תוצאה מצופה:** העסק נמצא לפי המרחק למיקום הקרוב ביותר (לא רק לנקודה הראשית).
 - [ ] **delivery-only עם נקודת איסוף** — עסק משלוחים-בלבד שיש לו נקודת איסוף — **תוצאה מצופה:** מופיע על המפה (היפוך MEH-213); עסק משלוחים-בלבד ללא מיקומים — נשאר מוסתר.
-- [ ] **שכבת נקודות איסוף** — טוגל "נקודות איסוף" על /map — **תוצאה מצופה:** מסתיר/מציג את הפינים המשניים (pickup/market_stand); הפינים הראשיים נשארים.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1388:5) — **שכבת נקודות איסוף** — טוגל "נקודות איסוף" על /map — **תוצאה מצופה:** מסתיר/מציג את הפינים המשניים (pickup/market_stand); הפינים הראשיים נשארים.
 
 ## MEH-1421 — עורך מיקומים בדשבורד + סימן dedup באדמין (chunk 4a)
 - [ ] **הצגת מיקומים** — דשבורד → עריכה → סעיף "מיקומים" — **תוצאה מצופה:** רשימת המיקומים; למיקום הראשי תג "★ ראשי", לשאר קישור "קבעו כראשי"; כפתור "+ הוסיפו מיקום".
@@ -782,28 +782,28 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map
 
-- [ ] **אין FAB על המפה (דסקטופ)** — פתחי `/map` ב-1440px — **תוצאה מצופה:** אין כפתור "שאלה? שאלו אותי" בפינה השמאלית-תחתונה; כפתור מקרא הקטגוריות נראה ולחיץ (לחיצה פותחת את רשימת הקטגוריות).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR3:1) — **אין FAB על המפה (דסקטופ)** — פתחי `/map` ב-1440px — **תוצאה מצופה:** אין כפתור "שאלה? שאלו אותי" בפינה השמאלית-תחתונה; כפתור מקרא הקטגוריות נראה ולחיץ (לחיצה פותחת את רשימת הקטגוריות).
 - [ ] **אין FAB על המפה (מובייל)** — `/map` ב-375px — **תוצאה מצופה:** אין FAB צף מעל הגיליון/המפה.
-- [ ] **כל הלוקאלים** — `/en/map` — **תוצאה מצופה:** גם באנגלית אין FAB על המפה.
-- [ ] **FAB נשאר בשאר האתר** — דף הבית, עמוד עסק — **תוצאה מצופה:** ה-FAB מופיע ומתפקד כרגיל (אותו מיקום, אותה התנהגות).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR3:3) — **כל הלוקאלים** — `/en/map` — **תוצאה מצופה:** גם באנגלית אין FAB על המפה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR3:4) — **FAB נשאר בשאר האתר** — דף הבית, עמוד עסק — **תוצאה מצופה:** ה-FAB מופיע ומתפקד כרגיל (אותו מיקום, אותה התנהגות).
 
 ## MEH-1230 — GPS fix persists → "מרחק" + distance labels (/map)
 
-- [ ] **GPS מפעיל מיון "מרחק" בלי reload** — פתחי `/map`, לחצי "קרוב אליי" (גלולת המובייל או כפתור ה-GPS בדסקטופ) ואשרי מיקום — **תוצאה מצופה:** מייד (בלי רענון) האופציה "מרחק" נפתחת (לא אפורה), הרשימה ממוינת מהקרוב, ותוויות ק"מ מופיעות על הכרטיסים. לפני התיקון "מרחק" נשארה disabled לתמיד ותוויות המרחק לא הופיעו כלל.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1230:1) — **GPS מפעיל מיון "מרחק" בלי reload** — פתחי `/map`, לחצי "קרוב אליי" (גלולת המובייל או כפתור ה-GPS בדסקטופ) ואשרי מיקום — **תוצאה מצופה:** מייד (בלי רענון) האופציה "מרחק" נפתחת (לא אפורה), הרשימה ממוינת מהקרוב, ותוויות ק"מ מופיעות על הכרטיסים. לפני התיקון "מרחק" נשארה disabled לתמיד ותוויות המרחק לא הופיעו כלל.
 - [ ] **טבעת פוקוס של פקד המיון לא נחתכת** — הקישי Tab עד ל-select "מיון" בראש רשימת /map (דסקטופ) — **תוצאה מצופה:** טבעת הפוקוס נראית במלואה סביב הפקד (לא נחתכת בקצה העליון של אזור הגלילה); שורת הספירה נשארת קומפקטית.
 
 ## map-quality batch PR 2 — מיון אמיתי ברשימת /map (דסקטופ)
 
-- [ ] **ברירת מחדל בלי GPS** — פתחי `/map` בדסקטופ (1440px) בלי אישור מיקום — **תוצאה מצופה:** ליד הספירה מופיע "מיון:" + "חדש בשוק"; האופציה "מרחק" אפורה (disabled); הרשימה בסדר החדשים-קודם של השרת.
-- [ ] **ברירת מחדל עם GPS** — אשרי מיקום (או לחצי "קרוב אליי") ואז היכנסי שוב ל-`/map` — **תוצאה מצופה:** ברירת המחדל היא "מרחק" והכרטיס הראשון הוא העסק הקרוב ביותר (תואם את תוויות ה-ק"מ על הכרטיסים).
-- [ ] **מיון לפי דירוג** — בחרי "הכי מדורגות" — **תוצאה מצופה:** מהדירוג הגבוה לנמוך; בשוויון דירוג — יותר ביקורות קודם; עסקים בלי דירוג בסוף.
-- [ ] **חזרה ל"חדש בשוק"** — **תוצאה מצופה:** הרשימה חוזרת לסדר השרת (חדשים קודם).
-- [ ] **subhead נקי** — מתחת לספירה — **תוצאה מצופה:** מופיע רק שם האזור (למשל "ירושלים"), בלי "קרוב · " לפניו.
-- [ ] **כתיב "קרוב אליי" אחיד** — כפתור/גלולת ה-GPS — **תוצאה מצופה:** בכל המופעים "קרוב אליי" (שתי יו"ד); תווית המיון היא "מרחק" (אין יותר התנגשות עם הגלולה).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:1) — **ברירת מחדל בלי GPS** — פתחי `/map` בדסקטופ (1440px) בלי אישור מיקום — **תוצאה מצופה:** ליד הספירה מופיע "מיון:" + "חדש בשוק"; האופציה "מרחק" אפורה (disabled); הרשימה בסדר החדשים-קודם של השרת.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:2) — **ברירת מחדל עם GPS** — אשרי מיקום (או לחצי "קרוב אליי") ואז היכנסי שוב ל-`/map` — **תוצאה מצופה:** ברירת המחדל היא "מרחק" והכרטיס הראשון הוא העסק הקרוב ביותר (תואם את תוויות ה-ק"מ על הכרטיסים).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:3) — **מיון לפי דירוג** — בחרי "הכי מדורגות" — **תוצאה מצופה:** מהדירוג הגבוה לנמוך; בשוויון דירוג — יותר ביקורות קודם; עסקים בלי דירוג בסוף.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:4) — **חזרה ל"חדש בשוק"** — **תוצאה מצופה:** הרשימה חוזרת לסדר השרת (חדשים קודם).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:5) — **subhead נקי** — מתחת לספירה — **תוצאה מצופה:** מופיע רק שם האזור (למשל "ירושלים"), בלי "קרוב · " לפניו.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR2:6) — **כתיב "קרוב אליי" אחיד** — כפתור/גלולת ה-GPS — **תוצאה מצופה:** בכל המופעים "קרוב אליי" (שתי יו"ד); תווית המיון היא "מרחק" (אין יותר התנגשות עם הגלולה).
 
 ## map-quality batch PR 1 — כרטיס עסק אחיד ב-/map
 
-- [ ] **גבהים אחידים** — פתחי `/map` (375px + 1440px) עם עסקים "מלאים" (קטגוריה, דירוג, מחיר) ולצדם עסק דל נתונים — **תוצאה מצופה:** כל הכרטיסים ברשימה באותו גובה בדיוק; אין כרטיס "מקוצר".
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:PR1:1) — **גבהים אחידים** — פתחי `/map` (375px + 1440px) עם עסקים "מלאים" (קטגוריה, דירוג, מחיר) ולצדם עסק דל נתונים — **תוצאה מצופה:** כל הכרטיסים ברשימה באותו גובה בדיוק; אין כרטיס "מקוצר".
 - [ ] **טיפוגרפיית מחיר** — עסק עם תווית מחיר הכוללת יחידה בעברית (למשל "מ-25/בקבוק") — **תוצאה מצופה:** רק הספרות ("25") ב-Cormorant נטוי; "מ-" ו-"/בקבוק" בפונט העברי הרגיל; אין ג'יבריש/גליפים שבורים.
 - [ ] **שורת מטא אחת** — בכל כרטיס — **תוצאה מצופה:** שורה אחת: עיר · מרחק (רק עם GPS) · מחיר; אין שורת שעות פתיחה ("פתוח עכשיו"/"סגור עכשיו") ואין שורת מרחק נפרדת.
 - [ ] **שורת קטגוריה משולבת** — עסק מאומת עם דירוג — **תוצאה מצופה:** צ'יפ קטגוריה + כוכב עם "4.8 (12)" + חותם אימות (אייקון בלבד, בלי טקסט "מאומת") באותה שורה; אין פס אמון נפרד מתחת.
@@ -839,7 +839,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 - [ ] **step_viewed בקונסול (dev)** — פתחי DevTools → Console ב-`/register/producer`, לחצי "בואו נתחיל" ואז עברי בין השלבים — **תוצאה מצופה:** על כל מעבר שלב מודפס `[track] producer_register_step_viewed { step: "account"|"details"|"category"|"story"|"confirm" }` (רק אחרי אישור עוגיות "all"; אם דחית עוגיות — אין לוג).
 - [ ] **submitted + error** — השלימי טופס תקין ושלחי — **תוצאה מצופה:** `[track] producer_register_submitted`. בכשל שליחה (למשל שרת מחזיר שגיאה) — `[track] producer_register_error { step: "story" }`.
-- [ ] **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-435:3) — **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
 
 ## MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint
 
@@ -988,27 +988,27 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 - [ ] **מסך פתיחה לפני הטופס** — פתחו `/register/producer` (לא מחוברות) — **תוצאה מצופה:** במקום טופס החשבון מופיע מסך "לפני שמתחילים": כותרת העמוד + subtitle נשארים, ואז צ'קליסט "מה כדאי להכין" (אימייל, סיפור קצר, 2–3 תמונות, רישיון יצרן אם נדרש), שורת משך "בערך 10 דקות", בלוק "מה קורה אחרי" עם קישור ל-`/about/process`, וכפתור "מתחילים" אחד.
 - [ ] **CTA → פריים 01** — לחצו "מתחילים" — **תוצאה מצופה:** נכנסים לפריים ACCOUNT הרגיל (stepper 01–04 ללא שינוי; ה-pre-flight לא נספר כצעד).
 - [ ] **מסלול upgrade** — משתמשת מחוברת פותחת `/register/producer` — **תוצאה מצופה:** ה-pre-flight מוצג גם כן, אבל **בלי** שורת "כתובת אימייל ליצירת חשבון"; "מתחילים" מוביל ישר ל-DETAILS.
-- [ ] **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
-- [ ] **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-994:4) — **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-994:5) — **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
 
 ## MEH-1075 — /map filter IA: quick chips + FilterSheet
 
-- [ ] **שורת סינון מהירה (375px)** — פתחו `/map` במובייל — תוצאה: שורה 1 קטגוריות (ללא שינוי); שורה 2 = [מאומתים] [משלוח אליי] + כפתור "סינון" עם אייקון Faders; אין באדג' כשאין סינונים פעילים מהגיליון.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:1) — **שורת סינון מהירה (375px)** — פתחו `/map` במובייל — תוצאה: שורה 1 קטגוריות (ללא שינוי); שורה 2 = [מאומתים] [משלוח אליי] + כפתור "סינון" עם אייקון Faders; אין באדג' כשאין סינונים פעילים מהגיליון.
 - [ ] **פתיחת גיליון** — לחצו "סינון" — תוצאה: גיליון תחתון נפתח מלמטה עם backdrop; 3 קבוצות עם כותרות (תזונה · מקור ואיכות · שירות ואמון); הפוקוס עובר לגיליון.
 - [ ] **סינון חי** — סמנו טבעוני + ללא גלוטן — תוצאה: כפתור האישור מציג "הצגת {N} בתי עסק" עם ספירה חיה (עדכון אחרי ~300ms); המפה מתעדכנת מאחורי הגיליון.
-- [ ] **אישור** — לחצו "הצגת N בתי עסק" — תוצאה: הגיליון נסגר; באדג' "2" על כפתור סינון; רצועת התגיות מציגה ×טבעוני ×ללא גלוטן; הפוקוס חוזר לכפתור.
-- [ ] **סנכרון תגית↔גיליון** — הסירו תגית × — תוצאה: באדג' יורד ל-1; פתיחת הגיליון מציגה את הצ'יפ כבוי.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:4) — **אישור** — לחצו "הצגת N בתי עסק" — תוצאה: הגיליון נסגר; באדג' "2" על כפתור סינון; רצועת התגיות מציגה ×טבעוני ×ללא גלוטן; הפוקוס חוזר לכפתור.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:5) — **סנכרון תגית↔גיליון** — הסירו תגית × — תוצאה: באדג' יורד ל-1; פתיחת הגיליון מציגה את הצ'יפ כבוי.
 - [ ] **ניקוי הכל בגיליון** — תוצאה: 7 הטוגלים מתאפסים; קטגוריה + עיר נשארות; רצועת התגיות + "נקו הכל" הקיימת ללא שינוי.
 - [ ] **סגירה** — ESC / לחיצה על ה-backdrop / גרירת הידית מטה — תוצאה: הגיליון נסגר בכל אחת מהדרכים.
-- [ ] **משלוח אליי מהגיליון ללא עיר שמורה** — תוצאה: CityPickerModal נפתח מעל הגיליון; בחירת עיר מפעילה את הסינון.
-- [ ] **דסקטופ (md+)** — לחצו "סינון" — תוצאה: פאנל מעוגן מתחת לכפתור (לא גיליון תחתון), אותו תוכן; לחיצה מחוץ לפאנל סוגרת.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:8) — **משלוח אליי מהגיליון ללא עיר שמורה** — תוצאה: CityPickerModal נפתח מעל הגיליון; בחירת עיר מפעילה את הסינון.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1075:9) — **דסקטופ (md+)** — לחצו "סינון" — תוצאה: פאנל מעוגן מתחת לכפתור (לא גיליון תחתון), אותו תוכן; לחיצה מחוץ לפאנל סוגרת.
 - [ ] **אין רגרסיה** — שורת הקטגוריות, סמני המפה, גיליון העסקים התחתון ו"קרוב אליי" מתנהגים כרגיל.
 
 ## MEH-970 chunk 2-lite — /map near-me pill + empty-near-me guard (mobile)
-- [ ] **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה, מעל ה-bottom sheet); **אין** כפתור צלב (crosshair) נוסף בשורת חיפוש העיר; חיפוש העיר תופס את כל הרוחב.
-- [ ] **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם סמן מיקום; אין toast.
-- [ ] **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עדיין עסקים באזורך — הנה הקרובים" + המפה מתרחקת לתצוגת ברירת המחדל (`[32.4,34.95]` זום 8) ומציגה את **כל** העסקים (לעולם לא מפה ריקה).
-- [ ] **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא toast מת.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:1) — **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה, מעל ה-bottom sheet); **אין** כפתור צלב (crosshair) נוסף בשורת חיפוש העיר; חיפוש העיר תופס את כל הרוחב.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:2) — **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם סמן מיקום; אין toast.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:3) — **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עדיין עסקים באזורך — הנה הקרובים" + המפה מתרחקת לתצוגת ברירת המחדל (`[32.4,34.95]` זום 8) ומציגה את **כל** העסקים (לעולם לא מפה ריקה).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-970:4) — **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא toast מת.
 
 ## MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות
 
@@ -1025,7 +1025,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 ## MEH-853 — /register/producer frame 01 (DETAILS): city + address
 
-- [ ] **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-853:1) — **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
 - [ ] **city בpayload** — מלאי יישוב + השלימי הרשמה — **תוצאה מצופה:** ב-DevTools Network, ה-POST ל-`/auth/register/producer` נושא `"city": "<העיר>"`.
 - [ ] **address free-text** — שדה "כתובת" מקבל טקסט חופשי (לא חובה) — **תוצאה מצופה:** נשמר ב-`form.address` ונשלח כ-`"address"` ב-payload.
 - [ ] **שני המסלולים** — גם בהרשמה חדשה וגם במסלול upgrade (משתמשת מחוברת) — **תוצאה מצופה:** city+address נשלחים בשניהם (ה-body משותף מעל ענף `!isUpgrade`).
@@ -1037,36 +1037,36 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 לוח הניהול הפך ל-hub-and-spoke עם `layout.js` משותף (tab nav + שער הזדהות אחד) ו-Overview רזה. נכנסות כבעלת עסק (role=producer).
 
-- [ ] **שער הזדהות** — משתמשת לא-producer (או לא מחוברת) על כל `/producer/dashboard/*` → הפניה ל-`/login`
-- [ ] **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`aria-current="page"`)
+- ✅ → dashboard-shell.spec.ts (an authenticated consumer stays on the URL and is told why, in place — ⚠️ STALE as written: MEH-1599 replaced this redirect with an in-place denied screen; the spec asserts the behaviour that replaced it) — **שער הזדהות** — משתמשת לא-producer (או לא מחוברת) על כל `/producer/dashboard/*` → הפניה ל-`/login`
+- ✅ → dashboard-shell.spec.ts (four tabs in the locked order, and exactly one is aria-current · the active tab follows the route) — **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`aria-current="page"`)
 - [ ] **סקירה** (`/producer/dashboard`) — ברכה + באנרי סטטוס + כרטיס השלמת פרופיל + מתג זמינות + AnalyticsSection נשארים; אין כפול ואין רגרסיה
 - [ ] **עריכה** (`/producer/dashboard/edit`) — 3 טפסי העריכה (ביו AI / שאלות מותאמות / ערוצי קשר) עובדים זהה לקודם (שמירה ב-PUT /producers/me)
 - [ ] **כלים** (`/producer/dashboard/tools`) — גריד הקישורים המהירים; "הוסיפי אירוע" → `/producer/dashboard/events/new`; "צפי בעסק" → `/producer/{id}`
-- [ ] **תובנות** — הטאב **לא** מופיע עדיין ב-1A (נוסף ב-1B); אין טאב מת / "בקרוב"
+- ✅ → dashboard-shell.spec.ts (four tabs in the locked order, and exactly one is aria-current — only the LIVE half: the tab COUNT rejects a dead / «בקרוב» tab. The first clause is a statement about increment 1A, not about today's app, and is not convertible) — **תובנות** — הטאב **לא** מופיע עדיין ב-1A (נוסף ב-1B); אין טאב מת / "בקרוב"
 - [ ] **נייד (375px)** — שורת הטאבים נקראת ללא horizontal scroll; כל טאב נפתח תקין
-- [ ] **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות
+- ✅ → dashboard-shell.spec.ts (/en renders English tab labels, with no raw message keys) — **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות
 
 ## MEH-964 chunk 1B — KPI strip on Overview + תובנות tab
 
 ה-Overview קיבל רצועת 4 KPI נעולה + שורת המרה, והאנליטיקה העמוקה עברה לטאב חדש "תובנות". נכנסות כבעלת עסק (role=producer).
 
-- [ ] **רצועת KPI (סקירה)** — 4 קלפים ב-2×2, סדר RTL ימין→שמאל: פניות בוואטסאפ → צרי קשר → דירוג → צפיות; **זהה בנייד ובדסקטופ**
-- [ ] **ללא דלתות/חצים** — אין מגמה/חץ ליד מספר; תווית חלון אחידה "7 הימים האחרונים" בשלושה הקלפים (דירוג מציג "{N} ביקורות")
+- ✅ → dashboard-shell.spec.ts (four KPIs in the locked DOM order, one uniform window label, no deltas · with no activity at all the strip is replaced) — **רצועת KPI (סקירה)** — 4 קלפים ב-2×2, סדר RTL ימין→שמאל: פניות בוואטסאפ → צרי קשר → דירוג → צפיות; **זהה בנייד ובדסקטופ**
+- ✅ → dashboard-shell.spec.ts (four KPIs in the locked DOM order, one uniform window label, no deltas) — **ללא דלתות/חצים** — אין מגמה/חץ ליד מספר; תווית חלון אחידה "7 הימים האחרונים" בשלושה הקלפים (דירוג מציג "{N} ביקורות")
 - [ ] **שורת המרה** — מתחת לרצועה, שקטה/מוצללת (לא קלף): "X% מהצופות פנו אלייך" (מונה = וואטסאפ בלבד)
 - [ ] **תג "בעלת עסק השבוע"** — נשאר ב-Overview כשמתקיימים התנאים (profile_strength≥80 + rank=1)
-- [ ] **תובנות** (`/producer/dashboard/insights`) — הטאב הרביעי מופיע; מציג את הקלפים החלוניים (צפיות/חיפושים/וואטסאפ/צרי קשר) + עוקבים/דירוג + 2 הגרפים (קו צפיות + ערים מובילות)
-- [ ] **אין כפילות** — רצועת ה-KPI מופיעה רק ב-Overview, לא ב-תובנות (אנטי-MEH-961/963)
+- ✅ → dashboard-shell.spec.ts (four tabs in the locked order · the insights tests below) — **תובנות** (`/producer/dashboard/insights`) — הטאב הרביעי מופיע; מציג את הקלפים החלוניים (צפיות/חיפושים/וואטסאפ/צרי קשר) + עוקבים/דירוג + 2 הגרפים (קו צפיות + ערים מובילות)
+- ✅ → dashboard-shell.spec.ts (the strip renders on Overview and NOWHERE else) — **אין כפילות** — רצועת ה-KPI מופיעה רק ב-Overview, לא ב-תובנות (אנטי-MEH-961/963)
 - [ ] **נייד (375px)** — 4 הטאבים: אם צרים מדי יש גלילה אופקית (overflow-x-auto), בלי חיתוך; רצועת ה-2×2 נקראת
-- [ ] **/en** — תווית הטאב "Insights"; ה-KPI באנגלית (WhatsApp leads / Contact clicks / Rating / Views); אין מחרוזות מפתח גולמיות
+- ✅ → dashboard-shell.spec.ts (/en renders English tab labels, with no raw message keys) — **/en** — תווית הטאב "Insights"; ה-KPI באנגלית (WhatsApp leads / Contact clicks / Rating / Views); אין מחרוזות מפתח גולמיות
 
 ## MEH-1134 — סקירה: סדר כרטיסים מותנה-מצב (completeness מעל availability)
 
 בטאב סקירה (`/producer/dashboard`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **עסק pending (או פרופיל חלקי)** — כרטיס השלמת הפרופיל מופיע מיד מתחת לבאנרי הסטטוס ו**מעל** כרטיס הזמינות (המנוטרל) — **תוצאה מצופה:** הפעולה הרלוונטית למעלה, לא מתחת לכרטיס מת
-- [ ] **עסק מאושר + פרופיל מלא** — הסדר הנוכחי נשמר: זמינות קודם, כרטיס ההשלמה מתחתיו (מעל ה-KPI) — **תוצאה מצופה:** אין שינוי לעסק חי
-- [ ] **מופע יחיד** — כרטיס ההשלמה מופיע פעם אחת בלבד בכל מצב; שאר הכרטיסים (אימות טלפון / לינק / באנרים) לא זזו
-- [ ] **נטרול זמינות נשמר** — עסק pending: פילי הזמינות עדיין מנוטרלים עם רמז "למה נעול"
+- ✅ → dashboard-shell.spec.ts (pending: the completeness card sits above the disabled availability card) — **עסק pending (או פרופיל חלקי)** — כרטיס השלמת הפרופיל מופיע מיד מתחת לבאנרי הסטטוס ו**מעל** כרטיס הזמינות (המנוטרל) — **תוצאה מצופה:** הפעולה הרלוונטית למעלה, לא מתחת לכרטיס מת
+- ✅ → dashboard-shell.spec.ts (approved + complete: the completeness card does not render at all — ⚠️ STALE as written: MEH-1397 deleted that slot, so the card cannot appear in this state) — **עסק מאושר + פרופיל מלא** — הסדר הנוכחי נשמר: זמינות קודם, כרטיס ההשלמה מתחתיו (מעל ה-KPI) — **תוצאה מצופה:** אין שינוי לעסק חי
+- ✅ → dashboard-shell.spec.ts (approved + complete: the completeness card does not render at all) — **מופע יחיד** — כרטיס ההשלמה מופיע פעם אחת בלבד בכל מצב; שאר הכרטיסים (אימות טלפון / לינק / באנרים) לא זזו
+- ✅ → dashboard-shell.spec.ts (pending: the completeness card sits above the disabled availability card) — **נטרול זמינות נשמר** — עסק pending: פילי הזמינות עדיין מנוטרלים עם רמז "למה נעול"
 
 ## MEH-1099 — עורך תמונות: drag-drop + טיפי צילום
 
@@ -1082,19 +1082,19 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב תובנות (`/producer/dashboard/insights`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **לפני אישור (status=pending)** — באנר בראש הדף: "העמוד עדיין לא פורסם" + "ברגע שיאושר, כאן יופיעו צפיות ופניות." + כפתור "להשלמת הפרופיל" → `/producer/dashboard/edit`; קלפי ה-KPI עדיין מוצגים (0) מתחתיו
-- [ ] **אחרי אישור** — הבאנר לא מופיע
-- [ ] **ערים מובילות עם 1-2 ערים** — רשימה טקסטואלית (עיר · מספר) במקום bars; עם 3+ ערים — ה-bars חוזרים
-- [ ] **0 עוקבות** — במקום "0 · +0 השבוע": "עדיין אין עוקבות — שתפו את העמוד"; כשהעסק מאושר "שתפו את העמוד" מקושר לעמוד הציבורי
+- ✅ → dashboard-shell.spec.ts (before approval a banner explains the zeros and routes to the edit tab) — **לפני אישור (status=pending)** — באנר בראש הדף: "העמוד עדיין לא פורסם" + "ברגע שיאושר, כאן יופיעו צפיות ופניות." + כפתור "להשלמת הפרופיל" → `/producer/dashboard/edit`; קלפי ה-KPI עדיין מוצגים (0) מתחתיו
+- ✅ → dashboard-shell.spec.ts (after approval the banner is gone) — **אחרי אישור** — הבאנר לא מופיע
+- ✅ → dashboard-shell.spec.ts (top cities: bars at 3+, a plain list at 1-2) — **ערים מובילות עם 1-2 ערים** — רשימה טקסטואלית (עיר · מספר) במקום bars; עם 3+ ערים — ה-bars חוזרים
+- ✅ → dashboard-shell.spec.ts (zero followers gets an invitation instead of «0 · +0») — **0 עוקבות** — במקום "0 · +0 השבוע": "עדיין אין עוקבות — שתפו את העמוד"; כשהעסק מאושר "שתפו את העמוד" מקושר לעמוד הציבורי
 - [ ] **נייד (375px)** — הבאנר והקלפים נקראים ללא גלילה אופקית
 
 ## MEH-1102 — טאב כלים: ניקוי כפילות + אייקונים
 
 בטאב כלים (`/producer/dashboard/tools`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **אין כרטיס "עריכת פרופיל"** — הגריד מציג 4 כרטיסים בלבד (הוספת אירוע / הצגת העסק באתר / ניהול קבוצות רכש / ניהול מתכונים); עריכה נגישה דרך הטאב בניווט
-- [ ] **אייקון לכל כרטיס** — כל כרטיס עם אייקון Phosphor ירוק מעל הכותרת
-- [ ] **יעדים ללא שינוי** — כל כרטיס מוביל לאותו יעד כמו קודם
+- ✅ → dashboard-shell.spec.ts (the grid holds exactly five cards, and the two removed ones are absent — ⚠️ the doc says FOUR and names «הצגת העסק באתר», which MEH-1357 removed; the count asserted is the measured five) — **אין כרטיס "עריכת פרופיל"** — הגריד מציג 4 כרטיסים בלבד (הוספת אירוע / הצגת העסק באתר / ניהול קבוצות רכש / ניהול מתכונים); עריכה נגישה דרך הטאב בניווט
+- ✅ → dashboard-shell.spec.ts (every card carries an icon above its title) — **אייקון לכל כרטיס** — כל כרטיס עם אייקון Phosphor ירוק מעל הכותרת
+- ✅ → dashboard-shell.spec.ts (the grid holds exactly five cards, and the two removed ones are absent) — **יעדים ללא שינוי** — כל כרטיס מוביל לאותו יעד כמו קודם
 - [ ] **/settings עדיין נגיש** — דרך תפריט החשבון (AccountSheet) ודרך כרטיס השלמת הפרופיל (שדה עיר)
 - [ ] **נייד (375px)** — הגריד נקרא, הכרטיסים לחיצים
 
@@ -1102,19 +1102,19 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב עריכה (`/producer/dashboard/edit`), כל הכרטיסים סגורים. נכנסות כבעלת עסק (role=producer).
 
-- [ ] **תמונות** — לעסק עם 5 תמונות — **תוצאה מצופה:** 3 תמונות ממוזערות 40px מעוגלות + תג "2+" בכותרת הסגורה
-- [ ] **קטגוריות** — לעסק עם 4 קטגוריות — **תוצאה מצופה:** 3 שבבי קטגוריה + "1+"
-- [ ] **ביו** — השורה הראשונה של התיאור הנוכחי, חתוכה בשורה אחת, אפור מעומעם
-- [ ] **מיקום** — אייקון סיכת מפה + שם היישוב (בלי אריחי מפה בכותרת)
-- [ ] **מוצרים / ערוצי קשר** — שם המוצר הראשון · אייקון הערוץ הראשי + שמו
-- [ ] **כרטיס ריק** — עסק חדש בלי תוכן — **תוצאה מצופה:** שורת הסיכום הקיימת + לוחית מקווקוות מעומעמת (בלי טקסט שיווקי)
+- ✅ → dashboard-edit.spec.ts (images: three thumbs cap the row and the rest become «+2» — ⚠️ the doc says «2+»; it renders «+2», deliberately (dir=ltr)) — **תמונות** — לעסק עם 5 תמונות — **תוצאה מצופה:** 3 תמונות ממוזערות 40px מעוגלות + תג "2+" בכותרת הסגורה
+- ✅ → dashboard-edit.spec.ts (categories: three chips and «+1») — **קטגוריות** — לעסק עם 4 קטגוריות — **תוצאה מצופה:** 3 שבבי קטגוריה + "1+"
+- ✅ → dashboard-edit.spec.ts (bio: the first line only, never the second) — **ביו** — השורה הראשונה של התיאור הנוכחי, חתוכה בשורה אחת, אפור מעומעם
+- ✅ → dashboard-edit.spec.ts (there is no location preview, and the set is the eight measured keys — ⚠️ STALE as written: the `previews` map has no `location` key and MapPin survives only in the comment recording its deletion; the spec asserts the ABSENCE, which is the behaviour that replaced this row) — **מיקום** — אייקון סיכת מפה + שם היישוב (בלי אריחי מפה בכותרת)
+- ✅ → dashboard-edit.spec.ts (contact: the primary channel's own label) — **מוצרים / ערוצי קשר** — שם המוצר הראשון · אייקון הערוץ הראשי + שמו
+- ✅ → dashboard-edit.spec.ts (an empty card gets the dashed placeholder and no sales pitch) — **כרטיס ריק** — עסק חדש בלי תוכן — **תוצאה מצופה:** שורת הסיכום הקיימת + לוחית מקווקוות מעומעמת (בלי טקסט שיווקי)
 - [ ] **נייד 390px** — אין גלילה אופקית; כל כותרת עדיין לחיצה אחת (44px+); פתיחה/סגירה ועוגן `#images` עובדים כרגיל
 
 ## MEH-1157 — טאב עריכה: 401 מפנה להתחברות + שגיאות ביו לפי סיבה
 
 בטאב עריכה (`/producer/dashboard/edit`).
 
-- [ ] **סשן שפג → הפניה** — כניסה לטאב עריכה עם טוקן שפג (או מחיקת הטוקן ב-devtools ורענון) — **תוצאה מצופה:** הפניה מיידית ל-login, אף טופס לא מוצג (גם לא "טוען נתונים" תקוע)
+- ✅ → dashboard-edit.spec.ts (a 401 on the profile fetch redirects to /login, showing no form) — **סשן שפג → הפניה** — כניסה לטאב עריכה עם טוקן שפג (או מחיקת הטוקן ב-devtools ורענון) — **תוצאה מצופה:** הפניה מיידית ל-login, אף טופס לא מוצג (גם לא "טוען נתונים" תקוע)
 - [ ] **ביו — מגבלת קצב** — לחיצה על "יצירת ביו" 6 פעמים בשעה — **תוצאה מצופה:** "נשלחו יותר מדי בקשות. נסו שוב בעוד כשעה." (לא השגיאה הכללית)
 - [ ] **ביו — AI לא זמין** — כשהשרת מחזיר ביו ריק (fail-open) — **תוצאה מצופה:** "השירות לא זמין כרגע. אפשר לכתוב תיאור ידנית או לנסות שוב מאוחר יותר." (לא "נסו שוב עם טקסט אחר")
 - [ ] **ביו — שגיאת רשת** — ניתוק רשת ולחיצה על "יצירת ביו" — **תוצאה מצופה:** השגיאה הכללית "שגיאה ביצירת הביו — נסו שוב"
@@ -1123,8 +1123,8 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב עריכה (`/producer/dashboard/edit`), כרטיס "ביו AI".
 
-- [ ] **ללא ביו שמור** — פתיחת הכרטיס בעסק בלי תיאור — **תוצאה מצופה:** תיבת הטקסט של הביו מוצגת מיד (ריקה, עם מונה 0/150), בלי צורך ביצירת AI
-- [ ] **ביו שמור קיים** — פתיחת הכרטיס בעסק עם תיאור — **תוצאה מצופה:** התיבה ממולאת מראש בביו השמור
+- ✅ → dashboard-edit.spec.ts (with no saved bio the textarea is already there, empty — the «0/150» counter the row also names is NOT asserted) — **ללא ביו שמור** — פתיחת הכרטיס בעסק בלי תיאור — **תוצאה מצופה:** תיבת הטקסט של הביו מוצגת מיד (ריקה, עם מונה 0/150), בלי צורך ביצירת AI
+- ✅ → dashboard-edit.spec.ts (with a saved bio the textarea is pre-filled with it) — **ביו שמור קיים** — פתיחת הכרטיס בעסק עם תיאור — **תוצאה מצופה:** התיבה ממולאת מראש בביו השמור
 - [ ] **יצירת AI ממלאת** — הזנת מקור ולחיצה על "יצירת ביו" — **תוצאה מצופה:** הטקסט שנוצר מחליף את תוכן התיבה, ואפשר לערוך אותו לפני שמירה
 - [ ] **AI לא זמין לא מוחק** — כשהשרת מחזיר ביו ריק (fail-open) — **תוצאה מצופה:** הטקסט הקיים בתיבה נשאר, מוצגת רק הודעת "השירות לא זמין"
 - [ ] **שמירה ידנית בלבד** — כתיבת ביו ידנית (בלי AI) ולחיצה על "שמרו ביו" ורענון — **תוצאה מצופה:** הביו נשמר ומופיע אחרי רענון
@@ -1178,7 +1178,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 ## MEH-805 — post-login redirect (3 senders → ?redirect=)
 - [ ] **Favorite gate** — לא מחוברת, לחצי ❤ על כרטיס בית עסק → toast "התחברי", לחצי על הלינק → אחרי login חוזרת לעמוד הקודם (לא לדף הבית). איך: `/login?redirect=%2F<slug>` ב-URL.
 - [ ] **Login modal** — טריגר ל-LoginPromptModal, לחצי "היכנסי" → אחרי login חוזרת ליעד.
-- [ ] **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (לא על `/`).
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-805:3) — a guest at /experiences/new lands on /login carrying ?redirect= — **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (לא על `/`).
 - [ ] **Regression** — `/register/producer` (כבר היה תקין) עדיין מחזיר ל-`/register/producer` אחרי login.
 
 ---
@@ -1250,12 +1250,12 @@ the toast (right side in he/RTL), inheriting the white text color.
 
 ## MEH-788 — /register split-editorial (תמונה + טופס)
 
-- [ ] כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) לא מופיעה
-- [ ] `/register` בדסקטופ ≥1024px — שני פאנלים: טופס מימין (START), תמונת ארגז תוצרת משמאל (END) — תוצאה: כמו /login, התמונה מכסה את הפאנל המלא
-- [ ] overlay "טרי · מקומי · מהמקור" בתחתית התמונה — תוצאה: קריא על השכבה הירוקה הכהה
-- [ ] `/register` במובייל 375/360/390 — רצועת תמונה למעלה (~30vh) + הטופס מתחת — תוצאה: אין גלילה אופקית, הטופס שמיש
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:1) — the heading is on /login's scale and the three-feature strip is gone — כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) לא מופיעה
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:2) — desktop: form pane at START, image pane at END, same y — `/register` בדסקטופ ≥1024px — שני פאנלים: טופס מימין (START), תמונת ארגז תוצרת משמאל (END) — תוצאה: כמו /login, התמונה מכסה את הפאנל המלא
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:3) — the overlay renders inside the image pane — overlay "טרי · מקומי · מהמקור" בתחתית התמונה — תוצאה: קריא על השכבה הירוקה הכהה
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:4) — mobile: image band above the form, zero horizontal overflow — `/register` במובייל 375/360/390 — רצועת תמונה למעלה (~30vh) + הטופס מתחת — תוצאה: אין גלילה אופקית, הטופס שמיש
 - [ ] הרשמה מלאה (שם+אימייל+סיסמה+תנאים) — תוצאה: מסך "בדקי את המייל" כרגיל (ללא פאנל תמונה — מכוון)
-- [ ] `/en/register` — overlay "Fresh · Local · From the source" — תוצאה: אנגלית, אותו עיצוב
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:6) — /en/register carries the English overlay and heading — `/en/register` — overlay "Fresh · Local · From the source" — תוצאה: אנגלית, אותו עיצוב
 
 ## MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns
 
@@ -1421,6 +1421,8 @@ Cross-check the returned emails against the original admin allowlist (whoever Sm
 
 ## MEH-641 PR-A — auth chrome noindex verification
 
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-641:1) — both locales, asserted as an exact partition: the four auth-chrome pages carry `noindex` **and** the five public ones do not. Checking only the first half would pass against a build that noindexed the whole site, which is the failure this row exists to catch. The manual bullets below are kept as the human-readable statement of the rule.
+
 **Pages to verify (View Source in browser):**
 - /he/login, /he/register, /he/contact, /he/search → must show `<meta name="robots" content="noindex, nofollow"/>` (or comma-space variant)
 - /en/login, /en/register, /en/contact, /en/search → same
@@ -1532,10 +1534,10 @@ Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (
 
 Desktop only (≥md) — the collapsible category legend at the map's bottom-start corner. A category with 0 businesses in the **current viewport** renders disabled instead of clicking into an empty list. Count is pre-category-filter (`allProducers ∩ committedBounds`), recomputed on pan.
 
-- [ ] Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a category has no businesses → that row is **grayed (low opacity) and not clickable** (cursor not-allowed, no hover highlight). תוצאה מצופה: שורה מושבתת, לא מובילה לרשימה ריקה.
-- [ ] Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable and filters the map as before. תוצאה מצופה: לחיצה מסננת כרגיל.
-- [ ] Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled state on the pan (not stuck from first render). תוצאה מצופה: עדכון על תזוזת מפה.
-- [ ] Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still clickable** (clicking it deactivates / shows all again, so you're not trapped in an empty filter). תוצאה מצופה: עדיין ניתן לכבות, אין מסך-ריק-תקוע, אין קריסה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:1) — Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a category has no businesses → that row is **grayed (low opacity) and not clickable** (cursor not-allowed, no hover highlight). תוצאה מצופה: שורה מושבתת, לא מובילה לרשימה ריקה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:2) — Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable and filters the map as before. תוצאה מצופה: לחיצה מסננת כרגיל.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:3) — Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled state on the pan (not stuck from first render). תוצאה מצופה: עדכון על תזוזת מפה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-722:4) — Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still clickable** (clicking it deactivates / shows all again, so you're not trapped in an empty filter). תוצאה מצופה: עדיין ניתן לכבות, אין מסך-ריק-תקוע, אין קריסה.
 
 ---
 
@@ -1958,25 +1960,25 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 ## Filter chips — two-row layout (feature/meh-two-row-filter-chips, אפריל 2026)
 
 ### /map — mobile (375px)
-- [ ] פתחי /map בחלון 375px — שורת קטגוריות מוצגת (כל · בשר ועוף · ...) ושורת תכונות מוצגת מתחתיה (🚚 משלוח אליי · ✓ מאומתים · ...)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m1) — פתחי /map בחלון 375px — שורת קטגוריות מוצגת (כל · בשר ועוף · ...) ושורת תכונות מוצגת מתחתיה (🚚 משלוח אליי · ✓ מאומתים · ...)
 - [ ] שתי שורות — edge-fade משני הצדדים (ימין + שמאל)
-- [ ] גללי בשורת הקטגוריות שמאלה — גריד נגלל, הצ'יפ הראשון לא נכרת (סיום עם w-8 spacer)
-- [ ] לחצי על "לחם ומאפה" (הצ'יפ בקצה שמאל) — הצ'יפ נצבע bg-primary **ומתגלל אוטומטית לתוך ה-viewport** (scrollIntoView)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m3) — גללי בשורת הקטגוריות שמאלה — גריד נגלל, הצ'יפ הראשון לא נכרת (סיום עם w-8 spacer)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m4) — לחצי על "לחם ומאפה" (הצ'יפ בקצה שמאל) — הצ'יפ נצבע bg-primary **ומתגלל אוטומטית לתוך ה-viewport** (scrollIntoView)
 - [ ] לחצי על "בשר ועוף" — הצ'יפ נצבע bg-primary; תחת שורת התכונות מופיע tag ירוק "× בשר ועוף" + קישור "× נקי הכל"
 - [ ] לחצי על "🌿 אורגני" — tag נוסף "× 🌿 אורגני" מופיע ליד הקודם
 - [ ] לחצי על × בתוך ה-tag "× בשר ועוף" — הסינון מוסר, הצ'יפ "בשר ועוף" כבה, "כל" שוב פעיל
-- [ ] לחצי על "× נקי הכל" — כל הסינונים מאופסים, אזור ה-tags נעלם
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:m8) — לחצי על "× נקי הכל" — כל הסינונים מאופסים, אזור ה-tags נעלם
 - [ ] בדיקת responsive — פתחי ב-375 / 430 / 768 / 1024 / 1280px — בכל גודל אין צ'יפ שנכרת ללא fade נראה, הצ'יפ הפעיל תמיד גלוי
 
 ### /map — desktop
-- [ ] פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:d1) — פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל
 
 ### /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED)
-- [ ] /map → לחצי על כפתור ה-GPS (🎯 "קרוב אליי") → **סרבי** להרשאת מיקום בדפדפן — איך לבדוק: בדפדפן/מובייל בחרי "Block"/"חסום" בבקשת המיקום — **תוצאה מצופה:** נפתח LocationModal (חיפוש עיר + ערים פופולריות), לא toast בלבד
-- [ ] בחרי עיר ב-modal שנפתח (חיפוש או צ'יפ עיר פופולרית) — **תוצאה מצופה:** ה-modal נסגר, רשימת בתי העסק ב-/map מסוננת לפי אותה עיר (כמו היום, ללא geocoding/זום)
-- [ ] /map → GPS → סרבי, ואז סגרי את ה-modal — **תוצאה מצופה:** אין בקשת הרשאה חוזרת אוטומטית (no re-prompt); הדפדפן לא שואל שוב מעצמו
-- [ ] /map → GPS → סמלצי כשל טכני (timeout/מיקום לא זמין, לא סירוב) — איך לבדוק: DevTools → Sensors → Location: "Unavailable", או נתקי GPS — **תוצאה מצופה:** toast שגיאה בלבד ("המיקום שלך לא זמין" / "לקח יותר מדי זמן"), **ללא** פתיחת modal
-- [ ] חזרי על הסירוב גם דרך כפתור ה-GPS בשורת הסינון (mobile sticky bar) וגם דרך ה-flow השני — שני ה-paths פותחים את אותו modal
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo1) — /map → לחצי על כפתור ה-GPS (🎯 "קרוב אליי") → **סרבי** להרשאת מיקום בדפדפן — איך לבדוק: בדפדפן/מובייל בחרי "Block"/"חסום" בבקשת המיקום — **תוצאה מצופה:** נפתח LocationModal (חיפוש עיר + ערים פופולריות), לא toast בלבד
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo2) — בחרי עיר ב-modal שנפתח (חיפוש או צ'יפ עיר פופולרית) — **תוצאה מצופה:** ה-modal נסגר, רשימת בתי העסק ב-/map מסוננת לפי אותה עיר (כמו היום, ללא geocoding/זום)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo3) — /map → GPS → סרבי, ואז סגרי את ה-modal — **תוצאה מצופה:** אין בקשת הרשאה חוזרת אוטומטית (no re-prompt); הדפדפן לא שואל שוב מעצמו
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo4) — /map → GPS → סמלצי כשל טכני (timeout/מיקום לא זמין, לא סירוב) — איך לבדוק: DevTools → Sensors → Location: "Unavailable", או נתקי GPS — **תוצאה מצופה:** toast שגיאה בלבד ("המיקום שלך לא זמין" / "לקח יותר מדי זמן"), **ללא** פתיחת modal
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:two-row:geo5) — חזרי על הסירוב גם דרך כפתור ה-GPS בשורת הסינון (mobile sticky bar) וגם דרך ה-flow השני — שני ה-paths פותחים את אותו modal
 
 ### דף הבית — filters מעל גריד היצרנים
 - [ ] פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל
@@ -2084,11 +2086,11 @@ RTL tests (Task 1) — verify on a mobile viewport (iOS Safari / Android Chrome)
 - [ ] `/register` — שדה "סיסמה" — עדיין LTR (intentional)
 - [ ] `/register` — שדה "עיר" (CitySearch) — RTL, placeholder "חפשי עיר..." מיושר ימין, התוצאות באוטוקומפליט RTL
 - [ ] `/register` — שדה "טלפון" — עדיין LTR (intentional)
-- [ ] `/register/producer` שלב 1 — שדה "שם מלא" — RTL
-- [ ] `/register/producer` שלב 2 — שדה "שם העסק" — RTL
-- [ ] `/register/producer` שלב 2 — textarea "תיאור העסק" — RTL
-- [ ] `/register/producer` שלב 2 — שדה "עיר" — RTL
-- [ ] `/register/producer` שלב 3 — שדות "עיר משלוח" ו-"יום משלוח" — RTL
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:6) — `/register/producer` שלב 1 — שדה "שם מלא" — RTL (נבדק יחד עם אימייל/סיסמה שנשארים LTR, כדי שהבדיקה לא תעבור רק בגלל dir של המסמך)
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:7) — `/register/producer` שלב 2 — שדה "שם העסק" — RTL
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:8) — `/register/producer` — textarea התיאור — RTL. **דריפט:** ה-textarea יושב על פריים STORY (שלב 4), לא על שלב 2, והתווית קוראת «ספרו על העסק שלך»
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:9) — `/register/producer` שלב 2 — שדה היישוב — RTL (התווית קוראת «יישוב»)
+- ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:Registration-forms-RTL:10 — חצי) — `/register/producer` — רשימת ערי המשלוח («ערים שמשלוחים אליהן») — RTL. **דריפט:** הבלוק יושב על שלב 2 (DETAILS) ולא על שלב 3, ומופיע רק אחרי סימון "משלוחים". **חצי שני לא הומר:** אין שדה "יום משלוח" באשף כלל (0 מופעים)
 - [ ] `/register/producer` שלב 2 — "אינסטגרם" / "אתר" — עדיין LTR (intentional)
 
 Dashboard copy tests (Task 2):
@@ -2104,12 +2106,12 @@ Dashboard copy tests (Task 2):
 
 The width bug only shows on desktop (≥ `md` breakpoint, 768px+). Mobile was already correct (`w-full`). The z-index bug shows on `/map` specifically because Leaflet's panes (z-index 200–700) were covering the dropdown (z-50).
 
-- [ ] `/map` על דסקטופ (חלון ≥ 768px) — הקלידי "ראשון לציון" בשדה החיפוש — הטקסט המלא נראה לגמרי, אין חיתוך (truncation) של התווים האחרונים
-- [ ] `/map` על דסקטופ — הקלידי "ראש" — ה-autocomplete dropdown מציג "ראשון לציון" ו-"ראש העין" בשורה מלאה כל אחת, ללא טקסט קטוע או גלילה אופקית
-- [ ] `/map` על דסקטופ — לחצי על "ראשון לציון" ב-dropdown — השדה מתמלא עם הערך המלא
-- [ ] `/map` על דסקטופ — הקלידי "מעלה אדומים" ידנית — הטקסט המלא גלוי בשדה
-- [ ] `/map` על מובייל (< 768px) — שדה החיפוש עדיין תופס את כל רוחב הפיד (`w-full`), לא התווסף regression
-- [ ] `/map` — הקלידי "זכ" — ה-dropdown מצויר **מעל** המפה, רקע לבן אטום, אין טקסט ערבי/עברי של תוויות OSM שמבצבץ דרכו (z-index fix — לפני התיקון ה-dropdown היה מאחורי panes של Leaflet z-200 עד z-700)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:1) — `/map` על דסקטופ (חלון ≥ 768px) — הקלידי "ראשון לציון" בשדה החיפוש — הטקסט המלא נראה לגמרי, אין חיתוך (truncation) של התווים האחרונים
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:2) — `/map` על דסקטופ — הקלידי "ראש" — ה-autocomplete dropdown מציג "ראשון לציון" ו-"ראש העין" בשורה מלאה כל אחת, ללא טקסט קטוע או גלילה אופקית
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:3) — `/map` על דסקטופ — לחצי על "ראשון לציון" ב-dropdown — השדה מתמלא עם הערך המלא
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:4) — `/map` על דסקטופ — הקלידי "מעלה אדומים" ידנית — הטקסט המלא גלוי בשדה
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:5) — `/map` על מובייל (< 768px) — שדה החיפוש עדיין תופס את כל רוחב הפיד (`w-full`), לא התווסף regression
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:city:6) — `/map` — הקלידי "זכ" — ה-dropdown מצויר **מעל** המפה, רקע לבן אטום, אין טקסט ערבי/עברי של תוויות OSM שמבצבץ דרכו (z-index fix — לפני התיקון ה-dropdown היה מאחורי panes של Leaflet z-200 עד z-700)
 - [ ] `/register` ו-`/register/producer` — שדה "עיר" — ה-dropdown עדיין עובד נכון (אין regression מה-z-[1000]), אין אלמנטים אחרים בעמוד שנחסמים על ידו
 
 ---
@@ -2298,31 +2300,31 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 ### Password visibility toggle (task 7) — both pages
 
 - [ ] `/login` — password field has a small eye icon on its left side (visual LEFT of the LTR input, which is the END of the RTL reading flow)
-- [ ] `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible
-- [ ] `/login` — tap again → flips back to `password` → characters become dots
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:2) — the eye flips the field to text — `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:3) — …and back to password — `/login` — tap again → flips back to `password` → characters become dots
 - [ ] `/login` — icon changes: closed eye (`Eye`) when hidden, slashed eye (`EyeSlash`) when visible
-- [ ] `/register` — same 4 checks on the password field there
-- [ ] Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles
-- [ ] Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` reflects state
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:5) — /register runs the same control through PasswordInput — `/register` — same 4 checks on the password field there
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:6) — Tab from the field reaches the toggle, Enter operates it — Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:7) — the aria-label swaps — but see the drift note: the live strings are «הצגת/הסתרת סיסמה» on /login and «הציגו/הסתירו סיסמה» on /register, neither of them the doc's «הציגי/הסתירי» — Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` reflects state
 
 ### Inline validation — /login (task 8)
 
-- [ ] `/login` — load page — submit button is **disabled** (form is empty)
-- [ ] Email field — tap then tap away without typing → no error (touched but empty is neutral)
-- [ ] Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
-- [ ] Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
-- [ ] Password — tap then tap away empty → no error
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:8) — submit is disabled on load — `/login` — load page — submit button is **disabled** (form is empty)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:9) — touched-but-empty email is neutral — Email field — tap then tap away without typing → no error (touched but empty is neutral)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:10) — a malformed email blurs to «האימייל לא תקין» + aria-invalid — Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:11) — fixing it clears the error and shows «✓ תקין» — Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty shows no error — Password — tap then tap away empty → no error
 - [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
 - [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
-- [ ] Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — but the floor is ONE character, not eight: MEH-835 removed the minimum on /login on purpose — Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
 - [ ] Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-enables
 
 ### Inline validation — /register (task 8)
 
-- [ ] `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
-- [ ] Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:17) — /register submit is disabled on load — `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:18) — an empty name blurs to «שם מלא הוא שדה חובה» — Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
 - [ ] Name — type `שרה` → green border + `"✓ תקין"`
-- [ ] Email — same pattern as /login (`"האימייל לא תקין"` error)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:20) — the email error behaves as it does on /login — Email — same pattern as /login (`"האימייל לא תקין"` error)
 - [ ] Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error)
 - [ ] Password — **strength indicator** appears below the input as soon as the user types anything:
   - 1 rule passes (e.g. `"abc"` — only len fails, no upper, no digit: **0 rules**) — strength bar shows no color, no label (field still effectively too short)
@@ -2334,7 +2336,7 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 - [ ] Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"`
 - [ ] Phone — fix to `0501234567` → green border + `"✓ תקין"`
 - [ ] City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional)
-- [ ] Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:28) — all four conditions gate submit, and unticking terms re-disables it — Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
   - Name non-empty ✓
   - Email valid format ✓
   - Password ≥8 chars ✓
@@ -2352,8 +2354,8 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ### Accessibility checks
 
-- [ ] Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
-- [ ] Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:33) — aria-label swaps and aria-pressed follows — Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:34) — an invalid email carries aria-invalid="true" — Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
 - [ ] Error messages are rendered in the same `<div>` as the input so screen readers pick them up
 - [ ] `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works smoothly under reduce-motion (it uses only a CSS `transition` on the icon color — no transform/opacity)
 
@@ -2429,40 +2431,40 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - `tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls:1000 → chat:9999`
 
 ### Bug fixes
-- [ ] Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000)
-- [ ] Desktop: hover marker → only ONE tooltip (no browser-native duplicate)
-- [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
-- [ ] Mobile: X close button stays at top-left during scroll → tap → closes
-- [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
-- [ ] Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b1) — Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b2) — Desktop: hover marker → only ONE tooltip (no browser-native duplicate)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b3) — Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b4) — Mobile: X close button stays at top-left during scroll → tap → closes
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b5) — Mobile: category legend NOT visible (hidden, filter chips serve this role)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:b6) — Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
 
 ### Regression
-- [ ] "חפשי באזור זה" button works (z-1000)
-- [ ] "קרוב אלי" clickable with sheet open
-- [ ] CitySearch dropdown above map tiles
-- [ ] Map pan/zoom works above the sheet
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r1) — "חפשי באזור זה" button works (z-1000)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r2) — "קרוב אלי" clickable with sheet open
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r3) — CitySearch dropdown above map tiles
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:r4) — Map pan/zoom works above the sheet
 
 ### Leaflet attribution rides the sheet edge (MEH-1365)
-- [ ] נייד, sheet ב-PEEK — `Leaflet | © OpenStreetMap` גלוי **מעל** קצה ה-sheet, בלי לגעת בתוכן — תוצאה מצופה: פער קטן (~6px) בין הכיתוב לקצה
-- [ ] נייד, sheet ב-HALF — ה-attribution רוכב למעלה עם הקצה, אפס חפיפה עם כרטיסים — תוצאה מצופה: הכיתוב צף מעל קצה ה-sheet, לא על "שליחת הודעה"
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:a1) — נייד, sheet ב-PEEK — `Leaflet | © OpenStreetMap` גלוי **מעל** קצה ה-sheet, בלי לגעת בתוכן — תוצאה מצופה: פער קטן (~6px) בין הכיתוב לקצה
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:a2) — נייד, sheet ב-HALF — ה-attribution רוכב למעלה עם הקצה, אפס חפיפה עם כרטיסים — תוצאה מצופה: הכיתוב צף מעל קצה ה-sheet, לא על "שליחת הודעה"
 - [ ] נייד, באמצע drag — ה-attribution עוקב אחרי הקצה בלי קפיצות (drag=0ms, snap=300ms)
-- [ ] דסקטופ (lg+) — ה-attribution בפינה התחתונה בדיוק כמו היום (הכלל scoped ל-<1024px)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:a4) — דסקטופ (lg+) — ה-attribution בפינה התחתונה בדיוק כמו היום (הכלל scoped ל-<1024px)
 
 ### Mobile top-banner height reservation (MEH-1019)
 _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → open `/he/map` on a phone → the map + bottom controls (קרוב אליי pill, bottom sheet) sit fully inside the viewport, no spill below the fold, page not scrollable past the map. תוצאה מצופה: המפה מסתיימת בדיוק בתחתית המסך.
-- [ ] Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:z:1019-2) — Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
 
 ---
 
 ## /map desktop — marker click = card-sync (MEH-1010)
 
-- [ ] Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
-- [ ] Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:1) — Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:2) — Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
 - [ ] Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+highlight. תוצאה מצופה: זהה למרקר בודד.
-- [ ] Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
-- [ ] Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
-- [ ] Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:4) — Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:5) — Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1010:6) — Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
 
 ---
 
@@ -3082,7 +3084,7 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 - [ ] **GPS פעיל** — `/he/map` אחרי אישור מיקום → כל כרטיס בית עסק עם קואורדינטות מציג שורת מרחק, למשל `2.5 ק"מ ממך` — איך לבדוק: לאשר הרשאת מיקום → לפתוח את רשימת הכרטיסים — תוצאה מצופה: שורת מרחק עם המספר מיושר LTR (ספרה משמאל, "ק"מ ממך" אחריה), בלי שבירת bidi
 - [ ] **אין GPS** — `/he/map` בלי אישור מיקום (או דחייה) → אף כרטיס לא מציג שורת מרחק — תוצאה מצופה: השורה נעלמת בחן, שאר הכרטיס תקין
-- [ ] **/en** — אותו כרטיס באנגלית → המרחק עדיין בפורמט העברי המשותף (`formatDistance`), עקבי עם `ProducerCard`
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G2:3) — **/en** — אותו כרטיס באנגלית → המרחק עדיין בפורמט העברי המשותף (`formatDistance`), עקבי עם `ProducerCard`
 
 ## MEH-848 — error toasts collapsed to error.generic (i18n refactor)
 
@@ -3097,10 +3099,10 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 שורת הספירה ברשימת ה-`/map` (desktop split-view) נושאת את הקופי הנעול + subhead "קרוב אליך · {region}" מתחתיה. ה-h1 הסמנטי ("מפת בתי עסק") נשאר.
 
-- [ ] **שורת ספירה** — `/he/map` desktop → מעל רשימת הכרטיסים מופיע "{N} בתי עסק מקומיים באזור" (לא "{N} בתי עסק" בלבד) — תוצאה מצופה: הקופי הנעול, עם המספר בצורת רבים/יחיד נכונה (0 → "אין בתי עסק מקומיים באזור", 1 → "בית עסק מקומי אחד באזור")
-- [ ] **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead מוצג רק כשיש עיר/region; אין עיר → ה-subhead נעלם (בלי "·" תלוי)
-- [ ] **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מוערמת
-- [ ] **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}"
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:1) — **שורת ספירה** — `/he/map` desktop → מעל רשימת הכרטיסים מופיע "{N} בתי עסק מקומיים באזור" (לא "{N} בתי עסק" בלבד) — תוצאה מצופה: הקופי הנעול, עם המספר בצורת רבים/יחיד נכונה (0 → "אין בתי עסק מקומיים באזור", 1 → "בית עסק מקומי אחד באזור")
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:2) — **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead מוצג רק כשיש עיר/region; אין עיר → ה-subhead נעלם (בלי "·" תלוי)
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:3) — **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מוערמת
+- ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:G3:4) — **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}"
 
 ## MEH-992 — group-buy dashboard form clarity
 
@@ -3140,11 +3142,11 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 בטאב עריכה (`/producer/dashboard/edit`). נכנסות כבעלת עסק (role=producer).
 
-- [ ] **טעינה** — כל הכרטיסים (ביו / שאלות / ערוצי קשר / קטגוריות / תמונות / מיקום / מוצרים) סגורים; בכל כותרת מופיע סיכום סטטוס בשורה אחת (למשל "טלפון ✓ · וואטסאפ ראשי", "2 קטגוריות")
-- [ ] **אחד פתוח בכל רגע** — פתיחת כרטיס שני סוגרת את הראשון
+- ✅ → dashboard-edit.spec.ts (with no hash every card in the group is closed and still summarised — only the LIVE half: the row's flat seven-card enumeration is the pre-hub shape (drift D4)) — **טעינה** — כל הכרטיסים (ביו / שאלות / ערוצי קשר / קטגוריות / תמונות / מיקום / מוצרים) סגורים; בכל כותרת מופיע סיכום סטטוס בשורה אחת (למשל "טלפון ✓ · וואטסאפ ראשי", "2 קטגוריות")
+- ✅ → dashboard-edit.spec.ts (opening a second card closes the first · changing the hash in place moves the open card) — **אחד פתוח בכל רגע** — פתיחת כרטיס שני סוגרת את הראשון
 - [ ] **שימור מצב** — פותחים כרטיס, מקלידים בלי לשמור, סוגרים ופותחים שוב — **תוצאה מצופה:** הטקסט שהוקלד נשמר; באנר "שינויים שלא נשמרו" נשאר גם כשהכרטיס סגור
 - [ ] **שומר הניווט (MEH-1100)** — עם שדה שלא נשמר, לוחצות על טאב אחר — **תוצאה מצופה:** דיאלוג אישור עוצר את הניווט
-- [ ] **עוגן URL** — כניסה ישירה ל-`/producer/dashboard/edit#categories` — **תוצאה מצופה:** כרטיס הקטגוריות נפתח אוטומטית והדף נגלל אליו; עובד גם בשינוי hash תוך כדי שהייה בדף
+- ✅ → dashboard-edit.spec.ts (a #anchor deep link opens that card, through its group · changing the hash in place moves the open card) — **עוגן URL** — כניסה ישירה ל-`/producer/dashboard/edit#categories` — **תוצאה מצופה:** כרטיס הקטגוריות נפתח אוטומטית והדף נגלל אליו; עובד גם בשינוי hash תוך כדי שהייה בדף
 - [ ] **מקלדת** — Tab מגיע לכותרות הכרטיסים; Enter/רווח פותח וסוגר; חץ הכיוון (CaretDown) מתהפך כשפתוח
 - [ ] **מובייל 375px** — הכותרות + הסיכומים נקראים בלי חיתוך; אין גלילה אופקית
 
