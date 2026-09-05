@@ -4520,6 +4520,22 @@
         "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 day a week} other {# days a week}}"
       },
+      "special_hours": {
+        "heading": "Special hours for holidays",
+        "subtitle": "A specific date that overrides the weekly schedule — a holiday eve or a closed day, for example",
+        "empty_state": "No special hours yet. Add a date or pick a holiday from the list",
+        "chips_label": "Upcoming holidays:",
+        "add_date": "Add a date",
+        "remove_date": "Remove this date",
+        "date_label": "Date",
+        "closed_toggle": "Closed for orders on this date",
+        "note_label": "Note",
+        "note_placeholder": "For example: Rosh Hashana eve",
+        "invalid_date": "Invalid or duplicate date",
+        "save_success": "Special hours saved",
+        "summary_empty": "Not set",
+        "summary_set": "{count, plural, one {1 date} other {# dates}}"
+      },
       "custom_questions": {
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
