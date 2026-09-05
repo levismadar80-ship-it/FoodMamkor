@@ -124,11 +124,11 @@
 
 ## MEH-1919 — שקט בשדות ההרשמה הצרכנית (06/08)
 
-- [ ] **שם מלא — אין שום סימן "תקין"** — `/register` (390px) → מלאי "שם מלא" → לחצי מחוץ לשדה (blur) — **תוצאה מצופה:** המסגרת נשארת **אפורה**, אין ✓, ואין הכיתוב "✓ תקין" מתחת לשדה. לפני השינוי הופיעו שלושתם
-- [ ] **אימייל — כלום בזמן הקלדה** — באותו עמוד, הקלידי אימייל תקין **בלי** לצאת מהשדה — **תוצאה מצופה:** אין מסגרת ירוקה של הצלחה ואין "✓ תקין". (המסגרת הירוקה של **פוקוס** כן מופיעה — היא קיימת בכל שדה ולא השתנתה)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-1919:1) — the name field stays quiet when it is merely correct — **שם מלא — אין שום סימן "תקין"** — `/register` (390px) → מלאי "שם מלא" → לחצי מחוץ לשדה (blur) — **תוצאה מצופה:** המסגרת נשארת **אפורה**, אין ✓, ואין הכיתוב "✓ תקין" מתחת לשדה. לפני השינוי הופיעו שלושתם
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-1919:2) — nothing appears while the email is being typed — **אימייל — כלום בזמן הקלדה** — באותו עמוד, הקלידי אימייל תקין **בלי** לצאת מהשדה — **תוצאה מצופה:** אין מסגרת ירוקה של הצלחה ואין "✓ תקין". (המסגרת הירוקה של **פוקוס** כן מופיעה — היא קיימת בכל שדה ולא השתנתה)
 - [ ] **אימייל — מסגרת ירוקה רק אחרי יציאה מהשדה** — צאי מהשדה (blur) עם ערך תקין — **תוצאה מצופה:** המסגרת ירוקה, **בלי** "✓ תקין" ובלי ✓
 - [ ] **אימייל — חזרה להקלדה מכבה את הסימן** — חזרי לשדה והוסיפי תו — **תוצאה מצופה:** סימן ההצלחה נעלם עד ה-blur הבא. לפני השינוי הוא הבהב על כל תו
-- [ ] **שגיאות לא זזו** — blur על "שם מלא" ריק, ו-blur על אימייל לא תקין — **תוצאה מצופה:** מסגרת אדומה + "שם מלא הוא שדה חובה" / "האימייל לא תקין", בדיוק כמו קודם; השגיאה **נשארת** בזמן התיקון
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-1919:5) — errors still appear on blur and persist while the value is wrong — **שגיאות לא זזו** — blur על "שם מלא" ריק, ו-blur על אימייל לא תקין — **תוצאה מצופה:** מסגרת אדומה + "שם מלא הוא שדה חובה" / "האימייל לא תקין", בדיוק כמו קודם; השגיאה **נשארת** בזמן התיקון
 
 ---
 
@@ -1178,7 +1178,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 ## MEH-805 — post-login redirect (3 senders → ?redirect=)
 - [ ] **Favorite gate** — לא מחוברת, לחצי ❤ על כרטיס בית עסק → toast "התחברי", לחצי על הלינק → אחרי login חוזרת לעמוד הקודם (לא לדף הבית). איך: `/login?redirect=%2F<slug>` ב-URL.
 - [ ] **Login modal** — טריגר ל-LoginPromptModal, לחצי "היכנסי" → אחרי login חוזרת ליעד.
-- [ ] **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (לא על `/`).
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-805:3) — a guest at /experiences/new lands on /login carrying ?redirect= — **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (לא על `/`).
 - [ ] **Regression** — `/register/producer` (כבר היה תקין) עדיין מחזיר ל-`/register/producer` אחרי login.
 
 ---
@@ -1250,12 +1250,12 @@ the toast (right side in he/RTL), inheriting the white text color.
 
 ## MEH-788 — /register split-editorial (תמונה + טופס)
 
-- [ ] כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) לא מופיעה
-- [ ] `/register` בדסקטופ ≥1024px — שני פאנלים: טופס מימין (START), תמונת ארגז תוצרת משמאל (END) — תוצאה: כמו /login, התמונה מכסה את הפאנל המלא
-- [ ] overlay "טרי · מקומי · מהמקור" בתחתית התמונה — תוצאה: קריא על השכבה הירוקה הכהה
-- [ ] `/register` במובייל 375/360/390 — רצועת תמונה למעלה (~30vh) + הטופס מתחת — תוצאה: אין גלילה אופקית, הטופס שמיש
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:1) — the heading is on /login's scale and the three-feature strip is gone — כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) לא מופיעה
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:2) — desktop: form pane at START, image pane at END, same y — `/register` בדסקטופ ≥1024px — שני פאנלים: טופס מימין (START), תמונת ארגז תוצרת משמאל (END) — תוצאה: כמו /login, התמונה מכסה את הפאנל המלא
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:3) — the overlay renders inside the image pane — overlay "טרי · מקומי · מהמקור" בתחתית התמונה — תוצאה: קריא על השכבה הירוקה הכהה
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:4) — mobile: image band above the form, zero horizontal overflow — `/register` במובייל 375/360/390 — רצועת תמונה למעלה (~30vh) + הטופס מתחת — תוצאה: אין גלילה אופקית, הטופס שמיש
 - [ ] הרשמה מלאה (שם+אימייל+סיסמה+תנאים) — תוצאה: מסך "בדקי את המייל" כרגיל (ללא פאנל תמונה — מכוון)
-- [ ] `/en/register` — overlay "Fresh · Local · From the source" — תוצאה: אנגלית, אותו עיצוב
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:6) — /en/register carries the English overlay and heading — `/en/register` — overlay "Fresh · Local · From the source" — תוצאה: אנגלית, אותו עיצוב
 
 ## MEH-788 — hero דף הבית: תמונת תוצרת + Ken Burns
 
@@ -1420,6 +1420,8 @@ Cross-check the returned emails against the original admin allowlist (whoever Sm
 ---
 
 ## MEH-641 PR-A — auth chrome noindex verification
+
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-641:1) — both locales, asserted as an exact partition: the four auth-chrome pages carry `noindex` **and** the five public ones do not. Checking only the first half would pass against a build that noindexed the whole site, which is the failure this row exists to catch. The manual bullets below are kept as the human-readable statement of the rule.
 
 **Pages to verify (View Source in browser):**
 - /he/login, /he/register, /he/contact, /he/search → must show `<meta name="robots" content="noindex, nofollow"/>` (or comma-space variant)
@@ -2298,31 +2300,31 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 ### Password visibility toggle (task 7) — both pages
 
 - [ ] `/login` — password field has a small eye icon on its left side (visual LEFT of the LTR input, which is the END of the RTL reading flow)
-- [ ] `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible
-- [ ] `/login` — tap again → flips back to `password` → characters become dots
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:2) — the eye flips the field to text — `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:3) — …and back to password — `/login` — tap again → flips back to `password` → characters become dots
 - [ ] `/login` — icon changes: closed eye (`Eye`) when hidden, slashed eye (`EyeSlash`) when visible
-- [ ] `/register` — same 4 checks on the password field there
-- [ ] Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles
-- [ ] Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` reflects state
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:5) — /register runs the same control through PasswordInput — `/register` — same 4 checks on the password field there
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:6) — Tab from the field reaches the toggle, Enter operates it — Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:7) — the aria-label swaps — but see the drift note: the live strings are «הצגת/הסתרת סיסמה» on /login and «הציגו/הסתירו סיסמה» on /register, neither of them the doc's «הציגי/הסתירי» — Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` reflects state
 
 ### Inline validation — /login (task 8)
 
-- [ ] `/login` — load page — submit button is **disabled** (form is empty)
-- [ ] Email field — tap then tap away without typing → no error (touched but empty is neutral)
-- [ ] Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
-- [ ] Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
-- [ ] Password — tap then tap away empty → no error
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:8) — submit is disabled on load — `/login` — load page — submit button is **disabled** (form is empty)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:9) — touched-but-empty email is neutral — Email field — tap then tap away without typing → no error (touched but empty is neutral)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:10) — a malformed email blurs to «האימייל לא תקין» + aria-invalid — Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:11) — fixing it clears the error and shows «✓ תקין» — Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty shows no error — Password — tap then tap away empty → no error
 - [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
 - [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
-- [ ] Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — but the floor is ONE character, not eight: MEH-835 removed the minimum on /login on purpose — Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
 - [ ] Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-enables
 
 ### Inline validation — /register (task 8)
 
-- [ ] `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
-- [ ] Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:19) — /register submit is disabled on load — `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:20) — an empty name blurs to «שם מלא הוא שדה חובה» — Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
 - [ ] Name — type `שרה` → green border + `"✓ תקין"`
-- [ ] Email — same pattern as /login (`"האימייל לא תקין"` error)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:22) — the email error behaves as it does on /login — Email — same pattern as /login (`"האימייל לא תקין"` error)
 - [ ] Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error)
 - [ ] Password — **strength indicator** appears below the input as soon as the user types anything:
   - 1 rule passes (e.g. `"abc"` — only len fails, no upper, no digit: **0 rules**) — strength bar shows no color, no label (field still effectively too short)
@@ -2334,7 +2336,7 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 - [ ] Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"`
 - [ ] Phone — fix to `0501234567` → green border + `"✓ תקין"`
 - [ ] City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional)
-- [ ] Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:34) — all four conditions gate submit, and unticking terms re-disables it — Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
   - Name non-empty ✓
   - Email valid format ✓
   - Password ≥8 chars ✓
@@ -2352,8 +2354,8 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ### Accessibility checks
 
-- [ ] Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
-- [ ] Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:41) — aria-label swaps and aria-pressed follows — Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:42) — an invalid email carries aria-invalid="true" — Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
 - [ ] Error messages are rendered in the same `<div>` as the input so screen readers pick them up
 - [ ] `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works smoothly under reduce-motion (it uses only a CSS `transition` on the icon color — no transform/opacity)
 
