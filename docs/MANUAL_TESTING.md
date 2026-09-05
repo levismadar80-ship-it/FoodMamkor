@@ -3108,10 +3108,10 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 טופס יצירת קבוצת רכש (`/he/producer/dashboard/group-buys` → "+ קבוצת רכש חדשה"). Copy חדש ב-he.json בלבד (functional/neutral, ADR-024); en.json לא נגעו.
 
-- [ ] **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
-- [ ] **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
-- [ ] **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
-- [ ] **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
+- ✅ → dashboard-offer-groupbuy.spec.ts (both price fields carry a ₪ adornment and read LTR — the adornment is the Input's startAdornment (inline start = right in RTL); asserted as rendered + computed direction, not as a pixel side) — **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
+- ✅ → dashboard-offer-groupbuy.spec.ts (the price-rule helper turns red when the group price is not below the regular price — muted → red → muted, pre-submit) — **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
+- ✅ → dashboard-offer-groupbuy.spec.ts (the deadline field explains what the date means, in Israel time) — **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
+- ✅ → dashboard-offer-groupbuy.spec.ts (the form opens with a one-line concept intro under its heading — opened through the empty state's «+ צרו קבוצה ראשונה» (the toggle renders only with ≥1 group buy)) — **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
 
 ## MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes)
 
@@ -3246,13 +3246,13 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**כלום**. הדרישה לכותרת חיה
 בטופס בלבד, כי שם אפשר לתקן אותה.
 
-- [ ] **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
-- [ ] **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
-- [ ] **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
-- [ ] **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
+- ✅ → dashboard-offer-groupbuy.spec.ts (the type select holds the five types plus «אין הטבה פעילה» — six options, custom last — «אין הטבה פעילה» renders FIRST (value ""), the five types after it in code order; the card is reached via ?group=location because #offer is a dead deep link (MEH-2262)) — **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
+- ✅ → dashboard-offer-groupbuy.spec.ts (choosing the custom type removes the threshold amount and unit from the DOM) — **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
+- ✅ → dashboard-offer-groupbuy.spec.ts (a custom offer with an expiry but no headline blocks the save and says why) — **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
+- ✅ → dashboard-offer-groupbuy.spec.ts (typing a headline clears the error and enables the save) — **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
 - [ ] **הטקסט בעמוד העסק** — אחרי שמירה → עמוד העסק — **תוצאה מצופה:** התגית מציגה את המילים שלך **פעם אחת**, עם אייקון המתנה. לא המשפט של הפלטפורמה, ולא אותו טקסט שוב בשורה מתחת
 - [ ] **הצ'יפ בכרטיסייה** — דף הבית / `/producers` — **תוצאה מצופה:** אותן מילים בצ'יפ הקצר (נחתך ב-`truncate` אם ארוך — זה תקין)
-- [ ] **סף שנשאר מסוג קודם** — בוחרות "מתנה", ממלאות 150 ₪, ואז עוברות ל"ניסוח חופשי" ושומרות — **תוצאה מצופה:** הסף **לא** נשמר. שדה מוסתר לא נשלח, וממילא אין לו איפה להופיע
+- ✅ → dashboard-offer-groupbuy.spec.ts (a threshold left over from «מתנה» is not saved once the type is custom — the PUT is captured: threshold_value and threshold_unit are null) — **סף שנשאר מסוג קודם** — בוחרות "מתנה", ממלאות 150 ₪, ואז עוברות ל"ניסוח חופשי" ושומרות — **תוצאה מצופה:** הסף **לא** נשמר. שדה מוסתר לא נשלח, וממילא אין לו איפה להופיע
 - [ ] **מובייל 375px** — כל האמור לעיל — **תוצאה מצופה:** הכותרת נקראת במלואה בתגית, והשגיאה האדומה בטופס לא נחתכת
 - [ ] **סוג לא מוכר (edge, דרך API)** — `PUT /producers/me` עם `offer_type` שאינו אחד מהחמישה — **תוצאה מצופה:** 422 עם "סוג הטבה חייב להיות אחד מ: …" שמונה את כל החמישה כולל `custom`
 
