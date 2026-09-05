@@ -144,7 +144,9 @@ const rec = (r: Route, writes?: Rec[]): unknown => {
   let body: unknown = null;
   try { body = req.postDataJSON(); } catch { body = req.postData(); }
   const pathname = new URL(req.url()).pathname;
-  writes?.push({ method: req.method(), url: pathname.slice(pathname.indexOf("/api") + "/api".length), body });
+  const at = pathname.indexOf("/api");
+  if (at < 0) throw new Error(`rec(): no /api segment in ${pathname}`);
+  writes?.push({ method: req.method(), url: pathname.slice(at + "/api".length), body });
   return body;
 };
 
@@ -205,8 +207,15 @@ async function openDashboard(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "לוח מחוונים" }), "control: the dashboard never rendered").toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" })).toBeVisible();
 }
-/** The card whose <h2> reads `heading`. */
-const card = (page: Page, heading: string) => page.locator("div.bg-white").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
+/**
+ * The dashboard card whose <h2> reads `heading`, scoped to the page's <main> so
+ * neither nav can match. `.last()` picks the innermost white container around
+ * that heading — the card itself rather than the grid cell wrapping it. A second
+ * card with the same <h2> would not be picked silently: every test also asserts
+ * the heading by role + exact name, which is a strict-mode violation on two.
+ */
+const card = (page: Page, heading: string) =>
+  page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
 /** The one pill that is actually rendered — the desktop sidebar and the mobile nav each carry one; the other is display:none. */
 const pill = (page: Page, count: number) => page.locator(`[aria-label="${count} פריטים לאישור"]:visible`);
 
@@ -258,7 +267,8 @@ test.describe("/admin — the dashboard", () => {
     // Only the MM-DD labels — a future axis label or title must not turn a date-format failure into a count mismatch.
     const dateLabels = svg.locator("text").filter({ hasText: /^\d\d-\d\d$/ });
     await expect(dateLabels).toHaveText(["08-07", "08-22", "09-05"]);
-    await expect(svg.locator("text"), "no other text nodes yet — the chart is dates-only today").toHaveCount(3);
+    // Pinned on purpose: a new <text> node (axis, title, tooltip) is a chart change this row should notice and re-pin.
+    await expect(svg.locator("text"), "the chart renders exactly the three date labels").toHaveCount(3);
     await expect(svg.locator("polyline")).toHaveAttribute("points", /^8\.0,/);
   });
 
@@ -315,8 +325,10 @@ async function openSettings(page: Page): Promise<void> {
   await page.goto("/he/admin/settings");
   await expect(page.getByRole("heading", { name: /^מצב חופשה/ }), "control: the settings page never rendered").toBeVisible({ timeout: 15_000 });
 }
-/** The vacation block — the page carries two other switches (holiday window, Friday mode) above it. */
-const vacationBlock = (page: Page) => page.locator("div.bg-white").filter({ has: page.getByRole("heading", { name: /^מצב חופשה/ }) }).last();
+/** The vacation block — the page carries two other switches (holiday window, Friday mode) above it.
+ *  Same shape and same reasoning as `card()`: <main>-scoped, innermost white container around the heading. */
+const vacationBlock = (page: Page) =>
+  page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: /^מצב חופשה/ }) }).last();
 const vacationSwitch = (page: Page) => vacationBlock(page).getByRole("switch");
 const vacationSave = (page: Page) => page.getByRole("button", { name: "שמרי מצב חופשה" });
 const returnDate = (page: Page) => page.getByLabel("אני בחופשה עד");
