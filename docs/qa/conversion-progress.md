@@ -243,10 +243,50 @@ the JSON-LD block. This is exactly the "green with two possible causes" shape, m
 a session that probed only the status code would have concluded the page renders fine with
 no backend.
 
-`scripts/local-backend.sh` was NOT used: it requires `backend/.venv`, which this sandbox does
-not have (`fastapi` is absent and `uv sync` was not run). The Node stub lived in the
-scratchpad and is deliberately **not committed** — a second local-backend mechanism competing
-with the sanctioned script is MEH-271 Smell #1.
+> ### ⛔ CORRECTED 2026-09-05 — the reason given here is FALSE, and the instrument that produced it is the point
+>
+> This paragraph read: *"`scripts/local-backend.sh` was NOT used: it requires `backend/.venv`,
+> which this sandbox does not have (`fastapi` is absent and `uv sync` was not run)."*
+>
+> **`backend/.venv` exists and is fully populated, and it was there the whole time.** Measured
+> 05/09: `stat` puts its mtime at **2026-09-04 10:22:56** — container-start, roughly eighteen
+> hours before the chunk-8 and chunk-9 work that asserted its absence. `fastapi`, `alembic`
+> and `sqlalchemy` all import.
+>
+> **The instrument was the wrong interpreter.** `python3 -c "import fastapi"` uses the SYSTEM
+> python and raises `ModuleNotFoundError`; `backend/.venv/bin/python -c "import fastapi"`
+> prints `0.141.1`. The first is a confident, well-formed, wrong answer with nothing in the
+> output saying so — the `.claude/rules/testing.md` shape exactly. It was nearly repeated on
+> 05/09: the first probe of that session was also the system python.
+>
+> **The stack boots here.** Postgres 16 is installed (`pg_ctl` under
+> `/usr/lib/postgresql/16/bin`); started, then `SKIP_UVICORN=1 bash scripts/local-backend.sh`
+> applied the full Alembic chain, seeded categories/producers/cities/state+status fixtures and
+> created the admin user; with uvicorn up, `GET /health` → **200**, `GET /producers` returns
+> the seeded catalogue, and `POST /auth/login` with the seeded admin returns **200 with an
+> access token**. Sapir's 13/07 decision — destructive rows run against this stack and never
+> against Railway — is therefore **executable in the CC sandbox**, not merely prescribed.
+>
+> **What this does NOT retroactively make wrong.** The destructive rows chunks 8-10 deferred
+> are still correctly deferred: they must not run against the deployed backend, and that has
+> not changed. What changed is the stated REASON. Re-converting them against the local stack
+> is real follow-up work on already-merged chunks, so it is named here rather than done
+> silently.
+>
+> **Checked and NOT corrected: `frontend/e2e/flows/manual/register-producer.spec.ts`.** The
+> plan was to fix "the same false claim" in that header too. Reading it first — the
+> file-preservation rule that a document must be PROVEN wrong before it is edited — shows the
+> header never made that claim: its stated reason for deferring the destructive rows is that
+> `e2e.yml` points `/api/*` at Railway staging and Sapir's decision forbids running them
+> there. That is correct, unaffected by any of the above, and was left alone. Editing it would
+> have been a regression that reads as diligence.
+>
+> _(Corrected in the artifact rather than in a comment — rule 34.)_
+
+The Node stub lived in the scratchpad and is deliberately **not committed** — a second
+local-backend mechanism competing with the sanctioned script is MEH-271 Smell #1. That
+reasoning stands and is the reason the stub stays uncommitted now that the sanctioned script
+is known to work.
 
 **Two premises corrected (meta-patterns §1 — surfaced, not silently accepted):**
 
