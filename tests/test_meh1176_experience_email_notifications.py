@@ -30,7 +30,8 @@ class TestSubmissionAdminNotification:
             lambda **kw: calls.append(kw),
         )
 
-        user = make_user(db, role="consumer", email="host@test.com")
+        # MEH-2246: POST /experiences is producer-only now (require_verified_producer).
+        user = make_user(db, role="producer", email="host@test.com")
         payload = _payload()
         r = client.post("/experiences", json=payload, headers=auth_header(user))
         assert r.status_code == 201, r.text
@@ -52,7 +53,7 @@ class TestSubmissionAdminNotification:
             lambda **kw: calls.append(kw),
         )
 
-        user = make_user(db, role="consumer", email="host2@test.com")
+        user = make_user(db, role="producer", email="host2@test.com")
         r = client.post("/experiences", json=_payload(), headers=auth_header(user))
         assert r.status_code == 201, r.text
         assert calls[0]["moderation_status"] == "FLAGGED"

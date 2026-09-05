@@ -486,7 +486,7 @@ export function HomeProducersGrid({
               {t("home.producers.hint_favorites")}
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4" data-testid="home-producers-grid">
             {visibleProducers.map((p, idx) => (
               <motion.div
                 key={p.id}
