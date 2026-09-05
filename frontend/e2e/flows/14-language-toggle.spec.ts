@@ -90,7 +90,13 @@ test.describe("Language toggle", () => {
   // The OTHER half of MEH-817 — bare `next/link` hrefs dropping /en — is a
   // different, deterministic defect (63 importers on 04/09) and is not what
   // this test covers.
-  test("flips he → en and back, preserving the path", async ({ page }) => {
+  test("flips he → en and back, preserving the path", async ({ page }, testInfo) => {
+    // Static project-identity gate (the sanctioned form — testing.md): the header
+    // toggle is `hidden md:inline-flex`, so below 768px `:visible` resolves to 0
+    // elements and this round trip has nothing to click. The mobile pill test
+    // above owns that viewport; this one asserts the ≥768px header toggle.
+    test.skip(testInfo.project.name !== "desktop", "header toggle is hidden below md; the mobile pill test covers <768px");
+
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
