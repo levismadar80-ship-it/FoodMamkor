@@ -255,7 +255,10 @@ test.describe("/admin — the dashboard", () => {
     await openDashboard(page);
     const svg = page.getByRole("img", { name: "DAU 30 ימים" });
     await expect(svg.locator("circle")).toHaveCount(30);
-    await expect(svg.locator("text")).toHaveText(["08-07", "08-22", "09-05"]);
+    // Only the MM-DD labels — a future axis label or title must not turn a date-format failure into a count mismatch.
+    const dateLabels = svg.locator("text").filter({ hasText: /^\d\d-\d\d$/ });
+    await expect(dateLabels).toHaveText(["08-07", "08-22", "09-05"]);
+    await expect(svg.locator("text"), "no other text nodes yet — the chart is dates-only today").toHaveCount(3);
     await expect(svg.locator("polyline")).toHaveAttribute("points", /^8\.0,/);
   });
 
