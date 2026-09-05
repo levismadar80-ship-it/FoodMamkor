@@ -32,6 +32,19 @@ let filteredRows = [];
 vi.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
 }));
+// MEH-2245: switching tab is a route change through next-intl's router;
+// stub it (HANDOFF lesson: next-intl navigation under vitest needs the
+// 5-line @/i18n/navigation stub, same as the Register suites).
+const pushMock = vi.fn();
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: pushMock, replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/",
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next-intl", () => ({
   useTranslations: (ns) => (k) => (ns ? `${ns}.${k}` : k),
   useLocale: () => "he",
@@ -122,8 +135,10 @@ const setUrl = (url) => window.history.replaceState(null, "", url);
 // Render and wait for the initial load() to settle, so no assertion reads the
 // loading state by accident (rows are [] there too — a third zero that means
 // neither of the two under test).
-const mount = async () => {
-  render(<EventsClient />);
+// MEH-2245: the tab is the route — /experiences mounts the same component
+// with initialTab="experiences" — so the helper takes the prop, not ?tab=.
+const mount = async (initialTab = "events") => {
+  render(<EventsClient initialTab={initialTab} />);
   await waitFor(() => {
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -153,9 +168,8 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
     });
 
     it("experiences tab: EXACTLY 0 filter controls, /producers link beside the existing CTA", async () => {
-      params = { tab: "experiences" };
-      setUrl("/events?tab=experiences");
-      await mount();
+      setUrl("/experiences");
+      await mount("experiences");
 
       expect(screen.getByTestId("events-empty-dataset")).toBeInTheDocument();
       expect(filterControlCount()).toBe(0);

@@ -70,7 +70,6 @@
     "reviews_count",
     "short_description",
     "slug",
-    "starting_price_label",
     "status",
     "top_product_id",
     "top_product_name",
@@ -155,7 +154,6 @@
     "reviews_count",
     "short_description",
     "slug",
-    "starting_price_label",
     "status",
     "story_card_url",
     "top_product_id",
@@ -184,6 +182,7 @@
     "ProducerDetailOut.categories": [
       "emoji",
       "id",
+      "is_system",
       "name",
       "producer_count",
       "slug"
@@ -236,6 +235,7 @@
     "ProducerListOut.categories": [
       "emoji",
       "id",
+      "is_system",
       "name",
       "producer_count",
       "slug"

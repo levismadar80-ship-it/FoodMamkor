@@ -64,6 +64,10 @@ erDiagram
         string availability_status "legacy — preserved during MEH-291 overlap"
         string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation"
         date vacation_until "nullable — required when availability_state=on_vacation"
+        timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
+        text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
+        date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
+        json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         string plan "free|premium"
         boolean grass_fed
         boolean organic_certified
@@ -79,6 +83,9 @@ erDiagram
         date license_expires_at "nullable — MEH-2072, DATE not TIMESTAMP (a licence is valid through a calendar day; compared against israel_today()); admin-only (ProducerAdminOut), never owner-writable; NULL = not captured yet, NEVER no-expiry; feeds GET /admin/license-expiry-reminders (30d window), no enforcement"
         text requested_changes "nullable — MEH-1011, admin completion-request feedback (non-terminal, status stays pending; cleared on approve)"
         timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
+        string rejection_reason_code "nullable — MEH-2210, VARCHAR(40); the admin preset_key (PRODUCER_REJECTION_PRESETS) beside the composed rejection_reason; cleared on approve"
+        int resubmission_count "NOT NULL DEFAULT 0 — MEH-2210, rejected→pending resubmissions used; history, never reset; cap constants.MAX_PRODUCER_RESUBMISSIONS=3"
+        timestamp resubmitted_at "nullable — MEH-2210, tz-aware; latest resubmission"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
@@ -97,6 +104,7 @@ erDiagram
         string name UK
         string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
+        boolean is_system "NOT NULL, server_default false — MEH-1456 chunk A, revision b7d3e5a9c1f4; TRUE for the 18 seed_data.CATEGORIES rows (backfilled by name + written by the seed), FALSE for admin-created rows. Chunk 2b refuses rename/delete on TRUE"
     }
 
     products {

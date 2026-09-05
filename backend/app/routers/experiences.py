@@ -21,7 +21,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, get_current_user_optional, require_verified_email
+from app.auth import (
+    get_current_user,
+    get_current_user_optional,
+    require_verified_producer,
+)
 from app.database import get_db
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
@@ -320,7 +324,11 @@ def get_experience(
 def submit_experience(
     request: Request,  # required by slowapi
     data: ExperienceCreate,
-    user: User = Depends(require_verified_email),
+    # MEH-2246: producer role + verified email, the same gate as POST /events
+    # (events.py). Since MEH-1749 only an approved business's experience ever
+    # reaches the public read paths, so a consumer submission could only ever
+    # sit in the admin queue — the gate moves to the write side to match.
+    user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
     """

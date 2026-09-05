@@ -1,0 +1,65 @@
+REDIRECT /events?tab=experiences -> 308 /experiences?tab=experiences
+PASS /events?tab=experiences answers 308
+PASS /events?tab=experiences location targets /experiences
+NOTE /events?tab=experiences: Location CARRIES ?tab= (Next forwards the request query on redirect)
+REDIRECT /he/events?tab=experiences -> 308 /he/experiences?tab=experiences
+PASS /he/events?tab=experiences answers 308
+PASS /he/events?tab=experiences location targets /experiences
+NOTE /he/events?tab=experiences: Location CARRIES ?tab= (Next forwards the request query on redirect)
+REDIRECT /en/events?tab=experiences -> 308 /en/experiences?tab=experiences
+PASS /en/events?tab=experiences answers 308
+PASS /en/events?tab=experiences location targets /experiences
+NOTE /en/events?tab=experiences: Location CARRIES ?tab= (Next forwards the request query on redirect)
+REDIRECT /events?tab=experiences&city=%D7%97%D7%99%D7%A4%D7%94 -> 308 /experiences?tab=experiences&city=%D7%97%D7%99%D7%A4%D7%94
+PASS /events?tab=experiences&city=%D7%97%D7%99%D7%A4%D7%94 answers 308
+PASS /events?tab=experiences&city=%D7%97%D7%99%D7%A4%D7%94 location targets /experiences
+NOTE /events?tab=experiences&city=%D7%97%D7%99%D7%A4%D7%94: Location CARRIES ?tab= (Next forwards the request query on redirect)
+PASS control: /events without ?tab= is 200 (got 200)
+PASS control: /events?tab=events is 200 (got 200)
+PASS [375] /events renders both tabs (MEH-1865)
+PASS [375] /events: events tab is selected
+[375] after tab click from /events: http://localhost:3000/experiences
+PASS [375] tab click navigates to /experiences
+PASS [375] no ?tab= after tab click
+PASS [375] /experiences renders both tabs (MEH-1865)
+PASS [375] /experiences: experiences tab is selected
+[375] /experiences <title> = חוויות וסדנאות אוכל אצל בתי עסק מקומיים | מהמקור
+PASS [375] <title> equals the new seo.experiences.title
+[375] /experiences description = סדנאות בישול, סיורי אוכל וטעימות שמארחים בתי עסק מקומיים מורשים בישראל. גלו חוויה לפי עיר וקטגוריה.
+PASS [375] no LOCK-violating words in title/description
+[375] breadcrumb current item = חוויות
+PASS [375] breadcrumb current item is "חוויות"
+[375] /experiences h1 = חוויות וסדנאות אוכל
+[375] after tab click from /experiences: http://localhost:3000/events
+PASS [375] tab click navigates back to /events
+[375] /events?tab=experiences landed on http://localhost:3000/experiences?tab=experiences (network: 308)
+PASS [375] old deep-link lands on /experiences
+PASS [375] network log shows 308 for the old deep-link
+[375] first URL: http://localhost:3000/experiences?tab=experiences → settled: /experiences (client cleanup: true)
+PASS [375] stray ?tab= is removed by the client URL-writer after hydration
+[375] /en tab click → http://localhost:3000/en/experiences
+PASS [375] locale prefix survives the tab push (/en/experiences)
+PASS [1440] /events renders both tabs (MEH-1865)
+PASS [1440] /events: events tab is selected
+[1440] after tab click from /events: http://localhost:3000/experiences
+PASS [1440] tab click navigates to /experiences
+PASS [1440] no ?tab= after tab click
+PASS [1440] /experiences renders both tabs (MEH-1865)
+PASS [1440] /experiences: experiences tab is selected
+[1440] /experiences <title> = חוויות וסדנאות אוכל אצל בתי עסק מקומיים | מהמקור
+PASS [1440] <title> equals the new seo.experiences.title
+[1440] /experiences description = סדנאות בישול, סיורי אוכל וטעימות שמארחים בתי עסק מקומיים מורשים בישראל. גלו חוויה לפי עיר וקטגוריה.
+PASS [1440] no LOCK-violating words in title/description
+[1440] breadcrumb current item = חוויות
+PASS [1440] breadcrumb current item is "חוויות"
+[1440] /experiences h1 = חוויות וסדנאות אוכל
+[1440] after tab click from /experiences: http://localhost:3000/events
+PASS [1440] tab click navigates back to /events
+[1440] /events?tab=experiences landed on http://localhost:3000/experiences?tab=experiences (network: 308)
+PASS [1440] old deep-link lands on /experiences
+PASS [1440] network log shows 308 for the old deep-link
+[1440] first URL: http://localhost:3000/experiences?tab=experiences → settled: /experiences (client cleanup: true)
+PASS [1440] stray ?tab= is removed by the client URL-writer after hydration
+[1440] /en tab click → http://localhost:3000/en/experiences
+PASS [1440] locale prefix survives the tab push (/en/experiences)
+SUMMARY: 0 failure(s)
