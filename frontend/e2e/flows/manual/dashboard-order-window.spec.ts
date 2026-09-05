@@ -219,8 +219,11 @@ test.describe("order-window card — several ranges per day", () => {
 
     await saveBtn(page).click();
     // The click surfaces the same reason as the form-level error too — that is the
-    // observable proof the handler ran and stopped, before we check the wire.
-    await expect(alerts(page)).toHaveCount(2);
+    // observable proof the handler ran and stopped, before we check the wire. Both
+    // alerts are asserted by text, not count: handleSave sets `t(issues[0].reason)`
+    // (OrderWindowEditor.jsx:136-140), so a form-level alert carrying any other string
+    // — a generic save_error, say — is a different code path and must read red here.
+    await expect(alerts(page)).toHaveText([OVERLAP, OVERLAP]);
     expect(puts.length, "a blocked save must not PUT").toBe(0);
   });
 
