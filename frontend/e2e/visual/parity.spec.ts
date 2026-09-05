@@ -626,6 +626,22 @@ test.describe("Visual parity — MEH-991", () => {
   // id against the backend; the /[slug] route SSR-seeds the producer and can't
   // be mocked. The borrowed id only unlocks the page — the pixels are the
   // fixture's.
+  // MEH-2168 re-freeze (2026-09-05, vrt-update run 33964228357 on
+  // feature/meh-2168-vrt-refreeze): SEVEN baselines regenerated on-runner and
+  // eye-reviewed frame by frame — login/register (desktop+mobile) +32px = one
+  // new footer link «חוויות» in the גלו column (desktop header also gains the
+  // nav item); about-mobile +32px = the same footer link, and the scroll-reveal
+  // sections now RENDER where the old frame was blank (MEH-1514 on mobile);
+  // map (desktop+mobile) = the second chip row משלוח · איסוף עצמי · סינון
+  // (pickup_points promoted to all surfaces) + «בתיאום אישי» on the cards.
+  // TWO desktop frames were NOT regenerated because their gates fail before
+  // the screenshot is taken, on staging as well: `about` desktop trips the
+  // reveal-gate (one section stays at opacity < 1 after the full scroll pass —
+  // MEH-1514 is not complete on desktop), and `producer detail` desktop trips
+  // the copy-gate on `producer.detail.tabs.about` — the tab row is hidden at
+  // 1440 since MEH-1390 (4 tabs -> 2), so expecting its copy VISIBLE on
+  // desktop is a spec expectation that no longer matches the page. Both are
+  // recorded here and on MEH-2168, deliberately not fixed in a baseline PR.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
 
