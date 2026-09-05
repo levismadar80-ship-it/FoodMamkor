@@ -15,7 +15,13 @@
 // at build time). Re-exported here so existing consumers of @/lib/seo keep
 // working unchanged.
 import { SITE_URL } from "./env";
-import { BRAND_NAME, BRAND_SAME_AS, SITE_DESCRIPTION } from "./constants";
+import {
+  BRAND_FOUNDER_NAME,
+  BRAND_NAME,
+  BRAND_NAME_LATIN,
+  BRAND_SAME_AS,
+  SITE_DESCRIPTION,
+} from "./constants";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 export { SITE_URL };
@@ -392,6 +398,9 @@ export function buildOrganizationNode() {
     "@type": "Organization",
     "@id": `${SITE_URL}#organization`,
     name: BRAND_NAME,
+    // MEH-2192: the Latin form answer engines and Google's entity graph key
+    // on; same constant the sitemap/share surfaces already use (MEH-476).
+    alternateName: BRAND_NAME_LATIN,
     url: SITE_URL,
     description: SITE_DESCRIPTION,
     logo: {
@@ -399,6 +408,9 @@ export function buildOrganizationNode() {
       url: `${SITE_URL}/logo.png`,
     },
     sameAs: BRAND_SAME_AS,
+    // MEH-2192: a named founder is the E-E-A-T signal the card asked for —
+    // the value is the /about signature, never a second spelling.
+    founder: { "@type": "Person", name: BRAND_FOUNDER_NAME },
   };
 }
 
