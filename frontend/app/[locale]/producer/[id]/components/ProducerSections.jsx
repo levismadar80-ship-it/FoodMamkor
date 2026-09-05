@@ -695,7 +695,10 @@ export default function ProducerSections({
           that says "arrival and location". Schedule only — the open/closed
           verdict stays in ProducerHeader alone (MEH-1305 A). Self-gating:
           renders nothing at all when order_window is null. */}
-      <OrderWindowScheduleBlock orderWindow={producer.order_window} />
+      <OrderWindowScheduleBlock
+        orderWindow={producer.order_window}
+        specialHours={producer.special_hours}
+      />
 
       {/* MEH-1146 chunk B: location is the LAST content section. MEH-1334
           chunk 3: merged into ONE "הגעה ומיקום" section (mockup Z3) — heading

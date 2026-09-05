@@ -108,7 +108,7 @@
 - [ ] **התור מציג ישן מול חדש** — `/admin` → תור בקשות שינוי שם — **תוצאה מצופה:** כל שורה מראה את **שני** השמות זה לצד זה. בלי זה אי אפשר לשפוט את הבקשה
 - [ ] **בקשה פתוחה אחת בכל רגע** — הגישי בקשה, ואז נסי להגיש עוד אחת בלי שהראשונה הוכרעה — **תוצאה מצופה:** שגיאה "כבר קיימת בקשת שינוי שם שממתינה לאישור"
 - [ ] **אי אפשר להכריע פעמיים** — אשרי בקשה, ואז נסי לדחות את אותה בקשה — **תוצאה מצופה:** שגיאה. אחרת אישור שני היה מזיז את השם הציבורי מהחלטה שכבר התקבלה
-- [ ] **הנתיב הישן נשאר סגור** — בדשבורד, ודאי ששדה "שם העסק" **אינו** ניתן לעריכה ישירה — **תוצאה מצופה:** אין שדה כזה. MEH-1851 הסיר אותו והכרטיס הזה לא מחזיר אותו
+- ✅ → dashboard-trust-cards.spec.ts (the empty state shows the current name read-only, a requested-name field, and an optional reason — «השם הנוכחי» is text, and no input carries the current name) — **הנתיב הישן נשאר סגור** — בדשבורד, ודאי ששדה "שם העסק" **אינו** ניתן לעריכה ישירה — **תוצאה מצופה:** אין שדה כזה. MEH-1851 הסיר אותו והכרטיס הזה לא מחזיר אותו
 
 ---
 
@@ -134,9 +134,9 @@
 
 ## MEH-1884 — שעות פתיחה נספרות בהשלמת הפרופיל (04/08)
 
-- [ ] **עסק שחסרות לו רק שעות** — כבעלת-עסק עם פרופיל מלא (עיר, קואורדינטות, פרטי קשר, קטגוריה, תמונה, תיאור) אבל **בלי** שעות פתיחה → `/producer/dashboard` — **תוצאה מצופה:** כרטיס השלמת הפרופיל **מופיע**. לפני השינוי הוא לא הופיע כלל, כי השעות לא נספרו — זה עיקר השינוי
-- [ ] **אחרי מילוי השעות** — לאותו עסק, `/producer/dashboard/edit` → כרטיס "שעות פתיחה" → הגדירי שעות ושמרי → חזרה ל-`/producer/dashboard` — **תוצאה מצופה:** כרטיס ההשלמה **נעלם** (הפרופיל שלם)
-- [ ] **הטבעת האחוזים לא זזה** — באותו מסך, לפני ומאחרי מילוי השעות — **תוצאה מצופה:** האחוז בטבעת **זהה** בשני המצבים. רשימת הצעדים בכרטיס קבועה על 4 (תמונה / מיקום / מוצרים / קשר) ושעות **אינן** צעד חמישי — עסק שהיה 100% לא יורד ל-80%
+- ✅ → dashboard-images-contact.spec.ts (a full profile without hours shows the card at 83% with «שעות פתיחה» open — 83% of six steps, not the doc's 4-step framing) — **עסק שחסרות לו רק שעות** — כבעלת-עסק עם פרופיל מלא (עיר, קואורדינטות, פרטי קשר, קטגוריה, תמונה, תיאור) אבל **בלי** שעות פתיחה → `/producer/dashboard` — **תוצאה מצופה:** כרטיס השלמת הפרופיל **מופיע**. לפני השינוי הוא לא הופיע כלל, כי השעות לא נספרו — זה עיקר השינוי
+- ✅ → dashboard-images-contact.spec.ts (with hours filled, an approved business has no completeness card — the hours come from the stubbed primary location, not a real save) — **אחרי מילוי השעות** — לאותו עסק, `/producer/dashboard/edit` → כרטיס "שעות פתיחה" → הגדירי שעות ושמרי → חזרה ל-`/producer/dashboard` — **תוצאה מצופה:** כרטיס ההשלמה **נעלם** (הפרופיל שלם)
+- ✅ → dashboard-images-contact.spec.ts (filling hours moves the ring from 83% to complete — hours is a counted step — ⚠️ STALE: MEH-1895 made hours a counted sixth step; the ring DOES move and the list is six, not four) — **הטבעת האחוזים לא זזה** — באותו מסך, לפני ומאחרי מילוי השעות — **תוצאה מצופה:** האחוז בטבעת **זהה** בשני המצבים. רשימת הצעדים בכרטיס קבועה על 4 (תמונה / מיקום / מוצרים / קשר) ושעות **אינן** צעד חמישי — עסק שהיה 100% לא יורד ל-80%
 - [ ] **התווית באזור הניהול** — כאדמין → `/admin/producers` → ריחוף על מחוון ההשלמה של עסק בלי שעות — **תוצאה מצופה:** ה-tooltip מכיל **"שעות פתיחה"** ברשימת החסרים. זה המשטח היחיד שמציג את התווית עצמה
 - [ ] **דירוג צהוב, לא אדום** — אותו עסק באותה טבלה — **תוצאה מצופה:** השורה **צהובה** ולא אדומה. עסק בלי שעות עדיין נמצא ועדיין ניתן ליצור איתו קשר; אדום שמור לעיר / קואורדינטות / פרטי קשר בלבד
 - [ ] **הרמז במצב ריק** — `/producer/dashboard/edit` → "שעות פתיחה" של עסק **שטרם שמר שעות** — **תוצאה מצופה:** מתחת לכותרת המשנה מופיעה שורה אפורה "שעות שמוגדרות כאן מוצגות בעמוד העסק ונשלחות למנועי החיפוש."
@@ -239,8 +239,8 @@
 - [ ] **אימייל לא תקין (דשבורד)** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "ערוצי קשר" → שדה "אימייל" → הקלידי `not-an-email` → "שמירת ערוצי קשר" — **תוצאה מצופה:** שגיאה אדומה inline "כתובת אימייל לא תקינה" (אייקון אזהרה), לא נשמר.
 - [ ] **טלפון לא תקין (דשבורד)** — אותו כרטיס → שדה "טלפון" → `12345` → שמירה — **תוצאה מצופה:** "מספר טלפון לא תקין" inline.
 - [ ] **קישור קבוצת וואטסאפ שגוי** — שדה "קישור לקבוצת וואטסאפ" → `https://wa.me/123` → שמירה — **תוצאה מצופה:** שגיאה "קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com".
-- [ ] **ניקוי אימייל (ריק)** — מחקי את שדה האימייל לגמרי → שמירה — **תוצאה מצופה:** נשמר (הופך ל-None), אין 422.
-- [ ] **ערכים תקינים** — טלפון `050-123-4567`, אימייל `owner@example.com`, קבוצה `https://chat.whatsapp.com/ABCdef123` → שמירה — **תוצאה מצופה:** "נשמר"; הטלפון נשמר בלי מקפים (`0501234567`).
+- ✅ → dashboard-images-contact.spec.ts (clearing the email sends null, not an empty string — the PUT is captured; the «no 422» half is the server's) — **ניקוי אימייל (ריק)** — מחקי את שדה האימייל לגמרי → שמירה — **תוצאה מצופה:** נשמר (הופך ל-None), אין 422.
+- ✅ → dashboard-images-contact.spec.ts (valid values go out in one payload — the phone exactly as typed — ⚠️ the hyphen strip («0501234567») is server-side; the client sends «050-123-4567») — **ערכים תקינים** — טלפון `050-123-4567`, אימייל `owner@example.com`, קבוצה `https://chat.whatsapp.com/ABCdef123` → שמירה — **תוצאה מצופה:** "נשמר"; הטלפון נשמר בלי מקפים (`0501234567`).
 - [ ] **אדמין** — `/admin/producers` → עריכת בית עסק → שדה טלפון הוא `type="tel"` (מקלדת מספרית במובייל); ערך לא תקין → 422 בעברית.
 
 ---
@@ -339,9 +339,9 @@
 ## MEH-1439 — סמנטיקת dietary: tooltips + מודעות בעלת עסק
 
 - [ ] **Badge tooltip (any-product)** — עמוד עסק `/producer/[id]` עם מוצר אחד טבעוני מתוך כמה → הקישי על תג "טבעוני" — **תוצאה מצופה:** ה-tooltip אומר "לעסק יש מוצרים טבעוניים מסומנים בקטלוג." (לא "כל המוצרים"). אותו דבר ל"ללא גלוטן"/"ללא לקטוז".
-- [ ] **Helper מתחת לצ'יפים** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "מוצרים" → "מוצר חדש" (וגם עריכת מוצר) — **תוצאה מצופה:** מתחת לשורת סימוני התזונה מופיעה שורה אפורה "סימון תווית על מוצר מציג את העסק בסינון המתאים בדפי החיפוש והמפה."
-- [ ] **Kosher hint (מותנה)** — בעלת-עסק עם שדה כשרות חופשי מלא **וללא** תעודה מאומתת → `/producer/dashboard/edit` → כרטיס "אישורים ותעודות" (כשרות) — **תוצאה מצופה:** מופיע רמז "כדי שהעסק יופיע בסינון \"כשר\", יש להעלות תעודת כשרות לאימות."
-- [ ] **Kosher hint נעלם כשמאומת** — לעסק עם `kashrut_verified_at` → אותו כרטיס — **תוצאה מצופה:** הרמז לא מופיע.
+- ✅ → dashboard-images-contact.spec.ts (the new-product form explains the diet chips and guides name, description and price — the add form; the edit form's twin line is not asserted) — **Helper מתחת לצ'יפים** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "מוצרים" → "מוצר חדש" (וגם עריכת מוצר) — **תוצאה מצופה:** מתחת לשורת סימוני התזונה מופיעה שורה אפורה "סימון תווית על מוצר מציג את העסק בסינון המתאים בדפי החיפוש והמפה."
+- ✅ → dashboard-images-contact.spec.ts (a free-text kosher field with no verified certificate shows the filter hint) — **Kosher hint (מותנה)** — בעלת-עסק עם שדה כשרות חופשי מלא **וללא** תעודה מאומתת → `/producer/dashboard/edit` → כרטיס "אישורים ותעודות" (כשרות) — **תוצאה מצופה:** מופיע רמז "כדי שהעסק יופיע בסינון \"כשר\", יש להעלות תעודת כשרות לאימות."
+- ✅ → dashboard-images-contact.spec.ts (the kosher hint disappears once the certificate is verified) — **Kosher hint נעלם כשמאומת** — לעסק עם `kashrut_verified_at` → אותו כרטיס — **תוצאה מצופה:** הרמז לא מופיע.
 
 ## MEH-1536 — בודק "מגיעים אלייך?" (DeliveryChecker ב-DeliveryBlock)
 - [ ] **תשובה חיובית עם פרטים** — עמוד עסק עם משלוחים לערים מוגדרות → הקלידי עיר שמשלחים אליה ובחרי אותה מהרשימה — **תוצאה מצופה:** "כן, מגיעים ל[עיר]" עם ✓ ירוק, ומתחת שורת פרטים "[יום] · מינימום [סכום]₪" (רק שדות שקיימים לעיר הזו).
@@ -373,16 +373,16 @@
 - ✅ → `frontend/e2e/flows/manual/map.spec.ts` (MT:MEH-1388:5) — **שכבת נקודות איסוף** — טוגל "נקודות איסוף" על /map — **תוצאה מצופה:** מסתיר/מציג את הפינים המשניים (pickup/market_stand); הפינים הראשיים נשארים.
 
 ## MEH-1421 — עורך מיקומים בדשבורד + סימן dedup באדמין (chunk 4a)
-- [ ] **הצגת מיקומים** — דשבורד → עריכה → סעיף "מיקומים" — **תוצאה מצופה:** רשימת המיקומים; למיקום הראשי תג "★ ראשי", לשאר קישור "קבעו כראשי"; כפתור "+ הוסיפו מיקום".
-- [ ] **הוספה** — "הוסיפו מיקום" → בחרי סוג (סניף/נקודת איסוף/דוכן שוק), מלאי עיר+תווית → "שמרו" — **תוצאה מצופה:** השורה מופיעה ברשימה.
-- [ ] **מיקום ראשי יחיד** — "קבעו כראשי" על מיקום אחר — **תוצאה מצופה:** התג "★ ראשי" עובר אליו; לא נשארים שני ראשיים.
-- [ ] **תווית חובה באותו יישוב** — הוסיפי מיקום שני באותו יישוב בלי תווית — **תוצאה מצופה:** הודעת שגיאה שמזכירה את היישוב בשמו: "כבר יש לך מיקום ביישוב {היישוב}. תני למיקום החדש תווית שתבדיל ביניהם — למשל 'הדוכן בשוק' או 'החנות'."; עם תווית → נשמר. (MEH-1940 — ההודעה מנוסחת כך כי שורת המיקום הראשונה נוצרת בהרשמה ובעלת העסק מעולם לא ראתה אותה.)
-- [ ] **ההודעה מתארת את המיקום הקיים, בלי דוגמאות מומצאות** (MEH-1940) — בדקי את שלושת המצבים: (א) למיקום הקיים **יש** תווית → ההודעה נוקבת בה בשמה ("יש לך כבר 'החנות' בזכרון יעקב"); (ב) **אין** לו תווית → ההודעה נוקבת ב**סוג** ("יש לך כבר סניף בזכרון יעקב"); (ג) **שניים או יותר** באותו יישוב → ההודעה סופרת ("יש לך כבר 2 מיקומים בזכרון יעקב"). **תוצאה מצופה:** בכל שלושתם מופיע גם "כדי שהלקוחות יבדילו ביניהם, תני למיקום הזה שם — לפחות שלוש אותיות", ו**אין** בהודעה 'הדוכן בשוק' או 'החנות' כדוגמה.
-- [ ] **רף שלוש האותיות נאמר מראש** (MEH-1940) — אחרי ההודעה, מלאי תווית בת שתי אותיות ושמרי — **תוצאה מצופה:** השגיאה על הרף אינה הפתעה; היא כבר הוזכרה בהודעה הראשונה.
-- [ ] **השגיאה מוצגת בתוך הטופס, לא ברצועה התחתונה** (MEH-1940) — חזרי על הבדיקה שמעליה **בביקור ראשון, כשבאנר העוגיות מוצג**, ב-375 וב-1440 — **תוצאה מצופה:** ההודעה מופיעה **מתחת לשדה "תווית"** בתוך הטופס, בעוצמה מלאה, ונגללת לתוך המסך; **אין** toast בתחתית; הבאנר, ווידג'ט הצ'אט וסרגל הניווט אינם מסתירים אותה.
-- [ ] **השגיאה לא נעלמת מעצמה** (MEH-1940) — אחרי שהופיעה, המתיני ~10 שניות בלי לגעת בכלום — **תוצאה מצופה:** ההודעה עדיין שם. ואז התחילי להקליד ב"תווית" — **תוצאה מצופה:** ההודעה נעלמת.
-- [ ] **שגיאות שורה נשארות toast** (MEH-1940) — מחקי מיקום כשהשרת מחזיר שגיאה — **תוצאה מצופה:** toast תחתון כרגיל (אין טופס פתוח שאפשר להציג בו הודעה).
-- [ ] **קואורדינטות לא תקינות** — קו רוחב 200 → שמירה — **תוצאה מצופה:** toast "קו רוחב לא תקין", לא נשלח לשרת.
+- ✅ → dashboard-locations.spec.ts (the list marks the primary, offers «קבעו כראשי» on the others, and has an add button — the badge text is «ראשי» beside a Star glyph, not the literal «★ ראשי») — **הצגת מיקומים** — דשבורד → עריכה → סעיף "מיקומים" — **תוצאה מצופה:** רשימת המיקומים; למיקום הראשי תג "★ ראשי", לשאר קישור "קבעו כראשי"; כפתור "+ הוסיפו מיקום".
+- ✅ → dashboard-locations.spec.ts (adding a pickup point in another town posts it and lists it — the POST is captured; the list re-renders from a stateful stub) — **הוספה** — "הוסיפו מיקום" → בחרי סוג (סניף/נקודת איסוף/דוכן שוק), מלאי עיר+תווית → "שמרו" — **תוצאה מצופה:** השורה מופיעה ברשימה.
+- ✅ → dashboard-locations.spec.ts («קבעו כראשי» moves the single badge to the chosen row) — **מיקום ראשי יחיד** — "קבעו כראשי" על מיקום אחר — **תוצאה מצופה:** התג "★ ראשי" עובר אליו; לא נשארים שני ראשיים.
+- ✅ → dashboard-locations.spec.ts (a second location in the same town without a label is refused, naming the existing label — ⚠️ MEH-2261: the live page renders «{label}» literally (ICU single quotes), so this test is `test.fail()` until the copy is fixed) — **תווית חובה באותו יישוב** — הוסיפי מיקום שני באותו יישוב בלי תווית — **תוצאה מצופה:** הודעת שגיאה שמזכירה את היישוב בשמו: "כבר יש לך מיקום ביישוב {היישוב}. תני למיקום החדש תווית שתבדיל ביניהם — למשל 'הדוכן בשוק' או 'החנות'."; עם תווית → נשמר. (MEH-1940 — ההודעה מנוסחת כך כי שורת המיקום הראשונה נוצרת בהרשמה ובעלת העסק מעולם לא ראתה אותה.)
+- ✅ → dashboard-locations.spec.ts ((a) …naming the existing label — `test.fail()`, MEH-2261 · (b) …or naming the existing location by its kind when it has no label · (c) …or counting them when there are several) — **ההודעה מתארת את המיקום הקיים, בלי דוגמאות מומצאות** (MEH-1940) — בדקי את שלושת המצבים: (א) למיקום הקיים **יש** תווית → ההודעה נוקבת בה בשמה ("יש לך כבר 'החנות' בזכרון יעקב"); (ב) **אין** לו תווית → ההודעה נוקבת ב**סוג** ("יש לך כבר סניף בזכרון יעקב"); (ג) **שניים או יותר** באותו יישוב → ההודעה סופרת ("יש לך כבר 2 מיקומים בזכרון יעקב"). **תוצאה מצופה:** בכל שלושתם מופיע גם "כדי שהלקוחות יבדילו ביניהם, תני למיקום הזה שם — לפחות שלוש אותיות", ו**אין** בהודעה 'הדוכן בשוק' או 'החנות' כדוגמה.
+- ✅ → dashboard-locations.spec.ts (the three-letter floor is stated in the first message) — **רף שלוש האותיות נאמר מראש** (MEH-1940) — אחרי ההודעה, מלאי תווית בת שתי אותיות ושמרי — **תוצאה מצופה:** השגיאה על הרף אינה הפתעה; היא כבר הוזכרה בהודעה הראשונה.
+- ✅ → dashboard-locations.spec.ts (the message renders inside the form, survives waiting, and clears on typing in «תווית» — desktop + Pixel 5 projects; the cookie banner is not part of the fixture) — **השגיאה מוצגת בתוך הטופס, לא ברצועה התחתונה** (MEH-1940) — חזרי על הבדיקה שמעליה **בביקור ראשון, כשבאנר העוגיות מוצג**, ב-375 וב-1440 — **תוצאה מצופה:** ההודעה מופיעה **מתחת לשדה "תווית"** בתוך הטופס, בעוצמה מלאה, ונגללת לתוך המסך; **אין** toast בתחתית; הבאנר, ווידג'ט הצ'אט וסרגל הניווט אינם מסתירים אותה.
+- ✅ → dashboard-locations.spec.ts (the message renders inside the form, survives waiting, and clears on typing in «תווית» — a 3-second inverted bounded wait, not the doc's ~10 s) — **השגיאה לא נעלמת מעצמה** (MEH-1940) — אחרי שהופיעה, המתיני ~10 שניות בלי לגעת בכלום — **תוצאה מצופה:** ההודעה עדיין שם. ואז התחילי להקליד ב"תווית" — **תוצאה מצופה:** ההודעה נעלמת.
+- ✅ → dashboard-locations.spec.ts (a failed delete is a toast, not an in-form message) — **שגיאות שורה נשארות toast** (MEH-1940) — מחקי מיקום כשהשרת מחזיר שגיאה — **תוצאה מצופה:** toast תחתון כרגיל (אין טופס פתוח שאפשר להציג בו הודעה).
+- ✅ → dashboard-locations.spec.ts (a latitude of 200 is refused in the form and never sent — ⚠️ STALE: the Zod message renders in `location-form-error`, not as a toast) — **קואורדינטות לא תקינות** — קו רוחב 200 → שמירה — **תוצאה מצופה:** toast "קו רוחב לא תקין", לא נשלח לשרת.
 - [ ] **מחיקת הראשי** — מחקי את המיקום הראשי כשיש עוד מיקומים — **תוצאה מצופה:** מיקום אחר מקודם אוטומטית לראשי.
 - [ ] **סימן dedup (אדמין)** — /admin/producers עם שני עסקים באותו שם או עיר — **תוצאה מצופה:** תג כתום "כפילות?" בעמודת התגיות; אינו חוסם אישור.
 
@@ -657,33 +657,33 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק.
 
-- [ ] **כרטיס רישיון מופיע ונשמר** — `/producer/dashboard/edit` → כרטיס "רישיון יצרן" (אחרי קטגוריות) → מלאי מספר 7-10 ספרות → שמירה → רענון — **תוצאה מצופה:** הערך נשמר; בכותרת הכרטיס מוצג צ'יפ ממוסך (•••+4 ספרות אחרונות); בלי ערך — "לא הוזן".
-- [ ] **אזהרת פורמט לא חוסמת** — הקלידי "123" — **תוצאה מצופה:** אזהרה כתומה "מספר רישיון יצרן הוא 7-10 ספרות"; כפתור השמירה עדיין פעיל.
-- [ ] **רמז קטגוריה דורשת-רישיון** — עסק עם קטגוריה מ-LICENSE_REQUIRED (למשל דבש/לחמים) — **תוצאה מצופה:** שורת רמז "אחת הקטגוריות שבחרתם דורשת רישיון יצרן…" מעל השדה; עסק בלי קטגוריה כזו — אין רמז.
-- [ ] **ניקוי בזמן קטגוריה דורשת → 422 עברית** — עסק מאושר עם רישיון + קטגוריה דורשת → רוקני את השדה → שמירה — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת מוצגת inline (לא הודעה גנרית); הערך לא נמחק.
-- [ ] **deep-link מהבאנר** — נווטי אל `/producer/dashboard/edit#license` — **תוצאה מצופה:** אקורדיון הרישיון נפתח וגולל אליו אוטומטית.
+- ✅ → dashboard-trust-cards.spec.ts (a 7-10 digit number saves, confirms, and comes back after a reload — the header previews «•••4567»; ⚠️ the doc's two cards are ONE merged card «אישורים ותעודות» (anchorId trust); #license/#kashrut both open it) — **כרטיס רישיון מופיע ונשמר** — `/producer/dashboard/edit` → כרטיס "רישיון יצרן" (אחרי קטגוריות) → מלאי מספר 7-10 ספרות → שמירה → רענון — **תוצאה מצופה:** הערך נשמר; בכותרת הכרטיס מוצג צ'יפ ממוסך (•••+4 ספרות אחרונות); בלי ערך — "לא הוזן".
+- ✅ → dashboard-trust-cards.spec.ts (a short number shows the format warning without disabling the save) — **אזהרת פורמט לא חוסמת** — הקלידי "123" — **תוצאה מצופה:** אזהרה כתומה "מספר רישיון יצרן הוא 7-10 ספרות"; כפתור השמירה עדיין פעיל.
+- ✅ → dashboard-trust-cards.spec.ts (the required-licence hint appears only for a licence-requiring category — the category is read from lib/license-required-categories.js) — **רמז קטגוריה דורשת-רישיון** — עסק עם קטגוריה מ-LICENSE_REQUIRED (למשל דבש/לחמים) — **תוצאה מצופה:** שורת רמז "אחת הקטגוריות שבחרתם דורשת רישיון יצרן…" מעל השדה; עסק בלי קטגוריה כזו — אין רמז.
+- ✅ → dashboard-trust-cards.spec.ts (a Hebrew 422 from the server renders inline in the card — the 422 is stubbed; the rule lives in backend tests) — **ניקוי בזמן קטגוריה דורשת → 422 עברית** — עסק מאושר עם רישיון + קטגוריה דורשת → רוקני את השדה → שמירה — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת מוצגת inline (לא הודעה גנרית); הערך לא נמחק.
+- ✅ → dashboard-trust-cards.spec.ts (#license opens the merged «אישורים ותעודות» card at its licence section) — **deep-link מהבאנר** — נווטי אל `/producer/dashboard/edit#license` — **תוצאה מצופה:** אקורדיון הרישיון נפתח וגולל אליו אוטומטית.
 
 ## MEH-1167 — כרטיס "תעודת כשרות" בטאב עריכה (21/07)
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק. המסלול המלא דורש אישור אדמין.
 
-- [ ] **הכרטיס מופיע** — `/producer/dashboard/edit` → כרטיס "תעודת כשרות" (אחרי "רישיון יצרן") → פותחת אותו — **תוצאה מצופה:** אינטרו + טופס (select "סוג הכשרות" + "צילום התעודה" + "שליחת בקשה לאישור"). עסק בלי badges ובלי בקשות — שורת empty "עוד אין תג כשרות לעסק".
-- [ ] **שליחת בקשה** — בחרי סוג כשרות → (אופ') העלי צילום תעודה → "שליחת בקשה לאישור" — **תוצאה מצופה:** הודעת הצלחה "הבקשה נשלחה — נעדכן אחרי הבדיקה" נשארת מוצגת; הטופס מתאפס; הבקשה מופיעה עם צ'יפ "ממתינה לאישור".
-- [ ] **בקשה כפולה → 409 inline** — שלחי שוב בקשה לאותו סוג כשרות שכבר pending — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת ("בקשה לbadge זה כבר ממתינה לאישור") מוצגת inline (לא toast נעלם).
-- [ ] **תעודה לא-תמונה נדחית** — נסי להעלות PDF — **תוצאה מצופה:** "רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות".
+- ✅ → dashboard-trust-cards.spec.ts (the card shows the intro, a type select, an upload control, and a disabled submit — ⚠️ the doc's two cards are ONE merged card «אישורים ותעודות» (anchorId trust); #license/#kashrut both open it; the upload label is «צילום התעודה (JPG/PNG, עד 5MB)») — **הכרטיס מופיע** — `/producer/dashboard/edit` → כרטיס "תעודת כשרות" (אחרי "רישיון יצרן") → פותחת אותו — **תוצאה מצופה:** אינטרו + טופס (select "סוג הכשרות" + "צילום התעודה" + "שליחת בקשה לאישור"). עסק בלי badges ובלי בקשות — שורת empty "עוד אין תג כשרות לעסק".
+- ✅ → dashboard-trust-cards.spec.ts (submitting a request posts the badge code, shows the persistent success line, and resets the form — the POST is captured; the success line is checked to survive a 3 s wait) — **שליחת בקשה** — בחרי סוג כשרות → (אופ') העלי צילום תעודה → "שליחת בקשה לאישור" — **תוצאה מצופה:** הודעת הצלחה "הבקשה נשלחה — נעדכן אחרי הבדיקה" נשארת מוצגת; הטופס מתאפס; הבקשה מופיעה עם צ'יפ "ממתינה לאישור".
+- ✅ → dashboard-trust-cards.spec.ts (a duplicate request's 409 renders inline, and no success line appears — the 409 is stubbed) — **בקשה כפולה → 409 inline** — שלחי שוב בקשה לאותו סוג כשרות שכבר pending — **תוצאה מצופה:** הודעת השגיאה העברית מהשרת ("בקשה לbadge זה כבר ממתינה לאישור") מוצגת inline (לא toast נעלם).
+- ✅ → dashboard-trust-cards.spec.ts (a rejected certificate upload surfaces the server's message inline — the 400 is stubbed; the input's accept="image/*" is bypassable and not what the row relies on) — **תעודה לא-תמונה נדחית** — נסי להעלות PDF — **תוצאה מצופה:** "רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות".
 - [ ] **גלריה מלאה לא חוסמת תעודה** — עסק בתוכנית free עם 3 תמונות גלריה — **תוצאה מצופה:** העלאת צילום התעודה מצליחה (אין freemium gate, בניגוד ל-`/upload/image`).
 - [ ] **מסלול מלא (עם אדמין)** — שלחי בקשה → `/admin/kashrut` approve → חזרה לכרטיס — **תוצאה מצופה:** ה-badge עובר ל-zone "תגי הכשרות שלך"; מופיע גם בעמוד העסק הציבורי + ב-filter "כשרות מאומתת" ב-/map.
-- [ ] **דחייה מציגה notes** — אדמין reject עם הערה — **תוצאה מצופה:** צ'יפ "נדחתה" + הערת האדמין מוצגת ליד הבקשה.
+- ✅ → dashboard-trust-cards.spec.ts (a rejected request shows «נדחתה» and the admin's note beside it — the request list is stubbed, not produced by an admin reject) — **דחייה מציגה notes** — אדמין reject עם הערה — **תוצאה מצופה:** צ'יפ "נדחתה" + הערת האדמין מוצגת ליד הבקשה.
 
 ## MEH sweep 16/07 — דשבורד בעלת עסק (1234/1236/1237/1238/1239)
 
 בדקי בנייד (375px) + דסקטופ, מחוברת כבעלת עסק.
 
-- [ ] **העלאת תמונה נשמרת בלי "שמור" (MEH-1236)** — עריכה → תמונות → העלי תמונה → חזרי לסקירה — **תוצאה מצופה:** צעד התמונה בצ'קליסט מסומן ✓ בלי לחיצת שמור; הסרת תמונה עדיין דורשת "שמרו".
+- ✅ → dashboard-images-contact.spec.ts (an upload saves without pressing save — the PUT carries the new image — the checklist ✓ on the Overview is not re-asserted here (dashboard-edit-cards.spec.ts covers the image step)) — **העלאת תמונה נשמרת בלי "שמור" (MEH-1236)** — עריכה → תמונות → העלי תמונה → חזרי לסקירה — **תוצאה מצופה:** צעד התמונה בצ'קליסט מסומן ✓ בלי לחיצת שמור; הסרת תמונה עדיין דורשת "שמרו".
 - [ ] **"סיימתי להשלים — שלחו לבדיקה" (MEH-1236)** — עסק בהמתנה עם בקשת השלמה מהאדמין → לחצי על הכפתור בבאנר — **תוצאה מצופה:** שורת אישור "נשלח לבדיקה"; לאדמין מגיע מייל/וואטסאפ "העסק X השלים את הפרטים"; עסק מאושר → הכפתור לא רלוונטי (הבאנר לא מוצג).
-- [ ] **באנר שינויים שלא נשמרו מפרט כרטיסים (MEH-1237)** — עריכה → שני שינויים בשני כרטיסים בלי לשמור — **תוצאה מצופה:** הבאנר "שינויים שלא נשמרו ב:" + שמות שני הכרטיסים; לחיצה על שם → האקורדיון נפתח וגולל אליו.
-- [ ] **עסק עם מוצר אחד מגיע ל-100% (MEH-1238)** — פרופיל מלא + מוצר אחד בקטלוג — **תוצאה מצופה:** הצ'קליסט 4/4 = "הפרופיל מלא"; badge "3 מוצרים" לא הושפע.
-- [ ] **טופס מוצר חדש עם הכוונה (MEH-1239)** — עריכה → מוצרים → "הוסיפו מוצר" — **תוצאה מצופה:** placeholders לדוגמה בשם ובתיאור + שורת hint מתחת לזוג המחירים (מחיר אחיד ↔ טווח); שום שינוי בהתנהגות.
+- ✅ → dashboard-images-contact.spec.ts (edits in two cards put both names in the unsaved banner, in card order) — **באנר שינויים שלא נשמרו מפרט כרטיסים (MEH-1237)** — עריכה → שני שינויים בשני כרטיסים בלי לשמור — **תוצאה מצופה:** הבאנר "שינויים שלא נשמרו ב:" + שמות שני הכרטיסים; לחיצה על שם → האקורדיון נפתח וגולל אליו.
+- ✅ → dashboard-edit-cards.spec.ts (COVERED by «products: zero is a todo, one is done» — ⚠️ STALE: six steps, not 4/4; the «3 מוצרים» badge is not asserted) — **עסק עם מוצר אחד מגיע ל-100% (MEH-1238)** — פרופיל מלא + מוצר אחד בקטלוג — **תוצאה מצופה:** הצ'קליסט 4/4 = "הפרופיל מלא"; badge "3 מוצרים" לא הושפע.
+- ✅ → dashboard-images-contact.spec.ts (the new-product form explains the diet chips and guides name, description and price) — **טופס מוצר חדש עם הכוונה (MEH-1239)** — עריכה → מוצרים → "הוסיפו מוצר" — **תוצאה מצופה:** placeholders לדוגמה בשם ובתיאור + שורת hint מתחת לזוג המחירים (מחיר אחיד ↔ טווח); שום שינוי בהתנהגות.
 - [ ] **חיפוש כתובת (MEH-1234, אחרי הוספת המפתח ב-Vercel)** — עריכה → מיקום → הקלידי "דרך שרה" — **תוצאה מצופה:** הצעות רחוב רלוונטיות בעברית, בלי שורות כפולות; בחירה ממלאת עיר/קואורדינטות ו"שמרו" נדלק. בלי מפתח — התנהגות Nominatim כמו היום (כולל dedupe).
 
 ## MEH-1229 — עקביות תמונות בתי-עסק (optimizeCloudinary + מפת יחסים פר-surface)
@@ -1072,10 +1072,10 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 
 בטאב עריכה (`/producer/dashboard/edit`), סקשן "תמונות". נכנסות כבעלת עסק (role=producer).
 
-- [ ] **גרירת תמונה** — גוררים קובץ תמונה מעל האזור המקווקו — **תוצאה מצופה:** המסגרת נצבעת ירוק והטקסט מתחלף ל"שחררו כאן להעלאה"; שחרור מעלה את התמונה לגריד
-- [ ] **קובץ שאינו תמונה** — גרירת PDF ושחרורו — **תוצאה מצופה:** לא קורה כלום (מסונן בשקט, אין שגיאה)
-- [ ] **Click עדיין עובד** — לחיצה על האזור פותחת בורר קבצים ומעלה כרגיל
-- [ ] **טיפי צילום** — 3 טיפים מוצגים מתחת לאזור ההעלאה (אור טבעי / תוצרת אמיתית / בלי סטוק); בעברית, ללא אימוג'י
+- ✅ → dashboard-images-contact.spec.ts (dragging a file over the zone swaps the copy, and dropping an image uploads it — the «שחררו כאן להעלאה» text is asserted; the green frame colour is not (VRT territory)) — **גרירת תמונה** — גוררים קובץ תמונה מעל האזור המקווקו — **תוצאה מצופה:** המסגרת נצבעת ירוק והטקסט מתחלף ל"שחררו כאן להעלאה"; שחרור מעלה את התמונה לגריד
+- ✅ → dashboard-images-contact.spec.ts (dropping a PDF does nothing — no upload, no error) — **קובץ שאינו תמונה** — גרירת PDF ושחרורו — **תוצאה מצופה:** לא קורה כלום (מסונן בשקט, אין שגיאה)
+- ✅ → dashboard-images-contact.spec.ts (clicking the zone opens the file chooser — the chooser event is asserted, not a real upload) — **Click עדיין עובד** — לחיצה על האזור פותחת בורר קבצים ומעלה כרגיל
+- ✅ → dashboard-images-contact.spec.ts (three photo tips render under the zone, in Hebrew, without emoji) — **טיפי צילום** — 3 טיפים מוצגים מתחת לאזור ההעלאה (אור טבעי / תוצרת אמיתית / בלי סטוק); בעברית, ללא אימוג'י
 - [ ] **נייד (375px)** — האזור לחיץ והטיפים נקראים ללא גלילה אופקית
 
 ## MEH-1101 — תובנות: zero-state לפני פרסום + ערים ועוקבות עם n נמוך
@@ -2839,14 +2839,14 @@ Added with `feature/session-handoff`.
 ## MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026)
 
 ### Producer dashboard (/producer/dashboard)
-- [ ] Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
-- [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
-- [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
-- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
-- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
-- [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
+- ✅ → dashboard-availability.spec.ts (the card shows four pills in the locked order, the saved state checked and all enabled — ⚠️ STALE: the live heading is «מצב נוכחי», not «מצב זמינות») — Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
+- ✅ → dashboard-availability.spec.ts (clicking «פתוח להזמנות» checks it, posts accepting_orders and shows no date input) — Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
+- ✅ → dashboard-availability.spec.ts (clicking «זמין היום» … — ⚠️ STALE: live label is «זמין היום», no emoji, masculine) — Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «עמוס השבוע» … — ⚠️ STALE: live label is «עמוס השבוע», no emoji) — Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
+- ✅ → dashboard-availability.spec.ts (clicking «בהפסקה» reveals the return-date input and «שמרו» without posting — zero captured POSTs) — Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- ✅ → dashboard-availability.spec.ts («שמרו» with an empty date shows the inline error and posts nothing — aria-invalid asserted too) — Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- ✅ → dashboard-availability.spec.ts (a future date + «שמרו» posts state and date, and a reload re-seeds both — the reload reads a stateful stub, not a real backend) — Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
+- ✅ → dashboard-availability.spec.ts (switching back to «פתוח להזמנות» clears the return date — in place and after a reload) — Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
 - [ ] /map or /producers list, look at a producer with `availability_state='available_today'` — תוצאה מצופה: green dot next to the location line.
@@ -3108,10 +3108,10 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 טופס יצירת קבוצת רכש (`/he/producer/dashboard/group-buys` → "+ קבוצת רכש חדשה"). Copy חדש ב-he.json בלבד (functional/neutral, ADR-024); en.json לא נגעו.
 
-- [ ] **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
-- [ ] **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
-- [ ] **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
-- [ ] **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
+- ✅ → dashboard-offer-groupbuy.spec.ts (both price fields carry a ₪ adornment and read LTR — the adornment is the Input's startAdornment (inline start = right in RTL); asserted as rendered + computed direction, not as a pixel side) — **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
+- ✅ → dashboard-offer-groupbuy.spec.ts (the price-rule helper turns red when the group price is not below the regular price — muted → red → muted, pre-submit) — **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
+- ✅ → dashboard-offer-groupbuy.spec.ts (the deadline field explains what the date means, in Israel time) — **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
+- ✅ → dashboard-offer-groupbuy.spec.ts (the form opens with a one-line concept intro under its heading — opened through the empty state's «+ צרו קבוצה ראשונה» (the toggle renders only with ≥1 group buy)) — **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
 
 ## MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes)
 
@@ -3186,13 +3186,13 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 "מתי מקבלים הזמנות" בדשבורד תומך עד 3 טווחים ליום — הפסקת צהריים, שישי בוקר + מוצ"ש.
 הפורמט ב-DB הפך למערך; שורות ישנות (טווח יחיד) ממשיכות לעבוד בלי המרה.
 
-- [ ] **הוספת טווח שני** — דשבורד → "מתי מקבלים הזמנות" → סמני יום → "+ טווח נוסף" — **תוצאה מצופה:** נוספת שורת שעות שנייה **שממשיכה** מהטווח הקודם (למשל אחרי 13:00 נפתח 13:00–15:00). **לא** 09:00–14:00 שמתנגש עם מה שכבר קיים
-- [ ] **שמירה ורענון** — הגדירי ראשון 09:00–13:00 ו-16:00–20:00, שמרי, רענני את העמוד — **תוצאה מצופה:** שני הטווחים חוזרים בדיוק, בסדר הנכון
-- [ ] **תקרה של 3** — הוסיפי טווח שלישי — **תוצאה מצופה:** כפתור "+ טווח נוסף" נעלם. יש X לכל אחד משלושת הטווחים
-- [ ] **הסרת טווח** — הקישי X על הטווח האמצעי — **תוצאה מצופה:** רק הוא נמחק, השאר נשארים. לטווח בודד אין X (סוגרים יום דרך הצ'קבוקס)
-- [ ] **חפיפה נחסמת** — הגדירי 09:00–13:00 ואז טווח שמתחיל ב-12:00, נסי לשמור — **תוצאה מצופה:** הודעה "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם" והשמירה **לא** נשלחת
-- [ ] **צמידות מותרת** — 09:00–13:00 ואז 13:00–17:00 — **תוצאה מצופה:** נשמר בלי שגיאה. זה רצף, לא חפיפה
-- [ ] **עסק ותיק (שורה ישנה)** — עסק שהגדיר טווח יחיד לפני העדכון — **תוצאה מצופה:** העורך נפתח עם טווח אחד, בלי שגיאה ובלי שדות ריקים
+- ✅ → dashboard-order-window.spec.ts («+ טווח נוסף» adds a second row that starts where the first one ended — the end time is asserted from lib/order-window.js `nextOrderRange`, not the doc's 15:00) — **הוספת טווח שני** — דשבורד → "מתי מקבלים הזמנות" → סמני יום → "+ טווח נוסף" — **תוצאה מצופה:** נוספת שורת שעות שנייה **שממשיכה** מהטווח הקודם (למשל אחרי 13:00 נפתח 13:00–15:00). **לא** 09:00–14:00 שמתנגש עם מה שכבר קיים
+- ✅ → dashboard-order-window.spec.ts (two ranges save as an ordered array and re-seed the editor after a reload — the reload round-trips through the stubbed GET (client seed parsing), not persistence) — **שמירה ורענון** — הגדירי ראשון 09:00–13:00 ו-16:00–20:00, שמרי, רענני את העמוד — **תוצאה מצופה:** שני הטווחים חוזרים בדיוק, בסדר הנכון
+- ✅ → dashboard-order-window.spec.ts (at the cap the add button disappears and every range has an X) — **תקרה של 3** — הוסיפי טווח שלישי — **תוצאה מצופה:** כפתור "+ טווח נוסף" נעלם. יש X לכל אחד משלושת הטווחים
+- ✅ → dashboard-order-window.spec.ts (the X removes only its own range, and the last range cannot be removed) — **הסרת טווח** — הקישי X על הטווח האמצעי — **תוצאה מצופה:** רק הוא נמחק, השאר נשארים. לטווח בודד אין X (סוגרים יום דרך הצ'קבוקס)
+- ✅ → dashboard-order-window.spec.ts (an overlapping range shows the overlap message and the save never leaves) — **חפיפה נחסמת** — הגדירי 09:00–13:00 ואז טווח שמתחיל ב-12:00, נסי לשמור — **תוצאה מצופה:** הודעה "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם" והשמירה **לא** נשלחת
+- ✅ → dashboard-order-window.spec.ts (a range that starts exactly when the previous one ends saves without an error) — **צמידות מותרת** — 09:00–13:00 ואז 13:00–17:00 — **תוצאה מצופה:** נשמר בלי שגיאה. זה רצף, לא חפיפה
+- ✅ → dashboard-order-window.spec.ts (a legacy single-object record opens as one range with nothing to save) — **עסק ותיק (שורה ישנה)** — עסק שהגדיר טווח יחיד לפני העדכון — **תוצאה מצופה:** העורך נפתח עם טווח אחד, בלי שגיאה ובלי שדות ריקים
 - [ ] **סטטוס בעמוד העסק בין טווחים** — לעסק עם 09:00–13:00 ו-16:00–20:00, פתחי את עמוד העסק ב-14:30 — **תוצאה מצופה:** "לא מקבלים הזמנות עכשיו" + הפתיחה הבאה **היום** ב-16:00 (לא מחר)
 - [ ] **מובייל 375px** — שורת יום עם 3 טווחים נקראת בלי גלילה אופקית; שדות השעה נשארים LTR
 
@@ -3246,13 +3246,13 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**כלום**. הדרישה לכותרת חיה
 בטופס בלבד, כי שם אפשר לתקן אותה.
 
-- [ ] **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
-- [ ] **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
-- [ ] **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
-- [ ] **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
+- ✅ → dashboard-offer-groupbuy.spec.ts (the type select holds the five types plus «אין הטבה פעילה» — six options, custom last — «אין הטבה פעילה» renders FIRST (value ""), the five types after it in code order; the card is reached via ?group=location because #offer is a dead deep link (MEH-2262)) — **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
+- ✅ → dashboard-offer-groupbuy.spec.ts (choosing the custom type removes the threshold amount and unit from the DOM) — **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
+- ✅ → dashboard-offer-groupbuy.spec.ts (a custom offer with an expiry but no headline blocks the save and says why) — **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
+- ✅ → dashboard-offer-groupbuy.spec.ts (typing a headline clears the error and enables the save) — **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
 - [ ] **הטקסט בעמוד העסק** — אחרי שמירה → עמוד העסק — **תוצאה מצופה:** התגית מציגה את המילים שלך **פעם אחת**, עם אייקון המתנה. לא המשפט של הפלטפורמה, ולא אותו טקסט שוב בשורה מתחת
 - [ ] **הצ'יפ בכרטיסייה** — דף הבית / `/producers` — **תוצאה מצופה:** אותן מילים בצ'יפ הקצר (נחתך ב-`truncate` אם ארוך — זה תקין)
-- [ ] **סף שנשאר מסוג קודם** — בוחרות "מתנה", ממלאות 150 ₪, ואז עוברות ל"ניסוח חופשי" ושומרות — **תוצאה מצופה:** הסף **לא** נשמר. שדה מוסתר לא נשלח, וממילא אין לו איפה להופיע
+- ✅ → dashboard-offer-groupbuy.spec.ts (a threshold left over from «מתנה» is not saved once the type is custom — the PUT is captured: threshold_value and threshold_unit are null) — **סף שנשאר מסוג קודם** — בוחרות "מתנה", ממלאות 150 ₪, ואז עוברות ל"ניסוח חופשי" ושומרות — **תוצאה מצופה:** הסף **לא** נשמר. שדה מוסתר לא נשלח, וממילא אין לו איפה להופיע
 - [ ] **מובייל 375px** — כל האמור לעיל — **תוצאה מצופה:** הכותרת נקראת במלואה בתגית, והשגיאה האדומה בטופס לא נחתכת
 - [ ] **סוג לא מוכר (edge, דרך API)** — `PUT /producers/me` עם `offer_type` שאינו אחד מהחמישה — **תוצאה מצופה:** 422 עם "סוג הטבה חייב להיות אחד מ: …" שמונה את כל החמישה כולל `custom`
 
@@ -3328,13 +3328,13 @@ CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**�
 
 ### בעלת עסק — דשבורד → עריכה → «שינוי שם העסק»
 
-- [ ] הכרטיס מופיע **ראשון** בקבוצת «פרופיל» — פתחו `/producer/dashboard/edit?group=profile` — «שינוי שם העסק» לפני «תמונות»
-- [ ] מצב ריק (אין בקשה פתוחה) — מוצג טופס עם «השם הנוכחי» לקריאה בלבד + «השם המבוקש» + «סיבה (אופציונלי)»
-- [ ] כפתור «שליחת בקשה לשינוי שם» **מושבת** כשהשדה ריק, וכשהשם המבוקש **זהה** לנוכחי (מופיעה השורה «השם המבוקש זהה לשם הנוכחי.»)
-- [ ] אחרי שליחה — מוצג «הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.»
+- ✅ → dashboard-trust-cards.spec.ts (the card is the last in the profile group — ⚠️ STALE: MEH-2063 moved it LAST; the deep link #business-name is dead (MEH-2262), the card is reached via ?group=profile) — הכרטיס מופיע **ראשון** בקבוצת «פרופיל» — פתחו `/producer/dashboard/edit?group=profile` — «שינוי שם העסק» לפני «תמונות»
+- ✅ → dashboard-trust-cards.spec.ts (the empty state shows the current name read-only, a requested-name field, and an optional reason) — מצב ריק (אין בקשה פתוחה) — מוצג טופס עם «השם הנוכחי» לקריאה בלבד + «השם המבוקש» + «סיבה (אופציונלי)»
+- ✅ → dashboard-trust-cards.spec.ts (submit is disabled when empty and when the requested name equals the current one) — כפתור «שליחת בקשה לשינוי שם» **מושבת** כשהשדה ריק, וכשהשם המבוקש **זהה** לנוכחי (מופיעה השורה «השם המבוקש זהה לשם הנוכחי.»)
+- ✅ → dashboard-trust-cards.spec.ts (submitting posts the requested name and shows the sent confirmation — the POST is captured) — אחרי שליחה — מוצג «הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.»
 - [ ] **פתחו את עמוד העסק הציבורי — השם עדיין הישן.** זו הבדיקה המרכזית
-- [ ] רענון הדף → מצב ממתין: «בקשה לשינוי שם ממתינה לאישור» + השם המבוקש, **והטופס נעלם** (לא ניתן לשלוח בקשה שנייה)
-- [ ] ‏`/en/producer/dashboard/edit?group=profile` — כל המחרוזות באנגלית, אין מפתח גולמי על המסך
+- ✅ → dashboard-trust-cards.spec.ts (with a pending request the card shows the pending block and no form — the pending request comes from a stubbed list, not a real reload after a real save) — רענון הדף → מצב ממתין: «בקשה לשינוי שם ממתינה לאישור» + השם המבוקש, **והטופס נעלם** (לא ניתן לשלוח בקשה שנייה)
+- ✅ → dashboard-trust-cards.spec.ts (/en renders the card without Hebrew and without a raw key) — ‏`/en/producer/dashboard/edit?group=profile` — כל המחרוזות באנגלית, אין מפתח גולמי על המסך
 
 ### אדמין — `/admin/name-change-requests`
 
@@ -3363,26 +3363,26 @@ CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**�
 
 | | אישור סגור | אישור פתוח |
 |---|---|---|
-| **0 חסרים** | - [ ] כפתור «שליחה לבדיקה» **פעיל**, אין רשימת חסרים בכלל | - [ ] «כן, שלחו» פעיל → POST אחד → טוסט הצלחה → הבאנר מתחלף לבאנר «בבדיקה» |
-| **פריט 1 חסר** | - [ ] הכפתור **מושבת**, מופיעה שורה אחת שמנסחת את הפריט החסר בשמו | - [ ] לא נגיש בזרימה רגילה; נבדק דרך המקרה למטה |
-| **רבים חסרים** | - [ ] הכפתור מושבת, כל פריט חסר מקבל שורה משלו + תג «חובה» | - [ ] כנ"ל |
+| **0 חסרים** | ✅ → flows/34-draft-submit-review.spec.ts (B — data-state-ready=true, no missing list, CTA enabled) — כפתור «שליחה לבדיקה» **פעיל**, אין רשימת חסרים בכלל | ✅ → flows/34-draft-submit-review.spec.ts (B — one POST, the review banner takes over) + dashboard-draft-submit.spec.ts (confirming shows the success toast that names the 3-business-day window) — «כן, שלחו» פעיל → POST אחד → טוסט הצלחה → הבאנר מתחלף לבאנר «בבדיקה» |
+| **פריט 1 חסר** | ✅ → dashboard-draft-submit.spec.ts (one missing item — the CTA is disabled and the list names exactly that item) — הכפתור **מושבת**, מופיעה שורה אחת שמנסחת את הפריט החסר בשמו | ✅ → __tests__/DraftSubmitBanner.test.jsx («confirm-yes is disabled when the profile stops being ready mid-confirm» — unit layer; see the race row below for why no browser path reaches this cell) — לא נגיש בזרימה רגילה; נבדק דרך המקרה למטה |
+| **רבים חסרים** | ✅ → flows/34-draft-submit-review.spec.ts (A — the five codes) + dashboard-draft-submit.spec.ts (five missing items — every row carries its own «חובה» chip) — הכפתור מושבת, כל פריט חסר מקבל שורה משלו + תג «חובה» | ✅ → __tests__/DraftSubmitBanner.test.jsx (same unit-layer guard as the cell above) — כנ"ל |
 
-- [ ] **התא שמגיעים אליו רק במרוץ** — לפתוח את «אישור», ואז לגרום לפרופיל להיטען מחדש כשהוא כבר לא שלם (למחוק תמונה בטאב שני). «כן, שלחו» חייב להיות **מושבת**, לא ללחוץ לריק. זה היה באג אמיתי (`c3acca4f`): הכפתור היה מגודר על `submitting` בלבד, ולחיצה עליו לא שלחה כלום ולא אמרה כלום.
-- [ ] **ביטול** («לא») מחזיר לכפתור פעיל — לא לכפתור תקוע מושבת.
+- ✅ → __tests__/DraftSubmitBanner.test.jsx («confirm-yes is disabled when the profile stops being ready mid-confirm» — ⚠️ STALE precondition: the dashboard fetches /producers/me ONCE per mount (dashboard/page.js:273-279) and onPhoneVerified only patches state locally, so a deletion in a second tab never reloads the first — the guard is pinned at the unit layer and no browser path reaches the cell) — **התא שמגיעים אליו רק במרוץ** — לפתוח את «אישור», ואז לגרום לפרופיל להיטען מחדש כשהוא כבר לא שלם (למחוק תמונה בטאב שני). «כן, שלחו» חייב להיות **מושבת**, לא ללחוץ לריק. זה היה באג אמיתי (`c3acca4f`): הכפתור היה מגודר על `submitting` בלבד, ולחיצה עליו לא שלחה כלום ולא אמרה כלום.
+- ✅ → dashboard-draft-submit.spec.ts (cancelling the confirm returns to an enabled CTA and sends nothing — live copy is «עוד לא», not «לא») — **ביטול** («לא») מחזיר לכפתור פעיל — לא לכפתור תקוע מושבת.
 
 ### מד ההשלמה — שש שורות, לא חמש (16/08)
 
-- [ ] הצ'קליסט מציג **שש** שורות: תמונה ראשית · קטגוריות ומיקום · מוצר ראשון · פרטי קשר · **אימות וואטסאפ** · שעות פתיחה
-- [ ] «אימות וואטסאפ» נושא צ'יפ **חובה**; «שעות פתיחה» היא היחידה עם **מומלץ**
-- [ ] לחיצה על «אימות וואטסאפ» מקפיצה לכרטיס האימות בבאנר (עוגן `#phone-verify`) — **לא** לעמוד העריכה, שאין בו פקד אימות
-- [ ] **התא ששבר את הגרסה הקודמת:** עסק עם טלפון שמור אבל **בלי** אימות — «פרטי קשר» מסומן ✓ **ובו-זמנית** «אימות וואטסאפ» עדיין חסר. שתי השורות אמורות לחלוק על עצמן; לפני הפיצול הן היו שורה אחת שאמרה «פרטי קשר ✓ חובה» בזמן שהבאנר מתחת סירב לשלוח
-- [ ] האחוז מחושב על שישה פריטים (חסר אחד = 83%, לא 80%)
+- ✅ → dashboard-draft-submit.spec.ts (the checklist shows six rows in the locked order) — הצ'קליסט מציג **שש** שורות: תמונה ראשית · קטגוריות ומיקום · מוצר ראשון · פרטי קשר · **אימות וואטסאפ** · שעות פתיחה
+- ✅ → dashboard-draft-submit.spec.ts («אימות וואטסאפ» carries חובה and «שעות פתיחה» is the only מומלץ — counted: 5 חובה, 1 מומלץ) — «אימות וואטסאפ» נושא צ'יפ **חובה**; «שעות פתיחה» היא היחידה עם **מומלץ**
+- ✅ → dashboard-draft-submit.spec.ts (clicking «אימות וואטסאפ» lands on the banner's #phone-verify anchor, not the edit page — pathname unchanged, hash asserted, card in viewport) — לחיצה על «אימות וואטסאפ» מקפיצה לכרטיס האימות בבאנר (עוגן `#phone-verify`) — **לא** לעמוד העריכה, שאין בו פקד אימות
+- ✅ → dashboard-draft-submit.spec.ts (a saved-but-unverified phone reads contact ✓ while the WhatsApp row is still missing — and the banner still lists it) — **התא ששבר את הגרסה הקודמת:** עסק עם טלפון שמור אבל **בלי** אימות — «פרטי קשר» מסומן ✓ **ובו-זמנית** «אימות וואטסאפ» עדיין חסר. שתי השורות אמורות לחלוק על עצמן; לפני הפיצול הן היו שורה אחת שאמרה «פרטי קשר ✓ חובה» בזמן שהבאנר מתחת סירב לשלוח
+- ✅ → dashboard-draft-submit.spec.ts (one missing step is 83%, computed over six — progressbar aria-valuenow + the «כמעט שם» headline) — האחוז מחושב על שישה פריטים (חסר אחד = 83%, לא 80%)
 
 ### אימות הוואטסאפ מתוך הטיוטה — הבדיקה הקריטית ביותר ברשימה
 
-- [ ] כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף
-- [ ] אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
-- [ ] אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
+- ✅ → flows/34-draft-submit-review.spec.ts (A — the OTP card is mounted inside the draft banner; completing it is rows 9-10) — כש-`phone_verified=false`, כרטיס אימות הטלפון **מופיע בתוך הבאנר**, ואפשר להשלים את האימות בלי לצאת מהדף
+- ✅ → dashboard-draft-submit.spec.ts (a successful OTP removes the card and the item, and enables the CTA on the same screen — send → 6-digit code → confirm, both POSTs captured) — אחרי אימות מוצלח — הכרטיס נעלם, ופריט «אימות וואטסאפ» יורד מרשימת החסרים
+- ✅ → dashboard-draft-submit.spec.ts (same test — after the confirm the CTA is enabled and the checklist collapses to «הפרופיל מלא», no reload) — אם כל השאר הושלם — הכפתור נעשה פעיל באותו מסך, בלי רענון ידני
 
 לפני MEH-2100 הכרטיס הזה היה תלוי בסטטוס `pending_whatsapp` בלבד (סטטוס שהוסר ב-MEH-2124), שטיוטה לעולם לא הגיעה אליו. כלומר `phone_verified` לא יכול היה להתהפך אף פעם, והשער היה **בלתי עביר לכל בית עסק באתר**. אם הכרטיס לא מופיע כאן — הפיצ'ר מת, ואין לזה סימן אחר.
 
@@ -3522,3 +3522,20 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 תוצאה מצופה: **שגיאה** — `violates foreign key constraint`. ה-`ROLLBACK` נמצא שם
 כי אם ה-RESTRICT דווקא **כן** שבור, ה-DELETE יצליח — ואז בדיקה בלי גלגול לאחור
 מוחקת סעיף אמיתי בזמן שהיא מוכיחה שההגנה חסרה.
+
+## MEH-2264 — שעות מיוחדות לחגים: עורך, נתיב כתיבה וקוראים (05/09)
+
+`special_hours` דורס את `order_window` **בתאריך אחד בלבד** — לא את שעות החנות (הכרעה א, MEH-1889). כל מה שתלוי בשעון נמדד בזמן ישראל.
+
+- [ ] **עורך — 0 תאריכים** — דשבורד → עריכה → קבוצת «זמנים» → כרטיס «שעות מיוחדות לחגים» — **תוצאה מצופה:** סיכום «לא הוגדר»; בפנים טקסט מצב-ריק + שורת «חגים קרובים:» עם צ'יפים (מ-`lib/holidays.js`); כפתור «שמירה» מושבת; אין «ביטול שינויים»
+- [ ] **עורך — צ'יפ חג** — לחיצה על צ'יפ (למשל «ראש השנה») — **תוצאה מצופה:** נוספות שורות **סגורות** לכל תאריכי החג, ההערה מולאה בשם החג, הצ'יפ הופך ל«נבחר» (מושבת). **לא נשמר** עד ללחיצה על «שמירה»
+- [ ] **עורך — תאריך אחד / רבים** — שמירה → רענון — **תוצאה מצופה:** הסיכום «תאריך אחד» / «N תאריכים»; השורות ממוינות לפי תאריך; שורה פתוחה מציגה טווחי שעות (עד 3, כמו בחלון ההזמנות), שורה סגורה מציגה רק «סגור להזמנות בתאריך זה» מסומן
+- [ ] **עורך — תאריך שעבר** — עסק עם תאריך ישן ב-DB — **תוצאה מצופה:** לא מוצג בעורך; אחרי שמירה הוא נמחק מהעמודה (הקוראים ממילא מתעלמים)
+- [ ] **עורך — כפילות** — «הוספת תאריך» → תאריך שכבר קיים → «שמירה» — **תוצאה מצופה:** שגיאה אדומה «תאריך לא תקין או כפול» ליד השורה ומעל הכפתור; **לא נשלחת בקשה**
+- [ ] **עורך — סגירה לפני פתיחה** — פתיחת שורה, שעת סגירה מוקדמת מהפתיחה — **תוצאה מצופה:** אותה שגיאה כמו בחלון ההזמנות («שעת הסגירה חייבת להיות אחרי שעת הפתיחה»); לא נשלחת בקשה
+- [ ] **API — רטנשן** — `PUT /producers/me` עם תאריך ישן מ-30 יום — **תוצאה מצופה:** 422 «התאריך … כבר עבר — אפשר להגדיר שעות מיוחדות רק לתאריכים מה-30 הימים האחרונים ואילך»; תאריך בדיוק היום−30 מתקבל
+- [ ] **עמוד עסק — רשימת «שעות מיוחדות»** — עסק עם תאריכים עתידיים → «מתי מקבלים הזמנות» — **תוצאה מצופה:** מתחת ללו"ז השבועי כותרת «שעות מיוחדות», שורה לכל תאריך עתידי: תאריך («21 בספטמבר») + הערה בצד ההתחלה, שעות או «לא מקבלים הזמנות» בצד הסוף. תאריכים שעברו — לא מופיעים. **אין** צבע סטטוס או פסק פתוח/סגור ברשימה
+- [ ] **עמוד עסק — סטטוס בכותרת ביום דריסה** — ביום שסומן סגור, בשעה שהלו"ז השבועי פתוח — **תוצאה מצופה:** הסטטוס «ההזמנות סגורות עכשיו · נפתחות … » (הדריסה מנצחת); ביום שסומן פתוח בעוד השבועי סגור — «פתוח להזמנות · עד {שעת הסגירה של הדריסה}»
+- [ ] **כרטיס ברשימה** — אותו עסק בעמוד הבית/`/producers` באותו יום — **תוצאה מצופה:** שורת «פתוח להזמנות · עד …» לא מוצגת ביום שסומן סגור, ומוצגת עם שעת הדריסה ביום שסומן פתוח
+- [ ] **פילטר «פתוח להזמנות עכשיו»** — `GET /producers?open_for_orders_now=true` — **תוצאה מצופה:** עסק פתוח-שבועי אבל סגור-היום **לא** מוחזר; עסק סגור-שבועי אבל פתוח-היום **מוחזר**; דריסה לתאריך אחר לא משנה כלום; עסק בלי לו"ז שבועי ועם דריסה סגורה להיום מופיע רק תחת `=false`
+- [ ] **JSON-LD / שעות החנות** — `view-source` של עמוד העסק — **תוצאה מצופה:** `openingHoursSpecification` **ללא שינוי** — הדריסה לא נוגעת בציר החנות
