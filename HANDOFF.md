@@ -3,6 +3,41 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-05 לילה — drain כז' (session `019GH5Ln…`): BRIEF כז' 07:36Z · T-A 9 Done · T-B/T-C 6 PRs · T-D ניסיון שני על השאריות של כו' · אפס מיזוגים בזמן הסשן (5 חמושים, 1 של ספיר)
+
+**‏שורה אחת:** ‏LEASE נלקח 22:31Z, שוחרר עם DRAIN DONE (~23:45Z). ‏T-A: 9 כרטיסים Done עם טבלת DoD (2184 · 2167 · 2224 · 2196 · 2228 · 2219 · 1904 · 1855 · 2259), 3 residual עם השורה החסרה (1517 · 1606 · 2046); 1523 היה כבר Done מ-04/09 21:17Z. ‏T-B/T-C: **שישה PRs נפתחו**, כולם non-draft — #3435 (1754 code half) · #3436 (2253) · #3437 (2256 + ראיות 375/1440) · #3438 (2254, docs) · #3439 (2048, **ספיר ממזגת**) · ועל #3366 (1640, של כו') נוספו 8 צילומי spokes. ‏auto-merge SQUASH חמוש ונקרא-חזרה על #3366 · #3435 · #3436 · #3437 · #3438; **אף אחד לא נחת עד סוף הסשן** (E2E ~26 דק׳). ‏flip-check (כלל 29ב) על 1754 · 2253 · 2256 · 2254 · 1640 — **חוב פתוח למי שרואה את המיזוגים.** ‏PR הזה (docs) לא חמוש — כלל 31ב.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏Postgres מקומי ל-pytest ולראיות דשבורד — הנוסחה שעבדה:** ‏`service postgresql start` נדחה ל-CC; ‏`pg_ctlcluster 16 main start` עובר. ‏conftest מצפה ל-`postgres:postgres` — ‏`su postgres -c "psql -Atc \"ALTER USER postgres PASSWORD 'postgres'\""` פעם אחת, אחרת כל fixture נופל על `password authentication failed`. ‏`SKIP_UVICORN=1 bash scripts/local-backend.sh` מכין DB עם alembic + seed + admin; ‏uvicorn ידני על :8000. **חשבון בעלת עסק לצילומי `/producer/dashboard/*`:** ‏`POST /auth/register` ואז SQL — ‏`role='producer'`, ‏`producer_id=<seeded producer>`, ‏`email_verified=true`. בלי `role` הדשבורד מציג «אין לך גישה» (‏`require_producer` בודק role, לא `producer_id`).
+2. **‏Playwright בסנדבוקס:** ‏`chromium.launch()` נופל על `chromium_headless_shell-1234` שלא קיים — מעבירים `executablePath: "/opt/pw-browsers/chromium"`. **באנר העוגיות מכסה את שורת השגיאה ב-375** — לוחצים «קבלו הכל» לפני כל צילום, אחרת הראיה מצלמת את הבאנר.
+3. **‏`rm` על קבצים בתוך הריפו נדחה גם בלי `-rf`** (הצילומים נכתבו בטעות ל-tree הראשי) — ‏`mv` ל-scratchpad עובר. ‏`git worktree remove --force` עובר.
+4. **‏`enable_pr_auto_merge` נופל על rate limit של GraphQL («API rate limit already exceeded») בזמן ש-REST (`update_pull_request`, `create_pull_request`) עובד** — ~15 דק׳, חוזר מעצמו. לא לקרוא את זה כ«חמוש».
+5. **‏`save_issue` על MEH-2227 מחזיר 183K תווים** — עורכים עם `patch` על anchor קצר וייחודי (`heartbeat 2026-09-05T23:12Z`) ומאמתים ב-`grep` על קובץ התוצאה השמור. **ושומרים את השעה מ-`date -u`** — שתי חותמות heartbeat נכתבו כאן קדימה מהזמן האמיתי ותוקנו בשורה.
+6. **‏מבחן שהודיע מראש שיתהפך:** ‏`tests/test_meh2140_import_dual_write.py::test_column_j_still_reaches_the_legacy_boolean` נשא docstring «אם MEH-2048 ינחת — זה המבחן שמשנים בכוונה». #3439 שינה אותו (`is True → is False`, שם חדש) ולא «גילה אותו שבור». **הכרטיס אמר עמודה K; הגיליון הוא J** (`producer_import.py:7`) — תוקן בתיאור (כלל 34).
+7. **‏InstallPrompt מופיע רק בביקור 2+** (`localStorage.pwa_visits`), אחרי `beforeinstallprompt`, ובעיכוב 30 שניות — לראיה: ‏`addInitScript` שזורע `pwa_visits=1`, ‏`dispatchEvent(new Event("beforeinstallprompt"))`, ואז `waitFor` 40 שניות. **CityPickerModal** נפתח מצ'יפ המשלוח ב-/map כשאין עיר שמורה. **OnboardingTip** מרונדר גם ב-`HomeProducersGrid` בביקור ראשון (step 0).
+8. **‏סשן Claude מקבילי היה פעיל:** דחף `71733826` ל-#3351 (23:13Z, שער-פרויקט לטסט ה-toggle) והגיב על #3345 (23:25Z, «merge decision stays with Sapir»). לא נגעתי בשניים האלה מעבר לראיות; ראיות 1687 נוספו **בלי** לחמוש.
+
+### PRs
+
+| PR | כרטיס | מה | מצב בסוף הסשן |
+|---|---|---|---|
+| #3435 | 1754 (item 5 code half) | `NEXT_PUBLIC_API_URL` חובה, אפס fallback ל-localhost; build 3-way proof | חמוש SQUASH, ממתין ל-gates |
+| #3436 | 2253 | `inert` מותאם-גרסה (`lib/inert-attr.js`); React 19 vendored vs 18 ב-vitest; מבחן על שני ה-renderers | חמוש SQUASH |
+| #3437 | 2256 | `/login` סיסמה ריקה אחרי blur = שגיאה נגישה (predicate לא-אפשרי תוקן); `qa-artifacts/MEH-2256/` 375+1440, 27,574 B | חמוש SQUASH |
+| #3438 | 2254 | ‏PDP:2 ← ✅ הכרעה: הפס הדביק מספק «CTA מעל הקפל» (docs-only) | חמוש SQUASH |
+| #3439 | 2048 | עצירת שני נתיבי הכתיבה של `pickup_points` (import עמודה J + טופס אדמין); 22/22 pytest, 3 אדומים מול הישן | **ספיר ממזגת**, לא חמוש |
+| #3366 | 1640 (של כו') | +8 צילומי spokes (`qa-artifacts/MEH-1640/`, 142,974 B), גוף → `Closes MEH-1640` | חמוש SQUASH |
+| #3345–#3348 | 1687 ×4 (של כו') | ראיות: כל ארבעת היעדים נמדדו **44×44** (`qa-artifacts/MEH-1687/`, 104,466 B) מ-build משולב מקומי | **לא חמוש** — ספיר, לפי הערת 23:25Z |
+
+### ‏מה נשאר לספיר (residual מאוחד)
+
+- **‏#3439 (2048)** — מיזוג. ‏**#3345–#3348 (1687)** — הכרעת מיזוג; הראיות בגוף.
+- **‏2192** — שורת DoD אחת: אישור verbatim ל-CANONICAL_SENTENCE (הסאבטייטל הקיים) → Done. **‏2244** — הגדרת Linear «auto-close parent» + שלושת ה-patch docs ל-`.github`.
+- **‏2049** — סתירה: ה-BRIEF שם אותו ב-T-C, הכרטיס נושא `post-launch` (B1) ו-ADDENDUM-4 D משאיר בחוץ. להסיר label או להשאיר.
+- **‏1430** — שורה אחת: token הכותרת של המודל (או צילום המוקאפ). **‏1694** — מחכה ל-#3428. **‏1625** — חשבון demo-admin. **‏1976 · 1529 · 1943 · 1658 · 1154 · 2233 · 893** — `post-launch`, STOP מחזיק. **‏1835 · 2210 B/C · 1428 ch1 (#3368)** — הסשן ה-RED.
+- **‏flip-check אחרי המיזוגים** (1754 · 2253 · 2256 · 2254 · 1640) ואז לחמוש את ה-PR הזה.
+
 ## 2026-09-05 ערב — MEH-1249: פרקים 11c–12g מוזגו, 18 PRs, תוכנית ה-chunk (0–12) הושלמה · נותר: הכרעות ספיר
 
 **‏שורה אחת:** 18 squash מאומתים בין `d246f5bf` ‏08:33Z (11c, #3409) ל-`5c33fa06` ‏20:01Z (12g, #3433); הרשימה המלאה ב-CHANGELOG. ‏325 שורות הומרו בפרקים 11–12 (178 + 147), 575 ריצות נוספו, הסוויטה ב-1348 executed. ‏flip-check אחרי כל אחד: MEH-1249 נשאר `Todo` / `completedAt: null`. הענף הנוכחי: `feature/meh-1249-docs-backfill-11-12` (docs-only, כלל 31). **אין פרק המרה פתוח.**
