@@ -9,7 +9,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
-from app.database import get_db
+from app.constants import MAX_PRODUCER_RESUBMISSIONS
+from app.config import settings
+from app.database import engine, get_db
 from app.rate_limit import limiter
 from app.services.availability_validation import (
     AvailabilityValidationError,
@@ -644,12 +646,13 @@ def update_my_producer(
         #                          so an APPROVED business could rename itself
         #                          into something else entirely through the raw
         #                          API. An editor with re-moderation is MEH-1872.
-        #   starting_price_label → the owner edits `price_range` (PricingCard);
-        #                          this second, older price string has no editor
-        #                          and is what ProducerSections.jsx:206 actually
-        #                          renders. MEH-1855 owns mirroring price_range
-        #                          into it — deliberately NOT done here, so the
-        #                          two PRs cannot collide in either merge order.
+        #   (price alias)        → the second, older price string that used to
+        #                          sit beside `price_range` was closed here by
+        #                          MEH-1851 and then DROPPED outright by
+        #                          MEH-1855 chunk 2 (revision 9849fab1637a) —
+        #                          `price_range` (PricingCard) is the only
+        #                          price-label field now. Its registry row went
+        #                          with the column (data_ownership.py).
         #   is_available_today   → written by POST /producers/me/availability-state
         #                          (and the legacy /availability toggle), BOTH of
         #                          which mirror `availability_state`. This path
@@ -688,6 +691,18 @@ def update_my_producer(
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
+        # MEH-1889 chunk A: `special_hours` is deliberately NOT in this set yet.
+        # The column, the ORM attribute and the ProducerUpdate validator all
+        # land in chunk A so the migration can be reviewed and applied on its
+        # own; the owner WRITE path opens in chunk B, in the same PR as the
+        # editor — the standing rule the `kosher` block below states ("do not
+        # re-add it without shipping its editor in the same PR"), and the
+        # condition `dashboard-field-guidance-ratchet.sh` enforces (a writable
+        # field must carry a row in the guidance audit: label + where-it-appears
+        # + example placeholder, none of which exist until the editor does).
+        # A body carrying `special_hours` today is therefore VALIDATED (422 on a
+        # malformed shape) and then ignored on write, which is the same
+        # disposition as every other column outside this set.
         # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
         # Same disposition and standing rule as the blocks above — the column
         # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
@@ -698,8 +713,8 @@ def update_my_producer(
         #            of them (חוק איסור הונאה בכשרות — an unverified claim is
         #            a legal exposure, not a missing feature). The owner was
         #            able to fill in a field nobody could ever see: the same
-        #            "I wrote it and it is not displayed" class as
-        #            starting_price_label.
+        #            "I wrote it and it is not displayed" class as the price
+        #            alias MEH-1855 retired.
         #
         #            The kashrut BADGE request flow is the only owner-facing
         #            mechanism, by design (cards.jsx:1263-1264 says so at the
@@ -1440,6 +1455,68 @@ def _send_whatsapp_otp(phone: str, code: str) -> bool:
     return send_template(phone, OtpCodeV1(code=code))
 
 
+_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def _otp_test_mode_allowed(db_host: str, railway_env: str, app_env: str) -> bool:
+    """MEH-2231 — may this environment honour the OTP test numbers at all?
+
+    # REUSES: backend/scripts/seed_demo_producers.py:646 — prod-refusal shape
+    Same three-way shape as `_assert_not_production`: a local DB host is
+    always allowed (dev / CI / tests); a remote host only when
+    RAILWAY_ENVIRONMENT == "staging"; anything else is refused. On top of
+    that shape, `ENV=production` refuses FIRST and unconditionally — the seed
+    script has no such flag to read, this app does (config.py `env`), and a
+    production service pointed at a local-looking host by mistake must still
+    never hand out a fixed code. Pure function so the refusal is testable
+    without faking an engine.
+
+    TCP hosts only, by design: a Unix-socket DB URL has `engine.url.host` of
+    None, the caller passes "", and the feature stays OFF — dark, with no
+    log line. That is the safe direction for a test-only bypass (the
+    reviewer on PR #3393 asked for a third escape hatch; declined — every
+    added way to say "allowed" is a way to say it by mistake). Local
+    Postgres over TCP, as tests/conftest.py and CI use, is unaffected.
+    """
+    if app_env.strip().lower() == "production":
+        return False
+    host = db_host.strip().lower()
+    if not host:
+        # No host (Unix-socket URL) → OFF, as the docstring promises. Without
+        # this line "" fell through to the Railway check and a staging
+        # service on a socket would have been allowed (reviewer, PR #3393).
+        return False
+    if host in _LOCAL_DB_HOSTS:
+        return True
+    return railway_env.strip().lower() == "staging"
+
+
+def _otp_test_code_for(phone: str) -> str | None:
+    """MEH-2231 — the fixed code for a TEST phone number, or None.
+
+    None means "take the normal path": the number is not on the allow-list,
+    the config is empty or malformed (a code that is not exactly 6 digits
+    turns the whole feature off rather than half-on), or the environment
+    refuses. The caller treats None as byte-identical to today's behaviour.
+    # DO NOT widen the phone match (prefix, normalisation, wildcard) — an
+    #        exact string on `producer.phone` is the only shape that cannot
+    #        accidentally cover a real customer's number.
+    """
+    numbers = {n.strip() for n in settings.otp_test_numbers.split(",") if n.strip()}
+    code = settings.otp_test_code.strip()
+    if not numbers or len(code) != 6 or not code.isdigit():
+        return None
+    if phone not in numbers:
+        return None
+    if not _otp_test_mode_allowed(
+        engine.url.host or "",
+        settings.railway_environment,
+        settings.env,
+    ):
+        return None
+    return code
+
+
 @router.post("/verify-phone", status_code=200)
 @limiter.limit("3/10minute")
 def send_phone_otp(
@@ -1455,7 +1532,10 @@ def send_phone_otp(
     if producer.phone_verified:
         return {"detail": "הטלפון כבר מאומת"}
 
-    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    # MEH-2231: a TEST number gets the fixed code and NO WhatsApp send; every
+    # other number takes exactly the path it took before this line existed.
+    test_code = _otp_test_code_for(producer.phone)
+    code = test_code or "".join(secrets.choice(string.digits) for _ in range(6))
     expires = datetime.utcnow() + timedelta(minutes=10)
 
     # Invalidate any previous unused tokens for this producer
@@ -1474,7 +1554,16 @@ def send_phone_otp(
     )
     db.commit()
 
-    _send_whatsapp_otp(producer.phone, code)
+    if test_code is None:
+        _send_whatsapp_otp(producer.phone, code)
+    else:
+        # MEH-2231: a fixed code is a bypass event. WARNING so it is filterable
+        # in Railway logs and an audit can tell a test run from a real one
+        # (reviewer, PR #3393). Producer id only — never the phone or the code.
+        log.warning(
+            "OTP test mode: fixed code issued, WhatsApp suppressed (producer_id=%s)",
+            producer.id,
+        )
     return {"detail": "קוד נשלח"}
 
 
@@ -1680,13 +1769,35 @@ def request_producer_review(
     MEH-977): a Meta/Resend outage or missing admin config must never affect
     the 200 the owner sees.
     """
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    # MEH-2210 follow-up (CI reviewer on #3343): the cap check and the
+    # `resubmission_count + 1` write are two ORM steps; two concurrent requests
+    # from the same owner at count=2 both read 2 and both write 3, and the
+    # business gets a 4th lifetime resubmission. FOR UPDATE serialises them on
+    # the producer row for the length of this request (released at commit).
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == user.producer_id)
+        .with_for_update()
+        .first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    if producer.status != "pending":
+    # MEH-2210: `rejected` is the second admitted status — the resubmit loop.
+    # Fail-closed (MEH-1587 pattern): explicit membership, every other status
+    # (draft / approved / inactive / anything unknown) stays 409.
+    resubmitting = producer.status == "rejected"
+    if producer.status != "pending" and not resubmitting:
         raise HTTPException(
             status_code=409,
             detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+    # MEH-2210: the cap is checked BEFORE the completeness gate — a business
+    # that has used its three resubmissions is told so, not handed a list of
+    # things to fix for a submission it cannot make.
+    if resubmitting and producer.resubmission_count >= MAX_PRODUCER_RESUBMISSIONS:
+        raise HTTPException(
+            status_code=409,
+            detail="הגעתן למספר השליחות המקסימלי — צרו איתנו קשר",
         )
 
     # MEH-2120: ordered AFTER the status check, matching submit_for_review — an
@@ -1707,6 +1818,36 @@ def request_producer_review(
     # (admin WhatsApp + email, fail-open). Lazy import mirrors the fire_alerts
     # style already used in this file.
     from app.services.auth_notifications import notify_admin_producer_resubmit
+
+    if resubmitting:
+        # MEH-2210: rejected → pending. The gate above already answered the
+        # unverified-phone case with 422 (`missing=["phone_verified"]`), so the
+        # target is always `pending` — `pending_whatsapp` was removed in
+        # MEH-2124 and is not revived here (Phase 0 on the card, 03/09).
+        # `rejection_reason` + `rejection_reason_code` are KEPT: they are the
+        # admin's history and the queue shows "the prior reason" next to the
+        # "שליחה חוזרת #n" badge. Only approve clears them.
+        # Captured BEFORE the commit: the commit expires the ORM row, and every
+        # later attribute read would be a lazy reload round-trip (CI reviewer
+        # on #3333). The literals below are what was just written.
+        new_count = producer.resubmission_count + 1
+        producer_name = producer.name
+        producer_city = producer.city
+        producer.status = "pending"
+        producer.resubmission_count = new_count
+        producer.resubmitted_at = datetime.now(timezone.utc)
+        db.commit()
+        background_tasks.add_task(
+            notify_admin_producer_resubmit,
+            producer_name,
+            producer_city,
+            resubmission_count=new_count,
+        )
+        return {
+            "detail": "נשלח לבדיקה חוזרת",
+            "status": "pending",
+            "resubmission_count": new_count,
+        }
 
     background_tasks.add_task(
         notify_admin_producer_resubmit, producer.name, producer.city
