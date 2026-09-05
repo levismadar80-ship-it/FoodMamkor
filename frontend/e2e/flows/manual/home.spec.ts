@@ -1905,7 +1905,12 @@ function strangersBetweenHeroAndMap(page: Page): Promise<string[]> {
     const heroEl = document.querySelector('[data-testid="home-hero"]');
     const mapEl = document.querySelector('[data-testid="home-minimap"]');
     if (!heroEl || !mapEl) return ["(hero or mini-map is not in the document)"];
-    const hero = heroEl.closest("section")!;
+    // `?? heroEl` rather than a non-null assertion, and the symmetry with the
+    // map branch below is the point: if the hero ever renders outside a
+    // <section>, the assertion must report the strangers it finds — not throw a
+    // TypeError out of page.evaluate, which reads as harness breakage rather
+    // than as the structural regression it would be.
+    const hero = heroEl.closest("section") ?? heroEl;
     const mapSection = mapEl.closest("section") ?? mapEl;
     const out: string[] = [];
     let n: Element | null = hero.nextElementSibling;
