@@ -161,8 +161,15 @@ const EXCLUDED_LABEL = "משלוחים לכל הארץ, חוץ מהערים הא
 const CITIES_LABEL = "ערים שמשלוחים אליהן";
 const CITIES_REQUIRED = "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ";
 
-const SHARON = REGIONS.find((r: { key: string }) => r.key === "sharon") as { name: string; cities: string[] };
-const HAIFA_REGION = REGIONS.find((r: { key: string }) => r.key === "haifa") as { name: string; cities: string[] };
+type Region = { key: string; name: string; cities: string[] };
+/** A missing key must fail with a readable control message, not a TypeError on `.cities` later. */
+function regionByKey(key: string): Region {
+  const r = (REGIONS as Region[]).find((x) => x.key === key);
+  if (!r) throw new Error(`control: data/regions.js has no region with key "${key}" — the fixture premise is gone`);
+  return r;
+}
+const SHARON = regionByKey("sharon");
+const HAIFA_REGION = regionByKey("haifa");
 
 async function openDelivery(page: Page): Promise<void> {
   await page.goto("/producer/dashboard/edit#delivery");
@@ -210,7 +217,11 @@ test.describe("delivery card — nationwide and the exclusion list", () => {
     await expect(saveBtn(page)).toHaveText("נשמר");
     await expect(saveBtn(page), "saved and clean → nothing to save").toBeDisabled();
 
-    expect(puts[0]).toMatchObject({ delivery_nationwide: true, delivery_areas: [], delivery_excluded_cities: ["אילת", "ערד"] });
+    expect(puts[0]).toMatchObject({ delivery_nationwide: true, delivery_areas: [] });
+    // Set semantics: the client may order the list however it likes; exactly these two, no more.
+    const excluded = puts[0].delivery_excluded_cities as string[];
+    expect(excluded).toHaveLength(2);
+    expect(excluded).toEqual(expect.arrayContaining(["אילת", "ערד"]));
   });
 
   // MT:MEH-1255:4 — turning nationwide off drops the exclusions and brings the cities field back.
