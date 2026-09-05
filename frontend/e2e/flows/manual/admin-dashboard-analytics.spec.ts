@@ -269,7 +269,9 @@ test.describe("/admin — the dashboard", () => {
     await expect(dateLabels).toHaveText(["08-07", "08-22", "09-05"]);
     // Pinned on purpose: a new <text> node (axis, title, tooltip) is a chart change this row should notice and re-pin.
     await expect(svg.locator("text"), "the chart renders exactly the three date labels").toHaveCount(3);
-    await expect(svg.locator("polyline")).toHaveAttribute("points", /^8\.0,\d+(\.\d+)? /);
+    // The line joins the same 30 points — a count, not a pixel offset (chart padding is not this row's claim).
+    const points = (await svg.locator("polyline").getAttribute("points")) ?? "";
+    expect(points.trim().split(/\s+/), "the polyline carries one x,y pair per day").toHaveLength(30);
   });
 
   test("with no DAU data the chart card reads «אין נתונים עדיין»", async ({ page }) => {
