@@ -1572,30 +1572,30 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
 
 ### MEH-1046 — pagination בטבלת /admin/users
-- [ ] ברירת מחדל 25 — `/admin/users` (500+ משתמשים); **תוצאה מצופה:** 25 שורות בלבד, "עמוד 1 מתוך N", "הקודם" מושבת, המונה למעלה עדיין מציג את הסך הכולל.
-- [ ] "הבא" מתקדם — לחצי "הבא"; **תוצאה מצופה:** 25 השורות הבאות; בעמוד האחרון "הבא" מושבת.
-- [ ] בורר גודל עמוד — שני ל-50/100; **תוצאה מצופה:** מספר השורות משתנה וחוזרים לעמוד 1.
-- [ ] שינוי פילטר מאפס — עברי לעמוד 2 ואז שני role או הריצי חיפוש; **תוצאה מצופה:** חוזרים לעמוד 1 עם התוצאות המסוננות.
-- [ ] פעולות שורה בעמוד 2 — חסימה / תפריט ⋮ / דיאלוג אישור; **תוצאה מצופה:** עובדים כרגיל, והחסימה לא מחזירה לעמוד 1.
+- ✅ → admin-users-reviews-categories.spec.ts (the first page shows 25 of 60, names page 1 of 3, and the header still counts the whole set) — ברירת מחדל 25 — `/admin/users` (500+ משתמשים); **תוצאה מצופה:** 25 שורות בלבד, "עמוד 1 מתוך N", "הקודם" מושבת, המונה למעלה עדיין מציג את הסך הכולל.
+- ✅ → admin-users-reviews-categories.spec.ts («הבא» walks to the next 25 and is disabled on the last page) — "הבא" מתקדם — לחצי "הבא"; **תוצאה מצופה:** 25 השורות הבאות; בעמוד האחרון "הבא" מושבת.
+- ✅ → admin-users-reviews-categories.spec.ts (changing the page size re-slices and returns to page 1) — בורר גודל עמוד — שני ל-50/100; **תוצאה מצופה:** מספר השורות משתנה וחוזרים לעמוד 1.
+- ✅ → admin-users-reviews-categories.spec.ts (a role filter or a search from page 2 lands on page 1 of the filtered result) — שינוי פילטר מאפס — עברי לעמוד 2 ואז שני role או הריצי חיפוש; **תוצאה מצופה:** חוזרים לעמוד 1 עם התוצאות המסוננות.
+- ✅ → admin-users-reviews-categories.spec.ts (blocking a user on page 2 keeps page 2, and the kebab there opens its dialog) — פעולות שורה בעמוד 2 — חסימה / תפריט ⋮ / דיאלוג אישור; **תוצאה מצופה:** עובדים כרגיל, והחסימה לא מחזירה לעמוד 1.
 - [ ] נייד — הפקדים נשברים לשתי שורות (flex-col) בלי גלישה אופקית.
 
 ### MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews
-- [ ] אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה ב-MEH-1023) — **לא** חלון confirm של הדפדפן.
-- [ ] שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה.
-- [ ] ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE.
-- [ ] אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת + toast הצלחה. בזמן המחיקה שני הכפתורים מושבתים ("במחיקה...").
-- [ ] כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח.
+- ✅ → admin-users-reviews-categories.spec.ts («מחקי» opens a modal dialog naming the user and the business — no native confirm()) — אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה ב-MEH-1023) — **לא** חלון confirm של הדפדפן.
+- ✅ → admin-users-reviews-categories.spec.ts («מחקי» opens a modal dialog naming the user and the business — no native confirm()) — שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה.
+- ✅ → admin-users-reviews-categories.spec.ts («ביטול» and Escape close the dialog without a DELETE) — ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE.
+- ✅ → admin-users-reviews-categories.spec.ts («מחקי» in the dialog DELETEs, disables both buttons while it flies, removes the row and toasts) — אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת + toast הצלחה. בזמן המחיקה שני הכפתורים מושבתים ("במחיקה...").
+- ✅ → admin-users-reviews-categories.spec.ts (a failed DELETE toasts the generic error and leaves the dialog open) — כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח.
 
 ### MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טאב "תוכן")
-- [ ] אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
-- [ ] שם הקטגוריה בדיאלוג — **תוצאה מצופה (עודכן ב-MEH-1034):** הטקסט הוא "מחיקת '<שם הקטגוריה>' — N בתי עסק משויכים" עם השם האמיתי והמספר האמיתי של בתי העסק המשויכים.
-- [ ] ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE.
-- [ ] אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשימה מתרעננת בלי הקטגוריה. בזמן המחיקה הכפתור מציג "מוחקים…" ומושבת.
-- [ ] הערה — ~~מספר בתי-העסק המשויכים לא מוצג~~ **טופל ב-MEH-1034:** הדיאלוג מציג את ה-count. מחיקת קטגוריה עדיין מנתקת אותה מכל בתי-העסק המשויכים (FK CASCADE).
+- ✅ → admin-users-reviews-categories.spec.ts («מחקו» opens a modal dialog carrying the producer count — no native confirm()) — אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
+- ✅ → admin-users-reviews-categories.spec.ts (the dialog names the category: «מחיקת 'לחמים ואפייה' — 3 בתי עסק משויכים» — ⚠️ STALE until MEH-2261: `'{name}'` is an ICU quoted literal, the dialog renders «{name}»; asserted correctly under `test.fail()`) — שם הקטגוריה בדיאלוג — **תוצאה מצופה (עודכן ב-MEH-1034):** הטקסט הוא "מחיקת '<שם הקטגוריה>' — N בתי עסק משויכים" עם השם האמיתי והמספר האמיתי של בתי העסק המשויכים.
+- ✅ → admin-users-reviews-categories.spec.ts («ביטול» closes the dialog, the category stays, nothing is sent) — ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE.
+- ✅ → admin-users-reviews-categories.spec.ts («מחקו» in the dialog DELETEs, reads «מוחקים…» while it flies, and the list re-reads without the category) — אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשימה מתרעננת בלי הקטגוריה. בזמן המחיקה הכפתור מציג "מוחקים…" ומושבת.
+- ✅ → admin-users-reviews-categories.spec.ts («מחקו» opens a modal dialog carrying the producer count — no native confirm() — the count half; the FK cascade is the backend's) — הערה — ~~מספר בתי-העסק המשויכים לא מוצג~~ **טופל ב-MEH-1034:** הדיאלוג מציג את ה-count. מחיקת קטגוריה עדיין מנתקת אותה מכל בתי-העסק המשויכים (FK CASCADE).
 
 ### MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן")
-- [ ] Count בכל שורה — `/admin` → טאב "תוכן" → "קטגוריות"; **תוצאה מצופה:** בכל שורת קטגוריה מופיע "N בתי עסק" (0 לקטגוריה ריקה).
-- [ ] Count בדיאלוג המחיקה — לחצי "מחקו" על קטגוריה עם בתי עסק משויכים; **תוצאה מצופה:** הדיאלוג מציג "מחיקת '<שם>' — N בתי עסק משויכים" עם המספר הנכון.
+- ✅ → admin-users-reviews-categories.spec.ts (every category row shows its producer count, 0 included) — Count בכל שורה — `/admin` → טאב "תוכן" → "קטגוריות"; **תוצאה מצופה:** בכל שורת קטגוריה מופיע "N בתי עסק" (0 לקטגוריה ריקה).
+- ✅ → admin-users-reviews-categories.spec.ts («מחקו» opens a modal dialog carrying the producer count — no native confirm()) — Count בדיאלוג המחיקה — לחצי "מחקו" על קטגוריה עם בתי עסק משויכים; **תוצאה מצופה:** הדיאלוג מציג "מחיקת '<שם>' — N בתי עסק משויכים" עם המספר הנכון.
 - [ ] API — DevTools Network → `GET /admin/categories`; **תוצאה מצופה:** כל שורה כוללת `producer_count`. ה-endpoint הציבורי `GET /categories` מחזיר `producer_count: null` (לא נשבר).
 
 ### MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/producers
@@ -1617,13 +1617,13 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.
 
 ### MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/admin/users
-- [ ] Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלוש-נקודות (⋮); **תוצאה מצופה:** "העלי לאדמין"/"הסירי הרשאות" כבר לא כפתורים inline — הם רק בתוך התפריט הנפתח.
-- [ ] פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ לתפריט / מקש Escape → נסגר (Escape מחזיר פוקוס ל-⋮).
-- [ ] Promote דרך התפריט — על משתמש שאינו אדמין פתחי ⋮ → "העלי לאדמין"; **תוצאה מצופה:** נפתח **אותו** דיאלוג אישור קיים; אישור → המשתמש הופך לאדמין (ללא שינוי בזרימה).
-- [ ] Demote דרך התפריט — על אדמין רגיל (לא ראשי, לא את עצמך) פתחי ⋮ → "הסירי הרשאות" (אדום); **תוצאה מצופה:** דיאלוג אישור, אישור → הורדה מאדמין.
-- [ ] אדמין ראשי (super-admin) — בשורת `levismadar80@gmail.com`; **תוצאה מצופה:** אין תפריט ⋮ (או ריק) — אין מה להציג; ה-tooltip של המנעול (🔒) עדיין מופיע בעמודת "תפקיד".
-- [ ] השורה של עצמך (אדמין) — **תוצאה מצופה:** אין "הסירי הרשאות" בתפריט (isMe guard) — לא ניתן להוריד את עצמך.
-- [ ] נגישות מקלדת — Tab ל-⋮ → Enter/Space פותח → פריטי התפריט נגישים ב-Tab, `aria-expanded` מתחלף.
+- ✅ → admin-users-reviews-categories.spec.ts (the actions cell holds an inline «חסום» and a ⋮, and no inline promote/demote) — Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלוש-נקודות (⋮); **תוצאה מצופה:** "העלי לאדמין"/"הסירי הרשאות" כבר לא כפתורים inline — הם רק בתוך התפריט הנפתח.
+- ✅ → admin-users-reviews-categories.spec.ts (the menu opens toward the start and closes on a second click, an outside click, and Escape) — פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ לתפריט / מקש Escape → נסגר (Escape מחזיר פוקוס ל-⋮).
+- ✅ → admin-users-reviews-categories.spec.ts («העלי לאדמין» opens the confirm and «אישור» PUTs role=admin, then the badge reads «אדמין») — Promote דרך התפריט — על משתמש שאינו אדמין פתחי ⋮ → "העלי לאדמין"; **תוצאה מצופה:** נפתח **אותו** דיאלוג אישור קיים; אישור → המשתמש הופך לאדמין (ללא שינוי בזרימה).
+- ✅ → admin-users-reviews-categories.spec.ts («הסירי הרשאות» is red, confirms, and PUTs role=consumer) — Demote דרך התפריט — על אדמין רגיל (לא ראשי, לא את עצמך) פתחי ⋮ → "הסירי הרשאות" (אדום); **תוצאה מצופה:** דיאלוג אישור, אישור → הורדה מאדמין.
+- ✅ → admin-users-reviews-categories.spec.ts (the super-admin row has no ⋮ and keeps the lock tooltip) — אדמין ראשי (super-admin) — בשורת `levismadar80@gmail.com`; **תוצאה מצופה:** אין תפריט ⋮ (או ריק) — אין מה להציג; ה-tooltip של המנעול (🔒) עדיין מופיע בעמודת "תפקיד".
+- ✅ → admin-users-reviews-categories.spec.ts (the admin's own row offers no «הסירי הרשאות» — measured: no ⋮ renders at all — ⚠️ STALE: an admin row has no promote either, so the menu renders nothing, not an emptier menu) — השורה של עצמך (אדמין) — **תוצאה מצופה:** אין "הסירי הרשאות" בתפריט (isMe guard) — לא ניתן להוריד את עצמך.
+- ✅ → admin-users-reviews-categories.spec.ts (keyboard: Enter and Space open the menu, aria-expanded flips, Escape closes and refocuses ⋮ + keyboard: Tab from the open ⋮ reaches the first menu item — ⚠️ STALE until MEH-2267: the portaled panel is last in tab order, Tab leaves the menu; asserted correctly under `test.fail()`) — נגישות מקלדת — Tab ל-⋮ → Enter/Space פותח → פריטי התפריט נגישים ב-Tab, `aria-expanded` מתחלף.
 - [ ] נייד (iOS Safari + Chrome) — התפריט נפתח מעל/מתחת לשורה בלי לגלוש מהמסך; טאץ' מחוץ לתפריט סוגר.
 
 ### MEH-1011 Chunk 2 — בקשת השלמה (admin UI)
