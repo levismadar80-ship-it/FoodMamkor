@@ -3,6 +3,23 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-05 לפנות בוקר — שני תיקונים אחרי פרק 10 · פרקים 11-12 הם כל מה שנותר ב-MEH-1249
+
+**‏שורה אחת:** ‏#3404 `301945dd` ‏04:36Z · #3403 `3ffef615` ‏04:55Z, שניהם squash מאומת (הורה יחיד). ‏flip-check (כלל 29ב) בשני הכיוונים אחרי כל אחד: MEH-1249 נשאר `Todo` / `completedAt: null`. הענף הנוכחי: `feature/meh-2258-c10-c11-log-backfill` (‏docs-only, כלל 31).
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏⛔ יש backend מקומי ב-sandbox, ואמרתי את ההפך פעמיים. הסיבה היא ה-probe.** ‏`python3 -c "import fastapi"` נכשל ב-`ModuleNotFoundError` — כי `python3` המערכתי אינו ה-venv. **השתמשו ב-`backend/.venv/bin/python`.** ‏`scripts/local-backend.sh` עולה, ושלושת ה-roles (`demo-owner`, `demo-consumer`, `demo-admin`) מחזירים 200 + token. **זה משנה את ה-scope של פרקים 11-12** — הם *כן* יכולים לרוץ מול משטחים מאומתים, ולא רק מול שער-האורחת כפי שכתבתי בפסקה 4 של הרשומה הקודמת.
+2. **‏`scripts/local-backend.sh` מוחק ויוצר מחדש את מסד הנתונים.** הרצה חוזרת שלו *אחרי* הזריעה מחזירה 401 על שלושת ה-roles. הסדר הוא `prep → seeders → uvicorn`, והוא נושא-משקל. אם התחברות נכשלת — קראו את טבלת `users` לפני שאתם מאבחנים את ה-auth.
+3. **‏probe שנכשל הוא טענה על ה-probe.** שתי הפסקאות למעלה הן אותה מחלקה כמו `secrets-scan-guard` שסורק diff, כמו `pgrep -f` שסופר את עצמו: כלי שמדווח תשובה בטוחה על משהו שלא ראה. **‏`ModuleNotFoundError` מהמפרש הלא נכון נראה בדיוק כמו היעדר תשתית**, וזה מה שהחזיק שלושה סשנים.
+4. **‏self-test שנכשל בהודעה שמאשימה את הנושא שלו — בדקו קודם את ה-fixture (‏#3403).** שורת סדר-הבלוקים דיווחה «‏a real element … must be reported by name» עם מחרוזת ריקה, כלומר לכאורה הקורא פספס. הסרת ה-fixture לפני הדגימה משחזרת את ההודעה **בדיוק**. התיקון: precondition על ה-fixture **לפני** כל קריאה של מה שהקורא החזיר, כך ששני הכשלים נפרדים. ההסבר המתבקש (סלקטור פסיק שמסיר `<template>` של React) נבדק — **0 תבניות אחרות** — והופרך לפני שנכתב.
+
+### ‏מה נשאר לספיר
+
+- **הכרעת קופי (כלל 22)** — «הצגת/הסתרת סיסמה» מול «הציגו/הסתירו סיסמה» על אותה בקרת עין. ללא שינוי מאתמול.
+- **שלוש ההכרעות של T12 פריט 2** — עדיין פתוחות.
+- MEH-2256 (ה-`aria-invalid` הבלתי-נגיש ב-`LoginClient.jsx:136`) ב-Backlog, שתי אפשרויות, אחת משנה התנהגות נצפית.
+
 ## 2026-09-05 לפנות בוקר — MEH-1249 פרק 10 (/login + /register) מוזג · נותרו פרקים 11-12
 
 **‏שורה אחת:** ‏#3400 `c77ec35a` ‏03:44Z, ‏squash מאומת (הורה יחיד). ‏17 בלוקי `test(`, ‏32 עברו / 2 דולגו, ירוק ×2. ‏diff אפליקציה = שני `data-testid`. ‏flip-check בשני הכיוונים: MEH-1249 נשאר `Todo` / `completedAt: null`.
