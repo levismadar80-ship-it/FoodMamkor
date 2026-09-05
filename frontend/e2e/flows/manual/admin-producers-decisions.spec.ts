@@ -161,11 +161,13 @@ type StubOpts = {
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
-const rec = (r: Route, writes?: Rec[]) => {
+/** Records the write and returns its parsed body, so a handler reads it once. */
+const rec = (r: Route, writes?: Rec[]): unknown => {
   const req = r.request();
   let body: unknown = null;
   try { body = req.postDataJSON(); } catch { body = req.postData(); }
   writes?.push({ method: req.method(), url: new URL(req.url()).pathname.replace(/^.*\/api/, ""), body });
+  return body;
 };
 
 /**
@@ -193,8 +195,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
   await page.route("**/admin/producers/*/review-checks", (r) => {
     const id = new URL(r.request().url()).pathname.match(/producers\/([^/]+)\/review-checks/)![1];
     if (r.request().method() === "PUT") {
-      rec(r, writes);
-      const ids = ((r.request().postDataJSON() as { item_ids: string[] }).item_ids) ?? [];
+      const ids = (rec(r, writes) as { item_ids?: string[] }).item_ids ?? [];
       checks.set(id, new Set(ids));
     }
     const set = checks.get(id) ?? new Set<string>();
