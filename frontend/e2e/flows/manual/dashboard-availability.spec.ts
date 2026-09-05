@@ -59,7 +59,8 @@ async function stubDashboard(page: Page, state: Avail, posts: Rec[] = []) {
     r.fulfill({ status: s, contentType: "application/json", body: JSON.stringify(b) });
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, 200, { id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7 }));
-  await page.route("**/favorites**", (r) => json(r, 200, []));
+  // The one favorites read the app makes (favorites-cache.js:47) — named exactly, not by substring.
+  await page.route("**/users/me/favorites", (r) => json(r, 200, []));
   await page.route("**/producers/me/availability-state", (r: Route) => {
     if (r.request().method() !== "POST") return r.continue();
     const body = r.request().postDataJSON() as Record<string, unknown>;
@@ -138,7 +139,11 @@ test("clicking «בהפסקה» reveals the return-date input and «שמרו» w
   await expect(dateInput(page)).toBeVisible();
   await expect(dateInput(page)).toHaveValue("");
   await expect(saveVacation(page)).toBeVisible();
-  expect(posts, "selecting vacation must not POST until «שמרו»").toHaveLength(0);
+  // Inverted bounded wait: a POST that fires late is still a POST. The bound is far
+  // above a click→request round-trip, so a healthy run pays it only here, on the
+  // "it did not happen" answer — the shape .claude/rules/testing.md prescribes.
+  const posted = await expect.poll(() => posts.length, { timeout: 2_000 }).toBeGreaterThan(0).then(() => true).catch(() => false);
+  expect(posted, "selecting vacation must not POST — «שמרו» is the only writer").toBe(false);
 });
 
 // MT:MEH-291:6 — «שמרו» with no date: the inline error, and still no POST.
@@ -150,7 +155,8 @@ test("«שמרו» with an empty date shows the inline error and posts nothing",
   await saveVacation(page).click();
   await expect(page.getByRole("alert").filter({ hasText: REQUIRED_DATE })).toBeVisible();
   await expect(dateInput(page)).toHaveAttribute("aria-invalid", "true");
-  expect(posts, "an empty date must be blocked client-side").toHaveLength(0);
+  const posted = await expect.poll(() => posts.length, { timeout: 2_000 }).toBeGreaterThan(0).then(() => true).catch(() => false);
+  expect(posted, "an empty date must be blocked client-side — no POST may leave").toBe(false);
 });
 
 // MT:MEH-291:7 — a future date + «שמרו» posts both fields; a reload is still on vacation with the date.
