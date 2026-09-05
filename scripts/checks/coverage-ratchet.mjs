@@ -449,6 +449,36 @@ function selfTest() {
   check("banking/allow-shrink-permitted", bankAllowCode === 0, `got ${bankAllowCode}`);
   check("banking/allow-shrink-actually-writes", bankAllowPct === 81, `got ${bankAllowPct}`);
 
+  // MEH-1909 anchor: every case above is a fixture this file invented. Parse the
+  // real summary vitest just wrote (CI runs this step right after
+  // `vitest run --coverage`) so the instrument is proven against the shape the
+  // repo actually produces, not only against shapes we assumed. Absent file →
+  // a NOTE, never a passing check: a skip that reads as green is the failure
+  // class this self-test exists to catch.
+  if (existsSync(SUMMARY_PATH)) {
+    let real = null;
+    let err = "";
+    try {
+      real = parseSummary(JSON.parse(readFileSync(SUMMARY_PATH, "utf8")));
+    } catch (e) {
+      err = e instanceof Error ? e.message : String(e);
+    }
+    check("real-summary/parses", real !== null, err);
+    check("real-summary/has-files", (real?.files ?? 0) > 0, `files=${real?.files}`);
+    check(
+      "real-summary/pct-in-range",
+      real !== null && real.globalPct > 0 && real.globalPct <= 100,
+      `pct=${real?.globalPct}`,
+    );
+    check(
+      "real-summary/counts-consistent",
+      real !== null && real.lines.total > 0 && real.lines.covered <= real.lines.total,
+      `covered=${real?.lines?.covered} total=${real?.lines?.total}`,
+    );
+  } else {
+    console.log(`  NOTE  real-summary/* not run — ${SUMMARY_PATH} absent (run \`vitest run --coverage\` first)`);
+  }
+
   console.log(`\n  ${ran.length} assertions ran, ${failures.length} failed.`);
   if (failures.length) {
     console.error(`\ncoverage-ratchet --self-test FAILED: ${failures.join(", ")}`);
