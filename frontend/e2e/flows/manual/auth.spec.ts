@@ -239,7 +239,7 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await expect(invalid).toBeVisible();
     await expect(email).toHaveAttribute("aria-invalid", "true");
 
-    await email.fill("foo@bar.com");
+    await email.fill("valid@example.com");
     await expect(invalid).toHaveCount(0);
     await expect(valid).toBeVisible();
     await expect(email).not.toHaveAttribute("aria-invalid", "true");
@@ -265,7 +265,7 @@ test.describe("manual › /login inline validation and submit gating", () => {
     const password = page.getByTestId("login-password");
     const anyLengthMessage = page.getByText(/לפחות \d+ תווים/);
 
-    await email.fill("foo@bar.com");
+    await email.fill("valid@example.com");
     await password.click();
     await email.click(); // blur the password with nothing in it
     await expect(anyLengthMessage).toHaveCount(0);
@@ -349,7 +349,7 @@ test.describe("manual › /register says nothing when a field is merely correct 
     await email.fill("fooo"); // still malformed — the error must not flicker off
     await expect(emailError).toBeVisible();
 
-    await email.fill("foo@bar.com");
+    await email.fill("valid@example.com");
     await expect(emailError).toHaveCount(0);
   });
 
@@ -399,9 +399,10 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
     const heroBox = (await hero.boundingBox())!;
 
     // RTL page: START is the right edge. The form must be the right-hand pane.
-    expect(formBox.x, "the form pane sits to the END side of the image pane in page coordinates").toBeGreaterThan(
-      heroBox.x,
-    );
+    expect(
+      formBox.x,
+      "the form pane sits at the START side — which on this RTL page is the RIGHT of the image pane in screen coordinates",
+    ).toBeGreaterThan(heroBox.x);
     // Side by side, not stacked.
     expect(Math.abs(formBox.y - heroBox.y), "both panes start at the same y").toBeLessThan(4);
 
