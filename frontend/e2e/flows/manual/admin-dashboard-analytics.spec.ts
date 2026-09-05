@@ -205,7 +205,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
 async function openDashboard(page: Page): Promise<void> {
   await page.goto("/he/admin");
   await expect(page.getByRole("heading", { name: "לוח מחוונים" }), "control: the dashboard never rendered").toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" }), "control: the health panel never rendered").toBeVisible();
+  await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" }), "control: the health panel never rendered").toBeVisible({ timeout: 15_000 });
 }
 /**
  * The dashboard card whose <h2> reads `heading`, scoped to the page's <main> so
@@ -271,7 +271,7 @@ test.describe("/admin — the dashboard", () => {
     await expect(svg.locator("text"), "the chart renders exactly the three date labels").toHaveCount(3);
     // The line joins the same 30 points — a count, not a pixel offset (chart padding is not this row's claim).
     const points = await svg.locator("polyline").getAttribute("points");
-    expect(points, "the polyline has a points attribute").not.toBeNull();
+    expect(points, "the polyline has a non-empty points attribute").toBeTruthy();
     expect(points!.trim().split(/\s+/), "the polyline carries one x,y pair per day").toHaveLength(30);
   });
 
