@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
-from app.database import get_db
+from app.config import settings
+from app.database import engine, get_db
 from app.rate_limit import limiter
 from app.services.availability_validation import (
     AvailabilityValidationError,
@@ -1454,6 +1455,68 @@ def _send_whatsapp_otp(phone: str, code: str) -> bool:
     return send_template(phone, OtpCodeV1(code=code))
 
 
+_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def _otp_test_mode_allowed(db_host: str, railway_env: str, app_env: str) -> bool:
+    """MEH-2231 — may this environment honour the OTP test numbers at all?
+
+    # REUSES: backend/scripts/seed_demo_producers.py:646 — prod-refusal shape
+    Same three-way shape as `_assert_not_production`: a local DB host is
+    always allowed (dev / CI / tests); a remote host only when
+    RAILWAY_ENVIRONMENT == "staging"; anything else is refused. On top of
+    that shape, `ENV=production` refuses FIRST and unconditionally — the seed
+    script has no such flag to read, this app does (config.py `env`), and a
+    production service pointed at a local-looking host by mistake must still
+    never hand out a fixed code. Pure function so the refusal is testable
+    without faking an engine.
+
+    TCP hosts only, by design: a Unix-socket DB URL has `engine.url.host` of
+    None, the caller passes "", and the feature stays OFF — dark, with no
+    log line. That is the safe direction for a test-only bypass (the
+    reviewer on PR #3393 asked for a third escape hatch; declined — every
+    added way to say "allowed" is a way to say it by mistake). Local
+    Postgres over TCP, as tests/conftest.py and CI use, is unaffected.
+    """
+    if app_env.strip().lower() == "production":
+        return False
+    host = db_host.strip().lower()
+    if not host:
+        # No host (Unix-socket URL) → OFF, as the docstring promises. Without
+        # this line "" fell through to the Railway check and a staging
+        # service on a socket would have been allowed (reviewer, PR #3393).
+        return False
+    if host in _LOCAL_DB_HOSTS:
+        return True
+    return railway_env.strip().lower() == "staging"
+
+
+def _otp_test_code_for(phone: str) -> str | None:
+    """MEH-2231 — the fixed code for a TEST phone number, or None.
+
+    None means "take the normal path": the number is not on the allow-list,
+    the config is empty or malformed (a code that is not exactly 6 digits
+    turns the whole feature off rather than half-on), or the environment
+    refuses. The caller treats None as byte-identical to today's behaviour.
+    # DO NOT widen the phone match (prefix, normalisation, wildcard) — an
+    #        exact string on `producer.phone` is the only shape that cannot
+    #        accidentally cover a real customer's number.
+    """
+    numbers = {n.strip() for n in settings.otp_test_numbers.split(",") if n.strip()}
+    code = settings.otp_test_code.strip()
+    if not numbers or len(code) != 6 or not code.isdigit():
+        return None
+    if phone not in numbers:
+        return None
+    if not _otp_test_mode_allowed(
+        engine.url.host or "",
+        settings.railway_environment,
+        settings.env,
+    ):
+        return None
+    return code
+
+
 @router.post("/verify-phone", status_code=200)
 @limiter.limit("3/10minute")
 def send_phone_otp(
@@ -1469,7 +1532,10 @@ def send_phone_otp(
     if producer.phone_verified:
         return {"detail": "הטלפון כבר מאומת"}
 
-    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    # MEH-2231: a TEST number gets the fixed code and NO WhatsApp send; every
+    # other number takes exactly the path it took before this line existed.
+    test_code = _otp_test_code_for(producer.phone)
+    code = test_code or "".join(secrets.choice(string.digits) for _ in range(6))
     expires = datetime.utcnow() + timedelta(minutes=10)
 
     # Invalidate any previous unused tokens for this producer
@@ -1488,7 +1554,16 @@ def send_phone_otp(
     )
     db.commit()
 
-    _send_whatsapp_otp(producer.phone, code)
+    if test_code is None:
+        _send_whatsapp_otp(producer.phone, code)
+    else:
+        # MEH-2231: a fixed code is a bypass event. WARNING so it is filterable
+        # in Railway logs and an audit can tell a test run from a real one
+        # (reviewer, PR #3393). Producer id only — never the phone or the code.
+        log.warning(
+            "OTP test mode: fixed code issued, WhatsApp suppressed (producer_id=%s)",
+            producer.id,
+        )
     return {"detail": "קוד נשלח"}
 
 
