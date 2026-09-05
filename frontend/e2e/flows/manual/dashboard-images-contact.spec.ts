@@ -1,4 +1,5 @@
-import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { test, expect, type Page } from "../_cloudinary-stub";
+import type { Route } from "@playwright/test";
 
 /**
  * Spec:     manual/dashboard-images-contact — MEH-1249 chunk 11h of 12
@@ -142,7 +143,7 @@ test.describe("images card", () => {
     const dt = await dataTransferWith(page, "menu.pdf", "application/pdf");
     await zone(page).dispatchEvent("drop", { dataTransfer: dt });
     // Inverted bounded wait: the upload must NOT happen.
-    const uploaded = await expect.poll(() => writes.filter((w) => w.url.endsWith("/upload/image")).length, { timeout: 2_000 }).toBe(1).then(() => true).catch(() => false);
+    const uploaded = await expect.poll(() => writes.filter((w) => w.url.endsWith("/upload/image")).length, { timeout: 2_000 }).toBeGreaterThan(0).then(() => true).catch(() => false);
     expect(uploaded, "a PDF must never reach /upload/image").toBe(false);
     await expect(body(page, "images").getByRole("alert")).toHaveCount(0);
   });
@@ -154,7 +155,10 @@ test.describe("images card", () => {
     const chooser = page.waitForEvent("filechooser", { timeout: 5_000 });
     await zone(page).click();
     const fc = await chooser;
-    expect(fc.isMultiple() || true, "control: a chooser object came back").toBe(true);
+    // `await chooser` is the row's proof — the chooser opened. The line below is the one
+    // property of it the app can lose: the zone's input is `multiple` (cards.jsx:390), and
+    // a chooser opened from it says so. Drop that attribute and this reads red.
+    expect(fc.isMultiple(), "the images chooser must accept several files").toBe(true);
   });
 
   // MT:MEH-1099:4 — three tips, Hebrew, no emoji.
