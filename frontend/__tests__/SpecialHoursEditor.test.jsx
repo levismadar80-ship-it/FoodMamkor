@@ -19,6 +19,7 @@ import SpecialHoursEditor from "@/app/[locale]/producer/dashboard/edit/SpecialHo
 import api from "@/lib/api";
 import {
   addHolidayRows,
+  canAddSpecialRange,
   holidayChips,
   rowsFromSpecialHours,
   serializeSpecialHours,
@@ -108,6 +109,24 @@ describe("lib/special-hours — rows ⇄ payload", () => {
       // index 4: closed → its ranges are ignored, like a closed weekly day.
     ]);
   });
+  it("canAddSpecialRange reads the row's `closed` key — a special row has no `open`", () => {
+    // The reviewer's finding on PR #3417: a special row passed straight to the
+    // order-window helper reads `day.open === undefined` and is refused on
+    // EVERY open row. The adapter is what this case discriminates — against
+    // the direct call, the first line below is false.
+    const open = { date: "2026-09-11", closed: false, ranges: [{ from: "09:00", to: "13:00" }] };
+    expect(canAddSpecialRange(open)).toBe(true);
+    expect(canAddSpecialRange({ ...open, closed: true })).toBe(false);
+    // Under the cap only — three ranges is the shared ceiling.
+    const three = [
+      { from: "08:00", to: "10:00" },
+      { from: "10:00", to: "12:00" },
+      { from: "12:00", to: "14:00" },
+    ];
+    expect(canAddSpecialRange({ ...open, ranges: three })).toBe(false);
+    // …and only with room left in the day after the last range.
+    expect(canAddSpecialRange({ ...open, ranges: [{ from: "20:00", to: "23:59" }] })).toBe(false);
+  });
 });
 
 describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
@@ -195,6 +214,33 @@ describe("SpecialHoursEditor — the state matrix", () => {
     // Nothing was saved — the owner decides.
     expect(api.put).not.toHaveBeenCalled();
     expect(screen.getByTestId("special-hours-save")).not.toBeDisabled();
+  });
+
+  it("an open row offers «+ range», adds one adjacent to the last, and saves both", async () => {
+    renderEditor(MANY);
+    // Row 0 is 2026-09-11, open 09:00–13:00. Against the pre-fix editor the
+    // control never renders on an open special row, so this line is the red.
+    const add = screen.getByTestId("special-hours-add-range-0");
+    fireEvent.click(add);
+    // nextOrderRange: starts where the last one ended, runs two hours.
+    expect(screen.getByTestId("special-hours-remove-range-0-0")).toBeTruthy();
+    expect(screen.getByTestId("special-hours-remove-range-0-1")).toBeTruthy();
+    expect(screen.getByDisplayValue("15:00")).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("special-hours-save"));
+    });
+    expect(api.put).toHaveBeenCalledWith("/producers/me", {
+      special_hours: {
+        "2026-09-11": {
+          ranges: [
+            { open: "09:00", close: "13:00" },
+            { open: "13:00", close: "15:00" },
+          ],
+          note: "ערב ראש השנה",
+        },
+        "2026-09-21": { ranges: [], note: "יום כיפור" },
+      },
+    });
   });
 
   it("saves the payload the backend expects: closed → ranges [], note trimmed", async () => {
