@@ -154,7 +154,11 @@ function overrideFor(specialHours, dateKey) {
  * weekly map on a date the owner overrode.
  */
 function rangesOnDay(orderWindow, specialHours, now, ahead) {
-  const dateKey = israelToday(new Date(now.getTime() + ahead * MINUTES_PER_DAY * 60 * 1000));
+  // Calendar arithmetic on the ISO date, not `now + 24h`: across an Israel DST
+  // switch a 24h step lands on the wrong calendar day for an hour, and the
+  // override key and the weekly row would then disagree about which day is
+  // being asked about. Both are derived from the SAME date key here.
+  const dateKey = addDaysIso(israelToday(now), ahead);
   const override = overrideFor(specialHours, dateKey);
   if (override) {
     return normalizeDayEntries(override.ranges).map((r) => ({
@@ -162,8 +166,20 @@ function rangesOnDay(orderWindow, specialHours, now, ahead) {
       closeMin: toMinutes(r.close),
     }));
   }
-  const { dayIndex } = israelNowParts(now);
-  return dayRanges(orderWindow, (dayIndex + ahead) % 7);
+  return dayRanges(orderWindow, weekdayOfIso(dateKey));
+}
+
+/** `YYYY-MM-DD` + n days, in UTC arithmetic on the date only (no clock). */
+function addDaysIso(iso, days) {
+  const [y, m, d] = iso.split("-").map(Number);
+  // guard-ok: UTC date arithmetic on a fixed ISO input, not a clock read
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** Sunday=0 … Saturday=6 for an ISO date — index-aligned with ORDER_DAY_KEYS. */
+function weekdayOfIso(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
 /**

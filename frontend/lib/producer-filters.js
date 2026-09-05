@@ -139,8 +139,12 @@ export function openNowChipVisible({
 } = {}) {
   if (active) return true;
 
-  // MEH-2264: an override-only producer has declared something too.
-  const declared = producers.filter((p) => p?.order_window || p?.special_hours).length;
+  // MEH-2264: an override-only producer has declared something too — but only
+  // a NON-EMPTY map counts. The validator stores `{}` as-is, and `{}` yields no
+  // status (orderWindow.js hasAnyOverride), so it must not inflate coverage.
+  const declared = producers.filter(
+    (p) => p?.order_window || Object.keys(p?.special_hours || {}).length > 0,
+  ).length;
   if (declared < OPEN_NOW_CHIP_MIN) return false;
 
   // Coverage passed. Zero-result only applies once the catalog is fully loaded
