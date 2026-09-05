@@ -66,20 +66,30 @@ const BASE = {
 
 type Rec = { method: string; url: string; body: unknown };
 async function stubEdit(page: Page, opts: { profile?: Record<string, unknown>; writes?: Rec[] } = {}): Promise<void> {
-  const p = opts.profile ?? BASE; const writes = opts.writes; let lastPut: Record<string, unknown> = {};
+  const p = opts.profile ?? BASE;
+  const writes = opts.writes;
+  let lastPut: Record<string, unknown> = {};
   const json = (r: Route, s: number, b: unknown) => r.fulfill({ status: s, contentType: "application/json", body: JSON.stringify(b) });
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, 200, { id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7 }));
   await page.route("**/favorites**", (r) => json(r, 200, []));
   await page.route("**/api/group-buys**", (r) => json(r, 200, []));
-  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests"]) await page.route(`**/producers/me/${sub}**`, (r) => json(r, 200, []));
+  // The child cards each read their own endpoint; unstubbed they 401 and bounce the tab to /login.
+  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests"]) {
+    await page.route(`**/producers/me/${sub}**`, (r) => json(r, 200, []));
+  }
   await page.route("**/producers/me/dashboard", (r) =>
     json(r, 200, { producer: { id: 7, name: BASE.name, slug: null, status: "approved", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));
   await page.route("**/producers/me/analytics**", (r) =>
     json(r, 200, { profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 },
       average_rating: null, total_reviews: 0, rank_in_city: null, conversion_rate: "0%", profile_strength: 10, top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
   await page.route("**/producers/me", (r: Route) => {
-    if (r.request().method() === "PUT") { const body = r.request().postDataJSON() as Record<string, unknown>; writes?.push({ method: "PUT", url: "/producers/me", body }); lastPut = { ...lastPut, ...body }; }
+    if (r.request().method() === "PUT") {
+      const body = r.request().postDataJSON() as Record<string, unknown>;
+      writes?.push({ method: "PUT", url: "/producers/me", body });
+      // Stateful: the next GET answers with this PUT merged in, so a reload re-seeds from it.
+      lastPut = { ...lastPut, ...body };
+    }
     return json(r, 200, { ...p, status: "approved", ...lastPut });
   });
 }
@@ -205,9 +215,14 @@ test.describe("group-buy form — clarity", () => {
       await expect(field).toHaveAttribute("type", "number");
       // Direction is asserted as computed — the `dir` may sit on the input or its wrapper.
       expect(await field.evaluate((el) => getComputedStyle(el).direction)).toBe("ltr");
-      // The adornment is a sibling inside the field's wrapper.
-      const wrapper = field.locator("xpath=ancestor::*[.//text()='₪'][1]");
-      await expect(wrapper.getByText("₪", { exact: true }).first()).toBeVisible();
+      // The adornment is the input's own sibling: Input.jsx:120-129 renders `startAdornment`
+      // as an aria-hidden <span> right before the <input>, both direct children of one
+      // `div.relative`. Reaching it through the parent — not an ancestor search for «₪» —
+      // keeps the claim spatial: a ₪ rendered anywhere else in the form does not satisfy it.
+      const adornment = field.locator("xpath=../span[@aria-hidden='true']");
+      await expect(adornment).toHaveCount(1);
+      await expect(adornment).toHaveText("₪");
+      await expect(adornment).toBeVisible();
     }
   });
 
