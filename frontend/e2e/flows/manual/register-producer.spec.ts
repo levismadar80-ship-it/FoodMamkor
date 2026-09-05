@@ -163,6 +163,10 @@ test.describe("/register/producer — MANUAL_TESTING conversion (MEH-1249 chunk 
 
     await expect(page).toHaveURL(/\/about\/process(\?|#|$)/);
     // The URL alone is not arrival — assert the destination actually rendered.
+    // `process-hero` belongs to a page OUTSIDE this spec's scope:
+    // app/[locale]/about/process/AboutProcessClient.jsx:123. Named here so a
+    // rename or removal there points at its source instead of leaving this
+    // failure looking like a bug on /register/producer.
     await expect(page.getByTestId("process-hero")).toBeVisible();
   });
 
