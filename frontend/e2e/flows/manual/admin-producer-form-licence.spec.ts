@@ -276,6 +276,8 @@ async function pickCategory(page: Page, name: string): Promise<void> {
 }
 
 const licenceField = (page: Page) => page.getByTestId("register-category-license");
+/** The licence <input> by its <label> («מספר רישיון יצרן», with «(חובה)» appended when required) — register's optional field and the admin form's alike. */
+const licenceInput = (page: Page) => page.getByLabel(/^מספר רישיון יצרן/);
 const optionalToggle = (page: Page) => page.getByRole("button", { name: "יש לי רישיון יצרן (אם רלוונטי) ↓" });
 const nextBtn = (page: Page) => page.getByTestId("register-category-next");
 
@@ -329,7 +331,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await expect(licenceField(page)).toHaveCount(0);
     await expect(page.getByText("מספר רישיון יצרן (חובה)")).toHaveCount(0);
     await optionalToggle(page).click();
-    const optional = page.locator("#producer-license-optional");
+    const optional = licenceInput(page);
     await expect(optional).toBeVisible();
     await expect(page.getByText("מספר רישיון יצרן", { exact: true })).toBeVisible();
     await expect(page.getByText("מספר רישיון יצרן (חובה)")).toHaveCount(0);
@@ -468,7 +470,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     await openNewProducer(page);
     await expect(page.getByRole("button", { name: "יש לי רישיון יצרן ↓" })).toBeVisible();
     await setChecked(page.getByRole("checkbox", { name: "בשר" }), true);
-    const field = page.locator("#admin-producer-license");
+    const field = licenceInput(page);
     await expect(field).toBeVisible();
     await expect(page.getByText("מספר רישיון יצרן (חובה)")).toBeVisible();
     await expect(page.getByText("ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות")).toBeVisible();
@@ -488,9 +490,9 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     await stubAdmin(page, { writes, postStatus: 201 });
     await openNewProducer(page);
     await setChecked(page.getByRole("checkbox", { name: "בשר" }), true);
-    await page.locator("#admin-producer-license").fill("abc");
+    await licenceInput(page).fill("abc");
     await expect(page.getByText("מספר רישיון יצרן הוא 7-10 ספרות")).toHaveClass(/text-amber-600/);
-    await page.locator("#admin-producer-license").fill("1234567");
+    await licenceInput(page).fill("1234567");
     await expect(page.getByText("מספר רישיון יצרן הוא 7-10 ספרות")).toHaveCount(0);
     await page.getByLabel("שם העסק").fill("קצביית הכפר");
     await saveBtn(page).click();
@@ -504,7 +506,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     await stubAdmin(page);
     await page.goto("/he/admin/producers/77/edit");
     await expect(page.getByRole("heading", { name: "עריכה: מאפיית שקד" })).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator("#admin-producer-license")).toHaveValue("1234567");
+    await expect(licenceInput(page)).toHaveValue("1234567");
     await expect(page.getByRole("button", { name: "יש לי רישיון יצרן ↓" })).toHaveCount(0);
     // «לחמים ואפייה» is licence-required, so the label carries the suffix too.
     await expect(page.getByText("מספר רישיון יצרן (חובה)")).toBeVisible();
