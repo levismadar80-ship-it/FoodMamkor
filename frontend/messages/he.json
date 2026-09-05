@@ -4530,7 +4530,7 @@
         "invalid_date": "תאריך לא תקין או כפול",
         "save_success": "השעות המיוחדות נשמרו",
         "summary_empty": "לא הוגדר",
-        "summary_set": "{count, plural, one {תאריך אחד} other {# תאריכים}}"
+        "summary_set": "{count, plural, one {תאריך אחד} two {שני תאריכים} other {# תאריכים}}"
       },
       "custom_questions": {
         "heading": "שאלות שמופיעות בדף שלך",
