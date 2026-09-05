@@ -691,18 +691,17 @@ def update_my_producer(
         # body clears it (present-but-None flows through model_dump(exclude_unset)
         # and setattr sets the column to NULL).
         "order_window",
-        # MEH-1889 chunk A: `special_hours` is deliberately NOT in this set yet.
-        # The column, the ORM attribute and the ProducerUpdate validator all
-        # land in chunk A so the migration can be reviewed and applied on its
-        # own; the owner WRITE path opens in chunk B, in the same PR as the
-        # editor — the standing rule the `kosher` block below states ("do not
-        # re-add it without shipping its editor in the same PR"), and the
-        # condition `dashboard-field-guidance-ratchet.sh` enforces (a writable
-        # field must carry a row in the guidance audit: label + where-it-appears
-        # + example placeholder, none of which exist until the editor does).
-        # A body carrying `special_hours` today is therefore VALIDATED (422 on a
-        # malformed shape) and then ignored on write, which is the same
-        # disposition as every other column outside this set.
+        # MEH-1889 chunk B (MEH-2264): per-date overrides ABOVE order_window,
+        # order-axis authoritative. Chunk A shipped the column + validator and
+        # deliberately left this line out, so a body carrying `special_hours`
+        # was validated and then ignored; chunk B opens the write path in the
+        # SAME PR as the dashboard editor (SpecialHoursEditor.jsx) and the
+        # guidance-audit row the ratchet demands — the standing rule the
+        # `kosher` block below states. Validated in ProducerUpdate: date keys,
+        # `ranges` via _validate_order_day (reused verbatim), `[]` = closed,
+        # `note` display-only, and dates older than today-30 rejected (Sapir's
+        # ruling ג). Explicit null clears it, same as order_window.
+        "special_hours",
         # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
         # Same disposition and standing rule as the blocks above — the column
         # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
