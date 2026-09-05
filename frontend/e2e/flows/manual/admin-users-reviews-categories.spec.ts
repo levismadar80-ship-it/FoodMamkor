@@ -710,6 +710,9 @@ test.describe("/admin/content — categories", () => {
     await openCategories(page);
     await expect(categoryRow(page, "לחמים ואפייה").getByText("3 בתי עסק")).toBeVisible();
     await expect(categoryRow(page, "פירות וירקות").getByText("0 בתי עסק")).toBeVisible();
+    // «1 בתי עסק» is what the page renders today — the plural for a count of 1, not correct Hebrew.
+    // Asserted as measured (the row's claim is "N בתי עסק on every row"); a copy fix that adds the
+    // singular («1 בית עסק») moves this line, not the app. Recorded on card 2261, never fixed inline.
     await expect(categoryRow(page, "דבש ומרקחות").getByText("1 בתי עסק")).toBeVisible();
   });
 
