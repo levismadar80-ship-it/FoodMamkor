@@ -57,7 +57,7 @@ _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 # MEH-1869: a day may carry several disjoint ranges (morning + evening, the
-# Israeli לunch-break and Friday/מוצ"ש patterns). Capped so the editor stays a
+# Israeli lunch-break and Friday/Saturday-night patterns). Capped so the editor stays a
 # form rather than a scheduler.
 _MAX_ORDER_RANGES_PER_DAY = 3
 
@@ -1858,7 +1858,7 @@ class ProducerImportResult(BaseModel):
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
 AVAILABILITY_STATES = (
     "accepting_orders",  # default — "פתוח להזמנות"
-    "available_today",  # superset — זמין + פתוח
+    "available_today",  # superset — available today + open for orders
     "full_this_week",  # "עמוסה השבוע"
     "on_vacation",  # "בהפסקה" (requires vacation_until)
 )
@@ -2351,7 +2351,7 @@ class ProducerListOut(BaseModel):
     # what a card claims about itself.
     delivers: bool = False
     offers_pickup: bool = False
-    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
+    # MEH-986 ch3b (P0 legal — Kashrut Fraud Prohibition Law): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
     # (admin-internal + owner's own view). Public kosher signal is verified-only
@@ -3092,7 +3092,7 @@ class FavoriteOut(BaseModel):
 # backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
-# --- Home Product (מהמטבח של השכן) ---
+# --- Home Product ("from the neighbor's kitchen" listings) ---
 class HomeProductCreate(BaseModel):
     title: str
     description: str | None = None
