@@ -312,6 +312,13 @@ export const ProducerListSchema = z.object({
   // Zod-parsed list feeds, and an undeclared key is stripped by z.object. Inner
   // shape stays permissive (same all-or-nothing-feed argument as order_window
   // above); `normalizeDayEntries` drops any malformed range at read time.
+  // The per-date entry is `.nullable()` ON PURPOSE even though the backend
+  // validator never writes a null entry: this literal guards two all-or-nothing
+  // feeds, and a hand-edited or imported row with one null entry must cost that
+  // one date (the readers skip it — orderWindow.js `overrideFor`), never the
+  // whole business. Tightening it here would turn a data blemish into a
+  // vanished producer, which is the exact failure the permissive inner shape
+  // above exists to prevent.
   special_hours: z
     .record(
       z.string(),
