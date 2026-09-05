@@ -17,11 +17,22 @@ import { PASSWORD_MIN_LENGTH } from "../../../lib/validators";
  *           post-login landing, the refresh-token lifecycle, or the Google /
  *           Apple providers' own flows. Those rows are named in
  *           § "What this file does NOT convert" with their reasons.
- * Locators: `getByTestId` only (docs/E2E-LOCATORS.md), except the eye toggle
- *           on `/login`, which the page renders without one and which is
- *           therefore addressed by its ARIA role + name — copy-independent in
- *           the sense that matters here, since the name is read from
- *           `messages/he.json` rather than typed into the spec.
+ * Locators: every ELEMENT under test is reached by `getByTestId`
+ *           (docs/E2E-LOCATORS.md). Two kinds of thing here are not elements
+ *           with testids, and both are addressed by what they say:
+ *             · the eye toggle on `/login`, which the page renders without a
+ *               testid, reached by ARIA role + accessible NAME — and that name
+ *               is itself one of the assertions;
+ *             · the validation MESSAGES on both pages («האימייל לא תקין»,
+ *               «✓ תקין», «הזינו סיסמה», «שם מלא הוא שדה חובה») and the hero
+ *               overlay copy, none of which carry a testid. Several of those
+ *               are absence assertions, where the string IS the subject: the
+ *               claim is that a particular sentence does not render.
+ *           So this file uses `getByText` deliberately and not incidentally.
+ *           Every such string is quoted from `messages/he.json` — a copy
+ *           change moves the assertion, which is the trade the rule warns
+ *           about and which is accepted here because the rows being converted
+ *           are about the copy.
  * Related:  `flows/30-login-journey-c.spec.ts` (the MEH-215 sign-in journey,
  *           including the wrong-credentials path) and
  *           `flows/29-register-journey-a.spec.ts` (the consumer register
