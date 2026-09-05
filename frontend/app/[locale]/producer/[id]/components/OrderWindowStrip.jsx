@@ -88,10 +88,13 @@ const NOON_UTC = 12;
  */
 function formatSpecialDate(isoDate, locale) {
   const [y, m, d] = isoDate.split("-").map(Number);
+  // DISPLAY formatter for a stored ISO date — israelToday()/israelNowParts()
+  // still own "now"; this only prints a calendar day in the page locale.
+  // guard-ok: display formatting of a stored date, not a clock read
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
-    timeZone: "Asia/Jerusalem",
+    timeZone: "Asia/Jerusalem", // guard-ok: display formatting of a stored date, not a clock read
   }).format(new Date(Date.UTC(y, m - 1, d, NOON_UTC)));
 }
 
