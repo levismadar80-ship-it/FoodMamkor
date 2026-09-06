@@ -3298,6 +3298,71 @@ class TestVacationBadgeClear:
         assert body["availability_status"] == "vacation"
         assert body["availability_state"] == "on_vacation"
 
+    def test_the_legacy_toggle_leaves_the_durable_states_alone(self, client, db):
+        """MEH-2271, from the CI reviewer on #3460: POST /availability is a
+        no-op on full_this_week and on_vacation, and that is PRESERVATION.
+
+        The old `_legacy_to_state` ranked `availability_status` above
+        `is_available_today`, so on a producer whose status was "full" or
+        "vacation" the boolean flip changed nothing the state could see. The
+        first version of this chunk moved them to available_today while
+        claiming parity with the old behaviour; it had neither.
+
+        The construction discriminates: a naive two-way toggle returns
+        available_today on both rows below and fails both assertions.
+        """
+        from datetime import date, timedelta
+        from app.models import User
+
+        for state, extra in (
+            ("full_this_week", {}),
+            ("on_vacation", {"vacation_until": date.today() + timedelta(days=5)}),
+        ):
+            user = make_user(db, role="producer", email=f"toggle-{state}@x.com")
+            producer = make_producer(db, name=f"עסק-{state}")
+            producer.availability_state = state
+            for k, v in extra.items():
+                setattr(producer, k, v)
+            user.producer_id = producer.id
+            db.commit()
+            user = db.query(User).filter(User.id == user.id).first()
+
+            resp = client.post(
+                "/producers/me/availability", headers=auth_header(user)
+            )
+            assert resp.status_code == 200, resp.text
+            assert resp.json()["availability_state"] == state, (
+                f"{state}: the legacy toggle must not clear a durable state"
+            )
+            db.refresh(producer)
+            assert producer.availability_state == state
+
+    def test_the_legacy_toggle_still_flips_the_two_it_owns(self, client, db):
+        """The control for the test above. Without it, `pass` in the endpoint
+        would satisfy the no-op assertions and this suite would be green
+        against an endpoint that does nothing at all.
+        """
+        from app.models import User
+
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+        user = db.query(User).filter(User.id == user.id).first()
+        assert producer.availability_state == "accepting_orders"
+
+        body = client.post(
+            "/producers/me/availability", headers=auth_header(user)
+        ).json()
+        assert body["availability_state"] == "available_today"
+        assert body["is_available_today"] is True
+
+        body = client.post(
+            "/producers/me/availability", headers=auth_header(user)
+        ).json()
+        assert body["availability_state"] == "accepting_orders"
+        assert body["is_available_today"] is False
+
     def test_a_legacy_only_vacation_row_is_ignored(self, client, db):
         """MEH-2271, pinned deliberately: the legacy COLUMN no longer speaks.
 

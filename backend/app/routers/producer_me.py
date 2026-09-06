@@ -910,14 +910,24 @@ def toggle_availability(
     # MEH-2271: toggle the STATE. Previously this flipped the boolean column
     # and derived the state from it; the column is no longer written by the
     # canonical endpoint, so deriving from it would toggle against stale data.
-    # A producer who is full_this_week or on_vacation and hits this legacy
-    # toggle moves to available_today, which is what flipping the old boolean
-    # from False did too.
-    producer.availability_state = (
-        "accepting_orders"
-        if producer.availability_state == "available_today"
-        else "available_today"
-    )
+    #
+    # full_this_week and on_vacation are LEFT ALONE, and that is preservation
+    # rather than a new rule. The old `_legacy_to_state` ranked
+    # `availability_status` above `is_available_today`, so on a producer whose
+    # status was "full" or "vacation" the boolean flip changed nothing the
+    # state could see — this endpoint was already a no-op for them. Dragging
+    # them to available_today would be a behaviour change wearing a refactor's
+    # clothes, and the durable states are exactly the ones a "am I free today"
+    # toggle has no business clearing.
+    #
+    # (The first version of this block did exactly that, with a comment
+    # claiming parity that did not hold. Caught by the CI reviewer on #3460.)
+    if producer.availability_state in ("accepting_orders", "available_today"):
+        producer.availability_state = (
+            "accepting_orders"
+            if producer.availability_state == "available_today"
+            else "available_today"
+        )
     producer.last_active_at = datetime.utcnow()
     db.commit()
     return {
@@ -1061,6 +1071,11 @@ def dashboard(
         or 0
     )
 
+    # MEH-2271 — bound here rather than spread inline from a zip(): the
+    # comment below is load-bearing and a zip idiom buries it (CI reviewer,
+    # #3460).
+    _derived_today, _derived_status = state_to_legacy(producer.availability_state)
+
     return {
         "producer": {
             "id": str(producer.id),
@@ -1074,12 +1089,8 @@ def dashboard(
             # the PR body rather than resolved by leaving a stale read here.
             # MEH-2272 removes both keys; the frontend dashboard already reads
             # only availability_state (app/[locale]/producer/dashboard/page.js).
-            **dict(
-                zip(
-                    ("is_available_today", "availability_status"),
-                    state_to_legacy(producer.availability_state),
-                )
-            ),
+            "is_available_today": _derived_today,
+            "availability_status": _derived_status,
             # MEH-291 — durable 4-value enum, the only one written.
             # Defensive default in case ORM ever returns NULL despite NOT NULL.
             "availability_state": producer.availability_state or "accepting_orders",
