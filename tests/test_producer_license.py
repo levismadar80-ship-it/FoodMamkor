@@ -39,6 +39,7 @@ def _register_payload(
         "name": "יצרנית",
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "עסק לדוגמה",
+        "terms_accepted": True,  # MEH-2080: mandatory on the schema
         "phone": "0501234567",
         # MEH-2015 chunk B: city is now required, unrelated to what this file
         # tests (license gating) — added for the same reason declaration_accepted is.

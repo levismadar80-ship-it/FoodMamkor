@@ -70,7 +70,7 @@ class TestRegisterFiresVerifyEmail:
         ):
             resp = client.post(
                 "/auth/register",
-                json={
+                json={"terms_accepted": True,
                     "email": "dave@test.com",
                     "name": "Dave",
                     "password": "SecurePass123!",
