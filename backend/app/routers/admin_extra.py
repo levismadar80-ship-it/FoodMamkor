@@ -62,10 +62,16 @@ SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
 # DO NOT soften the rename message into "try a different name" — it must say
 # WHY the rename is refused (a licensing requirement) and WHERE it belongs
 # (a migration), or the admin retries in the UI and files a bug instead.
+#
+# The closing sentence says «הסמל» and not «האימוג'י» (Sapir, 06/09, rule 22):
+# MEH-2163 moves the category glyphs to a slug-keyed registry, so the word
+# "emoji" names an implementation that is on its way out. Same amendment, same
+# reason, as CATEGORY_SYSTEM_RENAME_ERROR_HE below. English twin in en.json:
+# "The symbol can still be updated."
 CATEGORY_LICENSE_RENAME_ERROR_HE = (
     "לקטגוריה הזאת יש דרישת רישיון של משרד הבריאות שמזוהה לפי השם. "
     "שינוי השם מבטל את הדרישה עבור בתי העסק בקטגוריה, ולכן הוא נעשה במיגרציה "
-    "ולא במסך הניהול. אפשר לעדכן את האימוג'י."
+    "ולא במסך הניהול. אפשר לעדכן את הסמל."
 )
 CATEGORY_NAME_TAKEN_ERROR_HE = "קטגוריה בשם זה כבר קיימת"
 
