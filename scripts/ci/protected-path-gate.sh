@@ -133,6 +133,14 @@ self_test() {
   run_case "look-alike path (workflows-docs), no label" 0 $'docs/github/workflows/x.md\n.github/ISSUE_TEMPLATE/x.md' "" "levismadar80-ship-it"
   run_case "empty diff"                                 0 "" "" "levismadar80-ship-it"
   run_case "wrong label name is not approval"           1 $'.claude/hooks/x.sh' "protected-path-approve" "levismadar80-ship-it"
+  # Anchored to files that exist in this repo (testing.md, MEH-1909): the
+  # synthetic cases above prove the globs on shapes we invented; these two
+  # prove them on the shapes the repo actually uses. `test -f` first, so a
+  # renamed anchor fails loudly instead of quietly matching a string.
+  test -f backend/alembic/versions/20260424_0815_ef8fb1858f5b_baseline.py || { echo "  FAIL real alembic anchor missing"; failed=$((failed+1)); }
+  test -f .github/workflows/pr-checks.yml || { echo "  FAIL real workflow anchor missing"; failed=$((failed+1)); }
+  run_case "REAL alembic revision (baseline), no label" 1 $'backend/alembic/versions/20260424_0815_ef8fb1858f5b_baseline.py' "" "levismadar80-ship-it"
+  run_case "REAL workflow (pr-checks.yml), no label"    1 $'.github/workflows/pr-checks.yml' "" "levismadar80-ship-it"
   echo "self-test: $((ran-failed))/$ran cases as expected"
   [ "$failed" -eq 0 ]
 }
