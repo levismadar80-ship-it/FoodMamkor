@@ -161,6 +161,13 @@ def list_producers(
     gluten_free: bool | None = None,
     vegan: bool | None = None,
     vegetarian: bool | None = None,  # MEH-1438 — matches is_vegetarian OR is_vegan
+    # MEH-1508 chunk 3ב — the 100% axes. Distinct from `vegan` above, which is
+    # "at least one matching product OR the declaration" (chunk 3א): these two
+    # are the DECLARATION ALONE, so «100% טבעוני» can be filtered on separately
+    # from «מתאים לטבעונים». A business with one vegan cookie satisfies `vegan`
+    # and must not satisfy `vegan_all`.
+    vegan_all: bool | None = None,
+    vegetarian_all: bool | None = None,
     lactose_free: bool | None = None,
     # MEH-1934 — EXISTS over products.is_no_added_sugar / is_low_carb, same
     # mechanic as the four axes above (_DIETARY_FILTERS in producer_listing).
@@ -233,6 +240,8 @@ def list_producers(
         gluten_free=gluten_free,
         vegan=vegan,
         vegetarian=vegetarian,  # MEH-1438
+        vegan_all=vegan_all,  # MEH-1508 chunk 3ב
+        vegetarian_all=vegetarian_all,
         lactose_free=lactose_free,
         no_added_sugar=no_added_sugar,  # MEH-1934
         low_carb=low_carb,  # MEH-1934
