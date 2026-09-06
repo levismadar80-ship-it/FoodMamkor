@@ -22,6 +22,8 @@ import { detailToMessage } from "@/lib/errors";
 import EmptyState from "@/components/ui/EmptyState";
 // MEH-999: shared back link — one owner for target + arrow direction.
 import BackLink from "@/components/ui/BackLink";
+// MEH-1640: shared status colours across the four tools spokes.
+import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
@@ -121,7 +123,7 @@ export default function ManageEventsPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-semibold text-text truncate">{ev.title}</h2>
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${ev.is_active ? "bg-green-50 text-primary" : "bg-yellow-100 text-yellow-800"}`}
+                      className={`text-xs px-2 py-0.5 rounded-full ${ev.is_active ? STATUS_CLASSES.success : STATUS_CLASSES.warning}`}
                     >
                       {ev.is_active ? t("badge_active") : t("badge_inactive")}
                     </span>
