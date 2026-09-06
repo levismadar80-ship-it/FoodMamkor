@@ -191,22 +191,63 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
   const t = useTranslations("admin");
   const [name, setName] = useState(cat.name);
   const dirty = name !== cat.name;
+  // No `aria-readonly` on the input below: native `readOnly` already reaches
+  // assistive tech, and ARIA's first rule is not to duplicate native semantics.
+  //
+  // MEH-1456 chunk 2b: `categories.is_system` marks the rows seed_data owns.
+  // The backend refuses their rename and delete (admin_extra.update_category /
+  // delete_category); this is the reader half — the admin sees WHY before she
+  // types, instead of after a 422. Strict `=== true`: a payload without the
+  // field (an older backend) must fall through to the editable shape, never
+  // lock every row.
+  const locked = cat.is_system === true;
 
   return (
     <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
-      <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded-lg px-2 py-1" />
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        readOnly={locked}
+        title={locked ? t("content.categories.system_hint") : undefined}
+        data-testid={`category-name-${cat.id}`}
+        className={`flex-1 border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
+      />
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
         {t("content.categories.producer_count", { count: cat.producer_count ?? 0 })}
       </span>
-      <button
-        onClick={() => onSave(cat.id, name)}
-        disabled={!dirty || saving}
-        className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
-      >
-        {t("content.categories.save")}
-      </button>
-      <button onClick={() => onDelete(cat)} className="text-xs text-red-600">{t("content.categories.delete")}</button>
+      {locked ? (
+        // Replaces both action buttons rather than disabling them: a greyed
+        // save + a greyed delete say "broken", a label says "not yours". The
+        // `title` carries the where-it-belongs half for a reader who wants it
+        // (/admin is desktop-only by decision, MEH-2070, so a title is
+        // reachable here).
+        <span
+          data-testid={`category-system-badge-${cat.id}`}
+          title={t("content.categories.system_hint")}
+          className="text-xs text-muted whitespace-nowrap border border-border rounded-lg px-2 py-1"
+        >
+          {t("content.categories.system_badge")}
+        </span>
+      ) : (
+        <>
+          <button
+            onClick={() => onSave(cat.id, name)}
+            disabled={!dirty || saving}
+            data-testid={`category-save-${cat.id}`}
+            className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
+          >
+            {t("content.categories.save")}
+          </button>
+          <button
+            onClick={() => onDelete(cat)}
+            data-testid={`category-delete-${cat.id}`}
+            className="text-xs text-red-600"
+          >
+            {t("content.categories.delete")}
+          </button>
+        </>
+      )}
     </li>
   );
 }
