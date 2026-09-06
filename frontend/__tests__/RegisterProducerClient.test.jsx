@@ -85,6 +85,9 @@ vi.mock("@/components/CitySearch", () => ({
       id={id}
       aria-invalid={ariaInvalid}
       value={value || ""}
+      // Literal, not the constant: vi.mock() is hoisted above `const
+      // FREE_TEXT_TOWN`, so the factory cannot reference it. MUST MATCH
+      // FREE_TEXT_TOWN — the guard test below fails if the two drift.
       onChange={(e) => onChange(e.target.value, { known: e.target.value !== "עיירה שאינה ברשימה" })}
       // The async half: a test can flip the verdict for the current value
       // without re-emitting it (the real component fires this after a late
@@ -1654,6 +1657,15 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
   }
+
+  it("the stub's sentinel literal matches FREE_TEXT_TOWN (guards the hoisted duplicate)", async () => {
+    await reachDetailsFilledExceptCity();
+    // If the literal inside vi.mock() drifted from the constant, the constant
+    // would be emitted as a KNOWN town and this advance would succeed.
+    fireEvent.change(screen.getByTestId("city"), { target: { value: FREE_TEXT_TOWN } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+  });
 
   it("A — empty city still blocks the DETAILS advance (control)", async () => {
     await reachDetailsFilledExceptCity();
