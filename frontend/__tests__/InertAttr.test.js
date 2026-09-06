@@ -19,8 +19,25 @@ const R18 = req("react");
 const D18 = req("react-dom/server");
 // The App Router alias target. Not a public API, but it IS the runtime the
 // page ships with — a test that never touches it cannot see this bug.
-const R19 = req("next/dist/compiled/react");
-const D19 = req("next/dist/compiled/react-dom/server");
+//
+// Deliberately NOT a try/catch → test.skip: the two R19 rows are the subject
+// of this file, and a skip when the path moves would report green in the one
+// world (a Next bump changing the shipped React) where the bug can come back
+// — testing.md, "a guard that consults its own subject". A moved path fails
+// by name instead of as an opaque MODULE_NOT_FOUND from module setup.
+const reqVendored = (path) => {
+  try {
+    return req(path);
+  } catch (error) {
+    throw new Error(
+      `InertAttr.test.js: Next's vendored React moved — "${path}" no longer resolves ` +
+        `(${error && error.code ? error.code : error}). Point R19/D19 at the new App Router alias target; ` +
+        "do not skip these rows.",
+    );
+  }
+};
+const R19 = reqVendored("next/dist/compiled/react");
+const D19 = reqVendored("next/dist/compiled/react-dom/server");
 
 const markup = (R, D, inert) =>
   D.renderToStaticMarkup(R.createElement("div", { inert }, "x"));
