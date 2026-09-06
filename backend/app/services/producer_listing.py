@@ -43,7 +43,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_min_km,
 )
-from app.utils.clock import israel_now
+from app.utils.clock import israel_now, israel_today
 from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -588,6 +588,31 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         col = getattr(Producer, attr)
         q = q.filter(col == val)
         count_q = count_q.filter(col == val)
+
+    # MEH-1287 chunk B — the seasonal homepage module. `?in_season=true` means
+    # "an editor marked this business as in season and the mark has not
+    # expired": `in_season_until >= israel_today()`, inclusive, an Israel
+    # calendar day (the column is a DATE for exactly that reason — chunk A).
+    #
+    # The expiry half is the whole design. A boolean would have to be cleared
+    # by hand at the end of every season, and the predictable failure is a flag
+    # left on: a seasonal farmer whose page says "in season" in February. Here
+    # a stale mark simply stops matching, with nobody remembering anything.
+    #
+    # Written as an explicit NOT-NULL conjunction rather than the bare
+    # comparison because SQL three-valued logic would otherwise drop unmarked
+    # producers from BOTH halves: `NULL >= date` is NULL, and so is its
+    # negation, so `?in_season=false` would silently exclude the very rows it
+    # most obviously describes. `is_not(None)` is never NULL, so the negation
+    # of the conjunction is always true or false and the two halves partition
+    # the table. Asserted in both directions in the chunk-B tests.
+    in_season = filters.get("in_season")
+    if in_season is not None:
+        season_cond = Producer.in_season_until.is_not(None) & (
+            Producer.in_season_until >= israel_today()
+        )
+        q = q.filter(season_cond if in_season else ~season_cond)
+        count_q = count_q.filter(season_cond if in_season else ~season_cond)
 
     # MEH-293 — dietary flag filter via EXISTS subquery on products.
     # `?vegan=true` matches producers with at least one is_vegan=TRUE product;
