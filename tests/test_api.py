@@ -153,6 +153,23 @@ class TestAuth:
             is None
         )
 
+    def test_register_producer_with_terms_false_is_422(self, client, db):
+        # MEH-2080: the producer schema shares the validator with the consumer
+        # one, but a shared validator is a claim about the code, not a test of
+        # it — an explicit False on ProducerRegister is refused the same way.
+        from app.models.models import User
+
+        payload = valid_producer_register_payload()
+        payload["email"] = "producer_refused@example.com"
+        payload["phone"] = "0521234567"
+        payload["terms_accepted"] = False
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 422, resp.text
+        assert (
+            db.query(User).filter(User.email == "producer_refused@example.com").first()
+            is None
+        )
+
     def test_register_producer_upgrade_without_terms_is_422(self, client, db):
         # MEH-2080: the upgrade path mutates current_user instead of building
         # a User, and renders the same checkbox — so the same 422 applies, and
