@@ -230,6 +230,12 @@ jobs:
               - 'frontend/**'
               - 'package.json'
               - 'package-lock.json'
+              # MEH-1868: the Knip ratchet and its baseline gate the frontend
+              # job, so an edit to EITHER must force that job to run. Without
+              # these lines a PR touching only these files skips the very job
+              # that would have checked them (docs/ci/meh-1980-coverage-ratchet.patch.md §A0).
+              - 'scripts/checks/lint-ratchet.mjs'
+              - 'scripts/checks/lint-ratchet-baseline.tsv'
             backend:
               - 'backend/**'
               - 'tests/**'
@@ -707,15 +713,17 @@ jobs:
   # ─────────────────────────────────────────────
   # JOB 6: frontend-knip (MEH-562 Layer 2)
   # Dead-code + unused-deps detection.
-  # Two-layer warn-only — see backend-mypy comment above.
+  # Ratcheted (MEH-1868): scripts/checks/lint-ratchet-baseline.tsv freezes the
+  # findings that existed at arming time. Everything in the baseline is
+  # grandfathered; only counts that RISE fail the job. Nobody is asked to clean
+  # up existing findings — that is the design, not an oversight.
   # ─────────────────────────────────────────────
   frontend-knip:
-    name: Frontend Knip (dead code, warn-only)
+    name: Frontend Knip (dead-code ratchet)
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
     defaults:
       run:
         working-directory: frontend
@@ -733,8 +741,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Knip (warn-only — findings logged, check passes)
-        run: npm run knip || true
+      - name: Ratchet self-test (the comparator must still discriminate)
+        run: node ../scripts/checks/lint-ratchet.mjs --self-test
+
+      - name: Knip ratchet (baseline frozen; only NEW findings fail)
+        run: npm run lint:ratchet
 
   # ─────────────────────────────────────────────
   # JOB 7: frontend-tsc-strict (MEH-562 Layer 2)
@@ -1013,7 +1024,7 @@ jobs:
             echo "Frontend stack touched (or workflows changed) — enforcing frontend checks:"
             check_ran "Frontend build (Next.js)" "$R_BUILD"
             check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
-            check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
+            check_ran "Frontend Knip (ratchet)" "$R_FRONTEND_KNIP"
             check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
             check_ran "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
           else
