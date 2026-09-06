@@ -179,7 +179,6 @@ const EMPTY = {
   established_year: "",
   category_ids: [],
   has_delivery: false,
-  pickup_points: false,
   kosher: "",
   grass_fed: false,
   organic_certified: false,
@@ -453,7 +452,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           : Number(form.established_year),
       category_ids: form.category_ids,
       has_delivery: form.has_delivery,
-      pickup_points: form.pickup_points,
       kosher: form.kosher,
       grass_fed: form.grass_fed,
       organic_certified: form.organic_certified,
@@ -965,15 +963,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.has_delivery")}
           </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.pickup_points}
-              onChange={(e) => update("pickup_points", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t("producers.form.fields.pickup_points")}
-          </label>
+          {/* MEH-2048: the pickup checkbox is gone. Since MEH-2046 the filter,
+              the card tag and the map pin all derive pickup from
+              ProducerLocation rows (the locations editor above), and admin.py
+              already drops the field on write (MEH-2060) — so a checkbox here
+              could only claim pickup that no consumer surface would show. */}
+          <p className="text-sm text-fg-muted self-center">
+            {t("producers.form.fields.pickup_managed_in_locations")}
+          </p>
           {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
               removed — cities are now entered once via the CitiesAutocomplete in
               the location-mode block above (single store: delivery_areas). */}
