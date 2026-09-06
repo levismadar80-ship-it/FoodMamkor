@@ -26,6 +26,8 @@ import RecipeForm from "@/components/RecipeForm";
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
 // MEH-999: shared back link — one owner for target + arrow direction.
 import BackLink from "@/components/ui/BackLink";
+// MEH-1640: shared status colours across the four tools spokes.
+import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -75,7 +77,7 @@ export default function ProducerRecipesPage() {
           {/* MEH-999: entered from the Tools tab (tools/page.js:101), so back
               goes to Tools — not the overview. */}
           <BackLink href="/producer/dashboard/tools" label={t("back")} />
-          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
+          <h1 className="font-headline-lg text-3xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
@@ -87,7 +89,7 @@ export default function ProducerRecipesPage() {
         {items !== null && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>
@@ -164,12 +166,12 @@ export default function ProducerRecipesPage() {
                 </p>
               )}
               {r.moderation_status === "needs_revision" && r.moderation_notes && (
-                <div className="rounded-[10px] p-3 text-sm mb-3 bg-orange-50 border border-orange-200 text-orange-800">
+                <div className={`rounded-[8px] p-3 text-sm mb-3 border ${STATUS_CLASSES.warning}`}>
                   <strong>{t("notes_needs_revision")}</strong> {r.moderation_notes}
                 </div>
               )}
               {r.moderation_status === "rejected" && r.moderation_notes && (
-                <div className="rounded-[10px] p-3 text-sm mb-3 bg-red-50 border border-red-200 text-red-800">
+                <div className={`rounded-[8px] p-3 text-sm mb-3 border ${STATUS_CLASSES.error}`}>
                   <strong>{t("notes_rejected")}</strong> {r.moderation_notes}
                 </div>
               )}
