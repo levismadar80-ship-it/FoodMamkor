@@ -5,7 +5,7 @@ tools (MEH-671; see the 06/09 bullet in `.claude/rules/security.md` — the deny
 is tool × path, and the API route is exactly what this gate exists for). The
 decision logic is **not** in the YAML: it lives in
 `scripts/ci/protected-path-gate.sh`, which is on the branch with this doc,
-carries an 11-case `--self-test`, and was shown to discriminate before this
+carries an 13-case `--self-test`, and was shown to discriminate before this
 doc was written (below). The YAML only feeds it three inputs.
 
 ## Why a server-side gate at all — the 20/07 finding
