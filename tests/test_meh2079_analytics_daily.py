@@ -138,11 +138,22 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
         capture_output=True,
         text=True,
     )
-    # CONTROL: grep found SOMETHING. An empty result would satisfy the
-    # assertion below while meaning the search itself was misaimed — the
-    # null-that-is-also-the-reassuring-answer shape.
+    # CONTROL, in two steps — the reviewer on #3452 caught that the first
+    # version had only the second, which made it a control that could lie.
+    #
+    # `grep` exits 0 (matched), 1 (no match) or 2 (ERROR — bad path, bad
+    # pattern). On a 2 the stdout is empty, so a control that only asserts
+    # "stdout is non-empty" fires with "the probe is aimed wrong" when the
+    # truth is "the probe could not run at all". That is the same defect the
+    # control exists to prevent, one level up: a diagnostic that reports the
+    # wrong cause is worse than none, because it sends the next reader after
+    # the wrong thing.
+    assert out.returncode in (0, 1), (
+        f"grep itself failed (exit {out.returncode}) — the search never ran: "
+        f"{out.stderr.strip()}"
+    )
     files = {line for line in out.stdout.split("\n") if line}
-    assert files, "grep matched nothing at all — the probe is aimed wrong"
+    assert files, "grep ran and matched nothing — the probe is aimed wrong"
     assert files == {
         "backend/app/models/models.py",
         "backend/app/models/__init__.py",
