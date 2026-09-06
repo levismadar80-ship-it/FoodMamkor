@@ -14,6 +14,7 @@ import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrim
 import { withReferralParams } from "@/lib/utils";
 
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 
 // MEH-1411: the sticky CTA carried a label with no icon while the inline CTA
 // showed one. Mirror PrimaryContactButton.jsx's per-method icon so the sticky
@@ -97,10 +98,12 @@ export default function StickyContactBar({
       // aria-hidden — a bare aria-hidden left the sticky CTA tabbable inside a
       // hidden subtree (axe aria-hidden-focus, serious). `inert` removes the whole
       // subtree from tab order AND the a11y tree (implies aria-hidden), so the
-      // rule can't fire and the CTA is truly unreachable while hidden. React
-      // 18.3.1 has no first-class `inert` prop → string idiom ("" = present,
-      // undefined = removed).
-      inert={!isBarVisible ? "" : undefined}
+      // rule can't fire and the CTA is truly unreachable while hidden.
+      // MEH-2253: the value that means "present" differs between the React in
+      // vitest (18.3.1 → "") and the React Next ships the page with (19.x →
+      // true); the old `""` idiom was a silent no-op in the browser. The choice
+      // lives in lib/inert-attr.js and is tested against both renderers.
+      inert={!isBarVisible ? INERT_PRESENT : undefined}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
