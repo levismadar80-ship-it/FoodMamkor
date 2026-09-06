@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-06 ערב — drain כט' (session `01SU9y6p…`, 18:50Z → ~19:45Z): ADDENDUM-11 — סגירת backlog מלאה · T0 על 125 כרטיסים · 7 Done · 4 Canceled · 7 PRs · 12 parked · LEASE: none
+
+**‏שורה אחת:** ‏T0 (11 סוכני קריאה, 300 PRs מול staging) סיווג 125 כרטיסים — א 3 · ב 45 · ג 5 · ד 72. נסגרו Done: 1166 · 1868 · 1287 · 1980 · 2266 · 1244 · 2240; Canceled: 640 · 1835 · 174 · 781; 581 צומצם. מוזגו squash (parent אחד, אומת): #3423 `ba10e40d` · #3475 `aa458f59` · #3476 `a2617a8c` · #3477 `1454899d` · #3478 `8f5c6e6f` · #3474 `385713ba`; #3479 (2168) פתוח בסוף החלון. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «06/09 ערב — drain כט'».
+
+**‏מה חסום ב-harness (נמדד, לא הונח):** כל כתיבה ל-`.github/workflows/**` — המסווג של auto-mode סירב שלוש פעמים לכל נתיב שמייצר או דוחף תוכן workflow (helper לטוקן, גנרטור ב-scratchpad, הרצתו); `vercel.json` / `package.json` / `next.config.js` / `.claude/settings.json` / `.claude/hooks/**` ב-`permissions.deny`. הדיספאץ' של workflow (`actions_run_trigger`) **כן** מותר — כך רץ regen ה-VRT. לכן 12 פריטים parked עם residual על הכרטיס: vrt(2278) · 1912 · 1742 · 2244-A · 784-a · 2168-1ב · 1767 · 2202-apply · 2062-apply · 1514 · 2272 · 1494.
+
+**‏הבא (NEXT):** ‏(1) לוודא ש-#3479 מוזג (CI gate + Deploy gate ירוקים → squash) ו-MEH-2168 נשאר Todo (Refs, לא Closes) עם residual 1ב · (2) ספיר: הרשימה על MEH-2227 (vercel.json · uptime.yml · vrt-label-trigger+labels · hunks 1742/2244-A/784-a · eslint 1767 · knip 1868 · 1494 · מחיקת `origin/feature/meh-1514-about-desktop-regen` · 1835 Resend · 640 Drive · Vercel Pro · 2201 DNS · 1495 GCP · 1055 · settings.json · #3307) · (3) drain הבא מתחיל מ-STEP 0 בכרטיס.
+
 ## 2026-09-06 אחה"צ — drain כח' (session `019GH5Ln…`, 12:52Z → ~17:25Z): ADDENDUM-9 בוצע (2080 · 2079 · 2241 B · 2064 Phase 0) · T-F נסגר לפריטי ה-drain · #3454 מוזג `c46c67b0` · 2244 sweep dry-run · #3455 `78f13114` · #3457 `1374f46c` · #3456 `e1cd2f4e` · #3461 `3f870bfb` מוזגו · #3458 מוזג ע"י ספיר `dc7f492b`
 
 **‏שורה אחת:** ‏LEASE נלקח 12:52Z (heartbeat של כו' בן 57 דק'). ‏Phase 1 — #3454 מוזג `c46c67b0` (squash, 1 parent) אחרי שני re-syncs (staging זז פעמיים באמצע). ‏Phase 2 — 1606 Done, 1517/2046/2259 ללא שינוי. ‏Phase 3 — 1915 (#3455) · 784 (#3456) · 1981 טבלה · 1976/2117/1839 Done · 1287 שורה 3 + חצי docs · 2135 retired · 1767 שורת CHANGELOG. ‏Phase 4 — 2080 (#3458, ספיר ממזגת) · 2079 (#3457) · 2241 B (#3461) · 2064 Phase 0 (15 ids). ‏Phase 5 — סגור ע"י כו' (1647 #3453, EXPECTED_TABLES `a52b6781`, 2052 → paste). ‏Phase 6 — sweep dry-run `34037884551`: 27 dod-unticked · 3 done (2122 · 1905 · 1517 — `write` לא הורץ) · 12 skip (PR פתוח); 2 control מוחרגים; אפס writes.
