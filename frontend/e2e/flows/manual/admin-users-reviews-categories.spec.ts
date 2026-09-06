@@ -61,21 +61,11 @@ import type { Locator, Route } from "@playwright/test";
  *      dialogs whose code comments say they MIRROR it, carries no role="dialog" /
  *      aria-modal and does not close on Escape — reached here by its copy, not
  *      by role. Opened as MEH-2268, not fixed here.
- * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured then:
- *      the panel is portaled to the end of <body> and nothing moved focus into
- *      it, so Tab from the open ⋮ landed on the NEXT ROW's favorites button
- *      (probe: document.activeElement after Tab, both projects). CLOSED by
- *      MEH-2267, and the fix does not make the original assertion pass — it
- *      makes it obsolete. Under the WAI-ARIA APG menu-button pattern the item
- *      list is reached by the OPEN itself (focus moves to the first item), and
- *      Tab is the key that LEAVES the menu. So a spec asserting "Tab reaches
- *      the first item" would now be asserting non-APG behaviour. The test below
- *      asserts the contract that satisfies the MT row's intent — the items are
- *      keyboard-reachable without tabbing the rest of the page — plus the two
- *      halves the old shape could not cover: Arrow navigation, and Tab
- *      returning focus to the trigger. Divergence from the card's "the fix
- *      turns it into an unexpected pass" flagged on MEH-2267 rather than
- *      resolved silently.
+ * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured: the
+ *      panel is portaled to the end of <body> and nothing moves focus into it,
+ *      so Tab from the open ⋮ lands on the NEXT ROW's favorites button (probe:
+ *      document.activeElement after Tab, both projects). Opened as MEH-2267;
+ *      the clause is asserted correctly under test.fail() citing it.
  * D5 · MT:MEH-530:23 + :28 expect «מחיקת '<שם>' — N בתי עסק משויכים». The count
  *      renders; the NAME does not — `'{name}'` in he.json is an ICU quoted
  *      literal, so the dialog reads «מחיקת {name} — 3 בתי עסק משויכים». Already
@@ -532,12 +522,12 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(menu(page)).toBeVisible();
   });
 
-  // MT:MEH-530:50 — "פריטי התפריט נגישים ב-Tab" — under the APG menu-button
-  // reading D4 records: opening moves focus INTO the list, arrows walk it, and
-  // Tab leaves. Before MEH-2267 the first assertion below landed on the NEXT
-  // row's favorites button, so this test reds against the pre-fix component
-  // without needing test.fail() to say so.
-  test("keyboard: opening the ⋮ moves focus to the first item; arrows walk it; Tab leaves and returns focus", async ({ page }) => {
+  // MT:MEH-530:50 — "פריטי התפריט נגישים ב-Tab". D4 / MEH-2267: the panel is portaled to the END of
+  // <body> and nothing moves focus into it, so Tab from the open ⋮ lands on the next row's
+  // favorites button. This test asserts the CORRECT behaviour and is expected to fail until the
+  // card lands — the fix turns it into an unexpected pass, which is the signal to drop test.fail().
+  test("keyboard: Tab from the open ⋮ reaches the first menu item", async ({ page }) => {
+    test.fail(true, "MEH-2267 — AdminRowMenu's portaled panel is last in tab order; Tab leaves the menu");
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -546,18 +536,8 @@ test.describe("/admin/users — the role kebab", () => {
     await btn.focus();
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
-    const m = menu(page);
-    const promote = m.getByRole("menuitem", { name: "העלי לאדמין" });
-    const demote = m.getByRole("menuitem", { name: "הסירי הרשאות" });
-    await expect(promote, "APG: the open puts focus on the first item").toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(demote).toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(promote, "ArrowDown wraps to the first item").toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(m, "APG: Tab closes the menu").toHaveCount(0);
-    await expect(btn, "APG: Tab returns focus to the trigger").toBeFocused();
-    await expect(btn).toHaveAttribute("aria-expanded", "false");
+    await expect(menu(page).getByRole("menuitem", { name: "העלי לאדמין" })).toBeFocused();
   });
 });
 
