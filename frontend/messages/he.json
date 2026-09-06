@@ -2180,7 +2180,7 @@
         "empty": "אין נתונים עדיין",
         "save": "שמרו",
         "delete": "מחקו",
-        "confirm_delete": "מחיקת '{name}' — {count} בתי עסק משויכים",
+        "confirm_delete": "מחיקת ''{name}'' — {count} בתי עסק משויכים",
         "producer_count": "{count} בתי עסק",
         "deleting": "מוחקים…",
         "delete_error": "מחיקת הקטגוריה נכשלה. נסו שוב.",
@@ -5029,7 +5029,7 @@
         "save_failed": "שגיאה בשמירת המיקום",
         "delete_failed": "שגיאה במחיקת המיקום",
         "same_city": {
-          "labelled": "יש לך כבר '{label}' ב{city}.",
+          "labelled": "יש לך כבר ''{label}'' ב{city}.",
           "unlabelled": "יש לך כבר {kind} ב{city}.",
           "many": "יש לך כבר {count} מיקומים ב{city}.",
           "generic": "יש לך כבר מיקום ביישוב הזה.",
