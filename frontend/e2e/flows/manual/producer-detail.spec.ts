@@ -467,22 +467,19 @@ test.describe("manual › /producer/[id] — one primary action per screen", () 
     // (That the card is below the fold at rest is a separate finding against
     // checklist row PDP:2 — see docs/qa/conversion-progress.md.)
     //
-    // ── Why `transform` and not `inert` ─────────────────────────────────────
+    // ── `transform` AND `inert` ─────────────────────────────────────────────
     // The parked state is asserted through StickyContactBar.jsx's own
-    // `translateY` fork. That draft used the `inert` attribute instead, on the
-    // strength of the MEH-1333 comment, and went red — so the two were
-    // measured apart at five scroll positions:
-    //
-    //   card intersecting     -> transform translateY(100%) · inert ABSENT
-    //   card not intersecting -> transform translateY(0px)   · inert ABSENT
-    //
-    // `transform` tracks the scroll exactly, so the hook, the observer and the
-    // slide are all correct; `inert` is absent at EVERY position, i.e. it is
-    // never rendered at all. That is a real (narrow) regression against
-    // MEH-1333 — the parked CTA stays focusable and in the a11y tree, the
-    // `aria-hidden-focus` class that ticket closed — and it is REPORTED, not
-    // fixed here and not quietly dropped: see docs/qa/conversion-progress.md.
-    // Asserting `inert` would red this suite on a bug these rows are not about.
+    // `translateY` fork AND through the `inert` attribute. The 04/09 draft of
+    // this test measured the two apart at five scroll positions and found
+    // `inert` ABSENT at every one while `transform` tracked the observer
+    // exactly — the MEH-1333 string idiom (`inert=""`) is a no-op under the
+    // React Next ships the page with (19.x treats `inert` as a boolean and
+    // drops ""), while the unit tests' React 18 rendered it. MEH-2253 moved
+    // the choice into lib/inert-attr.js; the assertions below are the
+    // browser-side half of its proof (the renderer-level half is
+    // __tests__/InertAttr.test.js). Against the pre-fix component the two
+    // `inert` expectations below go red on both scroll positions — that is
+    // the measurement the card was opened with.
     const inlineCard = root.locator("#section-contact");
     const cardTop = await inlineCard.evaluate(
       (el) => el.getBoundingClientRect().top + window.scrollY,
@@ -496,6 +493,10 @@ test.describe("manual › /producer/[id] — one primary action per screen", () 
       parked,
       { timeout: 10_000 },
     );
+    await expect(bar, "a parked bar is inert — its CTA must leave the tab order (MEH-1333 via MEH-2253)").toHaveAttribute(
+      "inert",
+      "",
+    );
 
     // Scroll well past it → the bar must slide in.
     await page.evaluate((y) => window.scrollTo(0, y), cardTop + 1400);
@@ -503,6 +504,9 @@ test.describe("manual › /producer/[id] — one primary action per screen", () 
       "style",
       parked,
       { timeout: 10_000 },
+    );
+    await expect(bar, "a visible bar is NOT inert — its CTA must be reachable").not.toHaveAttribute(
+      "inert",
     );
 
     // Scroll back to it → the same observer must park the bar again.
@@ -512,6 +516,7 @@ test.describe("manual › /producer/[id] — one primary action per screen", () 
       parked,
       { timeout: 10_000 },
     );
+    await expect(bar, "and it is inert again once parked").toHaveAttribute("inert", "");
   });
 
   // MT:MEH-1146A:6 + MT:TASK14:copy-link:1 + MT:TASK14:whatsapp:1 —
