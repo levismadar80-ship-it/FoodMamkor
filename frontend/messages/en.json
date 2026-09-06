@@ -524,6 +524,9 @@
       "fallback_day_caption": "Delivers to {city}: {days}",
       "fallback_day_caption_flexible": "Delivers to {city} by arrangement"
     },
+    "seasonal": {
+      "heading": "In season now"
+    },
     "recent": {
       "heading": "Recently viewed"
     },
@@ -1699,6 +1702,8 @@
           "license_optional_toggle": "I have a producer license ↓",
           "license_expires_at": "License valid until (from the document)",
           "license_expires_at_hint": "The date printed on the license document. Businesses whose license expires within 30 days appear in the reminder list.",
+          "in_season_until": "In season until",
+          "in_season_until_hint": "The last day this business appears in the \"In season now\" module on the homepage. Empty means not marked. The module only shows when three or more businesses are marked.",
           "has_physical_location": "Physical store (welcomes customers)",
           "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
@@ -1709,6 +1714,7 @@
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
           "has_delivery": "Offers delivery",
           "pickup_points": "Pickup points across the country",
+          "pickup_managed_in_locations": "Pickup points are managed in the locations editor",
           "delivery_area_cities": "Delivery cities (comma-separated)",
           "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
           "short_description": "Short description (for the card)",
