@@ -538,6 +538,7 @@ class TestJourney7AuthSession:
             "email": f"n{uuid4().hex[:8]}@example.com",
             "name": "משתמשת חדשה",
             "password": "Zx7Yp9Mq2Lr4",
+            "terms_accepted": True,  # MEH-2080
         }
         resp = client.post("/auth/register", json=payload)
         assert resp.status_code in (200, 201)

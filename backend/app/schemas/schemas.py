@@ -728,6 +728,19 @@ def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
 
 
 # --- Auth ---
+def _terms_must_be_accepted(v: bool) -> bool:
+    """MEH-2080: the terms checkbox is mandatory, and since 2026-09-v2 it also
+    carries the 18+ self-declaration. An omitted or False flag is a 422 here,
+    never a silent NULL row — the server is the second half of the gate the
+    client's `required` attribute is the first half of (MEH-2015 asterisk
+    invariant). MEH-1995 kept the field optional on purpose and named this as
+    the separate hardening decision; it was ruled on 01/09 (18+, self-declared,
+    no date of birth) and queued on 06/09 (ADDENDUM-9)."""
+    if v is not True:
+        raise ValueError("יש לאשר את תנאי השימוש ולהצהיר על גיל 18 ומעלה")
+    return v
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
@@ -746,11 +759,15 @@ class UserRegister(BaseModel):
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
     # failure (a stored number no wa.me link can dial).
     phone: PhoneNumberField | None = None
-    # MEH-1995: terms-of-service acceptance. See the fuller note on
-    # ProducerRegister.terms_accepted — same field, same additive-default
-    # reasoning. The consumer form's checkbox (RegisterClient.jsx:76) gated the
-    # submit button and was then dropped on the floor; this is what carries it.
-    terms_accepted: bool = False
+    # MEH-1995 recorded the terms-of-service acceptance; MEH-2080 made it
+    # mandatory and folded the 18+ self-declaration into the same checkbox
+    # (RegisterClient.jsx:76, `required`). See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -853,10 +870,17 @@ class ProducerRegister(BaseModel):
     # "consent refused" — the handler stamps only on True, so an omitted field
     # leaves terms_accepted_at NULL, which is the honest state.
     #
-    # Deliberately NOT enforced as required=True here: making it mandatory is a
-    # breaking API change and a separate hardening decision (noted on MEH-1995),
-    # not something to smuggle in under a column addition.
-    terms_accepted: bool = False
+    # MEH-1995 deliberately left this optional and named the mandatory form
+    # as a separate hardening decision. MEH-2080 is that decision: the box is
+    # required on both email paths (new producer AND the consumer→producer
+    # upgrade, which renders the same checkbox), and it now also carries the
+    # 18+ self-declaration. See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
