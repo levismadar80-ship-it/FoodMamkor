@@ -3225,7 +3225,24 @@ class TestOwnerStoryFields:
 # ---------- MEH-155: Vacation badge auto-clear after return_date ----------
 
 class TestVacationBadgeClear:
-    """vacation_until field auto-clears expired vacation at serialization time (MEH-155)."""
+    """vacation_until field auto-clears expired vacation at serialization time (MEH-155).
+
+    MEH-2271 changed HOW these rows are constructed, not what MEH-155
+    guarantees. The auto-clear used to fire on `availability_status ==
+    "vacation"` OR `availability_state == "on_vacation"`; it is state-only now,
+    because the status field is DERIVED from the state at serialization time
+    and reading it there would be reading the validator's own output.
+
+    So the setups below put the producer on vacation the way every app write
+    path does — `availability_state = "on_vacation"` — instead of poking the
+    legacy column, which no code has written since chunk 3a. The invariant
+    under test is unchanged and still asserted: an expired vacation must not be
+    served, neither as a status nor as a date.
+
+    `test_a_legacy_only_vacation_row_is_ignored` pins the other half of that
+    change deliberately, so the behaviour is a recorded decision rather than a
+    silent consequence.
+    """
 
     def test_set_vacation_with_future_date(self, client, db):
         """POST availability-status with vacation + future vacation_until persists both."""
@@ -3250,7 +3267,10 @@ class TestVacationBadgeClear:
         """A producer with vacation_until in the past should appear as 'available' in GET /producers."""
         from datetime import date, timedelta
         producer = make_producer(db)
-        producer.availability_status = "vacation"
+        # MEH-2271: the enum is what every write path sets, so it is what the
+        # auto-clear reads. Setting the legacy column here instead would build
+        # a row the application can no longer produce.
+        producer.availability_state = "on_vacation"
         producer.vacation_until = date.today() - timedelta(days=1)
         db.commit()
 
@@ -3266,14 +3286,43 @@ class TestVacationBadgeClear:
         """A producer with vacation_until in the future stays as 'vacation'."""
         from datetime import date, timedelta
         producer = make_producer(db)
-        producer.availability_status = "vacation"
+        producer.availability_state = "on_vacation"
         producer.vacation_until = date.today() + timedelta(days=3)
         db.commit()
 
         resp = client.get(f"/producers/{producer.id}")
         assert resp.status_code == 200
         body = resp.json()
+        # Derived from the state, and it must still read "vacation" — the
+        # derivation is what keeps a client on the legacy field correct.
         assert body["availability_status"] == "vacation"
+        assert body["availability_state"] == "on_vacation"
+
+    def test_a_legacy_only_vacation_row_is_ignored(self, client, db):
+        """MEH-2271, pinned deliberately: the legacy COLUMN no longer speaks.
+
+        A row carrying availability_status='vacation' with the enum left at its
+        default is the shape the two tests above used to build, and it is the
+        shape a pre-chunk-3a row froze into. Nothing writes it any more and
+        nothing reads it: the response reports what the ENUM says.
+
+        This is the intended consequence of making the enum the single
+        authority, recorded here rather than discovered later from a
+        mysteriously green suite. It is safe because the desync between the two
+        was measured at 0 of 29 rows on staging (06/09) before the switch — had
+        it been non-zero, those rows would have needed a backfill first.
+        """
+        from datetime import date, timedelta
+        producer = make_producer(db)
+        producer.availability_status = "vacation"
+        producer.vacation_until = date.today() + timedelta(days=3)
+        db.commit()
+        assert producer.availability_state == "accepting_orders"
+
+        body = client.get(f"/producers/{producer.id}").json()
+        assert body["availability_state"] == "accepting_orders"
+        assert body["availability_status"] == "available"
+        assert body["is_available_today"] is False
 
     def test_switching_away_from_vacation_clears_date(self, client, db):
         """Setting status to 'available' must clear vacation_until."""
