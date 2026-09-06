@@ -1,23 +1,38 @@
 """
 Module:   test_meh1828_full_week_expiry
-Purpose:  The weekly reset clears 'full_this_week' — ALL THREE columns, not
-          just the enum — and touches nothing else. Plus: the scheduler job
-          actually registers with the Israel-timezone weekly trigger.
+Purpose:  The weekly reset clears 'full_this_week' — ONE column, and touches
+          nothing else, including the two legacy columns it used to write.
+          Plus: the scheduler job actually registers with the Israel-timezone
+          weekly trigger.
 Touches:  Test DB only (producers rows via the conftest factory).
 Does NOT: test WHEN the trigger fires — APScheduler's cron math is not this
           repo's to verify. It asserts the trigger's declared fields instead.
 Related:  backend/app/services/availability_expiry.py (the subject);
-          backend/app/routers/producer_me.py:533 (_state_to_legacy);
+          backend/app/schemas/schemas.py (state_to_legacy — the derivation
+          that replaced the dual-write);
           tests/test_scheduler_job_isolation.py (the job-wiring precedent).
-History:  MEH-1828 (creation).
+History:  MEH-1828 (creation) · MEH-2271 (MEH-1854 chunk 3a — the
+          discriminating assertion INVERTED, see below).
 
-THE DISCRIMINATING ASSERTION (Phase 0 finding): the legacy pair
-(is_available_today, availability_status) is still live and still read until
-MEH-1854 Phase 4 drops it. A reset writing only availability_state leaves
-availability_status='full' behind, and legacy readers keep showing the
-banner. test_reset_clears_the_legacy_pair_too fails on exactly that naive
-implementation — proven by building the enum-only variant and running the
-suite against it (run pasted in the PR body).
+THE DISCRIMINATING ASSERTION, and why it flipped. MEH-1828 asserted the
+opposite of what this file asserts now, and both were right for their day.
+
+  Then: the legacy pair was live and read off the row, so a reset writing
+        only the enum left availability_status='full' behind and every
+        legacy reader kept showing the banner. The test failed the enum-only
+        variant on exactly that assertion.
+
+  Now (MEH-2271): nothing writes the pair and nothing reads it off the row —
+        ProducerListOut derives both from availability_state at
+        serialization time. A reset that still wrote them would be a second
+        authority over one fact, and would be the thing to catch.
+
+So test_reset_leaves_the_legacy_columns_alone below is the same test with
+the sign reversed: it pins the two columns to values that DISAGREE with the
+state, resets, and requires them to still disagree — which fails the
+moment anything re-introduces the dual-write. It also asserts the derived
+output is correct despite those stale columns, so the two halves together
+say "the columns are dead AND the reader is right", not just one of them.
 """
 
 from __future__ import annotations
@@ -32,40 +47,94 @@ from app.services.availability_expiry import (
 
 
 def _set_state(db, producer, state: str) -> None:
-    """Put a producer into `state` the way the app does — enum + legacy pair
-    via the router's own mapping, the single owner of that translation."""
-    from app.routers.producer_me import _state_to_legacy
-
-    is_today, legacy_status = _state_to_legacy(state)
+    """Put a producer into `state` the way the app does as of MEH-2271 — the
+    enum, and only the enum. The legacy columns keep whatever the row already
+    had, which is exactly the production shape now: they are frozen at the
+    last value written before chunk 3a and nothing updates them again."""
     producer.availability_state = state
-    producer.is_available_today = is_today
-    producer.availability_status = legacy_status
     db.commit()
 
 
-def test_reset_clears_the_legacy_pair_too(db):
-    """The three-column write. The enum-only variant fails THIS test on the
-    availability_status assertion — that is the discrimination proof."""
+def _set_legacy_columns(db, producer, *, is_today: bool, status: str) -> None:
+    """Write the two legacy columns DIRECTLY, bypassing every app path.
+
+    No app code writes them any more, so a test that wants a specific value
+    in them has to put it there itself. Used to plant values that DISAGREE
+    with availability_state — the only construction under which "the reset
+    did not touch these columns" is a falsifiable claim rather than a
+    tautology about two fields that already matched.
+    """
+    producer.is_available_today = is_today
+    producer.availability_status = status
+    db.commit()
+
+
+def test_reset_leaves_the_legacy_columns_alone(db):
+    """MEH-2271: the reset writes ONE column. A re-introduced dual-write fails
+    HERE and only here — that is the discrimination proof, inverted from the
+    MEH-1828 version of this test.
+
+    The construction is what makes it falsifiable. The legacy columns are
+    planted with values that CONTRADICT the state (`is_available_today=True`
+    and `availability_status='vacation'` on a `full_this_week` row) — a
+    combination no app path can produce. If the reset still mapped the state
+    onto them, they would come back (False, 'available'), which is the exact
+    pair the old implementation wrote. Planting values that already agreed
+    with the mapping would make the assertion pass under BOTH implementations
+    and prove nothing.
+    """
     p = make_producer(db, name="עמוסה")
     _set_state(db, p, EXPIRED_STATE)
-    # Preconditions, so a green below cannot mean "was never full":
-    assert p.availability_status == "full"
-    assert p.is_available_today is False
+    _set_legacy_columns(db, p, is_today=True, status="vacation")
+    # Preconditions, so a green below cannot mean "was never full" or "the
+    # columns were already at the asserted values":
+    assert p.availability_state == EXPIRED_STATE
+    assert p.availability_status == "vacation"
+    assert p.is_available_today is True
 
     changed = reset_expired_full_week(db)
     db.refresh(p)
 
     assert changed == 1
     assert p.availability_state == RESET_STATE
-    # THE discriminating line — the naive enum-only implementation leaves
-    # availability_status='full' behind, and the construction run failed on
-    # exactly this assertion ('full' == 'available') and nothing else.
-    assert p.availability_status == "available"
-    # NOT a discriminator, and saying so is the point (CI reviewer catch):
-    # full_this_week and accepting_orders BOTH map to is_available_today=False,
-    # so this line passes under the naive variant too. It is an invariant
-    # check — the reset must not accidentally set the flag truthy — not proof.
-    assert p.is_available_today is False
+    # THE discriminating lines. The old three-column write would have set
+    # these to (False, 'available'); the contradictory plant survives only if
+    # the UPDATE names one column.
+    assert p.availability_status == "vacation", (
+        "the reset must not write availability_status any more (MEH-2271)"
+    )
+    assert p.is_available_today is True, (
+        "the reset must not write is_available_today any more (MEH-2271)"
+    )
+
+
+def test_the_derived_output_is_right_even_though_the_columns_are_stale(db):
+    """The other half of the claim above. Dead columns are only safe if the
+    reader no longer consults them — otherwise this chunk trades a stale
+    write for a stale read, which is the same bug wearing the other sign.
+
+    Serializes the reset row through ProducerListOut with the contradictory
+    legacy values still on it, and requires the derived pair to follow the
+    STATE. Against a reader that still read the columns, this returns
+    ('vacation', True) and fails on both lines.
+    """
+    from app.schemas.schemas import ProducerListOut
+
+    p = make_producer(db, name="עמוסה")
+    _set_state(db, p, EXPIRED_STATE)
+    _set_legacy_columns(db, p, is_today=True, status="vacation")
+    reset_expired_full_week(db)
+    db.refresh(p)
+
+    out = ProducerListOut.model_validate(p, from_attributes=True)
+
+    assert out.availability_state == RESET_STATE
+    assert out.availability_status == "available", (
+        "derived from the state, not read off the stale column"
+    )
+    assert out.is_available_today is False, (
+        "derived from the state, not read off the stale column"
+    )
 
 
 def test_reset_touches_only_full_this_week(db):
@@ -79,29 +148,31 @@ def test_reset_touches_only_full_this_week(db):
     for state in ("accepting_orders", "available_today", "on_vacation"):
         q = make_producer(db, name=f"עסק-{state}")
         _set_state(db, q, state)
+        # Sentinel: contradicts every state below, so "unchanged" is a real
+        # claim rather than a coincidence with the enum→legacy mapping.
+        _set_legacy_columns(db, q, is_today=True, status="vacation")
         untouched[state] = q.id
 
     changed = reset_expired_full_week(db)
     assert changed == 1  # exactly the one expired row, not 4
 
     from app.models.models import Producer
-    from app.routers.producer_me import _state_to_legacy
 
     for state, pid in untouched.items():
         row = db.query(Producer).filter(Producer.id == pid).one()
         assert row.availability_state == state, (
             f"{state}: reset must not touch it"
         )
-        # The FULL row survives, not just the enum (CI reviewer catch: the
-        # docstring claims byte-identical, so all three columns are asserted
-        # for every untouched state — not only vacation's). available_today
-        # doubles as the true-flag control: its is_available_today=True would
-        # redline a reset that wrote the wrong mapping onto untouched rows.
-        exp_today, exp_status = _state_to_legacy(state)
-        assert row.is_available_today is exp_today, (
+        # MEH-2271: the legacy columns are asserted against the SENTINEL the
+        # setup planted, not against a mapping of the state. Comparing them
+        # to state_to_legacy(state) would pass under a re-introduced
+        # dual-write for three of these rows, because the reset would write
+        # exactly the value being compared against. The sentinel cannot be
+        # produced by any mapping, so only "nothing wrote here" satisfies it.
+        assert row.is_available_today is True, (
             f"{state}: legacy flag must survive untouched"
         )
-        assert row.availability_status == exp_status, (
+        assert row.availability_status == "vacation", (
             f"{state}: legacy status must survive untouched"
         )
 
@@ -164,7 +235,6 @@ def test_service_rolls_back_and_leaves_the_session_usable_on_failure(db, monkeyp
     row = db.query(Producer).filter(Producer.id == p.id).one()
     # And the rollback must have undone the UPDATE: still expired.
     assert row.availability_state == EXPIRED_STATE
-    assert row.availability_status == "full"
 
 
 def test_weekly_job_is_registered_with_israel_timezone():

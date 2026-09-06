@@ -192,6 +192,11 @@ const EMPTY = {
   // MEH-766 ch3: is_verified removed — verification is the doc-grant flow, not a form toggle.
   // MEH-18
   is_recommended: false,
+  // MEH-2274 (MEH-1494 chunk B, frontend half): the editor's reason for the
+  // pick. "" and not null for the same reason as the date fields below — a
+  // controlled textarea must never flip to uncontrolled — and the submit path
+  // converts "" back to null so an admin can CLEAR a note she wrote.
+  recommended_note: "",
   // MEH-530: admin form persists raw value; backend enforces conditional-
   // required guard on category-license pairing.
   producer_license_number: "",
@@ -227,6 +232,11 @@ function Section({ title, children, testId }) {
     </div>
   );
 }
+
+// MEH-2274: mirrors ProducerUpdate.recommended_note's `max_length=500`
+// (schemas.py). The server is the enforcer — this only stops the admin from
+// typing past the limit and getting a 422 after she has written the note.
+const RECOMMENDED_NOTE_MAX = 500;
 
 function Field({ label, children, full = false }) {
   return (
@@ -298,6 +308,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // is exactly what <input type="date"> wants — no formatting needed.
         license_expires_at: initial.license_expires_at ?? "",
         in_season_until: initial.in_season_until ?? "",
+        // MEH-2274: read the note back after a save. Before this the admin
+        // could write it (the backend accepted it since #3446) and never see
+        // it again, which is the half-feature the card exists to close.
+        recommended_note: initial.recommended_note ?? "",
         contact_name: initial.contact_name ?? "",
         whatsapp_group: initial.whatsapp_group ?? "",
         // MEH-17
@@ -473,6 +487,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // and the same reason for sending null rather than omitting the key —
       // clearing the mark is how a season ends early.
       in_season_until: form.in_season_until || null,
+      // MEH-2274: same ""-is-not-a-value reasoning. `recommended_at` is NOT
+      // sent — it is stamped from the transition in admin.py, and supplying it
+      // here would be a second authority over the same clock (schemas.py says
+      // so on the field itself).
+      recommended_note: form.recommended_note || null,
       admin_notes: form.admin_notes,
       images: form.images,
       // MEH-213 — location mode
@@ -807,6 +826,48 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.recommended")}
           </label>
+          {/* MEH-2274 (MEH-1494 chunk B, frontend half). Three deliberate
+              choices here, each of which the backend already decided:
+
+              1. ALWAYS RENDERED, not gated on `is_recommended`. admin.py
+                 does not clear the note on an un-pick — it is the record of
+                 why the decision was made, and hiding it behind the toggle
+                 would make an un-picked business look like it never had one.
+              2. `recommended_at` is READ-ONLY. It is stamped from the
+                 transition in admin.py, so there is no input for it; showing
+                 it as an editable date would invite a second authority over
+                 a clock the server owns.
+              3. NULL on a PICKED business is not missing data — it means the
+                 pick predates the column, and admin.py's review-due clause
+                 counts exactly that row as due. So it renders the review
+                 string, never a blank date. On an UNPICKED business there is
+                 nothing to say, so nothing is rendered. */}
+          <div className="md:col-span-2">
+            <Field label={t("producers.form.fields.recommended_note")}>
+              <textarea
+                id="admin-producer-recommended-note"
+                value={form.recommended_note}
+                onChange={(e) => update("recommended_note", e.target.value)}
+                maxLength={RECOMMENDED_NOTE_MAX}
+                placeholder={t(
+                  "producers.form.fields.recommended_note_placeholder"
+                )}
+                className={`${inputClass} h-20 resize-none`}
+              />
+            </Field>
+            <p className="text-xs text-fg-muted mt-1">
+              {t("producers.form.fields.recommended_note_hint")}
+            </p>
+            {form.is_recommended && (
+              <p className="text-xs text-fg-muted mt-1">
+                {initial?.recommended_at
+                  ? `${t("producers.form.fields.recommended_at")} ${new Date(
+                      initial.recommended_at
+                    ).toLocaleDateString("he-IL")}`
+                  : t("producers.form.fields.recommended_at_never")}
+              </p>
+            )}
+          </div>
           {/* MEH-1287 chunk B: the seasonal mark lives beside the editorial
               "מומלץ" toggle because it is the same kind of decision — the
               editor's, never the owner's (`in_season_until` is on the admin
