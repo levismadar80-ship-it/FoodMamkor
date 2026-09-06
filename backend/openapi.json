@@ -11006,15 +11006,6 @@
             ],
             "title": "Reply At"
           },
-          "source": {
-            "default": "click",
-            "enum": [
-              "click",
-              "invite_link"
-            ],
-            "title": "Source",
-            "type": "string"
-          },
           "stars": {
             "title": "Stars",
             "type": "integer"

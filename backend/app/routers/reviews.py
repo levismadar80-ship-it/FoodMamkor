@@ -146,8 +146,6 @@ def _serialize(review: ProducerReview) -> ReviewOut:
         # MEH-1039: business-owner reply surfaced in the public GET payload.
         reply=review.reply,
         reply_at=review.reply_at.isoformat() if review.reply_at else None,
-        # MEH-1428: "click" | "invite_link".
-        source=review.source,
     )
 
 

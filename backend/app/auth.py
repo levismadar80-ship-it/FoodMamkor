@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -117,7 +118,7 @@ def create_review_invite_token(producer_id: UUID) -> str:
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
-def decode_review_invite_token(token: str) -> dict | None:
+def decode_review_invite_token(token: str) -> dict[str, Any] | None:
     """MEH-1428: validate a review-invite token. Returns claims on success,
     None on any failure (invalid signature, expired, wrong scope, missing
     producer_id). Never raises — callers branch on None. The caller still
