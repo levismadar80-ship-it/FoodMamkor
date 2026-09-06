@@ -102,13 +102,18 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
     ).toEqual([]);
   });
 
-  // The three cards this ticket fixed, asserted by name. The two checks above
-  // are the general invariant; these pin the specific regressions so a future
+  // The four cards this ticket fixed, asserted by name. The checks above are
+  // the general invariant; these pin the specific regressions so a future
   // refactor that drops one is unambiguous in the failure output.
   it.each([
     ["business-name", "businessName", "profile"],
     ["offer", "offer", "location"],
     ["special-hours", "specialHours", "location"],
+    // The fourth, added on the reviewer's second pass. It belongs in this list
+    // for the same reason as the other three: the general invariants above
+    // already cover it, and the point of naming a card here is that a future
+    // refactor which drops it says WHICH card in the failure output.
+    ["owner-story", "ownerStory", "profile"],
   ])("#%s opens %s in the %s group", (anchor, key, group) => {
     expect(ANCHOR_TO_KEY[anchor]).toBe(key);
     expect(KEY_TO_GROUP[key]).toBe(group);
