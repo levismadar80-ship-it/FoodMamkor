@@ -305,6 +305,7 @@ erDiagram
         int stars "1-5"
         text comment
         timestamp created_at
+        string source "MEH-1428: click | invite_link — NOT NULL default 'click' (rev 3f9a7c2e5d18)"
     }
 ```
 
