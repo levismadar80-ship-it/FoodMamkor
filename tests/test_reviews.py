@@ -743,16 +743,18 @@ from app.auth import (  # noqa: E402
 from app.config import settings  # noqa: E402
 
 
-def _mint(producer_id, *, exp_delta=timedelta(days=1), key=None, scope=None):
+def _mint(producer_id, *, exp_delta=timedelta(days=1), key=None, scope=None, with_exp=True):
     """Mint a review-invite-shaped JWT with ONE property under our control:
-    expiry, signing key, or scope. Everything else mirrors auth.py."""
+    expiry (or its absence), signing key, or scope. Everything else mirrors
+    auth.py."""
     now = datetime.now(timezone.utc)
     payload = {
         "producer_id": str(producer_id),
-        "exp": now + exp_delta,
         "iat": int(now.timestamp()),
         "scope": scope or REVIEW_INVITE_SCOPE,
     }
+    if with_exp:
+        payload["exp"] = now + exp_delta
     return jose_jwt.encode({"alg": settings.algorithm}, payload, key or _jwt_key())
 
 
@@ -806,6 +808,15 @@ class TestMeh1428ReviewInviteLink:
         assert r.status_code == 403, r.text
         assert r.json()["detail"] == GATE_403
         assert db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).count() == 0
+
+    def test_token_without_exp_is_403(self, client, db):
+        """A validly signed token that simply omits `exp` must not be a
+        permanent key: the registry treats `exp` as essential (reviewer
+        finding on #3368; joserfc raises MissingClaimError)."""
+        producer = self._owner_and_producer(db)[1]
+        reviewer = make_user(db, role="consumer")
+        r = self._post(client, producer, reviewer, _mint(producer.id, with_exp=False))
+        assert r.status_code == 403, r.text
 
     def test_forged_signature_is_403(self, client, db):
         """Well-formed claims, wrong key — the signature is the whole proof."""
