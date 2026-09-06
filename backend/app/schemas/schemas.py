@@ -881,6 +881,7 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _terms_accepted_required(cls, v: bool) -> bool:
         return _terms_must_be_accepted(v)
+
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
