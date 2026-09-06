@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
 
