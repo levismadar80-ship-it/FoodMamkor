@@ -166,6 +166,12 @@ def list_producers(
     # mechanic as the four axes above (_DIETARY_FILTERS in producer_listing).
     no_added_sugar: bool | None = None,
     low_carb: bool | None = None,
+    # MEH-1287 chunk B — the seasonal homepage module reads this. TRUE selects
+    # businesses an editor marked in season with an unexpired date; FALSE is the
+    # exact complement (unmarked OR expired). Editorial, not owner-declared:
+    # `in_season_until` is deliberately absent from ProducerUpdate (chunk A
+    # guard), so a business cannot put itself here.
+    in_season: bool | None = None,
     # MEH-1483: sort axis for non-geo results. "newest" (default) or "rating".
     # Validated below — an unknown value 422s rather than silently defaulting.
     sort: str | None = None,
@@ -236,6 +242,7 @@ def list_producers(
         lactose_free=lactose_free,
         no_added_sugar=no_added_sugar,  # MEH-1934
         low_carb=low_carb,  # MEH-1934
+        in_season=in_season,  # MEH-1287 chunk B
         sort=sort,
         search_q=search_q,
         limit=limit,
