@@ -728,6 +728,19 @@ def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
 
 
 # --- Auth ---
+def _terms_must_be_accepted(v: bool) -> bool:
+    """MEH-2080: the terms checkbox is mandatory, and since 2026-09-v2 it also
+    carries the 18+ self-declaration. An omitted or False flag is a 422 here,
+    never a silent NULL row — the server is the second half of the gate the
+    client's `required` attribute is the first half of (MEH-2015 asterisk
+    invariant). MEH-1995 kept the field optional on purpose and named this as
+    the separate hardening decision; it was ruled on 01/09 (18+, self-declared,
+    no date of birth) and queued on 06/09 (ADDENDUM-9)."""
+    if v is not True:
+        raise ValueError("יש לאשר את תנאי השימוש ולהצהיר על גיל 18 ומעלה")
+    return v
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
@@ -746,11 +759,15 @@ class UserRegister(BaseModel):
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
     # failure (a stored number no wa.me link can dial).
     phone: PhoneNumberField | None = None
-    # MEH-1995: terms-of-service acceptance. See the fuller note on
-    # ProducerRegister.terms_accepted — same field, same additive-default
-    # reasoning. The consumer form's checkbox (RegisterClient.jsx:76) gated the
-    # submit button and was then dropped on the floor; this is what carries it.
-    terms_accepted: bool = False
+    # MEH-1995 recorded the terms-of-service acceptance; MEH-2080 made it
+    # mandatory and folded the 18+ self-declaration into the same checkbox
+    # (RegisterClient.jsx:76, `required`). See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -853,10 +870,18 @@ class ProducerRegister(BaseModel):
     # "consent refused" — the handler stamps only on True, so an omitted field
     # leaves terms_accepted_at NULL, which is the honest state.
     #
-    # Deliberately NOT enforced as required=True here: making it mandatory is a
-    # breaking API change and a separate hardening decision (noted on MEH-1995),
-    # not something to smuggle in under a column addition.
-    terms_accepted: bool = False
+    # MEH-1995 deliberately left this optional and named the mandatory form
+    # as a separate hardening decision. MEH-2080 is that decision: the box is
+    # required on both email paths (new producer AND the consumer→producer
+    # upgrade, which renders the same checkbox), and it now also carries the
+    # 18+ self-declaration. See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
+
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
@@ -1867,6 +1892,40 @@ AVAILABILITY_STATES = (
 )
 
 
+# MEH-2271 (MEH-1854 chunk 3a): the ONE owner of the enum -> legacy mapping.
+# It used to live in routers/producer_me.py as `_state_to_legacy` with three
+# callers — the state endpoint, the expiry job, and nothing else read the
+# result back, so the pair of columns and the enum were two authorities over
+# one fact (workflow.md Smell #1). Chunk 3a inverts that: `availability_state`
+# is the only thing written, and the two legacy fields exist only as a derived
+# view on `ProducerListOut` for the one release before MEH-2272 removes them.
+#
+# It lives here, beside AVAILABILITY_STATES, because schemas.py is the single
+# module both the routers and the services can import without a cycle —
+# services/availability_validation.py already imports AVAILABILITY_STATES from
+# here, so the arrow only points one way.
+_STATE_TO_LEGACY: dict[str, tuple[bool, str]] = {
+    "accepting_orders": (False, "available"),
+    "available_today": (True, "available"),
+    "full_this_week": (False, "full"),
+    "on_vacation": (False, "vacation"),
+}
+
+
+def state_to_legacy(state: str | None) -> tuple[bool, str]:
+    """Derive the legacy ``(is_available_today, availability_status)`` pair
+    from ``availability_state``.
+
+    Total by construction: an unknown or NULL state falls back to the default
+    row rather than raising. The column is ``NOT NULL`` with a server default
+    (models.py), so the fallback is unreachable through the ORM — it exists so
+    a hand-built dict or a fixture with a missing state cannot 500 a listing.
+    The previous version of this mapping was a bare dict subscript and would
+    have raised ``KeyError`` on exactly that input.
+    """
+    return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
+
+
 class ProducerUpdate(BaseModel):
     name: SanitizedBusinessNameField | None = None
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
@@ -1951,8 +2010,26 @@ class ProducerUpdate(BaseModel):
     admin_notes: str | None = None
     # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
     # setattr-loop can no longer write it (verification = grant-verified only).
-    # MEH-18
+    #
+    # MEH-18. Reachable from the OWNER's PUT (producer_me.py, gated by
+    # _PRODUCER_WRITABLE_FIELDS, which excludes it) and the ADMIN PUT
+    # (admin.py bulk setattr) — and the admin path is the only way the
+    # editorial pick can be switched on at all. MEH-1494's chunk-B checklist
+    # called this a redundant declaration to delete; measured 06/09, deleting
+    # it would ship a dead toggle, and no test drives the flip through the
+    # admin PUT, so CI would have stayed green. Corrected on the card.
     is_recommended: bool | None = None
+    # MEH-1494 chunk B: the editor's reasoning for the pick. ADMIN-ONLY in both
+    # directions — absent from _PRODUCER_WRITABLE_FIELDS so an owner cannot
+    # write her own citation, and never on a public serializer (asserted by
+    # name in test_meh1494_recommended_at_note.py). `recommended_at` is NOT
+    # here: it is stamped from the transition in admin.py, not supplied by the
+    # caller, so accepting it would be a second authority over the same clock.
+    #
+    # The 500-char cap is the card's own ruling: it rejected `String(500)` on
+    # the COLUMN (an editorial note is internal text and the column stays Text)
+    # and said the length limit belongs in chunk B's validator. This is it.
+    recommended_note: str | None = Field(default=None, max_length=500)
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
@@ -2027,6 +2104,29 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1494 chunk B: the editor's note is free text an admin types, so it
+    # gets the MEH-555 floor like every other admin-visible free-text field —
+    # "???" is exactly the input that rule exists to reject.
+    #
+    # Blank clears the field rather than failing. That distinction is the
+    # reason this is not a bare `_min_letters_validator`: an admin removing a
+    # note she no longer stands behind is a legitimate edit, and the un-pick
+    # path in admin.py deliberately does NOT clear the note, so clearing it by
+    # hand has to be possible. Sending nothing at all leaves it untouched
+    # (`exclude_unset`); sending "" or whitespace is the explicit clear.
+    #
+    # REUSES: backend/app/schemas/schemas.py:252 (_min_letters_validator) —
+    # same floor, same Hebrew message, same three scripts (MEH-2236).
+    @field_validator("recommended_note")
+    @classmethod
+    def _validate_recommended_note(cls, v):
+        if v is None:
+            return v
+        cleaned = sanitize_text(v, max_length=500)
+        if cleaned is None or not cleaned.strip():
+            return None
+        return _min_letters_validator(cleaned)
 
     # MEH-829: sanitize the owner-editable address on PATCH /producers/me, same
     # bleach strip as the register path (_sanitize_address on ProducerRegister).
@@ -2390,11 +2490,17 @@ class ProducerListOut(BaseModel):
     # MEH-102/MEH-826: weekly hours "Sun-Thu 09:00-18:00, Fri 09:00-14:00".
     # Moved up from ProducerDetailOut so the /map card can show open/closed status.
     opening_hours: str | None = None
+    # MEH-2271 (MEH-1854 chunk 3a) — DERIVED, not read from the row. Whatever
+    # `from_attributes` loads off the two columns is overwritten by
+    # `_compute_trust_tier` below from `availability_state`. They stay on the
+    # contract for exactly one release so a consumer still reading them is not
+    # broken by the switch; MEH-2272 removes them, MEH-2273 drops the columns.
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
-    # MEH-291: 4-value durable enum that supersedes the two above. During the
-    # 7-day overlap both surfaces are populated; reads should prefer this field.
+    # MEH-291: 4-value durable enum. As of MEH-2271 it is not "preferred" —
+    # it is the only thing written and the only thing read; the two fields
+    # above are a view of it.
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
@@ -2551,14 +2657,24 @@ class ProducerListOut(BaseModel):
             # yesterday and the business stayed hidden from the listings
             # (default-hide on on_vacation) for those extra hours every night.
             and self.vacation_until < israel_today()
-            and (
-                self.availability_status == "vacation"
-                or self.availability_state == "on_vacation"
-            )
+            # MEH-2271: state-only. This used to be an OR with
+            # `availability_status == "vacation"`, which was correct while the
+            # two were independently written. They are not any more — the pair
+            # below is DERIVED from the state a few lines down, so reading it
+            # here would be reading this validator's own output.
+            and self.availability_state == "on_vacation"
         ):
-            self.availability_status = "available"
             self.availability_state = "accepting_orders"
             self.vacation_until = None
+        # MEH-2271 (MEH-1854 chunk 3a): the legacy pair is a derived view of
+        # `availability_state`, not two columns read off the row. It is
+        # computed HERE, after the vacation auto-clear above, so an expired
+        # vacation reports `available`/False rather than the stale `vacation`
+        # the columns still hold. MEH-2272 removes both fields; until then a
+        # consumer still on them sees exactly what the enum says.
+        self.is_available_today, self.availability_status = state_to_legacy(
+            self.availability_state
+        )
         return self
 
     @model_validator(mode="after")
@@ -2761,6 +2877,30 @@ class ProducerAdminOut(ProducerDetailOut):
     # WHICH businesses are in season from the module they appear in, never a
     # date on a card. The public filter is `?in_season=true`.
     in_season_until: date | None = None
+    # MEH-1494 chunk B (ADR-006 R2 — a field with a write path needs a read
+    # path). `ProducerUpdate` accepts `recommended_note` and this PR's handler
+    # stamps `recommended_at`, and neither could be read back: the admin edit
+    # form had no way to populate the note for a second edit, so re-saving a
+    # picked producer blanked the editor's own reasoning in the UI, and the
+    # `recommended_review_due` list could show WHICH picks are stale without
+    # showing WHY any of them was made.
+    #
+    # Admin-only, and that is a hard line rather than a default: the note is the
+    # editor's internal reasoning about a real business (models.py:188 — "DO NOT
+    # expose recommended_note on any public serializer"), and ADR-030 bans
+    # pay-to-play, so the rationale is exactly the artifact that must stay
+    # internal and auditable instead of becoming marketing copy. This class is
+    # the one place it may appear — NOT ProducerOwnerOut either, the sibling
+    # subclass fifty lines below, which is the easiest wrong home for it.
+    # `test_meh1494_recommended_at_note.py` asserts its absence from the other
+    # three shapes by name; a subclass field does not join its parent's
+    # `model_fields`, so that guard is untouched by this addition.
+    #
+    # `recommended_at` NULL on a picked producer is not missing data: it means
+    # "picked before the clock existed", which is what the review list reads as
+    # due now (admin.py::_recommended_review_due_clause).
+    recommended_at: datetime | None = None
+    recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
@@ -4105,11 +4245,23 @@ class EventFilters(BaseModel):
 class ReviewCreateNested(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     body: str = Field(..., min_length=10, max_length=500)
+    # MEH-1428 chunk 1: the `rt` query param from a "request a review" link,
+    # forwarded as-is. A valid token for THIS producer satisfies the
+    # contact-click gate; anything else falls through to the click check.
+    # Never persisted — only `source` ("click" | "invite_link") is.
+    review_token: str | None = Field(default=None, max_length=2048)
 
     @field_validator("body")
     @classmethod
     def _sanitize_body(cls, v):
         return sanitize_text(v, max_length=500)
+
+
+class ReviewInviteLinkOut(BaseModel):
+    """MEH-1428 chunk 1: GET /producers/me/review-link — the shareable URL
+    (public producer page + `?rt=<token>`)."""
+
+    url: str
 
 
 class ReviewReplyUpdate(BaseModel):
@@ -4143,6 +4295,11 @@ class ReviewOut(BaseModel):
     # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
     reply: str | None = None
     reply_at: str | None = None
+    # MEH-1428: `source` ("click" | "invite_link") is deliberately NOT here.
+    # It says how a reviewer passed the contact gate — whether the owner
+    # sent them an invite link — which is moderation signal, not something
+    # every visitor to a producer page should be able to read off each
+    # review. Admin-only: AdminReviewOut.source (reviewer finding on #3368).
 
     model_config = {"from_attributes": True}
 
@@ -4158,6 +4315,9 @@ class AdminReviewOut(BaseModel):
     body: str | None = None
     is_hidden: bool
     created_at: str
+    # MEH-1428: "click" | "invite_link" — how the reviewer passed the contact
+    # gate. Admin-only on purpose; the public ReviewOut does not carry it.
+    source: Literal["click", "invite_link"] = "click"
 
     model_config = {"from_attributes": True}
 
