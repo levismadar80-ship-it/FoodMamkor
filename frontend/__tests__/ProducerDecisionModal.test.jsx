@@ -69,6 +69,11 @@ vi.mock("@phosphor-icons/react", () => ({
   Cow: (p) => <span {...p} />,
   DotsThreeVertical: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-2274: AdminProducersToolbar's review-due toggle renders <Star/>.
+  // These mocks list icons explicitly, so a new icon on a shared toolbar has
+  // to be added to every mock that renders it — the failure is a hard throw,
+  // not a missing glyph.
+  Star: (p) => <span {...p} />,
   Package: (p) => <span {...p} />,
   Seal: (p) => <span {...p} />,
   StarOfDavid: (p) => <span {...p} />,

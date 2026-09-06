@@ -1881,6 +1881,77 @@ class ProducerWhatsAppClick(Base):
     city = Column(String(60), nullable=True)
 
 
+class ProducerAnalyticsDaily(Base):
+    """MEH-2079 chunk A: the anonymous daily roll-up that lets the raw
+    analytics tables be pruned without the owner's dashboard losing history.
+
+    Sapir's ruling 05/09: `producer_page_views` and `producer_whatsapp_clicks`
+    keep 90 days of RAW rows and are then deleted, while this table keeps the
+    per-day counts forever. The point of the pair is stated in the ruling as
+    "אפס שינוי נראה לבעלת העסק" — the owner's numbers must not move when the
+    purge first runs.
+
+    ANONYMOUS BY CONSTRUCTION, and that is the whole reason it may be kept
+    without a bound: no `viewer_ip_hash`, no `city`, no `user_id`, no row-level
+    anything. A count per (business, day) says nothing about any person, so
+    Amendment 13's storage-limitation principle does not bite on it the way it
+    bites on the pseudonymous raw rows (`analytics.py:163` — SHA-256 of the IP
+    with a deploy-scoped salt is personal data, not anonymous data).
+
+    THE COUNTS ARE DEDUPED, NOT RAW ROW COUNTS. `views_unique` and
+    `views_search_unique` store what `services/analytics.py::unique_views_count`
+    computes — one view per visitor per Israel calendar day (MEH-160) — because
+    that is what every reader of the raw table already shows. Summing raw rows
+    here instead would make the owner's "total" jump upward the moment the
+    aggregate half of the window starts being read, which is the same
+    inflation MEH-160 removed, reintroduced through a side door.
+    `whatsapp_clicks` is a plain count, matching its reader
+    (`producer_me.py`'s `windowed(ProducerWhatsAppClick, ...)`, no distinct).
+
+    `day` is an Israel calendar day (`utils/clock.py::israel_today`), a DATE
+    and not a timestamp — the same MEH-1883 reasoning as every other date
+    column here.
+
+    Chunk A creates the table and NOTHING else: no writer, no reader, no
+    scheduler entry. Chunk B adds the roll-up job and the `windowed()` total
+    path; chunk C adds the purge and must not merge before the privacy-policy
+    wording is live (MEH-1981).
+
+    # DO NOT add a person-level column to this table — its whole licence to
+    #        exist unbounded is that it carries none.
+    # DO NOT write raw row counts into views_unique; use unique_views_count.
+    """
+
+    __tablename__ = "producer_analytics_daily"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # CASCADE, like the raw tables: when a business deletes its account the
+    # aggregate goes with it. The ruling keeps the aggregate "anonymous" for
+    # RETENTION purposes, which is not a reason to keep a deleted business's
+    # numbers — deletion is a different right from storage limitation, and the
+    # card is explicit that the existing CASCADE is not a substitute for either.
+    day = Column(Date, nullable=False, index=True)
+    views_unique = Column(Integer, nullable=False, server_default="0")
+    views_search_unique = Column(Integer, nullable=False, server_default="0")
+    whatsapp_clicks = Column(Integer, nullable=False, server_default="0")
+
+    __table_args__ = (
+        # One row per business per day. The roll-up in chunk B upserts on this
+        # constraint, so a re-run over a day it already summarised corrects the
+        # row instead of doubling it — a job that can be run twice safely is
+        # the difference between a recoverable backfill and a corrupted one.
+        UniqueConstraint(
+            "producer_id", "day", name="uq_producer_analytics_daily_producer_day"
+        ),
+    )
+
+
 class ContactClick(Base):
     """MEH-82: one row per click on a non-WhatsApp contact method (phone/instagram/website/email).
 

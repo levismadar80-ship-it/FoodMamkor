@@ -728,6 +728,19 @@ def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
 
 
 # --- Auth ---
+def _terms_must_be_accepted(v: bool) -> bool:
+    """MEH-2080: the terms checkbox is mandatory, and since 2026-09-v2 it also
+    carries the 18+ self-declaration. An omitted or False flag is a 422 here,
+    never a silent NULL row — the server is the second half of the gate the
+    client's `required` attribute is the first half of (MEH-2015 asterisk
+    invariant). MEH-1995 kept the field optional on purpose and named this as
+    the separate hardening decision; it was ruled on 01/09 (18+, self-declared,
+    no date of birth) and queued on 06/09 (ADDENDUM-9)."""
+    if v is not True:
+        raise ValueError("יש לאשר את תנאי השימוש ולהצהיר על גיל 18 ומעלה")
+    return v
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
@@ -746,11 +759,15 @@ class UserRegister(BaseModel):
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
     # failure (a stored number no wa.me link can dial).
     phone: PhoneNumberField | None = None
-    # MEH-1995: terms-of-service acceptance. See the fuller note on
-    # ProducerRegister.terms_accepted — same field, same additive-default
-    # reasoning. The consumer form's checkbox (RegisterClient.jsx:76) gated the
-    # submit button and was then dropped on the floor; this is what carries it.
-    terms_accepted: bool = False
+    # MEH-1995 recorded the terms-of-service acceptance; MEH-2080 made it
+    # mandatory and folded the 18+ self-declaration into the same checkbox
+    # (RegisterClient.jsx:76, `required`). See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -853,10 +870,18 @@ class ProducerRegister(BaseModel):
     # "consent refused" — the handler stamps only on True, so an omitted field
     # leaves terms_accepted_at NULL, which is the honest state.
     #
-    # Deliberately NOT enforced as required=True here: making it mandatory is a
-    # breaking API change and a separate hardening decision (noted on MEH-1995),
-    # not something to smuggle in under a column addition.
-    terms_accepted: bool = False
+    # MEH-1995 deliberately left this optional and named the mandatory form
+    # as a separate hardening decision. MEH-2080 is that decision: the box is
+    # required on both email paths (new producer AND the consumer→producer
+    # upgrade, which renders the same checkbox), and it now also carries the
+    # 18+ self-declaration. See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
+
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
@@ -1867,6 +1892,40 @@ AVAILABILITY_STATES = (
 )
 
 
+# MEH-2271 (MEH-1854 chunk 3a): the ONE owner of the enum -> legacy mapping.
+# It used to live in routers/producer_me.py as `_state_to_legacy` with three
+# callers — the state endpoint, the expiry job, and nothing else read the
+# result back, so the pair of columns and the enum were two authorities over
+# one fact (workflow.md Smell #1). Chunk 3a inverts that: `availability_state`
+# is the only thing written, and the two legacy fields exist only as a derived
+# view on `ProducerListOut` for the one release before MEH-2272 removes them.
+#
+# It lives here, beside AVAILABILITY_STATES, because schemas.py is the single
+# module both the routers and the services can import without a cycle —
+# services/availability_validation.py already imports AVAILABILITY_STATES from
+# here, so the arrow only points one way.
+_STATE_TO_LEGACY: dict[str, tuple[bool, str]] = {
+    "accepting_orders": (False, "available"),
+    "available_today": (True, "available"),
+    "full_this_week": (False, "full"),
+    "on_vacation": (False, "vacation"),
+}
+
+
+def state_to_legacy(state: str | None) -> tuple[bool, str]:
+    """Derive the legacy ``(is_available_today, availability_status)`` pair
+    from ``availability_state``.
+
+    Total by construction: an unknown or NULL state falls back to the default
+    row rather than raising. The column is ``NOT NULL`` with a server default
+    (models.py), so the fallback is unreachable through the ORM — it exists so
+    a hand-built dict or a fixture with a missing state cannot 500 a listing.
+    The previous version of this mapping was a bare dict subscript and would
+    have raised ``KeyError`` on exactly that input.
+    """
+    return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
+
+
 class ProducerUpdate(BaseModel):
     name: SanitizedBusinessNameField | None = None
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
@@ -2431,11 +2490,17 @@ class ProducerListOut(BaseModel):
     # MEH-102/MEH-826: weekly hours "Sun-Thu 09:00-18:00, Fri 09:00-14:00".
     # Moved up from ProducerDetailOut so the /map card can show open/closed status.
     opening_hours: str | None = None
+    # MEH-2271 (MEH-1854 chunk 3a) — DERIVED, not read from the row. Whatever
+    # `from_attributes` loads off the two columns is overwritten by
+    # `_compute_trust_tier` below from `availability_state`. They stay on the
+    # contract for exactly one release so a consumer still reading them is not
+    # broken by the switch; MEH-2272 removes them, MEH-2273 drops the columns.
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
-    # MEH-291: 4-value durable enum that supersedes the two above. During the
-    # 7-day overlap both surfaces are populated; reads should prefer this field.
+    # MEH-291: 4-value durable enum. As of MEH-2271 it is not "preferred" —
+    # it is the only thing written and the only thing read; the two fields
+    # above are a view of it.
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
@@ -2592,14 +2657,24 @@ class ProducerListOut(BaseModel):
             # yesterday and the business stayed hidden from the listings
             # (default-hide on on_vacation) for those extra hours every night.
             and self.vacation_until < israel_today()
-            and (
-                self.availability_status == "vacation"
-                or self.availability_state == "on_vacation"
-            )
+            # MEH-2271: state-only. This used to be an OR with
+            # `availability_status == "vacation"`, which was correct while the
+            # two were independently written. They are not any more — the pair
+            # below is DERIVED from the state a few lines down, so reading it
+            # here would be reading this validator's own output.
+            and self.availability_state == "on_vacation"
         ):
-            self.availability_status = "available"
             self.availability_state = "accepting_orders"
             self.vacation_until = None
+        # MEH-2271 (MEH-1854 chunk 3a): the legacy pair is a derived view of
+        # `availability_state`, not two columns read off the row. It is
+        # computed HERE, after the vacation auto-clear above, so an expired
+        # vacation reports `available`/False rather than the stale `vacation`
+        # the columns still hold. MEH-2272 removes both fields; until then a
+        # consumer still on them sees exactly what the enum says.
+        self.is_available_today, self.availability_status = state_to_legacy(
+            self.availability_state
+        )
         return self
 
     @model_validator(mode="after")

@@ -202,7 +202,7 @@
           "valid_hint": "✓ תקין"
         },
         "terms": {
-          "intro": "קראתי ואני מסכימה",
+          "intro": "אני מעל גיל 18 ומסכימה",
           "tos_link": "לתנאי השימוש",
           "and": "ו",
           "privacy_link": "למדיניות הפרטיות"
@@ -356,7 +356,7 @@
           "cross_step_summary": "חסרים כמה פרטים — הועברתם לראשון:"
         },
         "terms": {
-          "intro": "קראתי ואני מסכימה",
+          "intro": "אני מעל גיל 18 ומסכימה",
           "tos_link": "לתנאי השימוש",
           "and": "ו",
           "privacy_link": "למדיניות הפרטיות",
@@ -1500,7 +1500,9 @@
         "incomplete_label": "פרטים חסרים",
         "export": "ייצוא",
         "import_excel": "ייבא מ-Excel",
-        "new_producer": "+ בית עסק חדש"
+        "new_producer": "+ בית עסק חדש",
+        "review_due_label": "מומלצות לביקורת",
+        "review_due_title": "בתי עסק שמסומנים «מומלץ» ולא נבדקו מחדש מעל 12 חודשים, או שנבחרו לפני שהיה תאריך"
       },
       "import": {
         "errors_loading": "שגיאה בקריאת הקובץ",
@@ -1600,7 +1602,8 @@
         "deleting": "מוחקים…",
         "waiting_badge": "ממתין {days} ימי עסקים",
         "waiting_tooltip_submitted": "נשלח לבדיקה: {when}",
-        "waiting_tooltip_created": "נוצר: {when}"
+        "waiting_tooltip_created": "נוצר: {when}",
+        "resubmission_badge": "שליחה חוזרת #{n}"
       },
       "toggle": {
         "invalid_transition": "לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך כפתורי האישור/דחייה."
@@ -1689,6 +1692,11 @@
           "grass_fed": "גראס פד",
           "verified": "מאומת",
           "recommended": "מומלץ (תגית עורכת)",
+          "recommended_note": "נימוק הבחירה",
+          "recommended_note_hint": "למה בית העסק נבחר. פנימי לחלוטין — לא מוצג לבית העסק ולא באתר. נשמר גם כשמבטלים את התגית, כדי שתישאר היסטוריה. עד 500 תווים.",
+          "recommended_note_placeholder": "למשל: מאפייה שטוחנת את הקמח בעצמה, ביקור באתר 03/2026",
+          "recommended_at": "נבחר בתאריך",
+          "recommended_at_never": "נבחר לפני שהיה שעון — ביקורת נדרשת עכשיו",
           "kosher": "כשרות",
           "kosher_none": "—",
           "kosher_kosher": "כשר",
@@ -2173,7 +2181,7 @@
         "empty": "אין נתונים עדיין",
         "save": "שמרו",
         "delete": "מחקו",
-        "confirm_delete": "מחיקת '{name}' — {count} בתי עסק משויכים",
+        "confirm_delete": "מחיקת ''{name}'' — {count} בתי עסק משויכים",
         "producer_count": "{count} בתי עסק",
         "deleting": "מוחקים…",
         "delete_error": "מחיקת הקטגוריה נכשלה. נסו שוב.",
@@ -5022,7 +5030,7 @@
         "save_failed": "שגיאה בשמירת המיקום",
         "delete_failed": "שגיאה במחיקת המיקום",
         "same_city": {
-          "labelled": "יש לך כבר '{label}' ב{city}.",
+          "labelled": "יש לך כבר ''{label}'' ב{city}.",
           "unlabelled": "יש לך כבר {kind} ב{city}.",
           "many": "יש לך כבר {count} מיקומים ב{city}.",
           "generic": "יש לך כבר מיקום ביישוב הזה.",

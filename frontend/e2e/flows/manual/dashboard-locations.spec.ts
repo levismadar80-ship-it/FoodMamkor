@@ -210,12 +210,6 @@ test.describe("locations editor — list, add, primary", () => {
 test.describe("locations editor — the same-town label rule", () => {
   // MT:MEH-1421:4 · MT:MEH-1421:5 (a) — the existing location has a label: it is named.
   test("a second location in the same town without a label is refused, naming the existing label", async ({ page }) => {
-    // MEH-2261: `'{label}'` in he.json is an ICU quoted literal, so the live page
-    // renders «יש לך כבר {label} בחיפה.» — the placeholder, not the label. The
-    // assertion below is the CORRECT behaviour; the annotation keeps this spec
-    // green until the copy is fixed, and flips to "unexpected pass" the moment
-    // it is — remove the annotation in that PR.
-    test.fail(true, "MEH-2261 — ICU single quotes swallow {label}");
     await stubEdit(page, { postFails: sameCity({ city: "חיפה", existing_count: 1, existing_label: "החנות", existing_kind: "branch" }) });
     await openLocations(page);
     await startAdding(page, "חיפה");
