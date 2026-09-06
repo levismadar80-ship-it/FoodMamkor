@@ -49,7 +49,7 @@ def test_verify_email_task_dispatched_on_new_signup(client, monkeypatch):
 
     resp = client.post(
         "/auth/register",
-        json={"terms_accepted": True, **VALID_CONSUMER_REG, "email": "dispatch-ok@test.com"},
+        json={**VALID_CONSUMER_REG, "email": "dispatch-ok@test.com"},
     )
     assert resp.status_code == 200
     sender.assert_called_once()
@@ -73,7 +73,7 @@ def test_dispatch_independent_of_resend_api_key(client, monkeypatch):
 
     resp = client.post(
         "/auth/register",
-        json={"terms_accepted": True, **VALID_CONSUMER_REG, "email": "no-key@test.com"},
+        json={**VALID_CONSUMER_REG, "email": "no-key@test.com"},
     )
     assert resp.status_code == 200
     sender.assert_called_once()
