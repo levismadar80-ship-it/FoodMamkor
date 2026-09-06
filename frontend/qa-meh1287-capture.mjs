@@ -11,6 +11,7 @@
  *      that the gate gates.
  */
 import { chromium } from "playwright";
+import { resolveChromium } from "./qa-chrome-path.mjs";
 import fs from "node:fs";
 
 const OUT = "/home/user/FoodMamkor/qa-artifacts/MEH-1287";
@@ -24,7 +25,7 @@ const fail = (m) => {
 };
 
 const browser = await chromium.launch({
-  executablePath: process.env.PW_CHROME || undefined,
+  executablePath: resolveChromium(),
 });
 
 for (const [label, width, height] of [

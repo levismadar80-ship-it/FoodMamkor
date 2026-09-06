@@ -3,7 +3,8 @@
 // double at the same instant, it is a page-level transition window and not a
 // property of HomeSeasonalNow.
 import { chromium } from "playwright";
-const b = await chromium.launch({ executablePath: process.env.PW_CHROME });
+import { resolveChromium } from "./qa-chrome-path.mjs";
+const b = await chromium.launch({ executablePath: resolveChromium() });
 const ctx = await b.newContext({ viewport: { width: 375, height: 812 }, locale: "he-IL" });
 const p = await ctx.newPage();
 const IDS = ["home-seasonal-now", "home-recently-viewed", "home-recent-rail"];

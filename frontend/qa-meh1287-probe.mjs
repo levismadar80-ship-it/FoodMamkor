@@ -19,10 +19,11 @@
  * what the settled DOM looks like.
  *
  * Run against a local `next start` (see qa-meh1287-capture.mjs for the stub
- * origin), with PW_CHROME pointing at the sandbox Chromium.
+ * origin). The browser is resolved by qa-chrome-path.mjs — no env var.
  */
 import { chromium } from "playwright";
-const b = await chromium.launch({ executablePath: process.env.PW_CHROME });
+import { resolveChromium } from "./qa-chrome-path.mjs";
+const b = await chromium.launch({ executablePath: resolveChromium() });
 const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, locale: "he-IL" });
 const p = await ctx.newPage();
 await p.goto("http://127.0.0.1:3111/", { waitUntil: "domcontentloaded" });
