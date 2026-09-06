@@ -17,8 +17,9 @@ import api from "@/lib/api";
  *   - onKnownChange (fn(known)) — optional. The async half of the same answer:
  *     fired when a fetch that resolves AFTER the emit changes whether the
  *     current value is known. Deliberately NOT a second onChange with the same
- *     value — DeliveryChecker.jsx:140-143 resets its verdict on every onChange,
- *     so an equal-value re-emit would wipe a result the user just asked for.
+ *     value — at least one consumer resets its own derived state (a delivery
+ *     verdict) on every onChange call, so an equal-value re-emit would wipe a
+ *     result the user just asked for.
  *   - placeholder
  *   - label (always required for a11y; sr-only unless labelVisible)
  *   - labelVisible (boolean, default false) — when true the label renders
@@ -135,13 +136,11 @@ export default function CitySearch({
   useEffect(() => {
     if (!onKnownChange) return;
     if (lastKnown.current.value !== value) return;
-    const known = isKnown(value);
+    const known = allCities.includes((value || "").trim());
     if (known === lastKnown.current.known) return;
     lastKnown.current = { value, known };
     onKnownChange(known);
-    // allCities is the only input that can change the answer for a fixed value.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allCities, value]);
+  }, [allCities, value, onKnownChange]);
 
   const matches = useMemo(() => {
     const q = (value || "").trim();

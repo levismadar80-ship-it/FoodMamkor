@@ -198,8 +198,6 @@ describe("MEH-2270 — onChange(value, { known }) and the async onKnownChange", 
   it("clearing reports an empty, unknown value", () => {
     const onChangeSpy = vi.fn();
     const { getByRole } = mount({ initial: "כפר סבא", onChangeSpy, useBackend: false });
-    // Reviewer minor on #3449: address the clear button by its accessible
-    // name, not "the first labelled button in the document".
     fireEvent.click(getByRole("button", { name: he.search.city_search.clear_aria }));
     expect(onChangeSpy).toHaveBeenLastCalledWith("", { known: false });
   });
