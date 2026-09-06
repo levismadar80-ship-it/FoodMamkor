@@ -1966,7 +1966,11 @@ class ProducerUpdate(BaseModel):
     # name in test_meh1494_recommended_at_note.py). `recommended_at` is NOT
     # here: it is stamped from the transition in admin.py, not supplied by the
     # caller, so accepting it would be a second authority over the same clock.
-    recommended_note: str | None = None
+    #
+    # The 500-char cap is the card's own ruling: it rejected `String(500)` on
+    # the COLUMN (an editorial note is internal text and the column stays Text)
+    # and said the length limit belongs in chunk B's validator. This is it.
+    recommended_note: str | None = Field(default=None, max_length=500)
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
@@ -2041,6 +2045,29 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1494 chunk B: the editor's note is free text an admin types, so it
+    # gets the MEH-555 floor like every other admin-visible free-text field —
+    # "???" is exactly the input that rule exists to reject.
+    #
+    # Blank clears the field rather than failing. That distinction is the
+    # reason this is not a bare `_min_letters_validator`: an admin removing a
+    # note she no longer stands behind is a legitimate edit, and the un-pick
+    # path in admin.py deliberately does NOT clear the note, so clearing it by
+    # hand has to be possible. Sending nothing at all leaves it untouched
+    # (`exclude_unset`); sending "" or whitespace is the explicit clear.
+    #
+    # REUSES: backend/app/schemas/schemas.py:252 (_min_letters_validator) —
+    # same floor, same Hebrew message, same three scripts (MEH-2236).
+    @field_validator("recommended_note")
+    @classmethod
+    def _validate_recommended_note(cls, v):
+        if v is None:
+            return v
+        cleaned = sanitize_text(v, max_length=500)
+        if cleaned is None or not cleaned.strip():
+            return None
+        return _min_letters_validator(cleaned)
 
     # MEH-829: sanitize the owner-editable address on PATCH /producers/me, same
     # bleach strip as the register path (_sanitize_address on ProducerRegister).

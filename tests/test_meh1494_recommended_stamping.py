@@ -283,3 +283,75 @@ def test_the_default_listing_is_unchanged(db, client):
     names = {row["name"] for row in resp.json()}
     assert picked.name in names, "the default listing dropped rows"
     assert "עסק רגיל שני" in names
+
+
+# ── the note's content floor (MEH-555) ────────────────────────────────────
+def test_a_punctuation_only_note_is_rejected(db, client):
+    """"???" is the exact input the MEH-555 rule exists to reject, and an
+    editorial citation is admin-visible free text like any other."""
+    admin = _admin(db)
+    p = make_producer(db, name="עסק לנימוק פסול")
+
+    resp = client.put(
+        f"/admin/producers/{p.id}",
+        json={"is_recommended": True, "recommended_note": "???"},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 422, resp.text
+    row = _reload(db, p.id)
+    assert row.recommended_note is None
+    # The rejection must be total: a 422 that still stamped the clock would
+    # leave the row picked with no citation, which is the state ADR-030 forbids.
+    assert row.recommended_at is None
+    assert not row.is_recommended
+
+
+def test_a_blank_note_clears_it(db, client):
+    """An admin withdrawing a note she no longer stands behind. Distinct from
+    omitting the field, which leaves it untouched — and necessary, because the
+    un-pick path deliberately does not clear it."""
+    admin = _admin(db)
+    p = _picked(db, note="נימוק ישן שכבר לא רלוונטי")
+
+    resp = client.put(
+        f"/admin/producers/{p.id}",
+        json={"recommended_note": "   "},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert _reload(db, p.id).recommended_note is None
+
+
+def test_omitting_the_note_leaves_it_untouched(db, client):
+    """The other half of the pair above: `exclude_unset` means an edit that
+    does not mention the note must not erase it."""
+    admin = _admin(db)
+    p = _picked(db, note="נימוק שצריך לשרוד")
+
+    resp = client.put(
+        f"/admin/producers/{p.id}",
+        json={"name": "שם אחר"},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert _reload(db, p.id).recommended_note == "נימוק שצריך לשרוד"
+
+
+def test_an_over_long_note_is_rejected(db, client):
+    """The card rejected String(500) on the COLUMN and said the cap belongs in
+    chunk B's validator. 501 chars of real letters — so the only thing that can
+    reject it is the length, not the letter floor."""
+    admin = _admin(db)
+    p = make_producer(db, name="עסק לנימוק ארוך")
+
+    resp = client.put(
+        f"/admin/producers/{p.id}",
+        json={"is_recommended": True, "recommended_note": "א" * 501},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 422, resp.text
+    assert _reload(db, p.id).recommended_note is None
