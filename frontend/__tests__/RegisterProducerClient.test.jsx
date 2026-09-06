@@ -1733,33 +1733,39 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
   // the town was picked, and IS challenged when it was not — rather than by
   // reading the stored JSON, which would pass identically if restoreDraft
   // dropped the key on the way back in.
-  it("draft round-trip: a restored list-picked town passes the gate; a restored free-text town does not", async () => {
-    const DRAFT_KEY = "producer_registration_draft";
-    const seed = (city_known) =>
-      localStorage.setItem(
-        DRAFT_KEY,
-        JSON.stringify({
-          v: 2,
-          savedAt: Date.now(),
-          step: 2, // DETAILS
-          form: { producer_name: "העסק שלי", phone: "0501234567", city: "תל אביב", city_known },
-        }),
-      );
+  // packDraft spreads every field except `password`, so `city_known` rides
+  // the draft. Two cases, one per outcome, so a red in one cannot hide the
+  // other (CI reviewer on this PR).
+  async function restoreDraftWithCity(known) {
     localStorage.setItem("token", "tok-123");
     authState.user = { role: "user" };
-
-    seed(true);
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        v: 2,
+        savedAt: Date.now(),
+        step: 2, // DETAILS
+        form: {
+          producer_name: "העסק שלי",
+          phone: "0501234567",
+          city: known ? "תל אביב" : FREE_TEXT_TOWN,
+          city_known: known,
+        },
+      }),
+    );
     await renderWizard();
     fireEvent.click(await screen.findByTestId("register-draft-continue"));
-    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    await screen.findByTestId("register-frame-details");
+  }
+
+  it("draft round-trip — a restored list-picked town passes the gate", async () => {
+    await restoreDraftWithCity(true);
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
-    cleanup();
+  });
 
-    seed(false);
-    await renderWizard();
-    fireEvent.click(await screen.findByTestId("register-draft-continue"));
-    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+  it("draft round-trip — a restored free-text town is re-challenged", async () => {
+    await restoreDraftWithCity(false);
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
     expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
