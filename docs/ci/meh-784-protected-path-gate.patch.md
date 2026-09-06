@@ -72,12 +72,18 @@ $ bash scripts/ci/protected-path-gate.sh --self-test
   ok   look-alike path (workflows-docs), no label (exit 0)
   ok   empty diff (exit 0)
   ok   wrong label name is not approval (exit 1)
-self-test: 11/11 cases as expected
+  ok   REAL alembic revision (baseline), no label (exit 1)
+  ok   REAL workflow (pr-checks.yml), no label (exit 1)
+self-test: 13/13 cases as expected
 ```
+
+(11 synthetic cases + 2 anchored to files that exist in the repo — testing.md,
+MEH-1909. The count above is pasted from a run on this branch; the script derives
+it, so re-run `--self-test` rather than trusting the number here.)
 
 **Discrimination control (06/09):** a copy of the script with the dependabot
 exemption broken (`= "nobody"` in place of the author compare) reports
-**10/11** and exits 1 — the one red case is `uv.lock by dependabot, no label`,
+**12/13** and exits 1 — the one red case is `uv.lock by dependabot, no label`,
 which is the case that exemption owns. The count is derived from the cases
 that ran, never typed.
 
