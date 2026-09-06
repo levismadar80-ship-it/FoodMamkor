@@ -125,7 +125,10 @@ def decode_review_invite_token(token: str) -> dict | None:
     """
     try:
         token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
-        JWTClaimsRegistry().validate(token_obj.claims)
+        # `exp` is essential: the registry only checks expiry when the claim
+        # is present, and this token travels as an opaque string in a shared
+        # link — one minted without `exp` must not become a permanent key.
+        JWTClaimsRegistry(exp={"essential": True}).validate(token_obj.claims)
     except JoseError:
         return None
     claims = token_obj.claims
