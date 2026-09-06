@@ -399,6 +399,13 @@ Converting it would ship a red test; weakening it to "somewhere on the page" wou
 assertion that cannot fail. Escalated with numbers instead; the checklist row is left
 unchecked and annotated.
 
+> **Ruled 05/09 (MEH-2254, drain כז'):** the requirement is *superseded*, not regressed. The
+> sticky bottom bar is the mobile CTA (Wolt / Google Maps pattern — a fixed CTA at the
+> bottom of the viewport), and rows PDP:3/PDP:4 already assert it slides in exactly as
+> the inline card leaves the viewport. The inline CTA at 101px below the fold is fine as
+> is; no layout change and no test on the inline card's position. The MANUAL_TESTING row
+> now says so (PDP:2 → covered by PDP:3/4) instead of sitting unchecked.
+
 ### A stub-fixture defect worth recording, because it has the shape this file warns about
 
 The first version of the scratchpad stub keyed the reviews list under `items`. The
