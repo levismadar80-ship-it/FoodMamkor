@@ -255,7 +255,7 @@ def test_business_name_keeps_three_letter_floor():
             city="תל אביב",
             category_ids=[1],
             declaration_accepted=True,
-        terms_accepted=True,  # MEH-2080: mandatory on the schema
+            terms_accepted=True,  # MEH-2080: mandatory on the schema
         )
 
 
