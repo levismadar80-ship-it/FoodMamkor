@@ -102,7 +102,51 @@ jobs:
           #
           # IF A FUTURE OUTAGE NEEDS IT AGAIN: turn it on, capture the one run,
           # turn it off in the same session. Never leave it on across a fix.
-          claude_args: "--model claude-sonnet-4-6 --allowed-tools mcp__github__add_issue_comment"
+          # MEH-2277 — two changes, both about the reviewer being ABLE to do
+          # the job this file already asks of it. The model pin is deliberately
+          # NOT touched here; see the note at the end.
+          #
+          # Read/Glob/Grep: the prompt below orders the reviewer to read
+          # CLAUDE.md and docs/CLAUDE-REVIEW.md, and it had no tool permitted to
+          # open either. It was reviewing against a contract it could not read.
+          # Glob and Grep come too: without them it can only open a path it
+          # already knows, not locate the files a diff touched.
+          #
+          # allowed_bots: without it the action REFUSES TO START on any run
+          # whose actor is a bot, and posts nothing at all. Measured 06/09 on
+          # PR #3469:
+          #
+          #     Workflow initiated by non-human actor: claude (type: Bot).
+          #     Add bot to allowed_bots list or use '*' to allow all bots.
+          #
+          # The discriminator is the WORKFLOW RUN'S ACTOR, not the PR's author.
+          # Every PR here renders as authored by claude[bot], so that is not it.
+          # Over the last 25 runs of this workflow: 24 with actor
+          # levismadar80-ship-it (User), all success; 1 with actor claude[bot],
+          # the only failure. That one is the first PR opened by calling the
+          # REST API with GH_WORKFLOW_TOKEN — the app's identity — rather than
+          # through the GitHub MCP under the user's.
+          #
+          # Why "claude" and not "claude[bot]": both work, and neither is a
+          # guess. src/github/validation/actor.ts:11-28, read at the pinned SHA
+          # above (a874e9ec, v1.0.210) and byte-identical at HEAD, lowercases
+          # and strips a trailing [bot] from BOTH the list entries and the
+          # actor before comparing. So claude[bot] normalises to claude.
+          #
+          # This matters more now than it did in August: CC merges its own
+          # green PRs with that token, so without this line the PRs least
+          # supervised by a human are exactly the ones landing with no review
+          # on the open event — and workflow rule 5a becomes unsatisfiable by
+          # construction on precisely those.
+          #
+          # NOT CHANGED HERE: the model pin. PR #2607 bundled a bump to
+          # claude-sonnet-5 with these two fixes, arguing there was "no clean
+          # baseline to protect" because the reviewer was broken anyway. That
+          # argument has expired — the reviewer works and is finding real
+          # defects — so the model is a separate cost/quality call for Sapir,
+          # not a rider on a fix for a different problem.
+          claude_args: "--model claude-sonnet-4-6 --allowed-tools Read,Glob,Grep,mcp__github__add_issue_comment"
+          allowed_bots: "claude"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
