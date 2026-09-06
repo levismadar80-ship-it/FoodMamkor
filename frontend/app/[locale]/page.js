@@ -47,16 +47,24 @@ async function fetchFirstPaint() {
       return null;
     }
   };
-  const [producers, categories] = await Promise.all([
+  // MEH-1287 chunk B: a THIRD request, not a client-side filter over the feed
+  // above. `in_season_until` is the editor's private mark and is deliberately
+  // absent from the public producer shape (chunk A's guard asserts it by name),
+  // so the reader's page has no way to compute this set — only to ask for it.
+  // `?in_season=true` answers against the Israel calendar day server-side,
+  // which also means an expired mark disappears without the page reloading a
+  // stale boolean.
+  const [producers, categories, inSeason] = await Promise.all([
     get("/producers"),
     get("/categories"),
+    get("/producers?in_season=true"),
   ]);
-  return { producers, categories };
+  return { producers, categories, inSeason };
 }
 
 export default async function HomePage({ params }) {
   const { locale } = await params;
-  const { producers, categories } = await fetchFirstPaint();
+  const { producers, categories, inSeason } = await fetchFirstPaint();
 
   return (
     <>
@@ -69,7 +77,11 @@ export default async function HomePage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildHomeJsonLd(locale)) }}
       />
-      <HomeClient initialProducers={producers} initialCategories={categories} />
+      <HomeClient
+        initialProducers={producers}
+        initialCategories={categories}
+        initialInSeason={inSeason}
+      />
     </>
   );
 }

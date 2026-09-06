@@ -524,6 +524,9 @@
       "fallback_day_caption": "משלוח ל{city}: {days}",
       "fallback_day_caption_flexible": "משלוח ל{city} בתיאום מראש"
     },
+    "seasonal": {
+      "heading": "עכשיו בעונה"
+    },
     "recent": {
       "heading": "צפית לאחרונה"
     },
@@ -1699,6 +1702,8 @@
           "license_optional_toggle": "יש לי רישיון יצרן ↓",
           "license_expires_at": "תוקף רישיון (מהמסמך)",
           "license_expires_at_hint": "התאריך שמופיע על מסמך הרישיון. עסקים שהרישיון שלהם פג בתוך 30 יום מופיעים ברשימת התזכורות.",
+          "in_season_until": "בעונה עד",
+          "in_season_until_hint": "התאריך האחרון שבו בית העסק מופיע במודול \"עכשיו בעונה\" בדף הבית. ריק = לא מסומן. המודול מוצג רק כששלושה בתי עסק או יותר מסומנים.",
           "has_physical_location": "חנות פיזית (קבלת לקוחות)",
           "offers_delivery": "משלוחים",
           "type_validation": "חייב לסמן לפחות אחד מהשניים",
