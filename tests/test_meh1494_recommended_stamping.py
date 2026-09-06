@@ -355,3 +355,29 @@ def test_an_over_long_note_is_rejected(db, client):
 
     assert resp.status_code == 422, resp.text
     assert _reload(db, p.id).recommended_note is None
+
+
+def test_escaping_cannot_push_the_stored_note_over_the_cap(db, client):
+    """`Field(max_length=500)` bounds the INPUT; bleach can make the output
+    longer. `sanitize_text(v, max_length=500)`'s truncation is what bounds what
+    reaches the column, so its `max_length` argument is not redundant with the
+    Field constraint — measured: 500 '<' characters clean to 2000, because
+    `strip=True` removes TAGS while a bare '<' is escaped to '&lt;'.
+
+    A reviewer read the argument as dead on this path. This test is here so the
+    next reader who reaches the same conclusion gets a red instead of a silent
+    4x-over-cap write.
+    """
+    admin = _admin(db)
+    p = make_producer(db, name="עסק לנימוק עם תווים בורחים")
+
+    resp = client.put(
+        f"/admin/producers/{p.id}",
+        json={"is_recommended": True, "recommended_note": "<" * 500},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 200, resp.text
+    stored = _reload(db, p.id).recommended_note
+    assert stored is not None
+    assert len(stored) <= 500, f"stored {len(stored)} chars — the cap did not hold"
