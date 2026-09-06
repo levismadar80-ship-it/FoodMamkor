@@ -56,6 +56,7 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
     ReviewInviteLinkOut,
+    state_to_legacy,
 )
 from app.services.auth_notifications import (
     notify_admin_new_producer,
@@ -654,11 +655,12 @@ def update_my_producer(
         #                          `price_range` (PricingCard) is the only
         #                          price-label field now. Its registry row went
         #                          with the column (data_ownership.py).
-        #   is_available_today   → written by POST /producers/me/availability-state
-        #                          (and the legacy /availability toggle), BOTH of
-        #                          which mirror `availability_state`. This path
-        #                          did not, so a raw PUT desynced the pair. The
-        #                          column's removal is MEH-1854, not this.
+        #   is_available_today   → nothing writes it any more. MEH-2271 made
+        #                          `availability_state` the sole written column
+        #                          and the legacy pair a derived view, so the
+        #                          desync this row was blocking a raw PUT from
+        #                          creating is no longer reachable. The
+        #                          column's removal is MEH-2273, not this.
         # MEH-1242 PR5: owner permission-surface extension — location mode +
         # opening hours (previously admin-only). delivery_area_cities is still
         # popped + processed separately below. The (has_physical_location OR
@@ -853,42 +855,42 @@ def update_my_producer(
 
 
 # LEGACY(2026-10-01, MEH-1854)
-# MEH-291 — dual-write helpers used during the 7-day overlap.
-# Phase 4 (separate PR) drops the legacy is_available_today + availability_status
-# columns and removes these helpers along with the legacy endpoints below.
-# MEH-1857: that "7-day overlap" opened in May 2026 and the contract step never
-# ran — ~14 months, which is why the expiry marker above now exists. MEH-1854
-# owns the removal; scripts/legacy-expiry-check.sh fails once the date passes,
-# so the next person either finishes it or extends the date in a reviewed PR.
+# MEH-291 — the two endpoints below are the legacy availability write paths.
+# MEH-2271 (chunk 3a) removed the dual-WRITE: nothing in this module writes
+# is_available_today or availability_status any more, so the two mapping
+# helpers that lived here are gone. What replaced them:
+#
+#   enum -> legacy   schemas.state_to_legacy — one caller, the ProducerListOut
+#                    derivation. Not called from a router at all.
+#   legacy -> enum   _status_to_state below, which reads the CURRENT STATE
+#                    rather than the two columns. That is the whole point: the
+#                    old _legacy_to_state consulted columns this module had
+#                    stopped updating, so a producer who set full_this_week on
+#                    the new endpoint and then touched a legacy one would have
+#                    been silently reset from stale input.
+#
+# MEH-2273 deletes both endpoints and the columns. scripts/legacy-expiry-check.sh
+# fails once the date above passes, so the next person either finishes it or
+# extends the date in a reviewed PR.
 
 
-# DO NOT remove, rename, or make private-er — imported cross-module by
-# app/services/availability_expiry.py (MEH-1828). A rename fails silently at
-# the next Sunday rollover, not at startup; MEH-1854 owns deleting both ends.
-def _state_to_legacy(state: str) -> tuple[bool, str]:
-    """Map the new 4-value enum to the (is_available_today, availability_status)
-    pair so old readers (ProducerCard, ProducerDetail, dashboard) stay accurate
-    until the legacy columns are dropped."""
-    return {
-        "accepting_orders": (False, "available"),
-        "available_today": (True, "available"),
-        "full_this_week": (False, "full"),
-        "on_vacation": (False, "vacation"),
-    }[state]
+def _status_to_state(current_state: str | None, status: str) -> str:
+    """Map a legacy ``availability_status`` write onto the 4-value enum,
+    resolved against the producer's CURRENT state.
 
-
-def _legacy_to_state(
-    is_available_today: bool | None, availability_status: str | None
-) -> str:
-    """Inverse mapping. Precedence matches the Phase 1 backfill CASE WHEN tree:
-    vacation > full > is_available_today > default."""
-    if availability_status == "vacation":
+    Only ``"available"`` is ambiguous: it means "not full and not on vacation"
+    and says nothing about today. Preserving `available_today` across such a
+    write is what keeps the legacy endpoint's observable behaviour identical to
+    the pre-MEH-2271 one, where writing status="available" left the separate
+    `is_available_today` boolean untouched.
+    """
+    if status == "vacation":
         return "on_vacation"
-    if availability_status == "full":
+    if status == "full":
         return "full_this_week"
-    if is_available_today:
-        return "available_today"
-    return "accepting_orders"
+    return (
+        "available_today" if current_state == "available_today" else "accepting_orders"
+    )
 
 
 @router.post("/availability")
@@ -906,14 +908,33 @@ def toggle_availability(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    producer.is_available_today = not bool(producer.is_available_today)
-    producer.availability_state = _legacy_to_state(
-        producer.is_available_today, producer.availability_status
-    )
+    # MEH-2271: toggle the STATE. Previously this flipped the boolean column
+    # and derived the state from it; the column is no longer written by the
+    # canonical endpoint, so deriving from it would toggle against stale data.
+    #
+    # full_this_week and on_vacation are LEFT ALONE, and that is preservation
+    # rather than a new rule. The old `_legacy_to_state` ranked
+    # `availability_status` above `is_available_today`, so on a producer whose
+    # status was "full" or "vacation" the boolean flip changed nothing the
+    # state could see — this endpoint was already a no-op for them. Dragging
+    # them to available_today would be a behaviour change wearing a refactor's
+    # clothes, and the durable states are exactly the ones a "am I free today"
+    # toggle has no business clearing.
+    #
+    # (The first version of this block did exactly that, with a comment
+    # claiming parity that did not hold. Caught by the CI reviewer on #3460.)
+    if producer.availability_state in ("accepting_orders", "available_today"):
+        producer.availability_state = (
+            "accepting_orders"
+            if producer.availability_state == "available_today"
+            else "available_today"
+        )
     producer.last_active_at = datetime.utcnow()
     db.commit()
     return {
-        "is_available_today": producer.is_available_today,
+        # Derived for the response, not read back off a column. MEH-2272
+        # removes this key together with the field on ProducerListOut.
+        "is_available_today": producer.availability_state == "available_today",
         "availability_state": producer.availability_state,
     }
 
@@ -952,15 +973,17 @@ def set_availability_status(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    producer.availability_status = data.status
-    producer.vacation_until = data.vacation_until if data.status == "vacation" else None
-    producer.availability_state = _legacy_to_state(
-        producer.is_available_today, producer.availability_status
+    # MEH-2271: state-only write, resolved against the current state so that
+    # status="available" does not silently clear an available_today producer.
+    producer.availability_state = _status_to_state(
+        producer.availability_state, data.status
     )
+    producer.vacation_until = data.vacation_until if data.status == "vacation" else None
     producer.last_active_at = datetime.utcnow()
     db.commit()
     return {
-        "availability_status": producer.availability_status,
+        # Derived, same as the toggle above.
+        "availability_status": state_to_legacy(producer.availability_state)[1],
         "availability_state": producer.availability_state,
         "vacation_until": producer.vacation_until.isoformat()
         if producer.vacation_until
@@ -1002,10 +1025,10 @@ def set_availability_state(
             status_code=400 if e.kind == "value" else 422, detail=str(e)
         ) from e
 
+    # MEH-2271: one column. The dual-write to is_available_today +
+    # availability_status is gone — ProducerListOut derives both from this
+    # value, so writing them here would be a second authority over one fact.
     producer.availability_state = data.state
-    is_today, legacy_status = _state_to_legacy(data.state)
-    producer.is_available_today = is_today
-    producer.availability_status = legacy_status
     producer.vacation_until = vacation_until
     producer.last_active_at = datetime.utcnow()
     db.commit()
@@ -1049,14 +1072,27 @@ def dashboard(
         or 0
     )
 
+    # MEH-2271 — bound here rather than spread inline from a zip(): the
+    # comment below is load-bearing and a zip idiom buries it (CI reviewer,
+    # #3460).
+    _derived_today, _derived_status = state_to_legacy(producer.availability_state)
+
     return {
         "producer": {
             "id": str(producer.id),
             "name": producer.name,
-            "is_available_today": bool(producer.is_available_today),
-            # MEH-12 — dashboard toggle reads this to highlight the active pill
-            "availability_status": producer.availability_status or "available",
-            # MEH-291 — durable 4-value enum that supersedes the two above.
+            # MEH-2271 — both derived from the enum, not read off the two
+            # columns this module no longer writes. Reading the columns here
+            # would report the value they froze at, which is the exact bug
+            # deriving everywhere else exists to prevent. This is the SECOND
+            # call site of state_to_legacy, and Sapir's ruling of 2026-09-06 asked for
+            # exactly one (the schema derivation) — the deviation is stated in
+            # the PR body rather than resolved by leaving a stale read here.
+            # MEH-2272 removes both keys; the frontend dashboard already reads
+            # only availability_state (app/[locale]/producer/dashboard/page.js).
+            "is_available_today": _derived_today,
+            "availability_status": _derived_status,
+            # MEH-291 — durable 4-value enum, the only one written.
             # Defensive default in case ORM ever returns NULL despite NOT NULL.
             "availability_state": producer.availability_state or "accepting_orders",
             "vacation_until": producer.vacation_until.isoformat()
