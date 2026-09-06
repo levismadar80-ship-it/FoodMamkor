@@ -4,9 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Leaf } from "@phosphor-icons/react";
 import FadeInSection from "@/components/FadeInSection";
-import { CATEGORY_ICONS } from "@/lib/category-registry";
+// MEH-2163: the no-photo glyph AND its fallback both come from the registry's
+// total lookup. The local `Leaf` import that used to supply the fallback here
+// is gone — same component, one owner.
+import { resolveCategoryGlyph } from "@/lib/category-registry";
 
 // MEH-643: ease-quart curve [0.25,1,0.5,1] mirrored for Framer (= .ease-quart, MEH-136).
 const EASE_QUART = [0.25, 1, 0.5, 1];
@@ -62,9 +64,12 @@ export function HomeCategoryGrid({ categoryCards }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         {categoryCards.map((card, idx) => {
-          // MEH-683: CATEGORY_ICONS is keyed by canonical DB name. Cards carry
+          // MEH-683: the glyph map is keyed by canonical DB name. Cards carry
           // photos (MEH-1183) so this glyph is the no-photo fallback only.
-          const LineArt = CATEGORY_ICONS[card.name];
+          // MEH-2163: total lookup — `LineArt` is never undefined; `isFallback`
+          // says whether it is the registry fallback (rendered lighter, below).
+          const { glyph: LineArt, isFallback: glyphIsFallback } =
+            resolveCategoryGlyph(card);
           const isHero = idx < 2;
           const numeral = String(idx + 1).padStart(2, "0");
           const cardClassName = [
@@ -128,7 +133,9 @@ export function HomeCategoryGrid({ categoryCards }) {
               {/* Glyph panel — cream background, geometric line glyph in brand
                   green (MEH-683 unified set); Phosphor Leaf if name is unmapped. */}
               <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")} data-testid="home-category-image-frame">
-                {LineArt ? (
+                {glyphIsFallback ? (
+                  <LineArt weight="thin" className={isHero ? "w-24 h-24 lg:w-[120px] lg:h-[120px]" : "w-16 h-16"} aria-hidden="true" />
+                ) : (
                   <LineArt
                     className={
                       isHero
@@ -136,8 +143,6 @@ export function HomeCategoryGrid({ categoryCards }) {
                         : "w-16 h-16"
                     }
                   />
-                ) : (
-                  <Leaf weight="thin" className={isHero ? "w-24 h-24 lg:w-[120px] lg:h-[120px]" : "w-16 h-16"} aria-hidden="true" />
                 )}
               </div>
 
