@@ -2173,7 +2173,7 @@
         "empty": "No data yet",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "confirm_delete": "Delete ''{name}'' — {count} associated businesses",
         "producer_count": "{count} businesses",
         "deleting": "Deleting…",
         "delete_error": "Failed to delete the category. Please try again.",
@@ -5026,7 +5026,7 @@
         "save_failed": "Failed to save location",
         "delete_failed": "Failed to delete location",
         "same_city": {
-          "labelled": "You already have '{label}' in {city}.",
+          "labelled": "You already have ''{label}'' in {city}.",
           "unlabelled": "You already have a {kind} in {city}.",
           "many": "You already have {count} locations in {city}.",
           "generic": "You already have a location in this town.",
