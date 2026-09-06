@@ -230,6 +230,12 @@ jobs:
               - 'frontend/**'
               - 'package.json'
               - 'package-lock.json'
+              # MEH-1980: the coverage ratchet and its baseline gate the
+              # frontend job, so an edit to EITHER must force that job to run.
+              # Without these lines a PR touching only these files skips the
+              # very job that would have checked them (patch §A0).
+              - 'scripts/checks/coverage-ratchet.mjs'
+              - 'scripts/checks/coverage-ratchet-baseline.json'
               # MEH-1868: the Knip ratchet and its baseline gate the frontend
               # job, so an edit to EITHER must force that job to run. Without
               # these lines a PR touching only these files skips the very job
@@ -482,12 +488,16 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           SECRET_KEY: ci-test-secret-not-for-production
 
-      # MEH-489 — coverage gate at 70%. Drops `-x` so the full suite runs
+      # MEH-489 — coverage gate. Drops `-x` so the full suite runs
       # (partial runs make coverage meaningless); drops `-v` for log
       # signal-to-noise (the coverage summary is now the load-bearing
       # output). `--tb=long` retained for failure trace quality.
-      # Baseline at merge: 77% (5,529 stmts, 1,281 missed). Threshold 70%
-      # = baseline − 7pt buffer; lift via follow-up ticket as new tests land.
+      # MEH-1980 (05/09): the 70% floor sat 21pt under the measured 91.19%
+      # (run 33960595330, 10,133 stmts) — a dead zone the gate could not
+      # see. Re-frozen as a ratchet at <measured, rounded down> - 2 = 89:
+      # the 2pt buffer is the backend analogue of the frontend's 0.5pt
+      # tolerance (pytest-cov has no tolerance mode). Raise it only from a
+      # fresh CI TOTAL line, never from a number quoted elsewhere.
       - name: Run tests (parallel)
         run: |
           backend/.venv/bin/python -m pytest tests/ \
@@ -509,7 +519,7 @@ jobs:
             --cov-report=xml \
             --cov-report=html \
             --cov-report=term \
-            --cov-fail-under=70 \
+            --cov-fail-under=89 \
             --tb=long --timeout=60
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
@@ -803,8 +813,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Run vitest unit suite
-        run: npx vitest run
+      - name: Run vitest unit suite (with coverage — feeds the ratchet below)
+        run: npx vitest run --coverage
+
+      - name: Coverage ratchet self-test (the comparator must still discriminate)
+        run: node ../scripts/checks/coverage-ratchet.mjs --self-test
+
+      - name: Coverage ratchet (baseline frozen; only a DROP fails)
+        run: node ../scripts/checks/coverage-ratchet.mjs
 
   # ─────────────────────────────────────────────
   # JOB: linear-mentions — workflow.md rule 29 (Linear auto-reopen guard)
