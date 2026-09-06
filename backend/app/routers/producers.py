@@ -152,10 +152,17 @@ def list_producers(
     open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
+    # DEPRECATED (MEH-2271, MEH-1854 chunk 3a) — kept for one release as an
+    # alias onto `availability_state`, not as a column filter. It no longer
+    # reads producers.is_available_today at all: `true` selects
+    # availability_state == "available_today", `false` selects everything
+    # else. Same result set as before, because the column and the enum agreed
+    # (desync measured 0/29 on staging, 06/09) and now the enum is the only
+    # thing written. Removed by MEH-2272; the column drops in MEH-2273.
     is_available_today: bool | None = None,
-    # MEH-291 — durable 4-value enum filter. Phase 3 frontend will switch
-    # to this; the legacy is_available_today filter above stays during the
-    # 7-day overlap. Default listing behavior unchanged in Phase 2.
+    # MEH-291 — durable 4-value enum filter, and as of MEH-2271 the only
+    # availability filter that reads a column. An explicit value here WINS
+    # over the deprecated alias above.
     availability_state: str | None = None,
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
