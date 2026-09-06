@@ -90,29 +90,36 @@ After every PR — send the Vercel preview URL:
 >   problem, and **no commit can fix it** — it resets daily. Observed on PRs
 >   #2541, #2542 (02/08) and #2594 (04/08).
 >
-> **OPEN QUESTION — does an `Ignored` deployment count against
-> `api-deployments-free-per-day`? Unresolved as of 2026-08-04; do not write
-> either answer into this rule until it is settled.** PR #2594 showed `Ignored`
-> on one SHA and rate-limited on the next, which *looks* like the quota being
-> consumed before the ignore step runs. But with ~17 open PRs pushing all day,
-> the account could equally have crossed 100 deployments from **other branches'
-> real builds** in between. Both explanations fit the observation, and nothing
-> observed so far separates them. Weak support for "yes, it counts": each
-> `Ignored` row still carries its own deployment ID and inspector URL, so a
-> deployment *record* exists — but a record existing is not the same as it being
-> counted. **Resolution method:** compare the Vercel dashboard's deployment list
-> against the number of pushes over one day. That needs dashboard access and is
-> **not resolvable from the repo**, so no CC session can settle it.
+> **ANSWERED 2026-09-06 (MEH-2062): an `Ignored` deployment DOES count against
+> `api-deployments-free-per-day`.** Measured on the Vercel dashboard by the
+> orchestrator: 20 deployments in 5.5 hours, 18 of them `CANCELED` by the
+> `ignoreCommand` — every one a quota unit spent on a build that was never going
+> to happen. The 04/08 reading ("the quota gate runs BEFORE the ignore step",
+> PR #2603: rate-limited with no `[preview]` token) was the mechanism; the
+> dashboard count is the confirmation. **So the `ignoreCommand` alone cannot
+> protect the quota**, and the fix moves one layer up: `git.deploymentEnabled`
+> in `frontend/vercel.json` with `feature/*`, `dependabot/*` and `vrt-regen/*`
+> set to `false` — Vercel then creates no deployment record for those pushes at
+> all; `staging` and `main` stay `true`, and the `ignoreCommand` is kept as the
+> second layer for any branch the map does not name. **The block is STAGED,
+> not applied** — `frontend/vercel.json` is filesystem-denied to CC (measured
+> 06/09 19:10Z) and the API route was refused by the harness in the same
+> session, so it is Sapir's five-line paste:
+> [docs/ci/meh-2062-vercel-git-deployments.patch.md](../../docs/ci/meh-2062-vercel-git-deployments.patch.md).
+> **Acceptance once applied:** a push to a `feature/*` branch produces no row in
+> the Vercel deployment list, `Ignored` or otherwise. Until then every feature
+> push still burns a quota unit, and the two states below remain the live ones.
 >
-> **One thing the question IS now settled on (measured on PR #2603, 2026-08-04):
-> the quota gate runs BEFORE the ignore step.** That PR carries no `[preview]`
-> token, so it should have reported `Ignored` — and instead Vercel returned the
-> `api-deployments-free-per-day` error outright. A deployment that reaches the
-> `ignoreCommand` at all has therefore already been admitted past the quota
-> check. **This still does not answer the question above:** being *checked
-> against* a counter and *incrementing* it are different, and only the dashboard
-> comparison separates them. Recorded because it narrows the search, not because
-> it closes it.
+> **Consequence for rule 9 (workflow.md), once applied:** a feature branch gets a
+> preview only by an explicit `vercel deploy` (Sapir's CLI) — the `[preview]`
+> commit-message token no longer reaches Vercel on those branches. Absent a
+> preview, the UI evidence is the 375/1440 Playwright bundle (rule 23 amendment)
+> plus staging after merge.
+>
+> _History, kept for the record:_ the question was opened 2026-08-04 on PR
+> #2594 (`Ignored` on one SHA, rate-limited on the next) and could not be
+> resolved from the repo — it needed the dashboard's deployment list against
+> the day's push count, which is what the 06/09 measurement is.
 >
 > When there is no preview, say so in the PR and name which of the two states it
 > was — do not silently drop rule 9, and do not report a stale or ignored URL as
