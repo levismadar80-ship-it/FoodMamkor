@@ -53,12 +53,13 @@ jobs:
       - name: Resolve mode
         id: mode
         env:
+          EVENT_NAME: ${{ github.event_name }}
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_ISSUES: ${{ github.event.inputs.issues }}
         run: |
           set -euo pipefail
           # Only an explicit dispatch input may select write; the schedule never does.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$INPUT_MODE" = "write" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_MODE" = "write" ]; then
             echo "flag=--write" >> "$GITHUB_OUTPUT"
           else
             echo "flag=--dry-run" >> "$GITHUB_OUTPUT"
@@ -95,9 +96,11 @@ jobs:
 
       - name: Publish table as job summary
         if: always()
+        env:
+          MODE_FLAG: ${{ steps.mode.outputs.flag }}
         run: |
           {
-            echo "## PR reconcile — ${{ steps.mode.outputs.flag }}"
+            echo "## PR reconcile — $MODE_FLAG"
             echo
             cat reconcile-table.md 2>/dev/null || echo "_no output — the sweep step failed before printing_"
           } >> "$GITHUB_STEP_SUMMARY"
