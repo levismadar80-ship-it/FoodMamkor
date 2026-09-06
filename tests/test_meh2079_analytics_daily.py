@@ -22,7 +22,6 @@ here against the source tree instead.
 
 from __future__ import annotations
 
-import subprocess
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -126,34 +125,35 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
     is chunk B — and chunk B changes what a downgrade costs, so it must not
     ride in on this PR unnoticed.
     """
-    out = subprocess.run(
-        [
-            "grep",
-            "-rln",
-            "ProducerAnalyticsDaily\\|producer_analytics_daily",
-            "--include=*.py",
-            "backend/app",
-        ],
-        cwd=REPO,
-        capture_output=True,
-        text=True,
-    )
-    # CONTROL, in two steps — the reviewer on #3452 caught that the first
-    # version had only the second, which made it a control that could lie.
+    # NO SUBPROCESS. Three review rounds landed on this one probe — an
+    # unchecked exit code, then GNU-only `\\|` alternation that a BSD grep
+    # reads literally — and both had the same shape: the shell-out has
+    # semantics (exit codes, regex dialects, PATH) that are not the subject of
+    # this test and that fail by producing a MISLEADING message rather than an
+    # honest one. Reading the files directly removes the whole class instead of
+    # patching its third instance.
+    root = REPO / "backend" / "app"
+    scanned = 0
+    files = set()
+    for path in sorted(root.rglob("*.py")):
+        scanned += 1
+        text = path.read_text(encoding="utf-8")
+        if "ProducerAnalyticsDaily" in text or "producer_analytics_daily" in text:
+            files.add(path.relative_to(REPO).as_posix())
+
+    # CONTROL: the scan actually walked a source tree. Without this, a wrong
+    # `root` yields zero files, zero matches, and an assertion that reads as
+    # "nothing references the table" — the reassuring null.
     #
-    # `grep` exits 0 (matched), 1 (no match) or 2 (ERROR — bad path, bad
-    # pattern). On a 2 the stdout is empty, so a control that only asserts
-    # "stdout is non-empty" fires with "the probe is aimed wrong" when the
-    # truth is "the probe could not run at all". That is the same defect the
-    # control exists to prevent, one level up: a diagnostic that reports the
-    # wrong cause is worse than none, because it sends the next reader after
-    # the wrong thing.
-    assert out.returncode in (0, 1), (
-        f"grep itself failed (exit {out.returncode}) — the search never ran: "
-        f"{out.stderr.strip()}"
+    # 50 rather than the current count: the tree holds 99 files today
+    # (measured — the first draft said 100 and reddened immediately, which is
+    # the control doing its job on its own author), and a bound pinned to the
+    # live number would fail on the next file anyone deletes while a wrong
+    # root still produces 0.
+    assert scanned > 50, (
+        f"only {scanned} .py files under {root} — the scan is aimed wrong"
     )
-    files = {line for line in out.stdout.split("\n") if line}
-    assert files, "grep ran and matched nothing — the probe is aimed wrong"
+
     assert files == {
         "backend/app/models/models.py",
         "backend/app/models/__init__.py",
