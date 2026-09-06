@@ -1951,8 +1951,22 @@ class ProducerUpdate(BaseModel):
     admin_notes: str | None = None
     # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
     # setattr-loop can no longer write it (verification = grant-verified only).
-    # MEH-18
+    #
+    # MEH-18. Reachable from the OWNER's PUT (producer_me.py, gated by
+    # _PRODUCER_WRITABLE_FIELDS, which excludes it) and the ADMIN PUT
+    # (admin.py bulk setattr) — and the admin path is the only way the
+    # editorial pick can be switched on at all. MEH-1494's chunk-B checklist
+    # called this a redundant declaration to delete; measured 06/09, deleting
+    # it would ship a dead toggle, and no test drives the flip through the
+    # admin PUT, so CI would have stayed green. Corrected on the card.
     is_recommended: bool | None = None
+    # MEH-1494 chunk B: the editor's reasoning for the pick. ADMIN-ONLY in both
+    # directions — absent from _PRODUCER_WRITABLE_FIELDS so an owner cannot
+    # write her own citation, and never on a public serializer (asserted by
+    # name in test_meh1494_recommended_at_note.py). `recommended_at` is NOT
+    # here: it is stamped from the transition in admin.py, not supplied by the
+    # caller, so accepting it would be a second authority over the same clock.
+    recommended_note: str | None = None
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None

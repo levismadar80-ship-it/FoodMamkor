@@ -9484,6 +9484,17 @@
             ],
             "title": "Producer License Number"
           },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "short_description": {
             "anyOf": [
               {
