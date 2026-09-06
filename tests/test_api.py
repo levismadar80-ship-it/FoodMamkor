@@ -3299,12 +3299,14 @@ class TestVacationBadgeClear:
 class TestAvailabilityState:
     """4-value enum that consolidates is_available_today + availability_status.
 
-    Phase 2 ships:
-      - new POST /producers/me/availability-state endpoint
-      - dual-write mirror in legacy POST /availability + /availability-status
-      - extended auto-clear when vacation_until is past
-      - optional ?availability_state= filter on /producers list
-    Old columns preserved during 7-day overlap; Phase 4 drops them.
+    Phase 2 shipped the endpoint, the dual-write mirror, the auto-clear and
+    the ?availability_state= filter. MEH-2271 (MEH-1854 chunk 3a) removed the
+    DUAL-WRITE half: `availability_state` is the only column written, the two
+    legacy fields on ProducerListOut are derived from it at serialization
+    time, and ?is_available_today= is a deprecated alias onto the state
+    filter. The assertions below therefore check the RESPONSE, not the two
+    columns — a column assertion here would now be pinning frozen data.
+    MEH-2272 removes the fields; MEH-2273 drops the columns.
     """
 
     @staticmethod
@@ -3341,9 +3343,12 @@ class TestAvailabilityState:
         assert resp.json()["availability_state"] == "available_today"
         db.refresh(producer)
         assert producer.availability_state == "available_today"
-        # Dual-write to legacy columns.
-        assert producer.is_available_today is True
-        assert producer.availability_status == "available"
+        # MEH-2271: no dual-write. The derived view is what a consumer sees.
+        listed = client.get("/producers?availability_state=available_today").json()
+        mine = [p for p in listed if p["id"] == str(producer.id)]
+        assert len(mine) == 1
+        assert mine[0]["is_available_today"] is True
+        assert mine[0]["availability_status"] == "available"
 
     def test_new_endpoint_sets_full_this_week(self, client, db):
         user, producer = self._setup(db)
@@ -3355,8 +3360,13 @@ class TestAvailabilityState:
         assert resp.status_code == 200, resp.text
         assert resp.json()["availability_state"] == "full_this_week"
         db.refresh(producer)
-        assert producer.availability_status == "full"
-        assert producer.is_available_today is False
+        assert producer.availability_state == "full_this_week"
+        # MEH-2271: derived, not dual-written.
+        listed = client.get("/producers?availability_state=full_this_week").json()
+        mine = [p for p in listed if p["id"] == str(producer.id)]
+        assert len(mine) == 1
+        assert mine[0]["availability_status"] == "full"
+        assert mine[0]["is_available_today"] is False
 
     def test_new_endpoint_on_vacation_requires_vacation_until(self, client, db):
         user, _ = self._setup(db)
@@ -3368,7 +3378,9 @@ class TestAvailabilityState:
         assert resp.status_code == 422
         assert "תאריך חזרה לחופשה נדרש" in resp.text
 
-    def test_new_endpoint_on_vacation_with_date_dual_writes(self, client, db):
+    def test_new_endpoint_on_vacation_with_date_derives_the_legacy_pair(
+        self, client, db
+    ):
         from datetime import date, timedelta
         user, producer = self._setup(db)
         future = (date.today() + timedelta(days=10)).isoformat()
@@ -3383,9 +3395,14 @@ class TestAvailabilityState:
         assert body["vacation_until"] == future
         db.refresh(producer)
         assert producer.availability_state == "on_vacation"
-        assert producer.availability_status == "vacation"
-        assert producer.is_available_today is False
         assert producer.vacation_until.isoformat() == future
+        # MEH-2271: derived. An on_vacation producer is hidden from the
+        # default listing, so ask for the state explicitly.
+        listed = client.get("/producers?availability_state=on_vacation").json()
+        mine = [p for p in listed if p["id"] == str(producer.id)]
+        assert len(mine) == 1
+        assert mine[0]["availability_status"] == "vacation"
+        assert mine[0]["is_available_today"] is False
 
     def test_old_toggle_mirrors_to_state(self, client, db):
         user, producer = self._setup(db)
@@ -3463,18 +3480,58 @@ class TestAvailabilityState:
         assert "Alpha" in names
         assert "Beta" not in names
 
-    def test_legacy_is_available_today_filter_still_works(self, client, db):
+    def test_the_deprecated_alias_returns_the_same_set_as_the_state_filter(
+        self, client, db
+    ):
+        """MEH-2271: ?is_available_today= is an ALIAS onto availability_state,
+        not a column filter. Both halves are asserted, and the rows are set up
+        with legacy columns that CONTRADICT their states — under the old
+        column filter this test returns the opposite answer on both halves,
+        which is what makes it discriminating rather than a restatement.
+        """
         p1 = make_producer(db, name="Gamma", status="approved")
-        p1.is_available_today = True
+        p1.availability_state = "available_today"
+        p1.is_available_today = False  # contradicts the state on purpose
         p2 = make_producer(db, name="Delta", status="approved")
-        p2.is_available_today = False
+        p2.availability_state = "accepting_orders"
+        p2.is_available_today = True  # contradicts the state on purpose
         db.commit()
 
-        resp = client.get("/producers?is_available_today=true")
+        def names(url):
+            resp = client.get(url)
+            assert resp.status_code == 200, resp.text
+            return {p["name"] for p in resp.json()}
+
+        alias_true = names("/producers?is_available_today=true")
+        state_true = names("/producers?availability_state=available_today")
+        assert alias_true == state_true
+        assert "Gamma" in alias_true and "Delta" not in alias_true
+
+        # The false half is a real negation, not a dropped filter: it must
+        # exclude Gamma and include Delta, and it must agree with the set the
+        # state filter leaves behind.
+        alias_false = names("/producers?is_available_today=false")
+        assert "Delta" in alias_false
+        assert "Gamma" not in alias_false
+        assert alias_false.isdisjoint(state_true)
+
+        # No 422 anywhere: the alias is deprecated, not removed (MEH-2272).
+        assert client.get("/producers?is_available_today=true").status_code == 200
+
+    def test_an_explicit_state_filter_wins_over_the_alias(self, client, db):
+        """Both parameters present → the real filter decides. Without this,
+        the alias could intersect the state filter and quietly return an empty
+        set for a caller that passed a stale query string.
+        """
+        p1 = make_producer(db, name="Epsilon", status="approved")
+        p1.availability_state = "full_this_week"
+        db.commit()
+
+        resp = client.get(
+            "/producers?availability_state=full_this_week&is_available_today=true"
+        )
         assert resp.status_code == 200
-        names = [p["name"] for p in resp.json()]
-        assert "Gamma" in names
-        assert "Delta" not in names
+        assert "Epsilon" in {p["name"] for p in resp.json()}
 
 
 class TestMojibakeDetection:

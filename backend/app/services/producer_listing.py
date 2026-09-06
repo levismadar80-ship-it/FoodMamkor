@@ -101,7 +101,11 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     # consumers surface unverified "organic" producers — same risk family as the
     # MEH-986 free-text kosher filter. Re-add only behind an admin-verified flow
     # (post-launch, Option B). The column stays (owner/admin managed).
-    ("is_available_today", "is_available_today"),
+    # MEH-2271 — ("is_available_today", "is_available_today") was here. The
+    # public parameter survives as a deprecated ALIAS onto availability_state
+    # (block below); it no longer reads the column, which nothing writes any
+    # more. Removing it from this table is what makes that true rather than
+    # leaving two filters racing on one parameter name.
     # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
     # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
     ("availability_state", "availability_state"),
@@ -682,6 +686,47 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         q = q.filter(veg_cond if vegetarian else ~veg_cond)
         count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)
 
+    # MEH-2271 (MEH-1854 chunk 3a) — the deprecated ?is_available_today=
+    # alias, mapped onto availability_state.
+    #
+    # It maps rather than 422s because the frontend is the only consumer and
+    # a hard removal is MEH-2272's job, one release later (Expand-Contract:
+    # the alias IS the expand phase for the parameter).
+    #
+    # `true`  -> availability_state == "available_today"
+    # `false` -> availability_state != "available_today"
+    #
+    # The false half is a real negation, not a no-op: the old column filter
+    # answered `is_available_today = FALSE`, and dropping that half would
+    # silently widen a caller's result set. The negation is safe against
+    # SQL's three-valued logic because availability_state is NOT NULL
+    # (models.py, server_default 'accepting_orders') — `!=` on a nullable
+    # column would drop unmarked rows from BOTH halves of the comparison.
+    #
+    # An explicit ?availability_state= WINS: the caller asked for the real
+    # filter, so the alias does not get to override or intersect it.
+    legacy_available = filters.get("is_available_today")
+    if legacy_available is not None:
+        if filters.get("availability_state") is not None:
+            logger.warning(
+                "deprecated_filter_ignored",
+                filter="is_available_today",
+                reason="explicit availability_state wins",
+                removed_in="MEH-2272",
+            )
+        else:
+            logger.warning(
+                "deprecated_filter_used",
+                filter="is_available_today",
+                mapped_to="availability_state",
+                value=bool(legacy_available),
+                removed_in="MEH-2272",
+            )
+            avail_cond = Producer.availability_state == "available_today"
+            cond = avail_cond if legacy_available else ~avail_cond
+            q = q.filter(cond)
+            count_q = count_q.filter(cond)
+
     # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
     # explicitly filter by availability_state, exclude vacation producers from
     # the default listing (still reachable via direct slug / favorites / an
@@ -988,7 +1033,9 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     canonical Hebrew day; explicit-row matching only), delivery_days (MEH-2036 —
     OR-list of the same vocabulary; WINS over delivery_day when both are
     present), has_delivery, verified, kosher, city,
-    is_available_today, grass_fed, gluten_free, vegan, vegetarian, lactose_free,
+    is_available_today (MEH-2271 — DEPRECATED alias onto availability_state,
+    removed by MEH-2272; it no longer reads the column), grass_fed,
+    gluten_free, vegan, vegetarian, lactose_free,
     no_added_sugar, low_carb (MEH-1934), sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)
     (MEH-1282: `require_physical` — geo-only opt-in for the has_physical_location
