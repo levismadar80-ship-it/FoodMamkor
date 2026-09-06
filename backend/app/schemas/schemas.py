@@ -4220,11 +4220,23 @@ class EventFilters(BaseModel):
 class ReviewCreateNested(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     body: str = Field(..., min_length=10, max_length=500)
+    # MEH-1428 chunk 1: the `rt` query param from a "request a review" link,
+    # forwarded as-is. A valid token for THIS producer satisfies the
+    # contact-click gate; anything else falls through to the click check.
+    # Never persisted — only `source` ("click" | "invite_link") is.
+    review_token: str | None = Field(default=None, max_length=2048)
 
     @field_validator("body")
     @classmethod
     def _sanitize_body(cls, v):
         return sanitize_text(v, max_length=500)
+
+
+class ReviewInviteLinkOut(BaseModel):
+    """MEH-1428 chunk 1: GET /producers/me/review-link — the shareable URL
+    (public producer page + `?rt=<token>`)."""
+
+    url: str
 
 
 class ReviewReplyUpdate(BaseModel):
@@ -4258,6 +4270,11 @@ class ReviewOut(BaseModel):
     # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
     reply: str | None = None
     reply_at: str | None = None
+    # MEH-1428: `source` ("click" | "invite_link") is deliberately NOT here.
+    # It says how a reviewer passed the contact gate — whether the owner
+    # sent them an invite link — which is moderation signal, not something
+    # every visitor to a producer page should be able to read off each
+    # review. Admin-only: AdminReviewOut.source (reviewer finding on #3368).
 
     model_config = {"from_attributes": True}
 
@@ -4273,6 +4290,9 @@ class AdminReviewOut(BaseModel):
     body: str | None = None
     is_hidden: bool
     created_at: str
+    # MEH-1428: "click" | "invite_link" — how the reviewer passed the contact
+    # gate. Admin-only on purpose; the public ReviewOut does not carry it.
+    source: Literal["click", "invite_link"] = "click"
 
     model_config = {"from_attributes": True}
 
