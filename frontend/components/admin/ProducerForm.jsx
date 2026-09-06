@@ -179,7 +179,6 @@ const EMPTY = {
   established_year: "",
   category_ids: [],
   has_delivery: false,
-  pickup_points: false,
   kosher: "",
   grass_fed: false,
   organic_certified: false,
@@ -218,9 +217,9 @@ const EMPTY = {
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
-function Section({ title, children }) {
+function Section({ title, children, testId }) {
   return (
-    <div className="bg-white rounded-[12px] border border-border p-6">
+    <div className="bg-white rounded-[12px] border border-border p-6" data-testid={testId}>
       <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
       {children}
     </div>
@@ -306,7 +305,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
-        price_range: initial.price_range ?? initial.starting_price_label ?? "",
+        price_range: initial.price_range ?? "",
         // MEH-1541: null → "" so the number input stays controlled + empty.
         established_year: initial.established_year ?? "",
         admin_notes: initial.admin_notes ?? "",
@@ -453,7 +452,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           : Number(form.established_year),
       category_ids: form.category_ids,
       has_delivery: form.has_delivery,
-      pickup_points: form.pickup_points,
       kosher: form.kosher,
       grass_fed: form.grass_fed,
       organic_certified: form.organic_certified,
@@ -865,7 +863,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       {/* MEH-213 — location type */}
-      <Section title={t("producers.form.sections.business_type")}>
+      <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -925,7 +923,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 {t("producers.form.fields.delivery_nationwide")}
               </label>
               {!form.delivery_nationwide && (
-                <div>
+                <div data-testid="delivery-cities-block">
                   <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
                   <CitiesAutocomplete
                     value={form.delivery_cities}
@@ -965,15 +963,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.has_delivery")}
           </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.pickup_points}
-              onChange={(e) => update("pickup_points", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t("producers.form.fields.pickup_points")}
-          </label>
+          {/* MEH-2048: the pickup checkbox is gone. Since MEH-2046 the filter,
+              the card tag and the map pin all derive pickup from
+              ProducerLocation rows (the locations editor above), and admin.py
+              already drops the field on write (MEH-2060) — so a checkbox here
+              could only claim pickup that no consumer surface would show. */}
+          <p className="text-sm text-fg-muted self-center">
+            {t("producers.form.fields.pickup_managed_in_locations")}
+          </p>
           {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
               removed — cities are now entered once via the CitiesAutocomplete in
               the location-mode block above (single store: delivery_areas). */}

@@ -138,14 +138,14 @@ export default function HomeClient({ initialProducers = null, initialCategories 
           was nothing to add and a second rule was NOT introduced.
           ========================= */}
       {!statsLoaded && (
-        <section className="bg-background border-y border-border py-8 text-center" aria-busy="true">
+        <section className="bg-background border-y border-border py-8 text-center" aria-busy="true" data-testid="home-trust-band">
           <p className="font-body-md text-base tracking-wide opacity-60">
             <span className="inline-block w-48 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
           </p>
         </section>
       )}
       {statsLoaded && (
-        <section className="bg-background border-y border-border py-8 text-center">
+        <section className="bg-background border-y border-border py-8 text-center" data-testid="home-trust-band">
           <p className="font-body-md text-base text-text tracking-wide" data-testid="trust-lead">
             {showTrustCount
               ? t.rich("home.trust.lead_count", {
