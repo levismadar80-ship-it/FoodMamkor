@@ -537,7 +537,22 @@ test.describe("/admin/users — the role kebab", () => {
   // Tab leaves. Before MEH-2267 the first assertion below landed on the NEXT
   // row's favorites button, so this test reds against the pre-fix component
   // without needing test.fail() to say so.
-  test("keyboard: opening the ⋮ moves focus to the first item; arrows walk it; Tab leaves and returns focus", async ({ page }) => {
+  //
+  // ONE item, not two, and that is a property of this page rather than of this
+  // fixture: `page.js:238,245` gates promote on `u.role !== "admin"` and demote
+  // on `u.role === "admin"`, which are mutually exclusive. No row on
+  // /admin/users ever offers both, so multi-item Arrow navigation cannot be
+  // exercised here at all — it is covered in __tests__/AdminRowMenu.test.jsx,
+  // where the items are injected. What this test can prove, and does, is the
+  // single-item boundary of the same wrap arithmetic: with n=1 every ArrowDown
+  // and ArrowUp must resolve back to the one item rather than to nothing.
+  //
+  // The count assertion is deliberate and load-bearing: it pins the premise, so
+  // if the page ever grows a second item this test says WHY it changed instead
+  // of failing somewhere further down with "element(s) not found" — which is
+  // exactly how the first version of this test failed, having assumed a demote
+  // item that no consumer row can have.
+  test("keyboard: opening the ⋮ moves focus to its item; arrows hold it; Tab leaves and returns focus", async ({ page }) => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -547,13 +562,13 @@ test.describe("/admin/users — the role kebab", () => {
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
     const m = menu(page);
+    await expect(m.getByRole("menuitem"), "a consumer row offers promote only").toHaveText(["העלי לאדמין"]);
     const promote = m.getByRole("menuitem", { name: "העלי לאדמין" });
-    const demote = m.getByRole("menuitem", { name: "הסירי הרשאות" });
     await expect(promote, "APG: the open puts focus on the first item").toBeFocused();
     await page.keyboard.press("ArrowDown");
-    await expect(demote).toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(promote, "ArrowDown wraps to the first item").toBeFocused();
+    await expect(promote, "ArrowDown wraps to the single item, not off it").toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(promote, "ArrowUp wraps to the single item, not off it").toBeFocused();
     await page.keyboard.press("Tab");
     await expect(m, "APG: Tab closes the menu").toHaveCount(0);
     await expect(btn, "APG: Tab returns focus to the trigger").toBeFocused();
