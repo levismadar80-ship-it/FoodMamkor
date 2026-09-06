@@ -2273,6 +2273,34 @@ class ProducerUpdate(BaseModel):
         return v
 
 
+class ProducerAdminUpdate(ProducerUpdate):
+    """MEH-1287 chunk B: the admin write shape — everything an owner may edit,
+    plus what only an editor may set (today: `in_season_until`).
+
+    A SUBCLASS rather than a field added to `ProducerUpdate`, because
+    `ProducerUpdate` is the OWNER's schema and is shared by both PUT handlers
+    (`producer_me.py` and `admin.py`). Chunk A pinned `in_season_until`'s
+    absence from it by name, and that guard is the anti-self-curation rule in
+    mechanical form: seasonality is the editor's judgement about a business,
+    not the business's claim about itself (the ADR-030 principle, applied to a
+    different surface). A subclass field does not join its parent's
+    `model_fields`, so the guard still holds and the owner endpoint — which
+    annotates `ProducerUpdate` — cannot receive the field at all.
+
+    Note this is stronger than the `_PRODUCER_WRITABLE_FIELDS` whitelist that
+    already filters the owner PUT: the whitelist drops the value after parsing,
+    while this keeps the field off the owner's schema entirely, so it never
+    appears in the owner's OpenAPI shape and no future edit to that whitelist
+    can open it.
+    """
+
+    # A DATE, inclusive, in the Israel calendar: the business is in season
+    # UNTIL this day. `None` clears the mark. There is deliberately no upper
+    # bound — an editor curating a year ahead is a judgement call, not an
+    # error, and the module only ever asks whether today is still inside it.
+    in_season_until: date | None = None
+
+
 class KashrutCertRef(BaseModel):
     """MEH-1672: a badge whose approved certificate photo can be served.
 
@@ -2725,6 +2753,14 @@ class ProducerAdminOut(ProducerDetailOut):
     rejection_reason_code: str | None = None
     resubmission_count: int = 0
     resubmitted_at: datetime | None = None
+    # MEH-1287 chunk B — the editorial seasonal mark, admin-only and READ-BACK
+    # (ADR-006 R2: `ProducerAdminUpdate` writes it, so something has to return
+    # it, or the admin form reopens empty and the next save silently clears a
+    # date an editor set). Absent from ProducerListOut / ProducerDetailOut by
+    # name, asserted in `test_meh1287_in_season_until.py`: the reader learns
+    # WHICH businesses are in season from the module they appear in, never a
+    # date on a card. The public filter is `?in_season=true`.
+    in_season_until: date | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
