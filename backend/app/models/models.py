@@ -1924,7 +1924,22 @@ class ProducerAnalyticsDaily(Base):
 
     __tablename__ = "producer_analytics_daily"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # `server_default` as well as the Python `default`, so the column is
+    # self-sufficient at the DB. Chunk B's roll-up upserts on the unique
+    # constraint below, and the efficient shape for that is a raw
+    # `INSERT … ON CONFLICT DO UPDATE` that never instantiates this class —
+    # a path where `default=uuid.uuid4` is simply not consulted. The pair
+    # matches how the count columns below are already declared (Python-free
+    # `server_default="0"`), and adding it after the table is applied would
+    # cost a second migration. `gen_random_uuid()` is Postgres 13+ core, no
+    # pgcrypto — the same call b7d3e1a94c26 (MEH-1872) and d4a9c31e6f82
+    # (MEH-1399) already rely on.
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
     producer_id = Column(
         UUID(as_uuid=True),
         ForeignKey("producers.id", ondelete="CASCADE"),
