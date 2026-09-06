@@ -116,7 +116,7 @@ describe("auth-context city write-back (MEH-1485)", () => {
     });
 
     // MEH-2265: the listener is re-registered by a useEffect keyed on [user]
-    // (auth-context.js:107-118), so on a slow runner the dispatch can land
+    // (auth-context.js:108-119), so on a slow runner the dispatch can land
     // before the new registration. Asserted with waitFor rather than a bare
     // expect — the assertion itself is unchanged, only the moment it is read.
     await waitFor(() =>
