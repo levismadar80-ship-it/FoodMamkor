@@ -191,7 +191,7 @@ class TestAuth:
         assert resp.status_code == 422, resp.text
         db.expire_all()
         still = db.query(User).filter(User.email == "upgrader_noterms@example.com").first()
-        assert still.role != "producer"
+        assert still.role == "consumer"  # make_user default; a None role must not pass this
         assert still.terms_accepted_at is None
 
     def test_register_producer_upgrade_records_terms_consent(self, client, db):
@@ -273,7 +273,7 @@ class TestAuth:
         assert resp.status_code == 422, resp.text
         db.expire_all()
         still = db.query(User).filter(User.email == "preserve@example.com").first()
-        assert still.role != "producer"  # refused, so no upgrade either
+        assert still.role == "consumer"  # refused, so no upgrade — and not a vacuous "not producer"
         # The pre-existing consent survives the refusal, unchanged in both columns.
         assert still.terms_accepted_at is not None
         assert still.terms_accepted_at.astimezone(timezone.utc) == earlier
