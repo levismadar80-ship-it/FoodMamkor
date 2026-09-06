@@ -5,13 +5,13 @@
  * Purpose:  Shared create/edit form for community experiences. Owns form state,
  *           the debounced live-moderation check, and submit (POST /experiences
  *           on create, PUT /experiences/{id} on edit). Extracted from
- *           experiences/new/NewExperienceClient.jsx for MEH-1405 so the manage
+ *           producer/dashboard/experiences/new/page.js for MEH-1405 so the manage
  *           edit page reuses the exact fields + validation.
  * Touches:  POST /experiences/validate (live verdict), POST|PUT /experiences,
  *           POST /upload/image (cover image).
  * Does NOT: own page chrome (breadcrumb/heading) or post-success navigation —
  *           the consuming page passes onSuccess and renders the surrounding UI.
- * Related:  experiences/new/NewExperienceClient.jsx (create wrapper),
+ * Related:  producer/dashboard/experiences/new/page.js (create wrapper),
  *           producer/dashboard/experiences/[id]/edit/page.js (edit wrapper).
  * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
  *           MEH-1809 (all required/range checks evaluated together and rendered
@@ -34,6 +34,7 @@ import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import CollectionNotice from "@/components/CollectionNotice";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
@@ -182,6 +183,9 @@ function validateExperienceForm(f, t) {
 export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
   const t = useTranslations("experiences.new");
   const tCat = useTranslations("experiences.categories");
+  // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
+  const tNotice = useTranslations("privacy.collection_notice");
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(() => seed(initial));
   const [verdict, setVerdict] = useState(null); // { status, reason, suggestion }
   const [checking, setChecking] = useState(false);
@@ -701,6 +705,12 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           </div>
         )}
       </div>
+
+      <CollectionNotice
+        message={tNotice("experience")}
+        linkLabel={tPrivacyLink("privacy_link")}
+        testId="experience-collection-notice"
+      />
 
       <div className="flex items-center justify-between pt-4 border-t border-border">
         <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">

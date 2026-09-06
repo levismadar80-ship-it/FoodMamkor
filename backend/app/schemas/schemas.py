@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from typing import Annotated, Literal
 from urllib.parse import urlparse
@@ -57,7 +57,7 @@ _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 # MEH-1869: a day may carry several disjoint ranges (morning + evening, the
-# Israeli לunch-break and Friday/מוצ"ש patterns). Capped so the editor stays a
+# Israeli lunch-break and Friday/Saturday-night patterns). Capped so the editor stays a
 # form rather than a scheduler.
 _MAX_ORDER_RANGES_PER_DAY = 3
 
@@ -140,6 +140,112 @@ def _order_window_validator(v):
                 + ", ".join(sorted(_ORDER_WINDOW_DAYS))
             )
         normalized[day] = _validate_order_day(day, hours)
+    return normalized
+
+
+# MEH-1889 chunk A. Cap mirrors _MAX_ORDER_RANGES_PER_DAY's reasoning: the
+# editor stays a form, not a scheduler. A year of holidays is ~20 dates; 60
+# leaves room without letting the column become an unbounded log.
+_MAX_SPECIAL_DATES = 60
+# MEH-1889 chunk B (ruling ג): how far back a special date may reach on WRITE.
+# 30 days lets an owner re-save a form that still carries last week's holiday
+# without a 422, while keeping the column from becoming an unbounded log.
+_SPECIAL_HOURS_RETENTION_DAYS = 30
+_ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _validate_special_date(key, entry) -> dict:
+    """Validate ONE date's entry and return it normalised.
+
+    Split out of `_special_hours_validator` for the same two reasons
+    `_validate_order_day` was split out of `_order_window_validator`: that
+    function hit the C901 ceiling (12 > 10), and "is this one date
+    well-formed?" is a separable question from "is this a well-formed set of
+    dates?".
+    """
+    if not isinstance(key, str) or not _ISO_DATE_REGEX.match(key):
+        raise ValueError(f"תאריך לא תקין: {key} — הפורמט חייב להיות YYYY-MM-DD")
+    try:
+        # Shape is not reality: the regex accepts 2026-02-30 and 2026-13-01,
+        # and only this call rejects them.
+        date.fromisoformat(key)
+    except ValueError:
+        raise ValueError(f"תאריך לא תקין: {key} — הפורמט חייב להיות YYYY-MM-DD")
+
+    if not isinstance(entry, dict) or "ranges" not in entry:
+        raise ValueError(f"התאריך {key} חייב לכלול רשימת טווחים")
+    ranges = entry["ranges"]
+    if not isinstance(ranges, list):
+        raise ValueError(f"התאריך {key} חייב לכלול רשימת טווחים")
+
+    # [] is the CLOSED marker, so it must not reach _validate_order_day — that
+    # function rejects an empty list ("at least one range"), which is the right
+    # rule for a weekly day and the wrong one for a date.
+    day: dict = {"ranges": [] if not ranges else _validate_order_day(key, ranges)}
+
+    note = entry.get("note")
+    if note is not None:
+        if not isinstance(note, str):
+            raise ValueError(f"הערה לא תקינה לתאריך {key}")
+        cleaned = sanitize_text(note, max_length=200)
+        if cleaned:
+            day["note"] = cleaned
+    return day
+
+
+def _special_hours_validator(v):
+    """Validate producers.special_hours on write (MEH-1889 chunk A).
+
+    Shape — date-keyed overrides above the weekly axes:
+
+        {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
+                        "note": "ערב ראש השנה"}}
+
+    `"ranges": []` means CLOSED on that date. `note` is OPTIONAL and is
+    DISPLAY ONLY — the store-hours surface renders it as text and derives
+    nothing from it.
+
+    ORDER-AXIS AUTHORITATIVE: `ranges` overrides `order_window` on that date.
+    It does NOT override `opening_hours`, which is unbounded free text
+    (models.py:380) and therefore has nothing to compute against — the same
+    split services/producer_listing.py:508-514 already draws between the two.
+
+    Ranges are validated by `_validate_order_day`, REUSED VERBATIM rather than
+    reimplemented, so `special_hours` and `order_window` cannot drift on what a
+    valid range is (HH:MM 24h, close>open, ascending + non-overlapping, ≤3).
+    Its messages interpolate the key, which here is the date — "היום 2026-09-22
+    חייב לכלול שעת פתיחה ושעת סגירה" reads correctly.
+
+    Retention (MEH-1889 chunk B, Sapir's ruling ג): a date older than
+    `israel_today() - 30` is REJECTED on write, and readers ignore past dates.
+    Chunk A deliberately accepted any real date so the migration was not
+    coupled to this policy. The boundary is inclusive — exactly today-30 is
+    still accepted — and the check runs AFTER the shape checks, so a malformed
+    key still gets the format message, never the retention one. The clock is
+    `israel_today()`, the codebase's Asia/Jerusalem primitive (not
+    `date.today()`, which is UTC on Railway), so a test freezes it through
+    `schemas.israel_today` — the same idiom test_availability_validation.py uses.
+
+    None passes through (an explicit null clears the field). Returns the
+    NORMALISED value, so the stored row is always the canonical shape.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("שעות מיוחדות חייבות להיות אובייקט של תאריכים")
+    if len(v) > _MAX_SPECIAL_DATES:
+        raise ValueError(f"אפשר להגדיר עד {_MAX_SPECIAL_DATES} תאריכים מיוחדים")
+    normalized = {key: _validate_special_date(key, entry) for key, entry in v.items()}
+    oldest_allowed = israel_today() - timedelta(days=_SPECIAL_HOURS_RETENTION_DAYS)
+    for key in normalized:
+        # Every key here already passed _validate_special_date, which parsed it
+        # with date.fromisoformat — so this call cannot raise. Keep the two in
+        # this order: shape first, then policy.
+        if date.fromisoformat(key) < oldest_allowed:
+            raise ValueError(
+                f"התאריך {key} כבר עבר — אפשר להגדיר שעות מיוחדות רק לתאריכים "
+                f"מה-{_SPECIAL_HOURS_RETENTION_DAYS} הימים האחרונים ואילך"
+            )
     return normalized
 
 
@@ -622,6 +728,19 @@ def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
 
 
 # --- Auth ---
+def _terms_must_be_accepted(v: bool) -> bool:
+    """MEH-2080: the terms checkbox is mandatory, and since 2026-09-v2 it also
+    carries the 18+ self-declaration. An omitted or False flag is a 422 here,
+    never a silent NULL row — the server is the second half of the gate the
+    client's `required` attribute is the first half of (MEH-2015 asterisk
+    invariant). MEH-1995 kept the field optional on purpose and named this as
+    the separate hardening decision; it was ruled on 01/09 (18+, self-declared,
+    no date of birth) and queued on 06/09 (ADDENDUM-9)."""
+    if v is not True:
+        raise ValueError("יש לאשר את תנאי השימוש ולהצהיר על גיל 18 ומעלה")
+    return v
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
@@ -640,11 +759,15 @@ class UserRegister(BaseModel):
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
     # failure (a stored number no wa.me link can dial).
     phone: PhoneNumberField | None = None
-    # MEH-1995: terms-of-service acceptance. See the fuller note on
-    # ProducerRegister.terms_accepted — same field, same additive-default
-    # reasoning. The consumer form's checkbox (RegisterClient.jsx:76) gated the
-    # submit button and was then dropped on the floor; this is what carries it.
-    terms_accepted: bool = False
+    # MEH-1995 recorded the terms-of-service acceptance; MEH-2080 made it
+    # mandatory and folded the 18+ self-declaration into the same checkbox
+    # (RegisterClient.jsx:76, `required`). See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -747,10 +870,18 @@ class ProducerRegister(BaseModel):
     # "consent refused" — the handler stamps only on True, so an omitted field
     # leaves terms_accepted_at NULL, which is the honest state.
     #
-    # Deliberately NOT enforced as required=True here: making it mandatory is a
-    # breaking API change and a separate hardening decision (noted on MEH-1995),
-    # not something to smuggle in under a column addition.
-    terms_accepted: bool = False
+    # MEH-1995 deliberately left this optional and named the mandatory form
+    # as a separate hardening decision. MEH-2080 is that decision: the box is
+    # required on both email paths (new producer AND the consumer→producer
+    # upgrade, which renders the same checkbox), and it now also carries the
+    # 18+ self-declaration. See _terms_must_be_accepted above.
+    terms_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
+
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
@@ -1036,6 +1167,14 @@ class CategoryOut(BaseModel):
     # reviewer on PR #3052.)
     slug: str | None = None
     emoji: str | None = None
+    # MEH-1456 chunk A: the seeded-row ownership flag, on the same ADR-006 R1
+    # reasoning as `slug` above — a new non-internal column rides the matching
+    # *Out in the SAME PR (the CI reviewer flagged its absence on PR #3392).
+    # Read-only on every surface; chunk 2b gates rename/delete on it in
+    # update_category / delete_category and the admin UI reads it from here.
+    # `False` default (not Optional) because the column is NOT NULL two-state.
+    # Deliberately NOT on CategoryHit: a search hit never gates an edit.
+    is_system: bool = False
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
     # ProducerOut.categories) serialize unchanged — NOT a DB column.
@@ -1747,10 +1886,44 @@ class ProducerImportResult(BaseModel):
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
 AVAILABILITY_STATES = (
     "accepting_orders",  # default — "פתוח להזמנות"
-    "available_today",  # superset — זמין + פתוח
+    "available_today",  # superset — available today + open for orders
     "full_this_week",  # "עמוסה השבוע"
     "on_vacation",  # "בהפסקה" (requires vacation_until)
 )
+
+
+# MEH-2271 (MEH-1854 chunk 3a): the ONE owner of the enum -> legacy mapping.
+# It used to live in routers/producer_me.py as `_state_to_legacy` with three
+# callers — the state endpoint, the expiry job, and nothing else read the
+# result back, so the pair of columns and the enum were two authorities over
+# one fact (workflow.md Smell #1). Chunk 3a inverts that: `availability_state`
+# is the only thing written, and the two legacy fields exist only as a derived
+# view on `ProducerListOut` for the one release before MEH-2272 removes them.
+#
+# It lives here, beside AVAILABILITY_STATES, because schemas.py is the single
+# module both the routers and the services can import without a cycle —
+# services/availability_validation.py already imports AVAILABILITY_STATES from
+# here, so the arrow only points one way.
+_STATE_TO_LEGACY: dict[str, tuple[bool, str]] = {
+    "accepting_orders": (False, "available"),
+    "available_today": (True, "available"),
+    "full_this_week": (False, "full"),
+    "on_vacation": (False, "vacation"),
+}
+
+
+def state_to_legacy(state: str | None) -> tuple[bool, str]:
+    """Derive the legacy ``(is_available_today, availability_status)`` pair
+    from ``availability_state``.
+
+    Total by construction: an unknown or NULL state falls back to the default
+    row rather than raising. The column is ``NOT NULL`` with a server default
+    (models.py), so the fallback is unreachable through the ORM — it exists so
+    a hand-built dict or a fixture with a missing state cannot 500 a listing.
+    The previous version of this mapping was a bare dict subscript and would
+    have raised ``KeyError`` on exactly that input.
+    """
+    return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
 
 
 class ProducerUpdate(BaseModel):
@@ -1790,7 +1963,6 @@ class ProducerUpdate(BaseModel):
     # belongs to someone else, and syncs top_product_name from it. Sending
     # `null` clears the vote.
     top_product_id: UUID | None = None
-    starting_price_label: str | None = None
     price_range: str | None = None
     # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
     # bleach-stripped + capped at 300 below (mirrors short_description);
@@ -1838,8 +2010,26 @@ class ProducerUpdate(BaseModel):
     admin_notes: str | None = None
     # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
     # setattr-loop can no longer write it (verification = grant-verified only).
-    # MEH-18
+    #
+    # MEH-18. Reachable from the OWNER's PUT (producer_me.py, gated by
+    # _PRODUCER_WRITABLE_FIELDS, which excludes it) and the ADMIN PUT
+    # (admin.py bulk setattr) — and the admin path is the only way the
+    # editorial pick can be switched on at all. MEH-1494's chunk-B checklist
+    # called this a redundant declaration to delete; measured 06/09, deleting
+    # it would ship a dead toggle, and no test drives the flip through the
+    # admin PUT, so CI would have stayed green. Corrected on the card.
     is_recommended: bool | None = None
+    # MEH-1494 chunk B: the editor's reasoning for the pick. ADMIN-ONLY in both
+    # directions — absent from _PRODUCER_WRITABLE_FIELDS so an owner cannot
+    # write her own citation, and never on a public serializer (asserted by
+    # name in test_meh1494_recommended_at_note.py). `recommended_at` is NOT
+    # here: it is stamped from the transition in admin.py, not supplied by the
+    # caller, so accepting it would be a second authority over the same clock.
+    #
+    # The 500-char cap is the card's own ruling: it rejected `String(500)` on
+    # the COLUMN (an editorial note is internal text and the column stays Text)
+    # and said the length limit belongs in chunk B's validator. This is it.
+    recommended_note: str | None = Field(default=None, max_length=500)
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
@@ -1888,6 +2078,9 @@ class ProducerUpdate(BaseModel):
     # 24h, close>open → 422 Hebrew). Owner-writable path opened in
     # producer_me.py (_PRODUCER_WRITABLE_FIELDS).
     order_window: dict | None = None
+    # MEH-1889 chunk A: per-date overrides above order_window. Validated by
+    # _special_hours_validator; explicit null clears it, same as order_window.
+    special_hours: dict | None = None
     # MEH-1577: structured delivery cost (whole shekels, producer-level).
     # Validated below — both reject negatives, free_delivery_above additionally
     # rejects 0. delivery_fee=0 is ACCEPTED and meaningful ("משלוח חינם"), which
@@ -1911,6 +2104,29 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1494 chunk B: the editor's note is free text an admin types, so it
+    # gets the MEH-555 floor like every other admin-visible free-text field —
+    # "???" is exactly the input that rule exists to reject.
+    #
+    # Blank clears the field rather than failing. That distinction is the
+    # reason this is not a bare `_min_letters_validator`: an admin removing a
+    # note she no longer stands behind is a legitimate edit, and the un-pick
+    # path in admin.py deliberately does NOT clear the note, so clearing it by
+    # hand has to be possible. Sending nothing at all leaves it untouched
+    # (`exclude_unset`); sending "" or whitespace is the explicit clear.
+    #
+    # REUSES: backend/app/schemas/schemas.py:252 (_min_letters_validator) —
+    # same floor, same Hebrew message, same three scripts (MEH-2236).
+    @field_validator("recommended_note")
+    @classmethod
+    def _validate_recommended_note(cls, v):
+        if v is None:
+            return v
+        cleaned = sanitize_text(v, max_length=500)
+        if cleaned is None or not cleaned.strip():
+            return None
+        return _min_letters_validator(cleaned)
 
     # MEH-829: sanitize the owner-editable address on PATCH /producers/me, same
     # bleach strip as the register path (_sanitize_address on ProducerRegister).
@@ -1996,6 +2212,11 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_order_window(cls, v):
         return _order_window_validator(v)
+
+    @field_validator("special_hours")
+    @classmethod
+    def _validate_special_hours(cls, v):
+        return _special_hours_validator(v)
 
     # MEH-2153: delegates to the shared guard so the count/length/trim rules
     # that MEH-210 Phase 2 wrote inline live in one place, and picks up the
@@ -2152,6 +2373,34 @@ class ProducerUpdate(BaseModel):
         return v
 
 
+class ProducerAdminUpdate(ProducerUpdate):
+    """MEH-1287 chunk B: the admin write shape — everything an owner may edit,
+    plus what only an editor may set (today: `in_season_until`).
+
+    A SUBCLASS rather than a field added to `ProducerUpdate`, because
+    `ProducerUpdate` is the OWNER's schema and is shared by both PUT handlers
+    (`producer_me.py` and `admin.py`). Chunk A pinned `in_season_until`'s
+    absence from it by name, and that guard is the anti-self-curation rule in
+    mechanical form: seasonality is the editor's judgement about a business,
+    not the business's claim about itself (the ADR-030 principle, applied to a
+    different surface). A subclass field does not join its parent's
+    `model_fields`, so the guard still holds and the owner endpoint — which
+    annotates `ProducerUpdate` — cannot receive the field at all.
+
+    Note this is stronger than the `_PRODUCER_WRITABLE_FIELDS` whitelist that
+    already filters the owner PUT: the whitelist drops the value after parsing,
+    while this keeps the field off the owner's schema entirely, so it never
+    appears in the owner's OpenAPI shape and no future edit to that whitelist
+    can open it.
+    """
+
+    # A DATE, inclusive, in the Israel calendar: the business is in season
+    # UNTIL this day. `None` clears the mark. There is deliberately no upper
+    # bound — an editor curating a year ahead is a judgement call, not an
+    # error, and the module only ever asks whether today is still inside it.
+    in_season_until: date | None = None
+
+
 class KashrutCertRef(BaseModel):
     """MEH-1672: a badge whose approved certificate photo can be served.
 
@@ -2183,7 +2432,6 @@ class ProducerListOut(BaseModel):
     # and is DERIVED from the FK in attach_badge_fields when the FK is set.
     top_product_id: UUID | None = None
     top_product_name: str | None = None
-    starting_price_label: str | None = None
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
@@ -2234,7 +2482,7 @@ class ProducerListOut(BaseModel):
     # what a card claims about itself.
     delivers: bool = False
     offers_pickup: bool = False
-    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
+    # MEH-986 ch3b (P0 legal — Kashrut Fraud Prohibition Law): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
     # (admin-internal + owner's own view). Public kosher signal is verified-only
@@ -2242,11 +2490,17 @@ class ProducerListOut(BaseModel):
     # MEH-102/MEH-826: weekly hours "Sun-Thu 09:00-18:00, Fri 09:00-14:00".
     # Moved up from ProducerDetailOut so the /map card can show open/closed status.
     opening_hours: str | None = None
+    # MEH-2271 (MEH-1854 chunk 3a) — DERIVED, not read from the row. Whatever
+    # `from_attributes` loads off the two columns is overwritten by
+    # `_compute_trust_tier` below from `availability_state`. They stay on the
+    # contract for exactly one release so a consumer still reading them is not
+    # broken by the switch; MEH-2272 removes them, MEH-2273 drops the columns.
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
-    # MEH-291: 4-value durable enum that supersedes the two above. During the
-    # 7-day overlap both surfaces are populated; reads should prefer this field.
+    # MEH-291: 4-value durable enum. As of MEH-2271 it is not "preferred" —
+    # it is the only thing written and the only thing read; the two fields
+    # above are a view of it.
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
@@ -2257,6 +2511,15 @@ class ProducerListOut(BaseModel):
     # while the producer PAGE already could. Defaults to None, so every
     # existing response is byte-identical for a producer that has no window.
     order_window: dict | None = None
+    # MEH-1889 chunk B (MEH-2264): per-date overrides above order_window,
+    # order-axis authoritative — `{"YYYY-MM-DD": {"ranges": [...], "note"?}}`,
+    # `"ranges": []` = closed that date. On the LIST contract, not only the
+    # detail one, for the MEH-1880 reason: ProducerCard's "open for orders"
+    # line and the open-now chip evaluator read the order axis from list
+    # data, and a card saying "open" on Yom Kippur is exactly the drift this
+    # field exists to prevent. Defaults to None; every existing response is
+    # byte-identical for a producer with no overrides.
+    special_hours: dict | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -2394,14 +2657,24 @@ class ProducerListOut(BaseModel):
             # yesterday and the business stayed hidden from the listings
             # (default-hide on on_vacation) for those extra hours every night.
             and self.vacation_until < israel_today()
-            and (
-                self.availability_status == "vacation"
-                or self.availability_state == "on_vacation"
-            )
+            # MEH-2271: state-only. This used to be an OR with
+            # `availability_status == "vacation"`, which was correct while the
+            # two were independently written. They are not any more — the pair
+            # below is DERIVED from the state a few lines down, so reading it
+            # here would be reading this validator's own output.
+            and self.availability_state == "on_vacation"
         ):
-            self.availability_status = "available"
             self.availability_state = "accepting_orders"
             self.vacation_until = None
+        # MEH-2271 (MEH-1854 chunk 3a): the legacy pair is a derived view of
+        # `availability_state`, not two columns read off the row. It is
+        # computed HERE, after the vacation auto-clear above, so an expired
+        # vacation reports `available`/False rather than the stale `vacation`
+        # the columns still hold. MEH-2272 removes both fields; until then a
+        # consumer still on them sees exactly what the enum says.
+        self.is_available_today, self.availability_status = state_to_legacy(
+            self.availability_state
+        )
         return self
 
     @model_validator(mode="after")
@@ -2589,6 +2862,45 @@ class ProducerAdminOut(ProducerDetailOut):
     # Both NULL once the producer is approved (approve_producer clears them).
     requested_changes: str | None = None
     changes_requested_at: datetime | None = None
+    # MEH-2210: the rejected → resubmit loop, admin side. The code is the
+    # preset key the admin chose (admin.py::PRODUCER_REJECTION_PRESETS); the
+    # count is history (never reset by approve) and drives the queue's
+    # "שליחה חוזרת #n" badge; the stamp is the latest resubmission.
+    rejection_reason_code: str | None = None
+    resubmission_count: int = 0
+    resubmitted_at: datetime | None = None
+    # MEH-1287 chunk B — the editorial seasonal mark, admin-only and READ-BACK
+    # (ADR-006 R2: `ProducerAdminUpdate` writes it, so something has to return
+    # it, or the admin form reopens empty and the next save silently clears a
+    # date an editor set). Absent from ProducerListOut / ProducerDetailOut by
+    # name, asserted in `test_meh1287_in_season_until.py`: the reader learns
+    # WHICH businesses are in season from the module they appear in, never a
+    # date on a card. The public filter is `?in_season=true`.
+    in_season_until: date | None = None
+    # MEH-1494 chunk B (ADR-006 R2 — a field with a write path needs a read
+    # path). `ProducerUpdate` accepts `recommended_note` and this PR's handler
+    # stamps `recommended_at`, and neither could be read back: the admin edit
+    # form had no way to populate the note for a second edit, so re-saving a
+    # picked producer blanked the editor's own reasoning in the UI, and the
+    # `recommended_review_due` list could show WHICH picks are stale without
+    # showing WHY any of them was made.
+    #
+    # Admin-only, and that is a hard line rather than a default: the note is the
+    # editor's internal reasoning about a real business (models.py:188 — "DO NOT
+    # expose recommended_note on any public serializer"), and ADR-030 bans
+    # pay-to-play, so the rationale is exactly the artifact that must stay
+    # internal and auditable instead of becoming marketing copy. This class is
+    # the one place it may appear — NOT ProducerOwnerOut either, the sibling
+    # subclass fifty lines below, which is the easiest wrong home for it.
+    # `test_meh1494_recommended_at_note.py` asserts its absence from the other
+    # three shapes by name; a subclass field does not join its parent's
+    # `model_fields`, so that guard is untouched by this addition.
+    #
+    # `recommended_at` NULL on a picked producer is not missing data: it means
+    # "picked before the clock existed", which is what the review list reads as
+    # due now (admin.py::_recommended_review_due_clause).
+    recommended_at: datetime | None = None
+    recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
@@ -2642,6 +2954,13 @@ class ProducerOwnerOut(ProducerDetailOut):
     # REUSES: schemas.py:913-914 (ProducerAdminOut declarations).
     requested_changes: str | None = None
     changes_requested_at: datetime | None = None
+    # MEH-2210: the owner sees her OWN rejection trail so the dashboard banner
+    # can branch its copy on the code and render "שליחה {n+1} מתוך 3". Same
+    # owner-private pattern as requested_changes directly above; the free-text
+    # reason itself keeps flowing through GET /auth/me (MEH-283).
+    rejection_reason_code: str | None = None
+    resubmission_count: int = 0
+    resubmitted_at: datetime | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -2927,6 +3246,12 @@ class UserOut(BaseModel):
     # correct business tab state (pending/approved/rejected/suspended).
     producer_status: str | None = None
     producer_rejection_reason: str | None = None
+    # MEH-2210: the structured code beside the free text, plus how many
+    # resubmissions the business has used — the dashboard's rejected banner
+    # already reads its reason from here (MEH-1355), so the two fields it
+    # branches on ride the same response.
+    producer_rejection_reason_code: str | None = None
+    producer_resubmission_count: int = 0
     # MEH-192: email verification status.
     email_verified: bool = False
 
@@ -2946,7 +3271,7 @@ class FavoriteOut(BaseModel):
 # backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
-# --- Home Product (מהמטבח של השכן) ---
+# --- Home Product ("from the neighbor's kitchen" listings) ---
 class HomeProductCreate(BaseModel):
     title: str
     description: str | None = None
@@ -3920,11 +4245,23 @@ class EventFilters(BaseModel):
 class ReviewCreateNested(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     body: str = Field(..., min_length=10, max_length=500)
+    # MEH-1428 chunk 1: the `rt` query param from a "request a review" link,
+    # forwarded as-is. A valid token for THIS producer satisfies the
+    # contact-click gate; anything else falls through to the click check.
+    # Never persisted — only `source` ("click" | "invite_link") is.
+    review_token: str | None = Field(default=None, max_length=2048)
 
     @field_validator("body")
     @classmethod
     def _sanitize_body(cls, v):
         return sanitize_text(v, max_length=500)
+
+
+class ReviewInviteLinkOut(BaseModel):
+    """MEH-1428 chunk 1: GET /producers/me/review-link — the shareable URL
+    (public producer page + `?rt=<token>`)."""
+
+    url: str
 
 
 class ReviewReplyUpdate(BaseModel):
@@ -3958,6 +4295,11 @@ class ReviewOut(BaseModel):
     # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
     reply: str | None = None
     reply_at: str | None = None
+    # MEH-1428: `source` ("click" | "invite_link") is deliberately NOT here.
+    # It says how a reviewer passed the contact gate — whether the owner
+    # sent them an invite link — which is moderation signal, not something
+    # every visitor to a producer page should be able to read off each
+    # review. Admin-only: AdminReviewOut.source (reviewer finding on #3368).
 
     model_config = {"from_attributes": True}
 
@@ -3973,6 +4315,9 @@ class AdminReviewOut(BaseModel):
     body: str | None = None
     is_hidden: bool
     created_at: str
+    # MEH-1428: "click" | "invite_link" — how the reviewer passed the contact
+    # gate. Admin-only on purpose; the public ReviewOut does not carry it.
+    source: Literal["click", "invite_link"] = "click"
 
     model_config = {"from_attributes": True}
 

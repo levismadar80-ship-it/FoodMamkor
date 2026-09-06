@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { Faders } from "@phosphor-icons/react";
 
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { CATEGORY_ICONS } from "@/lib/category-registry";
+import { resolveCategoryGlyph } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
 import DeliveryContextBanner from "./DeliveryContextBanner";
 import ServiceChipRow from "./ServiceChipRow";
@@ -57,8 +57,13 @@ export default function FilterChipsBar({
   const categoryChipsWithIcons = useMemo(
     () =>
       visibleCategoryChips.map((chip) => {
-        const Glyph = chip.iconName ? CATEGORY_ICONS[chip.iconName] : null;
-        return Glyph ? { ...chip, icon: <Glyph size={16} /> } : chip;
+        // MEH-2163: one total lookup. The "כל" reset chip declares no iconName
+        // and stays text-only; an aggregate chip whose declared key is not in
+        // the registry keeps the chip-row policy — NO icon rather than the
+        // fallback glyph (same call as ProducersClient's category chips).
+        if (!chip.iconName) return chip;
+        const { glyph: Glyph, isFallback } = resolveCategoryGlyph(chip.iconName);
+        return isFallback ? chip : { ...chip, icon: <Glyph size={16} /> };
       }),
     [visibleCategoryChips],
   );
@@ -103,6 +108,7 @@ export default function FilterChipsBar({
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
+            data-testid="map-filters-button"
             aria-expanded={sheetOpen}
             aria-controls="filter-sheet-panel"
             // REUSES: frontend/components/ChipScrollRow.jsx:118-122 — chip
@@ -160,6 +166,7 @@ export default function FilterChipsBar({
       {activeFilterTags.length > 0 && (
         <div
           dir="rtl"
+          data-testid="map-active-filter-tags"
           className="mt-2 flex flex-wrap items-center gap-1.5"
           aria-live="polite"
         >
@@ -174,6 +181,7 @@ export default function FilterChipsBar({
               // selection is exited via the "כל" chip, never shown as a tag),
               // so every removable tag is a toggle-off.
               onClick={() => onToggleChipClick(tag.key)}
+              data-testid="map-active-filter-tag"
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
               className="group inline-flex items-center min-h-[44px] -my-2.5"
             >
@@ -186,6 +194,7 @@ export default function FilterChipsBar({
           <button
             type="button"
             onClick={resetAllFilters}
+            data-testid="map-clear-all"
             className="inline-flex items-center min-h-[44px] -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
           >
             {t("map.filter.clear_all")}

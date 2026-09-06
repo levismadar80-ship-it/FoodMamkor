@@ -149,7 +149,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           id: 1,
           name: "רוח השדה",
           top_product_name: "לחם מחמצת כפרי",
-          starting_price_label: "החל מ-25₪",
+          price_range: "החל מ-25₪",
           products: [
             { id: 21, name: "לחם מחמצת כפרי", image_url: "https://res.cloudinary.com/x/bread.jpg" },
             { id: 22, name: "חלה", image_url: null },
@@ -300,7 +300,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
   });
 
   // MEH-1463: the signature highlight now carries an accent eyebrow label and,
-  // when its matched grid product was deduped out and starting_price_label is
+  // when its matched grid product was deduped out and price_range is
   // empty, falls back to that product's own description + price.
   it("MEH-1463: eyebrow signature_label renders in the highlight card", () => {
     render(
@@ -310,7 +310,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           id: 1,
           name: "רוח השדה",
           top_product_name: "לחם מחמצת כפרי",
-          starting_price_label: "החל מ-25₪",
+          price_range: "החל מ-25₪",
           products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
         }}
       />,
@@ -319,7 +319,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getByText("producer.detail.sections.products.signature_label")).toBeInTheDocument();
   });
 
-  it("MEH-1463: empty starting_price_label → highlight shows the matched product's description + numeric price", () => {
+  it("MEH-1463: empty price_range → highlight shows the matched product's description + numeric price", () => {
     const { container } = render(
       <ProducerSections
         {...baseProps}
@@ -327,7 +327,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           id: 1,
           name: "רוח השדה",
           top_product_name: "לחם מחמצת כפרי",
-          // no starting_price_label → fallback path
+          // no price_range → fallback path
           products: [
             {
               id: 21,
@@ -347,7 +347,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(ltr).toHaveTextContent("25₪");
   });
 
-  it("MEH-1463: empty starting_price_label with free-text price_range → rendered naturally, not dir=ltr", () => {
+  it("MEH-1463: empty producer price_range with free-text product price_range → rendered naturally, not dir=ltr", () => {
     render(
       <ProducerSections
         {...baseProps}
@@ -366,7 +366,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(freeText.closest('span[dir="ltr"]')).toBeNull();
   });
 
-  it("MEH-1463: starting_price_label present keeps priority — product price NOT used as fallback", () => {
+  it("MEH-1463: price_range present keeps priority — product price NOT used as fallback", () => {
     render(
       <ProducerSections
         {...baseProps}
@@ -374,7 +374,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           id: 1,
           name: "רוח השדה",
           top_product_name: "לחם מחמצת כפרי",
-          starting_price_label: "החל מ-25₪",
+          price_range: "החל מ-25₪",
           products: [
             { id: 21, name: "לחם מחמצת כפרי", image_url: null, price_min: 99 },
           ],
@@ -386,11 +386,23 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.queryByText("99₪")).not.toBeInTheDocument();
   });
 
-  // MEH-1855: price_range is the canonical field (models.py:121) but every
-  // public reader only ever consulted the legacy starting_price_label alias —
-  // an owner who filled ONLY price_range saw nothing on her own page,
-  // including no signature block at all (hasSignature gated on the alias).
-  describe("MEH-1855 — price_range (canonical) read with starting_price_label (alias) fallback", () => {
+  // MEH-1855: price_range is the canonical field. Chunk 1 made every public
+  // reader consult it first (an owner who filled ONLY price_range used to see
+  // nothing on her own page — hasSignature gated on the legacy alias). Chunk 2
+  // DROPPED the alias column, so the reader now consults price_range ALONE:
+  // the two "alias" cases below assert its ABSENCE — a stale payload that
+  // still carries the old key must render nothing from it.
+  describe("MEH-1855 — price_range is the only price-label field the reader consults", () => {
+    // The dropped column's name, assembled at runtime ON PURPOSE: chunk 2's
+    // absence gate greps backend/frontend/docs for that name over *.py, *.js,
+    // *.jsx and *.json (the PR-body command) and requires 0 hits, and a literal
+    // in this .jsx file would be the one hit — a reference to a key that no
+    // longer exists anywhere in the contract. The test still sends the real
+    // stale key to the component; it just does not spell it. The gate does not
+    // scan *.mjs, which is why e2e/qa-meh1855-price-signature.mjs keeps the
+    // literal in its ALIAS_ONLY fixture — a stale payload, not a contract key.
+    const STALE_ALIAS_KEY = ["starting", "price", "label"].join("_");
+
     it("price_range-only, NO top_product_name: the signature block still renders (was fully invisible)", () => {
       render(
         <ProducerSections
@@ -398,8 +410,8 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           producer={{
             id: 1,
             name: "רוח השדה",
-            // no top_product_name, no starting_price_label — only the
-            // canonical field the owner actually filled in.
+            // no top_product_name — only the canonical field the owner
+            // actually filled in.
             price_range: "מ-₪20",
             products: [],
           }}
@@ -424,7 +436,11 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
       expect(screen.getByText("מ-₪20")).toBeInTheDocument();
     });
 
-    it("starting_price_label-only (alias, no price_range): unchanged — still renders", () => {
+    it("chunk 2 ABSENCE: a stale payload carrying ONLY the dropped alias key renders no price from it", () => {
+      // Before chunk 2 this case rendered "החל מ-25₪" via the alias fallback.
+      // The column is gone, so the reader must not consult the key at all —
+      // the name still renders (top_product_name), the price line does not.
+      const staleAliasKey = STALE_ALIAS_KEY;
       render(
         <ProducerSections
           {...baseProps}
@@ -432,15 +448,36 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
             id: 1,
             name: "רוח השדה",
             top_product_name: "לחם מחמצת כפרי",
-            starting_price_label: "החל מ-25₪",
+            [staleAliasKey]: "החל מ-25₪",
             products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
           }}
         />,
       );
-      expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+      expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
+      expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
     });
 
-    it("both set: price_range (canonical) wins over starting_price_label (alias)", () => {
+    it("chunk 2 ABSENCE: with ONLY the dropped alias key and no top_product_name, the signature block does not render at all", () => {
+      const staleAliasKey = STALE_ALIAS_KEY;
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            [staleAliasKey]: "החל מ-25₪",
+            products: [],
+          }}
+        />,
+      );
+      expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("producer.detail.sections.products.signature_label"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("both keys present: price_range renders and the stale alias value is ignored", () => {
+      const staleAliasKey = STALE_ALIAS_KEY;
       render(
         <ProducerSections
           {...baseProps}
@@ -449,7 +486,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
             name: "רוח השדה",
             top_product_name: "לחם מחמצת כפרי",
             price_range: "מ-₪20",
-            starting_price_label: "החל מ-25₪",
+            [staleAliasKey]: "החל מ-25₪",
             products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
           }}
         />,

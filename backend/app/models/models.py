@@ -38,7 +38,7 @@ from app.utils.clock import israel_today
 class City(Base):
     """MEH-213: canonical Israeli city list seeded from data.gov.il.
     Used to validate delivery_cities on producers — free text is forbidden
-    to prevent duplicates and broken search (e.g. ת״א vs תל אביב-יפו).
+    to prevent duplicates and broken search (e.g. "ת״א" vs "תל אביב-יפו").
     """
 
     __tablename__ = "cities"
@@ -180,6 +180,29 @@ class Producer(Base):
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
+    # MEH-1494 chunk A: the editor's pick gets a DATE and a REASON (TripAdvisor
+    # Travelers' Choice = 12-month window; MICHELIN re-inspects every 12-18
+    # months and withdraws stars). Both nullable, NO backfill — rows already
+    # recommended keep recommended_at NULL, read by chunk B's review list as
+    # "picked before the clock existed, due now" rather than a fabricated date.
+    # recommended_note is ADMIN-ONLY: the editor's internal reasoning about a
+    # real business. Never on ProducerListOut / ProducerDetailOut — the guard
+    # test asserts its absence by name. Chunk B stamps recommended_at on the
+    # admin toggle and adds the note field to the admin form; chunk A only
+    # creates the two facts. Paired migration: e2a7c9d4b6f1.
+    # DO NOT expose recommended_note on any public serializer.
+    recommended_at = Column(DateTime(timezone=True), nullable=True)
+    recommended_note = Column(Text, nullable=True)
+    # MEH-1287 chunk A: date-bounded editorial curation for the "עכשיו בעונה"
+    # homepage module. The business is in season UNTIL this date (inclusive,
+    # Israel calendar day — compare with israel_today(), never date.today()).
+    # NULL = not curated. A DATE rather than a boolean so it expires by itself
+    # instead of being a flag someone forgets in winter; same clock-not-flag
+    # shape as recommended_at above. Admin-only, NOT on ProducerUpdate —
+    # seasonality is the editor's call, not the owner's declaration (guard
+    # test asserts absence). Chunk B reads it with a count >= 3 render gate
+    # (ADDENDUM-4). Paired migration: f5b8d2c7a3e9.
+    in_season_until = Column(Date, nullable=True)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
     # MEH-1335: owner story fields consumed by the public OwnerCard
@@ -253,15 +276,10 @@ class Producer(Base):
         ),
         nullable=True,
     )
-    # LEGACY(2026-10-01, MEH-1855)
-    # MEH-1857: the alias below carried no date and no ticket, so nothing could
-    # ever make it expire. Ownership is also INVERTED today — the public page
-    # reads this alias (ProducerSections.jsx) while the owner writes the
-    # canonical price_range, so a price she fills in renders nowhere. MEH-1855
-    # collapses the pair; the marker makes the deadline enforceable.
-    starting_price_label = Column(
-        String(50), nullable=True
-    )  # legacy alias for price_range
+    # MEH-1855 chunk 2 (contract step, ADR-007 Phase 4): the legacy
+    # price-label alias column that used to sit here is GONE — backfilled into
+    # this column by 97669fe803f5 (Phase 1) and dropped by 9849fab1637a.
+    # price_range is the single price-label field; do not re-add an alias.
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
@@ -290,8 +308,9 @@ class Producer(Base):
     # ProducerListOut.has_X_products (aggregated, computed at attach time).
     has_delivery = Column(Boolean, default=False)
     pickup_points = Column(Boolean, default=False)
-    kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
-    # MEH-530: manufacturer license number (משרד הבריאות). Nullable at the
+    # values: "כשר" / "לא כשר" / "כשר למהדרין"
+    kosher = Column(String(50), nullable=True)
+    # MEH-530: manufacturer license number (Ministry of Health). Nullable at the
     # DB level so existing producer rows stay valid; required-vs-optional
     # is enforced at the application layer (router-level helper
     # app/services/license_validation.py — depends on selected categories).
@@ -389,7 +408,7 @@ class Producer(Base):
     #               {"open": "16:00", "close": "20:00"}], ...}
     # keys a subset of sunday..saturday; a day absent = orders closed that day.
     # Up to 3 ranges per day, ascending and non-overlapping (a lunch break, or
-    # Friday morning + מוצ"ש). The pre-MEH-1869 single-dict form
+    # Friday morning + Saturday night post-Shabbat). The pre-MEH-1869 single-dict form
     # ({"sunday": {"open", "close"}}) is still ACCEPTED on write and normalised
     # to a one-element list, and every reader normalises both — so rows written
     # before the cutover keep working untouched. This was a JSONB VALUE-shape
@@ -401,6 +420,24 @@ class Producer(Base):
     # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
     # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
+    # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
+    # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
+    #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,
+    # `"ranges": []` = CLOSED that date. NULL = feature unused.
+    # ORDER-AXIS AUTHORITATIVE: `ranges` overrides `order_window` on that date
+    # only. It does NOT override `opening_hours` — that axis is unbounded free
+    # text (see the column above at :380), so there is nothing to compute
+    # against; `note` is DISPLAY ONLY for the store-hours surface. The repo
+    # already ruled the two are different facts and that the computed surfaces
+    # read the order axis deliberately: services/producer_listing.py:508-514
+    # and routers/producers.py:146.
+    # Ranges reuse `order_window`'s per-day rules verbatim (HH:MM 24h,
+    # close>open, ascending + non-overlapping, ≤3) via _validate_order_day, so
+    # the two fields cannot drift on what a "range" means. Validated in
+    # schemas.ProducerUpdate -> 422. Expand-only per ADR-007.
+    # Precedence at the READERS is chunk B — chunk A stores and validates only.
+    # Paired migration for the COLUMN: c4e81b7a2f96 (MEH-1889).
+    special_hours = Column(JSONB, nullable=True)
     # MEH-213: location mode. Two independent booleans (not an enum) because
     # a producer can have BOTH a physical store AND offer delivery.
     # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
@@ -460,6 +497,20 @@ class Producer(Base):
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
     # never added it to the DB, baseline didn't pick it up).
     rejection_reason = Column(Text, nullable=True)
+    # MEH-2210 — the rejected → resubmit loop. `rejection_reason_code` is the
+    # admin's preset key (admin.py::PRODUCER_REJECTION_PRESETS — the SAME dict
+    # that composes the text above; a second code dictionary would be
+    # workflow.md Smell #1), stored beside the composed text so the owner
+    # dashboard can branch its copy on it. NULL on every row rejected before
+    # this column existed (legacy free-text reject with no preset_key); `other`
+    # is stored as the string "other" — the banner falls back to the text.
+    # `resubmission_count` is HISTORY: incremented by POST /producers/me/
+    # request-review from `rejected`, never reset by approve. Capped at
+    # constants.MAX_PRODUCER_RESUBMISSIONS server-side. `resubmitted_at` is
+    # the tz-aware stamp of the latest resubmission (MEH-762).
+    rejection_reason_code = Column(String(40), nullable=True)
+    resubmission_count = Column(Integer, nullable=False, default=0, server_default="0")
+    resubmitted_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-1011: producer "request-changes" trail — the non-terminal twin of
     # rejection_reason. When the admin sends a completion request (missing
     # photo / license), status STAYS "pending"; `requested_changes` holds the
@@ -840,6 +891,22 @@ class Category(Base):
     # nobody "simplifies" the explicit value back out.
     slug = Column(String(50), nullable=False, default=_category_slug_default)
     emoji = Column(String(10))
+    # MEH-1456 chunk A: declared ownership ON THE ROW (Oracle Siebel "Protect
+    # Seed Data", IBM RDU WRITE_PROTECTED — and, measured 04/09, GBP's closed
+    # taxonomy / Etsy's immutable taxonomy_id). TRUE for exactly the rows
+    # seed_data.CATEGORIES owns, FALSE for admin-created rows. Two writers, on
+    # purpose: revision b7d3e5a9c1f4 backfills existing databases by name
+    # (name is UNIQUE and the seed's own conflict key, so a seed-named row IS
+    # the seed row); seed_categories writes True on its own INSERT for fresh
+    # ones, where migrations run BEFORE the boot seed inserts anything.
+    # Two-state by design (NOT NULL + server_default false) — ownership has no
+    # "unknown". Chunk 2b makes update_category / delete_category refuse a
+    # rename or delete while this is True; chunk A only creates the fact.
+    # DO NOT expose this as admin-editable — a flag the second authority can
+    #        clear is not a lock (the whole point of the column).
+    is_system = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
@@ -888,8 +955,8 @@ class Product(Base):
     # fallbacks) — naming it here records who removes this column, not that
     # the removal is ready.
     #
-    # Separate instance from producers.starting_price_label above (MEH-1855) —
-    # same class, different column.
+    # Separate instance from the producer-level price alias MEH-1855 retired
+    # (chunk 2, 9849fab1637a) — same class, different column.
     price_range = Column(String(50))  # legacy: removal tracked in MEH-2064
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
@@ -1384,14 +1451,15 @@ class HomeProduct(Base):
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
     # --- expanded fields (docs/archive/FIXES_V2.md fix 2) ---
-    category = Column(String(50), nullable=True)  # בשר ועוף / דגים / ירקות / ...
-    prep_date = Column(Date, nullable=True)  # תאריך הכנה / קטיף
-    expiry_date = Column(Date, nullable=True)  # תאריך תפוגה
-    storage_type = Column(String(30), nullable=True)  # מקרר / מקפיא / טמפרטורת חדר
+    category = Column(String(50), nullable=True)  # e.g. "בשר ועוף" / "דגים" / "ירקות"
+    prep_date = Column(Date, nullable=True)  # preparation / harvest date
+    expiry_date = Column(Date, nullable=True)  # expiry date
+    # e.g. "מקרר" / "מקפיא" / "טמפרטורת חדר"
+    storage_type = Column(String(30), nullable=True)
     allergens = Column(Text, nullable=True)  # "חיטה, ביצים, חלב..."
-    kosher = Column(String(30), nullable=True)  # כשר / לא כשר / לא ידוע
+    kosher = Column(String(30), nullable=True)  # values: "כשר" / "לא כשר" / "לא ידוע"
     is_organic = Column(Boolean, default=False)
-    unit = Column(String(30), nullable=True)  # ק״ג / יח׳ / ליטר / מנות
+    unit = Column(String(30), nullable=True)  # e.g. "ק״ג" / "יח׳" / "ליטר" / "מנות"
     delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
     location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
     images = Column(ARRAY(Text), default=[])  # up to 4 photos (Cloudinary URLs)
@@ -1497,7 +1565,9 @@ class Event(Base):
     lat = Column(Float)
     lng = Column(Float)
     image_url = Column(Text)
-    category = Column(String(30), nullable=False)  # שוק|קטיף|טעימות|אחר (MEH-1657)
+    # MEH-1657: one of routers/events.py VALID_CATEGORIES —
+    # "שוק" | "קטיף" | "טעימות" | "אחר".
+    category = Column(String(30), nullable=False)
     price = Column(Integer, default=0)  # 0 = free
     max_participants = Column(Integer, nullable=True)
     registration_url = Column(String(500), nullable=True)  # external signup link
@@ -1556,7 +1626,9 @@ class Experience(Base):
     title = Column(String(300), nullable=False)
     description = Column(Text, nullable=False)
     image_url = Column(Text, nullable=True)
-    category = Column(String(50), nullable=True)  # בישול | תזונה | סיור אוכל | ...
+    # e.g. "בישול" | "תזונה" | "סיור אוכל" — keys mirror
+    # frontend/lib/event-categories.js EXPERIENCE_CATEGORIES.
+    category = Column(String(50), nullable=True)
 
     # Host — any logged-in user (consumer / producer / admin)
     host_user_id = Column(
@@ -1643,6 +1715,12 @@ class ProducerReview(Base):
         UniqueConstraint(
             "producer_id", "user_id", name="uq_one_review_per_producer_per_user"
         ),
+        # MEH-1428: DB-level twin of the Pydantic Literal on `source` — added
+        # by revision 3f9a7c2e5d18 alongside the column.
+        CheckConstraint(
+            "source IN ('click', 'invite_link')",
+            name="ck_producer_reviews_source",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1665,6 +1743,14 @@ class ProducerReview(Base):
     # utcnow() the endpoint writes (CHUNK B). Alembic revision b8f3d21a9c47.
     reply = Column(Text, nullable=True)
     reply_at = Column(DateTime, nullable=True)
+    # MEH-1428 chunk 1: how the reviewer passed the contact gate —
+    # "click" (a WhatsApp/contact click row, the pre-MEH-1428 path) or
+    # "invite_link" (a signed "request a review" token, reviews.py guard 3).
+    # NOT NULL with a server_default so every pre-existing row reads "click"
+    # without a backfill — Expand-only (ADR-007). Alembic revision
+    # 3f9a7c2e5d18 (down_revision f5b8d2c7a3e9 — re-pointed 05/09 when the
+    # branch was synced onto staging; the revision docstring records it).
+    source = Column(String(20), nullable=False, server_default="click")
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")
@@ -1793,6 +1879,77 @@ class ProducerWhatsAppClick(Base):
     # means "not a coverage click" and never "we lost it". Length mirrors the
     # 60-char cap the request schema enforces after trim.
     city = Column(String(60), nullable=True)
+
+
+class ProducerAnalyticsDaily(Base):
+    """MEH-2079 chunk A: the anonymous daily roll-up that lets the raw
+    analytics tables be pruned without the owner's dashboard losing history.
+
+    Sapir's ruling 05/09: `producer_page_views` and `producer_whatsapp_clicks`
+    keep 90 days of RAW rows and are then deleted, while this table keeps the
+    per-day counts forever. The point of the pair is stated in the ruling as
+    "אפס שינוי נראה לבעלת העסק" — the owner's numbers must not move when the
+    purge first runs.
+
+    ANONYMOUS BY CONSTRUCTION, and that is the whole reason it may be kept
+    without a bound: no `viewer_ip_hash`, no `city`, no `user_id`, no row-level
+    anything. A count per (business, day) says nothing about any person, so
+    Amendment 13's storage-limitation principle does not bite on it the way it
+    bites on the pseudonymous raw rows (`analytics.py:163` — SHA-256 of the IP
+    with a deploy-scoped salt is personal data, not anonymous data).
+
+    THE COUNTS ARE DEDUPED, NOT RAW ROW COUNTS. `views_unique` and
+    `views_search_unique` store what `services/analytics.py::unique_views_count`
+    computes — one view per visitor per Israel calendar day (MEH-160) — because
+    that is what every reader of the raw table already shows. Summing raw rows
+    here instead would make the owner's "total" jump upward the moment the
+    aggregate half of the window starts being read, which is the same
+    inflation MEH-160 removed, reintroduced through a side door.
+    `whatsapp_clicks` is a plain count, matching its reader
+    (`producer_me.py`'s `windowed(ProducerWhatsAppClick, ...)`, no distinct).
+
+    `day` is an Israel calendar day (`utils/clock.py::israel_today`), a DATE
+    and not a timestamp — the same MEH-1883 reasoning as every other date
+    column here.
+
+    Chunk A creates the table and NOTHING else: no writer, no reader, no
+    scheduler entry. Chunk B adds the roll-up job and the `windowed()` total
+    path; chunk C adds the purge and must not merge before the privacy-policy
+    wording is live (MEH-1981).
+
+    # DO NOT add a person-level column to this table — its whole licence to
+    #        exist unbounded is that it carries none.
+    # DO NOT write raw row counts into views_unique; use unique_views_count.
+    """
+
+    __tablename__ = "producer_analytics_daily"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # CASCADE, like the raw tables: when a business deletes its account the
+    # aggregate goes with it. The ruling keeps the aggregate "anonymous" for
+    # RETENTION purposes, which is not a reason to keep a deleted business's
+    # numbers — deletion is a different right from storage limitation, and the
+    # card is explicit that the existing CASCADE is not a substitute for either.
+    day = Column(Date, nullable=False, index=True)
+    views_unique = Column(Integer, nullable=False, server_default="0")
+    views_search_unique = Column(Integer, nullable=False, server_default="0")
+    whatsapp_clicks = Column(Integer, nullable=False, server_default="0")
+
+    __table_args__ = (
+        # One row per business per day. The roll-up in chunk B upserts on this
+        # constraint, so a re-run over a day it already summarised corrects the
+        # row instead of doubling it — a job that can be run twice safely is
+        # the difference between a recoverable backfill and a corrupted one.
+        UniqueConstraint(
+            "producer_id", "day", name="uq_producer_analytics_daily_producer_day"
+        ),
+    )
 
 
 class ContactClick(Base):

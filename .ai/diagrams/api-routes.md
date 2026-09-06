@@ -9,7 +9,7 @@
 >   - 🌐 = public (no token)
 >   - 🔑 = any authenticated user (`get_current_user`)
 >   - 👤 = producer role (`require_producer`)
->   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /producers/me/recipes`, `POST /group-buys`.
+>   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`.
 >   - 🛡️ = admin role (`require_admin`)
 
 ## 1. Registered routers at a glance
@@ -97,7 +97,8 @@ graph TD
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
-    Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending-only 409, 3/hr,<br/>notification-only, no DB write]
+    Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending: notification-only, no DB write;<br/>MEH-2210 rejected: cap 3 → 409, completeness gate → 422, else → pending + resubmission_count+1; other statuses 409; 3/hr]
+    Dashboard --> ReviewLink[GET /producers/me/review-link<br/>👤 MEH-1428 signed "request a review" URL — approved-only 403, 30/min,<br/>30-day HS256 token scope=review_invite bound to producer_id, not single-use;<br/>presented as review_token on POST /producers/:id/reviews it replaces the<br/>contact-click gate for that producer only → row source=invite_link]
     Dashboard --> SubmitReview[POST /producers/me/submit-for-review<br/>👤 MEH-2100 draft→pending — draft-only 409, 5/hr,<br/>server-side completeness gate → 422 with params.missing,<br/>stamps submitted_for_review_at + pings admin]
 
     NeighborList[/neighbor + create home product] --> HPCreate[POST /home-products<br/>🔑 Claude Opus moderation on write]
@@ -109,7 +110,7 @@ graph TD
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
-    Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
+    Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
 ```
 
@@ -121,7 +122,7 @@ graph TD
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
-    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit]
+    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key]
     Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]

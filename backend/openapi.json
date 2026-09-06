@@ -152,6 +152,15 @@
             ],
             "title": "Producer Name"
           },
+          "source": {
+            "default": "click",
+            "enum": [
+              "click",
+              "invite_link"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
           "stars": {
             "title": "Stars",
             "type": "integer"
@@ -583,6 +592,11 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "is_system": {
+            "default": false,
+            "title": "Is System",
+            "type": "boolean"
           },
           "name": {
             "title": "Name",
@@ -4538,6 +4552,18 @@
             "title": "Images",
             "type": "array"
           },
+          "in_season_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Season Until"
+          },
           "instagram": {
             "anyOf": [
               {
@@ -4792,6 +4818,29 @@
             "title": "Products Count",
             "type": "integer"
           },
+          "recommended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended At"
+          },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "referral_source": {
             "anyOf": [
               {
@@ -4814,6 +4863,17 @@
             ],
             "title": "Referral Source Other"
           },
+          "rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason Code"
+          },
           "report_count": {
             "default": 0,
             "title": "Report Count",
@@ -4829,6 +4889,23 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "resubmission_count": {
+            "default": 0,
+            "title": "Resubmission Count",
+            "type": "integer"
+          },
+          "resubmitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resubmitted At"
           },
           "reviews_count": {
             "default": 0,
@@ -4879,16 +4956,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -5051,6 +5129,704 @@
           "name"
         ],
         "title": "ProducerAdminOut",
+        "type": "object"
+      },
+      "ProducerAdminUpdate": {
+        "description": "MEH-1287 chunk B: the admin write shape — everything an owner may edit,\nplus what only an editor may set (today: `in_season_until`).\n\nA SUBCLASS rather than a field added to `ProducerUpdate`, because\n`ProducerUpdate` is the OWNER's schema and is shared by both PUT handlers\n(`producer_me.py` and `admin.py`). Chunk A pinned `in_season_until`'s\nabsence from it by name, and that guard is the anti-self-curation rule in\nmechanical form: seasonality is the editor's judgement about a business,\nnot the business's claim about itself (the ADR-030 principle, applied to a\ndifferent surface). A subclass field does not join its parent's\n`model_fields`, so the guard still holds and the owner endpoint — which\nannotates `ProducerUpdate` — cannot receive the field at all.\n\nNote this is stronger than the `_PRODUCER_WRITABLE_FIELDS` whitelist that\nalready filters the owner PUT: the whitelist drops the value after parsing,\nwhile this keeps the field off the owner's schema entirely, so it never\nappears in the owner's OpenAPI shape and no future edit to that whitelist\ncan open it.",
+        "properties": {
+          "active_offer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProducerOfferCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "address": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "admin_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Notes"
+          },
+          "availability_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability State"
+          },
+          "availability_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Status"
+          },
+          "category_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Ids"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
+          "custom_questions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Questions"
+          },
+          "delivery_area_cities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Area Cities"
+          },
+          "delivery_areas": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryAreaCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Areas"
+          },
+          "delivery_cities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Cities"
+          },
+          "delivery_excluded_cities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Excluded Cities"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "delivery_nationwide": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Nationwide"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "established_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Established Year"
+          },
+          "external_order_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Order Form"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "gluten_free_facility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Free Facility"
+          },
+          "google_place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Place Id"
+          },
+          "grass_fed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grass Fed"
+          },
+          "has_delivery": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Delivery"
+          },
+          "has_physical_location": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Physical Location"
+          },
+          "images": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images"
+          },
+          "in_season_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Season Until"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "is_available_today": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Available Today"
+          },
+          "is_recommended": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Recommended"
+          },
+          "kosher": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kosher"
+          },
+          "lactose_free_facility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lactose Free Facility"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "license_expires_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Expires At"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "offers_delivery": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offers Delivery"
+          },
+          "opening_hours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Hours"
+          },
+          "order_window": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Window"
+          },
+          "organic_certified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organic Certified"
+          },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
+          },
+          "owner_photo_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Photo Url"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "pickup_points": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Points"
+          },
+          "price_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Range"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
+          },
+          "producer_license_number": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer License Number"
+          },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "special_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Hours"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "top_product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Id"
+          },
+          "top_product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Product Name"
+          },
+          "vacation_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vacation Until"
+          },
+          "vegan_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vegan Scope"
+          },
+          "vegetarian_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vegetarian Scope"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "whatsapp_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Group"
+          }
+        },
+        "title": "ProducerAdminUpdate",
         "type": "object"
       },
       "ProducerCityOut": {
@@ -5774,16 +6550,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -6462,16 +7239,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -7917,6 +8695,17 @@
             "title": "Products Count",
             "type": "integer"
           },
+          "rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason Code"
+          },
           "report_count": {
             "default": 0,
             "title": "Report Count",
@@ -7932,6 +8721,23 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "resubmission_count": {
+            "default": 0,
+            "title": "Resubmission Count",
+            "type": "integer"
+          },
+          "resubmitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resubmitted At"
           },
           "reviews_count": {
             "default": 0,
@@ -7960,16 +8766,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -8746,7 +9553,6 @@
             "title": "Short Description"
           },
           "terms_accepted": {
-            "default": false,
             "title": "Terms Accepted",
             "type": "boolean"
           },
@@ -8764,7 +9570,8 @@
         },
         "required": [
           "producer_name",
-          "city"
+          "city",
+          "terms_accepted"
         ],
         "title": "ProducerRegister",
         "type": "object"
@@ -9419,6 +10226,18 @@
             ],
             "title": "Producer License Number"
           },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -9441,16 +10260,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "anyOf": [
@@ -10144,6 +10964,18 @@
             "title": "Body",
             "type": "string"
           },
+          "review_token": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Token"
+          },
           "stars": {
             "maximum": 5.0,
             "minimum": 1.0,
@@ -10156,6 +10988,20 @@
           "body"
         ],
         "title": "ReviewCreateNested",
+        "type": "object"
+      },
+      "ReviewInviteLinkOut": {
+        "description": "MEH-1428 chunk 1: GET /producers/me/review-link — the shareable URL\n(public producer page + `?rt=<token>`).",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ReviewInviteLinkOut",
         "type": "object"
       },
       "ReviewOut": {
@@ -10630,6 +11476,22 @@
             ],
             "title": "Producer Rejection Reason"
           },
+          "producer_rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Rejection Reason Code"
+          },
+          "producer_resubmission_count": {
+            "default": 0,
+            "title": "Producer Resubmission Count",
+            "type": "integer"
+          },
           "producer_status": {
             "anyOf": [
               {
@@ -10708,7 +11570,6 @@
             "title": "Phone"
           },
           "terms_accepted": {
-            "default": false,
             "title": "Terms Accepted",
             "type": "boolean"
           }
@@ -10716,7 +11577,8 @@
         "required": [
           "email",
           "name",
-          "password"
+          "password",
+          "terms_accepted"
         ],
         "title": "UserRegister",
         "type": "object"
@@ -12369,6 +13231,16 @@
               ],
               "title": "Search"
             }
+          },
+          {
+            "in": "query",
+            "name": "recommended_review_due",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Recommended Review Due",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -12683,7 +13555,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProducerUpdate"
+                "$ref": "#/components/schemas/ProducerAdminUpdate"
               }
             }
           },
@@ -16638,6 +17510,38 @@
           },
           {
             "in": "query",
+            "name": "vegan_all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vegan All"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vegetarian_all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vegetarian All"
+            }
+          },
+          {
+            "in": "query",
             "name": "lactose_free",
             "required": false,
             "schema": {
@@ -16682,6 +17586,22 @@
                 }
               ],
               "title": "Low Carb"
+            }
+          },
+          {
+            "in": "query",
+            "name": "in_season",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "In Season"
             }
           },
           {
@@ -17945,6 +18865,33 @@
         ]
       }
     },
+    "/producers/me/review-link": {
+      "get": {
+        "description": "The owner's shareable \"request a review\" URL.\n\nApproved producers only: the public page the link opens exists only once\nthe business is live, and a pending/draft business has no customers to\nask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py\ncreate_review_invite_token) — not single-use, so one link serves every\ncustomer the owner sends it to; a fresh call re-mints it, which is how a\nlink is \"renewed\" after expiry. No DB write.\n\nURL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a\ncustom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are\nthe live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).",
+        "operationId": "get_review_invite_link_producers_me_review_link_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewInviteLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Review Invite Link",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/submit-for-review": {
       "post": {
         "description": "The owner declares her profile ready and hands it to the admin queue.\n\nThis is the ONLY transition out of `draft` (MEH-2100). All three producer\ncreation sites now write `draft`, so before this call the business is\ninvisible to the review queue by construction — and the \"בסקירה\" banner\nplus the 3-business-day SLA both start HERE rather than at signup, which\nis the whole point of the ticket.\n\nDraft-only, mirroring the MEH-1236 request-review 409 directly above: a\nbusiness already `pending` is in the queue (nothing to do), and one that\nis approved / rejected / inactive has been decided. A silent 200 on those\nwould tell the owner something happened when nothing did.\n\nThe gate is SERVER-SIDE and reads the SAME helper the dashboard checklist\nand the MEH-1818 nudge read (`submission_missing_items`), so the three can\nnever drift into different definitions of \"ready\". A client that ignores\nthe disabled CTA still gets 422 — the button state is an affordance, not\nthe rule.\n\nThe 422 body uses the MEH-1943 `{code, message, params}` shape, which buys\ntwo things at once: `detailToMessage` (frontend/lib/errors.js:151) renders\n`message` with no client change, and `params.missing` carries the\nmachine-readable codes the checklist highlights.\n\nNOT gated here, deliberately: the producer LICENSE (MEH-971's\nlicense_pending path must still be able to reach the queue with a NULL\nlicense — it is an approve-time question) and OPENING HOURS (recommended,\nnot required — Google precedent). Both remain enforced where they belong;\nsee submission_gate.py's \"Does NOT\" header.",
@@ -18508,7 +19455,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {

@@ -128,9 +128,12 @@ export const ProducerListSchema = z.object({
     id: z.union([z.string(), z.number()]).optional(),
     name: z.string().nullable().optional(),
     emoji: z.string().optional(),
+    // MEH-1456 chunk A: seeded-row ownership flag, read-only on every
+    // surface. Declared so the nested-parity guard does not strip it;
+    // chunk 2b's admin UI gates rename/delete on it.
+    is_system: z.boolean().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
-  starting_price_label: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),
   avg_rating: z.number().nullable().optional(),
   reviews_count: z.number().int().nullable().optional(),
@@ -308,9 +311,16 @@ export const ProducerListSchema = z.object({
   // would debug a backend that is in fact serving it correctly (MEH-901 class).
   top_product_id: z.string().nullable().optional(),          // → ProductsSection badge, chunk 3
   top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
-  availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:36
-  availability_status: z.string().nullable().optional(),     // → availability dot (legacy "vacation"), ProducerCard.jsx:37
-  is_available_today: z.boolean().nullable().optional(),     // → availability dot + fridayMode pill, ProducerCard.jsx:39/:435
+  // MEH-2271: availability_state is the only one anything reads — every
+  // surface goes through lib/availability.js, which no longer falls back.
+  // The two below are still SERVED (ProducerListOut derives them from the
+  // state) so a stale client is not broken mid-release; MEH-2272 removes
+  // them from the contract and from here in the same PR. Keeping them
+  // declared until then is what stops `.loose()`-less parses from stripping
+  // fields the backend is still sending.
+  availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:64
+  availability_status: z.string().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
+  is_available_today: z.boolean().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   // NOT read by ProducerCard today, so the card-derived guard below cannot
@@ -341,6 +351,33 @@ export const ProducerListSchema = z.object({
   // (lib/orderWindow.js:93) already drops any range that is not valid HH:MM.
   order_window: z
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
+    .nullable()
+    .optional(),
+  // MEH-1889 chunk B (MEH-2264): per-date overrides ABOVE `order_window`,
+  // order-axis authoritative — `{"YYYY-MM-DD": {ranges: [...], note?}}`, and
+  // `ranges: []` means closed on that date. Declared on the LIST schema for the
+  // MEH-1880 reason: ProducerCard's "open for orders" line and the open-now
+  // chip evaluator (lib/producer-filters.js) read the order axis from the two
+  // Zod-parsed list feeds, and an undeclared key is stripped by z.object. Inner
+  // shape stays permissive (same all-or-nothing-feed argument as order_window
+  // above); `normalizeDayEntries` drops any malformed range at read time.
+  // The per-date entry is `.nullable()` ON PURPOSE even though the backend
+  // validator never writes a null entry: this literal guards two all-or-nothing
+  // feeds, and a hand-edited or imported row with one null entry must cost that
+  // one date (the readers skip it — orderWindow.js `overrideFor`), never the
+  // whole business. Tightening it here would turn a data blemish into a
+  // vanished producer, which is the exact failure the permissive inner shape
+  // above exists to prevent.
+  special_hours: z
+    .record(
+      z.string(),
+      z
+        .object({
+          ranges: z.array(OrderWindowRange),
+          note: z.string().nullable().optional(),
+        })
+        .nullable(),
+    )
     .nullable()
     .optional(),
   // MEH-1678: the producer-level pair from ProducerListOut
