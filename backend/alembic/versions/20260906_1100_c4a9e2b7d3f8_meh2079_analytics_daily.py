@@ -1,7 +1,7 @@
 """meh2079_analytics_daily
 
 Revision ID: c4a9e2b7d3f8
-Revises: f5b8d2c7a3e9
+Revises: 3f9a7c2e5d18
 Create Date: 2026-09-06 11:00:00.000000+00:00
 
 MEH-2079 chunk A: the anonymous daily aggregate that makes pruning the raw
@@ -65,8 +65,25 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
+#
+# MEH-2079, re-pointed 2026-09-06: this revised f5b8d2c7a3e9 when it was
+# written, and so does 3f9a7c2e5d18 (MEH-1428 review_source), which landed on
+# staging first. Two children of one parent is two heads, and
+# `alembic-head-guard` reds the required Repo guards job on it.
+#
+# CHAINED rather than merged, deliberately. A merge revision is the right fix
+# when both forks are already APPLIED somewhere; this one has never been
+# applied — #3452 has not merged, so c4a9e2b7d3f8 exists on no database. Making
+# it a linear successor of the revision that got there first keeps the chain
+# single-headed with no extra no-op revision to explain later. Same choice the
+# MEH-1494 chunk-A revision recorded ("cut after 1456 A so as not to create two
+# heads").
+#
+# If this revision had already been applied anywhere, `alembic merge heads`
+# would be the only safe option — re-pointing a down_revision under an applied
+# migration rewrites history the database has already followed.
 revision: str = "c4a9e2b7d3f8"
-down_revision: Union[str, None] = "f5b8d2c7a3e9"
+down_revision: Union[str, None] = "3f9a7c2e5d18"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
