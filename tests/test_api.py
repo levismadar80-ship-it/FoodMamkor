@@ -3594,6 +3594,55 @@ class TestAvailabilityState:
         assert "Alpha" in names
         assert "Beta" not in names
 
+    def test_status_available_preserves_available_today(self, client, db):
+        """MEH-2271, from the CI reviewer's second round on #3460:
+        `_status_to_state`'s preservation case had a docstring and no test.
+
+        `status="available"` is the one ambiguous legacy value — it means "not
+        full, not on vacation" and says nothing about today. Before chunk 3a
+        that endpoint wrote only `availability_status` and left the separate
+        `is_available_today` column alone, so an available_today producer
+        stayed available_today. The function claims to reproduce that. Claiming
+        is not testing: an implementation that mapped "available" straight to
+        accepting_orders would satisfy every other test in this class and
+        silently un-mark a producer who is open today.
+        """
+        user, producer = self._setup(db)
+        producer.availability_state = "available_today"
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/availability-status",
+            json={"status": "available"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "available_today"
+        db.refresh(producer)
+        assert producer.availability_state == "available_today"
+
+    def test_status_available_from_full_lands_on_accepting_orders(self, client, db):
+        """The other half, and the reason the case above is not vacuous.
+
+        "available" is not a no-op — from full_this_week it genuinely clears to
+        accepting_orders. Without this, an implementation that returned the
+        current state unchanged for "available" would pass the preservation
+        test and break the legacy endpoint's actual job.
+        """
+        user, producer = self._setup(db)
+        producer.availability_state = "full_this_week"
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/availability-status",
+            json={"status": "available"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "accepting_orders"
+        db.refresh(producer)
+        assert producer.availability_state == "accepting_orders"
+
     def test_the_deprecated_alias_returns_the_same_set_as_the_state_filter(
         self, client, db
     ):

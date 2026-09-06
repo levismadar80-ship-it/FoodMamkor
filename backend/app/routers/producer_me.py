@@ -1084,7 +1084,7 @@ def dashboard(
             # columns this module no longer writes. Reading the columns here
             # would report the value they froze at, which is the exact bug
             # deriving everywhere else exists to prevent. This is the SECOND
-            # call site of state_to_legacy, and Sapir's 06/09 ruling asked for
+            # call site of state_to_legacy, and Sapir's ruling of 2026-09-06 asked for
             # exactly one (the schema derivation) — the deviation is stated in
             # the PR body rather than resolved by leaving a stale read here.
             # MEH-2272 removes both keys; the frontend dashboard already reads
