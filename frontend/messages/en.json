@@ -1500,7 +1500,9 @@
         "incomplete_label": "Missing details",
         "export": "Export",
         "import_excel": "Import from Excel",
-        "new_producer": "+ New business"
+        "new_producer": "+ New business",
+        "review_due_label": "Picks due for review",
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
       },
       "import": {
         "errors_loading": "Error reading file",
@@ -1689,6 +1691,11 @@
           "grass_fed": "Grass-fed",
           "verified": "Verified",
           "recommended": "Recommended (editor's pick)",
+          "recommended_note": "Editor's reason",
+          "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
+          "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
+          "recommended_at": "Picked on",
+          "recommended_at_never": "Picked before there was a clock — review due now",
           "kosher": "Kosher",
           "kosher_none": "—",
           "kosher_kosher": "Kosher",
@@ -2173,7 +2180,7 @@
         "empty": "No data yet",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "confirm_delete": "Delete ''{name}'' — {count} associated businesses",
         "producer_count": "{count} businesses",
         "deleting": "Deleting…",
         "delete_error": "Failed to delete the category. Please try again.",
@@ -5026,7 +5033,7 @@
         "save_failed": "Failed to save location",
         "delete_failed": "Failed to delete location",
         "same_city": {
-          "labelled": "You already have '{label}' in {city}.",
+          "labelled": "You already have ''{label}'' in {city}.",
           "unlabelled": "You already have a {kind} in {city}.",
           "many": "You already have {count} locations in {city}.",
           "generic": "You already have a location in this town.",
