@@ -292,17 +292,18 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await expect(page.getByTestId("login-submit")).toBeEnabled();
   });
 
-  // NO MT row — this discharges nothing in the checklist; it records a finding
-  // the conversion turned up, asserted as behaviour AND filed (MEH-2256) rather
-  // than fixed here, since MEH-1249 forbids application-code changes inside a
-  // conversion chunk. `LoginClient.jsx:136` reads
+  // MT:eye-toggle:12 — the password field's touched-empty state. Until
+  // MEH-2256 the row read "tap then tap away empty → no error" and the spec
+  // asserted exactly that, because `LoginClient.jsx` computed
   //   passwordTouched && password.length > 0 && password.length < 1
-  // whose last two clauses cannot both hold, so «הזינו סיסמה» and the field's
-  // `aria-invalid` are unreachable in every state a user can produce. The three
-  // states below are exhaustive over that predicate's inputs (untouched, empty,
-  // non-empty), so if the branch is ever made reachable this test says so —
-  // which is what MEH-2256 will do under either of the two options it offers.
-  test("the password field's error state is unreachable — no state a user can produce shows it", async ({
+  // — a predicate no integer satisfies, so «הזינו סיסמה» and `aria-invalid`
+  // were unreachable in every state a user can produce. MEH-2256 option 1
+  // made the branch reachable (`password.length === 0`), so this row now
+  // asserts the accessible error state the branch always existed to give a
+  // screen reader; the three states below are exhaustive over the predicate's
+  // inputs (untouched, touched-empty, touched-non-empty). Against the pre-fix
+  // component the touched-empty expectations go red — that is the bug.
+  test("password: neutral while untouched, «הזינו סיסמה» + aria-invalid once blurred empty, clear again when typed", async ({
     page,
   }) => {
     await page.goto(LOGIN);
@@ -311,10 +312,12 @@ test.describe("manual › /login inline validation and submit gating", () => {
     const required = page.getByText("הזינו סיסמה", { exact: true });
 
     await expect(required).toHaveCount(0); // untouched
+    await expect(password).not.toHaveAttribute("aria-invalid", "true");
+
     await password.click();
     await email.click();
-    await expect(required).toHaveCount(0); // touched, empty
-    await expect(password).not.toHaveAttribute("aria-invalid", "true");
+    await expect(required).toBeVisible(); // touched, empty
+    await expect(password).toHaveAttribute("aria-invalid", "true");
 
     await password.fill("x");
     await email.click();

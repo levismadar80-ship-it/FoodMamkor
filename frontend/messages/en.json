@@ -1709,6 +1709,7 @@
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
           "has_delivery": "Offers delivery",
           "pickup_points": "Pickup points across the country",
+          "pickup_managed_in_locations": "Pickup points are managed in the locations editor",
           "delivery_area_cities": "Delivery cities (comma-separated)",
           "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
           "short_description": "Short description (for the card)",
