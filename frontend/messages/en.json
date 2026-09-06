@@ -3654,7 +3654,7 @@
       },
       "retention": {
         "title": "7. Data retention and security",
-        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. We apply reasonable security measures including encryption, secure storage, access control, and backups."
       },
       "minors": {
         "title": "8. Minors",
