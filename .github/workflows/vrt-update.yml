@@ -35,9 +35,15 @@ on:
         description: 'Playwright --grep pattern (ריק = כל ה-routes)'
         required: false
         default: ''
+  # MEH-1764: label = a REQUEST for a regen, scoped by the label's own name.
+  # workflow_dispatch above stays as the escape hatch for a route this
+  # vocabulary does not cover.
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: vrt-update-${{ github.ref }}
@@ -48,8 +54,26 @@ jobs:
     name: Regenerate VRT baselines
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Self-loop guard: the baseline commit this job pushes must not re-run it.
-    if: github.actor != 'github-actions[bot]'
+    # Self-loop guard (existing): the baseline commit this job pushes must not
+    # re-run it. MEH-1764 adds the label conditions — on a `labeled` event ALL
+    # of these must hold; on a dispatch only the actor check applies.
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (
+        github.event_name == 'workflow_dispatch'
+        || (
+          startsWith(github.event.label.name, 'vrt-regen:')
+          && github.event.pull_request.head.repo.full_name == github.repository
+        )
+      )
+    env:
+      # MEH-2278: on a `pull_request` event github.ref is the synthetic
+      # refs/pull/N/merge and github.ref_name is N/merge — checking that out
+      # and pushing to it would regenerate the PNGs and throw them away at the
+      # commit step (the MEH-1705 shape). Resolve the real head branch once and
+      # use it in the reject step, the checkout and the push.
+      TARGET_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+      EVENT: ${{ github.event_name }}
 
     steps:
       # MEH-1705: fail FAST on a protected ref. This job regenerates baselines
@@ -63,9 +87,9 @@ jobs:
       # header above already said "never pushes to staging/main" — prose alone
       # did not stop it, so this is the mechanism (MEH-271: mechanism > memory).
       - name: Reject dispatch against a protected branch
-        if: github.ref_name == 'staging' || github.ref_name == 'main'
+        if: env.TARGET_REF == 'staging' || env.TARGET_REF == 'main'
         run: |
-          echo "::error title=Dispatch this against the feature branch, not ${{ github.ref_name }}::VRT baselines are committed back to the ref the run was launched from, and '${{ github.ref_name }}' rejects direct pushes at the ruleset level. This run would regenerate every baseline and then fail at 'Commit updated baselines' with nothing saved."
+          echo "::error title=Dispatch this against the feature branch, not $TARGET_REF::VRT baselines are committed back to the ref the run was launched from, and '$TARGET_REF' rejects direct pushes at the ruleset level. This run would regenerate every baseline and then fail at 'Commit updated baselines' with nothing saved."
           echo ""
           echo "  Correct usage:  Actions -> VRT baseline update -> Run workflow"
           echo "                  Branch: the FEATURE branch whose PR is red"
@@ -79,9 +103,42 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ env.TARGET_REF }}
+
+      # MEH-1764: the --grep pattern is chosen by the workflow, never supplied
+      # by the event. A label name selects a case; an unknown label exits 0
+      # without regenerating. This is also what removes the injection sink —
+      # `${{ inputs.route }}` used to reach `run:` directly.
+      - name: Resolve regen scope
+        id: scope
+        env:
+          LABEL: ${{ github.event.label.name }}
+          ROUTE: ${{ inputs.route }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            case "$LABEL" in
+              vrt-regen:home)            pattern='home' ;;
+              vrt-regen:map)             pattern='map' ;;
+              vrt-regen:about)           pattern='about' ;;
+              vrt-regen:login)           pattern='login' ;;
+              vrt-regen:register)        pattern='register' ;;
+              vrt-regen:producer-detail) pattern='producer.detail' ;;
+              *)
+                echo "::notice::'$LABEL' is not a regen label — nothing to do."
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+            esac
+            echo "Scope from label '$LABEL' -> --grep '$pattern'"
+          else
+            pattern="$ROUTE"
+            echo "Scope from dispatch input -> --grep '${pattern:-<ALL ROUTES>}'"
+          fi
+          echo "pattern=$pattern" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js 20
+        if: steps.scope.outputs.skip != 'true'
         uses: actions/setup-node@v7
         with:
           node-version: "22"
@@ -89,6 +146,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Cache Playwright browsers
+        if: steps.scope.outputs.skip != 'true'
         id: playwright-cache
         uses: actions/cache@v6
         with:
@@ -96,15 +154,17 @@ jobs:
           key: playwright-${{ runner.os }}-chromium-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Install frontend dependencies
+        if: steps.scope.outputs.skip != 'true'
         run: npm ci
         working-directory: frontend
 
       - name: Install Playwright (Chromium only)
         run: npx playwright install --with-deps chromium
         working-directory: frontend
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.scope.outputs.skip != 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: Build frontend
+        if: steps.scope.outputs.skip != 'true'
         run: npm run build
         working-directory: frontend
         env:
@@ -122,6 +182,7 @@ jobs:
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: 591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
       - name: Start Next.js server (background)
+        if: steps.scope.outputs.skip != 'true'
         run: |
           nohup npm run start > /tmp/next-start.log 2>&1 &
         working-directory: frontend
@@ -129,6 +190,7 @@ jobs:
           NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
 
       - name: Wait for localhost readiness
+        if: steps.scope.outputs.skip != 'true'
         run: |
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 000)
@@ -147,14 +209,16 @@ jobs:
         # MEH-1496: scope to one route when `route` is set (e.g. "map" or
         # "producer detail"); empty input regenerates every baseline. PR #2102
         # added the input but left this step unscoped — the input was dead.
+        if: steps.scope.outputs.skip != 'true'
         run: |
-          if [ -n "${{ inputs.route }}" ]; then
-            npx playwright test e2e/visual --update-snapshots --grep "${{ inputs.route }}"
+          if [ -n "$PATTERN" ]; then
+            npx playwright test e2e/visual --update-snapshots --grep "$PATTERN"
           else
             npx playwright test e2e/visual --update-snapshots
           fi
         working-directory: frontend
         env:
+          PATTERN: ${{ steps.scope.outputs.pattern }}
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           CI: "true"
 
@@ -167,7 +231,7 @@ jobs:
         # success() || failure() (not always()) so a concurrency-CANCELLED run
         # — cancel-in-progress is true — can't commit a partially-rendered
         # snapshot set mid-`--update-snapshots`. (PR #1891 review.)
-        if: ${{ success() || failure() }}
+        if: ${{ (success() || failure()) && steps.scope.outputs.skip != 'true' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -177,14 +241,25 @@ jobs:
             exit 0
           fi
           git commit -m "test(vrt): regenerate visual parity baselines (MEH-991)"
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin HEAD:"$TARGET_REF"
 
       - name: Upload report on failure
         uses: actions/upload-artifact@v7
-        if: failure()
+        if: failure() && steps.scope.outputs.skip != 'true'
         with:
           name: vrt-update-report
           path: |
             frontend/playwright-report/
             frontend/test-results/
           retention-days: 7
+
+      # Make the label a one-shot request rather than a standing state, so
+      # re-labelling is how you ask again.
+      - name: Remove the regen label
+        if: always() && github.event_name == 'pull_request' && steps.scope.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          LABEL: ${{ github.event.label.name }}
+        run: gh pr edit "$PR" --remove-label "$LABEL"
