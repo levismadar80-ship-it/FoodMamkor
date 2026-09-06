@@ -399,7 +399,16 @@ test.describe("manual › /producers hierarchy (MEH-1186)", () => {
 
     await line.getByTestId("producers-clear-all").click();
     await expect.poll(() => query(page).toString()).toBe("");
-    await expect(scope(page).getByTestId("producers-control-line")).toHaveCount(0);
+    // «נקו הכל» empties the CONTROLS, not necessarily the line: with a live
+    // backend the unfiltered counter («כל N בתי עסק») stays on the row, and
+    // with the sandbox's fail-open SSR (total 0) the whole line unmounts. The
+    // first version asserted `toHaveCount(0)` on the line — green only in the
+    // second world, red on CI (run 33998581419, both projects). Assert what the
+    // row specifies and what discriminates a broken clear in BOTH worlds: no
+    // removable chip, no search chip, no clear button survive the click.
+    await expect(scope(page).getByTestId("producers-clear-all")).toHaveCount(0);
+    await expect(scope(page).getByTestId("active-search-chip")).toHaveCount(0);
+    await expect(scope(page).getByTestId("producers-control-line").getByRole("button")).toHaveCount(0);
     await expect(allChip(page)).toHaveAttribute("aria-pressed", "true");
   });
 
