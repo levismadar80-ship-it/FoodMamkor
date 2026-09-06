@@ -81,7 +81,9 @@ async function open(browser, width, height) {
     r.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify([{ id: 1, name: "סבונים טבעיים" }]),
+      // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
+      // Hebrew name — a slug-less stub renders no chip at all.
+      body: JSON.stringify([{ id: 1, name: "סבונים טבעיים", slug: "care" }]),
     }),
   );
   await page.route(NOMINATIM, (r) =>
