@@ -4818,6 +4818,29 @@
             "title": "Products Count",
             "type": "integer"
           },
+          "recommended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended At"
+          },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "referral_source": {
             "anyOf": [
               {
@@ -5665,6 +5688,18 @@
               }
             ],
             "title": "Producer License Number"
+          },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
           },
           "short_description": {
             "anyOf": [
@@ -10191,6 +10226,18 @@
             ],
             "title": "Producer License Number"
           },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -13183,6 +13230,16 @@
                 }
               ],
               "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recommended_review_due",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Recommended Review Due",
+              "type": "boolean"
             }
           }
         ],
