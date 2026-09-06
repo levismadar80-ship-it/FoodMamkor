@@ -790,7 +790,9 @@ class TestMeh1428ReviewInviteLink:
         reviewer = make_user(db)
         r = self._post(client, producer, reviewer, create_review_invite_token(producer.id))
         assert r.status_code == 201, r.text
-        assert r.json()["source"] == "invite_link"
+        # The public payload must NOT say how the gate was passed (reviewer
+        # finding on #3368): `source` is admin-only. The DB row is the record.
+        assert "source" not in r.json()
         row = (
             db.query(ProducerReview)
             .filter(
@@ -854,7 +856,7 @@ class TestMeh1428ReviewInviteLink:
         _wa_click(db, producer, reviewer)
         r = self._post(client, producer, reviewer)
         assert r.status_code == 201, r.text
-        assert r.json()["source"] == "click"
+        assert "source" not in r.json()
         row = db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).one()
         assert row.source == "click"
 
@@ -867,7 +869,7 @@ class TestMeh1428ReviewInviteLink:
         _contact_click(db, producer, reviewer)
         r = self._post(client, producer, reviewer, _mint(producer.id, exp_delta=timedelta(days=-1)))
         assert r.status_code == 201, r.text
-        assert r.json()["source"] == "click"
+        assert "source" not in r.json()
 
     def test_edit_never_rewrites_source_in_either_direction(self, client, db):
         """reviews.py:278 claims "an edit never rewrites it — the first proof is
@@ -887,16 +889,16 @@ class TestMeh1428ReviewInviteLink:
         )
         assert r.status_code == 201, r.text
         assert r.json()["stars"] == 2
-        assert r.json()["source"] == "invite_link"
+        assert "source" not in r.json()
 
         clicker = make_user(db)
         _wa_click(db, producer, clicker)
         r = self._post(client, producer, clicker)
         assert r.status_code == 201, r.text
-        assert r.json()["source"] == "click"
+        assert "source" not in r.json()
         r = self._post(client, producer, clicker, create_review_invite_token(producer.id))
         assert r.status_code == 201, r.text
-        assert r.json()["source"] == "click"
+        assert "source" not in r.json()
 
         rows = {
             row.user_id: row.source
@@ -942,4 +944,6 @@ class TestMeh1428ReviewInviteLink:
         reviewer = make_user(db)
         r = self._post(client, producer, reviewer, rt)
         assert r.status_code == 201, r.text
-        assert r.json()["source"] == "invite_link"
+        assert "source" not in r.json()
+        row = db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).one()
+        assert row.source == "invite_link"

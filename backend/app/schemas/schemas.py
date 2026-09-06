@@ -4155,9 +4155,11 @@ class ReviewOut(BaseModel):
     # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
     reply: str | None = None
     reply_at: str | None = None
-    # MEH-1428: how the reviewer passed the contact gate — "click" (a contact
-    # click row) or "invite_link" (a signed "request a review" token).
-    source: Literal["click", "invite_link"] = "click"
+    # MEH-1428: `source` ("click" | "invite_link") is deliberately NOT here.
+    # It says how a reviewer passed the contact gate — whether the owner
+    # sent them an invite link — which is moderation signal, not something
+    # every visitor to a producer page should be able to read off each
+    # review. Admin-only: AdminReviewOut.source (reviewer finding on #3368).
 
     model_config = {"from_attributes": True}
 
@@ -4173,7 +4175,8 @@ class AdminReviewOut(BaseModel):
     body: str | None = None
     is_hidden: bool
     created_at: str
-    # MEH-1428: "click" | "invite_link" — see ReviewOut.source.
+    # MEH-1428: "click" | "invite_link" — how the reviewer passed the contact
+    # gate. Admin-only on purpose; the public ReviewOut does not carry it.
     source: Literal["click", "invite_link"] = "click"
 
     model_config = {"from_attributes": True}
