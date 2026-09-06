@@ -70,10 +70,12 @@ jobs:
           # and each token must look like a Linear id — anything else fails here.
           filter=""
           for id in $INPUT_ISSUES; do
-            case "$id" in
-              MEH-[0-9]*) filter="$filter --issue $id" ;;
-              *) echo "::error::issues filter token '$id' is not a MEH-N id"; exit 1 ;;
-            esac
+            # A regex, not a glob: the glob MEH-[0-9]* would accept MEH-1abc.
+            if [[ "$id" =~ ^MEH-[0-9]+$ ]]; then
+              filter="$filter --issue $id"
+            else
+              echo "::error::issues filter token '$id' is not a MEH-N id"; exit 1
+            fi
           done
           echo "filter=$filter" >> "$GITHUB_OUTPUT"
 
