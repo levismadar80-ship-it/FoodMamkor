@@ -205,7 +205,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         readOnly={locked}
-        aria-readonly={locked || undefined}
+        aria-readonly={locked ? true : undefined}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
         className={`flex-1 border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
