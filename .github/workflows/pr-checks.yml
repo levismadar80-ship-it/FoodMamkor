@@ -24,7 +24,13 @@ on:
   # target a run on a branch where the trigger isn't yet present.
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    # MEH-1523: `labeled`/`unlabeled` are load-bearing, exactly as
+    # `ready_for_review` is. The marker gate reads the labels on the event
+    # payload, so WITHOUT these two, adding the label after the last run does
+    # not re-run the gate and the stale green stands — the marker would never
+    # block anything. Removing it would likewise not clear the red without a
+    # push, which rule 30 does not permit CC to manufacture.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     branches: [staging, main]
 
 # MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
@@ -37,7 +43,11 @@ concurrency:
   # MEH-1653: ready_for_review מקבל group נפרד כדי שלא יבטל ריצת synchronize
   # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
   # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event.action == 'ready_for_review' }}
+  # MEH-1523 extends MEH-1653's reasoning to the two label actions. Buckets:
+  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-code
+  # Each action class cancels only its own kind, so a label toggle can never
+  # cancel a synchronize run (cancelled maps to FAIL in the aggregator).
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.action || 'code' }}
   cancel-in-progress: true
 
 jobs:
@@ -64,24 +74,86 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Fail if the PR carries a DO-NOT-MERGE marker (MEH-1155, ADR-016 amendment)
+      - name: Fail if the PR carries the marker label (MEH-1523)
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
+          # Label NAMES only. `.*.name` flattens the label objects to a JSON
+          # array of strings; toJSON keeps it one safe scalar for the shell.
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
           set -euo pipefail
-          if printf '%s\n%s' "$PR_TITLE" "$PR_BODY" | grep -Eiq '(^|[^A-Za-z0-9_-])do[ _-]?not[ _-]?merge([^A-Za-z0-9_-]|$)|DNM-LOCK'; then
-            echo "::error::This PR carries a DO-NOT-MERGE marker. Per ADR-016 (amendment, MEH-1155) auto-merge authority is VOID regardless of risk tier. Only Sapir may remove the marker."
+          # MEH-1523: the marker is a LABEL. This step reads NOTHING else — no
+          # title, no body, no commit messages. That absence is asserted by
+          # scripts/checks/dnm-matcher-guard.sh, which fails if either of the
+          # old text-scanning env vars reappears anywhere in this job — so do
+          # not name them even in a comment, which is how the patch doc's own
+          # wording tripped this gate on first application (04/09).
+          #
+          # Why not text: PR #2637 was blocked by a pasted test name, and
+          # PR #2813 by CC's own prose — and clearing #2813's marker left no
+          # trace on the PR at all, so a cleared accident and a cleared
+          # deliberate block are indistinguishable. A label has an actor and a
+          # timestamp in the PR timeline; a sentence in a body has neither.
+          #
+          # The name DNM_LABEL_RE is load-bearing: the guard detects this patch
+          # by it and switches to the label fixture table. Do not rename it.
+          #
+          # Matched against each label name NORMALISED to lowercase with every
+          # non-alphanumeric stripped, so do-not-merge / DO NOT MERGE /
+          # do_not_merge / don't merge all collapse onto donotmerge|dontmerge.
+          # The two `tr` calls below are mirrored exactly in the guard's
+          # normalise_label(); they must stay identical.
+          # ANCHORED (^...$) deliberately. MEH-1523 acceptance criterion 2
+          # says to match "the normalized form /dono?tmerge/" — unanchored.
+          # Do NOT ship that: normalisation strips non-alphanumerics, so
+          # `audit-do-not-merge-findings` becomes `auditdonotmergefindings`,
+          # which CONTAINS `donotmerge` and would trip this BLOCKING gate on a
+          # documentation label. That is #2637's false positive moved from prose
+          # onto metadata — the swap shipping the very bug it was sent to fix.
+          # The variant-tolerance AC2 actually wants is fully preserved:
+          # `do_not_merge`, `DO NOT MERGE` and `don't merge` all normalise onto
+          # the two strings below.
+          DNM_LABEL_RE='^(dono?tmerge|dnmlock)$'
+          # Fail-closed: a jq error fails the assignment under `set -e` +
+          # pipefail, so a broken parse BLOCKS rather than falling through.
+          # Deliberately NOT a process substitution — that would swallow it.
+          #
+          # PR_LABELS is `null` (not an empty array) on `workflow_dispatch` —
+          # this job has no `pull_request` context there, so the expression
+          # above resolves to `toJSON(null)`. That is a legitimate "nothing to
+          # check", not a corrupt parse: `.[]` on a bare `null` is a real jq
+          # error (exit 5, "Cannot iterate over null"), which would have
+          # blocked every manual re-run of this workflow — the exact recovery
+          # path its own `workflow_dispatch` trigger exists for (see the `on:`
+          # block comment above). Guard the type instead of assuming an array;
+          # a non-array still yields zero names, so a PR with no marker label
+          # still passes.
+          names="$(printf '%s' "$PR_LABELS" | jq -r 'if type == "array" then .[] else empty end')"
+          hit=""
+          while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            norm="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')"
+            [ -n "$norm" ] || continue
+            if printf '%s' "$norm" | grep -Eq "$DNM_LABEL_RE"; then hit="$name"; break; fi
+          done <<< "$names"
+          if [ -n "$hit" ]; then
+            echo "::error::This PR carries the '$hit' label. Per ADR-016 (amendment, MEH-1155) auto-merge authority is VOID regardless of risk tier. Only Sapir may remove the label."
             exit 1
           fi
-          echo "No DO-NOT-MERGE marker. OK."
+          echo "No marker label. OK."
 
   repo-guards:
     name: Repo guards
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # MEH-2224: fetch-depth 2 so builder-model-guard.sh can read the head
+      # commit's parent without a network fetch. Its MEH-2223 exemption branch
+      # needs the parent; on the default depth-1 checkout it must `git fetch`
+      # it, and a runner that cannot reach origin at that moment fails the
+      # guard closed — a false red on a PR with nothing wrong with it.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - name: Run every guard in scripts/checks/ (MEH-999)
         run: bash scripts/checks/run-all.sh
 
@@ -116,7 +188,13 @@ jobs:
             [ -n "$f" ] || continue
             sz=$(git cat-file -s "$HEAD_SHA:$f" 2>/dev/null || echo 0)
             total=$((total + sz))
-          done < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- qa-artifacts/)
+          # MEH-2184: a bare `qa-artifacts/` pathspec is anchored at the repo root, so
+          # it never matched frontend/qa-artifacts/ — which is where Playwright writes,
+          # because e2e.yml runs it with working-directory: frontend. Measured on
+          # staging: 495 tracked files / 14.8 MB were invisible to a 2 MB cap.
+          # `:(glob)` makes the leading `**/` match at any depth, root included.
+          done < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" \
+                     -- ':(glob)**/qa-artifacts/**')
           mb=$(awk -v t="$total" 'BEGIN{printf "%.2f", t/1048576}')
           echo "qa-artifacts added/modified in this PR: ${total} bytes (${mb} MB)"
           if [ "$total" -gt "$MAX_BYTES" ]; then
@@ -152,6 +230,12 @@ jobs:
               - 'frontend/**'
               - 'package.json'
               - 'package-lock.json'
+              # MEH-1868: the Knip ratchet and its baseline gate the frontend
+              # job, so an edit to EITHER must force that job to run. Without
+              # these lines a PR touching only these files skips the very job
+              # that would have checked them (docs/ci/meh-1980-coverage-ratchet.patch.md §A0).
+              - 'scripts/checks/lint-ratchet.mjs'
+              - 'scripts/checks/lint-ratchet-baseline.tsv'
             backend:
               - 'backend/**'
               - 'tests/**'
@@ -194,6 +278,12 @@ jobs:
         env:
           # Silence telemetry noise in CI logs.
           NEXT_TELEMETRY_DISABLED: "1"
+          # MEH-1754 item 5: NEXT_PUBLIC_API_URL is required by
+          # lib/env.client.js and the build now fails without it. Same Railway
+          # staging value the E2E build uses (e2e.yml:142) — build-time only,
+          # public by definition (NEXT_PUBLIC_* ships in the browser bundle),
+          # so plain env and deliberately not `secrets.*`.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
 
       # MEH-686 Step 18 — design-token drift gate (Flag B). Re-exports tokens
       # from docs/DESIGN.md and fails if the committed tailwind.tokens.json
@@ -244,6 +334,9 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+          # MEH-1754 item 5: required by lib/env.client.js — this job builds
+          # independently of the `build` job, so it needs its own copy.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
 
       - name: "Scan 2a — forbidden AI-artifact filenames in deployable output"
         run: |
@@ -580,27 +673,24 @@ jobs:
   # auth.py + schemas/ due to STOP-condition (a):
   # combined count was 57 errors > 50 threshold.
   #
-  # Two-layer warn-only:
-  #   1. `|| true` on the mypy command → step exits 0 → check
-  #      reports green even when mypy finds errors. Clean PR UX
-  #      (the owner's call — see HANDOFF entry for MEH-562).
-  #   2. `continue-on-error: true` at the job → defensive belt-
-  #      and-braces: if `|| true` is ever stripped during a future
-  #      edit, the workflow still doesn't fail.
+  # MEH-1868: ratcheted, no longer warn-only. Both swallows are
+  # gone (`|| true` and `continue-on-error`) — they reported
+  # success for a tool that was never installed (spawn failure,
+  # job 91623752935, 0s). `mypy` is now pinned in the dev group.
   #
-  # Errors stay visible in the workflow logs and in
-  # docs/research/static-analysis-baseline.md. Regression
-  # tracking lives in the git history of the baseline doc, not
-  # in the check status. Hybrid annotation upgrade (post baseline-
-  # vs-current as a PR comment) is a follow-up ticket post-launch.
+  # backend/mypy-baseline.txt freezes the errors that existed
+  # at arming time (20 on 12/08, re-frozen to 21 on 05/09), keyed
+  # by (file, error-code) and NOT by line number. Everything in
+  # the baseline is grandfathered; only a count that RISES fails
+  # the job. Raising one requires an explicit --allow-increase,
+  # so loosening is visible in review.
   # ─────────────────────────────────────────────
   backend-mypy:
-    name: Backend mypy (strict, warn-only)
+    name: Backend mypy (ratchet)
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v7
@@ -616,22 +706,24 @@ jobs:
         run: uv sync --dev --frozen
         working-directory: backend
 
-      - name: Run mypy strict on app/auth.py (warn-only — errors logged, check passes)
-        run: uv run mypy app/auth.py --strict || true
+      - name: mypy ratchet (frozen baseline — only increases fail)
+        run: uv run python scripts/mypy_baseline.py
         working-directory: backend
 
   # ─────────────────────────────────────────────
   # JOB 6: frontend-knip (MEH-562 Layer 2)
   # Dead-code + unused-deps detection.
-  # Two-layer warn-only — see backend-mypy comment above.
+  # Ratcheted (MEH-1868): scripts/checks/lint-ratchet-baseline.tsv freezes the
+  # findings that existed at arming time. Everything in the baseline is
+  # grandfathered; only counts that RISE fail the job. Nobody is asked to clean
+  # up existing findings — that is the design, not an oversight.
   # ─────────────────────────────────────────────
   frontend-knip:
-    name: Frontend Knip (dead code, warn-only)
+    name: Frontend Knip (dead-code ratchet)
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
     defaults:
       run:
         working-directory: frontend
@@ -649,8 +741,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Knip (warn-only — findings logged, check passes)
-        run: npm run knip || true
+      - name: Ratchet self-test (the comparator must still discriminate)
+        run: node ../scripts/checks/lint-ratchet.mjs --self-test
+
+      - name: Knip ratchet (baseline frozen; only NEW findings fail)
+        run: npm run lint:ratchet
 
   # ─────────────────────────────────────────────
   # JOB 7: frontend-tsc-strict (MEH-562 Layer 2)
@@ -722,7 +817,13 @@ jobs:
   linear-mentions:
     name: Linear mention guard (rule 29, warn-only)
     needs: changes
-    if: ${{ needs.changes.outputs.frontend != 'true' && needs.changes.outputs.backend != 'true' && needs.changes.outputs.workflows != 'true' }}
+    # MEH-1949: the docs-only gate was correct for rule 29's TEXT ban and is
+    # wrong for the branch-name consistency check, whose whole population is
+    # code PRs (a `feature/meh-<N>-*` branch is what the Branch name gate
+    # requires of them). Measured 02/09: the job reported `skipped` on #3292
+    # (frontend) and #3294 (backend) — the two shapes it needs to see.
+    # Removed rather than inverted: one job with both scopes beats two jobs
+    # sharing one script. The cost is stated below and it is warnings only.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     continue-on-error: true
@@ -736,7 +837,19 @@ jobs:
           printf '%s' "$PR_TITLE" > "$RUNNER_TEMP/pr_title.txt"
           printf '%s' "$PR_BODY"  > "$RUNNER_TEMP/pr_body.txt"
       - name: Check for bare Linear identifiers (warn-only)
-        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" || true
+        # MEH-1949: third argument = the head branch name. A `meh-<N>` in a
+        # branch name is an auto-link with no closing keyword available, so the
+        # script checks CONSISTENCY (is it declared as `Closes` in the body?)
+        # rather than banning the identifier — banning it would collide with
+        # the Branch name gate, which REQUIRES it.
+        env:
+          # Via env, never interpolated into the `run:` string. A branch name
+          # is attacker-controlled on a fork PR, and `${{ }}` inside `run:`
+          # is substituted before the shell sees it — the standard Actions
+          # script-injection sink. The step above already does this for the
+          # title and body; this is the same discipline for the same reason.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" "$PR_HEAD_REF" || true
 
   # ─────────────────────────────────────────────
   # MEH-1585: backend CVE gate, as a ci-gate LEG.
@@ -888,7 +1001,7 @@ jobs:
             check_ran "Backend tests (pytest)" "$R_PYTEST"
             check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
             check_ran "Seed coverage contract (MEH-1706)" "$R_SEED_COVERAGE"
-            check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
+            check_ran "Backend mypy (ratchet)" "$R_BACKEND_MYPY"
           else
             echo "Backend stack not touched — backend checks not enforced."
           fi
@@ -911,7 +1024,7 @@ jobs:
             echo "Frontend stack touched (or workflows changed) — enforcing frontend checks:"
             check_ran "Frontend build (Next.js)" "$R_BUILD"
             check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
-            check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
+            check_ran "Frontend Knip (ratchet)" "$R_FRONTEND_KNIP"
             check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
             check_ran "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
           else

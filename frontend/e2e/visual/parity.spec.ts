@@ -68,6 +68,19 @@ const MAP_CATEGORIES_FIXTURE = fs.readFileSync(
 const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
 const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 
+// MEH-2168: the ONE endpoint every parity frame depends on and none of them
+// asked for. `lib/use-experiences-nav-gate.js` shows the "חוויות" link in the
+// Header AND the Footer only when `GET /experiences/count` answers >= 3 — a
+// CLIENT-side fetch that resolves after hydration and FAILS CLOSED, so a slow
+// or non-2xx response leaves the link hidden and the page 32px shorter. The
+// endpoint is rate-limited (`@limiter.limit("60/minute")`,
+// backend/app/routers/experiences.py) and in a ~1350-spec parallel run the
+// per-IP budget is spent long before the visual files execute. Every fullPage
+// frame was therefore a race, in BOTH directions: run 34004395174 received
+// exactly 32px less than expected on login/about/register mobile, while the
+// 05/09 regen had captured the link PRESENT. Neither state was deterministic.
+const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
+
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
  * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
@@ -197,6 +210,24 @@ async function preparePage(page: Page): Promise<void> {
   // e.g. use-home-page.js:131's 60s isFridayMode() re-check — still ticks and
   // simply keeps re-deriving the same frozen answer. install() would freeze
   // timers too and risk hanging networkidle/font settle.
+  // MEH-2168: pin the experiences nav gate BEFORE the first navigation, so the
+  // link is present on every frame instead of depending on how loaded the
+  // runner is. Same MEH-417 no-mocks carve-out the /map and producer-detail
+  // fixtures use (frontend/e2e/CLAUDE.md -> MEH-1497 §2.4): the subject here is
+  // layout, the supply number is noise. DO NOT copy into e2e/flows/.
+  //
+  // The count is deliberately far above EXPERIENCES_NAV_THRESHOLD (3 today)
+  // rather than equal to it: pinning the threshold itself would make every
+  // baseline silently flip the day someone raises it, which is the class of
+  // trap this stub exists to close.
+  await page.route(EXPERIENCES_COUNT_RE, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ count: 999 }),
+    });
+  });
+
   await page.clock.setFixedTime(VRT_FIXED_TIME);
   await page.addInitScript(() => {
     try {
@@ -263,6 +294,83 @@ async function expectCopy(page: Page, key: string): Promise<void> {
 }
 
 /**
+ * MEH-1514 — /about is a fullPage shot of a page whose sections are scroll
+ * revealed: every `<FadeInSection {...REVEAL_PRESET}>` mounts with an inline
+ * `opacity: 0` and only resolves to 1 once framer-motion's `whileInView`
+ * IntersectionObserver sees it (components/FadeInSection.jsx). A fullPage
+ * capture extends the canvas past the viewport WITHOUT scrolling it, so the
+ * observer never fires for anything below the fold and the baseline freezes a
+ * page that is mostly transparent — the same shape as the MEH-1552
+ * candidate-baseline trap: a PNG that measures the page's HEIGHT while
+ * carrying none of its CONTENT. parity.css cannot help here: it zeroes CSS
+ * animation/transition durations, and this reveal is a JS animation gated on
+ * intersection, not a CSS one.
+ *
+ * So: walk the document once, viewport by viewport, so each section enters
+ * view and its observer fires; return to the top so the shot starts where the
+ * baseline expects; then WAIT for the last inline opacity to resolve, since
+ * the reveal is a 250ms JS tween and a shot taken mid-tween is a flake.
+ *
+ * The `before > 0` control is deliberate (testing.md, MEH-1619): if the page
+ * ever stops mounting hidden sections — a framer upgrade, a refactor away from
+ * whileInView — this helper is dead weight and the assertion says so, instead
+ * of a green that has two possible causes.
+ */
+async function revealScrollSections(page: Page): Promise<void> {
+  // Tag the gated set ONCE, from the initial state: framer-motion's whileInView
+  // mounts at exactly opacity 0, so `=== 0` is the discriminator (CI reviewer on
+  // #3352 — a decorative element sitting at an intentional 0.5 must not be
+  // counted, or the poll below burns its full budget on something that never
+  // moves). The WAIT then requires those tagged elements to reach 1, not just
+  // to leave 0 — a mid-fade 0.4 is still not a settled frame.
+  const tagGated = (): Promise<number> =>
+    page.evaluate(() => {
+      let n = 0;
+      document.querySelectorAll<HTMLElement>('[style*="opacity"]').forEach((el) => {
+        if (parseFloat(getComputedStyle(el).opacity) === 0) {
+          el.dataset.revealGate = "1";
+          n += 1;
+        }
+      });
+      return n;
+    });
+  const hidden = (): Promise<number> =>
+    page.evaluate(() => {
+      let n = 0;
+      document.querySelectorAll<HTMLElement>("[data-reveal-gate]").forEach((el) => {
+        if (parseFloat(getComputedStyle(el).opacity) < 1) n += 1;
+      });
+      return n;
+    });
+
+  const before = await tagGated();
+  expect(
+    before,
+    "[reveal-gate] /about mounted no opacity-gated sections — the scroll-reveal " +
+      "premise this helper exists for is gone; re-derive before trusting the shot",
+  ).toBeGreaterThan(0);
+
+  await page.evaluate(async () => {
+    const step = Math.max(200, Math.floor(window.innerHeight * 0.6));
+    const bottom = () => document.documentElement.scrollHeight - window.innerHeight;
+    for (let y = 0; y <= bottom(); y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    window.scrollTo(0, bottom());
+    await new Promise((r) => setTimeout(r, 40));
+    window.scrollTo(0, 0);
+  });
+
+  await expect
+    .poll(hidden, {
+      message: "[reveal-gate] sections still at opacity < 1 after a full scroll pass",
+      timeout: 10_000,
+    })
+    .toBe(0);
+}
+
+/**
  * Wait for fonts + a settle beat so text renders identically run-to-run.
  *
  * MEH-1727 — `document.fonts.ready` is NOT a gate. It resolves even when every
@@ -274,6 +382,27 @@ async function expectCopy(page: Page, key: string): Promise<void> {
  * then assert a POSITIVE count of loaded faces and zero failed font fetches.
  */
 async function settle(page: Page): Promise<void> {
+  // MEH-2168: the experiences nav gate has RESOLVED TO VISIBLE. preparePage()
+  // stubs the count endpoint, so this is deterministic rather than a hope — and
+  // it asserts the OUTCOME (the link is in the DOM), not that the fetch merely
+  // answered: `writeCache` runs before the threshold comparison, so a stub that
+  // stopped matching and let a real `{"count": 0}` through would still write the
+  // cache key while the link stayed hidden. That is the 32px frame this whole
+  // change exists to stop, and only the link itself discriminates it.
+  //
+  // `toBeAttached`, not `toBeVisible`: the header nav is `hidden md:flex`, so on
+  // the mobile project the link is in the DOM and not displayed — and /map has
+  // no footer at all (FooterSlot returns null there), which leaves the hidden
+  // header copy as the only instance on that route. Both gated links come from
+  // the same hook, and no ungated /experiences anchor exists on any parity
+  // route (grep: Footer.jsx:89 and lib/nav-registry.js:163, both gated).
+  await expect(
+    page.locator('a[href$="/experiences"]').first(),
+    "[experiences-gate] the «חוויות» nav link never entered the DOM — the " +
+      "/api/experiences/count stub in preparePage() did not reach " +
+      "use-experiences-nav-gate, so this frame would be shot 32px short.",
+  ).toBeAttached({ timeout: 10_000 });
+
   await page.evaluate(() => document.fonts.ready);
 
   const fonts = await page.evaluate(() => {
@@ -549,6 +678,22 @@ test.describe("Visual parity — MEH-991", () => {
   // id against the backend; the /[slug] route SSR-seeds the producer and can't
   // be mocked. The borrowed id only unlocks the page — the pixels are the
   // fixture's.
+  // MEH-2168 re-freeze (2026-09-05, vrt-update run 33964228357 on
+  // feature/meh-2168-vrt-refreeze): SEVEN baselines regenerated on-runner and
+  // eye-reviewed frame by frame — login/register (desktop+mobile) +32px = one
+  // new footer link «חוויות» in the גלו column (desktop header also gains the
+  // nav item); about-mobile +32px = the same footer link, and the scroll-reveal
+  // sections now RENDER where the old frame was blank (MEH-1514 on mobile);
+  // map (desktop+mobile) = the second chip row משלוח · איסוף עצמי · סינון
+  // (pickup_points promoted to all surfaces) + «בתיאום אישי» on the cards.
+  // TWO desktop frames were NOT regenerated because their gates fail before
+  // the screenshot is taken, on staging as well: `about` desktop trips the
+  // reveal-gate (one section stays at opacity < 1 after the full scroll pass —
+  // MEH-1514 is not complete on desktop), and `producer detail` desktop trips
+  // the copy-gate on `producer.detail.tabs.about` — the tab row is hidden at
+  // 1440 since MEH-1390 (4 tabs -> 2), so expecting its copy VISIBLE on
+  // desktop is a spec expectation that no longer matches the page. Both are
+  // recorded here and on MEH-2168, deliberately not fixed in a baseline PR.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
 
@@ -767,6 +912,9 @@ test.describe("Visual parity — MEH-991", () => {
     // budget of any route here and is the easiest place for a rewrite to hide.
     await expectCopy(page, "about.consumer.hero.heading");
     await expectCopy(page, "about.consumer.hero.subheading");
+    // MEH-1514 — resolve every scroll-revealed section BEFORE the fullPage shot,
+    // or the baseline is a transparent page (see revealScrollSections).
+    await revealScrollSections(page);
     await expect(page).toHaveScreenshot("about.png", {
       ...SHOT,
       fullPage: true,

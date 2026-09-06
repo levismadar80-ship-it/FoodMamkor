@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, cast, func, or_
+from sqlalchemy import and_, case, cast, func, or_
 from sqlalchemy.dialects.postgresql import JSONPATH
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -43,7 +43,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_min_km,
 )
-from app.utils.clock import israel_now
+from app.utils.clock import israel_now, israel_today
 from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -140,6 +140,17 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
 _SCOPE_COLUMN_FOR_AXIS: dict[str, str] = {
     "vegan": "vegan_scope",
 }
+
+# MEH-1508 chunk 3ב — the standalone 100% axes. Separate table from the one
+# above because they answer a different question: that one widens an existing
+# product filter, this one IS the filter. Only the two `*_scope` columns appear
+# — `gluten_free` / `lactose_free` carry `*_facility`, which the card (§6.3)
+# rules a question about the production site and not the catalog, so there is
+# no "100% gluten free" axis to add here later by analogy.
+_SCOPE_ALL_FILTERS: list[tuple[str, str]] = [
+    ("vegan_all", "vegan_scope"),
+    ("vegetarian_all", "vegetarian_scope"),
+]
 
 
 def _build_base_queries(
@@ -503,6 +514,14 @@ _ORDER_DAY_KEYS = (
 # expression — the expression itself is a constant.
 _OPEN_NOW_JSONPATH = "$.%s[*] ? (@.open <= $now && @.close > $now)"
 
+# MEH-1889 chunk B (MEH-2264): the same predicate over TODAY's override. The
+# subject is `special_hours -> '<today>' -> 'ranges'`, selected with SQLAlchemy's
+# JSONB subscript operators so the date travels as a bind parameter and this
+# expression stays a constant — same discipline as the weekly path above, where
+# only the day NAME (from a fixed tuple) is ever interpolated. `ranges: []`
+# gives an empty array, over which `[*]` matches nothing → closed.
+_OPEN_NOW_OVERRIDE_JSONPATH = "$[*] ? (@.open <= $now && @.close > $now)"
+
 
 def _open_for_orders_now_condition(open_now: bool):
     """MEH-1881: match on the DECLARED ordering window, not on opening_hours.
@@ -516,6 +535,17 @@ def _open_for_orders_now_condition(open_now: bool):
     NULL rather than false, so both branches use `IS TRUE` / `IS NOT TRUE`
     instead of `== True` / `!= True` — with a bare boolean comparison the NULL
     rows would silently vanish from BOTH sides of the filter.
+
+    MEH-1889 chunk B (MEH-2264): `special_hours` is ORDER-AXIS AUTHORITATIVE on
+    the one date it names (Sapir's ruling א). If today's ISO date is a key, that
+    entry's `ranges` decide and the weekly day is not consulted — `[]` means
+    closed even on a weekly-open day, and a range means open even on a
+    weekly-closed day. No key for today → the weekly answer, byte-identical to
+    before. An override with NO weekly window is still a declaration, so such a
+    producer lands on the closed side rather than vanishing from both — the CASE
+    only falls through to the weekly (NULL-propagating) branch when today has
+    no override. Past dates need no reader-side filter here: the lookup is by
+    today's key alone, so a stale date is simply never read.
     """
     # `israel_now` is the codebase's canonical Asia/Jerusalem primitive, and
     # going through it rather than building a datetime here is what makes the
@@ -523,13 +553,27 @@ def _open_for_orders_now_condition(open_now: bool):
     # `monkeypatch.setattr(producer_listing, "israel_now", ...)`, the same
     # idiom test_availability_validation.py uses for `israel_today`.
     now = israel_now()
+    now_vars = func.jsonb_build_object("now", now.strftime("%H:%M"))
     # weekday() is Monday=0; order_window is keyed Sunday-first.
     day_key = _ORDER_DAY_KEYS[(now.weekday() + 1) % 7]
-    matches = func.jsonb_path_exists(
+    weekly = func.jsonb_path_exists(
         Producer.order_window,
         cast(_OPEN_NOW_JSONPATH % day_key, JSONPATH),
-        func.jsonb_build_object("now", now.strftime("%H:%M")),
+        now_vars,
     )
+    today_key = now.date().isoformat()
+    override = func.jsonb_path_exists(
+        Producer.special_hours[today_key]["ranges"],
+        cast(_OPEN_NOW_OVERRIDE_JSONPATH, JSONPATH),
+        now_vars,
+    )
+    # `has_key` on a NULL column is NULL, and CASE treats a NULL condition as
+    # not-taken, so a producer with no overrides at all takes the weekly branch.
+    # The CASE is load-bearing, not style: PostgreSQL evaluates a THEN arm only
+    # when its WHEN is true, so `override` is never computed against a NULL or
+    # key-less column. Do not "simplify" it into a bare OR/COALESCE that would
+    # evaluate the subscript path on every row.
+    matches = case((Producer.special_hours.has_key(today_key), override), else_=weekly)
     return matches.is_(True) if open_now else matches.isnot(True)
 
 
@@ -544,6 +588,31 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         col = getattr(Producer, attr)
         q = q.filter(col == val)
         count_q = count_q.filter(col == val)
+
+    # MEH-1287 chunk B — the seasonal homepage module. `?in_season=true` means
+    # "an editor marked this business as in season and the mark has not
+    # expired": `in_season_until >= israel_today()`, inclusive, an Israel
+    # calendar day (the column is a DATE for exactly that reason — chunk A).
+    #
+    # The expiry half is the whole design. A boolean would have to be cleared
+    # by hand at the end of every season, and the predictable failure is a flag
+    # left on: a seasonal farmer whose page says "in season" in February. Here
+    # a stale mark simply stops matching, with nobody remembering anything.
+    #
+    # Written as an explicit NOT-NULL conjunction rather than the bare
+    # comparison because SQL three-valued logic would otherwise drop unmarked
+    # producers from BOTH halves: `NULL >= date` is NULL, and so is its
+    # negation, so `?in_season=false` would silently exclude the very rows it
+    # most obviously describes. `is_not(None)` is never NULL, so the negation
+    # of the conjunction is always true or false and the two halves partition
+    # the table. Asserted in both directions in the chunk-B tests.
+    in_season = filters.get("in_season")
+    if in_season is not None:
+        season_cond = Producer.in_season_until.is_not(None) & (
+            Producer.in_season_until >= israel_today()
+        )
+        q = q.filter(season_cond if in_season else ~season_cond)
+        count_q = count_q.filter(season_cond if in_season else ~season_cond)
 
     # MEH-293 — dietary flag filter via EXISTS subquery on products.
     # `?vegan=true` matches producers with at least one is_vegan=TRUE product;
@@ -564,6 +633,29 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         scope_col = _SCOPE_COLUMN_FOR_AXIS.get(key)
         if scope_col is not None:
             cond = or_(cond, getattr(Producer, scope_col) == "all")
+        q = q.filter(cond if val else ~cond)
+        count_q = count_q.filter(cond if val else ~cond)
+
+    # MEH-1508 chunk 3ב — the 100% axes, filtered on the DECLARATION ALONE.
+    #
+    # Deliberately not folded into the loop above, and the difference is the
+    # whole point of the axis: `?vegan=true` means "at least one vegan product
+    # OR a 100% declaration" (chunk 3א), while `?vegan_all=true` means only the
+    # declaration. A bakery with one vegan cookie satisfies the first and must
+    # NOT satisfy the second — that distinction is what the card exists to give
+    # a consumer, so the two axes cannot share a branch.
+    #
+    # `false` is the strict complement (`!= 'all'`), which therefore includes
+    # both `some` and `unknown`. `unknown` is the column default, so the
+    # complement is "every business that has not declared 100%", not "every
+    # business that declared it is not 100%" — those differ, and the honest one
+    # is the former: we have no signal for the latter.
+    for key, scope_attr in _SCOPE_ALL_FILTERS:
+        val = filters.get(key)
+        if val is None:
+            continue
+        scope_col = getattr(Producer, scope_attr)
+        cond = scope_col == "all"
         q = q.filter(cond if val else ~cond)
         count_q = count_q.filter(cond if val else ~cond)
 

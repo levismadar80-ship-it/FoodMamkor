@@ -54,7 +54,7 @@ from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerRejectIn,
-    ProducerUpdate,
+    ProducerAdminUpdate,
     RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
@@ -539,7 +539,6 @@ def admin_create_producer(
         slug=slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,
-        starting_price_label=data.price_range,  # keep both in sync
         grass_fed=data.grass_fed,
         organic_certified=data.organic_certified,
         has_delivery=data.has_delivery,
@@ -700,7 +699,11 @@ def license_expiry_reminders(
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
-    data: ProducerUpdate,
+    # MEH-1287 chunk B: the ADMIN shape — ProducerUpdate plus the editor-only
+    # fields. The owner PUT (producer_me.py) keeps ProducerUpdate, which is what
+    # keeps `in_season_until` off the owner's schema entirely rather than merely
+    # filtered out of it.
+    data: ProducerAdminUpdate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -750,10 +753,6 @@ def admin_update_producer(
         _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
-
-    # Mirror price_range → starting_price_label for backward-compat display
-    if "price_range" in payload:
-        producer.starting_price_label = payload["price_range"]
 
     # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
