@@ -54,6 +54,8 @@ const PRS = {
   3011: { number: 3011, title: "feat: merged sibling", state: "closed", merged_at: "2026-08-25T10:00:00Z", merged: true },
   3012: { number: 3012, title: "feat: superseded attempt", state: "closed", merged_at: null, merged: false, body: "Superseded by #3011." },
   3020: { number: 3020, title: "chore: closed quietly", state: "closed", merged_at: null, merged: false, body: "no reason given" },
+  // Referenced ONLY by the control-card fixtures below: any fetch of it proves an excluded card was classified.
+  3099: { number: 3099, title: "docs: drain evidence", state: "closed", merged_at: "2026-09-01T10:00:00Z", merged: true },
 };
 
 /** GitHub issue comments per PR number (only consulted for closed-unmerged PRs). */
@@ -553,7 +555,7 @@ const CONTROL_ISSUES = [
     description: DOD_TICKED,
     state: { id: "s-prog", name: "In Progress", type: "started" },
     labels: { nodes: [{ name: "cc-queue" }, { name: "Control" }] },
-    attachments: { nodes: [{ url: pull(3001), title: "first" }] },
+    attachments: { nodes: [{ url: pull(3099), title: "control evidence" }] },
   },
   {
     id: "id-ctl-id",
@@ -562,7 +564,7 @@ const CONTROL_ISSUES = [
     description: "# 1 · Goal\n\nprose only",
     state: { id: "s-prog", name: "In Progress", type: "started" },
     labels: { nodes: [] },
-    attachments: { nodes: [{ url: pull(3001), title: "first" }] },
+    attachments: { nodes: [{ url: pull(3099), title: "control evidence" }] },
   },
   {
     id: "id-ctl-flag",
@@ -571,7 +573,7 @@ const CONTROL_ISSUES = [
     description: DOD_TICKED,
     state: { id: "s-todo", name: "Todo", type: "unstarted" },
     labels: { nodes: [{ name: "cc-queue" }] },
-    attachments: { nodes: [{ url: pull(3001), title: "first" }] },
+    attachments: { nodes: [{ url: pull(3099), title: "control evidence" }] },
   },
 ];
 
@@ -618,8 +620,15 @@ test("run --write: excluded control cards get no row, no comment, no state move 
   for (const c of CONTROL_ISSUES) {
     assert.equal(calls.comment.some((x) => x.issueId === c.id), false, `${c.identifier} never commented on`);
     assert.equal(calls.setState.some((x) => x.issueId === c.id), false, `${c.identifier} never moved`);
-    assert.equal(calls.githubGet.some((p) => p.includes(`/pulls/`) && false), false);
   }
+  // #3099 is referenced only by control cards; the fake would have answered it, so a fetch proves a leak.
+  assert.ok(PRS[3099], "control-only PR exists in the fixture — a fetch would not 404");
+  assert.equal(calls.githubGet.some((p) => p.endsWith("/pulls/3099")), false, "no GitHub PR fetch for a control-only PR");
+  assert.deepEqual(
+    calls.githubGet.filter((p) => /\/pulls\/\d+$/.test(p)).sort(),
+    [`/repos/${REPO}/pulls/3001`, `/repos/${REPO}/pulls/3002`],
+    "only the ordinary card's PRs were fetched",
+  );
   assert.match(out.join("\n"), /excluded 3 control card\(s\): MEH-2227 \(id\), MEH-9101 \(label:control\), MEH-9102 \(id\)/);
 });
 
