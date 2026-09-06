@@ -1,0 +1,39 @@
+REDIRECT /he/experiences/new → 308 /he/producer/dashboard/experiences/new
+PASS /he/experiences/new answers 308
+PASS /he/experiences/new Location targets the dashboard route (got /he/producer/dashboard/experiences/new)
+REDIRECT /experiences/new → 308 /producer/dashboard/experiences/new
+PASS /experiences/new answers 308
+PASS /experiences/new Location targets the dashboard route (got /producer/dashboard/experiences/new)
+REDIRECT /en/experiences/new → 308 /en/producer/dashboard/experiences/new
+PASS /en/experiences/new answers 308
+PASS /en/experiences/new Location targets the dashboard route (got /en/producer/dashboard/experiences/new)
+PASS control: /experiences is still 200 (got 200)
+[375] anonymous landed on http://localhost:3000/login?redirect=%2Fproducer%2Fdashboard%2Fexperiences%2Fnew
+PASS [375] (i) anonymous → /login
+PASS [375] (i) /login carries redirect back to the route
+PASS [375] (i) no experience form for an anonymous visitor
+PASS [375] (ii) consumer sees data-testid="access-denied"
+PASS [375] (ii) denied state offers the "רשמו בית עסק" CTA
+PASS [375] (ii) NO form for a consumer
+[375] consumer URL stayed at http://localhost:3000/producer/dashboard/experiences/new
+PASS [375] (iii) producer sees ExperienceForm
+PASS [375] (iii) no denied state for a producer
+[375] crumb = ניהול העסק›חוויה חדשה
+PASS [375] (iii) crumb reads "ניהול העסק › חוויה חדשה"
+[375] /experiences: dashboard-route links=1, stale /experiences/new links=0
+PASS [375] (v) zero links still pointing at the old public route
+[1440] anonymous landed on http://localhost:3000/login?redirect=%2Fproducer%2Fdashboard%2Fexperiences%2Fnew
+PASS [1440] (i) anonymous → /login
+PASS [1440] (i) /login carries redirect back to the route
+PASS [1440] (i) no experience form for an anonymous visitor
+PASS [1440] (ii) consumer sees data-testid="access-denied"
+PASS [1440] (ii) denied state offers the "רשמו בית עסק" CTA
+PASS [1440] (ii) NO form for a consumer
+[1440] consumer URL stayed at http://localhost:3000/producer/dashboard/experiences/new
+PASS [1440] (iii) producer sees ExperienceForm
+PASS [1440] (iii) no denied state for a producer
+[1440] crumb = ניהול העסק›חוויה חדשה
+PASS [1440] (iii) crumb reads "ניהול העסק › חוויה חדשה"
+[1440] /experiences: dashboard-route links=1, stale /experiences/new links=0
+PASS [1440] (v) zero links still pointing at the old public route
+SUMMARY: 0 failure(s)

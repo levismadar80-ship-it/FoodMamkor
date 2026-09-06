@@ -63,7 +63,7 @@ PRODUCERS = [
         "name": "חוות הגליל - בשר אורגני",
         "slug": "galil-farm",
         "top_product_name": "בשר בקר grass-fed",
-        "starting_price_label": "מ-₪70/ק״ג",
+        "price_range": "מ-₪70/ק״ג",
         "description": "חווה משפחתית בגליל המגדלת בקר grass-fed על מרעה טבעי. ללא הורמונים, ללא אנטיביוטיקה.",
         "city": "כרמיאל",
         "lat": 32.9136,
@@ -86,7 +86,7 @@ PRODUCERS = [
         "name": "גבינות הר הגולן",
         "slug": "golan-cheese",
         "top_product_name": "גבינת עיזים מיושנת",
-        "starting_price_label": "מ-₪35/יח׳",
+        "price_range": "מ-₪35/יח׳",
         "description": "מחלבה בוטיק ברמת הגולן. גבינות מחלב עיזים ופרות שגדלות במרעה חופשי.",
         "city": "קצרין",
         "lat": 32.9940,
@@ -131,7 +131,7 @@ PRODUCERS = [
         "name": "מאפיית המחמצת של דנה",
         "slug": "dana-sourdough",
         "top_product_name": "לחם מחמצת כוסמין",
-        "starting_price_label": "מ-₪30",
+        "price_range": "מ-₪30",
         "description": "לחמים ומאפים מקמח כוסמין וקמחים מלאים. מחמצת טבעית בת 8 שנים. ללא שמרים מסחריים.",
         "city": "תל אביב",
         "lat": 32.0853,
@@ -154,7 +154,7 @@ PRODUCERS = [
         "name": "תסס - מותססים טבעיים",
         "slug": "tases-ferments",
         "top_product_name": "קימצ'י קוריאני מסורתי",
-        "starting_price_label": "מ-₪25/בקבוק",
+        "price_range": "מ-₪25/בקבוק",
         "description": "סדנה לתסיסה טבעית. קימצ'י, כרוב כבוש, קומבוצ'ה ומשקאות מותססים - הכל בעבודת יד.",
         "city": "ירושלים",
         "lat": 31.7683,
@@ -177,7 +177,7 @@ PRODUCERS = [
         "name": "טבע פור - סבונים ושמנים",
         "slug": "teva-pure",
         "top_product_name": "סבון שמן זית ולבנדר",
-        "starting_price_label": "מ-₪35",
+        "price_range": "מ-₪35",
         "description": "סבונים בעבודת יד משמן זית ראשוני ישראלי. קרמים טבעיים ותכשירי צמחים ללא כימיקלים.",
         "city": "זכרון יעקב",
         "lat": 32.5714,
@@ -334,7 +334,13 @@ def seed_categories(db):
         # renamed row that still holds `dairy` — see its docstring.
         .values(
             [
-                {"name": name, "emoji": emoji, "slug": _slugs[name]}
+                # MEH-1456 chunk A: the seed declares ownership of its own rows.
+                # Needed HERE and not only in revision b7d3e5a9c1f4's backfill:
+                # on a fresh database migrations run before this INSERT, so a
+                # migration-only backfill would leave every seeded row False.
+                # Insert-only + ON CONFLICT DO NOTHING means an existing row's
+                # flag is never touched from here — the migration owns that.
+                {"name": name, "emoji": emoji, "slug": _slugs[name], "is_system": True}
                 for name, emoji in CATEGORIES
             ]
         )
@@ -408,7 +414,9 @@ def _seed_demo_producers(db):
             website=p_data.get("website"),
             slug=p_data.get("slug"),
             top_product_name=p_data.get("top_product_name"),
-            starting_price_label=p_data.get("starting_price_label"),
+            # MEH-1855 chunk 2: the seed writes the canonical price_range
+            # (the dropped alias used to be the only field it filled).
+            price_range=p_data.get("price_range"),
             # MEH-1772 chunk 3: .get() so the producers that state no rate
             # keep NULL ("cost not stated") rather than becoming 0 ("free").
             delivery_fee=p_data.get("delivery_fee"),
