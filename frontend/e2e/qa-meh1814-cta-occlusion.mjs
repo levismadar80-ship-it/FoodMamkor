@@ -18,7 +18,9 @@ await page.route("**/auth/me", (r) =>
 await page.route("**/favorites**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 await page.route("**/categories", (r) =>
   r.fulfill({ status: 200, contentType: "application/json",
-    body: JSON.stringify([{ id: 1, name: "חלב וגבינות" }, { id: 2, name: "לחמים ואפייה" }]) }));
+    // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
+    // Hebrew name — a slug-less stub renders no chip at all.
+    body: JSON.stringify([{ id: 1, name: "חלב וגבינות", slug: "dairy" }, { id: 2, name: "לחמים ואפייה", slug: "bread" }]) }));
 await page.route("**/auth/register/producer", (r) => {
   if (r.request().method() !== "POST") return r.continue();
   role = "producer";
