@@ -858,6 +858,19 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             <p className="text-xs text-fg-muted mt-1">
               {t("producers.form.fields.recommended_note_hint")}
             </p>
+            {/* MEH-2276 — `initial?.recommended_at` (load-time) under a
+                `form.is_recommended` (live) condition looks like a stale-data
+                bug and is not one, for a reason that lives at the OTHER end of
+                this file: a successful save calls
+                `router.push("/admin?tab=producers")` (:525), so the form
+                navigates away and no one is ever left looking at a stamp the
+                save has just invalidated. Re-entering through the edit page
+                refetches. Before a save, ticking the box shows «מעולם לא»,
+                which is accurate — the server has not stamped anything yet.
+
+                Written down because the dependency is non-local: swap that
+                push for a toast that keeps the admin on the form, and this
+                line starts lying with nothing here to show it. */}
             {form.is_recommended && (
               <p className="text-xs text-fg-muted mt-1">
                 {initial?.recommended_at

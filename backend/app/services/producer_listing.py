@@ -705,6 +705,23 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     #
     # An explicit ?availability_state= WINS: the caller asked for the real
     # filter, so the alias does not get to override or intersect it.
+    #
+    # MEH-2276 — what this block does NOT do, because it reads like a missing
+    # clause and is not one. It does not suppress the MEH-291 default-hide of
+    # `on_vacation` below, and that is correct rather than an oversight.
+    #
+    # The gate down there is `if filters.get("availability_state") is None`. It
+    # keys on the PRESENCE of that parameter, not on where this block sits, so
+    # moving these lines above or below it changes nothing. A caller passing
+    # only `?is_available_today=` leaves `availability_state` unset, the gate
+    # therefore fires, and the vacation exclusion applies to BOTH halves of the
+    # alias — which is exactly what the old column filter did, for the same
+    # reason, before 3a replaced it. Preserving that is the whole point of an
+    # alias.
+    #
+    # (Raised as a Minor on #3460 with the placement stated the other way round.
+    # The observation was worth recording, the premise was not: order is not the
+    # mechanism here, parameter presence is.)
     legacy_available = filters.get("is_available_today")
     if legacy_available is not None:
         if filters.get("availability_state") is not None:
