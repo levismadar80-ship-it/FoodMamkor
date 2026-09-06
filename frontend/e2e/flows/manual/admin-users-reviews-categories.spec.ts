@@ -63,11 +63,21 @@ import type { Locator, Route } from "@playwright/test";
  *      it by its Hebrew copy while reaching the other two by role. CLOSED by
  *      MEH-2268: all three are now `getByRole("dialog", …)` here, and the
  *      Escape close is asserted with its in-flight guard.
- * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured: the
- *      panel is portaled to the end of <body> and nothing moves focus into it,
- *      so Tab from the open ⋮ lands on the NEXT ROW's favorites button (probe:
- *      document.activeElement after Tab, both projects). Opened as MEH-2267;
- *      the clause is asserted correctly under test.fail() citing it.
+ * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured then:
+ *      the panel is portaled to the end of <body> and nothing moved focus into
+ *      it, so Tab from the open ⋮ landed on the NEXT ROW's favorites button
+ *      (probe: document.activeElement after Tab, both projects). CLOSED by
+ *      MEH-2267, and the fix does not make the original assertion pass — it
+ *      makes it obsolete. Under the WAI-ARIA APG menu-button pattern the item
+ *      list is reached by the OPEN itself (focus moves to the first item), and
+ *      Tab is the key that LEAVES the menu. So a spec asserting "Tab reaches
+ *      the first item" would now be asserting non-APG behaviour. The test below
+ *      asserts the contract that satisfies the MT row's intent — the items are
+ *      keyboard-reachable without tabbing the rest of the page — plus the two
+ *      halves the old shape could not cover: Arrow navigation, and Tab
+ *      returning focus to the trigger. Divergence from the card's "the fix
+ *      turns it into an unexpected pass" flagged on MEH-2267 rather than
+ *      resolved silently.
  * D5 · MT:MEH-530:23 + :28 expect «מחיקת '<שם>' — N בתי עסק משויכים». The count
  *      rendered; the NAME did not — `'{name}'` in he.json was an ICU quoted
  *      literal, so the dialog read «מחיקת {name} — 3 בתי עסק משויכים». FIXED:
@@ -578,12 +588,27 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(menu(page)).toBeVisible();
   });
 
-  // MT:MEH-530:50 — "פריטי התפריט נגישים ב-Tab". D4 / MEH-2267: the panel is portaled to the END of
-  // <body> and nothing moves focus into it, so Tab from the open ⋮ lands on the next row's
-  // favorites button. This test asserts the CORRECT behaviour and is expected to fail until the
-  // card lands — the fix turns it into an unexpected pass, which is the signal to drop test.fail().
-  test("keyboard: Tab from the open ⋮ reaches the first menu item", async ({ page }) => {
-    test.fail(true, "MEH-2267 — AdminRowMenu's portaled panel is last in tab order; Tab leaves the menu");
+  // MT:MEH-530:50 — "פריטי התפריט נגישים ב-Tab" — under the APG menu-button
+  // reading D4 records: opening moves focus INTO the list, arrows walk it, and
+  // Tab leaves. Before MEH-2267 the first assertion below landed on the NEXT
+  // row's favorites button, so this test reds against the pre-fix component
+  // without needing test.fail() to say so.
+  //
+  // ONE item, not two, and that is a property of this page rather than of this
+  // fixture: `page.js:238,245` gates promote on `u.role !== "admin"` and demote
+  // on `u.role === "admin"`, which are mutually exclusive. No row on
+  // /admin/users ever offers both, so multi-item Arrow navigation cannot be
+  // exercised here at all — it is covered in __tests__/AdminRowMenu.test.jsx,
+  // where the items are injected. What this test can prove, and does, is the
+  // single-item boundary of the same wrap arithmetic: with n=1 every ArrowDown
+  // and ArrowUp must resolve back to the one item rather than to nothing.
+  //
+  // The count assertion is deliberate and load-bearing: it pins the premise, so
+  // if the page ever grows a second item this test says WHY it changed instead
+  // of failing somewhere further down with "element(s) not found" — which is
+  // exactly how the first version of this test failed, having assumed a demote
+  // item that no consumer row can have.
+  test("keyboard: opening the ⋮ moves focus to its item; arrows hold it; Tab leaves and returns focus", async ({ page }) => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -592,8 +617,18 @@ test.describe("/admin/users — the role kebab", () => {
     await btn.focus();
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
+    const m = menu(page);
+    await expect(m.getByRole("menuitem"), "a consumer row offers promote only").toHaveText(["העלי לאדמין"]);
+    const promote = m.getByRole("menuitem", { name: "העלי לאדמין" });
+    await expect(promote, "APG: the open puts focus on the first item").toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(promote, "ArrowDown wraps to the single item, not off it").toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(promote, "ArrowUp wraps to the single item, not off it").toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(menu(page).getByRole("menuitem", { name: "העלי לאדמין" })).toBeFocused();
+    await expect(m, "APG: Tab closes the menu").toHaveCount(0);
+    await expect(btn, "APG: Tab returns focus to the trigger").toBeFocused();
+    await expect(btn).toHaveAttribute("aria-expanded", "false");
   });
 });
 
