@@ -1715,6 +1715,12 @@ class ProducerReview(Base):
         UniqueConstraint(
             "producer_id", "user_id", name="uq_one_review_per_producer_per_user"
         ),
+        # MEH-1428: DB-level twin of the Pydantic Literal on `source` — added
+        # by revision 3f9a7c2e5d18 alongside the column.
+        CheckConstraint(
+            "source IN ('click', 'invite_link')",
+            name="ck_producer_reviews_source",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1737,6 +1743,14 @@ class ProducerReview(Base):
     # utcnow() the endpoint writes (CHUNK B). Alembic revision b8f3d21a9c47.
     reply = Column(Text, nullable=True)
     reply_at = Column(DateTime, nullable=True)
+    # MEH-1428 chunk 1: how the reviewer passed the contact gate —
+    # "click" (a WhatsApp/contact click row, the pre-MEH-1428 path) or
+    # "invite_link" (a signed "request a review" token, reviews.py guard 3).
+    # NOT NULL with a server_default so every pre-existing row reads "click"
+    # without a backfill — Expand-only (ADR-007). Alembic revision
+    # 3f9a7c2e5d18 (down_revision f5b8d2c7a3e9 — re-pointed 05/09 when the
+    # branch was synced onto staging; the revision docstring records it).
+    source = Column(String(20), nullable=False, server_default="click")
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")
