@@ -3,6 +3,38 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-06 אחה"צ — drain כח' (session `019GH5Ln…`, 12:52Z → ~17:25Z): ADDENDUM-9 בוצע (2080 · 2079 · 2241 B · 2064 Phase 0) · T-F נסגר לפריטי ה-drain · #3454 מוזג `c46c67b0` · 2244 sweep dry-run · #3455 `78f13114` · #3457 `1374f46c` · #3456 `e1cd2f4e` · #3461 `3f870bfb` מוזגו · #3458 מוזג ע"י ספיר `dc7f492b`
+
+**‏שורה אחת:** ‏LEASE נלקח 12:52Z (heartbeat של כו' בן 57 דק'). ‏Phase 1 — #3454 מוזג `c46c67b0` (squash, 1 parent) אחרי שני re-syncs (staging זז פעמיים באמצע). ‏Phase 2 — 1606 Done, 1517/2046/2259 ללא שינוי. ‏Phase 3 — 1915 (#3455) · 784 (#3456) · 1981 טבלה · 1976/2117/1839 Done · 1287 שורה 3 + חצי docs · 2135 retired · 1767 שורת CHANGELOG. ‏Phase 4 — 2080 (#3458, ספיר ממזגת) · 2079 (#3457) · 2241 B (#3461) · 2064 Phase 0 (15 ids). ‏Phase 5 — סגור ע"י כו' (1647 #3453, EXPECTED_TABLES `a52b6781`, 2052 → paste). ‏Phase 6 — sweep dry-run `34037884551`: 27 dod-unticked · 3 done (2122 · 1905 · 1517 — `write` לא הורץ) · 12 skip (PR פתוח); 2 control מוחרגים; אפס writes.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏«require branches up to date» כבוי על protect-staging מאז 13:40Z (ספיר, לבאצ' הזה).** לפני כן #3454 חטף `405 — 2 of 2 required status checks are expected` פעמיים על head ירוק, כי staging זז (#3448, #3453) בין ריצת ה-CI למיזוג; `git merge origin/staging` + push הוא התיקון כשההגדרה דולקת. עכשיו — מיזוג ישיר על gates ירוקים.
+2. **‏הסוויטה המלאה של ה-backend (3,320) לוקחת ~15 דק' — מעבר לחלון פקודה אחד.** ‏`run_in_background` עם grep ל-`FAILED|passed` לקובץ ב-scratchpad; לרוץ מהשורש עם `PYTHONPATH=<repo>` (מודולי `from tests.conftest import` נופלים מ-`backend/`). שינוי סכמה על register = 26 קוראים ב-13 קבצים + conftest; ה-openapi snapshot (`UPDATE_OPENAPI_SNAPSHOT=1`) + `npm run codegen` (manifest) חייבים לחדש יחד, ו-merge של staging באמצע מתנגש על ה-manifest — פתרון: checkout של staging לשלושת הקבצים ו-regen על העץ הממוזג.
+3. **‏הוק שם-הענף (`check-branch-name.sh`) חוסם `git push origin $b` בתוך לולאה** — הוא רואה את המחרוזת `$b`, לא את הערך. שמות ענפים מפורשים בלבד. ‏**ה-mentions gate** דורש `Refs MEH-N (chunk k/n)` עם מספרים; `(chunk B/B)` נדחה.
+4. **‏ה-CitySearch stub ב-`RegisterProducerClient.test.jsx` נושא עכשיו verdict** (`onChange(v, { known })`, sentinel «עיירה שאינה ברשימה» = לא ידוע, מעביר `aria-invalid`). טסט שמדמה עיר צריך לדעת את זה; `fireEvent.blur` על ה-stub מפעיל `onKnownChange(true)`.
+5. **‏E2E על PRs של קופי בלבד (#3457, #3458) מדווח 9 failed / 4 flaky — סט הבסיס** (MEH-2269 שמונת ה-token-expiry ב-mobile + parity VRT map/about/login/register/producer-detail + admin-users/dashboard-*), זהה לריצות staging של כו'. לא של ה-diff; לא נדרש למיזוג.
+6. **‏`useCallback([])` על handler שקורא ל-`setAndSave` היה מצמיד את `step` של הרנדר הראשון לכתיבת ה-draft** — לכן `handleCityKnownChange` ב-RegisterProducerClient לא ממומש; ה-effect של CitySearch רץ כל רנדר אבל קורא חזרה רק כשה-verdict מתהפך.
+
+### PRs
+
+| PR | כרטיס | מה | מצב |
+|---|---|---|---|
+| #3454 | 2227 docs | backfill הצהריים (כז') + #2863/#3396 | **מוזג `c46c67b0`** 13:49Z |
+| #3455 | 1915 (1/2) | security.md: deny = tool × path | **מוזג `78f13114`** 14:14Z, squash |
+| #3456 | 784 (1/2) | protected-path-gate.sh + patch doc; 4 סבבי reviewer (בלוק prefix מת · 2 עוגנים אמיתיים 13/13 · ספירות ב-doc) | **מוזג `e1cd2f4e`** 14:50Z, squash |
+| #3457 | 2079 (1/4) | 90/30 במדיניות + lawyer bundle; reviewer ×2 נענו (הכרעות) | **מוזג `1374f46c`** 14:20Z, squash |
+| #3458 | 2080 (1/2) | צ'ק-בוקס 18+ · סכמה מחייבת · 5 טסטים failing-first | **מוזג ע"י ספיר** `dc7f492b` (merge commit, 2 parents; auth + קופי, כלל 22) |
+| #3461 | 2241 (2/2) | שער `city_known` + vitest 5 + Playwright flows/40 | **מוזג `3f870bfb`** (squash) — E2E על `f7dc4d2a`: flows/40 6/6 ירוק, אבל flows/18·28·38 אדומים בשער DETAILS→CATEGORY: הקלידו «תל אביב» בלי לבחור, והרשימה הסטטית מכירה רק «תל אביב-יפו» — בדיוק המקרה שהכרטיס מדד. תוקן ב-`e4b85186` (6 אתרי fill ב-18·22·28·38 בוחרים אופציה; בקרה מקומית מול `next start`: ישן 8 failed, חדש 17 passed / 2 skipped) |
+
+### רשימת ספיר (residual)
+
+* **‏#3458 (2080) — מוזג `dc7f492b`:** nod על «אני מעל גיל 18 ומסכימה ל…» (כלל 22). chunk 2 = שלושת נתיבי OAuth — צריך צעד UI לפני ה-redirect, לא דגל סכמה.
+* **‏2079:** הכרעת «מוצפן» מול «hashed» (שאלה ב' לעו"ד) — עריכה אחת ב-he.json אחרי התשובה; chunk C (purge) ממזגים רק אחרי שהמדיניות חיה.
+* **‏2241 chunk 0 בפרוד:** `python -m scripts.seed_cities` — `GET /api/cities?q=שדות` → `[]` (06/09 09:31Z). עד אז השער החדש מציג את הפער במקום לבלוע טקסט חופשי. קופי ייעודי («בחרי יישוב מהרשימה») — הכרעתך או להשאיר `city_required`.
+* **‏1981 שורה 3:** newsletter footer בלי notice, contact עם קישור בלבד — קופי (כלל 22).
+* **‏1915 (2/2):** GitHub settings — נדחה לסוף הבאצ' (הכרעה 10:51Z). ‏**2052 / 903 / 2192 / 2135** — שלך. ‏**1055** — נדחה.
+
 ## 2026-09-06 צהריים — drain כז' (session `019GH5Ln…`, 09:25Z → 10:35Z): מעבר DoD על 39 כרטיסים · #3447 מוזג `fcc14a7a` · Sapir residual + T-F על MEH-2227 · ואחריו כו' חלון שני (#3449, #3425, #3453) עד 11:55Z
 
 **‏שורה אחת:** ‏LEASE נלקח 09:25Z, שוחרר ~10:35Z. ‏37 כרטיסי `dod-unticked` נבדקו מול `origin/staging` (1 verified-closed · 4 held-open הכול-הוכח · 22 residual-open · 9 ללא checkbox; 76/84 שורות אחרי הכרעות-מחלקה ומדידות live). ‏#3447 (2244 chunk 4/4, control cards מחוץ ל-sweep) מוזג squash ישיר אחרי ש-auto-merge נדחה על Vercel status; #3450 (UI, בסיס `main`) נסגר. על MEH-2227: «Sapir residual — 06/09» · «T-F — next drain» · הכרעות האורקסטרטור · ADDENDUM-9 · ADDENDUM-10 (סמכות token + תור drain כח'). אחרי ה-DRAIN DONE של כז' לקח drain כו' lease שני (09:25Z–11:55Z): #3449 `b4ec778b` (2241 chunk A), #3425 `a6259719` (mypy ratchet), #3453 פתוח (1647 דרך Contents API); ספיר מיזגה #3451 `c9a53199` (1287 chunk B, «עכשיו בעונה»).
