@@ -3,6 +3,38 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-06 צהריים — drain כז' (session `019GH5Ln…`, 09:25Z → 10:35Z): מעבר DoD על 39 כרטיסים · #3447 מוזג `fcc14a7a` · Sapir residual + T-F על MEH-2227 · ואחריו כו' חלון שני (#3449, #3425, #3453) עד 11:55Z
+
+**‏שורה אחת:** ‏LEASE נלקח 09:25Z, שוחרר ~10:35Z. ‏37 כרטיסי `dod-unticked` נבדקו מול `origin/staging` (1 verified-closed · 4 held-open הכול-הוכח · 22 residual-open · 9 ללא checkbox; 76/84 שורות אחרי הכרעות-מחלקה ומדידות live). ‏#3447 (2244 chunk 4/4, control cards מחוץ ל-sweep) מוזג squash ישיר אחרי ש-auto-merge נדחה על Vercel status; #3450 (UI, בסיס `main`) נסגר. על MEH-2227: «Sapir residual — 06/09» · «T-F — next drain» · הכרעות האורקסטרטור · ADDENDUM-9 · ADDENDUM-10 (סמכות token + תור drain כח'). אחרי ה-DRAIN DONE של כז' לקח drain כו' lease שני (09:25Z–11:55Z): #3449 `b4ec778b` (2241 chunk A), #3425 `a6259719` (mypy ratchet), #3453 פתוח (1647 דרך Contents API); ספיר מיזגה #3451 `c9a53199` (1287 chunk B, «עכשיו בעונה»).
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏LEASE זר עם heartbeat טרי = יוצאים, גם כשהבריף אומר «LEASE חדש».** ‏drain כח' נכנס 11:57Z ומצא את כו' עם heartbeat בן 2 דקות — שורת log, אפס writes, re-check מתוזמן; לקח רק ב-12:52Z כשה-heartbeat עבר 45 דק' (§1ב). הבריף מתאר כוונה, שורת ה-LEASE מתארת מצב.
+2. **‏`enable_pr_auto_merge` על PR שה-status של Vercel שלו אדום מחזיר «unstable — required checks are failing»** גם כששני ה-gates הנדרשים ירוקים. הנתיב: `merge_pull_request` squash + קריאת ה-commit שנחת (תבנית `<title> (#N)` = squash; `Merge pull request` = לא). ‏GraphQL עם `GH_WORKFLOW_TOKEN` מסורב ע"י ה-proxy; REST עובד ואין לו auto-merge.
+3. **‏Contents API עם הטוקן עובד ל-`frontend/eslint.config.mjs` (#3453) ו-403 ל-`.claude/hooks/**`** (נמדד ע"י כו' 11:55Z). 2052 נשאר paste של ספיר; 1647 סגור בנתיב הזה.
+4. **‏Linear: `get_issue`/`list_comments` על 2227 חוצים את מגבלת הפלט של הכלי** — הפלט נשמר לקובץ; `jq -r .description` / `.comments[]` עליו. ה-`patch` ל-LEASE עובד עם anchor של ~100 תווים מתחילת השורה.
+5. **‏הכרעות-מחלקה לשורות DoD (06/09):** «נבדק בנייד» ← artifact @375 תחת `qa-artifacts/` או spec E2E על המשטח; «preview URL» ← URL בגוף ה-PR; CHANGELOG/HANDOFF ← ה-backfill על staging (SHA); «ספיר מאשרת קופי» ← רק שורת אישור כלל 22 על הכרטיס. הכול אחר נשאר פתוח עם residual + owner.
+6. **‏מדידות live מהסנדבוקס שעובדות:** ‏staging דרך `/api/*` עם bypass headers + cookie jar; prod דרך `mehamakor.co.il/api/*` ישירות; PostHog דרך Playwright (`executablePath` + TLS 1.2) — 0 בקשות עם/בלי consent כי אין key, לא בגלל ה-gate.
+
+### PRs
+
+| PR | כרטיס | מה | מצב |
+|---|---|---|---|
+| #3447 | 2244 chunk 4/4 | control cards מוחרגים מה-sweep (label / id, grow-only); 23/23; reviewer Must Fix (entailed assertion) תוקן `250ea747` | **מוזג `fcc14a7a`** 10:34Z, squash מאומת; 2244 נשאר Todo (נכון) |
+| #3450 | — | נוצר מה-UI על `main`, גוף עם טענות שווא | **נסגר** 10:22Z, wrong-base |
+| #3449 | 2241 chunk A / 2270 | CitySearch `?q=` + `known` (כו') | **מוזג `b4ec778b`** 11:30Z |
+| #3425 | 1868 | mypy ratchet 20→21 (כו', RED) | **מוזג `a6259719`** 10:50Z (merge commit) |
+| #3451 | 1287 chunk B | «עכשיו בעונה» gated ≥3 (RED session, ספיר מיזגה) | **מוזג `c9a53199`** 11:45Z |
+| #3453 | 1647 | selector הפלטה בלי prefix `className` — Contents API + טוקן (כו') | **פתוח**, בשרשרת המיזוג של כו' |
+| #2863 · #3396 | 1767 · 1287 A | רשומות ישנות שמעולם לא נכתבו (T-F) | מוזגים `e242652e` (13/08) · `437d7951` (05/09) |
+
+### רשימת ספיר (residual, אחרי הכרעות האורקסטרטור 10:51Z)
+
+* **‏Railway prod console:** `python -m scripts.seed_cities` (2241 chunk 0) — CitySearch ב-prod מחזיר `[]`. ‏**Railway staging SQL (2064):** בוצע — 15 שורות legacy-only; ה-drain מצרף את ה-ids ב-Phase 0.
+* **‏כלל 22:** 2192 «אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.» · 2080 «אני מעל גיל 18 ומסכימה לתנאי השימוש ולמדיניות הפרטיות».
+* **‏עו"ד (חבילת 1981, הודעה אחת):** גיל 18 בהצהרה עצמית · נוסח 90/30 · 5 שורות ה-notice · שאלת ה-IP hash — `docs/legal/lawyer-bundle-2026-09.md` (drain כח' מייצר).
+* **‏1915 GitHub settings — נדחה לסוף הבאצ'** (Code Owners review מפיל auto-merge של drains באמצע ריצה). ‏**2052** — paste של ספיר (`.claude/hooks` 403 דרך ה-API). ‏**1055** — טרמינל מקומי, Low, נדחה.
+
 ## 2026-09-06 בוקר — drain כו' חלון סגירה (session `01HDS31i…`): שש הכרעות ספיר · MEH-1249 Done · **ריליז staging→main #3442** (STEP RELEASE §5, merge commit `223c6d9e` 08:20Z, 4/4 probes כולל באנר ראש השנה) · LEASE none 08:24Z
 
 **‏שורה אחת:** ‏LEASE 07:36Z → 08:24Z. ‏(1) MEH-1249 → Done 07:39Z עם טבלת DoD (13 chunks / 30 PRs המרה + 10 docs; 29 ספקים · 496 `test(` · 569 `MT:`; #3379 chunk 5 נשאר פתוח). (2) MEH-2269 — הכרעה: fixture re-auth, TTL ללא שינוי, נרשם ב-description. (3) 2261/2262/2267/2268 → T-B של ה-drain הבא. (4) **ריליז:** #3442 נפתח 07:39Z, staging זז תחתיו (ספיר מיזגה #3439 → `f759bfaa`), נמדד מחדש, **מוזג 08:20:19Z כ-merge commit `223c6d9e`** (103 first-parent מאז `0f273bf8`); פרוד booted 08:21:28Z על ה-tip החדש, `alembic_head 7c1e2a9f4b3d → f5b8d2c7a3e9`; probes ×2 תקינים (categories 200/18 · producers 200 `x-total-count: 0` · by-slug 404); **probe 4:** `/he` ב-Chromium — לפני: אפס באנר, bundle `09-20..22`; אחרי: `holiday-banner` נוכח, «ראש השנה», bundle `2026-09-11..13`. אפס revert. (5) 2261 נשאר פתוח. (6) 2259 קיבל שורת Duplicate; Linear דחה relation — MEH-1858 **באשפה**.

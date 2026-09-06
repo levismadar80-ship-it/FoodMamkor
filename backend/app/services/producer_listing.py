@@ -141,6 +141,17 @@ _SCOPE_COLUMN_FOR_AXIS: dict[str, str] = {
     "vegan": "vegan_scope",
 }
 
+# MEH-1508 chunk 3ב — the standalone 100% axes. Separate table from the one
+# above because they answer a different question: that one widens an existing
+# product filter, this one IS the filter. Only the two `*_scope` columns appear
+# — `gluten_free` / `lactose_free` carry `*_facility`, which the card (§6.3)
+# rules a question about the production site and not the catalog, so there is
+# no "100% gluten free" axis to add here later by analogy.
+_SCOPE_ALL_FILTERS: list[tuple[str, str]] = [
+    ("vegan_all", "vegan_scope"),
+    ("vegetarian_all", "vegetarian_scope"),
+]
+
 
 def _build_base_queries(
     db: Session,
@@ -622,6 +633,29 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         scope_col = _SCOPE_COLUMN_FOR_AXIS.get(key)
         if scope_col is not None:
             cond = or_(cond, getattr(Producer, scope_col) == "all")
+        q = q.filter(cond if val else ~cond)
+        count_q = count_q.filter(cond if val else ~cond)
+
+    # MEH-1508 chunk 3ב — the 100% axes, filtered on the DECLARATION ALONE.
+    #
+    # Deliberately not folded into the loop above, and the difference is the
+    # whole point of the axis: `?vegan=true` means "at least one vegan product
+    # OR a 100% declaration" (chunk 3א), while `?vegan_all=true` means only the
+    # declaration. A bakery with one vegan cookie satisfies the first and must
+    # NOT satisfy the second — that distinction is what the card exists to give
+    # a consumer, so the two axes cannot share a branch.
+    #
+    # `false` is the strict complement (`!= 'all'`), which therefore includes
+    # both `some` and `unknown`. `unknown` is the column default, so the
+    # complement is "every business that has not declared 100%", not "every
+    # business that declared it is not 100%" — those differ, and the honest one
+    # is the former: we have no signal for the latter.
+    for key, scope_attr in _SCOPE_ALL_FILTERS:
+        val = filters.get(key)
+        if val is None:
+            continue
+        scope_col = getattr(Producer, scope_attr)
+        cond = scope_col == "all"
         q = q.filter(cond if val else ~cond)
         count_q = count_q.filter(cond if val else ~cond)
 
