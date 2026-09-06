@@ -58,9 +58,11 @@ import type { Locator, Route } from "@playwright/test";
  *      end edge (insetInlineEnd) — asserted by geometry: the panel's LEFT edge
  *      sits at the trigger's left edge and the panel extends to the right.
  * D3 · The users role-confirm modal (:46-47), unlike the reviews and categories
- *      dialogs whose code comments say they MIRROR it, carries no role="dialog" /
- *      aria-modal and does not close on Escape — reached here by its copy, not
- *      by role. Opened as MEH-2268, not fixed here.
+ *      dialogs whose code comments say they MIRROR it, carried no role="dialog" /
+ *      aria-modal and did not close on Escape — so this file originally reached
+ *      it by its Hebrew copy while reaching the other two by role. CLOSED by
+ *      MEH-2268: all three are now `getByRole("dialog", …)` here, and the
+ *      Escape close is asserted with its in-flight guard.
  * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured then:
  *      the panel is portaled to the end of <body> and nothing moved focus into
  *      it, so Tab from the open ⋮ landed on the NEXT ROW's favorites button
@@ -166,6 +168,14 @@ type StubOpts = {
   deleteStatus?: number;
   /** Delay before a DELETE answers — the in-flight window. */
   delayMs?: number;
+  /**
+   * MEH-2268 — held open until the test resolves it, and awaited by the
+   * PUT .../role handler only. A promise rather than a `delayMs` twin on
+   * purpose: the Escape-during-flight assertion needs the request to still be
+   * open at a moment the test CHOOSES, and a timeout would make that a race
+   * against the CI runner instead of a fact.
+   */
+  holdRole?: Promise<void>;
   writes?: Rec[];
   /** Every GET /admin/users, with its query params — the filter → reload trail. */
   listCalls?: Record<string, string>[];
@@ -177,7 +187,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   let users: User[] = opts.users ?? SIXTY;
   let reviews: Review[] = opts.reviews ?? REVIEWS;
   let categories: Category[] = opts.categories ?? CATEGORIES;
-  const { deleteStatus = 200, delayMs = 0, writes, listCalls } = opts;
+  const { deleteStatus = 200, delayMs = 0, holdRole, writes, listCalls } = opts;
   const unstubbed: string[] = [];
 
   await page.addInitScript(() => {
@@ -221,10 +231,11 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     users = users.map((x) => (x.id === id ? { ...x, is_blocked: !x.is_blocked } : x));
     return json(r, { ok: true });
   });
-  await page.route(/\/api\/admin\/users\/([^/]+)\/role$/, (r) => {
+  await page.route(/\/api\/admin\/users\/([^/]+)\/role$/, async (r) => {
     const body = rec(r, writes) as { role: string };
     const id = new URL(r.request().url()).pathname.match(/users\/([^/]+)\/role$/)![1];
     users = users.map((x) => (x.id === id ? { ...x, role: body.role } : x));
+    if (holdRole) await holdRole;
     return json(r, { ok: true });
   });
 
@@ -264,6 +275,13 @@ const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const userRow = (page: Page, name: string) => page.getByRole("row", { name: new RegExp(`(^|\\s)${reEscape(name)}(\\s|$)`) });
 const kebab = (row: Locator) => row.getByRole("button", { name: "פעולות נוספות" });
 const menu = (page: Page) => page.getByRole("menu");
+// MEH-2268 — the role-confirm modal, by ROLE, like `reviewDialog` further down,
+// now that it carries role="dialog" + aria-labelledby. Reaching it by its copy
+// was the D3 inconsistency: a getByText match passes against a plain <div>, so
+// it asserts the sentence and says nothing about the dialog. `name` comes from
+// aria-labelledby, so a named locator asserts BOTH at once.
+const roleDialog = (page: Page, name?: string | RegExp) =>
+  page.getByRole("dialog", { name: name ?? /^את בטוחה שברצונך/ });
 
 /** The chunk-12b/12d open: scroll first, let the reflow settle, then click —
  *  AdminRowMenu closes on ANY scroll, and a bare click on the Pixel 5 profile
@@ -394,9 +412,9 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 2 מתוך 3"), "still on page 2 after the reload").toBeVisible();
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
-    await expect(page.getByText("את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 30?")).toBeVisible();
+    await expect(roleDialog(page, "את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 30?")).toBeVisible();
     await page.getByRole("button", { name: "ביטול" }).click();
-    await expect(page.getByText(/את בטוחה שברצונך/)).toHaveCount(0);
+    await expect(roleDialog(page)).toHaveCount(0);
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
   });
 });
@@ -455,10 +473,10 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(row.getByText("צרכן")).toBeVisible();
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
-    await expect(page.getByText("את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 4?")).toBeVisible();
+    await expect(roleDialog(page, "את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 4?")).toBeVisible();
     await page.getByRole("button", { name: "אישור" }).click();
     await expect.poll(() => writes).toEqual([{ method: "PUT", url: `/admin/users/${uuid(104)}/role`, body: { role: "admin" } }]);
-    await expect(page.getByText(/את בטוחה שברצונך/), "the dialog closes on success").toHaveCount(0);
+    await expect(roleDialog(page), "the dialog closes on success").toHaveCount(0);
     await expect(row.getByText("אדמין", { exact: true })).toBeVisible();
     await expect(row.getByText("צרכן")).toHaveCount(0);
   });
@@ -475,10 +493,48 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(demote).toHaveClass(/text-red-600/);
     await expect(menu(page).getByRole("menuitem")).toHaveText(["הסירי הרשאות"]);
     await demote.click();
-    await expect(page.getByText("את בטוחה שברצונך להסיר הרשאות אדמין מרונית אדמין?")).toBeVisible();
+    await expect(roleDialog(page, "את בטוחה שברצונך להסיר הרשאות אדמין מרונית אדמין?")).toBeVisible();
     await page.getByRole("button", { name: "אישור" }).click();
     await expect.poll(() => writes).toEqual([{ method: "PUT", url: `/admin/users/${uuid(102)}/role`, body: { role: "consumer" } }]);
     await expect(row.getByText("צרכן")).toBeVisible();
+  });
+
+  // MEH-2268 — Escape closes the role-confirm dialog, and the close is GUARDED
+  // while the PUT is in flight. Both halves are asserted, because the guard is
+  // the part a naive listener gets wrong: a dialog that vanishes mid-request
+  // takes with it the only explanation of what the request is doing.
+  test("Escape closes the role-confirm dialog — but not while the role change is in flight", async ({ page }) => {
+    const writes: Rec[] = [];
+    let release!: () => void;
+    const holdRole = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await stubAdmin(page, { writes, holdRole });
+    await openUsers(page);
+    const row = userRow(page, "משתמשת 4");
+    await openKebab(row);
+    await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
+    await expect(roleDialog(page)).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(roleDialog(page), "Escape closes it while idle").toHaveCount(0);
+
+    // Reopen, submit, and press Escape while the PUT is still unanswered. The
+    // disabled confirm button is the in-flight marker rather than its label:
+    // `users.confirm.submitting` is the three-dot string "...", which is a
+    // weak thing to match on and would not tell a busy dialog from a typo.
+    await openKebab(row);
+    await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
+    const submit = roleDialog(page).getByRole("button", { name: /אישור|\.\.\./ });
+    await submit.click();
+    await expect(submit, "the PUT is still open").toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(roleDialog(page), "Escape is a no-op while the PUT is in flight").toBeVisible();
+
+    release();
+    await expect(roleDialog(page), "and it closes on its own when the PUT lands").toHaveCount(0);
+    await expect.poll(() => writes.map((w) => `${w.method} ${w.url}`)).toEqual([`PUT /admin/users/${uuid(104)}/role`]);
+    await expect(row.getByText("אדמין", { exact: true })).toBeVisible();
   });
 
   // MT:MEH-530:48 — the super-admin row: no ⋮, the «מוגן» badge and the lock tooltip stay.
