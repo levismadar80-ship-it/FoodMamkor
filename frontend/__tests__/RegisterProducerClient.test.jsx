@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
 
@@ -91,6 +91,9 @@ vi.mock("@/components/CitySearch", () => ({
       // /cities response). Exposed as a button so no fetch is simulated.
       data-has-known-change={onKnownChange ? "1" : "0"}
       onBlur={() => onKnownChange && onKnownChange(true)}
+      // …and the reverse flip (a late response REVOKING a match) rides
+      // double-click, so both directions of the async verdict are drivable.
+      onDoubleClick={() => onKnownChange && onKnownChange(false)}
     />
   ),
 }));
@@ -1696,6 +1699,61 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     fireEvent.blur(cityInput);
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("B→C — a late response revoking the match re-blocks, without the value changing", async () => {
+    await reachDetailsFilledExceptCity();
+    const cityInput = screen.getByTestId("city");
+    fireEvent.change(cityInput, { target: { value: "תל אביב" } }); // known at emit
+    fireEvent.doubleClick(cityInput); // async verdict: not a town after all
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+    expect(cityInput.value).toBe("תל אביב"); // the value itself was never re-emitted
+  });
+
+  // Draft round-trip (CI reviewer on #3461): `packDraft` spreads every form
+  // field except `password` (lib/register-draft.js), so the verdict survives a
+  // reload. Asserted end-to-end — a restored draft is NOT re-challenged when
+  // the town was picked, and IS challenged when it was not — rather than by
+  // reading the stored JSON, which would pass identically if restoreDraft
+  // dropped the key on the way back in.
+  it("draft round-trip: a restored list-picked town passes the gate; a restored free-text town does not", async () => {
+    const DRAFT_KEY = "producer_registration_draft";
+    const seed = (city_known) =>
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          v: 2,
+          savedAt: Date.now(),
+          step: 2, // DETAILS
+          form: { producer_name: "העסק שלי", phone: "0501234567", city: "תל אביב", city_known },
+        }),
+      );
+    localStorage.setItem("token", "tok-123");
+    authState.user = { role: "user" };
+
+    seed(true);
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+    cleanup();
+
+    seed(false);
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
   });
 
   it("the flag never reaches the POST body", async () => {
