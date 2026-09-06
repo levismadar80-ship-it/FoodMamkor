@@ -12,7 +12,7 @@ import AdminContentPage from "@/app/[locale]/admin/content/page";
 const LICENSE_DETAIL =
   "לקטגוריה הזאת יש דרישת רישיון של משרד הבריאות שמזוהה לפי השם. " +
   "שינוי השם מבטל את הדרישה עבור בתי העסק בקטגוריה, ולכן הוא נעשה במיגרציה " +
-  "ולא במסך הניהול. אפשר לעדכן את האימוג'י.";
+  "ולא במסך הניהול. אפשר לעדכן את הסמל.";
 const NAME_TAKEN_DETAIL = "קטגוריה בשם זה כבר קיימת";
 
 const apiMock = vi.hoisted(() => ({

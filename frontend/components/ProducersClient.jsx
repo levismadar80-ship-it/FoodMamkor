@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { CATEGORY_ICONS, CATEGORY_STYLES } from "@/lib/category-registry";
+import { CATEGORY_STYLES, resolveCategoryGlyph } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
 // mounts, and the same whitelist the backend validates delivery_day against.
@@ -667,13 +667,17 @@ export default function ProducersClient({
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
     ...visibleCategories.map((c) => {
-      const Glyph = CATEGORY_ICONS[c.name];
+      // MEH-2163: one total lookup, and the chip policy stated rather than
+      // inferred from a bare index returning `undefined` — an unmapped category
+      // renders NO icon here (`isFallback` discarded), which is MEH-1441's
+      // "never a Leaf fallback" decision, not an accident of the lookup shape.
+      const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c);
       const style = CATEGORY_STYLES[c.name];
       const iconColor = style ? (style.textColor ?? style.color) : undefined;
       return {
         key: String(c.id),
         label: c.name,
-        ...(Glyph ? { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) } : {}),
+        ...(isFallback ? {} : { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) }),
       };
     }),
   ];

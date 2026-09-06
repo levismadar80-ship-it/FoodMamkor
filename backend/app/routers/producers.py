@@ -152,15 +152,29 @@ def list_producers(
     open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
+    # DEPRECATED (MEH-2271, MEH-1854 chunk 3a) — kept for one release as an
+    # alias onto `availability_state`, not as a column filter. It no longer
+    # reads producers.is_available_today at all: `true` selects
+    # availability_state == "available_today", `false` selects everything
+    # else. Same result set as before, because the column and the enum agreed
+    # (desync measured 0/29 on staging, 06/09) and now the enum is the only
+    # thing written. Removed by MEH-2272; the column drops in MEH-2273.
     is_available_today: bool | None = None,
-    # MEH-291 — durable 4-value enum filter. Phase 3 frontend will switch
-    # to this; the legacy is_available_today filter above stays during the
-    # 7-day overlap. Default listing behavior unchanged in Phase 2.
+    # MEH-291 — durable 4-value enum filter, and as of MEH-2271 the only
+    # availability filter that reads a column. An explicit value here WINS
+    # over the deprecated alias above.
     availability_state: str | None = None,
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
     vegan: bool | None = None,
     vegetarian: bool | None = None,  # MEH-1438 — matches is_vegetarian OR is_vegan
+    # MEH-1508 chunk 3ב — the 100% axes. Distinct from `vegan` above, which is
+    # "at least one matching product OR the declaration" (chunk 3א): these two
+    # are the DECLARATION ALONE, so «100% טבעוני» can be filtered on separately
+    # from «מתאים לטבעונים». A business with one vegan cookie satisfies `vegan`
+    # and must not satisfy `vegan_all`.
+    vegan_all: bool | None = None,
+    vegetarian_all: bool | None = None,
     lactose_free: bool | None = None,
     # MEH-1934 — EXISTS over products.is_no_added_sugar / is_low_carb, same
     # mechanic as the four axes above (_DIETARY_FILTERS in producer_listing).
@@ -239,6 +253,8 @@ def list_producers(
         gluten_free=gluten_free,
         vegan=vegan,
         vegetarian=vegetarian,  # MEH-1438
+        vegan_all=vegan_all,  # MEH-1508 chunk 3ב
+        vegetarian_all=vegetarian_all,
         lactose_free=lactose_free,
         no_added_sugar=no_added_sugar,  # MEH-1934
         low_carb=low_carb,  # MEH-1934

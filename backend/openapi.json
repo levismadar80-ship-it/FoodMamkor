@@ -152,6 +152,15 @@
             ],
             "title": "Producer Name"
           },
+          "source": {
+            "default": "click",
+            "enum": [
+              "click",
+              "invite_link"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
           "stars": {
             "title": "Stars",
             "type": "integer"
@@ -4809,6 +4818,29 @@
             "title": "Products Count",
             "type": "integer"
           },
+          "recommended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended At"
+          },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "referral_source": {
             "anyOf": [
               {
@@ -5656,6 +5688,18 @@
               }
             ],
             "title": "Producer License Number"
+          },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
           },
           "short_description": {
             "anyOf": [
@@ -10182,6 +10226,18 @@
             ],
             "title": "Producer License Number"
           },
+          "recommended_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Note"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -10908,6 +10964,18 @@
             "title": "Body",
             "type": "string"
           },
+          "review_token": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Token"
+          },
           "stars": {
             "maximum": 5.0,
             "minimum": 1.0,
@@ -10920,6 +10988,20 @@
           "body"
         ],
         "title": "ReviewCreateNested",
+        "type": "object"
+      },
+      "ReviewInviteLinkOut": {
+        "description": "MEH-1428 chunk 1: GET /producers/me/review-link — the shareable URL\n(public producer page + `?rt=<token>`).",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ReviewInviteLinkOut",
         "type": "object"
       },
       "ReviewOut": {
@@ -13148,6 +13230,16 @@
                 }
               ],
               "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recommended_review_due",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Recommended Review Due",
+              "type": "boolean"
             }
           }
         ],
@@ -17418,6 +17510,38 @@
           },
           {
             "in": "query",
+            "name": "vegan_all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vegan All"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vegetarian_all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vegetarian All"
+            }
+          },
+          {
+            "in": "query",
             "name": "lactose_free",
             "required": false,
             "schema": {
@@ -18736,6 +18860,33 @@
           }
         ],
         "summary": "Request Producer Review",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/review-link": {
+      "get": {
+        "description": "The owner's shareable \"request a review\" URL.\n\nApproved producers only: the public page the link opens exists only once\nthe business is live, and a pending/draft business has no customers to\nask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py\ncreate_review_invite_token) — not single-use, so one link serves every\ncustomer the owner sends it to; a fresh call re-mints it, which is how a\nlink is \"renewed\" after expiry. No DB write.\n\nURL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a\ncustom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are\nthe live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).",
+        "operationId": "get_review_invite_link_producers_me_review_link_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewInviteLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Review Invite Link",
         "tags": [
           "producer-management"
         ]

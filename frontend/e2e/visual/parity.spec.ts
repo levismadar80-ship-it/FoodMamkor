@@ -68,6 +68,19 @@ const MAP_CATEGORIES_FIXTURE = fs.readFileSync(
 const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
 const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 
+// MEH-2168: the ONE endpoint every parity frame depends on and none of them
+// asked for. `lib/use-experiences-nav-gate.js` shows the "חוויות" link in the
+// Header AND the Footer only when `GET /experiences/count` answers >= 3 — a
+// CLIENT-side fetch that resolves after hydration and FAILS CLOSED, so a slow
+// or non-2xx response leaves the link hidden and the page 32px shorter. The
+// endpoint is rate-limited (`@limiter.limit("60/minute")`,
+// backend/app/routers/experiences.py) and in a ~1350-spec parallel run the
+// per-IP budget is spent long before the visual files execute. Every fullPage
+// frame was therefore a race, in BOTH directions: run 34004395174 received
+// exactly 32px less than expected on login/about/register mobile, while the
+// 05/09 regen had captured the link PRESENT. Neither state was deterministic.
+const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
+
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
  * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
@@ -197,6 +210,24 @@ async function preparePage(page: Page): Promise<void> {
   // e.g. use-home-page.js:131's 60s isFridayMode() re-check — still ticks and
   // simply keeps re-deriving the same frozen answer. install() would freeze
   // timers too and risk hanging networkidle/font settle.
+  // MEH-2168: pin the experiences nav gate BEFORE the first navigation, so the
+  // link is present on every frame instead of depending on how loaded the
+  // runner is. Same MEH-417 no-mocks carve-out the /map and producer-detail
+  // fixtures use (frontend/e2e/CLAUDE.md -> MEH-1497 §2.4): the subject here is
+  // layout, the supply number is noise. DO NOT copy into e2e/flows/.
+  //
+  // The count is deliberately far above EXPERIENCES_NAV_THRESHOLD (3 today)
+  // rather than equal to it: pinning the threshold itself would make every
+  // baseline silently flip the day someone raises it, which is the class of
+  // trap this stub exists to close.
+  await page.route(EXPERIENCES_COUNT_RE, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ count: 999 }),
+    });
+  });
+
   await page.clock.setFixedTime(VRT_FIXED_TIME);
   await page.addInitScript(() => {
     try {
@@ -351,6 +382,27 @@ async function revealScrollSections(page: Page): Promise<void> {
  * then assert a POSITIVE count of loaded faces and zero failed font fetches.
  */
 async function settle(page: Page): Promise<void> {
+  // MEH-2168: the experiences nav gate has RESOLVED TO VISIBLE. preparePage()
+  // stubs the count endpoint, so this is deterministic rather than a hope — and
+  // it asserts the OUTCOME (the link is in the DOM), not that the fetch merely
+  // answered: `writeCache` runs before the threshold comparison, so a stub that
+  // stopped matching and let a real `{"count": 0}` through would still write the
+  // cache key while the link stayed hidden. That is the 32px frame this whole
+  // change exists to stop, and only the link itself discriminates it.
+  //
+  // `toBeAttached`, not `toBeVisible`: the header nav is `hidden md:flex`, so on
+  // the mobile project the link is in the DOM and not displayed — and /map has
+  // no footer at all (FooterSlot returns null there), which leaves the hidden
+  // header copy as the only instance on that route. Both gated links come from
+  // the same hook, and no ungated /experiences anchor exists on any parity
+  // route (grep: Footer.jsx:89 and lib/nav-registry.js:163, both gated).
+  await expect(
+    page.locator('a[href$="/experiences"]').first(),
+    "[experiences-gate] the «חוויות» nav link never entered the DOM — the " +
+      "/api/experiences/count stub in preparePage() did not reach " +
+      "use-experiences-nav-gate, so this frame would be shot 32px short.",
+  ).toBeAttached({ timeout: 10_000 });
+
   await page.evaluate(() => document.fonts.ready);
 
   const fonts = await page.evaluate(() => {
@@ -626,6 +678,22 @@ test.describe("Visual parity — MEH-991", () => {
   // id against the backend; the /[slug] route SSR-seeds the producer and can't
   // be mocked. The borrowed id only unlocks the page — the pixels are the
   // fixture's.
+  // MEH-2168 re-freeze (2026-09-05, vrt-update run 33964228357 on
+  // feature/meh-2168-vrt-refreeze): SEVEN baselines regenerated on-runner and
+  // eye-reviewed frame by frame — login/register (desktop+mobile) +32px = one
+  // new footer link «חוויות» in the גלו column (desktop header also gains the
+  // nav item); about-mobile +32px = the same footer link, and the scroll-reveal
+  // sections now RENDER where the old frame was blank (MEH-1514 on mobile);
+  // map (desktop+mobile) = the second chip row משלוח · איסוף עצמי · סינון
+  // (pickup_points promoted to all surfaces) + «בתיאום אישי» on the cards.
+  // TWO desktop frames were NOT regenerated because their gates fail before
+  // the screenshot is taken, on staging as well: `about` desktop trips the
+  // reveal-gate (one section stays at opacity < 1 after the full scroll pass —
+  // MEH-1514 is not complete on desktop), and `producer detail` desktop trips
+  // the copy-gate on `producer.detail.tabs.about` — the tab row is hidden at
+  // 1440 since MEH-1390 (4 tabs -> 2), so expecting its copy VISIBLE on
+  // desktop is a spec expectation that no longer matches the page. Both are
+  // recorded here and on MEH-2168, deliberately not fixed in a baseline PR.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
 

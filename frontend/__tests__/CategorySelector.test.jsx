@@ -29,17 +29,33 @@ vi.mock("@phosphor-icons/react", () => {
 // seed name) is intentionally absent → it exercises the Leaf fallback path.
 // MEH-1453: CategorySelector now imports CATEGORY_ICONS from the category
 // registry, so mock the registry directly (was @/components/CategoryIcons).
+// MEH-2163: CategorySelector now calls the registry's total lookup instead of
+// indexing CATEGORY_ICONS itself, so this factory has to carry it — a partial
+// vi.mock throws on any export the component imports. The stub mirrors the real
+// contract (Object.hasOwn + a fallback component) so the "תבלינים" card below
+// still exercises the fallback path, now via `isFallback` rather than a null
+// glyph. The REAL resolver is covered by SeedCategoryRegistryDrift.test.js.
 vi.mock("@/lib/category-registry", () => {
   const Glyph = (props) => <span data-testid="glyph" {...props} />;
+  const Fallback = (props) => <span data-testid="glyph-fallback" {...props} />;
+  const CATEGORY_ICONS = {
+    "חלב וגבינות": Glyph,
+    "לחמים ואפייה": Glyph,
+    "בשר": Glyph,
+    "שמנים": Glyph,
+    "ירקות": Glyph,
+    "סבונים טבעיים": Glyph,
+    "דבש": Glyph,
+  };
   return {
-    CATEGORY_ICONS: {
-      "חלב וגבינות": Glyph,
-      "לחמים ואפייה": Glyph,
-      "בשר": Glyph,
-      "שמנים": Glyph,
-      "ירקות": Glyph,
-      "סבונים טבעיים": Glyph,
-      "דבש": Glyph,
+    CATEGORY_ICONS,
+    CATEGORY_GLYPH_FALLBACK: Fallback,
+    categoryGlyphKey: (c) => (typeof c === "string" ? c : (c?.name ?? "")),
+    resolveCategoryGlyph: (c) => {
+      const key = typeof c === "string" ? c : (c?.name ?? "");
+      return key && Object.hasOwn(CATEGORY_ICONS, key)
+        ? { glyph: CATEGORY_ICONS[key], isFallback: false }
+        : { glyph: Fallback, isFallback: true };
     },
   };
 });
