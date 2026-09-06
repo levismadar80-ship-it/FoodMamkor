@@ -80,9 +80,18 @@ CATEGORY_NAME_TAKEN_ERROR_HE = "קטגוריה בשם זה כבר קיימת"
 # No escape hatch in v1, deliberately. Siebel and IBM both ship one; here a
 # second authority over the same row is exactly what this closes, and the
 # sanctioned path already exists (a migration).
+#
+# Copy approved by Sapir 06/09 (rule 22), with one amendment she made on
+# approval: the closing sentence says «הסמל» and not «האימוג'י», because
+# MEH-2163 moves the category glyphs to a slug-keyed registry and the word
+# "emoji" goes stale the day that lands. English twin, approved with it:
+# "This is a system category — its name is set in code and changes only in a
+# migration, not in the admin screen. The symbol can still be updated."
+# Recorded here rather than as an en.json key because nothing reads such a
+# mirror (the MEH-1571 pair at the top of this block has one and it is dead).
 CATEGORY_SYSTEM_RENAME_ERROR_HE = (
     "זו קטגוריית מערכת — השם שלה נקבע בקוד ומשתנה רק במיגרציה, "
-    "לא במסך הניהול. אפשר לעדכן את האימוג'י."
+    "לא במסך הניהול. אפשר לעדכן את הסמל."
 )
 CATEGORY_SYSTEM_DELETE_ERROR_HE = (
     "זו קטגוריית מערכת ואי אפשר למחוק אותה ממסך הניהול. הסרה נעשית במיגרציה."
