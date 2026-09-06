@@ -201,6 +201,19 @@ def test_the_owner_cannot_write_the_note_or_the_pick(db, client):
         headers=auth_header(owner),
     )
 
+    # MEH-2274, from the CI reviewer on PR #3446: the accepted pair, spelled out.
+    # 200 is what a clean run returns — `recommended_note` and `is_recommended`
+    # are simply not in `_PRODUCER_WRITABLE_FIELDS`, so the owner PUT drops them
+    # and succeeds. 422 is accepted because this route validates the whole body
+    # and a future required field could reject this minimal payload for an
+    # unrelated reason; the test would then be failing on its setup rather than
+    # on its subject.
+    #
+    # Neither status is the guard. The DB assertions below are — they hold under
+    # both, and they are what goes red if the owner ever gains write access to
+    # either field. Widening the status check does not weaken them, because a
+    # 422 for the WRONG reason still leaves the row unwritten, which is exactly
+    # what is asserted.
     assert resp.status_code in (200, 422), resp.text
     row = _reload(db, p.id)
     assert row.recommended_note is None, "the owner wrote the editor's citation"
