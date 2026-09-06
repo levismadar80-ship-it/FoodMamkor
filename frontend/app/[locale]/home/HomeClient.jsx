@@ -18,6 +18,7 @@ import {
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
+import HomeSeasonalNow from "@/app/[locale]/home/HomeSeasonalNow";
 import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
 
@@ -49,7 +50,14 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
  * JSON-LD block moved. page.js is now a Server Component that fetches the
  * first-paint feed and renders this with `initialData`.
  */
-export default function HomeClient({ initialProducers = null, initialCategories = null }) {
+export default function HomeClient({
+  initialProducers = null,
+  initialCategories = null,
+  // MEH-1287 chunk B: the seasonal rows, fetched by the server shell. Not part
+  // of useHomePage's state — nothing on this page mutates the set, and the
+  // module below hides itself when there are fewer than three of them.
+  initialInSeason = null,
+}) {
   const t = useTranslations();
   const {
     user,
@@ -260,6 +268,12 @@ export default function HomeClient({ initialProducers = null, initialCategories 
           content ever ships.
           ========================= */}
       <HomeFeaturedProducer featured={featuredProducer} />
+
+      {/* MEH-1287 chunk B: the editorial seasonal strip sits with the other
+          editorial content — after the single "meet a producer" pick and before
+          the explanatory blocks — rather than above the producer grid, which is
+          the browse path. Self-hides below 3 businesses (ADDENDUM-4). */}
+      <HomeSeasonalNow producers={initialInSeason} />
 
       {/* MEH-879/883: content-first IA — HowItWorks sits below the producer
           content; the marquee + both founder quotes were removed (MEH-883). */}

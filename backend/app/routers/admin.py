@@ -54,7 +54,7 @@ from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerRejectIn,
-    ProducerUpdate,
+    ProducerAdminUpdate,
     RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
@@ -773,7 +773,11 @@ def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
-    data: ProducerUpdate,
+    # MEH-1287 chunk B: the ADMIN shape — ProducerUpdate plus the editor-only
+    # fields. The owner PUT (producer_me.py) keeps ProducerUpdate, which is what
+    # keeps `in_season_until` off the owner's schema entirely rather than merely
+    # filtered out of it.
+    data: ProducerAdminUpdate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
