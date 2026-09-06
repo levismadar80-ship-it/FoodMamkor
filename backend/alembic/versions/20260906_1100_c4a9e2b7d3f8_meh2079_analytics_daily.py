@@ -91,7 +91,21 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "producer_analytics_daily",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
+        # `gen_random_uuid()` server-side, not only a Python default: chunk A
+        # ships NO ORM model for this table (grep `producer_analytics_daily`
+        # under backend/app — nothing), so there is no `default=uuid.uuid4` to
+        # fall back on, and chunk B's roll-up is the kind of writer that wants a
+        # raw `INSERT … ON CONFLICT (producer_id, day) DO UPDATE`. Making the
+        # column self-sufficient here costs one line; adding it after the table
+        # is applied costs another migration. Postgres 13+ core — the same
+        # `gen_random_uuid()` MEH-1872 (b7d3e1a94c26:39) and MEH-1399
+        # (d4a9c31e6f82:123) already rely on, no pgcrypto extension needed.
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            nullable=False,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
         sa.Column("producer_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("day", sa.Date(), nullable=False),
         sa.Column(
