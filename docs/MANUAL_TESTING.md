@@ -2313,7 +2313,7 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:9) — touched-but-empty email is neutral — Email field — tap then tap away without typing → no error (touched but empty is neutral)
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:10) — a malformed email blurs to «האימייל לא תקין» + aria-invalid — Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:11) — fixing it clears the error and shows «✓ תקין» — Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty shows no error — Password — tap then tap away empty → no error
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty blurs to «הזינו סיסמה» + aria-invalid — Password — tap then tap away empty → red border + error `"הזינו סיסמה"` below the field, `aria-invalid="true"` **(MEH-2256, 05/09: the row used to say «→ no error» — that was the observable of an unreachable predicate, not a design choice; option 1 revived the branch)**
 - [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
 - [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — but the floor is ONE character, not eight: MEH-835 removed the minimum on /login on purpose — Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
