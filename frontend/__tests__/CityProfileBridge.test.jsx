@@ -6,7 +6,7 @@
  * to the profile; guests are a no-op.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, act, screen } from "@testing-library/react";
+import { render, act, screen, waitFor } from "@testing-library/react";
 import { AuthProvider, useAuth } from "../lib/auth-context.js";
 import {
   seedCityFromProfile,
@@ -115,7 +115,13 @@ describe("auth-context city write-back (MEH-1485)", () => {
       window.dispatchEvent(new CustomEvent(USER_CITY_CHANGED_EVENT));
     });
 
-    expect(apiPatch).toHaveBeenCalledWith("/users/me", { city: "רעננה" });
+    // MEH-2265: the listener is re-registered by a useEffect keyed on [user]
+    // (auth-context.js:107-118), so on a slow runner the dispatch can land
+    // before the new registration. Asserted with waitFor rather than a bare
+    // expect — the assertion itself is unchanged, only the moment it is read.
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith("/users/me", { city: "רעננה" }),
+    );
   });
 
   it("seed value (localCity === profile city) does NOT trigger a redundant PATCH", async () => {
