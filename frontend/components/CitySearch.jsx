@@ -54,6 +54,10 @@ import api from "@/lib/api";
 // matches the dropdown's own "shows after 2 characters" rule below.
 const QUERY_DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
+// Sorted once at module load — the static list never changes, so the merge
+// below only re-sorts when fetched results actually join it.
+const STATIC_CITIES_SORTED = [...ISRAEL_CITIES].sort((a, b) => a.localeCompare(b, "he"));
+const NO_FETCHED = Object.freeze([]);
 
 export default function CitySearch({
   value,
@@ -114,13 +118,19 @@ export default function CitySearch({
     return () => clearTimeout(timer);
   }, [value, useBackend]);
 
-  const allCities = useMemo(() => {
+  // Which fetched results still apply to the current value. Returns the same
+  // array reference while the prefix relation holds, so the merge below does
+  // not re-run on every keystroke.
+  const fetched = useMemo(() => {
     const current = (value || "").trim();
-    const fetched =
-      backend.q && current.startsWith(backend.q) ? backend.cities : [];
-    const set = new Set([...ISRAEL_CITIES, ...fetched]);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "he"));
+    return backend.q && current.startsWith(backend.q) ? backend.cities : NO_FETCHED;
   }, [backend, value]);
+
+  const allCities = useMemo(() => {
+    if (fetched.length === 0) return STATIC_CITIES_SORTED;
+    const set = new Set([...STATIC_CITIES_SORTED, ...fetched]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "he"));
+  }, [fetched]);
 
   const isKnown = (candidate) => allCities.includes((candidate || "").trim());
 
