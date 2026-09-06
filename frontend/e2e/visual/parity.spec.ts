@@ -694,7 +694,7 @@ test.describe("Visual parity — MEH-991", () => {
   // 1440 since MEH-1390 (4 tabs -> 2), so expecting its copy VISIBLE on
   // desktop is a spec expectation that no longer matches the page. Both are
   // recorded here and on MEH-2168, deliberately not fixed in a baseline PR.
-  test("producer detail", async ({ page }) => {
+  test("producer detail", async ({ page }, testInfo) => {
     await preparePage(page);
 
     // ── MEH-417 no-mocks EXCEPTION — scoped to VRT specs only (ticket §2.4) ──
@@ -760,7 +760,17 @@ test.describe("Visual parity — MEH-991", () => {
     // it is the only unconditional anchor here; the conditional
     // products/delivery tabs are absent by construction on this payload and
     // asserting them would be a check that cannot fail.
-    await expectCopy(page, "producer.detail.tabs.about");
+    //
+    // MEH-2168 (ruling 06/09, drain כט'): the tab row is hidden at 1440 since
+    // MEH-1390 (4 tabs -> 2, deliberate), so this copy CANNOT be in the desktop
+    // frame — asserting it there was a spec expectation that no longer matched
+    // the page, and it kept the desktop shot from ever being taken. Gate on the
+    // static project name, never on the element's own count (testing.md — a
+    // guard must not consult its subject): mobile still asserts the tab copy,
+    // desktop asserts the h1 above and takes the frame.
+    if (testInfo.project.name !== "desktop") {
+      await expectCopy(page, "producer.detail.tabs.about");
+    }
     await expect(page).toHaveScreenshot("producer-detail.png", {
       ...SHOT,
       // With the fixture, the name, one-liner, meta line and gallery grid
