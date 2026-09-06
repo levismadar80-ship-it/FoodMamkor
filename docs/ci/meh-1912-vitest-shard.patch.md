@@ -1,5 +1,24 @@
 # MEH-1912 — vitest 2-shard matrix: YAML patch ל-`pr-checks.yml` (ספיר)
 
+> ## ⛔ Status: NOT applied — and NOT applicable as written since 2026-09-06 (drain כט')
+>
+> The step this patch replaces no longer exists in that form. #3426 (`9c5beef4`,
+> 06/09 18:47Z, MEH-1980) changed the `frontend-vitest` job to
+> `npx vitest run --coverage` followed by `coverage-ratchet.mjs --self-test` and
+> the ratchet itself, which reads **one** `frontend/coverage/coverage-summary.json`
+> (`scripts/checks/coverage-ratchet.mjs:50`). Splitting the run into two shards
+> as §2 prescribes produces two partial summaries, so the ratchet would read half
+> the suite's coverage as a DROP and red a required gate on day one.
+>
+> **What applying now requires (redesign, not a paste):** each shard runs with
+> `--coverage --reporter=blob` and uploads `.vitest-reports/`; a third job
+> downloads both and runs `npx vitest run --merge-reports --coverage`, then the
+> ratchet self-test + ratchet on the merged summary. `ci-gate.needs` gains the
+> merge job in place of `frontend-vitest`. Measure the wall-clock gain before
+> keeping it: the coverage instrumentation changed the baseline this patch's §1
+> numbers (198 s) were taken on. Filed on the card as the residual; the §1
+> diagnosis and the `isolate:false` finding stay valid.
+
 > **הבלוק כאן מיועד לספיר להדבקה ידנית.** `.github/workflows/**` הוא CC-deny
 > (`.claude/settings.json`, MEH-671). CC ערך את `frontend/vitest.config.js`
 > (מותר) וכתב את שינוי ה-YAML כאן בלבד.
