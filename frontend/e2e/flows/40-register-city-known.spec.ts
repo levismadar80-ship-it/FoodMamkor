@@ -1,4 +1,4 @@
-import { test, expect, type Route } from "./_cloudinary-stub";
+import { test, expect, type Page, type Route } from "./_cloudinary-stub";
 
 /**
  * MEH-2241 chunk B — «free-text city forbidden» (MEH-213) is enforced at the
@@ -28,7 +28,7 @@ import { test, expect, type Route } from "./_cloudinary-stub";
 const KNOWN_TOWN = "תל אביב";
 const FREE_TEXT_TOWN = "עיירה שאינה ברשימה";
 
-async function reachDetails(page) {
+async function reachDetails(page: Page) {
   await page.goto("/register/producer");
   await page.getByTestId("register-preflight-start").click();
   await expect(page.getByTestId("register-frame-account")).toBeVisible({ timeout: 15_000 });
