@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Warning } from "@phosphor-icons/react";
+import { Star, Warning } from "@phosphor-icons/react";
 
 // Phosphor icon size used in this toolbar.
 const ICON_SIZE_SM = 16;
@@ -55,6 +55,31 @@ function IncompleteToggle({ active, count, onToggle }) {
           {count}
         </span>
       )}
+    </button>
+  );
+}
+
+// MEH-2274 (MEH-1494 chunk B): the annual-review queue. Same shape as
+// IncompleteToggle above on purpose — but it is a SERVER filter, not a
+// client-side narrowing of the fetched list, because `recommended_at` is
+// admin-only and never reaches the list payload. It therefore carries no
+// count badge: the count IS the length of the filtered result, and showing a
+// number beside a toggle that changes what is fetched would read as "N more
+// exist elsewhere", which is not what it would mean.
+function ReviewDueToggle({ active, onToggle }) {
+  const t = useTranslations("admin");
+  const cls = active
+    ? "bg-amber-100 border-amber-400 text-amber-900"
+    : "bg-white border-border text-muted hover:border-amber-400";
+  return (
+    <button
+      onClick={() => onToggle((v) => !v)}
+      className={`px-4 py-2 rounded-[12px] text-sm border whitespace-nowrap transition ${cls}`}
+      title={t("producers.toolbar.review_due_title")}
+      aria-pressed={active}
+    >
+      <Star size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" />{" "}
+      {active ? t("producers.toolbar.show_all") : t("producers.toolbar.review_due_label")}
     </button>
   );
 }
@@ -111,6 +136,7 @@ export default function AdminProducersToolbar({
   producerSearch, setProducerSearch,
   producerStatus, setProducerStatus,
   incompleteOnly, setIncompleteOnly, incompleteCount,
+  reviewDueOnly, setReviewDueOnly,
   importing, onSearch, onExport, onImportFile,
 }) {
   const t = useTranslations("admin");
@@ -124,6 +150,7 @@ export default function AdminProducersToolbar({
         {t("common.search")}
       </button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
+      <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
       <ToolbarActions onExport={onExport} onTriggerImport={triggerImport} importing={importing} />
       <HiddenFileInput inputRef={fileInputRef} onPickFile={onImportFile} />
     </div>
