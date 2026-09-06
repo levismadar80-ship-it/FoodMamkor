@@ -287,7 +287,7 @@ def test_the_default_listing_is_unchanged(db, client):
 
 # ── the note's content floor (MEH-555) ────────────────────────────────────
 def test_a_punctuation_only_note_is_rejected(db, client):
-    """"???" is the exact input the MEH-555 rule exists to reject, and an
+    """ "???" is the exact input the MEH-555 rule exists to reject, and an
     editorial citation is admin-visible free text like any other."""
     admin = _admin(db)
     p = make_producer(db, name="עסק לנימוק פסול")
@@ -381,3 +381,101 @@ def test_escaping_cannot_push_the_stored_note_over_the_cap(db, client):
     stored = _reload(db, p.id).recommended_note
     assert stored is not None
     assert len(stored) <= 500, f"stored {len(stored)} chars — the cap did not hold"
+
+
+# ── the read-back (ADR-006 R2) ────────────────────────────────────────────
+# A field with a write path needs a read path. `recommended_note` was
+# writable through ProducerUpdate and `recommended_at` was stamped by the
+# handler, and neither appeared on ProducerAdminOut — so the admin edit form
+# could write the editor's reasoning and never show it back, and the review
+# list above could say WHICH picks are stale without saying WHY any of them
+# was made. (CI reviewer, #3446.)
+#
+# The two exclusion cases below are the half that discriminates. Adding the
+# fields to ProducerDetailOut instead of ProducerAdminOut would satisfy every
+# inclusion assertion here — the admin shape inherits from it — while
+# publishing the editor's private note to every visitor. They are HTTP-level
+# on purpose: `test_meh1494_recommended_at_note.py` asserts the same absence
+# by field name, and a name check cannot see a handler that adds the key to
+# its response dict by hand.
+def test_the_admin_put_returns_the_note_and_the_stamp_it_just_wrote(db, client):
+    admin = _admin(db)
+    p = make_producer(db, name="עסק שנשמר מהטופס")
+
+    resp = client.put(
+        f"/admin/producers/{p.id}",
+        json={"is_recommended": True, "recommended_note": "ביקור 09/26, גבינות עיזים"},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    # Without this the form re-opens with an empty note field, and the next
+    # save writes that emptiness back over the editor's own reasoning.
+    assert body["recommended_note"] == "ביקור 09/26, גבינות עיזים"
+    assert body["recommended_at"] is not None
+
+
+def test_the_review_list_carries_the_reason_for_every_pick_it_flags(db, client):
+    """The list exists so an editor can re-judge a year-old pick. Re-judging it
+    without the note in front of you is re-deciding, not reviewing."""
+    admin = _admin(db)
+    now = datetime.now(timezone.utc)
+
+    expired = make_producer(db, name="נבחרה מזמן עם נימוק")
+    expired.is_recommended = True
+    expired.recommended_at = now - timedelta(days=400)
+    expired.recommended_note = "נבחרה על סמך ביקור באוגוסט אשתקד"
+    never = make_producer(db, name="נבחרה בלי שעון ובלי נימוק")
+    never.is_recommended = True
+    db.commit()
+
+    resp = client.get(
+        "/admin/producers?recommended_review_due=true", headers=auth_header(admin)
+    )
+    assert resp.status_code == 200, resp.text
+    rows = {row["name"]: row for row in resp.json()}
+    assert set(rows) == {expired.name, never.name}, rows.keys()
+
+    assert rows[expired.name]["recommended_note"] == "נבחרה על סמך ביקור באוגוסט אשתקד"
+    assert rows[expired.name]["recommended_at"] is not None
+    # The pre-clock row: both keys PRESENT and null. A missing key would break
+    # a form that reads `producer.recommended_note` to populate its field, and
+    # is a different bug from an empty one.
+    assert rows[never.name]["recommended_note"] is None
+    assert rows[never.name]["recommended_at"] is None
+
+
+def test_the_owner_shape_cannot_read_the_editors_note(db, client):
+    """ProducerOwnerOut is the sibling subclass of the same parent, and is the
+    easiest wrong home for these two fields. The business owner must not be
+    able to read what the editor wrote about her — ADR-030 bans pay-to-play,
+    and a rationale the subject can read is a negotiation, not a record."""
+    admin_note = "נימוק פנימי של העורכת"
+    p = _picked(db, note=admin_note)
+    owner = make_user(db, email="rec-note-owner@example.com", role="producer")
+    owner.producer_id = p.id
+    db.commit()
+
+    resp = client.get("/producers/me", headers=auth_header(owner))
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert "recommended_note" not in body, "the owner can read the editor's note"
+    assert "recommended_at" not in body
+    assert admin_note not in resp.text
+
+
+def test_the_public_detail_shape_cannot_read_the_editors_note(db, client):
+    p = _picked(db, note="נימוק פנימי שלא יוצא החוצה")
+
+    resp = client.get(f"/producers/{p.id}")
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert "recommended_note" not in body
+    assert "recommended_at" not in body
+    # The badge itself is public — this is the control that proves the request
+    # reached a serialized producer at all, so the two absences above are not
+    # green because the response was an error page.
+    assert body["is_recommended"] is True

@@ -2766,6 +2766,30 @@ class ProducerAdminOut(ProducerDetailOut):
     rejection_reason_code: str | None = None
     resubmission_count: int = 0
     resubmitted_at: datetime | None = None
+    # MEH-1494 chunk B (ADR-006 R2 — a field with a write path needs a read
+    # path). `ProducerUpdate` accepts `recommended_note` and this PR's handler
+    # stamps `recommended_at`, and neither could be read back: the admin edit
+    # form had no way to populate the note for a second edit, so re-saving a
+    # picked producer blanked the editor's own reasoning in the UI, and the
+    # `recommended_review_due` list could show WHICH picks are stale without
+    # showing WHY any of them was made.
+    #
+    # Admin-only, and that is a hard line rather than a default: the note is the
+    # editor's internal reasoning about a real business (models.py:188 — "DO NOT
+    # expose recommended_note on any public serializer"), and ADR-030 bans
+    # pay-to-play, so the rationale is exactly the artifact that must stay
+    # internal and auditable instead of becoming marketing copy. This class is
+    # the one place it may appear — NOT ProducerOwnerOut either, the sibling
+    # subclass fifty lines below, which is the easiest wrong home for it.
+    # `test_meh1494_recommended_at_note.py` asserts its absence from the other
+    # three shapes by name; a subclass field does not join its parent's
+    # `model_fields`, so that guard is untouched by this addition.
+    #
+    # `recommended_at` NULL on a picked producer is not missing data: it means
+    # "picked before the clock existed", which is what the review list reads as
+    # due now (admin.py::_recommended_review_due_clause).
+    recommended_at: datetime | None = None
+    recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
