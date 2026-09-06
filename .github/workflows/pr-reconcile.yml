@@ -1,0 +1,86 @@
+# .github/workflows/pr-reconcile.yml
+#
+# MEH-2244 chunk D — weekly PR <-> Linear reconciliation sweep.
+# Schedule = dry-run only (table in the job summary, zero Linear writes).
+# Writes happen only through workflow_dispatch with mode=write.
+name: PR reconcile (Linear)
+
+on:
+  schedule:
+    - cron: "0 6 * * 0" # Sunday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run prints the table; write posts comments + moves done cards"
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - write
+      issues:
+        description: "optional: space-separated MEH-N filter (e.g. MEH-1754 MEH-2122)"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: pr-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile PRs <-> Linear (${{ github.event.inputs.mode || 'dry-run' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7 # tag pin, same form as every other workflow in this repo
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # The suite is the discrimination evidence for the classifier — run it before
+      # trusting the table it produces (testing.md: check the instrument first).
+      - name: Self-test (node --test, no network)
+        run: node --test scripts/oneoff/__tests__/pr-reconcile.test.mjs
+
+      - name: Resolve mode
+        id: mode
+        env:
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_ISSUES: ${{ github.event.inputs.issues }}
+        run: |
+          set -euo pipefail
+          # Only an explicit dispatch input may select write; the schedule never does.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$INPUT_MODE" = "write" ]; then
+            echo "flag=--write" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=--dry-run" >> "$GITHUB_OUTPUT"
+          fi
+          filter=""
+          for id in $INPUT_ISSUES; do filter="$filter --issue $id"; done
+          echo "filter=$filter" >> "$GITHUB_OUTPUT"
+
+      - name: Run sweep
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/oneoff/pr-reconcile.mjs ${{ steps.mode.outputs.flag }} ${{ steps.mode.outputs.filter }} \
+            | tee reconcile-table.md
+
+      - name: Publish table as job summary
+        if: always()
+        run: |
+          {
+            echo "## PR reconcile — ${{ steps.mode.outputs.flag }}"
+            echo
+            cat reconcile-table.md 2>/dev/null || echo "_no output — the sweep step failed before printing_"
+          } >> "$GITHUB_STEP_SUMMARY"
