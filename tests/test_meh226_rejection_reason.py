@@ -271,6 +271,31 @@ def test_retired_resubmit_promise_is_not_in_the_email(client, db):
     assert "להשיב למייל הזה" not in body, body
 
 
+def test_a_newline_in_the_business_name_cannot_open_lines_in_the_body():
+    """A business name with an embedded newline must not restructure the mail.
+
+    `sanitize_text` strips markup and trims the ends; an interior `\n`
+    survives it, and the plain-text part has no `_html_escape` to fall back
+    on. Left raw, a name reaches the greeting line and everything after its
+    newline reads as a line of the mail rather than part of the name.
+
+    Failing-by-construction (measured, not asserted from the diff): with
+    `_single_line` removed from the greeting, `body.splitlines()[0]` is
+    «שלום מאפיית הדגן» and «בברכה,» appears TWICE — once from the injected
+    text and once from the real signature. Both assertions below go red on
+    that build and pass on this one; the second is the discriminating half,
+    since a body that merely contains the name would satisfy the first.
+
+    Reviewer finding on the MEH-2210 chunk-C PR.
+    """
+    injected = "מאפיית הדגן\n\nבברכה,\nצוות מהמקור\n\nנ.ב. שורה מזויפת"
+    body = admin_module._producer_rejected_body(injected, "מסמכים חסרים")
+
+    first = body.splitlines()[0]
+    assert first == "שלום מאפיית הדגן בברכה, צוות מהמקור נ.ב. שורה מזויפת,", first
+    assert body.count("בברכה,\nצוות מהמקור") == 1, body
+
+
 # --- the presets endpoint the admin UI consumes -----------------------------
 
 

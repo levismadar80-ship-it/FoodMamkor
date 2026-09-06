@@ -1918,6 +1918,29 @@ def _rejected_dashboard_link(dashboard_link: str | None) -> str:
     return dashboard_link or f"{settings.frontend_url}/producer/dashboard"
 
 
+def _single_line(value: str) -> str:
+    """Collapse any newline in an owner-supplied value to a single space.
+
+    `sanitize_text` (services/sanitization.py:14) runs bleach with `tags=[]`
+    and then `.strip()` — bleach removes markup, `.strip()` trims the ends,
+    and neither touches an interior `\n`. So a business name really can carry
+    line breaks into a plain-text mail body, where the HTML twin's
+    `_html_escape` gives no protection because the text part is not markup.
+
+    In the rejection mail the greeting is the first line and the signature the
+    last, so an embedded newline lets the name open lines of its own beneath
+    the greeting — a self-addressed mail, hence Minor and not a security fix,
+    but the body should render as the copy Sapir approved regardless.
+
+    Reported by the reviewer on the MEH-2210 chunk-C PR against this function.
+    The same interpolation exists in `_producer_approved_body` (:1777) and
+    `_producer_changes_requested_body` (:2015); both are OUTSIDE this PR's
+    diff and are deliberately left alone here rather than widening it — this
+    helper is what makes each of them a one-line change.
+    """
+    return " ".join(value.split())
+
+
 def _producer_rejected_body(
     name: str, reason: str, dashboard_link: str | None = None
 ) -> str:
@@ -1941,7 +1964,7 @@ def _producer_rejected_body(
     """
     link = _rejected_dashboard_link(dashboard_link)
     return (
-        f"שלום {name},\n\n"
+        f"שלום {_single_line(name)},\n\n"
         f"תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה."
         f"{_rejection_reason_suffix(reason)}\n\n"
         f"אפשר לתקן ולשלוח שוב מלוח הבקרה: {link}\n\n"
