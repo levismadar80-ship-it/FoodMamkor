@@ -369,6 +369,9 @@ export default function AdminUsersPage() {
               >
                 {isBusy(`role:${confirm.userId}`) ? t("users.confirm.submitting") : t("users.confirm.confirm")}
               </button>
+              {/* Deliberately NOT guarded by isBusy: an explicit cancel stays
+                  available while the PUT is open. The guard belongs on the
+                  ambiguous dismissal (Escape), not on the deliberate one. */}
               <button
                 onClick={() => setConfirm(null)}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"

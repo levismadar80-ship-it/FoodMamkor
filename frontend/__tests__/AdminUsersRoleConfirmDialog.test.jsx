@@ -164,11 +164,23 @@ describe("admin/users — the role-confirm dialog (MEH-2268)", () => {
     expect(screen.getByRole("dialog")).toBe(dialog);
   });
 
-  it("«ביטול» still closes it, busy or not — the guard is on Escape, not on the button", async () => {
-    await openConfirm();
-    fireEvent.click(screen.getByRole("button", { name: "ביטול" }));
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
-    );
-  });
+  // Both halves of "busy or not" are exercised, because the name claims both.
+  // The first version of this case ran only the idle half and left the busy one
+  // to be inferred from reading the source — a test name asserting coverage it
+  // did not have, which is the exact shape .claude/rules/testing.md warns about
+  // under "the artifact that asserts coverage". Caught by the CI reviewer.
+  it.each([
+    ["idle", false],
+    ["mid-flight", true],
+  ])(
+    "«ביטול» closes it while %s — the guard is on Escape, not on the button",
+    async (_label, busy) => {
+      adminAction.busy = busy;
+      await openConfirm();
+      fireEvent.click(screen.getByRole("button", { name: "ביטול" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+    },
+  );
 });
