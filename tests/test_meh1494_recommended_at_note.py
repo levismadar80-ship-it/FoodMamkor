@@ -16,7 +16,7 @@ History:  MEH-1494 chunk A (creation, night session 04/09).
 from conftest import make_producer
 
 from app.models.models import Producer
-from app.schemas.schemas import ProducerDetailOut, ProducerListOut
+from app.schemas.schemas import ProducerDetailOut, ProducerListOut, ProducerOwnerOut
 
 
 # ── The absence control ───────────────────────────────────────────────────
@@ -45,8 +45,17 @@ def test_new_producer_has_no_pick_date_and_no_note(db):
 
 # ── The privacy guard ─────────────────────────────────────────────────────
 # The note is the editor's internal reasoning about a real business. It must
-# never ride a public schema. Asserted by NAME on both public shapes so that
-# adding it to a base class the two inherit from also goes red.
+# never ride a public schema. Asserted by NAME on each shape so that adding it
+# to a base class they inherit from also goes red.
+#
+# MEH-1494 chunk B added the field to ProducerAdminOut (ADR-006 R2 — the write
+# path needed a read path), which is a subclass of ProducerDetailOut and does
+# NOT put it in the parent's `model_fields`. ProducerOwnerOut joined this loop
+# in the same change: it is the OTHER subclass of that parent, so it is the one
+# public shape a "just put it next to the admin fields" edit could reach
+# without any of the three asserts below moving. The owner reading what the
+# editor wrote about her business is the ADR-030 failure, not a leak of
+# degree — a rationale its subject can read is a negotiation, not a record.
 def test_recommended_note_is_absent_from_public_schemas():
-    for schema in (ProducerListOut, ProducerDetailOut):
+    for schema in (ProducerListOut, ProducerDetailOut, ProducerOwnerOut):
         assert "recommended_note" not in schema.model_fields, schema.__name__
