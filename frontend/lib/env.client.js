@@ -24,7 +24,12 @@ import { z } from "zod";
 // NEXT_PUBLIC_* vars. Server-only vars live in env.server.js.
 export const env = createEnv({
   client: {
-    NEXT_PUBLIC_API_URL: z.string().url().optional(),
+    // MEH-1754 item 5: REQUIRED, deliberately. An absent value used to fall
+    // back to localhost:8000 below, which baked an unreachable origin into the
+    // deployed bundle and surfaced as a silent 404 — the same silent-failure
+    // family as the resolver bug this ticket fixed. Fail the build instead.
+    // DO NOT re-add .optional() — the fallback that made it survivable is gone.
+    NEXT_PUBLIC_API_URL: z.string().url(),
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     NEXT_PUBLIC_APPLE_CLIENT_ID: z.string().optional(),
@@ -50,8 +55,10 @@ export const env = createEnv({
 export const SITE_URL =
   env.NEXT_PUBLIC_SITE_URL || "https://mehamakor.co.il";
 
-export const API_URL =
-  env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// MEH-1754: no fallback. The schema above guarantees a validated URL at build
+// time, so a `|| "http://localhost:8000"` here could only mask a validation
+// bypass (SKIP_ENV_VALIDATION / NODE_ENV=test) — never help production.
+export const API_URL = env.NEXT_PUBLIC_API_URL;
 
 // MEH-653: centralized public contact email shown on /terms, /privacy,
 // /contact, /forgot-password, /accessibility. Falls back to the literal

@@ -1896,7 +1896,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 ## Producer Detail Page (feature/meh-producer-detail-redesign, 2026-04-18)
 
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:1) — Mobile: producer name visible above fold without scrolling (הפרויקט הנייד הוא Pixel 5 393×851; ה-375 שבשורה הוא הכוונה, לא רוחב הריצה)
-- [ ] Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם **(⚠️ לא הומר — נמדד 04/09 ונכשל מול המוצר: ב-Pixel 5 (393×727) תחתית ה-CTA היא 828, כלומר 101px מתחת לקפל, על fixture דל במכוון. האם זו רגרסיה או דרישה שהוחלפה ע"י הפס הדביק של MEH-1146 chunk A — אינה הכרעה של הצ'אנק הזה; ראו docs/qa/conversion-progress.md chunk 8)**
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3 + MT:PDP:4 מכסים) — **הוכרע 05/09 (MEH-2254): הדרישה «CTA מעל הקפל» מסופקת ע"י הפס הדביק, לא ע"י הכרטיס האינליין.** דפוס Wolt / Google Maps — CTA קבוע בתחתית המסך בנייד, וב-Pixel 5 (393×727) הפס נכנס בדיוק כשהכרטיס האינליין יוצא מה-viewport (PDP:3/4). ה-CTA האינליין ב-y=780→828, 101px מתחת לקפל על fixture דל במכוון, **תקין ואינו רגרסיה**; אין תיקון layout ואין טסט על מיקום הכרטיס. השורה המקורית (2026-04-18): «Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם» — הוחלפה, לא נמחקה. מדידה: docs/qa/conversion-progress.md chunk 8, finding 2.
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3) — Mobile: scroll past CTA → sticky bar slides in
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:4) — Mobile: scroll back to CTA → sticky bar slides out
 - [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
@@ -2313,7 +2313,7 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:9) — touched-but-empty email is neutral — Email field — tap then tap away without typing → no error (touched but empty is neutral)
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:10) — a malformed email blurs to «האימייל לא תקין» + aria-invalid — Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:11) — fixing it clears the error and shows «✓ תקין» — Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty shows no error — Password — tap then tap away empty → no error
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty blurs to «הזינו סיסמה» + aria-invalid — Password — tap then tap away empty → red border + error `"הזינו סיסמה"` below the field, `aria-invalid="true"` **(MEH-2256, 05/09: the row used to say «→ no error» — that was the observable of an unreachable predicate, not a design choice; option 1 revived the branch)**
 - [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
 - [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — but the floor is ONE character, not eight: MEH-835 removed the minimum on /login on purpose — Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
