@@ -1985,8 +1985,26 @@ class ProducerUpdate(BaseModel):
     admin_notes: str | None = None
     # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
     # setattr-loop can no longer write it (verification = grant-verified only).
-    # MEH-18
+    #
+    # MEH-18. Reachable from the OWNER's PUT (producer_me.py, gated by
+    # _PRODUCER_WRITABLE_FIELDS, which excludes it) and the ADMIN PUT
+    # (admin.py bulk setattr) — and the admin path is the only way the
+    # editorial pick can be switched on at all. MEH-1494's chunk-B checklist
+    # called this a redundant declaration to delete; measured 06/09, deleting
+    # it would ship a dead toggle, and no test drives the flip through the
+    # admin PUT, so CI would have stayed green. Corrected on the card.
     is_recommended: bool | None = None
+    # MEH-1494 chunk B: the editor's reasoning for the pick. ADMIN-ONLY in both
+    # directions — absent from _PRODUCER_WRITABLE_FIELDS so an owner cannot
+    # write her own citation, and never on a public serializer (asserted by
+    # name in test_meh1494_recommended_at_note.py). `recommended_at` is NOT
+    # here: it is stamped from the transition in admin.py, not supplied by the
+    # caller, so accepting it would be a second authority over the same clock.
+    #
+    # The 500-char cap is the card's own ruling: it rejected `String(500)` on
+    # the COLUMN (an editorial note is internal text and the column stays Text)
+    # and said the length limit belongs in chunk B's validator. This is it.
+    recommended_note: str | None = Field(default=None, max_length=500)
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
@@ -2061,6 +2079,29 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1494 chunk B: the editor's note is free text an admin types, so it
+    # gets the MEH-555 floor like every other admin-visible free-text field —
+    # "???" is exactly the input that rule exists to reject.
+    #
+    # Blank clears the field rather than failing. That distinction is the
+    # reason this is not a bare `_min_letters_validator`: an admin removing a
+    # note she no longer stands behind is a legitimate edit, and the un-pick
+    # path in admin.py deliberately does NOT clear the note, so clearing it by
+    # hand has to be possible. Sending nothing at all leaves it untouched
+    # (`exclude_unset`); sending "" or whitespace is the explicit clear.
+    #
+    # REUSES: backend/app/schemas/schemas.py:252 (_min_letters_validator) —
+    # same floor, same Hebrew message, same three scripts (MEH-2236).
+    @field_validator("recommended_note")
+    @classmethod
+    def _validate_recommended_note(cls, v):
+        if v is None:
+            return v
+        cleaned = sanitize_text(v, max_length=500)
+        if cleaned is None or not cleaned.strip():
+            return None
+        return _min_letters_validator(cleaned)
 
     # MEH-829: sanitize the owner-editable address on PATCH /producers/me, same
     # bleach strip as the register path (_sanitize_address on ProducerRegister).
@@ -2811,6 +2852,30 @@ class ProducerAdminOut(ProducerDetailOut):
     # WHICH businesses are in season from the module they appear in, never a
     # date on a card. The public filter is `?in_season=true`.
     in_season_until: date | None = None
+    # MEH-1494 chunk B (ADR-006 R2 — a field with a write path needs a read
+    # path). `ProducerUpdate` accepts `recommended_note` and this PR's handler
+    # stamps `recommended_at`, and neither could be read back: the admin edit
+    # form had no way to populate the note for a second edit, so re-saving a
+    # picked producer blanked the editor's own reasoning in the UI, and the
+    # `recommended_review_due` list could show WHICH picks are stale without
+    # showing WHY any of them was made.
+    #
+    # Admin-only, and that is a hard line rather than a default: the note is the
+    # editor's internal reasoning about a real business (models.py:188 — "DO NOT
+    # expose recommended_note on any public serializer"), and ADR-030 bans
+    # pay-to-play, so the rationale is exactly the artifact that must stay
+    # internal and auditable instead of becoming marketing copy. This class is
+    # the one place it may appear — NOT ProducerOwnerOut either, the sibling
+    # subclass fifty lines below, which is the easiest wrong home for it.
+    # `test_meh1494_recommended_at_note.py` asserts its absence from the other
+    # three shapes by name; a subclass field does not join its parent's
+    # `model_fields`, so that guard is untouched by this addition.
+    #
+    # `recommended_at` NULL on a picked producer is not missing data: it means
+    # "picked before the clock existed", which is what the review list reads as
+    # due now (admin.py::_recommended_review_due_clause).
+    recommended_at: datetime | None = None
+    recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
