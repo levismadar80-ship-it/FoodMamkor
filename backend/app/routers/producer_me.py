@@ -24,6 +24,7 @@ from app.utils.clock import ISRAEL_TZ, israel_today
 from app.models import (
     ContactClick,
     DeliveryArea,
+    ProducerAnalyticsDaily,
     Favorite,
     HomeProduct,
     Producer,
@@ -74,6 +75,7 @@ from app.services.license_validation import (
     ensure_license_for_categories,
 )
 from app.services.analytics import israel_day_of, unique_views_count
+from app.services.analytics_rollup import rolled_up_sum, rollup_watermark
 from app.services.trust_tier import VALID_BADGE_CODES
 
 log = logging.getLogger(__name__)
@@ -1162,6 +1164,11 @@ class WindowFilter:
     # anything, and dropping them (which COUNT(DISTINCT) does silently) would
     # trade over-counting for under-counting.
     distinct_col: Any = None
+    # MEH-2079 chunk B2 (MEH-2283): the `producer_analytics_daily` column that
+    # holds this metric's per-day roll-up. Only the `total` arm (days=None)
+    # reads it — the `days=N` arms stay raw-only (Sapir's ruling 06/09), which
+    # is safe exactly as long as chunk C's retention window is ≥ 30 days.
+    rollup_col: Any = None
 
 
 def _count_in_window(
@@ -1178,6 +1185,16 @@ def _count_in_window(
     any spoofed user-agent. hash_ip's salt is settings.secret_key — stable per
     deploy, not time-rotating — so the day grain comes from created_at, not
     from the hash itself (a secret rotation resets uniques; acceptable, rare).
+
+    MEH-2283: with ``window.rollup_col`` set AND no day window, the aggregate
+    owns every Israel day up to `rollup_watermark()` and the raw table is read
+    only ABOVE it — `Σ aggregate.col + deduped raw WHERE israel_day > watermark`.
+    The raw side never reads a day the aggregate has, so once chunk C purges
+    those raw rows the number does not move. Same day grain as the job (the
+    Israel day — see analytics_rollup.py's header for why not UTC), so the
+    two halves partition the rows exactly and the sum equals the raw-only
+    count to the row (asserted before, after, and after-purge in
+    tests/test_meh2283_analytics_rollup.py).
     """
     if window.distinct_col is not None:
         counter = unique_views_count(
@@ -1188,12 +1205,18 @@ def _count_in_window(
     else:
         counter = func.count(model.id)
     q = db.query(counter).filter(model.producer_id == producer_id)
+    rolled_up = 0
     if window.days is not None:
         cutoff = datetime.utcnow() - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
+    elif window.rollup_col is not None:
+        watermark = rollup_watermark(db)
+        if watermark is not None:
+            q = q.filter(israel_day_of(time_col) > watermark)
+            rolled_up = rolled_up_sum(db, producer_id, window.rollup_col)
     if window.extra_filter is not None:
         q = q.filter(window.extra_filter)
-    return int(q.scalar() or 0)
+    return int(q.scalar() or 0) + rolled_up
 
 
 @router.get("/analytics")
@@ -1218,14 +1241,22 @@ def producer_analytics(
     pid = producer.id
 
     # Time-windowed counts for the 3 main metrics.
-    def windowed(model, time_col, *, extra=None, distinct_col=None):
+    # MEH-2283: `rollup_col` names the aggregate column the `total` arm reads
+    # through (see WindowFilter). The three metrics the roll-up carries pass
+    # one; contact_clicks has no aggregate column and stays raw on every arm.
+    def windowed(model, time_col, *, extra=None, distinct_col=None, rollup_col=None):
         return {
             label: _count_in_window(
                 db,
                 model,
                 time_col,
                 pid,
-                WindowFilter(days=days, extra_filter=extra, distinct_col=distinct_col),
+                WindowFilter(
+                    days=days,
+                    extra_filter=extra,
+                    distinct_col=distinct_col,
+                    rollup_col=rollup_col,
+                ),
             )
             for label, days in (("last_7d", 7), ("last_30d", 30), ("total", None))
         }
@@ -1240,14 +1271,20 @@ def producer_analytics(
         ProducerPageView,
         ProducerPageView.created_at,
         distinct_col=ProducerPageView.viewer_ip_hash,
+        rollup_col=ProducerAnalyticsDaily.views_unique,
     )
     search_appearances = windowed(
         ProducerPageView,
         ProducerPageView.created_at,
         extra=(ProducerPageView.referrer == "search"),
         distinct_col=ProducerPageView.viewer_ip_hash,
+        rollup_col=ProducerAnalyticsDaily.views_search_unique,
     )
-    whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
+    whatsapp_clicks = windowed(
+        ProducerWhatsAppClick,
+        ProducerWhatsAppClick.clicked_at,
+        rollup_col=ProducerAnalyticsDaily.whatsapp_clicks,
+    )
     contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
 
     # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,

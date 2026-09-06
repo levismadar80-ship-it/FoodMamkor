@@ -156,9 +156,17 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
         f"only {scanned} .py files under {root} — the scan is aimed wrong"
     )
 
+    # MEH-2283 (chunk B2): the reader and the writer arrived, and they are
+    # the ONLY two sites allowed to — plus the scheduler wiring that names
+    # the job. A sixth file means a second writer or a second reader, which
+    # is the two-parallel-mechanisms smell (workflow.md, MEH-271) and the
+    # exact thing `unique_views_count`'s docstring warns about for readers.
     assert files == {
         "backend/app/models/models.py",
         "backend/app/models/__init__.py",
+        "backend/app/services/analytics_rollup.py",
+        "backend/app/routers/producer_me.py",
+        "backend/app/startup.py",
     }, files
 
 
