@@ -20,7 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
-from app.utils.clock import business_days_waiting, israel_today
+from app.utils.clock import business_days_waiting, israel_now, israel_today
 from app.utils.pii import mask_phone
 from app.config import settings
 from app.services.auth_notifications import (
@@ -54,7 +54,7 @@ from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerRejectIn,
-    ProducerUpdate,
+    ProducerAdminUpdate,
     RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
@@ -414,6 +414,32 @@ def _attach_aging(producer) -> None:
     )
 
 
+# MEH-1494 chunk B: the annual-review predicate, extracted so the filter reads
+# as one named thing in `list_producers` and can be asserted directly.
+#
+# The window is the TripAdvisor/Michelin pattern the card cites: an editorial
+# pick carries a visible clock and is re-examined, rather than being permanent.
+#
+# `recommended_at IS NULL` is IN the due set on purpose, and it is the case
+# that matters most today. Chunk A deliberately did not backfill a date onto
+# rows picked before the column existed, because inventing one would fabricate
+# a decision date; NULL means "picked before there was a clock — review it now",
+# which is exactly how Michelin treats a star that has not been re-examined.
+#
+# 365 days rather than a calendar year: the difference is a leap day on a
+# review cadence measured in months, and `timedelta` costs no dependency. If
+# the boundary ever has to be exact, this is the one line to change.
+REVIEW_WINDOW_DAYS = 365
+
+
+def _recommended_review_due_clause():
+    """SQL: the row carries the pick AND its clock is unset or past the window."""
+    cutoff = israel_now() - timedelta(days=REVIEW_WINDOW_DAYS)
+    return Producer.is_recommended.is_(True) & (
+        Producer.recommended_at.is_(None) | (Producer.recommended_at < cutoff)
+    )
+
+
 @router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(
     status: str | None = Query(
@@ -421,6 +447,9 @@ def list_producers(
         pattern="^(draft|pending|approved|rejected|inactive|all)$",
     ),
     search: str | None = None,
+    # MEH-1494 chunk B: the annual-review view. Default False so every existing
+    # caller — the admin toolbar included — sees exactly the list it saw before.
+    recommended_review_due: bool = Query(False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -463,6 +492,8 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
+    if recommended_review_due:
+        q = q.filter(_recommended_review_due_clause())
     # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
     # עסקים" promise starts at submission and a business that has waited longest
     # is the one closest to breaking it. Newest-first (the old default) let an
@@ -696,10 +727,57 @@ def license_expiry_reminders(
     )
 
 
+def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
+    """Normalise the editorial pick and stamp/clear its date on a transition.
+
+    MEH-1494 chunk B. The stamp is driven by the TRANSITION, never by the
+    value: `recommended_at` is what makes the annual review possible (the
+    TripAdvisor/Michelin pattern on the card), so a row re-saved while already
+    picked keeps its original date. Stamping on the value instead would reset
+    the review window on every unrelated admin edit to that producer — which is
+    the whole clock, silently disarmed.
+
+    Gated on the PAYLOAD, not on the resulting value, matching this handler's
+    `exclude_unset` semantics throughout: an admin editing only the name never
+    touches the stamp.
+
+    `bool(...)` on both sides because `is_recommended` is nullable and an
+    explicit `is_recommended: null` reaches here — a NULL flag is not a pick,
+    so it lands on the un-pick branch.
+
+    `recommended_note` is deliberately NOT cleared on an un-pick: it is the
+    editor's record of a decision that was actually made, and erasing it would
+    destroy the only trace of why — the thing ADR-030 requires to be
+    defensible. The next pick overwrites it.
+    """
+    if "is_recommended" not in payload:
+        return
+    was = bool(producer.is_recommended)
+    will_be = bool(payload["is_recommended"])
+    # Normalise BEFORE the setattr loop reaches the column. `is_recommended` is
+    # nullable while `ProducerAdminOut.is_recommended` is a plain `bool`, so a
+    # PUT carrying an explicit `is_recommended: null` wrote NULL and then died
+    # in response validation — a 500 on a successful write. Measured 06/09
+    # against the pre-chunk-B code, so this is a latent defect this chunk
+    # surfaced rather than one it introduced; the column stays nullable
+    # (narrowing it is Alembic, and this handler is not where that belongs).
+    payload["is_recommended"] = will_be
+    if will_be and not was:
+        producer.recommended_at = israel_now()
+    elif was and not will_be:
+        # Clearing the date takes the row OUT of the review list rather than
+        # leaving it there forever as permanently overdue.
+        producer.recommended_at = None
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
-    data: ProducerUpdate,
+    # MEH-1287 chunk B: the ADMIN shape — ProducerUpdate plus the editor-only
+    # fields. The owner PUT (producer_me.py) keeps ProducerUpdate, which is what
+    # keeps `in_season_until` off the owner's schema entirely rather than merely
+    # filtered out of it.
+    data: ProducerAdminUpdate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -755,6 +833,11 @@ def admin_update_producer(
     # matters — destroying before commit would orphan-leak in reverse
     # (assets gone, DB still references them) on a commit raise.
     old_images = list(producer.images or [])
+
+    # MEH-1494 chunk B: the editorial clock, stamped BEFORE the setattr loop
+    # below — that loop is what turns `producer.is_recommended` into the new
+    # value, so the transition has to be read while it is still the old one.
+    _apply_recommended_pick(producer, payload)
 
     for field, value in payload.items():
         setattr(producer, field, value)
@@ -1250,10 +1333,16 @@ def reject_producer(
     reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
+        # MEH-2210: both parts carry the dashboard link — the resubmit CTA
+        # lives there. Same link the changes-requested mail builds.
+        dashboard_link = f"{settings.frontend_url}/producer/dashboard"
         _send_notification_email(
             producer_user.email,
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            _producer_rejected_body(producer.name, composed_reason),
+            _producer_rejected_body(producer.name, composed_reason, dashboard_link),
+            html=_producer_rejected_html(
+                producer.name, composed_reason, dashboard_link
+            ),
         )
 
     # Notify admin via WhatsApp
@@ -1821,32 +1910,129 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
     )
 
 
-def _producer_rejected_body(name: str, reason: str) -> str:
-    """MEH-226: copy approved by Sapir 14.08.2026, shipped verbatim.
+def _rejected_dashboard_link(dashboard_link: str | None) -> str:
+    """MEH-2210: the owner dashboard is where the resubmit CTA lives. Computed
+    lazily so the MEH-1965 copy corpus can keep calling the body builders with
+    two arguments; the handler passes the explicit value it already builds for
+    the changes-requested mail (`admin.py` request_producer_changes)."""
+    return dashboard_link or f"{settings.frontend_url}/producer/dashboard"
 
-    The recovery line is the conditional half of that ruling. It reads "תקני
-    בלוח הבקרה" rather than the retired "הגישי שוב מהדף האישי" because the
-    resubmit flow does not exist for a rejected business —
-    `producer_me.py`'s `request_producer_review` gates POST
-    /producers/me/request-review to `pending`, so a rejected owner gets 409.
-    Editing, by contrast, IS open to her, which is what licenses this wording:
 
-      * `auth.py:363-368` — `require_producer` gates on role only, no status
-      * `producer_me.py:379-381` — `update_my_producer` 404s on a missing
-        producer and checks status nowhere
-      * `frontend/app/[locale]/producer/dashboard/edit/page.js` — no
-        producer-status gate; the only redirect is 401 → /login
+def _single_line(value: str) -> str:
+    """Collapse any newline in an owner-supplied value to a single space.
 
-    `tests/test_meh226_rejection_reason.py::test_rejected_owner_can_still_edit_her_details`
-    holds that open, so this sentence stops being true loudly rather than
-    silently.
+    `sanitize_text` (services/sanitization.py:14) runs bleach with `tags=[]`
+    and then `.strip()` — bleach removes markup, `.strip()` trims the ends,
+    and neither touches an interior `\n`. So a business name really can carry
+    line breaks into a plain-text mail body, where the HTML twin's
+    `_html_escape` gives no protection because the text part is not markup.
+
+    In the rejection mail the greeting is the first line and the signature the
+    last, so an embedded newline lets the name open lines of its own beneath
+    the greeting — a self-addressed mail, hence Minor and not a security fix,
+    but the body should render as the copy Sapir approved regardless.
+
+    Reported by the reviewer on the MEH-2210 chunk-C PR against this function.
+    The same interpolation exists in `_producer_approved_body` (:1777) and
+    `_producer_changes_requested_body` (:2015); both are OUTSIDE this PR's
+    diff and are deliberately left alone here rather than widening it — this
+    helper is what makes each of them a one-line change.
     """
+    return " ".join(value.split())
+
+
+def _producer_rejected_body(
+    name: str, reason: str, dashboard_link: str | None = None
+) -> str:
+    """MEH-226: copy approved by Sapir 14.08.2026 — greeting, decision and the
+    "הסיבה:" tail are shipped verbatim.
+
+    MEH-2210 replaced the recovery line. The MEH-226 sentence ("אפשר לתקן את
+    הפרטים בלוח הבקרה ולהשיב למייל הזה — ונבחן את הבקשה מחדש") was the
+    conditional half of that ruling: it said "reply to this email" BECAUSE the
+    resubmit flow did not exist — `request_producer_review` answered a rejected
+    owner with 409. Chunk A of MEH-2210 opened that door (rejected → pending,
+    three times), so the line now points at the flow that exists, with the
+    card's own copy and the dashboard link the changes-requested mail already
+    carries. `tests/test_meh226_rejection_reason.py` holds both halves: the
+    owner can still edit, and the retired "הגישי שוב מהדף האישי" stays out.
+
+    The reason tail is the COMPOSED text (`_compose_rejection_reason`) — the
+    preset label plus the admin's free text — so the "reason line by code" the
+    card asks for is already in it; a second line keyed on the code would print
+    the same label twice.
+    """
+    link = _rejected_dashboard_link(dashboard_link)
     return (
-        f"שלום {name},\n\n"
+        f"שלום {_single_line(name)},\n\n"
         f"תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה."
         f"{_rejection_reason_suffix(reason)}\n\n"
-        f"אפשר לתקן את הפרטים בלוח הבקרה ולהשיב למייל הזה — ונבחן את הבקשה מחדש.\n\n"
+        f"אפשר לתקן ולשלוח שוב מלוח הבקרה: {link}\n\n"
         f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_rejected_html(
+    name: str, reason: str, dashboard_link: str | None = None
+) -> str:
+    """MEH-2210: the HTML twin of `_producer_rejected_body` — same copy, same
+    order, same reason. Mirrors `_producer_approved_html` (MEH-2151): Gmail
+    does not infer direction from content, so the plain-text Hebrew body
+    renders its trailing period at the START of the line; `dir="rtl"` on the
+    document plus `direction:rtl` on every containing element is the fix.
+    Every producer-controlled value is escaped; the reason is the admin's
+    composed text and is escaped too — it is rendered, never trusted.
+    """
+    # MEH-2210: _single_line first, so the two twins agree on what an
+    # owner-supplied name may do. Reviewer's finding, and their own
+    # caveat is right — a newline is invisible here because HTML
+    # collapses whitespace, so this buys symmetry rather than a fix.
+    # That is worth one call: the text twin's guarantee is only
+    # readable as a rule if both paths carry it.
+    safe_name = _html_escape(_single_line(name))
+    link = _rejected_dashboard_link(dashboard_link)
+    reason_block = (
+        (
+            '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+            'margin:0 0 24px;direction:rtl;">'
+            f"הסיבה: {_html_escape(reason)}</p>\n"
+        )
+        if reason
+        else ""
+    )
+    return (
+        "<!DOCTYPE html>\n"
+        '<html dir="rtl" lang="he">\n'
+        '<head><meta charset="UTF-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "</head>\n"
+        '<body style="margin:0;padding:0;background:#F5F0E8;'
+        'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
+        '<table width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#F5F0E8;padding:32px 0;"><tr><td align="center">\n'
+        '<table width="100%" cellpadding="40" cellspacing="0" '
+        'style="background:#ffffff;border-radius:12px;text-align:right;'
+        'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
+        '<td style="text-align:right;direction:rtl;">\n'
+        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        f'margin:0 0 16px;direction:rtl;">שלום {safe_name},</p>\n'
+        '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
+        'margin:0 0 24px;direction:rtl;">'
+        "תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה.</p>\n"
+        f"{reason_block}"
+        '<p style="margin:0 0 24px;direction:rtl;">'
+        "אפשר לתקן ולשלוח שוב מלוח הבקרה: "
+        f'<a href="{_html_escape(link)}" style="color:#2e6853;'
+        'font-size:15px;text-decoration:underline;direction:rtl;">'
+        f"{_html_escape(link)}</a></p>\n"
+        '<hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">\n'
+        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        'margin:0;direction:rtl;">'
+        f"בברכה,<br>צוות מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
+        "</td></tr></table>\n"
+        "</td></tr></table>\n"
+        "</body>\n"
+        "</html>"
     )
 
 

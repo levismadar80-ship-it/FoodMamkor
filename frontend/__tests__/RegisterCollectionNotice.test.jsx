@@ -70,8 +70,12 @@ vi.mock("@/lib/auth-context", () => ({
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 vi.mock("@/components/CitySearch", () => ({
+  // MEH-2241 chunk B: the wizard gates DETAILS→CATEGORY on CitySearch's
+  // `{ known }` verdict (chunk A contract), so a one-argument emit now reads
+  // as an unknown town and blocks the advance. This file's subject is not
+  // the city gate — every town it types is vouched for.
   default: ({ value, onChange, id }) => (
-    <input data-testid="city" id={id} value={value || ""} onChange={(e) => onChange(e.target.value)} />
+    <input data-testid="city" id={id} value={value || ""} onChange={(e) => onChange(e.target.value, { known: true })} />
   ),
 }));
 
