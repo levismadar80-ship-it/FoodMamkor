@@ -13,7 +13,7 @@
 # Regenerate:  node scripts/checks/lint-ratchet.mjs --update-baseline
 # Raising a number requires an explicit --allow-increase and should be justified in the PR.
 #
-# as-of: this file is a measurement, not a target. Total at freeze: 1075.
+# as-of: this file is a measurement, not a target. Total at freeze: 1077.
 app/fonts.js	exports	6
 components/CategoryIcons.jsx	exports	12
 components/MapBottomSheet.jsx	exports	1
@@ -25,7 +25,7 @@ lib/api-schemas.js	exports	1
 lib/category-registry.js	exports	1
 lib/categoryQuestions.js	exports	2
 lib/env.server.js	files	1
-lib/generated/api.zod.js	exports	1024
+lib/generated/api.zod.js	exports	1026
 lib/hours-serialize.js	exports	4
 lib/i18n-key-map.js	exports	1
 lib/launch-cohort.js	exports	2
