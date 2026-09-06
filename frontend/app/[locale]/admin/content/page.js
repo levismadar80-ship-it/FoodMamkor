@@ -191,6 +191,9 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
   const t = useTranslations("admin");
   const [name, setName] = useState(cat.name);
   const dirty = name !== cat.name;
+  // No `aria-readonly` on the input below: native `readOnly` already reaches
+  // assistive tech, and ARIA's first rule is not to duplicate native semantics.
+  //
   // MEH-1456 chunk 2b: `categories.is_system` marks the rows seed_data owns.
   // The backend refuses their rename and delete (admin_extra.update_category /
   // delete_category); this is the reader half — the admin sees WHY before she
@@ -205,7 +208,6 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         readOnly={locked}
-        aria-readonly={locked ? true : undefined}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
         className={`flex-1 border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
