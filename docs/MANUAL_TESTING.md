@@ -2017,6 +2017,13 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] לחיצה על WhatsApp בעמוד יצרן (לא משלך) — ב-Network tab רואים POST /whatsapp-click sendBeacon נשלח לפני פתיחת חלון wa.me
 - [ ] חזרה ל-/producer/dashboard — ספירת whatsapp_clicks עלתה ב-1
 
+### Daily roll-up — `producer_analytics_daily` (MEH-2079 chunk B2, 06/09)
+- ✅ → tests/test_meh2283_analytics_rollup.py (12 tests: run-twice, immutable day under added AND deleted raw rows, never-today, watermark range, backfill guards, per-column definitions, the before/after/after-purge equality, raw-side blindness to owned days, 7d/30d stay raw-only, the UTC-vs-Israel key count, scheduler wiring + crash isolation, the CLI)
+- [ ] staging, after the 01:30 UTC tick (or `railway run python scripts/rollup_analytics.py --from <אתמול> --to <אתמול>` מהטרמינל של ספיר) — בלוג: `[ANALYTICS-ROLLUP] range=… days_rolled=N days_skipped=0`; `SELECT count(*) FROM producer_analytics_daily WHERE day = <אתמול>` > 0
+- [ ] הרצה שנייה של אותו backfill — `days_skipped=N`, `days_rolled=0`, אף שורה לא השתנתה (יום מגולגל הוא immutable)
+- [ ] /producer/dashboard — `total` בשלוש הכרטיסיות (צפיות · הופעות בחיפוש · ווטסאפ) **לא זז** לפני/אחרי ה-roll-up; `last_7d` / `last_30d` נשארים raw-only
+- [ ] `--to <היום>` — נדחה עם `never today`, exit 2
+
 ### Admin dashboard (/admin)
 - ✅ → admin-dashboard-analytics.spec.ts (4 main stat cards, 4 secondary, both alert cards, two chart headings, the health panel and the activity feed — ⚠️ STALE: «2 גרפים» — two SVG line charts plus the top-cities bar list) — סה״כ תצוגה: 4 stat cards ראשיים + 4 משניים (new_users_this_week, new_producers_this_week, total_events, total_experiences) + alert cards + 2 גרפים + פאנל בריאות שרת + פעילות
 - ✅ → admin-dashboard-analytics.spec.ts (the DAU chart draws 30 points and labels the first, middle and last date + with no DAU data the chart card reads «אין נתונים עדיין» — the rendering of a fixed payload; the users.last_active_at aggregation is backend tests) — "DAU — 30 ימים אחרונים" — line chart עם 30 נקודות, מבוסס `users.last_active_at`

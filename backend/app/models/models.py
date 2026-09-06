@@ -1955,10 +1955,12 @@ class ProducerAnalyticsDaily(Base):
     whatsapp_clicks = Column(Integer, nullable=False, server_default="0")
 
     __table_args__ = (
-        # One row per business per day. The roll-up in chunk B upserts on this
-        # constraint, so a re-run over a day it already summarised corrects the
-        # row instead of doubling it — a job that can be run twice safely is
-        # the difference between a recoverable backfill and a corrupted one.
+        # One row per business per day. The roll-up (services/analytics_rollup.py,
+        # MEH-2283) inserts with `ON CONFLICT DO NOTHING` on this constraint —
+        # SKIP, never upsert-overwrite (Sapir's ruling 06/09): a rolled-up day
+        # is immutable, because after chunk C a re-roll would read partially
+        # purged raw rows and write an undercount over a correct number. This
+        # comment used to say "corrects the row"; that was the pre-ruling plan.
         UniqueConstraint(
             "producer_id", "day", name="uq_producer_analytics_daily_producer_day"
         ),

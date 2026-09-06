@@ -364,6 +364,35 @@ def _run_full_week_expiry_job() -> None:
         db.close()
 
 
+def _run_analytics_rollup_job() -> None:
+    """MEH-2079 chunk B2 (MEH-2283): daily APScheduler tick that rolls every
+    pending Israel day of raw producer analytics into `producer_analytics_daily`
+    — `[watermark + 1 .. yesterday]`, never today, never a day that already
+    has a row. `run_rollup` logs `days_rolled` / `days_skipped` itself.
+
+    Same shape as _run_full_week_expiry_job: fresh session (the scheduler
+    worker thread cannot share request-scoped sessions), the service rolls
+    back before re-raising so the session stays usable (MEH-1824 invariant),
+    own Sentry task tag, and the exception swallowed so the scheduler thread
+    never dies. A crashed run costs nothing that the next run does not
+    recover: the range is recomputed from the watermark every time.
+    """
+    from app.database import SessionLocal
+    from app.services.analytics_rollup import run_rollup
+
+    db = SessionLocal()
+    try:
+        result = run_rollup(db)
+        log.info("[ANALYTICS-ROLLUP] daily run complete result=%s", result)
+    except Exception as exc:
+        # roll_up_day already rolled back before re-raising, so the session
+        # is usable; this handler only reports. Daily cadence — no flood risk.
+        capture_background_exception(exc, task="analytics_rollup")
+        log.error("[ANALYTICS-ROLLUP] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -494,11 +523,29 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
+    # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
+    # (the last day the job may roll) is a complete Israel day by the time it
+    # fires. Israel-day semantics live in the service; the trigger only has
+    # to be late enough. coalesce + a 6h grace: a pause spanning the fire
+    # time runs it once, late, instead of skipping — and a fully missed day
+    # costs nothing, since the next run recomputes the range from the
+    # watermark and rolls both days.
+    followup_scheduler.add_job(
+        _run_analytics_rollup_job,
+        CronTrigger(hour=1, minute=30),
+        id="meh_2283_analytics_rollup_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
     log.info(
         "[FOLLOWUP] scheduler started — daily 10:00 UTC"
         " + weekly full-week expiry Sun 00:10 Asia/Jerusalem (MEH-1828)"
+        " + daily analytics roll-up 01:30 UTC (MEH-2283)"
     )
 
     yield
