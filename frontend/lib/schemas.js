@@ -1,5 +1,47 @@
 import { z } from "zod";
 
+/**
+ * MEH-1748 Phase 2 — fields where THIS hand-written schema is intentionally
+ * stricter, looser, or differently-shaped than `lib/generated/api.zod.js`
+ * (the orval-generated mirror of `backend/openapi.json`).
+ *
+ * `scripts/codegen-divergence-report.mjs` reads this map to classify every
+ * structural difference it finds as declared or undeclared. A divergence not
+ * listed here is undeclared by definition, whether or not it is fine — the
+ * registry exists so "declared" means "someone looked and wrote why", not
+ * "the report happened not to flag it".
+ *
+ * Docs/audits/codegen-phase1-comparison.md §5/§7.1 found these two by hand;
+ * they are the seed of this list, not its ceiling — add an entry whenever a
+ * future intentional divergence is introduced, in the same PR that introduces it.
+ */
+export const DECLARED_DIVERGENCES = {
+  id: {
+    reason:
+      "hand: z.union([z.string(), z.number()]) — deliberately permissive " +
+      "against a future int→uuid migration. generated: zod.uuid(), which " +
+      "REJECTS a non-uuid string outright. See the MEH-901 comment on the " +
+      "ProducerListSchema id field.",
+    citation: "docs/audits/codegen-phase1-comparison.md §7.1",
+  },
+  order_window: {
+    reason:
+      "hand: structured { open, close } (OrderWindowRange, MEH-1880) — the " +
+      "spec types this field as an untyped dict, so generation can only " +
+      "produce zod.looseObject({}). The hand schema carries more information " +
+      "than the generator can derive from the contract as declared.",
+    citation: "docs/audits/codegen-phase1-comparison.md §5",
+  },
+  coverage_cta_enabled: {
+    reason:
+      "hand: z.boolean().optional() (absent → undefined). generated: " +
+      "_default(boolean(), true) (absent → true), because the OpenAPI " +
+      "schema carries a default. Both behave identically for the only " +
+      "consumer today (=== false), but differ for !x and x ?? false.",
+    citation: "lib/schemas.js — see the field's own comment, immediately below",
+  },
+};
+
 // Producer from API — lat/lng can be null in the DB (producers registered
 // without geocoding). Marked optional/nullable so the schema doesn't reject
 // them outright; callers (marker creation, flyTo) guard against null/NaN
