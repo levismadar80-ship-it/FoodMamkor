@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { Faders } from "@phosphor-icons/react";
 
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { CATEGORY_ICONS } from "@/lib/category-registry";
+import { resolveCategoryGlyph } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
 import DeliveryContextBanner from "./DeliveryContextBanner";
 import ServiceChipRow from "./ServiceChipRow";
@@ -57,8 +57,13 @@ export default function FilterChipsBar({
   const categoryChipsWithIcons = useMemo(
     () =>
       visibleCategoryChips.map((chip) => {
-        const Glyph = chip.iconName ? CATEGORY_ICONS[chip.iconName] : null;
-        return Glyph ? { ...chip, icon: <Glyph size={16} /> } : chip;
+        // MEH-2163: one total lookup. The "כל" reset chip declares no iconName
+        // and stays text-only; an aggregate chip whose declared key is not in
+        // the registry keeps the chip-row policy — NO icon rather than the
+        // fallback glyph (same call as ProducersClient's category chips).
+        if (!chip.iconName) return chip;
+        const { glyph: Glyph, isFallback } = resolveCategoryGlyph(chip.iconName);
+        return isFallback ? chip : { ...chip, icon: <Glyph size={16} /> };
       }),
     [visibleCategoryChips],
   );
