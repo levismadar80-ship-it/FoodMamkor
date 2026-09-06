@@ -3,7 +3,7 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-09-06 אחה"צ — drain כח' (session `019GH5Ln…`, 12:52Z → ~15:20Z): ADDENDUM-9 בוצע (2080 · 2079 · 2241 B · 2064 Phase 0) · T-F נסגר לפריטי ה-drain · #3454 מוזג `c46c67b0` · 2244 sweep dry-run · #3455 `78f13114` · #3457 `1374f46c` · #3456 `e1cd2f4e` מוזגו
+## 2026-09-06 אחה"צ — drain כח' (session `019GH5Ln…`, 12:52Z → «END»): ADDENDUM-9 בוצע (2080 · 2079 · 2241 B · 2064 Phase 0) · T-F נסגר לפריטי ה-drain · #3454 מוזג `c46c67b0` · 2244 sweep dry-run · #3455 `78f13114` · #3457 `1374f46c` · #3456 `e1cd2f4e` · #3461 «3461-SHA» מוזגו · #3458 מוזג ע"י ספיר `dc7f492b`
 
 **‏שורה אחת:** ‏LEASE נלקח 12:52Z (heartbeat של כו' בן 57 דק'). ‏Phase 1 — #3454 מוזג `c46c67b0` (squash, 1 parent) אחרי שני re-syncs (staging זז פעמיים באמצע). ‏Phase 2 — 1606 Done, 1517/2046/2259 ללא שינוי. ‏Phase 3 — 1915 (#3455) · 784 (#3456) · 1981 טבלה · 1976/2117/1839 Done · 1287 שורה 3 + חצי docs · 2135 retired · 1767 שורת CHANGELOG. ‏Phase 4 — 2080 (#3458, ספיר ממזגת) · 2079 (#3457) · 2241 B (#3461) · 2064 Phase 0 (15 ids). ‏Phase 5 — סגור ע"י כו' (1647 #3453, EXPECTED_TABLES `a52b6781`, 2052 → paste). ‏Phase 6 — sweep dry-run `34037884551`: 27 dod-unticked · 3 done (2122 · 1905 · 1517 — `write` לא הורץ) · 12 skip (PR פתוח); 2 control מוחרגים; אפס writes.
 
@@ -24,12 +24,12 @@
 | #3455 | 1915 (1/2) | security.md: deny = tool × path | **מוזג `78f13114`** 14:14Z, squash |
 | #3456 | 784 (1/2) | protected-path-gate.sh + patch doc; 4 סבבי reviewer (בלוק prefix מת · 2 עוגנים אמיתיים 13/13 · ספירות ב-doc) | **מוזג `e1cd2f4e`** 14:50Z, squash |
 | #3457 | 2079 (1/4) | 90/30 במדיניות + lawyer bundle; reviewer ×2 נענו (הכרעות) | **מוזג `1374f46c`** 14:20Z, squash |
-| #3458 | 2080 (1/2) | צ'ק-בוקס 18+ · סכמה מחייבת · 5 טסטים failing-first | **פתוח — ספיר ממזגת** (auth + קופי, כלל 22) |
-| #3461 | 2241 (2/2) | שער `city_known` + vitest 5 + Playwright flows/40 | **פתוח** — CI על `ec2f1395` (reviewer nit + תיקון stubs אחים) רץ בעת הכתיבה; SHA יתווסף בעדכון |
+| #3458 | 2080 (1/2) | צ'ק-בוקס 18+ · סכמה מחייבת · 5 טסטים failing-first | **מוזג ע"י ספיר** `dc7f492b` (merge commit, 2 parents; auth + קופי, כלל 22) |
+| #3461 | 2241 (2/2) | שער `city_known` + vitest 5 + Playwright flows/40 | **מוזג «3461-SHA»** (squash) — E2E על `f7dc4d2a`: flows/40 6/6 ירוק, אבל flows/18·28·38 אדומים בשער DETAILS→CATEGORY: הקלידו «תל אביב» בלי לבחור, והרשימה הסטטית מכירה רק «תל אביב-יפו» — בדיוק המקרה שהכרטיס מדד. תוקן ב-`e4b85186` (6 אתרי fill ב-18·22·28·38 בוחרים אופציה; בקרה מקומית מול `next start`: ישן 8 failed, חדש 17 passed / 2 skipped) |
 
 ### רשימת ספיר (residual)
 
-* **‏#3458 (2080):** מיזוג + nod על «אני מעל גיל 18 ומסכימה ל…» (כלל 22). chunk 2 = שלושת נתיבי OAuth — צריך צעד UI לפני ה-redirect, לא דגל סכמה.
+* **‏#3458 (2080) — מוזג `dc7f492b`:** nod על «אני מעל גיל 18 ומסכימה ל…» (כלל 22). chunk 2 = שלושת נתיבי OAuth — צריך צעד UI לפני ה-redirect, לא דגל סכמה.
 * **‏2079:** הכרעת «מוצפן» מול «hashed» (שאלה ב' לעו"ד) — עריכה אחת ב-he.json אחרי התשובה; chunk C (purge) ממזגים רק אחרי שהמדיניות חיה.
 * **‏2241 chunk 0 בפרוד:** `python -m scripts.seed_cities` — `GET /api/cities?q=שדות` → `[]` (06/09 09:31Z). עד אז השער החדש מציג את הפער במקום לבלוע טקסט חופשי. קופי ייעודי («בחרי יישוב מהרשימה») — הכרעתך או להשאיר `city_required`.
 * **‏1981 שורה 3:** newsletter footer בלי notice, contact עם קישור בלבד — קופי (כלל 22).
