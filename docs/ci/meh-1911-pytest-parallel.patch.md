@@ -1,5 +1,7 @@
 # MEH-1911 — pytest מקבילי: patches מוכנים להדבקה (ספיר)
 
+> **Status: APPLIED — נמדד על `origin/staging` 2026-09-06 (drain כט'):** `backend/pyproject.toml:43` `"pytest-xdist>=3.8.0"` · `backend/uv.lock:933/977` · `.github/workflows/pr-checks.yml:504` `-n auto -m "not serial"` · `:514-521` מעבר `-m serial` נפרד עם `--cov-append` + `--cov-fail-under=89` (הרצפה עודכנה ב-#3426). כל שלושת הבלוקים למטה חיים; המסמך נשמר כתיעוד.
+
 > **הבלוקים כאן מיועדים לספיר להדבקה ידנית.** `.github/workflows/**` הוא CC-deny
 > (`.claude/settings.json`, MEH-671), וכך גם `backend/pyproject.toml` ו-`backend/uv.lock`.
 > CC כתב את ה-diff בקובץ ה-`.md` הזה בלבד ולא נגע באף אחד משלושתם.
