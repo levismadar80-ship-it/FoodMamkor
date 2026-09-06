@@ -895,8 +895,8 @@ GET    /admin/users/{id}/favorites             admin
 # Content
 GET    /admin/categories                       admin — rows include producer_count (query-time, MEH-1034)
 POST   /admin/categories                       admin
-PUT    /admin/categories/{id}                  admin
-DELETE /admin/categories/{id}                  admin
+PUT    /admin/categories/{id}                  admin — 422 on a RENAME of an is_system row (MEH-1456 chunk 2b); emoji-only edits pass
+DELETE /admin/categories/{id}                  admin — 422 on an is_system row, before the MEH-1297 linked-producer 409
 GET    /admin/pages/{slug}                     admin
 PUT    /admin/pages/{slug}                     admin
 
