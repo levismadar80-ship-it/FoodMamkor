@@ -84,8 +84,8 @@ test.describe("Language toggle", () => {
   // What this test now guards is the deterministic contract: HE → EN adds
   // the /en prefix and useLocale() follows; EN → HE drops it and useLocale()
   // follows. If it ever goes red under --fail-on-flaky-tests, the first
-  // question is whether localeDetection was turned back on — not whether to
-  // re-quarantine.
+  // question is whether localeDetection was turned back on (i18n/routing.js,
+  // `localeDetection: false` since MEH-1045) — not whether to re-quarantine.
   //
   // The OTHER half of MEH-817 — bare `next/link` hrefs dropping /en — is a
   // different, deterministic defect (63 importers on 04/09) and is not what
