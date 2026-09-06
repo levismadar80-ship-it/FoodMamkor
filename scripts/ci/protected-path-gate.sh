@@ -54,13 +54,14 @@ PROTECTED_GLOBS=(
 matches_protected() {
   local f="$1" g
   for g in "${PROTECTED_GLOBS[@]}"; do
+    # `case` pattern matching is NOT pathname globbing: here `*` matches any
+    # string, `/` included, so `.github/workflows/*` already covers a nested
+    # `.github/workflows/sub/x.yml`. (The "`*` does not cross `/`" rule is a
+    # property of filename expansion only.) Measured 06/09 before removing a
+    # second, unreachable prefix-match block that assumed otherwise — the
+    # self-test's "workflow under a subdirectory" case is what pins this.
     case "$f" in
       $g) return 0 ;;
-    esac
-    # `*` in a shell pattern does not cross `/`; a nested path under a
-    # protected directory must match too (e.g. .github/workflows/sub/x.yml).
-    case "$g" in
-      */\*) case "$f" in "${g%\*}"*) return 0 ;; esac ;;
     esac
   done
   return 1
