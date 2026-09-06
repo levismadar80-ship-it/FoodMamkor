@@ -17475,6 +17475,38 @@
           },
           {
             "in": "query",
+            "name": "vegan_all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vegan All"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vegetarian_all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vegetarian All"
+            }
+          },
+          {
+            "in": "query",
             "name": "lactose_free",
             "required": false,
             "schema": {
