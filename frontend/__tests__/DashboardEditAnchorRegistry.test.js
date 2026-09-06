@@ -67,7 +67,7 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
   // that has an anchor entry and a group but NO scroll target slips between
   // them. That is exactly what ownerStory was — the deep link opened the card
   // and then scrolled nowhere, because getElementById(undefined) returns null
-  // and the optional chain swallowed it. Found by the reviewer, not by me.
+  // and the optional chain swallowed it.
   it("every anchor's card key also has a scroll target", () => {
     const noTarget = Object.entries(ANCHOR_TO_KEY)
       .filter(
@@ -109,10 +109,10 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
     ["business-name", "businessName", "profile"],
     ["offer", "offer", "location"],
     ["special-hours", "specialHours", "location"],
-    // The fourth, added on the reviewer's second pass. It belongs in this list
-    // for the same reason as the other three: the general invariants above
-    // already cover it, and the point of naming a card here is that a future
-    // refactor which drops it says WHICH card in the failure output.
+    // The fourth belongs here for the same reason as the other three: the
+    // general invariants above already cover it, and the point of naming a
+    // card is that a future refactor which drops it says WHICH card in the
+    // failure output.
     ["owner-story", "ownerStory", "profile"],
   ])("#%s opens %s in the %s group", (anchor, key, group) => {
     expect(ANCHOR_TO_KEY[anchor]).toBe(key);
@@ -125,9 +125,9 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
   //   expect(Object.keys(X).length).toBe(new Set(Object.keys(X)).size)
   // which is true for every object in the language — a duplicate key
   // overwrites silently and never appears twice in Object.keys — so it could
-  // not fail. The reviewer offered "remove it or note the language guarantee";
-  // removed, per .claude/rules/testing.md ("delete it rather than reformulate
-  // it, because the reformulation tends to be entailed too").
+  // not fail. Deleted rather than reworded, per .claude/rules/testing.md
+  // ("delete it rather than reformulate it, because the reformulation tends
+  // to be entailed too").
   //
   // The obvious reformulation was tried and is WRONG: asserting that no two
   // anchors resolve to the same card key goes red on the live registry,

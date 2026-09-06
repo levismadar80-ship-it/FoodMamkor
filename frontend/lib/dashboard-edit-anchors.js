@@ -76,8 +76,8 @@ export const ANCHOR_TO_KEY = {
 export const KEY_TO_ANCHOR = {
   businessName: "business-name",
   bio: "bio",
-  // MEH-2262, found by the reviewer on the fix PR: the FOURTH instance of this
-  // class, in the third distinct direction. "owner-story" is in ANCHOR_TO_KEY
+  // MEH-2262 — the FOURTH instance of this class, in the third distinct
+  // direction. "owner-story" is in ANCHOR_TO_KEY
   // and ownerStory is in KEY_TO_GROUP, so the deep link DID open the profile
   // group and the card — and then scrolled nowhere, because the resolver's
   // `getElementById(KEY_TO_ANCHOR[key])` (page.js:313) was
