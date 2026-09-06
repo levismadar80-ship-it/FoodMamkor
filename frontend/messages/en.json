@@ -202,7 +202,7 @@
           "valid_hint": "✓ Valid"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy"
@@ -356,7 +356,7 @@
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
@@ -1602,7 +1602,8 @@
         "deleting": "Deleting…",
         "waiting_badge": "Waiting {days} business days",
         "waiting_tooltip_submitted": "Submitted for review: {when}",
-        "waiting_tooltip_created": "Created: {when}"
+        "waiting_tooltip_created": "Created: {when}",
+        "resubmission_badge": "Resubmission #{n}"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."

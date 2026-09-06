@@ -202,7 +202,7 @@
           "valid_hint": "✓ תקין"
         },
         "terms": {
-          "intro": "קראתי ואני מסכימה",
+          "intro": "אני מעל גיל 18 ומסכימה",
           "tos_link": "לתנאי השימוש",
           "and": "ו",
           "privacy_link": "למדיניות הפרטיות"
@@ -356,7 +356,7 @@
           "cross_step_summary": "חסרים כמה פרטים — הועברתם לראשון:"
         },
         "terms": {
-          "intro": "קראתי ואני מסכימה",
+          "intro": "אני מעל גיל 18 ומסכימה",
           "tos_link": "לתנאי השימוש",
           "and": "ו",
           "privacy_link": "למדיניות הפרטיות",
@@ -1602,7 +1602,8 @@
         "deleting": "מוחקים…",
         "waiting_badge": "ממתין {days} ימי עסקים",
         "waiting_tooltip_submitted": "נשלח לבדיקה: {when}",
-        "waiting_tooltip_created": "נוצר: {when}"
+        "waiting_tooltip_created": "נוצר: {when}",
+        "resubmission_badge": "שליחה חוזרת #{n}"
       },
       "toggle": {
         "invalid_transition": "לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך כפתורי האישור/דחייה."

@@ -120,7 +120,6 @@ test.describe("offer card — the custom type", () => {
   // KEY_TO_ANCHOR (:184) and KEY_TO_GROUP (:223) know the key — the mirror of the
   // business-name gap. Correct behaviour asserted; expected to fail until fixed.
   test("#offer opens the offer card through the location group", async ({ page }) => {
-    test.fail(true, "MEH-2262 — `offer` is missing from ANCHOR_TO_KEY, so #offer never resolves");
     await stubEdit(page);
     await page.goto("/producer/dashboard/edit#offer");
     await expect(card(page)).toBeVisible({ timeout: 15_000 });

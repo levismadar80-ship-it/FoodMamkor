@@ -77,10 +77,10 @@ import type { Locator, Route } from "@playwright/test";
  *      turns it into an unexpected pass" flagged on MEH-2267 rather than
  *      resolved silently.
  * D5 · MT:MEH-530:23 + :28 expect «מחיקת '<שם>' — N בתי עסק משויכים». The count
- *      renders; the NAME does not — `'{name}'` in he.json is an ICU quoted
- *      literal, so the dialog reads «מחיקת {name} — 3 בתי עסק משויכים». Already
- *      on MEH-2261 (found by chunk 11f on the locations card, which lists this
- *      very key); asserted correctly under test.fail() citing it.
+ *      rendered; the NAME did not — `'{name}'` in he.json was an ICU quoted
+ *      literal, so the dialog read «מחיקת {name} — 3 בתי עסק משויכים». FIXED:
+ *      the escape (`''{name}''`) shipped, this went unexpected-pass on the next
+ *      run, and its test.fail() came off. The assertion stays as the guard.
  *
  * ─── Rows this chunk does NOT convert ──────────────────────────────────────
  *
@@ -682,12 +682,12 @@ test.describe("/admin/content — categories", () => {
   });
 
   // MT:MEH-530:23 — the dialog names the category. D5 / MEH-2261: `content.categories.confirm_delete`
-  // wraps its placeholder in single quotes ('{name}'), which ICU MessageFormat reads as a quoted
-  // literal — the dialog renders «מחיקת {name} — 3 בתי עסק משויכים». Measured here, the same
-  // defect chunk 11f found on the locations card. This asserts the CORRECT copy and is expected to
-  // fail until the card lands; the fix turns it into an unexpected pass.
+  // used to wrap its placeholder in single quotes ('{name}'), which ICU MessageFormat reads as a
+  // quoted literal — the dialog rendered «מחיקת {name} — 3 בתי עסק משויכים». The escape shipped
+  // (''{name}''), this went from expected-fail to unexpected-pass on the very next run, and the
+  // annotation came off. That transition is why it was written as a real assertion and not a skip:
+  // it now guards the escape — re-break the string and this goes red.
   test("the dialog names the category: «מחיקת 'לחמים ואפייה' — 3 בתי עסק משויכים»", async ({ page }) => {
-    test.fail(true, "MEH-2261 — '{name}' in he.json is an ICU quoted literal; the dialog shows the placeholder");
     await stubAdmin(page);
     await openCategories(page);
     await categoryRow(page, "לחמים ואפייה").getByRole("button", { name: "מחקו" }).click();

@@ -64,7 +64,7 @@ class TestSignupPolicy:
         # HIBP never run.
         resp = client.post(
             "/auth/register",
-            json={"email": "a@x.com", "name": "A", "password": "short_pass!"},
+            json={"terms_accepted": True, "email": "a@x.com", "name": "A", "password": "short_pass!"},
         )
         assert resp.status_code == 422
 
@@ -73,7 +73,7 @@ class TestSignupPolicy:
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
             resp = client.post(
                 "/auth/register",
-                json={"email": "b@x.com", "name": "B", "password": SAFE_PASSWORD},
+                json={"terms_accepted": True, "email": "b@x.com", "name": "B", "password": SAFE_PASSWORD},
             )
         assert resp.status_code == 422
         body = resp.json()
@@ -83,7 +83,7 @@ class TestSignupPolicy:
         # 12-char deny-listed credential — blocked locally, HIBP not called.
         resp = client.post(
             "/auth/register",
-            json={"email": "c@x.com", "name": "C", "password": DENY_LISTED_AT_LENGTH},
+            json={"terms_accepted": True, "email": "c@x.com", "name": "C", "password": DENY_LISTED_AT_LENGTH},
         )
         assert resp.status_code == 422
         assert "too_common" in resp.json()["detail"]["failures"]
@@ -94,7 +94,7 @@ class TestSignupPolicy:
         before = datetime.now(timezone.utc) - timedelta(seconds=1)
         resp = client.post(
             "/auth/register",
-            json={"email": "d@x.com", "name": "D", "password": SAFE_PASSWORD},
+            json={"terms_accepted": True, "email": "d@x.com", "name": "D", "password": SAFE_PASSWORD},
         )
         assert resp.status_code == 200
         user = db.query(User).filter(User.email == "d@x.com").first()
