@@ -7,7 +7,7 @@ Touches:  The test DB via `db`; HTTP through `client`, admin-authenticated.
 Does NOT: assert the column shapes or the public-serializer exclusion — that is
           chunk A, in `test_meh1494_recommended_at_note.py`. Does not cover the
           annual-review listing or the ProducerForm field.
-Related:  backend/app/routers/admin.py::_stamp_recommended_at /
+Related:  backend/app/routers/admin.py::_apply_recommended_pick /
           admin_update_producer; backend/app/schemas/schemas.py::ProducerUpdate;
           backend/app/routers/producer_me.py::_PRODUCER_WRITABLE_FIELDS.
 History:  MEH-1494 chunk B (creation, 06/09).
@@ -154,12 +154,13 @@ def test_unpicking_keeps_the_note(db, client):
     admin = _admin(db)
     p = _picked(db, note="בחירה על סמך ביקור באוגוסט")
 
-    client.put(
+    resp = client.put(
         f"/admin/producers/{p.id}",
         json={"is_recommended": False},
         headers=auth_header(admin),
     )
 
+    assert resp.status_code == 200, resp.text
     row = _reload(db, p.id)
     assert row.recommended_at is None
     assert row.recommended_note == "בחירה על סמך ביקור באוגוסט"
