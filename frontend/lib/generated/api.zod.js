@@ -2215,6 +2215,8 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
  * All reviews (including hidden) for moderation.
  * @summary Admin List Reviews
  */
+export const adminListReviewsAdminReviewsGetResponseSourceDefault = `click`;
+
 export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
@@ -2222,6 +2224,7 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), adminListReviewsAdminReviewsGetResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "user_id": /*#__PURE__*/ zod.uuid(),
@@ -4691,6 +4694,26 @@ export const UpdateMyRecipeProducersMeRecipesRecipeIdPatchResponse = /*#__PURE__
  * @summary Request Producer Review
  */
 export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The owner's shareable "request a review" URL.
+ *
+ * Approved producers only: the public page the link opens exists only once
+ * the business is live, and a pending/draft business has no customers to
+ * ask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py
+ * create_review_invite_token) — not single-use, so one link serves every
+ * customer the owner sends it to; a fresh call re-mints it, which is how a
+ * link is "renewed" after expiry. No DB write.
+ *
+ * URL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a
+ * custom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are
+ * the live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).
+ * @summary Get Review Invite Link
+ */
+export const GetReviewInviteLinkProducersMeReviewLinkGetResponse = /*#__PURE__*/ zod.object({
+  "url": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-1428 chunk 1: GET \/producers\/me\/review-link — the shareable URL\n(public producer page + `?rt=<token>`).'))
 
 
 /**

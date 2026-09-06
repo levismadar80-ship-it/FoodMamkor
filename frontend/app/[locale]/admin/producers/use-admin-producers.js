@@ -45,6 +45,13 @@ function useProducersData() {
   const [producerSearch, setProducerSearch] = useState("");
   const [producerStatus, setProducerStatus] = useState(initialStatus);
   const [incompleteOnly, setIncompleteOnly] = useState(false);
+  // MEH-2274 (MEH-1494 chunk B): the annual-review queue. Unlike
+  // `incompleteOnly`, which filters the already-fetched list client-side, this
+  // one is a SERVER filter — `recommended_at IS NULL OR < now()-12mo` is a
+  // clause the client cannot evaluate, because `recommended_at` is not on the
+  // public list payload at all (it is admin-only, ProducerAdminOut). So it
+  // joins `producerStatus` in the effect dependency list below and re-fetches.
+  const [reviewDueOnly, setReviewDueOnly] = useState(false);
   // MEH-23 — client-side pagination on the admin producers table.
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
@@ -55,6 +62,10 @@ function useProducersData() {
     const params = {};
     if (producerStatus && producerStatus !== "all") params.status = producerStatus;
     if (search) params.search = search;
+    // MEH-2274: only sent when ON. Sending `false` would be harmless today
+    // (admin.py defaults it to False) but would put a dead parameter on every
+    // request, and the backend reads presence-or-absence for the other flags.
+    if (reviewDueOnly) params.recommended_review_due = true;
     setLoadError(false);
     api
       .get("/admin/producers", { params })
@@ -65,7 +76,7 @@ function useProducersData() {
   useEffect(() => {
     loadAllProducers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producerStatus]);
+  }, [producerStatus, reviewDueOnly]);
 
   return {
     producers, setProducers,
@@ -73,6 +84,7 @@ function useProducersData() {
     producerSearch, setProducerSearch,
     producerStatus, setProducerStatus,
     incompleteOnly, setIncompleteOnly,
+    reviewDueOnly, setReviewDueOnly,
     page, setPage,
     perPage, setPerPage,
     storyCardOpenId, setStoryCardOpenId,
