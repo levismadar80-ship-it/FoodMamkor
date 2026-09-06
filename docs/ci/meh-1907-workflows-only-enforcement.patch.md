@@ -1,4 +1,4 @@
-> **Status: APPLIED IN PR #3240 — not yet on `staging`. as-of 2026-09-01.**
+> **Status: APPLIED — on `staging` since #3240 merged 2026-09-01 11:49Z (`ef64d29d`). Re-verified 2026-09-06 (drain כט'): `pr-checks.yml:933` `WORKFLOWS_TOUCHED: ${{ needs.changes.outputs.workflows }}` · `:1001` summary line prints `workflows=$WORKFLOWS_TOUCHED`; both enforcement branches read the union. Historical record below.** _(This line previously read "not yet on `staging`. as-of 2026-09-01" — true then, stale since the same day.)_
 > Evidence: job `99811633641` (run `33493134235`) printed
 > `Stack touched -> frontend=false backend=false workflows=true`
 > and enforced eight frontend/backend legs on a workflows-only diff.

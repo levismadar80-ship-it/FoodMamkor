@@ -204,6 +204,24 @@ The brand record is split across three document types:
 
 A new brand decision lands as an ADR first, then this file is updated to reference it. Edits to this file without a backing ADR are not permitted — that's how brand drift starts.
 
+## 9 · לשון פנייה (נקבע 16/07/2026 — MEH-1244)
+
+Canonical home of the address-form rule. The Drive twin is `03-Brand-Hub/07a-language-rules-נספח-לשון-פנייה-v1.2.md` (06/09); when the two disagree, this section wins. Source: the 16/07 copy review under MEH-1231. Locked copy — reproduced verbatim from the card; not a paraphrase.
+
+**שלוש שכבות, לפי סדר עדיפות:**
+
+1. **ברירת מחדל בכל קופי: ניסוח ניטרלי.** ציוויי רבים ("הגיעו", "קחו", "בחרו"), שמות פועל ("אפשר להזמין", "כדאי להגיע"), משפטים בלי כינוי ממוגדר.
+2. **קופי צרכני (דף בית, מדריכים, תוכן מגזיני):** כשנדרש כינוי מסומן — **נקבה** ("אליכן", "שלכן"). בחירה מותגית מודעת: קהל היעד המוגדר הוא נשים 28-45, ומחקר (כריכלי-כץ & רגב, אונ' ת"א) מצא שברירת מחדל זכרית פוגעת בביצועי נשים.
+3. **ממשקי בעלי עסק (dashboard, טפסי הרשמה, מיילים תפעוליים):** ניטרלי מלא בלבד; כשיש שם איש/אשת קשר — פנייה אישית בשמם. לא נקבה כפויה — יש גם בעלי עסק גברים.
+
+**אסור:** לוכסנים ונקודות (א.נשים, לקוחות/ים, בעל/ת) בכל קופי עריכתי או שיווקי — שובר את קול המגזין. חריג יחיד: טקסט משפטי (תקנון/פרטיות) אם אין ניסוח ניטרלי סביר.
+
+**בדיקה עצמית:** אם משפט מערבב צורות ("תגיעו... אליכן") — לנרמל לפי השכבה של ה-surface.
+
+**למה:** ביקורת קופי 16/07 (MEH-1231) מצאה ערבוב פניות באותו טקסט. אין תקן רשמי בעברית (האקדמיה לא הכריעה); הכלל מבוסס "לכתוב לכולםן" + ראיית המחקר לעיל + אילוץ קול המגזין (בלי לוכסנים).
+
+_Sweep of the existing copy in `frontend/messages/he.json` against this rule = a separate card, opened after this section merges (report-only, `Refs MEH-1244`)._
+
 ---
 
 *This is the canonical brand narrative. When BRAND.md and an ADR disagree, the ADR wins (per Truth Hierarchy in `docs/CONTEXT.md` §3). When BRAND.md and DESIGN.md disagree on a token, DESIGN.md wins. When BRAND.md and `MEH-124-v4-content-sync.md` (legacy, slated for archive) disagree, this file wins.*

@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-06 ערב — drain כט' (session `01SU9y6p…`, 18:50Z → ~19:45Z): ADDENDUM-11 — סגירת backlog מלאה · T0 על 125 כרטיסים · 7 Done · 4 Canceled · 7 PRs · 12 parked · LEASE: none
+
+**‏שורה אחת:** ‏T0 (11 סוכני קריאה, 300 PRs מול staging) סיווג 125 כרטיסים — א 3 · ב 45 · ג 5 · ד 72. נסגרו Done: 1166 · 1868 · 1287 · 1980 · 2266 · 1244 · 2240; Canceled: 640 · 1835 · 174 · 781; 581 צומצם. מוזגו squash (parent אחד, אומת): #3423 `ba10e40d` · #3475 `aa458f59` · #3476 `a2617a8c` · #3477 `1454899d` · #3478 `8f5c6e6f` · #3474 `385713ba`; #3479 (2168) פתוח בסוף החלון. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «06/09 ערב — drain כט'».
+
+**‏מה חסום ב-harness (נמדד, לא הונח):** כל כתיבה ל-`.github/workflows/**` — המסווג של auto-mode סירב שלוש פעמים לכל נתיב שמייצר או דוחף תוכן workflow (helper לטוקן, גנרטור ב-scratchpad, הרצתו); `vercel.json` / `package.json` / `next.config.js` / `.claude/settings.json` / `.claude/hooks/**` ב-`permissions.deny`. הדיספאץ' של workflow (`actions_run_trigger`) **כן** מותר — כך רץ regen ה-VRT. לכן 12 פריטים parked עם residual על הכרטיס: vrt(2278) · 1912 · 1742 · 2244-A · 784-a · 2168-1ב · 1767 · 2202-apply · 2062-apply · 1514 · 2272 · 1494.
+
+**‏הבא (NEXT):** ‏(1) לוודא ש-#3479 מוזג (CI gate + Deploy gate ירוקים → squash) ו-MEH-2168 נשאר Todo (Refs, לא Closes) עם residual 1ב · (2) ספיר: הרשימה על MEH-2227 (vercel.json · uptime.yml · vrt-label-trigger+labels · hunks 1742/2244-A/784-a · eslint 1767 · knip 1868 · 1494 · מחיקת `origin/feature/meh-1514-about-desktop-regen` · 1835 Resend · 640 Drive · Vercel Pro · 2201 DNS · 1495 GCP · 1055 · settings.json · #3307) · (3) drain הבא מתחיל מ-STEP 0 בכרטיס.
+
 ## 2026-09-06 אחה"צ — drain כח' (session `019GH5Ln…`, 12:52Z → ~17:25Z): ADDENDUM-9 בוצע (2080 · 2079 · 2241 B · 2064 Phase 0) · T-F נסגר לפריטי ה-drain · #3454 מוזג `c46c67b0` · 2244 sweep dry-run · #3455 `78f13114` · #3457 `1374f46c` · #3456 `e1cd2f4e` · #3461 `3f870bfb` מוזגו · #3458 מוזג ע"י ספיר `dc7f492b`
 
 **‏שורה אחת:** ‏LEASE נלקח 12:52Z (heartbeat של כו' בן 57 דק'). ‏Phase 1 — #3454 מוזג `c46c67b0` (squash, 1 parent) אחרי שני re-syncs (staging זז פעמיים באמצע). ‏Phase 2 — 1606 Done, 1517/2046/2259 ללא שינוי. ‏Phase 3 — 1915 (#3455) · 784 (#3456) · 1981 טבלה · 1976/2117/1839 Done · 1287 שורה 3 + חצי docs · 2135 retired · 1767 שורת CHANGELOG. ‏Phase 4 — 2080 (#3458, ספיר ממזגת) · 2079 (#3457) · 2241 B (#3461) · 2064 Phase 0 (15 ids). ‏Phase 5 — סגור ע"י כו' (1647 #3453, EXPECTED_TABLES `a52b6781`, 2052 → paste). ‏Phase 6 — sweep dry-run `34037884551`: 27 dod-unticked · 3 done (2122 · 1905 · 1517 — `write` לא הורץ) · 12 skip (PR פתוח); 2 control מוחרגים; אפס writes.
@@ -155,6 +163,25 @@
 - **‏MEH-2263 Done על staging (#3414) — ראש השנה ב-12/09; דורש release `staging → main` לפני כן.**
 - **הכרעת קופי (כלל 22)** — «הצגת/הסתרת סיסמה» מול «הציגו/הסתירו סיסמה». ללא שינוי.
 - **שלוש ההכרעות של T12 פריט 2.** ‏MEH-2259 — לפתוח מחדש את MEH-1858 או להחזיק כרטיס נפרד.
+
+## 2026-09-05 צהריים — MEH-1889 special_hours נסגר (A+B) · ההורה Done · הסשן RED עובר ל-MEH-1508
+
+**‏שורה אחת:** ‏#3417 (MEH-2264, chunk B) מוזג 11:11Z כ-**merge commit** `d042ed0f` — ה-auto-merge של ספיר היה במצב `merge`, לא squash; גוף ה-PR חי ב-history של הענף. ‏staging בוט 11:12:19Z על `d042ed0f`, ‏`alembic_head = f5b8d2c7a3e9` (אין מיגרציה ב-B). ‏flip-check בשני הכיוונים: MEH-2264 → Done שנייה אחרי המיזוג; MEH-1889 נשאר Backlog ונסגר **ידנית** עם טבלת DoD (auto-close-parent לא פעיל — כלל 36). ה-backfill הזה: MEH-2266.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏שני עורכי השעות ממדלים «מקבל הזמנות» במפתחות הפוכים.** יום שבועי הוא `open: boolean` (`lib/order-window.js`), תאריך מיוחד הוא `closed: boolean` (`lib/special-hours.js`) — כי יום שבועי פתוח כברירת מחדל ותאריך מיוחד סגור כברירת מחדל. **כל helper של order-window שמקבל «יום» חייב לקבל שורת special דרך `asOrderDay(row)`.** קריאה ישירה אינה שגיאת טיפוס אלא `false` שקט: `canAddOrderRange` קורא `day.open`, מוצא `undefined`, ומסתיר את הכפתור על כל תאריך פתוח. זה עבר 4 סבבי reviewer, 20 טסטים ו-28 בדיקות harness — ונתפס בסבב 5.
+2. **‏טסט שבודק רק היעדר הוא ירוק משתי סיבות.** «אין כפתור על שורה סגורה» עבר זהה בעולם שבו הכפתור לא קיים בכלל. הטסט שהבחין הוא זה שדרש את **הנוכחות** על שורה פתוחה ואת ה-payload עם שני טווחים. אותה מחלקה כמו `count()===0 → skip` ב-testing.md.
+3. **‏VRT ירוק/אדום על producer-detail אינו ראיה על שכבה מותנית.** ה-fixture (`e2e/visual/fixtures/producer-detail*.json`) לא נושא `special_hours` (grep count 0), ולכן שכבת «שעות מיוחדות» לא מרונדרת בשום פריים של VRT. מי שרוצה כיסוי ויזואלי לשכבה צריך fixture חדש, לא re-baseline.
+4. **‏ה-CASE ב-`_open_for_orders_now_condition` נשען על short-circuit של PostgreSQL.** `case((special_hours.has_key(today), override), else_=weekly)` — ה-jsonpath של ה-override קבוע והתאריך הוא bind parameter; אם מישהו «יפשט» את זה ל-`or_`/`coalesce`, ה-override ירוץ גם על מפתח חסר. ההערה בקוד אומרת את זה.
+5. **‏auto-merge במצב `merge` דורס כל בקשת squash בגוף ה-PR.** #3417 ביקש squash בגוף ונחת כ-merge commit כי הדריכה הייתה `merge` (workflow.md, ה-`enable_auto_merge` no-op). ספיר מעבירה ל-squash; עד שזה נמדד על PR הבא — לקרוא את ה-`method` מהתגובה, לא להניח.
+6. **‏`E2E gate` אדום על staging מאז ה-baseline regen של T5 (MEH-2168):** map/about/producer-detail/login/register + `37-outreach-prefill:285` (429, MEH-2259). כל PR פתוח מקבל את אותם 8 אדומים; ההוכחה ש«לא שלי» היא ריצת e2e.yml על ה-base commit, לא הרגשה. `E2E gate` אינו נדרש — CI gate + Deploy gate ממזגים.
+
+### ‏מה נשאר לספיר
+
+- **‏MEH-2266 (זה) — למזג** (docs-only, שני הקבצים בלבד).
+- **‏תור RED מעודכן (05/09):** ‏MEH-1508 (Phase 0 → תוכנית 3 chunks → go) → 1456 B → 1494 B → 1287 B → MEH-2122 chunk A (OTP observability) → 1854 chunk 1 (אחרי ספירת ה-desync) → אשכול auth 2220/1436/282 → 903/796 expand. ‏#3393 כבר מוזג בבוקר (`14271239`).
+- **‏מהבוקר, ללא שינוי:** הכרעת קופי עין-סיסמה · שלוש ההכרעות של T12 פריט 2 · MEH-2259 — לפתוח מחדש את 1858 או להחזיק כרטיס נפרד.
 
 ## 2026-09-05 בוקר — MEH-1249 פרקים 11a+11b מוזגו · נותרו 11c ו-12 · הסשן עבר ל-fable-5.1
 
