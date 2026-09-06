@@ -47,7 +47,17 @@ def upgrade() -> None:
             server_default="click",
         ),
     )
+    # Reviewer round on #3368: the Literal["click", "invite_link"] lives in
+    # Pydantic only. This CHECK is the DB-level twin, so a direct-SQL insert
+    # or a future ORM path that skips the schema layer cannot land a third
+    # value. Mirrored in ProducerReview.__table_args__ (models.py).
+    op.create_check_constraint(
+        "ck_producer_reviews_source",
+        "producer_reviews",
+        "source IN ('click', 'invite_link')",
+    )
 
 
 def downgrade() -> None:
+    op.drop_constraint("ck_producer_reviews_source", "producer_reviews", type_="check")
     op.drop_column("producer_reviews", "source")
