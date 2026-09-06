@@ -414,6 +414,32 @@ def _attach_aging(producer) -> None:
     )
 
 
+# MEH-1494 chunk B: the annual-review predicate, extracted so the filter reads
+# as one named thing in `list_producers` and can be asserted directly.
+#
+# The window is the TripAdvisor/Michelin pattern the card cites: an editorial
+# pick carries a visible clock and is re-examined, rather than being permanent.
+#
+# `recommended_at IS NULL` is IN the due set on purpose, and it is the case
+# that matters most today. Chunk A deliberately did not backfill a date onto
+# rows picked before the column existed, because inventing one would fabricate
+# a decision date; NULL means "picked before there was a clock — review it now",
+# which is exactly how Michelin treats a star that has not been re-examined.
+#
+# 365 days rather than a calendar year: the difference is a leap day on a
+# review cadence measured in months, and `timedelta` costs no dependency. If
+# the boundary ever has to be exact, this is the one line to change.
+REVIEW_WINDOW_DAYS = 365
+
+
+def _recommended_review_due_clause():
+    """SQL: the row carries the pick AND its clock is unset or past the window."""
+    cutoff = israel_now() - timedelta(days=REVIEW_WINDOW_DAYS)
+    return Producer.is_recommended.is_(True) & (
+        Producer.recommended_at.is_(None) | (Producer.recommended_at < cutoff)
+    )
+
+
 @router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(
     status: str | None = Query(
@@ -421,6 +447,9 @@ def list_producers(
         pattern="^(draft|pending|approved|rejected|inactive|all)$",
     ),
     search: str | None = None,
+    # MEH-1494 chunk B: the annual-review view. Default False so every existing
+    # caller — the admin toolbar included — sees exactly the list it saw before.
+    recommended_review_due: bool = Query(False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -463,6 +492,8 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
+    if recommended_review_due:
+        q = q.filter(_recommended_review_due_clause())
     # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
     # עסקים" promise starts at submission and a business that has waited longest
     # is the one closest to breaking it. Newest-first (the old default) let an

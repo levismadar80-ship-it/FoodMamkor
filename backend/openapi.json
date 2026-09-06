@@ -12462,6 +12462,16 @@
               ],
               "title": "Search"
             }
+          },
+          {
+            "in": "query",
+            "name": "recommended_review_due",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Recommended Review Due",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

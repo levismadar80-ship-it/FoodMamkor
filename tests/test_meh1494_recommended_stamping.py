@@ -206,3 +206,80 @@ def test_the_owner_cannot_write_the_note_or_the_pick(db, client):
     assert row.recommended_note is None, "the owner wrote the editor's citation"
     assert not row.is_recommended, "the owner picked herself"
     assert row.recommended_at is None
+
+
+# ── the annual-review view ────────────────────────────────────────────────
+# `GET /admin/producers?recommended_review_due=true`. The window is 365 days;
+# a NULL stamp is DUE, because chunk A deliberately did not invent a date for
+# rows picked before the column existed.
+def _due_names(client, admin) -> set[str]:
+    resp = client.get(
+        "/admin/producers?recommended_review_due=true", headers=auth_header(admin)
+    )
+    assert resp.status_code == 200, resp.text
+    return {row["name"] for row in resp.json()}
+
+
+def test_the_review_view_selects_unstamped_and_expired_picks(db, client):
+    admin = _admin(db)
+    now = datetime.now(timezone.utc)
+
+    never = make_producer(db, name="נבחרה לפני שהיה שעון")
+    never.is_recommended = True  # recommended_at stays NULL
+    expired = make_producer(db, name="נבחרה לפני 13 חודשים")
+    expired.is_recommended = True
+    expired.recommended_at = now - timedelta(days=396)
+    fresh = make_producer(db, name="נבחרה בשבוע שעבר")
+    fresh.is_recommended = True
+    fresh.recommended_at = now - timedelta(days=7)
+    # Not picked, but carrying an old date — the filter must gate on the PICK,
+    # not on the date alone, or an un-picked row would haunt the review list.
+    stale_unpicked = make_producer(db, name="לא נבחרה, תאריך ישן")
+    stale_unpicked.is_recommended = False
+    stale_unpicked.recommended_at = now - timedelta(days=400)
+    plain = make_producer(db, name="עסק רגיל")
+    db.commit()
+
+    due = _due_names(client, admin)
+
+    assert never.name in due, "a pick with no clock is not being reviewed"
+    assert expired.name in due
+    assert fresh.name not in due, "a recent pick is due for review"
+    assert stale_unpicked.name not in due, "the filter keyed on the date, not the pick"
+    assert plain.name not in due
+    # Count, not a membership spot-check: exactly the two, nothing else swept in.
+    assert len(due) == 2, due
+
+
+def test_the_boundary_is_the_window_not_a_guess(db, client):
+    """Just inside and just outside 365 days, so an off-by-a-lot cannot pass."""
+    admin = _admin(db)
+    now = datetime.now(timezone.utc)
+
+    inside = make_producer(db, name="יום לפני הגבול")
+    inside.is_recommended = True
+    inside.recommended_at = now - timedelta(days=364)
+    outside = make_producer(db, name="יום אחרי הגבול")
+    outside.is_recommended = True
+    outside.recommended_at = now - timedelta(days=366)
+    db.commit()
+
+    due = _due_names(client, admin)
+    assert outside.name in due
+    assert inside.name not in due
+
+
+def test_the_default_listing_is_unchanged(db, client):
+    """The param defaults to False, so the queue the admin actually opens is
+    byte-identical to before this chunk."""
+    admin = _admin(db)
+    picked = make_producer(db, name="נבחרה, בלי שעון")
+    picked.is_recommended = True
+    make_producer(db, name="עסק רגיל שני")
+    db.commit()
+
+    resp = client.get("/admin/producers", headers=auth_header(admin))
+    assert resp.status_code == 200, resp.text
+    names = {row["name"] for row in resp.json()}
+    assert picked.name in names, "the default listing dropped rows"
+    assert "עסק רגיל שני" in names
