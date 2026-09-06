@@ -1983,7 +1983,13 @@ def _producer_rejected_html(
     Every producer-controlled value is escaped; the reason is the admin's
     composed text and is escaped too — it is rendered, never trusted.
     """
-    safe_name = _html_escape(name)
+    # MEH-2210: _single_line first, so the two twins agree on what an
+    # owner-supplied name may do. Reviewer's finding, and their own
+    # caveat is right — a newline is invisible here because HTML
+    # collapses whitespace, so this buys symmetry rather than a fix.
+    # That is worth one call: the text twin's guarantee is only
+    # readable as a rule if both paths carry it.
+    safe_name = _html_escape(_single_line(name))
     link = _rejected_dashboard_link(dashboard_link)
     reason_block = (
         (
