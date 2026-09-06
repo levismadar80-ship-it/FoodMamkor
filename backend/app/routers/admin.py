@@ -20,7 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
-from app.utils.clock import business_days_waiting, israel_today
+from app.utils.clock import business_days_waiting, israel_now, israel_today
 from app.utils.pii import mask_phone
 from app.config import settings
 from app.services.auth_notifications import (
@@ -414,6 +414,32 @@ def _attach_aging(producer) -> None:
     )
 
 
+# MEH-1494 chunk B: the annual-review predicate, extracted so the filter reads
+# as one named thing in `list_producers` and can be asserted directly.
+#
+# The window is the TripAdvisor/Michelin pattern the card cites: an editorial
+# pick carries a visible clock and is re-examined, rather than being permanent.
+#
+# `recommended_at IS NULL` is IN the due set on purpose, and it is the case
+# that matters most today. Chunk A deliberately did not backfill a date onto
+# rows picked before the column existed, because inventing one would fabricate
+# a decision date; NULL means "picked before there was a clock — review it now",
+# which is exactly how Michelin treats a star that has not been re-examined.
+#
+# 365 days rather than a calendar year: the difference is a leap day on a
+# review cadence measured in months, and `timedelta` costs no dependency. If
+# the boundary ever has to be exact, this is the one line to change.
+REVIEW_WINDOW_DAYS = 365
+
+
+def _recommended_review_due_clause():
+    """SQL: the row carries the pick AND its clock is unset or past the window."""
+    cutoff = israel_now() - timedelta(days=REVIEW_WINDOW_DAYS)
+    return Producer.is_recommended.is_(True) & (
+        Producer.recommended_at.is_(None) | (Producer.recommended_at < cutoff)
+    )
+
+
 @router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(
     status: str | None = Query(
@@ -421,6 +447,9 @@ def list_producers(
         pattern="^(draft|pending|approved|rejected|inactive|all)$",
     ),
     search: str | None = None,
+    # MEH-1494 chunk B: the annual-review view. Default False so every existing
+    # caller — the admin toolbar included — sees exactly the list it saw before.
+    recommended_review_due: bool = Query(False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -463,6 +492,8 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
+    if recommended_review_due:
+        q = q.filter(_recommended_review_due_clause())
     # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
     # עסקים" promise starts at submission and a business that has waited longest
     # is the one closest to breaking it. Newest-first (the old default) let an
@@ -696,6 +727,49 @@ def license_expiry_reminders(
     )
 
 
+def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
+    """Normalise the editorial pick and stamp/clear its date on a transition.
+
+    MEH-1494 chunk B. The stamp is driven by the TRANSITION, never by the
+    value: `recommended_at` is what makes the annual review possible (the
+    TripAdvisor/Michelin pattern on the card), so a row re-saved while already
+    picked keeps its original date. Stamping on the value instead would reset
+    the review window on every unrelated admin edit to that producer — which is
+    the whole clock, silently disarmed.
+
+    Gated on the PAYLOAD, not on the resulting value, matching this handler's
+    `exclude_unset` semantics throughout: an admin editing only the name never
+    touches the stamp.
+
+    `bool(...)` on both sides because `is_recommended` is nullable and an
+    explicit `is_recommended: null` reaches here — a NULL flag is not a pick,
+    so it lands on the un-pick branch.
+
+    `recommended_note` is deliberately NOT cleared on an un-pick: it is the
+    editor's record of a decision that was actually made, and erasing it would
+    destroy the only trace of why — the thing ADR-030 requires to be
+    defensible. The next pick overwrites it.
+    """
+    if "is_recommended" not in payload:
+        return
+    was = bool(producer.is_recommended)
+    will_be = bool(payload["is_recommended"])
+    # Normalise BEFORE the setattr loop reaches the column. `is_recommended` is
+    # nullable while `ProducerAdminOut.is_recommended` is a plain `bool`, so a
+    # PUT carrying an explicit `is_recommended: null` wrote NULL and then died
+    # in response validation — a 500 on a successful write. Measured 06/09
+    # against the pre-chunk-B code, so this is a latent defect this chunk
+    # surfaced rather than one it introduced; the column stays nullable
+    # (narrowing it is Alembic, and this handler is not where that belongs).
+    payload["is_recommended"] = will_be
+    if will_be and not was:
+        producer.recommended_at = israel_now()
+    elif was and not will_be:
+        # Clearing the date takes the row OUT of the review list rather than
+        # leaving it there forever as permanently overdue.
+        producer.recommended_at = None
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -759,6 +833,11 @@ def admin_update_producer(
     # matters — destroying before commit would orphan-leak in reverse
     # (assets gone, DB still references them) on a commit raise.
     old_images = list(producer.images or [])
+
+    # MEH-1494 chunk B: the editorial clock, stamped BEFORE the setattr loop
+    # below — that loop is what turns `producer.is_recommended` into the new
+    # value, so the transition has to be read while it is still the old one.
+    _apply_recommended_pick(producer, payload)
 
     for field, value in payload.items():
         setattr(producer, field, value)

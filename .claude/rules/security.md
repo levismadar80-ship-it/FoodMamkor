@@ -56,6 +56,24 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   that `agent_id` and `agent_type` ARE exposed to L2 hooks, so
   per-agent gating at the hook layer is feasible (Phase 2 follow-up
   pending). See [docs/agent-permissions-investigation.md](../../docs/agent-permissions-investigation.md).
+- **`permissions.deny` is tool × path, never "this file is locked".**
+  `Edit(.github/workflows/**)` in `.claude/settings.json` blocks exactly the
+  filesystem tools that name it — `Edit` / `Write` / `MultiEdit` — and nothing
+  else. The GitHub MCP write tools and the Contents API reach the same paths:
+  measured on PR #2629 (`f43afbf8` wrote `claude-review.yml` in the very
+  session whose `Edit` on it was denied), and again on 06/09 when
+  `frontend/eslint.config.mjs` landed through the Contents API as PR #3453,
+  while a `.claude/hooks/**` write through the same route was refused at the
+  sandbox proxy (403) — so the API path is open per path, not per policy.
+  That gap is what the 08/2026 permission split relies on, and it is a
+  **decision, not an oversight** (MEH-1915): the gate moves from edit time to
+  merge time — `.github/CODEOWNERS` landed in #3246; the ruleset half
+  (code-owner review) is paused on MEH-1501, because author and approver
+  currently share one GitHub account and the gate cannot tell them apart.
+  **So before writing "`.github/workflows/**` is CC-deny", ask *for which
+  tool?*** — the honest sentence is: denied to the filesystem tools, open to
+  the API, and held until the merge-time gate is live by convention plus the
+  staged patches under `docs/ci/`.
 
 ---
 
