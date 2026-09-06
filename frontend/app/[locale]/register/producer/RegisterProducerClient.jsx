@@ -1727,6 +1727,7 @@ function RegisterProducerPageBody() {
                     !form.producer_license_number.trim()
                   ) {
                     setLicenseRequiredError(true);
+                    requestFocus("producer-license-required");
                     return;
                   }
                   setLicenseRequiredError(false);
@@ -1795,6 +1796,7 @@ function RegisterProducerPageBody() {
               </p>
               <textarea
                 id="producer-description"
+                data-testid="register-story-description"
                 value={form.description}
                 onChange={set("description")}
                 disabled={descriptionDisabled}

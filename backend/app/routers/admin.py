@@ -184,6 +184,13 @@ def _apply_approval_state(producer: Producer) -> None:
     # request (if any) is resolved once the business is approved.
     producer.requested_changes = None
     producer.changes_requested_at = None
+    # MEH-2210: symmetric clearing of the rejection trail — an approved
+    # business must not carry a stale "לא אושרה" reason into its dashboard
+    # (the banner reads producer_rejection_reason off GET /auth/me).
+    # `resubmission_count` is deliberately NOT reset: it is history, and the
+    # cap is per business, not per rejection.
+    producer.rejection_reason = None
+    producer.rejection_reason_code = None
 
 
 class ApprovalOverrides(NamedTuple):
@@ -532,7 +539,6 @@ def admin_create_producer(
         slug=slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,
-        starting_price_label=data.price_range,  # keep both in sync
         grass_fed=data.grass_fed,
         organic_certified=data.organic_certified,
         has_delivery=data.has_delivery,
@@ -743,10 +749,6 @@ def admin_update_producer(
         _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
-
-    # Mirror price_range → starting_price_label for backward-compat display
-    if "price_range" in payload:
-        producer.starting_price_label = payload["price_range"]
 
     # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
@@ -1231,6 +1233,11 @@ def reject_producer(
     # "נדחה" with no reason on her dashboard (the banner reads
     # producer_rejection_reason off GET /auth/me).
     producer.rejection_reason = composed_reason or None
+    # MEH-2210: the preset key is the structured reason code. Same dict as the
+    # composed text (PRODUCER_REJECTION_PRESETS, validated above), so there is
+    # exactly one vocabulary; the owner dashboard branches its copy on it.
+    # NULL when a legacy caller sent free text only.
+    producer.rejection_reason_code = preset_key
     # MEH-1011: clear any request-changes trail on reject — a rejected producer
     # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
     # with approve_producer's clearing.

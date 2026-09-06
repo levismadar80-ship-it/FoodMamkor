@@ -41,7 +41,9 @@ def _jwt_key() -> OctKey:
 def create_access_token(
     user_id: UUID, token_version: int = 1, fingerprint_hash: str | None = None
 ) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.access_token_expire_minutes
+    )
     # MEH-326: scope="access" disambiguates from refresh tokens. Old tokens
     # issued before this change have no scope claim — get_current_user treats
     # absence as access (backward compat) so existing sessions don't break.
@@ -65,7 +67,9 @@ def create_refresh_token(user_id: UUID, token_version: int) -> str:
     as access tokens (one secret to rotate). Carried in an HttpOnly cookie
     set by every login/register endpoint and by /auth/refresh on rotation.
     """
-    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.refresh_token_expire_days
+    )
     payload = {
         "sub": str(user_id),
         "exp": expire,
@@ -393,8 +397,10 @@ def require_verified_email(user: User = Depends(get_current_user)) -> User:
 
 def require_verified_producer(user: User = Depends(require_producer)) -> User:
     # MEH-1164 F5: role check first (require_producer → "Producer access
-    # required"), then the email-verified gate. experiences.py already uses
-    # require_verified_email directly and is left unchanged.
+    # required"), then the email-verified gate. MEH-2246: events.py AND
+    # experiences.py both submit through this gate — the MEH-1164 decision to
+    # leave experiences on require_verified_email predated MEH-1749, after
+    # which only a business's experience is ever publicly visible.
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

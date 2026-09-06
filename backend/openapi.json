@@ -584,6 +584,11 @@
             "title": "Id",
             "type": "integer"
           },
+          "is_system": {
+            "default": false,
+            "title": "Is System",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -4814,6 +4819,17 @@
             ],
             "title": "Referral Source Other"
           },
+          "rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason Code"
+          },
           "report_count": {
             "default": 0,
             "title": "Report Count",
@@ -4829,6 +4845,23 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "resubmission_count": {
+            "default": 0,
+            "title": "Resubmission Count",
+            "type": "integer"
+          },
+          "resubmitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resubmitted At"
           },
           "reviews_count": {
             "default": 0,
@@ -4879,16 +4912,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -5774,16 +5808,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -6462,16 +6497,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -7917,6 +7953,17 @@
             "title": "Products Count",
             "type": "integer"
           },
+          "rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason Code"
+          },
           "report_count": {
             "default": 0,
             "title": "Report Count",
@@ -7932,6 +7979,23 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "resubmission_count": {
+            "default": 0,
+            "title": "Resubmission Count",
+            "type": "integer"
+          },
+          "resubmitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resubmitted At"
           },
           "reviews_count": {
             "default": 0,
@@ -7960,16 +8024,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "default": "pending",
@@ -9441,16 +9506,17 @@
             ],
             "title": "Slug"
           },
-          "starting_price_label": {
+          "special_hours": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Starting Price Label"
+            "title": "Special Hours"
           },
           "status": {
             "anyOf": [
@@ -10629,6 +10695,22 @@
               }
             ],
             "title": "Producer Rejection Reason"
+          },
+          "producer_rejection_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Rejection Reason Code"
+          },
+          "producer_resubmission_count": {
+            "default": 0,
+            "title": "Producer Resubmission Count",
+            "type": "integer"
           },
           "producer_status": {
             "anyOf": [
@@ -18508,7 +18590,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {
