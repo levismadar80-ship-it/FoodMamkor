@@ -44,7 +44,13 @@ export const REFRESH_MARGIN_MS = 120_000;
  * anything that moves this decode to a browser context. Recorded because a
  * reader who deletes it will see every test still pass.
  */
-export function decodeJwtExpMs(token: string): number | null {
+export function decodeJwtExpMs(
+  token: string | null | undefined,
+): number | null {
+  // The signature admits null/undefined because the guard below is the point:
+  // a caller holding a fixture that lost its token must get `null` here, not a
+  // TypeError. Narrowing it to `string` would make the unit test's null cases
+  // illegal and quietly stop exercising this line (reviewer on the PR).
   const parts = typeof token === "string" ? token.split(".") : [];
   if (parts.length !== 3) return null;
   try {

@@ -163,8 +163,24 @@ function bypassHeaders(): Record<string, string> {
  * The write is atomic (tmp + rename) because parallel workers read this file
  * while another may be rewriting it; a torn read would surface as a JSON parse
  * error in an unrelated spec.
+ *
+ * ─── Concurrent workers: safe, and not by luck ─────────────────────────────
+ *
+ * A reviewer asked whether two workers reading the same stale fixture would
+ * each refresh with the same cookie, and the second would then 401 against an
+ * already-rotated one. Read from the route rather than assumed: `/auth/refresh`
+ * (auth.py:151-217) decodes the cookie, requires `tv == user.token_version`,
+ * and issues new tokens — it does **not** revoke, blacklist or bump anything
+ * on the old refresh token, which stays valid until its own 14-day expiry
+ * (config.py:36). Both workers therefore succeed; the loser's write is
+ * overwritten by an equally valid state.
+ *
+ * What concurrency CAN cost here is the 30/minute per-IP limit if a large
+ * worker pool refreshes at once. The error message names that case; it would
+ * be a loud 429, not a silent wrong answer, and no lock is added for a cost
+ * that has not been observed.
  */
-export async function ensureFreshFixture(role: string): Promise<boolean> {
+async function ensureFreshFixture(role: string): Promise<boolean> {
   if (!fixtureExists(role)) return false;
   if (!isStale(tokenFromFixture(role))) return false;
 
@@ -181,9 +197,11 @@ export async function ensureFreshFixture(role: string): Promise<boolean> {
     if (!res.ok()) {
       throw new Error(
         `[auth-fixture] /auth/refresh for "${role}" at ${origin} returned ` +
-          `HTTP ${res.status()}. The stored refresh cookie is 14 days old at most ` +
-          `(config.py:36), so a 401 here means the cookie was never captured or the ` +
-          `account's token_version moved.`,
+          `HTTP ${res.status()}. Candidates, in the order worth checking: the ` +
+          `fixture carried no refresh cookie (global-setup captured none), the ` +
+          `account's token_version moved, or the 30/minute per-IP limit was hit ` +
+          `by a burst of workers. NOT a rotated-cookie race — see the note on ` +
+          `this function.`,
       );
     }
     const { access_token: accessToken } = await res.json();
