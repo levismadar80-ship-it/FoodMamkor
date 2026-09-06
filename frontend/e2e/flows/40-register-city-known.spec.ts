@@ -70,7 +70,7 @@ test.describe("MEH-2241 chunk B — the city gate refuses a typed town the picke
     const city = page.getByTestId("register-details-city").getByRole("combobox");
     await city.fill(KNOWN_TOWN);
     // pick it from the dropdown, the way a seller does — not just type it
-    await page.getByRole("option", { name: KNOWN_TOWN }).first().click();
+    await page.getByTestId("register-details-city").getByRole("option", { name: KNOWN_TOWN }).first().click();
     await page.getByTestId("register-details-next").click();
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
   });
@@ -80,7 +80,7 @@ test.describe("MEH-2241 chunk B — the city gate refuses a typed town the picke
     const city = page.getByTestId("register-details-city").getByRole("combobox");
     await city.fill(FREE_TEXT_TOWN);
     // no dropdown to pick from — that is the case
-    await expect(page.getByRole("option")).toHaveCount(0);
+    await expect(page.getByTestId("register-details-city").getByRole("option")).toHaveCount(0);
     await page.getByTestId("register-details-next").click();
     await expect(page.getByTestId("register-frame-details")).toBeVisible();
     await expect(page.getByTestId("register-frame-category")).toHaveCount(0);
@@ -89,7 +89,7 @@ test.describe("MEH-2241 chunk B — the city gate refuses a typed town the picke
     await expect(city).toBeFocused();
     // correcting it to a real town clears the block (Baymard on-change clear)
     await city.fill(KNOWN_TOWN);
-    await page.getByRole("option", { name: KNOWN_TOWN }).first().click();
+    await page.getByTestId("register-details-city").getByRole("option", { name: KNOWN_TOWN }).first().click();
     await expect(page.locator("#register-city-error")).toHaveCount(0);
     await page.getByTestId("register-details-next").click();
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
