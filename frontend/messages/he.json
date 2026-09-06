@@ -1602,7 +1602,8 @@
         "deleting": "מוחקים…",
         "waiting_badge": "ממתין {days} ימי עסקים",
         "waiting_tooltip_submitted": "נשלח לבדיקה: {when}",
-        "waiting_tooltip_created": "נוצר: {when}"
+        "waiting_tooltip_created": "נוצר: {when}",
+        "resubmission_badge": "שליחה חוזרת #{n}"
       },
       "toggle": {
         "invalid_transition": "לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך כפתורי האישור/דחייה."

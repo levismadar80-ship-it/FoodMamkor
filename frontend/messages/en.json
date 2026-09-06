@@ -1602,7 +1602,8 @@
         "deleting": "Deleting…",
         "waiting_badge": "Waiting {days} business days",
         "waiting_tooltip_submitted": "Submitted for review: {when}",
-        "waiting_tooltip_created": "Created: {when}"
+        "waiting_tooltip_created": "Created: {when}",
+        "resubmission_badge": "Resubmission #{n}"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
