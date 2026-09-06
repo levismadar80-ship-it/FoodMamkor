@@ -564,8 +564,14 @@ function RegisterProducerPageBody() {
   // itself is untouched, so nothing keyed on the value re-fires.
   // Not memoised on purpose: setAndSave closes over the current `step` for the
   // draft write, and a []-deps callback would pin the first render's step.
-  // CitySearch's effect re-runs per render but only calls back when the
-  // verdict actually flips, so the cost is a comparison, not a state write.
+  // Two things keep this loop-safe, and both are pinned by tests:
+  //  1. CitySearch (chunk A) calls onKnownChange only when the verdict flips —
+  //     __tests__/CitySearchQuery.test.jsx asserts toHaveBeenCalledTimes(1)
+  //     across a fetch that flips it.
+  //  2. Even an unconditional call with the SAME value is a no-op here: the
+  //     updater returns `prev` unchanged, so React bails out with no render.
+  // A re-render loop therefore needs chunk A to alternate verdicts on a fixed
+  // value, which its own guard forbids.
   const handleCityKnownChange = (known) =>
     setAndSave((prev) => (prev.city_known === known ? prev : { ...prev, city_known: known }));
 
