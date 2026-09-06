@@ -870,6 +870,13 @@ class TestMeh1428ReviewInviteLink:
         r = self._post(client, producer, reviewer, _mint(producer.id, exp_delta=timedelta(days=-1)))
         assert r.status_code == 201, r.text
         assert "source" not in r.json()
+        # The docstring's claim — "the row is recorded as the proof that
+        # actually held" — is about the STORED value, and the public payload
+        # no longer carries it, so read the row (reviewer on #3368). Without
+        # this, a regression stamping "invite_link" on the bad-token+click
+        # path passes: this is the only case covering that fallback's source.
+        row = db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).one()
+        assert row.source == "click"
 
     def test_edit_never_rewrites_source_in_either_direction(self, client, db):
         """reviews.py:278 claims "an edit never rewrites it — the first proof is
