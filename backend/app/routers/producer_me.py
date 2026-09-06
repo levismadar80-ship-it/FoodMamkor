@@ -8,9 +8,9 @@ from sqlalchemy import and_, func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import require_producer
-from app.constants import MAX_PRODUCER_RESUBMISSIONS
+from app.auth import create_review_invite_token, require_producer
 from app.config import settings
+from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
 from app.rate_limit import limiter
 from app.services.availability_validation import (
@@ -55,6 +55,7 @@ from app.schemas.schemas import (
     ProductCreate,
     ProductOut,
     ProductUpdate,
+    ReviewInviteLinkOut,
 )
 from app.services.auth_notifications import (
     notify_admin_new_producer,
@@ -1722,6 +1723,47 @@ def list_kashrut_requests(
         .all()
     )
     return rows
+
+
+# ---------------------------------------------------------------------------
+# MEH-1428 chunk 1: "request a review" — a signed link the owner shares with
+# a customer. Presenting its `rt` token on POST /producers/{id}/reviews
+# satisfies the contact-click gate (reviews.py guard 3).
+# ---------------------------------------------------------------------------
+
+
+@router.get("/review-link", response_model=ReviewInviteLinkOut)
+@limiter.limit("30/minute")
+def get_review_invite_link(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """The owner's shareable "request a review" URL.
+
+    Approved producers only: the public page the link opens exists only once
+    the business is live, and a pending/draft business has no customers to
+    ask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py
+    create_review_invite_token) — not single-use, so one link serves every
+    customer the owner sends it to; a fresh call re-mints it, which is how a
+    link is "renewed" after expiry. No DB write.
+
+    URL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a
+    custom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are
+    the live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if producer.status != "approved":
+        raise HTTPException(
+            status_code=403,
+            detail="קישור לבקשת ביקורת זמין רק לעסק מאושר",
+        )
+    base = settings.frontend_url.rstrip("/")
+    path = f"/p/{producer.slug}" if producer.slug else f"/producer/{producer.id}"
+    token = create_review_invite_token(producer.id)
+    return ReviewInviteLinkOut(url=f"{base}{path}?rt={token}")
 
 
 # ---------------------------------------------------------------------------
