@@ -1,7 +1,11 @@
 # `check-branch-name.sh` — read `--delete` as a flag, not as a branch name (MEH-2077)
 
-**Status:** staged for Sapir. `.claude/hooks/**` is CC-deny, so CC cannot apply
-this. Measured, not proposed blind: the patch below was applied to a **copy** of
+**Status: APPLIED** — landed in #3239 (2026-09-01 09:32Z); verified on
+`origin/staging` 2026-09-06 (drain כט'): `check-branch-name.sh:78` reads
+`--delete` / `-d` / `:refspec` as flags, `:95` carries the MEH-2077 comment.
+The measurement below is the record of how it was proven before applying.
+_(Was: "staged for Sapir. `.claude/hooks/**` is CC-deny, so CC cannot apply
+this.")_ Measured, not proposed blind: the patch below was applied to a **copy** of
 the hook and both hooks were run against the same 10-case corpus. Results are in
 the table at the bottom.
 
