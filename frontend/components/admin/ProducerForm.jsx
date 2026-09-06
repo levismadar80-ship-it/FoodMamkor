@@ -199,6 +199,8 @@ const EMPTY = {
   // controlled date input never flips to uncontrolled — same idiom as
   // vacation_until below; the submit path converts "" back to null.
   license_expires_at: "",
+  // MEH-1287 chunk B: editorial seasonal mark. "" = not marked.
+  in_season_until: "",
   admin_notes: "",
   images: [],
   // MEH-213 — location mode
@@ -295,6 +297,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // above. Already an ISO "YYYY-MM-DD" string (the column is DATE), which
         // is exactly what <input type="date"> wants — no formatting needed.
         license_expires_at: initial.license_expires_at ?? "",
+        in_season_until: initial.in_season_until ?? "",
         contact_name: initial.contact_name ?? "",
         whatsapp_group: initial.whatsapp_group ?? "",
         // MEH-17
@@ -466,6 +469,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // explicitly (rather than omitting the key) is what lets the admin CLEAR
       // a date she entered by mistake.
       license_expires_at: form.license_expires_at || null,
+      // MEH-1287 chunk B: same ""-is-not-a-date reasoning as the line above,
+      // and the same reason for sending null rather than omitting the key —
+      // clearing the mark is how a season ends early.
+      in_season_until: form.in_season_until || null,
       admin_notes: form.admin_notes,
       images: form.images,
       // MEH-213 — location mode
@@ -800,6 +807,25 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.recommended")}
           </label>
+          {/* MEH-1287 chunk B: the seasonal mark lives beside the editorial
+              "מומלץ" toggle because it is the same kind of decision — the
+              editor's, never the owner's (`in_season_until` is on the admin
+              write schema only). A DATE and not a checkbox: the mark expires
+              by itself, so nobody has to remember to clear it at the end of a
+              season. No `min` — re-reading an old season is legitimate. */}
+          <div>
+            <Input
+              id="admin-producer-in-season-until"
+              type="date"
+              label={t("producers.form.fields.in_season_until")}
+              value={form.in_season_until}
+              onChange={(e) => update("in_season_until", e.target.value)}
+              dir="ltr"
+            />
+            <p className="text-xs text-fg-muted mt-1">
+              {t("producers.form.fields.in_season_until_hint")}
+            </p>
+          </div>
           <Field label={t("producers.form.fields.kosher")}>
             <select
               value={form.kosher}
