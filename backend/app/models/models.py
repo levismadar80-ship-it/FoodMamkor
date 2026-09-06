@@ -1715,6 +1715,12 @@ class ProducerReview(Base):
         UniqueConstraint(
             "producer_id", "user_id", name="uq_one_review_per_producer_per_user"
         ),
+        # MEH-1428: DB-level twin of the Pydantic Literal on `source` — added
+        # by revision 3f9a7c2e5d18 alongside the column.
+        CheckConstraint(
+            "source IN ('click', 'invite_link')",
+            name="ck_producer_reviews_source",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

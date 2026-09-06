@@ -293,7 +293,7 @@ producer_reviews (
   id uuid PK, producer_id FK, user_id FK,
   stars int (1-5), title, body,
   created_at,
-  source varchar(20) NOT NULL DEFAULT 'click',  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18
+  source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
 ```
