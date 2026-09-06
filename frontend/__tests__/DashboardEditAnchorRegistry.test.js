@@ -32,7 +32,6 @@ import {
 // Same family as scripts/validate-registry-paths.py (guarded registries) and
 // the silent-gap class in .claude/rules/testing.md.
 
-
 describe("dashboard-edit anchor registry (MEH-2262)", () => {
   // Run first: if the maps did not import, every assertion below passes over
   // three empty objects and reports a healthy registry that does not exist.
@@ -49,7 +48,9 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
 
   it("every anchor resolves to a card key that has a group", () => {
     const orphans = Object.entries(ANCHOR_TO_KEY)
-      .filter(([, key]) => !KEY_TO_GROUP[OPEN_KEY_FOR(key)] && !KEY_TO_GROUP[key])
+      .filter(
+        ([, key]) => !KEY_TO_GROUP[OPEN_KEY_FOR(key)] && !KEY_TO_GROUP[key],
+      )
       .map(([anchor, key]) => `#${anchor} -> ${key} (no KEY_TO_GROUP entry)`);
 
     expect(
@@ -61,11 +62,37 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
     ).toEqual([]);
   });
 
+  // The third direction, and the one the first version of this file missed:
+  // the two checks above cover anchor→group and scroll-target→anchor, so a key
+  // that has an anchor entry and a group but NO scroll target slips between
+  // them. That is exactly what ownerStory was — the deep link opened the card
+  // and then scrolled nowhere, because getElementById(undefined) returns null
+  // and the optional chain swallowed it. Found by the reviewer, not by me.
+  it("every anchor's card key also has a scroll target", () => {
+    const noTarget = Object.entries(ANCHOR_TO_KEY)
+      .filter(
+        ([, key]) => !KEY_TO_ANCHOR[key] && !KEY_TO_ANCHOR[OPEN_KEY_FOR(key)],
+      )
+      .map(([anchor, key]) => `#${anchor} -> ${key} (no KEY_TO_ANCHOR entry)`);
+
+    expect(
+      noTarget,
+      noTarget.length === 0
+        ? ""
+        : `These deep links open their card and then scroll nowhere —\n` +
+            `getElementById(undefined) is null and the optional chain hides it:\n  ` +
+            noTarget.join("\n  "),
+    ).toEqual([]);
+  });
+
   it("every card with a scroll target is reachable by anchor", () => {
     const reachable = new Set(Object.values(ANCHOR_TO_KEY));
     const unreachable = Object.keys(KEY_TO_ANCHOR)
       .filter((key) => !reachable.has(key))
-      .map((key) => `${key} (anchor "${KEY_TO_ANCHOR[key]}" is not in ANCHOR_TO_KEY)`);
+      .map(
+        (key) =>
+          `${key} (anchor "${KEY_TO_ANCHOR[key]}" is not in ANCHOR_TO_KEY)`,
+      );
 
     expect(
       unreachable,
@@ -88,14 +115,19 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
     expect(KEY_TO_ANCHOR[key]).toBe(anchor);
   });
 
-  // Derived, not stated: a hand-written total goes stale the moment a card is
-  // added and would read as coverage while measuring nothing.
-  it("checks every registered anchor", () => {
-    expect(Object.keys(ANCHOR_TO_KEY).length).toBe(
-      new Set(Object.keys(ANCHOR_TO_KEY)).size,
-    );
-    expect(Object.keys(ANCHOR_TO_KEY).length).toBeGreaterThanOrEqual(
-      Object.keys(KEY_TO_ANCHOR).length,
-    );
-  });
+  // NOTHING REPLACES THE TEST THAT USED TO SIT HERE, and that is the point.
+  // It read
+  //   expect(Object.keys(X).length).toBe(new Set(Object.keys(X)).size)
+  // which is true for every object in the language — a duplicate key
+  // overwrites silently and never appears twice in Object.keys — so it could
+  // not fail. The reviewer offered "remove it or note the language guarantee";
+  // removed, per .claude/rules/testing.md ("delete it rather than reformulate
+  // it, because the reformulation tends to be entailed too").
+  //
+  // The obvious reformulation was tried and is WRONG: asserting that no two
+  // anchors resolve to the same card key goes red on the live registry,
+  // because the MEH-1106 alias anchors (#profile-contact, #profile-categories,
+  // #profile-images, #profile-products) deliberately share a card with their
+  // canonical anchors. Distinctness is not an invariant here; the two
+  // reachability directions above are.
 });
