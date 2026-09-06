@@ -63,17 +63,34 @@ jobs:
           else
             echo "flag=--dry-run" >> "$GITHUB_OUTPUT"
           fi
+          # The issues input is free text from the dispatch form. It is consumed
+          # below ONLY through an env var (never interpolated into script text),
+          # and each token must look like a Linear id — anything else fails here.
           filter=""
-          for id in $INPUT_ISSUES; do filter="$filter --issue $id"; done
+          for id in $INPUT_ISSUES; do
+            case "$id" in
+              MEH-[0-9]*) filter="$filter --issue $id" ;;
+              *) echo "::error::issues filter token '$id' is not a MEH-N id"; exit 1 ;;
+            esac
+          done
           echo "filter=$filter" >> "$GITHUB_OUTPUT"
 
       - name: Run sweep
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Step outputs enter the shell as env vars, not as script text: a
+          # `${{ }}` expression inside `run:` is pasted into the script before
+          # bash parses it, so a dispatch value containing `&&` or `;` would
+          # become shell operators (and `env` would dump LINEAR_API_KEY into the
+          # table). $VAR expansion never re-parses operators.
+          MODE_FLAG: ${{ steps.mode.outputs.flag }}
+          FILTER: ${{ steps.mode.outputs.filter }}
         run: |
           set -euo pipefail
-          node scripts/oneoff/pr-reconcile.mjs ${{ steps.mode.outputs.flag }} ${{ steps.mode.outputs.filter }} \
+          # shellcheck disable=SC2086 — FILTER is a deliberate word list of
+          # `--issue MEH-N` pairs, validated token-by-token in the step above.
+          node scripts/oneoff/pr-reconcile.mjs "$MODE_FLAG" $FILTER \
             | tee reconcile-table.md
 
       - name: Publish table as job summary
