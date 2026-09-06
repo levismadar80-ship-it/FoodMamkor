@@ -1925,6 +1925,8 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:10) — Cookie banner — כנסי בחלון פרטי — מופיע עם 2 כפתורים
 - ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:11) — "רק הכרחיים" — לחצי — banner נעלם, analytics לא נטען
 - [ ] Producer registration — נסי לשלוח בלי checkboxes — כפתור disabled (גם checkbox הרישיונות וגם checkbox תנאי השימוש חובה)
+- [ ] **הצהרת גיל 18+ (MEH-2080)** — `/register` ו-`/register/producer` (שלב אחרון) — **תוצאה מצופה:** תווית הצ'ק-בוקס פותחת ב-«אני מעל גיל 18 ומסכימה ל…» (אין שדה תאריך לידה); בלי סימון הדפדפן חוסם שליחה (`required`).
+- [ ] **API מסרב בלי הדגל (MEH-2080)** — `POST /auth/register` או `/auth/register/producer` בלי `terms_accepted` או עם `false` — **תוצאה מצופה:** 422 עם «יש לאשר את תנאי השימוש ולהצהיר על גיל 18 ומעלה», ולא נוצר משתמש.
 - [ ] DirectoryDisclaimer — כנסי לדף יצרן — disclaimer מוצג מעל כפתור הדיווח
 - [ ] DirectoryDisclaimer — גללי את גריד "מהמטבח של השכן" — כל כרטיסייה מציגה את ה-disclaimer בתחתית
 

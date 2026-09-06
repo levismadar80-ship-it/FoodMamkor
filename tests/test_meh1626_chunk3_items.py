@@ -119,6 +119,7 @@ def test_producer_register_website_also_normalizes():
         city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
+        terms_accepted=True,  # MEH-2080: mandatory on the schema
         website="",
     )
     assert reg.website is None

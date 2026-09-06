@@ -35,7 +35,7 @@ class TestAuth:
         # is verified out-of-band via the DB query below.
         resp = client.post(
             "/auth/register",
-            json={"email": "alice@test.com", "name": "Alice", "password": "Zx7Yp9Mq2Lr4"},
+            json={"terms_accepted": True, "email": "alice@test.com", "name": "Alice", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 200
         body = resp.json()
@@ -76,15 +76,12 @@ class TestAuth:
         assert created.terms_accepted_at is not None
         assert created.terms_version == TERMS_VERSION
 
-    def test_register_without_terms_flag_records_no_consent(self, client, db):
-        # MEH-1995: the discriminating half. Without this, a handler that
-        # stamped unconditionally would pass the test above — so the pair is
-        # what proves the stamp tracks the actual input rather than firing on
-        # every registration.
-        #
-        # NULL here is the intended state, not an oversight: it means "no
-        # record of consent", which is the truthful reading for a caller that
-        # never asserted acceptance. It must never read as "consent refused".
+    def test_register_without_terms_flag_is_422(self, client, db):
+        # MEH-2080 (supersedes the MEH-1995 case that accepted this body with
+        # a 200 and a NULL consent row): the checkbox is mandatory and carries
+        # the 18+ self-declaration, so an omitted flag is refused at the
+        # schema and no user row is written. Shown failing first: against the
+        # MEH-1995 schema this body returns 200 and the row exists.
         from app.models.models import User
 
         resp = client.post(
@@ -95,11 +92,27 @@ class TestAuth:
                 "password": "Zx7Yp9Mq2Lr4",
             },
         )
-        assert resp.status_code == 200
-        created = db.query(User).filter(User.email == "noconsent@example.com").first()
-        assert created is not None
-        assert created.terms_accepted_at is None
-        assert created.terms_version is None
+        assert resp.status_code == 422, resp.text
+        assert db.query(User).filter(User.email == "noconsent@example.com").first() is None
+
+    def test_register_with_terms_false_is_422(self, client, db):
+        # MEH-2080: an explicit False is not "no record" — it is a refusal of
+        # a mandatory declaration, and it is refused the same way. The
+        # validator, not the handler, is what the client-side `required`
+        # attribute leans on (MEH-2015 asterisk invariant).
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "refused@example.com",
+                "name": "Refused",
+                "password": "Zx7Yp9Mq2Lr4",
+                "terms_accepted": False,
+            },
+        )
+        assert resp.status_code == 422, resp.text
+        assert db.query(User).filter(User.email == "refused@example.com").first() is None
 
     def test_register_producer_records_terms_consent(self, client, db):
         # MEH-1995: the producer password path stamps via a SECOND, hand-copied
@@ -123,6 +136,63 @@ class TestAuth:
         assert created is not None
         assert created.terms_accepted_at is not None
         assert created.terms_version == TERMS_VERSION
+
+    def test_register_producer_without_terms_is_422(self, client, db):
+        # MEH-2080: the producer path has its own hand-copied schema and its
+        # own stamp site (auth.py); the consumer 422 above cannot see it.
+        from app.models.models import User
+
+        payload = valid_producer_register_payload()
+        payload["email"] = "producer_noterms@example.com"
+        payload["phone"] = "0521234567"
+        payload.pop("terms_accepted", None)
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 422, resp.text
+        assert (
+            db.query(User).filter(User.email == "producer_noterms@example.com").first()
+            is None
+        )
+
+    def test_register_producer_with_terms_false_is_422(self, client, db):
+        # MEH-2080: the producer schema shares the validator with the consumer
+        # one, but a shared validator is a claim about the code, not a test of
+        # it — an explicit False on ProducerRegister is refused the same way.
+        from app.models.models import User
+
+        payload = valid_producer_register_payload()
+        payload["email"] = "producer_refused@example.com"
+        payload["phone"] = "0521234567"
+        payload["terms_accepted"] = False
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 422, resp.text
+        assert (
+            db.query(User).filter(User.email == "producer_refused@example.com").first()
+            is None
+        )
+
+    def test_register_producer_upgrade_without_terms_is_422(self, client, db):
+        # MEH-2080: the upgrade path mutates current_user instead of building
+        # a User, and renders the same checkbox — so the same 422 applies, and
+        # the account must stay a consumer when the flag is missing.
+        from app.models.models import User
+
+        user = make_user(db, email="upgrader_noterms@example.com")
+        payload = valid_producer_register_payload()
+        payload.pop("email", None)
+        payload.pop("password", None)
+        payload.pop("name", None)
+        payload["phone"] = "0521234567"
+        payload.pop("terms_accepted", None)
+        resp = client.post(
+            "/auth/register/producer",
+            json=payload,
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422, resp.text
+        db.expire_all()
+        still = db.query(User).filter(User.email == "upgrader_noterms@example.com").first()
+        assert still.role == "consumer"  # make_user default; a None role must not pass this
+        assert still.terms_accepted_at is None
 
     def test_register_producer_upgrade_records_terms_consent(self, client, db):
         # MEH-1995 (adversarial review R-1): the MEH-143 upgrade path does NOT
@@ -189,21 +259,25 @@ class TestAuth:
         payload.pop("password", None)
         payload.pop("name", None)
         payload["phone"] = "0521234567"
-        payload.pop("terms_accepted", None)  # omitted → schema default False
+        # MEH-2080: an omitted flag is now refused at the schema (422), so the
+        # invariant this test guards has moved one layer out — the refused
+        # request must leave the earlier consent exactly as it was. Before
+        # MEH-2080 this body returned 200 with the same preservation check.
+        payload.pop("terms_accepted", None)
 
         resp = client.post(
             "/auth/register/producer",
             json=payload,
             headers=auth_header(user),
         )
-        assert resp.status_code == 200, resp.text
+        assert resp.status_code == 422, resp.text
         db.expire_all()
-        upgraded = db.query(User).filter(User.email == "preserve@example.com").first()
-        assert upgraded.role == "producer"  # the upgrade still happened
-        # The pre-existing consent survives it, unchanged in both columns.
-        assert upgraded.terms_accepted_at is not None
-        assert upgraded.terms_accepted_at.astimezone(timezone.utc) == earlier
-        assert upgraded.terms_version == TERMS_VERSION
+        still = db.query(User).filter(User.email == "preserve@example.com").first()
+        assert still.role == "consumer"  # refused, so no upgrade — and not a vacuous "not producer"
+        # The pre-existing consent survives the refusal, unchanged in both columns.
+        assert still.terms_accepted_at is not None
+        assert still.terms_accepted_at.astimezone(timezone.utc) == earlier
+        assert still.terms_version == TERMS_VERSION
 
     def test_consent_columns_are_exposed_by_no_endpoint(self, client, db):
         # MEH-1995 (CI review): the audit-only exposure contract is the whole
@@ -291,7 +365,7 @@ class TestAuth:
         before = db.query(User).filter(User.email == "dup@test.com").count()
         resp = client.post(
             "/auth/register",
-            json={"email": "dup@test.com", "name": "x", "password": "Zx7Yp9Mq2Lr4"},
+            json={"terms_accepted": True, "email": "dup@test.com", "name": "x", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 200
         assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
@@ -320,7 +394,7 @@ class TestAuth:
         )
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "dup_pw@test.com",
                 "name": "AttackerName",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -357,7 +431,7 @@ class TestAuth:
         )
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "dup_g@test.com",
                 "name": "Attacker",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -372,7 +446,7 @@ class TestAuth:
         # MEH-328: no auto-login. Caller must verify via email then login.
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "noauto@test.com",
                 "name": "NoAuto",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -433,7 +507,7 @@ class TestAuth:
         def post(email):
             return client.post(
                 "/auth/register",
-                json={
+                json={"terms_accepted": True,
                     "email": email,
                     "name": "Tester",
                     "password": "Zx7Yp9Mq2Lr4",
@@ -1000,6 +1074,7 @@ class TestRegisterPerEmailRateLimit:
             "email": "rl_victim_register@test.com",
             "name": "Victim",
             "password": "Zx7Yp9Mq2Lr4",
+            "terms_accepted": True,  # MEH-2080
         }
         statuses = [
             client.post("/auth/register", json=payload).status_code
@@ -1102,7 +1177,7 @@ class TestRegistrationCoverageGaps:
         )
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "dup_a@test.com",
                 "name": "Attacker",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -1169,7 +1244,7 @@ class TestRegistrationCoverageGaps:
         monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", dup)
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "noauth@test.com",
                 "name": "Attacker",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -1225,7 +1300,7 @@ class TestRegistrationCoverageGaps:
         )
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "novertify@test.com",
                 "name": "Attacker",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -1332,7 +1407,7 @@ class TestRegistrationCoverageGaps:
         )
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "welcome_c@example.com",
                 "name": "צרכנית",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -1379,7 +1454,7 @@ class TestRegistrationCoverageGaps:
         )
         resp = client.post(
             "/auth/register",
-            json={
+            json={"terms_accepted": True,
                 "email": "nowelcome@test.com",
                 "name": "Attacker",
                 "password": "Zx7Yp9Mq2Lr4",
@@ -1498,7 +1573,7 @@ class TestRegisterPerIpRateLimit:
         statuses = [
             client.post(
                 "/auth/register",
-                json={
+                json={"terms_accepted": True,
                     "email": f"perip{i}@example.com",
                     "name": "Tester",
                     "password": "Zx7Yp9Mq2Lr4",
@@ -4563,7 +4638,7 @@ class TestFingerprintCookie:
         # Identical-bytes invariant in TestAuth depends on this being absent.
         res = client.post(
             "/auth/register",
-            json={"email": "fp2@test.com", "name": "FP Test", "password": "Zx7Yp9Mq2Lr4"},
+            json={"terms_accepted": True, "email": "fp2@test.com", "name": "FP Test", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert res.status_code == 200
         assert self._fp_cookie_header(res) is None

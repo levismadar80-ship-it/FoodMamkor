@@ -9553,7 +9553,6 @@
             "title": "Short Description"
           },
           "terms_accepted": {
-            "default": false,
             "title": "Terms Accepted",
             "type": "boolean"
           },
@@ -9571,7 +9570,8 @@
         },
         "required": [
           "producer_name",
-          "city"
+          "city",
+          "terms_accepted"
         ],
         "title": "ProducerRegister",
         "type": "object"
@@ -11570,7 +11570,6 @@
             "title": "Phone"
           },
           "terms_accepted": {
-            "default": false,
             "title": "Terms Accepted",
             "type": "boolean"
           }
@@ -11578,7 +11577,8 @@
         "required": [
           "email",
           "name",
-          "password"
+          "password",
+          "terms_accepted"
         ],
         "title": "UserRegister",
         "type": "object"

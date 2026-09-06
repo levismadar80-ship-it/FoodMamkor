@@ -202,7 +202,7 @@
           "valid_hint": "✓ Valid"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy"
@@ -356,7 +356,7 @@
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",

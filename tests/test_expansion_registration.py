@@ -24,6 +24,7 @@ def _payload(category_ids, *, license_number=None, declaration_accepted=True,
         "name": "יצרנית",
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "עסק הרחבה",
+        "terms_accepted": True,  # MEH-2080: mandatory on the schema
         "phone": "0501234567",
         # MEH-2015 chunk B: city is now required (ProducerRegister.city has no
         # default) — added here for the same reason category_ids is, so this
