@@ -1,0 +1,82 @@
+name: Uptime probe
+
+# MEH-2202: external, Sentry-independent liveness + readiness probe. Runs on a
+# GitHub-hosted runner every 10 minutes and turns two consecutive failures into
+# a GitHub issue (label `uptime`), closed again on recovery. No account, no
+# money, no repo secret. Manual dispatch kept for a smoke run after applying.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe / and /api/health/readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HOME_URL: https://mehamakor.co.il/
+      READY_URL: https://mehamakor.co.il/api/health/readiness
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Probe both endpoints
+        id: probe
+        shell: bash
+        run: |
+          set -uo pipefail
+          fail=0
+          for url in "$HOME_URL" "$READY_URL"; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 --retry 2 --retry-delay 5 "$url" || echo 000)
+            echo "$url -> HTTP $code"
+            if [ "$code" != "200" ]; then fail=1; fi
+          done
+          echo "fail=$fail" >> "$GITHUB_OUTPUT"
+
+      # One issue carries the outage state. Title is fixed so `gh issue list`
+      # finds it; the body's first line records whether the previous tick
+      # already failed (the "×2 consecutive" memory).
+      - name: Update the outage issue
+        if: always()
+        shell: bash
+        env:
+          FAIL: ${{ steps.probe.outputs.fail }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Label bootstrap: create once, no-op afterwards (issues: write covers labels).
+          gh label create uptime --color d73a4a --description "MEH-2202 uptime probe" 2>/dev/null || true
+          title="uptime: mehamakor.co.il probe failing"
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          open=$(gh issue list --state open --label uptime --search "$title in:title" --json number --jq '.[0].number // empty')
+          closed=$(gh issue list --state closed --label uptime --search "$title in:title" --limit 1 --json number,body --jq '.[0] | "\(.number)\t\(.body | split("\n")[0])"' || true)
+
+          if [ "$FAIL" = "1" ]; then
+            if [ -n "$open" ]; then
+              gh issue comment "$open" --body "still failing at $now — $RUN_URL"
+            elif [ -n "$closed" ] && [ "${closed#*$'\t'}" = "first-failure-pending" ]; then
+              # second consecutive failure → reopen with the real body
+              n="${closed%%$'\t'*}"
+              gh issue edit "$n" --body "OUTAGE OPENED $now (two consecutive probe failures) — $RUN_URL"
+              gh issue reopen "$n"
+            else
+              # first failure: create closed, marked pending; the next tick decides
+              n=$(gh issue create --title "$title" --label uptime --body "first-failure-pending" | grep -oE '[0-9]+$')
+              gh issue close "$n" --comment "first failure at $now — waiting for the next tick before alerting ($RUN_URL)"
+            fi
+          else
+            if [ -n "$open" ]; then
+              gh issue close "$open" --comment "recovered at $now — $RUN_URL"
+            elif [ -n "$closed" ] && [ "${closed#*$'\t'}" = "first-failure-pending" ]; then
+              n="${closed%%$'\t'*}"
+              gh issue edit "$n" --body "single failure, recovered by the next tick at $now"
+            fi
+          fi
