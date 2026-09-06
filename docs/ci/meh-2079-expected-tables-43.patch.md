@@ -1,4 +1,17 @@
-# MEH-2079 chunk A — `EXPECTED_TABLES` 42 → 43 (one line, Sapir applies)
+# MEH-2079 chunk A — `EXPECTED_TABLES` 42 → 43
+
+> **✅ ALREADY APPLIED IN #3452 (merged 06/09, `07fdf697`) — there is nothing
+> left to do here.** Sapir ruled on 06/09 that the line falls under the
+> `GH_WORKFLOW_TOKEN` authority, so it was pushed into that PR's own branch
+> through the GitHub API rather than staged for her. `.github/workflows/
+> pr-checks.yml` on `staging` reads `EXPECTED_TABLES=43`. Applying the diff
+> below a second time would conflict.
+>
+> The rest of this file is kept as the record of WHY the bump was needed and
+> what it consisted of — not as a pending action. (Flagged by the adversarial
+> reviewer on #3452, twice, as reading like an open task; the fix was overtaken
+> by auto-merge there and lands with MEH-2282.)
+
 
 `.github/workflows/**` is CC-deny (MEH-671). The deny is a **local PreToolUse
 hook**, not a GitHub permission, so `GH_WORKFLOW_TOKEN` does not lift it: the
