@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { createTranslator } from "next-intl";
@@ -31,7 +31,14 @@ import { createTranslator } from "next-intl";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MESSAGES_DIR = path.join(HERE, "..", "messages");
-const LOCALES = ["he", "en"];
+// Derived from the directory, never listed: a hand-written locale list makes
+// the scan silently skip a locale added later, and the "coverage" assertion
+// below would still pass. Reading the directory means a new messages/*.json is
+// scanned the moment it lands (reviewer on the PR).
+const LOCALES = readdirSync(MESSAGES_DIR)
+  .filter((f) => f.endsWith(".json"))
+  .map((f) => path.basename(f, ".json"))
+  .sort();
 
 // A single-quoted placeholder: '{ident}'. Deliberately NOT matching `''{x}''`
 // — that is the escaped, correct form, and its inner text is `'{x}'` only if
@@ -113,10 +120,13 @@ describe("ICU quoted placeholders (MEH-2261)", () => {
     ).toEqual([]);
   });
 
-  // Derived, not stated: a count written by hand goes stale the moment a locale
-  // is added, and would read as coverage while measuring nothing.
+  // The control for the scan above: LOCALES is read off disk, so this asserts
+  // the directory listing actually produced something parseable rather than
+  // restating the constant. An empty MESSAGES_DIR would make every `it.each`
+  // case above vanish with the suite still green — that is the world this
+  // catches, and `en`/`he` are named because the app cannot ship without them.
   it("scans every locale file the app ships", () => {
-    expect(LOCALES.length).toBe(2);
+    expect(LOCALES).toEqual(expect.arrayContaining(["en", "he"]));
     for (const locale of LOCALES) {
       expect(() => scan(locale)).not.toThrow();
     }
