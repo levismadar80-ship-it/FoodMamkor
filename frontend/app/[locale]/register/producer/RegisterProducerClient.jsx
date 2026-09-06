@@ -94,7 +94,11 @@ const CROSS_STEP_REQUIRED = [
     step: STEP.DETAILS,
     focusId: "producer-city",
     messageKey: "city_required",
-    isMissing: (f) => !f.city,
+    // MEH-2241 chunk B: free-text towns are forbidden (MEH-213) and this is the
+    // layer that enforces it — a typed value CitySearch could not match (0
+    // suggestions, never picked) is as missing as an empty one. Copy stays
+    // `city_required` until Sapir rules on a dedicated string (rule 22).
+    isMissing: (f) => !f.city || !f.city_known,
   },
   {
     field: "category_ids",
@@ -134,6 +138,12 @@ const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
   city: "", address: "",
+  // MEH-2241 chunk B: CitySearch's verdict on `city` — true only when the value
+  // is a town the component can vouch for (picked from the list, or present in
+  // the static list ∪ the fetched results). Rides the draft (packDraft keeps
+  // it) so a restored, list-picked town is not re-challenged; never sent —
+  // the submit body enumerates its fields.
+  city_known: false,
   // MEH-1808: the coordinates AddressSearch hands back on select. Before this
   // they were dropped on the floor (:963-968 only wrote the address text) and
   // the submit body carried none, so EVERY business registering through the
@@ -547,6 +557,17 @@ function RegisterProducerPageBody() {
       return next;
     });
   };
+
+  // MEH-2241 chunk B: the async half of CitySearch's verdict — a /cities fetch
+  // that resolves after the keystroke can turn "unknown" into "known" (or the
+  // reverse) for the value still in the field. Only the flag moves; `city`
+  // itself is untouched, so nothing keyed on the value re-fires.
+  // Not memoised on purpose: setAndSave closes over the current `step` for the
+  // draft write, and a []-deps callback would pin the first render's step.
+  // CitySearch's effect re-runs per render but only calls back when the
+  // verdict actually flips, so the cost is a comparison, not a state write.
+  const handleCityKnownChange = (known) =>
+    setAndSave((prev) => (prev.city_known === known ? prev : { ...prev, city_known: known }));
 
   // MEH-1807 (Baymard inline-validation): the message goes away the moment the
   // field is touched, not at the next gate — an error that outlives its cause
@@ -1142,10 +1163,14 @@ function RegisterProducerPageBody() {
               label={t("auth.register.producer.fields.city_label")}
               placeholder={t("auth.register.producer.fields.city")}
               value={form.city}
-              onChange={(v) => {
+              onChange={(v, meta) => {
                 clearFieldError("city");
-                setAndSave((prev) => ({ ...prev, city: v }));
+                // MEH-2241 chunk B: the second argument is CitySearch's verdict
+                // at emit time (chunk A contract); a one-argument emit reads
+                // as unknown, which is the safe side of the MEH-213 rule.
+                setAndSave((prev) => ({ ...prev, city: v, city_known: Boolean(meta?.known) }));
               }}
+              onKnownChange={handleCityKnownChange}
               aria-invalid={fieldErrors.city ? "true" : undefined}
               aria-describedby={fieldErrors.city ? "register-city-error" : undefined}
             />

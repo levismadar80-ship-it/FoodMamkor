@@ -1925,6 +1925,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:10) — Cookie banner — כנסי בחלון פרטי — מופיע עם 2 כפתורים
 - ✅ → `frontend/e2e/flows/manual/legal.spec.ts` (MT:LEGAL:11) — "רק הכרחיים" — לחצי — banner נעלם, analytics לא נטען
 - [ ] Producer registration — נסי לשלוח בלי checkboxes — כפתור disabled (גם checkbox הרישיונות וגם checkbox תנאי השימוש חובה)
+- [ ] **עיר חופשית נחסמת (MEH-2241 chunk B)** — `/register/producer` שלב פרטים → הקלידי יישוב שלא מופיע בהצעות (למשל «עיירה שאינה ברשימה») בלי לבחור מהרשימה → «הבא» — **תוצאה מצופה:** נשארים בשלב, השדה מסומן אדום עם הודעת העיר, הפוקוס על השדה; בחירה מהרשימה מנקה ומתקדמת.
 - [ ] DirectoryDisclaimer — כנסי לדף יצרן — disclaimer מוצג מעל כפתור הדיווח
 - [ ] DirectoryDisclaimer — גללי את גריד "מהמטבח של השכן" — כל כרטיסייה מציגה את ה-disclaimer בתחתית
 

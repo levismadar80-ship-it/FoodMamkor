@@ -72,9 +72,26 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 // CitySearch stub — emits a string via onChange (MEH-853 contract), so the test
 // can set `city` without the real /cities fetch. Mirrors ModalFocusReturn:62.
+// MEH-2241 chunk B: the real component also emits `{ known }` (chunk A
+// contract) and the wizard now gates on it, so the stub carries the verdict:
+// every town is known EXCEPT the one sentinel below, which stands in for
+// "typed, 0 suggestions, never picked" — the case C the card measured.
+// Tests that fill "תל אביב" are therefore unaffected.
+const FREE_TEXT_TOWN = "עיירה שאינה ברשימה";
 vi.mock("@/components/CitySearch", () => ({
-  default: ({ value, onChange, id }) => (
-    <input data-testid="city" id={id} value={value || ""} onChange={(e) => onChange(e.target.value)} />
+  default: ({ value, onChange, onKnownChange, id, "aria-invalid": ariaInvalid }) => (
+    <input
+      data-testid="city"
+      id={id}
+      aria-invalid={ariaInvalid}
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value, { known: e.target.value !== "עיירה שאינה ברשימה" })}
+      // The async half: a test can flip the verdict for the current value
+      // without re-emitting it (the real component fires this after a late
+      // /cities response). Exposed as a button so no fetch is simulated.
+      data-has-known-change={onKnownChange ? "1" : "0"}
+      onBlur={() => onKnownChange && onKnownChange(true)}
+    />
   ),
 }));
 
@@ -1619,5 +1636,83 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
 
     expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
     expectScrolledToTop();
+  });
+});
+
+// ── MEH-2241 chunk B — «free-text city forbidden» (MEH-213) enforced at the
+// DETAILS→CATEGORY gate. Three states of the city field, per the 5-state rule:
+// empty / picked-from-list / typed-but-unknown. The first two are controls the
+// MEH-2015 chunk-B tests above already pin (empty blocks, "תל אביב" advances);
+// they are restated here so the three cells sit in one place.
+describe("MEH-2241 chunk B — a typed town CitySearch could not match is as missing as an empty one", () => {
+  async function reachDetailsFilledExceptCity() {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+  }
+
+  it("A — empty city still blocks the DETAILS advance (control)", async () => {
+    await reachDetailsFilledExceptCity();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+  });
+
+  it("B — a town CitySearch vouches for advances (control)", async () => {
+    await reachDetailsFilledExceptCity();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("C — a typed town with no match is refused at the field, focused, with the city message", async () => {
+    await reachDetailsFilledExceptCity();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: FREE_TEXT_TOWN } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    // did NOT advance
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    // the message is the city one, not a neighbour's
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+    const cityInput = screen.getByTestId("city");
+    expect(cityInput).toHaveAttribute("aria-invalid", "true");
+    expect(document.activeElement).toBe(cityInput);
+  });
+
+  it("C→B — the async verdict (onKnownChange) unblocks without a re-emit of the value", async () => {
+    await reachDetailsFilledExceptCity();
+    const cityInput = screen.getByTestId("city");
+    fireEvent.change(cityInput, { target: { value: FREE_TEXT_TOWN } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    // a late /cities response says the value IS a town after all
+    expect(cityInput).toHaveAttribute("data-has-known-change", "1");
+    fireEvent.blur(cityInput);
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("the flag never reaches the POST body", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // whatever the submit path sends, `city_known` is wizard state, not payload
+    api.post.mockResolvedValue({ data: {} });
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body).not.toHaveProperty("city_known");
+    expect(body.city).toBe("תל אביב");
   });
 });
