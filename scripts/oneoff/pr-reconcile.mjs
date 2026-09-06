@@ -66,13 +66,27 @@
  *     --dry-run            default — no Linear writes
  *     --write              post comments + move `done` rows to Done
  *     --issue MEH-N        filter (repeatable)
+ *     --exclude MEH-N      add a control card to the exclusion set (repeatable;
+ *                          MEH-2227 + MEH-2244 are always excluded)
+ *     --exclude-label X    add a label to the exclusion set (repeatable; the
+ *                          label `control` is always excluded)
  *     --json               table + a JSON block on stdout
  *     --team <name>        default Mehamakor
  *     --repo <owner/repo>  default levismadar80-ship-it/FoodMamkor
  *
+ * CONTROL CARDS
+ * -------------
+ * A card that steers the sweep (the drain lease MEH-2227, the reconcile card
+ * MEH-2244) carries PR attachments as evidence, not as its own work, so the
+ * classifier would file it `dod-unticked` and a `write` run would comment on
+ * the card that dispatched it. Those cards are excluded before classification:
+ * no row, no PR fetch, no comment, no move — and `--issue` cannot re-admit
+ * one. The stdout header lists what was excluded and why, so an empty table
+ * is never silent about it.
+ *
  * Node >= 20, ESM, zero dependencies (global fetch). Wiring for the weekly
- * schedule lives in docs/ci/meh-2244-reconcile.patch.md — .github/workflows/**
- * is CC-deny (MEH-671).
+ * schedule lives in .github/workflows/pr-reconcile.yml (applied 06/09 under
+ * Sapir's authorization; the staged copy is docs/ci/meh-2244-reconcile.patch.md).
  */
 
 import { createHash } from "node:crypto";
@@ -90,6 +104,18 @@ export const GITHUB_ENDPOINT = "https://api.github.com";
 export const PR_CLASSES = Object.freeze(["merged", "closed-unmerged", "open"]);
 export const ACTIONS = Object.freeze(["done", "dod-unticked", "superseded", "skip"]);
 export const ACTIONABLE = new Set(["done", "dod-unticked", "superseded"]);
+
+/**
+ * Control cards — never classified, never commented on, never moved, even
+ * when named with --issue. A control card (the drain lease MEH-2227, the
+ * reconcile card MEH-2244 itself) carries PR attachments as *evidence*, not as
+ * *its work*; a `write` run that reached it would post a "dod-unticked" comment
+ * on the card that is steering the sweep. Exclusion by Linear label `control`
+ * (case-insensitive) or by explicit identifier; both sets extend via
+ * --exclude-label / --exclude and can only grow, never shrink (rule 32).
+ */
+export const DEFAULT_EXCLUDED_LABELS = Object.freeze(["control"]);
+export const DEFAULT_EXCLUDED_IDS = Object.freeze(["MEH-2227", "MEH-2244"]);
 
 // ---------------------------------------------------------------------------
 // GraphQL documents — exported so a fake client can dispatch on identity.
@@ -112,6 +138,7 @@ query PrReconcileIssues($team: String!, $after: String) {
       title
       description
       state { id name type }
+      labels { nodes { name } }
       attachments { nodes { url title } }
     }
   }
@@ -154,6 +181,8 @@ export function parseArgs(argv = []) {
     team: DEFAULT_TEAM,
     repo: DEFAULT_REPO,
     issues: null, // Set<string> of identifiers, or null = no filter
+    excludeIds: new Set(DEFAULT_EXCLUDED_IDS),
+    excludeLabels: new Set(DEFAULT_EXCLUDED_LABELS),
   };
   const issues = [];
   for (let i = 0; i < argv.length; i += 1) {
@@ -173,6 +202,10 @@ export function parseArgs(argv = []) {
     else if (arg === "--repo") out.repo = next();
     else if (arg === "--issue") issues.push(next().toUpperCase());
     else if (arg.startsWith("--issue=")) issues.push(arg.slice(8).toUpperCase());
+    else if (arg === "--exclude") out.excludeIds.add(next().toUpperCase());
+    else if (arg.startsWith("--exclude=")) out.excludeIds.add(arg.slice(10).toUpperCase());
+    else if (arg === "--exclude-label") out.excludeLabels.add(next().toLowerCase());
+    else if (arg.startsWith("--exclude-label=")) out.excludeLabels.add(arg.slice(16).toLowerCase());
     else if (arg.startsWith("--team=")) out.team = arg.slice(7);
     else if (arg.startsWith("--repo=")) out.repo = arg.slice(7);
     else throw new Error(`unknown flag: ${arg}`);
@@ -180,6 +213,22 @@ export function parseArgs(argv = []) {
   if (issues.length > 0) out.issues = new Set(issues);
   out.dryRun = !out.write;
   return out;
+}
+
+/**
+ * Why a Linear issue is a control card, or false. Returns "id" for an explicit
+ * identifier match, "label:<name>" for a label match (the matched label, in the
+ * casing the flag/default used), so the stdout line says which rule fired.
+ */
+export function isExcluded(issue, args) {
+  const identifier = String((issue && issue.identifier) || "").toUpperCase();
+  if (identifier && args.excludeIds.has(identifier)) return "id";
+  const nodes = (issue && issue.labels && issue.labels.nodes) || (Array.isArray(issue && issue.labels) ? issue.labels : []);
+  for (const l of nodes) {
+    const name = String((l && l.name) || "").toLowerCase();
+    if (name && args.excludeLabels.has(name)) return `label:${name}`;
+  }
+  return false;
 }
 
 /** merged / closed-unmerged / open from a GitHub REST pull object. */
@@ -424,8 +473,15 @@ export async function run({ linear, github, argv = [], stdout = (s) => console.l
   const issues = await fetchAllIssues(linear, args.team);
   const prCache = new Map();
   const rows = [];
+  const excluded = [];
 
   for (const issue of issues) {
+    const why = isExcluded(issue, args);
+    if (why) {
+      // Control card: no row, no PR fetch, no comment, no move — --issue cannot re-admit it.
+      excluded.push({ identifier: issue.identifier, why });
+      continue;
+    }
     if (args.issues && !args.issues.has(String(issue.identifier || "").toUpperCase())) continue;
     const attachments = (issue.attachments && issue.attachments.nodes) || issue.attachments || [];
     const refs = extractPrRefs(attachments, args.repo);
@@ -487,6 +543,13 @@ export async function run({ linear, github, argv = [], stdout = (s) => console.l
   const table = renderTable(rows, { write: args.write });
   const mode = args.write ? "WRITE" : "DRY-RUN (no Linear writes)";
   stdout(`${SCRIPT_NAME} — team ${args.team} · repo ${args.repo} · ${mode} · ${rows.length} issue(s) with PR attachments`);
+  if (excluded.length > 0) {
+    const list = [...excluded]
+      .sort((a, b) => String(a.identifier).localeCompare(String(b.identifier)))
+      .map((e) => `${e.identifier} (${e.why})`)
+      .join(", ");
+    stdout(`excluded ${excluded.length} control card(s): ${list}`);
+  }
   stdout("");
   stdout(table);
   let json = null;
@@ -495,7 +558,7 @@ export async function run({ linear, github, argv = [], stdout = (s) => console.l
     stdout("");
     stdout(json);
   }
-  return { args, rows, table, json };
+  return { args, rows, excluded, table, json };
 }
 
 // ---------------------------------------------------------------------------
