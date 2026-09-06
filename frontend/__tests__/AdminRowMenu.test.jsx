@@ -9,11 +9,22 @@ import AdminRowMenu from "@/components/admin/AdminRowMenu";
 // OUTSIDE the component's own container, as a child of document.body.
 
 function renderMenu(items, extra = {}) {
-  return render(<AdminRowMenu ariaLabel="פעולות נוספות" items={items} {...extra} />);
+  return render(
+    <AdminRowMenu ariaLabel="פעולות נוספות" items={items} {...extra} />,
+  );
 }
 
-const promote = (onSelect = () => {}) => ({ key: "promote", label: "העלי לאדמין", onSelect });
-const demote = (onSelect = () => {}) => ({ key: "demote", label: "הסירי הרשאות", tone: "danger", onSelect });
+const promote = (onSelect = () => {}) => ({
+  key: "promote",
+  label: "העלי לאדמין",
+  onSelect,
+});
+const demote = (onSelect = () => {}) => ({
+  key: "demote",
+  label: "הסירי הרשאות",
+  tone: "danger",
+  onSelect,
+});
 
 describe("admin/AdminRowMenu", () => {
   it("renders nothing when items is empty (protected super-admin + self)", () => {
@@ -84,7 +95,15 @@ describe("admin/AdminRowMenu", () => {
   // click-guard instead of native disabled so busy items stay focusable (APG).
   it("renders a disabled item as aria-disabled, still focusable; click does not fire onSelect or close", () => {
     const onSelect = vi.fn();
-    renderMenu([{ key: "delete", label: "מחקו", tone: "danger", disabled: true, onSelect }]);
+    renderMenu([
+      {
+        key: "delete",
+        label: "מחקו",
+        tone: "danger",
+        disabled: true,
+        onSelect,
+      },
+    ]);
     fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
     const item = screen.getByRole("menuitem", { name: "מחקו" });
     expect(item).toHaveAttribute("aria-disabled", "true");
@@ -108,6 +127,113 @@ describe("admin/AdminRowMenu", () => {
     renderMenu([promote(), demote()]);
     fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
     expect(screen.getAllByRole("menuitem")).toHaveLength(2);
-    expect(screen.getByRole("menuitem", { name: "הסירי הרשאות" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "הסירי הרשאות" }),
+    ).toBeInTheDocument();
+  });
+
+  // ── MEH-2267 — WAI-ARIA APG menu-button keyboard contract ────────────────
+  //
+  // The panel is portaled to the END of <body> (MEH-1251), so before this the
+  // items sat after every other focusable node on the page: from the open
+  // trigger, one Tab landed on the NEXT table row's control. Every assertion
+  // below fails against the pre-MEH-2267 component — the "Shown-failing" run
+  // is in the PR body, and each case names the specific thing it discriminates.
+  describe("MEH-2267 — keyboard (APG menu button)", () => {
+    it("moves focus to the first item on open", () => {
+      renderMenu([promote(), demote()]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      // Old behaviour: focus stayed on the trigger and this was the trigger.
+      expect(document.activeElement).toBe(
+        screen.getByRole("menuitem", { name: "העלי לאדמין" }),
+      );
+    });
+
+    it("skips a busy (aria-disabled) first item, landing on the first choosable one", () => {
+      renderMenu([{ ...promote(), disabled: true }, demote()]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      expect(document.activeElement).toBe(
+        screen.getByRole("menuitem", { name: "הסירי הרשאות" }),
+      );
+    });
+
+    it("falls back to the first item when EVERY item is busy — focus is never dropped to <body>", () => {
+      renderMenu([
+        { ...promote(), disabled: true },
+        { ...demote(), disabled: true },
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement).toBe(
+        screen.getByRole("menuitem", { name: "העלי לאדמין" }),
+      );
+    });
+
+    it("ArrowDown/ArrowUp walk the items and wrap in both directions", () => {
+      renderMenu([promote(), demote()]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      const menu = screen.getByRole("menu");
+      const [first, second] = screen.getAllByRole("menuitem");
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(document.activeElement).toBe(second);
+      fireEvent.keyDown(menu, { key: "ArrowDown" }); // wraps forward
+      expect(document.activeElement).toBe(first);
+      fireEvent.keyDown(menu, { key: "ArrowUp" }); // wraps backward
+      expect(document.activeElement).toBe(second);
+      fireEvent.keyDown(menu, { key: "ArrowUp" });
+      expect(document.activeElement).toBe(first);
+    });
+
+    it("Arrow navigation does NOT skip an aria-disabled item (MEH-1027 Ch.B — busy items stay perceivable)", () => {
+      renderMenu([promote(), { ...demote(), disabled: true }]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowDown" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("menuitem", { name: "הסירי הרשאות" }),
+      );
+    });
+
+    it("Home and End jump to the ends", () => {
+      renderMenu([promote(), demote()]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      const menu = screen.getByRole("menu");
+      const [first, last] = screen.getAllByRole("menuitem");
+      fireEvent.keyDown(menu, { key: "End" });
+      expect(document.activeElement).toBe(last);
+      fireEvent.keyDown(menu, { key: "Home" });
+      expect(document.activeElement).toBe(first);
+    });
+
+    it("Tab closes the menu and returns focus to the trigger (APG — not a focus trap)", () => {
+      renderMenu([promote(), demote()]);
+      const trigger = screen.getByRole("button", { name: "פעולות נוספות" });
+      fireEvent.click(trigger);
+      fireEvent.keyDown(screen.getByRole("menu"), { key: "Tab" });
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    // An unhandled key must be inert: no focus move, no close, and no
+    // preventDefault (typing must still reach whatever else listens).
+    //
+    // This case replaced a prototype-pollution probe (`key: "toString"`) that
+    // did NOT discriminate: React normalises `e.key` through a plain-object
+    // lookup of its own, so a prototype-named key reaches the handler as a
+    // function and matches nothing — the assertion passed identically against a
+    // Map lookup and against the object lookup it existed to reject. Measured,
+    // then deleted rather than reformulated. See the note at MENU_NAV.
+    it("an unhandled key is inert — focus stays put and the menu stays open", () => {
+      renderMenu([promote(), demote()]);
+      fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+      const menu = screen.getByRole("menu");
+      const [, second] = screen.getAllByRole("menuitem");
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(document.activeElement).toBe(second); // control: arrows do work
+      fireEvent.keyDown(menu, { key: "PageDown" });
+      expect(document.activeElement).toBe(second);
+      fireEvent.keyDown(menu, { key: "a" });
+      expect(document.activeElement).toBe(second);
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+    });
   });
 });

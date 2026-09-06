@@ -10,14 +10,27 @@ import api from "@/lib/api";
  *
  * Props:
  *   - value (string)
- *   - onChange (fn(newValue))
+ *   - onChange (fn(newValue, { known })) — `known` is true when newValue is a
+ *     city the component can vouch for at emit time: picked from the list, or
+ *     present in the static list ∪ the results already fetched for it. Callers
+ *     that take one argument are unaffected (MEH-2241 chunk A).
+ *   - onKnownChange (fn(known)) — optional. The async half of the same answer:
+ *     fired when a fetch that resolves AFTER the emit changes whether the
+ *     current value is known. Deliberately NOT a second onChange with the same
+ *     value — at least one consumer resets its own derived state (a delivery
+ *     verdict) on every onChange call, so an equal-value re-emit would wipe a
+ *     result the user just asked for.
  *   - placeholder
  *   - label (always required for a11y; sr-only unless labelVisible)
  *   - labelVisible (boolean, default false) — when true the label renders
  *     visible above the field with the sibling recipe; MEH-1127
  *   - id (required for <label htmlFor>)
  *   - onSubmit (fn, called when user hits Enter)
- *   - useBackend (boolean) — if true, also merges results from GET /cities
+ *   - useBackend (boolean) — if true, queries GET /cities?q=<value> for the
+ *     current value (debounced, ≥2 chars) and merges the results with the
+ *     static list. MEH-2241 chunk A: the endpoint is a prefix search capped at
+ *     20 rows (cities.py MAX_RESULTS) since MEH-1343, so the old "fetch once
+ *     without q" only ever knew the first 20 names alphabetically.
  *   - aria-describedby / aria-invalid — forwarded verbatim to the <input>
  *     (MEH-2022: the callers render the city error message themselves; these
  *     let it be programmatically associated. Omitted -> absent, byte-identical
@@ -36,6 +49,16 @@ import api from "@/lib/api";
  * search-adornment the D1 gallery uses for its "יישוב" example — so no render
  * change here (a literal location-*pin* would misread on a city *search* field).
  */
+// MEH-2241 chunk A — the anonymous /cities rate limit is 60/min; the debounce
+// keeps a fast typist to a handful of requests per word, and the length floor
+// matches the dropdown's own "shows after 2 characters" rule below.
+const QUERY_DEBOUNCE_MS = 250;
+const MIN_QUERY_LENGTH = 2;
+// Sorted once at module load — the static list never changes, so the merge
+// below only re-sorts when fetched results actually join it.
+const STATIC_CITIES_SORTED = [...ISRAEL_CITIES].sort((a, b) => a.localeCompare(b, "he"));
+const NO_FETCHED = Object.freeze([]);
+
 export default function CitySearch({
   value,
   onChange,
@@ -44,6 +67,7 @@ export default function CitySearch({
   labelVisible = false,
   id,
   onSubmit,
+  onKnownChange,
   useBackend = true,
   className = "",
   // MEH-2015: same marker mechanism as ui/Input — aria-required on the input,
@@ -60,23 +84,73 @@ export default function CitySearch({
   const inputPlaceholder = placeholder ?? t("placeholder");
   const [isOpen, setIsOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
-  const [backendCities, setBackendCities] = useState([]);
+  // Results of the last resolved query, tagged with the prefix they answer
+  // (MEH-2241 chunk A). Tagging instead of clearing: results for "שד" are still
+  // valid candidates while the user extends to "שדות", and a shorter/unrelated
+  // value simply stops using them — no state write on every keystroke.
+  const [backend, setBackend] = useState({ q: "", cities: [] });
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  // Monotonic request id: a response is applied only if no newer query was
+  // issued after it — the debounce stops most stale requests from being sent,
+  // this stops the ones already in flight from landing out of order.
+  const requestSeq = useRef(0);
+  // What the last onChange said about the current value, so the async half
+  // (onKnownChange) fires only when the answer actually changes.
+  const lastKnown = useRef({ value: undefined, known: undefined });
 
-  // Load cities from backend once — de-dupes with the static list
   useEffect(() => {
     if (!useBackend) return;
-    api
-      .get("/cities")
-      .then((r) => setBackendCities(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setBackendCities([]));
-  }, [useBackend]);
+    const q = (value || "").trim();
+    if (q.length < MIN_QUERY_LENGTH) return;
+    const seq = ++requestSeq.current;
+    const timer = setTimeout(() => {
+      api
+        .get("/cities", { params: { q } })
+        .then((r) => {
+          if (seq !== requestSeq.current) return;
+          setBackend({ q, cities: Array.isArray(r.data) ? r.data : [] });
+        })
+        .catch(() => {
+          if (seq === requestSeq.current) setBackend({ q, cities: [] });
+        });
+    }, QUERY_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [value, useBackend]);
+
+  // Which fetched results still apply to the current value. Returns the same
+  // array reference while the prefix relation holds, so the merge below does
+  // not re-run on every keystroke.
+  const fetched = useMemo(() => {
+    const current = (value || "").trim();
+    return backend.q && current.startsWith(backend.q) ? backend.cities : NO_FETCHED;
+  }, [backend, value]);
 
   const allCities = useMemo(() => {
-    const set = new Set([...ISRAEL_CITIES, ...backendCities]);
+    if (fetched.length === 0) return STATIC_CITIES_SORTED;
+    const set = new Set([...STATIC_CITIES_SORTED, ...fetched]);
     return Array.from(set).sort((a, b) => a.localeCompare(b, "he"));
-  }, [backendCities]);
+  }, [fetched]);
+
+  const isKnown = (candidate) => allCities.includes((candidate || "").trim());
+
+  // Every emit goes through here so the second argument is never forgotten.
+  const emit = (next, known = isKnown(next)) => {
+    lastKnown.current = { value: next, known };
+    onChange(next, { known });
+  };
+
+  // The async half: a fetch that resolves after the emit may change the answer
+  // for the value the user still has in the field. Report that flip through
+  // onKnownChange, never through a second onChange (see the prop doc above).
+  useEffect(() => {
+    if (!onKnownChange) return;
+    if (lastKnown.current.value !== value) return;
+    const known = allCities.includes((value || "").trim());
+    if (known === lastKnown.current.known) return;
+    lastKnown.current = { value, known };
+    onKnownChange(known);
+  }, [allCities, value, onKnownChange]);
 
   const matches = useMemo(() => {
     const q = (value || "").trim();
@@ -110,7 +184,7 @@ export default function CitySearch({
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (matches[highlight]) {
-        onChange(matches[highlight]);
+        emit(matches[highlight], true);
         setIsOpen(false);
         onSubmit?.(matches[highlight]);
       } else if (onSubmit) {
@@ -122,7 +196,7 @@ export default function CitySearch({
   };
 
   const handleClear = () => {
-    onChange("");
+    emit("", false);
     inputRef.current?.focus();
   };
 
@@ -162,7 +236,7 @@ export default function CitySearch({
           aria-invalid={ariaInvalid}
           value={value || ""}
           onChange={(e) => {
-            onChange(e.target.value);
+            emit(e.target.value);
             setIsOpen(true);
             setHighlight(0);
           }}
@@ -233,7 +307,7 @@ export default function CitySearch({
               aria-selected={idx === highlight}
               onMouseDown={(e) => {
                 e.preventDefault();
-                onChange(city);
+                emit(city, true);
                 setIsOpen(false);
                 onSubmit?.(city);
               }}

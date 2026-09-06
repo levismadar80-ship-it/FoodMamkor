@@ -62,12 +62,46 @@ SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
 # DO NOT soften the rename message into "try a different name" — it must say
 # WHY the rename is refused (a licensing requirement) and WHERE it belongs
 # (a migration), or the admin retries in the UI and files a bug instead.
+#
+# The closing sentence says «הסמל» and not «האימוג'י» (Sapir, 06/09, rule 22):
+# MEH-2163 moves the category glyphs to a slug-keyed registry, so the word
+# "emoji" names an implementation that is on its way out. Same amendment, same
+# reason, as CATEGORY_SYSTEM_RENAME_ERROR_HE below. English twin in en.json:
+# "The symbol can still be updated."
 CATEGORY_LICENSE_RENAME_ERROR_HE = (
     "לקטגוריה הזאת יש דרישת רישיון של משרד הבריאות שמזוהה לפי השם. "
     "שינוי השם מבטל את הדרישה עבור בתי העסק בקטגוריה, ולכן הוא נעשה במיגרציה "
-    "ולא במסך הניהול. אפשר לעדכן את האימוג'י."
+    "ולא במסך הניהול. אפשר לעדכן את הסמל."
 )
 CATEGORY_NAME_TAKEN_ERROR_HE = "קטגוריה בשם זה כבר קיימת"
+
+# MEH-1456 chunk 2b — the seeded rows declare their own ownership
+# (`categories.is_system`, revision b7d3e5a9c1f4). Same shape as the licensing
+# guard above and for the same reason: a rename or a delete of a seed row is a
+# reviewed, reversible Alembic revision (the MEH-927 pattern), not a text field
+# in the admin panel. Industry precedent on the card §2.6 — Oracle Siebel
+# "Protect Seed Data", IBM RDU `WRITE_PROTECTED`: ownership is a column on the
+# row, never a hardcoded list in application code.
+#
+# No escape hatch in v1, deliberately. Siebel and IBM both ship one; here a
+# second authority over the same row is exactly what this closes, and the
+# sanctioned path already exists (a migration).
+#
+# Copy approved by Sapir 06/09 (rule 22), with one amendment she made on
+# approval: the closing sentence says «הסמל» and not «האימוג'י», because
+# MEH-2163 moves the category glyphs to a slug-keyed registry and the word
+# "emoji" goes stale the day that lands. English twin, approved with it:
+# "This is a system category — its name is set in code and changes only in a
+# migration, not in the admin screen. The symbol can still be updated."
+# Recorded here rather than as an en.json key because nothing reads such a
+# mirror (the MEH-1571 pair at the top of this block has one and it is dead).
+CATEGORY_SYSTEM_RENAME_ERROR_HE = (
+    "זו קטגוריית מערכת — השם שלה נקבע בקוד ומשתנה רק במיגרציה, "
+    "לא במסך הניהול. אפשר לעדכן את הסמל."
+)
+CATEGORY_SYSTEM_DELETE_ERROR_HE = (
+    "זו קטגוריית מערכת ואי אפשר למחוק אותה ממסך הניהול. הסרה נעשית במיגרציה."
+)
 
 
 # ============================================================
@@ -290,6 +324,14 @@ def update_category(
     # Emoji-only edits skip both guards — nothing about the licensing lookup or
     # the UNIQUE constraint depends on the emoji.
     if data.name != cat.name:
+        # MEH-1456 chunk 2b: ownership first. Every LICENSE_REQUIRED_CATEGORIES
+        # name is also a seeded row, so the licensing guard below would answer
+        # for both and tell an admin about a licensing requirement when the
+        # actual reason is that the row belongs to the seed. Specific before
+        # general — and an unlicensed seed row (most of the 18) reaches only
+        # this one.
+        if cat.is_system:
+            raise HTTPException(status_code=422, detail=CATEGORY_SYSTEM_RENAME_ERROR_HE)
         # Guard on the row's CURRENT name: that is the value the regulatory
         # lookup matches on today. Checking the INCOMING name instead would
         # invert the guard and let the bypass through.
@@ -323,6 +365,12 @@ def delete_category(
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
+    # MEH-1456 chunk 2b: a seeded row is not deletable from here even when the
+    # MEH-1297 count below is zero — an empty system category is still the
+    # taxonomy's, and removing it is a migration. Ordered first so the admin is
+    # told the real reason instead of "0 businesses are linked".
+    if cat.is_system:
+        raise HTTPException(status_code=422, detail=CATEGORY_SYSTEM_DELETE_ERROR_HE)
     # MEH-1297: block deleting a category still linked to producers — a silent
     # cascade would orphan those businesses (uncategorised → invisible).
     linked = (
