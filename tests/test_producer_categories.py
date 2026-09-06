@@ -173,6 +173,7 @@ class TestLicenseWithThreeCategories:
             "name": "יצרנית",
             "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "עסק שלישייה",
+            "terms_accepted": True,  # MEH-2080: mandatory on the schema
             "phone": "0501234567",
             # MEH-2015 chunk B: city is now required — added for the same
             # reason category_ids/phone are, so this local payload doesn't 422

@@ -22,6 +22,7 @@ VALID_CONSUMER_REG = {
     "email": "consumer301@test.com",
     "name": "שרה ישראלית",
     "password": "SecurePass123!",
+    "terms_accepted": True,  # MEH-2080
 }
 
 
