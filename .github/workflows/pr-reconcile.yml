@@ -25,6 +25,7 @@ on:
         default: ""
 
 permissions:
+  contents: read # checkout needs it — a workflow-level block sets every unlisted scope to none
   pull-requests: read
 
 concurrency:
