@@ -94,6 +94,31 @@ export default [
           message:
             "Raw Tailwind palette shade is not a Mehamakor token. Use a semantic token (text-error, bg-surface, border-border, text-fg-muted, text-muted). green-* IS a token and is exempt. If a raw shade is genuinely required, add // token-ok and eslint-disable-next-line.",
         },
+        {
+          // MEH-1767: a hand-rolled address/city text field has already caused
+          // two production bugs (MEH-1455 — a city typed by hand fell outside
+          // the map's city filter; MEH-1766 — an address typed by hand saved
+          // with no lat/lng, so the pin never appeared). Scoped to raw HTML
+          // `input`/`textarea` elements only (lowercase tag name) — a JSX
+          // component reference like `<CitySearch id="producer-city">` has an
+          // uppercase element name and never matches, so every existing
+          // canonical-component call site is naturally excluded, with nothing
+          // to allowlist (verified against the live codebase: every current
+          // id="…-city"/"…-address" literal in app/**+components/** sits on a
+          // <CitySearch>/<AddressSearch> instance, not a raw <input> — 0
+          // baseline violations, 2026-08-13). Matches a LITERAL
+          // id/name/placeholder/aria-label only: a value built from a
+          // variable or an i18n key (`placeholder={t("city")}`) is invisible
+          // to this selector, same gap MEH-1618's no-literal-string already
+          // has — stated here rather than implied. Hebrew keywords use plain
+          // substring match, not \b: JS regex word-boundaries are ASCII-\w
+          // based and do not fire around Hebrew letters, so \bעיר\b would
+          // silently never match at all.
+          selector:
+            "JSXOpeningElement[name.name=/^(input|textarea)$/] > JSXAttribute[name.name=/^(id|name|placeholder|aria-label)$/] > Literal[value=/\\b(city|address)\\b|עיר|כתובת/i]",
+          message:
+            "Hand-rolled address/city field — use the canonical <AddressSearch> or <CitySearch> component (MEH-1455, MEH-1766: this exact pattern shipped two bugs — a city that silently fell out of the map filter, an address saved with no lat/lng). Legitimate exception (e.g. an admin raw-coordinates escape hatch)? Add // address-field-ok and eslint-disable-next-line.",
+        },
       ],
     },
   },
