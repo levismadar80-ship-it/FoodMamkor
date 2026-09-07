@@ -75,7 +75,7 @@ from app.services.license_validation import (
     ensure_license_for_categories,
 )
 from app.services.analytics import israel_day_of, unique_views_count
-from app.services.analytics_rollup import rolled_up_sum, rollup_watermark
+from app.services.analytics_rollup import rollup_snapshot
 from app.services.trust_tier import VALID_BADGE_CODES
 
 log = logging.getLogger(__name__)
@@ -1187,7 +1187,7 @@ def _count_in_window(
     from the hash itself (a secret rotation resets uniques; acceptable, rare).
 
     MEH-2283: with ``window.rollup_col`` set AND no day window, the aggregate
-    owns every Israel day up to `rollup_watermark()` and the raw table is read
+    owns every Israel day up to the watermark and the raw table is read
     only ABOVE it — `Σ aggregate.col + deduped raw WHERE israel_day > watermark`.
     The raw side never reads a day the aggregate has, so once chunk C purges
     those raw rows the number does not move. Same day grain as the job (the
@@ -1210,10 +1210,12 @@ def _count_in_window(
         cutoff = datetime.utcnow() - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
     elif window.rollup_col is not None:
-        watermark = rollup_watermark(db)
+        # One statement for both halves — a roll-up committing between a
+        # separate watermark read and the sum double-counts the rolled day
+        # for the request that straddles it (see rollup_snapshot's docstring).
+        watermark, rolled_up = rollup_snapshot(db, producer_id, window.rollup_col)
         if watermark is not None:
             q = q.filter(israel_day_of(time_col) > watermark)
-            rolled_up = rolled_up_sum(db, producer_id, window.rollup_col)
     if window.extra_filter is not None:
         q = q.filter(window.extra_filter)
     return int(q.scalar() or 0) + rolled_up

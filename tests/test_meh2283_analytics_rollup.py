@@ -368,6 +368,54 @@ def test_the_raw_side_never_reads_a_day_the_aggregate_has(client, db):
     assert _totals(client, user)[0] == 2, "D[2] is the aggregate's; only D[0] is raw"
 
 
+def test_a_roll_up_landing_mid_request_cannot_double_count(client, db):
+    """Adversarial reviewer on #3486: the watermark and the aggregate sum must
+    come from ONE snapshot. Injected deterministically rather than raced: an
+    engine-level `after_cursor_execute` listener commits a roll-up (on its own
+    session) right after the request's FIRST statement that touches the
+    aggregate table, i.e. exactly between "read the watermark" and "sum the
+    aggregate" in the two-statement shape.
+
+    Two-statement shape (the old seam): watermark = D[3] captured, roll-up
+    lands D[2], the sum then includes D[2] and the raw filter (`> D[3]`)
+    includes D[2] too -> 4. One-statement shape: (D[3], 1) captured together,
+    the raw side covers D[2] and D[0] -> 3. Only the 3 is right."""
+    from sqlalchemy import event
+
+    from app.database import SessionLocal, engine
+
+    p, user = _owner(db, "race@test.com")
+    _view(db, p.id, "a" * 64, D[3])
+    db.commit()
+    run_rollup(db, today=ANCHOR)  # watermark = D[3]
+    _view(db, p.id, "b" * 64, D[2])  # pending — the day the injected roll-up rolls
+    _view(db, p.id, "c" * 64, D[0])  # today, always raw
+    db.commit()
+
+    fired = {"count": 0}
+
+    def _land_a_roll_up(conn, cursor, statement, parameters, context, executemany):
+        if "producer_analytics_daily" not in statement or fired["count"]:
+            return
+        fired["count"] += 1  # once, and never from inside the roll-up itself
+        other = SessionLocal()
+        try:
+            assert run_rollup(other, today=ANCHOR).days_rolled >= 1
+        finally:
+            other.close()
+
+    event.listen(engine, "after_cursor_execute", _land_a_roll_up)
+    try:
+        total = _totals(client, user)[0]
+    finally:
+        event.remove(engine, "after_cursor_execute", _land_a_roll_up)
+
+    # CONTROL: the injection actually happened, and it did roll D[2].
+    assert fired["count"] == 1
+    assert rollup_watermark(db) == D[2]
+    assert total == 3, "D[2] must be counted once — by whichever side owns it"
+
+
 def test_the_day_windows_stay_raw_only(client, db):
     """Ruled raw-only for now. Pinned so the ≥30-day retention condition
     recorded on the card is a real precondition, not a forgotten one: if
