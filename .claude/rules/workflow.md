@@ -1673,15 +1673,31 @@ Tasks auto-expire after 7 days.
     (measured — MEH-1523 §7), so the label is not a lock either; what changes is
     that violating rule 30 becomes visible instead of invisible.
 
-    **Staged, not yet applied** — the gate lives in `.github/workflows/**`
-    (CC-deny, MEH-671):
-    [`docs/ci/meh-1523-dnm-label-gate.patch.md`](../../docs/ci/meh-1523-dnm-label-gate.patch.md).
-    It supersedes `dnm-gate-regex.patch.md` (MEH-1922), which narrowed the same
-    regex and kept text scanning — apply one, not both. Until it is applied the
-    live gate still scans text, so **prose containing the words still reds a
-    required check**: phrase it as "the marker" in a PR body, as MEH-1523's own
-    constraints block instructs. `scripts/checks/dnm-matcher-guard.sh` pins all
-    three states and flips tables automatically.
+    **✅ APPLIED — the gate is LIVE on `staging` and reads LABELS ONLY.**
+    `.github/workflows/pr-checks.yml:72`, job `do-not-merge-gate`, step *"Fail if
+    the PR carries the marker label (MEH-1523)"*: its only input is
+    `github.event.pull_request.labels.*.name`. It reads no title, no body, no
+    commit message — and `scripts/checks/dnm-matcher-guard.sh` fails if either
+    old text-scanning env var reappears in that job. MEH-1523 closed 04/09.
+
+    _(This paragraph read **"Staged, not yet applied — the gate lives in
+    `.github/workflows/**` (CC-deny, MEH-671)… Until it is applied the live gate
+    still scans text, so prose containing the words still reds a required
+    check."** Every clause of that is now false, and the correction is not
+    cosmetic — **a reader who trusted it would take the wrong action.** Measured
+    07/09: PR #3307 was found with `labels: []` on work Sapir had gated. Reading
+    this file, the conclusion is "the label gate isn't live, so a label is
+    decorative" → restore nothing, or merge. Reading `pr-checks.yml:72`, the
+    conclusion is "a label reds `CI gate (required)`" → restore the label, which
+    is what happened. Same class as §7.3's dead citations that hid MEH-1519 for
+    six weeks, one step worse: those made a live card look blocked, this one
+    made a live gate look absent.)_
+
+    **Consequence for how you write a PR body: prose is now free.** The old
+    warning to phrase it as "the marker" was for the text-scanning gate that no
+    longer exists. Writing the words in a body no longer reds anything — only
+    the label does. `dnm-gate-regex.patch.md` (MEH-1922) narrowed the same regex
+    and is **superseded, not pending**; do not apply it.
 
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
