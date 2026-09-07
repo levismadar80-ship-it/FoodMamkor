@@ -143,7 +143,7 @@ def rollup_snapshot(db: Session, producer_id, column) -> tuple[date | None, int]
             ProducerAnalyticsDaily.producer_id == producer_id
         )
     ).one()
-    return watermark, int(total or 0)
+    return watermark, int(total)  # COALESCE(…, 0) in SQL — never None
 
 
 def _earliest_raw_day(db: Session) -> date | None:
