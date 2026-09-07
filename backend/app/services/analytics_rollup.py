@@ -144,15 +144,21 @@ def rollup_snapshot(db: Session, producer_id, column) -> tuple[date | None, int]
 
 def _earliest_raw_day(db: Session) -> date | None:
     """The oldest Israel day with any raw row, across both raw tables — the
-    starting point of the very first run, before a watermark exists."""
-    views = db.execute(
-        select(func.min(israel_day_of(ProducerPageView.created_at)))
-    ).scalar()
-    clicks = db.execute(
-        select(func.min(israel_day_of(ProducerWhatsAppClick.clicked_at)))
-    ).scalar()
-    candidates = [d for d in (views, clicks) if d is not None]
-    return min(candidates) if candidates else None
+    starting point of the very first run, before a watermark exists.
+
+    ONE statement (reviewer on #3486): `LEAST` of the two MINs. Postgres'
+    LEAST skips NULLs, so an empty table on either side yields the other
+    side's day, and NULL only when both are empty — the same semantics as
+    a Python min over the non-None candidates, without the second round
+    trip and without two snapshots for one fact.
+    """
+    views = select(
+        func.min(israel_day_of(ProducerPageView.created_at))
+    ).scalar_subquery()
+    clicks = select(
+        func.min(israel_day_of(ProducerWhatsAppClick.clicked_at))
+    ).scalar_subquery()
+    return db.execute(select(func.least(views, clicks))).scalar()
 
 
 def pending_days(db: Session, *, today: date | None = None) -> list[date]:

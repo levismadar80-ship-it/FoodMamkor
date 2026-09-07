@@ -224,6 +224,26 @@ def test_the_range_is_watermark_plus_one_to_yesterday(db):
     assert (empty.days_rolled, empty.first_day) == (0, None)
 
 
+def test_the_first_run_starts_at_the_earliest_raw_day_of_either_table(db):
+    """`_earliest_raw_day` is one LEAST over both raw tables (reviewer on
+    #3486). Three shapes, each pinning one arm: clicks strictly EARLIER than
+    views (LEAST must pick the click side), clicks only (the views MIN is
+    NULL and must not poison the result), and nothing at all (None)."""
+    p = make_producer(db, name="ראשון")
+    _click(db, p.id, D[6])
+    _view(db, p.id, "a" * 64, D[2])
+    db.commit()
+    assert pending_days(db, today=ANCHOR)[0] == D[6]
+
+    db.query(ProducerPageView).delete()
+    db.commit()
+    assert pending_days(db, today=ANCHOR)[0] == D[6], "clicks-only must still start"
+
+    db.query(ProducerWhatsAppClick).delete()
+    db.commit()
+    assert pending_days(db, today=ANCHOR) == []
+
+
 def test_backfill_refuses_a_hole_and_a_range_past_retention(db):
     p = make_producer(db, name="גבולות")
     _view(db, p.id, "a" * 64, D[3])
