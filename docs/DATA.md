@@ -478,6 +478,27 @@ producer_whatsapp_clicks (
   city varchar(60) NULL
 )
 
+-- MEH-2079: the ANONYMOUS daily roll-up of the two raw tables above — one
+-- row per (business, Israel calendar day), kept forever so the raw rows can
+-- be purged (chunk C, 90 days) without the owner's dashboard numbers moving.
+-- No viewer identifiers of any kind (that is its licence to be unbounded).
+-- Written ONLY by services/analytics_rollup.py (daily 01:30 UTC via the
+-- startup.py scheduler, or `scripts/rollup_analytics.py --from/--to`) with
+-- INSERT … ON CONFLICT DO NOTHING: a rolled-up day is immutable, never
+-- re-rolled (MEH-2283). Read ONLY by the `total` arm of
+-- GET /producers/me/analytics: Σ aggregate + deduped raw rows whose Israel
+-- day is ABOVE max(day) — the raw side never reads a day the aggregate owns.
+-- The `last_7d` / `last_30d` arms stay raw-only.
+producer_analytics_daily (
+  id uuid PK DEFAULT gen_random_uuid(),   -- MEH-2282: the DB mints it (raw INSERT path)
+  producer_id FK producers.id ON DELETE CASCADE (indexed),
+  day date (indexed),                     -- Israel calendar day, same grain as the dedupe
+  views_unique int NOT NULL DEFAULT 0,    -- unique_views_count() per day, NOT raw rows
+  views_search_unique int NOT NULL DEFAULT 0,  -- same, referrer='search' only
+  whatsapp_clicks int NOT NULL DEFAULT 0,
+  UNIQUE (producer_id, day)               -- uq_producer_analytics_daily_producer_day
+)
+
 -- MEH-1677: the business's opt-out for the coverage-request CTA (MEH-1675).
 -- server_default true (not a Python-side default) so existing rows are
 -- backfilled by the DDL and a writer bypassing the ORM still gets true.
