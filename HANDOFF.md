@@ -3,6 +3,20 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-07 בוקר — ‏STEP RELEASE §5: רילז `staging → main` (‏PR #3494 → `8e69ff1e`) · אומת 6/6 · ‏v1.0.0 לא נדחף (residual)
+
+**‏שורה אחת:** ‏LEASE נלקח 07:40Z (ה-heartbeat של כט' היה בן ~10.5 שעות מול TTL של 45 דק'), שוחרר 07:52Z עם ה-PR פתוח, ונלקח שוב 09:12Z לצורך ה-carry. ‏PR #3494 הוכן עם preflight 6/6 ומוזג ע"י ספיר 08:31:30Z **כ-merge commit** (שני הורים `223c6d9e` + `d9f7d8dc`) — 56 קומיטים ב-first-parent, 188 קבצים, 3 מיגרציות expand-only. פרודקשן בוט 08:32:49Z על `8e69ff1e` עם `alembic_head = 0396917da2ea`. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 בוקר — STEP RELEASE §5».
+
+**‏שלושה מכשירים שהחזירו תשובה שגויה ובטוחה, ותוקנו לפני שנכתבו לשום מקום:**
+
+1. **‏ה-probe של staging.** קריאה ראשונה החזירה 307 על **כל** נתיב, כולל הבקרה — ולכן לא הוכיחה כלום ונזרקה במקום להידווח כתקלה. עם bypass headers ובלי מעקב אחרי הפניות: 200 על כל ניתוב, אפס redirects, בלי `location`. ה-`location:` על ה-302 הוא `vercel.com/sso-api` — הגנת פלטפורמה, לא באג באפליקציה. `163/163` → **`12/163`, אפס אזעקות aggregate, 16 ניתובים ב-2xx**.
+2. **‏parser של `alembic heads`.** גרסה שקוראת רק `down_revision` סקלרי מדווחת **9 ראשים ו-5 שורשים** על אותם 76 קבצים; ארבע revisions מסוג `merge_*_heads` נושאות 2-tuple. הבקרה מוכיחה את ההבחנה ישירות (תמים → שגוי, מתוקן → נכון) ומעוגנת בקבצים אמיתיים מהריפו, לא ב-fixtures.
+3. **‏grep של משתני סביבה.** תבנית מחמירה החזירה **אפס** — התשובה המרגיעה. הרצה חוזרת עם התבנית שכבר ידוע שהיא מוצאת: אותם 4 מפתחות. האפס היה ה-probe, לא הטווח.
+
+**‏מה שהתקבל כאדום לא-חוסם (הכרעת ספיר 07/09):** ‏`parity.spec.ts:916` (`about` desktop) — אדום **בכוונה** ע"י #3428 בתוך הטווח, ‏baseline של VRT בלי משטח משתמש, residual פתוח של MEH-1514. ‏`37-outreach-prefill:285` — זהה בית-בבית בין הרפרנסים, כלומר כבר אדום על `main`; הרילז לא גורם ולא מתקן. **‏MEH-2269 לא נפתח מחדש** — כרטיס חדש MEH-2284 (‏Backlog, Medium) נושא את השארית, כולל שהכשל התפשט ל-desktop ב-`642ee9ba`, מה שההסבר המקורי שלל.
+
+**‏הבא (NEXT):** ‏(1) **ספיר: `v1.0.0`** — `git tag -a v1.0.0 8e69ff1ec1fa7cef24714a035e38a5ca4a133f09 -m "release: v1.0.0"` ואז דחיפת ה-tag. ‏CC חסומה משני הכיוונים, נמדד: `.claude/hooks/check-branch-name.sh` אינו פוטר `refs/tags/` (‏false positive — ה-header של ההוק עצמו אומר שהוא לא נוגע ב-tags), וה-API של git-data חסום בפרוקסי. תיקון עם self-test של 6 מקרים ב-[`docs/ci/meh-2285-tag-push-hook.patch.md`](./docs/ci/meh-2285-tag-push-hook.patch.md) · (2) ‏MEH-2284 טריאז' · (3) ה-job הלילי `meh_2283_analytics_rollup_daily` (01:30 UTC) פעיל בפרודקשן אבל **לא נבדק מול דאטה אמיתית** — הקטלוג ריק, ולכן הריצה הראשונה מגלגלת אפס; זו התנהגות נכונה, לא תקלה, אבל היא אומרת שהאימות האמיתי נדחה לרגע שבו יש קטלוג · (4) ‏drain הבא מתחיל מ-STEP 0 בכרטיס.
+
 ## 2026-09-06 ערב — drain כט' (session `01SU9y6p…`, 18:50Z → ~19:45Z): ADDENDUM-11 — סגירת backlog מלאה · T0 על 125 כרטיסים · 7 Done · 4 Canceled · 7 PRs · 12 parked · LEASE: none
 
 **‏שורה אחת:** ‏T0 (11 סוכני קריאה, 300 PRs מול staging) סיווג 125 כרטיסים — א 3 · ב 45 · ג 5 · ד 72. נסגרו Done: 1166 · 1868 · 1287 · 1980 · 2266 · 1244 · 2240; Canceled: 640 · 1835 · 174 · 781; 581 צומצם. מוזגו squash (parent אחד, אומת): #3423 `ba10e40d` · #3475 `aa458f59` · #3476 `a2617a8c` · #3477 `1454899d` · #3478 `8f5c6e6f` · #3474 `385713ba`; #3479 (2168) פתוח בסוף החלון. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «06/09 ערב — drain כט'».
