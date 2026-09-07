@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 🚨 Runbook — התראת uptime (MEH-2202)
+
+**כשמגיעה התראה על issue חדש בכותרת `uptime: mehamakor.co.il probe failing` — לבדוק Railway logs לפני כל דבר אחר.**
+
+| שלב | מה |
+| -- | -- |
+| 1 | ‏Railway → השירות → **Logs**. ‏boot loop / traceback / `alembic` תקוע = התשובה, ואין טעם לחפש במקום אחר |
+| 2 | ‏`https://mehamakor.co.il/api/health/readiness` — `ready` מול `db_init_failed`. ‏readiness בודק DB, liveness לא |
+| 3 | ‏Vercel → Deployments — רק אם `/` נפל וה-readiness דווקא ירוק (אז זה ה-frontend, לא ה-backend) |
+| 4 | ‏ה-issue **נסגר מעצמו** בריצה הראשונה ששני ה-probes חוזרים 200. אין מה לסגור ביד |
+
+**המנגנון:** `.github/workflows/uptime.yml` — GitHub-hosted runner, cron כל 10 דק', **שני** probes (`/` ו-`/api/health/readiness`). issue נפתח רק אחרי **שני כשלים רצופים**, כדי ששיהוק בודד לא יצלצל. בלי חשבון חיצוני, בלי כסף, בלי secret. ההתראה מגיעה דרך **Repo → Watch → Custom → Issues** — בלי ההגדרה הזו ה-issue נפתח לחדר ריק.
+
 ## 2026-09-07 בוקר — ‏MEH-2210 נסגר: הראיה @375 נחתה (#3500) וכל חמשת ה-PRs מגובים ביומן
 
 **‏שורה אחת:** ‏#3500 `036b8032` (squash מאומת) הוסיף `frontend/qa-meh2210-rejected-banner.mjs` ושבעה `.webp` ב-375px — שורת ה-DoD האחרונה. הכרטיס מגובה כאן במלואו לראשונה: עד היום רק chunk A היה ביומן (#3372), ו-HANDOFF שורה 321 עדיין אמרה ש-#3336/#3343 «פתוחים». פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — MEH-2210, הכרטיס כולו».
