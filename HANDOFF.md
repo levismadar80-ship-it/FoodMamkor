@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-07 — SWEEP-2: הלוח הפתוח כולו (117), ושלושה כרטיסים ששוחררו מחסם שכבר נפל
+
+**‏שורה אחת:** ‏**MEH-2062 · MEH-2202 · MEH-1767 נסגרו** — שלושתם Backlog, שלושתם עם עבודה שנחתה ועם החסם האחרון שהתפוגג, ואף אחת לא חזרה לסגור. השורש: `Refs` במקום `Closes` הוא **הכרעה נכונה** (הכרטיס לא נסגר לפני שהשארית נסגרת) שחסר לה **צעד חזרה**. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — SWEEP-2».
+
+**‏מה שסשן חדש צריך לקחת מכאן — שתי טעויות מדידה בחלון אחד, שתיהן «המכשיר, לא העולם»:**
+
+1. **‏`eslint --format unix` אינו קיים** ב-ESLint המודרני. הוא מדפיס הודעת התקנה, יוצא **0**, ו-`grep -c` מחזיר **0** — כלומר בדיוק התשובה שרוצים לראות. תפסה אותו בקרת המכשיר, לא קריאה חוזרת.
+2. **‏`git log --format='%b'` מפצל גוף רב-שורתי על פני שורות.** ספירת שורות במקום קומיטים ייצרה «57 כרטיסים עם עבודה שנחתה»; בנייה מחדש עם מפריד `NUL` נתנה **0**. **קורפוס שנבנה לא-נכון נותן מספר סמכותי לחלוטין.**
+
+**‏השיטה, לפרוטוקול:** 117 כרטיסים פתוחים נמנו **בחלון אחד** (`hasNextPage: false`); הסינון ל-66 הלא-נסרקים נעשה לפי `updatedAt >= 06/09` (טביעת סוויפ 2244); ואז חיפוש **לפי הדבר עצמו ולא לפי המזהה** — pin של תלות, עמודה ב-models, endpoint, מחרוזת he.json — כי PR שנחת תחת `Refs` לא מופיע בחיפוש id. **13 מתוך 13 אישרו שהעבודה לא נחתה.**
+
+**‏שארית ספיר שנותרה:** ניסוח מחדש של שורת ה-`grep = 1` ב-MEH-2192 (ובאותה נשימה: ה-`description` של ה-Organization הוא `SITE_DESCRIPTION` ולא ה-CANONICAL_SENTENCE — שני משפטי מותג משודרים) · מעבר נייד ל-MEH-2210 (חריגה (b) של כלל 23) · ההגדרה ב-Linear «auto-close parent issues» (כלל 36).
+
 ## 🚨 Runbook — התראת uptime (MEH-2202)
 
 **כשמגיעה התראה על issue חדש בכותרת `uptime: mehamakor.co.il probe failing` — לבדוק Railway logs לפני כל דבר אחר.**
