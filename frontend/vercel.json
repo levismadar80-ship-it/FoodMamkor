@@ -5,6 +5,15 @@
     "fra1"
   ],
   "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in staging|main) exit 1 ;; esac; case \"$VERCEL_GIT_COMMIT_MESSAGE\" in *\"[preview]\"*) exit 1 ;; *) echo \"skip: previews off unless [preview] in commit msg (MEH-1044/MEH-1378)\"; exit 0 ;; esac",
+  "git": {
+    "deploymentEnabled": {
+      "staging": true,
+      "main": true,
+      "feature/*": false,
+      "dependabot/*": false,
+      "vrt-regen/*": false
+    }
+  },
   "github": {
     "autoJobCancelation": true
   }

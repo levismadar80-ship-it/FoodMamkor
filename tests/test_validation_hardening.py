@@ -18,7 +18,7 @@ from tests.conftest import (
 def test_register_rejects_short_password(client):
     r = client.post(
         "/auth/register",
-        json={"email": "short@test.com", "name": "Short", "password": "1234567"},
+        json={"terms_accepted": True, "email": "short@test.com", "name": "Short", "password": "1234567"},
     )
     assert r.status_code == 422
     # Error must name the password field so the frontend can surface it
@@ -28,7 +28,7 @@ def test_register_rejects_short_password(client):
 def test_register_accepts_valid_password(client):
     r = client.post(
         "/auth/register",
-        json={"email": "ok@test.com", "name": "OK", "password": "SecurePass123!"},
+        json={"terms_accepted": True, "email": "ok@test.com", "name": "OK", "password": "SecurePass123!"},
     )
     assert r.status_code == 200
 
@@ -228,6 +228,11 @@ def test_producer_register_validated_field_count():
        finding that `Field(..., min_length=1)` alone accepts a whitespace-only
        city. 13 + 1 = 14.
 
+    4. MEH-2080 made `terms_accepted` mandatory-and-True via
+       `_terms_accepted_required` (the single checkbox now carries the 18+
+       self-declaration, so an omitted or False flag is a schema 422). 14 + 1
+       = 15.
+
     Bumping the constant is only legitimate BECAUSE a field was added to the
     validated set; it must never be bumped to chase a red test.
 
@@ -240,7 +245,8 @@ def test_producer_register_validated_field_count():
     assert "producer_name" in fields, sorted(fields)
     assert "name" in fields, sorted(fields)
     assert "city" in fields, sorted(fields)
-    assert len(fields) == 14, sorted(fields)
+    assert "terms_accepted" in fields, sorted(fields)
+    assert len(fields) == 15, sorted(fields)
 
 
 def test_producer_name_is_validated_by_type_not_decorator():

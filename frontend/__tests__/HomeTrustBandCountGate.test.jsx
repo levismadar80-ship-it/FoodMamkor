@@ -50,6 +50,14 @@ vi.mock("@/app/[locale]/home/HomeStaticBlocks", () => ({
 }));
 vi.mock("@/app/[locale]/home/HomeCategoryGrid", () => ({ HomeCategoryGrid: () => null }));
 vi.mock("@/app/[locale]/home/HomeProducersGrid", () => ({ HomeProducersGrid: () => null }));
+// MEH-1287 chunk B added a child to HomeClient. It is stubbed for the same
+// reason as every sibling above and NOT because it is inconvenient: this suite
+// mounts the real HomeClient to pin the trust band, and an unstubbed
+// HomeSeasonalNow pulls the real ProducerCard into the module graph, whose
+// next-intl navigation import does not resolve under vitest's ESM loader
+// ("Cannot find module .../next/navigation"). The suite then fails to LOAD —
+// zero tests run, and the red says nothing about the trust band.
+vi.mock("@/app/[locale]/home/HomeSeasonalNow", () => ({ default: () => null }));
 vi.mock("@/lib/seo", () => ({ buildHomeJsonLd: () => ({}), serializeJsonLd: () => "{}" }));
 
 // HomeHero is NOT mocked to null — it renders home.hero.subtitle, which the

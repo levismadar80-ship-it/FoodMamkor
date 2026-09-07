@@ -321,7 +321,6 @@ test.describe("business-name card", () => {
   // (page.js:202-231) carries no `businessName`, so the resolver returns early and
   // the hub stays on screen. Correct behaviour asserted; expected to fail until fixed.
   test("#business-name opens the card through the profile group", async ({ page }) => {
-    test.fail(true, "MEH-2262 — `businessName` is missing from KEY_TO_GROUP, so #business-name never resolves");
     await stubEdit(page);
     await page.goto("/producer/dashboard/edit#business-name");
     await expect(card(page, "business-name")).toBeVisible({ timeout: 15_000 });

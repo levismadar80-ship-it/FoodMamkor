@@ -466,6 +466,7 @@ def valid_user_register_payload() -> dict:
         "email": "valid@example.com",
         "name": "משתמשת בדיקה",
         "password": "Zx7Yp9Mq2Lr4",
+        "terms_accepted": True,  # MEH-2080: mandatory on the consumer path too
     }
 
 
@@ -508,6 +509,9 @@ def valid_producer_register_payload() -> dict:
         # MEH-759 (ADR-022 gate 2): binding declaration is mandatory for a
         # successful registration; the handler 422s when falsy.
         "declaration_accepted": True,
+        # MEH-2080: the terms checkbox is mandatory on both producer paths; a
+        # schema-valid payload must carry it (workflow.md regression rule 6).
+        "terms_accepted": True,
     }
 
 

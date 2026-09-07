@@ -242,6 +242,13 @@ EXEMPT_TABLES = {
     "producer_page_views": "analytics — runtime telemetry, item 10 (out of scope)",
     "producer_contact_clicks": "analytics — runtime telemetry, item 10 (out of scope)",
     "producer_whatsapp_clicks": "analytics — runtime telemetry, item 10 (out of scope)",
+    # MEH-2079 chunk A — the daily roll-up of the two tables above. Exempt for
+    # the same reason they are, and for one more: chunk A creates it with NO
+    # writer, so the only way a row could exist is if the demo seed fabricated
+    # one. That would assert traffic a demo business never received, on a
+    # surface no reader consumes yet. Chunk B's scheduled roll-up is what fills
+    # it, from rows the seed does not create either.
+    "producer_analytics_daily": "MEH-2079 analytics roll-up — derived from the two exempt raw tables above; seeding it would fabricate traffic",
     "search_queries": "analytics — runtime telemetry, item 10 (out of scope)",
     "referral_clicks": "analytics — runtime telemetry, item 13 (out of scope)",
     "favorites": "consumer action — item 11 (out of scope)",

@@ -48,6 +48,7 @@ def _body(db, **overrides) -> dict:
         "primary_contact_method": "whatsapp",
         "phone": "0501234567",
         "declaration_accepted": True,
+        "terms_accepted": True,  # MEH-2080: mandatory on the schema
     }
     return {**base, **overrides}
 

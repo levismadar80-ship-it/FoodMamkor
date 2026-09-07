@@ -13,7 +13,9 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *           (promote/demote admin) is demoted from primary-inline to this menu
  *           while routine "block" stays inline (MEH-1023).
  * Does NOT: own any action logic — items pass their own onSelect (e.g. opening
- *           the caller's existing confirm dialog); does NOT trap focus.
+ *           the caller's existing confirm dialog); does NOT trap focus — MEH-2267
+ *           MOVES focus into the panel on open and returns it on Escape/Tab, but
+ *           Tab still leaves the menu (APG menu-button), it is not a focus trap.
  *           MEH-1251: the open panel now PORTALS to document.body and positions
  *           `fixed` from the trigger rect — it no longer positions absolutely
  *           inside its own wrapper (that clipped under the admin tables'
@@ -27,7 +29,10 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *           MEH-1027 (per-item disabled — producers-table busy guards;
  *           Ch.B: native disabled → aria-disabled + click-guard, APG);
  *           MEH-1251 (portal to body + fixed positioning from trigger rect;
- *           close-on-scroll/resize — fixes overflow clipping on lower rows)
+ *           close-on-scroll/resize — fixes overflow clipping on lower rows);
+ *           MEH-2230 (viewport fit via lib/panel-position.js);
+ *           MEH-2267 (APG keyboard: focus the first item on open, Arrow
+ *           navigation with wrap, Tab closes and returns focus to the trigger)
  */
 
 /**
@@ -66,6 +71,41 @@ function measureCoords(triggerEl) {
     triggerBottom: rect.bottom,
   };
 }
+
+// MEH-2267 — the panel's own menuitems, in DOM order. Arrow navigation walks
+// ALL of them, aria-disabled included: MEH-1027 Ch.B swapped native `disabled`
+// for `aria-disabled` precisely so a busy item stays perceivable to keyboard
+// and screen-reader users instead of being silently skipped.
+function menuItemsOf(panelEl) {
+  return Array.from(panelEl?.querySelectorAll('[role="menuitem"]') ?? []);
+}
+
+// Where each navigation key lands, given the current index (-1 when focus is
+// not on an item) and the item count.
+//
+// A Map rather than an object literal, and the reason is worth recording
+// because the obvious test for it does not work. A plain `KEYS[e.key]` lookup
+// would resolve `toString` / `constructor` / `valueOf` off Object.prototype and
+// call one of them as a mover. That hazard is NOT reachable here: React
+// normalises `e.key` through a plain object of its own
+// (`getEventKey` -> `normalizeKey[key] || key`), so a prototype-named key comes
+// out of the synthetic event as a FUNCTION, not a string, and matches nothing.
+// Measured 2026-09-06 with a stderr probe in this handler:
+// `fireEvent.keyDown(menu, { key: "toString" })` arrives as
+// `typeof e.key === "function"`.
+//
+// So the Map buys defence in depth against a future non-React caller, not a fix
+// for a live bug — and there is deliberately no unit test asserting it, because
+// no test can distinguish the two implementations through React. Writing one
+// anyway is the `size="enormous"` trap in .claude/rules/testing.md; the first
+// draft of this change carried exactly that test and it passed against a
+// deliberate Map -> object swap.
+const MENU_NAV = new Map([
+  ["ArrowDown", (at, n) => (at === -1 ? 0 : (at + 1) % n)],
+  ["ArrowUp", (at, n) => (at === -1 ? n - 1 : (at - 1 + n) % n)],
+  ["Home", () => 0],
+  ["End", (at, n) => n - 1],
+]);
 
 export default function AdminRowMenu({ items = [], ariaLabel }) {
   const [open, setOpen] = useState(false);
@@ -146,6 +186,50 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
     }
   }, [open, coords]);
 
+  // MEH-2267 — WAI-ARIA APG menu-button: opening the menu moves focus INTO it.
+  // Before this, the panel was portaled to the end of <body> and nothing moved
+  // focus, so from the open trigger a Tab landed on the next table row's
+  // favourites button and the items were only reachable by tabbing through the
+  // rest of the page. Measured on /admin/users at 1440 and Pixel 5.
+  //
+  // The initial target skips an aria-disabled item (a busy row action cannot be
+  // chosen, so landing on it is a dead end), but falls back to the first item
+  // when every item is disabled — losing focus to <body> would be worse than
+  // landing somewhere inert.
+  //
+  // `preventScroll` is load-bearing, not hygiene: handleReflow above closes the
+  // menu on ANY scroll (capture), so a focus() that scrolled its target into
+  // view would close the menu it had just opened.
+  useEffect(() => {
+    if (!open) return;
+    const all = menuItemsOf(menuRef.current);
+    const target =
+      all.find((el) => !el.hasAttribute("aria-disabled")) ?? all[0];
+    target?.focus({ preventScroll: true });
+  }, [open]);
+
+  // Roving focus inside the open panel (APG). Escape is already handled by the
+  // window listener above — it lives there because it must also fire while
+  // focus sits on the trigger.
+  const handleMenuKeyDown = (e) => {
+    if (e.key === "Tab") {
+      // APG: Tab moves out of the menu and closes it. The trigger is where the
+      // user came from, so return focus there and let the NEXT Tab continue the
+      // page order from a sane place.
+      e.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    const move = MENU_NAV.get(e.key);
+    if (!move) return;
+    const all = menuItemsOf(menuRef.current);
+    if (all.length === 0) return;
+    e.preventDefault();
+    const next = move(all.indexOf(document.activeElement), all.length);
+    all.at(next)?.focus({ preventScroll: true });
+  };
+
   // Nothing to show (e.g. protected super-admin + self) → render nothing.
   if (items.length === 0) return null;
 
@@ -159,7 +243,12 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
       ref={menuRef}
       id={menuId}
       role="menu"
-      style={{ position: "fixed", top: coords?.top, insetInlineEnd: coords?.insetInlineEnd }}
+      onKeyDown={handleMenuKeyDown}
+      style={{
+        position: "fixed",
+        top: coords?.top,
+        insetInlineEnd: coords?.insetInlineEnd,
+      }}
       className="z-[800] min-w-[10rem] bg-white border border-border rounded-md shadow-lg py-1 text-start"
     >
       {items.map((it) => (
@@ -180,9 +269,7 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
             it.onSelect();
           }}
           className={`block w-full text-start px-3 py-2 text-sm transition ${
-            it.disabled
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-gray-50"
+            it.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
           } ${
             it.tone === "danger"
               ? `text-red-600 ${it.disabled ? "" : "hover:bg-red-50"}`

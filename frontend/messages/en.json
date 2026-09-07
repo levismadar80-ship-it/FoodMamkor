@@ -202,7 +202,7 @@
           "valid_hint": "✓ Valid"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy"
@@ -356,7 +356,7 @@
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
@@ -523,6 +523,9 @@
       "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:",
       "fallback_day_caption": "Delivers to {city}: {days}",
       "fallback_day_caption_flexible": "Delivers to {city} by arrangement"
+    },
+    "seasonal": {
+      "heading": "In season now"
     },
     "recent": {
       "heading": "Recently viewed"
@@ -1497,7 +1500,9 @@
         "incomplete_label": "Missing details",
         "export": "Export",
         "import_excel": "Import from Excel",
-        "new_producer": "+ New business"
+        "new_producer": "+ New business",
+        "review_due_label": "Picks due for review",
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
       },
       "import": {
         "errors_loading": "Error reading file",
@@ -1597,7 +1602,8 @@
         "deleting": "Deleting…",
         "waiting_badge": "Waiting {days} business days",
         "waiting_tooltip_submitted": "Submitted for review: {when}",
-        "waiting_tooltip_created": "Created: {when}"
+        "waiting_tooltip_created": "Created: {when}",
+        "resubmission_badge": "Resubmission #{n}"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
@@ -1686,6 +1692,11 @@
           "grass_fed": "Grass-fed",
           "verified": "Verified",
           "recommended": "Recommended (editor's pick)",
+          "recommended_note": "Editor's reason",
+          "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
+          "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
+          "recommended_at": "Picked on",
+          "recommended_at_never": "Picked before there was a clock — review due now",
           "kosher": "Kosher",
           "kosher_none": "—",
           "kosher_kosher": "Kosher",
@@ -1699,6 +1710,8 @@
           "license_optional_toggle": "I have a producer license ↓",
           "license_expires_at": "License valid until (from the document)",
           "license_expires_at_hint": "The date printed on the license document. Businesses whose license expires within 30 days appear in the reminder list.",
+          "in_season_until": "In season until",
+          "in_season_until_hint": "The last day this business appears in the \"In season now\" module on the homepage. Empty means not marked. The module only shows when three or more businesses are marked.",
           "has_physical_location": "Physical store (welcomes customers)",
           "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
@@ -2168,13 +2181,15 @@
         "empty": "No data yet",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "confirm_delete": "Delete ''{name}'' — {count} associated businesses",
         "producer_count": "{count} businesses",
         "deleting": "Deleting…",
         "delete_error": "Failed to delete the category. Please try again.",
         "save_error": "Failed to save the category. Please try again.",
-        "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The emoji can still be updated.",
-        "name_taken_error": "A category with this name already exists"
+        "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The symbol can still be updated.",
+        "name_taken_error": "A category with this name already exists",
+        "system_badge": "System category",
+        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen."
       },
       "page_editor": {
         "title_placeholder": "Title",
@@ -3646,7 +3661,7 @@
       },
       "retention": {
         "title": "7. Data retention and security",
-        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. We apply reasonable security measures including encryption, secure storage, access control, and backups."
       },
       "minors": {
         "title": "8. Minors",
@@ -5019,7 +5034,7 @@
         "save_failed": "Failed to save location",
         "delete_failed": "Failed to delete location",
         "same_city": {
-          "labelled": "You already have '{label}' in {city}.",
+          "labelled": "You already have ''{label}'' in {city}.",
           "unlabelled": "You already have a {kind} in {city}.",
           "many": "You already have {count} locations in {city}.",
           "generic": "You already have a location in this town.",

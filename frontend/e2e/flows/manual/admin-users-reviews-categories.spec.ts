@@ -58,19 +58,31 @@ import type { Locator, Route } from "@playwright/test";
  *      end edge (insetInlineEnd) — asserted by geometry: the panel's LEFT edge
  *      sits at the trigger's left edge and the panel extends to the right.
  * D3 · The users role-confirm modal (:46-47), unlike the reviews and categories
- *      dialogs whose code comments say they MIRROR it, carries no role="dialog" /
- *      aria-modal and does not close on Escape — reached here by its copy, not
- *      by role. Opened as MEH-2268, not fixed here.
- * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured: the
- *      panel is portaled to the end of <body> and nothing moves focus into it,
- *      so Tab from the open ⋮ lands on the NEXT ROW's favorites button (probe:
- *      document.activeElement after Tab, both projects). Opened as MEH-2267;
- *      the clause is asserted correctly under test.fail() citing it.
+ *      dialogs whose code comments say they MIRROR it, carried no role="dialog" /
+ *      aria-modal and did not close on Escape — so this file originally reached
+ *      it by its Hebrew copy while reaching the other two by role. CLOSED by
+ *      MEH-2268: all three are now `getByRole("dialog", …)` here, and the
+ *      Escape close is asserted with its in-flight guard.
+ * D4 · MT:MEH-530:50 says the menu items are "reachable by Tab". Measured then:
+ *      the panel is portaled to the end of <body> and nothing moved focus into
+ *      it, so Tab from the open ⋮ landed on the NEXT ROW's favorites button
+ *      (probe: document.activeElement after Tab, both projects). CLOSED by
+ *      MEH-2267, and the fix does not make the original assertion pass — it
+ *      makes it obsolete. Under the WAI-ARIA APG menu-button pattern the item
+ *      list is reached by the OPEN itself (focus moves to the first item), and
+ *      Tab is the key that LEAVES the menu. So a spec asserting "Tab reaches
+ *      the first item" would now be asserting non-APG behaviour. The test below
+ *      asserts the contract that satisfies the MT row's intent — the items are
+ *      keyboard-reachable without tabbing the rest of the page — plus the two
+ *      halves the old shape could not cover: Arrow navigation, and Tab
+ *      returning focus to the trigger. Divergence from the card's "the fix
+ *      turns it into an unexpected pass" flagged on MEH-2267 rather than
+ *      resolved silently.
  * D5 · MT:MEH-530:23 + :28 expect «מחיקת '<שם>' — N בתי עסק משויכים». The count
- *      renders; the NAME does not — `'{name}'` in he.json is an ICU quoted
- *      literal, so the dialog reads «מחיקת {name} — 3 בתי עסק משויכים». Already
- *      on MEH-2261 (found by chunk 11f on the locations card, which lists this
- *      very key); asserted correctly under test.fail() citing it.
+ *      rendered; the NAME did not — `'{name}'` in he.json was an ICU quoted
+ *      literal, so the dialog read «מחיקת {name} — 3 בתי עסק משויכים». FIXED:
+ *      the escape (`''{name}''`) shipped, this went unexpected-pass on the next
+ *      run, and its test.fail() came off. The assertion stays as the guard.
  *
  * ─── Rows this chunk does NOT convert ──────────────────────────────────────
  *
@@ -156,6 +168,14 @@ type StubOpts = {
   deleteStatus?: number;
   /** Delay before a DELETE answers — the in-flight window. */
   delayMs?: number;
+  /**
+   * MEH-2268 — held open until the test resolves it, and awaited by the
+   * PUT .../role handler only. A promise rather than a `delayMs` twin on
+   * purpose: the Escape-during-flight assertion needs the request to still be
+   * open at a moment the test CHOOSES, and a timeout would make that a race
+   * against the CI runner instead of a fact.
+   */
+  holdRole?: Promise<void>;
   writes?: Rec[];
   /** Every GET /admin/users, with its query params — the filter → reload trail. */
   listCalls?: Record<string, string>[];
@@ -167,7 +187,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   let users: User[] = opts.users ?? SIXTY;
   let reviews: Review[] = opts.reviews ?? REVIEWS;
   let categories: Category[] = opts.categories ?? CATEGORIES;
-  const { deleteStatus = 200, delayMs = 0, writes, listCalls } = opts;
+  const { deleteStatus = 200, delayMs = 0, holdRole, writes, listCalls } = opts;
   const unstubbed: string[] = [];
 
   await page.addInitScript(() => {
@@ -211,10 +231,11 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     users = users.map((x) => (x.id === id ? { ...x, is_blocked: !x.is_blocked } : x));
     return json(r, { ok: true });
   });
-  await page.route(/\/api\/admin\/users\/([^/]+)\/role$/, (r) => {
+  await page.route(/\/api\/admin\/users\/([^/]+)\/role$/, async (r) => {
     const body = rec(r, writes) as { role: string };
     const id = new URL(r.request().url()).pathname.match(/users\/([^/]+)\/role$/)![1];
     users = users.map((x) => (x.id === id ? { ...x, role: body.role } : x));
+    if (holdRole) await holdRole;
     return json(r, { ok: true });
   });
 
@@ -254,6 +275,13 @@ const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const userRow = (page: Page, name: string) => page.getByRole("row", { name: new RegExp(`(^|\\s)${reEscape(name)}(\\s|$)`) });
 const kebab = (row: Locator) => row.getByRole("button", { name: "פעולות נוספות" });
 const menu = (page: Page) => page.getByRole("menu");
+// MEH-2268 — the role-confirm modal, by ROLE, like `reviewDialog` further down,
+// now that it carries role="dialog" + aria-labelledby. Reaching it by its copy
+// was the D3 inconsistency: a getByText match passes against a plain <div>, so
+// it asserts the sentence and says nothing about the dialog. `name` comes from
+// aria-labelledby, so a named locator asserts BOTH at once.
+const roleDialog = (page: Page, name?: string | RegExp) =>
+  page.getByRole("dialog", { name: name ?? /^את בטוחה שברצונך/ });
 
 /** The chunk-12b/12d open: scroll first, let the reflow settle, then click —
  *  AdminRowMenu closes on ANY scroll, and a bare click on the Pixel 5 profile
@@ -384,9 +412,9 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 2 מתוך 3"), "still on page 2 after the reload").toBeVisible();
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
-    await expect(page.getByText("את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 30?")).toBeVisible();
+    await expect(roleDialog(page, "את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 30?")).toBeVisible();
     await page.getByRole("button", { name: "ביטול" }).click();
-    await expect(page.getByText(/את בטוחה שברצונך/)).toHaveCount(0);
+    await expect(roleDialog(page)).toHaveCount(0);
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
   });
 });
@@ -445,10 +473,10 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(row.getByText("צרכן")).toBeVisible();
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
-    await expect(page.getByText("את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 4?")).toBeVisible();
+    await expect(roleDialog(page, "את בטוחה שברצונך להעניק הרשאות אדמין למשתמשת 4?")).toBeVisible();
     await page.getByRole("button", { name: "אישור" }).click();
     await expect.poll(() => writes).toEqual([{ method: "PUT", url: `/admin/users/${uuid(104)}/role`, body: { role: "admin" } }]);
-    await expect(page.getByText(/את בטוחה שברצונך/), "the dialog closes on success").toHaveCount(0);
+    await expect(roleDialog(page), "the dialog closes on success").toHaveCount(0);
     await expect(row.getByText("אדמין", { exact: true })).toBeVisible();
     await expect(row.getByText("צרכן")).toHaveCount(0);
   });
@@ -465,10 +493,48 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(demote).toHaveClass(/text-red-600/);
     await expect(menu(page).getByRole("menuitem")).toHaveText(["הסירי הרשאות"]);
     await demote.click();
-    await expect(page.getByText("את בטוחה שברצונך להסיר הרשאות אדמין מרונית אדמין?")).toBeVisible();
+    await expect(roleDialog(page, "את בטוחה שברצונך להסיר הרשאות אדמין מרונית אדמין?")).toBeVisible();
     await page.getByRole("button", { name: "אישור" }).click();
     await expect.poll(() => writes).toEqual([{ method: "PUT", url: `/admin/users/${uuid(102)}/role`, body: { role: "consumer" } }]);
     await expect(row.getByText("צרכן")).toBeVisible();
+  });
+
+  // MEH-2268 — Escape closes the role-confirm dialog, and the close is GUARDED
+  // while the PUT is in flight. Both halves are asserted, because the guard is
+  // the part a naive listener gets wrong: a dialog that vanishes mid-request
+  // takes with it the only explanation of what the request is doing.
+  test("Escape closes the role-confirm dialog — but not while the role change is in flight", async ({ page }) => {
+    const writes: Rec[] = [];
+    let release!: () => void;
+    const holdRole = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await stubAdmin(page, { writes, holdRole });
+    await openUsers(page);
+    const row = userRow(page, "משתמשת 4");
+    await openKebab(row);
+    await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
+    await expect(roleDialog(page)).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(roleDialog(page), "Escape closes it while idle").toHaveCount(0);
+
+    // Reopen, submit, and press Escape while the PUT is still unanswered. The
+    // disabled confirm button is the in-flight marker rather than its label:
+    // `users.confirm.submitting` is the three-dot string "...", which is a
+    // weak thing to match on and would not tell a busy dialog from a typo.
+    await openKebab(row);
+    await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
+    const submit = roleDialog(page).getByRole("button", { name: /אישור|\.\.\./ });
+    await submit.click();
+    await expect(submit, "the PUT is still open").toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(roleDialog(page), "Escape is a no-op while the PUT is in flight").toBeVisible();
+
+    release();
+    await expect(roleDialog(page), "and it closes on its own when the PUT lands").toHaveCount(0);
+    await expect.poll(() => writes.map((w) => `${w.method} ${w.url}`)).toEqual([`PUT /admin/users/${uuid(104)}/role`]);
+    await expect(row.getByText("אדמין", { exact: true })).toBeVisible();
   });
 
   // MT:MEH-530:48 — the super-admin row: no ⋮, the «מוגן» badge and the lock tooltip stay.
@@ -522,12 +588,27 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(menu(page)).toBeVisible();
   });
 
-  // MT:MEH-530:50 — "פריטי התפריט נגישים ב-Tab". D4 / MEH-2267: the panel is portaled to the END of
-  // <body> and nothing moves focus into it, so Tab from the open ⋮ lands on the next row's
-  // favorites button. This test asserts the CORRECT behaviour and is expected to fail until the
-  // card lands — the fix turns it into an unexpected pass, which is the signal to drop test.fail().
-  test("keyboard: Tab from the open ⋮ reaches the first menu item", async ({ page }) => {
-    test.fail(true, "MEH-2267 — AdminRowMenu's portaled panel is last in tab order; Tab leaves the menu");
+  // MT:MEH-530:50 — "פריטי התפריט נגישים ב-Tab" — under the APG menu-button
+  // reading D4 records: opening moves focus INTO the list, arrows walk it, and
+  // Tab leaves. Before MEH-2267 the first assertion below landed on the NEXT
+  // row's favorites button, so this test reds against the pre-fix component
+  // without needing test.fail() to say so.
+  //
+  // ONE item, not two, and that is a property of this page rather than of this
+  // fixture: `page.js:238,245` gates promote on `u.role !== "admin"` and demote
+  // on `u.role === "admin"`, which are mutually exclusive. No row on
+  // /admin/users ever offers both, so multi-item Arrow navigation cannot be
+  // exercised here at all — it is covered in __tests__/AdminRowMenu.test.jsx,
+  // where the items are injected. What this test can prove, and does, is the
+  // single-item boundary of the same wrap arithmetic: with n=1 every ArrowDown
+  // and ArrowUp must resolve back to the one item rather than to nothing.
+  //
+  // The count assertion is deliberate and load-bearing: it pins the premise, so
+  // if the page ever grows a second item this test says WHY it changed instead
+  // of failing somewhere further down with "element(s) not found" — which is
+  // exactly how the first version of this test failed, having assumed a demote
+  // item that no consumer row can have.
+  test("keyboard: opening the ⋮ moves focus to its item; arrows hold it; Tab leaves and returns focus", async ({ page }) => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -536,8 +617,18 @@ test.describe("/admin/users — the role kebab", () => {
     await btn.focus();
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
+    const m = menu(page);
+    await expect(m.getByRole("menuitem"), "a consumer row offers promote only").toHaveText(["העלי לאדמין"]);
+    const promote = m.getByRole("menuitem", { name: "העלי לאדמין" });
+    await expect(promote, "APG: the open puts focus on the first item").toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(promote, "ArrowDown wraps to the single item, not off it").toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(promote, "ArrowUp wraps to the single item, not off it").toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(menu(page).getByRole("menuitem", { name: "העלי לאדמין" })).toBeFocused();
+    await expect(m, "APG: Tab closes the menu").toHaveCount(0);
+    await expect(btn, "APG: Tab returns focus to the trigger").toBeFocused();
+    await expect(btn).toHaveAttribute("aria-expanded", "false");
   });
 });
 
@@ -662,12 +753,12 @@ test.describe("/admin/content — categories", () => {
   });
 
   // MT:MEH-530:23 — the dialog names the category. D5 / MEH-2261: `content.categories.confirm_delete`
-  // wraps its placeholder in single quotes ('{name}'), which ICU MessageFormat reads as a quoted
-  // literal — the dialog renders «מחיקת {name} — 3 בתי עסק משויכים». Measured here, the same
-  // defect chunk 11f found on the locations card. This asserts the CORRECT copy and is expected to
-  // fail until the card lands; the fix turns it into an unexpected pass.
+  // used to wrap its placeholder in single quotes ('{name}'), which ICU MessageFormat reads as a
+  // quoted literal — the dialog rendered «מחיקת {name} — 3 בתי עסק משויכים». The escape shipped
+  // (''{name}''), this went from expected-fail to unexpected-pass on the very next run, and the
+  // annotation came off. That transition is why it was written as a real assertion and not a skip:
+  // it now guards the escape — re-break the string and this goes red.
   test("the dialog names the category: «מחיקת 'לחמים ואפייה' — 3 בתי עסק משויכים»", async ({ page }) => {
-    test.fail(true, "MEH-2261 — '{name}' in he.json is an ICU quoted literal; the dialog shows the placeholder");
     await stubAdmin(page);
     await openCategories(page);
     await categoryRow(page, "לחמים ואפייה").getByRole("button", { name: "מחקו" }).click();
