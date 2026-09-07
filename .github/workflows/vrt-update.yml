@@ -135,6 +135,12 @@ jobs:
             pattern="$ROUTE"
             echo "Scope from dispatch input -> --grep '${pattern:-<ALL ROUTES>}'"
           fi
+          # Always emit `skip`, so no consumer ever reads an UNSET output. Only
+          # the unknown-label `*)` branch above writes skip=true, and it exits
+          # there; every path that reaches here resolved a scope. Hardening, not
+          # the fix for the dead guard — that was steps.scope.result, which is
+          # not a property of the steps context at all.
+          echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "pattern=$pattern" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js 20
