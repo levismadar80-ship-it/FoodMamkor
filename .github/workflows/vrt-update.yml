@@ -243,9 +243,14 @@ jobs:
           git commit -m "test(vrt): regenerate visual parity baselines (MEH-991)"
           git push origin HEAD:"$TARGET_REF"
 
+      # MEH-2278 (reviewer #3483, Minor): `steps.scope.outputs.skip` is EMPTY
+      # when the scope step itself failed, and '' != 'true', so this used to
+      # fire on a scope crash and claim an artifact slot for a report Playwright
+      # never wrote. `scope.result == 'success'` separates "resolved, not
+      # skipped" from "never resolved".
       - name: Upload report on failure
         uses: actions/upload-artifact@v7
-        if: failure() && steps.scope.outputs.skip != 'true'
+        if: failure() && steps.scope.result == 'success' && steps.scope.outputs.skip != 'true'
         with:
           name: vrt-update-report
           path: |
@@ -255,8 +260,15 @@ jobs:
 
       # Make the label a one-shot request rather than a standing state, so
       # re-labelling is how you ask again.
+      #
+      # MEH-2278 (reviewer #3483, Should Consider): the same empty-`skip` hole,
+      # and here it is the one that costs a person something. Under `always()`
+      # a crashed scope step left `skip` empty, the label was stripped anyway,
+      # and the request vanished with no baselines regenerated — indistinguish-
+      # able from a completed regen unless you open the run. The label now
+      # survives a crash, so re-labelling is still the way to retry.
       - name: Remove the regen label
-        if: always() && github.event_name == 'pull_request' && steps.scope.outputs.skip != 'true'
+        if: always() && github.event_name == 'pull_request' && steps.scope.result == 'success' && steps.scope.outputs.skip != 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
