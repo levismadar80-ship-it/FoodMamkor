@@ -346,6 +346,16 @@ erDiagram
 erDiagram
     producers ||--o{ producer_page_views : "view_logged"
     producers ||--o{ producer_whatsapp_clicks : "click_logged"
+    producers ||--o{ producer_analytics_daily : "rolled_up_daily"
+
+    producer_analytics_daily {
+        uuid id PK "DEFAULT gen_random_uuid() — MEH-2282"
+        uuid producer_id FK "indexed"
+        date day "Israel calendar day; UNIQUE (producer_id, day)"
+        int views_unique "unique_views_count per day — MEH-2079"
+        int views_search_unique "same, referrer=search"
+        int whatsapp_clicks "plain count"
+    }
 
     producer_page_views {
         uuid id PK
