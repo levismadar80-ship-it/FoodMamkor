@@ -1924,7 +1924,20 @@ class ProducerAnalyticsDaily(Base):
 
     __tablename__ = "producer_analytics_daily"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # `server_default` as well as the Python `default` (MEH-2282, revision
+    # 0396917da2ea). Chunk B2's roll-up writes with a raw
+    # `INSERT … ON CONFLICT DO NOTHING` that never instantiates this class, so
+    # `default=uuid.uuid4` is not consulted on the one path that writes every
+    # row; the DB has to be able to mint the id itself. Declared on both sides
+    # so model and migration agree (ADR-006). `gen_random_uuid()` is Postgres
+    # 13+ core — the same call b7d3e1a94c26 (MEH-1872) and d4a9c31e6f82
+    # (MEH-1399) already use.
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
     producer_id = Column(
         UUID(as_uuid=True),
         ForeignKey("producers.id", ondelete="CASCADE"),
