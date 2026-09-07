@@ -261,6 +261,19 @@ def test_backfill_refuses_a_hole_and_a_range_past_retention(db):
             to_day=later - timedelta(days=1),
             today=later,
         )
+    # And BEFORE any watermark exists (reviewer on #3486): a first backfill
+    # that starts above the earliest raw day would leave that day unrolled
+    # beneath the watermark it creates — refused the same way; starting AT
+    # the earliest raw day is fine.
+    db.query(ProducerAnalyticsDaily).delete()
+    db.commit()
+    assert rollup_watermark(db) is None
+    with pytest.raises(ValueError, match="hole"):
+        run_rollup(db, from_day=D[2], to_day=D[1], today=ANCHOR)
+    assert _rows(db) == {}, "a refused backfill writes nothing"
+    first = run_rollup(db, from_day=D[3], to_day=D[1], today=ANCHOR)
+    assert first.days_rolled == 3
+    assert rollup_watermark(db) == D[1]
     # Exactly watermark + 1 is fine (the automatic range's own start).
     ok = run_rollup(db, from_day=D[0], to_day=D[0], today=later)
     assert ok.days_rolled == 1

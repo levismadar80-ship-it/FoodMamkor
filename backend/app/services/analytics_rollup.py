@@ -133,6 +133,10 @@ def rollup_snapshot(db: Session, producer_id, column) -> tuple[date | None, int]
     job about who owns a day. `test_a_roll_up_landing_mid_request_cannot_
     double_count` injects the commit between the reader's statements.
     """
+    # Deliberately UNFILTERED — the watermark is global (max over every
+    # producer's rows), while the SUM below is this producer's. Adding the
+    # producer filter to the subquery "for consistency" would turn it into a
+    # per-producer watermark and silently break the partition the job wrote.
     watermark_sq = select(func.max(ProducerAnalyticsDaily.day)).scalar_subquery()
     watermark, total = db.execute(
         select(watermark_sq, func.coalesce(func.sum(column), 0)).where(
@@ -322,11 +326,18 @@ def run_rollup(
                 f"--from {from_day} is older than the {RAW_RETENTION_DAYS}-day raw "
                 "retention window — the raw rows to count are not guaranteed to exist"
             )
+        # The floor a backfill may start at: the day after the watermark, or —
+        # before any watermark exists — the earliest raw day. Both matter
+        # (reviewer on #3486): a FIRST backfill starting above the earliest raw
+        # day would set a watermark with unrolled days beneath it, and the
+        # automatic range (`watermark + 1 ..`) would never reach them again
+        # while the reader stopped counting them at once.
         wm = rollup_watermark(db)
-        if wm is not None and from_day > wm + timedelta(days=1):
+        floor = wm + timedelta(days=1) if wm is not None else _earliest_raw_day(db)
+        if floor is not None and from_day > floor:
             raise ValueError(
-                f"--from {from_day} would leave a hole after the watermark {wm}; "
-                f"start at or before {wm + timedelta(days=1)}"
+                f"--from {from_day} would leave a hole below the watermark "
+                f"(unrolled raw days before it); start at or before {floor}"
             )
         days = [
             from_day + timedelta(days=i) for i in range((to_day - from_day).days + 1)
