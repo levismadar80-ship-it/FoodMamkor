@@ -201,6 +201,71 @@ wrong answer.
 
 ---
 
+## An unresolvable `MEH-XXXX` is archived-because-Done at least as often as missing — check the repo before treating it as open (MEH-1519 · MEH-1146)
+
+**`get_issue` returns the same string for a card that never existed and for one
+that was archived because it shipped: `Could not find referenced Issue`.** The
+answer is well-formed, it is fast, and it carries no marker saying which of the
+two worlds you are in. Nothing downstream can recover that distinction, so it
+gets decided by whoever reads the null — usually in the direction that makes the
+current task simpler.
+
+**Before an unresolvable identifier is treated as an open blocker, as a missing
+entity, or as an action for Sapir, run all three:**
+
+```bash
+grep -n "MEH-<N>" HANDOFF.md docs/CHANGELOG.md      # 1. did it ship, and when
+git log --oneline --all --grep="MEH-<N>"            # 2. which commits claim it
+git merge-base --is-ancestor <sha> origin/staging   # 3. per SHA — is it LANDED
+```
+
+Step 3 is the one that settles it, and it is the one most often skipped. A
+commit *existing* is not the same as it being on the base branch: `git log
+--all` reaches abandoned branches too. **The blob-identity corollary in the
+section above applies here as well** — "commit C mentions MEH-N" does not mean C
+implemented it.
+
+**The tie is broken in the repo, never in Linear.** A card's own groom notes are
+the second-best source and are worth reading (both cases below had the answer
+sitting in a note nobody re-read), but they are a claim; the ancestor check is a
+measurement.
+
+### The two cases, because one of them is a near-miss and the other is not
+
+| | **MEH-1519** | **MEH-1146** |
+|---|---|---|
+| Read as | still open | "no entity whose status can change" |
+| Actually | resolved six weeks earlier | work merged 12/07, three PRs |
+| Cost | **MEH-1508 chunk 3 sat blocked for six weeks** | a wrong Sapir action, propagated into four artifacts |
+| Caught by | a sweep that happened to re-check | a sweep that happened to re-check |
+
+**MEH-1146 is the more instructive one, because the session that got it wrong
+had already stated the rule.** Its own note reads *"NOT a claim that it never
+existed — a lookup that excludes archived is indistinguishable from that"* — and
+then the very next sentence concludes *"there is no entity whose status can
+change, so this card cannot ever open by itself"* and files a Sapir action. The
+hedge was correct and the conclusion took the other branch of it. **Naming the
+ambiguity is not the same as resolving it**; only the three commands above
+resolve it.
+
+By the time it was measured (07/09), the wrong reading had reached
+`scripts/wake-when.sh`, two Linear card sections, and a pre-launch audit — each
+inheriting it as fact with the uncertainty stripped, which is the failure mode
+rule 34 exists to stop. The correction: `858a8d61` (#1670) · `91b7ab2c` (#1673)
+· `ff7156a5` (#1676), each verified an ancestor of `origin/staging`.
+
+**Both directions of the null are live in this repo, so neither default is
+safe.** `MEH-360` is cited in 30 files and has never existed; `MEH-1948` was
+declared non-existent from a lookup that silently excluded archived cards, one
+day after it was archived. Same query, same output, opposite truths.
+
+**Where the answer goes:** into the card's DESCRIPTION and into whatever
+registry carried the stale gate (rule 34) — not only into a comment. A sweep
+reads descriptions and registries; a comment thread is where a correction goes
+to be re-discovered.
+
+---
+
 ## ✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer confirmed working; temporary section removed
 
 The three-action DoD ((a) credential, (b) SHA pin, (c) delete this section) is
