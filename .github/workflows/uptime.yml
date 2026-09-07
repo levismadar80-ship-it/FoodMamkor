@@ -56,8 +56,29 @@ jobs:
           gh label create uptime --color d73a4a --description "MEH-2202 uptime probe" 2>/dev/null || true
           title="uptime: mehamakor.co.il probe failing"
           now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          open=$(gh issue list --state open --label uptime --search "$title in:title" --json number --jq '.[0].number // empty')
-          closed=$(gh issue list --state closed --label uptime --search "$title in:title" --limit 1 --json number,body --jq '.[0] | "\(.number)\t\(.body | split("\n")[0])"' || true)
+
+          # The title is quoted INSIDE the search string: unquoted, `uptime:`
+          # reads as a search qualifier to GitHub's parser, not as literal text.
+          #
+          # Neither lookup below carries a blanket `|| true`. The empty-result
+          # case is handled inside jq (`// empty` / `select(. != null)`), which
+          # exits 0 on an empty list, so the only remaining non-zero exit is a
+          # real API error — and that aborts the tick instead of arriving here
+          # as an empty string that reads as "no issue exists" and opens a
+          # duplicate on top of a live outage.
+          if ! open=$(gh issue list --state open --label uptime \
+                        --search "\"$title\" in:title" \
+                        --json number --jq '.[0].number // empty'); then
+            echo "::error::gh issue list (open) failed — issue state left untouched this tick."
+            exit 1
+          fi
+          if ! closed=$(gh issue list --state closed --label uptime \
+                          --search "\"$title\" in:title" --limit 1 \
+                          --json number,body \
+                          --jq '.[0] | select(. != null) | "\(.number)\t\((.body // "") | split("\n")[0])"'); then
+            echo "::error::gh issue list (closed) failed — issue state left untouched this tick."
+            exit 1
+          fi
 
           if [ "$FAIL" = "1" ]; then
             if [ -n "$open" ]; then
