@@ -19,9 +19,9 @@
  * Run:      node qa-meh2210-rejected-banner.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 
-const BASE = process.env.PROBE_BASE_URL || "http://localhost:3000";
+const BASE = "http://localhost:3000"; // `next start` default; no env knob (rule 8)
 const OUT = "../qa-artifacts/MEH-2210";
 const MAX = 3;
 
@@ -58,12 +58,23 @@ const user = (code, count) => ({
 const run = async () => {
   mkdirSync(OUT, { recursive: true });
   // The repo pins a Playwright whose bundled revision is not the one this
-  // sandbox preinstalled (expects chromium_headless_shell-1234, has -1194), and
-  // `playwright install` is forbidden here. Point at the preinstalled binary
-  // instead; PROBE_CHROMIUM lets CI fall back to the bundled one.
-  const executablePath =
-    process.env.PROBE_CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-  const browser = await chromium.launch({ executablePath });
+  // sandbox preinstalled (it expects chromium_headless_shell-1234 and has
+  // -1194), and `playwright install` is forbidden here. So probe the
+  // preinstalled locations and fall through to Playwright's own bundled
+  // browser when none is present — which is what CI wants.
+  //
+  // Deliberately NOT an env var: regression rule 8 requires new env vars to be
+  // declared and confirmed, and `Env drift (.env.example)` reds a PR that
+  // reads one without documenting it. A throwaway QA knob does not justify
+  // widening the runtime env surface, so this auto-detects instead.
+  const candidates = [
+    "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "/opt/pw-browsers/chromium/chrome-linux/chrome",
+  ];
+  const executablePath = candidates.find((p) => existsSync(p));
+  const browser = await chromium.launch(executablePath ? { executablePath } : {});
+  if (executablePath) console.log(`chromium: ${executablePath}`);
+  else console.log("chromium: Playwright bundled default");
   const failures = [];
   const ran = [];
 
