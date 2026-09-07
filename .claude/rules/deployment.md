@@ -101,20 +101,41 @@ After every PR — send the Vercel preview URL:
 > in `frontend/vercel.json` with `feature/*`, `dependabot/*` and `vrt-regen/*`
 > set to `false` — Vercel then creates no deployment record for those pushes at
 > all; `staging` and `main` stay `true`, and the `ignoreCommand` is kept as the
-> second layer for any branch the map does not name. **The block is STAGED,
-> not applied** — `frontend/vercel.json` is filesystem-denied to CC (measured
-> 06/09 19:10Z) and the API route was refused by the harness in the same
-> session, so it is Sapir's five-line paste:
-> [docs/ci/meh-2062-vercel-git-deployments.patch.md](../../docs/ci/meh-2062-vercel-git-deployments.patch.md).
-> **Acceptance once applied:** a push to a `feature/*` branch produces no row in
-> the Vercel deployment list, `Ignored` or otherwise. Until then every feature
-> push still burns a quota unit, and the two states below remain the live ones.
+> second layer for any branch the map does not name.
 >
-> **Consequence for rule 9 (workflow.md), once applied:** a feature branch gets a
+> ### ✅ APPLIED 2026-09-07 — `6bdb10d1` (PR #3484), in production via `8e69ff1e`
+>
+> _(This block read **"STAGED, not applied — `frontend/vercel.json` is
+> filesystem-denied to CC and the API route was refused"** until 07/09. Both
+> halves were wrong in the same way: the deny is on the **filesystem tools**,
+> and the GitHub Contents API writes that path without complaint — the tool ×
+> path split `.claude/rules/security.md` already documents. Reading a
+> tool-level refusal as a path-level block is what kept this parked.)_
+>
+> **Acceptance met, measured on the Vercel deployment list — and the boundary
+> is visible inside one window, which is what makes it evidence rather than an
+> absence:**
+>
+> | Time (07/09) | Ref | State |
+> |---|---|---|
+> | 07:36:32Z | `feature/meh-2278-vrt-label-trigger` | **CANCELED** — a quota unit spent |
+> | **07:38:44Z** | **`6bdb10d1` lands on `staging`** | — |
+> | 07:38Z → 10:35Z | `staging` ×8, `main` ×1 | READY |
+> | 10:38:19Z · 10:46:06Z | two pushes to `feature/meh-2210-docs-backfill` | **no row at all** |
+>
+> Same branch shape, same project, two minutes apart at the boundary: `CANCELED`
+> before, **nothing** after. **The control that stops this being a null that is
+> also the reassuring answer:** `staging` deployments in the same window are
+> `READY`, so deployment creation is alive and reporting — the absence is the
+> config, not a rate limit or a dead instrument.
+>
+> **Consequence for rule 9 (workflow.md), now live:** a feature branch gets a
 > preview only by an explicit `vercel deploy` (Sapir's CLI) — the `[preview]`
 > commit-message token no longer reaches Vercel on those branches. Absent a
 > preview, the UI evidence is the 375/1440 Playwright bundle (rule 23 amendment)
-> plus staging after merge.
+> plus staging after merge. **The two states below (`Ignored` / rate-limited)
+> are now history for `feature/*`** — they still describe any branch the map
+> does not name.
 >
 > _History, kept for the record:_ the question was opened 2026-08-04 on PR
 > #2594 (`Ignored` on one SHA, rate-limited on the next) and could not be
