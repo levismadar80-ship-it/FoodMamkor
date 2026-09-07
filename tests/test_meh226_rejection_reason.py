@@ -22,6 +22,7 @@ Mirrors tests/test_producer_request_changes.py: pure HTTP/DB, with
 `_send_notification_email` monkeypatched to assert the email carries the same
 composed string that landed in the column (the two must not drift).
 """
+
 import app.routers.admin as admin_module
 from app.routers.admin import PRODUCER_REJECTION_PRESETS
 from conftest import auth_header, make_producer, make_user
@@ -73,10 +74,12 @@ def test_reject_joins_preset_label_with_free_text(client, db):
 
 
 def test_reject_other_persists_the_free_text_alone(client, db):
-    """"אחר (פירוט חופשי)" describes the input box, not a reason — prefixing it
+    """ "אחר (פירוט חופשי)" describes the input box, not a reason — prefixing it
     would put it in a business owner's inbox."""
     producer = make_producer(db, status="pending")
-    resp = _reject(client, producer.id, _admin(db), preset_key="other", reason=FREE_TEXT)
+    resp = _reject(
+        client, producer.id, _admin(db), preset_key="other", reason=FREE_TEXT
+    )
     assert resp.status_code == 200, resp.text
 
     db.refresh(producer)
@@ -143,7 +146,9 @@ def test_other_with_whitespace_only_free_text_is_400(client, db):
 
 def test_unknown_preset_key_is_400_and_does_not_reject(client, db):
     producer = make_producer(db, status="pending")
-    resp = _reject(client, producer.id, _admin(db), preset_key="definitely_not_a_preset")
+    resp = _reject(
+        client, producer.id, _admin(db), preset_key="definitely_not_a_preset"
+    )
     assert resp.status_code == 400, resp.text
 
     db.refresh(producer)
@@ -159,7 +164,10 @@ def test_email_body_carries_the_same_string_that_was_persisted(client, db, monke
     Asserting the column and the email agree is what stops them drifting."""
     sent = {}
 
-    def _capture(to_email, subject, body):
+    # MEH-2210 chunk C: the rejection mail gained an HTML twin (same shape the
+    # approval mail took in MEH-2151), so the capture accepts the keyword the
+    # handler now passes. The assertion below is still about the TEXT body.
+    def _capture(to_email, subject, body, html=None):
         sent["to"] = to_email
         sent["body"] = body
 
@@ -255,7 +263,37 @@ def test_retired_resubmit_promise_is_not_in_the_email(client, db):
 
     assert "להגיש שוב" not in body, body
     assert "הדף האישי" not in body, body
-    assert "אפשר לתקן את הפרטים בלוח הבקרה" in body, body
+    # MEH-2210: the recovery line now names the flow that EXISTS — the
+    # dashboard's "שליחה לבדיקה חוזרת" — and carries its link. The MEH-226
+    # "reply to this email" line was conditional on that flow being absent.
+    assert "אפשר לתקן ולשלוח שוב מלוח הבקרה:" in body, body
+    assert "/producer/dashboard" in body, body
+    assert "להשיב למייל הזה" not in body, body
+
+
+def test_a_newline_in_the_business_name_cannot_open_lines_in_the_body():
+    """A business name with an embedded newline must not restructure the mail.
+
+    `sanitize_text` strips markup and trims the ends; an interior `\n`
+    survives it, and the plain-text part has no `_html_escape` to fall back
+    on. Left raw, a name reaches the greeting line and everything after its
+    newline reads as a line of the mail rather than part of the name.
+
+    Failing-by-construction (measured, not asserted from the diff): with
+    `_single_line` removed from the greeting, `body.splitlines()[0]` is
+    «שלום מאפיית הדגן» and «בברכה,» appears TWICE — once from the injected
+    text and once from the real signature. Both assertions below go red on
+    that build and pass on this one; the second is the discriminating half,
+    since a body that merely contains the name would satisfy the first.
+
+    Reviewer finding on the MEH-2210 chunk-C PR.
+    """
+    injected = "מאפיית הדגן\n\nבברכה,\nצוות מהמקור\n\nנ.ב. שורה מזויפת"
+    body = admin_module._producer_rejected_body(injected, "מסמכים חסרים")
+
+    first = body.splitlines()[0]
+    assert first == "שלום מאפיית הדגן בברכה, צוות מהמקור נ.ב. שורה מזויפת,", first
+    assert body.count("בברכה,\nצוות מהמקור") == 1, body
 
 
 # --- the presets endpoint the admin UI consumes -----------------------------

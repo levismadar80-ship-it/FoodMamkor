@@ -75,7 +75,10 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-function setup(status, { rejection_reason = null } = {}) {
+function setup(
+  status,
+  { rejection_reason = null, rejection_reason_code = null, resubmission_count = 0 } = {},
+) {
   producerRef.current = {
     id: 1,
     name: "חוות הבוקר",
@@ -88,39 +91,65 @@ function setup(status, { rejection_reason = null } = {}) {
     name: "שרה",
     role: "producer",
     producer_rejection_reason: rejection_reason,
+    // MEH-2210: the code + count ride /auth/me beside the reason (chunk A).
+    producer_rejection_reason_code: rejection_reason_code,
+    producer_resubmission_count: resubmission_count,
   };
 }
 
 describe("producer dashboard status banners (MEH-1355)", () => {
   beforeEach(() => setup("approved"));
 
-  it("rejected: renders reason + migrated tips + support trigger", async () => {
-    setup("rejected", { rejection_reason: "התמונות לא ברורות מספיק" });
+  it("rejected: renders reason (as a quote) + the resubmit CTA + support trigger, no generic tips (MEH-2210)", async () => {
+    setup("rejected", {
+      rejection_reason: "התמונות לא ברורות מספיק",
+      rejection_reason_code: "missing_image",
+    });
     render(<ProducerDashboardPage />);
-    await screen.findByTestId("producer-overview");
-
-    const banner = screen.getByTestId("status-rejected-banner");
-    expect(banner).toBeInTheDocument();
-    // admin reason rendered as-is (like ChangesRequestedBanner's DB text)
+    const banner = await screen.findByTestId("status-rejected-banner");
+    expect(banner).toHaveAttribute("role", "alert");
     expect(screen.getByTestId("status-rejected-reason")).toHaveTextContent(
       "התמונות לא ברורות מספיק",
     );
-    // 3 fix-it tips migrated from the removed /settings business tab (key-echo)
-    expect(screen.getByText("status.rejected.tip_details")).toBeInTheDocument();
-    expect(screen.getByText("status.rejected.tip_photos")).toBeInTheDocument();
-    expect(screen.getByText("status.rejected.tip_address")).toBeInTheDocument();
+    // The reason-driven line, keyed on the admin's code (key-echo mock).
+    expect(screen.getByTestId("status-rejected-line")).toHaveTextContent(
+      "by_code.missing_image",
+    );
+    expect(screen.getByTestId("status-rejected-resubmit")).toBeInTheDocument();
     expect(screen.getByTestId("status-rejected-support")).toBeInTheDocument();
+    // MEH-2210 absence assertion: the three MEH-1355 tips that did not depend
+    // on the reason are gone from the page.
+    expect(screen.queryByText("status.rejected.tip_details")).not.toBeInTheDocument();
+    expect(screen.queryByText("status.rejected.tip_photos")).not.toBeInTheDocument();
+    expect(screen.queryByText("status.rejected.tip_address")).not.toBeInTheDocument();
   });
 
-  it("rejected: omits the reason paragraph when no rejection_reason is set", async () => {
+  it("rejected: omits the quote when no rejection_reason is set, CTA still shown (legacy row)", async () => {
     setup("rejected", { rejection_reason: null });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
-
     expect(screen.getByTestId("status-rejected-banner")).toBeInTheDocument();
     expect(screen.queryByTestId("status-rejected-reason")).not.toBeInTheDocument();
-    // tips still render even without a reason
-    expect(screen.getByText("status.rejected.tip_photos")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-rejected-line")).not.toBeInTheDocument();
+    expect(screen.getByTestId("status-rejected-resubmit")).toBeInTheDocument();
+  });
+
+  it("rejected: at the cap the CTA is gone and the capped line shows (MEH-2210)", async () => {
+    setup("rejected", { rejection_reason: "x", resubmission_count: 3 });
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
+    expect(screen.queryByTestId("status-rejected-resubmit")).not.toBeInTheDocument();
+    expect(screen.getByTestId("status-rejected-capped")).toBeInTheDocument();
+    expect(screen.getByTestId("status-rejected-support")).toBeInTheDocument();
+  });
+
+  it("rejected → resubmit click flips the page to the pending banner in the same session (MEH-2210)", async () => {
+    setup("rejected", { rejection_reason: "x", rejection_reason_code: "missing_docs" });
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("status-rejected-banner");
+    fireEvent.click(screen.getByTestId("status-rejected-resubmit"));
+    await screen.findByTestId("status-pending-banner");
+    expect(screen.queryByTestId("status-rejected-banner")).not.toBeInTheDocument();
   });
 
   it("inactive: renders the amber banner + support trigger (literal 'inactive')", async () => {

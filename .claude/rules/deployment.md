@@ -90,29 +90,57 @@ After every PR — send the Vercel preview URL:
 >   problem, and **no commit can fix it** — it resets daily. Observed on PRs
 >   #2541, #2542 (02/08) and #2594 (04/08).
 >
-> **OPEN QUESTION — does an `Ignored` deployment count against
-> `api-deployments-free-per-day`? Unresolved as of 2026-08-04; do not write
-> either answer into this rule until it is settled.** PR #2594 showed `Ignored`
-> on one SHA and rate-limited on the next, which *looks* like the quota being
-> consumed before the ignore step runs. But with ~17 open PRs pushing all day,
-> the account could equally have crossed 100 deployments from **other branches'
-> real builds** in between. Both explanations fit the observation, and nothing
-> observed so far separates them. Weak support for "yes, it counts": each
-> `Ignored` row still carries its own deployment ID and inspector URL, so a
-> deployment *record* exists — but a record existing is not the same as it being
-> counted. **Resolution method:** compare the Vercel dashboard's deployment list
-> against the number of pushes over one day. That needs dashboard access and is
-> **not resolvable from the repo**, so no CC session can settle it.
+> **ANSWERED 2026-09-06 (MEH-2062): an `Ignored` deployment DOES count against
+> `api-deployments-free-per-day`.** Measured on the Vercel dashboard by the
+> orchestrator: 20 deployments in 5.5 hours, 18 of them `CANCELED` by the
+> `ignoreCommand` — every one a quota unit spent on a build that was never going
+> to happen. The 04/08 reading ("the quota gate runs BEFORE the ignore step",
+> PR #2603: rate-limited with no `[preview]` token) was the mechanism; the
+> dashboard count is the confirmation. **So the `ignoreCommand` alone cannot
+> protect the quota**, and the fix moves one layer up: `git.deploymentEnabled`
+> in `frontend/vercel.json` with `feature/*`, `dependabot/*` and `vrt-regen/*`
+> set to `false` — Vercel then creates no deployment record for those pushes at
+> all; `staging` and `main` stay `true`, and the `ignoreCommand` is kept as the
+> second layer for any branch the map does not name.
 >
-> **One thing the question IS now settled on (measured on PR #2603, 2026-08-04):
-> the quota gate runs BEFORE the ignore step.** That PR carries no `[preview]`
-> token, so it should have reported `Ignored` — and instead Vercel returned the
-> `api-deployments-free-per-day` error outright. A deployment that reaches the
-> `ignoreCommand` at all has therefore already been admitted past the quota
-> check. **This still does not answer the question above:** being *checked
-> against* a counter and *incrementing* it are different, and only the dashboard
-> comparison separates them. Recorded because it narrows the search, not because
-> it closes it.
+> ### ✅ APPLIED 2026-09-07 — `6bdb10d1` (PR #3484), in production via `8e69ff1e`
+>
+> _(This block read **"STAGED, not applied — `frontend/vercel.json` is
+> filesystem-denied to CC and the API route was refused"** until 07/09. Both
+> halves were wrong in the same way: the deny is on the **filesystem tools**,
+> and the GitHub Contents API writes that path without complaint — the tool ×
+> path split `.claude/rules/security.md` already documents. Reading a
+> tool-level refusal as a path-level block is what kept this parked.)_
+>
+> **Acceptance met, measured on the Vercel deployment list — and the boundary
+> is visible inside one window, which is what makes it evidence rather than an
+> absence:**
+>
+> | Time (07/09) | Ref | State |
+> |---|---|---|
+> | 07:36:32Z | `feature/meh-2278-vrt-label-trigger` | **CANCELED** — a quota unit spent |
+> | **07:38:44Z** | **`6bdb10d1` lands on `staging`** | — |
+> | 07:38Z → 10:35Z | `staging` ×8, `main` ×1 | READY |
+> | 10:38:19Z · 10:46:06Z | two pushes to `feature/meh-2210-docs-backfill` | **no row at all** |
+>
+> Same branch shape, same project, two minutes apart at the boundary: `CANCELED`
+> before, **nothing** after. **The control that stops this being a null that is
+> also the reassuring answer:** `staging` deployments in the same window are
+> `READY`, so deployment creation is alive and reporting — the absence is the
+> config, not a rate limit or a dead instrument.
+>
+> **Consequence for rule 9 (workflow.md), now live:** a feature branch gets a
+> preview only by an explicit `vercel deploy` (Sapir's CLI) — the `[preview]`
+> commit-message token no longer reaches Vercel on those branches. Absent a
+> preview, the UI evidence is the 375/1440 Playwright bundle (rule 23 amendment)
+> plus staging after merge. **The two states below (`Ignored` / rate-limited)
+> are now history for `feature/*`** — they still describe any branch the map
+> does not name.
+>
+> _History, kept for the record:_ the question was opened 2026-08-04 on PR
+> #2594 (`Ignored` on one SHA, rate-limited on the next) and could not be
+> resolved from the repo — it needed the dashboard's deployment list against
+> the day's push count, which is what the 06/09 measurement is.
 >
 > When there is no preview, say so in the PR and name which of the two states it
 > was — do not silently drop rule 9, and do not report a stale or ignored URL as

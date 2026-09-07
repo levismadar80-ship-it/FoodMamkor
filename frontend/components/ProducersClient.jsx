@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { CATEGORY_ICONS, CATEGORY_STYLES } from "@/lib/category-registry";
+import { CATEGORY_STYLES, resolveCategoryGlyph } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
 // mounts, and the same whitelist the backend validates delivery_day against.
@@ -667,13 +667,17 @@ export default function ProducersClient({
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
     ...visibleCategories.map((c) => {
-      const Glyph = CATEGORY_ICONS[c.name];
+      // MEH-2163: one total lookup, and the chip policy stated rather than
+      // inferred from a bare index returning `undefined` — an unmapped category
+      // renders NO icon here (`isFallback` discarded), which is MEH-1441's
+      // "never a Leaf fallback" decision, not an accident of the lookup shape.
+      const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c);
       const style = CATEGORY_STYLES[c.name];
       const iconColor = style ? (style.textColor ?? style.color) : undefined;
       return {
         key: String(c.id),
         label: c.name,
-        ...(Glyph ? { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) } : {}),
+        ...(isFallback ? {} : { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) }),
       };
     }),
   ];
@@ -725,6 +729,7 @@ export default function ProducersClient({
       <form
         role="search"
         onSubmit={handleSearchSubmit}
+        data-testid="producers-search-form"
         className="flex items-center gap-2 mb-3"
       >
         <label htmlFor="producers-search-input" className="sr-only">
@@ -755,8 +760,8 @@ export default function ProducersClient({
           MEH-1186: micro-label above the row names the behavior (category
           selection) vs the toggle row below (attribute filtering). */}
       {categories.length > 0 && (
-        <div className="mb-3">
-          <p className="text-xs text-fg-muted mb-1">{t("filters.category_label")}</p>
+        <div className="mb-3" data-testid="producers-category-row">
+          <p className="text-xs text-fg-muted mb-1" data-testid="producers-category-label">{t("filters.category_label")}</p>
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
@@ -838,8 +843,8 @@ export default function ProducersClient({
           filter strip. In the zero-result state counterText is null but the
           chips still render so the user can escape the empty state. */}
       {(counterText || hasActiveChips) && (
-        <div className="flex flex-wrap items-center gap-2 mb-4 text-sm" aria-live="polite">
-          {counterText && <span className="text-fg-muted">{counterText}</span>}
+        <div className="flex flex-wrap items-center gap-2 mb-4 text-sm" aria-live="polite" data-testid="producers-control-line">
+          {counterText && <span className="text-fg-muted" data-testid="producers-results-counter">{counterText}</span>}
           {counterText && hasActiveChips && (
             <span aria-hidden="true" className="text-border">·</span>
           )}
@@ -896,6 +901,7 @@ export default function ProducersClient({
             <button
               type="button"
               onClick={clearAll}
+              data-testid="producers-clear-all"
               className="text-xs text-primary underline whitespace-nowrap shrink-0 ms-1"
             >
               {t("filters.clear_all")}
@@ -946,7 +952,7 @@ export default function ProducersClient({
         <CatalogEmptyState />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4" data-testid="producers-grid">
             {displayItems.map((p) => (
               <ProducerCard
                 key={p.id}
@@ -1001,7 +1007,7 @@ export default function ProducersClient({
 function FilterEmptyState({ onClear, searchQ }) {
   const t = useTranslations("producers");
   return (
-    <div className="text-center py-16">
+    <div className="text-center py-16" data-testid="producers-filter-empty">
       <div
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
@@ -1034,6 +1040,7 @@ function FilterEmptyState({ onClear, searchQ }) {
       <button
         type="button"
         onClick={onClear}
+        data-testid="producers-empty-clear"
         className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
       >
         {t("empty.clear_all_show_all")}
@@ -1050,7 +1057,7 @@ function CatalogEmptyState() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   return (
-    <div className="text-center py-16">
+    <div className="text-center py-16" data-testid="producers-catalog-empty">
       <div
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"

@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+// MEH-2245: the tab is the ROUTE (/events vs /experiences), so switching it is
+// a navigation. next-intl's router keeps the locale prefix (/en/experiences).
+import { useRouter } from "@/i18n/navigation";
 import {
   ArrowCounterClockwise,
   ArrowRight,
@@ -40,8 +43,10 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 // date formatting (lib/format-date.js) untouched — layout layer only.
 // EventCard rewritten as the date-rail EntryRow (the page's signature
 // gesture); experiences render through the SAME EntryRow (gold accent),
-// so ExperienceCard.jsx is no longer imported here (still owns
-// /experiences + /mine). Calendar view keeps CalendarView as-is.
+// so the old experience card is no longer imported here (the route-as-tab
+// merge deleted its last route consumer, the old /experiences client, and
+// MEH-2248 deleted the component itself). Calendar view keeps
+// CalendarView as-is.
 
 // MEH-788: events hero — license-clean Pexels market-produce photo (3:4
 // 2400×3200, Pexels Free). Smart-cropped to a wide 16:9 band via g_auto
@@ -116,15 +121,17 @@ function toEntry(row, tab) {
   };
 }
 
-export default function EventsPage() {
+// MEH-2245: one hub behind two routes. `initialTab` is decided by the route
+// that mounts this component (/events → "events", /experiences →
+// "experiences") — never by a ?tab= query. The old query-string deep-link
+// 308s to /experiences in next.config.js redirects().
+export default function EventsPage({ initialTab = "events" }) {
   const t = useTranslations("events.list");
   const tCat = useTranslations("events.categories");
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
+  const router = useRouter();
   const search = useSearchParams();
-  // Tab state lives in the URL so /events?tab=experiences is a real
-  // deep-link and survives refresh / share / bookmark.
-  const initialTab = search.get("tab") === "experiences" ? "experiences" : "events";
   const [tab, setTab] = useState(initialTab);
   // View mode — list (default) vs calendar. Independent of tab; applies
   // to whichever data set (events / experiences) is loaded.
@@ -133,7 +140,7 @@ export default function EventsPage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
-  // URL on mount like `tab` above. A URL category is accepted only when it
+  // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
   // silently filter to zero rows.
   const [city, setCity] = useState(() => search.get("city") || "");
@@ -147,24 +154,29 @@ export default function EventsPage() {
   // category vocabularies, so keeping a cross-tab category would
   // silently filter to zero rows. The URL-sync effect below mirrors the
   // reset into the query string.
+  // MEH-2245: the switch is also a route change (/events ↔ /experiences).
+  // Local state flips first so the tablist responds on the same tick
+  // (aria-selected / roving tabindex — EventsTabsKeyboard.test.jsx); the
+  // route then mounts this same component with the matching initialTab.
   const switchTab = (next) => {
     if (next === tab) return;
     setTab(next);
     setCategory("");
     setCity("");
+    router.push(next === "experiences" ? "/experiences" : "/events");
   };
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
-  // {tab, city, category}, so filters survive refresh/share and the switchTab
+  // {city, category}, so filters survive refresh/share and the switchTab
   // reset clears them from the URL too — a cross-tab category is never
   // resurrected. Shallow history.replaceState, NOT router.replace: a Next
   // navigation from this mount-time effect re-suspends the useSearchParams
   // boundary (page.js Suspense) and resets client state — the E2E calendar
   // toggle caught exactly that. replaceState keeps it a pure URL mirror
   // (and preserves the locale-prefixed pathname on /en).
+  // MEH-2245: `tab` is no longer written — the route carries it.
   useEffect(() => {
     const p = new URLSearchParams();
-    if (tab === "experiences") p.set("tab", "experiences");
     if (city) p.set("city", city);
     if (category) p.set("category", category);
     const qs = p.toString();
@@ -172,7 +184,7 @@ export default function EventsPage() {
     if (qs === current) return;
     const path = window.location.pathname;
     window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
-  }, [tab, city, category]);
+  }, [city, category]);
 
   useEffect(() => {
     load();
@@ -262,7 +274,12 @@ export default function EventsPage() {
       {/* Breadcrumb — stays on cream so it reads on the dark desktop hero
           below without recoloring the shared component. */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
-        <Breadcrumb items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_events") }]} />
+        <Breadcrumb
+          items={[
+            { href: "/", label: t("breadcrumb_home") },
+            { label: isExp ? t("breadcrumb_experiences") : t("breadcrumb_events") },
+          ]}
+        />
       </div>
 
       {/* Header — type-led per tab, now a full-bleed Ken Burns produce hero
@@ -344,7 +361,7 @@ export default function EventsPage() {
           </button>
           </div>
           <Link
-            href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
+            href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
             className="ms-auto self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
@@ -561,7 +578,7 @@ function EmptyState({ tab, t }) {
       <div className="mt-6 flex flex-col items-center gap-4 w-full">
         {isExp && (
           <Link
-            href="/experiences/new"
+            href="/producer/dashboard/experiences/new"
             className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <Plus size={18} weight="bold" />

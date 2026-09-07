@@ -280,8 +280,8 @@ class TestBranchRowIsNotAPickup:
     `test_the_new_row_is_never_a_pickup_kind` DOES go red on HEAD~ — but only
     because there is no row there to unpack, not because it told a branch row
     from a pickup one. Named rather than counted: its red is about existence,
-    and only its green is about kind. `test_column_j_still_reaches_the_legacy_boolean`
-    passes in both worlds and is genuinely non-discriminating.
+    and only its green is about kind. `test_column_j_no_longer_reaches_the_legacy_boolean`
+    is MEH-2048's guard on this file: red against the pre-2048 importer.
 
     Kept because the failure they guard is silent and legally-shaped: a branch
     row that counted as a pickup point would advertise collection at an address
@@ -298,15 +298,19 @@ class TestBranchRowIsNotAPickup:
         assert loc.kind == "branch"
         assert loc.kind not in ("pickup", "market_stand")
 
-    def test_column_j_still_reaches_the_legacy_boolean(self, db):
-        """MEH-2060 kept this write deliberately; MEH-2140 does not stop it.
+    def test_column_j_no_longer_reaches_the_legacy_boolean(self, db):
+        """MEH-2060 kept this write deliberately; MEH-2048 (05/09) stopped it.
 
-        Stopping it is MEH-2048. If that lands, this assertion is the one that
-        should be changed on purpose rather than discovered broken.
+        This assertion used to read `is True` and its docstring said: "Stopping
+        it is MEH-2048. If that lands, this assertion is the one that should be
+        changed on purpose rather than discovered broken." It landed; this is the
+        on-purpose change. Column J now yields only a warning
+        (`tests/test_meh2048_pickup_write_stopped.py` covers the warning text and
+        the dry-run path).
         """
         _seed_category(db)
 
         import_rows(db, [_row(pickup="כן")], dry_run=False)
 
         producer = db.query(Producer).filter(Producer.name == "חוות הגליל").one()
-        assert producer.pickup_points is True
+        assert producer.pickup_points is False

@@ -210,20 +210,20 @@ async function main() {
     await page.close();
   }
 
-  // ───────────────────── surface 2: /experiences/new ──────────────────────
+  // ───────────────────── surface 2: /producer/dashboard/experiences/new ──────────────────────
   for (const width of [375, 1440]) {
-    const page = await open(browser, width, "/experiences/new", []);
+    const page = await open(browser, width, "/producer/dashboard/experiences/new", []);
     const body = await page.evaluate(() => document.body.innerText);
     const hasNew = body.includes(EXPECTED_SUBTITLE);
     if (!hasNew) await diagnostic(page, `${width}: subtitle not found`);
     check(
-      `${width} experiences/new: the NEW subtitle renders byte-for-byte`,
+      `${width} producer/dashboard/experiences/new: the NEW subtitle renders byte-for-byte`,
       hasNew,
       hasNew ? "" : "not found in body text"
     );
     const stale = RETIRED.filter((s) => body.includes(s));
     check(
-      `${width} experiences/new: the retired 24–48h promise is GONE`,
+      `${width} producer/dashboard/experiences/new: the retired 24–48h promise is GONE`,
       stale.length === 0,
       stale.length ? `still present: ${stale.join(" · ")}` : ""
     );

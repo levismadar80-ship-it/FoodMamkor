@@ -1,0 +1,88 @@
+"""
+Module:   test_meh1494_recommended_at_note
+Purpose:  Chunk A guard for producers.recommended_at / recommended_note — the
+          two columns exist with the declared shape, a new producer carries
+          NULL in both, and recommended_note is ABSENT from every public
+          response schema by name.
+Touches:  The test DB via `db` (make_producer inserts one row). No HTTP.
+Does NOT: assert the admin toggle stamps recommended_at, or the annual review
+          list — both are chunk B and have no code yet.
+Related:  backend/app/models/models.py (Producer.recommended_at / _note);
+          backend/alembic/versions/20260904_2230_e2a7c9d4b6f1_*.py;
+          backend/app/schemas/schemas.py (ProducerListOut / ProducerDetailOut)
+History:  MEH-1494 chunk A (creation, night session 04/09).
+"""
+
+from conftest import make_producer
+
+from app.models.models import Producer
+from app.schemas.schemas import ProducerDetailOut, ProducerListOut, ProducerOwnerOut
+
+
+# ── The absence control ───────────────────────────────────────────────────
+# Against origin/staging both attributes raise AttributeError — the columns
+# do not exist there.
+def test_columns_exist_with_declared_shape():
+    at = Producer.recommended_at.property.columns[0]
+    note = Producer.recommended_note.property.columns[0]
+    assert at.nullable is True and note.nullable is True
+    assert at.type.timezone is True, (
+        "a pick date without a timezone is a MEH-1883 bug waiting to happen"
+    )
+    assert at.server_default is None and note.server_default is None
+
+
+def test_new_producer_has_no_pick_date_and_no_note(db):
+    p = make_producer(db)
+    db.refresh(p)
+    assert p.recommended_at is None
+    assert p.recommended_note is None
+    # No backfill from the boolean either: the date is unknown, not "now".
+    # `is False`, not `in (False, None)`: the column carries default=False, so
+    # a None here would mean someone made it nullable (reviewer, PR #3394).
+    assert p.is_recommended is False
+
+
+# ── The privacy guard ─────────────────────────────────────────────────────
+# The note is the editor's internal reasoning about a real business. It must
+# never ride a public schema. Asserted by NAME on each shape so that adding it
+# to a base class they inherit from also goes red.
+#
+# MEH-1494 chunk B added the field to ProducerAdminOut (ADR-006 R2 — the write
+# path needed a read path), which is a subclass of ProducerDetailOut and does
+# NOT put it in the parent's `model_fields`. ProducerOwnerOut joined this loop
+# in the same change: it is the OTHER subclass of that parent, so it is the one
+# public shape a "just put it next to the admin fields" edit could reach
+# without any of the three asserts below moving. The owner reading what the
+# editor wrote about her business is the ADR-030 failure, not a leak of
+# degree — a rationale its subject can read is a negotiation, not a record.
+def test_recommended_note_is_absent_from_public_schemas():
+    for schema in (ProducerListOut, ProducerDetailOut, ProducerOwnerOut):
+        assert "recommended_note" not in schema.model_fields, schema.__name__
+
+
+# MEH-2274, from the CI reviewer on PR #3446: the fence above was asymmetric.
+# `recommended_at` was added to ProducerAdminOut in the same change and never
+# checked by NAME here, so the HTTP tests would catch a mistaken addition to a
+# public schema and the schema-level fence would not.
+#
+# WHY THIS IS A SEPARATE TEST AND NOT A SECOND STRING IN THE LOOP ABOVE. The
+# two fields are absent for DIFFERENT reasons, and collapsing them would state
+# a decision the card has not made.
+#
+#   recommended_note is absent on PRINCIPLE (ADR-030). It is never public, in
+#   any future — a rationale its subject can read is a negotiation, not a
+#   record.
+#
+#   recommended_at is absent as a matter of TODAY'S FACT. Whether it becomes
+#   public — «בחירת העורכת 2026», the shape TripAdvisor uses for a
+#   Travelers' Choice year — is an OPEN copy-and-design question the card
+#   routes to Sapir under rule 22. Nobody has ruled.
+#
+# So a red here is not necessarily a bug: it means someone put the date on a
+# public shape, and the reader should check whether that ruling has been made
+# rather than reverting on sight. If it is made, updating this test IS part of
+# that change — which is what an as-of fence is for.
+def test_recommended_at_is_absent_from_public_schemas_today():
+    for schema in (ProducerListOut, ProducerDetailOut, ProducerOwnerOut):
+        assert "recommended_at" not in schema.model_fields, schema.__name__

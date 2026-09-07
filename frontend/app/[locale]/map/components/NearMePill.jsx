@@ -40,6 +40,7 @@ export default function NearMePill({ onClick }) {
     <button
       type="button"
       onClick={onClick}
+      data-testid="map-near-me-pill"
       aria-label={t("map.near_me_pill.aria")}
       // MEH-970 R2: `bottom` rides the sheet edge (--map-sheet-h) and animates in
       // lockstep with the sheet via --map-sheet-anim (0ms drag / 300ms snap,

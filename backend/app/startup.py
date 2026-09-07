@@ -35,6 +35,25 @@ def _redacted_db_url() -> str:
 # drift branch below, so it gets its own warning.
 _RECOGNIZED_ENVS = ("development", "staging", "production")
 
+# MEH-2219 chunk 1 (ruling 01/09, ADR-003): in the two DEPLOYED environments the
+# schema is owned by Alembic alone — `alembic upgrade head` runs in the container
+# entrypoint before uvicorn (Dockerfile). `Base.metadata.create_all(checkfirst=True)`
+# is not a no-op there: a table added to models without a revision would be
+# CREATED at boot, which is the second schema writer MEH-267 removed. It stays
+# as the dev/CI safety net (MEH-352) everywhere else, including tests.
+_ALEMBIC_OWNED_ENVS = ("staging", "production")
+
+
+def _schema_is_alembic_owned(env: str | None) -> bool:
+    """True when boot must NOT call create_all — the deployed environments.
+
+    Pure helper so the decision is unit-testable without a lifespan. Compared
+    lower-cased so `ENV=Production` behaves like `production`; an unrecognized
+    value (typo) stays on the safety-net side, which is the fail-open reading —
+    _check_frontend_url_consistency already warns about it separately.
+    """
+    return (env or "").lower() in _ALEMBIC_OWNED_ENVS
+
 
 def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
     """MEH-334: defense-in-depth boot guard for FRONTEND_URL drift.
@@ -147,9 +166,17 @@ def _run_db_init_sync() -> None:
     from app.models import models  # noqa: F401
     from app.database import Base, engine
 
-    Base.metadata.create_all(
-        bind=engine
-    )  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
+    if _schema_is_alembic_owned(settings.env):
+        # MEH-2219: the line below is the Railway-log evidence that the second
+        # schema writer is gone in this environment (ADR-003).
+        log.info(
+            "[bg 1/2] schema is Alembic-owned in %s; create_all skipped (ADR-003)",
+            settings.env,
+        )
+    else:
+        Base.metadata.create_all(
+            bind=engine
+        )  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist
     log.info("[bg 1/2] models imported OK")
 
     log.info("[bg 2/2] running seed_data.seed()...")
@@ -337,6 +364,35 @@ def _run_full_week_expiry_job() -> None:
         db.close()
 
 
+def _run_analytics_rollup_job() -> None:
+    """MEH-2079 chunk B2 (MEH-2283): daily APScheduler tick that rolls every
+    pending Israel day of raw producer analytics into `producer_analytics_daily`
+    — `[watermark + 1 .. yesterday]`, never today, never a day that already
+    has a row. `run_rollup` logs `days_rolled` / `days_skipped` itself.
+
+    Same shape as _run_full_week_expiry_job: fresh session (the scheduler
+    worker thread cannot share request-scoped sessions), the service rolls
+    back before re-raising so the session stays usable (MEH-1824 invariant),
+    own Sentry task tag, and the exception swallowed so the scheduler thread
+    never dies. A crashed run costs nothing that the next run does not
+    recover: the range is recomputed from the watermark every time.
+    """
+    from app.database import SessionLocal
+    from app.services.analytics_rollup import run_rollup
+
+    db = SessionLocal()
+    try:
+        result = run_rollup(db)
+        log.info("[ANALYTICS-ROLLUP] daily run complete result=%s", result)
+    except Exception as exc:
+        # roll_up_day already rolled back before re-raising, so the session
+        # is usable; this handler only reports. Daily cadence — no flood risk.
+        capture_background_exception(exc, task="analytics_rollup")
+        log.error("[ANALYTICS-ROLLUP] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -467,11 +523,29 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
+    # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
+    # (the last day the job may roll) is a complete Israel day by the time it
+    # fires. Israel-day semantics live in the service; the trigger only has
+    # to be late enough. coalesce + a 6h grace: a pause spanning the fire
+    # time runs it once, late, instead of skipping — and a fully missed day
+    # costs nothing, since the next run recomputes the range from the
+    # watermark and rolls both days.
+    followup_scheduler.add_job(
+        _run_analytics_rollup_job,
+        CronTrigger(hour=1, minute=30),
+        id="meh_2283_analytics_rollup_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
     log.info(
         "[FOLLOWUP] scheduler started — daily 10:00 UTC"
         " + weekly full-week expiry Sun 00:10 Asia/Jerusalem (MEH-1828)"
+        " + daily analytics roll-up 01:30 UTC (MEH-2283)"
     )
 
     yield

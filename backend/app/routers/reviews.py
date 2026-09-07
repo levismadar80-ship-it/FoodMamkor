@@ -23,13 +23,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, aliased, joinedload
 
-from app.auth import get_current_user, require_admin
+from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
     ContactClick,
     Producer,
+    ProducerCategory,
     ProducerReview,
     ProducerWhatsAppClick,
     User,
@@ -211,6 +212,42 @@ def list_reviews(
 # ---------------------------------------------------------------------------
 
 
+def _shares_category(db: Session, owner_producer_id: UUID, producer_id: UUID) -> bool:
+    """MEH-2076: True when the two producers' category sets intersect.
+
+    One EXISTS-shaped query over the M2M table (self-join on category_id),
+    so a shared SECONDARY category counts — the check is intersection, not
+    primary-only.
+    """
+    mine = aliased(ProducerCategory)
+    theirs = aliased(ProducerCategory)
+    return (
+        db.query(mine.category_id)
+        .join(theirs, theirs.category_id == mine.category_id)
+        .filter(
+            mine.producer_id == owner_producer_id,
+            theirs.producer_id == producer_id,
+        )
+        .first()
+        is not None
+    )
+
+
+def _invited_by_token(review_token: str | None, producer_id: UUID) -> bool:
+    """MEH-1428: does a signed review-invite token vouch for THIS producer?
+
+    Verification (signature, expiry, scope) lives in
+    decode_review_invite_token; this adds only the producer binding — a token
+    minted for another business is a forged claim of contact here. Extracted
+    from create_review_nested so the handler stays under ruff's C901 budget
+    (it read 11 > 10 with the branch inline).
+    """
+    if not review_token:
+        return False
+    claims = decode_review_invite_token(review_token)
+    return bool(claims) and claims.get("producer_id") == str(producer_id)
+
+
 @router.post(
     "/producers/{producer_id}/reviews",
     response_model=ReviewOut,
@@ -229,6 +266,8 @@ def create_review_nested(
     Guards (checked in order):
       1. Producer must exist.
       2. Producer owner cannot review their own business.
+      2b. Producer owner cannot review a business sharing a category with
+          hers (MEH-2076 — conflict of interest; cross-category stays open).
       3. First-time reviewers must have a click on ANY of this producer's
          contact channels — a WhatsApp click OR a contact click (MEH-2204).
       4. Body is moderated by Haiku (fail-open).
@@ -242,6 +281,21 @@ def create_review_nested(
         raise HTTPException(
             status_code=403,
             detail="בעלת עסק לא יכולה לדרג את עצמה",
+        )
+
+    # Guard 2b (MEH-2076): a business owner cannot review a DIRECT competitor —
+    # any business whose category set intersects hers. Policy (Sapir 14/08):
+    # same-category only; cross-category reviews stay allowed, because the
+    # bakery owner really does buy the cheese ("magazine, not marketplace").
+    # Sits BEFORE the contact gate on purpose: it must hold no matter how the
+    # reviewer got past that gate — a click today, a signed invite link once
+    # MEH-1428 lands — so it cannot be attached to either of those paths.
+    if user.producer_id is not None and _shares_category(
+        db, user.producer_id, producer_id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות.",
         )
 
     existing_review = (
@@ -272,7 +326,20 @@ def create_review_nested(
     # That keeps the pre-existing WhatsApp path identical in both result and
     # query count — the regression criterion this ticket is held to.
     # Both columns are indexed (models.py: producer_id and user_id on each).
-    if not existing_review:
+    #
+    # MEH-1428 chunk 1: a signed "request a review" token (the `rt` param on
+    # the link the owner shares, forwarded as `review_token`) is the THIRD way
+    # through this gate. The owner asking for the review is itself the proof
+    # of contact. The token must verify (signature, expiry, scope — all inside
+    # decode_review_invite_token) AND name THIS producer; a token minted for
+    # another business is a forged claim of contact here and gets the same
+    # 403 as no token at all. It is checked before the click queries so a
+    # link-holder costs zero click reads, and a bad token simply falls through
+    # to the click path — a customer who clicked AND pasted a stale link is
+    # still a customer who clicked. Same detail on every failure: the reviewer
+    # learns nothing about WHICH proof was rejected.
+    invited = _invited_by_token(data.review_token, producer_id)
+    if not existing_review and not invited:
         clicked = (
             db.query(ProducerWhatsAppClick.id)
             .filter(
@@ -316,6 +383,9 @@ def create_review_nested(
             user_id=user.id,
             stars=data.stars,
             body=data.body,
+            # MEH-1428: records HOW the gate was passed, set once at creation.
+            # An edit never rewrites it — the first proof is the one on record.
+            source="invite_link" if invited else "click",
         )
         db.add(review)
         try:
@@ -462,6 +532,8 @@ def admin_list_reviews(
             body=r.body,
             is_hidden=r.is_hidden,
             created_at=r.created_at.isoformat() if r.created_at else "",
+            # MEH-1428: "click" | "invite_link".
+            source=r.source,
         )
         for r in rows
     ]

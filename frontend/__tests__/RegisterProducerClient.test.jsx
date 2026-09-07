@@ -72,9 +72,32 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 // CitySearch stub — emits a string via onChange (MEH-853 contract), so the test
 // can set `city` without the real /cities fetch. Mirrors ModalFocusReturn:62.
+// MEH-2241 chunk B: the real component also emits `{ known }` (chunk A
+// contract) and the wizard now gates on it, so the stub carries the verdict:
+// every town is known EXCEPT the one sentinel below, which stands in for
+// "typed, 0 suggestions, never picked" — the case C the card measured.
+// Tests that fill "תל אביב" are therefore unaffected.
+const FREE_TEXT_TOWN = "עיירה שאינה ברשימה";
 vi.mock("@/components/CitySearch", () => ({
-  default: ({ value, onChange, id }) => (
-    <input data-testid="city" id={id} value={value || ""} onChange={(e) => onChange(e.target.value)} />
+  default: ({ value, onChange, onKnownChange, id, "aria-invalid": ariaInvalid }) => (
+    <input
+      data-testid="city"
+      id={id}
+      aria-invalid={ariaInvalid}
+      value={value || ""}
+      // Literal, not the constant: vi.mock() is hoisted above `const
+      // FREE_TEXT_TOWN`, so the factory cannot reference it. MUST MATCH
+      // FREE_TEXT_TOWN — the guard test below fails if the two drift.
+      onChange={(e) => onChange(e.target.value, { known: e.target.value !== "עיירה שאינה ברשימה" })}
+      // The async half: a test can flip the verdict for the current value
+      // without re-emitting it (the real component fires this after a late
+      // /cities response). Exposed as a button so no fetch is simulated.
+      data-has-known-change={onKnownChange ? "1" : "0"}
+      onBlur={() => onKnownChange && onKnownChange(true)}
+      // …and the reverse flip (a late response REVOKING a match) rides
+      // double-click, so both directions of the async verdict are drivable.
+      onDoubleClick={() => onKnownChange && onKnownChange(false)}
+    />
   ),
 }));
 
@@ -818,6 +841,25 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     fireEvent.click(screen.getByTestId("pick-category")); // deselect id 1
     fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  // MEH-2105: this gate was the only per-step block that never called
+  // requestFocus — on a 375px viewport the red line rendered ~67px below the
+  // fold while every sibling gate (ACCOUNT fields, runRequiredGate) scrolls
+  // its offender to block:"center". Observed the way MEH-1807 observes its
+  // gates: focus landed on the field, and the setup.js scrollIntoView shim
+  // saw the centred scroll. The pre-click control proves the field was NOT
+  // already focused, so the post-click assertion is falsifiable.
+  it("moves focus to the licence field when the gate blocks (MEH-2105)", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    await renderWizard();
+    await reachCategoryAndPick();
+    const licenseInput = screen.getByTestId("register-category-license");
+    expect(document.activeElement).not.toBe(licenseInput); // control
+    fireEvent.click(screen.getByTestId("register-category-next")); // blocked
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
+    expect(document.activeElement).toBe(licenseInput);
+    expect(licenseInput.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
   });
 });
 
@@ -1600,5 +1642,153 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
 
     expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
     expectScrolledToTop();
+  });
+});
+
+// ── MEH-2241 chunk B — «free-text city forbidden» (MEH-213) enforced at the
+// DETAILS→CATEGORY gate. Three states of the city field, per the 5-state rule:
+// empty / picked-from-list / typed-but-unknown. The first two are controls the
+// MEH-2015 chunk-B tests above already pin (empty blocks, "תל אביב" advances);
+// they are restated here so the three cells sit in one place.
+describe("MEH-2241 chunk B — a typed town CitySearch could not match is as missing as an empty one", () => {
+  async function reachDetailsFilledExceptCity() {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+  }
+
+  it("the stub's sentinel literal matches FREE_TEXT_TOWN (guards the hoisted duplicate)", async () => {
+    await reachDetailsFilledExceptCity();
+    // If the literal inside vi.mock() drifted from the constant, the constant
+    // would be emitted as a KNOWN town and this advance would succeed.
+    fireEvent.change(screen.getByTestId("city"), { target: { value: FREE_TEXT_TOWN } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+  });
+
+  it("A — empty city still blocks the DETAILS advance (control)", async () => {
+    await reachDetailsFilledExceptCity();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+  });
+
+  it("B — a town CitySearch vouches for advances (control)", async () => {
+    await reachDetailsFilledExceptCity();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("C — a typed town with no match is refused at the field, focused, with the city message", async () => {
+    await reachDetailsFilledExceptCity();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: FREE_TEXT_TOWN } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    // did NOT advance
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    // the message is the city one, not a neighbour's
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+    const cityInput = screen.getByTestId("city");
+    expect(cityInput).toHaveAttribute("aria-invalid", "true");
+    expect(document.activeElement).toBe(cityInput);
+  });
+
+  it("C→B — the async verdict (onKnownChange) unblocks without a re-emit of the value", async () => {
+    await reachDetailsFilledExceptCity();
+    const cityInput = screen.getByTestId("city");
+    fireEvent.change(cityInput, { target: { value: FREE_TEXT_TOWN } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    // a late /cities response says the value IS a town after all
+    expect(cityInput).toHaveAttribute("data-has-known-change", "1");
+    fireEvent.blur(cityInput);
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("B→C — a late response revoking the match re-blocks, without the value changing", async () => {
+    await reachDetailsFilledExceptCity();
+    const cityInput = screen.getByTestId("city");
+    fireEvent.change(cityInput, { target: { value: "תל אביב" } }); // known at emit
+    fireEvent.doubleClick(cityInput); // async verdict: not a town after all
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+    expect(cityInput.value).toBe("תל אביב"); // the value itself was never re-emitted
+  });
+
+  // Draft round-trip (CI reviewer on #3461): `packDraft` spreads every form
+  // field except `password` (lib/register-draft.js), so the verdict survives a
+  // reload. Asserted end-to-end — a restored draft is NOT re-challenged when
+  // the town was picked, and IS challenged when it was not — rather than by
+  // reading the stored JSON, which would pass identically if restoreDraft
+  // dropped the key on the way back in.
+  // packDraft spreads every field except `password`, so `city_known` rides
+  // the draft. Two cases, one per outcome, so a red in one cannot hide the
+  // other (CI reviewer on this PR).
+  async function restoreDraftWithCity(known) {
+    localStorage.setItem("token", "tok-123");
+    authState.user = { role: "user" };
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        v: 2,
+        savedAt: Date.now(),
+        step: 2, // DETAILS
+        form: {
+          producer_name: "העסק שלי",
+          phone: "0501234567",
+          city: known ? "תל אביב" : FREE_TEXT_TOWN,
+          city_known: known,
+        },
+      }),
+    );
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    await screen.findByTestId("register-frame-details");
+  }
+
+  it("draft round-trip — a restored list-picked town passes the gate", async () => {
+    await restoreDraftWithCity(true);
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("draft round-trip — a restored free-text town is re-challenged", async () => {
+    await restoreDraftWithCity(false);
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(document.getElementById("register-city-error")).toHaveTextContent(
+      `${K}.validation.city_required`,
+    );
+  });
+
+  it("the flag never reaches the POST body", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // whatever the submit path sends, `city_known` is wizard state, not payload
+    api.post.mockResolvedValue({ data: {} });
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body).not.toHaveProperty("city_known");
+    expect(body.city).toBe("תל אביב");
   });
 });

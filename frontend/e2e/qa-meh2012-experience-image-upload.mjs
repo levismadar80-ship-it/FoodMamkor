@@ -1,10 +1,10 @@
 /**
  * MEH-2012 self-QA — the experience image field is an upload, not a URL box.
  *
- * Drives the REAL /he/experiences/new page in Chromium against a local
+ * Drives the REAL /he/producer/dashboard/experiences/new page in Chromium against a local
  * `next start`, with `/api/**` fulfilled from fixtures (the CC sandbox has no
  * backend and cannot reach Railway — CLAUDE.md "Known Bug Patterns"). The page
- * is auth-gated (`NewExperienceClient.jsx:24` redirects to /login without a
+ * is auth-gated (the dashboard layout redirects to /login without a
  * user), so a token is seeded and `GET /auth/me` is stubbed — the same pattern
  * as `e2e/qa-meh1638-settings-skeleton.mjs`.
  *
@@ -126,7 +126,7 @@ async function openForm(ctx) {
   const page = await ctx.newPage();
   const pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(String(e)));
-  await page.goto(`${BASE}/he/experiences/new`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/he/producer/dashboard/experiences/new`, { waitUntil: "networkidle" });
   await page.waitForTimeout(900);
   return { page, pageErrors };
 }
@@ -173,7 +173,7 @@ async function attach(page) {
 }
 
 async function run(browser, vp) {
-  console.log(`\n== /he/experiences/new @ ${vp.width}×${vp.height} (${vp.tag}) ==`);
+  console.log(`\n== /he/producer/dashboard/experiences/new @ ${vp.width}×${vp.height} (${vp.tag}) ==`);
 
   // ---- 1: empty + the field's shape --------------------------------------
   const ctx = await newContext(browser, vp, { upload: "cloud" });

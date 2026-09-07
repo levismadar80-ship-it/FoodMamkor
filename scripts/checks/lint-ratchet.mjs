@@ -296,7 +296,8 @@ function selfTest() {
       ["lib/places.js\texports", 1],
       ["lib/env.server.js\tfiles", 1],
       ["package.json\tdependencies", 1],
-      ["package.json\tdevDependencies", 1],
+      // 1 at the 12/08 freeze; 2 at the 05/09 re-freeze (orval + eslint-plugin-playwright).
+      ["package.json\tdevDependencies", 2],
       ["eslint.config.mjs\tunlisted", 1],
       ["lib/schemas.js\tduplicates", 1],
     ];

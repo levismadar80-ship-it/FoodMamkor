@@ -313,6 +313,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     )}
     <div
       className={`relative h-52 rounded-md overflow-hidden bg-gray-100${single ? "" : " md:hidden"}`}
+      data-testid="gallery-carousel"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

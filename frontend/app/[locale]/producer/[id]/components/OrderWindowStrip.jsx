@@ -55,19 +55,48 @@
  *           feature. The "Does NOT" clause above and its guard test in
  *           __tests__/OrderWindowScheduleBlock.test.jsx still hold; reversing
  *           them is Sapir's call, not a side effect of another ticket.
+ *           MEH-2264 (MEH-1889 chunk B) — a third layer, "שעות מיוחדות": the
+ *           owner's UPCOMING per-date overrides, listed under the weekly
+ *           schedule with the date, the hours (or "not accepting orders"),
+ *           and the display-only `note`. Past dates never render (ruling ג).
+ *           Still schedule-only — the date list carries no verdict about NOW;
+ *           the header's status already reads today's override. Clock-derived
+ *           (which dates are still ahead), so it arrives after mount like the
+ *           today-chip, and an override-only producer's block appears then.
  */
 
 import { Fragment, useEffect, useState } from "react";
 import { CalendarCheck, CaretDown } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { humanTime } from "@/lib/time-format";
 
 import {
   ORDER_DAY_KEYS,
   getOrderWindowRanges,
+  getUpcomingSpecialDates,
   israelNowParts,
   normalizeDayEntries,
 } from "@/lib/orderWindow";
+
+const NOON_UTC = 12;
+
+/**
+ * "21 בספטמבר" for an ISO date, in the page locale. Built from a UTC-noon
+ * instant and formatted in Asia/Jerusalem, so neither the runner's zone nor the
+ * IST/IDT offset can move the calendar day (`new Date("YYYY-MM-DD")` is UTC
+ * midnight, which is still "yesterday" for the first hours of an Israel day).
+ */
+function formatSpecialDate(isoDate, locale) {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  // DISPLAY formatter for a stored ISO date — israelToday()/israelNowParts()
+  // still own "now"; this only prints a calendar day in the page locale.
+  // guard-ok: display formatting of a stored date, not a clock read
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Jerusalem", // guard-ok: display formatting of a stored date, not a clock read
+  }).format(new Date(Date.UTC(y, m - 1, d, NOON_UTC)));
+}
 
 // MEH-1875: index-aligned with lib/orderWindow.js ORDER_DAY_KEYS, so index 0 is
 // Sunday on every axis. REUSES: components/DeliveryBlock.jsx:13 (same
@@ -143,10 +172,16 @@ function openDaysOf(orderWindow) {
  * this returns null, so the block is absent from the DOM entirely — no empty
  * container, no heading, zero layout shift.
  */
-export function OrderWindowScheduleBlock({ orderWindow }) {
+export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
   const t = useTranslations("producer.detail.order_window");
   const tDays = useTranslations("producer.detail.order_window.days");
+  const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
+  // MEH-2264: "which overrides are still ahead" is clock-derived — same
+  // after-mount rule as todayIndex below. The server pass renders no special
+  // list, and an override-only producer's block is therefore client-only.
+  const [upcoming, setUpcoming] = useState([]);
+  useEffect(() => setUpcoming(getUpcomingSpecialDates(specialHours)), [specialHours]);
   // MEH-1917: "which day is today" is clock-derived, so it must not run on the
   // server pass — the same reason ProducerHeader.jsx:118-120 gates its status.
   // Deliberately NOT a guard around the whole block: the schedule itself stays
@@ -162,7 +197,7 @@ export function OrderWindowScheduleBlock({ orderWindow }) {
   // per-day list, and a control labelled "כל השבוע" that reveals a verbatim
   // copy of the rows above it is noise wearing the costume of an affordance.
   const hasMergedRows = openDays.length > rows.length;
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && upcoming.length === 0) return null;
 
   return (
     <section className="mt-8 border-t border-border pt-8" data-testid="order-window-schedule">
@@ -280,6 +315,44 @@ export function OrderWindowScheduleBlock({ orderWindow }) {
               </div>
             )}
           </>
+        )}
+
+        {/* MEH-2264 layer 3 — upcoming special dates. Rendered as a plain list
+            under the weekly schedule: date + note on the start side, hours (or
+            "not accepting orders") on the end side, same row grammar as above.
+            No verdict, no status colour — ProducerHeader already reads today's
+            override into the page's single status (MEH-1305 A). */}
+        {upcoming.length > 0 && (
+          <div
+            className="border-t border-border px-3.5 py-2"
+            data-testid="order-window-special"
+          >
+            <div className="py-1 text-[13px] font-medium text-text">{t("special_heading")}</div>
+            {upcoming.map((d) => (
+              <div
+                key={d.date}
+                className="flex justify-between gap-4 py-1.5 text-[13px] text-fg-muted"
+                data-testid="order-window-special-row"
+                data-date={d.date}
+                data-closed={d.closed ? "true" : undefined}
+              >
+                <span className="flex shrink-0 flex-col">
+                  <span>{formatSpecialDate(d.date, locale)}</span>
+                  {d.note && <span className="text-[12px]">{d.note}</span>}
+                </span>
+                {d.closed ? (
+                  <span className="text-end">{t("special_closed")}</span>
+                ) : (
+                  // dir="ltr" keeps the numerals in reading order on the RTL
+                  // page; text-end then aligns them to the row's END edge —
+                  // the same pair the weekly rows above use. rtl-ok
+                  <span dir="ltr" className="text-end">
+                    <RangeList ranges={d.ranges} />
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </section>

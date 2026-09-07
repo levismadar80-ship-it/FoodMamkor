@@ -179,7 +179,6 @@ const EMPTY = {
   established_year: "",
   category_ids: [],
   has_delivery: false,
-  pickup_points: false,
   kosher: "",
   grass_fed: false,
   organic_certified: false,
@@ -193,6 +192,11 @@ const EMPTY = {
   // MEH-766 ch3: is_verified removed — verification is the doc-grant flow, not a form toggle.
   // MEH-18
   is_recommended: false,
+  // MEH-2274 (MEH-1494 chunk B, frontend half): the editor's reason for the
+  // pick. "" and not null for the same reason as the date fields below — a
+  // controlled textarea must never flip to uncontrolled — and the submit path
+  // converts "" back to null so an admin can CLEAR a note she wrote.
+  recommended_note: "",
   // MEH-530: admin form persists raw value; backend enforces conditional-
   // required guard on category-license pairing.
   producer_license_number: "",
@@ -200,6 +204,8 @@ const EMPTY = {
   // controlled date input never flips to uncontrolled — same idiom as
   // vacation_until below; the submit path converts "" back to null.
   license_expires_at: "",
+  // MEH-1287 chunk B: editorial seasonal mark. "" = not marked.
+  in_season_until: "",
   admin_notes: "",
   images: [],
   // MEH-213 — location mode
@@ -218,14 +224,19 @@ const EMPTY = {
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
-function Section({ title, children }) {
+function Section({ title, children, testId }) {
   return (
-    <div className="bg-white rounded-[12px] border border-border p-6">
+    <div className="bg-white rounded-[12px] border border-border p-6" data-testid={testId}>
       <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
       {children}
     </div>
   );
 }
+
+// MEH-2274: mirrors ProducerUpdate.recommended_note's `max_length=500`
+// (schemas.py). The server is the enforcer — this only stops the admin from
+// typing past the limit and getting a 422 after she has written the note.
+const RECOMMENDED_NOTE_MAX = 500;
 
 function Field({ label, children, full = false }) {
   return (
@@ -296,6 +307,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // above. Already an ISO "YYYY-MM-DD" string (the column is DATE), which
         // is exactly what <input type="date"> wants — no formatting needed.
         license_expires_at: initial.license_expires_at ?? "",
+        in_season_until: initial.in_season_until ?? "",
+        // MEH-2274: read the note back after a save. Before this the admin
+        // could write it (the backend accepted it since #3446) and never see
+        // it again, which is the half-feature the card exists to close.
+        recommended_note: initial.recommended_note ?? "",
         contact_name: initial.contact_name ?? "",
         whatsapp_group: initial.whatsapp_group ?? "",
         // MEH-17
@@ -306,7 +322,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
-        price_range: initial.price_range ?? initial.starting_price_label ?? "",
+        price_range: initial.price_range ?? "",
         // MEH-1541: null → "" so the number input stays controlled + empty.
         established_year: initial.established_year ?? "",
         admin_notes: initial.admin_notes ?? "",
@@ -453,7 +469,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           : Number(form.established_year),
       category_ids: form.category_ids,
       has_delivery: form.has_delivery,
-      pickup_points: form.pickup_points,
       kosher: form.kosher,
       grass_fed: form.grass_fed,
       organic_certified: form.organic_certified,
@@ -468,6 +483,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // explicitly (rather than omitting the key) is what lets the admin CLEAR
       // a date she entered by mistake.
       license_expires_at: form.license_expires_at || null,
+      // MEH-1287 chunk B: same ""-is-not-a-date reasoning as the line above,
+      // and the same reason for sending null rather than omitting the key —
+      // clearing the mark is how a season ends early.
+      in_season_until: form.in_season_until || null,
+      // MEH-2274: same ""-is-not-a-value reasoning. `recommended_at` is NOT
+      // sent — it is stamped from the transition in admin.py, and supplying it
+      // here would be a second authority over the same clock (schemas.py says
+      // so on the field itself).
+      recommended_note: form.recommended_note || null,
       admin_notes: form.admin_notes,
       images: form.images,
       // MEH-213 — location mode
@@ -802,6 +826,80 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.recommended")}
           </label>
+          {/* MEH-2274 (MEH-1494 chunk B, frontend half). Three deliberate
+              choices here, each of which the backend already decided:
+
+              1. ALWAYS RENDERED, not gated on `is_recommended`. admin.py
+                 does not clear the note on an un-pick — it is the record of
+                 why the decision was made, and hiding it behind the toggle
+                 would make an un-picked business look like it never had one.
+              2. `recommended_at` is READ-ONLY. It is stamped from the
+                 transition in admin.py, so there is no input for it; showing
+                 it as an editable date would invite a second authority over
+                 a clock the server owns.
+              3. NULL on a PICKED business is not missing data — it means the
+                 pick predates the column, and admin.py's review-due clause
+                 counts exactly that row as due. So it renders the review
+                 string, never a blank date. On an UNPICKED business there is
+                 nothing to say, so nothing is rendered. */}
+          <div className="md:col-span-2">
+            <Field label={t("producers.form.fields.recommended_note")}>
+              <textarea
+                id="admin-producer-recommended-note"
+                value={form.recommended_note}
+                onChange={(e) => update("recommended_note", e.target.value)}
+                maxLength={RECOMMENDED_NOTE_MAX}
+                placeholder={t(
+                  "producers.form.fields.recommended_note_placeholder"
+                )}
+                className={`${inputClass} h-20 resize-none`}
+              />
+            </Field>
+            <p className="text-xs text-fg-muted mt-1">
+              {t("producers.form.fields.recommended_note_hint")}
+            </p>
+            {/* MEH-2276 — `initial?.recommended_at` (load-time) under a
+                `form.is_recommended` (live) condition looks like a stale-data
+                bug and is not one, for a reason that lives at the OTHER end of
+                this file: a successful save calls
+                `router.push("/admin?tab=producers")` (:525), so the form
+                navigates away and no one is ever left looking at a stamp the
+                save has just invalidated. Re-entering through the edit page
+                refetches. Before a save, ticking the box shows «מעולם לא»,
+                which is accurate — the server has not stamped anything yet.
+
+                Written down because the dependency is non-local: swap that
+                push for a toast that keeps the admin on the form, and this
+                line starts lying with nothing here to show it. */}
+            {form.is_recommended && (
+              <p className="text-xs text-fg-muted mt-1">
+                {initial?.recommended_at
+                  ? `${t("producers.form.fields.recommended_at")} ${new Date(
+                      initial.recommended_at
+                    ).toLocaleDateString("he-IL")}`
+                  : t("producers.form.fields.recommended_at_never")}
+              </p>
+            )}
+          </div>
+          {/* MEH-1287 chunk B: the seasonal mark lives beside the editorial
+              "מומלץ" toggle because it is the same kind of decision — the
+              editor's, never the owner's (`in_season_until` is on the admin
+              write schema only). A DATE and not a checkbox: the mark expires
+              by itself, so nobody has to remember to clear it at the end of a
+              season. No `min` — re-reading an old season is legitimate. */}
+          <div>
+            <Input
+              id="admin-producer-in-season-until"
+              type="date"
+              label={t("producers.form.fields.in_season_until")}
+              value={form.in_season_until}
+              onChange={(e) => update("in_season_until", e.target.value)}
+              dir="ltr"
+            />
+            <p className="text-xs text-fg-muted mt-1">
+              {t("producers.form.fields.in_season_until_hint")}
+            </p>
+          </div>
           <Field label={t("producers.form.fields.kosher")}>
             <select
               value={form.kosher}
@@ -865,7 +963,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       {/* MEH-213 — location type */}
-      <Section title={t("producers.form.sections.business_type")}>
+      <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -925,7 +1023,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 {t("producers.form.fields.delivery_nationwide")}
               </label>
               {!form.delivery_nationwide && (
-                <div>
+                <div data-testid="delivery-cities-block">
                   <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
                   <CitiesAutocomplete
                     value={form.delivery_cities}
@@ -965,15 +1063,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.has_delivery")}
           </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.pickup_points}
-              onChange={(e) => update("pickup_points", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t("producers.form.fields.pickup_points")}
-          </label>
+          {/* MEH-2048: the pickup checkbox is gone. Since MEH-2046 the filter,
+              the card tag and the map pin all derive pickup from
+              ProducerLocation rows (the locations editor above), and admin.py
+              already drops the field on write (MEH-2060) — so a checkbox here
+              could only claim pickup that no consumer surface would show. */}
+          <p className="text-sm text-fg-muted self-center">
+            {t("producers.form.fields.pickup_managed_in_locations")}
+          </p>
           {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
               removed — cities are now entered once via the CitiesAutocomplete in
               the location-mode block above (single store: delivery_areas). */}

@@ -101,7 +101,7 @@ export default function ProducerDashboardToolsPage() {
       {/* Quick links. MEH-1102: the עריכת פרופיל card was removed — after
           MEH-1095 it targeted /producer/dashboard/edit, duplicating the
           עריכה nav tab one row above. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div data-testid="tools-grid" className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* MEH-1405: card now opens the manage list (create is reachable there). */}
         <Link
           href="/producer/dashboard/events"

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
+import CollectionNotice from "@/components/CollectionNotice";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
 export default function ForgotPasswordClient() {
@@ -70,6 +71,13 @@ export default function ForgotPasswordClient() {
               placeholder={t("auth.passwordRecovery.forgot.email_placeholder")}
               required
               dir="ltr"
+            />
+            {/* MEH-1981: notice-at-collection — purpose of the one field this
+                form takes. Copy approved verbatim 02/09 (rule 22). */}
+            <CollectionNotice
+              message={t("privacy.collection_notice.password_reset")}
+              linkLabel={t("auth.register.consumer.terms.privacy_link")}
+              testId="forgot-collection-notice"
             />
             {error && (
               <p className="text-red-600 text-sm text-center" role="alert">{error}</p>

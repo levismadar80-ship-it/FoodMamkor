@@ -69,6 +69,30 @@ export function AwaitingCompletionBadge({ producer }) {
   );
 }
 
+// MEH-2210 chunk C: "שליחה חוזרת #n" — a business that came back from
+// `rejected` through the owner's resubmit CTA. Shown only while it is in the
+// queue again (status pending) and only when it actually resubmitted
+// (resubmission_count > 0 — the count is history, so an approved business
+// that once resubmitted does NOT wear it). The PRIOR rejection reason is kept
+// on the row by chunk A (approve is what clears it), so the title carries it
+// — the admin sees what she asked for last time without opening the card.
+// Ordering of the queue is untouched: this is a badge, not a sort key.
+export function ResubmissionBadge({ producer }) {
+  const t = useTranslations("admin");
+  const count = producer.resubmission_count ?? 0;
+  if (count <= 0 || producer.status !== "pending") return null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 px-2 py-0.5 text-[10px] font-medium"
+      title={producer.rejection_reason || undefined}
+      data-testid="resubmission-badge"
+      data-count={count}
+    >
+      {t("producers.table.resubmission_badge", { n: count })}
+    </span>
+  );
+}
+
 // MEH-2110: business-days-waiting badge. The count is computed SERVER-side
 // (routers/admin.py via utils/clock.business_days_waiting) — this component
 // only colours it, so the badge and the queue's sort order can never disagree
@@ -471,6 +495,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
           <div className="flex flex-col items-start gap-1">
             <StatusBadge status={p.status} />
             <AwaitingCompletionBadge producer={p} />
+            <ResubmissionBadge producer={p} />
             <WaitingBadge producer={p} />
           </div>
         </td>

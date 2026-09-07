@@ -19,12 +19,14 @@ import WhatsThis from "@/components/WhatsThis";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 // MEH-999: shared back link — one owner for target + arrow direction.
 import BackLink from "@/components/ui/BackLink";
+// MEH-1640: shared status colours across the four tools spokes.
+import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 
 const STATUS_CLS = {
-  open: "bg-blue-50 text-blue-700 border-blue-200",
-  funded: "bg-[#EAF3DE] text-primary border-primary/20",
-  cancelled: "bg-gray-100 text-gray-500 border-gray-200",
-  fulfilled: "bg-green-50 text-primary border-primary/30",
+  open: STATUS_CLASSES.info,
+  funded: STATUS_CLASSES.success,
+  cancelled: STATUS_CLASSES.neutral,
+  fulfilled: STATUS_CLASSES.success,
 };
 
 function NewGroupBuyForm({ producerCity, onCreated }) {
@@ -88,7 +90,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
-      <h2 className="font-headline-md text-lg font-bold text-text">{t("heading")}</h2>
+      <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
 
@@ -113,7 +115,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             onChange={set("description")}
             placeholder={t("description_placeholder")}
             rows={2}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-start resize-none"
             dir="rtl"
           />
         </div>
@@ -224,7 +226,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             onChange={set("fulfillment_note")}
             placeholder={t("fulfillment_placeholder")}
             rows={2}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-start resize-none"
             dir="rtl"
           />
         </div>
@@ -236,7 +238,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       <button
         type="submit"
         disabled={submitting || priceInvalid}
-        className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+        className="bg-primary text-white px-6 py-2.5 min-h-[44px] rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
       >
         {submitting ? t("submitting") : t("submit")}
       </button>
@@ -318,7 +320,7 @@ export default function ProducerGroupBuysPage() {
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:92). */}
           <BackLink href="/producer/dashboard/tools" label={t("back")} />
-          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
+          <h1 className="font-headline-lg text-3xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
           {/* MEH-1115: what a group buy is, under the page heading. */}
@@ -340,7 +342,7 @@ export default function ProducerGroupBuysPage() {
         {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>
@@ -402,7 +404,7 @@ export default function ProducerGroupBuysPage() {
       ) : (
         <div className="space-y-4">
           {items.map((gb) => {
-            const cls = STATUS_CLS[gb.status] || "bg-gray-100 text-gray-600 border-gray-200";
+            const cls = STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
               <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">

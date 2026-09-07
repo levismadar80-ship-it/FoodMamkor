@@ -38,6 +38,8 @@ with every feature PR and this table does not update itself.
 | 11 | Favorites | `Favorite`, `FavoriteAlert` | not referenced | ❌ uncovered | 🟡 (out of scope) |
 | 12 | Admin queues | `Report`, `CategoryRequest`, `OutreachLead` | not referenced | ❌ uncovered | 🟡 (out of scope) |
 | 13 | Misc | `story_card_url` (MEH-53), `HomeProduct*`, `ReferralClick` | not referenced | ❌ uncovered | 🟡 (out of scope) |
+| 14 | Admin pre-approval review checklist | `AdminChecklistItem` | **the migration**, not a seed script — revision `d4a9c31e6f82` ends in a `bulk_insert` of 7 reference rows | ✅ covered | — |
+| — | Admin review audit trail | `ProducerReviewCheck` | nothing, by design — a row is written when an admin ticks an item, so absence of a row IS the unchecked state | ⬜ exempt | — |
 
 🟡 rows are explicitly out of scope for the seed work this contract tracks
 (chunk B of MEH-1706) — listed here so the gap is visible, not because

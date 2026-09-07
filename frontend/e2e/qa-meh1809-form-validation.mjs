@@ -141,9 +141,9 @@ async function qaEvent(browser) {
 }
 
 async function qaExperience(browser) {
-  console.log("\n== ExperienceForm (/experiences/new) ==");
+  console.log("\n== ExperienceForm (/producer/dashboard/experiences/new) ==");
   const { ctx, page } = await newPage(browser);
-  await page.goto(`${BASE}/experiences/new`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/producer/dashboard/experiences/new`, { waitUntil: "networkidle" });
   await page.waitForTimeout(500);
   await shoot(page, "experience-1-rest");
   await report(page, "experience", "rest");

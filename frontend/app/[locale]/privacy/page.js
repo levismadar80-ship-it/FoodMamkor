@@ -197,7 +197,7 @@ export default async function PrivacyPage({ params }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "privacy" });
   return (
-    <section className="min-h-screen">
+    <section className="min-h-screen" data-testid="privacy-page">
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
           {t("heading")}

@@ -87,53 +87,24 @@ import GrassFedCard from "./GrassFedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
+// MEH-2264: per-date overrides above the weekly window (own file, same reason).
+import SpecialHoursEditor from "./SpecialHoursEditor";
+import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
 import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
-// MEH-1116: stable English anchor id per card → the page-local open-state key.
-// The anchor ids are a public deep-link contract (#contact-channels …).
-// Do not rename.
-const ANCHOR_TO_KEY = {
-  // MEH-1872: business-name change-request card. Registered in BOTH maps —
-  // this file's own note says a card added to the JSX without an entry renders
-  // but is unreachable by anchor.
-  "business-name": "businessName",
-  bio: "bio",
-  questions: "questions",
-  "contact-channels": "contact",
-  categories: "categories",
-  // MEH-1258: license editor card (deep-linked from the "נשאר להשלים" banner).
-  license: "license",
-  // MEH-1167: kashrut-request card (badge request + cert photo + status).
-  kashrut: "kashrut",
-  images: "images",
-  // MEH-2058: LocationsEditor's own anchorId — was unregistered while the
-  // now-deleted LocationCard (anchor "location", singular) sat beside it as
-  // the checklist deep-link target. Registering it keeps
-  // ProfileCompletenessCard's "location" step CTA working.
-  locations: "locations",
-  products: "products",
-  pricing: "pricing",
-  delivery: "delivery",
-  // MEH-2142: `hours` is gone from all four registries below. The
-  // business-level opening-hours card was removed — store hours are a
-  // per-location fact now, edited in LocationsEditor. A stale #hours deep link
-  // (an old email, a bookmark) therefore falls through to the default group
-  // rather than resolving to a card that no longer exists.
-  "order-window": "orderWindow",
-  // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
-  // OwnerCard).
-  "owner-story": "ownerStory",
-  // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
-  // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
-  // under the accordion they resolve to the same cards, auto-expanded.
-  "profile-contact": "contact",
-  "profile-categories": "categories",
-  "profile-images": "images",
-  "profile-products": "products",
-};
+// MEH-2262: the anchor registry moved to lib/dashboard-edit-anchors.js so a
+// test can import it — a card missing from one of its three maps is
+// unreachable by deep link and fails silently. Same objects, same behaviour;
+// GROUP_MEMBERS stays here because it drives the hub's completion count.
+import {
+  ANCHOR_TO_KEY,
+  KEY_TO_ANCHOR,
+  KEY_TO_GROUP,
+  OPEN_KEY_FOR,
+} from "@/lib/dashboard-edit-anchors";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -161,29 +132,6 @@ const METHOD_FIELD = {
   external_order: "external_order_form",
 };
 
-// Canonical section id per open-state key — hash aliases above scroll to the
-// section that actually carries the id attribute.
-const KEY_TO_ANCHOR = {
-  businessName: "business-name",
-  bio: "bio",
-  questions: "questions",
-  contact: "contact-channels",
-  categories: "categories",
-  license: "license",
-  kashrut: "kashrut",
-  images: "images",
-  locations: "locations",
-  products: "products",
-  pricing: "pricing",
-  delivery: "delivery",
-  orderWindow: "order-window",
-  // MEH-1823: registered here so #offer deep-links resolve like every other
-  // card. These three maps are a guarded registry — a card added to the JSX
-  // without an entry renders but is unreachable by anchor, which is the
-  // silent-gap class .claude/rules/testing.md documents for path registries.
-  offer: "offer",
-};
-
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
 // keys and anchor contract above are UNCHANGED — this only assigns each card to
 // one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
@@ -195,42 +143,6 @@ const KEY_TO_ANCHOR = {
 // recorded it. Noted rather than left contradicting the registries below,
 // which is what a reader checks it against.
 const GROUP_KEYS = ["profile", "trust", "location", "contact"];
-
-// Card key → its group. Drives anchor→group deep-link resolution and the hub
-// status/next-step aggregation. license/kashrut both live in the trust group
-// (rendered as one card — see OPEN_KEY_FOR).
-const KEY_TO_GROUP = {
-  images: "profile",
-  categories: "profile",
-  bio: "profile",
-  products: "profile",
-  pricing: "profile",
-  ownerStory: "profile",
-  license: "trust",
-  kashrut: "trust",
-  // MEH-2058: not a GROUP_MEMBERS entry (LocationsEditor was never part of
-  // the hub's "{done}/{total}" count, before or after this chunk) — only
-  // registered here so a #locations deep link resolves to the right group.
-  locations: "location",
-  delivery: "location",
-  orderWindow: "location",
-  // MEH-1823: the offer lives in the location group — it is read against the
-  // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
-  // for the same reason orderWindow isn't: membership drives the hub's
-  // "{done}/{total}", and an opt-in field would show every existing business
-  // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
-  // for — the GBP-staleness risk that note already cites.
-  offer: "location",
-  contact: "contact",
-  questions: "contact",
-};
-
-// The accordion open-state key a card key maps to. The trust group renders ONE
-// accordion card (anchorId "trust") composing the license + kashrut bodies, so
-// both card keys open that single card; scroll still targets the inner
-// #license / #kashrut sub-section (KEY_TO_ANCHOR unchanged).
-const OPEN_KEY_FOR = (key) =>
-  key === "license" || key === "kashrut" ? "trust" : key;
 
 // Ordered member card keys per group — for the hub completion count + the
 // next-step marker placement.
@@ -664,6 +576,10 @@ function EditPageInner() {
       Boolean(profile.offers_delivery),
     // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
     orderWindow: Object.keys(profile.order_window || {}).length > 0,
+    // MEH-2264: "filled" = at least one override still ahead. Clock-derived,
+    // but this page is client-only (the profile is fetched in the browser),
+    // so there is no server pass to disagree with.
+    specialHours: upcomingSpecialCount(profile.special_hours) > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
@@ -722,11 +638,12 @@ function EditPageInner() {
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
     orderWindow: t("order_window.heading"),
+    specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "specialHours", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1177,6 +1094,38 @@ function EditPageInner() {
             testId="whats-this-order-window"
           />
           <OrderWindowEditor
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-2264 — per-date overrides ABOVE the weekly window ("ערב ראש
+            השנה 09:00–13:00", "כיפור: סגור"). Opt-in like its sibling, and
+            deliberately its own card: a date list and a weekly grid are two
+            different mental models, and MEH-1830's finding was that the time
+            cluster is already confusing when things share a card. The
+            WhatsThis reuses the card's subtitle string on purpose (rule 22 —
+            approved copy, no second sentence to approve). */}
+        <EditAccordionCard
+          anchorId="special-hours"
+          title={t("special_hours.heading")}
+          summary={
+            cardFilled.specialHours
+              ? t("special_hours.summary_set", {
+                  count: upcomingSpecialCount(profile.special_hours),
+                })
+              : t("special_hours.summary_empty")
+          }
+          open={openKey === "specialHours"}
+          onToggle={() => toggleKey("specialHours")}
+        >
+          <WhatsThis
+            content={t("special_hours.subtitle")}
+            className="mb-1"
+            testId="whats-this-special-hours"
+          />
+          <SpecialHoursEditor
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}

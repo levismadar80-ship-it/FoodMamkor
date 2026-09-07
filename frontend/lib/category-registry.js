@@ -14,7 +14,11 @@
  *           components/MapComponent.jsx (styleForProducer → pin), app/[locale]/
  *           map/components/MapPane.jsx (CATEGORY_LEGEND → legend widget).
  * History:  MEH-1453 (creation — consolidated lib/map-categories.js + surfaced
- *           the CATEGORY_ICONS map through one import hub).
+ *           the CATEGORY_ICONS map through one import hub); MEH-2163 (the
+ *           glyph lookup became TOTAL — resolveCategoryGlyph + one named
+ *           fallback, replacing three inline per-call-site fallbacks; the key
+ *           indirection moved into categoryGlyphKey so MEH-1456's slug swap is
+ *           one line).
  *
  * MEH-1453 shape note: the pin-style map (CATEGORY_STYLES — 8 keys, incl. 2
  * STALE combined names "ירקות, פירות ומשקים" / "טיפוח וסבונים" that the /map
@@ -36,7 +40,30 @@ import { Plant, FlowerTulip, Leaf } from "@phosphor-icons/react";
 // The chip / register-selector / home-card line-art glyph map (18 canonical DB
 // names → component) is defined next to its components in CategoryIcons.jsx;
 // re-exported here so the registry is the one import hub for category data.
-export { CATEGORY_ICONS } from "@/components/CategoryIcons";
+// MEH-2163: imported into local scope as well (a bare `export … from` does NOT
+// bind the name here) so the resolver below can read it. The public export
+// surface is unchanged — `import { CATEGORY_ICONS } from "@/lib/category-registry"`
+// resolves exactly as before.
+import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+
+export { CATEGORY_ICONS };
+
+/**
+ * MEH-2163 — the ONE fallback glyph.
+ *
+ * Before this ticket the fallback was re-decided at each call site: an inline
+ * `<Leaf size={46} weight="light" />` in CategorySelector.jsx, a separate
+ * inline `<Leaf weight="thin" />` in HomeCategoryGrid.jsx, and this module's
+ * DEFAULT_CATEGORY_STYLE.icon for map pins — three owners of one decision,
+ * each free to drift. It is the same component in all three, so naming it here
+ * changes nothing that renders today; it just means there is now one place to
+ * change it.
+ *
+ * `Leaf` deliberately: it is what the two inline sites and the default pin
+ * style already used, so consolidating them is a no-op on screen. Swapping it
+ * for a more neutral glyph is a design decision, not a registry one.
+ */
+export const CATEGORY_GLYPH_FALLBACK = Leaf;
 
 export const CATEGORY_STYLES = {
   // MEH-1268 (post-MEH-927 taxonomy): the combined "בשר, עוף ודגים" row was
@@ -76,9 +103,64 @@ export const CATEGORY_STYLES = {
 
 export const DEFAULT_CATEGORY_STYLE = {
   color: "#2e6853",
-  icon: Leaf,
+  // MEH-2163: was a second literal `Leaf`. Same component, one owner now —
+  // lib/marker-glyph.js keys its memo on this module-level identity, which is
+  // unchanged by the indirection.
+  icon: CATEGORY_GLYPH_FALLBACK,
   iconName: "Leaf",
 };
+
+/**
+ * MEH-2163 — THE key indirection, and the only one.
+ *
+ * The glyph map is keyed by the canonical Hebrew DB `name` today. `slug`
+ * (MEH-2139, `backend/app/services/category_slug.NAME_TO_SLUG`) is the stable
+ * identity and is already serialized in `CategoryOut`, but the frontend has no
+ * name→slug table and writing one would be a THIRD copy of that backend map,
+ * in a language the test pinning the existing two cannot reach — the reasoning
+ * spelled out at CategorySelector.jsx's POPULAR comment. So the key stays
+ * `name`, and **MEH-1456 swaps it by changing the one `?? category.name` line
+ * below** — no consumer moves, because no consumer indexes the map directly.
+ *
+ * @param {string|{name?: string, slug?: string}|null|undefined} category
+ * @returns {string} the registry key, or "" when there is nothing to key on.
+ */
+export function categoryGlyphKey(category) {
+  if (typeof category === "string") return category;
+  // MEH-1456 swaps this line to `category?.slug ?? ""` once the glyph map is
+  // re-keyed by slug. Until then `name` is the key the backend already exposes.
+  return category?.name ?? "";
+}
+
+/**
+ * MEH-2163 — the TOTAL glyph lookup. Never returns `undefined`.
+ *
+ * `Object.hasOwn` rather than `CATEGORY_ICONS[key] || FALLBACK`: a category
+ * named `constructor` / `toString` / `valueOf` / `__proto__` resolves through
+ * the prototype chain under the `||` form and hands the caller `Object` (or
+ * `Object.prototype.toString`) as a "glyph component" — truthy, so the
+ * fallback never fires and React is asked to render a builtin. The guard test
+ * uses exactly those four keys, because any other unknown key cannot tell the
+ * two forms apart.
+ *
+ * `isFallback` is returned rather than left for the caller to infer, because
+ * the two surfaces disagree on what to do with it and both disagreements are
+ * deliberate: the card surfaces (register selector, home grid) RENDER the
+ * fallback, while the chip rows do NOT (MEH-1441 — an unknown admin category
+ * gets no icon rather than a green Leaf that mis-signals "produce"). One total
+ * lookup, two explicit policies, instead of the policy hiding inside whether a
+ * bare index happened to return `undefined`.
+ *
+ * @param {string|{name?: string, slug?: string}|null|undefined} category
+ * @returns {{glyph: Function, isFallback: boolean}}
+ */
+export function resolveCategoryGlyph(category) {
+  const key = categoryGlyphKey(category);
+  if (key && Object.hasOwn(CATEGORY_ICONS, key)) {
+    return { glyph: CATEGORY_ICONS[key], isFallback: false };
+  }
+  return { glyph: CATEGORY_GLYPH_FALLBACK, isFallback: true };
+}
 
 /**
  * Array form — used by the legend widget on the map page. Order is

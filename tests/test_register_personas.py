@@ -287,6 +287,7 @@ class TestPersona2OAuthProducer:
             REGISTER_URL,
             json={
                 "producer_name": "בשריית הבדיקה",
+                "terms_accepted": True,  # MEH-2080: mandatory on the schema
                 "phone": VALID_PHONE,
                 # MEH-2015 chunk B: city is now required on both ProducerRegister
                 # paths (this is the MEH-143 upgrade path under test here).

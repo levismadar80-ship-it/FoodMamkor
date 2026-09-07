@@ -202,7 +202,7 @@
           "valid_hint": "✓ Valid"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy"
@@ -356,7 +356,7 @@
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
         "terms": {
-          "intro": "I have read and agree to",
+          "intro": "I am over 18 and agree to",
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
@@ -523,6 +523,9 @@
       "region_fallback_header_days": "Meanwhile — businesses reaching the {region} area:",
       "fallback_day_caption": "Delivers to {city}: {days}",
       "fallback_day_caption_flexible": "Delivers to {city} by arrangement"
+    },
+    "seasonal": {
+      "heading": "In season now"
     },
     "recent": {
       "heading": "Recently viewed"
@@ -692,10 +695,10 @@
       "og_description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel."
     },
     "experiences": {
-      "title": "Community experiences and workshops | Mehamakor",
-      "description": "Cooking workshops, food tours, and nutrition classes hosted by locals across Israel. Find an experience by city and category, or submit your own.",
-      "og_title": "Community experiences and workshops | Mehamakor",
-      "og_description": "Cooking workshops, food tours, and nutrition classes — local hosts, real experiences."
+      "title": "Food experiences and workshops at local businesses | Mehamakor",
+      "description": "Cooking workshops, food tours and tastings hosted by licensed local businesses in Israel. Find one by city and category.",
+      "og_title": "Food experiences and workshops at local businesses | Mehamakor",
+      "og_description": "Learn, taste, discover — food experiences at local businesses."
     },
     "group_buys": {
       "title": "Group purchases | Mehamakor",
@@ -876,6 +879,8 @@
         "show_week": "Full week",
         "hide_week": "Hide full week",
         "today": "Today",
+        "special_heading": "Special hours",
+        "special_closed": "Not accepting orders",
         "days": {
           "sun": "Sunday",
           "mon": "Monday",
@@ -1495,7 +1500,9 @@
         "incomplete_label": "Missing details",
         "export": "Export",
         "import_excel": "Import from Excel",
-        "new_producer": "+ New business"
+        "new_producer": "+ New business",
+        "review_due_label": "Picks due for review",
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
       },
       "import": {
         "errors_loading": "Error reading file",
@@ -1595,7 +1602,8 @@
         "deleting": "Deleting…",
         "waiting_badge": "Waiting {days} business days",
         "waiting_tooltip_submitted": "Submitted for review: {when}",
-        "waiting_tooltip_created": "Created: {when}"
+        "waiting_tooltip_created": "Created: {when}",
+        "resubmission_badge": "Resubmission #{n}"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
@@ -1684,6 +1692,11 @@
           "grass_fed": "Grass-fed",
           "verified": "Verified",
           "recommended": "Recommended (editor's pick)",
+          "recommended_note": "Editor's reason",
+          "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
+          "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
+          "recommended_at": "Picked on",
+          "recommended_at_never": "Picked before there was a clock — review due now",
           "kosher": "Kosher",
           "kosher_none": "—",
           "kosher_kosher": "Kosher",
@@ -1697,6 +1710,8 @@
           "license_optional_toggle": "I have a producer license ↓",
           "license_expires_at": "License valid until (from the document)",
           "license_expires_at_hint": "The date printed on the license document. Businesses whose license expires within 30 days appear in the reminder list.",
+          "in_season_until": "In season until",
+          "in_season_until_hint": "The last day this business appears in the \"In season now\" module on the homepage. Empty means not marked. The module only shows when three or more businesses are marked.",
           "has_physical_location": "Physical store (welcomes customers)",
           "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
@@ -1707,6 +1722,7 @@
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
           "has_delivery": "Offers delivery",
           "pickup_points": "Pickup points across the country",
+          "pickup_managed_in_locations": "Pickup points are managed in the locations editor",
           "delivery_area_cities": "Delivery cities (comma-separated)",
           "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
           "short_description": "Short description (for the card)",
@@ -1852,7 +1868,7 @@
       "notes_label": "Moderation notes"
     },
     "experiences": {
-      "title": "Community experiences",
+      "title": "Experiences",
       "subtitle": "Moderation for user-submitted experiences",
       "public_link": "Public page →",
       "tabs": {
@@ -2165,13 +2181,15 @@
         "empty": "No data yet",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "confirm_delete": "Delete ''{name}'' — {count} associated businesses",
         "producer_count": "{count} businesses",
         "deleting": "Deleting…",
         "delete_error": "Failed to delete the category. Please try again.",
         "save_error": "Failed to save the category. Please try again.",
-        "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The emoji can still be updated.",
-        "name_taken_error": "A category with this name already exists"
+        "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The symbol can still be updated.",
+        "name_taken_error": "A category with this name already exists",
+        "system_badge": "System category",
+        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen."
       },
       "page_editor": {
         "title_placeholder": "Title",
@@ -2433,6 +2451,7 @@
       "h1_experiences": "Food experiences & workshops",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
+      "breadcrumb_experiences": "Experiences",
       "tab_events": "Farm events",
       "tab_experiences": "Workshops & experiences",
       "add_event": "Add event",
@@ -2501,19 +2520,6 @@
     }
   },
   "experiences": {
-    "list": {
-      "title": "Community workshops & experiences",
-      "subtitle": "Cooking workshops, food tours, nutrition classes — local hosts, real experiences",
-      "submit_cta": "Submit your own experience",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "cross_link_events": "Also looking for farm events? All events and experiences together ←",
-      "filter_city_label": "Filter by city",
-      "filter_city_placeholder": "Search city...",
-      "loading": "Loading experiences...",
-      "empty_title": "No experiences match this filter — yet",
-      "empty_cta": "Submit the first experience →"
-    },
     "categories": {
       "all": "All",
       "cooking": "Cooking",
@@ -2545,17 +2551,8 @@
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences"
     },
-    "card": {
-      "host_fallback": "Community host",
-      "spots_left": "{n} spots left",
-      "sold_out": "Sold out",
-      "free": "Free"
-    },
     "new": {
-      "auth_loading": "Loading...",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "breadcrumb_submit": "Submit",
+      "crumb_current": "New experience",
       "title": "Submit a new experience",
       "subtitle": "All submissions are reviewed by the Mehamakor team. We'll get back to you within 3 business days",
       "field_title": "Experience title",
@@ -3544,6 +3541,13 @@
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
     "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "collection_notice": {
+      "chat": "What you write here is sent to Anthropic to draft the reply.",
+      "password_reset": "Your email is used only to send the reset link.",
+      "experience": "What you submit here is intended for publication on the site, after review.",
+      "event": "What you submit here is intended for publication on the site, after review.",
+      "category_request": "The request is sent to us for review and is not published on the site."
+    },
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -3657,7 +3661,7 @@
       },
       "retention": {
         "title": "7. Data retention and security",
-        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. We apply reasonable security measures including encryption, secure storage, access control, and backups."
       },
       "minors": {
         "title": "8. Minors",
@@ -4118,11 +4122,19 @@
           "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster."
         },
         "rejected": {
-          "title": "Application not approved",
-          "body": "Contact us for more details and a re-review.",
-          "tip_details": "Make sure all business details are complete and accurate",
-          "tip_photos": "Add clear product photos",
-          "tip_address": "Check that the business address is correct",
+          "title": "Application not approved — you can fix it and resubmit",
+          "by_code": {
+            "missing_docs": "Documents are missing or unreadable",
+            "missing_image": "The main photo is missing",
+            "incomplete_info": "Business details are incomplete (address / phone / description)",
+            "not_eligible": "The business does not meet the platform terms",
+            "not_eligible_hint": "If things changed (for example, a licence was issued) — update and resubmit"
+          },
+          "resubmit_cta": "Resubmit for review",
+          "resubmit_caption": "Submission {n} of {max}",
+          "resubmit_toast": "Sent for re-review",
+          "resubmit_error": "Couldn't send. Please try again.",
+          "capped": "You have reached the maximum number of submissions.",
           "support_cta": "Talk to us →"
         },
         "inactive": {
@@ -4523,6 +4535,22 @@
         "clear_cta": "Clear all",
         "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 day a week} other {# days a week}}"
+      },
+      "special_hours": {
+        "heading": "Special hours for holidays",
+        "subtitle": "A specific date that overrides the weekly schedule — a holiday eve or a closed day, for example",
+        "empty_state": "No special hours yet. Add a date or pick a holiday from the list",
+        "chips_label": "Upcoming holidays:",
+        "add_date": "Add a date",
+        "remove_date": "Remove this date",
+        "date_label": "Date",
+        "closed_toggle": "Closed for orders on this date",
+        "note_label": "Note",
+        "note_placeholder": "For example: Rosh Hashana eve",
+        "invalid_date": "Invalid or duplicate date",
+        "save_success": "Special hours saved",
+        "summary_empty": "Not set",
+        "summary_set": "{count, plural, one {1 date} other {# dates}}"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
@@ -5006,7 +5034,7 @@
         "save_failed": "Failed to save location",
         "delete_failed": "Failed to delete location",
         "same_city": {
-          "labelled": "You already have '{label}' in {city}.",
+          "labelled": "You already have ''{label}'' in {city}.",
           "unlabelled": "You already have a {kind} in {city}.",
           "many": "You already have {count} locations in {city}.",
           "generic": "You already have a location in this town.",

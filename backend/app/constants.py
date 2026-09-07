@@ -88,7 +88,10 @@ DECLARATION_VERSION: str = "2026-06-v2"
 # attributable to the version actually accepted. Must stay within the
 # VARCHAR(10) users.terms_version column.
 #   v1 ("2026-08-v1") — the terms/privacy wording live at MEH-1995 (2026-08-09).
-TERMS_VERSION: str = "2026-08-v1"
+#   v2 ("2026-09-v2") — MEH-2080: the checkbox now also carries the 18+
+#      self-declaration («אני מעל גיל 18 ומסכימה …»), and acceptance became
+#      mandatory on both email registration paths (422 when absent).
+TERMS_VERSION: str = "2026-09-v2"
 
 # MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
 # self-reported attribution captured at the final registration step). English
@@ -114,3 +117,12 @@ REFERRAL_SOURCE_KEYS: tuple[str, ...] = (
     "other",
     "prefer_not_to_say",
 )
+
+
+# MEH-2210 — how many times a REJECTED business may send itself back to the
+# review queue (POST /producers/me/request-review from status "rejected").
+# Server-side, in addition to the 3/hour rate limit (MEH-1236). After the cap
+# the CTA is replaced by "צרו קשר" and the endpoint answers 409. The count is
+# history (Producer.resubmission_count) — approve does not reset it. Sapir's
+# ruling 29/08 on the card: 3.
+MAX_PRODUCER_RESUBMISSIONS: int = 3

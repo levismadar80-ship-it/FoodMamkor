@@ -248,9 +248,17 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
         )
 
 
-def notify_admin_producer_resubmit(producer_name: str, city: str | None) -> None:
+def notify_admin_producer_resubmit(
+    producer_name: str, city: str | None, resubmission_count: int | None = None
+) -> None:
     """Ping admin (WhatsApp + email) that a producer finished completing her
     details after a request-changes and is ready for a re-review.
+
+    MEH-2210 — `resubmission_count` is set ONLY on the rejected → pending
+    transition (POST /producers/me/request-review from `rejected`); the
+    message then reads "🔁 שליחה חוזרת #{n}" so the admin can tell a
+    re-application from the MEH-1236 "I finished completing" ping, which
+    keeps calling this with two arguments and is otherwise unchanged.
 
     MEH-1236 — the resubmit affordance: after an admin sends a completion
     request (MEH-1011), the owner had no way to signal she was done, so the
@@ -267,10 +275,14 @@ def notify_admin_producer_resubmit(producer_name: str, city: str | None) -> None
     # MEH-1051 sanitizer (one flattener per file, MEH-271).
     safe_name = _sanitize_wa_param(producer_name)
     safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    if resubmission_count is not None:
+        headline = f"🔁 שליחה חוזרת #{resubmission_count}: {safe_name}, {safe_city}"
+        subject = f"מהמקור - שליחה חוזרת #{resubmission_count}: {safe_name}"
+    else:
+        headline = f"העסק {safe_name} השלים את הפרטים — מוכן לבדיקה חוזרת"
+        subject = f"מהמקור - {safe_name} מוכן לבדיקה חוזרת"
     message = (
-        f"העסק {safe_name} השלים את הפרטים — מוכן לבדיקה חוזרת\n"
-        f"עיר: {safe_city}\n"
-        f"לבדיקה: {settings.frontend_url}/admin/producers"
+        f"{headline}\nעיר: {safe_city}\nלבדיקה: {settings.frontend_url}/admin/producers"
     )
     # Per-channel guards (not one shared try) — a WhatsApp raise must not
     # skip the email, matching notify_admin_new_recipe's independence.
@@ -295,11 +307,7 @@ def notify_admin_producer_resubmit(producer_name: str, city: str | None) -> None
 
     try:
         if settings.admin_email:
-            send_email(
-                settings.admin_email,
-                f"מהמקור - {safe_name} מוכן לבדיקה חוזרת",
-                message,
-            )
+            send_email(settings.admin_email, subject, message)
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(
             f"[NOTIFY] Admin producer-resubmit email FAILED for '{safe_name}': {e}"

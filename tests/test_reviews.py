@@ -10,8 +10,13 @@ Guards tested:
 """
 import pytest
 
-from conftest import auth_header, make_producer, make_user
-from app.models.models import ContactClick, ProducerReview, ProducerWhatsAppClick
+from conftest import auth_header, make_category, make_producer, make_user
+from app.models.models import (
+    ContactClick,
+    ProducerCategory,
+    ProducerReview,
+    ProducerWhatsAppClick,
+)
 
 # MEH-2204: imported, not transcribed. The matrix below must widen on its own
 # the day this frozenset does — otherwise adding a method (e.g. when facebook /
@@ -100,6 +105,95 @@ def test_post_review_rejects_producer_owner(client, db):
     )
     assert r.status_code == 403, r.text
     assert "עסק" in r.json().get("detail", "") or "עצמ" in r.json().get("detail", "")
+
+
+# ---------------------------------------------------------------------------
+# MEH-2076: same-category conflict-of-interest guard.
+#
+# A business owner may not review a business that SHARES a category with hers
+# (policy, Sapir 14/08: same-category only — cross-category stays open, the
+# bakery owner really does buy the cheese). Each case carries a click so the
+# contact gate is satisfied and only the guard under test decides the verdict.
+# The 403 detail is asserted by EQUALITY — the copy is locked on the card.
+# ---------------------------------------------------------------------------
+
+SAME_CATEGORY_403 = (
+    "כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות."
+)
+
+
+def _owner_of(db, category, *, email):
+    """A producer owner whose business sits in `category`."""
+    owner = make_user(db, role="producer", email=email)
+    mine = make_producer(db, name=f"העסק של {email}", category=category)
+    owner.producer_id = mine.id
+    db.commit()
+    return owner
+
+
+def test_same_category_owner_is_blocked(client, db):
+    """Owner of a dairy business reviewing ANOTHER dairy business → 403 + locked copy."""
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מחלבת המתחרה", category=dairy)
+    owner = _owner_of(db, dairy, email="dairy-owner@example.com")
+    _wa_click(db, target, owner)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 1, "body": VALID_BODY},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json()["detail"] == SAME_CATEGORY_403
+    assert db.query(ProducerReview).filter_by(producer_id=target.id).count() == 0
+
+
+def test_shared_secondary_category_is_also_blocked(client, db):
+    """Intersection, not primary-only: the target's SECOND category matches the
+    owner's → still 403. Guards a primary-only implementation."""
+    bakery = make_category(db, name="מאפים", emoji="🥐")
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מאפייה עם גבינות", category=bakery)
+    db.add(ProducerCategory(producer_id=target.id, category_id=dairy.id, position=1))
+    db.commit()
+    owner = _owner_of(db, dairy, email="dairy-owner-2@example.com")
+    _wa_click(db, target, owner)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 2, "body": VALID_BODY},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 403, r.text
+    assert r.json()["detail"] == SAME_CATEGORY_403
+
+
+def test_cross_category_owner_is_allowed(client, db):
+    """Bakery owner reviewing a dairy → 201, unchanged behaviour (community)."""
+    bakery = make_category(db, name="מאפים", emoji="🥐")
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מחלבה שכנה", category=dairy)
+    owner = _owner_of(db, bakery, email="bakery-owner@example.com")
+    _wa_click(db, target, owner)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["stars"] == 5
+
+
+def test_consumer_is_not_affected_by_category_guard(client, db):
+    """A consumer (no producer_id) reviewing a categorised business → 201."""
+    dairy = make_category(db, name="חלב וגבינות", emoji="🧀")
+    target = make_producer(db, name="מחלבה", category=dairy)
+    user = make_user(db, email="consumer@example.com")
+    _wa_click(db, target, user)
+    r = client.post(
+        f"/producers/{target.id}/reviews",
+        json={"stars": 4, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 201, r.text
 
 
 # ---------------------------------------------------------------------------
@@ -617,3 +711,246 @@ def test_reply_rejects_punctuation_only(client, db):
         headers=auth_header(owner),
     )
     assert r.status_code == 422, r.text
+
+
+# ---------------------------------------------------------------------------
+# MEH-1428 chunk 1 — "request a review" signed link.
+#
+# Two surfaces: GET /producers/me/review-link mints the link (approved owners
+# only), and POST /producers/{id}/reviews accepts its token as `review_token`
+# — a valid token for THIS producer passes guard 3 without any click row.
+# Every rejection below is the SAME 403 + detail as "no contact": the
+# reviewer must not learn which proof failed.
+#
+# Red control (run with the reviews.py verify branch stashed): the valid-token
+# / other-producer / round-trip cases go red (403 instead of 201, or no
+# `source` key), the three rejection cases stay green by construction (a
+# server that ignores the token rejects everything) — which is exactly why
+# the positive cases are the ones that carry the evidence.
+# ---------------------------------------------------------------------------
+
+from datetime import datetime, timedelta, timezone  # noqa: E402
+from urllib.parse import parse_qs, urlparse  # noqa: E402
+
+from joserfc import jwt as jose_jwt  # noqa: E402
+from joserfc.jwk import OctKey  # noqa: E402
+
+from app.auth import (  # noqa: E402
+    REVIEW_INVITE_SCOPE,
+    _jwt_key,
+    create_review_invite_token,
+)
+from app.config import settings  # noqa: E402
+
+
+def _mint(producer_id, *, exp_delta=timedelta(days=1), key=None, scope=None, with_exp=True):
+    """Mint a review-invite-shaped JWT with ONE property under our control:
+    expiry (or its absence), signing key, or scope. Everything else mirrors
+    auth.py."""
+    now = datetime.now(timezone.utc)
+    payload = {
+        "producer_id": str(producer_id),
+        "iat": int(now.timestamp()),
+        "scope": scope or REVIEW_INVITE_SCOPE,
+    }
+    if with_exp:
+        payload["exp"] = now + exp_delta
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, key or _jwt_key())
+
+
+class TestMeh1428ReviewInviteLink:
+    @staticmethod
+    def _owner_and_producer(db, *, status="approved", slug=None):
+        producer = make_producer(db, status=status)
+        if slug:
+            producer.slug = slug
+        owner = make_user(db, role="producer")
+        owner.producer_id = producer.id
+        db.commit()
+        db.refresh(producer)
+        return owner, producer
+
+    @staticmethod
+    def _post(client, producer, user, token=None):
+        body = {"stars": 5, "body": VALID_BODY}
+        if token is not None:
+            body["review_token"] = token
+        return client.post(
+            f"/producers/{producer.id}/reviews",
+            json=body,
+            headers=auth_header(user),
+        )
+
+    # ---- POST verify branch ---------------------------------------------
+
+    def test_valid_token_passes_gate_and_stores_invite_link_source(self, client, db):
+        """No click of any kind + a valid token for THIS producer → 201, and
+        the row records source="invite_link"."""
+        _, producer = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        r = self._post(client, producer, reviewer, create_review_invite_token(producer.id))
+        assert r.status_code == 201, r.text
+        # The public payload must NOT say how the gate was passed (reviewer
+        # finding on #3368): `source` is admin-only. The DB row is the record.
+        assert "source" not in r.json()
+        row = (
+            db.query(ProducerReview)
+            .filter(
+                ProducerReview.producer_id == producer.id,
+                ProducerReview.user_id == reviewer.id,
+            )
+            .one()
+        )
+        assert row.source == "invite_link"
+
+    def test_expired_token_is_403(self, client, db):
+        _, producer = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        r = self._post(client, producer, reviewer, _mint(producer.id, exp_delta=timedelta(days=-1)))
+        assert r.status_code == 403, r.text
+        assert r.json()["detail"] == GATE_403
+        assert db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).count() == 0
+
+    def test_token_without_exp_is_403(self, client, db):
+        """A validly signed token that simply omits `exp` must not be a
+        permanent key: the registry treats `exp` as essential (reviewer
+        finding on #3368; joserfc raises MissingClaimError)."""
+        producer = self._owner_and_producer(db)[1]
+        reviewer = make_user(db, role="consumer")
+        r = self._post(client, producer, reviewer, _mint(producer.id, with_exp=False))
+        assert r.status_code == 403, r.text
+
+    def test_forged_signature_is_403(self, client, db):
+        """Well-formed claims, wrong key — the signature is the whole proof."""
+        _, producer = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        forged = _mint(producer.id, key=OctKey.import_key(b"not-the-server-secret-at-all-0000"))
+        r = self._post(client, producer, reviewer, forged)
+        assert r.status_code == 403, r.text
+        assert r.json()["detail"] == GATE_403
+
+    def test_wrong_scope_token_is_403(self, client, db):
+        """A correctly signed token with another scope (e.g. an access token
+        replayed here) must not pass — scope is what stops cross-use."""
+        _, producer = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        r = self._post(client, producer, reviewer, _mint(producer.id, scope="access"))
+        assert r.status_code == 403, r.text
+        assert r.json()["detail"] == GATE_403
+
+    def test_token_for_other_producer_is_403(self, client, db):
+        """A genuine token minted for producer B is a forged claim of contact
+        with producer A."""
+        _, producer_a = self._owner_and_producer(db)
+        _, producer_b = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        r = self._post(client, producer_a, reviewer, create_review_invite_token(producer_b.id))
+        assert r.status_code == 403, r.text
+        assert r.json()["detail"] == GATE_403
+
+    def test_click_path_still_works_with_click_source(self, client, db):
+        """Regression: the pre-MEH-1428 path — a click row, no token — is
+        unchanged and records source="click"."""
+        _, producer = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        _wa_click(db, producer, reviewer)
+        r = self._post(client, producer, reviewer)
+        assert r.status_code == 201, r.text
+        assert "source" not in r.json()
+        row = db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).one()
+        assert row.source == "click"
+
+    def test_bad_token_falls_through_to_click_path(self, client, db):
+        """A customer who clicked AND pasted a stale link is still a customer
+        who clicked: the bad token is ignored, the click carries her through,
+        and the row is recorded as the proof that actually held."""
+        _, producer = self._owner_and_producer(db)
+        reviewer = make_user(db)
+        _contact_click(db, producer, reviewer)
+        r = self._post(client, producer, reviewer, _mint(producer.id, exp_delta=timedelta(days=-1)))
+        assert r.status_code == 201, r.text
+        assert "source" not in r.json()
+        # The docstring's claim — "the row is recorded as the proof that
+        # actually held" — is about the STORED value, and the public payload
+        # no longer carries it, so read the row (reviewer on #3368). Without
+        # this, a regression stamping "invite_link" on the bad-token+click
+        # path passes: this is the only case covering that fallback's source.
+        row = db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).one()
+        assert row.source == "click"
+
+    def test_edit_never_rewrites_source_in_either_direction(self, client, db):
+        """reviews.py:278 claims "an edit never rewrites it — the first proof is
+        the one on record". Both directions, so a future edit path that
+        re-derives `source` from the CURRENT request goes red: an invite_link
+        row edited with no token stays invite_link, and a click row edited
+        WITH a valid token stays click."""
+        _, producer = self._owner_and_producer(db)
+
+        invited = make_user(db)
+        r = self._post(client, producer, invited, create_review_invite_token(producer.id))
+        assert r.status_code == 201, r.text
+        r = client.post(
+            f"/producers/{producer.id}/reviews",
+            json={"stars": 2, "body": VALID_BODY},
+            headers=auth_header(invited),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["stars"] == 2
+        assert "source" not in r.json()
+
+        clicker = make_user(db)
+        _wa_click(db, producer, clicker)
+        r = self._post(client, producer, clicker)
+        assert r.status_code == 201, r.text
+        assert "source" not in r.json()
+        r = self._post(client, producer, clicker, create_review_invite_token(producer.id))
+        assert r.status_code == 201, r.text
+        assert "source" not in r.json()
+
+        rows = {
+            row.user_id: row.source
+            for row in db.query(ProducerReview).filter(ProducerReview.producer_id == producer.id)
+        }
+        assert rows == {invited.id: "invite_link", clicker.id: "click"}
+
+    # ---- GET /producers/me/review-link ------------------------------------
+
+    def test_review_link_403_for_non_approved(self, client, db):
+        owner, _ = self._owner_and_producer(db, status="pending")
+        r = client.get("/producers/me/review-link", headers=auth_header(owner))
+        assert r.status_code == 403, r.text
+        assert r.json()["detail"] == "קישור לבקשת ביקורת זמין רק לעסק מאושר"
+
+    def test_review_link_requires_producer_role(self, client, db):
+        consumer = make_user(db)
+        r = client.get("/producers/me/review-link", headers=auth_header(consumer))
+        assert r.status_code == 403, r.text
+
+    def test_review_link_200_for_approved_with_slug(self, client, db):
+        owner, producer = self._owner_and_producer(db, slug="havat-hanisui")
+        r = client.get("/producers/me/review-link", headers=auth_header(owner))
+        assert r.status_code == 200, r.text
+        url = r.json()["url"]
+        parsed = urlparse(url)
+        assert url.startswith(settings.frontend_url.rstrip("/"))
+        assert parsed.path == "/p/havat-hanisui"
+        assert "rt" in parse_qs(parsed.query)
+
+    def test_review_link_without_slug_uses_producer_id_route(self, client, db):
+        owner, producer = self._owner_and_producer(db)
+        assert producer.slug is None  # the factory never sets one
+        r = client.get("/producers/me/review-link", headers=auth_header(owner))
+        assert r.status_code == 200, r.text
+        assert urlparse(r.json()["url"]).path == f"/producer/{producer.id}"
+
+    def test_link_token_round_trips_through_post(self, client, db):
+        """End to end: the `rt` the GET mints is exactly what the POST accepts."""
+        owner, producer = self._owner_and_producer(db, slug="round-trip")
+        link = client.get("/producers/me/review-link", headers=auth_header(owner)).json()["url"]
+        rt = parse_qs(urlparse(link).query)["rt"][0]
+        reviewer = make_user(db)
+        r = self._post(client, producer, reviewer, rt)
+        assert r.status_code == 201, r.text
+        assert "source" not in r.json()
+        row = db.query(ProducerReview).filter(ProducerReview.user_id == reviewer.id).one()
+        assert row.source == "invite_link"

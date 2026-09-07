@@ -79,7 +79,9 @@ async function newPage(browser, width, height) {
       // POPULAR (renders at rest, no search needed), not license-required, not
       // agricultural — so neither the MEH-952 license gate nor the MEH-759
       // grower declaration interferes with what this harness is measuring.
-      body: JSON.stringify([{ id: 1, name: "סבונים טבעיים" }]),
+      // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
+      // Hebrew name — a slug-less stub renders no chip at all.
+      body: JSON.stringify([{ id: 1, name: "סבונים טבעיים", slug: "care" }]),
     }),
   );
   // Anti-enumeration ack (no access_token) — the non-upgrade CONFIRM branch.

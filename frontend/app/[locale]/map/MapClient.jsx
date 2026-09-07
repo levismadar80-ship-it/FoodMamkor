@@ -686,7 +686,7 @@ export default function MapPage() {
       {/* =================== DESKTOP (lg+) — split view =================== */}
       {/* MEH-1009: height subtracts the MEASURED top offset (header + in-flow
           top banners), not a hardcoded 64 — see the measurement effect above. */}
-      <div ref={desktopShellRef} className="hidden lg:grid" style={{ height: `calc(100vh - ${desktopTopOffset}px)`, gridTemplateColumns: hints.splitRatio }}>
+      <div ref={desktopShellRef} data-testid="map-desktop-shell" className="hidden lg:grid" style={{ height: `calc(100vh - ${desktopTopOffset}px)`, gridTemplateColumns: hints.splitRatio }}>
         {/* List pane (RTL → first child = right) */}
         <div className="overflow-y-auto border-l border-border flex flex-col">
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
@@ -714,9 +714,9 @@ export default function MapPage() {
             <div className="flex items-start justify-between mb-3">
               {/* MEH-826: locked count copy + "near you · {region}" subhead under it */}
               <div>
-                <p className="text-xs text-fg-muted">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
+                <p className="text-xs text-fg-muted" data-testid="map-list-count">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
                 {mapRegion && (
-                  <p className="text-[11px] text-fg-muted mt-0.5">{t("map.client.subhead", { region: mapRegion })}</p>
+                  <p className="text-[11px] text-fg-muted mt-0.5" data-testid="map-list-subhead">{t("map.client.subhead", { region: mapRegion })}</p>
                 )}
               </div>
               {/* MEH-1110: borderless text+chevron sort control — appearance-none
@@ -730,6 +730,7 @@ export default function MapPage() {
                 <span className="text-sm text-fg-muted" aria-hidden="true">{t("map.client.sort.label")}</span>
                 <select
                   value={effectiveSort}
+                  data-testid="map-sort-select"
                   onChange={(e) => handleSortChange(e.target.value)}
                   disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
@@ -781,7 +782,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header
@@ -834,7 +835,7 @@ export default function MapPage() {
             what was measured rather than by a file:line that could not be
             confirmed. (An earlier revision of this comment did attribute it to
             the `×` button; the CI reviewer on PR #3002 caught that.) */}
-        <div ref={mobileBarRef} className="absolute top-0 inset-x-0 px-3 py-2 bg-background border-b border-border">
+        <div ref={mobileBarRef} data-testid="map-mobile-bar" className="absolute top-0 inset-x-0 px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
               map below) is now the SINGLE mobile near-me control. City search

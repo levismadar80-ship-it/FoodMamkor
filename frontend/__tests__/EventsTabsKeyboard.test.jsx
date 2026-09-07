@@ -20,6 +20,19 @@ let params = {};
 vi.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
 }));
+// MEH-2245: switching tab is a route change through next-intl's router;
+// stub it (HANDOFF lesson: next-intl navigation under vitest needs the
+// 5-line @/i18n/navigation stub, same as the Register suites).
+const pushMock = vi.fn();
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: pushMock, replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/",
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next-intl", () => ({
   useTranslations: (ns) => (k) => (ns ? `${ns}.${k}` : k),
   useLocale: () => "he",

@@ -81,7 +81,7 @@ export default function MobileSheetSelectedCard({
   const locationLabel = selectedLocation?.label;
 
   return (
-    <div ref={rootRef} className="relative mb-3">
+    <div ref={rootRef} data-testid="map-selected-card" className="relative mb-3">
       {locationLabel ? (
         // ps-9 clears the deselect × (top-start, w-7) so the label never sits
         // under it in RTL (start = right, where both live).
@@ -95,9 +95,10 @@ export default function MobileSheetSelectedCard({
         type="button"
         onClick={onClose}
         aria-label={t("common.aria.close")}
-        className="absolute top-1 start-1 z-10 w-7 h-7 rounded-full bg-white/90 border border-border shadow-sm flex items-center justify-center text-fg-muted focus-ring"
+        data-testid="map-selected-card-close"
+        className="absolute top-1 start-1 z-10 w-11 h-11 rounded-full bg-white/90 border border-border shadow-sm flex items-center justify-center text-fg-muted focus-ring"
       >
-        <X size={14} weight="bold" />
+        <X size={18} weight="bold" />
       </button>
     </div>
   );
