@@ -130,6 +130,7 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
           category_ids: [categoryId],
           producer_license_number: "000000000", // covers any license-gated category
           declaration_accepted: true, // handler 422s when falsy (MEH-759)
+          terms_accepted: true, // schema 422s when omitted/false (MEH-2080: 18+ + terms)
         },
       });
       expect(

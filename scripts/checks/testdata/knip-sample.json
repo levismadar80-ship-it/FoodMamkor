@@ -1,136 +1,142 @@
 {
- "issues": [
-  {
-   "file": "lib/env.server.js",
-   "binaries": [],
-   "catalog": [],
-   "catalogReferences": [],
-   "dependencies": [],
-   "devDependencies": [],
-   "duplicates": [],
-   "enumMembers": [],
-   "exports": [],
-   "files": [
+  "issues": [
     {
-     "name": "lib/env.server.js"
-    }
-   ],
-   "namespaceMembers": [],
-   "optionalPeerDependencies": [],
-   "types": [],
-   "unlisted": [],
-   "unresolved": []
-  },
-  {
-   "file": "package.json",
-   "binaries": [],
-   "catalog": [],
-   "catalogReferences": [],
-   "dependencies": [
+      "file": "lib/env.server.js",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [
+        {
+          "name": "lib/env.server.js"
+        }
+      ],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
     {
-     "name": "@swc/helpers",
-     "line": 20,
-     "col": 6,
-     "pos": 614
-    }
-   ],
-   "devDependencies": [
+      "file": "package.json",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [
+        {
+          "name": "@swc/helpers",
+          "line": 23,
+          "col": 6,
+          "pos": 847
+        }
+      ],
+      "devDependencies": [
+        {
+          "name": "eslint-plugin-playwright",
+          "line": 56,
+          "col": 6,
+          "pos": 1887
+        },
+        {
+          "name": "orval",
+          "line": 64,
+          "col": 6,
+          "pos": 2160
+        }
+      ],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
     {
-     "name": "eslint-plugin-playwright",
-     "line": 53,
-     "col": 6,
-     "pos": 1654
-    }
-   ],
-   "duplicates": [],
-   "enumMembers": [],
-   "exports": [],
-   "files": [],
-   "namespaceMembers": [],
-   "optionalPeerDependencies": [],
-   "types": [],
-   "unlisted": [],
-   "unresolved": []
-  },
-  {
-   "file": "eslint.config.mjs",
-   "binaries": [],
-   "catalog": [],
-   "catalogReferences": [],
-   "dependencies": [],
-   "devDependencies": [],
-   "duplicates": [],
-   "enumMembers": [],
-   "exports": [],
-   "files": [],
-   "namespaceMembers": [],
-   "optionalPeerDependencies": [],
-   "types": [],
-   "unlisted": [
+      "file": "eslint.config.mjs",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [
+        {
+          "name": "globals",
+          "line": 4,
+          "col": 21,
+          "pos": 211
+        }
+      ],
+      "unresolved": []
+    },
     {
-     "name": "globals",
-     "line": 4,
-     "col": 21,
-     "pos": 211
-    }
-   ],
-   "unresolved": []
-  },
-  {
-   "file": "lib/places.js",
-   "binaries": [],
-   "catalog": [],
-   "catalogReferences": [],
-   "dependencies": [],
-   "devDependencies": [],
-   "duplicates": [],
-   "enumMembers": [],
-   "exports": [
+      "file": "lib/places.js",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "ProviderError",
+          "line": 37,
+          "col": 14,
+          "pos": 1995
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
     {
-     "name": "ProviderError",
-     "line": 37,
-     "col": 14,
-     "pos": 1995
+      "file": "lib/schemas.js",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [
+        [
+          {
+            "name": "ProducerDetailSchema",
+            "line": 378,
+            "col": 14,
+            "pos": 24177
+          },
+          {
+            "name": "ProducerSchema",
+            "line": 409,
+            "col": 14,
+            "pos": 26147
+          }
+        ]
+      ],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
     }
-   ],
-   "files": [],
-   "namespaceMembers": [],
-   "optionalPeerDependencies": [],
-   "types": [],
-   "unlisted": [],
-   "unresolved": []
-  },
-  {
-   "file": "lib/schemas.js",
-   "binaries": [],
-   "catalog": [],
-   "catalogReferences": [],
-   "dependencies": [],
-   "devDependencies": [],
-   "duplicates": [
-    [
-     {
-      "name": "ProducerDetailSchema",
-      "line": 279,
-      "col": 14,
-      "pos": 17946
-     },
-     {
-      "name": "ProducerSchema",
-      "line": 292,
-      "col": 14,
-      "pos": 18637
-     }
-    ]
-   ],
-   "enumMembers": [],
-   "exports": [],
-   "files": [],
-   "namespaceMembers": [],
-   "optionalPeerDependencies": [],
-   "types": [],
-   "unlisted": [],
-   "unresolved": []
-  }
- ]
+  ]
 }

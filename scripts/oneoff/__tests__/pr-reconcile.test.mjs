@@ -18,6 +18,8 @@ import assert from "node:assert/strict";
 
 import {
   ACTIONABLE,
+  DEFAULT_EXCLUDED_IDS,
+  DEFAULT_EXCLUDED_LABELS,
   GQL_COMMENTS,
   GQL_DONE_STATE,
   GQL_ISSUES,
@@ -27,6 +29,7 @@ import {
   classifyPr,
   extractPrRefs,
   isDuplicate,
+  isExcluded,
   parseArgs,
   parseDod,
   renderTable,
@@ -51,6 +54,8 @@ const PRS = {
   3011: { number: 3011, title: "feat: merged sibling", state: "closed", merged_at: "2026-08-25T10:00:00Z", merged: true },
   3012: { number: 3012, title: "feat: superseded attempt", state: "closed", merged_at: null, merged: false, body: "Superseded by #3011." },
   3020: { number: 3020, title: "chore: closed quietly", state: "closed", merged_at: null, merged: false, body: "no reason given" },
+  // Referenced ONLY by the control-card fixtures below: any fetch of it proves an excluded card was classified.
+  3099: { number: 3099, title: "docs: drain evidence", state: "closed", merged_at: "2026-09-01T10:00:00Z", merged: true },
 };
 
 /** GitHub issue comments per PR number (only consulted for closed-unmerged PRs). */
@@ -536,4 +541,101 @@ test("run --write: an identical existing comment (verbatim or by marker) is skip
 test("run: refuses to start without both clients", async () => {
   await assert.rejects(() => run({ linear: null, github: {} }), /clients are required/);
   await assert.rejects(() => run({}), /clients are required/);
+});
+
+// ---------------------------------------------------------------------------
+// Control-card exclusion (MEH-2244 chunk 4/4)
+// ---------------------------------------------------------------------------
+
+const CONTROL_ISSUES = [
+  {
+    id: "id-ctl-label",
+    identifier: "MEH-9101",
+    title: "control card by label — merged PR, DoD ticked, must NEVER be commented on",
+    description: DOD_TICKED,
+    state: { id: "s-prog", name: "In Progress", type: "started" },
+    labels: { nodes: [{ name: "cc-queue" }, { name: "Control" }] },
+    attachments: { nodes: [{ url: pull(3099), title: "control evidence" }] },
+  },
+  {
+    id: "id-ctl-id",
+    identifier: "MEH-2227",
+    title: "control card by explicit id (drain control) — merged PR, no DoD",
+    description: "# 1 · Goal\n\nprose only",
+    state: { id: "s-prog", name: "In Progress", type: "started" },
+    labels: { nodes: [] },
+    attachments: { nodes: [{ url: pull(3099), title: "control evidence" }] },
+  },
+  {
+    id: "id-ctl-flag",
+    identifier: "MEH-9102",
+    title: "excluded only via --exclude flag — merged PR, DoD ticked",
+    description: DOD_TICKED,
+    state: { id: "s-todo", name: "Todo", type: "unstarted" },
+    labels: { nodes: [{ name: "cc-queue" }] },
+    attachments: { nodes: [{ url: pull(3099), title: "control evidence" }] },
+  },
+];
+
+test("GQL_ISSUES: fetches issue labels (the exclusion has to see them)", () => {
+  assert.match(GQL_ISSUES, /labels\s*\{\s*nodes\s*\{\s*name\s*\}\s*\}/);
+});
+
+test("parseArgs: control-card exclusion defaults, repeatable --exclude / --exclude-label, case-insensitive", () => {
+  const d = parseArgs([]);
+  assert.deepEqual([...d.excludeIds].sort(), [...DEFAULT_EXCLUDED_IDS].sort());
+  assert.deepEqual([...d.excludeLabels], [...DEFAULT_EXCLUDED_LABELS]);
+  assert.ok(d.excludeIds.has("MEH-2227") && d.excludeIds.has("MEH-2244"), "both control cards excluded by default");
+  assert.ok(d.excludeLabels.has("control"), "the `control` label is excluded by default");
+  const w = parseArgs(["--exclude", "meh-9102", "--exclude=MEH-9103", "--exclude-label", "Frozen", "--exclude-label=hold"]);
+  assert.ok(w.excludeIds.has("MEH-9102") && w.excludeIds.has("MEH-9103"), "flags extend the default id set");
+  assert.ok(w.excludeIds.has("MEH-2227"), "defaults survive extension");
+  assert.ok(w.excludeLabels.has("frozen") && w.excludeLabels.has("hold") && w.excludeLabels.has("control"));
+  assert.throws(() => parseArgs(["--exclude"]), /needs a value/);
+  assert.throws(() => parseArgs(["--exclude-label", "--write"]), /needs a value/);
+});
+
+test("isExcluded: by id (case-insensitive), by label (case-insensitive), neither -> false", () => {
+  const args = parseArgs(["--exclude", "MEH-9102"]);
+  assert.equal(isExcluded(CONTROL_ISSUES[0], args), "label:control", "label match names the label");
+  assert.equal(isExcluded(CONTROL_ISSUES[1], args), "id", "explicit id match");
+  assert.equal(isExcluded(CONTROL_ISSUES[2], args), "id", "flag-added id match");
+  assert.equal(isExcluded({ ...CONTROL_ISSUES[2], identifier: "meh-2244" }, args), "id", "lower-case identifier still matches");
+  assert.equal(isExcluded(ISSUES[0], args), false, "an ordinary card is not excluded");
+  assert.equal(isExcluded({ identifier: "MEH-1", labels: undefined }, args), false, "no labels field tolerated");
+});
+
+test("run --write: excluded control cards get no row, no comment, no state move — even when named with --issue", async () => {
+  const { linear, github, calls } = makeFakes({ issues: [...ISSUES, ...CONTROL_ISSUES] });
+  const out = [];
+  const argv = ["--write", "--exclude", "MEH-9102", "--issue", "MEH-9101", "--issue", "MEH-2227", "--issue", "MEH-9102", "--issue", "MEH-9001"];
+  const { rows, excluded } = await run({ linear, github, argv, stdout: (s) => out.push(s) });
+
+  assert.deepEqual(rows.map((r) => r.identifier), ["MEH-9001"], "only the ordinary card yields a row");
+  assert.deepEqual(excluded.map((e) => e.identifier).sort(), ["MEH-2227", "MEH-9101", "MEH-9102"]);
+  assert.equal(calls.comment.length, 1, "exactly one comment, for the ordinary card");
+  assert.equal(calls.comment[0].issueId, "id-a-ticked");
+  assert.equal(calls.setState.length, 1);
+  assert.equal(calls.setState[0].issueId, "id-a-ticked");
+  for (const c of CONTROL_ISSUES) {
+    assert.equal(calls.comment.some((x) => x.issueId === c.id), false, `${c.identifier} never commented on`);
+    assert.equal(calls.setState.some((x) => x.issueId === c.id), false, `${c.identifier} never moved`);
+  }
+  // #3099 is referenced only by control cards; the fake would have answered it, so a fetch proves a leak.
+  assert.ok(PRS[3099], "control-only PR exists in the fixture — a fetch would not 404");
+  assert.equal(calls.githubGet.some((p) => p.endsWith("/pulls/3099")), false, "no GitHub PR fetch for a control-only PR");
+  assert.deepEqual(
+    calls.githubGet.filter((p) => /\/pulls\/\d+$/.test(p)).sort(),
+    [`/repos/${REPO}/pulls/3001`, `/repos/${REPO}/pulls/3002`],
+    "only the ordinary card's PRs were fetched",
+  );
+  assert.match(out.join("\n"), /excluded 3 control card\(s\): MEH-2227 \(id\), MEH-9101 \(label:control\), MEH-9102 \(id\)/);
+});
+
+test("run --dry-run: exclusion happens before any GitHub fetch for the excluded card", async () => {
+  const { linear, github, calls } = makeFakes({ issues: [CONTROL_ISSUES[0]] });
+  const { rows, excluded } = await run({ linear, github, argv: [], stdout: () => {} });
+  assert.equal(rows.length, 0);
+  assert.equal(excluded.length, 1);
+  assert.equal(calls.githubGet.length, 0, "no PR fetched for an excluded card");
 });

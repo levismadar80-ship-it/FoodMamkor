@@ -449,6 +449,55 @@ function selfTest() {
   check("banking/allow-shrink-permitted", bankAllowCode === 0, `got ${bankAllowCode}`);
   check("banking/allow-shrink-actually-writes", bankAllowPct === 81, `got ${bankAllowPct}`);
 
+  // MEH-1909 anchor: every case above is a fixture this file invented. Parse the
+  // real summary vitest just wrote (CI runs this step right after
+  // `vitest run --coverage`) so the instrument is proven against the shape the
+  // repo actually produces, not only against shapes we assumed.
+  //
+  // The absent-file branch below USED to be exactly the failure class this
+  // section exists to catch, and the comment here claimed otherwise: the four
+  // checks never called `check()`, so they added nothing to `ran` and nothing
+  // to `failures`, and the run still exited 0. The derived count (29 instead of
+  // 33) was the only tell, and a count is something a human has to notice.
+  // Caught by the CI reviewer on the PR that added it.
+  //
+  // So the branch now discriminates by WHERE it runs. In CI the file is always
+  // present — the workflow runs `vitest run --coverage` immediately before —
+  // therefore its absence there means the coverage step did not produce what it
+  // claims to, and that is a hard failure. Locally, running the self-test
+  // without having generated coverage first is ordinary, so it stays a NOTE.
+  if (existsSync(SUMMARY_PATH)) {
+    let real = null;
+    let err = "";
+    try {
+      real = parseSummary(JSON.parse(readFileSync(SUMMARY_PATH, "utf8")));
+    } catch (e) {
+      err = e instanceof Error ? e.message : String(e);
+    }
+    check("real-summary/parses", real !== null, err);
+    check("real-summary/has-files", (real?.files ?? 0) > 0, `files=${real?.files}`);
+    check(
+      "real-summary/pct-in-range",
+      real !== null && real.globalPct > 0 && real.globalPct <= 100,
+      `pct=${real?.globalPct}`,
+    );
+    check(
+      "real-summary/counts-consistent",
+      real !== null && real.lines.total > 0 && real.lines.covered <= real.lines.total,
+      `covered=${real?.lines?.covered} total=${real?.lines?.total}`,
+    );
+  } else if (process.env.CI) {
+    // One `check()` call, so the absence lands in `failures` and moves the exit
+    // code — not a console line a reader has to spot.
+    check(
+      "real-summary/present-in-ci",
+      false,
+      `${SUMMARY_PATH} absent under CI — the coverage step did not write it`,
+    );
+  } else {
+    console.log(`  NOTE  real-summary/* not run — ${SUMMARY_PATH} absent (run \`vitest run --coverage\` first)`);
+  }
+
   console.log(`\n  ${ran.length} assertions ran, ${failures.length} failed.`);
   if (failures.length) {
     console.error(`\ncoverage-ratchet --self-test FAILED: ${failures.join(", ")}`);

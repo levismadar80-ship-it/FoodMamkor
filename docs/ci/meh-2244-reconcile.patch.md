@@ -21,6 +21,7 @@ from it):
 | **(b)** | only closed-unmerged PRs | comment `superseded/abandoned: #N (<reason>)`, status untouched |
 | **(c)** | any open PR | skip |
 | — | no PR attachments | filtered out, no row |
+| — | **control card** — label `control`, or MEH-2227 / MEH-2244 by id | excluded before classification: no row, no PR fetch, no comment, no move; `--issue` cannot re-admit it. Listed on the stdout header as `excluded N control card(s): …`. Extend with `--exclude MEH-N` / `--exclude-label X` (grow-only, rule 32). |
 
 Idempotent: every comment starts with `<!-- pr-reconcile:<sha256> -->`; a body that
 already exists (verbatim or by marker) is `skipped-identical`. A card with **no DoD
@@ -34,8 +35,11 @@ that lacks a checklist.
 | `LINEAR_API_KEY` | repo secret — **must be added** (not present today; the E2E/CI jobs do not use Linear) | read issues + attachments; in `write` mode, `commentCreate` + `issueUpdate` |
 | `GITHUB_TOKEN` | automatic | `GET /repos/…/pulls/{n}` and `GET /repos/…/issues/{n}/comments` — reads only |
 
-`permissions: pull-requests: read` is the whole grant. The token never writes to GitHub;
-all writes go to Linear, gated on the dispatch input.
+`permissions: contents: read` + `pull-requests: read` is the whole grant — `contents: read`
+because a workflow-level `permissions:` block sets every unlisted scope to `none`, and
+`actions/checkout` needs it (the first draft of this doc omitted it; caught on PR #3444
+by the CI reviewer). The token never writes to GitHub; all writes go to Linear, gated on
+the dispatch input.
 
 The card's constraint was *"no new env vars beyond LINEAR_API_KEY / GITHUB_TOKEN
 already used in CI"*. `GITHUB_TOKEN` is; `LINEAR_API_KEY` is named on the card but
@@ -73,6 +77,7 @@ on:
         default: ""
 
 permissions:
+  contents: read # checkout needs it — a workflow-level block sets every unlisted scope to none
   pull-requests: read
 
 concurrency:
@@ -155,7 +160,7 @@ script is wrong or the card is stale; either way, do not `write` until it agrees
 | Card | Card says | Expected class → action | What would falsify it |
 |---|---|---|---|
 | MEH-1754 | 5 PRs, all landed over August | **(a)** → `done` if every DoD bullet reads `[x]`, else `dod-unticked` with the bullets listed | an `open` PR in the row → the class is (c) and the card's "5 PRs" hides a live one |
-| MEH-2122 | #3007, closed without merge in August | **(b)** → `superseded` with #3007's reason | a `merged_at` on #3007 → the card mis-describes it |
+| MEH-2122 | #3007 — **merged** 18/08 (`b43b6176`; this row used to say "closed without merge", which was wrong — the card itself was right, the error was in MEH-2244 §2 and here; corrected 06/09, rule 34) | **(a)** → `dod-unticked` (chunk A DoD is `*` bullets without checkboxes, so zero checkbox lines) | an `open` PR in the row → chunks B–D started |
 | MEH-1606 | #3321, in flight | **(c)** → `skip` | #3321 showing `merged`/`closed-unmerged` → it landed or died since the card was written |
 | MEH-2241 | 2 PRs | not stated on the card — read the row | — |
 | MEH-817 | 2 PRs | not stated on the card — read the row | — |
@@ -169,6 +174,14 @@ node scripts/oneoff/pr-reconcile.mjs --dry-run \
 
 (Through the workflow: dispatch with `mode: dry-run`, `issues: MEH-1754 MEH-2122 MEH-1606
 MEH-2241 MEH-817`.)
+
+**Measured 06/09 (runs `34024051854` full, `34024053379` narrowed, both dry-run on
+`staging`):** 52 issues with PR attachments → `done` 1 (MEH-1508 — stale ticks, since
+re-opened by hand), `dod-unticked` 39, `skip` 12; zero contradictions against the manual
+sweep of 06/09 on MEH-2227. MEH-2122 came back **(a)**, MEH-1606 **(a)** (#3321 had
+merged), MEH-1754 was filtered (Done). The 39 included MEH-2227 and MEH-2244 themselves,
+which is why the control-card exclusion above exists and why no `write` run happened
+before it landed.
 
 **Control for the null.** If the table prints `(no issues with PR attachments)` for
 that filter, the sweep did not see the cards — a Linear auth or team-name problem, not

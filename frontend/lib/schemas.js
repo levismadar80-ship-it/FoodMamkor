@@ -269,9 +269,16 @@ export const ProducerListSchema = z.object({
   // would debug a backend that is in fact serving it correctly (MEH-901 class).
   top_product_id: z.string().nullable().optional(),          // → ProductsSection badge, chunk 3
   top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
-  availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:36
-  availability_status: z.string().nullable().optional(),     // → availability dot (legacy "vacation"), ProducerCard.jsx:37
-  is_available_today: z.boolean().nullable().optional(),     // → availability dot + fridayMode pill, ProducerCard.jsx:39/:435
+  // MEH-2271: availability_state is the only one anything reads — every
+  // surface goes through lib/availability.js, which no longer falls back.
+  // The two below are still SERVED (ProducerListOut derives them from the
+  // state) so a stale client is not broken mid-release; MEH-2272 removes
+  // them from the contract and from here in the same PR. Keeping them
+  // declared until then is what stops `.loose()`-less parses from stripping
+  // fields the backend is still sending.
+  availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:64
+  availability_status: z.string().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
+  is_available_today: z.boolean().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   // NOT read by ProducerCard today, so the card-derived guard below cannot

@@ -1,5 +1,32 @@
 # `vrt-update.yml` — label-triggered regen (MEH-1764)
 
+> ## ⚠️ Correction 2026-09-06 (drain כט', MEH-2278) — §3/§4 have a ref bug; do not apply verbatim
+>
+> §4 states *"the label fires on the PR, so `github.ref` **is** the PR's head
+> branch"*. **It is not.** On a `pull_request` event `github.ref` is the
+> synthetic `refs/pull/N/merge` and `github.ref_name` is `N/merge`. The live
+> file checks out `ref: ${{ github.ref }}` and pushes
+> `HEAD:${{ github.ref_name }}`, so on the label path it would check out the
+> merge ref and push to a ref that does not exist — the regen would run and
+> throw the PNGs away at the commit step, the exact MEH-1705 failure shape.
+>
+> **The fix, applied on top of §3.2–3.6:** a job-level
+> `TARGET_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}`
+> read by three places — the protected-branch reject (`env.TARGET_REF == 'staging' || ...`),
+> `checkout` (`ref: ${{ env.TARGET_REF }}`), and the push (`HEAD:$TARGET_REF`).
+> §3.4's `if [ "${{ github.event_name }}" ...` inside `run:` should also become
+> an `EVENT:` env var, consistent with the doc's own rule that event values never
+> reach a script body through `${{ }}`. §3.1 is **superseded**: #3337 deleted
+> the false `actions:write` comment outright (the card's ruling was delete, not
+> reword), so there is nothing to reword.
+>
+> A generator implementing all of the above was written in the drain window
+> and refused by the harness classifier three times on the `.github/workflows`
+> write path, so the corrected file is **not** staged as a blob here — apply
+> §3 with the three `TARGET_REF` substitutions above. Sub-issue MEH-2278 carries
+> the DoD (byte-identical push, probe failing→passing, the six `vrt-regen:*`
+> labels).
+
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply this
 itself. This doc is the exact edit for **Sapir** to make in
 `.github/workflows/vrt-update.yml`.

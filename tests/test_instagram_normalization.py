@@ -89,6 +89,7 @@ def test_normalize_instagram(raw, expected):
                 # schema; unrelated to what this test exercises (instagram
                 # normalization).
                 city="תל אביב",
+                terms_accepted=True,  # MEH-2080: mandatory on the schema
                 instagram=ig,
                 category_ids=[1],
                 licensing_declaration_confirmed=True,

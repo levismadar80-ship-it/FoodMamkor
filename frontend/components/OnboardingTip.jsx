@@ -11,8 +11,10 @@ import { ArrowRight } from "@phosphor-icons/react";
  * placement="above"   → expects parent to be relative; positions itself absolute
  *                       above the parent element (BottomNav tab steps).
  *
- * The "×" close button uses logical end-3 (visual left in RTL) so it sits
- * away from the right-aligned Hebrew text without overlap. (rtl-ok: comment-only)
+ * The "×" close button is a 44px target pinned at logical top-0 end-0 (visual
+ * left in RTL); the paragraph reserves pe-8 (32px) so the button never covers
+ * the right-aligned Hebrew text — rtl.md arithmetic: 0 + 44 − 16 = 28px minimum.
+ * (rtl-ok: comment-only)
  */
 export default function OnboardingTip({
   show,
@@ -48,12 +50,12 @@ export default function OnboardingTip({
             <button
               type="button"
               onClick={onDismiss}
-              className="absolute top-2 end-3 text-white/60 hover:text-white text-base leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
+              className="absolute top-0 end-0 w-11 h-11 inline-flex items-center justify-center text-white/60 hover:text-white text-base leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
               aria-label={t("close_aria")}
             >
               ×
             </button>
-            <p className="pe-5 leading-snug">{text}</p>
+            <p className="pe-8 leading-snug">{text}</p>
             <button
               type="button"
               onClick={onNext ?? onDismiss}

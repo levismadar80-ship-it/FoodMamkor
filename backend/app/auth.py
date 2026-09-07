@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -93,6 +94,50 @@ def decode_refresh_token(token: str) -> dict | None:
     if token_obj.claims.get("scope") != "refresh":
         return None
     return token_obj.claims
+
+
+# MEH-1428 chunk 1: "request a review" signed link. A producer owner hands a
+# customer a URL carrying this token; presenting it on POST /producers/{id}/
+# reviews satisfies the contact-click gate (reviews.py guard 3) as an
+# alternative to a click row. Same HS256 + secret as access/refresh (one
+# secret to rotate); its own `scope` so it can never be replayed as either.
+# NOT single-use — the owner shares one link with many customers (31/08
+# ruling). Bound to a producer, never to a user.
+REVIEW_INVITE_SCOPE = "review_invite"
+REVIEW_INVITE_TTL_DAYS = 30
+
+
+def create_review_invite_token(producer_id: UUID) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(days=REVIEW_INVITE_TTL_DAYS)
+    payload = {
+        "producer_id": str(producer_id),
+        "exp": expire,
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+        "scope": REVIEW_INVITE_SCOPE,
+    }
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
+
+
+def decode_review_invite_token(token: str) -> dict[str, Any] | None:
+    """MEH-1428: validate a review-invite token. Returns claims on success,
+    None on any failure (invalid signature, expired, wrong scope, missing
+    producer_id). Never raises — callers branch on None. The caller still
+    has to compare `producer_id` against the producer being reviewed.
+    """
+    try:
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+        # `exp` is essential: the registry only checks expiry when the claim
+        # is present, and this token travels as an opaque string in a shared
+        # link — one minted without `exp` must not become a permanent key.
+        JWTClaimsRegistry(exp={"essential": True}).validate(token_obj.claims)
+    except JoseError:
+        return None
+    claims = token_obj.claims
+    if claims.get("scope") != REVIEW_INVITE_SCOPE:
+        return None
+    if not claims.get("producer_id"):
+        return None
+    return claims
 
 
 def generate_fingerprint() -> str:

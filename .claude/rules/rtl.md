@@ -70,8 +70,8 @@ characters of every heading — the one position guaranteed to collide. The same
 component reviewed in English looks fine, because there `start-` is the empty
 left margin.
 
-**Reference implementation: `OnboardingTip.jsx:50,55`** — `top-2 end-3` on the
-button *and* `pe-5` on the paragraph. `Lightbox.jsx:156` (`top-4 end-4`) is the
+**Reference implementation: `OnboardingTip.jsx:53,58`** — `top-0 end-0 w-11 h-11` on the
+button *and* `pe-8` on the paragraph (MEH-1687: 0 + 44 − 16 = 28px needed, 32px reserved). `Lightbox.jsx:156` (`top-4 end-4`) is the
 position half.
 
 **Reserving the space is arithmetic, not a guess:** the button is absolutely

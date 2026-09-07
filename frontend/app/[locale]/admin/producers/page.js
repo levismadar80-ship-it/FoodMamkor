@@ -155,6 +155,8 @@ function ProducersAdminPage() {
         incompleteOnly={h.incompleteOnly}
         setIncompleteOnly={h.setIncompleteOnly}
         incompleteCount={h.incompleteCount}
+        reviewDueOnly={h.reviewDueOnly}
+        setReviewDueOnly={h.setReviewDueOnly}
         importing={h.importing}
         onSearch={h.loadAllProducers}
         onExport={h.exportExcel}

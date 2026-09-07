@@ -88,7 +88,10 @@ DECLARATION_VERSION: str = "2026-06-v2"
 # attributable to the version actually accepted. Must stay within the
 # VARCHAR(10) users.terms_version column.
 #   v1 ("2026-08-v1") — the terms/privacy wording live at MEH-1995 (2026-08-09).
-TERMS_VERSION: str = "2026-08-v1"
+#   v2 ("2026-09-v2") — MEH-2080: the checkbox now also carries the 18+
+#      self-declaration («אני מעל גיל 18 ומסכימה …»), and acceptance became
+#      mandatory on both email registration paths (422 when absent).
+TERMS_VERSION: str = "2026-09-v2"
 
 # MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
 # self-reported attribution captured at the final registration step). English

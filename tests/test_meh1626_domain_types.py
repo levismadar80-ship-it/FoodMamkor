@@ -58,6 +58,7 @@ def _user_register(**overrides):
         "email": "a@example.com",
         "name": "גל",
         "password": "Zx7Yp9Mq2Lr4",
+        "terms_accepted": True,  # MEH-2080: mandatory on the schema
         **overrides,
     }
 
@@ -223,6 +224,7 @@ def test_producer_register_person_name_two_letters_accepted():
         city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
+        terms_accepted=True,  # MEH-2080: mandatory on the schema
     )
     assert reg.name == "גל"
 
@@ -236,6 +238,7 @@ def test_producer_register_person_name_omitted_stays_none():
         city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
+        terms_accepted=True,  # MEH-2080: mandatory on the schema
     )
     assert reg.name is None
 
@@ -252,6 +255,7 @@ def test_business_name_keeps_three_letter_floor():
             city="תל אביב",
             category_ids=[1],
             declaration_accepted=True,
+            terms_accepted=True,  # MEH-2080: mandatory on the schema
         )
 
 
@@ -262,5 +266,6 @@ def test_business_name_hebrew_accepted():
         city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
+        terms_accepted=True,  # MEH-2080: mandatory on the schema
     )
     assert reg.producer_name == "מאפיית שקד"

@@ -69,6 +69,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     // city: CitySearch (out of scope) owns the input; testid is on the parent
     // wrapper, so reach the role="combobox" input inside it.
     await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
 
@@ -142,6 +143,7 @@ test.describe("Producer register wizard (5-frame)", () => {
 
     // advance DETAILS → CATEGORY → STORY (city + address to satisfy the form)
     await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
     await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
@@ -176,6 +178,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-details-name").fill("העסק שלי");
     await page.getByTestId("register-details-phone").fill("0501234567");
     await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
 

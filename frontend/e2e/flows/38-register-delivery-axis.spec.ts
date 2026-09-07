@@ -77,6 +77,7 @@ async function reachDetails(page: Page): Promise<void> {
   await page.getByTestId("register-details-name").fill("העסק שלי");
   await page.getByTestId("register-details-phone").fill("0501234567");
   await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+  await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
   await page.getByTestId("register-details-address").fill("הרצל 1");
   // The block itself — this is the mutation-check anchor (header note).
   await expect(page.getByTestId("register-delivery-axis")).toBeVisible();

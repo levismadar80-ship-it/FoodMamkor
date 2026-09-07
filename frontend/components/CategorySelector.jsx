@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
-import { CATEGORY_ICONS } from "@/lib/category-registry";
+import { Check, MagnifyingGlass } from "@phosphor-icons/react";
+// MEH-2163: the glyph (and its fallback) come from the registry's total
+// lookup — the local `Leaf` import that used to supply the fallback here is
+// gone, so there is one owner of that decision instead of three.
+import { resolveCategoryGlyph } from "@/lib/category-registry";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
@@ -44,15 +47,19 @@ import { CATEGORY_ICONS } from "@/lib/category-registry";
 // `slug` repeating it.
 //
 // It is NOT the same token as the GLYPH, and an earlier version of this comment
-// said it was. `CATEGORY_ICONS` is still keyed by the Hebrew display name
-// (see :244), so the glyph is the one thing on this card that a rename still
-// drops — silently, to no glyph. Left that way on purpose: that map is shared
-// with three other surfaces (ProducersClient, HomeCategoryGrid, FilterChipsBar)
-// whose data carries no slug, and the frontend has no name-to-slug table to
-// derive a slug-keyed view from. Writing one would be a THIRD copy of
-// backend/app/services/category_slug.NAME_TO_SLUG — in a language the test that
-// pins the existing two cannot reach. The cost of the gap is a missing 46px
-// glyph; the cost of the third copy is a table that can drift unpinned.
+// said it was. The glyph map is still keyed by the Hebrew display name (the
+// `resolveCategoryGlyph(cat)` call in the card loop below), so the glyph is the
+// one thing on this card that a rename still drops. Left that way on purpose:
+// that map is shared with three other surfaces (ProducersClient,
+// HomeCategoryGrid, FilterChipsBar) whose data carries no slug, and the
+// frontend has no name-to-slug table to derive a slug-keyed view from. Writing
+// one would be a THIRD copy of backend/app/services/category_slug.NAME_TO_SLUG
+// — in a language the test that pins the existing two cannot reach. The cost of
+// the gap is a generic 46px glyph; the cost of the third copy is a table that
+// can drift unpinned.
+// MEH-2163 amended one word of that: a rename no longer drops to NO glyph, it
+// drops to the registry fallback. The key choice is unchanged, and MEH-1456 is
+// where it moves — one line, in lib/category-registry.js `categoryGlyphKey`.
 const POPULAR = [
   { slug: "dairy" },
   { slug: "bread" },
@@ -235,14 +242,14 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               const capDisabled = !selected && selectedIds.length >= MAX_CATEGORIES;
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
-              // MEH-683 #4: CATEGORY_ICONS is keyed by canonical DB name (was
+              // MEH-683 #4: the glyph map is keyed by canonical DB name (was
               // slug). MEH-2139: every OTHER lookup in this file moved to
               // `cat.slug`; this one did not, and that is the whole exception —
               // see the note above POPULAR for why. So "every card resolves its
-              // glyph" holds only while the DB name still matches the seed: a
-              // renamed category, and an admin-created one, both resolve `null`
-              // and render no glyph.
-              const Glyph = CATEGORY_ICONS[cat.name] || null;
+              // own glyph" holds only while the DB name still matches the seed:
+              // a renamed category, and an admin-created one, both fall back.
+              // MEH-2163: that fallback is the registry's, not a local `Leaf`.
+              const { glyph: Glyph, isFallback } = resolveCategoryGlyph(cat);
               return (
                 <button
                   key={cat.id}
@@ -268,7 +275,10 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     className={`flex items-center justify-center ${selected ? "text-primary" : "text-primary-dark"}`}
                     aria-hidden="true"
                   >
-                    {Glyph ? <Glyph size={46} /> : <Leaf size={46} weight="light" />}
+                    {/* MEH-2163: same two renderings as before — the mapped
+                        glyph at 46px, the fallback at 46px `weight="light"`.
+                        Only the identity of the fallback moved (registry). */}
+                    {isFallback ? <Glyph size={46} weight="light" /> : <Glyph size={46} />}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">

@@ -126,7 +126,7 @@ export default function InstallPrompt() {
       <button
         onClick={handleDismiss}
         aria-label={t("dismiss_aria")}
-        className="shrink-0 text-fg-muted hover:text-text transition p-1 rounded-lg"
+        className="shrink-0 w-11 h-11 inline-flex items-center justify-center text-fg-muted hover:text-text transition rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>
