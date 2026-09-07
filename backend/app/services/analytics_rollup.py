@@ -15,7 +15,7 @@ Does NOT: purge anything (chunk C, gated on MEH-1981); decide WHEN to run —
 Related:  backend/app/models/models.py::ProducerAnalyticsDaily;
           backend/app/services/analytics.py:70 (unique_views_count);
           backend/app/routers/producer_me.py (`_count_in_window` — the
-          `total` arm reads through `rollup_watermark` + `rolled_up_sum`);
+          `total` arm reads through `rollup_snapshot`);
           backend/app/startup.py (`_run_analytics_rollup_job`).
 History:  MEH-2079 chunk B2 / MEH-2283 (creation, 06/09). Rulings by Sapir,
           06/09 evening, restated in the function docstrings below.
@@ -110,17 +110,36 @@ def rollup_watermark(db: Session) -> date | None:
     return db.execute(select(func.max(ProducerAnalyticsDaily.day))).scalar()
 
 
-def rolled_up_sum(db: Session, producer_id, column) -> int:
-    """Σ `column` over the producer's aggregate rows. Every aggregate row is
-    at or below the watermark by construction, so no day filter is needed —
-    and adding one would let a reader disagree with the job about who owns
-    a day."""
-    total = db.execute(
-        select(func.coalesce(func.sum(column), 0)).where(
+def rollup_snapshot(db: Session, producer_id, column) -> tuple[date | None, int]:
+    """`(watermark, Σ column over the producer's aggregate rows)` — from ONE
+    statement, deliberately.
+
+    The reader partitions the rows at the watermark: aggregate below, raw
+    above. That is only consistent if the watermark and the sum describe the
+    same moment. Read as two statements (the first shape of this seam), a
+    roll-up committing between them — the 01:30 UTC tick landing mid-request —
+    advances the watermark AFTER the reader captured the old one but BEFORE it
+    summed: the sum then includes the freshly rolled day and the raw filter
+    (`> old watermark`) includes it too, so that day counts twice for the
+    request that straddled the commit. Adversarial reviewer on #3486. One
+    statement = one snapshot under READ COMMITTED, so a roll-up can only land
+    entirely before it (both halves see it) or entirely after it (neither
+    does; the raw side still covers the day). The raw query that follows is a
+    separate statement and that is fine: it filters on the watermark THIS
+    snapshot returned, so it covers exactly the days this sum does not.
+
+    Every aggregate row is at or below the watermark by construction, so the
+    sum needs no day filter — adding one would let a reader disagree with the
+    job about who owns a day. `test_a_roll_up_landing_mid_request_cannot_
+    double_count` injects the commit between the reader's statements.
+    """
+    watermark_sq = select(func.max(ProducerAnalyticsDaily.day)).scalar_subquery()
+    watermark, total = db.execute(
+        select(watermark_sq, func.coalesce(func.sum(column), 0)).where(
             ProducerAnalyticsDaily.producer_id == producer_id
         )
-    ).scalar()
-    return int(total or 0)
+    ).one()
+    return watermark, int(total or 0)
 
 
 def _earliest_raw_day(db: Session) -> date | None:
