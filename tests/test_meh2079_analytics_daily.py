@@ -9,8 +9,10 @@ Does NOT: assert the roll-up job (chunk B) or the purge (chunk C). Neither
           "artifact that asserts coverage" shape.
 Related:  backend/app/models/models.py::ProducerAnalyticsDaily;
           backend/alembic/versions/20260906_1100_c4a9e2b7d3f8_*.py;
+          backend/alembic/versions/20260906_2040_0396917da2ea_*.py;
           docs/ci/meh-2079-expected-tables-43.patch.md.
-History:  MEH-2079 chunk A (creation, 06/09).
+History:  MEH-2079 chunk A (creation, 06/09);
+          MEH-2282 chunk B1 (the id server default, 06/09).
 
 WHY "NOTHING READS IT" IS AN ASSERTION AND NOT A COMMENT
 --------------------------------------------------------
@@ -158,3 +160,98 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
         "backend/app/models/models.py",
         "backend/app/models/__init__.py",
     }, files
+
+
+# ── MEH-2282 (chunk B1): the DB can mint the id itself ──────────────────────
+#
+# Chunk B2's roll-up writes with a raw `INSERT … ON CONFLICT DO NOTHING` that
+# never instantiates the ORM class, so `default=uuid.uuid4` is never consulted
+# on the one path that writes every row. The column therefore needs a
+# server-side default, declared on BOTH the model and a migration.
+#
+# The test DB is built from `Base.metadata.create_all` (conftest.py:200), so
+# the model's `server_default` IS the default the test DB carries — which makes
+# the raw-INSERT case below an end-to-end check of the ORM half, not a
+# metadata read. The migration half is asserted by parsing the revision file:
+# the migration is never applied in the test DB, and MEH-1909 is explicit that
+# a probe over a revision file must be anchored to the REAL file, not a fixture.
+
+
+def test_id_declares_a_server_default_on_the_model():
+    col = ProducerAnalyticsDaily.__table__.columns["id"]
+    assert col.server_default is not None
+    assert "gen_random_uuid()" in str(col.server_default.arg)
+    # The Python-side default stays: the ORM path must keep working unchanged.
+    assert col.default is not None
+
+
+def test_a_raw_insert_with_no_id_is_minted_one_by_the_db(db):
+    """The behaviour the default exists for. Against the pre-MEH-2282 model
+    this raises IntegrityError (NOT NULL on id) — the exact failure chunk
+    B2's writer would hit."""
+    p = make_producer(db, name="B1 raw-insert")
+    db.commit()
+    res = db.execute(
+        sa.text(
+            "INSERT INTO producer_analytics_daily (producer_id, day) "
+            "VALUES (:pid, :day) RETURNING id"
+        ),
+        {"pid": p.id, "day": date(2026, 9, 1)},
+    )
+    minted = res.scalar_one()
+    db.commit()
+    assert minted is not None
+    row = db.get(ProducerAnalyticsDaily, minted)
+    assert row is not None and row.producer_id == p.id
+    # The count defaults still apply on the same raw path — a partial INSERT
+    # must not leave NULLs that poison every SUM (chunk A's own guarantee).
+    assert (row.views_unique, row.views_search_unique, row.whatsapp_clicks) == (0, 0, 0)
+
+
+def test_the_b1_revision_sets_the_default_and_chains_after_chunk_a():
+    import ast
+
+    versions = REPO / "backend" / "alembic" / "versions"
+    matches = sorted(versions.glob("*_0396917da2ea_*.py"))
+    assert len(matches) == 1, matches
+    tree = ast.parse(matches[0].read_text(encoding="utf-8"))
+
+    # Identifiers: annotated assignments (the shape this repo's revisions use —
+    # MEH-1909 caught a probe that only handled the plain form).
+    ids = {
+        n.target.id: n.value.value
+        for n in tree.body
+        if isinstance(n, ast.AnnAssign)
+        and isinstance(n.target, ast.Name)
+        and isinstance(n.value, ast.Constant)
+    }
+    assert ids["revision"] == "0396917da2ea"
+    assert ids["down_revision"] == "c4a9e2b7d3f8"
+
+    # upgrade() alters exactly producer_analytics_daily.id and sets a
+    # gen_random_uuid() server_default; downgrade() clears it.
+    def alter_calls(fn_name):
+        fn = next(
+            n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == fn_name
+        )
+        out = []
+        for node in ast.walk(fn):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "alter_column"
+            ):
+                args = [a.value for a in node.args if isinstance(a, ast.Constant)]
+                kw = {k.arg: ast.unparse(k.value) for k in node.keywords}
+                out.append((args, kw))
+        return out
+
+    up = alter_calls("upgrade")
+    assert len(up) == 1
+    assert up[0][0] == ["producer_analytics_daily", "id"]
+    assert "gen_random_uuid()" in up[0][1]["server_default"]
+
+    down = alter_calls("downgrade")
+    assert len(down) == 1
+    assert down[0][0] == ["producer_analytics_daily", "id"]
+    assert down[0][1]["server_default"] == "None"
