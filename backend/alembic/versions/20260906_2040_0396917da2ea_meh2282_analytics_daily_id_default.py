@@ -45,12 +45,14 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "0396917da2ea"
-# Chains after chunk A (c4a9e2b7d3f8), which `alembic heads` confirms is the
-# sole head on staging at cut time. If another revision lands first and
-# claims c4a9e2b7d3f8 as its parent, re-point this one to THAT revision
-# rather than merging — this revision has never been applied anywhere, so
-# re-pointing rewrites no history (the same call c4a9e2b7d3f8 itself made
-# when 3f9a7c2e5d18 arrived first).
+# Chains after chunk A (c4a9e2b7d3f8) — the sole head on staging at cut time
+# (`alembic heads`) and, once this revision is applied, simply history. The
+# only situation in which this line changes is BEFORE apply: if another
+# revision lands on staging first and claims c4a9e2b7d3f8 as its parent,
+# re-point this one to THAT revision rather than adding a merge revision
+# (the same call c4a9e2b7d3f8 itself made when 3f9a7c2e5d18 arrived first).
+# After apply, treat this as fixed — re-pointing an applied revision is
+# exactly the kind of history rewrite Alembic exists to prevent.
 down_revision: Union[str, None] = "c4a9e2b7d3f8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
