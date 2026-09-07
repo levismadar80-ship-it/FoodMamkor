@@ -1,5 +1,17 @@
 # `vrt-update.yml` — label-triggered regen (MEH-1764)
 
+> ## ✅ APPLIED 2026-09-07 — `d9f7d8dc` (PR #3483), with the correction below folded in
+>
+> §3.2–3.6 are live in `.github/workflows/vrt-update.yml` on `staging`, and the
+> ref bug named in the next block was fixed in the same commit rather than
+> applied and then patched. **Read this doc as a record, not as an instruction:**
+> applying it again would re-apply a change that is already there.
+>
+> The six `vrt-regen:*` labels the `case` map keys on were created on 2026-09-07
+> via the REST labels API (`POST /repos/:owner/:repo/labels`, 201 ×6, colour
+> `a2eeef`). That was recorded here as a Sapir residual; it was not one — the
+> API route accepts an ordinary token, and the residual line was wrong.
+
 > ## ⚠️ Correction 2026-09-06 (drain כט', MEH-2278) — §3/§4 have a ref bug; do not apply verbatim
 >
 > §4 states *"the label fires on the PR, so `github.ref` **is** the PR's head
