@@ -323,10 +323,14 @@ zero.
      deployment at all** — `git.deploymentEnabled` in `frontend/vercel.json`
      disabling `feature/*`, `dependabot/*` and `vrt-regen/*`, because every
      `Ignored` deployment still consumes the Hobby-tier daily quota
-     (measured: 18 of 20 in 5.5 h). **Staged for Sapir, not yet applied**
-     ([docs/ci/meh-2062-vercel-git-deployments.patch.md](../../docs/ci/meh-2062-vercel-git-deployments.patch.md)
-     — the file is filesystem-denied to CC). Once it lands, a preview exists
-     only when Sapir runs `vercel deploy` explicitly; the UI evidence is
+     (measured: 18 of 20 in 5.5 h). **✅ APPLIED 07/09 — `6bdb10d1` (PR #3484),
+     in production via `8e69ff1e`.** _(This read "Staged for Sapir, not yet
+     applied — the file is filesystem-denied to CC". The deny is on the
+     filesystem tools; the Contents API writes it fine.)_ **So a feature-branch
+     preview now exists only when Sapir runs `vercel deploy` explicitly** —
+     measured: two pushes to a `feature/*` branch at 10:38:19Z and 10:46:06Z
+     produced **no deployment row at all**, where the same branch shape produced
+     a `CANCELED` row two minutes before the change landed. The UI evidence is
      otherwise the 375/1440 Playwright bundle (rule 23 amendment) and staging
      after merge — say which in the PR, never report an absent preview as if
      it rendered.
