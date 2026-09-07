@@ -24,10 +24,10 @@ from app.utils.clock import ISRAEL_TZ, israel_today
 from app.models import (
     ContactClick,
     DeliveryArea,
-    ProducerAnalyticsDaily,
     Favorite,
     HomeProduct,
     Producer,
+    ProducerAnalyticsDaily,
     Product,
     ProducerLocation,
     ProducerOffer,
