@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-09-07 בוקר — ‏MEH-2210 נסגר: הראיה @375 נחתה (#3500) וכל חמשת ה-PRs מגובים ביומן
+
+**‏שורה אחת:** ‏#3500 `036b8032` (squash מאומת) הוסיף `frontend/qa-meh2210-rejected-banner.mjs` ושבעה `.webp` ב-375px — שורת ה-DoD האחרונה. הכרטיס מגובה כאן במלואו לראשונה: עד היום רק chunk A היה ביומן (#3372), ו-HANDOFF שורה 321 עדיין אמרה ש-#3336/#3343 «פתוחים». פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — MEH-2210, הכרטיס כולו».
+
+**‏חמשת ה-PRs, עם ה-SHA שנחת ושיטת המיזוג שנמדדה (‏MEH-1526 — לא מונח שהבקשה כובדה):**
+
+| PR | מה | SHA | שיטה |
+| -- | -- | -- | -- |
+| #3333 | chunk A — ‏`rejection_reason_code`, מכסת 3, ping לאדמין | `cd766944` | squash |
+| #3336 | chunk B — הבאנר לפי קוד סיבה + CTA | `3d66b498` | **merge commit** ⚠️ |
+| #3343 | chunk C — badge בתור, מייל דחייה, ‏E2E | `a1edd058` | squash |
+| #3373 | chunk A follow-up — נעילת שורה סביב בדיקת המכסה | `a8c37ece` | squash |
+| #3500 | ראיית QA ‏@375, שבעה מצבים אסרטיביים | `036b8032` | squash |
+
+**‏#3336 נחת כ-merge commit ולא כ-squash** — הודעתו היא `Merge pull request #3336 from …`, כלומר תבנית המיזוג ולא `<title> (#N)`. זה בדיוק הכשל ש-MEH-1526 מתעד, והוא נתפס כאן רק מפני ש-`git log --grep="(#3336)"` **לא החזיר כלום** בזמן איסוף ה-SHA-ים ל-backfill. גוף ה-commit המנוסח — כולל ה-trailer `Builder-Model:` — קבור בהיסטוריית הענף. **היסטוריה שנחתה לא נכתבת מחדש.**
+
+**‏מה שהראיה של #3500 כן מוכיחה, ומה שלא:** ‏7/7 מצבים אסרטיביים (ארבעת הקודים המבניים · `other` · קוד `NULL` לגסי · המכסה), כל אחד ממתין למחרוזת העברית הצפויה **גלויה** לפני הצילום, והמקרה החסום אוסר בנוסף על נוכחות ה-CTA — אסרציה על מחרוזות בלבד אינה יכולה לזהות כפתור שהיה אמור להיעלם. **הריצה הראשונה נכשלה 7/7 וצילמה את עמוד ה-access-denied** (‏Playwright מתאים route **אחרון-שנרשם-ראשון**, וה-catch-all של `**/api/**` בלע את `/api/auth/me`) — שני חצאי הבקרה נצפו. **ה-API מדומה**, כלומר זה מוכיח שהבאנר מרנדר את מה שה-payload אומר ולא שה-backend מייצר אותו; החצי השני הוא `tests/test_producer_resubmit.py` (16 מקרים, ירוק).
+
+**‏שתי שורות DoD שנסגרו בהכרעה ולא בראיה, ורשומות ככאלה:** (1) **E2E** — הספק של הכרטיס עצמו (`40-rejected-resubmit-loop`) עובר; הסוויטה אדומה על specs שאינם שלו (MEH-1514 · MEH-2269/MEH-2284), ו-`E2E gate` אינו context נדרש. (2) **preview URL** — כבוי מתוכנן מאז MEH-2062. **שארית פתוחה על כרטיס סגור:** מעבר נייד אנושי של ספיר — חריגה (b) של תיקון MEH-1511 לכלל 23 (מחרוזות עברית **חדשות**) אינה מתמלאת ע"י חבילת Chromium, גם כשהקופי אושר מראש על הכרטיס (כלל 22).
+
+**‏הבא (NEXT):** ‏(1) ‏MEH-1508 chunk 3ב-2 תחת הכרעת (c′) — rename + regen באותו PR · (2) ‏MEH-2168 chunk 2 · (3) ‏MEH-1938 chunk 1 · (4) ספיר: מעבר נייד ל-2210, והרשימה ב-CHANGELOG.
+
 ## 2026-09-07 בוקר — ‏drain כט' המשך (session `01SU9y6p…`): ‏§Token 4/4 הוחל · סוויפ 2244 · ‏MEH-2278 נסגר על 5 בקרות · באג `steps.<id>.result` תוקן · LEASE: לא נלקח
 
 **‏שורה אחת:** ‏ארבע ההחלות של §Token נחתו (#3485 `642ee9ba` · #3484 `6bdb10d1` · #3482 `ef1a0bfe` · #3483 `d9f7d8dc`), ששת ה-labels `vrt-regen:*` נוצרו ב-API (201 ×6), חמש בקרות discrimination רצו על מסלול ה-label, ובקרה 3 חשפה שהתיקון שלי ב-#3483 השתמש ב-`steps.<id>.result` — מאפיין שאינו קיים — כך ששני שלבים היו מתים בכל ריצה. תוקן ב-#3496 `0c7d0014`, נסגר MEH-2278 על בקרה 5 מלאה (push + הסרת label). ‏#3495 `22567b07` תיקן ארבעה patch docs. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 בוקר — drain כט' המשך».
@@ -318,7 +340,7 @@
 | #3368 | MEH-1428 chunk 1 — קישור ביקורת חתום, revision `3f9a7c2e5d18` על `2c1033ca5745` | פתוח — ספיר (revision) |
 | #3369 | MEH-2076 — same-category review guard | פתוח — ספיר (post-launch, שינוי התנהגות) |
 | #3366 | MEH-1640 — איחוד 4 spokes | פתוח — ספיר (screenshots 375/1440 לא צולמו) |
-| #3336 / #3343 | MEH-2210 B / C | פתוחים — ספיר (self-QA rig לא הוקם) |
+| #3336 / #3343 | MEH-2210 B / C | ~~פתוחים~~ → **שניהם נחתו 05/09** — #3336 `3d66b498` (**merge commit**, לא squash — נפילת MEH-1526), #3343 `a1edd058` (squash). תוקן ב-backfill של 07/09. |
 | #3345–#3348 | MEH-1687 — 4 יעדי מגע 44px | פתוחים — ספיר (UI) |
 | #3350 | MEH-2119 — probe זמני | פתוח — ספיר (RED) |
 | #3355 | MEH-1621 chunk 2 — הערות schemas.py | פתוח — post-launch |
