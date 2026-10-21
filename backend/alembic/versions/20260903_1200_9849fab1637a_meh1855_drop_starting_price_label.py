@@ -14,7 +14,7 @@ Every reader and writer was retired first, in order:
   committed contract snapshot + openapi.json + generated Zod, the admin
   create/PUT mirror, the XLSX importer, the boot seed, `lib/schemas.js`, the
   e2e fixtures, and every frontend reader — which now consult `price_range`
-  ALONE. The `LEGACY(2026-11-30, MEH-1855)` marker on the column went with
+  ALONE. The dated legacy marker (MEH-1855) on the column went with
   it (docs/MIGRATIONS.md § LEGACY-expiry), 28 days before its expiry.
 
 DESTRUCTIVE — class A (`drop_column`) in upgrade(), per the release-audit
