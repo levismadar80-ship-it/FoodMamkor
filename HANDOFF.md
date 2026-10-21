@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 00:40 — release v1.1.0 יצא, Railway בתקלה עולמית, שלוש פצצות-זמן ושלושה PR-ים נעולים
+
+**‏שורה אחת:** ‏`main` = `5980abd7` (#3521, merge commit). Vercel חי; **ה-backend לא** — Railway Major Outage (builds paused), לא token. Search Console מאומת + sitemap הוגש. MEH-2192 · MEH-2288 · MEH-2290 Done. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «22/10».
+
+**‏מה שסשן חדש חייב לדעת, לפי דחיפות:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| **production backend** | `/api/health.version.git_sha` = `8e69ff1e` (07/09) למרות release | **לבדוק `/api/health`.** אם עדיין ישן: status.railway.com; כשהם חוזרים, Railway בונה `main` לבד. אם ה-outage נגמר והבנייה לא קרתה → Railway dashboard → Redeploy (ספיר). **עד אז: הרשמה עם «מהמקור פנו אליי ישירות» → 422.** בדיקות מתוזמנות: 01:05, 90 דק', 09:00 (הסתרה הפיכה ב-frontend אם צריך, אלא אם ספיר אמרה «אל תסתירי») |
+| **תג `v1.1.0`** | לא נדחף (sandbox) | ספיר: `git tag -a v1.1.0 5980abd7 -m "release: v1.1.0" && git push origin v1.1.0` |
+| **PR-ים נעולים (`do-not-merge`)** | #3524 שעות (אחרי 2 תיקוני סקירה) · #3525 lat/lng (סקירה בתהליך בעת הכתיבה) · #3528 top_product_name | סקירת ספיר אחרי ההשקה; #3524/#3525 מתנגשים על חתימת `upsert_primary_branch_location` — השני rebase. **לא מחליפים drop:** chunks 7-10 ב-MEH-2288 נשארים RED |
+| **MEH-2272 / MEH-2064 (chunks 1, 6)** | לא התחילו | דורשים regen של `openapi.json`/Zod — סשן CC מקומי עם orval |
+| **GSC** | מאומת בחשבון sapir000s; sitemap «לא ניתן היה לאחזר» = ראשוני | לבדוק בעוד יום שהסטטוס התעדכן |
+| **פצצות-זמן** | 3 פורקו (special_hours #3526, kashrut fixtures #3527, LEGACY #3519/#3523) | אופק הבא: `lib/holidays.js` 11/06/2027 |
+
+**‏שני לקחים שהלילה הזה הוסיף, לכלל:**
+1. **תאריך קשיח בריפו הוא פצצת-זמן אלא אם יש לו שעון קפוא או guard.** שלוש מחלקות שונות פוצצו באותו ערב (סמן LEGACY, literal בטסט backend מול `israel_today`, literal בטסט frontend מול `new Date()`), כולן בלי שינוי קוד. ה-idioms קיימים (`monkeypatch israel_today`, `vi.setSystemTime`, sentinel 2099) — מה שחסר הוא בדיקה בזמן הכתיבה. מועמד ל-guard: grep של `20[2-9][0-9]-[01][0-9]-[0-3][0-9]` ב-tests שלא ליד freeze.
+2. **«Invalid RAILWAY_TOKEN» ≠ token פג.** ה-CLI מדפיס את זה גם כשה-API של Railway לא זמין. לפני rotation — status.railway.com. (טעות שנעשתה ותוקנה באותו לילה; הרשומה המקורית ב-CHANGELOG מתוקנת.)
+
+**‏איך הלילה עבד (לפרוטוקול):** session claude.ai אחד (לא CC), עם Linear/Chrome/GitHub-REST; סוכני רקע לסקירה אדברסרית (3), Phase 0 (1), סריקת פצצות-זמן (1), והכנת PR-ים נעולים ב-worktrees (3). כל PR שמוזג: squash מאומת + flip-check ב-Linear (MEH-2286 נדרש סגירה ידנית — כיוון שני של כלל 29b).
+
 ## 2026-10-21 ערב — session claude.ai לפני ה-outreach של 22/10: #3516 + #3517 פתוחים, CI חסום על מכסה
 
 **‏שורה אחת:** ‏שני PR-ים ירוקים-להלכה מחכים ל-CI שלא רץ — **כל job נופל ב-2 שניות עם אפס steps** (חתימת מכסת Actions, כלל 21). ספיר פותחת את המכסה → ‏`rerun` → מיזוג → release `staging → main`. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «21/10».
