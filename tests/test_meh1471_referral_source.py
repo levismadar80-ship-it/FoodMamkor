@@ -10,7 +10,7 @@ Does NOT: exercise the admin display (frontend) or the MEH-143 upgrade path
 Related:  backend/app/schemas/schemas.py (ProducerRegister validators),
           backend/app/constants.py:REFERRAL_SOURCE_KEYS,
           backend/app/routers/auth.py (Producer creation sites).
-History:  MEH-1471 (creation, 2026-07-22).
+History:  MEH-1471 (creation, 2026-07-22); MEH-2286 (direct_outreach key, 2026-10-21).
 """
 from app.models.models import Producer
 from conftest import valid_producer_register_payload
@@ -86,6 +86,22 @@ def test_prefer_not_to_say_persists(client, db):
     )
     assert resp.status_code == 200, resp.text
     assert db.query(Producer).one().referral_source == "prefer_not_to_say"
+
+
+def test_direct_outreach_persists(client, db):
+    """'direct_outreach' (business contacted by Mehamakor's founder outreach)
+    is an allowed key, so launch-day calls can be counted from the column
+    instead of from free text under 'other'."""
+    resp = client.post(
+        REGISTER_URL,
+        json=_new_registration(
+            email="ref-outreach@example.com", referral_source="direct_outreach"
+        ),
+    )
+    assert resp.status_code == 200, resp.text
+    producer = db.query(Producer).one()
+    assert producer.referral_source == "direct_outreach"
+    assert producer.referral_source_other is None
 
 
 def test_absent_referral_source_is_nullable(client, db):
