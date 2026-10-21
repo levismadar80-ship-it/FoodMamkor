@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { buildHomeJsonLd, buildJsonLd, buildOrganizationNode } from "@/lib/seo";
 import {
@@ -53,8 +54,9 @@ describe("Organization JSON-LD (MEH-2192)", () => {
   });
 
   it("public/llms.txt carries CANONICAL_SENTENCE as its own line (single owner)", () => {
-    const llms = readFileSync(resolve(__dirname, "../public/llms.txt"), "utf8");
-    const lines = llms.split("\n").map((l) => l.trim());
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const llms = readFileSync(path.join(here, "..", "public", "llms.txt"), "utf8");
+    const lines = llms.split("\n").map((line) => line.trim());
     expect(lines).toContain(CANONICAL_SENTENCE);
   });
 
