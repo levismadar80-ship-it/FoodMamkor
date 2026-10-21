@@ -860,8 +860,24 @@ def admin_update_producer(
     # MEH-1939 takes the flushed Producer rather than five loose fields
     # (producer_queries.py:378-383) — the row is a mirror, and reading the
     # mirror's source off the instance is what makes them unable to drift.
-    if "lat" in payload or "lng" in payload:
-        upsert_primary_branch_location(db, producer)
+    #
+    # MEH-1938 (hours write-through): `opening_hours` joins the gate. The
+    # setattr loop above still writes the legacy `Producer.opening_hours`
+    # (expand phase — both columns), and this mirrors the same value onto the
+    # primary row so the public page's LEGACY(2026-11-30) read fallback
+    # (frontend/lib/hours.js) stops being re-armed by every admin edit. Each
+    # axis is mirrored only when its own field is in the payload: an
+    # hours-only edit must not re-mirror the address, a point-only edit must
+    # not touch owner-authored hours on the row.
+    touches_point = "lat" in payload or "lng" in payload
+    touches_hours = "opening_hours" in payload
+    if touches_point or touches_hours:
+        upsert_primary_branch_location(
+            db,
+            producer,
+            mirror_point=touches_point,
+            mirror_hours=touches_hours,
+        )
 
     db.commit()
     db.refresh(producer)

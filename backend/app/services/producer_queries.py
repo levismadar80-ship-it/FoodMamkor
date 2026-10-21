@@ -429,9 +429,35 @@ def _demote_other_primaries(db: Session, producer_id, keep_id) -> None:
 
 
 def upsert_primary_branch_location(
-    db: Session, producer: Producer
+    db: Session,
+    producer: Producer,
+    *,
+    mirror_point: bool = True,
+    mirror_hours: bool = False,
 ) -> ProducerLocation | None:
     """MEH-2059 (MEH-1938 chunk 4b) — the ADMIN half of the dual-write.
+
+    MEH-1938 (hours write-through): two keyword flags pick WHICH axis of the
+    producer row is mirrored onto the primary location on this call —
+    `mirror_point` (city / address / lat / lng, the original contract, default
+    on) and `mirror_hours` (`opening_hours`, default off). They exist because
+    the admin PUT gates on the PAYLOAD (admin.py — "an admin editing only the
+    name must not re-mirror the address over a row the owner authored"): an
+    hours-only edit must mirror hours and NOTHING else, a point-only edit the
+    reverse, and both together both. Each flag reads its source off the
+    `producer` instance — never a loose value — for the same reason the
+    helper takes a flushed `Producer` at all: a mirror that reads the column
+    it mirrors cannot drift from it. An explicit `opening_hours: null` in the
+    payload therefore clears the row's hours too, the way case 3 below
+    mirrors a coordinate clear.
+
+    Why hours had to join the mirror: before this, the admin PUT wrote
+    `Producer.opening_hours` ONLY, while the public page prefers the primary
+    row's hours and falls back to the business column behind
+    LEGACY(2026-11-30, MEH-1938) (`frontend/lib/hours.js`). Every admin edit
+    of hours therefore re-armed that fallback, and its contract step could
+    never be safe. Expand phase: BOTH columns are written; the legacy column
+    is not dropped here.
 
     `create_primary_branch_location` above covers creation-from-signup. This
     covers the admin EDIT path, where the producer may already own a primary
@@ -489,12 +515,28 @@ def upsert_primary_branch_location(
         .first()
     )
     if existing is None:
-        return create_primary_branch_location(db, producer)
+        created = create_primary_branch_location(db, producer)
+        # MEH-1938: a row born here has no owner-authored hours to protect, so
+        # it ALWAYS takes the business hours — regardless of mirror_hours —
+        # the same shape the 7c1e2a9f4b3d backfill gave its rows
+        # (BACKFILL_SQL copies p.opening_hours unconditionally). Gating this
+        # on the flag re-opened the gap: a point-only PUT that creates the
+        # first row would leave row.opening_hours NULL while the column held
+        # a value (review of #3524, defect 1). `created` is None when the
+        # producer has no coordinates (the create helper's condition); then
+        # the legacy column still holds the value and the frontend fallback
+        # covers it — count_hours_gap.py counts that class too.
+        if created is not None:
+            created.opening_hours = producer.opening_hours
+        return created
 
-    existing.city = producer.city
-    existing.address = producer.address
-    existing.lat = producer.lat
-    existing.lng = producer.lng
+    if mirror_point:
+        existing.city = producer.city
+        existing.address = producer.address
+        existing.lat = producer.lat
+        existing.lng = producer.lng
+    if mirror_hours:
+        existing.opening_hours = producer.opening_hours
     _demote_other_primaries(db, producer.id, keep_id=existing.id)
     return existing
 
