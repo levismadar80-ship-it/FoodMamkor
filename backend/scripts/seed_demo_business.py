@@ -413,6 +413,12 @@ DEMO_LOCATIONS = [
         "lng": 34.9519,
         "is_primary": True,
         "location_precision": "exact",
+        # MEH-1938 (hours write-through): the primary row carries the SAME
+        # hours as the business column above, so a fresh seed does not recreate
+        # the gap `backend/scripts/count_hours_gap.py` counts — a primary row
+        # with no hours keeps the public page's LEGACY(2026-11-30) read fallback
+        # (frontend/lib/hours.js) load-bearing and blocks its contract step.
+        "opening_hours": DEMO_PRODUCER["opening_hours"],
     },
     {
         "kind": "pickup",
