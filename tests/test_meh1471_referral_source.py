@@ -88,6 +88,22 @@ def test_prefer_not_to_say_persists(client, db):
     assert db.query(Producer).one().referral_source == "prefer_not_to_say"
 
 
+def test_direct_outreach_persists(client, db):
+    """'direct_outreach' (business contacted by Mehamakor's founder outreach)
+    is an allowed key, so launch-day calls can be counted from the column
+    instead of from free text under 'other'."""
+    resp = client.post(
+        REGISTER_URL,
+        json=_new_registration(
+            email="ref-outreach@example.com", referral_source="direct_outreach"
+        ),
+    )
+    assert resp.status_code == 200, resp.text
+    producer = db.query(Producer).one()
+    assert producer.referral_source == "direct_outreach"
+    assert producer.referral_source_other is None
+
+
 def test_absent_referral_source_is_nullable(client, db):
     """The column is nullable and the field optional at the API layer — an
     absent value keeps registration working (existing producers / MEH-143
