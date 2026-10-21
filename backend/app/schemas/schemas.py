@@ -1752,6 +1752,11 @@ class ProducerAdminCreate(BaseModel):
     facebook: str | None = None
     external_order_form: str | None = None
     slug: str | None = None
+    # MEH-2137 (writers closed): ACCEPTED AND IGNORED. admin.py no longer
+    # assigns it on create — the legacy column is derived from `top_product_id`
+    # (owner PUT sync + serializer). The field stays declared, unchanged, so
+    # backend/openapi.json and frontend/lib/generated/** do not drift; removing
+    # it is a contract change for the drop PR, not this one.
     top_product_name: SanitizedLabelField | None = None
     price_range: str | None = None
     grass_fed: bool = False
@@ -1957,6 +1962,12 @@ class ProducerUpdate(BaseModel):
     # write it — owners cannot self-map. Validated below (URL-safe charset,
     # ≤300). No rating value is ever accepted or stored (live-fetch only).
     google_place_id: str | None = None
+    # MEH-2137 (writers closed): ACCEPTED AND IGNORED by both PUTs — popped in
+    # producer_me.py::_resolve_top_product and admin.py::admin_update_producer
+    # before either setattr loop. The column is written ONLY from the product
+    # row `top_product_id` names. Declared unchanged on purpose: dropping the
+    # field moves backend/openapi.json + frontend/lib/generated/** (the
+    # codegen drift guard), which belongs to the drop PR.
     top_product_name: SanitizedLabelField | None = None
     # MEH-2137 switch: the owner now votes by IDENTITY. Ownership cannot be
     # checked here — it needs the DB — so producer_me.py 422s a product that

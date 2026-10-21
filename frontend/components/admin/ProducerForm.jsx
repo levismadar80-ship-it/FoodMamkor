@@ -173,7 +173,9 @@ const EMPTY = {
   google_place_id: "",
   description: "",
   short_description: "",
-  top_product_name: "",
+  // MEH-2137 (writers closed): `top_product_name` left this form. The featured
+  // product is a vote by id the OWNER casts in her dashboard; the admin form
+  // neither pre-fills nor sends the legacy free-text name any more.
   price_range: "",
   // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
   established_year: "",
@@ -321,7 +323,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         facebook: initial.facebook ?? "",
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
-        top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? "",
         // MEH-1541: null → "" so the number input stays controlled + empty.
         established_year: initial.established_year ?? "",
@@ -460,7 +461,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       google_place_id: form.google_place_id?.trim() || null,
       description: form.description,
       short_description: form.short_description,
-      top_product_name: form.top_product_name,
       price_range: form.price_range,
       // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
       established_year:
@@ -1093,12 +1093,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={`${inputClass} h-28 resize-none`}
             />
           </Field>
-          <Input
-            label={t("producers.form.fields.top_product")}
-            value={form.top_product_name}
-            onChange={(e) => update("top_product_name", e.target.value)}
-            placeholder={t("producers.form.fields.top_product_placeholder")}
-          />
           <Input
             label={t("producers.form.fields.price_range")}
             value={form.price_range}
