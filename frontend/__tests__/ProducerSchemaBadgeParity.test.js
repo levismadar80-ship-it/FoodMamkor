@@ -279,7 +279,10 @@ describe("MEH-1704 — badges survive a ProducerSchema round-trip", () => {
     has_vegan_products: true,
     has_lactose_free_products: true,
     kashrut_verified_at: "2026-07-01",
-    kashrut_expires_at: "2027-07-01",
+    // MEH-2290: far sentinel, not a near date — badges.js:360 compares this to
+    // the real clock; 2027-07-01 would have dropped the kosher badge (10 -> 9)
+    // on that day with no code change.
+    kashrut_expires_at: "2099-01-01",
     // MEH-2046: `delivers` is what earns the delivery badge now. The two legacy
     // operands stay on the fixture deliberately — this file's whole subject is
     // fields surviving the strict parse, and they are still declared in

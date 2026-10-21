@@ -91,7 +91,12 @@ vi.mock("@/lib/favorites-cache", () => ({
   subscribeFavorites: () => () => {},
 }));
 
-const FUTURE = "2027-07-01T00:00:00Z";
+// MEH-2290: a "future" expiry must be a far sentinel, never a near calendar
+// date. KashrutBadgeStrip reads the real clock (near-expiry copy at <=30 days,
+// badge dropped at 0), so a 2027-07-01 literal would have broken the parity
+// assertions on 2027-06-01 with no code change — the same time-bomb class as
+// test_meh1889_special_hours. 2099 is the idiom badges.test.js:216 uses.
+const FUTURE = "2099-01-01T00:00:00Z";
 
 const producerWith = (codes) => ({
   id: "3c3c3c3c-3333-4333-8333-333333333333",
