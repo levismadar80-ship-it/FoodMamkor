@@ -70,8 +70,10 @@ class Producer(Base):
     # location now take `lat` / `lng` as keyword args from the caller's
     # payload, and no path — registration, admin create/update, public POST,
     # import, the seeds — assigns these columns any more. They are NULL on
-    # every row written since. Only `tests/conftest.py::make_producer` still
-    # sets them, as a fixture control for the "derived, not column" tests;
+    # every NEW row written since (pre-existing rows keep their mirrored
+    # values until the drop). Test fixtures (`tests/conftest.py::make_producer`
+    # and two siblings) still set them as controls for the "derived, not
+    # column" tests;
     # that goes with the drop. The drop itself — [DESTRUCTIVE], its own
     # revision, ≥7-day soak, R2 backup ≤24h, the MEH-2056 count query = 0 on
     # production — is a separate RED PR, not this chunk.

@@ -136,7 +136,7 @@ in `backend/init_db.sql` is for cold-start Railway deploys only.
 producers (
   id uuid PK,
   name, description, short_description,
-  city, lat float, lng float,   -- lat/lng: LEGACY mirror of the primary producer_locations row (MEH-1938 5a: no reader; 5b code half 2026-10-22: NO WRITER either — registration / admin create+PUT / public POST / import / seeds pass coordinates to create_/upsert_primary_branch_location as kwargs and the columns stay NULL; the drop is a separate RED revision)
+  city, lat float, lng float,   -- lat/lng: LEGACY mirror of the primary producer_locations row (MEH-1938 5a: no reader; 5b code half 2026-10-22: no APP writer either — registration / admin create+PUT / public POST / import / seeds / scripts pass coordinates to create_/upsert_primary_branch_location as kwargs, so NEW rows leave the columns NULL; pre-existing rows keep their mirrored values until the drop; test fixtures (conftest make_producer + 2 others) still construct Producer(lat=…) and go with the RED drop revision)
   phone, instagram, website, whatsapp_group, facebook, external_order_form,
   status: draft|pending|approved|rejected|inactive,   -- MEH-2100: draft is where every new producer starts; MEH-2124 removed pending_whatsapp
   images text[],
