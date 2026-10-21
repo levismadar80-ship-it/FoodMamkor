@@ -65,15 +65,22 @@ class Producer(Base):
     # CONSUMER SURFACE reads them (geo, submit gate, admin map, producerPoints,
     # JSON-LD all read the rows, with no fallback) and the owner PUT ignores
     # them; `ProducerListOut.lat/lng` are DERIVED from the primary row at
-    # serialization. Two readers remain on purpose, in the WRITE direction:
-    # producer_queries.create_primary_branch_location and
-    # upsert_primary_branch_location copy the columns INTO the row, because
-    # admin, import and the seeds still deliver coordinates through them
-    # during the soak. Chunk 5b rewires those helpers to take coordinates
-    # directly and drops both columns — [DESTRUCTIVE], its own revision,
-    # ≥7-day soak, R2 backup ≤24h, the MEH-2056 count query = 0 on production.
+    # serialization. Chunk 5b (code half, 2026-10-22) closed the last WRITERS:
+    # producer_queries.create_primary_branch_location / upsert_primary_branch_
+    # location now take `lat` / `lng` as keyword args from the caller's
+    # payload, and no path — registration, admin create/update, public POST,
+    # import, the seeds — assigns these columns any more. They are NULL on
+    # every NEW row written since (pre-existing rows keep their mirrored
+    # values until the drop). Test fixtures (`tests/conftest.py::make_producer`
+    # and two siblings) still set them as controls for the "derived, not
+    # column" tests;
+    # that goes with the drop. The drop itself — [DESTRUCTIVE], its own
+    # revision, ≥7-day soak, R2 backup ≤24h, the MEH-2056 count query = 0 on
+    # production — is a separate RED PR, not this chunk.
     # DO NOT add a reader of these columns on any consumer path —
     # producer_queries.haversine_min_km carries the standing "no COALESCE" rule.
+    # DO NOT add a writer either — the helpers above are the only coordinate
+    # sink, and they refuse to read these columns by design.
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))

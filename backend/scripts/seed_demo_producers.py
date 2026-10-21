@@ -828,8 +828,8 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
         short_description=biz["short_description"],
         city=biz["city"],
         address=biz["address"],
-        lat=biz["lat"],
-        lng=biz["lng"],
+        # MEH-1938 chunk 5b: the fixture's lat/lng go to the location row
+        # (create_primary_branch_location below), never onto the legacy columns.
         phone=biz["phone"],
         # MEH-2189: the channel is now per-fixture. `.get` with the historical
         # literal as the default is deliberate — every DEMO_BUSINESSES row above
@@ -874,7 +874,8 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
     # instance, so the row mirrors these columns by construction). A
     # coordinate-less fixture gets no row, which is the helper's contract.
     # REUSES: backend/app/services/producer_import.py:397
-    create_primary_branch_location(db, producer)
+    # MEH-1938 chunk 5b: coordinates come from the fixture, not the columns.
+    create_primary_branch_location(db, producer, lat=biz["lat"], lng=biz["lng"])
     db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
 
     # MEH-2189: 2-3 products per archetype row so the catalog section on the

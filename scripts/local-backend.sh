@@ -131,7 +131,7 @@ for slug, name, status in FIXTURES:
         continue
     db.add(Producer(
         name=name, description="פרופיל בדיקה לסטטוסים באדמין", city="תל אביב",
-        lat=32.08, lng=34.78, slug=slug, status=status,
+        slug=slug, status=status,  # MEH-1938 5b: no Producer.lat/lng — the column pair is write-closed
     ))
     made.append((slug, status))
 db.commit()

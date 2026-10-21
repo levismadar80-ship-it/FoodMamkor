@@ -17,6 +17,15 @@ fixes both pass. The gap query is the SAME text Sapir runs by hand as P0,
 so the number here and the number in the Railway console answer one
 question.
 
+MEH-1938 chunk 5b: the seeds no longer write `producers.lat/lng` at all —
+the coordinates go to the helper as arguments and the columns stay NULL. That
+makes the P0 gap query (`p.lat IS NOT NULL AND … NOT EXISTS`) read 0 BY
+CONSTRUCTION, so it stopped being a discriminator: a seed that wrote no row
+would also read 0. The boot-seed case therefore asserts the row count derived
+from the fixture list (and the P0 query stays as the production-shaped
+control, not as the evidence), and both writers now also assert the columns
+are NULL — the half of the contract that is new in 5b.
+
 Related: tests/test_seed_env_gate.py (the production gate this must not
 weaken — asserted below rather than assumed), tests/test_meh2056_backfill_migration.py
 (the repair for rows already written).
@@ -99,13 +108,39 @@ def test_fixture_list_has_geocoded_rows():
 
 
 def test_boot_seed_leaves_no_producer_without_a_location_row(db, staging_env):
-    """THE DISCRIMINATION CASE — stash the seed_data.py fix and this reads
-    len(GEOCODED), not 0. The producer count is asserted first so a seed
-    that inserted nothing cannot satisfy the gap check by emptiness."""
+    """THE DISCRIMINATION CASE — stash the seed_data.py location call and the
+    primary-row count reads 0, not len(GEOCODED). The producer count is
+    asserted first so a seed that inserted nothing cannot satisfy the check
+    by emptiness.
+
+    MEH-1938 chunk 5b: the row count is the evidence now — the P0 gap query
+    is 0 by construction once the columns are never written (module
+    docstring), so it is kept only as the production-shaped control."""
     seed()
 
     assert db.query(Producer).count() == len(PRODUCERS)
+    primaries = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.is_primary.is_(True), ProducerLocation.kind == "branch"
+        )
+        .count()
+    )
+    assert primaries == len(GEOCODED)
     assert _gap(db) == 0
+
+
+def test_boot_seed_writes_no_legacy_columns(db, staging_env):
+    """MEH-1938 chunk 5b (Contract): every geocoded fixture's coordinates are
+    on its location row and NOT on `producers.lat/lng`. On the pre-5b seed
+    this fails on the column pair for all len(GEOCODED) fixtures."""
+    seed()
+
+    for fixture in GEOCODED:
+        producer = db.query(Producer).filter(Producer.slug == fixture["slug"]).one()
+        assert (producer.lat, producer.lng) == (None, None), fixture["slug"]
+        (row,) = _rows(db, producer.id)
+        assert (row.lat, row.lng) == (fixture["lat"], fixture["lng"]), fixture["slug"]
 
 
 def test_boot_seed_row_mirrors_each_geocoded_fixture(db, staging_env):
@@ -189,6 +224,10 @@ def test_demo_seed_writes_a_primary_branch_row(db, staging_env, demo_mod):
         biz["lng"],
         biz["city"],
         biz["address"],
+    )
+    # MEH-1938 chunk 5b: the fixture's point is on the row ONLY.
+    assert (producer.lat, producer.lng) == (None, None), (
+        f"seed_demo_producers wrote the legacy columns: {(producer.lat, producer.lng)}"
     )
     assert _gap(db) == 0
 

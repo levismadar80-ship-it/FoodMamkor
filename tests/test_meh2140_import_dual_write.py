@@ -126,16 +126,25 @@ class TestImportCreatesTheRow:
         # addition that started populating it should surface here.
         assert loc.address is None
 
-    def test_the_producer_columns_are_untouched(self, db):
-        """Expand, not replacement — `Producer.city/lat/lng` keep their values."""
+    def test_the_producer_city_is_written_and_lat_lng_left_null(self, db):
+        """MEH-1938 chunk 5b (Contract): `Producer.city` keeps its value;
+        `Producer.lat/lng` are LEGACY and the importer no longer assigns them —
+        columns R/S land on the location row only (asserted field by field in
+        `test_the_row_mirrors_the_imported_cells` above). Until 5b this case
+        asserted `== LAT / == LNG` on the columns (the Expand mirror); on the
+        pre-5b code it fails on the `is None` pair."""
         _seed_category(db)
 
         import_rows(db, [_row()], dry_run=False)
 
         producer = db.query(Producer).filter(Producer.name == "חוות הגליל").one()
         assert producer.city == "חיפה"
-        assert producer.lat == LAT
-        assert producer.lng == LNG
+        assert (producer.lat, producer.lng) == (None, None), (
+            f"the importer wrote the legacy columns: {(producer.lat, producer.lng)}"
+        )
+        # Both halves together: the coordinates were not dropped on the floor.
+        (loc,) = _locations_of(db, "חוות הגליל")
+        assert (loc.lat, loc.lng) == (LAT, LNG)
 
     def test_each_imported_row_gets_its_own_location(self, db):
         """Two businesses in one sheet → two rows, each primary for its owner.

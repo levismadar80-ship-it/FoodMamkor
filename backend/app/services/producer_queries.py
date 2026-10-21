@@ -342,14 +342,16 @@ def persist_registration_delivery_areas(
 
 
 def create_primary_branch_location(
-    db: Session, producer: Producer
+    db: Session,
+    producer: Producer,
+    *,
+    lat: float | None,
+    lng: float | None,
 ) -> ProducerLocation | None:
     """MEH-1939 (MEH-1938 chunk 1) — the registration half of the dual-write.
 
     Every path that creates a producer from a signup payload also creates ONE
-    `producer_locations` row for it: `kind='branch'`, `is_primary=True`. The
-    `Producer.city/lat/lng` columns keep being written exactly as before — this
-    is Expand, not replacement, and nothing reads the new row yet.
+    `producer_locations` row for it: `kind='branch'`, `is_primary=True`.
 
     Why this exists at all: `haversine_min_km` above used to COALESCE to
     `Producer.lat/lng`, and its comment said the fallback became dead weight
@@ -370,17 +372,25 @@ def create_primary_branch_location(
     way they already do for ProducerCategory and DeliveryArea, so a failure
     anywhere in registration rolls the location back with everything else.
 
-    Takes the flushed `Producer` rather than its five fields: the row this
-    writes is a MIRROR of those columns, so reading them off the instance is
-    what makes the two physically unable to drift. It also keeps the signature
-    at two parameters, which is the arity `PLR0913` / ESLint `max-params` are
-    both asking for (`.claude/rules/code-execution.md:53-55`). Callers must
-    have flushed — `producer.id` is read here.
+    MEH-1938 chunk 5b: `lat` / `lng` are keyword-only PARAMETERS, taken from
+    the caller's payload — never read off `producer.lat/lng`. Until 5b this
+    helper copied the columns INTO the row, which kept the legacy columns a
+    live write target on every create path (`LEGACY(2026-11-30)` in
+    models.py). Now the row is the ONLY place a coordinate lands, the columns
+    stay NULL on every path, and the drop (a separate RED revision) finds no
+    writer to break. `city` / `address` are still read off the instance:
+    those columns STAY (Q3 ruling), and reading them here is what keeps the
+    row's address from drifting away from the business's.
 
+    Callers must have flushed — `producer.id` is read here.
+
+    # DO NOT read `producer.lat` / `producer.lng` here, or re-add a parameter
+    # default that falls back to them — that reopens the two-stores drift
+    # MEH-1938 exists to remove, and the columns are about to be dropped.
     # DO NOT add a backfill for existing producers here — that is chunk 2, and
     # it is an Alembic data migration, not application code.
     """
-    if producer.lat is None or producer.lng is None:
+    if lat is None or lng is None:
         return None
 
     location = ProducerLocation(
@@ -389,8 +399,8 @@ def create_primary_branch_location(
         is_primary=True,
         city=producer.city,
         address=producer.address,
-        lat=producer.lat,
-        lng=producer.lng,
+        lat=lat,
+        lng=lng,
         # Coordinates on a signup payload come from AddressSearch's geocode
         # (MEH-1808), so the point is a real street-level fix. The
         # `approximate` case is a town with no address, which by the guard
@@ -429,9 +439,20 @@ def _demote_other_primaries(db: Session, producer_id, keep_id) -> None:
 
 
 def upsert_primary_branch_location(
-    db: Session, producer: Producer
+    db: Session,
+    producer: Producer,
+    *,
+    lat: float | None,
+    lng: float | None,
 ) -> ProducerLocation | None:
     """MEH-2059 (MEH-1938 chunk 4b) — the ADMIN half of the dual-write.
+
+    MEH-1938 chunk 5b: `lat` / `lng` are keyword-only PARAMETERS from the
+    admin payload, same contract as `create_primary_branch_location` above
+    — the helper never reads `producer.lat/lng`. The caller resolves a
+    partial payload (one coordinate present, the other not) against the
+    existing primary row BEFORE calling, so "absent" never silently becomes
+    "cleared" here (admin.py, the only caller).
 
     `create_primary_branch_location` above covers creation-from-signup. This
     covers the admin EDIT path, where the producer may already own a primary
@@ -489,12 +510,12 @@ def upsert_primary_branch_location(
         .first()
     )
     if existing is None:
-        return create_primary_branch_location(db, producer)
+        return create_primary_branch_location(db, producer, lat=lat, lng=lng)
 
     existing.city = producer.city
     existing.address = producer.address
-    existing.lat = producer.lat
-    existing.lng = producer.lng
+    existing.lat = lat
+    existing.lng = lng
     _demote_other_primaries(db, producer.id, keep_id=existing.id)
     return existing
 
@@ -521,8 +542,8 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         name=data.name,
         description=data.description,
         city=data.city,
-        lat=data.lat,
-        lng=data.lng,
+        # MEH-1938 chunk 5b: `data.lat` / `data.lng` go to the location row
+        # below, never onto the legacy columns.
         phone=data.phone,
         instagram=data.instagram,
         website=data.website,
@@ -546,10 +567,11 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
     # MEH-1921: areas + the offers_delivery declaration, written together.
     persist_registration_delivery_areas(db, producer, data.delivery_areas)
 
-    # MEH-1939: the dual-write. `ProducerCreate` carries no `address` field
+    # MEH-1939: the location row. `ProducerCreate` carries no `address` field
     # (schemas.py:1324-1338), so `producer.address` is None here — the row gets
     # city + coordinates only, and `ProducerLocation.address` is nullable.
-    create_primary_branch_location(db, producer)
+    # MEH-1938 chunk 5b: coordinates come from the payload, not the columns.
+    create_primary_branch_location(db, producer, lat=data.lat, lng=data.lng)
 
     db.commit()
     db.refresh(producer)

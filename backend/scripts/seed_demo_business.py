@@ -825,7 +825,12 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
 
     now = datetime.now(timezone.utc)
     producer = Producer(
-        **DEMO_PRODUCER,
+        # MEH-1938 chunk 5b: `DEMO_PRODUCER["lat"/"lng"]` are NOT spread onto
+        # the legacy `Producer.lat/lng` columns. The business's point is the
+        # `is_primary` branch row in DEMO_LOCATIONS (same coordinates), which
+        # is what every reader has used since chunk 5a. The two keys stay in
+        # the dict because DEMO_EVENT below still places the event at them.
+        **{k: v for k, v in DEMO_PRODUCER.items() if k not in ("lat", "lng")},
         status="approved",
         admin_notes=ADMIN_NOTE,
         # Trust signals of a "perfect" profile: document-verified tier
@@ -1023,8 +1028,11 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
         # so this producer is the only correct home for the surface.
         delivery_excluded_cities=["אילת", "קצרין"],
         has_delivery=True,
-        lat=None,
-        lng=None,
+        # MEH-1938 chunk 5b: the explicit `lat=None, lng=None` that used to
+        # sit here is gone — no seed writes the legacy columns any more, and
+        # NULL is their default. "No own point" is expressed by the ABSENCE
+        # of a primary branch row (DELIVERY_ONLY_LOCATION is a non-primary
+        # pickup), not by a column value.
     )
     db.add(delivery_only)
     db.flush()
