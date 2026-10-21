@@ -517,12 +517,16 @@ def upsert_primary_branch_location(
     if existing is None:
         created = create_primary_branch_location(db, producer)
         # MEH-1938: a row born here has no owner-authored hours to protect, so
-        # it takes the business hours whenever the caller asked for them —
-        # the same shape the 7c1e2a9f4b3d backfill gave its rows. `created`
-        # is None when the producer has no coordinates (the create helper's
-        # condition), and an hours-only edit on such a producer has no row to
-        # land on; the legacy column still holds the value in that case.
-        if created is not None and mirror_hours:
+        # it ALWAYS takes the business hours — regardless of mirror_hours —
+        # the same shape the 7c1e2a9f4b3d backfill gave its rows
+        # (BACKFILL_SQL copies p.opening_hours unconditionally). Gating this
+        # on the flag re-opened the gap: a point-only PUT that creates the
+        # first row would leave row.opening_hours NULL while the column held
+        # a value (review of #3524, defect 1). `created` is None when the
+        # producer has no coordinates (the create helper's condition); then
+        # the legacy column still holds the value and the frontend fallback
+        # covers it — count_hours_gap.py counts that class too.
+        if created is not None:
             created.opening_hours = producer.opening_hours
         return created
 

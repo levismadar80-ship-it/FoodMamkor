@@ -135,6 +135,34 @@ class TestHoursAreWrittenToBoth:
         assert rows[0].lng == 34.7818
         assert _reload(db, producer.id).opening_hours == NEW_HOURS
 
+    def test_point_only_put_that_creates_the_first_row_copies_the_column_hours(
+        self, client, db
+    ):
+        """Review of #3524, defect 1. Column already holds hours (an earlier
+        hours-only edit on a producer that had no coordinates, see the
+        delivery-only case below), then the admin geocodes it with a
+        point-only PUT. The row born on that PUT must carry the column's hours
+        — gating the copy on `mirror_hours` left it NULL and re-armed the very
+        fallback this chunk exists to retire. 7c1e2a9f4b3d's BACKFILL_SQL
+        copies p.opening_hours unconditionally; the create branch must too."""
+        producer = make_producer(db)
+        producer.opening_hours = OWNER_HOURS
+        db.commit()
+        assert _locations(db, producer.id) == []
+
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json=dict(EDITED_POINT),
+            headers=_admin_header(db),
+        )
+        assert resp.status_code == 200, resp.text
+
+        rows = _locations(db, producer.id)
+        assert len(rows) == 1
+        assert rows[0].is_primary is True
+        assert rows[0].opening_hours == OWNER_HOURS
+        assert _reload(db, producer.id).opening_hours == OWNER_HOURS
+
     def test_hours_and_point_in_one_put_mirror_both_axes(self, client, db):
         producer = make_producer(db)
         row = _owner_row(db, producer)

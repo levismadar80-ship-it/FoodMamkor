@@ -58,14 +58,28 @@ from app.database import SessionLocal, engine  # noqa: E402  # imports follow sy
 # `is_primary = true` on purpose, not "any row with hours": the public page
 # reads the PRIMARY row's hours (MEH-2142), so hours on a pickup point do not
 # retire the fallback for that business.
+# Mirrors the frontend's row selection, not a looser one: hours.js
+# resolveStoreHours() picks `locations.find(is_primary)` and, when there is
+# NO primary row at all, falls straight through to producer.opening_hours. So
+# the gap is "column has hours AND (no primary row OR primary row has none)".
+# An inner JOIN (the first version of this query) silently dropped the
+# no-primary-row class — delivery-only businesses (MEH-213) and businesses
+# whose only rows are pickup/market_stand — and reported 0 while the fallback
+# was still the only thing rendering their hours (review of #3524, defect 2).
+# Whitespace: Postgres btrim() strips ASCII spaces; JS trim() also strips
+# newlines/NBSP, so a row holding only "\n" reads as empty to the frontend but
+# as "has hours" here. E'[ \t\n\r]' keeps the two in step for the common cases.
 GAP_SQL = """
-    SELECT p.id, p.name
+    SELECT p.id, p.name,
+           (l.id IS NULL) AS no_primary_row
     FROM producers p
-    JOIN producer_locations l
+    LEFT JOIN producer_locations l
       ON l.producer_id = p.id AND l.is_primary = true
     WHERE p.opening_hours IS NOT NULL
-      AND btrim(p.opening_hours) <> ''
-      AND (l.opening_hours IS NULL OR btrim(l.opening_hours) = '')
+      AND btrim(p.opening_hours, E' \t\n\r') <> ''
+      AND (l.id IS NULL
+           OR l.opening_hours IS NULL
+           OR btrim(l.opening_hours, E' \t\n\r') = '')
     ORDER BY p.id
 """
 
@@ -86,7 +100,10 @@ def count_gap(db) -> dict:
     with the id list printed under it.
     """
     rows = db.execute(sa.text(GAP_SQL)).all()
-    gap = [{"id": str(row.id), "name": row.name} for row in rows]
+    gap = [
+        {"id": str(row.id), "name": row.name, "no_primary_row": bool(row.no_primary_row)}
+        for row in rows
+    ]
     return {
         "db_host": _db_host(),
         "gap_count": len(gap),
@@ -106,7 +123,8 @@ def _print_table(result: dict) -> None:
     )
     if result["producers"]:
         for p in result["producers"]:
-            print(f"  {p['id']}  {p['name']}")
+            why = "no primary row" if p["no_primary_row"] else "primary row has no hours"
+            print(f"  {p['id']}  {p['name']}  — {why}")
     else:
         print("  (none)")
     print()
