@@ -37,7 +37,7 @@ Two rulings (Sapir, 01/09) that shape the SQL:
 2. `opening_hours` and `phone` are mirrored onto the new row, exactly as
    a9f4c2e7b1d3 did. B3 (MEH-2142) made store hours a per-location fact
    with a read fallback to the business column behind
-   LEGACY(2026-10-01, MEH-1938); a primary row created WITHOUT hours would
+   LEGACY(2026-11-30, MEH-1938); a primary row created WITHOUT hours would
    keep that fallback load-bearing for these businesses and block its
    contract step.
 

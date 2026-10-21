@@ -689,7 +689,7 @@ def update_my_producer(
         #                          this column for businesses that have not
         #                          filled one in yet. Readers-first Parallel
         #                          Change — the fallback read carries
-        #                          LEGACY(2026-10-01, MEH-1938) and its removal
+        #                          LEGACY(2026-11-30, MEH-1938) and its removal
         #                          is the contract step.
         # MEH-1543: owner-editable weekly order-acceptance window. Validated in
         # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
@@ -856,7 +856,7 @@ def update_my_producer(
     return producer
 
 
-# LEGACY(2026-10-01, MEH-1854)
+# LEGACY(2026-11-30, MEH-1854)
 # MEH-291 — the two endpoints below are the legacy availability write paths.
 # MEH-2271 (chunk 3a) removed the dual-WRITE: nothing in this module writes
 # is_available_today or availability_status any more, so the two mapping
