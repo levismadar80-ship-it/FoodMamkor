@@ -160,7 +160,7 @@ export function computeStatus(map) {
  * half from another would be worse than either, and unreadable to the owner
  * who is trying to work out where to edit.
  *
- * LEGACY(2026-10-01, MEH-1938) — the `producer.opening_hours` arm below is the
+ * LEGACY(2026-11-30, MEH-1938) — the `producer.opening_hours` arm below is the
  * Expand-phase overlap. Deleting it is the contract step: by then every
  * business's hours live on her primary location row, and this function reduces
  * to reading that row. The date is enforced by
@@ -182,7 +182,7 @@ export function resolveStoreHours(producer) {
   const fromPrimary = primary?.opening_hours;
   if (typeof fromPrimary === "string" && fromPrimary.trim()) return fromPrimary;
 
-  // LEGACY(2026-10-01, MEH-1938) — see the note above.
+  // LEGACY(2026-11-30, MEH-1938) — see the note above.
   const legacy = producer?.opening_hours;
   if (typeof legacy === "string" && legacy.trim()) return legacy;
 
