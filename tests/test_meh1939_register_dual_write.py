@@ -3,8 +3,10 @@
 Purpose:  Prove that EVERY path which creates a producer from a signup payload
           also creates exactly one `producer_locations` row — kind='branch',
           is_primary=True — and that a payload with no coordinates creates
-          none. The `Producer.city/lat/lng` columns keep being written
-          unchanged; this is Expand, not replacement.
+          none. Since MEH-1938 chunk 5b the row is the ONLY place the payload's
+          coordinates land: `Producer.city/address` keep being written,
+          `Producer.lat/lng` stay NULL (Contract — the columns are LEGACY and
+          are dropped in a separate RED PR).
 Touches:  POST /auth/register/producer (both branches) and POST /producers.
 Does NOT: exercise the backfill for existing producers (chunk 2), the removal
           of the haversine COALESCE (chunk 5), or any schema change — this
@@ -14,7 +16,9 @@ Related:  backend/app/services/producer_queries.py
           call sites share); backend/app/routers/auth.py (:510 upgrade branch,
           :625 new-email branch); tests/conftest.py (make_user, make_category,
           auth_header).
-History:  MEH-1939 (creation).
+History:  MEH-1939 (creation); MEH-1938 chunk 5b (column writers closed —
+          the "columns written exactly as before" case flipped to "columns
+          left NULL", plus TestColumnsClosed).
 
 Why a new file rather than an existing one: no file owns "registration writes
 a location row". `test_producer_locations.py` scopes itself to the ORM data
@@ -92,9 +96,12 @@ class TestUpgradeBranch:
         assert loc.lat == GEOCODED["lat"]
         assert loc.lng == GEOCODED["lng"]
 
-    def test_producer_columns_are_written_exactly_as_before(self, client, db):
-        # The dual-write must not disturb the columns it runs beside — this is
-        # Expand, and a regression here would be silent until chunk 5.
+    def test_producer_columns_city_address_written_lat_lng_left_null(self, client, db):
+        # MEH-1938 chunk 5b (Contract): `city` / `address` are still columns
+        # on the business and keep being written; `lat` / `lng` are LEGACY and
+        # no path assigns them any more — the payload's coordinates land on
+        # the location row ONLY (asserted in TestColumnsClosed below). Until
+        # 5b this case asserted the opposite for lat/lng (the Expand mirror).
         consumer = make_user(db, email="cols@example.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
@@ -107,8 +114,8 @@ class TestUpgradeBranch:
         producer = db.query(Producer).filter(Producer.id == consumer.producer_id).one()
         assert producer.city == GEOCODED["city"]
         assert producer.address == GEOCODED["address"]
-        assert producer.lat == GEOCODED["lat"]
-        assert producer.lng == GEOCODED["lng"]
+        assert producer.lat is None
+        assert producer.lng is None
 
 
 class TestNewEmailBranch:
@@ -277,3 +284,110 @@ class TestSameCityLabelInvariant:
         )
         assert labelled.status_code in (200, 201), labelled.json()
         assert len(_locations_of(db, consumer.producer_id)) == 2
+
+
+class TestColumnsClosed:
+    """MEH-1938 chunk 5b — the Contract half of the dual-write, on every
+    signup-shaped create path: a payload WITH coordinates yields a primary
+    `branch` row carrying exactly those coordinates, while the legacy
+    `Producer.lat/lng` columns are left NULL.
+
+    Discrimination (testing.md, MEH-1619): on the pre-5b code every case here
+    fails on the `is None` pair — the helpers copied `producer.lat/lng` INTO
+    the row, so the columns were written on every one of these paths. The row
+    assertions are kept alongside the column ones on purpose: a change that
+    stopped writing the columns by ALSO dropping the coordinates on the floor
+    would pass a column-only check and fail here.
+
+    One case per writer rather than one parametrised case, because the three
+    paths build the producer in three different places (auth.py ×2,
+    producer_queries.create_producer_with_relations) and a regression in one
+    must name that one.
+    """
+
+    def _assert_row_only(self, db, producer_id):
+        producer = db.query(Producer).filter(Producer.id == producer_id).one()
+        rows = _locations_of(db, producer_id)
+        assert len(rows) == 1, f"expected exactly one location row, got {len(rows)}"
+        (loc,) = rows
+        assert loc.kind == "branch"
+        assert loc.is_primary is True
+        assert (loc.lat, loc.lng) == (GEOCODED["lat"], GEOCODED["lng"])
+        assert (producer.lat, producer.lng) == (None, None), (
+            f"legacy columns were written: {(producer.lat, producer.lng)} — "
+            "no path may assign Producer.lat/lng since MEH-1938 chunk 5b"
+        )
+
+    def test_upgrade_branch_writes_the_row_and_not_the_columns(self, client, db):
+        consumer = make_user(db, email="closed-upgrade@example.com", role="consumer")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_body(db, email="closed-upgrade@example.com", **GEOCODED),
+            headers=auth_header(consumer),
+        )
+        assert resp.status_code == 200, resp.json()
+
+        db.refresh(consumer)
+        self._assert_row_only(db, consumer.producer_id)
+
+    def test_new_email_branch_writes_the_row_and_not_the_columns(self, client, db):
+        email = "closed-newemail@example.com"
+        resp = client.post(
+            "/auth/register/producer",
+            json=_body(
+                db, email=email, name="יצרנית", password=SAFE_PASSWORD, **GEOCODED
+            ),
+        )
+        assert resp.status_code == 200, resp.json()
+
+        user = db.query(User).filter(User.email == email).one()
+        self._assert_row_only(db, user.producer_id)
+
+    def test_post_producers_writes_the_row_and_not_the_columns(self, client, db):
+        user = make_user(db, email="closed-poster@example.com", role="consumer")
+        user.email_verified = True
+        db.commit()
+        cat = make_category(db, name="קטגוריה-closed-post")
+
+        resp = client.post(
+            "/producers",
+            json={
+                "name": "עסק דרך POST — עמודות סגורות",
+                "category_ids": [cat.id],
+                "city": GEOCODED["city"],
+                "lat": GEOCODED["lat"],
+                "lng": GEOCODED["lng"],
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.json()
+
+        self._assert_row_only(db, resp.json()["id"])
+
+    def test_the_serialized_coordinates_still_come_back(self, client, db):
+        """The API shape is unchanged: `ProducerListOut.lat/lng` are DERIVED
+        from the primary row (chunk 5a), so closing the column writers must
+        not make a freshly registered business serialize as (None, None).
+        Without this, every case above would also pass against a build that
+        broke the serializer — the columns would be NULL for the wrong reason.
+        """
+        user = make_user(db, email="closed-serial@example.com", role="consumer")
+        user.email_verified = True
+        db.commit()
+        cat = make_category(db, name="קטגוריה-closed-serial")
+
+        resp = client.post(
+            "/producers",
+            json={
+                "name": "עסק דרך POST — סריאליזציה",
+                "category_ids": [cat.id],
+                "city": GEOCODED["city"],
+                "lat": GEOCODED["lat"],
+                "lng": GEOCODED["lng"],
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.json()
+
+        body = resp.json()
+        assert (body["lat"], body["lng"]) == (GEOCODED["lat"], GEOCODED["lng"])

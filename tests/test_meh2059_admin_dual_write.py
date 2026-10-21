@@ -355,21 +355,91 @@ class TestSinglePrimaryInvariant:
         assert primaries[0].kind == "branch"
 
 
-class TestProducerColumnsStillWritten:
-    """Expand, not replacement — chunk 5 has not happened.
+class TestProducerColumnsNoLongerWritten:
+    """MEH-1938 chunk 5b (Contract): neither admin path assigns the legacy
+    `Producer.lat/lng` columns any more — the payload's coordinates land on
+    the primary row ONLY. `city` is still a column on the business and keeps
+    being written.
 
-    If this ever fails, someone dropped the columns without doing chunk 5, and
-    the admin UI (which still edits them) is broken.
+    Until 5b this class asserted the opposite (`TestProducerColumnsStillWritten`,
+    the Expand mirror). Discrimination: on the pre-5b code the create case
+    fails on `is None` (the columns were assigned from the payload) and the
+    update case fails on `== before` (the bulk setattr loop wrote them).
     """
 
-    def test_the_producer_columns_keep_their_values(self, client, db):
+    def test_create_leaves_the_columns_null_and_the_row_carries_the_point(
+        self, client, db
+    ):
+        resp = client.post(
+            "/admin/producers", json=_create_body(db), headers=_admin_header(db)
+        )
+        assert resp.status_code == 201, resp.text
+        pid = resp.json()["id"]
+
+        refreshed = db.query(Producer).filter(Producer.id == pid).one()
+        assert refreshed.city == "תל אביב"
+        assert (refreshed.lat, refreshed.lng) == (None, None), (
+            f"legacy columns were written on admin create: "
+            f"{(refreshed.lat, refreshed.lng)}"
+        )
+        (row,) = _locations(db, pid)
+        assert (row.lat, row.lng) == (32.0853, 34.7818)
+        # The wire shape is unchanged — derived from the row (chunk 5a).
+        assert (resp.json()["lat"], resp.json()["lng"]) == (32.0853, 34.7818)
+
+    def test_update_does_not_touch_the_columns_and_moves_the_row(self, client, db):
+        # `make_producer` is a fixture that still seeds the columns directly
+        # (conftest.py — a control for the "derived, not column" tests; it goes
+        # with the drop). So the honest contract for the PUT is "the columns
+        # are exactly what they were before the request", not "NULL": a PUT
+        # that wrote them would move them to EDITED, which is a different
+        # number from the fixture's Tel Aviv point by construction.
         producer = make_producer(db)
+        before = (producer.lat, producer.lng)
+        assert before != (EDITED["lat"], EDITED["lng"]), "fixture control lost"
+
         resp = client.put(
             f"/admin/producers/{producer.id}", json=EDITED, headers=_admin_header(db)
         )
         assert resp.status_code == 200, resp.text
 
-        refreshed = db.query(Producer).filter(Producer.id == producer.id).first()
-        assert refreshed.lat == EDITED["lat"]
-        assert refreshed.lng == EDITED["lng"]
+        refreshed = db.query(Producer).filter(Producer.id == producer.id).one()
         assert refreshed.city == EDITED["city"]
+        assert (refreshed.lat, refreshed.lng) == before, (
+            f"admin PUT wrote the legacy columns: {(refreshed.lat, refreshed.lng)}"
+        )
+        (row,) = _primaries(db, producer.id)
+        assert (row.lat, row.lng) == (EDITED["lat"], EDITED["lng"])
+        assert (resp.json()["lat"], resp.json()["lng"]) == (
+            EDITED["lat"],
+            EDITED["lng"],
+        )
+
+    def test_update_with_only_one_coordinate_keeps_the_other_from_the_row(
+        self, client, db
+    ):
+        """The partial-payload edge, pinned because 5b changed its source.
+
+        Before 5b a payload carrying only `lat` inherited `lng` from the
+        mirror column (whatever the setattr loop left there). Now the caller
+        resolves the absent side against the existing primary ROW — same
+        observable result, different source — and this is the case that would
+        silently turn "absent" into "cleared" if the resolution were dropped.
+        """
+        producer = make_producer(db)
+        headers = _admin_header(db)
+        first = client.put(
+            f"/admin/producers/{producer.id}", json=EDITED, headers=headers
+        )
+        assert first.status_code == 200, first.text
+
+        resp = client.put(
+            f"/admin/producers/{producer.id}", json={"lat": 31.0}, headers=headers
+        )
+        assert resp.status_code == 200, resp.text
+
+        (row,) = _primaries(db, producer.id)
+        db.refresh(row)
+        assert (row.lat, row.lng) == (31.0, EDITED["lng"]), (
+            "the untouched coordinate must survive a partial payload"
+        )

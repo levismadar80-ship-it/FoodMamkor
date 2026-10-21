@@ -555,8 +555,8 @@ def admin_create_producer(
         description=data.description,
         short_description=data.short_description,
         city=data.city,
-        lat=data.lat,
-        lng=data.lng,
+        # MEH-1938 chunk 5b: `data.lat` / `data.lng` go to the location row
+        # (create_primary_branch_location below), never onto the legacy columns.
         phone=data.phone,
         instagram=data.instagram,
         website=data.website,
@@ -626,7 +626,8 @@ def admin_create_producer(
     #
     # REUSES: backend/app/services/producer_queries.py:449 — the same call, in
     # the same position (after flush, before commit), on the public-create path.
-    create_primary_branch_location(db, producer)
+    # MEH-1938 chunk 5b: coordinates come from the payload, not the columns.
+    create_primary_branch_location(db, producer, lat=data.lat, lng=data.lng)
 
     db.commit()
     db.refresh(producer)
@@ -797,6 +798,14 @@ def admin_update_producer(
     # still has a checkbox that sends this field (frontend out of scope for this
     # ticket, flagged separately), but the bulk setattr loop must not write it.
     payload.pop("pickup_points", None)
+    # MEH-1938 chunk 5b: coordinates are popped out BEFORE the bulk setattr
+    # loop so it can never write the legacy `Producer.lat/lng` columns again
+    # (same no-op-pop shape as delivery_cities / pickup_points above). They
+    # are handed to `upsert_primary_branch_location` further down, which is
+    # the only place a coordinate lands now. Presence is preserved: an
+    # explicit `lat: null` stays in `coords` as None (a clear), an absent key
+    # is simply not there (keep), so `exclude_unset` semantics survive.
+    coords = {k: payload.pop(k) for k in ("lat", "lng") if k in payload}
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
@@ -851,17 +860,29 @@ def admin_update_producer(
     # Gated on the payload rather than on the resulting values, because
     # `exclude_unset=True` above means an admin editing only the name must not
     # re-mirror `Producer.address` over a location row the OWNER authored in
-    # the dashboard. An explicit `lat: null` IS in the payload, so clearing the
-    # coordinates still reaches the helper — which mirrors the clear instead of
-    # leaving a stale point behind.
+    # the dashboard. An explicit `lat: null` IS in `coords` (popped above), so
+    # clearing the coordinates still reaches the helper — which mirrors the
+    # clear instead of leaving a stale point behind.
     #
-    # Runs AFTER the setattr loop on purpose: the helper reads the producer
-    # instance, so it must see the post-update values. That is the same reason
-    # MEH-1939 takes the flushed Producer rather than five loose fields
-    # (producer_queries.py:378-383) — the row is a mirror, and reading the
-    # mirror's source off the instance is what makes them unable to drift.
-    if "lat" in payload or "lng" in payload:
-        upsert_primary_branch_location(db, producer)
+    # Runs AFTER the setattr loop on purpose: the helper still reads `city` /
+    # `address` off the producer instance (those columns stay — Q3 ruling), so
+    # it must see the post-update values.
+    #
+    # MEH-1938 chunk 5b: the coordinates themselves are passed explicitly from
+    # `coords` (popped above) — the helper no longer reads `Producer.lat/lng`,
+    # which no path writes any more. A PARTIAL payload (one coordinate present,
+    # the other absent) resolves the missing side against the existing primary
+    # row, which is exactly what reading the mirror column used to give: the
+    # value the admin did not touch stays. The admin form sends both, so this
+    # branch is the API-only edge, kept so "absent" never becomes "cleared".
+    if coords:
+        primary = next((loc for loc in producer.locations if loc.is_primary), None)
+        upsert_primary_branch_location(
+            db,
+            producer,
+            lat=coords.get("lat", primary.lat if primary is not None else None),
+            lng=coords.get("lng", primary.lng if primary is not None else None),
+        )
 
     db.commit()
     db.refresh(producer)

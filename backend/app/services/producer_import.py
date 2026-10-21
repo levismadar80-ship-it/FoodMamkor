@@ -280,8 +280,9 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             description=parsed.data["description"],
             short_description=parsed.data["short_description"],
             city=parsed.data["city"],
-            lat=parsed.data["lat"],
-            lng=parsed.data["lng"],
+            # MEH-1938 chunk 5b: columns R/S (lat/lng) go to the location row
+            # (create_primary_branch_location below), never onto the legacy
+            # `Producer.lat/lng` columns.
             phone=parsed.data["phone"],
             instagram=parsed.data["instagram"],
             website=parsed.data["website"],
@@ -391,7 +392,10 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
         # reaches neither this line nor the `Producer(...)` above. That is why
         # this calls the create helper and not `upsert_primary_branch_location`
         # the way admin.py's PUT does.
-        create_primary_branch_location(db, producer)
+        # MEH-1938 chunk 5b: coordinates come from the parsed row, not the columns.
+        create_primary_branch_location(
+            db, producer, lat=parsed.data["lat"], lng=parsed.data["lng"]
+        )
 
         parsed.saved = True
         results.append(parsed)

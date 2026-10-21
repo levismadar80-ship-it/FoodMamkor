@@ -407,8 +407,9 @@ def _seed_demo_producers(db):
             name=p_data["name"],
             description=p_data["description"],
             city=p_data["city"],
-            lat=p_data["lat"],
-            lng=p_data["lng"],
+            # MEH-1938 chunk 5b: the fixture's lat/lng go to the location row
+            # (create_primary_branch_location below), never onto the legacy
+            # `Producer.lat/lng` columns.
             phone=p_data.get("phone"),
             instagram=p_data.get("instagram"),
             website=p_data.get("website"),
@@ -435,7 +436,10 @@ def _seed_demo_producers(db):
         # Producer.lat/lng fallbacks; a fixture without this row would then
         # vanish from the map and from "near me".
         # REUSES: backend/app/services/producer_import.py:397
-        create_primary_branch_location(db, producer)
+        # MEH-1938 chunk 5b: coordinates come from the fixture, not the columns.
+        create_primary_branch_location(
+            db, producer, lat=p_data["lat"], lng=p_data["lng"]
+        )
 
         # MEH-2081: name → id, resolved above from the DB. Never a literal.
         for cname in p_data["category_names"]:
