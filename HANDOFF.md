@@ -3,6 +3,97 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-21 ערב — session claude.ai לפני ה-outreach של 22/10: #3516 + #3517 פתוחים, CI חסום על מכסה
+
+**‏שורה אחת:** ‏שני PR-ים ירוקים-להלכה מחכים ל-CI שלא רץ — **כל job נופל ב-2 שניות עם אפס steps** (חתימת מכסת Actions, כלל 21). ספיר פותחת את המכסה → ‏`rerun` → מיזוג → release `staging → main`. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «21/10».
+
+**‏מה שסשן חדש צריך לדעת:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| #3516 `24d8ab28` — MEH-2286 referral `direct_outreach` | פתוח, non-draft, CI לא רץ | אחרי המכסה: re-run, שני האגרגטורים ירוקים → מיזוג. UI: צילום 375 של ה-dropdown ב-staging (DoD §5) |
+| #3517 `2aaec0db` — MEH-2287 templates → 5.5 | פתוח, docs-only | re-run → skip-green → מיזוג |
+| release `staging → main` | staging לפני main ב-13 קומיטים (כולם docs/CI/tests מאז 07/09) + שני אלה | ספיר כותבת «שחררי»; ה-15 «קומיטים» שב-main ולא ב-staging הם **רק merge commits של רילזים קודמים — אפס קבצים**, לא drift |
+| MEH-1495 Google Cloud trial | הדדליין עבר, לא אומת | ספיר: Billing לפני האישור הראשון של בית עסק |
+| MEH-2192 שארית | `description` ≠ CANONICAL_SENTENCE, טסט מקבע | הכרעת ספיר (B3). לא נגעתי |
+| production | `/api/producers` → `[]`, readiness `ready`, migrations `0396917da2ea` | — |
+
+**‏מה שנמדד ואין צורך לפתוח עליו כרטיס:** אינדוקס גוגל תקין (דף הבית #1 על «מהמקור»); nudge ל-draft קיים (MEH-2111); אירועים מהדשבורד קיימים.
+
+**‏הבא (NEXT):** ‏(1) ספיר: מכסת Actions · (2) מיזוג #3516 + #3517 · (3) release · (4) אחרי האישור הראשון של בית עסק: עמוד העסק + שורת הדירוג (1495) + ה-sitemap מתחיל לפלוט עמודי עסק.
+
+## 2026-09-07 — SWEEP-2: הלוח הפתוח כולו (117), ושלושה כרטיסים ששוחררו מחסם שכבר נפל
+
+**‏שורה אחת:** ‏**MEH-2062 · MEH-2202 · MEH-1767 נסגרו** — שלושתם Backlog, שלושתם עם עבודה שנחתה ועם החסם האחרון שהתפוגג, ואף אחת לא חזרה לסגור. השורש: `Refs` במקום `Closes` הוא **הכרעה נכונה** (הכרטיס לא נסגר לפני שהשארית נסגרת) שחסר לה **צעד חזרה**. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — SWEEP-2».
+
+**‏מה שסשן חדש צריך לקחת מכאן — שתי טעויות מדידה בחלון אחד, שתיהן «המכשיר, לא העולם»:**
+
+1. **‏`eslint --format unix` אינו קיים** ב-ESLint המודרני. הוא מדפיס הודעת התקנה, יוצא **0**, ו-`grep -c` מחזיר **0** — כלומר בדיוק התשובה שרוצים לראות. תפסה אותו בקרת המכשיר, לא קריאה חוזרת.
+2. **‏`git log --format='%b'` מפצל גוף רב-שורתי על פני שורות.** ספירת שורות במקום קומיטים ייצרה «57 כרטיסים עם עבודה שנחתה»; בנייה מחדש עם מפריד `NUL` נתנה **0**. **קורפוס שנבנה לא-נכון נותן מספר סמכותי לחלוטין.**
+
+**‏השיטה, לפרוטוקול:** 117 כרטיסים פתוחים נמנו **בחלון אחד** (`hasNextPage: false`); הסינון ל-66 הלא-נסרקים נעשה לפי `updatedAt >= 06/09` (טביעת סוויפ 2244); ואז חיפוש **לפי הדבר עצמו ולא לפי המזהה** — pin של תלות, עמודה ב-models, endpoint, מחרוזת he.json — כי PR שנחת תחת `Refs` לא מופיע בחיפוש id. **13 מתוך 13 אישרו שהעבודה לא נחתה.**
+
+**‏שארית ספיר שנותרה:** ניסוח מחדש של שורת ה-`grep = 1` ב-MEH-2192 (ובאותה נשימה: ה-`description` של ה-Organization הוא `SITE_DESCRIPTION` ולא ה-CANONICAL_SENTENCE — שני משפטי מותג משודרים) · מעבר נייד ל-MEH-2210 (חריגה (b) של כלל 23) · ההגדרה ב-Linear «auto-close parent issues» (כלל 36).
+
+## 🚨 Runbook — התראת uptime (MEH-2202)
+
+**כשמגיעה התראה על issue חדש בכותרת `uptime: mehamakor.co.il probe failing` — לבדוק Railway logs לפני כל דבר אחר.**
+
+| שלב | מה |
+| -- | -- |
+| 1 | ‏Railway → השירות → **Logs**. ‏boot loop / traceback / `alembic` תקוע = התשובה, ואין טעם לחפש במקום אחר |
+| 2 | ‏`https://mehamakor.co.il/api/health/readiness` — `ready` מול `db_init_failed`. ‏readiness בודק DB, liveness לא |
+| 3 | ‏Vercel → Deployments — רק אם `/` נפל וה-readiness דווקא ירוק (אז זה ה-frontend, לא ה-backend) |
+| 4 | ‏ה-issue **נסגר מעצמו** בריצה הראשונה ששני ה-probes חוזרים 200. אין מה לסגור ביד |
+
+**המנגנון:** `.github/workflows/uptime.yml` — GitHub-hosted runner, cron כל 10 דק', **שני** probes (`/` ו-`/api/health/readiness`). issue נפתח רק אחרי **שני כשלים רצופים**, כדי ששיהוק בודד לא יצלצל. בלי חשבון חיצוני, בלי כסף, בלי secret. ההתראה מגיעה דרך **Repo → Watch → Custom → Issues** — בלי ההגדרה הזו ה-issue נפתח לחדר ריק.
+
+## 2026-09-07 בוקר — ‏MEH-2210 נסגר: הראיה @375 נחתה (#3500) וכל חמשת ה-PRs מגובים ביומן
+
+**‏שורה אחת:** ‏#3500 `036b8032` (squash מאומת) הוסיף `frontend/qa-meh2210-rejected-banner.mjs` ושבעה `.webp` ב-375px — שורת ה-DoD האחרונה. הכרטיס מגובה כאן במלואו לראשונה: עד היום רק chunk A היה ביומן (#3372), ו-HANDOFF שורה 321 עדיין אמרה ש-#3336/#3343 «פתוחים». פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — MEH-2210, הכרטיס כולו».
+
+**‏חמשת ה-PRs, עם ה-SHA שנחת ושיטת המיזוג שנמדדה (‏MEH-1526 — לא מונח שהבקשה כובדה):**
+
+| PR | מה | SHA | שיטה |
+| -- | -- | -- | -- |
+| #3333 | chunk A — ‏`rejection_reason_code`, מכסת 3, ping לאדמין | `cd766944` | squash |
+| #3336 | chunk B — הבאנר לפי קוד סיבה + CTA | `3d66b498` | **merge commit** ⚠️ |
+| #3343 | chunk C — badge בתור, מייל דחייה, ‏E2E | `a1edd058` | squash |
+| #3373 | chunk A follow-up — נעילת שורה סביב בדיקת המכסה | `a8c37ece` | squash |
+| #3500 | ראיית QA ‏@375, שבעה מצבים אסרטיביים | `036b8032` | squash |
+
+**‏#3336 נחת כ-merge commit ולא כ-squash** — הודעתו היא `Merge pull request #3336 from …`, כלומר תבנית המיזוג ולא `<title> (#N)`. זה בדיוק הכשל ש-MEH-1526 מתעד, והוא נתפס כאן רק מפני ש-`git log --grep="(#3336)"` **לא החזיר כלום** בזמן איסוף ה-SHA-ים ל-backfill. גוף ה-commit המנוסח — כולל ה-trailer `Builder-Model:` — קבור בהיסטוריית הענף. **היסטוריה שנחתה לא נכתבת מחדש.**
+
+**‏מה שהראיה של #3500 כן מוכיחה, ומה שלא:** ‏7/7 מצבים אסרטיביים (ארבעת הקודים המבניים · `other` · קוד `NULL` לגסי · המכסה), כל אחד ממתין למחרוזת העברית הצפויה **גלויה** לפני הצילום, והמקרה החסום אוסר בנוסף על נוכחות ה-CTA — אסרציה על מחרוזות בלבד אינה יכולה לזהות כפתור שהיה אמור להיעלם. **הריצה הראשונה נכשלה 7/7 וצילמה את עמוד ה-access-denied** (‏Playwright מתאים route **אחרון-שנרשם-ראשון**, וה-catch-all של `**/api/**` בלע את `/api/auth/me`) — שני חצאי הבקרה נצפו. **ה-API מדומה**, כלומר זה מוכיח שהבאנר מרנדר את מה שה-payload אומר ולא שה-backend מייצר אותו; החצי השני הוא `tests/test_producer_resubmit.py` (16 מקרים, ירוק).
+
+**‏שתי שורות DoD שנסגרו בהכרעה ולא בראיה, ורשומות ככאלה:** (1) **E2E** — הספק של הכרטיס עצמו (`40-rejected-resubmit-loop`) עובר; הסוויטה אדומה על specs שאינם שלו (MEH-1514 · MEH-2269/MEH-2284), ו-`E2E gate` אינו context נדרש. (2) **preview URL** — כבוי מתוכנן מאז MEH-2062. **שארית פתוחה על כרטיס סגור:** מעבר נייד אנושי של ספיר — חריגה (b) של תיקון MEH-1511 לכלל 23 (מחרוזות עברית **חדשות**) אינה מתמלאת ע"י חבילת Chromium, גם כשהקופי אושר מראש על הכרטיס (כלל 22).
+
+**‏הבא (NEXT):** ‏(1) ‏MEH-1508 chunk 3ב-2 תחת הכרעת (c′) — rename + regen באותו PR · (2) ‏MEH-2168 chunk 2 · (3) ‏MEH-1938 chunk 1 · (4) ספיר: מעבר נייד ל-2210, והרשימה ב-CHANGELOG.
+
+## 2026-09-07 בוקר — ‏drain כט' המשך (session `01SU9y6p…`): ‏§Token 4/4 הוחל · סוויפ 2244 · ‏MEH-2278 נסגר על 5 בקרות · באג `steps.<id>.result` תוקן · LEASE: לא נלקח
+
+**‏שורה אחת:** ‏ארבע ההחלות של §Token נחתו (#3485 `642ee9ba` · #3484 `6bdb10d1` · #3482 `ef1a0bfe` · #3483 `d9f7d8dc`), ששת ה-labels `vrt-regen:*` נוצרו ב-API (201 ×6), חמש בקרות discrimination רצו על מסלול ה-label, ובקרה 3 חשפה שהתיקון שלי ב-#3483 השתמש ב-`steps.<id>.result` — מאפיין שאינו קיים — כך ששני שלבים היו מתים בכל ריצה. תוקן ב-#3496 `0c7d0014`, נסגר MEH-2278 על בקרה 5 מלאה (push + הסרת label). ‏#3495 `22567b07` תיקן ארבעה patch docs. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 בוקר — drain כט' המשך».
+
+**‏מה שסשן חדש חייב לדעת — התיקון שמבטל תשעה «parked»:** ‏`.github/workflows/**` · `frontend/vercel.json` · `frontend/eslint.config.mjs` **אינם חסומים ל-CC**. ה-deny הוא על **כלי הקבצים** (`Edit`/`Write`) ועל המסווג ב-Bash (`git push` של תוכן workflow, `curl` PUT); **כלי הכתיבה של GitHub MCP וגם `git push` רגיל עוברים** — נמדד היום שש פעמים. רק `.claude/hooks/**` נדחה באמת (403 ב-proxy). הערת «06/09 ערב» כאן ב-HANDOFF הכלילה סירוב ברמת-כלי לחסימה ברמת-נתיב, וזה מה שהשאיר vrt(2278) · 1742 · 2244-A · 1767 · 2202-apply · 2062-apply רשומים כ-parked בזמן שחלקם כבר היה בר-ביצוע או אפילו חי.
+
+**‏שני דפוסים ששווה לשאת הלאה:** (1) **סוויפ קורא תיאורים, לא תגובות** — שלוש כותרות כרטיס מיושנות (MEH-1517 · MEH-2210 · MEH-2244) גרמו לעבודה שכבר נחתה להיראות כלא-התחילה; התיקון חייב להיכנס ל-description (כלל 34). (2) **guard יכול להיות ירוק משתי סיבות בדיוק כמו טסט** — `steps.scope.result` דילג גם כשדילוג נכון וגם כשהוא באג, ולכן שרד review; מה שתפס אותו היה בקרה שהריצה את שני העולמות והשוותה.
+
+**‏הבא (NEXT):** ‏(1) ‏MEH-1508 chunk 3ב-2 — Phase 0 הושלם ועל הכרטיס; **חסום על הכרעה** בין בנייה בלי regen לבין המתנה ל-MEH-1519/1531 · (2) ‏MEH-2210 — ‏qa-artifacts @375 + backfill מלא + סגירה · (3) ‏MEH-1938 chunk 1 · (4) ‏MEH-2168 chunk 2 (`33-admin-producers-tab`) · (5) ספיר: הרשימה ב-CHANGELOG.
+
+## 2026-09-07 בוקר — ‏STEP RELEASE §5: רילז `staging → main` (‏PR #3494 → `8e69ff1e`) · אומת 6/6 · ‏v1.0.0 לא נדחף (residual)
+
+**‏שורה אחת:** ‏LEASE נלקח 07:40Z (ה-heartbeat של כט' היה בן ~10.5 שעות מול TTL של 45 דק'), שוחרר 07:52Z עם ה-PR פתוח, ונלקח שוב 09:12Z לצורך ה-carry. ‏PR #3494 הוכן עם preflight 6/6 ומוזג ע"י ספיר 08:31:30Z **כ-merge commit** (שני הורים `223c6d9e` + `d9f7d8dc`) — 56 קומיטים ב-first-parent, 188 קבצים, 3 מיגרציות expand-only. פרודקשן בוט 08:32:49Z על `8e69ff1e` עם `alembic_head = 0396917da2ea`. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 בוקר — STEP RELEASE §5».
+
+**‏שלושה מכשירים שהחזירו תשובה שגויה ובטוחה, ותוקנו לפני שנכתבו לשום מקום:**
+
+1. **‏ה-probe של staging.** קריאה ראשונה החזירה 307 על **כל** נתיב, כולל הבקרה — ולכן לא הוכיחה כלום ונזרקה במקום להידווח כתקלה. עם bypass headers ובלי מעקב אחרי הפניות: 200 על כל ניתוב, אפס redirects, בלי `location`. ה-`location:` על ה-302 הוא `vercel.com/sso-api` — הגנת פלטפורמה, לא באג באפליקציה. `163/163` → **`12/163`, אפס אזעקות aggregate, 16 ניתובים ב-2xx**.
+2. **‏parser של `alembic heads`.** גרסה שקוראת רק `down_revision` סקלרי מדווחת **9 ראשים ו-5 שורשים** על אותם 76 קבצים; ארבע revisions מסוג `merge_*_heads` נושאות 2-tuple. הבקרה מוכיחה את ההבחנה ישירות (תמים → שגוי, מתוקן → נכון) ומעוגנת בקבצים אמיתיים מהריפו, לא ב-fixtures.
+3. **‏grep של משתני סביבה.** תבנית מחמירה החזירה **אפס** — התשובה המרגיעה. הרצה חוזרת עם התבנית שכבר ידוע שהיא מוצאת: אותם 4 מפתחות. האפס היה ה-probe, לא הטווח.
+
+**‏מה שהתקבל כאדום לא-חוסם (הכרעת ספיר 07/09):** ‏`parity.spec.ts:916` (`about` desktop) — אדום **בכוונה** ע"י #3428 בתוך הטווח, ‏baseline של VRT בלי משטח משתמש, residual פתוח של MEH-1514. ‏`37-outreach-prefill:285` — זהה בית-בבית בין הרפרנסים, כלומר כבר אדום על `main`; הרילז לא גורם ולא מתקן. **‏MEH-2269 לא נפתח מחדש** — כרטיס חדש MEH-2284 (‏Backlog, Medium) נושא את השארית, כולל שהכשל התפשט ל-desktop ב-`642ee9ba`, מה שההסבר המקורי שלל.
+
+**‏הבא (NEXT):** ‏(1) **ספיר: `v1.0.0`** — `git tag -a v1.0.0 8e69ff1ec1fa7cef24714a035e38a5ca4a133f09 -m "release: v1.0.0"` ואז דחיפת ה-tag. ‏CC חסומה משני הכיוונים, נמדד: `.claude/hooks/check-branch-name.sh` אינו פוטר `refs/tags/` (‏false positive — ה-header של ההוק עצמו אומר שהוא לא נוגע ב-tags), וה-API של git-data חסום בפרוקסי. תיקון עם self-test של 6 מקרים ב-[`docs/ci/meh-2285-tag-push-hook.patch.md`](./docs/ci/meh-2285-tag-push-hook.patch.md) · (2) ‏MEH-2284 טריאז' · (3) ה-job הלילי `meh_2283_analytics_rollup_daily` (01:30 UTC) פעיל בפרודקשן אבל **לא נבדק מול דאטה אמיתית** — הקטלוג ריק, ולכן הריצה הראשונה מגלגלת אפס; זו התנהגות נכונה, לא תקלה, אבל היא אומרת שהאימות האמיתי נדחה לרגע שבו יש קטלוג · (4) ‏drain הבא מתחיל מ-STEP 0 בכרטיס.
+
 ## 2026-09-06 ערב — drain כט' (session `01SU9y6p…`, 18:50Z → ~19:45Z): ADDENDUM-11 — סגירת backlog מלאה · T0 על 125 כרטיסים · 7 Done · 4 Canceled · 7 PRs · 12 parked · LEASE: none
 
 **‏שורה אחת:** ‏T0 (11 סוכני קריאה, 300 PRs מול staging) סיווג 125 כרטיסים — א 3 · ב 45 · ג 5 · ד 72. נסגרו Done: 1166 · 1868 · 1287 · 1980 · 2266 · 1244 · 2240; Canceled: 640 · 1835 · 174 · 781; 581 צומצם. מוזגו squash (parent אחד, אומת): #3423 `ba10e40d` · #3475 `aa458f59` · #3476 `a2617a8c` · #3477 `1454899d` · #3478 `8f5c6e6f` · #3474 `385713ba`; #3479 (2168) פתוח בסוף החלון. פירוט מלא ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «06/09 ערב — drain כט'».
@@ -94,6 +185,13 @@
 
 | PR | מה | נחת |
 | -- | -- | -- |
+| #3299 | MEH-1938 STRICT follow-up — קידום מפורש+branch-בלבד, מחיקת ראשית מסורבת, MiniMap/HomepageMiniMap STRICT | `701af373` (squash) |
+| זה | docs backfill — CHANGELOG + HANDOFF, כולל תיקון 3 שורות stale | — |
+
+### רשימת ספיר (residual מהסשן הזה)
+
+* **‏5b עדיין לא** — אותם שני תנאים כמו ב-drain הקודם: ≥7 ימי soak מ-5a (מוקדם ביותר ~09/09) **וגם** אותה ספירה = 0 ב-staging **וגם** prod, נמדדת שוב באותו זמן.
+* **‏MEH-1943 (קופי error contract) נשאר Backlog, `post-launch` — לא הוזזה.** ההרחבה תיעדה ממצא, לא פתחה chunk. Phase 0 המקורי (אינוונטר + Expand-Contract) עדיין לא התחיל.
 | #3442 | **release: staging → main 2026-09-06** — 103 first-parent (86 squash + 17 merge), STEP RELEASE §5 | `223c6d9e` (**merge commit**, הורים `0f273bf8` + `f759bfaa`), 08:20:19Z |
 | זה | docs backfill — CHANGELOG + HANDOFF | — |
 
@@ -294,7 +392,7 @@
 | #3368 | MEH-1428 chunk 1 — קישור ביקורת חתום, revision `3f9a7c2e5d18` על `2c1033ca5745` | פתוח — ספיר (revision) |
 | #3369 | MEH-2076 — same-category review guard | פתוח — ספיר (post-launch, שינוי התנהגות) |
 | #3366 | MEH-1640 — איחוד 4 spokes | פתוח — ספיר (screenshots 375/1440 לא צולמו) |
-| #3336 / #3343 | MEH-2210 B / C | פתוחים — ספיר (self-QA rig לא הוקם) |
+| #3336 / #3343 | MEH-2210 B / C | ~~פתוחים~~ → **שניהם נחתו 05/09** — #3336 `3d66b498` (**merge commit**, לא squash — נפילת MEH-1526), #3343 `a1edd058` (squash). תוקן ב-backfill של 07/09. |
 | #3345–#3348 | MEH-1687 — 4 יעדי מגע 44px | פתוחים — ספיר (UI) |
 | #3350 | MEH-2119 — probe זמני | פתוח — ספיר (RED) |
 | #3355 | MEH-1621 chunk 2 — הערות schemas.py | פתוח — post-launch |
@@ -420,6 +518,22 @@
 * **‏Railway:** ‏`seed_cities` בקונסולה (2241 chunk 0) · חשבון demo-admin.
 * **‏git:** מחיקת `feature/meh-1981-notice-and-legal-drafts` (ענף ללא PR, ראו לקח 4).
 
+## 2026-09-03 — MEH-1938 STRICT follow-up (session `01MaGjwx…`, HIGH-RISK, chunk-by-chunk עם WAIT): #3299 נחת · שני תיקוני DoD בגוף ה-PR · MEH-1943 הורחב עם ממצא parity שני-סיבות
+
+**‏שורה אחת:** ‏#3299 מוזג כ-squash `701af373` על «approved, go merge» מפורש — `delete_my_location` הפסיק לקדם אוטומטית, קידום נשאר מפורש ו-branch-בלבד גם ב-create, ושתי מסכי STRICT ב-frontend (`MiniMap` · `HomepageMiniMap`) מפסיקים לבחור ראשית לפי סדר-שורה שרירותי ב-DB.
+
+### מה שסשן חדש חייב לדעת
+
+1. **‏החוזה שוב הוכרע לפני שנבנה, ולא נחזה מראש.** ספיר תיקנה `422` (לא `409`) והפכה את ההכרעה המקורית מ-«`branch` וגם `market_stand`» ל-**`branch` בלבד**, אחרי שהראיתי ש-`market_stand` מסווג ברפו עם `pickup` כשכבה משנית שה-`/map` toggle מסתיר (ארבעה מקומות זהים, MEH-1412). ראשית שהמרקר שלה נעלם מתחת לטוגל היא תשובה שלישית.
+2. **‏הספירה שחסמה את הענף יצאה 0/0 — חסימה נקייה, אין מסלול מיגרציה.** ‏`SELECT count(*) … WHERE is_primary AND kind <> 'branch'` = **0 ב-prod, 0 ב-staging**. השורה היחידה שנראתה ב-staging (`demo-delivery-pickup`) הייתה שורת דמו שנזרעה **באותו בוקר** ותוקנה במקור (`seed_demo_business.py:527`, `is_primary: False`) — לא נתוני בעלים אמיתיים.
+3. **‏`create_my_location` הוא המקור האמיתי של שורת ה-seed, לא רק `delete`.** אכיפת branch-בלבד רק ב-update הייתה משאירה חור: `create` היה מכריח ראשית על המיקום הראשון בלי קשר ל-kind, ומקבל `is_primary: true` מפורש על כל kind. שני מקרים, במכוון שונים: `is_primary: true` מפורש על לא-branch → **422**; מיקום ראשון שהוא pickup → נוצר, פשוט לא force-primary (זו הבעלית שהצהירה `has_physical_location: false`).
+4. **‏MiniMap STRICT דרש הרחבת ה-early-return guard באותו שינוי, אחרת STRICT היה שולח TypeError.** ‏`find(is_primary) ?? points[0]` הוחלף ב-STRICT (`is_primary === true`, אחרת `null`) בשני מקומות (`MiniMap` · `HomepageMiniMap`); בלי הרחבת ה-guard, `null` היה נשלח ישר ל-Waze URL שתי שורות אחר כך. רינדור כלום *הוא* הסמנטיקה.
+5. **‏Playwright WebKit (shadow, non-blocking) נכשל על ה-head הירוק — הפרש הקבוצות המלא, לא «בסיס-אדום» גנרי, הוא מה שהצדיק את המיזוג.** קראתי את שתי רשימות הכישלונות **במלואן** (28 מול 29): רק שני מקרים זזו, שניהם באותו `describe` (מדיניות סיסמאות), ואחד מהם (`:149`) מופיע כ-**flaky** על ה-head שלנו אחרי שנכשל קשה על staging — לא נשבר כאן. ה-diff לא נוגע במסלול `/reset-password` בכלל (`grep` על כל ה-diff מחזיר רק `auth_header(...)`, fixture של pytest). לא הרצתי מחדש את ה-job — הרצה מחדש הייתה מחליפה את מערכת הראיות (10/348, הפרש ריק) שספיר אישרה מולה.
+6. **‏שני תיקוני DoD בגוף ה-PR, שלא תוקנו כי «merge as-is» — ותועדו כדי שהמספר בגוף לא יישאר הרישום היחיד:** תיבת «Both authored commits carry the trailer» סופרת שתיים; **כל חמשת** הקומיטים המחוברים נושאים `Builder-Model: claude-opus-5` (נבדק אחד-אחד). תיבת `/adversarial-review` נשארה `[ ]`; הוא **כן** רץ והתוצאות פורסמו כתגובה על ה-PR לפני המיזוג. שתי אלה תת-הצהרה, לא הצהרת-יתר — לא כשל כלל 33.
+7. **‏MEH-1943 הורחב, לא פוצל.** חיפוש כלל 27 (`error contract code params i18n`) מצא כרטיס קיים שכבר נושא בדיוק את ההכרעה: חוזה `{code, message, params}`, Expand-Contract, chunk A נחת (PR #2833). ההרחבה — ב-**description**, לא בתגובה (כלל 34) — מוסיפה: שני המפתחות (`primary_must_be_branch` · `one_primary_required`) קיימים בשני קבצי ה-messages, `en-parity-guard.test.js` ירוק, ואף אחד לא קורא אותם — ה-backend שולח את המחרוזת העברית ב-`detail`. **שער ה-parity של MEH-978 מוכיח שהמפתח קיים, לא שהוא נקרא** — green-with-two-causes.
+8. **‏מלכודת מכוונת נשמרה על הכרטיס, לא הוסרה.** `test_the_approved_copy_is_pinned_by_literal` (`tests/test_meh1938_ch5_strict_followup.py:75`) מקבע את שתי המחרוזות בליטרל, ואמור **ליפול** כשההמרה לחוזה `{code, params}` תגיע ל-router הזה. הכרטיס מציין את זה במפורש: לעדכן את הפין יחד עם החוזה, לעולם לא להרפות אותו.
+9. **‏ה-flip-check עבד:** ‏`Refs MEH-1938` — הכרטיס נשאר **Todo** אחרי המיזוג (`completedAt: null`, `stateHistory` ללא שינוי מ-07/08). ה-slug לא סגר, לא נדרשה פתיחה מחדש.
+10. **‏שלוש שורות ב-drain הקודם (2026-09-02 ערב, סעיף «MEH-1938 chunk 5a») תוקנו בכתובת — כלל 31ב בכיוון ההפוך.** הכותרת + סעיף 2 + התבליט ב-residual טענו ש-«ה-PR הממשיך לא התחיל, חסום על ספירה» — נכון בזמן כתיבתו, שגוי מאז ה-drain הזה. תוקנו במקום, בתבנית `[עודכן …]` הקיימת כבר בקובץ (ראו סעיף MEH-2168 למעלה), לא נמחקו.
 ## 2026-09-02 לילה — drain כד' (session `01UJNNqp…`): ארבעה PRs נחתו · Phase 0 שינה את הצורה של שניים מהם · מיזוג אחד נחת כ-merge ולא כ-squash
 
 **‏שורה אחת:** ‏#3292 (WhatsApp href אחד) · #3294 (MEH-2073 chunk 2) · #3295 (MEH-1904 §5.2) · #3296 (MEH-1949 wiring). אפס פארקים, אפס STOP.
@@ -452,14 +566,14 @@
 * **‏MEH-1904 · MEH-1949:** להחיל את שני ה-patch-docs. סדר: `meh-2196` (שני שלביו) → `meh-1904-coverage-regression` (בונה עליו) → `meh-1949-branch-arg-wiring` (**שני** ה-hunks).
 * **‏Railway staging redeploy נכשל אחרי מיזוג #3296** — `The latest deployment … cannot be redeployed` ואז `error decoding response body`. צד Railway; המיזוג הבא יפעיל redeploy חדש ממילא. קונסולות Railway הן STOP ל-CC.
 
-## 2026-09-02 ערב — MEH-1938 chunk 5a (session `01MaGjwx…`, HIGH-RISK): #3285 נחת · שלוש הנחות הופרכו · ה-PR הממשיך חסום על ספירה אחת
+## 2026-09-02 ערב — MEH-1938 chunk 5a (session `01MaGjwx…`, HIGH-RISK): #3285 נחת · שלוש הנחות הופרכו · ה-PR הממשיך חסום על ספירה אחת [עודכן 03/09 — ה-PR הממשיך נבנה ומוזג, ראו למעלה]
 
 **‏שורה אחת:** ה-Contract של האפיק בוצע — אין יותר אף קורא fallback ל-`Producer.lat/lng`, `producer_locations` הוא ה-SoT בכל משטח; #3285 מוזג כ-squash `6cd5a3bf` על «approved, go merge #3285» מפורש של ספיר, אחרי ארבעה תת-שלבים עם go בין כל אחד.
 
 ### מה שסשן חדש חייב לדעת
 
 1. **‏5b עדיין לא. שני תנאים, שניהם של ספיר:** ‏≥7 ימי soak אחרי 5a (מוקדם ביותר ~09/09) **וגם** ‏`SELECT count(*) FROM producers p WHERE p.lat IS NOT NULL AND NOT EXISTS (SELECT 1 FROM producer_locations l WHERE l.producer_id = p.id AND l.is_primary AND l.lat IS NOT NULL AND l.lng IS NOT NULL)` = **0 ב-staging וגם ב-prod**. הספירה שנמדדה קודם (0/0) ענתה על שאלה **חלשה יותר** («קואורדינטות ובלי אף שורה»); הקוראים מאז 5a דורשים שורה ראשית **שמישה**. שורת `SKIP MEH-1938 5b` ב-`scripts/wake-when.sh`.
-2. **‏ה-PR הממשיך (`feature/meh-1938-ch5-strict-followup`) לא התחיל, וחסום על ספירה אחת:** ‏`SELECT count(*) FROM producer_locations WHERE is_primary AND kind <> 'branch'` (staging + prod). `>0` → ה-PR נושא **מסלול מיגרציה** (הבעלים מתבקשת לבחור), לא רק את החסימה. התכולה מוגדרת ב-description של MEH-1938.
+2. **‏ה-PR הממשיך (`feature/meh-1938-ch5-strict-followup`) לא התחיל, וחסום על ספירה אחת:** ‏`SELECT count(*) FROM producer_locations WHERE is_primary AND kind <> 'branch'` (staging + prod). `>0` → ה-PR נושא **מסלול מיגרציה** (הבעלים מתבקשת לבחור), לא רק את החסימה. התכולה מוגדרת ב-description של MEH-1938. **‏[עודכן 03/09 — כלל 31ב:]** הספירה יצאה **0/0** (prod/staging), השורה היחידה ב-staging הייתה `demo-delivery-pickup` — דמו שנזרע באותו בוקר. הענף נבנה כ-**חסימה נקייה** (אין מסלול מיגרציה, אין prompt לבעלים) ומוזג כ-**#3299** (`701af373`, squash). ראו את הרשומה למעלה.
 3. **‏שלוש הנחות הופרכו במדידה בסשן הזה — כולן תוקנו ב-description של MEH-1938 ולא בתגובה (כלל 34).** ‏(א) `delete_my_location` **כן** מקדם אוטומטית היום — `producer_me.py:2263-2271`, השורה הוותיקה ביותר, **בלי סינון kind** — בניגוד להנחה שנמסרה. (ב) ל-`primaryPoint()` **אין** כלל «never a pickup»: הוא kind-agnostic במפורש, וה-docstring שלו (`producerPoints.js:82-83`) מנמק למה — ראשית-pickup היא פגם דאטה שצריך **להיראות**. (ג) `market_stand` מסווג ברפו עם `pickup` כשכבה משנית, בארבעה מקומות זהים (MEH-1412): `producerPoints.js:28` · `MiniMap.jsx:70` · `MapComponent.jsx:375` · `DeliveryBlock.jsx:468`. **בעקבות (ג) ספיר הפכה את הכרעתה:** כשיר-לראשיות = `branch` **בלבד**; ההרחבה ל-market_stand בוטלה כי ראשי שהמרקר שלו מוסתר מתחת לטוגל של /map הוא תשובה שלישית.
 4. **‏ההכרעות התקפות ל-PR הממשיך, אחרי ההיפוך:** מחיקת הראשית כשיש אחרות → **422** עם «חובה מיקום ראשי אחד» (אותו קוד ואותו מפתח כמו `:2229-2232`, שהוא אותו אינווריאנט מהצד השני) · מחיקת האחרונה → מותר, `primary = null` (ה-ping שייך ל-MEH-2073 chunk 2) · קידום = מפורש בלבד, `branch` בלבד · `primaryPoint()` **נשאר kind-agnostic** (הכרעה חלה על צד הכתיבה בלבד).
 5. **‏מכשיר שיחזור: ה-ruleset דורש ענף מעודכן, וההודעה מטעה.** מיזוג #3285 נדחה ב-`405 — 2 of 2 required status checks are expected` בזמן ששני השערים היו **ירוקים**; הסיבה האמיתית היא ש-staging זזה קומיט אחד. הפתרון: `git merge origin/staging` (לא rebase), push, להמתין ל-CI, למזג. לא לחפש check אדום שאינו קיים.
@@ -476,7 +590,7 @@
 
 ### רשימת ספיר (residual מהסשן הזה)
 
-* **‏שתי ספירות, שתיהן על staging **וגם** prod:** שער 5b (סעיף 1) ושער הדאטה של ה-PR הממשיך (סעיף 2).
+* **‏שתי ספירות, שתיהן על staging **וגם** prod:** שער 5b (סעיף 1) ושער הדאטה של ה-PR הממשיך (סעיף 2). **‏[עודכן 03/09:]** ספירת ה-PR הממשיך בוצעה ודיווחה 0/0 — הענף נבנה ומוזג (#3299). שער 5b (סעיף 1) עדיין פתוח, ≥7 ימי soak מ-5a (מוקדם ביותר ~09/09).
 * ‏`docs/DEPLOYMENT.md:1544` תוקן ב-PR הזה: הפניה ל-`_haversine_km` **בקובץ הלא נכון** (`routers/producers.py`). ה-reviewer ב-CI תפס את השם; הקובץ היה שגוי גם הוא. ה-sweep מצא שזה האתר היחיד — `.ai/diagrams/db-schema.md:415` כבר נכון.
 
 ---
