@@ -21,7 +21,7 @@
 **חדש בגרסה 2:** כל issue ב-Linear מציין **explicit model recommendation**:
 
 ```
-**Model:** 🟢 Sonnet 5 [או] 🟣 Opus 4.8
+**Model:** 🟢 Sonnet 5.5 [או] 🟣 Opus 5.5
 **Effort:** medium / high / xhigh / max
 ```
 
@@ -74,7 +74,7 @@
 ---
 
 ## Model + Effort + Thinking
-- **Model:** 🟢 Sonnet 5 [או] 🟣 Opus 4.8
+- **Model:** 🟢 Sonnet 5.5 [או] 🟣 Opus 5.5
 - **Effort:** medium / high / xhigh / max
 - **Adaptive Thinking:** ON / OFF (ראי 00-model-selection-guide.md)
 - **Reasoning:** [1-line — למה הבחירה הזאת]
@@ -236,7 +236,7 @@ _מקור: MEH-1877 (03/08) — הכרטיס דרש `grep -rn … frontend/ → 
 ---
 
 ## Model + Effort + Thinking
-- **Model:** 🟣 Opus 4.8
+- **Model:** 🟣 Opus 5.5
 - **Effort:** xhigh
 - **Adaptive Thinking:** ON
 - **Reasoning:** Multi-layer feature (DB schema + JWT click_token + 2 endpoints + 2 components + integration). Security-sensitive (verification logic). Worth Opus + thinking for trade-off reasoning.
@@ -358,7 +358,7 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 
 ❌ **Issue בלי model/effort** — Claude Code לא יודעת לבחור אוטומטית.
 
-❌ **Prompt בלי file_locations** — Opus 4.8 literal interpretation, ה-context הזה קריטי.
+❌ **Prompt בלי file_locations** — Opus 5.5 literal interpretation, ה-context הזה קריטי.
 
 ❌ **כרטיס על קומפוננטה קיימת בלי anchor `file:line` מאומת** — ב-batch של 03/08
 שלושה מארבעה כרטיסים עצרו ב-Phase 0 כי תיארו עולם שאינו הקוד: `SocialProofBar`
@@ -404,6 +404,6 @@ PR מותר.
 
 ## 📚 מקורות
 
-- Anthropic 2026: "intent, constraints, acceptance criteria, and relevant file locations" (Opus 4.8 docs)
+- Anthropic 2026: "intent, constraints, acceptance criteria, and relevant file locations" (Opus 5.5 docs)
 - MEH-342 retrospective — pre-go scope-match rule
 - Mehamakor Linear conventions (this template)
