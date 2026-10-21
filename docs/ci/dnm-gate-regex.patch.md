@@ -1,11 +1,27 @@
-> **⛔ PENDING, and SUPERSEDED — as-of 01/09. Apply `meh-1523-dnm-label-gate.patch.md` instead, not this one.**
-> Measured: `DNM_TITLE_RE` / `DNM_BODY_RE` are absent from `pr-checks.yml`, so this patch is not applied — and `scripts/checks/dnm-matcher-guard.sh` says in its own output that the label patch “SUPERSEDES the first” and closes all three defects rather than two.
-> ⚠️ **Do not grep this file for its own regex to decide the question.** The `grep -Eiq '…'` line quoted below is the *before* state; it matches `pr-checks.yml` verbatim today precisely because it is the construct the patch REPLACES. That false positive was made and caught on 01/09 — the discriminating token is `DNM_TITLE_RE`.
+> **⛔ DEAD — do NOT apply. Superseded and CLOSED, re-measured 07/09.**
+> The label gate that supersedes this one was **applied on 04/09** (`4a13f706d`,
+> `pr-checks.yml` job `do-not-merge-gate`, step *"Fail if the PR carries the
+> marker label"*), and its staged patch doc was deleted in that same commit —
+> which is why every link to `meh-1523-dnm-label-gate.patch.md` in this repo now
+> dangles. Applying *this* patch would put text scanning back and re-open the
+> #2637 / #2813 false positives the label move exists to close: that is removing
+> a constraint (rule 32), not restoring one.
+> This header previously read **"⛔ PENDING, and SUPERSEDED — as-of 01/09. Apply
+> `meh-1523-dnm-label-gate.patch.md` instead, not this one."** True on its date;
+> false since 04/09, and it sent a reader to a file that no longer exists.
+> ⚠️ **Do not grep this file for its own regex to decide the question.** The
+> `grep -Eiq '…'` line quoted below is the *before* state. The discriminating
+> token was `DNM_TITLE_RE`; today the live job's token is `DNM_LABEL_RE`, and
+> `scripts/checks/dnm-matcher-guard.sh` prints which mode it found.
+>
+> **Kept, not deleted:** the 19-case corpus and the truth tables below are what
+> `dnm-matcher-guard.sh` was built from, and the guard still pins them.
 
 # `do-not-merge-gate` — narrow the matcher to an explicit marker (MEH-1922)
 
-**Status:** staged for Sapir. `.github/workflows/**` is CC-deny (MEH-671), so CC
-cannot apply this. Everything below is measured, not proposed blind — the
+**Status:** ⛔ **dead — superseded 04/09, never to be applied** (see the header).
+When written it was staged for Sapir; `.github/workflows/**` is CC-deny (MEH-671),
+so CC could not apply it then and must not now. Everything below is measured, not proposed blind — the
 regexes were run against a 19-case corpus before this doc was written, and that
 corpus ships as a live guard (see "What already landed").
 

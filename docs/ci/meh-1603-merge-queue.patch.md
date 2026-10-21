@@ -6,11 +6,18 @@ was read out of the live files on `origin/staging` at
 `7cddbb8` (re-checked after a staging sync mid-session; all anchors held across the
 move from `e4d0e93`) — re-derive before applying if staging has moved again.
 
-**Do not apply this before [`meh-1523-dnm-label-gate.patch.md`](./meh-1523-dnm-label-gate.patch.md).**
-The order is not stylistic: §2.4 below shows that the label gate that patch
-ships **hard-fails in merge-group context**, which would red the required check
-on every queued merge. Hunk 3 here is the fix, and it is written against the
-post-1523 shape of that step. Full ordering: [`meh-1603-runbook.md`](./meh-1603-runbook.md).
+**✅ Precondition MET — re-measured 07/09.** This doc used to open *"Do not apply
+this before `meh-1523-dnm-label-gate.patch.md`"*. **That patch was applied on
+04/09** (`4a13f706d`) and its staged doc was deleted in the same commit, so every
+link to it below now dangles — read the live job instead: `pr-checks.yml`,
+`do-not-merge-gate`, step *"Fail if the PR carries the marker label"*.
+
+The ordering was never stylistic and its *reason* still stands, now as a live
+condition rather than a future one: §2.4 below shows that label gate **hard-fails
+in merge-group context**, which would red a required check on every queued merge.
+Hunk 3 here is the fix, it is written against the shape that is now live, and it
+is therefore a **prerequisite of turning the queue on**, not an optional follow-up.
+Full ordering: [`meh-1603-runbook.md`](./meh-1603-runbook.md).
 
 ---
 

@@ -6,7 +6,7 @@
  * `ProducerLocation.opening_hours` in LocationsEditor; the business-level
  * editor was removed and its write path closed. `Producer.opening_hours`
  * survives as a fallback for businesses that filled it in before the switch —
- * LEGACY(2026-10-01, MEH-1938), a readers-first Parallel Change.
+ * LEGACY(2026-11-30, MEH-1938), a readers-first Parallel Change.
  *
  * Every case here fails against the pre-change code for the honest reason: the
  * function did not exist. That makes the file as a whole non-discriminating in

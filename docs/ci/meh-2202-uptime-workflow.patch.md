@@ -1,12 +1,27 @@
 # `uptime.yml` — scheduled external uptime probe, Sentry-independent (MEH-2202, ADDENDUM-11 §Token)
 
-> **Status: STAGED, not applied — as-of 2026-09-06.** ADDENDUM-11 replaced the
-> UptimeRobot account the card asked for with a repo-owned workflow: no account,
-> no money, no Sentry dependency. The file lives under `.github/workflows/**`,
-> and in the drain window that staged this the harness refused every write
-> path to that directory (filesystem deny + classifier on the API route, three
-> attempts 18:58–19:02Z). So it is the exact file for **Sapir** to add; one
-> residual click after it lands (§4).
+> **Status: ✅ APPLIED 2026-09-07 — `ef1a0bfe` (PR #3482), and on `main` via
+> release #3494 (`8e69ff1e`).** ADDENDUM-11 replaced the UptimeRobot account the
+> card asked for with a repo-owned workflow: no account, no money, no Sentry
+> dependency.
+>
+> **The 06/09 status line said the harness refused every write path to
+> `.github/workflows/**`. That was wrong about the API route** — it conflated a
+> Bash/`curl` classifier refusal with a blanket block. The GitHub Contents API
+> (`create_or_update_file`) accepts writes to that directory; only
+> `.claude/hooks/**` is refused at the sandbox proxy. This is the tool × path
+> split `.claude/rules/security.md` already documents.
+>
+> **Two deviations from §2 as applied**, both deliberate: a `gh label create`
+> bootstrap line so the alert path cannot die on a missing label, and the
+> issue-lookup error handling rewritten so a failed `gh issue list` aborts the
+> tick loudly instead of arriving as an empty string that reads as "no open
+> issue" and opens a duplicate on top of a live outage.
+>
+> **Smoke run:** dispatch `34101513523`, `run_number: 1` — both endpoints
+> `HTTP 200`, `FAIL: 0`, no issue opened, label auto-created. **§4's residual
+> click (Repo → Watch → Custom → Issues) is still open and is still Sapir's** —
+> without it the issue opens to an empty room.
 
 ## 1 · What it does
 

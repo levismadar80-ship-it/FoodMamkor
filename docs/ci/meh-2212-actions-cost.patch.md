@@ -327,9 +327,13 @@ see §2ג on required checks.
           echo "Branch '$BRANCH' OK."
 
       # MEH-1155 / ADR-016 amendment — was job `do-not-merge-gate`.
-      # Regex unchanged, byte for byte. See docs/ci/meh-1523-dnm-label-gate.patch.md
-      # for the pending swap of this text scan for a label check; if that lands
-      # first, this step becomes a label read and the merge here still holds.
+      # ⚠️ STALE AS WRITTEN (re-measured 07/09): the label swap is no longer
+      # "pending" — it LANDED 04/09 (4a13f706d), so the live step reads
+      # `github.event.pull_request.labels.*.name` and no title/body at all.
+      # Re-derive this hunk from the live job before pasting it: pasting the
+      # text-scanning body below would re-open the #2637 / #2813 false
+      # positives (rule 32 — never remove a constraint). The MERGE this
+      # section prescribes still holds; only the step body must be refreshed.
       - name: Fail if the PR carries a DO-NOT-MERGE marker (MEH-1155, ADR-016 amendment)
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}

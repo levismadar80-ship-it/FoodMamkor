@@ -548,14 +548,15 @@ skips=$(cat <<'SKIPS'
                             models.py — see the dated row above) needs 0/0 here AND
                             >=7 days of soak after PR #3285 lands. The old P0 read
                             0/0 on 02/09 and 5a merged on it; this is the next gate.
-    SKIP    MEH-1207        Sapir action: REPLACE `MEH-1146` in that card's title with
-                            an identifier that resolves, or drop the blocked marker.
-                            `get_issue MEH-1146` returns "Could not find referenced
-                            Issue"; an archived-inclusive query did not surface it
-                            either. NOT a claim that it never existed - a lookup that
-                            excludes archived is indistinguishable from that (MEH-1948).
-                            Worse than a closed blocker: there is no entity whose
-                            status can change, so this card cannot ever open by itself.
+    SKIP    MEH-1208        Sapir action: RULE on the data model for the "who is this
+                            for" section - a free `text` column vs a structured bullet
+                            array - and approve the Alembic revision. Both are named on
+                            the card; the orchestrator's recommendation there is bullets.
+                            NOT "blocked x2" as the title said: the FIRST blocker of the
+                            two (MEH-1146, section order) is discharged - see the
+                            MEH-1207 rows. One decision is left, and it is hers.
+                            #3257 recorded this card as "not swept: carries [blocked x2]
+                            and names neither". It is swept now.
     SKIP    MEH-2226        Sapir posts two @dependabot commands in the GitHub UI.
                             NOT "hooks write" — the card's own Phase 0 (30/08) put
                             the mangling OUTSIDE the repo (harness/MCP write path,
@@ -588,7 +589,12 @@ skipped=$(printf '%s\n' "$skips" | grep -c '^[[:space:]]*SKIP')
 # is owed, it belongs in SKIP. UNSTARTED means the work is simply unclaimed.
 # ---------------------------------------------------------------------------
 echo
-echo "  Unstarted — cc-queue, no gate, nobody blocked. This is WORK, not a park:"
+# Drain 18: the qualifier widened from "cc-queue" to ANY active card with no
+# gate. MEH-1207 is the case that forced it — no gate, no cc-queue label, and
+# therefore no section that could hold it, which is the drain-16 hole this
+# section exists to close reappearing one label along. Widening ADDS rows; it
+# cannot drop one (rule 32).
+echo "  Unstarted — no gate, nobody blocked. This is WORK, not a park:"
 unstarted_rows=$(cat <<'UNSTARTED'
     UNSTART MEH-2107        Retired from this file 01/09 when its blocker MEH-1906 went
                             Done (completedAt 2026-08-30T10:38:03Z), which removed it from
@@ -601,6 +607,19 @@ unstarted_rows=$(cat <<'UNSTARTED'
                             staging, and a register spec against staging is MEH-1502
                             self-pollution). What is stale is the TITLE, which still reads
                             "[חסום ע"י MEH-1906]" — and a title is what a sweep sorts on.
+    UNSTART MEH-1207        Producer-page sticky anchor-nav. Its stated gate, MEH-1146,
+                            does NOT resolve in Linear — and that is not the answer.
+                            MEH-1146's WORK LANDED on 12/07 in three squashes, each
+                            verified an ancestor of origin/staging: 858a8d61 (#1670)
+                            chunk A, 91b7ab2c (#1673) chunk B, ff7156a5 (#1676) chunk C.
+                            The final section order is readable today from
+                            ProducerSectionsOrder.test.jsx and MANUAL_TESTING.md:908.
+                            So the gate is DISCHARGED, not unresolvable: an archived
+                            card and a deleted one answer `get_issue` identically, and
+                            the tie is broken in the repo, not in Linear (MEH-1519 sat
+                            six weeks behind exactly this). The card's own 09/08 groom
+                            said so; this file did not read it. Not cc-queue — which is
+                            why the header above had to widen to hold it.
     UNSTART MEH-2237        17-gate CI reliability audit — Phase 0, read-only, a document
                             rather than code. High, cc-queue, no gate: nothing blocks it
                             and nobody is waiting on anyone. Not reached in drain 17,
@@ -634,6 +653,14 @@ cat <<'RETIRED'
                             Its own two prerequisites (#2743, #2746) are both on staging.
                             Drain 16: retiring it left the card with no row for two days.
                             It has a real gate after all — gov.il, checked above.
+    RETIRED MEH-1207        Gate was "blocked by MEH-1146". Drain 17 (#3257) filed it as
+                            a SKIP — a Sapir action — on the grounds that the identifier
+                            does not resolve, so "there is no entity whose status can
+                            change". That row hedged correctly ("NOT a claim that it
+                            never existed") and then acted as though it were: the wrong
+                            branch of its own disjunction. The work landed 12/07 and is
+                            on staging; see the UNSTART row for the three SHAs. Carried
+                            as UNSTART above, not dropped.
     RETIRED MEH-2087        Card is Done (31/08 22:10Z) and its single remaining CC task
                             is verified: ProducerDetailOut(ProducerListOut) inherits
                             availability_state + vacation_until (schemas.py:2248/2250,

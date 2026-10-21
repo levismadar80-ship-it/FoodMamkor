@@ -22,12 +22,12 @@
 
 | סוג refactor | מודל | למה |
 |---|---|---|
-| Single-file cleanup | 🟢 Sonnet 5 | localized, clear scope |
-| Cross-file rename / extract | 🟣 Opus 4.8 | dependency tracking |
-| Architecture refactor (auth-as-module) | 🟣 Opus 4.8 | strategic, requires deep model |
-| Pattern migration (callbacks → async) | 🟢 Sonnet 5 | mechanical if pattern clear |
-| Performance refactor (N+1 → batched) | 🟣 Opus 4.8 | reasoning about runtime behavior |
-| Test-only refactor (pytest → fixtures) | 🟢 Sonnet 5 | mechanical |
+| Single-file cleanup | 🟢 Sonnet 5.5 | localized, clear scope |
+| Cross-file rename / extract | 🟣 Opus 5.5 | dependency tracking |
+| Architecture refactor (auth-as-module) | 🟣 Opus 5.5 | strategic, requires deep model |
+| Pattern migration (callbacks → async) | 🟢 Sonnet 5.5 | mechanical if pattern clear |
+| Performance refactor (N+1 → batched) | 🟣 Opus 5.5 | reasoning about runtime behavior |
+| Test-only refactor (pytest → fixtures) | 🟢 Sonnet 5.5 | mechanical |
 
 ---
 
@@ -40,7 +40,7 @@
 
 ---
 
-## 🧱 Prompt Structure (Opus 4.8 — multi-file)
+## 🧱 Prompt Structure (Opus 5.5 — multi-file)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md.
@@ -120,7 +120,7 @@ AFTER refactor:
 
 ---
 
-## 🧱 Prompt Structure (Sonnet 5 — single-file)
+## 🧱 Prompt Structure (Sonnet 5.5 — single-file)
 
 ```xml
 Read .claude/rules/.
@@ -154,7 +154,7 @@ Before patching:
 
 ---
 
-## 📊 דוגמה — Extract email transport (Opus 4.8)
+## 📊 דוגמה — Extract email transport (Opus 5.5)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md.

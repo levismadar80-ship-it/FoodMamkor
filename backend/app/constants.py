@@ -114,6 +114,10 @@ REFERRAL_SOURCE_KEYS: tuple[str, ...] = (
     "facebook",
     "google",
     "whatsapp_group",
+    # Outreach attribution: the business was contacted directly by
+    # Mehamakor (founder outreach calls). Distinct from "other" so launch-day
+    # outreach can be counted without parsing free text.
+    "direct_outreach",
     "other",
     "prefer_not_to_say",
 )

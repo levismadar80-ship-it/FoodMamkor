@@ -201,6 +201,71 @@ wrong answer.
 
 ---
 
+## An unresolvable `MEH-XXXX` is archived-because-Done at least as often as missing — check the repo before treating it as open (MEH-1519 · MEH-1146)
+
+**`get_issue` returns the same string for a card that never existed and for one
+that was archived because it shipped: `Could not find referenced Issue`.** The
+answer is well-formed, it is fast, and it carries no marker saying which of the
+two worlds you are in. Nothing downstream can recover that distinction, so it
+gets decided by whoever reads the null — usually in the direction that makes the
+current task simpler.
+
+**Before an unresolvable identifier is treated as an open blocker, as a missing
+entity, or as an action for Sapir, run all three:**
+
+```bash
+grep -n "MEH-<N>" HANDOFF.md docs/CHANGELOG.md      # 1. did it ship, and when
+git log --oneline --all --grep="MEH-<N>"            # 2. which commits claim it
+git merge-base --is-ancestor <sha> origin/staging   # 3. per SHA — is it LANDED
+```
+
+Step 3 is the one that settles it, and it is the one most often skipped. A
+commit *existing* is not the same as it being on the base branch: `git log
+--all` reaches abandoned branches too. **The blob-identity corollary in the
+section above applies here as well** — "commit C mentions MEH-N" does not mean C
+implemented it.
+
+**The tie is broken in the repo, never in Linear.** A card's own groom notes are
+the second-best source and are worth reading (both cases below had the answer
+sitting in a note nobody re-read), but they are a claim; the ancestor check is a
+measurement.
+
+### The two cases, because one of them is a near-miss and the other is not
+
+| | **MEH-1519** | **MEH-1146** |
+|---|---|---|
+| Read as | still open | "no entity whose status can change" |
+| Actually | resolved six weeks earlier | work merged 12/07, three PRs |
+| Cost | **MEH-1508 chunk 3 sat blocked for six weeks** | a wrong Sapir action, propagated into four artifacts |
+| Caught by | a sweep that happened to re-check | a sweep that happened to re-check |
+
+**MEH-1146 is the more instructive one, because the session that got it wrong
+had already stated the rule.** Its own note reads *"NOT a claim that it never
+existed — a lookup that excludes archived is indistinguishable from that"* — and
+then the very next sentence concludes *"there is no entity whose status can
+change, so this card cannot ever open by itself"* and files a Sapir action. The
+hedge was correct and the conclusion took the other branch of it. **Naming the
+ambiguity is not the same as resolving it**; only the three commands above
+resolve it.
+
+By the time it was measured (07/09), the wrong reading had reached
+`scripts/wake-when.sh`, two Linear card sections, and a pre-launch audit — each
+inheriting it as fact with the uncertainty stripped, which is the failure mode
+rule 34 exists to stop. The correction: `858a8d61` (#1670) · `91b7ab2c` (#1673)
+· `ff7156a5` (#1676), each verified an ancestor of `origin/staging`.
+
+**Both directions of the null are live in this repo, so neither default is
+safe.** `MEH-360` is cited in 30 files and has never existed; `MEH-1948` was
+declared non-existent from a lookup that silently excluded archived cards, one
+day after it was archived. Same query, same output, opposite truths.
+
+**Where the answer goes:** into the card's DESCRIPTION and into whatever
+registry carried the stale gate (rule 34) — not only into a comment. A sweep
+reads descriptions and registries; a comment thread is where a correction goes
+to be re-discovered.
+
+---
+
 ## ✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer confirmed working; temporary section removed
 
 The three-action DoD ((a) credential, (b) SHA pin, (c) delete this section) is
@@ -323,10 +388,14 @@ zero.
      deployment at all** — `git.deploymentEnabled` in `frontend/vercel.json`
      disabling `feature/*`, `dependabot/*` and `vrt-regen/*`, because every
      `Ignored` deployment still consumes the Hobby-tier daily quota
-     (measured: 18 of 20 in 5.5 h). **Staged for Sapir, not yet applied**
-     ([docs/ci/meh-2062-vercel-git-deployments.patch.md](../../docs/ci/meh-2062-vercel-git-deployments.patch.md)
-     — the file is filesystem-denied to CC). Once it lands, a preview exists
-     only when Sapir runs `vercel deploy` explicitly; the UI evidence is
+     (measured: 18 of 20 in 5.5 h). **✅ APPLIED 07/09 — `6bdb10d1` (PR #3484),
+     in production via `8e69ff1e`.** _(This read "Staged for Sapir, not yet
+     applied — the file is filesystem-denied to CC". The deny is on the
+     filesystem tools; the Contents API writes it fine.)_ **So a feature-branch
+     preview now exists only when Sapir runs `vercel deploy` explicitly** —
+     measured: two pushes to a `feature/*` branch at 10:38:19Z and 10:46:06Z
+     produced **no deployment row at all**, where the same branch shape produced
+     a `CANCELED` row two minutes before the change landed. The UI evidence is
      otherwise the 375/1440 Playwright bundle (rule 23 amendment) and staging
      after merge — say which in the PR, never report an absent preview as if
      it rendered.
@@ -1669,15 +1738,31 @@ Tasks auto-expire after 7 days.
     (measured — MEH-1523 §7), so the label is not a lock either; what changes is
     that violating rule 30 becomes visible instead of invisible.
 
-    **Staged, not yet applied** — the gate lives in `.github/workflows/**`
-    (CC-deny, MEH-671):
-    [`docs/ci/meh-1523-dnm-label-gate.patch.md`](../../docs/ci/meh-1523-dnm-label-gate.patch.md).
-    It supersedes `dnm-gate-regex.patch.md` (MEH-1922), which narrowed the same
-    regex and kept text scanning — apply one, not both. Until it is applied the
-    live gate still scans text, so **prose containing the words still reds a
-    required check**: phrase it as "the marker" in a PR body, as MEH-1523's own
-    constraints block instructs. `scripts/checks/dnm-matcher-guard.sh` pins all
-    three states and flips tables automatically.
+    **✅ APPLIED — the gate is LIVE on `staging` and reads LABELS ONLY.**
+    `.github/workflows/pr-checks.yml:72`, job `do-not-merge-gate`, step *"Fail if
+    the PR carries the marker label (MEH-1523)"*: its only input is
+    `github.event.pull_request.labels.*.name`. It reads no title, no body, no
+    commit message — and `scripts/checks/dnm-matcher-guard.sh` fails if either
+    old text-scanning env var reappears in that job. MEH-1523 closed 04/09.
+
+    _(This paragraph read **"Staged, not yet applied — the gate lives in
+    `.github/workflows/**` (CC-deny, MEH-671)… Until it is applied the live gate
+    still scans text, so prose containing the words still reds a required
+    check."** Every clause of that is now false, and the correction is not
+    cosmetic — **a reader who trusted it would take the wrong action.** Measured
+    07/09: PR #3307 was found with `labels: []` on work Sapir had gated. Reading
+    this file, the conclusion is "the label gate isn't live, so a label is
+    decorative" → restore nothing, or merge. Reading `pr-checks.yml:72`, the
+    conclusion is "a label reds `CI gate (required)`" → restore the label, which
+    is what happened. Same class as §7.3's dead citations that hid MEH-1519 for
+    six weeks, one step worse: those made a live card look blocked, this one
+    made a live gate look absent.)_
+
+    **Consequence for how you write a PR body: prose is now free.** The old
+    warning to phrase it as "the marker" was for the text-scanning gate that no
+    longer exists. Writing the words in a body no longer reds anything — only
+    the label does. `dnm-gate-regex.patch.md` (MEH-1922) narrowed the same regex
+    and is **superseded, not pending**; do not apply it.
 
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are

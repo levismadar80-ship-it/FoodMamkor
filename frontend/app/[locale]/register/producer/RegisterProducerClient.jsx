@@ -197,6 +197,7 @@ const REFERRAL_SOURCE_KEYS = [
   "facebook",
   "google",
   "whatsapp_group",
+  "direct_outreach",
   "other",
   "prefer_not_to_say",
 ];

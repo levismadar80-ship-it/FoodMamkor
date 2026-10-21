@@ -95,9 +95,15 @@ direction that cannot be undone quietly.
 
 ## Step 1 — the marker-label patch (MEH-1523)
 
-Source of truth: [`meh-1523-dnm-label-gate.patch.md`](./meh-1523-dnm-label-gate.patch.md) §6.
-Summarised here only so the ordering is legible; **follow that doc, not this
-summary.**
+**✅ STEP 1 IS DONE — applied 04/09 (`4a13f706d`), re-measured 07/09.** The
+`do-not-merge` label exists and the gate reads label names and nothing else:
+`pr-checks.yml`, job `do-not-merge-gate`, step *"Fail if the PR carries the
+marker label"*. **Start this runbook at Step 2.**
+
+This line used to read *"Source of truth: `meh-1523-dnm-label-gate.patch.md` §6 —
+follow that doc, not this summary."* That doc was **deleted by the commit that
+applied it**, so the pointer dangles; the live workflow is the source of truth
+now. The numbered summary below is kept as the record of what was done.
 
 1. Create the label `do-not-merge` (Issues → Labels). Suggested `#B60205`.
 2. Choose **Option A** (three edits in `pr-checks.yml`, no ruleset change) or
