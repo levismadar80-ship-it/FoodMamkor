@@ -10,7 +10,7 @@ Does NOT: exercise the admin display (frontend) or the MEH-143 upgrade path
 Related:  backend/app/schemas/schemas.py (ProducerRegister validators),
           backend/app/constants.py:REFERRAL_SOURCE_KEYS,
           backend/app/routers/auth.py (Producer creation sites).
-History:  MEH-1471 (creation, 2026-07-22).
+History:  MEH-1471 (creation, 2026-07-22); MEH-2286 (direct_outreach key, 2026-10-21).
 """
 from app.models.models import Producer
 from conftest import valid_producer_register_payload
