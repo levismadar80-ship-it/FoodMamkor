@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-21 ערב — session claude.ai לפני ה-outreach של 22/10: #3516 + #3517 פתוחים, CI חסום על מכסה
+
+**‏שורה אחת:** ‏שני PR-ים ירוקים-להלכה מחכים ל-CI שלא רץ — **כל job נופל ב-2 שניות עם אפס steps** (חתימת מכסת Actions, כלל 21). ספיר פותחת את המכסה → ‏`rerun` → מיזוג → release `staging → main`. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «21/10».
+
+**‏מה שסשן חדש צריך לדעת:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| #3516 `24d8ab28` — MEH-2286 referral `direct_outreach` | פתוח, non-draft, CI לא רץ | אחרי המכסה: re-run, שני האגרגטורים ירוקים → מיזוג. UI: צילום 375 של ה-dropdown ב-staging (DoD §5) |
+| #3517 `2aaec0db` — MEH-2287 templates → 5.5 | פתוח, docs-only | re-run → skip-green → מיזוג |
+| release `staging → main` | staging לפני main ב-13 קומיטים (כולם docs/CI/tests מאז 07/09) + שני אלה | ספיר כותבת «שחררי»; ה-15 «קומיטים» שב-main ולא ב-staging הם **רק merge commits של רילזים קודמים — אפס קבצים**, לא drift |
+| MEH-1495 Google Cloud trial | הדדליין עבר, לא אומת | ספיר: Billing לפני האישור הראשון של בית עסק |
+| MEH-2192 שארית | `description` ≠ CANONICAL_SENTENCE, טסט מקבע | הכרעת ספיר (B3). לא נגעתי |
+| production | `/api/producers` → `[]`, readiness `ready`, migrations `0396917da2ea` | — |
+
+**‏מה שנמדד ואין צורך לפתוח עליו כרטיס:** אינדוקס גוגל תקין (דף הבית #1 על «מהמקור»); nudge ל-draft קיים (MEH-2111); אירועים מהדשבורד קיימים.
+
+**‏הבא (NEXT):** ‏(1) ספיר: מכסת Actions · (2) מיזוג #3516 + #3517 · (3) release · (4) אחרי האישור הראשון של בית עסק: עמוד העסק + שורת הדירוג (1495) + ה-sitemap מתחיל לפלוט עמודי עסק.
+
 ## 2026-09-07 — SWEEP-2: הלוח הפתוח כולו (117), ושלושה כרטיסים ששוחררו מחסם שכבר נפל
 
 **‏שורה אחת:** ‏**MEH-2062 · MEH-2202 · MEH-1767 נסגרו** — שלושתם Backlog, שלושתם עם עבודה שנחתה ועם החסם האחרון שהתפוגג, ואף אחת לא חזרה לסגור. השורש: `Refs` במקום `Closes` הוא **הכרעה נכונה** (הכרטיס לא נסגר לפני שהשארית נסגרת) שחסר לה **צעד חזרה**. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — SWEEP-2».
