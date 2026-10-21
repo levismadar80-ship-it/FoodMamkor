@@ -141,7 +141,10 @@ DEMO_PRODUCER = {
         "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
         "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-challah",
     ],
-    "top_product_name": "לחם מחמצת כפרי",
+    # MEH-2137 (writers closed): no free-text `top_product_name` here any more.
+    # The featured product is a vote by id — set below, after the product rows
+    # are flushed, and the legacy name column is derived from that row (the
+    # same pairing producer_me.py::_resolve_top_product writes).
     "price_range": "מ-₪24",
 }
 
@@ -860,6 +863,13 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
     for area in DEMO_DELIVERY_AREAS:
         db.add(DeliveryArea(producer_id=producer.id, **area))
     db.flush()
+
+    # MEH-2137 (writers closed): the featured-product vote, by IDENTITY, on the
+    # first demo product («לחם מחמצת כפרי»). Both columns from ONE row, so the
+    # seed can never carry a name that points at nothing — which is the state
+    # the backfill in f4b1c8e0a297 refused to guess for.
+    producer.top_product_id = first_product.id
+    producer.top_product_name = first_product.name
 
     # MEH-1432 (MEH-1388 chunk 6): the 10-location set — activates the E2E
     # multi-location assertions (per-location markers, cluster-counts-1-business,

@@ -568,7 +568,11 @@ def admin_create_producer(
         facebook=data.facebook,
         external_order_form=data.external_order_form,
         slug=slug,
-        top_product_name=data.top_product_name,
+        # MEH-2137 (writers closed): `top_product_name` is no longer assigned
+        # from the payload. The schema still accepts it (OpenAPI stability) and
+        # it is ignored — a freshly created producer has no products yet, so
+        # there is no id for a name to be derived from. The owner picks the
+        # featured product in the dashboard (PUT /producers/me, by id).
         price_range=data.price_range,
         grass_fed=data.grass_fed,
         organic_certified=data.organic_certified,
@@ -797,6 +801,13 @@ def admin_update_producer(
     # still has a checkbox that sends this field (frontend out of scope for this
     # ticket, flagged separately), but the bulk setattr loop must not write it.
     payload.pop("pickup_points", None)
+    # MEH-2137 (writers closed): same no-op-pop pattern — the legacy
+    # `top_product_name` column is derived from `top_product_id` (synced by the
+    # owner PUT, and overwritten from the FK at serialization), so a free-text
+    # name from the admin form must not reach the bulk setattr loop. The schema
+    # keeps the field so backend/openapi.json does not drift; the server ignores
+    # it. `top_product_id` itself still flows through the loop below unchanged.
+    payload.pop("top_product_name", None)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,

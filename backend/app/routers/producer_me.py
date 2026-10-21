@@ -518,14 +518,25 @@ def _resolve_top_product(db, producer, payload: dict) -> None:
                               the legacy column stays truthful for every reader
                               that has not switched yet.
 
+    MEH-2137 (writers closed): a `top_product_name` the CLIENT sends is popped
+    here and IGNORED — accepted by the schema so the OpenAPI contract does not
+    move, written by nobody. This helper is the ONLY writer of the legacy
+    column on the owner path, and it writes the column DIRECTLY from the
+    product row (not via the payload), because the key is no longer in
+    `_PRODUCER_WRITABLE_FIELDS` and the setattr loop would skip it. A name that
+    does not come from an id is exactly the free text the FK replaced.
+
     Runs BEFORE the writable-field setattr loop, so a rejected id never lands.
     """
+    # Free text in, free text dropped — regardless of whether an id rides along.
+    payload.pop("top_product_name", None)
+
     if "top_product_id" not in payload:
         return
 
     new_id = payload["top_product_id"]
     if new_id is None:
-        payload["top_product_name"] = None
+        producer.top_product_name = None
         return
 
     product = (
@@ -541,7 +552,7 @@ def _resolve_top_product(db, producer, payload: dict) -> None:
             status_code=422,
             detail="המוצר המוביל חייב להיות מוצר קיים של העסק שלך",
         )
-    payload["top_product_name"] = product.name
+    producer.top_product_name = product.name
 
 
 @router.put("", response_model=ProducerOwnerOut)
@@ -606,7 +617,12 @@ def update_my_producer(
         "contact_email",
         "facebook",
         "external_order_form",
-        "top_product_name",
+        # MEH-2137 (writers closed): `top_product_name` was REMOVED from this
+        # set. The column stays (its drop is a separate RED PR) and is still
+        # written — but ONLY by _resolve_top_product, which derives it from the
+        # product row the id names. A raw PUT carrying a free-text name is
+        # accepted by the schema (OpenAPI stability) and ignored here. Do not
+        # re-add: a name without an id is the string vote the FK replaced.
         # MEH-2137 switch: the vote by identity. Ownership is enforced by
         # _resolve_top_product (defined above) BEFORE this loop runs — a product
         # not this producer's never reaches the setattr.

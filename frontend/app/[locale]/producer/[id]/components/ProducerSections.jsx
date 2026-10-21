@@ -81,9 +81,9 @@ function parseHasLocation(producer, pin) {
   return producer.has_physical_location !== false && pin !== null;
 }
 
-// MEH-1901: the signature card's outer element. A <button> when the free-text
-// top_product_name matched a real product row (so there is a sheet to open),
-// an inert <div> otherwise. Same classes either way — the card looks identical;
+// MEH-1901: the signature card's outer element. A <button> when top_product_id
+// resolved to a real product row (so there is a sheet to open), an inert <div>
+// otherwise (MEH-2137: no name matching any more). Same classes either way — the card looks identical;
 // only its interactivity is conditional, which is the honest rendering of
 // "signatureProduct may be null" (see the MEH-1233 B4 note on the derivation).
 const SIGNATURE_SHELL_CLASS =
@@ -180,34 +180,28 @@ export default function ProducerSections({
   // first with a fallback to the legacy alias; chunk 2 dropped the alias
   // column (revision 9849fab1637a), so there is nothing to fall back to.
   const hasSignature = !!(producer.top_product_name || producer.price_range);
-  // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
-  // label. When it names a product that ALSO has a grid entry, feature that
+  // MEH-1233 B4: when the signature product has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
-  // MEH-1146 chunk B duplicate — C4). Exact name match only; a free-text label
-  // with no matching product just renders name + price on the leaf placeholder.
-  // MEH-2137 chunk 3: id first, name as the fallback — same ordering and same
-  // reasoning as the dashboard matcher (ProductsSection.jsx). Under the name
-  // match `.find()` returned whichever duplicate came first in the array, so
-  // two products sharing a name made the featured slot depend on row order.
-  // The name branch stays live for producers whose backfill left the FK NULL.
+  // MEH-1146 chunk B duplicate — C4). A label with no matching product just
+  // renders name + price on the leaf placeholder (inert — no sheet to open).
+  // MEH-2137 chunk 3 made the match id-first; MEH-2137 (writers closed) made
+  // it id-ONLY. The name-match fallback that stood here for producers whose
+  // backfill left the FK NULL is gone: under a name match `.find()` returned
+  // whichever duplicate came first in the array, so two products sharing a
+  // name made the featured slot depend on row order — the string vote the FK
+  // replaced, re-derived client-side. With the id NULL nothing is featured;
+  // `top_product_name` (served by the API, derived from the FK when set) still
+  // feeds the label text and the `hasSignature` gate above, unchanged.
   //
-  // The fallback is gated on `top_product_id == null` — NOT on the id lookup
-  // failing. Those are different conditions and an `||` chain conflates them:
-  // when the id is SET but its product is gone (deleted), `||` would fall
-  // through to the name and feature a *surviving* product that happens to
-  // share the deleted one's `top_product_name` — reintroducing exactly the
-  // wrong-row bug this chunk exists to kill, on the surface where a buyer
-  // sees it. The dashboard's `isTopProduct` already reads `!= null` and marks
-  // nothing in that case; this now agrees with it, so a row featured here is
-  // still exactly a row marked there. (Reviewer finding on PR #3048.)
+  // Same agreement with the dashboard as before: `isTopProduct` there reads
+  // `top_product_id != null` and marks nothing otherwise, so a row featured
+  // here is still exactly a row marked there — including the deleted-product
+  // case (id SET, row gone), where a surviving same-named product must NOT be
+  // featured by accident (reviewer finding on PR #3048).
   const signatureProduct =
     producer.top_product_id != null
       ? (producer.products || []).find((p) => p.id === producer.top_product_id) || null
-      : producer.top_product_name
-        ? (producer.products || []).find(
-            (p) => p.name?.trim() === producer.top_product_name.trim(),
-          ) || null
-        : null;
+      : null;
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
     : null;

@@ -141,6 +141,9 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
   // MEH-1233 B4: the signature product renders as a highlight CARD (photo when
   // a matching grid product has one, else the leaf placeholder) and the matching
   // grid entry is deduped so it never appears twice.
+  // MEH-2137 (writers closed): "matching" means BY ID — every fixture below
+  // that expects a featured row carries `top_product_id`; the name alone no
+  // longer matches anything (see the NULL-id case further down).
   it("signature with a matching grid product: featured with its photo, deduped from the grid", () => {
     render(
       <ProducerSections
@@ -148,6 +151,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         producer={{
           id: 1,
           name: "רוח השדה",
+          top_product_id: 21,
           top_product_name: "לחם מחמצת כפרי",
           price_range: "החל מ-25₪",
           products: [
@@ -197,9 +201,13 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getAllByText("לחם")).toHaveLength(2);
   });
 
-  it("a NULL id still falls back to the name — those producers are not blanked", () => {
-    // chunk 1's backfill left the FK NULL wherever it refused to guess. The
-    // name branch is the only signal those producers have.
+  it("MEH-2137 writers closed: a stale name with a NULL id features NOTHING — no trigger, grid untouched", () => {
+    // This case used to assert the opposite ("a NULL id still falls back to
+    // the name"). The name-match fallback is gone: with the FK NULL there is
+    // no featured product, even when a grid row happens to carry the same
+    // name. The label still renders as inert text (the API serves
+    // `top_product_name`, and the hasSignature gate is unchanged) — what must
+    // NOT happen is a product being pulled out of the grid by a string.
     render(
       <ProducerSections
         {...baseProps}
@@ -215,9 +223,17 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         }}
       />,
     );
+    // No signature PRODUCT: the card is an inert <div>, not a sheet trigger.
+    expect(screen.queryByTestId("signature-product-trigger")).not.toBeInTheDocument();
+    // THE discriminating count: the highlight shows the stale label as text AND
+    // row 61 stays a plain grid card ⇒ «חלה» appears TWICE. Under the old
+    // fallback row 61 was featured and deduped out of the grid ⇒ ONCE.
+    expect(screen.getAllByText("חלה")).toHaveLength(2);
+    // Row 61's photo renders exactly once — in the grid, not the highlight —
+    // and the highlight falls back to the no-photo leaf.
     const imgs = screen.getAllByTestId("product-image").map((i) => i.getAttribute("src") || "");
-    expect(imgs.some((src) => src.includes("challah.jpg"))).toBe(true);
-    expect(screen.getAllByText("חלה")).toHaveLength(1);
+    expect(imgs.filter((src) => src.includes("challah.jpg"))).toHaveLength(1);
+    expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
   });
 
   it("id SET but its product is gone: the name fallback must NOT fire (PR #3048 review)", () => {
@@ -326,6 +342,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         producer={{
           id: 1,
           name: "רוח השדה",
+          top_product_id: 21,
           top_product_name: "לחם מחמצת כפרי",
           // no price_range → fallback path
           products: [
@@ -354,6 +371,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         producer={{
           id: 1,
           name: "רוח השדה",
+          top_product_id: 21,
           top_product_name: "מארז לחמים",
           products: [
             { id: 21, name: "מארז לחמים", image_url: null, price_range: "מ-40₪ למארז" },
@@ -373,6 +391,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         producer={{
           id: 1,
           name: "רוח השדה",
+          top_product_id: 21,
           top_product_name: "לחם מחמצת כפרי",
           price_range: "החל מ-25₪",
           products: [
@@ -447,6 +466,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           producer={{
             id: 1,
             name: "רוח השדה",
+            top_product_id: 21,
             top_product_name: "לחם מחמצת כפרי",
             [staleAliasKey]: "החל מ-25₪",
             products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
@@ -502,6 +522,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           producer={{
             id: 1,
             name: "רוח השדה",
+            top_product_id: 21,
             top_product_name: "לחם מחמצת כפרי",
             price_range: "מ-₪20",
             products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null, price_min: 99 }],
@@ -589,6 +610,7 @@ describe("MEH-1901 — product rows open the detail sheet", () => {
         producer={{
           id: 1,
           name: "רוח השדה",
+          top_product_id: 21,
           top_product_name: "מארז לחמים",
           products: [
             { id: 21, name: "מארז לחמים", image_url: null, description: longDescription },

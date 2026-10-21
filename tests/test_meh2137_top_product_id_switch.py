@@ -6,12 +6,15 @@ Purpose:  Lock the switch from name-based to identity-based featured-product
           file asserts the BEHAVIOUR that change buys — not that the diff was
           applied.
 Does NOT: test the migration or the backfill (chunk 1, revision f4b1c8e0a297,
-          covered by its own probe) · the admin write path (admin.py still
-          writes top_product_name directly, by design this ticket) · the
-          frontend badge render (chunk 3, vitest).
+          covered by its own probe) · the frontend badge render (chunk 3,
+          vitest) · the column drop (a separate RED PR).
 Related:  backend/app/routers/producer_me.py::_resolve_top_product ·
+          backend/app/routers/admin.py (create + update, the popped key) ·
           backend/app/services/producer_queries.py::attach_badge_fields
-History:  MEH-2137 chunk 2 (creation).
+History:  MEH-2137 chunk 2 (creation); MEH-2137 writers-closed (the
+          "free text is ignored" block at the end — the admin path used to be
+          listed under Does NOT because it still wrote the name; it no longer
+          does, and is asserted here).
 """
 
 import uuid
@@ -19,7 +22,7 @@ import uuid
 import pytest
 
 from app.models import Product
-from tests.conftest import auth_header, make_producer, make_user
+from tests.conftest import auth_header, make_category, make_producer, make_user
 
 
 @pytest.fixture
@@ -221,4 +224,110 @@ def test_serializer_derives_the_name_from_the_fk_after_a_rename(
     assert body["top_product_id"] == str(cheap.id)
     assert body["top_product_name"] == "לחם מחמצת כוסמין", (
         "the serializer served the stale column instead of deriving from the FK"
+    )
+
+
+# ── MEH-2137 writers closed: free text in, free text IGNORED ────────────────
+#
+# The column stays (drop = separate RED PR) and the SCHEMA field stays — the
+# input schemas still declare `top_product_name` so backend/openapi.json and
+# the generated Zod do not move. What changed is that no code path writes a
+# name that did not come from a product row: the owner PUT pops it, the admin
+# PUT pops it, the admin create never assigns it. "Ignored", not 422, on
+# purpose — a 422 would break every client that still sends the key (the
+# dashboard's ProductsSection sends BOTH, by design), for no safety gain:
+# the value simply does not land.
+#
+# Each case below pins the column BEFORE and AFTER, so a pass means "the write
+# did not happen", not "the request did not 500".
+
+
+def test_owner_put_with_free_text_name_alone_leaves_the_column_unchanged(
+    client, db, owner_with_products
+):
+    user, producer, _cheap, _dear = owner_with_products
+    producer.top_product_name = "הערך שהיה שם קודם"
+    db.commit()
+
+    resp = client.put(
+        "/producers/me",
+        json={"top_product_name": "שם חופשי שאף מוצר לא נושא"},
+        headers=auth_header(user),
+    )
+
+    # Not rejected: the key is still in the contract. Just inert.
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.top_product_name == "הערך שהיה שם קודם", (
+        "a free-text top_product_name reached the column — the writer is open"
+    )
+    assert producer.top_product_id is None, "no id was sent; none may appear"
+
+
+def test_owner_put_with_name_beside_an_id_takes_the_name_from_the_product(
+    client, db, owner_with_products
+):
+    """Both keys in one body (what ProductsSection sends): the id decides, and
+    the column gets the PRODUCT's name — the client's string is discarded even
+    when it disagrees."""
+    user, producer, cheap, _dear = owner_with_products
+
+    resp = client.put(
+        "/producers/me",
+        json={"top_product_id": str(cheap.id), "top_product_name": "שם אחר לגמרי"},
+        headers=auth_header(user),
+    )
+
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.top_product_id == cheap.id
+    assert producer.top_product_name == "לחם", (
+        "the column must mirror the product row, never the client's free text"
+    )
+
+
+def test_admin_create_ignores_the_free_text_name(client, db):
+    admin = make_user(db, role="admin")
+    cat = make_category(db, name="קטגוריה לבדיקת מוצר מוביל")
+
+    resp = client.post(
+        "/admin/producers",
+        json={
+            "name": "עסק שנוצר על ידי אדמין",
+            "city": "תל אביב",
+            "lat": 32.0853,
+            "lng": 34.7818,
+            "phone": "0501234567",
+            "category_ids": [cat.id],
+            # Still schema-valid (SanitizedLabelField), still accepted — and
+            # it must not land: a new producer owns no product this could name.
+            "top_product_name": "מוצר שעוד לא קיים",
+        },
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["top_product_name"] is None, (
+        "admin create wrote the free-text name onto the new row"
+    )
+    assert body["top_product_id"] is None
+
+
+def test_admin_put_with_free_text_name_leaves_the_column_unchanged(client, db):
+    admin = make_user(db, role="admin")
+    producer = make_producer(db)
+    producer.top_product_name = "הערך שהיה שם קודם"
+    db.commit()
+
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"top_product_name": "שם חופשי מהטופס של האדמין"},
+        headers=auth_header(admin),
+    )
+
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.top_product_name == "הערך שהיה שם קודם", (
+        "the admin bulk setattr loop wrote the free-text name — the pop is missing"
     )

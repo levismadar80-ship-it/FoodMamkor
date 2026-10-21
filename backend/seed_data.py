@@ -62,7 +62,6 @@ PRODUCERS = [
     {
         "name": "חוות הגליל - בשר אורגני",
         "slug": "galil-farm",
-        "top_product_name": "בשר בקר grass-fed",
         "price_range": "מ-₪70/ק״ג",
         "description": "חווה משפחתית בגליל המגדלת בקר grass-fed על מרעה טבעי. ללא הורמונים, ללא אנטיביוטיקה.",
         "city": "כרמיאל",
@@ -85,7 +84,6 @@ PRODUCERS = [
     {
         "name": "גבינות הר הגולן",
         "slug": "golan-cheese",
-        "top_product_name": "גבינת עיזים מיושנת",
         "price_range": "מ-₪35/יח׳",
         "description": "מחלבה בוטיק ברמת הגולן. גבינות מחלב עיזים ופרות שגדלות במרעה חופשי.",
         "city": "קצרין",
@@ -130,7 +128,6 @@ PRODUCERS = [
     {
         "name": "מאפיית המחמצת של דנה",
         "slug": "dana-sourdough",
-        "top_product_name": "לחם מחמצת כוסמין",
         "price_range": "מ-₪30",
         "description": "לחמים ומאפים מקמח כוסמין וקמחים מלאים. מחמצת טבעית בת 8 שנים. ללא שמרים מסחריים.",
         "city": "תל אביב",
@@ -153,7 +150,6 @@ PRODUCERS = [
     {
         "name": "תסס - מותססים טבעיים",
         "slug": "tases-ferments",
-        "top_product_name": "קימצ'י קוריאני מסורתי",
         "price_range": "מ-₪25/בקבוק",
         "description": "סדנה לתסיסה טבעית. קימצ'י, כרוב כבוש, קומבוצ'ה ומשקאות מותססים - הכל בעבודת יד.",
         "city": "ירושלים",
@@ -176,7 +172,6 @@ PRODUCERS = [
     {
         "name": "טבע פור - סבונים ושמנים",
         "slug": "teva-pure",
-        "top_product_name": "סבון שמן זית ולבנדר",
         "price_range": "מ-₪35",
         "description": "סבונים בעבודת יד משמן זית ראשוני ישראלי. קרמים טבעיים ותכשירי צמחים ללא כימיקלים.",
         "city": "זכרון יעקב",
@@ -413,7 +408,11 @@ def _seed_demo_producers(db):
             instagram=p_data.get("instagram"),
             website=p_data.get("website"),
             slug=p_data.get("slug"),
-            top_product_name=p_data.get("top_product_name"),
+            # MEH-2137 (writers closed): the seed no longer writes the legacy
+            # free-text `top_product_name` — none of its labels named a seeded
+            # product row, so there was no id for them to derive from. The
+            # column is written only from `top_product_id` now; a seeded
+            # business shows its price_range alone until an owner picks one.
             # MEH-1855 chunk 2: the seed writes the canonical price_range
             # (the dropped alias used to be the only field it filled).
             price_range=p_data.get("price_range"),
