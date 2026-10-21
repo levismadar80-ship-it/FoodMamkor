@@ -23,6 +23,15 @@ export const BRAND_NAME_LATIN = "Mehamakor";
 export const SITE_DESCRIPTION =
   "בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד. כל בית עסק נבחר אישית.";
 
+// MEH-2192: the ONE brand sentence that machine-identity surfaces share —
+// the Organization JSON-LD `description` and public/llms.txt line 3 (a test
+// asserts the file matches this constant, so the file cannot drift alone).
+// Rule-22 approved verbatim by Sapir on MEH-2192 (06/09). SITE_DESCRIPTION
+// above stays the per-page <meta name="description">; the two are different
+// jobs — one describes the entity, the other sells the page to a SERP.
+export const CANONICAL_SENTENCE =
+  "אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.";
+
 // MEH-2192: `sameAs` for the Organization node — the profiles that corroborate
 // the entity. Exactly one canonical brand account exists today; it is the one
 // the footer already links (components/Footer.jsx:138). Do not add speculative

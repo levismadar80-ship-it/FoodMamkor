@@ -20,7 +20,7 @@ import {
   BRAND_NAME,
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
-  SITE_DESCRIPTION,
+  CANONICAL_SENTENCE,
 } from "./constants";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
@@ -390,8 +390,10 @@ export function buildJsonLd(producer, locale = "he") {
  * carries address/geo/openingHours semantics that would be false here — the
  * producers each have their own FoodEstablishment node (see buildJsonLd).
  *
- * `description` is the site's shipped meta description, reused verbatim from
- * lib/constants.js, so the entity and the page agree.
+ * `description` is CANONICAL_SENTENCE (lib/constants.js) — the same sentence
+ * public/llms.txt carries, so every machine-identity surface says one thing.
+ * MEH-2192 AC; it previously read SITE_DESCRIPTION (the per-page meta
+ * description), which left two brand sentences broadcasting side by side.
  */
 export function buildOrganizationNode() {
   return {
@@ -402,7 +404,7 @@ export function buildOrganizationNode() {
     // on; same constant the sitemap/share surfaces already use (MEH-476).
     alternateName: BRAND_NAME_LATIN,
     url: SITE_URL,
-    description: SITE_DESCRIPTION,
+    description: CANONICAL_SENTENCE,
     logo: {
       "@type": "ImageObject",
       url: `${SITE_URL}/logo.png`,
