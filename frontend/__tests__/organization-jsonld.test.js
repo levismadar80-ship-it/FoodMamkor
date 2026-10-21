@@ -110,8 +110,9 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     // separately; enriching one and forgetting the other is the regression
     // this catches, and it catches it in either direction.
     expect(homeOrg).toEqual(producerOrg);
-    expect(homeOrg.description).toBe(SITE_DESCRIPTION);
-    expect(producerOrg.description).toBe(SITE_DESCRIPTION);
+    // MEH-2192: both surfaces carry the canonical sentence (not the meta description).
+    expect(homeOrg.description).toBe(CANONICAL_SENTENCE);
+    expect(producerOrg.description).toBe(CANONICAL_SENTENCE);
     expect(homeOrg.sameAs).toEqual(BRAND_SAME_AS);
     expect(producerOrg.sameAs).toEqual(BRAND_SAME_AS);
 
