@@ -98,7 +98,7 @@ SLUG_MAX = 50
 
 def transliterate(name: str) -> str:
     """Best-effort ASCII slug. May return "" — callers handle that."""
-    out = []
+    out: list[str] = []
     for ch in (name or "").strip().lower():
         if ch in _HEBREW_TO_LATIN:
             out.append(_HEBREW_TO_LATIN[ch])
@@ -202,7 +202,7 @@ def bulk_slugs(db: "Session", names: "Iterable[str]") -> dict[str, str]:
     from app.models.models import Category
 
     taken = {row[0] for row in db.query(Category.slug).all() if row[0]}
-    out = {}
+    out: dict[str, str] = {}
     for name in names:
         base = slug_for_name(name)
         candidate = base
