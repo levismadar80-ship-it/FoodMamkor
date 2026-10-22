@@ -23,7 +23,7 @@ The eleven markers collapse into **six legacy things**:
 | 6 | `frontend/lib/hours.js:163` | same | MEH-1938 |
 | 7 | `frontend/lib/hours.js:185` | same | MEH-1938 |
 | 8 | `frontend/__tests__/resolve-store-hours.test.js:9` | same | MEH-1938 |
-| 9 | `backend/app/models/models.py:237` | `producers.top_product_name` | MEH-2137 (archived — no drop card) |
+| 9 | `backend/app/models/models.py:237` | `producers.top_product_name` | MEH-2137 (archived) → drop card **MEH-2292** (opened 22/10) |
 | 10 | `backend/app/models/models.py:944` | `products.price_range` | MEH-2064 |
 | 11 | `backend/app/routers/producer_me.py:859` | legacy availability endpoints + `is_available_today` / `availability_status` | MEH-1854 → MEH-2272 / MEH-2273 |
 
@@ -200,7 +200,7 @@ logs at `producer_listing.py:728-741` for external consumers before 2272.
 | 2 | MEH-1938 5b code | 3 | YELLOW | **#3525** held |
 | 3 | MEH-1938 hours write-through + gap count | 4–8 prep | YELLOW | **#3524** held (reviewed, 2 fixes) |
 | 4 | MEH-1938 hours contract (delete the arm) | 4–8 | GREEN | after 3 = 0 on prod + delivery-only ruling |
-| 5 | MEH-2137 free-text writers + fallback | 9 | YELLOW | **#3528** held; drop card to open |
+| 5 | MEH-2137 free-text writers + fallback | 9 | YELLOW | **#3528** held; drop card = **MEH-2292** (blocked by #3528 + soak) |
 | 6 | MEH-2064 code | 10 | YELLOW | needs regen — local CC |
 | 7–10 | `[DESTRUCTIVE]` revisions, one per column set, each after ≥7-day soak + R2 ≤24h | 11, 3, 9, 10 | **RED — Sapir merges** | after 1–6 |
 
