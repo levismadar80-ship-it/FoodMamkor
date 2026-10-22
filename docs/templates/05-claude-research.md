@@ -21,11 +21,11 @@
 
 ## 🎯 מודל מומלץ
 
-**Research = Opus 4.8. Always.**
+**Research = Opus 5.5. Always.**
 
-למה: research דורש GPQA-Diamond level reasoning (PhD-level). Sonnet 5 ב-74.1%, Opus 4.8 ב-91.3%+ — פער ניכר. ההבדל **דרמטי** ב-research של עומק.
+למה: research דורש reasoning עמוק רב-שלבי — זה הפער שהשכבה הגבוהה (Opus 5.5, ו-Fable 5.1 כ-advisor) משלמת עליו. מספרי benchmark של הדור הקודם הוסרו (21/10/2026); המקור העדכני: https://platform.claude.com/docs/en/models/overview
 
-יוצא מן הכלל: gather-only tasks (10 examples של X, no synthesis) — Sonnet 5 בסדר.
+יוצא מן הכלל: gather-only tasks (10 examples של X, no synthesis) — Sonnet 5.5 בסדר.
 
 ---
 
