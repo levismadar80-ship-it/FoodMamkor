@@ -950,6 +950,9 @@ test.describe("Visual parity — MEH-991", () => {
     await expectCopy(page, "about.consumer.hero.subheading");
     // MEH-1514 — resolve every scroll-revealed section BEFORE the fullPage shot,
     // or the baseline is a transparent page (see revealScrollSections).
+    // ONE-OFF DISCRIMINATION CONSTRUCTION — reverted in the next commit. Pins a
+    // real in-flow section at opacity 0 so the gate must go red and name it.
+    await page.addStyleTag({ content: "#editors-pick { opacity: 0 !important; }" });
     await revealScrollSections(page);
     await expect(page).toHaveScreenshot("about.png", {
       ...SHOT,
