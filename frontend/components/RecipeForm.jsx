@@ -150,7 +150,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       const detail = err.response?.data?.detail;
       if (isUnverifiedEmailError(err)) {
         setUnverified(true);
-      } else if (detail?.error === "recipe_rejected") {
+      } else if (detail?.error === "rejected") {
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
         setError(detail);

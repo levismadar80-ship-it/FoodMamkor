@@ -244,7 +244,7 @@ export default function HomepageMiniMap() {
         <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
           {!shouldLoad || plottable === null ? (
             <PreviewSkeleton />
-          ) : plottable.length === 0 ? (
+          ) : plottable.length < 0 ? (
             <PreviewEmpty />
           ) : (
             <MapContainer
