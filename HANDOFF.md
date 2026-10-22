@@ -3,6 +3,53 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 13:40 — סשן CC בלי npm (רק GitHub נגיש): 4 PR-י UI פתוחים עם צילומים, תיקון flake, ושני ממצאים לפני השקה
+
+**‏שורה אחת:** ‏ה-sandbox של הסשן הזה ראה **רק GitHub** (npm / pypi / mehamakor.co.il / Vercel חסומים — גם אחרי שההגדרות בסביבה תוקנו; הסשן נפתח מהמשימה המתוזמנת, ייתכן שעל סביבה אחרת). העבודה נעשתה עם CI כאורקל, וצילומי 375/1440 הופקו דרך `vrt-update.yml` עם spec זמני על ענף זרוק. **מוזג:** #3547 (flake ב-HomepageMiniMap, MEH-2297) · #3548 `d9506847` (MEH-2284 — stub ל-`/experiences/count` בשני טסטי admin; ה-429 נבע מ-60/דקה ל-IP כשכל ה-CI יוצא מ-IP אחד). **ה-classifier של הסשן חסם מיזוגים נוספים** — כל השאר מחכה לספיר.
+
+**‏ממתין לספיר (לפי סדר):**
+
+| מה | מצב | הפעולה |
+| -- | -- | -- |
+| **#3514 — pip group: pyjwt 2.13→2.15** | pip-audit מציג advisories על pyjwt 2.13 שנעול ב-staging/prod; CI אדום רק כי dependabot לא מחדש `uv.lock` | ממחשב עם PyPI: `cd backend && uv lock --upgrade-package aiohttp --upgrade-package anyio --upgrade-package certifi --upgrade-package multidict --upgrade-package urllib3 --upgrade-package werkzeug`, אחר כך `uv run mypy app/services/category_slug.py` (שגיאת `var-annotated` אחת), push, pytest על SQLAlchemy 2.1. #3489/#3490 — לקפל לאותו מעבר lock או לנעול מחדש אחרי |
+| **MEH-2298 (חדש)** — rate-limit אולי ממפתח לפי IP של Vercel ולא של הלקוחה | **השערה, לא נמדדה.** `/api/*` עובר ב-`rewrites()` צד-שרת (`next.config.js:195-212`) ו-`rate_limit.py:67-93` מעדיף `X-Real-IP` שנכתב מה-TCP peer | מדידה ב-Railway logs לפני ההשקה (פרטים בכרטיס) |
+| #3541 MEH-2294 · #3542 MEH-1430 · #3544 MEH-1685 (ACs 1–3) | CI gate ירוק / רץ שוב; צילומים ב-`qa-artifacts/MEH-<N>/` | מעבר על הצילומים + merge. לא מוזגו ע"י CC: כלל 23 דורש Vercel+Sentry MCP למיזוג בלי עין אנושית, ואינם מחוברים |
+| #3543 MEH-1207 (`do-not-merge`) | כל ה-jobs ירוקים; מחליף את שורת הטאבים בנייד | אישור ההחלפה + regen ל-VRT של עמוד העסק בנייד |
+| #3515 npm group | ירוק בשערים הנדרשים | merge אחרי E2E; לבדוק staging (next 16.3→16.4) |
+| #3492 unicorn 74 | ERESOLVE (דורש eslint 10) | להחזיק עד MEH-893 |
+| #3551 MEH-2300 — סמן העכבר נעלם מעל צ'אט «שאלו אותנו» | z-index של הסמן 9999→10001 (תיקו עם הצ'אט); טסט אדום→ירוק | בדיקה ידנית ב-Chrome/Safari + merge |
+| #3552 MEH-1514 — baseline של /about desktop | שער ה-reveal מדלג על אלמנטים `position: fixed`; baselines חדשים נבדקו בעין (כל הסקציות מרונדרות) | merge אחרי E2E |
+| #3543 — VRT | regen של producer-detail במובייל (`b34ac922`); בעין: שורת pills במקום טאבים. **שים לב:** התג «חדש» → «אין ביקורות עדיין» — לא מה-PR הזה, baseline ישן | מבט + merge |
+| #3514 — mypy | נוספו הערות טיפוס ב-`category_slug.py` (`255dca5b`) — אחרי `uv lock` נשאר רק pytest | `uv lock` כמפורט למעלה |
+
+**‏נבדק ונעצר — אין מה לבנות:** MEH-2122 chunk A (#3007), MEH-2168 chunk 2 (#3278), MEH-2241 chunks A+B (#3449/#3461 — נשאר רק הכרעת קופי), MEH-2244 (כל ה-chunks נחתו; נשאר wiring ב-workflow + הכרעות). MEH-2079 chunk C — חסום על הכרעת top_cities + עו"ד + שחזור תיאור. MEH-2272 — דורש סשן עם npm+uv. MEH-1428 chunk 2 — ה-Deploy המוצלח האחרון ל-staging הוא 14/08, לא ניתן לאמת את ה-revision (נרשם בתיאור).
+
+**‏לקחים:**
+- **סשן בלי npm יכול לספק צילומים:** spec זמני ב-`e2e/visual/` שכותב ל-`*-snapshots/` ורץ רק תחת `--update-snapshots`, הרצה דרך dispatch של `vrt-update.yml` על ענף זרוק — הבוט מחזיר את ה-PNG-ים לענף. ה-backend של staging ישן (14/08), אז endpoints חדשים צריכים stub ב-spec.
+- **flake ב-`HomepageMiniMap.test.jsx`** האדים PR-ים לא קשורים — תוקן ב-#3547 (מחכים לאתחול Leaflet, לא ל-div).
+- **ענף זרוק `feature/meh-2294-qa-bundle`** — מחיקה מרחוק נדחתה מה-sandbox; למחוק ידנית.
+
+## 2026-10-22 12:55 — סשן claude.ai (לא CC): מדריך outreach לטופז + PR #3545 לקופי ישן מלפני ADR-022
+
+**‏שורה אחת:** ‏ספיר מכניסה את אחותה טופז להתקשר לבתי עסק. נבנו שני artifacts ב-claude.ai (מדריך כתוב + אפליקציית מדריך עם צ'אט `sample`), ובדרך נמצא ש-3 משטחי קופי עדיין אומרים "רישיון בלבד" — מודל שהוחלף ב-ADR-022 (05/06). החמור: מייל 5B (`onboarding_followup.py`) נשלח לעסק **מאושר וחי** בלי מספר רישיון ואומר "הפרופיל ממתין… נסיר את הפרטים". **PR #3545** (`feature/meh-2296-adr022-copy`, 3 קבצים, 2 commits) מתקן את שלושתם — **מוזג ל-staging `f48ab643`** (squash, אומת: הורה אחד) בהרשאת ספיר («כל מה שעליי תעשה אתה בעצמך», 12:58). ה-reviewer האוטומטי נכשל (MEH-2295) → סקירה אדברסרית בסוכן נפרד: 0 BLOCK, 3 MINOR, אחד תוקן (`2ba67c8`). CI: build · vitest · pytest · שני השערים הנדרשים ירוקים. Linear לא סגר אוטומטית → MEH-2296 נסגר ידנית עם DoD (כלל 29b). **ה-backend ב-production עדיין `8e69ff1e`** — מייל 5B החדש מגיע לפרודקשן רק אחרי שה-Railway redeploy יצליח.
+
+**‏מה קרה בסשן הזה, בקצרה:**
+
+| מה | איפה |
+| -- | -- |
+| מדריך outreach כתוב (7 סעיפים: מה זה מהמקור · איך פונים · תסריט · התנגדויות · העמוד באתר · אחרי השיחה · פערים) | claude.ai Docs artifact «מדריך outreach לאחות — מהמקור» |
+| אפליקציית מדריך לטופז, RTL, Frank Ruhl + Heebo, מצב שיחה, חיפוש התנגדויות, צ'אט עם קלוד (`capabilities: sample`) | claude.ai artifact «מדריך השיחות של מהמקור» — פרטי עד שספיר משתפת |
+| MEH-2296 נפתח (template 07, קופי מאושר ורבטים 22/10) → PR #3545 | Linear + GitHub |
+| ספיר תיקנה אותי: עסק נכנס גם בלי רישיון, הרישיון קובע רק את התג (ADR-022). המדריך, האפליקציה ו-MEH-2296 תוקנו בהתאם | — |
+
+**‏סתירה שהסשן הזה חשף ולא פתר (ספיר):** הוראות הפרויקט ב-claude.ai עדיין נושאות LOCK «Licensed businesses only». הצעת החלפה: «Two-tier licensing (ADR-022): מאומת / מוצהר. Badge = license, never entry. Home cooks stay out.»
+
+**‏עוד ממצאים (לא נגעתי):** **הדומיין הקנוני הוא `mehamakor.co.il`** (ספיר 18/07, MEH-1322 — `robots.txt:59`, `config.py:114`); `docs/DEPLOYMENT.md:22` עדיין אומר `mehamakor.online` = production, וגם הוראות הפרויקט ב-claude.ai — שניהם ישנים, לא הקוד · MEH-2135 אומר "הסקריפט לא הורץ" אבל בגיליון `mehamekor_producers` יש לשונית «מרשם משרד הבריאות» עם 193 שורות (Wave 1, מחוז חיפה) — כלל 34 מבקש לעדכן את ה-description · MEH-2208 (§14, לידים במדיניות הפרטיות) ו-§30א(ה) (`outreach-disclosure-line.md`) עדיין פתוחים משפטית — ה-README של `docs/outreach` אומר במפורש לא להוציא גל כתוב לפני בדיקת עו"ד.
+
+**‏מה שאצל ספיר:** לשתף את שני ה-artifacts עם טופז · משתמש `role='admin'` לטופז (אין תפקיד outreach מצומצם; עד שיהיה, הכללים "מה לא לעשות" בחלק 5 של המדריך) · עדכון ה-LOCK + הדומיין בהוראות הפרויקט (`mehamakor.online` → `mehamakor.co.il`) · תיקון `docs/DEPLOYMENT.md:22` באותו הזדמנות.
+
+**‏סמיכות לסשן ה-CC של הבוקר (11:50):** הסשן הזה הוא claude.ai, לא CC, ולא נגע בתור ה-UI שנרשם שם. הבדיקה המתוזמנת של 13:15 (`direct_outreach`) שייכת לסשן ההוא. המדריך של טופז כבר מכיל fallback («אחר» + "טופז ממהמקור") לזמן שהאפשרות מוסתרת.
+
 ## 2026-10-22 11:50 — תור ה-CI נוקה (7 PR-ים); כרטיסי ה-UI ממתינים ל-session עם npm
 
 **‏שורה אחת:** ‏הבוקר מוזגו ל-staging: #3534 (MEH-1981 יידוע §11 בניוזלטר + צור קשר — כרטיס Done) · #3536 (MEH-2279) · #3537 (MEH-2280) · #3539 (MEH-2281) — טסטי vitest, כל אחד עם הוכחת red→green ב-CI · #3538 (MEH-1829 chunk 1/2 — backend של `sort=distance`; sub-issue MEH-2293 Done, ה-frontend הוא MEH-2294) · #3535 (MEH-1742 פריט 5) · #3533 (כרטיס drop חדש MEH-2292). **production backend עדיין `8e69ff1e`** (נמדד 11:45) — Railway לא החזירו builds ל-Hobby.
