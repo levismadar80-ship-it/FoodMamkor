@@ -3,6 +3,30 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 14:05 — CC מקצה לקצה: כלל 23 שונה, 7 PR-ים מוזגו; staging מושבת בגלל הטוקן של Railway
+
+**‏שורה אחת:** ‏ספיר הודיעה שהיא לא בודקת בנייד וש-CC עושה הכל. כלל 23 עודכן (#3556), ומוזגו ארבעת ה-PR-ים של UI (#3541 · #3542 · #3544 · #3551), הקופי של העיר (#3557) וה-purge (#3558). **הכל מוזג ל-staging. שום דבר מזה עוד לא ב-production**, כי Railway לא נבנה.
+
+**‏חוסם מספר 1 — MEH-2291 (ספיר):** סיבוב הסודות אחרי אירוע Railway, ובמיוחד שלבים #10–#11 — טוקנים חדשים ל-`RAILWAY_STAGING_TOKEN` / `RAILWAY_PRODUCTION_TOKEN` ו-redeploy.
+- **עד אז:** ה-backend של staging לא עונה, ה-E2E מריץ 0 טסטים, ו-MEH-2168 לא יכול להיסגר.
+- **אחרי «הטוקן הוחלף»:** CC תריץ את Deploy מחדש ותאמת.
+
+**‏ממתין לספיר:**
+
+| מה | הפעולה |
+| -- | -- |
+| MEH-2291 | סיבוב סודות + טוקני Railway (שלבים בכרטיס) |
+| #3543 MEH-1207 (`do-not-merge`) | להגיד ל-CC במפורש «תסיר את ה-do-not-merge» — כלל 30 |
+| #3514 pyjwt | `uv lock` ממחשב עם PyPI (פקודה ב-HANDOFF 13:40) |
+| MEH-2244 | Linear Settings → Workflow → auto-close parent issues |
+| MEH-2295 | טוקן ה-CI reviewer |
+| MEH-2298 | הצעת תיקון בכרטיס; מדידה = endpoint זמני + קריאה אחת כאדמין, או Railway logs |
+| הוראות הפרויקט ב-claude.ai | DoD עדיין כולל «נבדק בנייד» — לעדכן אצלך |
+
+**‏לקחים:**
+- כש-Deploy נכשל, לקרוא את הלוג של `Redeploy staging service` לפני שמאבחנים את ה-backend. כאן השורש היה טוקן, לא קוד.
+- טסט «קורא יחיד» שמחפש שם טבלה בטקסט נכשל גם על docstring. מודול שקורא דרך שכבה אחרת לא צריך להזכיר את שם הטבלה.
+
 ## 2026-10-22 13:40 — סשן CC בלי npm (רק GitHub נגיש): 4 PR-י UI פתוחים עם צילומים, תיקון flake, ושני ממצאים לפני השקה
 
 **‏שורה אחת:** ‏ה-sandbox של הסשן הזה ראה **רק GitHub** (npm / pypi / mehamakor.co.il / Vercel חסומים — גם אחרי שההגדרות בסביבה תוקנו; הסשן נפתח מהמשימה המתוזמנת, ייתכן שעל סביבה אחרת). העבודה נעשתה עם CI כאורקל, וצילומי 375/1440 הופקו דרך `vrt-update.yml` עם spec זמני על ענף זרוק. **מוזג:** #3547 (flake ב-HomepageMiniMap, MEH-2297) · #3548 `d9506847` (MEH-2284 — stub ל-`/experiences/count` בשני טסטי admin; ה-429 נבע מ-60/דקה ל-IP כשכל ה-CI יוצא מ-IP אחד). **ה-classifier של הסשן חסם מיזוגים נוספים** — כל השאר מחכה לספיר.
