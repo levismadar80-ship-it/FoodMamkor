@@ -1,0 +1,6 @@
+{
+  "url": "http://localhost:3000/producers?sort=distance",
+  "distanceRequests": [
+    "?sort=distance&lat=32.0853&lng=34.7818&limit=24&offset=0"
+  ]
+}
