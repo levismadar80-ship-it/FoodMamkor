@@ -95,4 +95,33 @@ describe("CollectionNotice", () => {
     expect(cls).toContain("EXTRA-CLASS");
     expect(cls).toContain("text-start");
   });
+
+  // MEH-1981 residual: the footer newsletter sits on bg-primary-dark, where the
+  // default primary-green link is unreadable. `tone="on-dark"` swaps BOTH inks
+  // (line + link) and keeps the resting underline — the a11y condition above
+  // must hold in every tone, not only the default one.
+  it("tone=on-dark swaps the line and link inks and keeps the resting underline", () => {
+    render(<CollectionNotice message="X" linkLabel="Y" testId="dark" tone="on-dark" />);
+    const line = screen.getByTestId("dark").className.split(/\s+/);
+    const link = screen.getByTestId("dark-link").className.split(/\s+/);
+    expect(line).toContain("text-green-100");
+    expect(line).not.toContain("text-muted-foreground");
+    expect(link).toContain("text-green-50");
+    expect(link).not.toContain("text-primary");
+    expect(link).toContain("underline");
+    expect(link).not.toContain("hover:underline");
+  });
+
+  // The probe is `constructor`, not a made-up word: an unknown-but-absent key
+  // like "enormous" passes identically on `TONES[tone] || default` and on
+  // Object.hasOwn, so it cannot tell the two apart (testing.md, case 2). A
+  // prototype key is the one input where the `||` form resolves to a function
+  // and renders "function Object() {...}" as the class list.
+  it("an unknown tone falls back to the default inks — including a prototype key", () => {
+    render(<CollectionNotice message="X" linkLabel="Y" testId="proto" tone="constructor" />);
+    const line = screen.getByTestId("proto").className;
+    expect(line.split(/\s+/)).toContain("text-muted-foreground");
+    expect(line).not.toMatch(/function|undefined|\[object/);
+    expect(screen.getByTestId("proto-link").className.split(/\s+/)).toContain("text-primary");
+  });
 });
