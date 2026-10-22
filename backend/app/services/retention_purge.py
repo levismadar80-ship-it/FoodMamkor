@@ -6,7 +6,8 @@ Purpose:  Enforce the retention windows the privacy policy promises (Sapir's
           MEH-2079 chunk C (MEH-2303).
 Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           `alert_log` — DELETE only, in batches, committing per batch.
-          Reads `producer_analytics_daily` (the roll-up watermark).
+          Reads the roll-up watermark through analytics_rollup — never
+          the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
           run (the CronTrigger in startup.py owns timing); touch the
           aggregate table, which is anonymous and kept unbounded.
@@ -34,7 +35,7 @@ boundary Israel day — so the DELETE filters on the indexed `created_at` /
 timestamp is below that instant has an Israel day below the boundary day.
 
 # DO NOT purge without the watermark guard — an un-rolled day is the only copy.
-# DO NOT delete from producer_analytics_daily here — it is the kept summary.
+# DO NOT delete from the aggregate table here — it is the kept summary.
 """
 
 from __future__ import annotations
@@ -87,7 +88,7 @@ def raw_boundary_day(db: Session, today: date) -> date | None:
     if watermark is None:
         return None
     retention_boundary = today - timedelta(days=RAW_RETENTION_DAYS)
-    return retention_boundary  # MUTATION (discrimination run): watermark guard removed
+    return min(retention_boundary, watermark + timedelta(days=1))
 
 
 def _delete_in_batches(db: Session, model, time_col, cutoff: datetime) -> int:
