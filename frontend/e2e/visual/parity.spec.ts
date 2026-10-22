@@ -720,6 +720,10 @@ test.describe("Visual parity — MEH-991", () => {
   // 1440 since MEH-1390 (4 tabs -> 2), so expecting its copy VISIBLE on
   // desktop is a spec expectation that no longer matches the page. Both are
   // recorded here and on MEH-2168, deliberately not fixed in a baseline PR.
+  // MEH-1514 (2026-10-22): the `about` desktop half is resolved — the
+  // reveal-gate now skips viewport-pinned (`position: fixed`) elements, and
+  // vrt-update run 39774196249 regenerated about-desktop with every section
+  // rendered. The `producer detail` desktop copy-gate note above still stands.
   test("producer detail", async ({ page }, testInfo) => {
     await preparePage(page);
 
