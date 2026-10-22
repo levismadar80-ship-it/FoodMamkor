@@ -3,6 +3,116 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 12:55 — סשן claude.ai (לא CC): מדריך outreach לטופז + PR #3545 לקופי ישן מלפני ADR-022
+
+**‏שורה אחת:** ‏ספיר מכניסה את אחותה טופז להתקשר לבתי עסק. נבנו שני artifacts ב-claude.ai (מדריך כתוב + אפליקציית מדריך עם צ'אט `sample`), ובדרך נמצא ש-3 משטחי קופי עדיין אומרים "רישיון בלבד" — מודל שהוחלף ב-ADR-022 (05/06). החמור: מייל 5B (`onboarding_followup.py`) נשלח לעסק **מאושר וחי** בלי מספר רישיון ואומר "הפרופיל ממתין… נסיר את הפרטים". **PR #3545** (`feature/meh-2296-adr022-copy`, 3 קבצים, 2 commits) מתקן את שלושתם — **מוזג ל-staging `f48ab643`** (squash, אומת: הורה אחד) בהרשאת ספיר («כל מה שעליי תעשה אתה בעצמך», 12:58). ה-reviewer האוטומטי נכשל (MEH-2295) → סקירה אדברסרית בסוכן נפרד: 0 BLOCK, 3 MINOR, אחד תוקן (`2ba67c8`). CI: build · vitest · pytest · שני השערים הנדרשים ירוקים. Linear לא סגר אוטומטית → MEH-2296 נסגר ידנית עם DoD (כלל 29b). **ה-backend ב-production עדיין `8e69ff1e`** — מייל 5B החדש מגיע לפרודקשן רק אחרי שה-Railway redeploy יצליח.
+
+**‏מה קרה בסשן הזה, בקצרה:**
+
+| מה | איפה |
+| -- | -- |
+| מדריך outreach כתוב (7 סעיפים: מה זה מהמקור · איך פונים · תסריט · התנגדויות · העמוד באתר · אחרי השיחה · פערים) | claude.ai Docs artifact «מדריך outreach לאחות — מהמקור» |
+| אפליקציית מדריך לטופז, RTL, Frank Ruhl + Heebo, מצב שיחה, חיפוש התנגדויות, צ'אט עם קלוד (`capabilities: sample`) | claude.ai artifact «מדריך השיחות של מהמקור» — פרטי עד שספיר משתפת |
+| MEH-2296 נפתח (template 07, קופי מאושר ורבטים 22/10) → PR #3545 | Linear + GitHub |
+| ספיר תיקנה אותי: עסק נכנס גם בלי רישיון, הרישיון קובע רק את התג (ADR-022). המדריך, האפליקציה ו-MEH-2296 תוקנו בהתאם | — |
+
+**‏סתירה שהסשן הזה חשף ולא פתר (ספיר):** הוראות הפרויקט ב-claude.ai עדיין נושאות LOCK «Licensed businesses only». הצעת החלפה: «Two-tier licensing (ADR-022): מאומת / מוצהר. Badge = license, never entry. Home cooks stay out.»
+
+**‏עוד ממצאים (לא נגעתי):** **הדומיין הקנוני הוא `mehamakor.co.il`** (ספיר 18/07, MEH-1322 — `robots.txt:59`, `config.py:114`); `docs/DEPLOYMENT.md:22` עדיין אומר `mehamakor.online` = production, וגם הוראות הפרויקט ב-claude.ai — שניהם ישנים, לא הקוד · MEH-2135 אומר "הסקריפט לא הורץ" אבל בגיליון `mehamekor_producers` יש לשונית «מרשם משרד הבריאות» עם 193 שורות (Wave 1, מחוז חיפה) — כלל 34 מבקש לעדכן את ה-description · MEH-2208 (§14, לידים במדיניות הפרטיות) ו-§30א(ה) (`outreach-disclosure-line.md`) עדיין פתוחים משפטית — ה-README של `docs/outreach` אומר במפורש לא להוציא גל כתוב לפני בדיקת עו"ד.
+
+**‏מה שאצל ספיר:** לשתף את שני ה-artifacts עם טופז · משתמש `role='admin'` לטופז (אין תפקיד outreach מצומצם; עד שיהיה, הכללים "מה לא לעשות" בחלק 5 של המדריך) · עדכון ה-LOCK + הדומיין בהוראות הפרויקט (`mehamakor.online` → `mehamakor.co.il`) · תיקון `docs/DEPLOYMENT.md:22` באותו הזדמנות.
+
+**‏סמיכות לסשן ה-CC של הבוקר (11:50):** הסשן הזה הוא claude.ai, לא CC, ולא נגע בתור ה-UI שנרשם שם. הבדיקה המתוזמנת של 13:15 (`direct_outreach`) שייכת לסשן ההוא. המדריך של טופז כבר מכיל fallback («אחר» + "טופז ממהמקור") לזמן שהאפשרות מוסתרת.
+
+## 2026-10-22 11:50 — תור ה-CI נוקה (7 PR-ים); כרטיסי ה-UI ממתינים ל-session עם npm
+
+**‏שורה אחת:** ‏הבוקר מוזגו ל-staging: #3534 (MEH-1981 יידוע §11 בניוזלטר + צור קשר — כרטיס Done) · #3536 (MEH-2279) · #3537 (MEH-2280) · #3539 (MEH-2281) — טסטי vitest, כל אחד עם הוכחת red→green ב-CI · #3538 (MEH-1829 chunk 1/2 — backend של `sort=distance`; sub-issue MEH-2293 Done, ה-frontend הוא MEH-2294) · #3535 (MEH-1742 פריט 5) · #3533 (כרטיס drop חדש MEH-2292). **production backend עדיין `8e69ff1e`** (נמדד 11:45) — Railway לא החזירו builds ל-Hobby.
+
+**‏למה נעצר כאן:** ה-sandbox של הסשן הזה חסום ל-`registry.npmjs.org` / `pypi.org` / `mehamakor.co.il` (נמדד 11:12 גם אחרי שספיר הוסיפה אותם לסביבה — ההגדרה חלה על session חדש). בלי npm אין vitest/build/Playwright מקומי ואין צילומי 375/1440, ולכן כל כרטיס UI נשאר לסשן הבא. **אל תפתחו את הסשן הבא במקביל לזה** (כלל single-session) — רק אחרי שהסשן הזה נסגר.
+
+**‏שורה לפתיחת הסשן הבא (להדביק כמו שהיא):**
+> קראי HANDOFF.md → הסעיף «2026-10-22 11:50». קודם בדקי ש-`curl -sS -o /dev/null -w '%{http_code}' https://registry.npmjs.org/vitest` מחזיר 200. ואז עבדי על «התור לסשן עם npm» לפי הסדר, סוכן לכל כרטיס, PR לכל כרטיס.
+
+**‏התור לסשן עם npm (לפי סדר):**
+
+| # | כרטיס | מה | הערות |
+| -- | -- | -- | -- |
+| 1 | MEH-2294 | אפשרות «לפי מרחק» ב-`ProducersClient.jsx`, מוצגת רק כשיש GPS · vitest · צילומי 375/1440 | ה-backend כבר ב-staging (#3538): `sort=distance` דורש `lat`+`lng` (אחרת 422), מחזיר `distance_km`, `X-Total-Count` לא משתנה. ההורה MEH-1829 נסגר אחרי שזה נכנס |
+| 2 | MEH-1430 | רענון `LocationModal.jsx` (bottom-sheet/dialog לפי המוקאפ המאושר) | LOW-RISK, סמכות end-to-end כתובה בכרטיס. Phase 0: hit-test לבאג ה-z-index של GPS (MEH-263) |
+| 3 | MEH-1207 | `SectionAnchorNav.jsx` חדש בעמוד בית העסק | עמוד בית העסק = central component → rule 23 carve-out (a): CC בונה + צילומים, **ספיר עוברת בעצמה לפני merge** |
+| 4 | MEH-1428 chunk 2 | «בקשו ביקורת» — כרטיס בדשבורד, `?rt=` → sessionStorage, שורת «בהזמנת בית העסק» | chunk 1 = #3368 (`15e2fbda`). Phase 0: לוודא ש-alembic `3f9a7c2e5d18` רץ ב-staging (ספיר) |
+| 5 | MEH-1685 ACs 1–3 | autocomplete: highlight הפוך · thumbnails של Cloudinary · תקרת הצעות | AC 4 (focus mode במובייל) = הכרעת עיצוב פתוחה — לא לגעת |
+| 6 | MEH-2272 | הסרת ה-alias `is_available_today` + הזוג הלגסי | דורש regen של `openapi.json` + `lib/generated/api.zod.js` (`npm run codegen`) — לכן כאן |
+| 7 | — | `--update-baseline` של ה-coverage ratchet אחרי #3536/#3537/#3539 | אופציונלי; לא נעשה כי אין `--coverage` מקומי |
+
+**‏מה שאצל ספיר (לא CC):**
+
+| מה | איפה |
+| -- | -- |
+| Railway: סיבוב סודות + tokens חדשים ל-GitHub + redeploy | MEH-2291 (צ'קליסט מלא בכרטיס). ספיר כתבה «סובבתי» ב-10:50; ה-redeploy עצמו ממתין ל-builds ל-Hobby. **שימי לב:** הקונטיינר הישן רץ עם המפתחות הישנים — אם ה-Resend הישן בוטל, מיילים לא יוצאים עד ה-redeploy |
+| סוקר ה-CI שותק מאז 21/10 (`Claude execution failed`, אפס תגובות `claude[bot]` על #3516–#3539) | MEH-2295 — כנראה `CLAUDE_CODE_OAUTH_TOKEN` פג; לא אומת (לוגים חסומים ל-sandbox) |
+| תגים `v1.1.0` (`5980abd7`) · `v1.1.1` (`94feb78e`) | מהמחשב שלך (ראו הסעיף מ-10:17) |
+| PR-ים נעולים #3524 · #3525 · #3528 | ללא שינוי |
+| MEH-2168 — הפיכת ה-probe ב-`e2e.yml` לשער חוסם | הכרעה, לא ידיים — ה-diff המלא בכרטיס |
+
+**‏מתוזמן:** בדיקה ב-13:15 (trigger `trig_014GWGM59omTfZhRCrFzXZnm`, נוחת בסשן **הזה**): אם `/api/health` מראה sha חדש — מחזירה את `direct_outreach` לטופס ומשחררת; אחרת שולחת לספיר הודעה רק אם Hobby חזר.
+
+## 2026-10-22 10:17 — hotfix v1.1.1: `direct_outreach` מוסתר ב-frontend; Railway = אירוע אבטחה, ה-Deploy job נכשל עד שיהיו tokens חדשים
+
+**‏שורה אחת:** ‏`main` = `94feb78e` (#3531, merge commit) מעל hotfix #3530 (`30b4926b`, squash ל-staging). האפשרות «מהמקור פנו אליי ישירות» **מוסתרת ב-frontend בלבד** (`RegisterProducerClient.jsx`, שורה אחת להחזרה) כי ה-backend ב-production עדיין `8e69ff1e`. **הסיבה התעדכנה:** Railway 21–22/10 = security incident — builds מושהים ל-Hobby + **כל ה-API tokens בוטלו 04:17 UTC** → `railway redeploy` ב-`Deploy` נכשל ל-main ול-staging גם ב-re-run. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «22/10 (09:10–10:17)».
+
+**‏מה שסשן חדש חייב לדעת, לפי דחיפות:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| **production backend** | `/api/health.version.git_sha` = `8e69ff1e`; ה-job `Deploy` אדום ל-main ול-staging (re-runs של `39673964501` / `39680276996` נפלו שוב 09:0x) | **ספיר:** Railway → Account → Tokens → ליצור tokens חדשים → לעדכן `RAILWAY_PRODUCTION_TOKEN` + `RAILWAY_STAGING_TOKEN` ב-GitHub Secrets → re-run של `Deploy`. **או** Railway dashboard → Deploy Latest Commit, ברגע ש-builds ל-Hobby חוזרים |
+| **rotation של secrets** | Railway's disclosure ממליץ rotation — [blog.railway.com/p/security-disclosure-wednesday-october-21st](https://blog.railway.com/p/security-disclosure-wednesday-october-21st) | **ספיר בלבד:** Postgres creds · `ANTHROPIC_API_KEY` · `RESEND_API_KEY` · Cloudinary · `JWT_SECRET_KEY`. לא מתוך CC |
+| **`direct_outreach` מוסתר** | `RegisterProducerClient.jsx` → `REFERRAL_SOURCE_KEYS` בלי `"direct_outreach"`; he/en/constants.py שלמים | אחרי ש-`/api/health` מראה sha אחרי `5980abd7`: להחזיר `"direct_outreach"` לרשימה (שורה אחת, הקומנט בקוד מסמן איפה). בדיקה מתוזמנת 13:15 אמורה לעשות זאת לבד — לוודא |
+| **תגים** | `v1.1.0` (`5980abd7`) · `v1.1.1` (`94feb78e`) — לא נדחפו (sandbox לא יכול) | ספיר: `git tag -a v1.1.0 5980abd7 -m "release: v1.1.0" && git push origin v1.1.0` ואותו דבר ל-`v1.1.1` על `94feb78e` |
+| **PR-ים נעולים (`do-not-merge`)** | #3524 · #3525 · #3528 | סקירת ספיר אחרי ההשקה (ללא שינוי מ-00:40) |
+
+**‏לקח שמתקן את הלקח של אמש:** «Invalid RAILWAY_TOKEN» היה אתמול סימפטום של API שלא עונה; **היום הוא נכון מילולית** — Railway ביטלו את כל ה-tokens. שני המקרים נראים זהים בלוג של ה-CLI; מה שמבדיל ביניהם הוא status.railway.com + ה-disclosure, לא הלוג. הכלל נשאר: סטטוס לפני rotation — והיום הסטטוס אמר rotation.
+
+## 2026-10-22 00:40 — release v1.1.0 יצא, Railway בתקלה עולמית, שלוש פצצות-זמן ושלושה PR-ים נעולים
+
+**‏שורה אחת:** ‏`main` = `5980abd7` (#3521, merge commit). Vercel חי; **ה-backend לא** — Railway Major Outage (builds paused), לא token. Search Console מאומת + sitemap הוגש. MEH-2192 · MEH-2288 · MEH-2290 Done. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «22/10».
+
+**‏מה שסשן חדש חייב לדעת, לפי דחיפות:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| **production backend** | `/api/health.version.git_sha` = `8e69ff1e` (07/09) למרות release | **לבדוק `/api/health`.** אם עדיין ישן: status.railway.com; כשהם חוזרים, Railway בונה `main` לבד. אם ה-outage נגמר והבנייה לא קרתה → Railway dashboard → Redeploy (ספיר). **עד אז: הרשמה עם «מהמקור פנו אליי ישירות» → 422.** בדיקות מתוזמנות: 01:05, 90 דק', 09:00 (הסתרה הפיכה ב-frontend אם צריך, אלא אם ספיר אמרה «אל תסתירי») |
+| **תג `v1.1.0`** | לא נדחף (sandbox) | ספיר: `git tag -a v1.1.0 5980abd7 -m "release: v1.1.0" && git push origin v1.1.0` |
+| **PR-ים נעולים (`do-not-merge`)** | #3524 שעות (אחרי 2 תיקוני סקירה) · #3525 lat/lng (סקירה בתהליך בעת הכתיבה) · #3528 top_product_name | סקירת ספיר אחרי ההשקה; #3524/#3525 מתנגשים על חתימת `upsert_primary_branch_location` — השני rebase. **לא מחליפים drop:** chunks 7-10 ב-MEH-2288 נשארים RED |
+| **MEH-2272 / MEH-2064 (chunks 1, 6)** | לא התחילו | דורשים regen של `openapi.json`/Zod — סשן CC מקומי עם orval |
+| **GSC** | מאומת בחשבון sapir000s; sitemap «לא ניתן היה לאחזר» = ראשוני | לבדוק בעוד יום שהסטטוס התעדכן |
+| **פצצות-זמן** | 3 פורקו (special_hours #3526, kashrut fixtures #3527, LEGACY #3519/#3523) | אופק הבא: `lib/holidays.js` 11/06/2027 |
+
+**‏שני לקחים שהלילה הזה הוסיף, לכלל:**
+1. **תאריך קשיח בריפו הוא פצצת-זמן אלא אם יש לו שעון קפוא או guard.** שלוש מחלקות שונות פוצצו באותו ערב (סמן LEGACY, literal בטסט backend מול `israel_today`, literal בטסט frontend מול `new Date()`), כולן בלי שינוי קוד. ה-idioms קיימים (`monkeypatch israel_today`, `vi.setSystemTime`, sentinel 2099) — מה שחסר הוא בדיקה בזמן הכתיבה. מועמד ל-guard: grep של `20[2-9][0-9]-[01][0-9]-[0-3][0-9]` ב-tests שלא ליד freeze.
+2. **«Invalid RAILWAY_TOKEN» ≠ token פג.** ה-CLI מדפיס את זה גם כשה-API של Railway לא זמין. לפני rotation — status.railway.com. (טעות שנעשתה ותוקנה באותו לילה; הרשומה המקורית ב-CHANGELOG מתוקנת.)
+
+**‏איך הלילה עבד (לפרוטוקול):** session claude.ai אחד (לא CC), עם Linear/Chrome/GitHub-REST; סוכני רקע לסקירה אדברסרית (3), Phase 0 (1), סריקת פצצות-זמן (1), והכנת PR-ים נעולים ב-worktrees (3). כל PR שמוזג: squash מאומת + flip-check ב-Linear (MEH-2286 נדרש סגירה ידנית — כיוון שני של כלל 29b).
+
+## 2026-10-21 ערב — session claude.ai לפני ה-outreach של 22/10: #3516 + #3517 פתוחים, CI חסום על מכסה
+
+**‏שורה אחת:** ‏שני PR-ים ירוקים-להלכה מחכים ל-CI שלא רץ — **כל job נופל ב-2 שניות עם אפס steps** (חתימת מכסת Actions, כלל 21). ספיר פותחת את המכסה → ‏`rerun` → מיזוג → release `staging → main`. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «21/10».
+
+**‏מה שסשן חדש צריך לדעת:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| #3516 `24d8ab28` — MEH-2286 referral `direct_outreach` | פתוח, non-draft, CI לא רץ | אחרי המכסה: re-run, שני האגרגטורים ירוקים → מיזוג. UI: צילום 375 של ה-dropdown ב-staging (DoD §5) |
+| #3517 `2aaec0db` — MEH-2287 templates → 5.5 | פתוח, docs-only | re-run → skip-green → מיזוג |
+| release `staging → main` | staging לפני main ב-13 קומיטים (כולם docs/CI/tests מאז 07/09) + שני אלה | ספיר כותבת «שחררי»; ה-15 «קומיטים» שב-main ולא ב-staging הם **רק merge commits של רילזים קודמים — אפס קבצים**, לא drift |
+| MEH-1495 Google Cloud trial | הדדליין עבר, לא אומת | ספיר: Billing לפני האישור הראשון של בית עסק |
+| MEH-2192 שארית | `description` ≠ CANONICAL_SENTENCE, טסט מקבע | הכרעת ספיר (B3). לא נגעתי |
+| production | `/api/producers` → `[]`, readiness `ready`, migrations `0396917da2ea` | — |
+
+**‏מה שנמדד ואין צורך לפתוח עליו כרטיס:** אינדוקס גוגל תקין (דף הבית #1 על «מהמקור»); nudge ל-draft קיים (MEH-2111); אירועים מהדשבורד קיימים.
+
+**‏הבא (NEXT):** ‏(1) ספיר: מכסת Actions · (2) מיזוג #3516 + #3517 · (3) release · (4) אחרי האישור הראשון של בית עסק: עמוד העסק + שורת הדירוג (1495) + ה-sitemap מתחיל לפלוט עמודי עסק.
+
 ## 2026-09-07 — SWEEP-2: הלוח הפתוח כולו (117), ושלושה כרטיסים ששוחררו מחסם שכבר נפל
 
 **‏שורה אחת:** ‏**MEH-2062 · MEH-2202 · MEH-1767 נסגרו** — שלושתם Backlog, שלושתם עם עבודה שנחתה ועם החסם האחרון שהתפוגג, ואף אחת לא חזרה לסגור. השורש: `Refs` במקום `Closes` הוא **הכרעה נכונה** (הכרטיס לא נסגר לפני שהשארית נסגרת) שחסר לה **צעד חזרה**. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «07/09 — SWEEP-2».

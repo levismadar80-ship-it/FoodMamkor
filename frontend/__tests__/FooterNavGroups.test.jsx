@@ -19,6 +19,19 @@ vi.mock("next/image", () => ({
   default: (props) => <img alt={props.alt ?? ""} {...props} />,
 }));
 
+// MEH-1981: the footer newsletter now carries a CollectionNotice whose /privacy
+// link is the locale-aware Link from @/i18n/navigation, which needs an intl
+// context the key-echo next-intl mock above does not provide. Same stub the
+// CategoryRequestModal / EventForm suites use — the link's behaviour is
+// CollectionNotice.test.jsx's job; this file is about the nav groups.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span data-testid="ig" />,
   ArrowRight: () => <span data-testid="arrow" />,
