@@ -90,15 +90,19 @@ for (const width of [375, 1440]) {
 
   test(`qa-capture MEH-1430 location modal @${width}`, async ({ browser }, testInfo) => {
     const baseURL = testInfo.project.use.baseURL as string;
-    // /map: the modal auto-opens ~800ms after mount when no city is saved.
+    // /map: since the first-visit auto-open was removed, the modal opens when
+    // the GPS control is tapped and geolocation is DENIED (no permission is
+    // granted in this context).
     let c = await ctx(browser, baseURL, width);
     let page = await c.newPage();
     await page.goto("/he/map");
+    const gps = page.locator('[aria-label="מרכזו את המפה על המיקום שלי"]:visible, [aria-label="הצגת בתי עסק קרובים למיקום שלי"]:visible').first();
+    await gps.waitFor({ timeout: 20000 });
+    await gps.click();
     const dialog = page.getByRole("dialog");
     await dialog.waitFor({ timeout: 15000 });
     await shot(page, `MEH-1430-${width}-1-map-open`);
     // Phase 0 hit-test (card addendum): what receives a tap at the GPS button's centre while the modal is open?
-    const gps = page.locator('[aria-label="מרכזו את המפה על המיקום שלי"]:visible, [aria-label="הצגת בתי עסק קרובים למיקום שלי"]:visible').first();
     let hit: unknown = "gps button not found";
     if (await gps.count()) {
       const box = await gps.boundingBox();
