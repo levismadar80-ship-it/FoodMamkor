@@ -18,16 +18,44 @@ where the raw ORM rows bypass response serialization.
 
 Only the non-geo listing path is exercised — geo results always order by
 distance and ignore the sort axis (producer_listing.py:_build_base_queries).
+
+MEH-1829 — ?sort=distance (TestSortDistance):
+
+  * ?sort=distance&lat&lng → nearest-location Haversine ASC (MEH-1402
+    `haversine_min_km`), a producer with NO location row sorts LAST — it is
+    never dropped, because this is a sort and not the geo radius filter.
+  * X-Total-Count is the same number under sort=distance and sort=newest —
+    the numeric "sorting hides nothing" assertion.
+  * ?sort=distance without lat/lng → 422 (Hebrew detail).
+  * lat/lng WITHOUT ?sort= do not change the default order (no radius_km
+    → not geo mode; no sort → created_at DESC, byte-identical).
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from app.models import ProducerLocation
 from app.services.producer_listing import build_producers_query
 from tests.conftest import make_producer
 
 BASE = datetime(2026, 1, 1, 12, 0, 0)
+
+# MEH-1829 — Tel Aviv origin + three points at known distances from it
+# (same coordinates as tests/test_producer_locations_geo.py).
+ORIGIN = {"lat": 32.0853, "lng": 34.7818}
+NEAR = (32.0860, 34.7825)  # ~0.1 km
+MID = (33.0000, 35.0000)  # ~104 km
+FAR = (29.5500, 34.9500)  # ~281 km (Eilat) — far outside any /map radius
+
+
+def _add_location(db, producer, coords, *, kind="branch"):
+    """MEH-1829: `make_producer` writes the legacy Producer.lat/lng mirror but
+    NO producer_locations row, and `haversine_min_km` reads ONLY the rows
+    (MEH-1938 chunk 5a) — so a producer gets a distance only through this."""
+    lat, lng = coords
+    db.add(ProducerLocation(producer_id=producer.id, kind=kind, lat=lat, lng=lng))
+    db.commit()
 
 
 def _set(db, producer, *, avg_rating, reviews_count, created_at):
@@ -115,3 +143,116 @@ class TestSortValidation:
         make_producer(db, name="Whatever")
         resp = client.get("/producers", params={"sort": "bogus"})
         assert resp.status_code == 422
+
+
+class TestSortDistance:
+    """MEH-1829 — ?sort=distance orders, never filters."""
+
+    def test_orders_by_nearest_location_asc_and_attaches_distance_km(self, client, db):
+        # Created FAR → NEAR so the default (created_at DESC) order is the
+        # REVERSE of the distance order — a distance-sorted result cannot pass
+        # by accident of insertion order.
+        far = make_producer(db, name="Far")
+        mid = make_producer(db, name="Mid")
+        near = make_producer(db, name="Near")
+        _set(db, far, avg_rating=5.0, reviews_count=9, created_at=BASE - timedelta(days=2))
+        _set(db, mid, avg_rating=1.0, reviews_count=1, created_at=BASE - timedelta(days=1))
+        _set(db, near, avg_rating=1.0, reviews_count=1, created_at=BASE)
+        _add_location(db, far, FAR)
+        _add_location(db, mid, MID)
+        _add_location(db, near, NEAR)
+
+        resp = client.get("/producers", params={"sort": "distance", **ORIGIN})
+        assert resp.status_code == 200
+        assert _names(resp) == ["Near", "Mid", "Far"]
+        # distance_km rides on each row (ProducerListOut already carries it)
+        # and is strictly ascending — the order is the distance, not a proxy.
+        distances = [row["distance_km"] for row in resp.json()]
+        assert distances == sorted(distances)
+        assert distances[0] < 1.0
+        assert distances[-1] > 200.0
+        # No radius filter: the Eilat producer (~281 km) is still in the page.
+        assert len(resp.json()) == 3
+
+    def test_nearest_of_several_locations_wins(self, client, db):
+        # A business with a far primary branch AND a near pickup point sorts by
+        # the pickup point — MIN over its rows, the MEH-1402 expression — so it
+        # beats a single-location business sitting at MID.
+        multi = make_producer(db, name="Multi")
+        single = make_producer(db, name="Single")
+        _add_location(db, multi, FAR)
+        _add_location(db, multi, NEAR, kind="pickup")
+        _add_location(db, single, MID)
+
+        resp = client.get("/producers", params={"sort": "distance", **ORIGIN})
+        assert resp.status_code == 200
+        assert _names(resp) == ["Multi", "Single"]
+        # One row per business, not one per location.
+        assert len(resp.json()) == 2
+
+    def test_null_coords_sort_last_and_are_not_hidden(self, client, db):
+        # NoCoords is the NEWEST row, so under the default sort it would come
+        # first; under distance it must be LAST — and present, with a null
+        # distance, never dropped.
+        located = make_producer(db, name="Located")
+        no_coords = make_producer(db, name="NoCoords")
+        _set(db, located, avg_rating=1.0, reviews_count=1, created_at=BASE - timedelta(days=1))
+        _set(db, no_coords, avg_rating=1.0, reviews_count=1, created_at=BASE)
+        _add_location(db, located, MID)
+
+        resp = client.get("/producers", params={"sort": "distance", **ORIGIN})
+        assert resp.status_code == 200
+        assert _names(resp) == ["Located", "NoCoords"]
+        rows = resp.json()
+        assert rows[0]["distance_km"] is not None
+        assert rows[1]["distance_km"] is None
+
+    def test_total_count_equals_newest_total(self, client, db):
+        # Three approved producers (one coordinate-less) plus one PENDING, so
+        # the count is neither "everything in the table" nor "rows with a
+        # distance". Both headers must read exactly 3 — the numeric assertion
+        # that sorting hides nothing.
+        near = make_producer(db, name="Near")
+        far = make_producer(db, name="Far")
+        make_producer(db, name="NoCoords")
+        make_producer(db, name="Pending", status="pending")
+        _add_location(db, near, NEAR)
+        _add_location(db, far, FAR)
+
+        newest = client.get("/producers", params={"sort": "newest"})
+        distance = client.get("/producers", params={"sort": "distance", **ORIGIN})
+        assert newest.status_code == 200
+        assert distance.status_code == 200
+        assert newest.headers["X-Total-Count"] == "3"
+        assert distance.headers["X-Total-Count"] == newest.headers["X-Total-Count"]
+        # The page agrees with the header on both axes.
+        assert len(distance.json()) == 3
+        assert sorted(_names(distance)) == sorted(_names(newest))
+
+    def test_distance_without_coords_is_422(self, client, db):
+        make_producer(db, name="Whatever")
+        missing_both = client.get("/producers", params={"sort": "distance"})
+        missing_lng = client.get("/producers", params={"sort": "distance", "lat": ORIGIN["lat"]})
+        assert missing_both.status_code == 422
+        assert missing_lng.status_code == 422
+        # Hebrew detail (routers/CLAUDE.md) that names the axis, not a generic
+        # pydantic error — the router's manual-422 pattern.
+        assert "מרחק" in missing_both.json()["detail"]
+
+    def test_coords_without_sort_keep_the_default_order(self, client, db):
+        # lat/lng alone (no radius_km, no sort) is NOT geo mode and NOT a
+        # distance sort: the default created_at DESC must hold — Far is the
+        # newest row and stays first even though it is 281 km away.
+        near = make_producer(db, name="Near")
+        far = make_producer(db, name="Far")
+        _set(db, near, avg_rating=1.0, reviews_count=1, created_at=BASE - timedelta(days=1))
+        _set(db, far, avg_rating=1.0, reviews_count=1, created_at=BASE)
+        _add_location(db, near, NEAR)
+        _add_location(db, far, FAR)
+
+        resp = client.get("/producers", params=ORIGIN)
+        assert resp.status_code == 200
+        assert _names(resp) == ["Far", "Near"]
+        # And the service-level contract: no distance is attached off-axis.
+        results, _ = build_producers_query(db, lat=ORIGIN["lat"], lng=ORIGIN["lng"])
+        assert [p.name for p in results] == ["Far", "Near"]

@@ -2536,7 +2536,9 @@ class ProducerListOut(BaseModel):
     reviews_count: int = 0
     images: list[str] = []
     categories: list[CategoryOut] = []
-    # Populated by /producers only when ?lat=&lng=&radius_km= are passed.
+    # Populated by /producers when ?lat=&lng=&radius_km= are passed (geo mode)
+    # or, since MEH-1829, when ?sort=distance&lat=&lng= is — where it may be
+    # null for a coordinate-less producer (sorted last, not hidden).
     # Computed via Haversine SQL — not a real column.
     distance_km: float | None = None
     # MEH-106: social proof — count of users who saved this producer.
