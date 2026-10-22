@@ -232,7 +232,7 @@ export default function AdminKashrutPage() {
             <tbody className="divide-y divide-border">
               {rows.map((row) => (
                 <tr key={row.id} className="hover:bg-green-50/50 transition">
-                  <td className="px-4 py-3 font-medium">{row.producer_name || "—"}{row.kosher && t("producers.table.tags.verified")}</td>
+                  <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">
                       {CODE_TO_KEY[row.badge_code] ? tBadges(`${CODE_TO_KEY[row.badge_code]}.label`) : row.badge_code}
