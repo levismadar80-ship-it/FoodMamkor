@@ -18,9 +18,9 @@
 
 **‏סתירה שהסשן הזה חשף ולא פתר (ספיר):** הוראות הפרויקט ב-claude.ai עדיין נושאות LOCK «Licensed businesses only». הצעת החלפה: «Two-tier licensing (ADR-022): מאומת / מוצהר. Badge = license, never entry. Home cooks stay out.»
 
-**‏עוד ממצאים (לא נגעתי):** `SITE_DOMAIN = "mehamakor.co.il"` ב-`onboarding_followup.py:42` ושורות share/footer ב-`he.json`/`en.json` עדיין `mehamakor.co.il`, בעוד `docs/DEPLOYMENT.md:22` אומר `mehamakor.online` = production · MEH-2135 אומר "הסקריפט לא הורץ" אבל בגיליון `mehamekor_producers` יש לשונית «מרשם משרד הבריאות» עם 193 שורות (Wave 1, מחוז חיפה) — כלל 34 מבקש לעדכן את ה-description · MEH-2208 (§14, לידים במדיניות הפרטיות) ו-§30א(ה) (`outreach-disclosure-line.md`) עדיין פתוחים משפטית — ה-README של `docs/outreach` אומר במפורש לא להוציא גל כתוב לפני בדיקת עו"ד.
+**‏עוד ממצאים (לא נגעתי):** **הדומיין הקנוני הוא `mehamakor.co.il`** (ספיר 18/07, MEH-1322 — `robots.txt:59`, `config.py:114`); `docs/DEPLOYMENT.md:22` עדיין אומר `mehamakor.online` = production, וגם הוראות הפרויקט ב-claude.ai — שניהם ישנים, לא הקוד · MEH-2135 אומר "הסקריפט לא הורץ" אבל בגיליון `mehamekor_producers` יש לשונית «מרשם משרד הבריאות» עם 193 שורות (Wave 1, מחוז חיפה) — כלל 34 מבקש לעדכן את ה-description · MEH-2208 (§14, לידים במדיניות הפרטיות) ו-§30א(ה) (`outreach-disclosure-line.md`) עדיין פתוחים משפטית — ה-README של `docs/outreach` אומר במפורש לא להוציא גל כתוב לפני בדיקת עו"ד.
 
-**‏מה שאצל ספיר:** למזג #3545 אחרי CI ירוק (ואז flip-check MEH-2296 לשני הכיוונים, כלל 29b) · לשתף את שני ה-artifacts עם טופז · משתמש `role='admin'` לטופז (אין תפקיד outreach מצומצם; עד שיהיה, הכללים "מה לא לעשות" בחלק 5 של המדריך) · עדכון ה-LOCK בהוראות הפרויקט · הכרעת דומיין קנוני.
+**‏מה שאצל ספיר:** למזג #3545 אחרי CI ירוק (ואז flip-check MEH-2296 לשני הכיוונים, כלל 29b) · לשתף את שני ה-artifacts עם טופז · משתמש `role='admin'` לטופז (אין תפקיד outreach מצומצם; עד שיהיה, הכללים "מה לא לעשות" בחלק 5 של המדריך) · עדכון ה-LOCK + הדומיין בהוראות הפרויקט (`mehamakor.online` → `mehamakor.co.il`) · תיקון `docs/DEPLOYMENT.md:22` באותו הזדמנות.
 
 **‏סמיכות לסשן ה-CC של הבוקר (11:50):** הסשן הזה הוא claude.ai, לא CC, ולא נגע בתור ה-UI שנרשם שם. הבדיקה המתוזמנת של 13:15 (`direct_outreach`) שייכת לסשן ההוא. המדריך של טופז כבר מכיל fallback («אחר» + "טופז ממהמקור") לזמן שהאפשרות מוסתרת.
 
