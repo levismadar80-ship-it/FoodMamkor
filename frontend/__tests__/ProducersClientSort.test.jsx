@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import ProducersClient from "@/components/ProducersClient";
+import { setUserLocation, clearUserLocation } from "@/lib/user-location";
 
 // MEH-1483: /producers backend-driven sort select (?sort=). Pins:
 //  (1) the select renders near the counter, default "newest";
@@ -125,18 +126,39 @@ const sortCalls = () =>
     ([url, cfg]) => url === "/producers" && cfg?.params?.sort !== undefined,
   );
 
+// MEH-2294: the infinite-scroll sentinel mounts an IntersectionObserver
+// (jsdom has none). Capture the callback so a test can scroll "page 2" in.
+let ioCallback = null;
+beforeAll(() => {
+  global.IntersectionObserver = class {
+    constructor(cb) { ioCallback = cb; }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+});
+
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
   params = {};
   apiGet.mockClear();
+  ioCallback = null;
+  clearUserLocation();
+  apiGet.mockImplementation(() => Promise.resolve({ data: [], headers: { "x-total-count": "1" } }));
 });
 
+// The vitest config reuses one jsdom environment across files, so a fix left
+// in localStorage would leak into e.g. RatingDataGate.test.jsx's hidden-control case.
+afterEach(() => clearUserLocation());
+
 describe("ProducersClient sort select (MEH-1483)", () => {
-  it("renders the sort select defaulting to newest with two options", () => {
+  it("renders the sort select defaulting to newest — distance present but disabled without a fix", () => {
     render(<ProducersClient {...PROPS} />);
     const select = screen.getByTestId("producers-sort");
     expect(select).toHaveValue("newest");
-    expect(select.querySelectorAll("option")).toHaveLength(2);
+    // MEH-2294: newest · rating · distance (disabled until a location fix).
+    expect(select.querySelectorAll("option")).toHaveLength(3);
+    expect(screen.getByTestId("producers-sort-distance")).toBeDisabled();
   });
 
   it("default (newest) mount never sends a sort param to /producers", () => {
@@ -166,5 +188,82 @@ describe("ProducersClient sort select (MEH-1483)", () => {
         ),
       ).toBe(true);
     });
+  });
+});
+
+// MEH-2294: the distance axis. GPS-gated like /map: the option is disabled
+// until useUserLocation() returns a fix, enables live on the user-location
+// event, and once chosen sends sort=distance + lat/lng on the sorted page 1,
+// every infinite-scroll page and the filtered fetch — never a radius.
+const LAT = 32.08;
+const LNG = 34.78;
+const distanceCalls = () =>
+  apiGet.mock.calls.filter(([url, cfg]) => url === "/producers" && cfg?.params?.sort === "distance");
+
+describe("ProducersClient distance sort (MEH-2294)", () => {
+  it("the distance option enables live when a location fix arrives (no reload)", () => {
+    render(<ProducersClient {...PROPS} />);
+    expect(screen.getByTestId("producers-sort-distance")).toBeDisabled();
+    act(() => setUserLocation(LAT, LNG));
+    expect(screen.getByTestId("producers-sort-distance")).not.toBeDisabled();
+  });
+
+  it("picking distance syncs ?sort=distance and fetches with lat+lng and no radius", async () => {
+    setUserLocation(LAT, LNG);
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(window.location.search).toContain("sort=distance");
+    await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
+    for (const [, cfg] of distanceCalls()) {
+      expect(cfg.params).toMatchObject({ sort: "distance", lat: LAT, lng: LNG, offset: 0 });
+      expect(cfg.params).not.toHaveProperty("radius_km");
+    }
+  });
+
+  it("infinite-scroll pages carry the distance sort and origin", async () => {
+    setUserLocation(LAT, LNG);
+    // A full sorted page 1 → hasMore stays true → the sentinel mounts.
+    apiGet.mockImplementation(() =>
+      Promise.resolve({
+        data: Array.from({ length: 24 }, (_, i) => ({ id: `d${i}`, categories: [] })),
+        headers: { "x-total-count": "48" },
+      }),
+    );
+    render(<ProducersClient {...PROPS} totalPages={2} initialTotal={48} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
+    await waitFor(() => expect(ioCallback).not.toBeNull());
+    act(() => ioCallback([{ isIntersecting: true }]));
+    await waitFor(() => {
+      expect(
+        distanceCalls().some(
+          ([, cfg]) => cfg.params.offset === 24 && cfg.params.lat === LAT && cfg.params.lng === LNG,
+        ),
+      ).toBe(true);
+    });
+  });
+
+  it("a ?sort=distance deep-link with no fix sends no sort until a fix arrives", async () => {
+    params = { sort: "distance" };
+    render(<ProducersClient {...PROPS} />);
+    // No origin → effective order is the default, and the backend is never
+    // asked for a distance sort it would 422.
+    expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
+    expect(sortCalls()).toHaveLength(0);
+    act(() => setUserLocation(LAT, LNG));
+    await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
+    expect(screen.getByTestId("producers-sort")).toHaveValue("distance");
+  });
+
+  it("below the rating threshold: no control without a fix (unchanged), newest + distance with one", () => {
+    const { unmount } = render(<ProducersClient {...PROPS} ratingSortEnabled={false} />);
+    expect(screen.queryByTestId("producers-sort")).toBeNull();
+    unmount();
+    setUserLocation(LAT, LNG);
+    render(<ProducersClient {...PROPS} ratingSortEnabled={false} />);
+    const values = [...screen.getByTestId("producers-sort").querySelectorAll("option")].map((o) => o.value);
+    expect(values).toEqual(["newest", "distance"]);
+    // Default stays byte-identical: no sort param on mount even with a fix.
+    expect(sortCalls()).toHaveLength(0);
   });
 });
