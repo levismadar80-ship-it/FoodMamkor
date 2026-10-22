@@ -311,8 +311,11 @@ describe("HomepageMiniMap — unmount", () => {
   it("unmounting a mounted map detaches the canvas click listener it bound", async () => {
     const { unmount } = renderMap();
     await waitFor(() => expect(mapEl()).toBeInTheDocument(), { timeout: 3000 });
+    // MEH-2297: the container div renders before the async Leaflet init has
+    // built the map, so wait for the stub and its bound listener — the thing
+    // the assertions below read — not for the div.
+    await waitFor(() => expect(leafletStubs.maps[0]?.listeners.click).toHaveLength(1), { timeout: 3000 });
     const map = leafletStubs.maps[0];
-    expect(map.listeners.click).toHaveLength(1);
     unmount();
     expect(map.listeners.click).toHaveLength(0);
     expect(mapEl()).toBeNull();
