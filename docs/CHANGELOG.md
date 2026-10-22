@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+- **‏22/10 (13:30–15:40, claude.ai) — ידית האינסטגרם עודכנה ל-meha.makor; מעקב שותפויות מרוכז בגיליון.**
+  - **‏MEH-2301 — PR #3553 (פתוח):** `meha_makor` → `meha.makor` ב-`Footer.jsx` (href + טקסט בתוך ה-`<bdi>`), בעמוד המדריכים לבתי עסק, ב-`BRAND_SAME_AS` (Organization JSON-LD) וב-`README.md`. 4 קבצים, 6 שורות. build/vitest לא רצו מקומית (`npm ci` נכשל פעמיים בסשן) — רצו ב-CI. `design-reference/**` ו-`docs/audits/**` לא נגעו (היסטוריה).
+  - **‏Outreach לשותפים (מחוץ לריפו):** 16 שותפים נוספו ללשונית «שותפויות ומשפיענים» בגיליון mehamekor_producers, ושם המעקב היחיד. 5 מיילים יצאו מ-contact@mehamakor.co.il ב-22.10, ופניות באינסטגרם ובלינקדאין יצאו מהחשבונות של ספיר. תזכורות ב-29.10. «הבית לעסקים» ענו: לחזור אליהם כשיהיו בתי עסק פעילים מהגליל.
+  - **‏ממצא פתוח:** נוסח הפתיחה החדש במדריך של טופז כולל «יצרנים», בניגוד לכלל «בית עסק, לא יצרן» (BRAND.md §4). לא שונה, ממתין להחלטה של ספיר.
+
 - **‏22/10 (11:00–13:40, CC בלי npm) — תיקון flake ב-HomepageMiniMap; ארבעה PR-י UI פתוחים לספיר.**
   - **‏#3547 `542f0870` (מוזג, squash, MEH-2297 Done):** שלושה מקרים ב-`HomepageMiniMap.test.jsx` חיכו ל-div של המפה ואז קראו את ה-stub של Leaflet לפני שאותחל — `Target cannot be null` (:315) ו-`expected null to be false` (:244) על PR-ים לא קשורים. עכשיו `waitForMapReady()` מחכה ל-listener שהאתחול קושר; האסרציות אחרי unmount לא השתנו.
   - **‏#3548 `d9506847` (מוזג, squash, MEH-2284 Done):** `37-outreach-prefill:285` נפל על 429 מ-`/experiences/count` (נקרא פעמיים בכל טעינה, 60/דקה ל-IP, וכל ה-CI יוצא מ-IP אחד); שני טסטי ה-admin שבודקים console errors קיבלו את ה-stub שטסטי האורחים כבר היו עם.

@@ -3,6 +3,17 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 15:40 — סשן claude.ai: ידית האינסטגרם (MEH-2301) + outreach לשותפים
+
+**‏שורה אחת:** ‏PR #3553 מעדכן את ידית האינסטגרם ל-`meha.makor` בפוטר, בעמוד המדריכים, ב-JSON-LD וב-README. הוא פתוח, CI רץ, ו-merge אצל ספיר. מעקב השותפויות מרוכז בלשונית «שותפויות ומשפיענים» בגיליון mehamekor_producers ולא באתר: `outreach_leads` לא מכוסה במדיניות הפרטיות (MEH-2208), והוספת סכמה היא סיכון.
+
+| מה | מצב | הפעולה |
+| -- | -- | -- |
+| #3553 MEH-2301 — ידית אינסטגרם | 4 קבצים, 6 שורות; לא נבנה מקומית (`npm ci` נכשל פעמיים) | בדיקה בפוטר של staging אחרי merge, ואז לסגור את הכרטיס (כלל 29b) |
+| ביו בפרופיל @meha.makor | 3 נוסחים הוצעו לספיר. אין דפדפן בסשן, אז העריכה תיעשה דרך Claude in Chrome אצלה | ספיר בוחרת נוסח |
+| תזכורות לשותפים | 5 מיילים מ-22.10 בלי תשובה | 29.10, לפי עמודת «תזמון» בגיליון |
+| «יצרנים» במדריך של טופז | סותר את BRAND.md §4 | החלטה של ספיר |
+
 ## 2026-10-22 13:40 — סשן CC בלי npm (רק GitHub נגיש): 4 PR-י UI פתוחים עם צילומים, תיקון flake, ושני ממצאים לפני השקה
 
 **‏שורה אחת:** ‏ה-sandbox של הסשן הזה ראה **רק GitHub** (npm / pypi / mehamakor.co.il / Vercel חסומים — גם אחרי שההגדרות בסביבה תוקנו; הסשן נפתח מהמשימה המתוזמנת, ייתכן שעל סביבה אחרת). העבודה נעשתה עם CI כאורקל, וצילומי 375/1440 הופקו דרך `vrt-update.yml` עם spec זמני על ענף זרוק. **מוזג:** #3547 (flake ב-HomepageMiniMap, MEH-2297) · #3548 `d9506847` (MEH-2284 — stub ל-`/experiences/count` בשני טסטי admin; ה-429 נבע מ-60/דקה ל-IP כשכל ה-CI יוצא מ-IP אחד). **ה-classifier של הסשן חסם מיזוגים נוספים** — כל השאר מחכה לספיר.
