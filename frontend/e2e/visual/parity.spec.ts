@@ -323,24 +323,50 @@ async function revealScrollSections(page: Page): Promise<void> {
   // counted, or the poll below burns its full budget on something that never
   // moves). The WAIT then requires those tagged elements to reach 1, not just
   // to leave 0 — a mid-fade 0.4 is still not a settled frame.
+  //
+  // MEH-1514 (desktop): an element pinned to the viewport — computed
+  // `position: fixed` on itself or on any ancestor — is NOT a scroll-revealed
+  // section. It never moves with the document, so a scroll pass cannot change
+  // whether it is "in view", and whatever holds it at opacity 0 is not this
+  // helper's subject. Counting one made the desktop regen fail with
+  // `Received: 1` (vrt-update run 34054289535) while mobile passed. The
+  // exclusion is by computed style, never by naming an element, so a real
+  // in-flow section that stays hidden still fails below.
   const tagGated = (): Promise<number> =>
     page.evaluate(() => {
+      const pinned = (el: HTMLElement): boolean => {
+        for (let n: HTMLElement | null = el; n; n = n.parentElement) {
+          if (getComputedStyle(n).position === "fixed") return true;
+        }
+        return false;
+      };
       let n = 0;
       document.querySelectorAll<HTMLElement>('[style*="opacity"]').forEach((el) => {
-        if (parseFloat(getComputedStyle(el).opacity) === 0) {
+        if (parseFloat(getComputedStyle(el).opacity) === 0 && !pinned(el)) {
           el.dataset.revealGate = "1";
           n += 1;
         }
       });
       return n;
     });
-  const hidden = (): Promise<number> =>
+  // Returns WHICH elements are still hidden, not just how many: a bare
+  // `Received: 1` is what left the desktop failure undiagnosable for weeks.
+  const hidden = (): Promise<string[]> =>
     page.evaluate(() => {
-      let n = 0;
+      const out: string[] = [];
       document.querySelectorAll<HTMLElement>("[data-reveal-gate]").forEach((el) => {
-        if (parseFloat(getComputedStyle(el).opacity) < 1) n += 1;
+        const cs = getComputedStyle(el);
+        if (parseFloat(cs.opacity) < 1) {
+          const id = el.id ? `#${el.id}` : "";
+          const testid = el.dataset.testid ? `[data-testid=${el.dataset.testid}]` : "";
+          const cls = (el.getAttribute("class") || "").trim().split(/\s+/).slice(0, 3).join(".");
+          out.push(
+            `${el.tagName.toLowerCase()}${id}${testid}${cls ? "." + cls : ""} ` +
+              `(opacity ${cs.opacity}, position ${cs.position}, display ${cs.display})`,
+          );
+        }
       });
-      return n;
+      return out;
     });
 
   const before = await tagGated();
@@ -367,7 +393,7 @@ async function revealScrollSections(page: Page): Promise<void> {
       message: "[reveal-gate] sections still at opacity < 1 after a full scroll pass",
       timeout: 10_000,
     })
-    .toBe(0);
+    .toEqual([]);
 }
 
 /**
