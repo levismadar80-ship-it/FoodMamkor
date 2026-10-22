@@ -3057,7 +3057,8 @@
       "label": "Sort:",
       "aria_label": "Sort businesses",
       "newest": "Newest",
-      "top_rated": "Top rated"
+      "top_rated": "Top rated",
+      "distance": "Distance"
     },
     "empty": {
       "no_match_search": "We couldn't find any businesses for \"{q}\"",
