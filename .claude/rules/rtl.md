@@ -147,7 +147,7 @@ over a CTA), which is why the gate sits in front of it.
 | `z-[1150]` | 2 | `components/MiniMap.jsx:531` · `FavoritesClient.jsx:76` | MiniMap fullscreen |
 | `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
 | `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
-| `z-[1050]` | 2 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context** |
+| `z-[1050]` | 1 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context**. 2 → 1 in MEH-1207: the second hit was prose inside the producer-page tab-bar comment block, which left with the tab bar |
 | `z-[1010]` | 3 | `components/AddressSearch.jsx:266` · `components/CitiesAutocomplete.jsx:273` · `components/CitySearch.jsx:206` | autocomplete / combobox suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. **AddressSearch:** MEH-2093 chunk A, fixing an observed clipping. **CitiesAutocomplete:** MEH-2102, *defensive alignment only* — measured 16/08, no current consumer places a map where that list can reach it. **CitySearch:** MEH-2108, an observed occlusion — at 1000 it tied with the Leaflet controls *and* the MiniMap fullscreen button (`MiniMap.jsx:56`), and DOM order handed the band to the map (9 of 15 hit-test samples inside the 72px band were painted by map chrome; 0 after) |
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
