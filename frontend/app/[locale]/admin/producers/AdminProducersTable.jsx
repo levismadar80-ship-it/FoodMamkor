@@ -348,12 +348,6 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
                 onSelect: () => onToggleStoryCard(p.id),
               }]
             : []),
-          // MEH-226: reject is terminal and emails the business owner, so it
-          // lives in the kebab with tone="danger" (MEH-1023 destructive-action
-          // convention) rather than in the always-visible strip beside
-          // approve. Pending-only — the same guard as approve and
-          // request-changes above; the backend has no status guard on reject,
-          // so this is a UI affordance, not the enforcement.
           // MEH-2299: approve a license-required business that has no license
           // number yet (Sapir, 22/10: it enters, it just gets no badge). Only on
           // the one cell where the plain approve would 422 on the license gate —
@@ -366,6 +360,12 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
                 onSelect: () => onApproveWithoutLicense(p),
               }]
             : []),
+          // MEH-226: reject is terminal and emails the business owner, so it
+          // lives in the kebab with tone="danger" (MEH-1023 destructive-action
+          // convention) rather than in the always-visible strip beside
+          // approve. Pending-only — the same guard as approve and
+          // request-changes above; the backend has no status guard on reject,
+          // so this is a UI affordance, not the enforcement.
           ...(isPending
             ? [{
                 key: "reject",

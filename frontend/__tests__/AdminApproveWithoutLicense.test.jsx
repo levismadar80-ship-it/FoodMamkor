@@ -116,6 +116,16 @@ describe("MEH-2299 — approve without license: which rows offer it", () => {
     expect(screen.queryByRole("menuitem", { name: LABEL })).not.toBeInTheDocument();
   });
 
+  it.each(["rejected", "inactive"])(
+    "does NOT offer it on a %s row, even if license_pending",
+    async (status) => {
+      await openMenu([{ ...LICENSE_PENDING_ROW, status }]);
+      // control: the menu IS open (delete is offered on every row)
+      expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0);
+      expect(screen.queryByRole("menuitem", { name: LABEL })).not.toBeInTheDocument();
+    },
+  );
+
   it("does NOT offer it on an approved row, even if license_pending", async () => {
     await openMenu([APPROVED_LICENSE_ROW]);
     expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0);
@@ -147,6 +157,25 @@ describe("MEH-2299 — the request it sends", () => {
   });
 });
 
+describe("MEH-2299 — another gate still stops the override", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("a photo-gate 422 on the override takes the existing blocked path, not a silent no-op", async () => {
+    apiMock.post.mockImplementation((url) =>
+      url.endsWith("/approve")
+        ? Promise.reject({ response: { status: 422, data: { detail: "לא ניתן לאשר בית עסק ללא תמונה." } } })
+        : Promise.resolve({ data: {} }),
+    );
+    await openMenu([LICENSE_PENDING_ROW]);
+    fireEvent.click(screen.getByRole("menuitem", { name: LABEL }));
+    await waitFor(() =>
+      expect(toastMock.info).toHaveBeenCalledWith("producers.request_changes.approve_blocked_info"),
+    );
+    expect(approveCalls()[0][2]).toEqual({ params: { allow_without_license: true } });
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
+});
+
 describe("MEH-2299 — the override survives the soft checklist confirm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -171,5 +200,25 @@ describe("MEH-2299 — the override survives the soft checklist confirm", () => 
     act(() => result.current.confirmApprove());
     expect(approve).toHaveBeenCalledTimes(1);
     expect(approve).toHaveBeenCalledWith(LICENSE_PENDING_ROW, { withoutLicense: true });
+  });
+
+  it("…and through the fail-closed confirm when the list never loaded", async () => {
+    apiMock.get.mockImplementation(() => new Promise(() => {})); // never resolves
+    const approve = vi.fn();
+    const { result } = renderHook(() => useReviewChecklist(approve));
+
+    act(() => result.current.attemptApprove(LICENSE_PENDING_ROW, { withoutLicense: true }));
+    expect(result.current.approveConfirm).toMatchObject({ count: null });
+    act(() => result.current.confirmApprove());
+    expect(approve).toHaveBeenCalledWith(LICENSE_PENDING_ROW, { withoutLicense: true });
+  });
+
+  it("a plain approve stays a one-argument call", async () => {
+    const approve = vi.fn();
+    const { result } = renderHook(() => useReviewChecklist(approve));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    act(() => result.current.attemptApprove(LICENSE_PENDING_ROW));
+    act(() => result.current.confirmApprove());
+    expect(approve.mock.calls[0]).toHaveLength(1);
   });
 });
