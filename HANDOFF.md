@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 12:55 — סשן claude.ai (לא CC): מדריך outreach לטופז + PR #3545 לקופי ישן מלפני ADR-022
+
+**‏שורה אחת:** ‏ספיר מכניסה את אחותה טופז להתקשר לבתי עסק. נבנו שני artifacts ב-claude.ai (מדריך כתוב + אפליקציית מדריך עם צ'אט `sample`), ובדרך נמצא ש-3 משטחי קופי עדיין אומרים "רישיון בלבד" — מודל שהוחלף ב-ADR-022 (05/06). החמור: מייל 5B (`onboarding_followup.py`) נשלח לעסק **מאושר וחי** בלי מספר רישיון ואומר "הפרופיל ממתין… נסיר את הפרטים". **PR #3545** (`feature/meh-2296-adr022-copy`, 3 קבצים, +23 −23) מתקן את שלושתם, Closes MEH-2296. **לא מוזג** — ספיר ממזגת. pytest/vitest/build לא רצו מקומית (PyPI + npm חסומים גם מהסשן הזה); CI הוא השער.
+
+**‏מה קרה בסשן הזה, בקצרה:**
+
+| מה | איפה |
+| -- | -- |
+| מדריך outreach כתוב (7 סעיפים: מה זה מהמקור · איך פונים · תסריט · התנגדויות · העמוד באתר · אחרי השיחה · פערים) | claude.ai Docs artifact «מדריך outreach לאחות — מהמקור» |
+| אפליקציית מדריך לטופז, RTL, Frank Ruhl + Heebo, מצב שיחה, חיפוש התנגדויות, צ'אט עם קלוד (`capabilities: sample`) | claude.ai artifact «מדריך השיחות של מהמקור» — פרטי עד שספיר משתפת |
+| MEH-2296 נפתח (template 07, קופי מאושר ורבטים 22/10) → PR #3545 | Linear + GitHub |
+| ספיר תיקנה אותי: עסק נכנס גם בלי רישיון, הרישיון קובע רק את התג (ADR-022). המדריך, האפליקציה ו-MEH-2296 תוקנו בהתאם | — |
+
+**‏סתירה שהסשן הזה חשף ולא פתר (ספיר):** הוראות הפרויקט ב-claude.ai עדיין נושאות LOCK «Licensed businesses only». הצעת החלפה: «Two-tier licensing (ADR-022): מאומת / מוצהר. Badge = license, never entry. Home cooks stay out.»
+
+**‏עוד ממצאים (לא נגעתי):** `SITE_DOMAIN = "mehamakor.co.il"` ב-`onboarding_followup.py:42` ושורות share/footer ב-`he.json`/`en.json` עדיין `mehamakor.co.il`, בעוד `docs/DEPLOYMENT.md:22` אומר `mehamakor.online` = production · MEH-2135 אומר "הסקריפט לא הורץ" אבל בגיליון `mehamekor_producers` יש לשונית «מרשם משרד הבריאות» עם 193 שורות (Wave 1, מחוז חיפה) — כלל 34 מבקש לעדכן את ה-description · MEH-2208 (§14, לידים במדיניות הפרטיות) ו-§30א(ה) (`outreach-disclosure-line.md`) עדיין פתוחים משפטית — ה-README של `docs/outreach` אומר במפורש לא להוציא גל כתוב לפני בדיקת עו"ד.
+
+**‏מה שאצל ספיר:** למזג #3545 אחרי CI ירוק (ואז flip-check MEH-2296 לשני הכיוונים, כלל 29b) · לשתף את שני ה-artifacts עם טופז · משתמש `role='admin'` לטופז (אין תפקיד outreach מצומצם; עד שיהיה, הכללים "מה לא לעשות" בחלק 5 של המדריך) · עדכון ה-LOCK בהוראות הפרויקט · הכרעת דומיין קנוני.
+
+**‏סמיכות לסשן ה-CC של הבוקר (11:50):** הסשן הזה הוא claude.ai, לא CC, ולא נגע בתור ה-UI שנרשם שם. הבדיקה המתוזמנת של 13:15 (`direct_outreach`) שייכת לסשן ההוא. המדריך של טופז כבר מכיל fallback («אחר» + "טופז ממהמקור") לזמן שהאפשרות מוסתרת.
+
 ## 2026-10-22 11:50 — תור ה-CI נוקה (7 PR-ים); כרטיסי ה-UI ממתינים ל-session עם npm
 
 **‏שורה אחת:** ‏הבוקר מוזגו ל-staging: #3534 (MEH-1981 יידוע §11 בניוזלטר + צור קשר — כרטיס Done) · #3536 (MEH-2279) · #3537 (MEH-2280) · #3539 (MEH-2281) — טסטי vitest, כל אחד עם הוכחת red→green ב-CI · #3538 (MEH-1829 chunk 1/2 — backend של `sort=distance`; sub-issue MEH-2293 Done, ה-frontend הוא MEH-2294) · #3535 (MEH-1742 פריט 5) · #3533 (כרטיס drop חדש MEH-2292). **production backend עדיין `8e69ff1e`** (נמדד 11:45) — Railway לא החזירו builds ל-Hobby.
