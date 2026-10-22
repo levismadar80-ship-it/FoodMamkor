@@ -60,7 +60,7 @@ class Producer(Base):
     short_description = Column(Text, nullable=True)
     city = Column(String(100))
     address = Column(String(255), nullable=True)
-    # LEGACY(2026-10-15, MEH-1938) — `lat` / `lng` are the business-level mirror
+    # LEGACY(2026-11-30, MEH-1938) — `lat` / `lng` are the business-level mirror
     # of the primary `producer_locations` row. Since chunk 5a (02/09) no
     # CONSUMER SURFACE reads them (geo, submit gate, admin map, producerPoints,
     # JSON-LD all read the rows, with no fallback) and the owner PUT ignores
@@ -234,7 +234,7 @@ class Producer(Base):
     # ≥20 reviews. Written admin-only (excluded from _PRODUCER_WRITABLE_FIELDS
     # in producer_me.py). Migration: a9f2c7d41b6e.
     google_place_id = Column(String(300), nullable=True)
-    # LEGACY(2026-09-20, MEH-2137) — superseded by top_product_id below as of
+    # LEGACY(2026-11-30, MEH-2137) — superseded by top_product_id below as of
     # the switch step. Still WRITTEN (producer_me.py syncs it from the chosen
     # product) and still SERVED (ProducerListOut), so cards/map need no change;
     # it is not dead and must not be dropped here. The drop is its own ticket in
@@ -941,7 +941,7 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    # LEGACY(2026-10-01, MEH-2064)
+    # LEGACY(2026-11-30, MEH-2064)
     # MEH-2145: the swap MEH-1857 asked for. That marker pointed at ITSELF
     # because the "MEH-295 follow-up" the line below promised had never been
     # opened, and it said in as many words: "whoever opens it should swap the
@@ -1924,7 +1924,20 @@ class ProducerAnalyticsDaily(Base):
 
     __tablename__ = "producer_analytics_daily"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # `server_default` as well as the Python `default` (MEH-2282, revision
+    # 0396917da2ea). Chunk B2's roll-up writes with a raw
+    # `INSERT … ON CONFLICT DO NOTHING` that never instantiates this class, so
+    # `default=uuid.uuid4` is not consulted on the one path that writes every
+    # row; the DB has to be able to mint the id itself. Declared on both sides
+    # so model and migration agree (ADR-006). `gen_random_uuid()` is Postgres
+    # 13+ core — the same call b7d3e1a94c26 (MEH-1872) and d4a9c31e6f82
+    # (MEH-1399) already use.
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
     producer_id = Column(
         UUID(as_uuid=True),
         ForeignKey("producers.id", ondelete="CASCADE"),
@@ -1942,10 +1955,12 @@ class ProducerAnalyticsDaily(Base):
     whatsapp_clicks = Column(Integer, nullable=False, server_default="0")
 
     __table_args__ = (
-        # One row per business per day. The roll-up in chunk B upserts on this
-        # constraint, so a re-run over a day it already summarised corrects the
-        # row instead of doubling it — a job that can be run twice safely is
-        # the difference between a recoverable backfill and a corrupted one.
+        # One row per business per day. The roll-up (services/analytics_rollup.py,
+        # MEH-2283) inserts with `ON CONFLICT DO NOTHING` on this constraint —
+        # SKIP, never upsert-overwrite (Sapir's ruling 06/09): a rolled-up day
+        # is immutable, because after chunk C a re-roll would read partially
+        # purged raw rows and write an undercount over a correct number. This
+        # comment used to say "corrects the row"; that was the pre-ruling plan.
         UniqueConstraint(
             "producer_id", "day", name="uq_producer_analytics_daily_producer_day"
         ),

@@ -187,6 +187,9 @@ def list_producers(
     # guard), so a business cannot put itself here.
     in_season: bool | None = None,
     # MEH-1483: sort axis for non-geo results. "newest" (default) or "rating".
+    # MEH-1829: "distance" — nearest-location Haversine ASC, NULL coords LAST,
+    # NO radius filter (sorting never hides a row). Needs lat+lng, no radius_km;
+    # with radius_km the request is the geo path and the axis is ignored.
     # Validated below — an unknown value 422s rather than silently defaulting.
     sort: str | None = None,
     # MEH-13 — free-text search over name + description, used by /search
@@ -210,8 +213,15 @@ def list_producers(
     # pattern, cf. record_contact_click). None/"newest" = default created_at
     # DESC; "rating" = avg_rating DESC nulls-last. An unknown value 422s rather
     # than silently falling back to newest.
-    if sort is not None and sort not in ("newest", "rating"):
+    if sort is not None and sort not in ("newest", "rating", "distance"):
         raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
+    # MEH-1829: distance ordering has no origin without both coordinates — a
+    # 422 here, not a silent fall-back to newest, so the frontend's GPS gate
+    # and the API agree on what "sort by distance" requires.
+    if sort == "distance" and (lat is None or lng is None):
+        raise HTTPException(
+            status_code=422, detail="מיון לפי מרחק דורש מיקום — lat ו-lng חובה"
+        )
     # MEH-1645: whitelist the day param against the canonical vocabulary —
     # same list DeliveryAreaCreate validates on the write path (MEH-1644).
     # MEH-2036: the plural is validated with the SAME whitelist and the SAME
