@@ -168,6 +168,17 @@ function renderMap() {
 
 const mapEl = () => screen.queryByTestId("map");
 
+// MEH-2297: the map container div renders before the async Leaflet init has
+// built the map and run its setup (zoom handlers disabled, canvas click
+// bound). Waiting for the div alone raced that setup on slow runners
+// ("Target cannot be null" at the unmount case, "expected null to be false"
+// at the init-path case). Wait for the last thing the init binds — the
+// canvas click listener — which implies the stub exists and setup ran.
+async function waitForMapReady() {
+  await waitFor(() => expect(mapEl()).toBeInTheDocument(), { timeout: 3000 });
+  await waitFor(() => expect(leafletStubs.maps[0]?.listeners.click).toHaveLength(1), { timeout: 3000 });
+}
+
 describe("HomepageMiniMap — MEH-604 deferral + mount (MEH-2281)", () => {
   beforeEach(() => {
     apiMock.state.producers = [];
@@ -220,7 +231,7 @@ describe("HomepageMiniMap — MEH-604 deferral + mount (MEH-2281)", () => {
   it("with plottable producers: exactly ONE MapContainer, one marker per primary point (pickup-first order resolved to the primary row), tile attribution present", async () => {
     apiMock.state.producers = PLOTTABLE;
     renderMap();
-    await waitFor(() => expect(mapEl()).toBeInTheDocument(), { timeout: 3000 });
+    await waitForMapReady();
     expect(screen.getAllByTestId("map")).toHaveLength(1);
     expect(leafletStubs.maps).toHaveLength(1);
     const markers = screen.getAllByTestId("marker");
@@ -239,7 +250,7 @@ describe("HomepageMiniMap — MEH-604 deferral + mount (MEH-2281)", () => {
   it("the Leaflet init path: non-click zoom disabled, dragging untouched, canvas click bound to /map, fitBounds once with the padding + maxZoom cap", async () => {
     apiMock.state.producers = PLOTTABLE;
     renderMap();
-    await waitFor(() => expect(mapEl()).toBeInTheDocument(), { timeout: 3000 });
+    await waitForMapReady();
     const map = leafletStubs.maps[0];
     expect(map.scrollWheelZoom.enabled).toBe(false);
     expect(map.touchZoom.enabled).toBe(false);
@@ -310,9 +321,8 @@ describe("HomepageMiniMap — unmount", () => {
 
   it("unmounting a mounted map detaches the canvas click listener it bound", async () => {
     const { unmount } = renderMap();
-    await waitFor(() => expect(mapEl()).toBeInTheDocument(), { timeout: 3000 });
+    await waitForMapReady();
     const map = leafletStubs.maps[0];
-    expect(map.listeners.click).toHaveLength(1);
     unmount();
     expect(map.listeners.click).toHaveLength(0);
     expect(mapEl()).toBeNull();
