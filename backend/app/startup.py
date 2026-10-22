@@ -393,6 +393,28 @@ def _run_analytics_rollup_job() -> None:
         db.close()
 
 
+def _run_retention_purge_job() -> None:
+    """MEH-2079 chunk C (MEH-2303): daily purge of raw analytics rows past
+    the 90-day window that the roll-up already owns, and alert_log rows past
+    30 days. Same shape as _run_analytics_rollup_job: fresh session, the
+    service rolls back before re-raising, own Sentry tag, exception swallowed
+    so the scheduler thread never dies. A crashed run costs nothing: the next
+    run recomputes the boundary and deletes whatever is still eligible.
+    """
+    from app.database import SessionLocal
+    from app.services.retention_purge import run_purge
+
+    db = SessionLocal()
+    try:
+        result = run_purge(db)
+        log.info("[RETENTION-PURGE] daily run complete result=%s", result)
+    except Exception as exc:
+        capture_background_exception(exc, task="retention_purge")
+        log.error("[RETENTION-PURGE] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -540,12 +562,26 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-2303 (MEH-2079 chunk C): daily retention purge, one hour after the
+    # roll-up so a day rolled at 01:30 is already owned by the aggregate. The
+    # service only deletes days <= the watermark, so a late or failed roll-up
+    # makes this a no-op for those days rather than a loss.
+    followup_scheduler.add_job(
+        _run_retention_purge_job,
+        CronTrigger(hour=2, minute=30),
+        id="meh_2303_retention_purge_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
     log.info(
         "[FOLLOWUP] scheduler started — daily 10:00 UTC"
         " + weekly full-week expiry Sun 00:10 Asia/Jerusalem (MEH-1828)"
         " + daily analytics roll-up 01:30 UTC (MEH-2283)"
+        " + daily retention purge 02:30 UTC (MEH-2303)"
     )
 
     yield
