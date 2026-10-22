@@ -240,6 +240,14 @@ async function reachDetailsFrame(page: Page): Promise<void> {
  * 33631151404: four tests, 12 such lines, no other error. Answering the
  * count locally takes the suite's request volume out of the equation
  * without hiding a 429 from anything the spec is actually about.
+ *
+ * Every test that calls assertNoConsoleErrors must install this stub before
+ * its first goto — the admin-context tests included, since /he/admin/* also
+ * mounts the Header/Footer nav gate. The admin-list test went without it and
+ * kept going red on exactly this 429 (staging run 39738209179, desktop, two
+ * `/api/experiences/count` 429 lines and nothing else) long after the guest
+ * tests were fixed. Which project trips it depends only on which one happens
+ * to be inside the saturated minute, not on the viewport.
  */
 async function stubExperiencesCount(page: Page): Promise<void> {
   await page.route("**/experiences/count", (route) =>
@@ -300,6 +308,7 @@ test.describe("MEH-2238 — admin outreach list", () => {
     expect(token.length).toBeGreaterThanOrEqual(40);
 
     const errors = collectConsoleErrors(page);
+    await stubExperiencesCount(page);
     await page.goto("/he/admin/outreach");
 
     const row = page.locator("table tbody tr", { hasText: LEAD.name });
@@ -569,6 +578,7 @@ test.describe("MEH-2238 — a signed-in admin follows the link", () => {
     const token = await mintToken(lead.id);
 
     const errors = collectConsoleErrors(page);
+    await stubExperiencesCount(page);
     const response = await page.goto(`/register/producer?prefill=${token}`);
 
     // Recording ACTUAL behaviour, per the card: assert it is not a crash and
