@@ -84,7 +84,7 @@ export default function AdminExperiencesPage() {
     setBusy(true);
     try {
       const endpoint =
-        modalAction === "changes" ? "request-changes" : "reject";
+        modalAction === "changes" ? "changes" : "reject";
       await api.post(`/admin/experiences/${modalEx.id}/${endpoint}`, {
         feedback: feedback.trim(),
       });
