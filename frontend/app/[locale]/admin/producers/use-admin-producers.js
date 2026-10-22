@@ -20,8 +20,18 @@ const DEFAULT_PER_PAGE = 25;
 // chip key. The license gate detail (MEH-971) contains "רישיון"; the photo
 // gate (MEH-799) doesn't — so "רישיון" present → license, else → photo.
 // Pure + exported so the mapping is unit-testable without the hook.
+//
+// MEH-2299: the WhatsApp-verification gate (admin.py, MEH-2121) also answers
+// 422, and its detail carries neither cue — so it fell through to "photo" and
+// the admin was offered a request asking the owner to upload a photo that was
+// not missing. It maps to "phone" now, checked FIRST because it is the most
+// specific cue. There is no request-changes chip for it on purpose: the owner
+// verifies the number herself in the dashboard, so the handler surfaces the
+// backend's own instruction instead of composing a mail.
 export function approveGateReason(detail) {
-  return (detail || "").includes("רישיון") ? "license" : "photo";
+  const d = detail || "";
+  if (d.includes("וואטסאפ")) return "phone";
+  return d.includes("רישיון") ? "license" : "photo";
 }
 
 // MEH-2209: the same gate, mapped to the decision modal's completion-group
@@ -131,6 +141,12 @@ function useProducerActions(loadAllProducers, deps) {
       (err) => {
         if (err?.response?.status === 422) {
           const reason = approveGateReason(err.response.data?.detail);
+          if (reason === "phone") {
+            // MEH-2299: the backend detail already says what to do (ask the
+            // owner to verify, or override). No preset fits, so no modal.
+            showToast.error(err.response.data.detail);
+            return;
+          }
           openDecision(producer, {
             preselect: decisionValue(CHANGES, GATE_PRESET_KEY[reason]),
             text: t(`producers.request_changes.chips.${reason}`),
