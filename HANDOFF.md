@@ -18,6 +18,10 @@
 | #3548 MEH-2284 | stub ל-`/experiences/count` בשני טסטי admin (429 ב-CI) | merge אחרי שה-E2E מראה spec 37 ירוק |
 | #3515 npm group | ירוק בשערים הנדרשים | merge אחרי E2E; לבדוק staging (next 16.3→16.4) |
 | #3492 unicorn 74 | ERESOLVE (דורש eslint 10) | להחזיק עד MEH-893 |
+| #3551 MEH-2300 — סמן העכבר נעלם מעל צ'אט «שאלו אותנו» | z-index של הסמן 9999→10001 (תיקו עם הצ'אט); טסט אדום→ירוק | בדיקה ידנית ב-Chrome/Safari + merge |
+| #3552 MEH-1514 — baseline של /about desktop | שער ה-reveal מדלג על אלמנטים `position: fixed`; baselines חדשים נבדקו בעין (כל הסקציות מרונדרות) | merge אחרי E2E |
+| #3543 — VRT | regen של producer-detail במובייל (`b34ac922`); בעין: שורת pills במקום טאבים. **שים לב:** התג «חדש» → «אין ביקורות עדיין» — לא מה-PR הזה, baseline ישן | מבט + merge |
+| #3514 — mypy | נוספו הערות טיפוס ב-`category_slug.py` (`255dca5b`) — אחרי `uv lock` נשאר רק pytest | `uv lock` כמפורט למעלה |
 
 **‏נבדק ונעצר — אין מה לבנות:** MEH-2122 chunk A (#3007), MEH-2168 chunk 2 (#3278), MEH-2241 chunks A+B (#3449/#3461 — נשאר רק הכרעת קופי), MEH-2244 (כל ה-chunks נחתו; נשאר wiring ב-workflow + הכרעות). MEH-2079 chunk C — חסום על הכרעת top_cities + עו"ד + שחזור תיאור. MEH-2272 — דורש סשן עם npm+uv. MEH-1428 chunk 2 — ה-Deploy המוצלח האחרון ל-staging הוא 14/08, לא ניתן לאמת את ה-revision (נרשם בתיאור).
 
