@@ -245,6 +245,11 @@ describe("ProducersClient distance sort (MEH-2294)", () => {
 
   it("a ?sort=distance deep-link with no fix sends no sort until a fix arrives", async () => {
     params = { sort: "distance" };
+    // The sorted page 1 must carry a row: an empty page with a non-zero total
+    // renders the page-overflow state, which has no sort control to read.
+    apiGet.mockImplementation(() =>
+      Promise.resolve({ data: [{ id: "d1", categories: [] }], headers: { "x-total-count": "1" } }),
+    );
     render(<ProducersClient {...PROPS} />);
     // No origin → effective order is the default, and the backend is never
     // asked for a distance sort it would 422.
