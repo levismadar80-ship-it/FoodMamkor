@@ -163,12 +163,22 @@ def _build_base_queries(
     geo: tuple[float, float, float] | None,
     sort: str | None,
     require_physical: bool = False,
+    sort_origin: tuple[float, float] | None = None,
 ):
     """Initial q + count_q.
 
     `geo=(lat, lng, radius_km)` activates the geo search path (Haversine
     distance, ORDER BY distance ASC); `geo=None` is the standard listing
     path (sort by created_at DESC or rating per the `sort` arg).
+
+    `sort_origin=(lat, lng)` (MEH-1829, non-geo mode only): with
+    `sort == "distance"` the standard listing is ORDERED by the MEH-1402
+    nearest-location Haversine from that point — NULLS LAST, and with NO
+    radius filter and NO physical-location filter, because a sort must never
+    hide a row. That is the whole difference from the geo path above, which
+    filters `<= radius_km` and so drops coordinate-less producers. `count_q`
+    is untouched by this axis (ordering cannot change a count), so
+    `X-Total-Count` is identical to the same filters under any other sort.
 
     `require_physical` (geo mode only): when True, keep MEH-213's
     `has_physical_location IS TRUE` filter — the /map pin semantics, where a
@@ -247,6 +257,9 @@ def _build_base_queries(
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
 
+    # MEH-1829: non-None only on the distance sort — doubles as the "select
+    # the distance too" switch below.
+    distance_expr = None
     if sort == "rating":
         # MEH-1483: avg_rating DESC, NULLs last, tiebreak reviews_count DESC,
         # then created_at DESC. `avg_rating.is_(None)` is a boolean order key
@@ -259,10 +272,34 @@ def _build_base_queries(
             Producer.reviews_count.desc(),
             Producer.created_at.desc(),
         )
+    elif sort == "distance" and sort_origin is not None:
+        # MEH-1829: nearest-location distance ASC, NULLs LAST. Same
+        # `haversine_min_km` expression the geo path uses (one formula — the
+        # MEH-271 Smell #1 rule), minus its `<= radius_km` filter: a producer
+        # with no usable location row yields NULL, and the boolean order key
+        # (`is_(None)` — FALSE < TRUE, the rating branch's idiom) parks it at
+        # the END of the list instead of dropping it. created_at DESC breaks
+        # ties so two co-located businesses order deterministically.
+        origin_lat, origin_lng = sort_origin
+        distance_expr = haversine_min_km(origin_lat, origin_lng)
+        order = (
+            distance_expr.is_(None),
+            distance_expr.desc(),
+            Producer.created_at.desc(),
+        )
     else:
         order = (Producer.created_at.desc(),)
+    # MEH-1829: the distance sort selects the distance alongside the row (the
+    # same two-entity shape as the geo path) so `_finalize_results` can attach
+    # `distance_km` to each producer. Every other sort keeps the single-entity
+    # query byte-identical.
+    select_entities = (
+        (Producer, distance_expr.label("distance_km"))
+        if distance_expr is not None
+        else (Producer,)
+    )
     q = (
-        db.query(Producer)
+        db.query(*select_entities)
         .options(
             joinedload(Producer.categories),
             selectinload(Producer.products),
@@ -1010,9 +1047,18 @@ def _log_search(db: Session, search_q: str | None, total_count: int) -> None:
         logger.warning("[producers] search_queries INSERT failed", exc_info=True)
 
 
-def _finalize_results(q, db: Session, *, geo_search: bool, limit: int, offset: int):
-    """Paginate, geo-dedup, attach badges + favorites. Returns the row list."""
-    if geo_search:
+def _finalize_results(q, db: Session, *, with_distance: bool, limit: int, offset: int):
+    """Paginate, geo-dedup, attach badges + favorites. Returns the row list.
+
+    `with_distance` is True for every query that selects `(Producer,
+    distance_km)` rather than a bare `Producer`: the geo path, and since
+    MEH-1829 the non-geo `sort=distance` path, which has the same two-entity
+    shape. Unlike geo mode the distance there CAN be NULL (a coordinate-less
+    producer is sorted last, not filtered out), hence the None guard on the
+    round(). (This parameter was `geo_search` before MEH-1829 — renamed
+    because the branch is about the row shape, not about geo mode.)
+    """
+    if with_distance:
         # A multi-entity query combined with joinedload on a collection
         # relationship (categories) can emit duplicate rows — the legacy
         # Query identity-map dedupe only applies to single-entity queries.
@@ -1026,7 +1072,9 @@ def _finalize_results(q, db: Session, *, geo_search: bool, limit: int, offset: i
             seen.add(producer.id)
             # Attach computed distance so Pydantic's from_attributes picks
             # it up in ProducerListOut.
-            producer.distance_km = round(float(distance_km), 2)
+            producer.distance_km = (
+                round(float(distance_km), 2) if distance_km is not None else None
+            )
             attach_badge_fields(producer)
             results.append(producer)
         attach_favorites_counts(results, db)
@@ -1037,6 +1085,24 @@ def _finalize_results(q, db: Session, *, geo_search: bool, limit: int, offset: i
         attach_badge_fields(p)
     attach_favorites_counts(rows, db)
     return rows
+
+
+def _distance_sort_origin(
+    sort: str | None, lat: float | None, lng: float | None, *, geo_search: bool
+) -> tuple[float, float] | None:
+    """MEH-1829: the (lat, lng) origin for `sort=distance`, or None.
+
+    A distance sort needs an origin but must NOT enter geo mode — geo mode
+    filters `<= radius_km`, and a sort may never hide a row. lat/lng present
+    WITHOUT radius_km is exactly that shape. The router already 422s a
+    distance sort missing either coordinate; the guard here keeps a direct
+    service call (tests) from ordering on a half-specified point.
+    """
+    if sort != "distance" or geo_search:
+        return None
+    if lat is None or lng is None:
+        return None
+    return (lat, lng)
 
 
 def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], int]:
@@ -1074,9 +1140,14 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
         else None
     )
     geo_search = geo is not None
+    sort_origin = _distance_sort_origin(sort, lat, lng, geo_search=geo_search)
 
     q, count_q = _build_base_queries(
-        db, geo=geo, sort=sort, require_physical=require_physical
+        db,
+        geo=geo,
+        sort=sort,
+        require_physical=require_physical,
+        sort_origin=sort_origin,
     )
     q, count_q = _apply_scalar_filters(q, count_q, **filters)
     q, count_q = _apply_search_filter(db, q, count_q, search_q, geo_search=geo_search)
@@ -1091,6 +1162,10 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     total_count = count_q.scalar() or 0
     _log_search(db, search_q, total_count)
     results = _finalize_results(
-        q, db, geo_search=geo_search, limit=limit, offset=offset
+        q,
+        db,
+        with_distance=geo_search or sort_origin is not None,
+        limit=limit,
+        offset=offset,
     )
     return results, total_count
