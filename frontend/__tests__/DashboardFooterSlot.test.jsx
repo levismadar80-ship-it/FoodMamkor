@@ -8,6 +8,14 @@ import { render, screen } from "@testing-library/react";
 let mockPathname = "/";
 vi.mock("@/i18n/navigation", () => ({
   usePathname: () => mockPathname,
+  // MEH-1981: the consumer Footer now carries a CollectionNotice whose
+  // /privacy link is this module's locale-aware Link; without the stub the
+  // consumer-footer cases throw "No Link export is defined on the mock".
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("next-intl", () => ({

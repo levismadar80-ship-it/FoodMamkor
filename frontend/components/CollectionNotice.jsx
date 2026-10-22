@@ -17,7 +17,10 @@
  *           and never this file (rule 22).
  * Related:  frontend/app/[locale]/register/RegisterClient.jsx:385-391 (the
  *           existing /privacy link treatment this matches), MEH-1981.
- * History:  MEH-1981 (creation — the five surfaces measured with no notice).
+ * History:  MEH-1981 (creation — the five surfaces measured with no notice);
+ *           MEH-1981 residual (`tone="on-dark"` for the footer newsletter —
+ *           the default `text-primary` link is #2e6853 on the footer's
+ *           bg-primary-dark #2e4a2e, which is not legible on any reading).
  */
 
 import { Link } from "@/i18n/navigation";
@@ -29,7 +32,14 @@ import { Link } from "@/i18n/navigation";
 // under the threshold — so the resting underline is the condition that has to
 // hold. Measured red on /forgot-password, desktop and mobile, in
 // e2e/flows/12-axe-a11y.spec.ts before this line changed.
-const LINK_CLASS = "text-primary underline";
+//
+// Two tones, both keeping that resting underline. `on-dark` reuses the exact
+// inks Footer.jsx already carries on bg-primary-dark (MEH-867: green-50 /
+// green-100 measured AA there) — no new colour is introduced.
+const TONES = {
+  default: { text: "text-muted-foreground", link: "text-primary underline" },
+  "on-dark": { text: "text-green-100", link: "text-green-50 underline hover:text-white" },
+};
 
 /**
  * @param {object}   props
@@ -37,29 +47,36 @@ const LINK_CLASS = "text-primary underline";
  * @param {string}   props.linkLabel   Already-translated label for /privacy.
  * @param {string}   props.testId      data-testid for the wrapper.
  * @param {string}   [props.className] Extra classes. Logical properties only.
+ * @param {"default"|"on-dark"} [props.tone] Ink set. `on-dark` for a dark
+ *                                     surface such as the footer; anything
+ *                                     unknown falls back to `default`.
  *
  * Translation happens in the CALLER, not here: each surface owns its own
  * next-intl namespace, so a component calling useTranslations() would have to
  * hardcode one namespace and would stop working on the next surface.
  */
-export default function CollectionNotice({ message, linkLabel, testId, className = "" }) {
+export default function CollectionNotice({ message, linkLabel, testId, className = "", tone = "default" }) {
   // Render nothing rather than an empty line if a caller passes no message —
   // a bare "·" next to a link reads as a broken element, and a notice that
   // says nothing is worse than no notice at all.
   if (!message) return null;
+
+  // Object.hasOwn, not `TONES[tone] || …`: a prototype key ("constructor")
+  // would otherwise resolve to a function and render garbage classes.
+  const ink = Object.hasOwn(TONES, tone) ? TONES[tone] : TONES.default;
 
   return (
     <p
       data-testid={testId}
       // Logical properties only (start/end/ms/me). The physical variants break
       // under dir="rtl", so this uses text-start and margin-block utilities.
-      className={`text-xs text-muted-foreground leading-relaxed text-start mt-2 ${className}`}
+      className={`text-xs ${ink.text} leading-relaxed text-start mt-2 ${className}`}
     >
       {message}{" "}
       <Link
         href="/privacy"
         target="_blank"
-        className={LINK_CLASS}
+        className={ink.link}
         data-testid={testId ? `${testId}-link` : undefined}
       >
         {linkLabel}

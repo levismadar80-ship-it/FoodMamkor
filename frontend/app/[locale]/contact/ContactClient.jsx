@@ -5,6 +5,7 @@ import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
+import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -17,6 +18,10 @@ import { CONTACT_EMAIL } from "@/lib/env.client";
 
 export default function ContactClient() {
   const t = useTranslations("contact");
+  // MEH-1981: same namespace pair CategoryRequestModal.jsx:17-18 uses — one
+  // privacy-link label site-wide, not a new string.
+  const tNotice = useTranslations("privacy.collection_notice");
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
@@ -134,6 +139,17 @@ export default function ContactClient() {
                   className="w-full border border-border rounded-[12px] px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 />
               </div>
+
+              {/* MEH-1981: notice-at-collection (Privacy Law Amendment 13 §11)
+                  — purpose + recipient of what is typed above, at the point of
+                  collection. The `privacy_notice` line under the submit button
+                  stays: it carries the consent wording, this carries the
+                  purpose. Copy derived from the five lines approved 02/09. */}
+              <CollectionNotice
+                message={tNotice("contact")}
+                linkLabel={tPrivacyLink("privacy_link")}
+                testId="contact-collection-notice"
+              />
 
               {status === "error" && (
                 <div className="text-sm text-red-600 bg-red-50 rounded-[12px] p-3">
