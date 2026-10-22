@@ -13,13 +13,29 @@ Related:  backend/app/schemas/schemas.py::_special_hours_validator;
 History:  MEH-1889 chunk A (creation).
 """
 
+from datetime import date
+
 import pytest
 
+import app.schemas.schemas as schemas
 from app.models.models import Producer
 from app.schemas.schemas import (
     _MAX_SPECIAL_DATES,
     _special_hours_validator,
 )
+
+
+# Every date literal in this file sits in September 2026. The validator
+# rejects keys older than _SPECIAL_HOURS_RETENTION_DAYS (30) against
+# `schemas.israel_today()` — so without a frozen clock this file was a
+# time-bomb: it went red on its own on 2026-10-22 (Israel midnight) with no
+# code change anywhere (see MEH-1889 / the 22/10 CI red). Freeze the clock the
+# way the validator's own docstring prescribes and test_availability_validation
+# already does; the retention policy itself is covered by
+# test_retention_rejects_dates_older_than_30_days below.
+@pytest.fixture(autouse=True)
+def _freeze_israel_today(monkeypatch):
+    monkeypatch.setattr(schemas, "israel_today", lambda: date(2026, 9, 22))
 
 
 # ── The absence control (MEH-1619) ────────────────────────────────────────
@@ -153,3 +169,15 @@ def test_adjacent_ranges_allowed():
         }
     )
     assert len(out["2026-09-22"]["ranges"]) == 2
+
+
+def test_retention_rejects_dates_older_than_30_days(monkeypatch):
+    """The policy the frozen clock would otherwise hide: exactly today-30 is
+    still accepted (inclusive boundary), today-31 is rejected with the
+    retention message — not the format message."""
+    monkeypatch.setattr(schemas, "israel_today", lambda: date(2026, 9, 22))
+    assert _special_hours_validator({"2026-08-23": {"ranges": []}}) == {
+        "2026-08-23": {"ranges": []}
+    }
+    with pytest.raises(ValueError, match="כבר עבר"):
+        _special_hours_validator({"2026-08-22": {"ranges": []}})

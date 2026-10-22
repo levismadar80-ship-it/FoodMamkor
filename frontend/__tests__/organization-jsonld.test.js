@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { buildHomeJsonLd, buildJsonLd, buildOrganizationNode } from "@/lib/seo";
 import {
@@ -6,6 +9,7 @@ import {
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
   SITE_DESCRIPTION,
+  CANONICAL_SENTENCE,
 } from "@/lib/constants";
 import he from "../messages/he.json";
 
@@ -35,16 +39,25 @@ const PRODUCER = {
 };
 
 describe("Organization JSON-LD (MEH-2192)", () => {
-  it("carries the site's own description, verbatim", () => {
+  it("carries the CANONICAL_SENTENCE, verbatim — the same one llms.txt ships", () => {
     const org = buildOrganizationNode();
 
     expect(org["@type"]).toBe("Organization");
     expect(org.name).toBe(BRAND_NAME);
-    expect(org.description).toBe(SITE_DESCRIPTION);
-    // Not a paraphrase of the meta description — the same string object-for-
-    // object. An entity description that disagrees with the page's own meta
-    // description is the inconsistency this ticket exists to remove.
-    expect(SITE_DESCRIPTION.length).toBeGreaterThan(0);
+    // MEH-2192 AC: entity description = the one approved brand sentence, so the
+    // JSON-LD and llms.txt say the same thing to answer engines. It is NOT the
+    // per-page meta description (SITE_DESCRIPTION) — that one sells the page
+    // to a SERP and legitimately differs.
+    expect(org.description).toBe(CANONICAL_SENTENCE);
+    expect(org.description).not.toBe(SITE_DESCRIPTION);
+    expect(CANONICAL_SENTENCE.length).toBeGreaterThan(0);
+  });
+
+  it("public/llms.txt carries CANONICAL_SENTENCE as its own line (single owner)", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const llms = readFileSync(path.join(here, "..", "public", "llms.txt"), "utf8");
+    const lines = llms.split("\n").map((line) => line.trim());
+    expect(lines).toContain(CANONICAL_SENTENCE);
   });
 
   it("declares sameAs, and every entry is an absolute https URL", () => {
@@ -97,8 +110,9 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     // separately; enriching one and forgetting the other is the regression
     // this catches, and it catches it in either direction.
     expect(homeOrg).toEqual(producerOrg);
-    expect(homeOrg.description).toBe(SITE_DESCRIPTION);
-    expect(producerOrg.description).toBe(SITE_DESCRIPTION);
+    // MEH-2192: both surfaces carry the canonical sentence (not the meta description).
+    expect(homeOrg.description).toBe(CANONICAL_SENTENCE);
+    expect(producerOrg.description).toBe(CANONICAL_SENTENCE);
     expect(homeOrg.sameAs).toEqual(BRAND_SAME_AS);
     expect(producerOrg.sameAs).toEqual(BRAND_SAME_AS);
 
