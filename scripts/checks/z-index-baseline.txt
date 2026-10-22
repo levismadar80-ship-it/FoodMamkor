@@ -42,8 +42,8 @@ frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx:z-[598]
 frontend/app/[locale]/producer/dashboard/page.js:z-[9000]
 frontend/app/globals.css:z-index:1000
 frontend/app/globals.css:z-index:1000
+frontend/app/globals.css:z-index:10001
 frontend/app/globals.css:z-index:1001
-frontend/app/globals.css:z-index:9999
 frontend/components/AccountSheet.jsx:z-[1001]
 frontend/components/AccountSheet.jsx:z-[1002]
 frontend/components/AddressSearch.jsx:z-[1010]
