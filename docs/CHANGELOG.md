@@ -6,7 +6,8 @@
 
 - **‏22/10 (11:00–13:40, CC בלי npm) — תיקון flake ב-HomepageMiniMap; ארבעה PR-י UI פתוחים לספיר.**
   - **‏#3547 `542f0870` (מוזג, squash, MEH-2297 Done):** שלושה מקרים ב-`HomepageMiniMap.test.jsx` חיכו ל-div של המפה ואז קראו את ה-stub של Leaflet לפני שאותחל — `Target cannot be null` (:315) ו-`expected null to be false` (:244) על PR-ים לא קשורים. עכשיו `waitForMapReady()` מחכה ל-listener שהאתחול קושר; האסרציות אחרי unmount לא השתנו.
-  - **‏פתוחים לספיר (לא מוזגו):** #3541 · #3542 · #3543 (`do-not-merge`) · #3544 · #3548 — פירוט ב-HANDOFF «2026-10-22 13:40».
+  - **‏#3548 `d9506847` (מוזג, squash, MEH-2284 Done):** `37-outreach-prefill:285` נפל על 429 מ-`/experiences/count` (נקרא פעמיים בכל טעינה, 60/דקה ל-IP, וכל ה-CI יוצא מ-IP אחד); שני טסטי ה-admin שבודקים console errors קיבלו את ה-stub שטסטי האורחים כבר היו עם.
+  - **‏פתוחים לספיר (לא מוזגו):** #3541 · #3542 · #3543 (`do-not-merge`) · #3544 — פירוט ב-HANDOFF «2026-10-22 13:40».
 
 - **‏22/10 (12:20–12:55, claude.ai) — מדריך outreach לטופז + PR #3545: שלושה משטחי קופי יושרו ל-ADR-022.**
   - **‏MEH-2296 — PR #3545 `f48ab643` (מוזג, squash, בהרשאת ספיר; MEH-2296 Done):** מייל 5B ב-`onboarding_followup.py` נכתב מחדש סביב תג «מאומת» במקום "הפרופיל ממתין / רק בעלי עסק עם רישיון / נסיר את הפרטים" — נוסח שהיה שגוי לעסק מוצהר שכבר חי מאז ADR-022 (05/06). `admin.outreach.call_script` (he/en) הוחלף בתסריט 5 השלבים; שלושת `wa_templates.*_body` מסתיימים בשורת היידוע הנעולה מ-`docs/compliance/outreach-disclosure-line.md`; `warm_title` «חמותה» → «חמה». קופי אושר ורבטים ע"י ספיר (כלל 22). 3 קבצים, +23 −23. בדיקות לא רצו מקומית (PyPI/npm חסומים מהסשן); ב-CI: build · vitest · pytest · שני השערים ירוקים; ה-reviewer האוטומטי נכשל (MEH-2295) והוחלף בסקירה אדברסרית בסוכן נפרד (0 BLOCK, MINOR אחד תוקן ב-`2ba67c8`: «נוח לך שאחזור»).
