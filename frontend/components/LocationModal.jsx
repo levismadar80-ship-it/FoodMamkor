@@ -47,10 +47,13 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
       if (e.key === "Escape") { onClose(); return; }
       if (e.key !== "Tab") return;
 
-      const focusables = panelRef.current?.querySelectorAll(
+      // MEH-1430: the X is display:none on mobile (bottom-sheet, no X), so
+      // the trap skips anything not rendered — otherwise a wrap would aim at
+      // an element that cannot take focus and the Tab would leave the panel.
+      const focusables = [...(panelRef.current?.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusables?.length) return;
+      ) ?? [])].filter((el) => window.getComputedStyle(el).display !== "none");
+      if (!focusables.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
@@ -70,7 +73,10 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
     // (KashrutBadgeStrip.jsx), which focuses its close control for the same
     // reason. The city field still receives focus on a geolocation failure,
     // where the user has been given an explicit reason to type.
+    // MEH-1430: on mobile the X is hidden, so focus() on it is a no-op; fall
+    // back to the panel itself (tabIndex -1) — still no keyboard raised.
     closeRef.current?.focus();
+    if (document.activeElement !== closeRef.current) panelRef.current?.focus();
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -153,15 +159,20 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-primary/10 backdrop-blur-sm sm:px-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* MEH-2039: aria-label -> aria-labelledby. The panel HAS a visible <h2>,
           and APG/MDN both say the accessible name should come from it rather
           than from a parallel string a screen-reader user cannot see change. */}
+      {/* MEH-1430 (C hybrid): mobile = bottom-sheet anchored to the bottom
+          edge (rounded top, grab handle, no X); sm+ = the centered dialog.
+          Cream surface (bg-background), primary-tinted backdrop above. The
+          bottom padding clears the iOS home indicator on the sheet. */}
       <div
         ref={panelRef}
-        className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full max-w-md p-6 relative animate-[slide-up_0.2s_ease-out]"
+        tabIndex={-1}
+        className="bg-background rounded-t-[24px] sm:rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="location-modal-title"
@@ -173,11 +184,36 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
             bg-background-secondary, which matched no token in
             tailwind.tokens.json and rendered transparent — see PR for the
             measured contrast ratios. */}
+        {/* MEH-1430: map-contour texture — decorative, primary @6%, top-END
+            corner only (end-0 mirrors with the reading direction). */}
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          viewBox="0 0 160 160"
+          className="pointer-events-none absolute top-0 end-0 w-40 h-40 text-primary opacity-[0.06]"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <path d="M160 18c-22 4-38 14-46 30s-4 34-20 44-38 6-52 18-18 32-14 50" />
+          <path d="M160 40c-16 3-28 11-33 23s-2 27-15 36-30 6-42 15-14 24-11 46" />
+          <path d="M160 62c-11 2-19 8-22 17s0 19-9 26-22 5-31 12-10 18-8 43" />
+          <path d="M160 86c-7 1-12 5-13 11s1 12-5 17-14 4-20 9-6 12-5 37" />
+          <circle cx="132" cy="112" r="6" />
+        </svg>
+
+        {/* MEH-1430: grab handle — visual affordance only (no gesture JS);
+            dismissal stays backdrop tap / Esc / «לא עכשיו». Mobile only. */}
+        <div className="flex justify-center pb-3 sm:hidden" aria-hidden="true">
+          <div className="w-11 h-[5px] rounded-full bg-border" />
+        </div>
+
+        {/* MEH-1430: the X exists on desktop only (sm+); the sheet has none. */}
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="absolute top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 flex items-center justify-center text-text transition-colors"
+          className="absolute top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 hidden sm:flex items-center justify-center text-text transition-colors"
           aria-label={t("close_aria")}
         >
           <X size={16} weight="regular" />
@@ -188,11 +224,11 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
             so 36px of overlap needs clearing. REUSES: OnboardingTip.jsx:55. */}
         <h2
           id="location-modal-title"
-          className="font-headline-md text-xl font-bold text-text mb-1 pe-10"
+          className="relative font-headline-md text-headline-md font-bold text-text mb-1 sm:pe-10"
         >
           {t("title")}
         </h2>
-        <p id="location-modal-subtitle" className="text-fg-muted text-sm mb-5 pe-10">
+        <p id="location-modal-subtitle" className="relative text-fg-muted text-sm mb-5 sm:pe-10">
           {t("subtitle")}
         </p>
 
@@ -224,18 +260,26 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
               key={key}
               type="button"
               onClick={() => handleCityPick(canonical)}
-              className="px-4 py-3 rounded-lg bg-green-50 hover:bg-primary hover:text-white transition-colors min-h-[44px] text-text text-sm font-medium"
+              className="px-4 py-3 rounded-lg bg-background-alt border border-accent/40 text-gold-deep hover:bg-primary hover:border-primary hover:text-white transition-colors min-h-[44px] text-sm font-medium"
             >
-              {t(`popular_cities.${key}`)}
+              {/* MEH-1430: label wrapped so a future «· N» count (data-gated,
+                  MEH-974) can append inside this span without reflowing the
+                  grid — slot only, no count logic. */}
+              <span className="inline-flex items-center gap-1">
+                <span>{t(`popular_cities.${key}`)}</span>
+              </span>
             </button>
           ))}
         </div>
+
+        {/* MEH-1430: hairline divider, then the outlined near-me button. */}
+        <div className="border-t border-border mb-4" aria-hidden="true" />
 
         <button
           type="button"
           onClick={handleGeo}
           disabled={geoLoading}
-          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-[10px] font-medium transition hover:bg-primary-dark disabled:opacity-60 mb-3"
+          className="w-full inline-flex items-center justify-center gap-2 border border-primary text-primary bg-transparent py-2.5 min-h-[44px] rounded-[10px] font-medium transition hover:bg-green-50 disabled:opacity-60 mb-3"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("geo_loading") : t("geo_button")}
