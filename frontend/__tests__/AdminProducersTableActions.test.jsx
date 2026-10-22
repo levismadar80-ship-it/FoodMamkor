@@ -88,6 +88,15 @@ describe("approveGateReason — 422 detail → chip mapping (MEH-1011)", () => {
     ).toBe("photo");
   });
 
+  // MEH-2299: this detail used to fall through to "photo" — red before the fix.
+  it("maps the WhatsApp-verification gate detail to 'phone', not 'photo'", () => {
+    expect(
+      approveGateReason(
+        "לא ניתן לאשר בית עסק ללא אימות מספר הוואטסאפ. בקשי מבעלת העסק לאמת את המספר, או אשרי עם דריסה מפורשת.",
+      ),
+    ).toBe("phone");
+  });
+
   it("defaults to 'photo' for empty/unknown detail", () => {
     expect(approveGateReason("")).toBe("photo");
     expect(approveGateReason(undefined)).toBe("photo");

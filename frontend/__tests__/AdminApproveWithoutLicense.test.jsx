@@ -176,6 +176,26 @@ describe("MEH-2299 — another gate still stops the override", () => {
   });
 });
 
+describe("MEH-2299 — a phone-gate 422 does not pose as a photo problem", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("shows the backend instruction and opens no request-changes modal", async () => {
+    const PHONE = "לא ניתן לאשר בית עסק ללא אימות מספר הוואטסאפ. בקשי מבעלת העסק לאמת את המספר, או אשרי עם דריסה מפורשת.";
+    apiMock.post.mockImplementation((url) =>
+      url.endsWith("/approve")
+        ? Promise.reject({ response: { status: 422, data: { detail: PHONE } } })
+        : Promise.resolve({ data: {} }),
+    );
+    mockApi([LICENSE_PENDING_ROW]);
+    render(<ProducersPageWrapper />);
+    await screen.findByText(BASE_ROW.name);
+    fireEvent.click(screen.getByRole("button", { name: "אשרי" }));
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith(PHONE));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(toastMock.info).not.toHaveBeenCalled();
+  });
+});
+
 describe("MEH-2299 — the override survives the soft checklist confirm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
