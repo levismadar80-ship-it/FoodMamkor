@@ -284,7 +284,7 @@ def _build_base_queries(
         distance_expr = haversine_min_km(origin_lat, origin_lng)
         order = (
             distance_expr.is_(None),
-            distance_expr.desc(),
+            distance_expr.asc(),
             Producer.created_at.desc(),
         )
     else:
