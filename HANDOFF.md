@@ -3,6 +3,39 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 11:50 — תור ה-CI נוקה (7 PR-ים); כרטיסי ה-UI ממתינים ל-session עם npm
+
+**‏שורה אחת:** ‏הבוקר מוזגו ל-staging: #3534 (MEH-1981 יידוע §11 בניוזלטר + צור קשר — כרטיס Done) · #3536 (MEH-2279) · #3537 (MEH-2280) · #3539 (MEH-2281) — טסטי vitest, כל אחד עם הוכחת red→green ב-CI · #3538 (MEH-1829 chunk 1/2 — backend של `sort=distance`; sub-issue MEH-2293 Done, ה-frontend הוא MEH-2294) · #3535 (MEH-1742 פריט 5) · #3533 (כרטיס drop חדש MEH-2292). **production backend עדיין `8e69ff1e`** (נמדד 11:45) — Railway לא החזירו builds ל-Hobby.
+
+**‏למה נעצר כאן:** ה-sandbox של הסשן הזה חסום ל-`registry.npmjs.org` / `pypi.org` / `mehamakor.co.il` (נמדד 11:12 גם אחרי שספיר הוסיפה אותם לסביבה — ההגדרה חלה על session חדש). בלי npm אין vitest/build/Playwright מקומי ואין צילומי 375/1440, ולכן כל כרטיס UI נשאר לסשן הבא. **אל תפתחו את הסשן הבא במקביל לזה** (כלל single-session) — רק אחרי שהסשן הזה נסגר.
+
+**‏שורה לפתיחת הסשן הבא (להדביק כמו שהיא):**
+> קראי HANDOFF.md → הסעיף «2026-10-22 11:50». קודם בדקי ש-`curl -sS -o /dev/null -w '%{http_code}' https://registry.npmjs.org/vitest` מחזיר 200. ואז עבדי על «התור לסשן עם npm» לפי הסדר, סוכן לכל כרטיס, PR לכל כרטיס.
+
+**‏התור לסשן עם npm (לפי סדר):**
+
+| # | כרטיס | מה | הערות |
+| -- | -- | -- | -- |
+| 1 | MEH-2294 | אפשרות «לפי מרחק» ב-`ProducersClient.jsx`, מוצגת רק כשיש GPS · vitest · צילומי 375/1440 | ה-backend כבר ב-staging (#3538): `sort=distance` דורש `lat`+`lng` (אחרת 422), מחזיר `distance_km`, `X-Total-Count` לא משתנה. ההורה MEH-1829 נסגר אחרי שזה נכנס |
+| 2 | MEH-1430 | רענון `LocationModal.jsx` (bottom-sheet/dialog לפי המוקאפ המאושר) | LOW-RISK, סמכות end-to-end כתובה בכרטיס. Phase 0: hit-test לבאג ה-z-index של GPS (MEH-263) |
+| 3 | MEH-1207 | `SectionAnchorNav.jsx` חדש בעמוד בית העסק | עמוד בית העסק = central component → rule 23 carve-out (a): CC בונה + צילומים, **ספיר עוברת בעצמה לפני merge** |
+| 4 | MEH-1428 chunk 2 | «בקשו ביקורת» — כרטיס בדשבורד, `?rt=` → sessionStorage, שורת «בהזמנת בית העסק» | chunk 1 = #3368 (`15e2fbda`). Phase 0: לוודא ש-alembic `3f9a7c2e5d18` רץ ב-staging (ספיר) |
+| 5 | MEH-1685 ACs 1–3 | autocomplete: highlight הפוך · thumbnails של Cloudinary · תקרת הצעות | AC 4 (focus mode במובייל) = הכרעת עיצוב פתוחה — לא לגעת |
+| 6 | MEH-2272 | הסרת ה-alias `is_available_today` + הזוג הלגסי | דורש regen של `openapi.json` + `lib/generated/api.zod.js` (`npm run codegen`) — לכן כאן |
+| 7 | — | `--update-baseline` של ה-coverage ratchet אחרי #3536/#3537/#3539 | אופציונלי; לא נעשה כי אין `--coverage` מקומי |
+
+**‏מה שאצל ספיר (לא CC):**
+
+| מה | איפה |
+| -- | -- |
+| Railway: סיבוב סודות + tokens חדשים ל-GitHub + redeploy | MEH-2291 (צ'קליסט מלא בכרטיס). ספיר כתבה «סובבתי» ב-10:50; ה-redeploy עצמו ממתין ל-builds ל-Hobby. **שימי לב:** הקונטיינר הישן רץ עם המפתחות הישנים — אם ה-Resend הישן בוטל, מיילים לא יוצאים עד ה-redeploy |
+| סוקר ה-CI שותק מאז 21/10 (`Claude execution failed`, אפס תגובות `claude[bot]` על #3516–#3539) | MEH-2295 — כנראה `CLAUDE_CODE_OAUTH_TOKEN` פג; לא אומת (לוגים חסומים ל-sandbox) |
+| תגים `v1.1.0` (`5980abd7`) · `v1.1.1` (`94feb78e`) | מהמחשב שלך (ראו הסעיף מ-10:17) |
+| PR-ים נעולים #3524 · #3525 · #3528 | ללא שינוי |
+| MEH-2168 — הפיכת ה-probe ב-`e2e.yml` לשער חוסם | הכרעה, לא ידיים — ה-diff המלא בכרטיס |
+
+**‏מתוזמן:** בדיקה ב-13:15 (trigger `trig_014GWGM59omTfZhRCrFzXZnm`, נוחת בסשן **הזה**): אם `/api/health` מראה sha חדש — מחזירה את `direct_outreach` לטופס ומשחררת; אחרת שולחת לספיר הודעה רק אם Hobby חזר.
+
 ## 2026-10-22 10:17 — hotfix v1.1.1: `direct_outreach` מוסתר ב-frontend; Railway = אירוע אבטחה, ה-Deploy job נכשל עד שיהיו tokens חדשים
 
 **‏שורה אחת:** ‏`main` = `94feb78e` (#3531, merge commit) מעל hotfix #3530 (`30b4926b`, squash ל-staging). האפשרות «מהמקור פנו אליי ישירות» **מוסתרת ב-frontend בלבד** (`RegisterProducerClient.jsx`, שורה אחת להחזרה) כי ה-backend ב-production עדיין `8e69ff1e`. **הסיבה התעדכנה:** Railway 21–22/10 = security incident — builds מושהים ל-Hobby + **כל ה-API tokens בוטלו 04:17 UTC** → `railway redeploy` ב-`Deploy` נכשל ל-main ול-staging גם ב-re-run. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «22/10 (09:10–10:17)».
