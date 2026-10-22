@@ -3,6 +3,22 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-22 10:17 — hotfix v1.1.1: `direct_outreach` מוסתר ב-frontend; Railway = אירוע אבטחה, ה-Deploy job נכשל עד שיהיו tokens חדשים
+
+**‏שורה אחת:** ‏`main` = `94feb78e` (#3531, merge commit) מעל hotfix #3530 (`30b4926b`, squash ל-staging). האפשרות «מהמקור פנו אליי ישירות» **מוסתרת ב-frontend בלבד** (`RegisterProducerClient.jsx`, שורה אחת להחזרה) כי ה-backend ב-production עדיין `8e69ff1e`. **הסיבה התעדכנה:** Railway 21–22/10 = security incident — builds מושהים ל-Hobby + **כל ה-API tokens בוטלו 04:17 UTC** → `railway redeploy` ב-`Deploy` נכשל ל-main ול-staging גם ב-re-run. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «22/10 (09:10–10:17)».
+
+**‏מה שסשן חדש חייב לדעת, לפי דחיפות:**
+
+| מה | מצב | הצעד הבא |
+| -- | -- | -- |
+| **production backend** | `/api/health.version.git_sha` = `8e69ff1e`; ה-job `Deploy` אדום ל-main ול-staging (re-runs של `39673964501` / `39680276996` נפלו שוב 09:0x) | **ספיר:** Railway → Account → Tokens → ליצור tokens חדשים → לעדכן `RAILWAY_PRODUCTION_TOKEN` + `RAILWAY_STAGING_TOKEN` ב-GitHub Secrets → re-run של `Deploy`. **או** Railway dashboard → Deploy Latest Commit, ברגע ש-builds ל-Hobby חוזרים |
+| **rotation של secrets** | Railway's disclosure ממליץ rotation — [blog.railway.com/p/security-disclosure-wednesday-october-21st](https://blog.railway.com/p/security-disclosure-wednesday-october-21st) | **ספיר בלבד:** Postgres creds · `ANTHROPIC_API_KEY` · `RESEND_API_KEY` · Cloudinary · `JWT_SECRET_KEY`. לא מתוך CC |
+| **`direct_outreach` מוסתר** | `RegisterProducerClient.jsx` → `REFERRAL_SOURCE_KEYS` בלי `"direct_outreach"`; he/en/constants.py שלמים | אחרי ש-`/api/health` מראה sha אחרי `5980abd7`: להחזיר `"direct_outreach"` לרשימה (שורה אחת, הקומנט בקוד מסמן איפה). בדיקה מתוזמנת 13:15 אמורה לעשות זאת לבד — לוודא |
+| **תגים** | `v1.1.0` (`5980abd7`) · `v1.1.1` (`94feb78e`) — לא נדחפו (sandbox לא יכול) | ספיר: `git tag -a v1.1.0 5980abd7 -m "release: v1.1.0" && git push origin v1.1.0` ואותו דבר ל-`v1.1.1` על `94feb78e` |
+| **PR-ים נעולים (`do-not-merge`)** | #3524 · #3525 · #3528 | סקירת ספיר אחרי ההשקה (ללא שינוי מ-00:40) |
+
+**‏לקח שמתקן את הלקח של אמש:** «Invalid RAILWAY_TOKEN» היה אתמול סימפטום של API שלא עונה; **היום הוא נכון מילולית** — Railway ביטלו את כל ה-tokens. שני המקרים נראים זהים בלוג של ה-CLI; מה שמבדיל ביניהם הוא status.railway.com + ה-disclosure, לא הלוג. הכלל נשאר: סטטוס לפני rotation — והיום הסטטוס אמר rotation.
+
 ## 2026-10-22 00:40 — release v1.1.0 יצא, Railway בתקלה עולמית, שלוש פצצות-זמן ושלושה PR-ים נעולים
 
 **‏שורה אחת:** ‏`main` = `5980abd7` (#3521, merge commit). Vercel חי; **ה-backend לא** — Railway Major Outage (builds paused), לא token. Search Console מאומת + sitemap הוגש. MEH-2192 · MEH-2288 · MEH-2290 Done. פירוט ב-[docs/CHANGELOG.md](./docs/CHANGELOG.md) → «22/10».
