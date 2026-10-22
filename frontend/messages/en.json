@@ -3547,7 +3547,9 @@
       "password_reset": "Your email is used only to send the reset link.",
       "experience": "What you submit here is intended for publication on the site, after review.",
       "event": "What you submit here is intended for publication on the site, after review.",
-      "category_request": "The request is sent to us for review and is not published on the site."
+      "category_request": "The request is sent to us for review and is not published on the site.",
+      "newsletter": "Your email is used only to send the updates.",
+      "contact": "Your message is sent to us so we can reply, and is not published on the site."
     },
     "sections": {
       "operator": {
