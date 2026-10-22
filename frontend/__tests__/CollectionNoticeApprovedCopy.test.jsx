@@ -62,20 +62,40 @@ vi.mock("@/components/AddressSearch", () => ({
     <input id={id} value={value || ""} onChange={(e) => onChange(e.target.value)} />
   ),
 }));
+// MEH-1981 residual: Footer renders next/image + the experiences nav gate
+// (GET /experiences/count — the never-settling api.get above keeps it closed).
+vi.mock("next/image", () => ({
+  default: (props) => <img alt={props.alt ?? ""} {...props} />,
+}));
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 
 import ChatWidget from "@/components/ChatWidget";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import ExperienceForm from "@/components/ExperienceForm";
 import EventForm from "@/components/EventForm";
 import ForgotPasswordClient from "@/app/[locale]/forgot-password/ForgotPasswordClient";
+import Footer from "@/components/Footer";
+import ContactClient from "@/app/[locale]/contact/ContactClient";
 
-// The five lines, byte-for-byte as approved on the MEH-1981 card (02/09).
+// The five lines, byte-for-byte as approved on the MEH-1981 card (02/09) —
+// plus the two residual surfaces (footer newsletter, contact form), whose lines
+// are derived from the five: `newsletter` mirrors `password_reset`,
+// `contact` mirrors `category_request`. Sapir can change a word; that is a
+// one-string edit in he.json AND here (this file pins copy on purpose).
 const APPROVED = {
   chat: "מה שנכתב כאן נשלח ל-Anthropic כדי לנסח את התשובה.",
   password_reset: "האימייל משמש לשליחת קישור האיפוס בלבד.",
   experience: "מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.",
   event: "מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.",
   category_request: "הבקשה נשלחת אלינו לעיון ואינה מתפרסמת באתר.",
+  newsletter: "האימייל משמש לשליחת העדכונים בלבד.",
+  contact: "ההודעה נשלחת אלינו כדי לחזור אלייך, ואינה מתפרסמת באתר.",
 };
 // The link label is a REUSE of the registration pages' string, per the card —
 // one privacy-link label site-wide, not a sixth approved string.
@@ -121,8 +141,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("MEH-1981 — the five approved lines live in the message files", () => {
-  it("he.json carries exactly the five keys, each byte-for-byte as approved", () => {
+describe("MEH-1981 — the approved lines live in the message files", () => {
+  it("he.json carries exactly these keys, each byte-for-byte as approved", () => {
     const block = he.privacy.collection_notice;
     expect(Object.keys(block).sort()).toEqual(Object.keys(APPROVED).sort());
     for (const [key, line] of Object.entries(APPROVED)) {
@@ -174,5 +194,47 @@ describe("MEH-1981 — each of the five surfaces renders its line verbatim", () 
   it("CategoryRequestModal says the request is reviewed and not published", () => {
     renderHe(<CategoryRequestModal open onClose={() => {}} />);
     expectNotice("category-request-collection-notice", APPROVED.category_request);
+  });
+});
+
+describe("MEH-1981 residual — the last two audited collection points", () => {
+  it("Footer newsletter states the one purpose of the email, directly under the field, in the on-dark inks", () => {
+    renderHe(<Footer />);
+    expectNotice("newsletter-collection-notice", APPROVED.newsletter);
+
+    // Placement: the notice is a sibling that follows the newsletter <form>
+    // inside the #newsletter column — under the input/button row, not in the
+    // copyright bar and not in another column.
+    const notice = screen.getByTestId("newsletter-collection-notice");
+    const column = document.getElementById("newsletter");
+    expect(column.contains(notice)).toBe(true);
+    expect(notice.previousElementSibling.tagName).toBe("FORM");
+
+    // Legibility on bg-primary-dark: the default primary-green link would be
+    // #2e6853 on #2e4a2e. The on-dark tone must be in effect on BOTH the line
+    // and the link, and the resting underline must survive the tone swap.
+    expect(notice.className.split(/\s+/)).toContain("text-green-100");
+    const link = screen.getByTestId("newsletter-collection-notice-link");
+    const linkClasses = link.className.split(/\s+/);
+    expect(linkClasses).toContain("text-green-50");
+    expect(linkClasses).toContain("underline");
+    expect(linkClasses).not.toContain("text-primary");
+  });
+
+  it("ContactClient states purpose + recipient under the message field, and keeps the consent line", () => {
+    renderHe(<ContactClient />);
+    expectNotice("contact-collection-notice", APPROVED.contact);
+
+    // Placement: right after the message field's wrapper, before the submit.
+    const notice = screen.getByTestId("contact-collection-notice");
+    const textarea = document.getElementById("contact-message");
+    expect(notice.previousElementSibling.contains(textarea)).toBe(true);
+
+    // The pre-existing consent line is NOT replaced by the purpose line: both
+    // /privacy links render — the notice's and the consent line's.
+    const privacyLinks = document.querySelectorAll('a[href="/privacy"]');
+    expect(privacyLinks.length).toBe(2);
+    const consentText = he.contact.privacy_notice.replace(/<\/?link>/g, "");
+    expect(document.body.textContent).toContain(consentText);
   });
 });
