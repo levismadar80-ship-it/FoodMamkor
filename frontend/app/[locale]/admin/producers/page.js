@@ -184,6 +184,7 @@ function ProducersAdminPage() {
         storyCardOpenId={h.storyCardOpenId}
         onSetStoryCardOpenId={h.setStoryCardOpenId}
         onQuickApprove={checklist.attemptApprove}
+        onApproveWithoutLicense={(p) => checklist.attemptApprove(p, { withoutLicense: true })}
         onRequestChanges={h.openRequestChanges}
         onReject={h.openReject}
         onToggleStatus={h.toggleStatus}

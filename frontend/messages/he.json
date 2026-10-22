@@ -1559,6 +1559,7 @@
         },
         "actions": {
           "approve_short": "✓ אשר",
+          "approve_without_license": "אשרי בלי רישיון",
           "request_changes": "בקשת השלמה",
           "edit": "עריכה",
           "view": "צפה",

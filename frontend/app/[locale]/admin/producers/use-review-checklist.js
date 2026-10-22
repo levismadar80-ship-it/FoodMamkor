@@ -166,15 +166,18 @@ export function useReviewChecklist(approve) {
   // count is unavailable rather than reporting a fabricated zero — the dialog
   // copy branches on it. The HARD gates (photo/licence 422 in admin.py) are
   // untouched and were never affected; this is the soft aid, restored.
+  // MEH-2299: `opts` ({ withoutLicense }) rides along untouched, through the
+  // soft confirm too — the override must not bypass the checklist, and the
+  // checklist must not silently drop the override.
   const attemptApprove = useCallback(
-    (producer) => {
+    (producer, opts) => {
       if (!itemsLoaded) {
-        setApproveConfirm({ producer, count: null });
+        setApproveConfirm({ producer, opts, count: null });
         return;
       }
       const remaining = uncheckedCount(producer.id);
-      if (remaining > 0) setApproveConfirm({ producer, count: remaining });
-      else approve(producer);
+      if (remaining > 0) setApproveConfirm({ producer, opts, count: remaining });
+      else approve(producer, opts);
     },
     [approve, itemsLoaded, uncheckedCount],
   );
@@ -185,7 +188,7 @@ export function useReviewChecklist(approve) {
   // approve request TWICE. Read the value, then write it — never both in one
   // updater.
   const confirmApprove = useCallback(() => {
-    if (approveConfirm) approve(approveConfirm.producer);
+    if (approveConfirm) approve(approveConfirm.producer, approveConfirm.opts);
     setApproveConfirm(null);
   }, [approve, approveConfirm]);
 

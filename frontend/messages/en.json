@@ -1559,6 +1559,7 @@
         },
         "actions": {
           "approve_short": "✓ Approve",
+          "approve_without_license": "Approve without license",
           "request_changes": "Request completion",
           "edit": "Edit",
           "view": "View",

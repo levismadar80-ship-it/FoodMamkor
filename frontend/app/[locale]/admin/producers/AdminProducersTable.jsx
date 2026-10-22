@@ -276,7 +276,7 @@ function ReferralSource({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
@@ -354,6 +354,18 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
           // approve. Pending-only — the same guard as approve and
           // request-changes above; the backend has no status guard on reject,
           // so this is a UI affordance, not the enforcement.
+          // MEH-2299: approve a license-required business that has no license
+          // number yet (Sapir, 22/10: it enters, it just gets no badge). Only on
+          // the one cell where the plain approve would 422 on the license gate —
+          // pending AND license_pending. Same busy key as approve: it IS approve.
+          ...(isPending && p.license_pending && onApproveWithoutLicense
+            ? [{
+                key: "approve-without-license",
+                label: t("producers.table.actions.approve_without_license"),
+                disabled: busy(`approve:${p.id}`),
+                onSelect: () => onApproveWithoutLicense(p),
+              }]
+            : []),
           ...(isPending
             ? [{
                 key: "reject",
@@ -597,14 +609,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
-  onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+  onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
   onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+    onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
   };
   return (
