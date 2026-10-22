@@ -44,7 +44,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
-      if (status === 409) {
+      if (status === 408) {
         // Already-producer OR email-password-collision both land on 409.
         // Toast survives the router.push to /login (parent's onError
         // redirects but drops the message); without it the user lands
