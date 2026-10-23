@@ -767,9 +767,9 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 ### How it works (4 steps)
 | Step | Title | Body | Derived from |
 |---|---|---|---|
-| 01 | `נרשמים` | `טופס קצר על העסק — סיפור, תמונות ופרטי קשר. בערך 10 דקות.` | MEH-994b locked duration |
+| 01 | `נרשמים` | `טופס קצר על העסק ופרטי קשר. כ־3 דקות. את התמונות מעלים אחר כך, מלוח הבקרה.` | MEH-2185 duration lock · MEH-2305 (no photos in the form) |
 | 02 | `שיחה אישית` | `הצוות שלנו יוצר קשר לשיחה קצרה — היכרות עם העסק והסיפור.` | MEH-994 after_body |
-| 03 | `העמוד עולה` | `בדרך כלל תוך יום-יומיים העסק שלכם מופיע באתר.` | chat.py approval timeframe |
+| 03 | `העמוד עולה` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | MEH-2305 — the 3-business-day clock starts at «שליחה לבדיקה» |
 | 04 | `לקוחות פונים ישירות` | `כפתור WhatsApp בעמוד פותח שיחה ישירה אתכם. הקשר והתשלום — ביניכם ובין הלקוחות בלבד.` | MEH-1003 neutral no-fees copy (avoids forbidden "מתווכים") |
 
 Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/process`.
