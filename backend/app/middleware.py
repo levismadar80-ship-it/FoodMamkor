@@ -12,7 +12,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
-from app.rate_limit import limiter
+from app.rate_limit import limiter, resolve_client_ip
 from app.services.analytics import record_request
 
 # MEH-483: Sentry SDK is not yet wired in backend (frontend-only today,
@@ -65,6 +65,10 @@ async def add_security_headers(request: Request, call_next) -> Response:
     response.headers["Strict-Transport-Security"] = (
         "max-age=63072000; includeSubDomains; preload"
     )
+    # MEH-2298: which path keyed this request's rate limit (edge / real-ip /
+    # xff / peer). A label only — never the IP itself — so the Vercel→Railway
+    # path can be verified from a browser's devtools without Railway logs.
+    response.headers["X-Client-IP-Source"] = resolve_client_ip(request)[1]
     return response
 
 
