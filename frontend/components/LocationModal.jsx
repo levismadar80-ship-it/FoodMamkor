@@ -208,12 +208,15 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           <div className="w-11 h-[5px] rounded-full bg-border" />
         </div>
 
-        {/* MEH-1430: the X exists on desktop only (sm+); the sheet has none. */}
+        {/* MEH-1430: the X exists on desktop only (sm+); the sheet has none.
+            MEH-2306: z-10 because the h2/p below are `relative` (to paint over
+            the contour SVG) and come later in the DOM, so without it the h2
+            paints over the X and takes its clicks. */}
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="absolute top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 hidden sm:flex items-center justify-center text-text transition-colors"
+          className="absolute z-10 top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 hidden sm:flex items-center justify-center text-text transition-colors"
           aria-label={t("close_aria")}
         >
           <X size={16} weight="regular" />
