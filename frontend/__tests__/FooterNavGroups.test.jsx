@@ -85,3 +85,21 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
     );
   });
 });
+
+// MEH-2308: axe 4.14 `label-content-name-mismatch` (WCAG 2.5.3 Label in Name).
+// The Instagram link used to carry an aria-label that REPLACED its visible
+// handle, so a voice-control user saying "@meha…" had nothing to match. The
+// handle is read from the DOM rather than restated, so a handle change (MEH-2301)
+// does not touch this test. DISCRIMINATION: the old markup fails the first
+// assertion (aria-label present) and the second (name did not start with it).
+describe("Footer Instagram link — the accessible name starts with the visible handle (MEH-2308)", () => {
+  it("has no overriding aria-label and keeps the description as sr-only text", () => {
+    render(<Footer />);
+    const link = document.querySelector('a[href*="instagram.com"]');
+    const handle = link.querySelector("bdi").textContent;
+    expect(link).not.toHaveAttribute("aria-label");
+    const name = link.textContent.trim();
+    expect(name.startsWith(handle)).toBe(true);
+    expect(name).toContain("nav.footer.instagram_aria");
+  });
+});
