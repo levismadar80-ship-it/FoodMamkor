@@ -136,7 +136,7 @@ export default function Footer() {
               {t("nav.footer.brand_tagline")}
             </p>
             <a
-              href="https://www.instagram.com/meha_makor"
+              href="https://www.instagram.com/meha.makor"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t("nav.footer.instagram_aria")}
@@ -144,7 +144,7 @@ export default function Footer() {
             >
               <InstagramLogo size={20} aria-hidden="true" />
               {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
-              <bdi className="font-body-md">@meha_makor</bdi>
+              <bdi className="font-body-md">@meha.makor</bdi>
             </a>
           </div>
 

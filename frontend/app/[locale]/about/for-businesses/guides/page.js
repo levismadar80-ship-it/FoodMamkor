@@ -95,12 +95,12 @@ export default async function GuidesIndexPage({ params }) {
           <p className="text-[15px] text-text/90">
             {ti("footer_prefix")}{" "}
             <a
-              href="https://www.instagram.com/meha_makor"
+              href="https://www.instagram.com/meha.makor"
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-primary"
             >
-              @meha_makor
+              @meha.makor
             </a>
             {ti("footer_suffix")}
           </p>

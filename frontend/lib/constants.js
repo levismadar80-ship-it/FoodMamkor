@@ -37,7 +37,7 @@ export const CANONICAL_SENTENCE =
 // the footer already links (components/Footer.jsx:138). Do not add speculative
 // or placeholder profiles here: an unresolvable sameAs is worse than an absent
 // one, because it asserts an identity nobody can verify.
-export const BRAND_SAME_AS = ["https://www.instagram.com/meha_makor"];
+export const BRAND_SAME_AS = ["https://www.instagram.com/meha.makor"];
 
 // MEH-2192: `founder` for the Organization node. The value is the name as it
 // already appears in the /about signature copy (messages/he.json
