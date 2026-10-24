@@ -259,7 +259,13 @@ export default function ChatWidget() {
           "flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
-        aria-label={open ? t("launcher_close_label") : t("launcher_open_label")}
+        // MEH-2308: when the pill text is showing it IS the accessible name. An
+        // aria-label over it would replace the words a voice-control user sees
+        // (WCAG 2.5.3, axe label-content-name-mismatch). The label stays for the
+        // icon-only states, where there is no visible text to contradict.
+        aria-label={
+          open ? t("launcher_close_label") : showPillText ? undefined : t("launcher_open_label")
+        }
         aria-expanded={open}
       >
         {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} />}
