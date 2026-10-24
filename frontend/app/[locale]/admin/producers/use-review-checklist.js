@@ -166,17 +166,26 @@ export function useReviewChecklist(approve) {
   // count is unavailable rather than reporting a fabricated zero — the dialog
   // copy branches on it. The HARD gates (photo/licence 422 in admin.py) are
   // untouched and were never affected; this is the soft aid, restored.
+  // MEH-2299: `opts` ({ withoutLicense }) rides along untouched, through the
+  // soft confirm too — the override must not bypass the checklist, and the
+  // checklist must not silently drop the override. A plain approve stays a
+  // ONE-argument call: `approve(p, undefined)` is a different call shape, and
+  // AdminReviewChecklist.test.jsx asserts the exact one.
+  const callApprove = useCallback(
+    (producer, opts) => (opts ? approve(producer, opts) : approve(producer)),
+    [approve],
+  );
   const attemptApprove = useCallback(
-    (producer) => {
+    (producer, opts) => {
       if (!itemsLoaded) {
-        setApproveConfirm({ producer, count: null });
+        setApproveConfirm({ producer, opts, count: null });
         return;
       }
       const remaining = uncheckedCount(producer.id);
-      if (remaining > 0) setApproveConfirm({ producer, count: remaining });
-      else approve(producer);
+      if (remaining > 0) setApproveConfirm({ producer, opts, count: remaining });
+      else callApprove(producer, opts);
     },
-    [approve, itemsLoaded, uncheckedCount],
+    [callApprove, itemsLoaded, uncheckedCount],
   );
 
   // Same impurity as `toggleOpen` above, found by the Bug Protocol sibling
@@ -185,9 +194,9 @@ export function useReviewChecklist(approve) {
   // approve request TWICE. Read the value, then write it — never both in one
   // updater.
   const confirmApprove = useCallback(() => {
-    if (approveConfirm) approve(approveConfirm.producer);
+    if (approveConfirm) callApprove(approveConfirm.producer, approveConfirm.opts);
     setApproveConfirm(null);
-  }, [approve, approveConfirm]);
+  }, [callApprove, approveConfirm]);
 
   const cancelApprove = useCallback(() => setApproveConfirm(null), []);
 
