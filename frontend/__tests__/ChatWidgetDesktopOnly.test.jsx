@@ -30,6 +30,13 @@ vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 import api from "@/lib/api";
 import ChatWidget from "@/components/ChatWidget";
 
+// MEH-2308: the launcher's accessible name is the visible pill text on a first
+// desktop visit and the aria-label once it is icon-only (WCAG 2.5.3). Tests that
+// only need "the launcher" match either; the MEH-2308 block below pins each state.
+const reEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const launcherName = (m) =>
+  new RegExp(`^(${reEsc(m.chat.launcher_open_label)}|${reEsc(m.chat.launcher_pill)})$`);
+
 function mockMatchMedia(matches) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({
     matches,
@@ -63,7 +70,7 @@ describe("ChatWidget desktop-only (MEH-1410)", () => {
     const { container } = renderWidget();
     expect(container).toBeEmptyDOMElement();
     // The launcher aria-label must not exist anywhere on mobile.
-    expect(screen.queryByLabelText(he.chat.launcher_open_label)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: launcherName(he) })).not.toBeInTheDocument();
   });
 
   it("renders the launcher FAB on desktop (>= 768px)", () => {
@@ -71,7 +78,7 @@ describe("ChatWidget desktop-only (MEH-1410)", () => {
     renderWidget();
     // The effect flips isDesktop → true (flushed inside render's act()), so the
     // closed-state launcher button is present.
-    expect(screen.getByLabelText(he.chat.launcher_open_label)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: launcherName(he) })).toBeInTheDocument();
   });
 });
 
@@ -102,13 +109,13 @@ describe("ChatWidget i18n (MEH-1617)", () => {
     mockMatchMedia(true);
     renderWidget("en");
     // The launcher label resolves from en.json, not the old hardcoded Hebrew.
-    expect(screen.getByLabelText(en.chat.launcher_open_label)).toBeInTheDocument();
-    expect(screen.queryByLabelText(he.chat.launcher_open_label)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: launcherName(en) })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: launcherName(he) })).not.toBeInTheDocument();
   });
 
   it.each([
-    ["he", he.chat.launcher_open_label, he.chat.prompts.register, he.chat.answers.register],
-    ["en", en.chat.launcher_open_label, en.chat.prompts.register, en.chat.answers.register],
+    ["he", launcherName(he), he.chat.prompts.register, he.chat.answers.register],
+    ["en", launcherName(en), en.chat.prompts.register, en.chat.answers.register],
   ])(
     "answers a suggested prompt from the message file without an API call (%s)",
     (locale, launcherLabel, promptText, answerText) => {
@@ -121,7 +128,7 @@ describe("ChatWidget i18n (MEH-1617)", () => {
       mockMatchMedia(true);
       renderWidget(locale);
 
-      fireEvent.click(screen.getByLabelText(launcherLabel));
+      fireEvent.click(screen.getByRole("button", { name: launcherLabel }));
       fireEvent.click(screen.getByRole("button", { name: promptText }));
 
       // Asserted against the log region's raw textContent rather than
@@ -132,4 +139,33 @@ describe("ChatWidget i18n (MEH-1617)", () => {
       expect(api.post).not.toHaveBeenCalled();
     },
   );
+});
+
+// MEH-2308 — WCAG 2.5.3 Label in Name (axe 4.14 label-content-name-mismatch).
+// DISCRIMINATION: before the fix the pill state carried aria-label «שאלו אותנו»
+// over visible text «שאלה? שאלו אותי», so the first case fails on both of its
+// assertions. The second case passes before and after — it is the control that
+// stops "drop the aria-label everywhere" from satisfying the block.
+describe("ChatWidget launcher — the accessible name contains the visible text (MEH-2308)", () => {
+  it("with the pill text showing, the pill text IS the name — no aria-label over it", () => {
+    localStorage.removeItem("chatWasOpened");
+    mockMatchMedia(true);
+    renderWidget();
+    const btn = screen.getByRole("button", { name: he.chat.launcher_pill });
+    expect(btn).not.toHaveAttribute("aria-label");
+  });
+
+  it("icon-only (after first use) keeps its aria-label — there is no visible text to contradict", () => {
+    localStorage.setItem("chatWasOpened", "true");
+    try {
+      mockMatchMedia(true);
+      renderWidget();
+      expect(screen.getByRole("button", { name: he.chat.launcher_open_label })).toHaveAttribute(
+        "aria-label",
+        he.chat.launcher_open_label,
+      );
+    } finally {
+      localStorage.removeItem("chatWasOpened");
+    }
+  });
 });

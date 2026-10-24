@@ -1,9 +1,13 @@
 # `railway.json` — point the deploy healthcheck at `/health/readiness` (MEH-1905 §6.1)
 
-**Status:** staged for Sapir. `railway.json` is infra/production-deploy config —
-ADR-032 §3.3 ("main / production deploy / release") is a hard stop for CC, and
-the card itself marks this step 🔴 RED: *"CC מכינה, ספיר מיישמת."* Nothing below
-was applied.
+**Status: applied by Sapir on 24/10/2026, PR #3564.** She edited the line herself in
+the GitHub web editor; the `railway.json` filesystem deny on CC stayed in force.
+Precondition 1 below was measured before merge: production `/api/health/readiness`
+has answered 200 in the uptime probe since 24/10 13:52Z, and `/api/health` reported
+`db_init: ready` on `3517075` (v1.2.0) at 16:12Z.
+
+_(This read "staged for Sapir … Nothing below was applied." That stopped being true
+with #3564; corrected in the same PR, per rule 34.)_
 
 ---
 

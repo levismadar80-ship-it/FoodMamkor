@@ -26,6 +26,13 @@ import { REGIONS } from "../../../data/regions.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CATEGORY_CARDS } from "../../../lib/home-categories.js";
 
+// MEH-2308: the chat launcher's accessible name is its visible pill text on a
+// first desktop visit and the aria-label once it is icon-only — match either.
+const reEscChat = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const CHAT_LAUNCHER_NAME = new RegExp(
+  `^(${reEscChat(he.chat.launcher_open_label)}|${reEscChat(he.chat.launcher_pill)})$`,
+);
+
 /**
  * Spec:     manual/home
  * Purpose:  docs/MANUAL_TESTING.md — the `/` (home) page group, converted under
@@ -981,7 +988,7 @@ test.describe("manual › floating back-to-top (MEH-1309)", () => {
     if (isDesktop(info)) {
       // The chat FAB is desktop-only (MEH-1410, ChatWidgetDesktopOnly.test.jsx:61),
       // so on mobile its absence has two causes and proves nothing.
-      const fab = page.getByRole("button", { name: he.chat.launcher_open_label });
+      const fab = page.getByRole("button", { name: CHAT_LAUNCHER_NAME });
       await expect(fab).toHaveCount(1);
       const f = await box(fab);
       expect(overlaps(b, f), "back-to-top must not overlap the chat FAB").toBe(false);
@@ -1020,7 +1027,7 @@ test.describe("manual › floating back-to-top (MEH-1309)", () => {
     expect(overlaps(btt, bannerBox), "back-to-top must not overlap the cookie banner").toBe(false);
     expect(btt.y + btt.height, "…it rides ABOVE it, via --cookie-banner-h").toBeLessThanOrEqual(bannerBox.y + 1);
     const neighbour = isDesktop(info)
-      ? page.getByRole("button", { name: he.chat.launcher_open_label })
+      ? page.getByRole("button", { name: CHAT_LAUNCHER_NAME })
       : page.getByTestId("bottom-nav");
     const n = await box(neighbour);
     expect(overlaps(btt, n), "back-to-top must not overlap its corner neighbour").toBe(false);
