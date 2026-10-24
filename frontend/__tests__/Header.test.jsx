@@ -40,7 +40,7 @@ vi.mock("next-intl", () => {
     "nav.register": "הרשמה",
     "nav.main_label": "ניווט ראשי",
     "nav.search_label": "חיפוש",
-    "nav.trust_strip": "שיחה אישית עם כל בית עסק",
+    "nav.trust_strip": "היכרות אישית עם כל בית עסק",
     // he.json:25 — the aria-label LanguageToggle renders at locale "he".
     "nav.lang_switch_to_en": "Switch to English",
     "nav.add_business": "הוסיפו את העסק שלך",
