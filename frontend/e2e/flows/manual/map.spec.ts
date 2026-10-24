@@ -162,8 +162,13 @@ const CARD_EMPTY = he.map.card_list.empty;
 const SHEET = he.filters.sheet;
 const FILTERS_BTN = he.filters.button;
 const LOC = he.modals.location;
-const CHAT_OPEN_HE = he.chat.launcher_open_label;
-const CHAT_OPEN_EN = en.chat.launcher_open_label;
+// MEH-2308: the launcher's name is its visible pill text on a first desktop
+// visit and the aria-label once it is icon-only, so match either. A string for
+// one state would make the absence checks below pass against the other one.
+const reEsc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const eitherName = (a: string, b: string) => new RegExp(`^(${reEsc(a)}|${reEsc(b)})$`);
+const CHAT_OPEN_HE = eitherName(he.chat.launcher_open_label, he.chat.launcher_pill);
+const CHAT_OPEN_EN = eitherName(en.chat.launcher_open_label, en.chat.launcher_pill);
 const MC_EN = en.map.client;
 
 type Axis = { key: string; label: string };
