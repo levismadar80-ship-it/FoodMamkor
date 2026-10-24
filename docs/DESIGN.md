@@ -389,15 +389,20 @@ front matter for the normative token bindings.
   also linking to `#reviews`. **Zero reviews → the whole strip is absent** (no
   "0 ביקורות"); a producer with only rating-only reviews shows the pill but no
   excerpt. Numerals stay Latin + bidi-isolated. RTL logical props only.
-- **Producer section tab bar (`ProducerDetail`, MEH-1168 P2 — ADOPTED):** the
-  **mobile-only** (`md:hidden`) section nav on `/producer/[id]` — a sticky row of
-  four tabs (about · products · delivery · reviews) with Phosphor icons
-  (`Info`/`Package`/`Truck`/`ChatCircleText`, fill weight when active); the active
-  tab is marked by `border-b-2 border-primary text-primary`. It sticks at
-  `top-[82px]`, **below** the global header (82px, `z-[1050]`) so it stays visible
-  page-long — at `top-0` it was occluded behind the header once scrolled into a
-  deep section. Tapping a tab smooth-scrolls the section clear of both the header
-  and the bar (`useTabScroll`). RTL logical props only.
+- **Producer section anchor-nav (`SectionAnchorNav`, MEH-1207 — replaces the
+  MEH-1168 P2 tab bar):** the **mobile-only** (`md:hidden`) section nav on
+  `/producer/[id]` — a sticky, horizontally scrolling row of pills styled like the
+  `ChipScrollRow` chips (`rounded-md` · `px-4 py-2.5` · `text-sm` · border; active
+  = solid `bg-state-selected` + white, Phosphor glyph in fill weight), for about ·
+  products · delivery · reviews · location
+  (`Info`/`Package`/`Truck`/`ChatCircleText`/`MapPin`). A pill renders only when its
+  section renders (gates: `producer/[id]/lib/section-nav.js`). It sticks at
+  `top: var(--chrome-top)` — the header height Header.jsx measures live — so it
+  stays visible below the header page-long. Pills are `<a href="#section-…">`;
+  the landing offset is each section's own `scroll-margin-top`
+  (`--chrome-top` + the bar's live height `--section-nav-h`), no JS offset math.
+  The active pill follows the scroll (IntersectionObserver, `aria-current`);
+  `prefers-reduced-motion` → instant jump. RTL logical props only.
 
 ## Action hierarchy
 

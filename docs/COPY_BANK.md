@@ -143,7 +143,7 @@
 ### Nav trust strip — homepage (collapsing)
 | Field | Value |
 |---|---|
-| **Current** | `שיחה אישית עם כל בית עסק` |
+| **Current** | `היכרות אישית עם כל בית עסק` — was `שיחה אישית עם כל בית עסק` until 24.10 (MEH-2305: Sapir does not commit to a call with every business; the admin checklist calls only on doubt) |
 | **Previous** | `כל בית עסק עובר אישור אישי` (placeholder shipped in #1262) |
 | **i18n key** | `nav.trust_strip` |
 | **Status** | ⏳ (PR for this copy lock; supersedes the #1262 placeholder) |
@@ -291,8 +291,8 @@
 ### /register/producer — Step 2 subhead
 | Field | Value |
 |---|---|
-| **Current** | `כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.` |
-| **Previous** | `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
+| **Current** | `כמה שדות בלבד — את שאר הפרטים משלימים בלוח הבקרה, לפני השליחה לבדיקה.` |
+| **Previous** | `כמה שדות בלבד — תשלימו את שאר הפרטים מהדשבורד אחרי האישור.` — wrong: the submission gate requires a photo and a product BEFORE review (`submission_gate.py:58-62`), so "after approval" told owners to wait for an approval that could never come (MEH-2305). Before that: `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
 | **i18n key** | `register.producer.steps.business.subtitle` |
 | **Location** | `frontend/app/[locale]/register/producer/page.js:393` |
 | **Status** | ✅ (MEH-608, PR #683, 2026-05-16) |
@@ -612,7 +612,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 ### Registration success — tier trust line
 | Field | Value |
 |---|---|
-| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
+| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור, ולפעמים גם שיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
 | **en** | `Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.` (⏳ en pending Sapir review) |
 | **i18n key** | `auth.register.producer.success.tier_trust` |
 | **Status** | 🕐 key-only — pending S7 register port (06A/06B) to render; Sapir closes after mobile smoke |
@@ -758,7 +758,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 |---|---|
 | **Eyebrow** | `לבתי עסק מקומיים` — aligned with the approved footer tagline; zero partial-category |
 | **H1** | `העסק שלכם. עמוד משלו.` — why-first, editorial through what-you-get |
-| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה ב-WhatsApp — לקוחות מקומיים פוגשים את הסיפור שלכם.` — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
+| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה אליכם, בוואטסאפ או בערוץ שתבחרו — לקוחות מקומיים פוגשים את הסיפור שלכם.` (MEH-2305: the primary contact button is owner-selectable among 7 channels, `frontend/lib/contact-method.js:13-22`, so "direct WhatsApp contact" was not true for every business) — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
 | **CTA** | `מצטרפים` → `/register/producer` — the page's single CTA |
 | **Trust hint** | `חינם להצטרף` — NOT "חינם לעולם"; zero premium mention anywhere on the page (MEH-617 model undecided) |
 | **i18n keys** | `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` |
@@ -767,9 +767,9 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 ### How it works (4 steps)
 | Step | Title | Body | Derived from |
 |---|---|---|---|
-| 01 | `נרשמים` | `טופס קצר על העסק — סיפור, תמונות ופרטי קשר. בערך 10 דקות.` | MEH-994b locked duration |
-| 02 | `שיחה אישית` | `הצוות שלנו יוצר קשר לשיחה קצרה — היכרות עם העסק והסיפור.` | MEH-994 after_body |
-| 03 | `העמוד עולה` | `בדרך כלל תוך יום-יומיים העסק שלכם מופיע באתר.` | chat.py approval timeframe |
+| 01 | `נרשמים` | `טופס קצר על העסק ופרטי קשר. כ־3 דקות. את התמונות מעלים אחר כך, מלוח הבקרה.` | MEH-2185 duration lock · MEH-2305 (no photos in the form) |
+| 02 | `היכרות אישית` | `הצוות שלנו עובר על העסק והסיפור, ואם צריך יוצר קשר להיכרות קצרה.` (MEH-2305, 24.10 — no unconditional call promise) | MEH-994 after_body |
+| 03 | `העמוד עולה` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | MEH-2305 — the 3-business-day clock starts at «שליחה לבדיקה» |
 | 04 | `לקוחות פונים ישירות` | `כפתור WhatsApp בעמוד פותח שיחה ישירה אתכם. הקשר והתשלום — ביניכם ובין הלקוחות בלבד.` | MEH-1003 neutral no-fees copy (avoids forbidden "מתווכים") |
 
 Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/process`.
@@ -778,8 +778,8 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 | Field | Value |
 |---|---|
 | **Checklist** | mirrors the MEH-994 pre-flight items verbatim (`join.prepare.*`) — keep the two surfaces in sync on any copy change |
-| **Card title** | `כל בית עסק עובר שיחה אישית` — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
-| **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
+| **Card title** | `כל בית עסק עובר היכרות אישית` (MEH-2305, was `…שיחה אישית`) — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
+| **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור, ולפעמים גם שיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
 | **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` — the no-fees LOCK lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
 | **Status** | ⏳ MEH-995 |
 

@@ -1693,7 +1693,7 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
     // the message is the city one, not a neighbour's
     expect(document.getElementById("register-city-error")).toHaveTextContent(
-      `${K}.validation.city_required`,
+      `${K}.validation.city_pick_from_list`,
     );
     const cityInput = screen.getByTestId("city");
     expect(cityInput).toHaveAttribute("aria-invalid", "true");
@@ -1722,7 +1722,7 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
     expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
     expect(document.getElementById("register-city-error")).toHaveTextContent(
-      `${K}.validation.city_required`,
+      `${K}.validation.city_pick_from_list`,
     );
     expect(cityInput.value).toBe("תל אביב"); // the value itself was never re-emitted
   });
@@ -1770,7 +1770,7 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
     expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
     expect(document.getElementById("register-city-error")).toHaveTextContent(
-      `${K}.validation.city_required`,
+      `${K}.validation.city_pick_from_list`,
     );
   });
 
