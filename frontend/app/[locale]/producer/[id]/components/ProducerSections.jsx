@@ -77,7 +77,9 @@ const MIN_NEARBY_BUSINESSES = 4;
 // and passed in, so the gate and the MiniMap props read the same value — the
 // null-safety of `pin.lat` below is then a fact of one variable, not a
 // coincidence between two calls (CI reviewer, 02/09).
-function parseHasLocation(producer, pin) {
+// Exported for the section anchor-nav's gate (lib/section-nav.js) — one
+// definition, so the location pill and the location section cannot disagree.
+export function parseHasLocation(producer, pin) {
   return producer.has_physical_location !== false && pin !== null;
 }
 
@@ -276,7 +278,7 @@ export default function ProducerSections({
       {producer.description && (
         // MEH-1306: stable id (deep-link target of the edit tab's view-link)
         // + scroll-mt clearing the sticky header/tab bar (the #reviews idiom).
-        <FadeInSection as="section" {...REVEAL_PRESET} id="section-bio" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24" ref={(el) => { sectionRefs.current.about = el; }}>
+        <FadeInSection as="section" {...REVEAL_PRESET} id="section-bio" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.about = el; }}>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.about")}</h2>
             <OwnerSectionEditLink producerId={producer.id} anchor="bio" sectionKey="bio" />
@@ -292,7 +294,7 @@ export default function ProducerSections({
           product exists (no product entries) so the moved-out header
           signature never vanishes. */}
       {(producer.products?.length > 0 || hasSignature) && (
-        <section id="section-products" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
+        <section id="section-products" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
             <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.products.heading")}</h2>
@@ -610,7 +612,13 @@ export default function ProducerSections({
       {(producer.offers_delivery ||
         producer.delivery_areas?.length > 0 ||
         producer.pickup_points) && (
-        <div ref={(el) => { sectionRefs.current.delivery = el; }}>
+        // MEH-1207: stable id = the anchor-nav's delivery target; scroll-mt
+        // clears the sticky header + nav (same idiom as #reviews below).
+        <div
+          id="section-delivery"
+          className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
+          ref={(el) => { sectionRefs.current.delivery = el; }}
+        >
           <DeliveryBlock
             nationwide={producer.delivery_nationwide}
             excluded={producer.delivery_excluded_cities || []}
@@ -638,9 +646,12 @@ export default function ProducerSections({
         // and the now-visible section tab bar (which sticks below it); desktop
         // has no tab bar so it keeps the header-only offset.
         // MEH-1202: mobile offset = live header height (`--chrome-top`) + the
-        // tab-bar band (~68px), replacing the hardcoded 150px. Desktop keeps
+        // tab-bar band, replacing the hardcoded 150px. Desktop keeps
         // the header-only scroll-mt-24 (no tab bar there).
-        className="scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
+        // MEH-1207: the band is now the anchor-nav's LIVE height
+        // (`--section-nav-h`, published by SectionAnchorNav); 68px is only the
+        // first-paint fallback.
+        className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
           reviewsContainerRef.current = el;
@@ -715,7 +726,7 @@ export default function ProducerSections({
       {(parseHasLocation(producer, primaryPin) || storeHours) && (
         <section
           id="section-location"
-          className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
+          className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         >
           <div className="flex items-center gap-2 mb-3">
             <h2 className="font-headline-md text-2xl font-bold text-text">
