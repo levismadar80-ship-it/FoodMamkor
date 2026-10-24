@@ -291,8 +291,8 @@
 ### /register/producer — Step 2 subhead
 | Field | Value |
 |---|---|
-| **Current** | `כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.` |
-| **Previous** | `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
+| **Current** | `כמה שדות בלבד — את שאר הפרטים משלימים בלוח הבקרה, לפני השליחה לבדיקה.` |
+| **Previous** | `כמה שדות בלבד — תשלימו את שאר הפרטים מהדשבורד אחרי האישור.` — wrong: the submission gate requires a photo and a product BEFORE review (`submission_gate.py:58-62`), so "after approval" told owners to wait for an approval that could never come (MEH-2305). Before that: `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
 | **i18n key** | `register.producer.steps.business.subtitle` |
 | **Location** | `frontend/app/[locale]/register/producer/page.js:393` |
 | **Status** | ✅ (MEH-608, PR #683, 2026-05-16) |
@@ -758,7 +758,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 |---|---|
 | **Eyebrow** | `לבתי עסק מקומיים` — aligned with the approved footer tagline; zero partial-category |
 | **H1** | `העסק שלכם. עמוד משלו.` — why-first, editorial through what-you-get |
-| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה ב-WhatsApp — לקוחות מקומיים פוגשים את הסיפור שלכם.` — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
+| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה אליכם, בוואטסאפ או בערוץ שתבחרו — לקוחות מקומיים פוגשים את הסיפור שלכם.` (MEH-2305: the primary contact button is owner-selectable among 7 channels, `frontend/lib/contact-method.js:13-22`, so "direct WhatsApp contact" was not true for every business) — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
 | **CTA** | `מצטרפים` → `/register/producer` — the page's single CTA |
 | **Trust hint** | `חינם להצטרף` — NOT "חינם לעולם"; zero premium mention anywhere on the page (MEH-617 model undecided) |
 | **i18n keys** | `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` |

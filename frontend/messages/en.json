@@ -261,7 +261,7 @@
           },
           "business": {
             "title": "2. Business details",
-            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval.",
+            "subtitle": "Just a few fields — you'll complete the rest in your dashboard, before sending it for review.",
             "free_hint": "Registration and your page — free. No commissions, ever."
           },
           "category": {
@@ -290,7 +290,7 @@
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
-          "address_map_privacy_hint": "Your full address isn't published. It only appears on the map if you choose to show it.",
+          "address_map_privacy_hint": "Your full address isn't published. A pin appears on the map at this spot, and in your dashboard you can make it approximate.",
           "address_optional_hint": "No exact address? The town is enough.",
           "address_city_mismatch": "The address we found is in {found}, but the town you chose is {selected}. Worth checking the town, or searching for a different address.",
           "address_pin_adjusted": "Location adjusted manually on the map",
@@ -335,8 +335,8 @@
           "body": "What you write here becomes your business page on Mehamakor — the place where customers meet you before they meet what you sell. Not a product description. A story."
         },
         "account_reassurance": "Every business is personally reviewed",
-        "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
-        "submit_next_hint": "We'll review your details and get back to you on WhatsApp within 3 business days.",
+        "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
+        "submit_next_hint": "Next, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
         "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
@@ -656,7 +656,7 @@
     },
     "join": {
       "title": "Join as a business | Mehamakor",
-      "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
+      "description": "A page of your own with photos and a story, every business hand-picked, and customers contact you directly on the channel you choose. Free to join.",
       "og_title": "Your business. A page of its own. | Mehamakor",
       "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
     },
@@ -3407,7 +3407,7 @@
   "join": {
     "eyebrow": "For local businesses",
     "h1": "Your business. A page of its own.",
-    "subhead": "A page with your photos and story, every business hand-picked, and direct contact on WhatsApp — local customers meet your story.",
+    "subhead": "A page with your photos and story, every business hand-picked, and customers contact you directly, on WhatsApp or the channel you choose — local customers meet your story.",
     "cta": "Join",
     "trust_hint": "Free to join",
     "how": {

@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest";
 
 import he from "../messages/he.json";
 import en from "../messages/en.json";
+import { CONTACT_METHODS } from "@/lib/contact-method";
 
 const read = (messages, path) =>
   path.split(".").reduce((node, key) => (node == null ? node : node[key]), messages);
@@ -74,5 +75,58 @@ describe("one review window, anchored to the submit press (MEH-2305)", () => {
     // dashboard. The step must say so rather than list photos as form content.
     expect(read(he, "join.how.step1_text")).toContain("מלוח הבקרה");
     expect(read(en, "join.how.step1_text")).toMatch(/dashboard/i);
+  });
+
+  it("the post-registration hint anchors the window to the submit, not to registration", () => {
+    expect(read(he, "auth.register.producer.submit_next_hint")).toContain("עד 3 ימי עסקים מהשליחה");
+    expect(read(en, "auth.register.producer.submit_next_hint")).toMatch(/3 business days of sending/i);
+  });
+});
+
+/*
+ * MEH-2305 (24.10) — registration copy must describe what the code does.
+ * Each case names the code that makes the old sentence false, so a future
+ * change to that code is the moment to revisit the copy.
+ */
+describe("registration copy matches the submission gate and the contact model (MEH-2305)", () => {
+  // backend/app/services/submission_gate.py:58-62 blocks «שליחה לבדיקה»
+  // without a photo, so nothing can wait for "after approval".
+  const BEFORE_REVIEW_KEYS = [
+    "auth.register.producer.steps.business.subtitle",
+    "auth.register.producer.photo_disclosure",
+  ];
+
+  it.each(BEFORE_REVIEW_KEYS)("he «%s» puts the dashboard step before review, not after approval", (path) => {
+    const value = read(he, path);
+    expect(value).not.toMatch(/אחרי האישור/);
+    expect(value).toMatch(/לבדיקה/);
+  });
+
+  it.each(BEFORE_REVIEW_KEYS)("en «%s» puts the dashboard step before review, not after approval", (path) => {
+    const value = read(en, path);
+    expect(value).not.toMatch(/after approval/i);
+    expect(value).toMatch(/for review/i);
+  });
+
+  it("the address hint does not offer a show-on-map choice that does not exist", () => {
+    // producer_queries.py:398 publishes an entered address as an exact pin;
+    // only LocationsEditor offers "approximate", later, in the dashboard.
+    const hePath = "auth.register.producer.fields.address_map_privacy_hint";
+    expect(read(he, hePath)).not.toMatch(/רק אם תבחרו/);
+    expect(read(he, hePath)).toContain("מקורבת");
+    expect(read(en, hePath)).not.toMatch(/only appears on the map if you choose/i);
+    expect(read(en, hePath)).toMatch(/approximate/i);
+  });
+
+  it("the join pitch does not promise WhatsApp while owners can pick another channel", () => {
+    // Derived from the code, not restated: if the site ever goes WhatsApp-only,
+    // this guard stops applying instead of going stale.
+    expect(CONTACT_METHODS.length).toBeGreaterThan(1);
+    for (const path of ["join.subhead", "seo.join.description"]) {
+      expect(read(he, path)).not.toMatch(/פנייה ישירה ב-?WhatsApp/);
+      expect(read(he, path)).toContain("בערוץ שתבחרו");
+      expect(read(en, path)).not.toMatch(/direct WhatsApp contact|direct contact on WhatsApp/i);
+      expect(read(en, path)).toMatch(/channel you choose/i);
+    }
   });
 });
