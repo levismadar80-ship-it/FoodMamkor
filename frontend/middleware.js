@@ -30,7 +30,9 @@ import staticRoutes from "./lib/static-routes.json";
  *           app/global-not-found.js (real-404 renderer), lib/slug.js.
  * History:  MEH-1398 (creation — middleware existence-check);
  *           MEH-1632 (dropped the /producer/<id> branch — owner-facing 404);
- *           MEH-1906 (5xx fail-open now also reports to Sentry).
+ *           MEH-1906 (5xx fail-open now also reports to Sentry);
+ *           MEH-2298 (/api/* pass-through stamps the visitor IP for the
+ *           backend rate limiter — see apiPassThrough).
  */
 
 // Real static route segments under app/[locale]/ (excluding the [slug]
@@ -145,7 +147,39 @@ async function producerExists(url) {
   }
 }
 
+// MEH-2298: /api/* is rewritten to Railway by next.config.js from the Vercel
+// edge, so the backend's TCP peer is Vercel, not the visitor. When
+// EDGE_PROXY_SECRET is set (server-side only — never NEXT_PUBLIC_), stamp the
+// visitor IP plus the shared secret onto the upstream request; the backend
+// trusts the IP header only when the secret matches
+// (backend/app/rate_limit.py::_edge_client_ip). Unset → plain pass-through,
+// byte-for-byte the pre-MEH-2298 request.
+//
+// Vercel overwrites x-real-ip / x-forwarded-for on ingress with the visitor's
+// public IP (vercel.com/docs/headers/request-headers), so neither is
+// client-controlled here. Both of our own headers are deleted before being
+// set, so a visitor cannot pre-load them either.
+const EDGE_PROXY_SECRET = process.env.EDGE_PROXY_SECRET || "";
+
+export function apiPassThrough(request) {
+  if (!EDGE_PROXY_SECRET) return NextResponse.next();
+  const headers = new Headers(request.headers);
+  headers.delete("x-edge-secret");
+  headers.delete("x-edge-client-ip");
+  const visitorIp = (
+    request.headers.get("x-real-ip") ||
+    (request.headers.get("x-forwarded-for") || "").split(",")[0] ||
+    ""
+  ).trim();
+  headers.set("x-edge-secret", EDGE_PROXY_SECRET);
+  if (visitorIp) headers.set("x-edge-client-ip", visitorIp);
+  return NextResponse.next({ request: { headers } });
+}
+
 export default async function middleware(request) {
+  // MEH-2298: API calls never reach locale routing or the slug check.
+  if (request.nextUrl.pathname.startsWith("/api/")) return apiPassThrough(request);
+
   const intlResponse = intlMiddleware(request);
   // next-intl issued a redirect (locale negotiation) — never existence-check it.
   if (intlResponse.headers.get("location")) return intlResponse;
@@ -200,5 +234,7 @@ export default async function middleware(request) {
 export const config = {
   matcher: [
     "/((?!api|_next|_vercel|.*\\..*).*)",
+    // MEH-2298: API calls, for the visitor-IP stamp only (apiPassThrough).
+    "/api/:path*",
   ],
 };
