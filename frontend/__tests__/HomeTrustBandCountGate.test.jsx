@@ -247,6 +247,8 @@ describe("MEH-1692 — positive guards (surfaces that must NOT change)", () => {
   });
 
   it("nav.trust_strip value is untouched in he.json", () => {
-    expect(he.nav.trust_strip).toBe("שיחה אישית עם כל בית עסק");
+    // MEH-2305 (24.10) changed it on purpose: Sapir does not commit to a call
+    // with every business. This guard still pins it against accidental edits.
+    expect(he.nav.trust_strip).toBe("היכרות אישית עם כל בית עסק");
   });
 });
