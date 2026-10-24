@@ -36,6 +36,7 @@ import {
 import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
+import { useUserLocation } from "@/lib/user-location";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -55,13 +56,30 @@ const SORT_VALUES = ["newest", "rating"];
 // threshold the option is not rendered, and a hand-typed ?sort=rating degrades
 // to the default here — the backend still answers that URL with 200, the
 // frontend just doesn't present an ordering with no data behind it.
-function sortValuesFor(ratingSortEnabled) {
-  return ratingSortEnabled ? SORT_VALUES : [SORT_DEFAULT];
+// MEH-2294: "distance" (nearest-first, backend MEH-1829 #3538) is legal only
+// while the visitor has a location fix (useUserLocation) — the backend 422s a
+// sort=distance without lat+lng, and has no origin to measure from anyway. No
+// radius is ever sent: sorting reorders, it never hides a row.
+const SORT_DISTANCE = "distance";
+function sortValuesFor(ratingSortEnabled, hasLocation = false) {
+  const values = ratingSortEnabled ? [...SORT_VALUES] : [SORT_DEFAULT];
+  if (hasLocation) values.push(SORT_DISTANCE);
+  return values;
 }
 function initSortFromParams(searchParams, ratingSortEnabled) {
   const s = searchParams.get("sort");
-  // unknown (or gated-off) → default
-  return sortValuesFor(ratingSortEnabled).includes(s) ? s : SORT_DEFAULT;
+  // unknown (or gated-off) → default. MEH-2294: a ?sort=distance deep-link is
+  // KEPT here even though the location is unknown on the first render
+  // (useUserLocation hydrates in an effect); until a fix arrives the effective
+  // order is the default — see `effectiveSort` in the component.
+  return sortValuesFor(ratingSortEnabled, true).includes(s) ? s : SORT_DEFAULT;
+}
+// MEH-2294: the request params for one sort axis. {} at the default (byte-
+// identical to the pre-sort listing); distance without a fix also → {}.
+function sortRequestParams(sort, loc) {
+  if (sort === SORT_DEFAULT) return {};
+  if (sort === SORT_DISTANCE) return loc ? { sort, lat: loc.lat, lng: loc.lng } : {};
+  return { sort };
 }
 
 // Display axis = i18n key for the translated label.
@@ -146,6 +164,18 @@ export default function ProducersClient({
   );
   const sortOrderRef = useRef(sortOrder);
   useEffect(() => { sortOrderRef.current = sortOrder; }, [sortOrder]);
+  // MEH-2294: the visitor's location fix (null until one exists). Updates live
+  // on the user-location event — a GPS grant on /map or the LocationModal
+  // enables the distance option without a reload. `locRef` mirrors it for the
+  // useCallback([]) fetchers, exactly like sortOrderRef.
+  const userLoc = useUserLocation();
+  const locRef = useRef(userLoc);
+  useEffect(() => { locRef.current = userLoc; }, [userLoc]);
+  // The order actually requested: a distance choice with no fix (deep-link
+  // before hydration, or a cleared location) falls back to the default.
+  const effectiveSort = sortOrder === SORT_DISTANCE && !userLoc ? SORT_DEFAULT : sortOrder;
+  const distanceOrigin =
+    effectiveSort === SORT_DISTANCE ? `${userLoc.lat},${userLoc.lng}` : null;
   // Unfiltered-mode base list: the SSR page by default; replaced with a freshly
   // fetched sorted page 1 when a non-default sort is active (the [sortOrder]
   // effect below). Infinite-scroll pages accumulate in appendItems on top.
@@ -275,7 +305,8 @@ export default function ProducersClient({
     // MEH-1483: sort added AFTER the no-filters check so a bare sort never
     // keeps the page in filtered mode — clearing the last filter still returns
     // to the unfiltered (infinite-scroll) list, whose sort the effect drives.
-    if (sortOrderRef.current !== SORT_DEFAULT) params.sort = sortOrderRef.current;
+    // MEH-2294: distance carries lat+lng (and nothing when there is no fix).
+    Object.assign(params, sortRequestParams(sortOrderRef.current, locRef.current));
     setLoading(true);
     api
       .get("/producers", { params: { ...params, limit: FILTER_LIMIT, offset: 0 } })
@@ -298,7 +329,8 @@ export default function ProducersClient({
           offset: (nextPage - 1) * PAGE_SIZE,
           // MEH-1483: carry the active sort into every infinite-scroll page so
           // the order holds across pages (omitted at the default).
-          ...(sortOrderRef.current !== SORT_DEFAULT && { sort: sortOrderRef.current }),
+          // MEH-2294: distance pages carry the same lat+lng origin.
+          ...sortRequestParams(sortOrderRef.current, locRef.current),
         },
       })
       .then((r) => {
@@ -342,13 +374,22 @@ export default function ProducersClient({
   // filters are active, so the base is already correct the moment the last
   // filter is cleared. `prevSortRef` skips the default-sort mount no-op so the
   // first paint stays byte-identical to the SSR order.
-  const prevSortRef = useRef(sortOrder);
+  // MEH-2294: keyed on the EFFECTIVE sort plus the distance origin, so a fix
+  // arriving after a ?sort=distance deep-link (or the origin moving) refetches
+  // too. On a real change the filtered list is refetched here as well — this
+  // effect is the single owner of "the order changed", so the select handler
+  // and a live location event cannot double-fetch.
+  const prevSortRef = useRef(effectiveSort);
+  const prevOriginRef = useRef(distanceOrigin);
   useEffect(() => {
-    const changed = prevSortRef.current !== sortOrder;
-    prevSortRef.current = sortOrder;
-    if (!changed && sortOrder === SORT_DEFAULT) return; // mount, default → no-op
+    const changed =
+      prevSortRef.current !== effectiveSort || prevOriginRef.current !== distanceOrigin;
+    prevSortRef.current = effectiveSort;
+    prevOriginRef.current = distanceOrigin;
+    if (!changed && effectiveSort === SORT_DEFAULT) return; // mount, default → no-op
+    if (changed && hasActiveChips) fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
     setAppendItems([]);
-    if (sortOrder === SORT_DEFAULT) {
+    if (effectiveSort === SORT_DEFAULT) {
       // Revert to the exact SSR order + pagination.
       setBaseItems(initialItems);
       setNextPage(initialPage + 1);
@@ -360,7 +401,9 @@ export default function ProducersClient({
     // skeleton flash + hiding the control the user just used).
     let cancelled = false;
     api
-      .get("/producers", { params: { sort: sortOrder, limit: PAGE_SIZE, offset: 0 } })
+      .get("/producers", {
+        params: { ...sortRequestParams(effectiveSort, locRef.current), limit: PAGE_SIZE, offset: 0 },
+      })
       .then((r) => {
         if (cancelled) return;
         const items = Array.isArray(r.data) ? r.data : [];
@@ -374,7 +417,9 @@ export default function ProducersClient({
         if (!cancelled) { setBaseItems([]); setHasMore(false); }
       });
     return () => { cancelled = true; };
-  }, [sortOrder, initialItems, initialPage, totalPages]);
+    // Filter state is read, not keyed: a filter toggle must never reset the
+    // infinite-scroll base (MEH-1483), and fetchFiltered is stable.
+  }, [effectiveSort, distanceOrigin, initialItems, initialPage, totalPages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-1081: load the DB categories for the radio row. Rule-19: shape
   // validated; on parse/network failure the row self-hides (categories=[]).
@@ -454,14 +499,14 @@ export default function ProducersClient({
   // unfiltered base), and refetch the filtered list in place when filters are
   // active so the visible results re-order immediately.
   const handleSortChange = (e) => {
-    const next = sortValuesFor(ratingSortEnabled).includes(e.target.value)
+    const next = sortValuesFor(ratingSortEnabled, !!userLoc).includes(e.target.value)
       ? e.target.value
       : SORT_DEFAULT;
     if (next === sortOrder) return;
     sortOrderRef.current = next;
     setSortOrder(next);
     syncUrl(chips, cityFilter, searchQ, categoryFilter);
-    if (hasActiveChips) fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    // MEH-2294: the filtered refetch now happens in the [effectiveSort] effect.
     trackEvent("producers_sort_change", { sort: next });
   };
 
@@ -917,18 +962,25 @@ export default function ProducersClient({
               returns intact the moment the catalog crosses the threshold.
               (/map keeps its control below the threshold: it still has
               nearest + newest to switch between.) */}
-          {ratingSortEnabled && (
+          {/* MEH-2294: rendered whenever it holds ≥2 real choices — the rating
+              gate above, OR a location fix (newest + distance, the /map shape).
+              Below the rating threshold with no fix: no control, as before. */}
+          {(ratingSortEnabled || !!userLoc) && (
           <div className="relative inline-flex items-center shrink-0 ms-auto">
             <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
             <select
-              value={sortOrder}
+              value={effectiveSort}
               onChange={handleSortChange}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
               className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             >
               <option value="newest">{t("sort.newest")}</option>
-              <option value="rating">{t("sort.top_rated")}</option>
+              {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
+              {/* MEH-2294: disabled until a location fix exists; enables live. */}
+              <option value={SORT_DISTANCE} disabled={!userLoc} data-testid="producers-sort-distance">
+                {t("sort.distance")}
+              </option>
             </select>
             <CaretDown
               size={14}

@@ -93,11 +93,12 @@ const CROSS_STEP_REQUIRED = [
     field: "city",
     step: STEP.DETAILS,
     focusId: "producer-city",
-    messageKey: "city_required",
     // MEH-2241 chunk B: free-text towns are forbidden (MEH-213) and this is the
     // layer that enforces it — a typed value CitySearch could not match (0
-    // suggestions, never picked) is as missing as an empty one. Copy stays
-    // `city_required` until Sapir rules on a dedicated string (rule 22).
+    // suggestions, never picked) is as missing as an empty one. The message
+    // differs by cause: empty → «fill it in», typed-but-unknown → «pick from
+    // the list» (MEH-2241 copy, ruled 22/10).
+    messageKey: (f) => (f.city ? "city_pick_from_list" : "city_required"),
     isMissing: (f) => !f.city || !f.city_known,
   },
   {
@@ -613,7 +614,8 @@ function RegisterProducerPageBody() {
       const next = { ...prev };
       candidates.forEach((c) => {
         if (offenders.includes(c)) {
-          next[c.field] = t(`auth.register.producer.validation.${c.messageKey}`);
+          const key = typeof c.messageKey === "function" ? c.messageKey(form) : c.messageKey;
+          next[c.field] = t(`auth.register.producer.validation.${key}`);
         } else {
           delete next[c.field];
         }

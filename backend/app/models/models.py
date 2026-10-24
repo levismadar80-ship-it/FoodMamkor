@@ -1354,9 +1354,9 @@ class AlertLog(Base):
     same channel within 24h still collapse to one send); it is kept for a
     future digest / analytics.
 
-    Append-only: nothing prunes this table yet — a retention/purge policy is a
-    separate follow-up (see the MEH-1338 exec report). Rows CASCADE-delete with
-    their user/producer.
+    Append-only from the request path; rows older than 30 days are deleted by
+    the daily retention purge (services/retention_purge.py, MEH-2303). Rows
+    CASCADE-delete with their user/producer.
     """
 
     __tablename__ = "alert_log"

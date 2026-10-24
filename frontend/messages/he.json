@@ -347,6 +347,7 @@
           "phone_invalid": "מספר טלפון לא תקין",
           "phone_valid": "✓ מספר תקין",
           "city_required": "יש למלא יישוב",
+          "city_pick_from_list": "יש לבחור יישוב מהרשימה",
           "category_required": "יש לבחור לפחות קטגוריה אחת",
           "terms_required": "יש לאשר את תנאי השימוש לפני ההצטרפות",
           "declaration_required": "יש לאשר את ההצהרה לפני ההצטרפות",
@@ -3058,7 +3059,8 @@
       "label": "מיון:",
       "aria_label": "מיון בתי עסק",
       "newest": "הצטרפו לאחרונה",
-      "top_rated": "הכי מדורגות"
+      "top_rated": "הכי מדורגות",
+      "distance": "מרחק"
     },
     "empty": {
       "no_match_search": "לא מצאנו בתי עסק עבור \"{q}\"",
