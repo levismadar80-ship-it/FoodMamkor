@@ -21,6 +21,7 @@ import { describe, expect, it } from "vitest";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 import { CONTACT_METHODS } from "@/lib/contact-method";
+import { ADMIN_REVIEW_CHECKLIST } from "@/lib/admin-review-checklist";
 
 const read = (messages, path) =>
   path.split(".").reduce((node, key) => (node == null ? node : node[key]), messages);
@@ -128,5 +129,39 @@ describe("registration copy matches the submission gate and the contact model (M
       expect(read(en, path)).not.toMatch(/direct WhatsApp contact|direct contact on WhatsApp/i);
       expect(read(en, path)).toMatch(/channel you choose/i);
     }
+  });
+});
+
+/*
+ * MEH-2305 (24.10) — Sapir does not commit to a call with every business.
+ * The admin checklist makes the call conditional; public copy must not
+ * promise more than that. File-wide on purpose: a promise is a promise
+ * wherever it appears.
+ */
+describe("no public copy promises a call with every business (MEH-2305)", () => {
+  const walk = (node, out = []) => {
+    if (typeof node === "string") out.push(node);
+    else if (node && typeof node === "object") Object.values(node).forEach((v) => walk(v, out));
+    return out;
+  };
+
+  it("the admin checklist still treats the call as conditional", () => {
+    const call = ADMIN_REVIEW_CHECKLIST.find((item) => item.id === "call");
+    expect(call, "call item moved — revisit this guard").toBeTruthy();
+    expect(call.label).toMatch(/רק אם/);
+  });
+
+  it("he.json carries no unconditional call promise", () => {
+    const hits = walk(he).filter((v) =>
+      /שיחה אישית עם כל|זהות, סיפור ושיחה|עובר שיחה אישית|יוצר קשר לשיחה קצרה|דיברנו\. אדם מולנו/.test(v),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it("en.json carries no unconditional call promise", () => {
+    const hits = walk(en).filter((v) =>
+      /conversation with every business|gets a personal call|reaches out for a short call|identity, story, and a conversation\b/i.test(v),
+    );
+    expect(hits).toEqual([]);
   });
 });

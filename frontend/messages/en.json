@@ -21,7 +21,7 @@
     "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
-    "trust_strip": "A real conversation with every business",
+    "trust_strip": "A personal introduction to every business",
     "menu_close": "Close menu",
     "menu_open": "Open menu",
     "lang_switch_to_en": "Switch to English",
@@ -236,7 +236,7 @@
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
           "duration": "The whole process takes about 3 minutes",
           "after_title": "What happens next",
-          "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, reaches out for a short call, and your business goes live within up to 3 business days.",
+          "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
           "cta": "Start"
         },
@@ -386,11 +386,11 @@
           "cta": "To my dashboard",
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
-          "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
+          "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
           "next_step1": "Personal review",
-          "next_step2": "Intro call",
+          "next_step2": "Personal review",
           "next_step3": "Your page goes live",
           "dashboard_cta": "Go to my dashboard →",
           "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.co.il/register/producer",
@@ -3276,7 +3276,7 @@
     "email_subject": "Have you heard of Mehamakor?",
     "email_fallback_toast": "We couldn't open your email app — the message was copied, paste it into your email.",
     "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
-    "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
+    "message": "Discover Mehamakor — local food businesses, each one personally vetted. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
   "gallery": {
@@ -3415,8 +3415,8 @@
       "heading": "Four steps",
       "step1_title": "Sign up",
       "step1_text": "A short form about your business and contact details. About 3 minutes. Photos come later, from the dashboard.",
-      "step2_title": "A personal call",
-      "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
+      "step2_title": "A personal introduction",
+      "step2_text": "Our team goes over the business and the story, and reaches out for a short intro if needed.",
       "step3_title": "Your page goes live",
       "step3_text": "Within up to 3 business days of sending it for review, your business appears on the site.",
       "step4_title": "Customers reach you directly",
@@ -3430,8 +3430,8 @@
       "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later"
     },
     "card": {
-      "title": "Every business gets a personal call",
-      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and a conversation. That keeps every page on the site trustworthy and personal."
+      "title": "Every business gets a personal introduction",
+      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and sometimes a conversation. That keeps every page on the site trustworthy and personal."
     },
     "testimonial": {
       "eyebrow": "Coming soon — our first testimonial",
@@ -3687,7 +3687,7 @@
     "meta_title": "Terms of Use | Mehamakor",
     "meta_description": "Terms of use for Mehamakor — local food businesses from across Israel, in one place.",
     "heading": "Terms of Use",
-    "date_label": "Last updated: April 2026",
+    "date_label": "Last updated: October 2026",
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -3716,7 +3716,7 @@
       },
       "verified": {
         "title": "5. Verification & display tiers",
-        "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
+        "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and, where needed, a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
         "verified_badge_title": "“Verified” badge",
         "verified_badge_body": "A business that presented us with an official licensing document or exemption approval, whose existence and validity we checked at the time of presentation, is marked with a “Verified” badge together with the date of the check. The check is limited to verifying the document presented, does not include ongoing monitoring with the authorities, and provides no guarantee that the document remained valid after the date of the check. The badge is provided free of charge.",
         "declared_title": "“Declared” business",
@@ -5096,7 +5096,7 @@
   "process": {
     "meta": {
       "title": "Our Acceptance Process | Mehamakor",
-      "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
+      "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
       "og_title": "Our Acceptance Process — Mehamakor",
       "og_description": "How a business is accepted to Mehamakor: a personal introduction, and what's checked in every category."
     },
@@ -5115,8 +5115,8 @@
       "lead": "Four steps, one person on the other side. This is how it works from the request to going live.",
       "s1_title": "The request reaches us",
       "s1_body": "It all starts with a short form — what's made, from which ingredients, and where. Every request is read by a person, from the very first word.",
-      "s2_title": "We actually talk",
-      "s2_body": "A personal conversation — on WhatsApp or by phone. Who stands behind the business, what a workday looks like, and where the raw ingredients come from.",
+      "s2_title": "Getting to know the business",
+      "s2_body": "We go over the details, the story and the photos: who stands behind the business, what a workday looks like, and where the raw ingredients come from. When needed, we talk on WhatsApp or by phone.",
       "s3_title": "A visit, if needed",
       "s3_body": "Sometimes we travel. When it helps us understand the place — we come to see the kitchen, the farm, or the hive with our own eyes.",
       "s4_title": "Going live — after we've met",
@@ -5132,8 +5132,8 @@
       "c1_body": "Who stands behind the business. A real name and place. No anonymity.",
       "c2_title": "Story",
       "c2_body": "How and why they work this way. What goes into the product — and what doesn't.",
-      "c3_title": "Conversation",
-      "c3_body": "We talked. A person across from us, not a form that approved itself."
+      "c3_title": "A human eye",
+      "c3_body": "A person reads every application and decides. Not a form that approved itself."
     },
     "badge": {
       "marker": "The badge",
