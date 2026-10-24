@@ -251,7 +251,8 @@ test.describe("WhatsApp verification from the draft", () => {
     await card.getByLabel("קוד אימות").fill("123456");
     await card.getByRole("button", { name: "אמתו" }).click();
 
-    await expect(page.getByText("הטלפון אומת! העסק הועבר לסקירת הצוות.")).toBeVisible();
+    // MEH-2305: verifying is one step, not the submission — the toast points at the button.
+    await expect(page.getByText('הטלפון אומת! כשכל השלבים מוכנים, לחצו "שליחה לבדיקה" כדי שנכיר את העסק.')).toBeVisible();
     expect(posts.map((p) => p.url)).toEqual(["verify-phone", "verify-phone/confirm"]);
     expect(posts[1].body).toEqual({ code: "123456" });
 
