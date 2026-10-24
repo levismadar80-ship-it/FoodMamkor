@@ -3,6 +3,32 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-24 19:30 — הכנות להשקה: ייצור עודכן ל-v1.2.0 ול-v1.2.1, תיקון rate limiter (כבוי עד הגדרת סוד), נגישות, והחלפת סודות בתהליך
+
+**‏שורה אחת:** ‏ה-backend בייצור ב-Railway היה תקוע מ-7/9 על `8e69ff1`. Railway לא פרס את v1.1.0 ואת v1.1.1 בזמן האירוע, ולכן האתר החדש דיבר עם שרת ישן. ספיר פרסה ידנית, ובאותן דקות סשן אחר מיזג את v1.2.0 (#3566). **ייצור רץ עכשיו על `3517075`** (`db_init: ready`, `alembic_head 0396917da2ea`). אחר כך v1.2.1 (#3568, `c1f72e4`) עלה ל-main, frontend בלבד.
+
+**‏מוזג ל-staging בסשן הזה (squash, כל PR בנפרד):**
+- **#3562 `d8f227cf` (MEH-2298):** ה-rate limiter מקבל את ה-IP של הגולשת מה-middleware של Vercel (`x-edge-client-ip`), רק כש-`x-edge-secret` תואם ל-`EDGE_PROXY_SECRET`. כל תגובה מחזירה `X-Client-IP-Source`. **כבוי עד שהסוד מוגדר** ב-Vercel וב-Railway. ספיר אישרה את משתנה הסביבה החדש.
+- **#3565 `0f6e0453` (MEH-2308):** קישור האינסטגרם בפוטר וקישור מפות Google ב-MiniMap. השם הנגיש שלהם מכיל עכשיו את הטקסט הנראה (WCAG 2.5.3). כפתור הצ'אט נדחה ל-PR נפרד, כי 7 אתרי טסט מחפשים אותו לפי ה-label, ושניים מהם בודקים היעדר.
+- **#3567 `05345e31` (MEH-2286):** «מהמקור פנו אליי ישירות» חזר לטופס ההרשמה.
+- **נסגר בלי מיזוג:** #3553. ספיר החזירה את חשבון האינסטגרם ל-`meha_makor`. MEH-2301 בוטל.
+
+**‏ממתין לספיר:**
+
+| מה | הפעולה |
+| -- | -- |
+| MEH-2291 | להשלים את החלפת הסודות: production, staging, backup-cron (R2), Vercel. שלבי A–F בצ'אט. Postgres רק אם ל-Railway יש Regenerate |
+| `EDGE_PROXY_SECRET` | אותו ערך ב-Railway (שתי הסביבות) וב-Vercel (Production + Preview). בדיקה: `/api` מחזיר `X-Client-IP-Source: edge` |
+| MEH-1905 | `railway.json:8` → `/health/readiness`. הקובץ חסום ל-CC (deny hook), זו עריכה של שורה אחת ב-GitHub |
+| MEH-1495 | Google Cloud billing. בלעדיו שורת הדירוג נעלמת |
+| MEH-1189 | קטגוריית חוות הגליל + ניקוי ישויות בדיקה דרך האדמין |
+| Sentry | לבדוק מכסה + Rate Limit ב-Client Keys |
+| #3515 (npm group, Next 16.4.2) | **לא למזג לפני ההשקה.** axe 4.14 מפיל 40 בדיקות E2E בגלל כפתור הצ'אט; ייתכן גם flake ב-`05-map-navigation:104` |
+
+**‏לקחים:**
+- `main` מעודכן לא אומר שייצור מעודכן. לבדוק את `git_sha` ב-`/api/health` מול `main` אחרי כל release.
+- כש-axe מתעדכן, הוא יכול להוסיף כללים. 40 כישלונות E2E ב-PR של תלויות היו נגישות אמיתית, לא באג בעדכון.
+
 ## 2026-10-22 14:05 — CC מקצה לקצה: כלל 23 שונה, 7 PR-ים מוזגו; staging מושבת בגלל הטוקן של Railway
 
 **‏שורה אחת:** ‏ספיר הודיעה שהיא לא בודקת בנייד וש-CC עושה הכל. כלל 23 עודכן (#3556), ומוזגו ארבעת ה-PR-ים של UI (#3541 · #3542 · #3544 · #3551), הקופי של העיר (#3557) וה-purge (#3558). **הכל מוזג ל-staging. שום דבר מזה עוד לא ב-production**, כי Railway לא נבנה.
