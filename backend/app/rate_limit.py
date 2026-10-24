@@ -37,11 +37,34 @@ Key-resolution priority when `TRUSTED_PROXY` is enabled:
 When `TRUSTED_PROXY` is not set, headers are client-controlled and
 must be ignored — falls straight through to `get_remote_address`.
 
+---
+
+MEH-2298 — browser traffic arrives through Vercel, not directly.
+
+`frontend/next.config.js` rewrites `/api/:path*` to the backend from the
+Vercel edge, so for a real visitor the TCP peer Railway sees is a Vercel
+egress IP. If Railway's edge keys `X-Real-IP` on that peer, every visitor
+shares a handful of buckets. That was never measured (MEH-256's probe does
+not record whether it went through Vercel), so this does not assume it.
+
+Instead, an opt-in trusted channel that wins over everything above when —
+and only when — it is authenticated:
+  0. `X-Edge-Client-IP`, set by `frontend/middleware.js` from Vercel's own
+     `x-real-ip` (which Vercel overwrites on ingress — documented, not
+     measured here), accepted only when `X-Edge-Secret` equals
+     `EDGE_PROXY_SECRET` (constant-time compare) and the value parses as
+     an IP address.
+A caller hitting Railway directly does not have the secret and falls
+through to steps 1–3 unchanged. With `EDGE_PROXY_SECRET` unset (the
+default) step 0 is skipped entirely, so this ships inert.
+
 `TRUSTED_PROXY` must be set to `1` / `true` / `yes` / `on` (case
 insensitive). Configure on Railway staging + production; leave unset
 for local dev and any directly-exposed deploy.
 """
 
+import hmac
+import ipaddress
 import json
 import os
 
@@ -64,21 +87,53 @@ def _trusted_proxy_enabled() -> bool:
     return os.getenv("TRUSTED_PROXY", "0").strip().lower() in _TRUTHY
 
 
-def get_real_client_ip(request: Request) -> str:
-    """Return the real caller IP for rate-limit bucketing.
+# MEH-2298: the edge channel. A secret shorter than this is treated as unset —
+# a guessable value would turn the header into a spoofing switch.
+EDGE_SECRET_MIN_LEN = 32
+EDGE_SECRET_HEADER = "x-edge-secret"
+EDGE_CLIENT_IP_HEADER = "x-edge-client-ip"
 
-    See module docstring for the resolution priority. In short: when
-    behind a trusted proxy, prefer `X-Real-IP` (Railway sets this
-    unspoofably); fall back to the second-to-last X-Forwarded-For
-    entry; fall through to `request.client.host` otherwise.
+
+def _edge_client_ip(request: Request) -> str | None:
+    """The visitor IP forwarded by our own Vercel middleware, or None.
+
+    Accepted only with a matching shared secret and a value that parses as
+    an IP. Any other request — no secret configured, a direct caller, a
+    wrong or missing header, garbage in the IP slot — returns None and the
+    caller falls through to the pre-MEH-2298 order.
     """
+    # DO NOT accept X-Edge-Client-IP without the secret check — it is a
+    # client-writable header on any request that does not pass through Vercel.
+    expected = os.getenv("EDGE_PROXY_SECRET", "").strip()
+    if len(expected) < EDGE_SECRET_MIN_LEN:
+        return None
+    sent = request.headers.get(EDGE_SECRET_HEADER, "")
+    if not hmac.compare_digest(sent.encode(), expected.encode()):
+        return None
+    raw = request.headers.get(EDGE_CLIENT_IP_HEADER, "").strip()
+    try:
+        return str(ipaddress.ip_address(raw))
+    except ValueError:
+        return None
+
+
+def resolve_client_ip(request: Request) -> tuple[str, str]:
+    """(ip, source) — source is one of edge / real-ip / xff / peer.
+
+    The source label is what `X-Client-IP-Source` reports (middleware.py),
+    so the resolution path can be checked from a browser without logs.
+    """
+    edge_ip = _edge_client_ip(request)
+    if edge_ip:
+        return edge_ip, "edge"
+
     if _trusted_proxy_enabled():
         # Primary: X-Real-IP, set by Railway's edge from its own
         # TCP-peer view of the caller. Overwritten on ingress, so the
         # client cannot spoof this value.
         real_ip = request.headers.get("x-real-ip", "").strip()
         if real_ip:
-            return real_ip
+            return real_ip, "real-ip"
 
         # Defensive fallback: X-Forwarded-For[-2]. Rightmost entry
         # is always Railway's internal proxy; the real client is the
@@ -88,9 +143,20 @@ def get_real_client_ip(request: Request) -> str:
         xff = request.headers.get("x-forwarded-for", "")
         entries = [e.strip() for e in xff.split(",") if e.strip()]
         if len(entries) >= 2:
-            return entries[-2]
+            return entries[-2], "xff"
 
-    return get_remote_address(request)
+    return get_remote_address(request), "peer"
+
+
+def get_real_client_ip(request: Request) -> str:
+    """Return the real caller IP for rate-limit bucketing.
+
+    See module docstring for the resolution priority. In short: the
+    authenticated edge header first (MEH-2298, opt-in); then, behind a
+    trusted proxy, `X-Real-IP`, then the second-to-last X-Forwarded-For
+    entry; `request.client.host` otherwise.
+    """
+    return resolve_client_ip(request)[0]
 
 
 def _no_email_fallback(request: Request, reason: str) -> str:
