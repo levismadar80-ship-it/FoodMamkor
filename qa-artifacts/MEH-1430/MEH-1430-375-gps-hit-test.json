@@ -1,0 +1,8 @@
+{
+  "x": 38,
+  "y": 492.328125,
+  "tag": "INPUT",
+  "aria": null,
+  "cls": "flex-1 min-w-0 min-h-[44px] bg-transparent outline-none text-text placeholder:text-fg-muted text-start",
+  "insideModalOverlay": true
+}

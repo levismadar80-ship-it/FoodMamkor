@@ -1,16 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { Info, Package, Truck, ChatCircleText, CaretLeft } from "@phosphor-icons/react";
+import { CaretLeft } from "@phosphor-icons/react";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
 // MEH-1306: owner-only per-section pencil (self-gating, 0 DOM non-owner).
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
+import SectionAnchorNav from "@/components/SectionAnchorNav";
 import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
@@ -22,8 +23,8 @@ import StickyContactBar from "./components/StickyContactBar";
 import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
 import { useStickyBar } from "./hooks/useStickyBar";
-import { useTabScroll } from "./hooks/useTabScroll";
 import { buildShareUrl, getRenderableImages } from "./lib/producer-format";
+import { getSectionNavItems } from "./lib/section-nav";
 import { isOnVacation } from "@/lib/availability";
 
 /**
@@ -56,7 +57,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     fetchPath,
     initialProducer,
   });
-  const { activeTab, sectionRefs, tabBarRef, scrollToSection } = useTabScroll();
+  // MEH-1207: ProducerSections still registers its section elements here (its
+  // sectionRefs prop is unchanged); the anchor-nav addresses sections by id.
+  const sectionRefs = useRef({});
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
 
@@ -155,7 +158,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           target of the edit tab's view-link) + an owner-only pencil row below
           it (→ #images card). Non-owners get an empty zero-height flex div —
           no reserved space, no CLS. */}
-      <div id="section-images" className="scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
+      <div id="section-images" className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24">
         {/* MEH-1843: verificationDocType + verifiedAt feed the masthead seal's
             popover body, which must read word-for-word the same as BadgeRow's
             hero chip popover — both render on this page. Without them the
@@ -176,77 +179,21 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         </div>
       </div>
 
-      {/* Mobile tab bar — MEH-1168 P2: sticks BELOW the global sticky header so
-          it stays visible page-long (at top-0 it hid behind the z-[1050]
-          header once scrolled into a deep section). MEH-1202: the offset is now
-          the LIVE-measured header height via the `--chrome-top` CSS var
-          (Header.jsx publishes it), not the old hardcoded `top-[82px]` — the
-          82px stays only as an SSR/first-paint fallback. */}
-      <nav
-        ref={tabBarRef}
-        style={{ top: "var(--chrome-top, 82px)" }}
-        className="md:hidden sticky z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
-        aria-label={t("producer.detail.aria.tab_nav")}
-      >
-        <div className="flex">
-          {/* MEH-1390: a tab whose section never renders is a dead click, so
-              each tab mirrors its section's render condition from
-              ProducerSections.jsx (about :141 — description; products :159 —
-              products/signature; delivery :410-412 — any delivery/pickup
-              signal). Keep the pairs in sync when a section condition changes.
-              The reviews wrapper always renders (it is the IO observation
-              point), so that tab is unconditional — the list is never empty.
-              activeTab seeds to "about" (useTabScroll.js:13) and changes only
-              on tap, so when the about tab is filtered out the seed points at
-              a tab that doesn't exist and nothing would highlight until the
-              first tap. Derived render-side (no state, no effect): fall back
-              to the first visible tab. */}
-          {(() => {
-            const visibleTabs = [
-              { key: "about", label: t("producer.detail.tabs.about"), Icon: Info, show: !!producer.description },
-              {
-                key: "products",
-                label: t("producer.detail.tabs.products"),
-                Icon: Package,
-                // MEH-1855: price_range is the only price-label field (the legacy
-                // alias was dropped in chunk 2) — it can make the products tab relevant.
-                show: !!(
-                  producer.products?.length > 0 ||
-                  producer.top_product_name ||
-                  producer.price_range
-                ),
-              },
-              {
-                key: "delivery",
-                label: t("producer.detail.tabs.delivery"),
-                Icon: Truck,
-                show: !!(producer.offers_delivery || producer.delivery_areas?.length > 0 || producer.pickup_points),
-              },
-              // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
-              // star implies a rating system the reviews section doesn't provide.
-              { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText, show: true },
-            ].filter((tab) => tab.show);
-            const effectiveActiveTab = visibleTabs.some((tab) => tab.key === activeTab)
-              ? activeTab
-              : visibleTabs[0].key;
-            return visibleTabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => scrollToSection(tab.key)}
-                className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
-                  effectiveActiveTab === tab.key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-fg-muted"
-                }`}
-              >
-                <tab.Icon size={18} weight={effectiveActiveTab === tab.key ? "fill" : "regular"} />
-                {tab.label}
-              </button>
-            ));
-          })()}
-        </div>
-      </nav>
+      {/* MEH-1207: section anchor-nav — REPLACES the MEH-1168 P2 mobile tab
+          bar that sat here (same slot, same mobile-only `md:hidden`, same
+          sticky offset off the live `--chrome-top` var, same aria-label and
+          tab labels). What changed: pills are `<a href="#id">` landing via
+          each section's own scroll-margin-top (no JS offset math — the old
+          useTabScroll hook is deleted), the active pill follows the scroll
+          (IntersectionObserver, aria-current), reduced motion jumps instantly,
+          and a fifth pill reaches the location section. Gates live in
+          lib/section-nav.js and are asserted against the real
+          ProducerSections render in SectionAnchorNav.test.jsx. */}
+      <SectionAnchorNav
+        items={getSectionNavItems(producer, t)}
+        ariaLabel={t("producer.detail.aria.tab_nav")}
+        className="md:hidden -mx-4 px-4 mt-6"
+      />
 
       {/* Two-column layout: main + sticky contact sidebar */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
@@ -277,7 +224,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               already always visible there in the sticky sidebar. Owner-only
               pencil row above the card (→ #contact-channels); non-owners get
               an empty zero-height flex div — no CLS. */}
-          <div ref={inlineCTARef} id="section-contact" className="lg:hidden mt-4 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)]">
+          <div ref={inlineCTARef} id="section-contact" className="lg:hidden mt-4 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))]">
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
