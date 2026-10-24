@@ -113,7 +113,8 @@ tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
 address suggestions:1010 → global header/nav (+ account dropdown):1050 →
 cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 →
-modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999
+modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999 →
+skip link:10000 → custom cursor dot:10001 (top of the scale, MEH-2300)
 ```
 
 ### The full live table (MEH-2093 chunk C)
@@ -136,8 +137,8 @@ over a CTA), which is why the gate sits in front of it.
 
 | token | n | representative owner | what it is |
 |---|---|---|---|
-| `z-[10000]` | 1 | `app/[locale]/layout.js:231` | skip-to-content link, on focus only |
-| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:64` | tooltips. ChatWidget's FAB shares the value via inline `zIndex: 9999` (`ChatWidget.jsx:212,220`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
+| `z-[10000]` | 1 | `app/[locale]/layout.js:232` | skip-to-content link, on focus only |
+| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:101` | tooltips. ChatWidget's FAB and open panel share the value via inline `zIndex: 9999` (`ChatWidget.jsx:222,230`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
 | `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
 | `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
 | `z-[9000]` | 20 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm; back to 20 in MEH-2209, which merged the admin producer reject + request-changes modals into one `ProducerDecisionModal` |
@@ -147,7 +148,7 @@ over a CTA), which is why the gate sits in front of it.
 | `z-[1150]` | 2 | `components/MiniMap.jsx:531` · `FavoritesClient.jsx:76` | MiniMap fullscreen |
 | `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
 | `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
-| `z-[1050]` | 2 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context** |
+| `z-[1050]` | 1 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context**. 2 → 1 in MEH-1207: the second hit was prose inside the producer-page tab-bar comment block, which left with the tab bar |
 | `z-[1010]` | 3 | `components/AddressSearch.jsx:266` · `components/CitiesAutocomplete.jsx:273` · `components/CitySearch.jsx:206` | autocomplete / combobox suggestion lists. Above Leaflet panes (400), controls (1000) and attribution (1001); below the header. **AddressSearch:** MEH-2093 chunk A, fixing an observed clipping. **CitiesAutocomplete:** MEH-2102, *defensive alignment only* — measured 16/08, no current consumer places a map where that list can reach it. **CitySearch:** MEH-2108, an observed occlusion — at 1000 it tied with the Leaflet controls *and* the MiniMap fullscreen button (`MiniMap.jsx:56`), and DOM order handed the band to the map (9 of 15 hit-test samples inside the 72px band were painted by map chrome; 0 after) |
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
@@ -160,6 +161,17 @@ over a CTA), which is why the gate sits in front of it.
 | `z-[1]` | 2 | `app/[locale]/about/AboutClient.jsx:624` | decorative layering |
 
 **22 live tokens.** Counts are occurrence counts, not file counts.
+
+**The custom cursor dot is NOT a row, and it sits above every row.**
+`.custom-cursor` in `app/globals.css` is `z-index: 10001` — a CSS declaration,
+not a `z-[N]` className, so the sync test above cannot see it (a table row for it
+would read as stale). It must be **strictly** above everything fixed: the native
+pointer is hidden site-wide (`.custom-cursor-on *{cursor:none}`), so any overlay
+that ties or beats the dot leaves no pointer at all over that overlay. That is
+exactly MEH-2300 — at 9999 it tied the chat panel and lost on DOM order.
+`__tests__/CustomCursorZOrder.test.js` asserts it stays above ChatWidget's inline
+values and every `z-[N]` token, and that `pointer-events: none` stays. A new
+value at or above 10001 therefore reds that test — raise the cursor with it.
 
 ### Modal overlays are portalled to `<body>` — a z token only ranks at the root
 

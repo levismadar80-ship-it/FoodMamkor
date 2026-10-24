@@ -593,6 +593,13 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
                                                reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
                                                Non-geo only (geo results always order by distance). Drives the /producers sort select.
+                                               MEH-1829: sort=distance (needs lat+lng, NO radius_km) → ORDER BY the MEH-1402
+                                               nearest-location Haversine ASC, NULL-coords rows LAST (sorted, never hidden — no
+                                               radius filter, no has_physical_location filter), tiebreak created_at DESC. Attaches
+                                               distance_km per row (null for a coordinate-less producer). X-Total-Count is the same
+                                               number as under any other sort with the same filters (count_q untouched).
+                                               sort=distance without lat or lng → 422 "מיון לפי מרחק דורש מיקום — lat ו-lng חובה".
+                                               With radius_km the request is geo mode and the sort axis is ignored, as before.
                                                MEH-1465: ?category is REPEATABLE (list[int]) — ?category=1&category=2 ORs over the
                                                ids (a producer in any selected category matches). A single ?category=5 still works
                                                (parses to [5]). Filtered via EXISTS on producer_categories (Producer.categories.any),

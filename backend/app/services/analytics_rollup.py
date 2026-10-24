@@ -7,7 +7,7 @@ Purpose:  Roll the raw producer analytics rows (`producer_page_views`,
           numbers moving. MEH-2079 chunk B2 (MEH-2283).
 Touches:  DB table `producer_analytics_daily` — INSERT only, never UPDATE,
           never DELETE. Reads the two raw tables. Commits per day.
-Does NOT: purge anything (chunk C, gated on MEH-1981); decide WHEN to run —
+Does NOT: purge anything (chunk C lives in retention_purge.py, MEH-2303); decide WHEN to run —
           the CronTrigger in startup.py owns timing, `scripts/rollup_analytics.py`
           owns the explicit backfill; count anything with a bare
           `func.count(id)` on page views — `unique_views_count` (analytics.py)

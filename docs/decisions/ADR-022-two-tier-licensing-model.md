@@ -40,3 +40,19 @@ declared_at / declaration_version (gate 2).
   barrier; unjustly excludes exempt categories.
 - Open listing without binding declaration — rejected: no good-faith defense.
 - Paid badge (Yelp model) — rejected: "monetizing trust" criticism; conflicts ADR-010.
+
+## Amendment 22/10/2026 — case-by-case approval without a license number (MEH-2299)
+Sapir's ruling, 22/10: "every business can enter without a license; it just doesn't
+get the badge." Chosen form (over opening the gate for everyone, and over counsel
+first): the admin may approve a business in a license-required category that has no
+license number, **one business at a time**, via «אשרי בלי רישיון» on
+`/admin/producers` (the MEH-971 `allow_without_license` override, logged).
+- Such a business shows **no badge and no «מוצהר»** (`verification_tier = None`) —
+  the tier-2 explainer says the category is exempt, which is false for it.
+- **Unchanged, deliberately:** the registration declaration text, the category-edit
+  422, and "Outside the model" above as the *default* — the override is an admin
+  decision per business, not a rule change for registration.
+- **Open, Sapir's:** the declaration every business signs says required licenses
+  exist and are valid. A business approved through the override has signed it while
+  lacking one. Whether that wording should change is a counsel question (Q1–Q5 above).
+

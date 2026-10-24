@@ -15,6 +15,7 @@ import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/re
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlightMatch";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
@@ -41,7 +42,39 @@ const DEBOUNCE_MS = 300;
 // reading a Hebrew example query before it swaps.
 const ROTATE_MS = 3500;
 const MAX_PER_SECTION = 5;
+// MEH-1685: total visible suggestions across ALL sections (Baymard choice-
+// paralysis threshold). Three sections × MAX_PER_SECTION used to reach 15.
+// The cap trims rows, never whole sections — see allocateCaps.
+const MAX_TOTAL_MOBILE = 8;
+const MAX_TOTAL_DESKTOP = 10;
+// MEH-1685: thumbnail renders at 40px; 80px delivered = 2× for retina.
+const THUMB_PX = 80;
 const EMPTY_RESULT = { producers: [], products: [], cities: [], categories: [] };
+
+/**
+ * MEH-1685: split a total budget across sections round-robin, so each
+ * non-empty section keeps at least one row before any section gets a second.
+ * Pure. `counts` = rows available per section (already ≤ perSection).
+ *   allocateCaps([5, 5, 5], 8)  → [3, 3, 2]
+ *   allocateCaps([5, 5, 5], 10) → [4, 3, 3]
+ *   allocateCaps([1, 5, 0], 8)  → [1, 5, 0]
+ */
+function allocateCaps(counts, total) {
+  const caps = counts.map(() => 0);
+  let left = total;
+  let progressed = true;
+  while (left > 0 && progressed) {
+    progressed = false;
+    for (let i = 0; i < counts.length && left > 0; i++) {
+      if (caps[i] < counts[i]) {
+        caps[i] += 1;
+        left -= 1;
+        progressed = true;
+      }
+    }
+  }
+  return caps;
+}
 
 function readRecent() {
   try {
@@ -102,10 +135,24 @@ export default function HeroSearch({
   // client paint, so SSR and hydration agree; only the interval advances it.
   const [phIdx, setPhIdx] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
+  // MEH-1685: viewport drives the total suggestion cap. Starts on the
+  // stricter mobile cap; the dropdown only renders after typing, i.e. after
+  // the effect below has measured, so there is no SSR/hydration exposure.
+  // REUSES: components/BackToTop.jsx:45 — same md (768px) breakpoint read.
+  const [isDesktop, setIsDesktop] = useState(false);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const trendingFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(mq.matches);
+    const h = (e) => setIsDesktop(e.matches);
+    mq.addEventListener?.("change", h);
+    return () => mq.removeEventListener?.("change", h);
+  }, []);
 
   // Hydrate recent searches after mount (localStorage is client-only).
   useEffect(() => {
@@ -166,20 +213,38 @@ export default function HeroSearch({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // MEH-1685: the ONE capped view of the results — both the rendered rows and
+  // the keyboard model read from it, so arrow keys can never land on a row
+  // that was sliced away.
+  const visible = useMemo(() => {
+    const producers = results.producers.slice(0, MAX_PER_SECTION);
+    const categories = results.categories.slice(0, MAX_PER_SECTION);
+    const cities = results.cities.slice(0, MAX_PER_SECTION);
+    const [pCap, cCap, cityCap] = allocateCaps(
+      [producers.length, categories.length, cities.length],
+      isDesktop ? MAX_TOTAL_DESKTOP : MAX_TOTAL_MOBILE
+    );
+    return {
+      producers: producers.slice(0, pCap),
+      categories: categories.slice(0, cCap),
+      cities: cities.slice(0, cityCap),
+    };
+  }, [results, isDesktop]);
+
   // Flat rows for keyboard navigation in autocomplete mode.
   const flatRows = useMemo(() => {
     const rows = [];
-    for (const p of results.producers.slice(0, MAX_PER_SECTION)) {
+    for (const p of visible.producers) {
       rows.push({ kind: "producer", id: p.id, data: p });
     }
-    for (const c of results.categories.slice(0, MAX_PER_SECTION)) {
+    for (const c of visible.categories) {
       rows.push({ kind: "category", id: c.id, data: c });
     }
-    for (const city of results.cities.slice(0, MAX_PER_SECTION)) {
+    for (const city of visible.cities) {
       rows.push({ kind: "city", id: city, data: city });
     }
     return rows;
-  }, [results]);
+  }, [visible]);
 
   // Empty-state rows (recent OR trending) as keyboard-navigable options,
   // so the dropdown is one listbox model in both states (ARIA APG combobox).
@@ -389,9 +454,9 @@ export default function HeroSearch({
             </div>
           )}
 
-          {results.producers.length > 0 && (
+          {visible.producers.length > 0 && (
             <Section title={t("section_producers")}>
-              {results.producers.slice(0, MAX_PER_SECTION).map((p) => {
+              {visible.producers.map((p) => {
                 const i = cursor++;
                 return (
                   <Row
@@ -401,19 +466,27 @@ export default function HeroSearch({
                     onSelect={() => navigate({ kind: "producer", data: p })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    <div className="font-medium">{highlightMatch(p.name, trimmed)}</div>
-                    {p.city && (
-                      <div className="text-xs text-fg-muted mt-0.5">{p.city}</div>
-                    )}
+                    {/* MEH-1685: thumbnail on the start side (right in RTL). */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ProducerThumb name={p.name} image={p.image} />
+                      <div className="min-w-0">
+                        <div className="font-medium">
+                          {highlightMatch(p.name, trimmed, { inverted: true })}
+                        </div>
+                        {p.city && (
+                          <div className="text-xs text-fg-muted mt-0.5">{p.city}</div>
+                        )}
+                      </div>
+                    </div>
                   </Row>
                 );
               })}
             </Section>
           )}
 
-          {results.categories.length > 0 && (
+          {visible.categories.length > 0 && (
             <Section title={t("section_categories")}>
-              {results.categories.slice(0, MAX_PER_SECTION).map((c) => {
+              {visible.categories.map((c) => {
                 const i = cursor++;
                 return (
                   <Row
@@ -423,16 +496,16 @@ export default function HeroSearch({
                     onSelect={() => navigate({ kind: "category", data: c })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    {highlightMatch(c.name, trimmed)}
+                    {highlightMatch(c.name, trimmed, { inverted: true })}
                   </Row>
                 );
               })}
             </Section>
           )}
 
-          {results.cities.length > 0 && (
+          {visible.cities.length > 0 && (
             <Section title={t("section_cities")}>
-              {results.cities.slice(0, MAX_PER_SECTION).map((city) => {
+              {visible.cities.map((city) => {
                 const i = cursor++;
                 return (
                   <Row
@@ -442,7 +515,7 @@ export default function HeroSearch({
                     onSelect={() => navigate({ kind: "city", data: city })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    {highlightMatch(city, trimmed)}
+                    {highlightMatch(city, trimmed, { inverted: true })}
                   </Row>
                 );
               })}
@@ -533,6 +606,44 @@ export default function HeroSearch({
         </div>
       )}
     </div>
+  );
+}
+
+// MEH-1685: circular producer thumbnail through the shared Cloudinary helper
+// (1:1 fill crop, 80px delivered for a 40px circle). Decorative — the name is
+// the adjacent text — so alt="" and no new copy. Imageless producers, and
+// images that fail to load, fall back to an initial in the same circle.
+// Same avatar/initial pattern as components/BottomNav.jsx:498.
+function ProducerThumb({ name, image }) {
+  const [failed, setFailed] = useState(false);
+  const src =
+    image && !failed
+      ? optimizeCloudinary(image, { aspectRatio: IMAGE_RATIOS.square, width: THUMB_PX })
+      : null;
+  return (
+    <span
+      className="shrink-0 w-10 h-10 rounded-full overflow-hidden bg-green-50 flex items-center justify-center"
+      aria-hidden="true"
+    >
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          width={40}
+          height={40}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="w-full h-full object-cover rounded-full"
+        />
+      ) : (
+        <span
+          data-testid="hero-search-thumb-initials"
+          className="w-full h-full rounded-full flex items-center justify-center text-sm font-semibold text-primary"
+        >
+          {(name || "").trim().charAt(0)}
+        </span>
+      )}
+    </span>
   );
 }
 

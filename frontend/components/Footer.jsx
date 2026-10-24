@@ -6,6 +6,7 @@ import { useState } from "react";
 import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
@@ -235,6 +236,18 @@ export default function Footer() {
                 )}
               </button>
             </form>
+            {/* MEH-1981: notice-at-collection (Privacy Law Amendment 13 §11) —
+                purpose of the one field this form takes, with the /privacy
+                link, directly under the field. `tone="on-dark"` because the
+                component's default primary-green link is unreadable on
+                bg-primary-dark. Copy derived from the five lines approved
+                02/09 (rule 22). */}
+            <CollectionNotice
+              message={t("privacy.collection_notice.newsletter")}
+              linkLabel={t("auth.register.consumer.terms.privacy_link")}
+              testId="newsletter-collection-notice"
+              tone="on-dark"
+            />
             {message && (
               <p
                 role="status"

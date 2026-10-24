@@ -661,9 +661,10 @@ zero.
    render cleanly (no undefined variables, no missing props).
 3. **One PR = one change.** One PR = one logical change. Never bundle
    a refactor with a feature, or a docs change with a code change.
-4. **Mobile preview before approving UI changes.** Before approving any
-   PR that changes visible UI: open the Vercel preview URL on mobile
-   and check the pages most affected by the change.
+4. **Mobile evidence before merging UI changes.** Before merging any
+   PR that changes visible UI, CC captures and reads the 375/1440
+   screenshots of the pages most affected. No human mobile pass
+   (rule 23, MEH-2302 amendment).
 5. **RTL logical properties.** Full rule + exception list:
    [.claude/rules/rtl.md](./rtl.md).
 6. **Guard tests (401/403/409) must send schema-valid payloads.**
@@ -1149,98 +1150,41 @@ Tasks auto-expire after 7 days.
     Anti-pattern: `/goal` ends with "PR merged" + any human-confirmation
     condition. The conditions race, merge wins, QA is bypassed.
 
-    ### Amendment 2026-08-12 (MEH-1511) — an automated evidence bundle may substitute for the human mobile-QA pass
+    ### Amendment 2026-10-22 (MEH-2302) — there is no human mobile-QA pass. CC owns UI QA end to end
 
-    **Everything above stays.** The MEH-571/579 incident is why the carve-outs
-    below exist, and the race it describes is real: a mechanical auto-close will
-    always beat a human confirmation step, so a `/goal` string must never make
-    them compete. What changes is *who supplies the QA evidence*, not whether
-    the QA happens.
+    **Sapir's ruling, 22/10/2026:** *"תוריד את הכלל הזה, אני לא בודקת כלום בנייד,
+    קלוד קוד בודק הכל בעצמו, אתה עושה הכל מקצה לקצה."* This supersedes the
+    MEH-1511 amendment (12/08), including its five carve-outs and its condition
+    that the Vercel and Sentry MCPs be connected. **Do not wait for, ask for, or
+    report a PR as "waiting on Sapir's mobile check".** That state no longer exists.
 
-    **Sapir's ruling, 08/08/2026, restated 10/08:** *"רק קלוד קוד בודק, אני לא
-    עושה QA."* The 08/08 wording extends this to **all UI, including central
-    components** — she reviews the evidence, not the phone.
+    **What still holds from the original rule above:** a `/goal` string must never
+    race a human confirmation against a mechanical auto-close. With no human
+    confirmation step left, the race cannot occur.
 
-    **The gates that remain hers are permissions, not quality:** workflow YAML,
-    branch protection, Alembic apply, `staging → main`, and copy/brand rulings
-    (rule 22). Do not read this amendment as touching any of those.
+    #### The evidence CC supplies before merging a UI PR
 
-    #### The substitution checklist — ALL of it, or the original gate stands
+    - `CI gate (required)` + `Deploy gate (required)` green on the current head
+      (build, vitest, backend tests, lint, API contract).
+    - Playwright screenshots at **375 and 1440** under `qa-artifacts/MEH-XXXX/`,
+      compressed per MEH-1156, opened and **read** by CC (copy, layout, RTL), and
+      linked from the PR.
+    - VRT clean, or re-baselined in the same PR with each changed PNG opened and
+      reviewed (CLAUDE.md: a regenerated baseline is a candidate, not truth).
+    - Where the change touches client storage, hydration, sticky / safe-area,
+      dates, or touch/scroll, say in the PR that only Chromium (and the
+      non-blocking WebKit shadow job) covered it. A real iOS device is not
+      available to CC, and the PR states that rather than implying coverage.
 
-    A frontend PR may proceed to merge without a human preview pass only when
-    every line holds:
+    #### What this amendment does NOT remove
 
-    - `npm run build` green · vitest green · `pytest tests/test_api.py` green
-    - the matching `/adversarial-review-*` variant (MEH-428) ran, with **zero**
-      REFEREE BLOCK verdicts outstanding
-    - Playwright screenshots at **375 and 1440**, committed under
-      `qa-artifacts/MEH-XXXX/`, compressed per the 2 MB cap (MEH-1156), and
-      posted to the PR and the Linear card. **These are Chromium-only. They are
-      layout and geometry evidence, NOT engine evidence** — see carve-out (e).
-    - VRT diff clean, or explicitly re-baselined **in the same PR** with each
-      changed PNG opened and reviewed by eye (CLAUDE.md — a regenerated baseline
-      is a candidate, not truth)
-    - `bash .claude/skills/mehamakor-dod/check.sh` exits 0 **in the PR's CI
-      context**, where dependencies are installed.
+    - **Rule 22.** New user-facing Hebrew copy is still approved verbatim
+      before it ships. That is a copy ruling, not QA.
+    - **Rule 30.** A `do-not-merge` label is still cleared by Sapir only.
+    - **Permission gates:** workflow YAML, branch protection, Alembic apply,
+      `staging → main`.
 
-    > **On that last line, because it is the one most easily fudged.** A
-    > non-zero exit *in the CC sandbox* caused solely by missing `node_modules`
-    > or the backend venv is **environmental** and does not block. A genuine
-    > violation the script reports is **not** environmental — it is fixed or
-    > ticketed before this amendment can be relied on, never waved through. If
-    > you cannot tell which you are looking at, it is not environmental.
-
-    #### Carve-outs that still require a human pass
-
-    (a) any file listed in `.claude/central-components.json`
-    (b) any **new** user-facing Hebrew string — **rule 22 remains fully in
-        force** and is not weakened anywhere by this amendment
-    (c) auth, payment, or checkout surfaces
-    (d) any PR carrying a merge-block marker (ADR-016 / MEH-1155) — already void
-        regardless of tier, and per rule 30 the marker is never CC's to clear
-    (e) **Safari / real-device (MEH-1788).** Any change touching client storage
-        (localStorage / sessionStorage / cookies), hydration or SSR/CSR
-        boundaries, sticky positioning or safe-area insets, date
-        parsing/formatting, or touch/scroll behaviour requires a human pass on a
-        **real iOS device**.
-
-    > **Why (e) is not negotiable on the evidence available.** WebKit coverage
-    > exists, but every form of it is **opt-in or non-voting**, so none of it
-    > substitutes for a real device. `frontend/playwright.config.ts` declares two
-    > webkit projects — `webkit-iphone13` (`:161`) and `webkit-pixel5-viewport`
-    > (`:183`) — but only inside a spread gated on `PW_WEBKIT=1`, so any run that
-    > does not set the flag is a **Chromium** run. In CI the shadow job
-    > `e2e-webkit` (`e2e.yml:432`) does install and run webkit, and it is
-    > `continue-on-error: true` (`:438`) and absent from `e2e-gate`'s `needs:`
-    > (`:566`) — it can neither red a run nor block a merge. In the CC sandbox
-    > the binary **is** obtainable behind the same flag (procedure:
-    > `docs/qa/webkit-local.md`). So a green Chromium bundle still carries *no
-    > information* about these classes, and a green shadow-webkit run carries
-    > *no vote*. Precedent: MEH-1769 was
-    > observed on real iOS Safari, and **10/10 green Chromium runs plus a
-    > raw-localStorage probe failed to reproduce it** (MEH-1783). This carve-out
-    > is **reviewed, not deleted**, when MEH-1788 promotes the shadow job to
-    > blocking — and
-    > even then Playwright webkit ≠ iOS Safari (no ITP, no PWA storage
-    > partitioning, no real safe-area, momentum or input-zoom behaviour), so the
-    > platform-specific subset stays human. Vocabulary to reuse: the 27
-    > DEVICE-ONLY rows in `docs/qa/manual-testing-matrix.md`.
-
-    #### The compensating control, and the condition on the whole amendment
-
-    This trades **prevention** (a human eye before merge) for
-    **detect-and-revert** (post-merge health). That trade is only legitimate
-    while the detection side is alive: post-merge verification via the Vercel and
-    Sentry MCPs, `.claude/commands/batch.md` §9.
-
-    **If either MCP is disconnected, this amendment does not apply and the
-    original human-preview gate above stands unchanged.** Check, don't assume —
-    a substitution justified by a control nobody verified is the same shape as a
-    green with two possible causes.
-
-    _Source: MEH-1511. Ruling 08/08/2026, restated 10/08 ("רק קלוד קוד בודק").
-    Carve-out (e) from MEH-1788 / MEH-1783 / MEH-1769. Original rule and its
-    MEH-571 → MEH-579 rationale preserved above, unamended._
+    _Source: MEH-2302. Supersedes MEH-1511 (12/08), whose text is in git history._
 
 24. **Scope-creep prevention for copy changes (MEH-579 lesson).**
     When the prompt scope is "replace Q&A content", Claude Code MUST

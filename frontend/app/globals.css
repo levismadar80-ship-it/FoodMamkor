@@ -620,7 +620,13 @@ body.sheet-open .cookie-banner {
   border-radius: 50%;
   position: fixed;
   pointer-events: none;
-  z-index: 9999;
+  /* MEH-2300: was 9999 — a TIE with ChatWidget's fixed launcher/panel (inline
+     zIndex 9999), and layout.js mounts <ChatWidgetLazy /> after <CustomCursor />,
+     so DOM order painted the open chat panel over the dot: no pointer at all
+     over the chat (the native one is already gone via .custom-cursor-on).
+     10001 = the top of the scale, above the z-[10000] skip link too. Must stay
+     pointer-events:none — guarded by __tests__/CustomCursorZOrder.test.js. */
+  z-index: 10001;
   transition:
     transform 0.18s ease-out,
     opacity 0.25s ease-out;
