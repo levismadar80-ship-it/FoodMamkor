@@ -198,11 +198,9 @@ const REFERRAL_SOURCE_KEYS = [
   "facebook",
   "google",
   "whatsapp_group",
-  // MEH-2286: "direct_outreach" is temporarily hidden from the dropdown — the
-  // backend that accepts it (v1.1.0) could not deploy during the Railway
-  // 21–22/10 incident, so the live API still 422s on it. Re-enable by adding
-  // "direct_outreach" back here once /api/health reports a post-5980abd7 sha.
-  // he.json / en.json / backend/app/constants.py are untouched on purpose.
+  // MEH-2286: re-enabled once production /api/health reported a post-v1.1.0
+  // sha — the backend that accepts it is live again.
+  "direct_outreach",
   "other",
   "prefer_not_to_say",
 ];

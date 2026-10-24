@@ -139,12 +139,16 @@ export default function Footer() {
               href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={t("nav.footer.instagram_aria")}
               className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
             >
               <InstagramLogo size={20} aria-hidden="true" />
               {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
               <bdi className="font-body-md">@meha_makor</bdi>
+              {/* MEH-2308: the description rides as sr-only text AFTER the visible
+                  handle instead of an aria-label that replaced it — WCAG 2.5.3
+                  (axe label-content-name-mismatch): the accessible name must
+                  contain the text a voice-control user sees and says. */}
+              <span className="sr-only"> — {t("nav.footer.instagram_aria")}</span>
             </a>
           </div>
 
