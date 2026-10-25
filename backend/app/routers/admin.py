@@ -1099,12 +1099,15 @@ def approve_producer(
     # approve something that was never submitted; the owner presses the button.
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
-    # path re-reads the row, but nothing in the codebase moves an existing
-    # producer BACK to draft — all four `status="draft"` writes are at creation
-    # (auth.py:561, auth.py:768, producer_queries.py:537, and admin.py:609 —
-    # admin_create_producer's `as_draft`, MEH-2322; lines re-derived for that
-    # addition). A row that was not draft when this line ran cannot be draft
-    # when the retry reads it.
+    # path re-reads the row. The four literal `status="draft"` writes are all
+    # at creation (auth.py:578, auth.py:785, producer_queries.py:537, and
+    # admin.py:609 — admin_create_producer's `as_draft`, MEH-2322). One more
+    # route CAN move an existing producer back to draft: an admin PUT carrying
+    # {"status": "draft"} (admin_update_producer applies the payload as-is —
+    # found in the MEH-2322 re-review). For the retry to read a draft row, an
+    # admin would have to send that PUT between this check and the retry, i.e.
+    # race her own approval. Accepted; restricting `status` on the admin PUT is
+    # tracked separately.
     if producer.status == "draft":
         raise HTTPException(
             status_code=409,

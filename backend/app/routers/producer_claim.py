@@ -59,16 +59,24 @@ _LINK_INVALID = "הקישור לא תקין או שפג תוקפו. אפשר ל�
 _ALREADY_CLAIMED = "העמוד הזה כבר שויך לחשבון."
 
 # MEH-2322 residual risks, accepted and written down rather than discovered:
-# - The link travels in a URL: the frontend /claim/<token> path, and the
+# - The link is a bearer credential: ANY signed-in account that holds it and
+#   ticks the two boxes claims the draft, first one wins. What bounds that is
+#   draft-only claiming, publication needing the owner's own submit AND a
+#   manual admin approval, the real owner seeing a 409 (so a hijack is loud),
+#   the 14-day expiry, and the link dying once the draft has an owner.
+# - The link travels in URLs: the frontend /claim/<token> path, and the
 #   preview's ?token= query, which reaches access logs and the Sentry request
 #   context (middleware.py request_info "url"). Readers of both are admins, who
-#   can mint a link anyway. The link alone cannot claim — it needs a signed-in
-#   account and her own declaration — expires in 14 days, and stops working
-#   once the draft has an owner.
-# - users.producer_id has no unique index. The row lock in claim_producer
-#   covers this route; register_producer's upgrade path does not lock, so one
-#   account claiming AND registering in the same instant is not serialised
-#   across the two routes.
+#   can mint a link anyway. The frontend page must keep the path out of
+#   analytics (MEH-2324).
+# - users.producer_id has no unique index. The claim and register_producer's
+#   upgrade path both lock the users row first, so those two are serialised.
+#   delete_account does not lock: an account deleted in the same instant it
+#   claims can leave the draft stamped and ownerless — inert (an ownerless
+#   draft cannot be submitted) and only reachable by the account racing itself.
+# - An admin PUT can set any listing's status back to "draft"
+#   (admin_update_producer applies the payload as-is), which makes an
+#   ownerless live listing claimable. Admin-only; tracked separately.
 
 
 def _has_owner(db: Session, producer_id: UUID) -> bool:
@@ -166,9 +174,10 @@ def claim_producer(
         db.query(User)
         .filter(User.id == user.id)
         .with_for_update()
-        .populate_existing()
-        .one()
+        .first()  # RED CONSTRUCTION (i): populate_existing() dropped
     )
+    if user is None:  # deleted between authentication and the lock
+        raise HTTPException(status_code=401, detail="משתמש לא נמצא")
 
     # Who may claim. Same two refusals, same wording family, as the register
     # upgrade path (routers/auth.py register_producer).

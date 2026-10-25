@@ -524,3 +524,16 @@ def factories():
         "category": make_category,
         "auth_header": auth_header,
     }
+
+
+# TEMPORARY (MEH-2322 red run 2) — removed in the next commit.
+def pytest_terminal_summary(terminalreporter):
+    failed = terminalreporter.stats.get("failed", []) + terminalreporter.stats.get("error", [])
+    rows = []
+    for rep in failed:
+        crash = getattr(getattr(rep, "longrepr", None), "reprcrash", None)
+        msg = (crash.message if crash else "").replace("\n", " ")[:140]
+        rows.append(f"{rep.nodeid} :: {msg}")
+    terminalreporter.write_line(
+        f"::notice title=red-run failures ({len(rows)})::" + " %0A ".join(rows)
+    )

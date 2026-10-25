@@ -19,7 +19,13 @@ from joserfc import jwt as jose_jwt
 from joserfc.jwk import OctKey
 from sqlalchemy import text
 
-from conftest import auth_header, make_category, make_producer, make_user
+from conftest import (
+    auth_header,
+    make_category,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 from app.auth import (
     PRODUCER_CLAIM_SCOPE,
     _jwt_key,
@@ -537,6 +543,50 @@ class TestClaimConcurrency:
         assert [u.id for u in db.query(User).filter(User.producer_id == pid)] == [
             first_id
         ]
+
+    def test_claim_in_flight_then_register_upgrade_on_same_account_is_409(
+        self, client, db
+    ):
+        """Across routes: the account's claim is mid-flight (held, not
+        committed) when the SAME account submits the register-upgrade form.
+        Without a users-row lock in register_producer, the register reads
+        producer_id=None, creates a second business, and overwrites the link
+        once the claim commits — the claimed draft ends up owned by nobody."""
+        p1 = _draft(db)
+        user = make_user(db)
+        user.last_active_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.commit()
+        uid, p1_id = user.id, p1.id
+        headers = auth_header(user)
+        body = valid_producer_register_payload()
+        for field in ("email", "name", "password"):
+            body.pop(field)
+        body["phone"] = "0521234567"
+        producers_before = db.query(Producer).count()
+
+        held = db.query(User).filter(User.id == uid).with_for_update().one()
+        held.producer_id, held.role, held.is_producer = p1_id, "producer", True
+        db.flush()
+
+        out = {}
+
+        def register():
+            out["r"] = client.post(
+                "/auth/register/producer", json=body, headers=headers
+            )
+
+        worker = threading.Thread(target=register)
+        worker.start()
+        queued = _wait_until_a_backend_queues_on_a_lock()
+        db.commit()
+        worker.join(timeout=30)
+        assert not worker.is_alive(), "request 2 never returned"
+        assert queued, "construction void: request 2 never queued behind request 1"
+
+        assert out["r"].status_code == 409, out["r"].text
+        db.expire_all()
+        assert db.get(User, uid).producer_id == p1_id
+        assert db.query(Producer).count() == producers_before
 
 
 # ---------- D7: admin draft create ----------
