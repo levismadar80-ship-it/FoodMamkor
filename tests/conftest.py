@@ -154,6 +154,14 @@ from app.models.models import (  # noqa: E402
 )
 
 
+def pytest_runtest_logreport(report):
+    # TEMPORARY (MEH-2322, removed before merge): name every failing test in
+    # the check annotations. Runs in the xdist controller, whose stdout is the
+    # job log; the CC sandbox cannot read raw logs, only annotations.
+    if report.failed:
+        print(f"\n::error title=pytest failed ({report.when})::{report.nodeid}")
+
+
 def pytest_configure(config):
     # MEH-214: register the `fuzz` marker so `pytest -m fuzz` / `-m "not fuzz"`
     # work and unregistered-marker warnings stay clean. The schemathesis
