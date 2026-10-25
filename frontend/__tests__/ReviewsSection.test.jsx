@@ -22,7 +22,8 @@ vi.mock("next-intl", () => ({
       owner_only_eyebrow: "מוצג רק לך",
     };
     const t = (key) => flat[key] || key;
-    t.rich = (key) => key; // guest login-prompt path
+    // guest login-prompt path: render the `login` chunk so its href is testable
+    t.rich = (key, tags) => (tags && tags.login ? <>{key} {tags.login("login")}</> : key);
     return t;
   },
   useLocale: () => "he",
@@ -265,5 +266,105 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-1428 chunk 2 (MEH-2330): the owner's "request a review" link carries a
+// signed `rt` token. It is an alternative to the WhatsApp-click gate — the
+// server verifies it (reviews.py `_invited_by_token`); the client only has to
+// keep it per producer, unlock the form, and forward it as `review_token`.
+describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
+  const PID = "prod-1428";
+
+  const submitReview = async () => {
+    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(screen.getAllByLabelText("star_aria")[4]);
+    fireEvent.change(screen.getByLabelText("body_label"), {
+      target: { value: "מוצרים טעימים מאוד, ממליצה" },
+    });
+    fireEvent.click(screen.getByText("submit"));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalled());
+    return apiMock.post.mock.calls[0];
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    apiMock.post.mockReset();
+    apiMock.post.mockResolvedValue({
+      data: { id: "rev-new", user_id: "u-9", stars: 5, body: "x", created_at: "2026-10-25T10:00:00" },
+    });
+    authState.user = { id: "u-9", producer_id: null };
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("?rt= on the page unlocks the form with no WhatsApp click, and the submit forwards it", async () => {
+    window.history.replaceState({}, "", `/p/meshek?rt=tok-abc`);
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    const [url, payload] = await submitReview();
+    expect(url).toBe(`/producers/${PID}/reviews`);
+    expect(payload).toEqual({ stars: 5, body: "מוצרים טעימים מאוד, ממליצה", review_token: "tok-abc" });
+  });
+
+  it("keeps the token per producer in sessionStorage, so it survives the login detour", async () => {
+    window.history.replaceState({}, "", `/p/meshek?rt=tok-abc`);
+    mockReviews([]);
+    const first = render(<ReviewsSection producerId={PID} />);
+    await waitFor(() => expect(sessionStorage.getItem(`review_invite_${PID}`)).toBe("tok-abc"));
+    first.unmount();
+
+    // Back from /login: the query string is gone, the token is not.
+    window.history.replaceState({}, "", `/p/meshek`);
+    render(<ReviewsSection producerId={PID} />);
+    const [, payload] = await submitReview();
+    expect(payload.review_token).toBe("tok-abc");
+  });
+
+  it("a token stored for ANOTHER producer does not unlock this one", async () => {
+    sessionStorage.setItem("review_invite_some-other-producer", "tok-other");
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+  });
+
+  it("WhatsApp-click path unchanged: no token in storage → no review_token key in the body", async () => {
+    localStorage.setItem(`wa_clicked_${PID}`, "1");
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    const [, payload] = await submitReview();
+    expect(payload).toEqual({ stars: 5, body: "מוצרים טעימים מאוד, ממליצה" });
+  });
+
+  it("the owner never gets the form, token or not", async () => {
+    authState.user = { id: "u-owner", producer_id: PID };
+    window.history.replaceState({}, "", `/p/meshek?rt=tok-abc`);
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} isOwner />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+  });
+
+  it("guest with the link: the login prompt returns to this page's reviews, token in the URL", async () => {
+    authState.user = null;
+    window.history.replaceState({}, "", `/p/meshek?rt=tok-abc`);
+    mockReviews([]);
+    // The guest prompt is a t.rich() chunk; render the link so its href is observable.
+    render(<ReviewsSection producerId={PID} />);
+    await waitFor(() => expect(sessionStorage.getItem(`review_invite_${PID}`)).toBe("tok-abc"));
+    const link = await screen.findByTestId("reviews-login-link");
+    expect(link.getAttribute("href")).toBe(
+      `/login?redirect=${encodeURIComponent("/p/meshek?rt=tok-abc#reviews")}`,
+    );
+  });
+
+  it("an empty ?rt= stores nothing and unlocks nothing", async () => {
+    window.history.replaceState({}, "", `/p/meshek?rt=`);
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(sessionStorage.getItem(`review_invite_${PID}`)).toBeNull();
+    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
   });
 });
