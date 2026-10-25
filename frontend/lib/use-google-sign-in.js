@@ -9,9 +9,13 @@ const GSI_BASE = "https://accounts.google.com/gsi/client";
 // he-IL Chrome, `locale` he/iw/fr/ar/de all rendered "Continue with Google",
 // and only `gsi/client?hl=he` produced «להמשיך עם Google». Google's reference
 // says to put `hl` on the script src. Read once, at load, from <html lang>.
-function gsiSrc() {
+export function gsiLang() {
   const lang = (document.documentElement.lang || "he").slice(0, 2).toLowerCase();
-  return `${GSI_BASE}?hl=${lang === "en" ? "en" : "he"}`;
+  return lang === "en" ? "en" : "he";
+}
+
+function gsiSrc() {
+  return `${GSI_BASE}?hl=${gsiLang()}`;
 }
 
 // MEH-1784 — document-scoped singleton state. Module scope is exactly the right
@@ -113,7 +117,7 @@ export function useGoogleSignIn(clientId, callback, onReady) {
 
     // DO NOT match on the exact src — a script loaded with another `hl` (or
     // none) is still the one GSI instance in this document (MEH-2319).
-    const existing = document.querySelector(`script[src^="${GSI_BASE}"]`);
+    const existing = document.querySelector(`script[src="${GSI_BASE}"]`);
     if (existing) {
       existing.addEventListener("load", init, { once: true });
       return release;
