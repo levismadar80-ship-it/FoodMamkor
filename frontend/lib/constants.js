@@ -29,8 +29,9 @@ export const SITE_DESCRIPTION =
 // Rule-22 approved verbatim by Sapir on MEH-2192 (06/09). SITE_DESCRIPTION
 // above stays the per-page <meta name="description">; the two are different
 // jobs — one describes the entity, the other sells the page to a SERP.
+// MEH-2313 (25/10): «קטנים שבדקנו» → «מקומיים שבחרנו», approved verbatim.
 export const CANONICAL_SENTENCE =
-  "אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.";
+  "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.";
 
 // MEH-2192: `sameAs` for the Organization node — the profiles that corroborate
 // the entity. Exactly one canonical brand account exists today; it is the one
