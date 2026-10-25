@@ -2,7 +2,17 @@
 
 import { useEffect, useRef } from "react";
 
-const GSI_SRC = "https://accounts.google.com/gsi/client";
+const GSI_BASE = "https://accounts.google.com/gsi/client";
+
+// MEH-2319: Google renders the button text in the language the LIBRARY was
+// loaded in. renderButton's `locale` alone was ignored: measured 25/10 in a
+// he-IL Chrome, `locale` he/iw/fr/ar/de all rendered "Continue with Google",
+// and only `gsi/client?hl=he` produced «להמשיך עם Google». Google's reference
+// says to put `hl` on the script src. Read once, at load, from <html lang>.
+function gsiSrc() {
+  const lang = (document.documentElement.lang || "he").slice(0, 2).toLowerCase();
+  return `${GSI_BASE}?hl=${lang === "en" ? "en" : "he"}`;
+}
 
 // MEH-1784 — document-scoped singleton state. Module scope is exactly the right
 // lifetime: shared by every consumer within one document, and reset by a real
@@ -101,14 +111,16 @@ export function useGoogleSignIn(clientId, callback, onReady) {
       return release;
     }
 
-    const existing = document.querySelector(`script[src="${GSI_SRC}"]`);
+    // DO NOT match on the exact src — a script loaded with another `hl` (or
+    // none) is still the one GSI instance in this document (MEH-2319).
+    const existing = document.querySelector(`script[src^="${GSI_BASE}"]`);
     if (existing) {
       existing.addEventListener("load", init, { once: true });
       return release;
     }
 
     const script = document.createElement("script");
-    script.src = GSI_SRC;
+    script.src = gsiSrc();
     script.async = true;
     script.onload = init;
     document.body.appendChild(script);
