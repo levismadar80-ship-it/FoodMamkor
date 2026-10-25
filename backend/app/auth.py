@@ -181,11 +181,12 @@ def decode_producer_claim_token(token: str) -> UUID | None:
         # `exp` is essential for the same reason as the review invite: this
         # travels as a shareable link, and one minted without `exp` must not
         # become a permanent key to someone's business.
-        JWTClaimsRegistry(exp={"essential": False}).validate(token_obj.claims)  # RED: G8 exp optional
+        JWTClaimsRegistry(exp={"essential": True}).validate(token_obj.claims)
     except (JoseError, ValueError):
         return None
     claims = token_obj.claims
-    # RED: G7 scope check removed
+    if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
+        return None
     try:
         return UUID(str(claims.get("producer_id")))
     except (TypeError, ValueError):

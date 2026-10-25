@@ -553,8 +553,10 @@ def admin_create_producer(
     # live without passing the approve gate, which enforces it
     # (producer_me.py `_is_approvable`) — the same reasoning as the public
     # register path's `license_pending`.
-    if True:  # RED: G11 license always enforced
-        ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    if not data.as_draft:
+        ensure_license_for_categories(
+            db, data.category_ids, data.producer_license_number
+        )
 
     producer = Producer(
         name=data.name,
@@ -602,7 +604,7 @@ def admin_create_producer(
         # admin = pre-approved. MEH-2322: an owner-claim draft is NOT — it
         # has no owner and no declaration, and stays off every public surface
         # until its owner claims it, completes it and submits it for review.
-        status="approved",  # RED: G10 as_draft ignored
+        status="draft" if data.as_draft else "approved",
     )
     db.add(producer)
     db.flush()

@@ -1134,6 +1134,7 @@ class ProducerClaimPreviewOut(BaseModel):
     city: str | None = None
     short_description: str | None = None
     image: str | None = None
+    category_names: list[str] = []
 
 
 class ProducerClaimRequest(BaseModel):

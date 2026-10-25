@@ -66,7 +66,7 @@ def _claimable(db: Session, producer: Producer) -> bool:
     # DO NOT widen to approved / imported listings without a decision — a
     # claim there would hand a stranger holding a leaked link control of a
     # page that is already live (MEH-2321 D2).
-    return True  # RED: G1 status + G2 owner removed
+    return producer.status == "draft" and not _has_owner(db, producer.id)
 
 
 @router.post(
@@ -83,7 +83,13 @@ def create_claim_link(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
-    # RED: G1b/G2b admin-link status + owner checks removed
+    if producer.status != "draft":
+        raise HTTPException(
+            status_code=409,
+            detail="אפשר ליצור קישור הזמנה רק לטיוטה שעוד לא נשלחה לבדיקה",
+        )
+    if _has_owner(db, producer.id):
+        raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
     token, expires_at = create_producer_claim_token(producer.id)
     logger.info(
         "producer_claim.link_created",
@@ -118,6 +124,10 @@ def preview_claim(
         city=producer.city,
         short_description=producer.short_description,
         image=(producer.images or [None])[0],
+        # Public on the business page anyway. The claim page needs them for
+        # the SAME rule registration applies: an agricultural category adds
+        # the grower declaration (RegisterProducerClient FARMER_DECLARATION_*).
+        category_names=[c.name for c in producer.categories],
     )
 
 
@@ -132,21 +142,21 @@ def claim_producer(
 ):
     # Who may claim. Same two refusals, same wording family, as the register
     # upgrade path (routers/auth.py register_producer).
-    if False:  # RED: G3 admin refusal removed
+    if user.role == "admin":
         raise HTTPException(
             status_code=403,
             detail="מנהלת מערכת לא יכולה לקבל עמוד של בית עסק. היכנסי עם חשבון אחר.",
         )
-    if False:  # RED: G4 existing-business refusal removed
+    if user.producer_id or user.is_producer:
         raise HTTPException(status_code=409, detail="לחשבון הזה כבר יש בית עסק רשום")
 
     # The declaration and the terms are HERS — stamped from her own clicks,
     # never prepared on her behalf (MEH-2321 D5, ADR-022 gate 2).
-    if False:  # RED: G5 declaration removed
+    if not body.declaration_accepted:
         raise HTTPException(
             status_code=422, detail="יש לאשר את הצהרת הרישוי כדי להמשיך"
         )
-    if False:  # RED: G6 terms removed
+    if not body.terms_accepted:
         raise HTTPException(
             status_code=422, detail="יש לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך"
         )
@@ -176,9 +186,7 @@ def claim_producer(
 
     # Capture before the session closes — background tasks run after it.
     p_id, p_name, p_phone = producer.id, producer.name, producer.phone
-    logger.info(
-        "producer_claim.claimed", producer_id=str(p_id), user_id=str(user.id)
-    )
+    logger.info("producer_claim.claimed", producer_id=str(p_id), user_id=str(user.id))
     # Same three side effects as a self-registered draft (register_producer
     # upgrade_path). The admin ping stays where it already is: at submit.
     background_tasks.add_task(notify_producer_registered, p_name, p_phone)

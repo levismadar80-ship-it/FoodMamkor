@@ -592,7 +592,7 @@ An admin prepares an ownerless DRAFT (`POST /admin/producers` with `as_draft: tr
 POST   /admin/producers/{id}/claim-link   admin  — 30/hour. Draft-only (409 otherwise), no owner yet (409 «העמוד הזה כבר שויך לחשבון.»), 404 if missing.
                                                      → {url: {frontend_url}/claim/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_claim"},
                                                      14-day TTL, exp essential (auth.py create_producer_claim_token). Stateless — no table, no revocation before exp.
-GET    /producer-claim/preview?token=      public — 30/min. → {name, city, short_description, image} ONLY (no phone/email/address/license).
+GET    /producer-claim/preview?token=      public — 30/min. → {name, city, short_description, image, category_names} ONLY (no phone/email/address/license; category names drive the grower declaration, as in registration).
                                                      Any unusable link (bad signature, expired, wrong scope, deleted draft) → the same 404; claimed or not a draft → 409.
 POST   /producer-claim                     auth   — 10/hour. Body {token, declaration_accepted, terms_accepted}. Refuses admin (403) and a user who already has a business (409);
                                                      both boxes required (422). Locks the producer row FOR UPDATE, re-checks draft + ownerless (409), then sets
