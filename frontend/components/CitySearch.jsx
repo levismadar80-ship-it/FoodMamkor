@@ -69,7 +69,7 @@ const NO_FETCHED = Object.freeze([]);
 // REUSES: backend/app/routers/alerts.py:216-225 (_normalize_city) — same
 // hyphen/maqaf/dash family, geresh/gershayim, whitespace and case folding.
 const CITY_SEPARATORS = /[-־–—]/g; // hyphen, maqaf, en/em dash
-export function cityKey(name) {
+function cityKey(name) {
   return (name || "")
     .replace(/׳/g, "'")
     .replace(/״/g, '"')
