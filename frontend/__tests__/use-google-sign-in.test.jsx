@@ -140,3 +140,86 @@ describe("useGoogleSignIn — one initialize per document (MEH-1784)", () => {
     ).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * MEH-2319 — the button language comes from the script URL, not from
+ * renderButton's `locale`.
+ *
+ * Measured 25/10 in a real Chrome (he-IL) on the production register page.
+ * With the library loaded as plain `gsi/client`, the button read "Continue
+ * with Google" for every `locale` tried (he, iw, fr, ar, de). After reloading
+ * it as `gsi/client?hl=he`, the same button read «להמשיך עם Google». Google's
+ * reference says to add `hl` to the client script src. These cases pin that
+ * the hook does, in the page's own language.
+ *
+ * DISCRIMINATION: both cases are red on origin/staging, whose script src
+ * has no `hl` at all.
+ */
+describe("useGoogleSignIn — loads GSI in the page language (MEH-2319)", () => {
+  const scriptHl = () => {
+    const s = document.querySelector('script[src^="https://accounts.google.com/gsi/client"]');
+    return s ? new URL(s.src).searchParams.get("hl") : "(no script)";
+  };
+
+  afterEach(() => {
+    cleanup();
+    document.querySelectorAll('script[src^="https://accounts.google.com/gsi/client"]').forEach((s) => s.remove());
+    document.documentElement.lang = "";
+    delete window.google;
+  });
+
+  it("loads the library with hl=he on a Hebrew page", async () => {
+    document.documentElement.lang = "he";
+    const Consumer = makeConsumer(await freshHook());
+    render(<Consumer onCredential={() => {}} />);
+    expect(scriptHl()).toBe("he");
+  });
+
+  it("loads the library with hl=en on the English locale", async () => {
+    document.documentElement.lang = "en";
+    const Consumer = makeConsumer(await freshHook());
+    render(<Consumer onCredential={() => {}} />);
+    expect(scriptHl()).toBe("en");
+  });
+
+  // The lookup must find the hook's OWN script, which now carries `?hl=`. A
+  // second consumer mounting while the first load is still in flight (no
+  // window.google yet) must attach to it, not append a second copy — the
+  // MEH-1784 duplicate-load class. DISCRIMINATION: red against an exact
+  // `script[src="…/gsi/client"]` lookup (the staging form), which no longer
+  // matches a src with a query string.
+  it("does not append a second library script while the first is still loading", async () => {
+    document.documentElement.lang = "he";
+    const pending = document.createElement("script");
+    pending.src = "https://accounts.google.com/gsi/client?hl=he";
+    document.body.appendChild(pending);
+    const Consumer = makeConsumer(await freshHook());
+    render(<Consumer onCredential={() => {}} />);
+    expect(
+      document.querySelectorAll('script[src^="https://accounts.google.com/gsi/client"]'),
+    ).toHaveLength(1);
+  });
+});
+
+// The app only ever sets "he" or "en" on <html lang> (app/[locale]/layout.js),
+// but the reader is total: region tags and unknown languages fall back sanely.
+describe("gsiLang (MEH-2319)", () => {
+  afterEach(() => {
+    document.documentElement.lang = "";
+  });
+
+  it.each([
+    ["", "he"],
+    ["he", "he"],
+    ["he-IL", "he"],
+    ["en", "en"],
+    ["en-US", "en"],
+    ["EN", "en"],
+    ["ar", "he"],
+  ])("<html lang=%j> → %s", async (lang, expected) => {
+    document.documentElement.lang = lang;
+    vi.resetModules();
+    const { gsiLang } = await import("@/lib/use-google-sign-in");
+    expect(gsiLang()).toBe(expected);
+  });
+});
