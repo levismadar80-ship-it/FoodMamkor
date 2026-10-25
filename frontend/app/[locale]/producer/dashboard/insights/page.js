@@ -337,10 +337,23 @@ function ViewsLineChart({ data }) {
   const yTicks = [...new Set([0, Math.round(maxV / 2), maxV])];
   // Show labels for start / mid / end only to avoid x-axis clutter.
   const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
+  const lastIndex = data.length - 1;
+  // MEH-2314: the edge labels anchor inward — a "middle" anchor at
+  // x = W - padRight pushed half the last label out of the viewBox.
+  const anchorFor = (i) => (i === 0 ? "start" : i === lastIndex ? "end" : "middle");
+  // MEH-2314: YYYY-MM-DD → DD.MM by string slicing, so no timezone can
+  // shift the day (no Date parsing).
+  const shortDate = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;
 
   return (
+    // MEH-2314: direction="ltr" — the page is dir="rtl", which SVG text
+    // inherits and which swaps what text-anchor start/end mean. The
+    // coordinates here are LTR (oldest left), so the text must be too;
+    // measured in a browser, RTL put both edge labels outside the box
+    // and the y-ticks inside the plot.
     <svg
       viewBox={`0 0 ${W} ${H + 20}`}
+      direction="ltr"
       className="w-full h-40"
       role="img"
       aria-label={t("views_chart_aria")}
@@ -397,11 +410,11 @@ function ViewsLineChart({ data }) {
                 x={x}
                 y={H + 14}
                 fontSize="10"
-                textAnchor="middle"
+                textAnchor={anchorFor(i)}
                 className="text-fg-muted"
                 fill="currentColor"
               >
-                {d.date.slice(5)}
+                {shortDate(d.date)}
               </text>
             )}
           </g>
