@@ -62,11 +62,17 @@ export const SUBMISSION_REQUIREMENTS = [
  * `delivery_cities` field is dead for registration-created producers and
  * reading it here would evaluate empty for every one of them.
  */
-function hasLocation(producer) {
-  const deliveryOnly =
-    producer?.has_physical_location === false && !!producer?.offers_delivery;
+/**
+ * True for a business with no physical location that delivers. Exported so
+ * the draft banner's "where do I fill this in" link (MEH-2327) follows the
+ * SAME split this gate uses, instead of a second copy of the predicate.
+ */
+export function isDeliveryOnly(producer) {
+  return producer?.has_physical_location === false && !!producer?.offers_delivery;
+}
 
-  if (deliveryOnly) {
+function hasLocation(producer) {
+  if (isDeliveryOnly(producer)) {
     if (producer?.delivery_nationwide) return true;
     return (producer?.delivery_areas || []).some((area) =>
       (area?.city || "").trim(),
