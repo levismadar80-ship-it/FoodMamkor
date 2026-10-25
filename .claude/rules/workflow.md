@@ -2037,12 +2037,21 @@ Tasks auto-expire after 7 days.
        closes the parent by hand and no PR claims it; its state is derived
        from its children.
 
-    **Residual for Sapir — UI only, one click:** Linear Settings → Workflow →
-    *"Auto-close parent issues when all sub-issues are closed"*. **Until it is
-    on, the parent still needs a hand close after the last child lands**, with
-    the DoD table on the card — and rule 29b's post-merge flip-check stays
-    mandatory in **both** directions (did it close a card it should not have;
-    did it fail to close one it should have) regardless of the setting.
+    **✅ The Linear setting is ON — measured 2026-10-25 (MEH-2328).** _(This
+    read "Residual for Sapir … Until it is on, the parent still needs a hand
+    close".)_ Linear Settings → Workflow → *"Auto-close parent issues when all
+    sub-issues are closed"*: at 18:56:13Z the last open child of MEH-2227
+    closed and MEH-2227 closed 0.3 s later, with no PR naming it. Rule 29b's
+    post-merge flip-check stays mandatory in **both** directions (did it close
+    a card it should not have; did it fail to close one it should have).
+
+    **The trap it sets: a parent that must stay open closes with its last
+    child.** That is a drain control card above all (MEH-2227) — so a drain's
+    docs sub-issue is **never** a child of the control card; give it no
+    parent, or the parent of the work it records. The `control` label that
+    `scripts/oneoff/pr-reconcile.mjs` excludes protects against the sweep
+    only, not against this setting. If it fires anyway: reopen, comment why,
+    and re-read the status (the MEH-1872 re-close precedent).
 
     Cross-refs: rule 28 §5 (identifier read from the created card), rule 29
     (no bare identifiers of Done cards), rule 29b (the 2-of-5 measurement and
