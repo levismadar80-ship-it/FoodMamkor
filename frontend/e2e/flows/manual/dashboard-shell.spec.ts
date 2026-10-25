@@ -246,6 +246,16 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
       }),
     }),
   );
+  // An approved business gets the «בקשו ביקורת מלקוחה» card on the tools tab
+  // (RequestReviewCard), which reads this on mount. Unstubbed, the fake token
+  // draws a 401 → failed refresh → api.js expires the session mid-test.
+  await page.route("**/producers/me/review-link", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ url: "https://mehamakor.co.il/p/maafiat-shaked?rt=e2e-review-invite" }),
+    }),
+  );
   await page.route("**/producers/me/analytics**", (route) =>
     route.fulfill({
       status: 200,
