@@ -234,7 +234,7 @@ test.describe("edit tab — unsaved-changes guard", () => {
 test.describe("edit tab — description card", () => {
   const assistOpen = (page: Page) => cardBody(page, "bio").getByRole("button", { name: "צרו תיאור עם AI" });
   const generateBtn = (page: Page) => cardBody(page, "bio").getByRole("button", { name: "צרו תיאור", exact: true });
-  const q1 = (page: Page) => cardBody(page, "bio").getByPlaceholder(/ריבות ביתיות/);
+  const q1 = (page: Page) => cardBody(page, "bio").getByPlaceholder(/ריבות פרי עונה/);
 
   // MT:MEH-1173:1 — one hero field plus the tagline, both labelled with where they appear.
   test("the card leads with one hero field and one tagline field", async ({ page }) => {

@@ -336,8 +336,8 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
-        "submit_next_hint": "Next, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
-        "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
+        "submit_next_hint": "After registering, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
+        "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -4601,7 +4601,7 @@
         "assist_title": "A few quick questions — and we'll write it for you",
         "assist_close": "Close writing help",
         "q_sell_label": "What do you sell?",
-        "q_sell_placeholder": "e.g. homemade jams, honey from the hive, almond cookies",
+        "q_sell_placeholder": "e.g. seasonal fruit jams, honey from the hive, almond cookies",
         "q_area_label": "Which area do you serve?",
         "q_area_placeholder": "e.g. Western Galilee, delivery up to Haifa",
         "q_special_label": "What's special about you?",
@@ -4918,8 +4918,8 @@
         "description": "Add 3 popular products with a photo and price — it takes 5 minutes, and customers instantly see what you offer.",
         "cta": "+ Add first product",
         "sample_label": "Example — how your product will look",
-        "sample_name": "Homemade fig jam",
-        "sample_price": "₪28 per jar"
+        "sample_name": "Spelt sourdough loaf",
+        "sample_price": "₪32 per loaf"
       },
       "edit_heading": "Edit product",
       "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
