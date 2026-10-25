@@ -100,42 +100,60 @@ async function recenterOnSeededProducer(
   return multi!;
 }
 
+// MEH-2323: markercluster tears down and rebuilds its cluster icons on every
+// zoom, and Leaflet animates the zoom itself. While either runs, the map pane
+// carries `leaflet-cluster-anim` (leaflet.markercluster-src.js:1240, removed in
+// _animationEnd) or `leaflet-zoom-anim` (leaflet-src.js:4808/4834). Reading the
+// cluster DOM inside that window is what flaked: `count()` saw N clusters, the
+// rebuild removed one, and the per-index read that followed
+// (`.nth(3).innerText()` / `.boundingBox()`) auto-waited 20 s for an element
+// that no longer existed. Wait on the libraries' own "animating" markers — a
+// condition, not a timer — before any read of the cluster set.
+const MAP_SETTLED = () => !document.querySelector(".leaflet-cluster-anim, .leaflet-zoom-anim");
+async function waitForMapSettled(page: import("@playwright/test").Page) {
+  await page.waitForFunction(MAP_SETTLED, null, { timeout: 15_000 });
+}
+
 // MEH-1568: click the cluster CLOSEST TO THE MAP CENTRE, not `.first()` in DOM
 // order. near-me flies the camera onto one of the seeded producer's own pins, so
 // the centremost cluster is the seeded one — this is the deterministic form
 // MEH-1440 asked for (blind `.first()` could pick a cluster in another region
-// and strand the zoom away from the seed). Returns false when no cluster took
-// the click. Spec-side only — do NOT touch app code.
+// and strand the zoom away from the seed). Returns false only when there is no
+// cluster to click; a click that misses a cluster rebuilt under it returns
+// true so the caller's bounded loop tries again. Spec-side only — do NOT touch
+// app code.
 async function clickCentremostCluster(
   page: import("@playwright/test").Page,
 ): Promise<boolean> {
+  await waitForMapSettled(page);
   const clusters = page.locator(".mehamakor-cluster");
   const mapBox = await page.locator(".leaflet-container:visible").first().boundingBox();
   if (!mapBox) return false;
-  const cx = mapBox.x + mapBox.width / 2;
-  const cy = mapBox.y + mapBox.height / 2;
+  const centre = { x: mapBox.x + mapBox.width / 2, y: mapBox.y + mapBox.height / 2 };
 
-  const count = await clusters.count();
-  let bestIndex = -1;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (let i = 0; i < count; i++) {
-    const box = await clusters.nth(i).boundingBox();
-    if (!box) continue;
-    const distance = Math.hypot(
-      box.x + box.width / 2 - cx,
-      box.y + box.height / 2 - cy,
-    );
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestIndex = i;
-    }
-  }
+  // MEH-2323: one atomic DOM snapshot instead of count() + nth(i).boundingBox()
+  // per index — the per-index form is the race described at MAP_SETTLED.
+  // Zero-size boxes are the hidden shell (MapClient renders twice).
+  const bestIndex = await clusters.evaluateAll((els, c) => {
+    let best = -1;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    els.forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      const d = Math.hypot(r.x + r.width / 2 - c.x, r.y + r.height / 2 - c.y);
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = i;
+      }
+    });
+    return best;
+  }, centre);
   if (bestIndex < 0) return false;
-  return clusters
+  await clusters
     .nth(bestIndex)
     .click({ timeout: 3_000 })
-    .then(() => true)
-    .catch(() => false);
+    .catch(() => {});
+  return true;
 }
 
 test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
@@ -215,12 +233,15 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     const multiBusinessClusters = page.locator(
       ".mehamakor-cluster:not(.mehamakor-cluster-single)",
     );
+    // MEH-2323: read the badges only once the zoom-out has finished animating,
+    // and as one snapshot (allInnerTexts does not auto-wait per index) — see
+    // MAP_SETTLED for the race this replaces.
+    await waitForMapSettled(page);
     const clusterCount = await clusters.count();
     expect(clusterCount, "at least one cluster must be present after zoom-out").toBeGreaterThan(0);
     const producerCount = producers.length;
-    const multiCount = await multiBusinessClusters.count();
-    for (let i = 0; i < multiCount; i++) {
-      const badge = parseInt((await multiBusinessClusters.nth(i).innerText()).trim(), 10);
+    for (const text of await multiBusinessClusters.allInnerTexts()) {
+      const badge = parseInt(text.trim(), 10);
       if (Number.isNaN(badge)) continue;
       expect(badge, "a unique-business cluster badge cannot exceed the producer count").toBeLessThanOrEqual(
         producerCount,
@@ -231,8 +252,8 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     // MEH-1568: and the single-business cluster must read as a real point count,
     // never the old "1" (which looked like a broken badge).
     const singleClusters = page.locator(".mehamakor-cluster-single");
-    for (let i = 0; i < (await singleClusters.count()); i++) {
-      const badge = parseInt((await singleClusters.nth(i).innerText()).trim(), 10);
+    for (const text of await singleClusters.allInnerTexts()) {
+      const badge = parseInt(text.trim(), 10);
       if (Number.isNaN(badge)) continue;
       expect(
         badge,
@@ -291,6 +312,9 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     // neighbouring marker's DOM may intercept the pointer over `.first()`
     // ("subtree intercepts pointer events"). Click the first secondary marker
     // that ACCEPTS the click instead of pinning the assertion to index 0.
+    // MEH-2323: the reveal's last zoom / spiderfy may still be animating, and a
+    // marker clicked mid-animation is detached under the pointer — settle first.
+    await waitForMapSettled(page);
     const secondaryCount = await secondary.count();
     let clicked = false;
     for (let i = 0; i < secondaryCount && !clicked; i++) {
