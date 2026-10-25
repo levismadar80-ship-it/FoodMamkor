@@ -1120,6 +1120,35 @@ class ProducerRegistrationResponse(Token):
     whatsapp_sent: bool
 
 
+# MEH-2322 (MEH-2321 chunk A): owner-claim link. Shapes for
+# routers/producer_claim.py. The preview is PUBLIC (anyone holding the link),
+# so it carries only what the business already shows on its own site — never
+# phone, email, address, license or admin fields.
+class ProducerClaimLinkOut(BaseModel):
+    url: str
+    expires_at: datetime
+
+
+class ProducerClaimPreviewOut(BaseModel):
+    name: str
+    city: str | None = None
+    short_description: str | None = None
+    image: str | None = None
+
+
+class ProducerClaimRequest(BaseModel):
+    # A signed JWT; 2048 is far above its real length and stops a megabyte
+    # body from reaching the decoder.
+    token: str = Field(min_length=1, max_length=2048)
+    declaration_accepted: bool = False
+    terms_accepted: bool = False
+
+
+class ProducerClaimOut(BaseModel):
+    producer_id: UUID
+    status: str
+
+
 # MEH-328: generic ack returned by POST /auth/register on ALL branches
 # (new email, existing password user, existing OAuth user). Body bytes
 # must be identical across branches to prevent email enumeration; the
@@ -1730,6 +1759,10 @@ class ProducerCreate(BaseModel):
 class ProducerAdminCreate(BaseModel):
     """Used by admin form — pre-approved, supports all extended fields."""
 
+    # MEH-2322: True = a DRAFT prepared for its owner to claim (owner-claim
+    # link, routers/producer_claim.py) — status "draft", no owner, not live.
+    # False (default) = today's behaviour: pre-approved and live at once.
+    as_draft: bool = False
     # MEH-229: mirror ProducerCreate — cap at the String(200) column width.
     name: SanitizedBusinessNameField = Field(max_length=200)
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the

@@ -536,7 +536,8 @@ def admin_create_producer(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Admin-created producers are auto-approved."""
+    """Admin-created producers are auto-approved — unless `as_draft`, which
+    prepares an ownerless draft for the owner-claim link (MEH-2322)."""
     slug = data.slug or _slugify(data.name)
     # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
     if data.slug:
@@ -547,7 +548,13 @@ def admin_create_producer(
     # admin form can still persist non-regex license values verbatim
     # (manual-approval flow), but missing-license-for-required-category
     # is still a 422.
-    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
+    # owner's to supply after she claims it, and nothing a draft holds can go
+    # live without passing the approve gate, which enforces it
+    # (producer_me.py `_is_approvable`) — the same reasoning as the public
+    # register path's `license_pending`.
+    if True:  # RED: G11 license always enforced
+        ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
 
     producer = Producer(
         name=data.name,
@@ -592,7 +599,10 @@ def admin_create_producer(
         # MEH-903 A: the legacy delivery_cities column is no longer written —
         # delivery_areas (via _apply_delivery_cities below) is the single store.
         # Column stays declared (drop = Chunk C); new rows keep the [] default.
-        status="approved",  # admin = pre-approved
+        # admin = pre-approved. MEH-2322: an owner-claim draft is NOT — it
+        # has no owner and no declaration, and stays off every public surface
+        # until its owner claims it, completes it and submits it for review.
+        status="approved",  # RED: G10 as_draft ignored
     )
     db.add(producer)
     db.flush()

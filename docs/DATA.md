@@ -584,6 +584,24 @@ POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy +
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
 ```
 
+### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
+
+An admin prepares an ownerless DRAFT (`POST /admin/producers` with `as_draft: true`) and sends its owner a signed link. She signs in with her OWN account and takes it over. No password is created or sent by Mehamakor.
+
+```
+POST   /admin/producers/{id}/claim-link   admin  — 30/hour. Draft-only (409 otherwise), no owner yet (409 «העמוד הזה כבר שויך לחשבון.»), 404 if missing.
+                                                     → {url: {frontend_url}/claim/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_claim"},
+                                                     14-day TTL, exp essential (auth.py create_producer_claim_token). Stateless — no table, no revocation before exp.
+GET    /producer-claim/preview?token=      public — 30/min. → {name, city, short_description, image} ONLY (no phone/email/address/license).
+                                                     Any unusable link (bad signature, expired, wrong scope, deleted draft) → the same 404; claimed or not a draft → 409.
+POST   /producer-claim                     auth   — 10/hour. Body {token, declaration_accepted, terms_accepted}. Refuses admin (403) and a user who already has a business (409);
+                                                     both boxes required (422). Locks the producer row FOR UPDATE, re-checks draft + ownerless (409), then sets
+                                                     user.producer_id / role="producer" / is_producer, stamps producers.declared_at + declaration_version and
+                                                     users.terms_accepted_at + terms_version. Status STAYS "draft" — she completes the page and submits via
+                                                     POST /producers/me/submit-for-review, so the manual approval gate is unchanged. Background: WhatsApp welcome,
+                                                     producer welcome email, risk score (same three as a self-registered draft). → {producer_id, status}.
+```
+
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
 
 ```
@@ -837,7 +855,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 ```
 # Producer moderation
 GET    /admin/producers                        admin — filter: status, search
-POST   /admin/producers                        admin — create auto-approved
+POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
 PUT    /admin/producers/{id}                   admin
 POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
