@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatCircleText } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -35,6 +35,7 @@ export default function RequestReviewCard() {
   const [url, setUrl] = useState(null);
   const [failed, setFailed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef(null);
 
   useEffect(() => {
     let alive = true;
@@ -50,16 +51,22 @@ export default function RequestReviewCard() {
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
+      clearTimeout(copiedTimer.current);
     };
   }, []);
 
   const handleCopy = () => {
     if (!url) return;
-    navigator.clipboard
-      .writeText(url)
+    // No clipboard API at all (insecure context, some in-app WebViews) is the
+    // same outcome as a rejected write: say so, don't throw from the handler.
+    const write = navigator.clipboard?.writeText
+      ? navigator.clipboard.writeText(url)
+      : Promise.reject(new Error("clipboard unavailable"));
+    write
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        clearTimeout(copiedTimer.current);
+        copiedTimer.current = setTimeout(() => setCopied(false), 2000);
       })
       .catch(() => showToast.error(tError("generic")));
   };

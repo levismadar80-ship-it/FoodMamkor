@@ -107,6 +107,16 @@ describe("RequestReviewCard", () => {
     await waitFor(() => expect(showToast.error).toHaveBeenCalledWith(he.error.generic));
     expect(screen.queryByText(copy.cta_copied)).not.toBeInTheDocument();
   });
+
+  it("no clipboard API (insecure context / some in-app WebViews) → the error toast, not a throw", async () => {
+    api.get.mockResolvedValue({ data: { url: LINK } });
+    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+    renderWithIntl(<RequestReviewCard />);
+    const btn = screen.getByTestId("request-review-copy");
+    await waitFor(() => expect(btn).toBeEnabled());
+    expect(() => fireEvent.click(btn)).not.toThrow();
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledWith(he.error.generic));
+  });
 });
 
 describe("Dashboard tools tab — where the card appears", () => {

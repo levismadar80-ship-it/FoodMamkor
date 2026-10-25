@@ -359,6 +359,24 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     );
   });
 
+  it("storage blocked (SecurityError): the token in the URL still unlocks and is sent", async () => {
+    window.history.replaceState({}, "", `/p/meshek?rt=tok-abc`);
+    const blocked = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+    const getSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(blocked);
+    const setSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(blocked);
+    try {
+      mockReviews([]);
+      render(<ReviewsSection producerId={PID} />);
+      const [, payload] = await submitReview();
+      expect(payload.review_token).toBe("tok-abc");
+    } finally {
+      getSpy.mockRestore();
+      setSpy.mockRestore();
+    }
+  });
+
   it("an empty ?rt= stores nothing and unlocks nothing", async () => {
     window.history.replaceState({}, "", `/p/meshek?rt=`);
     mockReviews([]);

@@ -21,12 +21,13 @@ const keyFor = (producerId) => `review_invite_${producerId}`;
 /** Store `?rt=` from `search` (a location.search string) for this producer, then return the token on file. */
 export function captureReviewInvite(producerId, search) {
   if (!producerId) return null;
+  const rt = new URLSearchParams(search || "").get("rt") || null;
   try {
-    const rt = new URLSearchParams(search || "").get("rt");
     if (rt) sessionStorage.setItem(keyFor(producerId), rt);
     return sessionStorage.getItem(keyFor(producerId));
   } catch {
-    // Storage blocked (private mode / disabled): the gate simply stays closed.
-    return null;
+    // Storage blocked (cookies off / some private modes): the token in the URL
+    // still counts for this page view — it just won't survive a login detour.
+    return rt;
   }
 }
