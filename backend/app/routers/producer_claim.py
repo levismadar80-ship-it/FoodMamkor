@@ -162,6 +162,13 @@ def claim_producer(
     # DO NOT drop populate_existing() — without it SQLAlchemy hands back the
     # identity-mapped `user` with its stale attributes, and the lock fixes
     # nothing. test_same_account_two_links_in_flight_second_is_409 covers it.
+    user = (
+        db.query(User)
+        .filter(User.id == user.id)
+        .with_for_update()
+        .populate_existing()
+        .one()
+    )
 
     # Who may claim. Same two refusals, same wording family, as the register
     # upgrade path (routers/auth.py register_producer).
@@ -170,7 +177,7 @@ def claim_producer(
             status_code=403,
             detail="מנהלת מערכת לא יכולה לקבל עמוד של בית עסק. היכנסי עם חשבון אחר.",
         )
-    if user.producer_id:
+    if user.producer_id or user.is_producer:
         raise HTTPException(status_code=409, detail="לחשבון הזה כבר יש בית עסק רשום")
 
     # The declaration and the terms are HERS — stamped from her own clicks,
@@ -189,7 +196,7 @@ def claim_producer(
     # then sees the owner the first one set and gets the 409 (MEH-2321 D3).
     # test_two_accounts_one_link_in_flight_second_is_409 covers it.
     producer = (
-        db.query(Producer).filter(Producer.id == producer_id).first()
+        db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
         if producer_id
         else None
     )
@@ -214,5 +221,6 @@ def claim_producer(
     # Same three side effects as a self-registered draft (register_producer
     # upgrade_path). The admin ping stays where it already is: at submit.
     background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+    background_tasks.add_task(score_producer, p_id)
     background_tasks.add_task(send_welcome_email, user.email, user.name, "producer")
     return ProducerClaimOut(producer_id=p_id, status=producer.status)
