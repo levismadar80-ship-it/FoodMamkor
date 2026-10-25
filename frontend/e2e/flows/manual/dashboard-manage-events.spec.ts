@@ -82,6 +82,12 @@ async function stubManage(page: Page, events: Row[], experiences: Row[], writes:
   // The tools page renders its quick links only after this read (tools/page.js:55-58).
   await page.route("**/producers/me/dashboard", (r) =>
     json(r, 200, { producer: { id: 7, name: "מאפיית שקד", slug: "shaked", status: "approved", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));
+  // An approved business also gets the «בקשו ביקורת מלקוחה» card on the tools
+  // tab (RequestReviewCard), which reads this on mount. Left unstubbed it hits
+  // the real backend with the fake token → 401 → failed refresh → api.js
+  // expires the session, and the next page renders for nobody.
+  await page.route("**/producers/me/review-link", (r) =>
+    json(r, 200, { url: "https://mehamakor.co.il/p/shaked?rt=e2e-review-invite" }));
   // The address providers — never reached from a test.
   await page.route("https://nominatim.openstreetmap.org/**", (r) => json(r, 200, []));
   await page.route("https://places.googleapis.com/**", (r) => json(r, 200, {}));

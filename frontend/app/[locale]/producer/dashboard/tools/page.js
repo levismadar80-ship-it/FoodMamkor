@@ -20,7 +20,8 @@
  *           reachable via AccountSheet + ProfileCompletenessCard; added
  *           Phosphor icons + action-noun titles); MEH-1357 (removed the
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
- *           in the dashboard shell nav; reviews card marked candidate-to-move).
+ *           in the dashboard shell nav; reviews card marked candidate-to-move);
+ *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -32,6 +33,7 @@ import { useTranslations } from "next-intl";
 import { CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import RequestReviewCard from "@/components/producer/RequestReviewCard";
 
 export default function ProducerDashboardToolsPage() {
   const router = useRouter();
@@ -154,6 +156,10 @@ export default function ProducerDashboardToolsPage() {
           <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
       </div>
+      {/* MEH-1428 chunk 2: the "request a review" link. Approved only — the
+          endpoint 403s for any other status, and a pending business's public
+          page does not exist yet, so the link would open a 404. */}
+      {producer.status === "approved" && <RequestReviewCard />}
     </div>
   );
 }

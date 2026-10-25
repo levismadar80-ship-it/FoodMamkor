@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
@@ -215,6 +216,9 @@ function ReviewReply({ review, isOwner, onSaved }) {
  * Gate: user must have clicked the producer's WhatsApp CTA (localStorage
  * `wa_clicked_{producerId}` === "1"). Backend enforces the same rule via
  * producer_whatsapp_clicks.user_id.
+ * MEH-1428 chunk 2: OR hold the owner's "request a review" token (`?rt=`,
+ * kept per producer by lib/review-invite.js) — forwarded as `review_token`
+ * and verified server-side (reviews.py `_invited_by_token`).
  */
 export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
   const t = useTranslations("reviews");
@@ -236,6 +240,12 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [hasClickedWa, setHasClickedWa] = useState(false);
+  // MEH-1428 chunk 2: the invite token for THIS producer, if any.
+  const [inviteToken, setInviteToken] = useState(null);
+  // Guest login prompt target. Set after mount (window is client-only) so the
+  // server markup and the first client render agree; until then it is plain
+  // /login, which is what it always was.
+  const [loginHref, setLoginHref] = useState("/login");
   const sectionRef = useRef(null);
   // MEH-1426: fire the anonymous-click→login re-ping at most once per mount.
   const rePingedRef = useRef(false);
@@ -266,6 +276,13 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         setHasClickedWa(true);
       }
     } catch {}
+    setInviteToken(captureReviewInvite(producerId, window.location.search));
+    // MEH-1428 chunk 2: come back to THIS page's reviews after login — a
+    // customer who opened the owner's link must land on the form, not on /.
+    // Same redirect shape as LoginPromptModal.jsx:103 (clamped by
+    // lib/safe-redirect.js on the login side).
+    const back = `${window.location.pathname}${window.location.search}#reviews`;
+    setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
   }, [producerId]);
 
   const fetchPage = (p) => {
@@ -336,7 +353,10 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
     }
     setSubmitting(true);
     try {
-      const r = await api.post(`/producers/${producerId}/reviews`, { stars, body });
+      // MEH-1428 chunk 2: the key is sent only when a token exists, so the
+      // WhatsApp-click path posts exactly the body it always did.
+      const payload = inviteToken ? { stars, body, review_token: inviteToken } : { stars, body };
+      const r = await api.post(`/producers/${producerId}/reviews`, payload);
       setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
       setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
       setShowForm(false);
@@ -399,7 +419,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       {user ? (
         // Producer owners cannot review their own business (backend guard mirrors this)
         user.producer_id === producerId ? null :
-        hasClickedWa ? (
+        hasClickedWa || inviteToken ? (
           !showForm ? (
             <button
               onClick={openReviewForm}
@@ -472,7 +492,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
           {t.rich("login_prompt", {
             login: (chunks) => (
-              <Link href="/login" className="text-primary hover:underline">{chunks}</Link>
+              <Link href={loginHref} data-testid="reviews-login-link" className="text-primary hover:underline">{chunks}</Link>
             ),
           })}
         </div>
@@ -509,7 +529,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               {t("empty_message")}
               {/* MEH-1139: WhatsApp-gate hint shown only to viewers the gate
                   actually applies to (logged in, not the owner, not yet gated). */}
-              {user && user.producer_id !== producerId && !hasClickedWa && (
+              {user && user.producer_id !== producerId && !hasClickedWa && !inviteToken && (
                 <> {t("empty_gate_hint")}</>
               )}
             </p>

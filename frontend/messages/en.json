@@ -4750,6 +4750,13 @@
           "location": "A location or delivery areas",
           "phone_verified": "WhatsApp number verification"
         }
+      },
+      "request_review": {
+        "title": "Ask a customer for a review",
+        "body": "Send the link in your WhatsApp chat with a customer — she can leave a verified review.",
+        "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
+        "cta": "Copy link",
+        "cta_copied": "Copied ✓"
       }
     }
   },
