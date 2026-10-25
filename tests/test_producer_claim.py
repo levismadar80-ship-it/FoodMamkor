@@ -58,6 +58,20 @@ def _body(token, **over):
 
 
 @pytest.fixture(autouse=True)
+def _annotate_on_failure(request):
+    """Name a failing test in the PR's check annotations.
+
+    pytest prints a test's captured stdout ONLY when that test fails, and
+    GitHub turns any log line starting with `::error`/`::warning` into an
+    annotation. So this line is invisible on a pass and names the test on a
+    failure — readable without the raw job log. Two annotation types, because
+    GitHub caps each type at 10 per step.
+    """
+    kind = "error" if request.node.cls is TestClaim else "warning"
+    print(f"::{kind} title=test_producer_claim failed::{request.node.nodeid}")
+
+
+@pytest.fixture(autouse=True)
 def _quiet_side_effects(monkeypatch):
     """Record the three background sends instead of running them, so the
     suite is hermetic AND the claim's side effects are observable."""
