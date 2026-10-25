@@ -10,21 +10,27 @@ case named for a class hides the inputs it skips). Each one was shown red
 against a construction that removes exactly that guard — see the PR body.
 """
 
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from joserfc import jwt as jose_jwt
+from joserfc.jwk import OctKey
+from sqlalchemy import text
 
 from conftest import auth_header, make_category, make_producer, make_user
 from app.auth import (
     PRODUCER_CLAIM_SCOPE,
     _jwt_key,
+    create_access_token,
     create_producer_claim_token,
     create_review_invite_token,
     decode_producer_claim_token,
 )
 from app.config import settings
 from app.constants import DECLARATION_VERSION, TERMS_VERSION
+from app.database import SessionLocal
 from app.models import Producer, User
 
 CLAIM = "/producer-claim"
@@ -70,20 +76,6 @@ def _body(token, **over):
         "terms_accepted": True,
         **over,
     }
-
-
-@pytest.fixture(autouse=True)
-def _annotate_on_failure(request):
-    """Name a failing test in the PR's check annotations.
-
-    pytest prints a test's captured stdout ONLY when that test fails, and
-    GitHub turns any log line starting with `::error`/`::warning` into an
-    annotation. So this line is invisible on a pass and names the test on a
-    failure — readable without the raw job log. Two annotation types, because
-    GitHub caps each type at 10 per step.
-    """
-    kind = "error" if request.node.cls is TestClaim else "warning"
-    print(f"::{kind} title=test_producer_claim failed::{request.node.nodeid}")
 
 
 @pytest.fixture(autouse=True)
@@ -146,10 +138,55 @@ class TestClaimToken:
     def test_garbage_is_rejected_without_raising(self):
         assert decode_producer_claim_token("not-a-jwt") is None
 
+    def test_non_uuid_producer_id_is_rejected_without_raising(self):
+        """Correctly signed, unexpired, right scope — only the UUID parse can
+        refuse it."""
+        assert decode_producer_claim_token(_mint("not-a-uuid")) is None
+
+    def test_token_signed_with_another_key_is_rejected(self, db):
+        """Identical claims to a token that decodes (control below); only the
+        signing key differs."""
+        p = _draft(db)
+        now = datetime.now(timezone.utc)
+        claims = {
+            "producer_id": str(p.id),
+            "iat": int(now.timestamp()),
+            "exp": now + timedelta(days=1),
+            "scope": PRODUCER_CLAIM_SCOPE,
+        }
+        header = {"alg": settings.algorithm}
+        assert (
+            decode_producer_claim_token(jose_jwt.encode(header, claims, _jwt_key()))
+            == p.id
+        ), "control: the same claims under the real key must decode"
+        other_key = OctKey.import_key(b"another-key-that-is-not-ours-" + b"k" * 40)
+        assert (
+            decode_producer_claim_token(jose_jwt.encode(header, claims, other_key))
+            is None
+        )
+
     def test_claim_token_is_not_an_access_token(self, client, db):
         """The other direction: a claim link must not authenticate anyone."""
         p = _draft(db)
         r = client.get("/auth/me", headers={"Authorization": f"Bearer {_token(p)}"})
+        assert r.status_code == 401
+
+    def test_claim_scope_refuses_a_token_that_also_carries_a_real_sub(self, client, db):
+        """The test above would pass on its missing `sub` alone. This one takes
+        a REAL access token, proves it authenticates, then changes only the
+        scope claim — so the 401 can come from nothing but the scope check."""
+        user = make_user(db)
+        real = create_access_token(user.id)
+        assert (
+            client.get(
+                "/auth/me", headers={"Authorization": f"Bearer {real}"}
+            ).status_code
+            == 200
+        ), "control: the untouched access token must authenticate"
+        claims = dict(jose_jwt.decode(real, _jwt_key()).claims)
+        claims["scope"] = PRODUCER_CLAIM_SCOPE
+        forged = jose_jwt.encode({"alg": settings.algorithm}, claims, _jwt_key())
+        r = client.get("/auth/me", headers={"Authorization": f"Bearer {forged}"})
         assert r.status_code == 401
 
 
@@ -270,6 +307,7 @@ class TestClaim:
         assert p.status == "draft"
         assert ("whatsapp", p.name, p.phone) in _quiet_side_effects
         assert ("email", "owner2322@example.com", "producer") in _quiet_side_effects
+        assert ("risk", p.id) in _quiet_side_effects
 
     def test_owner_can_open_her_dashboard_after_claiming(self, client, db):
         p = _draft(db)
@@ -316,6 +354,33 @@ class TestClaim:
             ).status_code
             == 409
         )
+
+    def test_is_producer_flag_alone_cannot_claim(self, client, db):
+        """producer_id is empty here, so only the `is_producer` half of the
+        check can refuse — the account is mid-registration elsewhere."""
+        user = make_user(db)
+        user.is_producer = True
+        db.commit()
+        p = _draft(db)
+        r = client.post(CLAIM, json=_body(_token(p)), headers=auth_header(user))
+        assert r.status_code == 409, r.text
+        db.expire_all()
+        assert db.query(User).filter(User.producer_id == p.id).first() is None
+
+    def test_blocked_account_cannot_claim(self, client, db):
+        user = make_user(db, is_blocked=True)
+        p = _draft(db)
+        r = client.post(CLAIM, json=_body(_token(p)), headers=auth_header(user))
+        assert r.status_code == 403, r.text
+        db.expire_all()
+        assert db.get(User, user.id).producer_id is None
+
+    def test_link_with_a_non_uuid_producer_id_is_404(self, client, db):
+        user = make_user(db)
+        r = client.post(
+            CLAIM, json=_body(_mint("not-a-uuid")), headers=auth_header(user)
+        )
+        assert r.status_code == 404, r.text
 
     def test_missing_declaration_is_422_and_links_nothing(self, client, db):
         p = _draft(db)
@@ -373,6 +438,105 @@ class TestClaim:
     def test_anonymous_cannot_claim(self, client, db):
         p = _draft(db)
         assert client.post(CLAIM, json=_body(_token(p))).status_code == 401
+
+
+# ---------- D3: two claims in flight at once ----------
+
+
+def _wait_until_a_backend_queues_on_a_lock(timeout_s=10.0) -> bool:
+    """True once a connection to THIS test database is waiting on a lock, i.e.
+    the claim under test has reached the row the test holds. Scoped to
+    current_database() because CI runs xdist workers side by side on one
+    server — a server-wide pg_locks count would see another worker's waits."""
+    probe = SessionLocal()
+    try:
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            waiting = probe.execute(
+                text(
+                    "SELECT count(*) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND wait_event_type = 'Lock'"
+                )
+            ).scalar()
+            probe.rollback()  # pg_stat_activity is snapshotted per transaction
+            if waiting:
+                return True
+            time.sleep(0.05)
+        return False
+    finally:
+        probe.close()
+
+
+def _claim_in_background(client, token, headers):
+    out = {}
+
+    def run():
+        out["r"] = client.post(CLAIM, json=_body(token), headers=headers)
+
+    worker = threading.Thread(target=run)
+    worker.start()
+    return worker, out
+
+
+class TestClaimConcurrency:
+    """Real races, on real connections. The `db` session plays request 1:
+    it has written its claim and NOT committed. The HTTP call is request 2,
+    on the app's own connection. Each test checks that request 2 actually
+    queued behind request 1 before reading its verdict — if it never did,
+    the construction is broken and the 409 assertion would mean nothing."""
+
+    def test_same_account_two_links_in_flight_second_is_409(self, client, db):
+        p1, p2 = _draft(db), _draft(db)
+        user = make_user(db)
+        # get_current_user's last-active write would commit and expire the
+        # stale row on its own, hiding exactly the race this test is for.
+        user.last_active_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.commit()
+        uid, p1_id, p2_id = user.id, p1.id, p2.id
+        headers, token2 = auth_header(user), _token(p2)
+
+        held = db.query(User).filter(User.id == uid).with_for_update().one()
+        held.producer_id, held.role, held.is_producer = p1_id, "producer", True
+        db.flush()
+
+        worker, out = _claim_in_background(client, token2, headers)
+        queued = _wait_until_a_backend_queues_on_a_lock()
+        db.commit()
+        worker.join(timeout=30)
+        assert not worker.is_alive(), "request 2 never returned"
+        assert queued, "construction void: request 2 never queued behind request 1"
+
+        assert out["r"].status_code == 409, out["r"].text
+        db.expire_all()
+        assert db.get(User, uid).producer_id == p1_id
+        assert db.query(User).filter(User.producer_id == p2_id).first() is None
+
+    def test_two_accounts_one_link_in_flight_second_is_409(self, client, db):
+        p = _draft(db)
+        first, second = make_user(db), make_user(db)
+        second.last_active_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.commit()
+        pid, first_id, second_id = p.id, first.id, second.id
+        headers, token = auth_header(second), _token(p)
+
+        held = db.query(Producer).filter(Producer.id == pid).with_for_update().one()
+        held.declared_at = datetime.now(timezone.utc)
+        db.get(User, first_id).producer_id = pid
+        db.flush()
+
+        worker, out = _claim_in_background(client, token, headers)
+        queued = _wait_until_a_backend_queues_on_a_lock()
+        db.commit()
+        worker.join(timeout=30)
+        assert not worker.is_alive(), "request 2 never returned"
+        assert queued, "construction void: request 2 never queued behind request 1"
+
+        assert out["r"].status_code == 409, out["r"].text
+        db.expire_all()
+        assert db.get(User, second_id).producer_id is None
+        assert [u.id for u in db.query(User).filter(User.producer_id == pid)] == [
+            first_id
+        ]
 
 
 # ---------- D7: admin draft create ----------

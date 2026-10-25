@@ -6,8 +6,9 @@ Purpose:  Owner-claim link — an admin prepares a DRAFT business with no owner,
           transmits a password.
 Touches:  producers (declared_at, declaration_version — read status, locked
           FOR UPDATE on claim), users (producer_id, role, is_producer,
-          terms_accepted_at, terms_version). Background: WhatsApp welcome to
-          the business phone, producer welcome email, risk score.
+          terms_accepted_at, terms_version — the claimant's row locked FOR
+          UPDATE first). Background: WhatsApp welcome to the business phone,
+          producer welcome email, risk score.
 Does NOT: create accounts (the owner signs up via /auth/* first), publish
           anything (the draft stays "draft" until she presses «שליחה לבדיקה»
           — producer_me.submit_for_review — and the admin approves it), or
@@ -56,6 +57,18 @@ router = APIRouter(tags=["producer-claim"])
 # producer ids exist.
 _LINK_INVALID = "הקישור לא תקין או שפג תוקפו. אפשר לבקש מאיתנו קישור חדש."
 _ALREADY_CLAIMED = "העמוד הזה כבר שויך לחשבון."
+
+# MEH-2322 residual risks, accepted and written down rather than discovered:
+# - The link travels in a URL: the frontend /claim/<token> path, and the
+#   preview's ?token= query, which reaches access logs and the Sentry request
+#   context (middleware.py request_info "url"). Readers of both are admins, who
+#   can mint a link anyway. The link alone cannot claim — it needs a signed-in
+#   account and her own declaration — expires in 14 days, and stops working
+#   once the draft has an owner.
+# - users.producer_id has no unique index. The row lock in claim_producer
+#   covers this route; register_producer's upgrade path does not lock, so one
+#   account claiming AND registering in the same instant is not serialised
+#   across the two routes.
 
 
 def _has_owner(db: Session, producer_id: UUID) -> bool:
@@ -140,6 +153,16 @@ def claim_producer(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # MEH-2322: lock the claimant's row FIRST, and re-read it under the lock.
+    # `user` was loaded by get_current_user before any lock, so a second claim
+    # by the same account, started before the first one committed, would check
+    # a stale producer_id, pass, and overwrite it — leaving the first page
+    # stamped with her declaration and owned by nobody. Lock order is always
+    # user → producer, so two claims cannot deadlock.
+    # DO NOT drop populate_existing() — without it SQLAlchemy hands back the
+    # identity-mapped `user` with its stale attributes, and the lock fixes
+    # nothing. test_same_account_two_links_in_flight_second_is_409 covers it.
+
     # Who may claim. Same two refusals, same wording family, as the register
     # upgrade path (routers/auth.py register_producer).
     if user.role == "admin":
@@ -147,7 +170,7 @@ def claim_producer(
             status_code=403,
             detail="מנהלת מערכת לא יכולה לקבל עמוד של בית עסק. היכנסי עם חשבון אחר.",
         )
-    if user.producer_id or user.is_producer:
+    if user.producer_id:
         raise HTTPException(status_code=409, detail="לחשבון הזה כבר יש בית עסק רשום")
 
     # The declaration and the terms are HERS — stamped from her own clicks,
@@ -164,8 +187,9 @@ def claim_producer(
     producer_id = decode_producer_claim_token(body.token)
     # FOR UPDATE serialises two claims racing on one link: the second waits,
     # then sees the owner the first one set and gets the 409 (MEH-2321 D3).
+    # test_two_accounts_one_link_in_flight_second_is_409 covers it.
     producer = (
-        db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
+        db.query(Producer).filter(Producer.id == producer_id).first()
         if producer_id
         else None
     )
@@ -190,6 +214,5 @@ def claim_producer(
     # Same three side effects as a self-registered draft (register_producer
     # upgrade_path). The admin ping stays where it already is: at submit.
     background_tasks.add_task(notify_producer_registered, p_name, p_phone)
-    background_tasks.add_task(score_producer, p_id)
     background_tasks.add_task(send_welcome_email, user.email, user.name, "producer")
     return ProducerClaimOut(producer_id=p_id, status=producer.status)

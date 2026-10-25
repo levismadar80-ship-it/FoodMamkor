@@ -549,10 +549,12 @@ def admin_create_producer(
     # (manual-approval flow), but missing-license-for-required-category
     # is still a 422.
     # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
-    # owner's to supply after she claims it, and nothing a draft holds can go
-    # live without passing the approve gate, which enforces it
-    # (producer_me.py `_is_approvable`) — the same reasoning as the public
-    # register path's `license_pending`.
+    # owner's to supply after she claims it. A draft cannot be approved at all
+    # until she submits it (approve_producer 409s on draft), and approval runs
+    # `_assert_approvable` — the MEH-971 license gate, which an admin can
+    # override with ?allow_without_license=true after checking the license
+    # out-of-band. Same exposure, and same override, as the public register
+    # path's `license_pending`; this branch adds no new route to "live".
     if not data.as_draft:
         ensure_license_for_categories(
             db, data.category_ids, data.producer_license_number
@@ -1098,9 +1100,11 @@ def approve_producer(
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
     # path re-reads the row, but nothing in the codebase moves an existing
-    # producer BACK to draft — all three `status="draft"` writes are at creation
-    # (auth.py:561, auth.py:768, producer_queries.py:542). A row that was not
-    # draft when this line ran cannot be draft when the retry reads it.
+    # producer BACK to draft — all four `status="draft"` writes are at creation
+    # (auth.py:561, auth.py:768, producer_queries.py:537, and admin.py:609 —
+    # admin_create_producer's `as_draft`, MEH-2322; lines re-derived for that
+    # addition). A row that was not draft when this line ran cannot be draft
+    # when the retry reads it.
     if producer.status == "draft":
         raise HTTPException(
             status_code=409,

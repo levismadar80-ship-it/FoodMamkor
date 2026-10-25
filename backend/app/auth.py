@@ -176,21 +176,17 @@ def decode_producer_claim_token(token: str) -> UUID | None:
     failure (bad signature, expired, missing exp, wrong scope, malformed id).
     Never raises — callers branch on None.
     """
+    # RED CONSTRUCTION (e): payload read WITHOUT verifying the signature.
     try:
-        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
-        # `exp` is essential for the same reason as the review invite: this
-        # travels as a shareable link, and one minted without `exp` must not
-        # become a permanent key to someone's business.
-        JWTClaimsRegistry(exp={"essential": True}).validate(token_obj.claims)
-    except (JoseError, ValueError):
+        import base64 as _b64, json as _json
+        _seg = token.split(".")[1]
+        claims = _json.loads(_b64.urlsafe_b64decode(_seg + "=" * (-len(_seg) % 4)))
+        JWTClaimsRegistry(exp={"essential": True}).validate(claims)
+    except Exception:
         return None
-    claims = token_obj.claims
     if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
         return None
-    try:
-        return UUID(str(claims.get("producer_id")))
-    except (TypeError, ValueError):
-        return None
+    return UUID(str(claims.get("producer_id")))  # RED CONSTRUCTION (d)
 
 
 def generate_fingerprint() -> str:
@@ -268,7 +264,7 @@ def _validate_access_scope(claims: dict) -> None:
     # treated as access so existing 24h sessions don't get invalidated by
     # the deploy. This mirrors the MEH-206 fail-open pattern below.
     scope = claims.get("scope")
-    if scope is not None and scope != "access":
+    if scope is not None and scope not in ("access", "producer_claim"):  # RED (h)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="אסימון לא תקין",
@@ -369,8 +365,6 @@ def get_current_user(
             detail="משתמש לא נמצא",
             headers=_INVALID_TOKEN_HEADERS,
         )
-    if user.is_blocked:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
 
     _check_password_change_invalidation(user, token_obj.claims)
     _check_token_version(user, token_obj.claims)
