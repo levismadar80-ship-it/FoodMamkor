@@ -140,3 +140,45 @@ describe("useGoogleSignIn — one initialize per document (MEH-1784)", () => {
     ).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * MEH-2319 — the button language comes from the script URL, not from
+ * renderButton's `locale`.
+ *
+ * Measured 25/10 in a real Chrome (he-IL) on the production register page.
+ * With the library loaded as plain `gsi/client`, the button read "Continue
+ * with Google" for every `locale` tried (he, iw, fr, ar, de). After reloading
+ * it as `gsi/client?hl=he`, the same button read «להמשיך עם Google». Google's
+ * reference says to add `hl` to the client script src. These cases pin that
+ * the hook does, in the page's own language.
+ *
+ * DISCRIMINATION: both cases are red on origin/staging, whose script src
+ * has no `hl` at all.
+ */
+describe("useGoogleSignIn — loads GSI in the page language (MEH-2319)", () => {
+  const scriptHl = () => {
+    const s = document.querySelector('script[src^="https://accounts.google.com/gsi/client"]');
+    return s ? new URL(s.src).searchParams.get("hl") : "(no script)";
+  };
+
+  afterEach(() => {
+    cleanup();
+    document.querySelectorAll('script[src^="https://accounts.google.com/gsi/client"]').forEach((s) => s.remove());
+    document.documentElement.lang = "";
+    delete window.google;
+  });
+
+  it("loads the library with hl=he on a Hebrew page", async () => {
+    document.documentElement.lang = "he";
+    const Consumer = makeConsumer(await freshHook());
+    render(<Consumer onCredential={() => {}} />);
+    expect(scriptHl()).toBe("he");
+  });
+
+  it("loads the library with hl=en on the English locale", async () => {
+    document.documentElement.lang = "en";
+    const Consumer = makeConsumer(await freshHook());
+    render(<Consumer onCredential={() => {}} />);
+    expect(scriptHl()).toBe("en");
+  });
+});
