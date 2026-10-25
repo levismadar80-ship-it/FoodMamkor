@@ -117,7 +117,7 @@ export function useGoogleSignIn(clientId, callback, onReady) {
 
     // DO NOT match on the exact src — a script loaded with another `hl` (or
     // none) is still the one GSI instance in this document (MEH-2319).
-    const existing = document.querySelector(`script[src="${GSI_BASE}"]`);
+    const existing = document.querySelector(`script[src^="${GSI_BASE}"]`);
     if (existing) {
       existing.addEventListener("load", init, { once: true });
       return release;
