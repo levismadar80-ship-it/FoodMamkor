@@ -34,11 +34,17 @@ export const CANONICAL_SENTENCE =
   "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.";
 
 // MEH-2192: `sameAs` for the Organization node — the profiles that corroborate
-// the entity. Exactly one canonical brand account exists today; it is the one
-// the footer already links (components/Footer.jsx:138). Do not add speculative
-// or placeholder profiles here: an unresolvable sameAs is worse than an absent
-// one, because it asserts an identity nobody can verify.
-export const BRAND_SAME_AS = ["https://www.instagram.com/meha_makor"];
+// the entity, and the same four the footer links (components/Footer.jsx).
+// MEH-2311 (25/10): Facebook, TikTok and YouTube joined Instagram once each had
+// a fixed handle. Do not add a profile here until its URL is permanent: an
+// unresolvable sameAs is worse than an absent one, because it asserts an
+// identity nobody can verify.
+export const BRAND_SAME_AS = [
+  "https://www.instagram.com/meha_makor",
+  "https://www.facebook.com/mehamakor",
+  "https://www.tiktok.com/@mehamakor",
+  "https://www.youtube.com/@Mehamakor",
+];
 
 // MEH-2192: `founder` for the Organization node. The value is the name as it
 // already appears in the /about signature copy (messages/he.json

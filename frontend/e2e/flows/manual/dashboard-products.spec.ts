@@ -137,8 +137,8 @@ test.describe("products card — mount and add", () => {
     await stubEdit(page, []);
     await openProducts(page);
     await expect(body(page).getByText("הוסיפו את המוצר הראשון שלכם")).toBeVisible();
-    await expect(body(page).getByText("ריבת תאנים ביתית")).toBeVisible();
-    await expect(body(page).getByText("₪28 לצנצנת")).toBeVisible();
+    await expect(body(page).getByText("לחם מחמצת כוסמין")).toBeVisible();
+    await expect(body(page).getByText("₪32 לכיכר")).toBeVisible();
     // The header «הוסיפו מוצר» is suppressed while empty (MEH-1097 F14): exactly one add affordance.
     await expect(body(page).getByRole("button", { name: /הוסיפו מוצר/ })).toHaveCount(1);
     await expect(body(page).getByRole("button", { name: "+ הוסיפו מוצר ראשון" })).toBeVisible();

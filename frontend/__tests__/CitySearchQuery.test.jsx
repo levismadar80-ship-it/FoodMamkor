@@ -241,3 +241,51 @@ describe("CONTROL — unchanged behaviour (green on both versions)", () => {
     expect(optionTexts().length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * MEH-2318 — one Tel Aviv, spelled the way the site's filters spell it.
+ *
+ * Measured on production 25/10: GET /cities?q=תל אביב returns
+ * ["תל אביב - יפו"] (the seeded data.gov spelling), while data/cities.js
+ * carries «תל אביב-יפו». The old exact-string Set listed both. The fetched
+ * value below is that real response, not an invented fixture (MEH-1909).
+ *
+ * DISCRIMINATION: the first two cases are red against origin/staging's
+ * CitySearch.jsx (two Tel Aviv options; the table spelling is unknown until
+ * the fetch lands). The third is a control: a city that exists only in the
+ * table must still be offered.
+ */
+describe("MEH-2318 — notation variants collapse to the static spelling", () => {
+  const TA_STATIC = "תל אביב-יפו";
+  const TA_TABLE = "תל אביב - יפו"; // production /cities response, 25/10
+
+  it("lists exactly one Tel Aviv, spelled as the static list spells it", async () => {
+    api.get.mockResolvedValue({ data: [TA_TABLE] });
+    const { input } = mount();
+    typed(input, "תל אביב");
+    await act(async () => {
+      vi.advanceTimersByTime(DEBOUNCE);
+    });
+    await flush();
+    const telAviv = optionTexts().filter((t) => t === TA_STATIC || t === TA_TABLE);
+    expect(telAviv).toEqual([TA_STATIC]);
+  });
+
+  it("treats a value saved in the table's spelling as a known city at once", () => {
+    const onChangeSpy = vi.fn();
+    const { input } = mount({ onChangeSpy });
+    typed(input, TA_TABLE);
+    expect(onChangeSpy).toHaveBeenLastCalledWith(TA_TABLE, { known: true });
+  });
+
+  it("control: a table-only city is still offered after the merge", async () => {
+    api.get.mockResolvedValue({ data: [TA_TABLE, SEEDED_ONLY] });
+    const { input } = mount();
+    typed(input, "שדות");
+    await act(async () => {
+      vi.advanceTimersByTime(DEBOUNCE);
+    });
+    await flush();
+    expect(optionTexts()).toContain(SEEDED_ONLY);
+  });
+});
