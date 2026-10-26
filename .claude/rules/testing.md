@@ -77,7 +77,7 @@ timestamp built from the UTC clock is green at most hours and red at one.
   edge** (the two `*_NOW` anchors in `tests/test_admin_queue_sla_aging.py`),
   not only at the hour the suite happens to run.
 - Review question: what does this assertion read at 21:30 UTC on the Monday
-  after the last Sunday of October?
+  after the clock change — late October, and late March?
 
 ---
 

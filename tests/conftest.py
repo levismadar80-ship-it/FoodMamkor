@@ -142,7 +142,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.auth import create_access_token, hash_password  # noqa: E402
-from app.utils.clock import ISRAEL_TZ, israel_now  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.models import (  # noqa: E402
@@ -154,6 +153,7 @@ from app.models.models import (  # noqa: E402
     Product,
     User,
 )
+from app.utils.clock import ISRAEL_TZ, israel_now  # noqa: E402
 
 
 def pytest_configure(config):

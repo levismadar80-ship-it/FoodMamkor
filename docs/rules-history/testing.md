@@ -252,11 +252,14 @@ PRs that changed nothing near it. Fixed by freezing `schemas.israel_today`
 
 **Sweep (2026-10-26), what is and is not exposed.** 194 clock reads across 40
 test files. Exact-count-over-an-Israel-window with a UTC seed: one site (the
-MEH-2380 test). `date.today()` seeds: 25 lines in 10 files
-(`test_api.py`, `test_experiences.py`, `test_expansion_availability.py`,
-`test_availability_validation.py`, `test_catalog_count_consistency.py`,
-`test_meh997_e2e_journeys.py`, `test_verified_email_enforcement.py`,
-`test_meh1626_domain_types.py`, `test_seed_demo_business.py`) — every one is a
+MEH-2380 test). `date.today()` seeds: 29 calls in 9 files, counted over code tokens with
+comments and docstrings excluded (`tokenize`; a raw grep says 38 in 10 files
+because `test_meh1894_analytics_israel_day.py` and others mention it in
+prose): `test_api.py` 9, `test_experiences.py` 7,
+`test_expansion_availability.py` 4, `test_availability_validation.py` 3,
+`test_meh997_e2e_journeys.py` 2, `test_catalog_count_consistency.py`,
+`test_meh1626_domain_types.py`, `test_seed_demo_business.py`,
+`test_verified_email_enforcement.py` 1 each — every one is a
 ±N-day margin in the direction Israel-ahead-of-UTC cannot flip (past −1…−5,
 future +2…+14), or feeds a schema with no past-date validator, so none can go
 red today; they are the next MEH-1983-shaped bug, not a current one. Hard-coded
@@ -271,7 +274,7 @@ the same `new Date()` the component reads.
 and never sees `tests/`, and `[tool.ruff*]` is hook-protected (MEH-442/466), so
 `DTZ011` (ban `date.today()`) is Sapir's change, not CC's. A warn-only
 `scripts/checks/*.sh` on `date.today()` in `tests/` is the house pattern
-(`israel-clock-guard.sh` is the frontend sibling) — but a guard born with 25
+(`israel-clock-guard.sh` is the frontend sibling) — but a guard born with 29
 standing findings is ignored on day one (MEH-1868), so it ships together with
 the sweep or not at all.
 

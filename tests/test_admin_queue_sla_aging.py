@@ -258,7 +258,12 @@ def test_dst_anchors_are_real():
 
 
 def test_naive_utc_seed_is_off_by_one_across_a_dst_switch():
-    """The trap, stated as a fact about the calendar — not a bug in the helper."""
+    """The trap, stated as a fact about the calendar — not a bug in the helper.
+
+    A characterisation, not a guard: it reads 4 / 6 because `business_days_waiting`
+    counts Israel calendar days on purpose (its docstring). It changes only if
+    that clock semantics changes — then update it, don't "fix" the helper.
+    """
     assert business_days_waiting(AUTUMN_NOW - timedelta(days=7), now=AUTUMN_NOW) == 4
     assert business_days_waiting(SPRING_NOW - timedelta(days=7), now=SPRING_NOW) == 6
 
