@@ -4,14 +4,15 @@
  * Preconditions (set up by hand, see the PR body): uvicorn on :8000 against a
  * scratch database, `next start` on :3000 proxying /api there, a verified
  * owner account, and a claim link an admin minted for a draft tagged ירקות.
- *   QA_OWNER_PASSWORD=<pw> node scripts/qa-meh2324-claim-e2e.mjs --link=<url> --email=<owner>
- * (the password stays out of argv, which `ps` and shell history show)
+ *   node scripts/qa-meh2324-claim-e2e.mjs --link=<url> --email=<owner> --password-file=<path>
+ * (a file, so the password stays out of argv, which `ps` and shell history show)
  *
  * Walks guest → login → back on /claim → tick → claim → dashboard, then opens
  * the same link in a fresh browser and expects "already claimed".
  * Disposable probe, not a gate.
  */
 import { chromium } from "playwright";
+import { readFileSync } from "node:fs";
 
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
 const LINK = arg("link").replace("127.0.0.1", "localhost");
@@ -39,7 +40,7 @@ try {
   await page.waitForURL((u) => u.pathname.endsWith("/login"), { timeout: 20_000 });
   check("login: redirect param is /claim", new URL(page.url()).searchParams.get("redirect") === "/claim", page.url());
   await page.getByTestId("login-email").fill(arg("email"));
-  await page.getByTestId("login-password").fill(process.env.QA_OWNER_PASSWORD || "");
+  await page.getByTestId("login-password").fill(readFileSync(arg("password-file"), "utf8").trim());
   await page.getByTestId("login-submit").click();
   await page.waitForURL((u) => u.pathname.endsWith("/claim"), { timeout: 30_000 });
   await page.getByTestId("claim-form").waitFor({ timeout: 30_000 });
