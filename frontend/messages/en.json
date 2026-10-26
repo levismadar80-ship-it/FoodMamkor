@@ -1774,7 +1774,7 @@
       },
       "claim": {
         "title": "Invite link for the business owner",
-        "intro": "The owner opens her own account, accepts the declaration and the terms herself, and the page becomes hers. It stays a draft until she submits it for review.",
+        "intro": "The owner opens her own account, accepts the declaration and the terms herself, and the page becomes hers. It stays a draft until she submits it for review. A new link does not revoke an earlier one; each link is valid until its own date.",
         "create": "Create link",
         "creating": "Creating link…",
         "url_label": "Link",
