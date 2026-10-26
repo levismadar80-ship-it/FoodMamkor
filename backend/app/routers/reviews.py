@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session, aliased, joinedload
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
 from app.services.experience_moderation import _parse_response_text
 from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
 from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
@@ -100,7 +101,7 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
     truncated = False
     try:
         msg = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=REVIEW_VERDICT_SCHEMA),
             # MEH-2335 eval: Haiku 5.5 spends 70-120 output tokens on this
             # JSON (the Hebrew "reason" is unbounded), so a 130 cap truncated
             # 6/15 cases mid-string → parse error → fail-open APPROVED, incl.
