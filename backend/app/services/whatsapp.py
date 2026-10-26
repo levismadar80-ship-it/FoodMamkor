@@ -62,6 +62,15 @@ OUTCOME_ACCEPTED = "accepted"
 OUTCOME_FAILED = "failed"
 OUTCOME_WINDOW_EXPIRED = "window_expired"
 
+# MEH-771 Chunk C — the two terminal-bad outcomes from the recipient's
+# perspective (`failed` = Meta reported an error, `window_expired` = the 24h
+# customer-service window closed). Owned HERE, next to the outcome labels
+# they mirror, so the admin failures list (routers/admin_whatsapp.py) and the
+# admin-home queue count (routers/admin_extra.py, MEH-2359) read one tuple
+# and one window instead of one router importing the other's privates.
+UNDELIVERED_STATUSES: tuple[str, ...] = (OUTCOME_FAILED, OUTCOME_WINDOW_EXPIRED)
+UNDELIVERED_WINDOW_DAYS = 7
+
 # MEH-214: Meta error codes meaning the 24h customer-service window has
 # closed, so a free-form message can't be delivered (a template is required).
 # 470 (legacy re-engagement), 131047 (re-engagement message), 131051
