@@ -45,9 +45,14 @@ export function countFromBody(hubKey, body) {
 
 async function fetchCount(hubKey) {
   try {
-    const res = await serverFetch(`${API_URL}${HUBS[hubKey].endpoint}`, {
-      next: { revalidate: 3600 },
-    });
+    // Short timeout, no retry: this count sits in front of each hub's
+    // generateMetadata, so a slow backend must not hold the page's first byte
+    // for serverFetch's default 8s x 3 attempts. Unknown is a safe answer.
+    const res = await serverFetch(
+      `${API_URL}${HUBS[hubKey].endpoint}`,
+      { next: { revalidate: 3600 } },
+      { timeoutMs: 2500, retries: 0 },
+    );
     if (!res.ok) return null;
     return countFromBody(hubKey, await res.json());
   } catch {
