@@ -38,9 +38,13 @@ describe("redactClaimPath", () => {
 
   // Sentry stack frames carry the route's chunk URL. Rewriting its %5Btoken%5D
   // segment would break the frame's link to the served file.
-  it("leaves the route chunk URL alone", () => {
-    const url =
-      "https://mehamakor.co.il/_next/static/chunks/app/%5Blocale%5D/claim/%5Btoken%5D/page-0a1b2c3d.js";
+  it.each([
+    "https://mehamakor.co.il/_next/static/chunks/app/%5Blocale%5D/claim/%5Btoken%5D/page-0a1b2c3d.js",
+    "https://mehamakor.co.il/_next/static/chunks/app/%5Blocale%5D/claim/page-0a1b2c3d.js",
+    "https://mehamakor.co.il/_next/static/chunks/app/%5Blocale%5D/claim/page-0a1b2c3d.js.map",
+    "webpack://_N_E/./app/[locale]/claim/ClaimClient.jsx",
+    "/login?redirect=%2Fclaim%2Fpage-0a1b2c3d.js",
+  ])("leaves a route file URL alone: %s", (url) => {
     expect(redactClaimPath(url)).toBe(url);
   });
 });

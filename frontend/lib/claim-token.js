@@ -19,16 +19,18 @@
 
 const STORAGE_KEY = "mehamakor.claimToken";
 
-// The path segment after /claim/, with or without a locale prefix, up to the
-// next delimiter. JWTs are base64url + dots, so this stops at / ? # and quotes.
-// A segment starting with [ or %5B is the route's own name ([token]) in a
-// chunk URL, which a stack frame must keep; no token starts that way.
-const CLAIM_PATH = /\/claim\/(?!\[|%5B)[^/?#\s"'&]+/gi;
+// The token after /claim/, with or without a locale prefix. It is matched by
+// its shape, a compact JWT: three base64url segments, the first one the
+// encoded '{"' header, so always "eyJ". Matching anything after /claim/ would
+// also rewrite the route's own files in stack frames (claim/page-<hash>.js,
+// claim/ClaimClient.jsx), and the frames would lose their link to the source.
+const JWT = String.raw`eyJ[\w-]*\.[\w-]+\.[\w-]+`;
+const CLAIM_PATH = new RegExp(String.raw`/claim/${JWT}`, "g");
 const REDACTED = "/claim/[token]";
 // The same path percent-encoded, as in a ?redirect= built with
-// encodeURIComponent (auth-context's session-expired link). A JWT has no %, so
-// the token ends at the next escape.
-const CLAIM_PATH_ENCODED = /(%2F(?:[a-z]{2}%2F)?claim)%2F[^/?#\s"'&%]+/gi;
+// encodeURIComponent (auth-context's session-expired link). A JWT has no
+// character that encoding changes, so the token itself is the same.
+const CLAIM_PATH_ENCODED = new RegExp(String.raw`(%2F(?:[a-z]{2}%2F)?claim)%2F${JWT}`, "gi");
 
 export function stashClaimToken(token) {
   try {
