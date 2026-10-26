@@ -858,19 +858,6 @@
         "title": "CheckPasswordRequest",
         "type": "object"
       },
-      "ClaimReferralRequest": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          }
-        },
-        "required": [
-          "code"
-        ],
-        "title": "ClaimReferralRequest",
-        "type": "object"
-      },
       "ContactClickIn": {
         "properties": {
           "method": {
@@ -20185,51 +20172,6 @@
           }
         },
         "summary": "Get Vapid Public Key"
-      }
-    },
-    "/referral/claim": {
-      "post": {
-        "description": "Link the current user (referee) to the referrer identified by code.\nIdempotent — calling twice for the same user is a no-op.",
-        "operationId": "claim_referral_referral_claim_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClaimReferralRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Claim Referral",
-        "tags": [
-          "referral"
-        ]
       }
     },
     "/register/producer/prefill/{token}": {
