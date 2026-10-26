@@ -80,6 +80,11 @@ const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 // exactly 32px less than expected on login/about/register mobile, while the
 // 05/09 regen had captured the link PRESENT. Neither state was deterministic.
 const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
+// MEH-2369: the Footer's «אירועים» link (lib/use-events-nav-gate.js) and the
+// home UpcomingEventsPreview both read `GET /events/upcoming`. Same race as the
+// experiences gate above; pinned to EMPTY, which is production's state today,
+// so the link and the preview are absent on every frame.
+const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
@@ -226,6 +231,9 @@ async function preparePage(page: Page): Promise<void> {
       contentType: "application/json",
       body: JSON.stringify({ count: 999 }),
     });
+  });
+  await page.route(EVENTS_UPCOMING_RE, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
   });
 
   await page.clock.setFixedTime(VRT_FIXED_TIME);
