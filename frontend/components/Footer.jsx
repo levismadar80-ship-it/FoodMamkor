@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -70,6 +71,8 @@ export default function Footer() {
 
   // MEH-1918: shared with the Header so one page load makes one request.
   const showExperiences = useExperiencesNavGate();
+  // MEH-2369: same idea for events — no upcoming event, no link.
+  const showEvents = useEventsNavGate();
 
   // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
   // producers). NN/g "Footers 101" — group links by secondary audience rather
@@ -81,7 +84,7 @@ export default function Footer() {
     // walk was previously reachable only via sitemap/pagination, not the footer.
     { href: "/producers", label: t("nav.footer.producers") },
     { href: "/map", label: t("nav.map") },
-    { href: "/events", label: t("nav.footer.events") },
+    ...(showEvents ? [{ href: "/events", label: t("nav.footer.events") }] : []),
     // MEH-1918: data-gated — the experiences link joins "גלו" only once
     // /experiences has real supply (see lib/use-experiences-nav-gate.js). It
     // sits next to /events because the two are the same kind of thing to a
