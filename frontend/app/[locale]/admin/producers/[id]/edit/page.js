@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -89,6 +90,10 @@ export default function EditProducerPage() {
       {producer.status === "draft" && (
         <DraftProductsPanel producerId={id} initialProducts={producer.products || []} />
       )}
+      {/* MEH-2325: only a draft can be handed to its owner. ProducerAdminOut
+          carries no owner id, so a draft she has already claimed still shows
+          the panel — the server answers that one with 409, shown verbatim. */}
+      {producer.status === "draft" && <ClaimLinkPanel producerId={id} />}
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

@@ -1745,7 +1745,9 @@
           "avail_today": "Available today",
           "avail_full": "Busy this week",
           "avail_vacation": "On break",
-          "vacation_until": "Return date (optional)"
+          "vacation_until": "Return date (optional)",
+          "as_draft": "Draft the owner will receive by invite link",
+          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner."
         }
       },
       "toast_approved": "Business approved",
@@ -1769,6 +1771,18 @@
         "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
         "submit_changes": "Send completion request",
         "submit_reject": "Reject and send email"
+      },
+      "claim": {
+        "title": "Invite link for the business owner",
+        "intro": "The owner opens her own account, accepts the declaration and the terms herself, and the page becomes hers. It stays a draft until she submits it for review. A new link does not revoke an earlier one; each link is valid until its own date.",
+        "create": "Create link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
       },
       "draft_products": {
         "title": "Products in this draft",

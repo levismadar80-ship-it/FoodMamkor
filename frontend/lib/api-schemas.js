@@ -100,6 +100,23 @@ export const ReviewInviteLinkSchema = z.object({
   url: z.string().url(),
 });
 
+// MEH-2325: POST /admin/producers with as_draft → ProducerAdminOut. Only the id
+// is read: it builds the draft's edit URL, so a missing one must not become
+// /admin/producers/undefined/edit.
+export const ProducerAdminCreatedSchema = z.object({
+  id: z.string().min(1),
+});
+
+// MEH-2325: POST /admin/producers/{id}/claim-link (ProducerClaimLinkOut).
+// Same reasoning as the review link above: the admin pastes this URL to the
+// business owner, so a malformed one must surface as an error, not be copied.
+export const ProducerClaimLinkSchema = z.object({
+  url: z.string().url(),
+  // The panel formats it with Intl during render, and an unparseable string
+  // would throw there, so an invalid date is a malformed payload.
+  expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
+});
+
 // MEH-2326: POST /admin/producers/{id}/products → ProductOut. The admin panel
 // appends the row to its list, so a payload with no id or name must route to
 // the panel's error state instead of rendering a row it cannot delete.
