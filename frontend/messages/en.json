@@ -2394,8 +2394,6 @@
           "intro": "The specific addresses (project IDs, tokens) are not here — they are in the team password manager. The list here points you where to look, it does not provide credentials.",
           "prod_label": "Production site",
           "staging_label": "Staging site",
-          "github_label": "Source code",
-          "github_text": "GitHub",
           "railway_label": "Railway",
           "railway_text": "<placeholder>fill in</placeholder> — project: <code>believable-tenderness</code>, service: backend",
           "vercel_label": "Vercel",
