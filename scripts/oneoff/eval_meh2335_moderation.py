@@ -299,9 +299,14 @@ class _Recorder:
         self.messages = self
 
     def create(self, **kwargs):
+        # Keep the caller's structured-output schema (MEH-2351); only the
+        # model-specific knobs are overridden.
+        fmt = (kwargs.get("output_config") or {}).get("format")
         for k in ("model", "thinking", "output_config"):
             kwargs.pop(k, None)
         kwargs.update(self._overrides)
+        if fmt is not None:
+            kwargs["output_config"] = {**kwargs.get("output_config", {}), "format": fmt}
         try:
             resp = self._client.messages.create(**kwargs)
         except Exception as exc:

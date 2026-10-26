@@ -30,6 +30,7 @@ import structlog
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import MODERATION_VERDICT_SCHEMA
 
 logger = structlog.get_logger(__name__)
 
@@ -158,7 +159,7 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
     truncated = False
     try:
         message = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=MODERATION_VERDICT_SCHEMA),
             # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
             # well clear of truncation (a truncated JSON fails open).
             max_tokens=800,
