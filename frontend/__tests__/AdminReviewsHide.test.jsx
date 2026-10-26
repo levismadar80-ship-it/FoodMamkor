@@ -7,6 +7,10 @@
  *
  * 5-state rule (CLAUDE.md): review count 0 / 1 / many × hidden / visible,
  * each cell asserted, plus a failed request leaving the row unchanged.
+ *
+ * MEH-2389: in flight the button is aria-disabled (never `disabled`, which
+ * drops keyboard focus), and "deleted elsewhere" is the 404 whose detail
+ * carries code "review_not_found" — not any 404 with Hebrew in it.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
@@ -53,6 +57,8 @@ vi.mock("@/lib/api", () => ({ default: apiMock }));
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock("@/lib/toast", () => ({ showToast: toastMock }));
+
+const NOT_FOUND = { code: "review_not_found", message: "ביקורת לא נמצאה" };
 
 const row = (id, is_hidden) => ({
   id,
@@ -139,14 +145,19 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
     expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/v2/hide");
   });
 
-  it("in flight: the clicked row's button is disabled, so a double-click sends one PUT", async () => {
+  it("in flight: the clicked row's button is aria-disabled, so a double-click sends one PUT", async () => {
     let settle;
     apiMock.put.mockImplementation(() => new Promise((res) => { settle = res; }));
     await renderWith([row("a", false)]);
     const btn = within(rowOf("a")).getByTestId("review-hide");
+    btn.focus();
 
     fireEvent.click(btn);
-    await waitFor(() => expect(btn.disabled).toBe(true));
+    await waitFor(() => expect(btn.getAttribute("aria-disabled")).toBe("true"));
+    // Not `disabled`: a disabled button loses focus, and a keyboard-only admin
+    // would be sent back to the top of the page after every hide.
+    expect(btn.disabled).toBe(false);
+    expect(document.activeElement).toBe(btn);
     fireEvent.click(btn);
     expect(apiMock.put).toHaveBeenCalledTimes(1);
 
@@ -163,11 +174,13 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
 
     fireEvent.click(btnA);
     fireEvent.click(btnB);
-    await waitFor(() => expect(btnB.disabled).toBe(true));
+    await waitFor(() => expect(btnB.getAttribute("aria-disabled")).toBe("true"));
 
     pending["/admin/reviews/a/hide"]({ data: {} });
     await waitFor(() => expect(within(rowOf("a")).getByTestId("review-hidden-tag")).toBeTruthy());
-    expect(within(rowOf("b")).getByTestId("review-hide").disabled).toBe(true);
+    expect(within(rowOf("b")).getByTestId("review-hide").getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(btnB);
+    expect(apiMock.put).toHaveBeenCalledTimes(2);
 
     pending["/admin/reviews/b/hide"]({ data: {} });
     await waitFor(() => expect(within(rowOf("b")).getByTestId("review-hidden-tag")).toBeTruthy());
@@ -175,7 +188,7 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
 
   it("404 (deleted elsewhere): the row leaves the list and the server's message is shown", async () => {
     apiMock.put.mockImplementation(() =>
-      Promise.reject({ response: { status: 404, data: { detail: "ביקורת לא נמצאה" } } }),
+      Promise.reject({ response: { status: 404, data: { detail: NOT_FOUND } } }),
     );
     await renderWith([row("gone", false), row("kept", false)]);
 
@@ -184,6 +197,57 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
     await waitFor(() => expect(screen.queryByText("ביקורת gone")).toBeNull());
     expect(screen.getByText("ביקורת kept")).toBeTruthy();
     expect(toastMock.error).toHaveBeenCalledWith("ביקורת לא נמצאה");
+  });
+
+  it("a 404 with a Hebrew detail but no code keeps the row and shows generic copy", async () => {
+    apiMock.put.mockImplementation(() =>
+      Promise.reject({ response: { status: 404, data: { detail: "ביקורת לא נמצאה" } } }),
+    );
+    await renderWith([row("a", false)]);
+
+    fireEvent.click(within(rowOf("a")).getByTestId("review-hide"));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("משהו השתבש"));
+    expect(screen.getByText("ביקורת a")).toBeTruthy();
+  });
+
+  it("deleted elsewhere while its delete dialog is open: the dialog closes with the row", async () => {
+    let fail;
+    apiMock.put.mockImplementation(() => new Promise((_, rej) => { fail = rej; }));
+    await renderWith([row("gone", false), row("kept", false)]);
+
+    fireEvent.click(within(rowOf("gone")).getByTestId("review-hide"));
+    fireEvent.click(within(rowOf("gone")).getByLabelText(/reviews.delete_aria/));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    fail({ response: { status: 404, data: { detail: NOT_FOUND } } });
+
+    await waitFor(() => expect(screen.queryByText("ביקורת gone")).toBeNull());
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("deleted elsewhere while ANOTHER row's delete dialog is open: that dialog stays", async () => {
+    let fail;
+    apiMock.put.mockImplementation(() => new Promise((_, rej) => { fail = rej; }));
+    await renderWith([row("gone", false), row("kept", false)]);
+
+    fireEvent.click(within(rowOf("gone")).getByTestId("review-hide"));
+    fireEvent.click(within(rowOf("kept")).getByLabelText(/reviews.delete_aria/));
+
+    fail({ response: { status: 404, data: { detail: NOT_FOUND } } });
+
+    await waitFor(() => expect(screen.queryByText("ביקורת gone")).toBeNull());
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("a review that is hidden AND AI-flagged shows both tags in the same cell", async () => {
+    await renderWith([{ ...row("both", true), ai_moderation_status: "FLAGGED" }]);
+    const both = rowOf("both");
+    expect(within(both).getByTestId("review-hidden-tag").textContent).toBe("מוסתרת");
+    expect(within(both).getByTestId("review-ai-flag")).toBeTruthy();
+    expect(within(both).getByTestId("review-hidden-tag").closest("td")).toBe(
+      within(both).getByTestId("review-ai-flag").closest("td"),
+    );
   });
 
   it("a 404 that isn't the handler's (English 'Not Found') keeps the row and shows generic copy", async () => {
