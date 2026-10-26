@@ -13,7 +13,8 @@ Covers backend/scripts/seed_demo_business.py:
 
 import importlib.util
 import os
-from datetime import date
+
+from app.utils.clock import israel_today
 
 import pytest
 
@@ -80,7 +81,7 @@ def test_seed_creates_complete_listing(db, seed_mod, bakery_category):
 
     event = db.query(Event).filter(Event.producer_id == row.id).one()
     assert event.is_active is True
-    assert event.event_date > date.today()
+    assert event.event_date > israel_today()
 
     # Social proof: reviews + one owner reply + denormalized aggregates.
     reviews = (
