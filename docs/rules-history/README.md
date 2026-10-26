@@ -6,6 +6,7 @@ rules were condensed (the rules diet, MEH-2333, 26/10/2026).
 | Archive | Live rules | Archived at |
 |---|---|---|
 | [workflow.md](./workflow.md) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) | `be037494` (MEH-2338) |
+| [testing.md](./testing.md) | [`.claude/rules/testing.md`](../../.claude/rules/testing.md) | `be037494` (MEH-2339) |
 
 **Why this split exists.** Everything in `.claude/rules/` without a `paths:`
 frontmatter is loaded into every session before the first word of work. The
