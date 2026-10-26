@@ -37,6 +37,7 @@ from typing import Any
 import structlog
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.services.moderation_fail_open import classify_failure, report_fail_open
 
 logger = structlog.get_logger(__name__)
 
@@ -177,8 +178,10 @@ def validate_experience(payload: dict[str, Any]) -> dict:
     client = _get_client()
     if client is None:
         logger.info("[experience-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED")
+        report_fail_open("experience", "no_client")
         return {"status": "APPROVED", "reason": None, "suggestion": None}
 
+    truncated = False
     try:
         message = client.messages.create(
             **ai_fast_request_kwargs(),
@@ -198,6 +201,7 @@ def validate_experience(payload: dict[str, Any]) -> dict:
                 "reason": "המודל סירב לבדוק את התוכן — נדרשת בדיקה ידנית",
                 "suggestion": None,
             }
+        truncated = getattr(message, "stop_reason", None) == "max_tokens"
         raw = ""
         for block in message.content:
             if getattr(block, "type", None) == "text":
@@ -213,6 +217,7 @@ def validate_experience(payload: dict[str, Any]) -> dict:
                 "[experience-moderation] unexpected status %r → APPROVED",
                 status,
             )
+            report_fail_open("experience", "bad_status")
             return {"status": "APPROVED", "reason": None, "suggestion": None}
 
         return {
@@ -222,4 +227,5 @@ def validate_experience(payload: dict[str, Any]) -> dict:
         }
     except Exception as e:  # noqa: BLE001 — moderation must fail safe
         logger.exception("[experience-moderation] Claude call failed: %s", e)
+        report_fail_open("experience", classify_failure(e, truncated=truncated))
         return {"status": "APPROVED", "reason": None, "suggestion": None}

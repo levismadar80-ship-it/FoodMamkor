@@ -31,6 +31,7 @@ import secrets
 from uuid import UUID
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.database import SessionLocal
 from app.models import Producer
 
@@ -212,6 +213,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         )
     except Exception as exc:  # noqa: BLE001 — fail-open per spec
         logger.warning("[RISK] anthropic call failed: %s", exc)
+        report_fail_open("producer_risk", classify_failure(exc))
         return (None, None)
 
     # Anthropic Messages API returns `content` as a list of content blocks.
@@ -244,6 +246,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
             "[RISK] anthropic response unparseable; first 200 chars: %r",
             body[:200],
         )
+        report_fail_open("producer_risk", "unparseable")
         return (None, None)
 
     score = _clamp_score(parsed.get("score"))
