@@ -12,6 +12,7 @@ import os
 import re
 import sys
 import uuid
+from datetime import datetime, timedelta, timezone
 
 # Point the backend at the test database BEFORE importing app modules.
 _BASE_DATABASE_URL = os.environ.get(
@@ -141,6 +142,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.auth import create_access_token, hash_password  # noqa: E402
+from app.utils.clock import ISRAEL_TZ, israel_now  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.models import (  # noqa: E402
@@ -438,6 +440,28 @@ def make_submit_ready_producer(
     db.refresh(producer)
     db.refresh(user)
     return producer, user
+
+
+def israel_days_ago(days: int, *, now: datetime | None = None) -> datetime:
+    """A UTC timestamp exactly `days` ISRAEL calendar days before `now` (MEH-2380).
+
+    `datetime.now(timezone.utc) - timedelta(days=N)` is N × 24 h, which is N
+    Israel calendar days only while the UTC offset is the same at both ends.
+    In the week after a DST switch, between 21:00 and 22:00 UTC, the two ends
+    sit on different Israel weekdays, and any count the code takes in Israel
+    days (`business_days_waiting`, an `israel_today()` window) is off by one —
+    `test_admin_get_producer_returns_admin_shape` went red that way on 26/10
+    at 21:16 UTC with no code change.
+
+    Subtracting from an Asia/Jerusalem-aware datetime is wall-clock
+    arithmetic — Python keeps the tzinfo and re-derives the offset for the new
+    wall time — so both ends share a weekday whatever the offset did in
+    between. Returned in UTC, the form the `DateTime(timezone=True)` columns
+    store. `now` is injectable so the trap can be pinned in a unit test
+    (tests/test_admin_queue_sla_aging.py).
+    """
+    base = (now if now is not None else israel_now()).astimezone(ISRAEL_TZ)
+    return (base - timedelta(days=days)).astimezone(timezone.utc)
 
 
 def auth_header(user: User) -> dict:

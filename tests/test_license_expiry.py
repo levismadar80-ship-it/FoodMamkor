@@ -37,7 +37,7 @@ and day 30) that an off-by-one would silently drop.
 from datetime import datetime, timedelta, timezone
 
 from app.utils.clock import israel_today
-from conftest import auth_header, make_producer, make_user
+from conftest import auth_header, israel_days_ago, make_producer, make_user
 
 REMINDERS = "/admin/license-expiry-reminders"
 
@@ -349,11 +349,16 @@ def test_admin_get_producer_returns_admin_shape(client, db):
     """
     producer = _with_expiry(db, 10)
     producer.address = "הרצל 1"
-    # Exactly 7 calendar days back. ANY 7-day window contains exactly 5 Sun–Thu
-    # days, so the expected value is 5 whatever weekday the suite runs on —
-    # deterministic without mocking the clock, and NOT computed by calling the
-    # helper under test (which would be circular).
-    producer.submitted_for_review_at = datetime.now(timezone.utc) - timedelta(days=7)
+    # Exactly 7 ISRAEL calendar days back. ANY 7 consecutive Israel days contain
+    # exactly 5 Sun–Thu days, so the expected value is 5 whatever weekday the
+    # suite runs on — deterministic without mocking the clock, and NOT computed
+    # by calling the helper under test (which would be circular).
+    #
+    # MEH-2380: this used to be `datetime.now(timezone.utc) - timedelta(days=7)`,
+    # which is 7 × 24 h, not 7 Israel days. In the week after a DST switch,
+    # 21:00–22:00 UTC, the two ends land on different Israel weekdays (Tue 00:16
+    # IDT → Mon 23:16 IST) and the route — correctly — answered 4.
+    producer.submitted_for_review_at = israel_days_ago(7)
     db.commit()
 
     resp = client.get(

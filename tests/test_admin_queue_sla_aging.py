@@ -21,8 +21,12 @@ under-reports; that is the safe direction for an SLA.
 """
 from datetime import datetime, timedelta, timezone
 
-from app.utils.clock import business_days_between, business_days_waiting
-from conftest import auth_header, make_producer, make_user
+from app.utils.clock import (
+    ISRAEL_TZ,
+    business_days_between,
+    business_days_waiting,
+)
+from conftest import auth_header, israel_days_ago, make_producer, make_user
 
 # A real, verified calendar week. 2026-08-16 is a Sunday; the assertions in
 # test_week_anchor_is_real pin that rather than trusting the comment.
@@ -225,3 +229,51 @@ def test_pending_route_also_carries_aging(client, db):
         "the pending queue serialised a structural 0 — the field is declared "
         "on the schema, so it has to be computed here too"
     )
+
+
+# --- MEH-2380 — seeding "N days ago" across a DST switch -----------------------
+#
+# Two real instants, one on each side of the year. Both are 7 × 24 h windows
+# whose ends sit on DIFFERENT Israel weekdays because the UTC offset changed in
+# between; a test that seeds with `now(utc) - timedelta(days=7)` and expects 5
+# is wrong for one hour a day in that week. These pin the trap AND the helper
+# that avoids it, against the real `business_days_waiting`.
+
+# Mon 26/10/2026 23:16 IST (+2) — Israel left DST on 25/10. 7 × 24 h earlier is
+# Tue 20/10 00:16 IDT (+3). The failing CI run was at exactly this instant.
+AUTUMN_NOW = datetime(2026, 10, 26, 21, 16, tzinfo=timezone.utc)
+# Tue 30/03/2027 00:30 IDT (+3) — Israel enters DST on 26/03/2027. 7 × 24 h
+# earlier is Mon 22/03 23:30 IST (+2).
+SPRING_NOW = datetime(2027, 3, 29, 21, 30, tzinfo=timezone.utc)
+
+
+def test_dst_anchors_are_real():
+    """Control for the two cases below: the offsets really differ across each window."""
+    for now in (AUTUMN_NOW, SPRING_NOW):
+        then = now - timedelta(days=7)
+        assert (
+            now.astimezone(ISRAEL_TZ).utcoffset()
+            != then.astimezone(ISRAEL_TZ).utcoffset()
+        )
+
+
+def test_naive_utc_seed_is_off_by_one_across_a_dst_switch():
+    """The trap, stated as a fact about the calendar — not a bug in the helper."""
+    assert business_days_waiting(AUTUMN_NOW - timedelta(days=7), now=AUTUMN_NOW) == 4
+    assert business_days_waiting(SPRING_NOW - timedelta(days=7), now=SPRING_NOW) == 6
+
+
+def test_israel_days_ago_seed_counts_five_on_both_sides_of_a_dst_switch():
+    """Seeding from the Israel clock keeps both ends on one weekday: 5 either way.
+
+    RED if `israel_days_ago` is reduced to `now - timedelta(days=N)` in UTC —
+    the autumn case answers 4 and the spring case 6 (the test above).
+    """
+    assert (
+        business_days_waiting(israel_days_ago(7, now=AUTUMN_NOW), now=AUTUMN_NOW) == 5
+    )
+    assert (
+        business_days_waiting(israel_days_ago(7, now=SPRING_NOW), now=SPRING_NOW) == 5
+    )
+    # And it hands back UTC, the form the timestamp columns store.
+    assert israel_days_ago(7, now=AUTUMN_NOW).tzinfo == timezone.utc
