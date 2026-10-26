@@ -2287,6 +2287,14 @@ export const HideReviewAdminReviewsReviewIdHidePutResponse = /*#__PURE__*/ zod.u
 
 
 /**
+ * MEH-2348: set is_hidden=False — the only way a hidden review returns.
+ * Recomputes producer aggregates.
+ * @summary Unhide Review
+ */
+export const UnhideReviewAdminReviewsReviewIdUnhidePutResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Idempotent: fetch Israeli localities from data.gov.il and upsert into cities table.
  * @summary Seed Cities
  */
