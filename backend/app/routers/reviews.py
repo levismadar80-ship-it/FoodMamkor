@@ -81,8 +81,10 @@ def _get_ai_client():
 
 def _checked_ai_status(body: str | None) -> str | None:
     """MEH-2349: moderate ``body`` and return the verdict to store on the row
-    — "APPROVED" | "FLAGGED", or None when there is no body (nothing checked).
-    REJECTED is never stored: it raises the 422 here, before any write."""
+    — "APPROVED" | "FLAGGED". REJECTED is never stored: it raises the 422
+    here, before any write. The empty-body branch is defensive only —
+    ReviewCreateNested requires a body, so NULL on a row means it predates
+    the column."""
     if not body:
         return None
     verdict = _moderate_review_body(body)
@@ -92,6 +94,22 @@ def _checked_ai_status(body: str | None) -> str | None:
             detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
         )
     return verdict
+
+
+def _ai_status_for_write(
+    body: str | None, existing: ProducerReview | None
+) -> str | None:
+    """MEH-2349: an edit that keeps the body keeps its stored verdict, so an
+    author cannot re-save a FLAGGED review until a different verdict (or a
+    fail-open, stored as APPROVED) clears the flag. A changed body, a new
+    review, or a row that predates the column is moderated afresh."""
+    if (
+        existing is not None
+        and existing.body == body
+        and existing.ai_moderation_status is not None
+    ):
+        return existing.ai_moderation_status
+    return _checked_ai_status(body)
 
 
 def _moderate_review_body(body: str | None) -> str:
@@ -411,7 +429,7 @@ def create_review_nested(
             )
 
     # Haiku moderation (fail-open). MEH-2349: the verdict is kept on the row.
-    ai_status = _checked_ai_status(data.body)
+    ai_status = _ai_status_for_write(data.body, existing_review)
 
     if existing_review:
         existing_review.stars = data.stars

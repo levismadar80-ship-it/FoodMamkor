@@ -58,6 +58,7 @@ def test_flagged_review_still_publishes(client, db, monkeypatch):
     _post(client, author, producer)
     public = client.get(f"/producers/{producer.id}/reviews").json()
     assert len(public["reviews"]) == 1
+    assert public["reviews"][0]["stars"] == 4  # the real item, not a new shape
     assert "ai_moderation_status" not in public["reviews"][0]
 
 
@@ -74,6 +75,26 @@ def test_edit_overwrites_verdict(client, db, monkeypatch):
     _post(client, author, producer, body=BODY + " שוב")
     db.refresh(row)
     assert row.ai_moderation_status == "FLAGGED"
+
+
+def test_resaving_the_same_body_keeps_the_flag(client, db, monkeypatch):
+    # Re-saving an unchanged body must not re-roll the verdict: otherwise an
+    # author could re-post until a different verdict or a fail-open
+    # (stored as APPROVED) erased the only admin signal.
+    author, producer = _setup(db)
+    _verdict(monkeypatch, "FLAGGED")
+    _post(client, author, producer)
+    calls = []
+    monkeypatch.setattr(
+        reviews_mod,
+        "_moderate_review_body",
+        lambda body: calls.append(body) or "APPROVED",
+    )
+    r = _post(client, author, producer, stars=2)
+    assert r.status_code == 201, r.text
+    row = db.query(ProducerReview).filter_by(user_id=author.id).one()
+    assert (row.stars, row.ai_moderation_status) == (2, "FLAGGED")
+    assert calls == []
 
 
 def test_fail_open_records_approved(client, db, monkeypatch):
