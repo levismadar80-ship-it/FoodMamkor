@@ -147,7 +147,9 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         # Same fence/prose tolerance as the experience/recipe moderators — a
         # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
         data = _parse_response_text(raw)
-        status = data.get("status")
+        # Upper-cased like the experience/recipe moderators: a lowercase
+        # "rejected" must not fall through to the fail-open APPROVED.
+        status = str(data.get("status", "")).upper()
         if status in {"APPROVED", "FLAGGED", "REJECTED"}:
             return status
         report_fail_open("review", "truncated" if truncated else "bad_status")
