@@ -166,8 +166,15 @@ for (const viewport of [
         // green by geometry, not by the sheet clearing anything; on the 2-column
         // /producers grid the title is on-screen and under the sheet. Measured
         // on the pre-MEH-819 build, same component, same result.)
+        // The branch is decided by the viewport (Popover.jsx switches to the
+        // sheet at `(max-width: 1023px)`), never by the panel's own width: a
+        // regression that stretched the desktop overlay to full width must
+        // still meet the 0-intersection rule, not be waved through as a sheet.
+        const isSheetViewport = viewport.width < 1024;
         const isFullWidthSheet = panelBox.width >= viewport.width - 1;
-        if (isFullWidthSheet) {
+        expect(isFullWidthSheet, `card ${i}: full-width sheet only below lg (viewport ${viewport.width}px)`)
+          .toBe(isSheetViewport);
+        if (isSheetViewport) {
           expect(panelBox.y + panelBox.height, `card ${i}: sheet must sit on the viewport bottom`)
             .toBeCloseTo(viewport.height, 0);
           await expect(

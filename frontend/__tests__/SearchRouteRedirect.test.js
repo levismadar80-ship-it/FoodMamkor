@@ -13,11 +13,17 @@ describe("/search → /producers redirect (MEH-819)", () => {
   // filesystem __filename), so this reads the rule objects out of the source.
   // A dropped or edited rule still goes red; the control below proves the
   // reader sees the real rule set and not an empty match.
-  const src = fs.readFileSync(path.join(process.cwd(), "next.config.js"), "utf-8");
-  const rule = (source) => {
-    const m = src.match(new RegExp(`\\{\\s*source:\\s*"${source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}",([^}]*)\\}`));
+  // Line comments are stripped first: a rule that was commented out must read
+  // as absent, not as present (the referee reproduced that false green).
+  const stripLineComments = (text) => text.replace(/^\s*\/\/.*$/gm, "");
+  const raw = fs.readFileSync(path.join(process.cwd(), "next.config.js"), "utf-8");
+  const ruleIn = (text, source) => {
+    const m = stripLineComments(text).match(
+      new RegExp(`\\{\\s*source:\\s*"${source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}",([^}]*)\\}`),
+    );
     return m ? m[1] : null;
   };
+  const rule = (source) => ruleIn(raw, source);
 
   it("308s /search and /:locale/search to /producers (Next forwards ?q= and ?focus=1)", () => {
     expect(rule("/search")).toMatch(/destination:\s*"\/producers"/);
@@ -29,6 +35,13 @@ describe("/search → /producers redirect (MEH-819)", () => {
   it("control: the reader finds a rule that predates this change", () => {
     expect(rule("/neighbor/:path*")).toMatch(/destination:\s*"\/"/);
     expect(rule("/does-not-exist")).toBeNull();
+  });
+
+  it("control: a commented-out rule reads as absent", () => {
+    const commentedOut = raw.replace(/^(\s*)(\{\s*source:\s*"\/search",[^}]*\})/m, "$1// $2");
+    expect(commentedOut).not.toBe(raw);
+    expect(ruleIn(commentedOut, "/search")).toBeNull();
+    expect(ruleIn(commentedOut, "/neighbor/:path*")).not.toBeNull();
   });
 
   it("the search page files are gone (RouteManifestSync covers the manifest)", () => {
