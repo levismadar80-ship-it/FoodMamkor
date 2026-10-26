@@ -217,6 +217,67 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 
 ---
 
+## Clock-dependent tests seed from the Israel clock (MEH-2290 · MEH-2380)
+
+**MEH-2380 (2026-10-26, measured on PR #3617 at 21:16 UTC).**
+`tests/test_license_expiry.py::test_admin_get_producer_returns_admin_shape`
+seeded `submitted_for_review_at = datetime.now(timezone.utc) - timedelta(days=7)`
+and asserted `business_days_waiting == 5`, on the comment "ANY 7-day window
+contains exactly 5 Sun–Thu days". That is true of 7 consecutive *Israel
+calendar* days; 7 × 24 h is 7 Israel days only while the UTC offset is the same
+at both ends. Israel left DST on 25/10, so at 21:16 UTC the seed was
+**Tue 20/10 00:16 IDT (+3)** and "now" was **Mon 26/10 23:16 IST (+2)**:
+`(Tue, Mon]` = Wed, Thu, Sun, Mon = **4**. The route was right; the test's
+premise was not. Reproduced with both clocks frozen (`clock.datetime` and the
+test module's `datetime`) at that instant → `assert 4 == 5`; the mirror case,
+Tue 30/03/2027 00:30 IDT, → `assert 6 == 5`; four control instants (noon UTC,
+Israel midnight, UTC midnight, the spring hour *outside* the window) green on
+the same old test. The failure window is one hour a day for the week after each
+switch — twice a year — on any PR, with no code change.
+
+**Fix shape, not a mock.** `israel_days_ago(N)` subtracts from an
+Asia/Jerusalem-aware datetime — wall-clock arithmetic, Python re-derives the
+offset for the new wall time — and returns UTC; `now` is injectable, and
+`test_admin_queue_sla_aging.py` pins both anchors against the real
+`business_days_waiting` (naive seed → 4 / 6, helper → 5 / 5). Shown red by
+reducing the helper to `now - timedelta(days=N)` in UTC.
+
+**MEH-2290 (2026-10-22, PR #3526)** is the same class from the other side:
+`test_meh1889_special_hours.py` hard-coded September dates against a validator
+that rejects keys older than 30 days by `israel_today()`; at Israel midnight on
+22/10 the first literal turned 31 days old and the suite went red between two
+PRs that changed nothing near it. Fixed by freezing `schemas.israel_today`
+(autouse), the idiom `test_availability_validation.py` and
+`test_meh1881_open_now_filter.py` already used.
+
+**Sweep (2026-10-26), what is and is not exposed.** 194 clock reads across 40
+test files. Exact-count-over-an-Israel-window with a UTC seed: one site (the
+MEH-2380 test). `date.today()` seeds: 29 calls in 9 files, counted over code tokens with
+comments and docstrings excluded (`tokenize`; a raw grep says 38 in 10 files
+because `test_meh1894_analytics_israel_day.py` and others mention it in
+prose): `test_api.py` 9, `test_experiences.py` 7,
+`test_expansion_availability.py` 4, `test_availability_validation.py` 3,
+`test_meh997_e2e_journeys.py` 2, `test_catalog_count_consistency.py`,
+`test_meh1626_domain_types.py`, `test_seed_demo_business.py`,
+`test_verified_email_enforcement.py` 1 each — every one is a
+±N-day margin in the direction Israel-ahead-of-UTC cannot flip (past −1…−5,
+future +2…+14), or feeds a schema with no past-date validator, so none can go
+red today; they are the next MEH-1983-shaped bug, not a current one. Hard-coded
+future literals (`date(2026, 12, 1)` ×3): `ExperienceCreate` has no
+`event_date` validator, so they do not expire. `business_days_waiting` window
+tests with `now(utc) - 14/21 days`: assert `0 < x < 14` / `> 0`, DST-proof by
+margin. Frontend: the vitest files a grep for `new Date()` / `Date.now()` / friday
+surfaced use `vi.useFakeTimers` or mock `isFridayMode`; `CalendarView.test.jsx` derives its expectation from
+the same `new Date()` the component reads.
+
+**Why not a mechanical guard here.** The CI `ruff check` runs from `backend/`
+and never sees `tests/`, and `[tool.ruff*]` is hook-protected (MEH-442/466), so
+`DTZ011` (ban `date.today()`) is Sapir's change, not CC's. A warn-only
+`scripts/checks/*.sh` on `date.today()` in `tests/` is the house pattern
+(`israel-clock-guard.sh` is the frontend sibling) — but a guard born with 29
+standing findings is ignored on day one (MEH-1868), so it ships together with
+the sweep or not at all.
+
 ## `networkidle` is banned in specs (MEH-215)
 
 > **A spec must never make its outcome depend on the network going quiet.**

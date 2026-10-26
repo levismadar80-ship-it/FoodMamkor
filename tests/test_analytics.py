@@ -15,7 +15,8 @@ All tests are written BEFORE the implementation (TDD, per workflow rule 5).
 They use the shared pytest fixtures in conftest.py.
 """
 import itertools
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 import pytest
 
@@ -778,6 +779,88 @@ class TestAdminDashboardAnalytics:
             "pending_moderation_count",
         ):
             assert key in stats, f"missing: {key}"
+
+    def test_admin_dashboard_per_queue_counts(self, client, db):
+        """MEH-2359: the admin home shows a queue only while its own count is
+        > 0, so each queue ships its own number. Assert the five new keys exist
+        and that each moves by exactly 1 for the row that belongs to it."""
+        from app.models.models import (
+            CategoryRequest,
+            Experience,
+            OutboundMessage,
+            ProducerNameChangeRequest,
+            ProducerRecipe,
+        )
+
+        admin = make_user(db, role="admin")
+        before = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        for key in (
+            "pending_category_requests",
+            "pending_name_change_requests",
+            "undelivered_whatsapp_7d",
+            "experiences_awaiting_review",
+            "recipes_awaiting_review",
+        ):
+            assert key in before, f"missing: {key}"
+        db.add(CategoryRequest(requested_name="קטגוריה חדשה לבדיקה", status="pending"))
+        # One recipe on the admin's turn, one on the owner's: the queue count
+        # moves by 1, the MEH-997 aggregate (`pending_recipes`) by 2.
+        producer = make_producer(db, name="מאפייה למונה", status="approved")
+        for moderation_status in ("pending", "needs_revision"):
+            db.add(
+                ProducerRecipe(
+                    producer_id=producer.id,
+                    title=f"מתכון {moderation_status}",
+                    ingredients="קמח, מים, מלח",
+                    instructions="לערבב ולאפות",
+                    moderation_status=moderation_status,
+                    published=False,
+                )
+            )
+        # Same split for experiences: one on the admin's turn, one on the host's.
+        for status in ("pending", "changes_requested"):
+            db.add(
+                Experience(
+                    title=f"חוויה {status}",
+                    description="תיאור ארוך מספיק כדי לעבור את הוולידציה של הטופס.",
+                    image_url="https://res.cloudinary.com/demo/image/upload/sample.jpg",
+                    category="בישול",
+                    host_user_id=admin.id,
+                    event_date=(datetime.utcnow() + timedelta(days=7)).date(),
+                    event_time=time(10, 0),
+                    location_type="home",
+                    city="תל אביב",
+                    max_participants=10,
+                    price_per_person=Decimal("150"),
+                    status=status,
+                    moderation_status="APPROVED",
+                )
+            )
+        # One pending name change + one already reviewed: the count moves by 1.
+        for status in ("pending", "approved"):
+            db.add(
+                ProducerNameChangeRequest(
+                    producer_id=producer.id,
+                    current_name=producer.name,
+                    requested_name=f"שם חדש {status}",
+                    status=status,
+                )
+            )
+        # Undelivered WhatsApp: one failed inside the 7-day window, one failed
+        # outside it, one accepted — only the first counts.
+        for status, age_days in (("failed", 1), ("failed", 9), ("accepted", 1)):
+            msg = OutboundMessage(to_phone="+972501234567", kind="test", status=status)
+            msg.created_at = datetime.utcnow() - timedelta(days=age_days)
+            db.add(msg)
+        db.commit()
+        after = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        assert after["pending_category_requests"] == before["pending_category_requests"] + 1
+        assert after["pending_name_change_requests"] == before["pending_name_change_requests"] + 1
+        assert after["undelivered_whatsapp_7d"] == before["undelivered_whatsapp_7d"] + 1
+        assert after["recipes_awaiting_review"] == before["recipes_awaiting_review"] + 1
+        assert after["pending_recipes"] == before["pending_recipes"] + 2
+        assert after["experiences_awaiting_review"] == before["experiences_awaiting_review"] + 1
+        assert after["pending_experiences"] == before["pending_experiences"] + 2
 
     def test_admin_dashboard_includes_analytics_series(self, client, db):
         admin = make_user(db, role="admin")

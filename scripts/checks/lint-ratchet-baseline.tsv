@@ -33,7 +33,6 @@ lib/order-window.js	exports	2
 lib/places.js	exports	1
 lib/schemas.js	duplicates	1
 lib/submission-gate.js	exports	1
-lib/useFirstVisit.js	files	1
 lib/user-location.js	exports	2
 package.json	dependencies	1
 package.json	devDependencies	2
