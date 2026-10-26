@@ -99,3 +99,11 @@ export const FavoriteWithProducerSchema = z.object({
 export const ReviewInviteLinkSchema = z.object({
   url: z.string().url(),
 });
+
+// MEH-2325: POST /admin/producers/{id}/claim-link (ProducerClaimLinkOut).
+// Same reasoning as the review link above: the admin pastes this URL to the
+// business owner, so a malformed one must surface as an error, not be copied.
+export const ProducerClaimLinkSchema = z.object({
+  url: z.string().url(),
+  expires_at: z.string().min(1),
+});
