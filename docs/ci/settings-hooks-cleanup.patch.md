@@ -33,6 +33,22 @@ The **discrimination proof** this card's AC asks for is in that same doc. It rec
 (`skipping ESLint` / exit 0) and after (`npm run lint` → exit 0 on a clean tree), and the script's
 `--self-test` builds fail-by-construction in both directions.
 
+### 1a · Before applying hunk 1: the change gating (MEH-2343, 26/10)
+
+Stop fires at the end of **every** turn, including a turn that only answered a question (hooks
+reference, *"Stop … always fires on every occurrence"*). As first written, the script ran all four steps
+in sequence each time, about 13 minutes. A command hook that reaches its `timeout` is cancelled with its
+output discarded, so on a heavy day it would have become the silent no-op it replaced.
+
+The script now skips an area (frontend = build + ESLint + vitest; backend = pytest) when the area is
+identical to `origin/staging`, or unchanged since its last green run. Measured on 26/10 on a checkout
+with `node_modules` and `backend/.venv` and no code changes: **0.06 s**, both areas skipped. The
+`--self-test` is 25/25. With the gate neutralised, the 5 gating cases fail. With red runs stamped, the
+"red is not stamped" case fails.
+
+Also corrected in hunk 1: `"timeout": 1800` (seconds). The hunk previously read `900000`, which would be
+about 10 days.
+
 ## 2 · PreToolUse Bash: the "update CLAUDE.md" reminder on every `git commit`
 
 **Current state** (`.claude/settings.json:5-13`, the first entry in `hooks.PreToolUse`):
