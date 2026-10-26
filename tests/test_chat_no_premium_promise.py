@@ -19,3 +19,17 @@ def test_system_prompt_has_no_premium_tier_promise():
 
 def test_system_prompt_keeps_no_fees_lock():
     assert "אין עמלות על עסקאות" in chat.SYSTEM_PROMPT
+
+
+def test_system_prompt_does_not_name_raw_milk():
+    # MEH-2373: raw milk was removed from the example list; approved
+    # replacement wording (Sapir, 26/10): «גבינות».
+    assert "חלב גולמי" not in chat.SYSTEM_PROMPT
+    assert "בשר במרעה, לחם מחמצת, גבינות, ירקות אורגניים ועוד" in chat.SYSTEM_PROMPT
+
+
+def test_system_prompt_instruction_is_feminine():
+    # MEH-2373: the prompt addresses the assistant in the feminine throughout.
+    assert "ענה " not in chat.SYSTEM_PROMPT
+    assert "עני בעברית יומיומית" in chat.SYSTEM_PROMPT
+    assert "עני בטקסט פשוט בלבד" in chat.SYSTEM_PROMPT
