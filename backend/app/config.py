@@ -257,9 +257,11 @@ WATCHDOG_LOOKBACK_MINUTES: int = 30
 AI_FAST_MODEL = "claude-haiku-5-5"
 
 
-def ai_fast_request_kwargs(
-    json_schema: dict[str, object] | None = None,
-) -> dict[str, object]:
+#: A JSON Schema object for structured outputs (MEH-2351).
+JsonSchema = dict[str, object]
+
+
+def ai_fast_request_kwargs(json_schema: JsonSchema | None = None) -> dict[str, object]:
     """Model + thinking/effort kwargs for every fast-tier messages.create.
 
     A function, not a shared dict, so no caller can mutate the defaults.
@@ -267,11 +269,16 @@ def ai_fast_request_kwargs(
     JSON valid against it on any completed response, so a fenced / prose-
     wrapped / invented-status reply can no longer fail open.
     """
-    output_config: dict[str, object] = {"effort": "low"}
-    if json_schema is not None:
-        output_config["format"] = {"type": "json_schema", "schema": json_schema}
+    # No annotated locals at 4-space indent in this file:
+    # scripts/check_env_drift.sh reads every `    name:` line here as a
+    # pydantic-settings field (→ env var NAME) and fails the PR.
+    fmt = (
+        {}
+        if json_schema is None
+        else {"format": {"type": "json_schema", "schema": json_schema}}
+    )
     return {
         "model": AI_FAST_MODEL,
         "thinking": {"type": "disabled"},
-        "output_config": output_config,
+        "output_config": {"effort": "low", **fmt},
     }
