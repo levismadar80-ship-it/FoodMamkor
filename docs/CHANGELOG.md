@@ -3424,7 +3424,7 @@ SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-
 ### 2026-06-03 — fix/terms-legal-copy-pii: legal-copy PII removal + MEH-720 deferred "דירקטורי" review (Refs MEH-720)
 
 `fix`: שלוש בעיות בעמודי /terms + /privacy בפרודקשן. **(1) PII** — מספר עוסקת
-פטורה (ת.ז.) `[removed]` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
+פטורה (ת.ז.) `[הוסר]` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
 בשתי השפות (he+en, terms+privacy). גם ה-descriptor האופציונלי "עוסקת פטורה" הוסר
 והשם תוקן ל-`טופז שנפ.` / `Topaz Schnapp.` (סדר שם + פ רגילה, מכוון).
 **(2) contact** — בלוק המפעיל הציג `noreply@mehamakor.co.il` ככתובת ליצירת קשר;
@@ -3438,7 +3438,7 @@ split-key, admin WhatsApp share-string) + מופע 6 שהתגלה ב-`HomeProduc
 הוחלף verbatim לנוסח "פלטפורמה המציגה מידע בלבד" (המונח `בין המוכרת לקונה` נשמר).
 **en.json:** רק מחיקת ה-PII (אין English verbatim מאושר) — נוסח "directory
 platform" באנגלית **דחוי ל-MEH-472** (en:1461/2540/2678/2793/2807; /en הוא
-noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep [removed] →
+noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep [הוסר] →
 0; grep דירקטורי → 0; `npm run build` ✓.
 
 ### 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
@@ -4896,7 +4896,7 @@ Two PRs landed end-to-end via autopilot, plus this docs closeout:
 
 **Two PRs merged via autopilot.** Total: 178 source strings extracted to 131 translation keys across 3 files, 2 new top-level namespaces, 1 new architectural pattern proven.
 
-- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ [removed].` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
+- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ [הוסר].` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
 - **PR #741 MERGED** at `807ff2e` — `feat(MEH-475 PR-C4b/chunk-4)`: for-businesses FAQ + FAQPage JSON-LD i18n (31 strings → 29 keys). New `about_business.*` top-level namespace. **First production pattern for JSON-LD consuming translation keys**: `buildFaqJsonLd(t)` builds the schema from the same translation keys the visible `<details>` rendering uses; `**bold**` markdown preserved in source values, stripped before schema emission. Accept-both JSON merge resolved against PR #740's privacy/terms additions.
 
 **Chunk 5 (3 guide pages + index, ~300 strings) DEFERRED** to a fresh session. Pattern is well understood (BLOCKS-array → per-position translation keys), but volume + EN-prose-translation quality bar exceeds remaining session runtime. See `HANDOFF.md` → "Next session pickup" for the resume instructions.
@@ -4961,7 +4961,7 @@ CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + br
 
 ### 2026-05-17 — MEH-630: Site operator legal disclosure on /terms + /privacy
 
-`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number ([removed]), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
+`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number ([הוסר]), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
 
 `scope`: 2 files touched — `frontend/app/[locale]/terms/page.js` + `frontend/app/[locale]/privacy/page.js`. Inline Hebrew JSX as a new `SECTIONS` entry (id `operator`), matching the existing pattern verbatim — same card layout, same `<strong>` markup, same `dir="ltr"` email link convention. New section is unnumbered and sits before §1 of each page.
 
