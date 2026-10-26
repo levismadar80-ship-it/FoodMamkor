@@ -15,6 +15,11 @@ describe("/search → /producers redirect (MEH-819)", () => {
   // reader sees the real rule set and not an empty match.
   // Line comments are stripped first: a rule that was commented out must read
   // as absent, not as present (the referee reproduced that false green).
+  // Known limit: the `([^}]*)` capture stops at the first `}`, so a rule that
+  // grows a nested block (a `has:` clause) would truncate the capture and
+  // could hide `destination` / `permanent`. The e2e check in
+  // e2e/flows/17-producers-search.spec.ts asks the running server and does
+  // not share that limit.
   const stripLineComments = (text) => text.replace(/^\s*\/\/.*$/gm, "");
   const raw = fs.readFileSync(path.join(process.cwd(), "next.config.js"), "utf-8");
   const ruleIn = (text, source) => {
