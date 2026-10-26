@@ -22,8 +22,8 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  * Module:   RegisterClient
  * Purpose:  /register surface — consumer signup form, MEH-788 split-editorial
  *           shell (image pane + form pane, mirroring /login). Visual shell
- *           only; signup flow (OWASP ack, password policy,
- *           OAuth) is untouched.
+ *           only; signup flow (OWASP ack, password policy, OAuth) is
+ *           untouched.
  * Does NOT: own SEO/metadata (page.js server wrapper) or the password
  *           checklist UX (PasswordInput.jsx, MEH-306). Producer signup is
  *           register/producer/.

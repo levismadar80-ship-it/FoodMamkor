@@ -17,3 +17,10 @@ def test_referral_claim_route_is_not_mounted():
     assert not [p for p in paths if p.startswith("/referral")]
     # Control: the schema is the real one, not an empty dict.
     assert "/auth/register" in paths
+
+
+def test_referral_claim_returns_404(client):
+    # The schema check above cannot see a route re-mounted with
+    # include_in_schema=False; the wire can. MANUAL_TESTING.md promises 404.
+    resp = client.post("/referral/claim", json={"code": "ABCDEF"})
+    assert resp.status_code == 404
