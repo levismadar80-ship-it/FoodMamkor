@@ -3404,7 +3404,7 @@ SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-
 ### 2026-06-03 — fix/terms-legal-copy-pii: legal-copy PII removal + MEH-720 deferred "דירקטורי" review (Refs MEH-720)
 
 `fix`: שלוש בעיות בעמודי /terms + /privacy בפרודקשן. **(1) PII** — מספר עוסקת
-פטורה (ת.ז.) `325120939` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
+פטורה (ת.ז.) `[הוסר]` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
 בשתי השפות (he+en, terms+privacy). גם ה-descriptor האופציונלי "עוסקת פטורה" הוסר
 והשם תוקן ל-`טופז שנפ.` / `Topaz Schnapp.` (סדר שם + פ רגילה, מכוון).
 **(2) contact** — בלוק המפעיל הציג `noreply@mehamakor.co.il` ככתובת ליצירת קשר;
@@ -3418,7 +3418,7 @@ split-key, admin WhatsApp share-string) + מופע 6 שהתגלה ב-`HomeProduc
 הוחלף verbatim לנוסח "פלטפורמה המציגה מידע בלבד" (המונח `בין המוכרת לקונה` נשמר).
 **en.json:** רק מחיקת ה-PII (אין English verbatim מאושר) — נוסח "directory
 platform" באנגלית **דחוי ל-MEH-472** (en:1461/2540/2678/2793/2807; /en הוא
-noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep 325120939 →
+noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep [הוסר] →
 0; grep דירקטורי → 0; `npm run build` ✓.
 
 ### 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
@@ -4395,7 +4395,7 @@ Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text
 
 ### 2026-05-22 — MEH-669: admin role lock-out via producer self-registration (OWASP A01)
 
-`fix(MEH-669)`: HIGH-RISK auth fix — closes a vertical privilege-escalation gap where any admin account that hit `/register/producer` (link, URL, or direct API call) had its `users.role` silently overwritten from `"admin"` to `"producer"` by the upgrade path at `backend/app/routers/auth.py:463`, locking the admin out of `/admin` (`frontend/app/[locale]/admin/layout.js:64` rejects non-admin role → push to `/login`). Discovered during staging smoke pre-production-promote (Sapir's `sint12345@gmail.com` admin account).
+`fix(MEH-669)`: HIGH-RISK auth fix — closes a vertical privilege-escalation gap where any admin account that hit `/register/producer` (link, URL, or direct API call) had its `users.role` silently overwritten from `"admin"` to `"producer"` by the upgrade path at `backend/app/routers/auth.py:463`, locking the admin out of `/admin` (`frontend/app/[locale]/admin/layout.js:64` rejects non-admin role → push to `/login`). Discovered during staging smoke pre-production-promote (Sapir's `<staging-admin-email>` admin account).
 
 **Approach: (a) + (c) per OWASP A01 — server-side enforcement is the source of truth; frontend is UX layer.**
 
@@ -4410,7 +4410,7 @@ Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text
 **Deferred (per Phase 0 decision):**
 - Approach (b) — Alembic `CHECK (NOT (role = 'admin' AND producer_id IS NOT NULL))` constraint, defense-in-depth at the DB layer. Post-launch ticket.
 - Approach (d) — role-model refactor (single `role` enum → permissions matrix). Out of scope.
-- Recovery SQL for Sapir's locked account (`UPDATE users SET role='admin', producer_id=NULL, is_producer=false WHERE email='sint12345@gmail.com';` then optional `DELETE FROM producers WHERE id='<that producer_id>';`) — documented in `docs/MANUAL_TESTING.md`, executed manually by Smadar (FK `users.producer_id → producers.id` has no `ondelete=`, so the UPDATE must precede the DELETE).
+- Recovery SQL for Sapir's locked account (`UPDATE users SET role='admin', producer_id=NULL, is_producer=false WHERE email='<staging-admin-email>';` then optional `DELETE FROM producers WHERE id='<that producer_id>';`) — documented in `docs/MANUAL_TESTING.md`, executed manually by Smadar (FK `users.producer_id → producers.id` has no `ondelete=`, so the UPDATE must precede the DELETE).
 - Audit query for other affected admin accounts — manual, by Smadar.
 
 Backend pytest verification deferred to local run (sandbox lacks FastAPI per MEH-360 pattern). AST parse + import-target existence confirmed. Frontend build clean: `✓ Compiled successfully in 14.7s`, 101 static pages.
@@ -4876,7 +4876,7 @@ Two PRs landed end-to-end via autopilot, plus this docs closeout:
 
 **Two PRs merged via autopilot.** Total: 178 source strings extracted to 131 translation keys across 3 files, 2 new top-level namespaces, 1 new architectural pattern proven.
 
-- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ 325120939.` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
+- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ [הוסר].` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
 - **PR #741 MERGED** at `807ff2e` — `feat(MEH-475 PR-C4b/chunk-4)`: for-businesses FAQ + FAQPage JSON-LD i18n (31 strings → 29 keys). New `about_business.*` top-level namespace. **First production pattern for JSON-LD consuming translation keys**: `buildFaqJsonLd(t)` builds the schema from the same translation keys the visible `<details>` rendering uses; `**bold**` markdown preserved in source values, stripped before schema emission. Accept-both JSON merge resolved against PR #740's privacy/terms additions.
 
 **Chunk 5 (3 guide pages + index, ~300 strings) DEFERRED** to a fresh session. Pattern is well understood (BLOCKS-array → per-position translation keys), but volume + EN-prose-translation quality bar exceeds remaining session runtime. See `HANDOFF.md` → "Next session pickup" for the resume instructions.
@@ -4941,7 +4941,7 @@ CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + br
 
 ### 2026-05-17 — MEH-630: Site operator legal disclosure on /terms + /privacy
 
-`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number (325120939), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
+`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number ([הוסר]), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
 
 `scope`: 2 files touched — `frontend/app/[locale]/terms/page.js` + `frontend/app/[locale]/privacy/page.js`. Inline Hebrew JSX as a new `SECTIONS` entry (id `operator`), matching the existing pattern verbatim — same card layout, same `<strong>` markup, same `dir="ltr"` email link convention. New section is unnumbered and sits before §1 of each page.
 
