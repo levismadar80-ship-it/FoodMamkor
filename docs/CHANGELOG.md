@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+- **‏26/10 (08:45–09:10) — דיאטת הכללים: הכללים שנטענים בכל סשן ירדו מ-245,672 ל-59,902 bytes, בלי למחוק כלל.**
+  - **‏#3589 `27b6b16c` (MEH-2337):** ‏`paths:` frontmatter ל-`skills.md`, `labels.md`, `deployment.md`. ה-diff כולל רק frontmatter.
+  - **‏#3590 `da3c166a` (MEH-2338):** ‏`workflow.md` ירד מ-118,110 ל-22,677 bytes. הנוסח המלא נמצא מילה במילה ב-`docs/rules-history/workflow.md`. נוסף guard ‏`scripts/checks/rules-inventory-guard.sh`, שנכשל אם כותרת או כלל ממוספר מהארכיון חסרים בקובץ החי. ה-self-test שלו רץ על הארכיון האמיתי.
+  - **‏#3594 (MEH-2339):** ‏`testing.md` ירד מ-56,173 ל-9,543 bytes, והארכיון ב-`docs/rules-history/testing.md`. ה-guard מוצא 85/85 ו-28/28.
+  - **‏נמדד:** ‏`Adversarial review (calibration)` אדום על כל PR, כי `ANTHROPIC_API_KEY` ריק. זה הטוקן של ה-CI reviewer שממתין לספיר, והג'וב לא חוסם מיזוג.
+
 - **‏25/10 (20:20–22:25, drain ל', לילה) — קישור «בקשו ביקורת» עובד מקצה לקצה.**
   - **‏#3587 `efa4e53e` (MEH-2330, MEH-1428 chunk 2):** ‏`?rt=` פותח את טופס הביקורת ונשלח כ-`review_token`. החזרה אחרי התחברות או הרשמה מגיעה לאזור הביקורות. כרטיס «בקשו ביקורת מלקוחה» בטאב «כלים» (עסק מאושר בלבד). ההפניה של `/p/[slug]` מעבירה עכשיו את ה-query. סקירה אדברסרית: 3 תיקונים. ‏E2E: נוסף stub ל-`review-link` בשני specs של הדשבורד, אחרי ש-401 ניתק את הסשן. ‏MEH-1428 חזר ל-Backlog + `needs-sapir`, על הכרעת התווית הפומבית.
   - **‏נמדד, בלי PR:** ‏MEH-2323 chunk 2 (מסלול החלפת הטופס בזמן הטעינה, לא הוכח ככשל) · ‏MEH-893 (ה-Babel parser שבתוך `next` חוסם את eslint 10).
