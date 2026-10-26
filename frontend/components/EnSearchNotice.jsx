@@ -15,8 +15,8 @@ import LanguageToggle from "@/components/LanguageToggle";
  *           categories carry a Latin character, and no engine is installed).
  *           This component states the gap; it does not close it.
  * Related:  components/LanguageToggle.jsx (the CTA's mechanism),
- *           components/HeroSearch.jsx + app/[locale]/search/SearchClient.jsx
- *           (the two consumer surfaces that mount it).
+ *           components/HeroSearch.jsx + components/ProducersClient.jsx
+ *           (the two consumer surfaces that mount it; /search is gone, MEH-819).
  * History:  MEH-1812 (creation; copy locked by Sapir 02/08, recorded in
  *           docs/COPY_BANK.md Section 13 before this component existed).
  */

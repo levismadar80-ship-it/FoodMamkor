@@ -13,7 +13,7 @@ vi.mock("@/lib/env", () => ({
 import sitemap from "@/app/sitemap";
 
 const BASE = "https://mehamakor.co.il";
-const NOINDEX_PATHS = ["/register", "/login", "/contact", "/search"];
+const NOINDEX_PATHS = ["/register", "/login", "/contact"];
 
 describe("sitemap noindex exclusion (MEH-803)", () => {
   beforeEach(() => {

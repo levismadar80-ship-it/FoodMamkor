@@ -40,6 +40,7 @@ import { useUserLocation } from "@/lib/user-location";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 
 const FILTER_LIMIT = 100;
@@ -221,7 +222,8 @@ export default function ProducersClient({
   const searchInputRef = useRef(null);
   const shouldFocus = searchParams.get("focus") === "1";
 
-  // ?focus=1 → focus the input on mount (mirrors SearchClient.jsx:59-63).
+  // ?focus=1 → focus the input on mount. The header search button lands here
+  // with it (MEH-819).
   useEffect(() => {
     if (shouldFocus) searchInputRef.current?.focus();
   }, [shouldFocus]);
@@ -799,6 +801,9 @@ export default function ProducersClient({
           {t("search_input.submit")}
         </button>
       </form>
+      {/* MEH-1812 notice, moved here from /search when MEH-819 made this the
+          one results page. Renders null outside /en. */}
+      <EnSearchNotice className="mb-3 text-muted" />
 
       {/* MEH-1081: category radio row — the canonical ?category=<id> axis.
           Self-hides while /categories hasn't resolved (or failed).

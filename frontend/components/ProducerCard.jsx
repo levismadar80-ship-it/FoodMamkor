@@ -199,7 +199,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // is 33vw at its own 1200px breakpoint edge (= 396 CSS px), and above that
   // breakpoint `max-w-7xl` (1280) + `px-4` caps the content column at 1248,
   // where the widest grid this card renders into is lg:grid-cols-3
-  // (SearchClient) at (1248 - 48)/3 = 400 CSS px. 400 x DPR 2 = 800, rounded
+  // (/producers?q=, MEH-819) at (1248 - 48)/3 = 400 CSS px. 400 x DPR 2 = 800, rounded
   // up to 828 — the first entry in Next's default `deviceSizes`, so the
   // optimizer's most likely request is a pass-through rather than an upscale.
   const imgSrc = optimizeCloudinary(producer.images?.[0], {
