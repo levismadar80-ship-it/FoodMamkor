@@ -51,6 +51,15 @@ export const SUBMISSION_REQUIREMENTS = [
 ];
 
 /**
+ * True for a business with no physical location that delivers. Exported so
+ * the draft banner's "where do I fill this in" link (MEH-2327) follows the
+ * SAME split this gate uses, instead of a second copy of the predicate.
+ */
+export function isDeliveryOnly(producer) {
+  return producer?.has_physical_location === false && !!producer?.offers_delivery;
+}
+
+/**
  * True when the business has told us where it is.
  *
  * MEH-213: a delivery-only business intentionally has no lat/lng, so its
@@ -63,10 +72,7 @@ export const SUBMISSION_REQUIREMENTS = [
  * reading it here would evaluate empty for every one of them.
  */
 function hasLocation(producer) {
-  const deliveryOnly =
-    producer?.has_physical_location === false && !!producer?.offers_delivery;
-
-  if (deliveryOnly) {
+  if (isDeliveryOnly(producer)) {
     if (producer?.delivery_nationwide) return true;
     return (producer?.delivery_areas || []).some((area) =>
       (area?.city || "").trim(),
