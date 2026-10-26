@@ -186,6 +186,18 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
     expect(toastMock.error).toHaveBeenCalledWith("ביקורת לא נמצאה");
   });
 
+  it("a non-404 error with an English detail (429) still shows the generic Hebrew copy", async () => {
+    apiMock.put.mockImplementation(() =>
+      Promise.reject({ response: { status: 429, data: { detail: "Rate limit exceeded" } } }),
+    );
+    await renderWith([row("a", false)]);
+
+    fireEvent.click(within(rowOf("a")).getByTestId("review-hide"));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("משהו השתבש"));
+    expect(screen.getByText("ביקורת a")).toBeTruthy();
+  });
+
   it("a failed request leaves the row as it was and shows the error toast", async () => {
     apiMock.put.mockImplementation(() => Promise.reject(new Error("500")));
     await renderWith([row("a", false)]);

@@ -171,11 +171,14 @@ export default function AdminReviewsPage() {
       );
       showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
     } catch (err) {
+      // Only the 404 `detail` is known Hebrew; a 429 or proxy 5xx body can be
+      // English, so every other failure gets the generic copy.
       const detail = err?.response?.data?.detail;
-      if (err?.response?.status === 404) {
+      const notFound = err?.response?.status === 404;
+      if (notFound) {
         setReviews((prev) => prev.filter((item) => item.id !== review.id));
       }
-      showToast.error(typeof detail === "string" && detail ? detail : tError("generic"));
+      showToast.error(notFound && typeof detail === "string" && detail ? detail : tError("generic"));
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev);
@@ -335,7 +338,7 @@ export default function AdminReviewsPage() {
                         : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-col items-start gap-1">
+                      <div className="flex flex-col items-start gap-2">
                         <button
                           type="button"
                           onClick={() => toggleHidden(r)}
