@@ -60,14 +60,15 @@ const labelsFor = (producer) => ({
   deliveryQuestion: chips.delivery_to_city.replace("{city}", producer?.city || chips.my_area),
   orderingQuestion: chips.ordering_q,
   escalationQuestion: chips.escalation,
-  recipeQuestion: chips.recipe_idea,
 });
 
 /**
  * Every question label the component put on screen, in render order.
  *
- * Reads the three row types the component emits — the disclosure buttons, the
- * WhatsApp chips, and the escalation/recipe anchors — and strips nothing else,
+ * Reads the row types the component emits — the disclosure buttons, the
+ * WhatsApp chips, and the escalation anchor (the recipe anchor stays in the
+ * selector so its return would surface as a mismatch, MEH-2385) — and strips
+ * nothing else,
  * so a row the helper forgets shows up as a length mismatch rather than being
  * quietly skipped.
  */
@@ -204,7 +205,7 @@ describe("the annotations the dashboard renders", () => {
     expect(items.some((i) => i.source === "category")).toBe(false);
   });
 
-  it("reports the category defaults as such when she has written none", () => {
+  it("reports no category rows when she has written none (MEH-2385)", () => {
     const producer = FIXTURES[0].producer;
     const { items, usesCustom, customCount } = resolveProducerQuestions(
       producer,
@@ -212,10 +213,9 @@ describe("the annotations the dashboard renders", () => {
     );
     expect(usesCustom).toBe(false);
     expect(customCount).toBe(0);
-    // MEH-2154's Phase 0 measured this: after the Q1/Q2 duplicates are stripped
-    // every category yields exactly one stock question.
-    expect(items.filter((i) => i.source === "category").map((i) => i.label)).toEqual([
-      "אילו לחמים יש השבוע?",
-    ]);
+    // The stock question is gone from the public block, so the live list is
+    // exactly the two answered rows + the escalation — nothing she never wrote.
+    expect(items.map((i) => i.source)).toEqual(["delivery", "ordering", "escalation"]);
+    expect(items.some((i) => i.source === "category")).toBe(false);
   });
 });

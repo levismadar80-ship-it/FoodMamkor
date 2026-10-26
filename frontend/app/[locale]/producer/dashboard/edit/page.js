@@ -594,7 +594,6 @@ function EditPageInner() {
       }),
       orderingQuestion: tChips("ordering_q"),
       escalationQuestion: tChips("escalation"),
-      recipeQuestion: tChips("recipe_idea"),
     });
     return { usesCustom, customCount, liveCount: items.length };
   })();
@@ -1282,7 +1281,6 @@ function CustomQuestionsCard({
     }),
     orderingQuestion: tChips("ordering_q"),
     escalationQuestion: tChips("escalation"),
-    recipeQuestion: tChips("recipe_idea"),
   });
 
   // Nothing to save when every input is blank AND nothing is stored — the save
