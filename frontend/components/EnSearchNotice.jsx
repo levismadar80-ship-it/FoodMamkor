@@ -57,7 +57,7 @@ export default function EnSearchNotice({ className = "" }) {
       // NO text colour here on purpose — the caller owns it. The two mount
       // points sit on opposite backgrounds: the hero pill rides the photo scrim
       // (where HomeHero.jsx:285 records that `text-fg-muted` fails AA, so the
-      // on-scrim tone is `text-green-50`), while /search is on cream. Baking a
+      // on-scrim tone is `text-green-50`), while /producers is on cream. Baking a
       // default in and letting callers "override" it would put two Tailwind
       // colour classes in one attribute, where the winner is decided by
       // stylesheet order rather than by the caller — a coin flip, not an override.
