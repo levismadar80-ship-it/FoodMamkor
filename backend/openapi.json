@@ -15498,7 +15498,7 @@
     },
     "/admin/whatsapp/failed": {
       "get": {
-        "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: status IN ('failed', 'window_expired') AND created_at within\nthe last `_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
+        "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: status IN ('failed', 'window_expired') AND created_at within\nthe last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
         "operationId": "list_failed_outbound_admin_whatsapp_failed_get",
         "responses": {
           "200": {
