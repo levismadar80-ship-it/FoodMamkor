@@ -3,7 +3,7 @@
 > **Neither hunk here can be applied by CC.** `.claude/settings.json` is deny-enforced (MEH-442
 > `protect-lint-config.sh` + `permissions.deny`), and `~/.claude/launcher-settings.json` is a
 > machine-level file outside the repo. **Hunk 1 APPLIED 26/10 by Sapir in PR #3598** (`timeout: 1800`,
-> script gated by MEH-2343). **Hunk 2 (machine-level) is still not applied.** The scripts both hunks point
+> script gated by MEH-2343). **Hunk 2 (machine-level) is not applied, and in cloud sessions it cannot be** (§3 note). The scripts both hunks point
 > at ARE committed and self-tested:
 >
 > | script | replaces | self-test |
@@ -159,6 +159,12 @@ bash scripts/hooks/stop-build-and-test.sh --self-test   # → 14/14, exit 0
 ```
 
 ## 3 · Hunk 2 — `~/.claude/launcher-settings.json` (Sapir; machine-level, outside the repo)
+
+> **Not actionable in cloud sessions (measured 26/10, MEH-2343).** In the Claude Code cloud container
+> `~/.claude/launcher-settings.json` and `~/.claude/stop-hook-git-check.sh` are written by the harness
+> at container start (both mtimes = session start, 09:53Z). An edit there is gone in the next session.
+> This hunk only applies to a Claude Code install on Sapir's own machine, and even there it only
+> improves the end-of-turn git messages. It blocks nothing. Do not chase it.
 
 Current file (read 03/09, 716 bytes):
 
