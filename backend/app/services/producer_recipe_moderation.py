@@ -28,14 +28,14 @@ from typing import Any
 
 import structlog
 
-from app.config import settings
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 
 logger = structlog.get_logger(__name__)
 
 # REUSES: experience_moderation.py:45 — Haiku model pin. Haiku is cheap
 # and fast enough for per-recipe pre-check; admins still review every
 # recipe before it ships.
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 
 VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
 
@@ -155,10 +155,23 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
 
     try:
         message = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=400,
+            **ai_fast_request_kwargs(),
+            # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
+            # well clear of truncation (a truncated JSON fails open).
+            max_tokens=800,
             messages=[{"role": "user", "content": _build_prompt(normalized)}],
         )
+        # MEH-2335: Haiku 5.5 runs safety classifiers. A decline is HTTP 200
+        # with stop_reason="refusal" and no text — the content itself
+        # tripped a harm classifier, so that is a signal, not an infra
+        # blink: route it to the admin as FLAGGED instead of failing open.
+        if getattr(message, "stop_reason", None) == "refusal":
+            logger.warning("[recipe-moderation] model refused → FLAGGED")
+            return {
+                "status": "FLAGGED",
+                "reason": "המודל סירב לבדוק את התוכן — נדרשת בדיקה ידנית",
+                "suggestion": None,
+            }
         raw = ""
         for block in message.content:
             if getattr(block, "type", None) == "text":

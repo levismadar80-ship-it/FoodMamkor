@@ -5,8 +5,8 @@ Users get answers to "how do I register?", "how do I find a producer?",
 "how do I post a home listing?" — without having to leave the page.
 
 Design notes:
-  - Uses claude-haiku-4-5 (cheapest production model — see SKILL.md model
-    table). The questions are short, the answers should be short, and we
+  - Uses the fast-tier Haiku (app.config.AI_FAST_MODEL — Haiku 5.5 since
+    MEH-2335). The questions are short, the answers should be short, and we
     expect MVP-scale traffic so per-call cost matters.
   - System prompt is in Hebrew. The bot persona is feminine, but it
     addresses users in neutral plural voice (MEH-940), scoped tightly to
@@ -27,7 +27,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.config import settings
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 from app.rate_limit import limiter
 
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
@@ -37,25 +37,20 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-# claude-haiku-4-5 is the cheapest production model. Hard-coded here
-# because the system-wide `settings.anthropic_model` is opus-tier and
-# tuned for moderation accuracy, not chatbot cost.
-#
-# IMPORTANT: use the date-suffixed model ID (`claude-haiku-4-5-20251001`),
-# NOT the bare alias (`claude-haiku-4-5`). The bare alias was rejected by
-# the Anthropic API in production, causing every chat call to silently
-# fail-open with the offline message. The date-suffixed form is the
-# canonical model ID per Anthropic's docs and works reliably. If you
-# upgrade to a newer Haiku, swap the date — the prefix stays the same.
-CHAT_MODEL = "claude-haiku-4-5-20251001"
+# MEH-2335: the fast-tier model lives in one place — app.config.AI_FAST_MODEL
+# (Haiku 5.5, whose ID has no date suffix). Not `settings.anthropic_model`,
+# which is opus-tier and only used by the home-products path.
+CHAT_MODEL = AI_FAST_MODEL
 
 # Cap on conversation length sent to the API. Each turn is a user msg
 # + assistant msg, so 10 = 20 messages = ~2-3K tokens of history.
 MAX_HISTORY_TURNS = 10
 
 # Cap on output tokens — the bot should answer in 2-3 sentences, not
-# write essays. Keeps cost predictable and the UX snappy.
-MAX_OUTPUT_TOKENS = 400
+# write essays. Keeps cost predictable and the UX snappy. 520 = the old
+# 400 + ~30%: Haiku 5.5's tokenizer counts the same text as ~30% more
+# tokens (MEH-2335), so this keeps the same answer length.
+MAX_OUTPUT_TOKENS = 520
 
 # Hebrew system prompt — scoped tightly to the site. The bot persona is
 # feminine, but it addresses users in neutral plural voice (MEH-940) per
@@ -225,7 +220,7 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
 
     try:
         response = client.messages.create(
-            model=CHAT_MODEL,
+            **ai_fast_request_kwargs(),
             max_tokens=MAX_OUTPUT_TOKENS,
             system=SYSTEM_PROMPT,
             messages=api_messages,
