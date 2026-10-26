@@ -6,7 +6,7 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 
 | דף | URL | תוכן |
 |----|-----|-------|
-| מה מחכה לטיפול | /admin | **MEH-2359:** רק מה שדורש החלטה — בתי עסק ממתינים (תצוגה מקדימה + «בדוק» + «צפה בכל») ושורה לכל תור אחר שיש בו פריטים. הסטטיסטיקה, הגרפים, DAU, ערים ובריאות השרת שהיו כאן ירדו; גרף הגידול, ערים ומפה נמצאים ב-/admin/analytics. ה-endpoint `GET /admin/dashboard` לא השתנה, רק קיבל שלושה מונים: `pending_category_requests`, `pending_name_change_requests`, `undelivered_whatsapp_7d` |
+| מה מחכה לטיפול | /admin | **MEH-2359:** רק מה שדורש החלטה — בתי עסק ממתינים (תצוגה מקדימה + «בדוק» + «צפה בכל») ושורה לכל תור אחר שיש בו פריטים. הסטטיסטיקה, הגרפים, DAU, ערים ובריאות השרת שהיו כאן ירדו; גרף הגידול, ערים ומפה נמצאים ב-/admin/analytics. ה-endpoint `GET /admin/dashboard` לא השתנה, רק קיבל חמישה מונים: `pending_category_requests`, `pending_name_change_requests`, `undelivered_whatsapp_7d`, `experiences_awaiting_review`, `recipes_awaiting_review` (השניים האחרונים = `status == "pending"` בלבד, תור האדמין) |
 | בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר inline; השהה/שגריר/סטורי/מחיקה בתפריט ⋮ פר-שורה (MEH-1027) + **דחייה** (MEH-226, ⋮ tone danger, שורות pending בלבד — MEH-2124 הסיר את הסטטוס השני) → מודל 5 סיבות + פירוט → שלב אישור → מייל לבעלת העסק; שורות pending נושאות תת-שורה **«רשימת בדיקה לפני אישור»** + **«תיק בדיקה»** (MEH-1399) |
 | משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms. **18 קטגוריות הזרע נעולות** (MEH-1456 chunk 2b) — ראו למטה |

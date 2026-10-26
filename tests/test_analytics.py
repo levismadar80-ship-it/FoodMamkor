@@ -782,8 +782,8 @@ class TestAdminDashboardAnalytics:
 
     def test_admin_dashboard_per_queue_counts(self, client, db):
         """MEH-2359: the admin home shows a queue only while its own count is
-        > 0, so each queue ships its own number. Seed one pending category
-        request and assert the three new keys exist and the seeded one is 1."""
+        > 0, so each queue ships its own number. Assert the five new keys exist
+        and that each moves by exactly 1 for the row that belongs to it."""
         from app.models.models import (
             CategoryRequest,
             Experience,

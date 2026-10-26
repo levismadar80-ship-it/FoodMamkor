@@ -360,10 +360,10 @@ test.describe("approvals queue — status chips", () => {
     await expect(rowOf(page, "מושבת").getByText("לא פעילה", { exact: true })).toHaveClass(/bg-gray-200/);
   });
 
-  // MT:MEH-294:6 — the /admin activity feed showed «(label)», not the code. The feed left
-  // /admin with MEH-2359 (26/10): the home is «מה מחכה לטיפול» and renders no activity
-  // list, so the row has no surface to assert on; the same status→label map is pinned by
-  // the chip rows above (MT:MEH-294:1-5, 8). Flagged for the docs backfill as superseded.
+  // MT:MEH-294:6 (activity feed showed «(label)», not the code) has no surface since
+  // MEH-2359 (26/10): /admin is «מה מחכה לטיפול» and renders no activity list. The same
+  // status→label map is pinned by the chip rows above (MT:MEH-294:1-5, 8); the
+  // MANUAL_TESTING row is struck through and says so.
 
   // MT:MEH-294:8 — a status the map does not know renders its raw code, in the fallback colour, without crashing.
   test("an unknown status falls back to the raw code in the neutral colour", async ({ page }) => {

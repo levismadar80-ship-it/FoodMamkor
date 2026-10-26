@@ -49,6 +49,12 @@ test.describe("Admin recipes moderation queue (MEH-997)", () => {
       "SMOKE_ADMIN_* are set but e2e/.auth/smoke-admin.json is missing — global-setup did not provision it",
     ).toBeTruthy();
 
+    // The sidebar reads the queue counts off /admin/dashboard; the nav
+    // assertions below run only once that response has landed, so they
+    // never read the "counts unknown ⇒ every queue listed" loading state.
+    const dashboard = page.waitForResponse(
+      (res) => res.url().includes("/api/admin/dashboard") && res.status() === 200,
+    );
     await page.goto("/admin/recipes");
 
     // The page exists (no 404 / no redirect back to /login) and renders.
@@ -62,15 +68,25 @@ test.describe("Admin recipes moderation queue (MEH-997)", () => {
     const empty = page.getByTestId("admin-recipes-empty");
     await expect(row.or(empty)).toBeVisible({ timeout: 15_000 });
 
-    // MEH-2359: the nav entry is count-gated — listed only while
-    // `recipes_awaiting_review` > 0, which on a real target is exactly "the
-    // pending tab has rows". Both states are pinned (rows ⇒ link, empty ⇒ no
-    // link); the stubbed 3-count case is manual/admin-recipes-kebab MT:MEH-997:3.
-    const navRecipes = page.locator('aside nav a[href*="/admin/recipes"], div.md\\:hidden > nav a[href*="/admin/recipes"]');
+    // MEH-2359: the «מתכונים» nav entry is count-gated everywhere EXCEPT on
+    // its own page — `visibleQueues()` keeps the queue the admin is standing
+    // on, so here the link is present in both states and what the count
+    // gates is the pill: rows on the pending tab ⇒ a «N פריטים לאישור» pill,
+    // empty ⇒ no pill. Dropping the keep-active clause makes the empty case
+    // lose the link (red); dropping the count gate makes the empty case grow
+    // a pill (red). The stubbed 3-count + off-page cases live in
+    // manual/admin-recipes-kebab (MT:MEH-997:3 and the 0-pending case).
+    await dashboard;
+    const navRecipes = page
+      .locator('aside nav a[href*="/admin/recipes"], div.md\\:hidden > nav a[href*="/admin/recipes"]')
+      .locator("visible=true");
+    await expect(navRecipes).toHaveCount(1);
+    await expect(navRecipes).toHaveAttribute("aria-current", "page");
+    const pill = navRecipes.locator('[aria-label$="פריטים לאישור"]');
     if (await row.isVisible()) {
-      await expect(navRecipes.locator("visible=true")).toHaveCount(1);
+      await expect(pill).toHaveCount(1);
     } else {
-      await expect(navRecipes).toHaveCount(0);
+      await expect(pill).toHaveCount(0);
     }
 
     // Tab switch re-queries with the moderation_status filter.
