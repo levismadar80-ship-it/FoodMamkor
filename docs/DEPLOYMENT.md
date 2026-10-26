@@ -1,7 +1,7 @@
 # מהמקור — Production Deployment Guide
 
 > **Target stack:** Frontend → Vercel · Backend → Railway · Database → Railway Postgres (**stock, no PostGIS**)
-> **Domain:** `mehamakor.online` (nameservers already point to Vercel)
+> **Domain:** production is `mehamakor.co.il` (the canonical origin since MEH-1322 — `SITE_URL` in `frontend/lib/env.client.js`, `email_from_address` in `backend/app/config.py`). `mehamakor.online` now serves staging only (`staging.mehamakor.online`). _This line read `mehamakor.online` until 2026-10-26 (MEH-2345)._
 >
 > **Distance queries** use the Haversine formula directly in SQL against
 > `producers.lat` / `producers.lng` float columns — no PostGIS extension is
@@ -19,7 +19,7 @@ checkpoint passes.
 
 | Branch | Role | Deploys to | Who can push |
 |---|---|---|---|
-| `main` | Production | mehamakor.online (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
+| `main` | Production | mehamakor.co.il (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
 | `staging` | Non-prod testing | staging.mehamakor.online (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
 | `feature/*` | New features and fixes | None — local + Vercel preview URL | Branch owner. **Always created from `staging`**, never from `main`. |
 
@@ -29,8 +29,8 @@ checkpoint passes.
 feature/your-thing  ──PR──▶  staging  ──PR──▶  main
        │                       │                 │
        │                       ▼                 ▼
-   local + PR        staging.mehamakor.online   mehamakor.online
-   preview                  (test here)           (live)
+   local + PR        staging.mehamakor.online   mehamakor.co.il
+   evidence                 (test here)           (live)
 ```
 
 ### Rules
@@ -163,8 +163,8 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
    | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
-   | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain (`mehamakor.online`) is verified (SPF+DKIM). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
-   | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.online>` (`config.py`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
+   | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` if staging sends from it. **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
+   | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.co.il>` (`config.py:115`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
@@ -183,7 +183,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
 
 Vercel auto-deploys every branch to a preview URL. The two named deploys are:
 
-- `main` → **Production** → `mehamakor.online`
+- `main` → **Production** → `mehamakor.co.il`
 - `staging` → **Preview** with custom domain → `staging.mehamakor.online`
 
 Steps:
@@ -192,7 +192,7 @@ Steps:
 2. **Settings → Git → Production Branch:** confirm it's `main`. Change it
    if not.
 3. **Settings → Domains:**
-   - `mehamakor.online` → **Production** (main) — already configured.
+   - `mehamakor.co.il` → **Production** (main) — already configured.
    - Click **Add** → enter `staging.mehamakor.online`.
    - When prompted, choose **"Git Branch"** → `staging`.
    - Vercel will give you a CNAME record: `staging` → `cname.vercel-dns.com`.
@@ -204,7 +204,7 @@ Steps:
    |---|---|---|
    | `BACKEND_URL` | `https://foodmamkor-production.up.railway.app` | `https://foodmamkor-staging.up.railway.app` |
    | `NEXT_PUBLIC_API_URL` | same as production `BACKEND_URL` | same as staging `BACKEND_URL` |
-   | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.online` | `https://staging.mehamakor.online` |
+   | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.co.il` | `https://staging.mehamakor.online` |
    | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
    | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Production Clarity ID | Empty (don't pollute heatmaps). |
 
@@ -614,14 +614,14 @@ python scripts/check_api_contract.py --probe "$BACKEND"
 
 **Every PR gets a Vercel preview URL.** Before merging to `staging`, that
 preview URL must be tested on a real device — primarily on mobile, since the
-phone is the dominant viewport for mehamakor.online and many bugs only surface
+phone is the dominant viewport for mehamakor.co.il and many bugs only surface
 in actual iOS Safari / Android Chrome.
 
 ### How preview URLs are generated
 
 Once the Vercel + GitHub integration is enabled (per §B above), every push to
 any branch — `feature/*`, `staging`, `main` — triggers a Vercel deployment.
-Production-branch pushes deploy to `mehamakor.online`; everything else
+Production-branch pushes deploy to `mehamakor.co.il`; everything else
 deploys to a unique preview URL.
 
 The preview URL pattern is:
@@ -650,7 +650,7 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 9. final smoke test on staging subdomain
 10. open PR staging → main
 11. merge to main
-12. Vercel auto-deploys main to mehamakor.online
+12. Vercel auto-deploys main to mehamakor.co.il
 ```
 
 ### What every PR description must include
@@ -736,7 +736,7 @@ own thing — this workflow does **not** touch Vercel.
 merge PR → main                        merge PR → staging
    │                                       │
    ├──▶ Vercel GitHub integration          ├──▶ Vercel GitHub integration
-   │    ──▶ mehamakor.online               │    ──▶ staging.mehamakor.online
+   │    ──▶ mehamakor.co.il                │    ──▶ staging.mehamakor.online
    │    (already wired, no workflow)       │    (already wired, no workflow)
    │                                       │
    └──▶ .github/workflows/deploy.yml       └──▶ .github/workflows/deploy.yml
@@ -1175,7 +1175,7 @@ Vercel's webhook configuration (`Authorization` header). The
 - [ ] GitHub repo pushed, with branch `main` as the deploy branch
 - [ ] Accounts: [Vercel](https://vercel.com), [Railway](https://railway.app),
       [Cloudinary](https://cloudinary.com), [Google Cloud Console](https://console.cloud.google.com)
-- [ ] Domain purchased: `mehamakor.online` (nameservers on Vercel)
+- [ ] Domain purchased: `mehamakor.co.il` (nameservers on Vercel)
 - [ ] Google OAuth Client ID:
       `591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com`
 
@@ -1289,15 +1289,15 @@ CONTACT_EMAIL=levismadar80@gmail.com
 
 # Email — Resend HTTP API (Railway blocks SMTP ports 25/465/587, so all mail
 # goes through Resend). REQUIRED for any email to send. The key must belong to
-# a Resend account where the sending domain (mehamakor.online) is verified
+# a Resend account where the sending domain (mehamakor.co.il) is verified
 # (SPF+DKIM). If unset, every verification/reset/welcome email is SILENTLY
 # skipped (fail-open in backend/app/services/email.py) — the user still sees a
 # "check your email" ack but nothing sends. Boot fails loud when this is missing
 # on staging/production (MEH-1164 guard in backend/app/startup.py).
-RESEND_API_KEY=<from resend.com — account with mehamakor.online verified>
-# Optional sender header; defaults to "מהמקור <noreply@mehamakor.online>".
+RESEND_API_KEY=<from resend.com — account with mehamakor.co.il verified>
+# Optional sender header; defaults to "מהמקור <noreply@mehamakor.co.il>".
 # Override only to send from a different address on the same verified domain.
-EMAIL_FROM_ADDRESS=מהמקור <noreply@mehamakor.online>
+EMAIL_FROM_ADDRESS=מהמקור <noreply@mehamakor.co.il>
 
 # LEGACY / removable — SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD are
 # DEAD: no code reads them since the smtplib→Resend migration (MEH-150 / PR #335,
@@ -1305,7 +1305,7 @@ EMAIL_FROM_ADDRESS=מהמקור <noreply@mehamakor.online>
 # docs step): zero consumers under backend/. If they still exist in Railway they
 # can be removed (do this yourself in the Railway UI — CC never touches Railway).
 
-FRONTEND_URL=https://mehamakor.online
+FRONTEND_URL=https://mehamakor.co.il
 ```
 
 > Twilio / SMTP / Apple keys are optional for first launch — leave blank and
@@ -1442,7 +1442,7 @@ BACKEND_URL=https://foodmamkor-production.up.railway.app
 NEXT_PUBLIC_API_URL=https://foodmamkor-production.up.railway.app
 
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
-NEXT_PUBLIC_SITE_URL=https://mehamakor.online
+NEXT_PUBLIC_SITE_URL=https://mehamakor.co.il
 ```
 
 > **Why both `BACKEND_URL` and `NEXT_PUBLIC_API_URL`?** `next.config.js`
@@ -1466,8 +1466,8 @@ Route (app)
 
 ### 3.4 Attach the domain
 
-1. Vercel Project → **Settings** → **Domains** → **Add** → `mehamakor.online`.
-2. Also add `www.mehamakor.online` (redirect to apex).
+1. Vercel Project → **Settings** → **Domains** → **Add** → `mehamakor.co.il`.
+2. Also add `www.mehamakor.co.il` (redirect to apex).
 3. Since nameservers are already on Vercel, the DNS records are created
    automatically. SSL cert issues within a few minutes.
 
@@ -1475,18 +1475,18 @@ Route (app)
 
 ```bash
 # DNS resolves
-dig mehamakor.online +short
+dig mehamakor.co.il +short
 
 # Frontend is live
-curl -I https://mehamakor.online
+curl -I https://mehamakor.co.il
 # → HTTP/2 200
 
 # The proxy to the backend works
-curl https://mehamakor.online/api/producers
+curl https://mehamakor.co.il/api/producers
 # → [...same array as step 2.5...]
 ```
 
-Open `https://mehamakor.online` in a browser. You should see the homepage
+Open `https://mehamakor.co.il` in a browser. You should see the homepage
 with producer cards loaded from Railway.
 
 ---
@@ -1499,15 +1499,15 @@ The OAuth client id exists, but it needs the production URL whitelisted.
 2. Click the OAuth 2.0 Client ID
    `591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7...`.
 3. Under **Authorized JavaScript origins** add:
-   - `https://mehamakor.online`
-   - `https://www.mehamakor.online`
+   - `https://mehamakor.co.il`
+   - `https://www.mehamakor.co.il`
 4. Under **Authorized redirect URIs** add (if your flow uses a callback):
-   - `https://mehamakor.online/login`
+   - `https://mehamakor.co.il/login`
 5. Save. Changes propagate within ~5 min.
 
 ### ✅ Verify
 
-- Visit `https://mehamakor.online/login`, click "Sign in with Google".
+- Visit `https://mehamakor.co.il/login`, click "Sign in with Google".
 - Login completes without `redirect_uri_mismatch` or `origin_mismatch`
   errors.
 
@@ -1517,7 +1517,7 @@ The OAuth client id exists, but it needs the production URL whitelisted.
 
 Run through this checklist in a real browser:
 
-- [ ] `https://mehamakor.online` loads the homepage with producer cards
+- [ ] `https://mehamakor.co.il` loads the homepage with producer cards
 - [ ] `/map` shows the Leaflet map with markers
 - [ ] Clicking a producer card opens `/producer/<id>`
 - [ ] Google login works end-to-end (check that a user row appears in the DB)
@@ -1539,9 +1539,9 @@ Run through this checklist in a real browser:
 | `/producers?lat=...&radius_km=...` returns `[]` unexpectedly | Producers seeded with NULL lat/lng | They're filtered out by design — add coords in admin or seed |
 | `502 Bad Gateway` from Railway with response header `X-Railway-Fallback: true` on every request | **Railway networking Target Port mismatch.** Railway injects `$PORT=8080` into the container, the Dockerfile binds uvicorn to `${PORT:-8000}` (= `8080` in Railway), but Railway's Settings → Networking → Target Port is set to `8000` (someone copy-pasted from `EXPOSE 8000` in the Dockerfile, which is documentation-only). Container is healthy on `8080`; Railway routes traffic to `8000`; nothing answers; fallback page. | Railway → service → **Settings → Networking** → click the public domain row → set **Target Port** to `8080`. Saves automatically; no redeploy needed. The 502 stops within seconds. |
 | Frontend `/api/*` returns HTML (404) | `BACKEND_URL` not set at build time | Set env var in Vercel → **Redeploy** (not just restart) |
-| Google login: `redirect_uri_mismatch` / `origin_mismatch` | Production domain not whitelisted in Google Cloud Console | §4 — add `https://mehamakor.online` to **Authorized JavaScript origins** AND, if your flow uses a callback, to **Authorized redirect URIs** |
+| Google login: `redirect_uri_mismatch` / `origin_mismatch` | Production domain not whitelisted in Google Cloud Console | §4 — add `https://mehamakor.co.il` to **Authorized JavaScript origins** AND, if your flow uses a callback, to **Authorized redirect URIs** |
 | Chat widget returns "משהו השתבש 🌱" | `ANTHROPIC_API_KEY` not set in Railway production env | Railway → backend service → **Variables → New Variable** → `ANTHROPIC_API_KEY` = your key. Container restarts automatically on env var change. |
-| `CORS policy: No 'Access-Control-Allow-Origin'` | Backend CORS closed | Set `CORS_ORIGINS` env var on Railway (comma-separated) to include `https://mehamakor.online,https://www.mehamakor.online` |
+| `CORS policy: No 'Access-Control-Allow-Origin'` | Backend CORS closed | Set `CORS_ORIGINS` env var on Railway (comma-separated) to include `https://mehamakor.co.il,https://www.mehamakor.co.il` |
 | Seed runs every boot | `seed()` in lifespan hook | Seeding is idempotent; safe but noisy — remove once live |
 
 ---

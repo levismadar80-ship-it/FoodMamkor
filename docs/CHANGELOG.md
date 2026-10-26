@@ -4,6 +4,32 @@
 
 ## Unreleased
 
+- **‏26/10 (10:00–13:30) — קישור ההזמנה לבעלת העסק הושלם: אדמין מכינה טיוטה, בעלת העסק מקבלת אותה בקישור ובחשבון משלה (MEH-2321, 4 chunks).**
+  - **‏#3600 `8186959b` (MEH-2326):** אדמין מוסיפה ומוחקת מוצרים בטיוטה שעוד לא נתבעה.
+  - **‏#3599 `8afd4caa` (MEH-2325):** אפשרות «טיוטה לבעלת העסק» ביצירת עסק, ולוח «קישור הזמנה» בעריכת הטיוטה. אחרי יצירה מוצלחת התשובה נבדקת ב-Zod (`ProducerAdminCreatedSchema`), ותשובה לא צפויה חוזרת לרשימת העסקים.
+  - **‏#3611 `5b339233` (MEH-2324):** הדף `/claim/<token>`, שבעה מצבים, הנוסח שספיר אישרה. הטוקן עובר ל-sessionStorage והכתובת מתחלפת ל-`/claim`. ב-Sentry (שלוש הסביבות) וב-Speed Insights הטוקן מושחר לפי צורת JWT (`eyJ…`), כך ש-stack frames של קבצי הדף נשארים שלמים. Clarity לא נטען, ו-replay לא מוקלט בלשונית שנפתחה מקישור.
+  - **‏נמצא בהרצה מול backend אמיתי ותוקן:** הקישור `/claim/<jwt>` החזיר 404, כי ה-matcher של ה-middleware מדלג על נתיבים עם נקודה. נוספו `"/claim/:path*"` ו-`"/:locale(he|en)/claim/:path*"`, עם טסט (`unstable_doesMiddlewareMatch`). ה-probe ‏`qa-meh2324-claim-e2e.mjs` עובר 10/10: אורחת → התחברות → סימון מגדלת → קבלה → לוח בקרה → שימוש שני מציג «כבר התקבל».
+  - **‏נמצא בסקירה ותוקן:** ה-scrubber כתב בחזרה לכל מפתח, ובאובייקט קפוא או ב-getter שזורק הוא זרק בתוך `beforeSend`, מה ש-Sentry מגיב עליו בהפלת האירוע (בשרת: כל שגיאה). עכשיו הוא עובר רק על אובייקטים רגילים ומערכים ומדלג על `sdkProcessingMetadata`.
+  - **‏סיכון שחרור:** שלושת ה-PR-ים עולים ל-production יחד, ב-PR של staging→main.
+
+- **‏26/10 (08:30–09:50) — מודלי ה-AI ב-backend עברו ל-Haiku 5.5, ונמצאו שני מסלולי fail-open שפרסמו ספאם.**
+  - **‏#3592 `322ec9a2`:** שש קריאות קוראות עכשיו את `AI_FAST_MODEL` / `ai_fast_request_kwargs()` מ-`backend/app/config.py` (`claude-haiku-5-5`, thinking מכובה, `effort: low`). אין env var חדש. סירוב בטיחות (`stop_reason="refusal"`) → FLAGGED. המחיר ירד מ-$1/$5 ל-$0.10/$0.50 ל-MTok.
+  - **‏נמצא ב-eval ותוקן:** (1) תקרות `max_tokens` חתכו את ה-JSON של 5.5 (ביקורות 130 → 300, חוויה ומתכון 800, סיכון 500). (2) ‏`reviews.py` השתמש ב-`json.loads` חשוף, ולכן ```` ```json ```` נכשל ואושר. הבאג הזה פגע גם ב-4.5 ב-production. עכשיו הוא משתמש ב-parser הסלחני של החוויות.
+  - **‏eval** (`scripts/oneoff/eval_meh2335_moderation.py`, 35 מקרים × 3 מודלים): 0 תאי FAILOPEN אחרי התיקון. התאמה ל-Opus 5.5: ‏4.5 = 28/35, ‏5.5 = 32/35. אין מקרה שבו תוכן מזיק מתפרסם. ספיר אישרה מיזוג.
+  - **‏מחקר מודרציה** ([Doc](https://claude.ai/artifact/QBxhNkRCS8fbkdMHHykNbT)) → כרטיסים MEH-2348 עד MEH-2354.
+  - **‏נמדד:** ה-CI reviewer פרסם הערה על #3592, כלומר עובד אחרי חידוש הטוקן.
+- **‏26/10 (09:15–09:50) — סידור הידע אחרי המעבר לחשבון Claude חדש: בית אחד לכל עובדה (ADR-035), ושומרים שמזהירים כשמשהו מתיישן.**
+  - **‏#3597 `828dde50` (MEH-2345):** ‏ADR-035 קובע לכל סוג עובדה מקום אחד: כללים, מוצר ומותג, החלטות, משימות פתוחות (Linear), מצב נוכחי (HANDOFF), היסטוריה, גישות והעדפות (זיכרון הפרויקט). ‏`HANDOFF.md` ירד מ-13,716 ל-287 שורות. העותק המלא נשמר מילה במילה ב-`docs/archive/handoff/HANDOFF-until-2026-10-21.md`, כך שציטוטי `HANDOFF.md:NNNN` ישנים נפתרים שם. ‏`CONTEXT.md` ו-`DEPLOYMENT.md` נבדקו מול הקוד (דומיין co.il, ‏DoD לפי MEH-2302 וכלל 31). חדש: `docs/PROJECT_INSTRUCTIONS.md`, המקור להוראות של פרויקט Claude, ו-`docs/runbooks/UPTIME.md`.
+  - **‏#3601 `205e24e9` (MEH-2346):** ‏`scripts/docs/knowledge_freshness.py` עם שני שומרים warn-only: `handoff-retention-guard.sh` (סעיף ישן מ-14 יום או קובץ מעל 1,500 שורות) ו-`doc-freshness-guard.sh` (‏`Last reviewed:` ישן מ-120 יום ב-CONTEXT / BRAND / PROJECT_INSTRUCTIONS). ‏`archive-handoff` מעביר סעיפים ישנים ל-`docs/archive/handoff/YYYY-MM.md`. ‏self-test של 14 מקרים רץ לפני כל בדיקה, על הקבצים האמיתיים. ‏`MERGE-QUEUE.md` ו-`session-state.md` עברו לארכיון.
+  - **‏נמדד:** ה-hook של SessionStart לא הזריק את HANDOFF אף פעם. קטע ה-CHANGELOG לבדו ארוך מהתקציב של 3,000 תווים, ו-`tail -40` על קובץ שהחדש בו למעלה מחזיר את הסעיף הישן ביותר. התיקון מוכן ב-`docs/ci/meh-2346-session-start-handoff.patch.md` ומחכה לספיר (`.claude/hooks/**` חסום ל-CC).
+  - **‏הוכרע (ספיר העבירה את ההחלטה):** מקור המותג הוא הריפו, ו-Drive ‏`03-Brand-Hub` הוא ארכיון עם קובץ «קראי קודם» (ADR-035, Alternatives). הוראות פרויקט Claude הוחלפו בנוסח מ-`docs/PROJECT_INSTRUCTIONS.md`. קבצי ה-xlsx עם פרטי אנשי הקשר יוצאים מהריפו ב-PR נפרד.
+
+- **‏26/10 (08:45–09:10) — דיאטת הכללים: הכללים שנטענים בכל סשן ירדו מ-245,672 ל-59,902 bytes, בלי למחוק כלל.**
+  - **‏#3589 `27b6b16c` (MEH-2337):** ‏`paths:` frontmatter ל-`skills.md`, `labels.md`, `deployment.md`. ה-diff כולל רק frontmatter.
+  - **‏#3590 `da3c166a` (MEH-2338):** ‏`workflow.md` ירד מ-118,110 ל-22,677 bytes. הנוסח המלא נמצא מילה במילה ב-`docs/rules-history/workflow.md`. נוסף guard ‏`scripts/checks/rules-inventory-guard.sh`, שנכשל אם כותרת או כלל ממוספר מהארכיון חסרים בקובץ החי. ה-self-test שלו רץ על הארכיון האמיתי.
+  - **‏#3594 (MEH-2339):** ‏`testing.md` ירד מ-56,173 ל-9,543 bytes, והארכיון ב-`docs/rules-history/testing.md`. ה-guard מוצא 85/85 ו-28/28.
+  - **‏נמדד:** ‏`Adversarial review (calibration)` אדום על כל PR, כי `ANTHROPIC_API_KEY` ריק. זה הטוקן של ה-CI reviewer שממתין לספיר, והג'וב לא חוסם מיזוג.
+
 - **‏25/10 (20:20–22:25, drain ל', לילה) — קישור «בקשו ביקורת» עובד מקצה לקצה.**
   - **‏#3587 `efa4e53e` (MEH-2330, MEH-1428 chunk 2):** ‏`?rt=` פותח את טופס הביקורת ונשלח כ-`review_token`. החזרה אחרי התחברות או הרשמה מגיעה לאזור הביקורות. כרטיס «בקשו ביקורת מלקוחה» בטאב «כלים» (עסק מאושר בלבד). ההפניה של `/p/[slug]` מעבירה עכשיו את ה-query. סקירה אדברסרית: 3 תיקונים. ‏E2E: נוסף stub ל-`review-link` בשני specs של הדשבורד, אחרי ש-401 ניתק את הסשן. ‏MEH-1428 חזר ל-Backlog + `needs-sapir`, על הכרעת התווית הפומבית.
   - **‏נמדד, בלי PR:** ‏MEH-2323 chunk 2 (מסלול החלפת הטופס בזמן הטעינה, לא הוכח ככשל) · ‏MEH-893 (ה-Babel parser שבתוך `next` חוסם את eslint 10).

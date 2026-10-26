@@ -1,5 +1,9 @@
 # Project Instructions Audit — claude.ai governance doc
 
+> **Superseded for the paste text (2026-10-26, MEH-2344):** the instructions to paste now live in
+> [PROJECT_INSTRUCTIONS.md](./PROJECT_INSTRUCTIONS.md). The analysis below is kept as history; its §8 draft predates
+> ADR-022, MEH-2302 and the move to the new Claude project, so do not paste from it.
+
 > **Ticket:** MEH-1246 · **Snapshot audited:** 2026-07-16 (the claude.ai Project
 > instructions Sapir pastes into the Project; they live in claude.ai only, not
 > the repo). · **Scope:** measure + map + propose. Analysis and this one docs
