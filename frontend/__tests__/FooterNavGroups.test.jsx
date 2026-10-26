@@ -74,17 +74,20 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
 
     // MEH-1060 (SEO-09): /producers index link added to the discover group.
     // MEH-1289: /about/why-local editorial page added to the discover group.
-    expect(discover).toEqual(["/", "/producers", "/map", "/events", "/about", "/about/why-local", "/share"]);
+    // MEH-2369: /events is data-gated (no upcoming event → no link); the
+    // never-settling api mock above keeps it hidden here. Its own behaviour is
+    // asserted in EventsNavGate.test.jsx.
+    expect(discover).toEqual(["/", "/producers", "/map", "/about", "/about/why-local", "/share"]);
     expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
   });
 
-  it("keeps all 10 nav links exactly once (no link dropped in the split)", () => {
+  it("keeps all 9 ungated nav links exactly once (no link dropped in the split)", () => {
     render(<Footer />);
     const navLinks = Array.from(
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/events", "/join", "/map", "/producers", "/share"].sort(),
+      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/share"].sort(),
     );
   });
 });
