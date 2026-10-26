@@ -246,7 +246,7 @@ class TestClaimPreview:
             category=veg,
             images=["https://res.cloudinary.com/demo/image/upload/a.jpg"],
         )
-        r = client.get(PREVIEW, params={"token": _token(p)})
+        r = client.post(PREVIEW, json={"token": _token(p)})
         assert r.status_code == 200, r.text
         body = r.json()
         # EXACT key set — a phone, email, address or license leaking into a
@@ -263,12 +263,12 @@ class TestClaimPreview:
         assert body["image"] == "https://res.cloudinary.com/demo/image/upload/a.jpg"
 
     def test_invalid_token_is_404(self, client, db):
-        assert client.get(PREVIEW, params={"token": "nope"}).status_code == 404
+        assert client.post(PREVIEW, json={"token": "nope"}).status_code == 404
 
     def test_expired_token_is_404(self, client, db):
         p = _draft(db)
-        r = client.get(
-            PREVIEW, params={"token": _mint(p.id, exp_delta=timedelta(seconds=-5))}
+        r = client.post(
+            PREVIEW, json={"token": _mint(p.id, exp_delta=timedelta(seconds=-5))}
         )
         assert r.status_code == 404
 
@@ -277,11 +277,17 @@ class TestClaimPreview:
         owner = make_user(db, role="producer")
         owner.producer_id = p.id
         db.commit()
-        assert client.get(PREVIEW, params={"token": _token(p)}).status_code == 409
+        assert client.post(PREVIEW, json={"token": _token(p)}).status_code == 409
 
     def test_approved_listing_is_409(self, client, db):
         p = make_producer(db, status="approved")
-        assert client.get(PREVIEW, params={"token": _token(p)}).status_code == 409
+        assert client.post(PREVIEW, json={"token": _token(p)}).status_code == 409
+
+    def test_token_is_never_accepted_in_the_query_string(self, client, db):
+        # The token is a 14-day bearer credential. In a query string it lands
+        # in access logs and the Sentry request context; the body does not.
+        p = _draft(db)
+        assert client.get(PREVIEW, params={"token": _token(p)}).status_code == 405
 
 
 # ---------- D2–D6: the claim ----------

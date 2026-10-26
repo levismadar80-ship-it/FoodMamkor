@@ -5945,6 +5945,21 @@
         "title": "ProducerClaimPreviewOut",
         "type": "object"
       },
+      "ProducerClaimPreviewRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "ProducerClaimPreviewRequest",
+        "type": "object"
+      },
       "ProducerClaimRequest": {
         "properties": {
           "declaration_accepted": {
@@ -17382,21 +17397,18 @@
       }
     },
     "/producer-claim/preview": {
-      "get": {
-        "operationId": "preview_claim_producer_claim_preview_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "maxLength": 2048,
-              "minLength": 1,
-              "title": "Token",
-              "type": "string"
+      "post": {
+        "operationId": "preview_claim_producer_claim_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerClaimPreviewRequest"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {

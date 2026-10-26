@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -42,6 +42,7 @@ from app.schemas.schemas import (
     ProducerClaimLinkOut,
     ProducerClaimOut,
     ProducerClaimPreviewOut,
+    ProducerClaimPreviewRequest,
     ProducerClaimRequest,
 )
 from app.services.auth_emails import send_welcome_email
@@ -64,11 +65,13 @@ _ALREADY_CLAIMED = "העמוד הזה כבר שויך לחשבון."
 #   draft-only claiming, publication needing the owner's own submit AND a
 #   manual admin approval, the real owner seeing a 409 (so a hijack is loud),
 #   the 14-day expiry, and the link dying once the draft has an owner.
-# - The link travels in URLs: the frontend /claim/<token> path, and the
-#   preview's ?token= query, which reaches access logs and the Sentry request
-#   context (middleware.py request_info "url"). Readers of both are admins, who
-#   can mint a link anyway. The frontend page must keep the path out of
-#   analytics (MEH-2324).
+# - The link travels in one URL: the frontend /claim/<token> path. The page
+#   must keep that path out of analytics (MEH-2324). The API never takes it in
+#   a URL: the preview is a POST with the token in the body, so it stays out
+#   of Railway access logs and the Sentry request context (middleware.py
+#   request_info "url", a third-party processor). DO NOT turn the preview back
+#   into a GET ?token= — that was the first version, and the review of record
+#   on PR #3579 is why it changed.
 # - users.producer_id has no unique index. The claim and register_producer's
 #   upgrade path both lock the users row first, so those two are serialised.
 #   delete_account does not lock: an account deleted in the same instant it
@@ -123,14 +126,14 @@ def create_claim_link(
     )
 
 
-@router.get("/producer-claim/preview", response_model=ProducerClaimPreviewOut)
+@router.post("/producer-claim/preview", response_model=ProducerClaimPreviewOut)
 @limiter.limit("30/minute")
 def preview_claim(
     request: Request,
-    token: str = Query(min_length=1, max_length=2048),
+    body: ProducerClaimPreviewRequest,
     db: Session = Depends(get_db),
 ):
-    producer_id = decode_producer_claim_token(token)
+    producer_id = decode_producer_claim_token(body.token)
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).first()
         if producer_id
