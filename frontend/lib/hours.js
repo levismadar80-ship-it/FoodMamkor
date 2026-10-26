@@ -11,8 +11,12 @@
  * History:  MEH-826 Gap2-hours (extracted from OpeningHours.jsx so the map
  *           card can share the parser instead of duplicating it);
  *           MEH-2142 (added resolveStoreHours — the one place that decides
- *           WHICH hours string a consumer surface reads).
+ *           WHICH hours string a consumer surface reads);
+ *           MEH-2383 (computeStatus reads the Israel clock through
+ *           lib/orderWindow.js `israelNowParts` and takes an injectable `now`).
  */
+
+import { israelNowParts } from "@/lib/orderWindow";
 
 // Day name constants. DAY_ABBR (English) is the API axis — used to parse
 // backend strings like "Sun-Thu 09:00-18:00". DAY_KEYS maps each index to
@@ -83,23 +87,14 @@ export function toMinutes(hhmm) {
 // Returns { isOpen, openTime?, closeTime?, nextDayKey?, nextTime?, nextIsTomorrow? }.
 // `openTime` (added MEH-826) lets the compact card render "open · HH:MM–HH:MM";
 // the detail section ignores it. Day labels resolve at the JSX layer via t().
-export function computeStatus(map) {
-  const now = new Date();
-  // MEH-845: derive Israel-local weekday + wall-clock via Intl parts. The prior
-  // `new Date(now.toLocaleString("en-US", { timeZone }))` re-parse relied on an
-  // implementation-defined, non-ISO date string — V8 parses it, other engines /
-  // SSR contexts can return Invalid Date. formatToParts is portable.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Jerusalem",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(now);
-  const part = (type) => parts.find((p) => p.type === type)?.value;
-  const dayIdx = DAY_ABBR.indexOf(part("weekday")); // "Sun"…"Sat" → 0…6
-  // hour12:false emits "24" for midnight on some engines; normalise to 0.
-  const nowMin = (Number(part("hour")) % 24) * 60 + Number(part("minute"));
+// `now` is injectable (MEH-2383) so a boundary case is a plain argument, not a
+// fake-timers setup; production callers pass nothing.
+export function computeStatus(map, now = new Date()) {
+  // MEH-2383: the Israel-local weekday + wall-clock come from the one owner,
+  // lib/orderWindow.js `israelNowParts` (Intl formatToParts — portable, unlike
+  // the toLocaleString re-parse MEH-845 removed). This function used to carry
+  // a line-for-line private copy; israel-clock-guard.sh flagged it.
+  const { dayIndex: dayIdx, minutes: nowMin } = israelNowParts(now);
 
   // MEH-1870: a day holds a LIST of ranges, so "am I open?" is a scan. Ranges
   // are emitted in source order; sort defensively so a hand-edited string with
