@@ -1,15 +1,15 @@
 # Mehamakor — Project Context
 
 **Single source of truth for AI assistants and human contributors.**
-**Last reviewed:** 2026-05-23 · **Format:** AGENTS.md / CONTEXT.md pattern (PrestaShop, March 2026)
+**Last reviewed:** 2026-10-26 (MEH-2344 — re-checked against the repo after the move to the new Claude project) · **Format:** AGENTS.md / CONTEXT.md pattern (PrestaShop, March 2026)
 
-> Tool-specific files (`CLAUDE.md`, `personal-preferences-v2.md`, IDE-specific configs) are thin pointers to this file. When they disagree with this file, this file wins (see Truth Hierarchy below).
+> Tool-specific files (`CLAUDE.md`, the Claude project instructions in [`PROJECT_INSTRUCTIONS.md`](./PROJECT_INSTRUCTIONS.md), IDE-specific configs) are thin pointers to this file. When they disagree with this file, this file wins (see Truth Hierarchy below).
 
 ---
 
 ## 1 · What Mehamakor is
 
-Mehamakor (`mehamakor.online` / `mehamakor.co.il`) is a Hebrew-RTL editorial directory for licensed Israeli local food businesses. Magazine, not marketplace. Cohort 1 is licensed businesses only (Ministry of Health permit).
+Mehamakor (`mehamakor.co.il` — the canonical production origin, MEH-1322; staging is `staging.mehamakor.online`) is a Hebrew-RTL editorial directory for Israeli local food businesses. Magazine, not marketplace. Licensing is two-tier (ADR-022, §2): the license decides the badge, not entry.
 
 **Founder + developer:** Sapir Levi (solo).
 
@@ -37,17 +37,18 @@ When two documents disagree, resolve in this order (highest authority first):
 3. docs/CONTEXT.md (this file)
 4. docs/BRAND.md, docs/DESIGN.md (domain SoTs)
 5. docs/* (general technical references)
-6. HANDOFF.md (rolling 7-day active state)
-7. Drive (working drafts, archive)
-8. Project Knowledge (Claude.ai chat surface — manual copies, not canonical)
-9. userMemories (Claude L3 cache — recent learnings only)
+6. HANDOFF.md (rolling 7-day active state; older sections in docs/archive/handoff/)
+7. Drive (working drafts, archive — never a copy of a repo document)
+8. Claude project memory (tool access, account quirks, Sapir's preferences — no rules, no product facts)
 ```
+
+The Claude project instructions are not on this list: they hold pointers only, and their source is [`PROJECT_INSTRUCTIONS.md`](./PROJECT_INSTRUCTIONS.md). Which fact lives where: [ADR-035](./decisions/ADR-035-one-home-per-fact.md).
 
 When two documents at the same level own the same fact, **one is deleted, not disabled** (this extends the MEH-271 "two parallel mechanisms" rule to docs; the corresponding `.claude/rules/workflow.md` 1-line append lands in Phase η of MEH-686).
 
 ## 4 · Stack
 
-Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backend) · PostgreSQL with **Alembic as sole schema authority** (post-MEH-265, see ADR-003 + ADR-007) · Cloudinary (images) · Leaflet + OpenStreetMap (maps) · JWT + Google OAuth (auth) · Linear (MEH-XX issues) · GitHub (CI/CD) · Claude Code (file execution). Anthropic SDK: Opus for moderation, Haiku for chat widget.
+Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backend) · PostgreSQL with **Alembic as sole schema authority** (post-MEH-265, see ADR-003 + ADR-007) · Cloudinary (images) · Leaflet + OpenStreetMap (maps) · JWT + Google OAuth (auth) · Linear (MEH-XX issues) · GitHub (CI/CD) · Claude Code (file execution). Anthropic SDK — the model ids live in code (`backend/app/config.py` + the `backend/app/services/*_moderation.py` constants), not here.
 
 ## 5 · Brand locks (summary — full version in docs/BRAND.md)
 
@@ -119,13 +120,13 @@ Every schema change goes through an Alembic revision. Risky changes (DROP COLUMN
 - Lazy edits with `// ... existing code ...` markers; no full-file returns.
 - Atomic edits per file (one edit per file per turn).
 - Build verification BEFORE push.
-- "Push ≠ Go" — CC never pushes before explicit push approval.
+- Push/merge authority follows the risk tier (§6, ADR-016 + ADR-032) — RED waits for `go` per chunk.
 - PR descriptions end with `Closes MEH-XX`.
 - Branch: `feature/meh-XXX-slug` off `staging`.
 
 ## 12 · Templates (v2.1) — in `docs/templates/`
 
-Canonical location: `docs/templates/` (per ADR-020). Project Knowledge holds a manual snapshot (non-canonical, refresh on canonical change).
+Canonical location: `docs/templates/` (per ADR-020). No copies elsewhere (ADR-035) — the Drive `02-Templates` folder is archived.
 
 The canonical, enumerated index (all templates + recommended models) lives in [`docs/templates/README.md`](./templates/README.md) — the single source for the set; not duplicated here to avoid drift. Template 09 (Council Mode) status under reconciliation in MEH-690.
 
@@ -141,31 +142,29 @@ Trigger phrases: *defer · adopt · abandon · "decision is" · "we'll go with" 
 
 ## 14 · Definition of Done
 
-- ✅ Build green (`npm run build` + `pytest`)
-- ✅ Preview URL sent to Sapir
-- ✅ נבדק בנייד — פר-tier per [ADR-028](./decisions/ADR-028-qa-gates-per-tier.md): GREEN/YELLOW → שערי CI מספקים את ה-DoD (`pytest` + פרויקט `mobile`/Pixel 5 של `e2e.yml` + VRT), אין בדיקה ידנית פר-PR; RED + release `staging→main` → QA ידני של ספיר במכשיר אמיתי (iOS Safari, Tier-3 DEVICE-ONLY). exception: tests-only / docs-only / CI YAML
-- ✅ CHANGELOG.md updated
-- ✅ HANDOFF.md updated
+- ✅ `CI gate (required)` + `Deploy gate (required)` green on the current head (build, vitest, backend tests, lint, API contract).
+- ✅ UI change: Playwright screenshots at 375 and 1440 under `qa-artifacts/MEH-XXXX/`, compressed, **read by CC** and linked from the PR. There is no human mobile pass (MEH-2302, workflow.md rule 23) and no feature-branch Vercel preview (MEH-2062) — say which evidence the PR carries.
+- ✅ `/adversarial-review` passed, REFEREE verdicts fixed (testing.md rule 5a).
+- ✅ CHANGELOG.md + HANDOFF.md updated **in a separate docs-only PR**, never in the code PR (workflow.md rule 31), and not armed before the code it describes has merged (rule 31b).
 
 ## 15 · Living vs frozen documents
 
 - **Frozen** (versioned via ADR supersedence): ADRs, this file (`docs/CONTEXT.md`), `docs/BRAND.md`, `docs/DESIGN.md`.
-- **Living** (overwritten in place): `HANDOFF.md` (rolling 7-day), Linear issue state, Drive working drafts.
+- **Living** (overwritten in place): `HANDOFF.md` (rolling 7-day; older sections move to `docs/archive/handoff/`), Linear issue state, Drive working drafts.
 - **Versioned** (append-only): `docs/CHANGELOG.md`.
 
 A change to a frozen document requires a new ADR superseding the prior decision. Living documents change every session.
 
 ## 16 · End-of-session protocol
 
-Before closing any conversation longer than 30 messages OR containing important decisions, Claude must:
+Before a session or thread that shipped work or made a decision ends, write each new fact to its **one** home (ADR-035) — never to several:
 
-1. Update `HANDOFF.md` with: what shipped, what's pending, decisions made, context needed for the next session.
-2. Update `memory_user_edits` (`userMemories`) with: new patterns (NOT volatile state), permanent decisions. Every entry starts with `(YYYY-MM)` prefix.
-3. Ask Sapir: "האם `docs/CONTEXT.md` (Project Knowledge copy) תקף, או יש דברים שצריך לעדכן?"
+1. **Where we are now** → a new top section in `HANDOFF.md` (what shipped, what's pending, what waits on Sapir), via a docs-only PR (rule 31).
+2. **A decision** → an ADR (§13), or the rule file it changes.
+3. **Task state** → the Linear card's description (rule 34), not only a comment.
+4. **Tool access, account quirks, Sapir's preferences** → the Claude project memory. Not rules, not product facts — those go to the repo.
 
-If the session ends mid-task, write a detailed `session-state.md` with continuation prompt.
-
-When Sapir says `"הקשר מתמלא"`, open a new chat and attach `session-state.md` from HANDOFF.
+If the session ends mid-task, `/session-save` writes a local `session-state.md` (not committed) for the next session to resume from.
 
 ## 17 · Reference files (request on demand)
 
@@ -202,13 +201,17 @@ The right home for a piece of information depends on its half-life:
 
 | Half-life | Home |
 |---|---|
-| ≥ 6 months (DNA, stack, brand, workflow rules) | This file (`docs/CONTEXT.md`) |
-| Weeks (active PRs, in-flight decisions) | `HANDOFF.md` |
-| Days (recent learnings, patterns observed in the last 30 days) | `userMemories` |
+| ≥ 6 months (DNA, stack, brand) | This file (`docs/CONTEXT.md`), `BRAND.md`, `DESIGN.md` |
+| How work is done | `CLAUDE.md` + `.claude/rules/` |
 | Permanent decisions | `docs/decisions/ADR-NNN-*.md` |
+| Open work, owners, status | Linear |
+| Days–weeks (what shipped, what's pending) | `HANDOFF.md`, last ~7 days; older → `docs/archive/handoff/` |
+| Tool access, account quirks, Sapir's preferences | Claude project memory |
+
+Full map and rationale: [ADR-035](./decisions/ADR-035-one-home-per-fact.md).
 
 **Never put volatile state in this file.** When in doubt, default down the table (shorter half-life). Promotion is cheap; demotion is expensive (requires deletion or supersedence).
 
 ---
 
-*This document is the AI-agnostic apex source of truth. Update it on every strategic shift. Tool-specific files (CLAUDE.md, personal-preferences-v2.md, IDE configs) are thin pointers to this file.*
+*This document is the AI-agnostic apex source of truth. Update it on every strategic shift, and bump `Last reviewed:` when you re-check it — `doc-freshness-guard.sh` warns after 120 days (MEH-2346). Tool-specific files (CLAUDE.md, the Claude project instructions, IDE configs) are thin pointers to this file.*
