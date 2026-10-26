@@ -150,14 +150,14 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
     apiMock.put.mockImplementation(() => new Promise((res) => { settle = res; }));
     await renderWith([row("a", false)]);
     const btn = within(rowOf("a")).getByTestId("review-hide");
-    btn.focus();
 
     fireEvent.click(btn);
     await waitFor(() => expect(btn.getAttribute("aria-disabled")).toBe("true"));
-    // Not `disabled`: a disabled button loses focus, and a keyboard-only admin
-    // would be sent back to the top of the page after every hide.
+    // Not `disabled`: Chromium moves focus off a disabled button, and a
+    // keyboard-only admin would be sent back to the top of the page after
+    // every hide. jsdom keeps focus either way, so focus itself is checked
+    // in a real browser (scripts/qa-meh2389-review-hide-keyboard.mjs).
     expect(btn.disabled).toBe(false);
-    expect(document.activeElement).toBe(btn);
     fireEvent.click(btn);
     expect(apiMock.put).toHaveBeenCalledTimes(1);
 
