@@ -1409,9 +1409,8 @@
     },
     "layout": {
       "nav": {
-        "dashboard": "לוח מחוונים",
+        "dashboard": "מה מחכה לטיפול",
         "producers": "בתי עסק",
-        "group_buys": "קבוצות רכש",
         "outreach": "גיוס",
         "experiences": "חוויות",
         "recipes": "מתכונים",
@@ -1428,69 +1427,27 @@
         "name_change_requests": "בקשות שינוי שם"
       },
       "nav_sections": {
-        "overview": "סקירה",
-        "core": "ליבה",
-        "content": "תוכן",
-        "queues": "ממתין לטיפול",
-        "system": "מערכת"
+        "approvals": "אישורים",
+        "queues": "תורים",
+        "more": "עוד"
       },
       "desktop_only": "המסך הזה זמין במחשב"
     },
     "dashboard": {
-      "title": "לוח מחוונים",
-      "subtitle": "סקירה כללית של הפלטפורמה",
-      "stats": {
-        "total_producers": "סה״כ בתי עסק",
-        "pending_approval": "ממתינים לאישור",
-        "registered_users": "משתמשים רשומים",
-        "group_buys": "קבוצות רכש",
-        "group_buys_tooltip": "ניהול קבוצות רכש של משתמשות. לא פעיל כרגע.",
-        "group_buys_tooltip_label": "מידע על קבוצות רכש"
-      },
-      "alerts": {
-        "producers_waiting": "{count} בתי עסק ממתינים לאישור",
-        "click_to_handle": "לחצו לטיפול",
-        "open_reports": "{count} דיווחים פתוחים",
-        "needs_review": "דורש בדיקה"
-      },
-      "chart": {
-        "new_producers_6_months": "בתי עסק חדשים — 6 חודשים אחרונים"
-      },
+      "title": "מה מחכה לטיפול",
+      "subtitle": "רק מה שדורש החלטה. סטטיסטיקה וגרפים — באנליטיקס.",
       "pending_panel": {
         "heading": "בקשות ממתינות",
         "view_all": "צפה בכל ←",
         "empty": "אין בקשות ממתינות",
-        "check": "בדוק"
+        "check": "בדוק",
+        "more": "ועוד {count} בתור"
       },
-      "activity": {
-        "heading": "פעילות אחרונה",
-        "empty": "אין נתונים עדיין",
-        "added_producer": "נוסף בית עסק:"
+      "queues": {
+        "heading": "תורים נוספים",
+        "all_clear": "אין פריטים ממתינים בשאר התורים"
       },
-      "weekly": {
-        "new_users_week": "משתמשים חדשים השבוע",
-        "new_producers_week": "עסקים חדשים השבוע",
-        "out_of_total": "מתוך {total} סה״כ",
-        "events": "אירועים",
-        "experiences": "חוויות"
-      },
-      "dau": {
-        "heading": "משתמשים פעילים — 30 ימים אחרונים",
-        "empty": "אין נתונים עדיין",
-        "aria": "DAU 30 ימים"
-      },
-      "top_cities": {
-        "heading": "ערים מובילות",
-        "empty": "עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר."
-      },
-      "health": {
-        "heading": "בריאות שרת — שעה אחרונה",
-        "waiting_traffic": "בהמתנה לתנועה...",
-        "requests_count": "{count} בקשות",
-        "response_time_avg": "זמן תגובה ממוצע",
-        "requests_per_minute": "בקשות לדקה",
-        "footnote": "**מידע:** נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md)."
-      }
+      "analytics_link": "סטטיסטיקה ואנליטיקס ←"
     },
     "producers": {
       "list": {
