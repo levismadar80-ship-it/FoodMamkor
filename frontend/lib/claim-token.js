@@ -67,14 +67,35 @@ export function redactClaimPath(value) {
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and
 // redacts every string, in place. No depth cutoff: a redactor that gives up
 // past some depth would let a deep token through. Each object is visited once,
-// so a cyclic payload still terminates. A payload deep enough to overflow the
-// stack throws, and Sentry drops that event, which fails safe.
+// so a cyclic payload still terminates.
+//
+// Only plain objects and arrays are walked, and a value is written back only
+// when redaction changed it. A server event also holds Sentry's own objects
+// (Scope instances under sdkProcessingMetadata, which Sentry strips before
+// sending) and can hold Buffers or frozen data. A throw here drops the whole
+// event, and on the server that would be every error, not only claim ones.
+function isPlainContainer(value) {
+  if (Array.isArray(value)) return true;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
 export function scrubClaimTokens(value, seen = new WeakSet()) {
   if (typeof value === "string") return redactClaimPath(value);
   if (!value || typeof value !== "object" || seen.has(value)) return value;
+  if (!isPlainContainer(value)) return value;
   seen.add(value);
   for (const key of Object.keys(value)) {
-    value[key] = scrubClaimTokens(value[key], seen);
+    if (key === "sdkProcessingMetadata") continue;
+    const before = value[key];
+    const after = scrubClaimTokens(before, seen);
+    if (after !== before) {
+      try {
+        value[key] = after;
+      } catch {
+        // Read-only property: leave it rather than lose the event.
+      }
+    }
   }
   return value;
 }

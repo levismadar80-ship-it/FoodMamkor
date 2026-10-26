@@ -81,6 +81,30 @@ describe("scrubClaimTokens", () => {
     const out = scrubClaimTokens({ a: shared, b: [shared] });
     expect(JSON.stringify(out)).not.toContain(TOKEN);
   });
+
+  // A server event carries Sentry's own objects (Scope instances under
+  // sdkProcessingMetadata) and can carry Buffers or frozen data. A throw here
+  // would drop every server error, not only claim ones.
+  it("does not walk or write non-plain objects, frozen data or getters", () => {
+    class Scope {
+      constructor() {
+        this.note = `/claim/${TOKEN}`;
+      }
+    }
+    const scope = new Scope();
+    const frozen = Object.freeze({ url: "/about" });
+    const withGetter = Object.defineProperty({}, "url", { get: () => "/about", enumerable: true });
+    const event = {
+      request: { url: `/claim/${TOKEN}` },
+      sdkProcessingMetadata: { capturedSpanScope: scope, normalizedRequest: { url: `/claim/${TOKEN}` } },
+      extra: { buf: Buffer.from("x"), frozen, withGetter },
+    };
+    expect(() => scrubClaimTokens(event)).not.toThrow();
+    expect(event.request.url).toBe("/claim/[token]");
+    // Sentry's internals are left as they are; they are stripped before send.
+    expect(scope.note).toBe(`/claim/${TOKEN}`);
+    expect(event.sdkProcessingMetadata.normalizedRequest.url).toBe(`/claim/${TOKEN}`);
+  });
 });
 
 describe("storage", () => {
