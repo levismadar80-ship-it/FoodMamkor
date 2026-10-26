@@ -1019,8 +1019,16 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 GET    /producers/{id}/reviews   public — items do NOT carry `source` (admin-only on GET /admin/reviews via AdminReviewOut; dropped from the public payload on #3368 review — whether a reviewer was invited is moderation signal, not consumer data)
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
-DELETE /reviews/{id}             auth  — owner or admin (stranger → 404)
+DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut)
+PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, recompute aggregates
+PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, recompute aggregates (MEH-2348)
 ```
+
+**MEH-2348 (sticky hide):** only the admin endpoints write `is_hidden`, so a
+hidden review is always admin-hidden. An author edit (POST upsert) keeps it
+hidden, and the author cannot DELETE it (delete + repost would undo the hide).
+Only `PUT /admin/reviews/{id}/unhide` brings it back.
 
 **MEH-1001 (existence-leak):** a non-owner-non-admin DELETE returns **404
 "ביקורת לא נמצאה"**, not 403 — review existence isn't leaked. Admin-override
