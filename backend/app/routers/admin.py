@@ -1653,7 +1653,8 @@ def seed_cities(
     except LocalityParseError as exc:
         # The message names the keys the records DID carry — the one piece of
         # evidence nobody could get from the sandbox. Surfacing it beats a 200
-        # that says "seeded 0" and explains nothing.
+        # that says "seeded 0" and explains nothing. Excluded from MEH-2375 on
+        # purpose: the text is ours (scripts/seed_cities.py), not a library's.
         raise HTTPException(
             status_code=502,
             detail=f"הרשומות התקבלו אך לא נמצאה בהן עמודת שם יישוב: {exc}",
