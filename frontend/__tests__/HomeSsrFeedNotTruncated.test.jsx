@@ -31,9 +31,6 @@ vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null, setCity: vi.fn() }) }));
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: -1, advance: vi.fn(), dismiss: vi.fn() }),
-}));
 vi.mock("@/lib/recently-viewed", () => ({ getRecentlyViewedIds: () => [] }));
 vi.mock("@/lib/friday-mode", () => ({ isFridayMode: () => false }));
 vi.mock("@/lib/featured-producer", () => ({ selectFeaturedProducer: () => null }));

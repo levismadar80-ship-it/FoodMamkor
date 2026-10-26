@@ -27,9 +27,6 @@ vi.mock("next-intl", () => ({
   },
 }));
 
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: 0, advance: vi.fn(), dismiss: vi.fn() }),
-}));
 
 vi.mock("framer-motion", () => ({
   // Strip animation-only props so they don't hit the DOM as attributes.
@@ -51,7 +48,6 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/components/AccountSheet", () => ({ default: () => null }));
 
 describe("BottomNav pointer-events shield (MEH-1253)", () => {

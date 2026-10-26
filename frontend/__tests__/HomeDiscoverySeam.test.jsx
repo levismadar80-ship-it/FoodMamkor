@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 
 // MEH-1174 — homepage discovery seam:
-//  A) onboarding tip step 0 renders ABOVE the section heading (before <h2>)
+//  A) (removed in MEH-2394 with the coach-mark tour)
 //  B) heading is dynamic — default vs "בתי עסק · {name}" when a category is active
 //  C) an active category shows a removable "× {name}" tag in the applied-filters
 //     row whose × reuses the existing clear-category handler.
@@ -28,10 +28,6 @@ vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 // imports LOAD_MORE_CAP from it), and that module now imports the locale-aware
 // router. Stub it so next-intl's ESM createNavigation never loads under vitest.
 vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
-// Render only when `show` so DOM-order / visibility assertions are meaningful.
-vi.mock("@/components/OnboardingTip", () => ({
-  default: ({ show, text }) => (show ? <div data-testid="tip">{text}</div> : null),
-}));
 
 const baseProps = {
   producers: [{ id: 1 }],
@@ -43,11 +39,6 @@ const baseProps = {
   categories: [{ id: 3, name: "חלב וגבינות" }],
   showNewUserHint: false,
   fridayMode: false,
-  step0Visible: false,
-  onboardStep: -1,
-  onboardAdvance: () => {},
-  onboardDismiss: () => {},
-  onAdvanceFromStep0: () => {},
   onChipNavigate: () => {},
   onClearCategory: () => {},
   onLoadMore: () => {},
@@ -57,23 +48,6 @@ const noCategory = { category: "", delivery_city: "", has_delivery: false };
 const withCategory = { category: "3", delivery_city: "", has_delivery: false };
 
 describe("HomeProducersGrid discovery seam (MEH-1174)", () => {
-  it("A — step 0 tip renders before the section heading in DOM order", () => {
-    render(
-      <HomeProducersGrid
-        {...baseProps}
-        filters={noCategory}
-        step0Visible
-        onboardStep={0}
-      />,
-    );
-    const tip = screen.getByTestId("tip");
-    const heading = screen.getByRole("heading", { level: 2 });
-    // heading must FOLLOW the tip in the document.
-    expect(
-      tip.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
   it("B — default heading when no category is active", () => {
     render(<HomeProducersGrid {...baseProps} filters={noCategory} />);
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
