@@ -26,7 +26,7 @@ sidebar קבוע ב: `frontend/app/admin/layout.js` — 9 דפים
 
 בעמוד העריכה של טיוטה מופיע הפאנל **«קישור הזמנה לבעלת העסק»**
 (`components/admin/ClaimLinkPanel.jsx`): «יצירת קישור» → `POST
-/admin/producers/{id}/claim-link` → קישור `/claim?token=…` לתוקף 14 יום + כפתור
+/admin/producers/{id}/claim-link` → קישור `/claim/<token>` לתוקף 14 יום + כפתור
 העתקה. כל לחיצה מנפיקה טוקן חדש (stateless, בלי כתיבה ל-DB). טיוטה שכבר שויכה
 עדיין מציגה את הפאנל (ל-`ProducerAdminOut` אין שדה בעלים) — השרת עונה 409
 וההודעה שלו מוצגת כמו שהיא.

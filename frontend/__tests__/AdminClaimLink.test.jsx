@@ -15,10 +15,19 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import EditProducerPage from "@/app/[locale]/admin/producers/[id]/edit/page";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
+  useParams: () => ({ id: "p-9" }),
+}));
+
+// One stable object: the edit page's fetch effect depends on `user`, so a
+// fresh object per render would refetch forever.
+const adminAuth = { user: { role: "admin" }, loading: false };
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => adminAuth,
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -101,7 +110,7 @@ describe("ClaimLinkPanel (MEH-2325)", () => {
   it("mints a link and shows it with its expiry date", async () => {
     api.post.mockResolvedValue({
       data: {
-        url: "https://mehamakor.co.il/he/claim?token=abc",
+        url: "https://mehamakor.co.il/claim/abc",
         expires_at: "2026-11-09T10:00:00+00:00",
       },
     });
@@ -110,7 +119,7 @@ describe("ClaimLinkPanel (MEH-2325)", () => {
     fireEvent.click(screen.getByTestId("claim-link-create"));
 
     expect(await screen.findByTestId("claim-link-url")).toHaveValue(
-      "https://mehamakor.co.il/he/claim?token=abc",
+      "https://mehamakor.co.il/claim/abc",
     );
     expect(api.post).toHaveBeenCalledWith("/admin/producers/d-1/claim-link");
     expect(screen.getByTestId("claim-link-expires")).toHaveTextContent("09.11.2026");
@@ -127,8 +136,11 @@ describe("ClaimLinkPanel (MEH-2325)", () => {
     expect(screen.queryByTestId("claim-link-result")).not.toBeInTheDocument();
   });
 
-  it("a malformed response is an error, never a link to paste", async () => {
-    api.post.mockResolvedValue({ data: { url: "not-a-url", expires_at: "x" } });
+  it.each([
+    ["a bad url", { url: "not-a-url", expires_at: "2026-11-09T10:00:00Z" }],
+    ["a bad expires_at", { url: "https://mehamakor.co.il/claim/abc", expires_at: "x" }],
+  ])("a malformed response (%s) is an error, never a link to paste", async (_, data) => {
+    api.post.mockResolvedValue({ data });
     wrap(<ClaimLinkPanel producerId="d-3" />);
 
     fireEvent.click(screen.getByTestId("claim-link-create"));
@@ -137,18 +149,68 @@ describe("ClaimLinkPanel (MEH-2325)", () => {
     expect(screen.queryByTestId("claim-link-result")).not.toBeInTheDocument();
   });
 
+  it("a failed re-mint clears the previous link", async () => {
+    const detail = "בית העסק כבר שויך לבעלת עסק";
+    api.post
+      .mockResolvedValueOnce({
+        data: { url: "https://mehamakor.co.il/claim/old", expires_at: "2026-11-09T10:00:00Z" },
+      })
+      .mockRejectedValueOnce({ response: { status: 409, data: { detail } } });
+    wrap(<ClaimLinkPanel producerId="d-5" />);
+
+    fireEvent.click(screen.getByTestId("claim-link-create"));
+    await screen.findByTestId("claim-link-result");
+    fireEvent.click(screen.getByTestId("claim-link-create"));
+
+    expect(await screen.findByTestId("claim-link-error")).toHaveTextContent(detail);
+    expect(screen.queryByTestId("claim-link-result")).not.toBeInTheDocument();
+  });
+
+  it("a failed copy says so", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    api.post.mockResolvedValue({
+      data: { url: "https://mehamakor.co.il/claim/xyz", expires_at: "2026-11-09T10:00:00Z" },
+    });
+    wrap(<ClaimLinkPanel producerId="d-6" />);
+
+    fireEvent.click(screen.getByTestId("claim-link-create"));
+    fireEvent.click(await screen.findByTestId("claim-link-copy"));
+
+    expect(await screen.findByTestId("claim-link-copy-failed")).toHaveTextContent(C.copy_failed);
+    expect(screen.getByTestId("claim-link-copy")).toHaveTextContent(C.copy);
+  });
+
   it("copy writes the URL to the clipboard and confirms", async () => {
     const writeText = vi.fn().mockResolvedValue();
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     api.post.mockResolvedValue({
-      data: { url: "https://mehamakor.co.il/he/claim?token=xyz", expires_at: "2026-11-09T10:00:00Z" },
+      data: { url: "https://mehamakor.co.il/claim/xyz", expires_at: "2026-11-09T10:00:00Z" },
     });
     wrap(<ClaimLinkPanel producerId="d-4" />);
 
     fireEvent.click(screen.getByTestId("claim-link-create"));
     fireEvent.click(await screen.findByTestId("claim-link-copy"));
 
-    expect(writeText).toHaveBeenCalledWith("https://mehamakor.co.il/he/claim?token=xyz");
+    expect(writeText).toHaveBeenCalledWith("https://mehamakor.co.il/claim/xyz");
     await waitFor(() => expect(screen.getByTestId("claim-link-copy")).toHaveTextContent(C.copied));
+  });
+});
+
+describe("edit page — the panel is for drafts only (MEH-2325)", () => {
+  it.each([
+    ["draft", true],
+    ["approved", false],
+  ])("status %s → panel shown: %s", async (status, shown) => {
+    api.get.mockImplementation((url) =>
+      Promise.resolve({
+        data: url === "/admin/producers/p-9" ? { id: "p-9", name: "עסק", status } : [],
+      }),
+    );
+    wrap(<EditProducerPage />);
+
+    await screen.findByText(he.admin.producers.form.sections.basic);
+    if (shown) expect(screen.getByTestId("claim-link-panel")).toBeInTheDocument();
+    else expect(screen.queryByTestId("claim-link-panel")).not.toBeInTheDocument();
   });
 });

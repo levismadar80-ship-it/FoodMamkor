@@ -105,5 +105,7 @@ export const ReviewInviteLinkSchema = z.object({
 // business owner, so a malformed one must surface as an error, not be copied.
 export const ProducerClaimLinkSchema = z.object({
   url: z.string().url(),
-  expires_at: z.string().min(1),
+  // The panel formats it with Intl during render, and an unparseable string
+  // would throw there, so an invalid date is a malformed payload.
+  expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
 });

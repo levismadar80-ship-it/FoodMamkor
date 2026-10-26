@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
@@ -25,6 +25,7 @@ import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
  */
 export default function ClaimLinkPanel({ producerId }) {
   const t = useTranslations("admin.producers.claim");
+  const locale = useLocale();
   const [link, setLink] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -32,9 +33,15 @@ export default function ClaimLinkPanel({ producerId }) {
   const [copyFailed, setCopyFailed] = useState(false);
   const copiedTimer = useRef(null);
 
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
+
   const create = async () => {
     setBusy(true);
     setError(null);
+    // A failed re-mint must not leave the previous link on screen beside the
+    // error: after a 409 that link belongs to a draft that is no longer
+    // claimable, so it is dead.
+    setLink(null);
     setCopied(false);
     setCopyFailed(false);
     try {
@@ -66,7 +73,7 @@ export default function ClaimLinkPanel({ producerId }) {
   };
 
   const expires = link
-    ? new Intl.DateTimeFormat("he-IL", {
+    ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
         timeZone: "Asia/Jerusalem",
         day: "2-digit",
         month: "2-digit",
