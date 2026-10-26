@@ -23,7 +23,6 @@ from app.models import (
 )
 from app.rate_limit import limiter
 from app.utils.stack_probe import log_depth
-from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
@@ -58,11 +57,6 @@ from app.services.producer_queries import (
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["producers"])
-
-# Compose the follow / unfollow / follow-status / my-following sub-router.
-# FastAPI mounts these endpoints transitively when router_registry.py
-# registers `producers.router` — no separate registration needed.
-router.include_router(producer_follows_router)
 
 
 # MEH-1833: the shared CDN policy for the two PUBLIC catalog GETs.

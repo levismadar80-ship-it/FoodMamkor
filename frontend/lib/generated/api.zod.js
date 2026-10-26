@@ -5075,29 +5075,6 @@ export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#
 
 
 /**
- * Unfollow a producer. No-op if the user doesn't currently follow.
- * @summary Unfollow Producer
- */
-export const UnfollowProducerProducersProducerIdFollowDeleteResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Follow a producer. Idempotent — returns the existing follow if
- * the user already follows this producer.
- * @summary Follow Producer
- */
-export const FollowProducerProducersProducerIdFollowPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Is the current user following this producer? Used by the follow
- * button on the producer page to initialize its state.
- * @summary Follow Status
- */
-export const FollowStatusProducersProducerIdFollowStatusGetResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * Live Google rating for a producer, or 204 when the line must not render.
  *
  * 204 (empty, no layout hole client-side) when: no mapped place_id, the live
@@ -5693,14 +5670,6 @@ export const UpsertAlertPrefsUsersMeFavoritesProducerIdAlertsPutResponse = /*#__
   "notify_new_recipe": /*#__PURE__*/ zod.boolean(),
   "whatsapp_opt_in": /*#__PURE__*/ zod.boolean()
 })
-
-
-/**
- * List the producers the current user is following, with basic
- * producer info joined in.
- * @summary List My Following
- */
-export const ListMyFollowingUsersMeFollowingGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
