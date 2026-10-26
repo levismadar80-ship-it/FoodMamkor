@@ -2394,8 +2394,6 @@
           "intro": "הכתובות הספציפיות (project IDs, tokens) לא כאן — הן בכספת של הצוות. הרשימה כאן מכוונת אותך לאיפה להסתכל, לא מספקת credentials.",
           "prod_label": "האתר בפרודקשן",
           "staging_label": "האתר ב-staging",
-          "github_label": "קוד המקור",
-          "github_text": "GitHub",
           "railway_label": "Railway",
           "railway_text": "<placeholder>להזין</placeholder> — project: <code>believable-tenderness</code>, service: backend",
           "vercel_label": "Vercel",
