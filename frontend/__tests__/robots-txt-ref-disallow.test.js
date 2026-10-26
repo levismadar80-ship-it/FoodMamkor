@@ -152,3 +152,34 @@ describe("CONTROL — the crawlable surface is still crawlable", () => {
     expect(verdict("/register", STAR)).toBe("disallow");
   });
 });
+
+describe("MEH-2368 — every locale-routed rule has its /en twin", () => {
+  // localePrefix "as-needed" (i18n/routing.js) serves every route under /en/
+  // too. A plain-prefix rule for "/admin/" does not match "/en/admin/", so a
+  // rule without its twin leaves the English copy of that route crawlable.
+  // /api/ is not locale-routed (backend proxy), so it has no twin.
+  const NOT_LOCALIZED = new Set(["/api/"]);
+  const unprefixed = STAR.disallows.filter(
+    (r) => !r.startsWith("/en/") && !NOT_LOCALIZED.has(r),
+  );
+
+  it("the * group has unprefixed rules to twin (guards the loop below)", () => {
+    expect(unprefixed.length).toBeGreaterThan(5);
+  });
+
+  it.each(unprefixed.map((r) => [r]))("%s is also disallowed under /en", (rule) => {
+    expect(verdict(`/en${rule}`, STAR)).toBe("disallow");
+  });
+
+  it("/en/register/producer stays allowed (twin of the MEH-1955 Allow)", () => {
+    expect(verdict("/en/register/producer", STAR)).toBe("allow");
+    expect(verdict("/en/register", STAR)).toBe("disallow");
+  });
+
+  it.each([["/en"], ["/en/map"], ["/en/producers"], ["/en/about"]])(
+    "CONTROL — %s stays allowed",
+    (path) => {
+      expect(verdict(path, STAR)).toBe("allow");
+    },
+  );
+});
