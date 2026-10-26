@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
 from app.services.experience_moderation import _parse_response_text
+from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
 from app.auth import decode_review_invite_token, get_current_user, require_admin
@@ -89,10 +90,13 @@ def _moderate_review_body(body: str | None) -> str:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
         report_fail_open("review", "no_client")
         return "APPROVED"
-    prompt = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
-בדוק את טקסט הביקורת הבאה ותחזיר JSON בלבד.
+    # MEH-2350: the review text is tagged data in the user turn, never
+    # part of the instructions.
+    data_rule, user_content = wrap_submission("review", {"טקסט": body})
+    system = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
+בדוק את טקסט הביקורת המוגשת ותחזיר JSON בלבד.
 
-טקסט: {body}
+{data_rule}
 
 החזר JSON בלבד (ללא ```json):
 {{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
@@ -110,7 +114,8 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
             # spam / personal info / rude. 300 leaves ~2.5x headroom; only
             # tokens actually generated are billed.
             max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
+            system=system,
+            messages=[{"role": "user", "content": user_content}],
         )
         # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
         # "refusal", no text) is a signal about the content, not an infra
