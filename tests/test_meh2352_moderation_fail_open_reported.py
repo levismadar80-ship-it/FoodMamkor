@@ -131,8 +131,28 @@ def test_model_verdict_is_not_reported(monkeypatch, calls, surface, msg):
     assert seen == []
 
 
+@pytest.mark.parametrize("surface", SURFACES)
+def test_lowercase_verdict_is_honoured_not_failed_open(monkeypatch, calls, surface):
+    # Reviews compared case-sensitively, so a lowercase "rejected" published
+    # the review as APPROVED; the other two surfaces already upper-cased.
+    seen, patch = calls
+    mod, getter, run, _ = surface()
+    patch(mod)
+    lower = json.dumps({"status": "rejected", "reason": "x", "suggestion": None})
+    monkeypatch.setattr(mod, getter, lambda: _Client(_Msg(lower)))
+    assert run() == "REJECTED"
+    assert seen == []
+
+
 def test_classify_failure_names():
+    import anthropic
+    import httpx
+
     from app.services.moderation_fail_open import classify_failure
+
+    # The branch a dead key / 429 / 529 hits in production.
+    conn = anthropic.APIConnectionError(request=httpx.Request("POST", "http://x"))
+    assert classify_failure(conn) == "api_error"
 
     assert classify_failure(ValueError(), truncated=True) == "truncated"
     try:

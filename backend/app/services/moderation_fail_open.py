@@ -52,9 +52,11 @@ def classify_failure(exc: BaseException, *, truncated: bool = False) -> str:
 
 
 def report_fail_open(surface: str, reason: str) -> None:
-    """Record that ``surface`` acted without a model verdict: the content
-    moderators approved it; ``producer_risk`` left the admin-only score empty
-    (nothing is approved there — filter on ``moderation_surface`` to split)."""
+    """Record that ``surface`` acted without a model verdict.
+
+    The content moderators approved the item. ``producer_risk`` approves
+    nothing; it left the admin-only score empty. Filter on
+    ``moderation_surface`` to tell them apart."""
     logger.warning(
         "[moderation] fail-open — no model verdict", surface=surface, reason=reason
     )
