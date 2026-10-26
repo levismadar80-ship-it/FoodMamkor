@@ -8,6 +8,8 @@ MEH-103 verified reviews system:
   - Owner guard: producer owners cannot review their own business.
   - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
   - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
+    The hide is sticky (MEH-2348): an author edit keeps it, the author cannot
+    delete a hidden review, and only PUT /admin/reviews/{id}/unhide undoes it.
   - Hidden reviews are excluded from public GET endpoints and aggregates.
   - Pagination: GET /producers/{id}/reviews returns 10 per page.
 
@@ -125,7 +127,9 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         # Same fence/prose tolerance as the experience/recipe moderators — a
         # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
         data = _parse_response_text(raw)
-        status = data.get("status")
+        # Upper-cased like the experience/recipe moderators: a lowercase
+        # "rejected" must not fall through to the fail-open APPROVED.
+        status = str(data.get("status", "")).upper()
         if status in {"APPROVED", "FLAGGED", "REJECTED"}:
             return status
         report_fail_open("review", "truncated" if truncated else "bad_status")
@@ -398,8 +402,11 @@ def create_review_nested(
     if existing_review:
         existing_review.stars = data.stars
         existing_review.body = data.body
-        # Unhide on edit (user is updating a previously hidden review)
-        existing_review.is_hidden = False
+        # MEH-2348: an edit never touches is_hidden. Only the admin hide
+        # endpoint sets it, so hidden ⇒ admin-hidden, and only an admin may
+        # undo it (PUT /admin/reviews/{id}/unhide). If is_hidden ever gains a
+        # second writer (e.g. AI auto-hide, MEH-2349 option ב), that premise
+        # dies and this needs a "hidden by whom" column.
         db.commit()
         review = existing_review
     else:
@@ -459,6 +466,11 @@ def delete_review(
     # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
     # review's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    # MEH-2348: the author may not delete a review an admin hid — delete +
+    # repost would publish a fresh, visible review and undo the hide. Same
+    # 404 as a stranger (MEH-1001 style); the admin override stays.
+    if review.is_hidden and not is_admin:
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     producer_id = review.producer_id
     db.delete(review)
@@ -528,6 +540,23 @@ def hide_review(
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
     return {"detail": "Review hidden", "id": str(review_id)}
+
+
+@router.put("/admin/reviews/{review_id}/unhide")
+def unhide_review(
+    review_id: UUID,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2348: set is_hidden=False — the only way a hidden review returns.
+    Recomputes producer aggregates."""
+    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    review.is_hidden = False
+    db.commit()
+    _recompute_producer_rating(review.producer_id, db)
+    return {"detail": "Review unhidden", "id": str(review_id)}
 
 
 @router.get("/admin/reviews", response_model=list[AdminReviewOut])

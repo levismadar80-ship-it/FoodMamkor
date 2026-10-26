@@ -136,8 +136,14 @@ Eight instances in one week:
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
-the PR. `auth.py` / `upload.py` / permissions also get a web-search CVE check
-([security.md](./security.md)).
+the PR. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
+the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
+web-search CVE check ([security.md](./security.md)).
+
+**Round cap (MEH-2334):** if a 3rd adversarial round on one PR still produces new
+findings, stop the fix loop and hand Sapir the remaining findings as one list.
+They are reported, never dropped. Past round 3 the finder mostly surfaces
+pre-existing bugs, and those belong to their own cards.
 
 ---
 
