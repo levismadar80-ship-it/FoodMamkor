@@ -236,7 +236,8 @@ export const config = {
     "/((?!api|_next|_vercel|.*\\..*).*)",
     // MEH-2324: the owner-claim link /claim/<token>. The token is a JWT, so
     // the path has dots and the entry above skips it; without this it never
-    // gets the locale rewrite and 404s. Two segments, so no slug check below.
+    // gets the locale rewrite and 404s. (Bare /claim matches both entries,
+    // which is harmless.) Two segments, so no slug check below.
     // The locale-prefixed form is matched too, so it gets next-intl's locale.
     "/claim/:path*",
     "/:locale(he|en)/claim/:path*",

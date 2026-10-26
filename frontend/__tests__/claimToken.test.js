@@ -35,6 +35,14 @@ describe("redactClaimPath", () => {
     expect(redactClaimPath("/claim")).toBe("/claim");
     expect(redactClaimPath("/producer/dashboard")).toBe("/producer/dashboard");
   });
+
+  // Sentry stack frames carry the route's chunk URL. Rewriting its %5Btoken%5D
+  // segment would break the frame's link to the served file.
+  it("leaves the route chunk URL alone", () => {
+    const url =
+      "https://mehamakor.co.il/_next/static/chunks/app/%5Blocale%5D/claim/%5Btoken%5D/page-0a1b2c3d.js";
+    expect(redactClaimPath(url)).toBe(url);
+  });
 });
 
 describe("scrubClaimTokens", () => {

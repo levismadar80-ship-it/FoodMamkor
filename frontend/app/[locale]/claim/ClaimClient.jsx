@@ -79,7 +79,10 @@ export default function ClaimClient({ tokenFromPath = null }) {
         return;
       }
       // Storage refused (some private modes): keep it in memory for this
-      // render tree only. The address keeps the token, but the claim works.
+      // render tree only. The address keeps the token, and the claim works for
+      // an owner already signed in. A guest who signs in from here lands on a
+      // token-less /claim and sees "link not active"; reopening the emailed
+      // link then works. Accepted as rare; a dedicated message needs new copy.
       setToken(tokenFromPath);
       return;
     }

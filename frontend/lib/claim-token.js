@@ -21,7 +21,9 @@ const STORAGE_KEY = "mehamakor.claimToken";
 
 // The path segment after /claim/, with or without a locale prefix, up to the
 // next delimiter. JWTs are base64url + dots, so this stops at / ? # and quotes.
-const CLAIM_PATH = /\/claim\/[^/?#\s"'&]+/g;
+// A segment starting with [ or %5B is the route's own name ([token]) in a
+// chunk URL, which a stack frame must keep; no token starts that way.
+const CLAIM_PATH = /\/claim\/(?!\[|%5B)[^/?#\s"'&]+/gi;
 const REDACTED = "/claim/[token]";
 // The same path percent-encoded, as in a ?redirect= built with
 // encodeURIComponent (auth-context's session-expired link). A JWT has no %, so
@@ -61,9 +63,10 @@ export function redactClaimPath(value) {
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and
-// redacts every string, in place. No depth cap: a redactor that gives up past
-// some depth would let a deep token through. Each object is visited once, so a
-// cyclic payload still terminates.
+// redacts every string, in place. No depth cutoff: a redactor that gives up
+// past some depth would let a deep token through. Each object is visited once,
+// so a cyclic payload still terminates. A payload deep enough to overflow the
+// stack throws, and Sentry drops that event, which fails safe.
 export function scrubClaimTokens(value, seen = new WeakSet()) {
   if (typeof value === "string") return redactClaimPath(value);
   if (!value || typeof value !== "object" || seen.has(value)) return value;
