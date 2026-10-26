@@ -8,7 +8,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 
 // ── Shared icon mock ────────────────────────────────────────────────────────
 vi.mock("@phosphor-icons/react", () => ({
+  Bread: (p) => <span {...p} />,
   CalendarBlank: (p) => <span {...p} />,
+  ChatCircleSlash: (p) => <span {...p} />,
+  CheckCircle: (p) => <span {...p} />,
   CookingPot: (p) => <span {...p} />,
   Cow: (p) => <span {...p} />,
   Heart: (p) => <span {...p} />,
@@ -19,6 +22,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Sparkle: (p) => <span {...p} />,
   Star: (p) => <span {...p} />,
   Storefront: (p) => <span {...p} />,
+  Tag: (p) => <span {...p} />,
+  TextAa: (p) => <span {...p} />,
   Trash: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
   Users: (p) => <span {...p} />,
@@ -102,7 +107,9 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
     // above renders the i18n *key*, so assert on keys, not the Hebrew literals.
     await waitFor(() => expect(screen.getByText("dashboard.title")).toBeInTheDocument());
     expect(screen.getByText("dashboard.pending_panel.empty")).toBeInTheDocument();
-    expect(screen.getByText("dashboard.activity.empty")).toBeInTheDocument();
+    // MEH-2359: the activity feed left the home page; the queues block's
+    // empty line is the second thing a null-heavy payload must still render.
+    expect(screen.getByText("dashboard.queues.all_clear")).toBeInTheDocument();
   });
 
   it("renders pending list when pending_producers is a non-empty array", async () => {

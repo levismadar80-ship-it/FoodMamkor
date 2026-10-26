@@ -32,7 +32,15 @@ from app.models import (
     StaticPage,
     User,
 )
-from app.models.models import GroupBuy, KashrutBadgeRequest, ProducerRecipe
+from app.models.models import (
+    CategoryRequest,
+    GroupBuy,
+    KashrutBadgeRequest,
+    OutboundMessage,
+    ProducerNameChangeRequest,
+    ProducerRecipe,
+)
+from app.routers.admin_whatsapp import _UNDELIVERED_STATUSES, _WINDOW_DAYS
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -773,6 +781,30 @@ def get_dashboard(
         .scalar()
         or 0
     )
+    # MEH-2359: per-queue counts for the admin home + sidebar — a queue entry
+    # is shown only while its count is > 0, so each queue needs its own
+    # number, not the aggregate below. Same predicates as the pages they
+    # link to (category_requests.py / producer_name_requests.py list
+    # `pending`; admin_whatsapp.py lists the undelivered 7-day window).
+    pending_category_requests = (
+        db.query(func.count(CategoryRequest.id))
+        .filter(CategoryRequest.status == "pending")
+        .scalar()
+        or 0
+    )
+    pending_name_change_requests = (
+        db.query(func.count(ProducerNameChangeRequest.id))
+        .filter(ProducerNameChangeRequest.status == "pending")
+        .scalar()
+        or 0
+    )
+    undelivered_whatsapp_7d = (
+        db.query(func.count(OutboundMessage.id))
+        .filter(OutboundMessage.status.in_(_UNDELIVERED_STATUSES))
+        .filter(OutboundMessage.created_at >= now - timedelta(days=_WINDOW_DAYS))
+        .scalar()
+        or 0
+    )
     pending_moderation_count = int(
         pending_producers
         + open_reports
@@ -816,6 +848,9 @@ def get_dashboard(
         "pending_experiences": int(pending_experiences),
         "pending_kashrut_requests": int(pending_kashrut_requests),
         "pending_recipes": int(pending_recipes),
+        "pending_category_requests": int(pending_category_requests),
+        "pending_name_change_requests": int(pending_name_change_requests),
+        "undelivered_whatsapp_7d": int(undelivered_whatsapp_7d),
         "pending_moderation_count": pending_moderation_count,
     }
 

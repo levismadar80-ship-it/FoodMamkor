@@ -1405,7 +1405,7 @@
     },
     "layout": {
       "nav": {
-        "dashboard": "Dashboard",
+        "dashboard": "Needs attention",
         "producers": "Businesses",
         "group_buys": "Group buys",
         "outreach": "Outreach",
@@ -1424,69 +1424,27 @@
         "name_change_requests": "Name changes"
       },
       "nav_sections": {
-        "overview": "Overview",
-        "core": "Core",
-        "content": "Content",
-        "queues": "Pending",
-        "system": "System"
+        "approvals": "Approvals",
+        "queues": "Queues",
+        "more": "More"
       },
       "desktop_only": "This screen is available on desktop"
     },
     "dashboard": {
-      "title": "Dashboard",
-      "subtitle": "Platform overview",
-      "stats": {
-        "total_producers": "Total businesses",
-        "pending_approval": "Awaiting approval",
-        "registered_users": "Registered users",
-        "group_buys": "Group buys",
-        "group_buys_tooltip": "Manage user group buys. Not active currently.",
-        "group_buys_tooltip_label": "Group buys info"
-      },
-      "alerts": {
-        "producers_waiting": "{count} businesses awaiting approval",
-        "click_to_handle": "Click to handle",
-        "open_reports": "{count} open reports",
-        "needs_review": "Needs review"
-      },
-      "chart": {
-        "new_producers_6_months": "New businesses — last 6 months"
-      },
+      "title": "Needs attention",
+      "subtitle": "Only what needs a decision. Stats and charts live in Analytics.",
       "pending_panel": {
         "heading": "Pending requests",
         "view_all": "View all →",
         "empty": "No pending requests",
-        "check": "Review"
+        "check": "Review",
+        "more": "{count} more in the queue"
       },
-      "activity": {
-        "heading": "Recent activity",
-        "empty": "No data yet",
-        "added_producer": "Business added:"
+      "queues": {
+        "heading": "Other queues",
+        "all_clear": "Nothing waiting in the other queues"
       },
-      "weekly": {
-        "new_users_week": "New users this week",
-        "new_producers_week": "New businesses this week",
-        "out_of_total": "out of {total} total",
-        "events": "Events",
-        "experiences": "Experiences"
-      },
-      "dau": {
-        "heading": "Active users — last 30 days",
-        "empty": "No data yet",
-        "aria": "DAU 30 days"
-      },
-      "top_cities": {
-        "heading": "Top cities",
-        "empty": "No city data yet — users who aren't logged in don't report their city."
-      },
-      "health": {
-        "heading": "Server health — last hour",
-        "waiting_traffic": "Waiting for traffic...",
-        "requests_count": "{count} requests",
-        "response_time_avg": "Average response time",
-        "requests_per_minute": "Requests per minute",
-        "footnote": "**Note:** Per-process in-memory data — resets on every deploy (docs/SECURITY.md)."
-      }
+      "analytics_link": "Stats and analytics →"
     },
     "producers": {
       "list": {

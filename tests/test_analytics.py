@@ -779,6 +779,25 @@ class TestAdminDashboardAnalytics:
         ):
             assert key in stats, f"missing: {key}"
 
+    def test_admin_dashboard_per_queue_counts(self, client, db):
+        """MEH-2359: the admin home shows a queue only while its own count is
+        > 0, so each queue ships its own number. Seed one pending category
+        request and assert the three new keys exist and the seeded one is 1."""
+        from app.models.models import CategoryRequest
+
+        admin = make_user(db, role="admin")
+        before = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        for key in (
+            "pending_category_requests",
+            "pending_name_change_requests",
+            "undelivered_whatsapp_7d",
+        ):
+            assert key in before, f"missing: {key}"
+        db.add(CategoryRequest(requested_name="קטגוריה חדשה לבדיקה", status="pending"))
+        db.commit()
+        after = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        assert after["pending_category_requests"] == before["pending_category_requests"] + 1
+
     def test_admin_dashboard_includes_analytics_series(self, client, db):
         admin = make_user(db, role="admin")
         body = client.get("/admin/dashboard", headers=auth_header(admin)).json()
