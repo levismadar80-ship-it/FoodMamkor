@@ -26,6 +26,8 @@ export default function ClarityScript({ projectId }) {
     return () => window.removeEventListener("cookie-consent", check);
   }, []);
 
+  // This only keeps Clarity from loading on a token path. It cannot unload a
+  // Clarity already running in the tab; the emailed link is a fresh page load.
   if (!consented || CLAIM_TOKEN_PATH.test(pathname || "")) return null;
 
   return (

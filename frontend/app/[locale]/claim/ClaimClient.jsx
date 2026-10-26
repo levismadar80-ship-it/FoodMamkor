@@ -167,7 +167,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
   if (view === VIEW.LOADING || (view === VIEW.READY && authLoading)) {
     return (
       <Shell>
-        <p className="text-center text-fg-muted" data-testid="claim-loading">
+        <p className="text-center text-fg-muted" role="status" data-testid="claim-loading">
           {t("loading")}
         </p>
       </Shell>
@@ -351,13 +351,20 @@ function Shell({ children, testid }) {
   );
 }
 
+function isCloudinaryUrl(value) {
+  try {
+    return new URL(value).hostname === "res.cloudinary.com";
+  } catch {
+    return false;
+  }
+}
+
 function Preview({ preview, kicker }) {
-  // next/image only accepts the configured hosts; an image from anywhere
-  // else is left out rather than breaking the page.
-  const src =
-    preview.image && preview.image.includes("res.cloudinary.com")
-      ? optimizeCloudinary(preview.image, { aspectRatio: IMAGE_RATIOS.banner, width: 640 })
-      : null;
+  // next/image throws on a host next.config does not allow, so an image from
+  // anywhere else is left out rather than breaking the page.
+  const src = isCloudinaryUrl(preview.image)
+    ? optimizeCloudinary(preview.image, { aspectRatio: IMAGE_RATIOS.banner, width: 640 })
+    : null;
   return (
     <div className="mb-4" data-testid="claim-preview">
       <p className="text-sm font-medium text-primary mb-2">{kicker}</p>

@@ -29,6 +29,11 @@ describe("middleware matcher — owner-claim link", () => {
     expect(matches(`/claim/${JWT}`)).toBe(true);
   });
 
+  it("runs on a locale-prefixed link too", () => {
+    expect(matches(`/en/claim/${JWT}`)).toBe(true);
+    expect(matches(`/he/claim/${JWT}`)).toBe(true);
+  });
+
   it("control: still runs on an ordinary page", () => {
     expect(matches("/about")).toBe(true);
   });

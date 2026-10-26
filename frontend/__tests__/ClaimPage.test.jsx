@@ -264,6 +264,20 @@ describe("submitting", () => {
     expect(screen.queryByTestId("claim-has-business")).not.toBeInTheDocument();
   });
 
+  // next/image throws on a host next.config does not allow, which would take
+  // the page down; the check must compare the hostname, not search the URL.
+  it.each([
+    ["a Cloudinary image", "https://res.cloudinary.com/demo/image/upload/v1/bread.jpg", 1],
+    ["another host that mentions Cloudinary", "https://x.example/bread.jpg?res.cloudinary.com", 0],
+    ["a malformed URL", "not a url res.cloudinary.com", 0],
+  ])("preview with %s renders %s image(s)", async (_label, image, count) => {
+    asUser(null);
+    previewOk({ ...PREVIEW, image });
+    const { container } = wrap(<ClaimClient />);
+    await screen.findByTestId("claim-preview");
+    expect(container.querySelectorAll("img")).toHaveLength(count);
+  });
+
   // A 2xx means the server already assigned the draft. Reporting failure would
   // send the owner into a retry that answers 409 "already claimed".
   it("a 2xx with an unexpected body still counts as claimed", async () => {
