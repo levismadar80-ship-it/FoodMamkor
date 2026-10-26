@@ -53,3 +53,6 @@ OVERNIGHT-REPORT.md
 
 # /session-save scratchpad — local only, never committed (MEH-2346)
 /session-state.md
+
+# Spreadsheets with contact data never go in this public repo (MEH-2356)
+/*.xlsx
