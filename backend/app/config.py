@@ -240,3 +240,30 @@ BUSINESS_HOURS: dict[str, tuple[int, int] | None] = {
 }
 WATCHDOG_INTERVAL_MINUTES: int = 5
 WATCHDOG_LOOKBACK_MINUTES: int = 30
+
+# MEH-2335: single source of truth for the fast-tier Claude model used by
+# chat, review / experience / recipe moderation, producer risk scoring and
+# the bio draft. A module constant on purpose, NOT a Settings field — a
+# Settings field would become an env var (ANTHROPIC_FAST_MODEL), and the
+# card rules out adding one.
+#
+# Haiku 5.5 runs adaptive thinking by default, and thinking tokens count
+# toward max_tokens — on the 100–520 token caps these routes use, that can
+# end a response before any text block, which the callers read as an empty
+# reply and fail open (APPROVED). Haiku 4.5 never thought on these routes,
+# so thinking stays off; effort "low" is the level `disabled` is accepted
+# at. Do not pass temperature/top_p/top_k or an assistant prefill: both 400
+# on this model.
+AI_FAST_MODEL = "claude-haiku-5-5"
+
+
+def ai_fast_request_kwargs() -> dict:
+    """Model + thinking/effort kwargs for every fast-tier messages.create.
+
+    A function, not a shared dict, so no caller can mutate the defaults.
+    """
+    return {
+        "model": AI_FAST_MODEL,
+        "thinking": {"type": "disabled"},
+        "output_config": {"effort": "low"},
+    }

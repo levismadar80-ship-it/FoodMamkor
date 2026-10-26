@@ -25,6 +25,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, joinedload
 
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
 from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
@@ -47,7 +48,7 @@ from app.schemas.schemas import (
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
 
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 _ai_client = None
 
 
@@ -96,8 +97,9 @@ FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם �
 REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
     try:
         msg = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=100,
+            **ai_fast_request_kwargs(),
+            # 130 = 100 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
+            max_tokens=130,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = next(

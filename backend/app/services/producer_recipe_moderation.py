@@ -28,14 +28,14 @@ from typing import Any
 
 import structlog
 
-from app.config import settings
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 
 logger = structlog.get_logger(__name__)
 
 # REUSES: experience_moderation.py:45 — Haiku model pin. Haiku is cheap
 # and fast enough for per-recipe pre-check; admins still review every
 # recipe before it ships.
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 
 VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
 
@@ -155,8 +155,9 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
 
     try:
         message = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=400,
+            **ai_fast_request_kwargs(),
+            # 520 = 400 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
+            max_tokens=520,
             messages=[{"role": "user", "content": _build_prompt(normalized)}],
         )
         raw = ""

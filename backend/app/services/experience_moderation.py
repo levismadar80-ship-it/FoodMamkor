@@ -5,7 +5,7 @@ moderation pattern — same APPROVED / FLAGGED / REJECTED enum, same
 fail-open semantics, same JSON-only prompt contract.
 
 What's different from home_product_moderation:
-  - **Model:** hardcoded to `claude-haiku-4-5-20251001`. Haiku is
+  - **Model:** the fast-tier Haiku, `app.config.AI_FAST_MODEL`. Haiku is
     fast+cheap enough for a real-time "is this a legitimate workshop?"
     check, and experience submissions flow through BOTH Claude and
     admin approval, so we're not relying on the model for the final
@@ -36,13 +36,13 @@ from typing import Any
 
 import structlog
 
-from app.config import settings
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 
 logger = structlog.get_logger(__name__)
 
 # Hardcoded per feature/experiences-moderation plan Q1 — Haiku is enough for
 # pre-moderation and strictly cheaper than settings.anthropic_model (Opus).
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 
 VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
 
@@ -181,8 +181,9 @@ def validate_experience(payload: dict[str, Any]) -> dict:
 
     try:
         message = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=400,
+            **ai_fast_request_kwargs(),
+            # 520 = 400 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
+            max_tokens=520,
             messages=[{"role": "user", "content": _build_prompt(normalized)}],
         )
         raw = ""

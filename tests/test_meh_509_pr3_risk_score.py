@@ -89,8 +89,10 @@ def test_score_producer_success_persists(db, monkeypatch):
     # Anthropic was called once, with the spec model + max_tokens.
     assert mock_create.call_count == 1
     _, kwargs = mock_create.call_args
-    assert kwargs["model"] == "claude-haiku-4-5-20251001"
-    assert kwargs["max_tokens"] == 200
+    assert kwargs["model"] == "claude-haiku-5-5"
+    assert kwargs["max_tokens"] == 260
+    # MEH-2335: thinking off so it cannot eat the 260-token cap.
+    assert kwargs["thinking"] == {"type": "disabled"}
     # System prompt locked in spec.
     assert "marketplace fraud detector" in kwargs["system"]
     # User payload is JSON-serialized profile wrapped in

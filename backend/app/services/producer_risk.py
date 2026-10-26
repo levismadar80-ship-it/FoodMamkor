@@ -3,7 +3,7 @@ Module:   producer_risk
 Purpose:  Anthropic-Haiku-backed signup risk score (0-100) + one-sentence
           Hebrew reasoning, written to producers.risk_score /
           producers.risk_reasoning asynchronously after producer signup.
-Touches:  Anthropic API (claude-haiku-4-5-20251001) via httpx-wrapped
+Touches:  Anthropic API (app.config.AI_FAST_MODEL) via httpx-wrapped
           SDK; PostgreSQL producers (UPDATE only). Opens a fresh
           SessionLocal because BackgroundTasks runs after the request
           session has closed (mirrors app/startup.py:_run_followup_job).
@@ -30,15 +30,16 @@ import re
 import secrets
 from uuid import UUID
 
-from app.config import settings
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 from app.database import SessionLocal
 from app.models import Producer
 
 logger = logging.getLogger(__name__)
 
 # Hardcoded per spec — out-of-scope to make configurable in v1.
-_MODEL = "claude-haiku-4-5-20251001"
-_MAX_TOKENS = 200
+_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
+# 260 = 200 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
+_MAX_TOKENS = 260
 _TIMEOUT_SECONDS = 10.0
 _REASONING_CAP_CHARS = 500
 _SCORE_MIN = 0
@@ -203,7 +204,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         # description fields from prematurely closing the wrapper.
         system_prompt, user_content = _build_prompt(profile)
         response = client.messages.create(
-            model=_MODEL,
+            **ai_fast_request_kwargs(),
             max_tokens=_MAX_TOKENS,
             system=system_prompt,
             messages=[{"role": "user", "content": user_content}],
