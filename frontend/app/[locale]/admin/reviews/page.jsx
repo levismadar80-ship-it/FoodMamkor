@@ -18,11 +18,11 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
  *
  * Filters: star filter (1–5) + free-text search over producer name,
  * user name, title, body + "only AI-flagged" (MEH-2349, client-side over
- * `ai_moderation_status`; the list endpoint already returns every row). Delete is guarded by a modal confirm dialog
- * (MEH-1040 — replaced the native browser confirm, mirroring the MEH-1023
- * pattern); after deletion the row is optimistically removed and the
- * producer's avg_rating + reviews_count are recomputed server-side by
- * the existing handler.
+ * `ai_moderation_status`; the list endpoint already returns every row).
+ * Delete is guarded by a modal confirm dialog (MEH-1040 — replaced the
+ * native browser confirm, mirroring the MEH-1023 pattern); after deletion
+ * the row is optimistically removed and the producer's avg_rating +
+ * reviews_count are recomputed server-side by the existing handler.
  */
 /**
  * MEH-1902: the review body was `line-clamp-3` with no way to read the rest.
