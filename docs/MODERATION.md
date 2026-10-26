@@ -9,7 +9,7 @@
 
 | משטח | מה נבדק | REJECTED | APPROVED / FLAGGED | שער אנושי | fail-open |
 |---|---|---|---|---|---|
-| **ביקורות** | גוף הביקורת (`reviews.py:_moderate_review_body`) | 422, לא נשמר (`routers/reviews.py:create_review_nested`) | **מתפרסם מיד** | אין. אדמין יכולה להסתיר או למחוק בדיעבד | APPROVED |
+| **ביקורות** | גוף הביקורת (`reviews.py:_moderate_review_body`) | 422, לא נשמר (`routers/reviews.py:create_review_nested`) | **מתפרסם מיד**. הסטטוס נשמר ב-`ai_moderation_status`, ו-FLAGGED מקבל תג «סומן ע״י AI» ב-`/admin/reviews` (PR #3621) | אין. אדמין יכולה להסתיר או למחוק בדיעבד | APPROVED |
 | **חוויות** | כותרת, תיאור, קטגוריה, עיר, מחיר, משתתפים (`services/experience_moderation.py`) | 400, לא נשמר (`routers/experiences.py:submit_experience`) | נשמר `status=pending`, והסטטוס של ה-AI נשמר ב-`moderation_status` | תמיד: אדמין מאשרת כל חוויה | APPROVED |
 | **מתכונים** | כותרת, תיאור, מצרכים, הוראות (`services/producer_recipe_moderation.py`) | 400, לא נשמר (`routers/producer_recipes.py:create_my_recipe`) | נשמר `moderation_status=pending`, וסיבת ה-AI נשמרת ב-`moderation_notes` | תמיד: אדמין מאשרת כל מתכון | APPROVED |
 | **סיכון בית עסק** | פרופיל בית העסק בהרשמה ובשיוך (`services/producer_risk.py`) | — | ציון 0–100 + נימוק ב-`producers.risk_score` / `risk_reasoning`, מוצג בטבלת `/admin/producers` | הציון הוא רק מידע לאדמין | ציון NULL (אדמין לא רואה ציון) |
@@ -19,7 +19,7 @@
 **ביקורות הן המשטח היחיד שמתפרסם בלי אדמין**, ולכן fail-open שם פירושו שביקורת עולה בלי שום בדיקה. זה הנימוק לדיווח ב-Sentry שמתואר בהמשך.
 
 ### מה עוד לא סגור
-- **FLAGGED בביקורות לא עושה כלום.** הביקורת מתפרסמת כמו APPROVED, והאדמין לא רואה שה-AI סימן אותה. כרטיס פתוח: MEH-2349 (שמירת הסטטוס + תג בדף האדמין).
+- **ביקורת FLAGGED עדיין מתפרסמת** (PR #3621). הסימון רק מסמן לאדמין. עריכה עם אותו טקסט שומרת את הסימון. fail-open נשמר כ-APPROVED, כך שבדף האדמין אי אפשר להבחין בינו לבין אישור אמיתי.
 - **הסתרה של אדמין דביקה** (PR #3612): כשהכותבת עורכת ביקורת מוסתרת היא נשארת מוסתרת. הכותבת גם לא יכולה למחוק ביקורת מוסתרת (404). רק `PUT /admin/reviews/{id}/unhide` מחזיר אותה.
 - `home_product_moderation.py` שייך למערכת שבהסרה (MEH-796) ועדיין משתמש ב-`settings.anthropic_model`. הוא לא חלק מהמסמך הזה, וגם לא קיבל את השיפורים שלמטה.
 
