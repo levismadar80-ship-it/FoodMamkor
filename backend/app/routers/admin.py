@@ -536,7 +536,8 @@ def admin_create_producer(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Admin-created producers are auto-approved."""
+    """Admin-created producers are auto-approved — unless `as_draft`, which
+    prepares an ownerless draft for the owner-claim link (MEH-2322)."""
     slug = data.slug or _slugify(data.name)
     # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
     if data.slug:
@@ -547,7 +548,17 @@ def admin_create_producer(
     # admin form can still persist non-regex license values verbatim
     # (manual-approval flow), but missing-license-for-required-category
     # is still a 422.
-    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
+    # owner's to supply after she claims it. A draft cannot be approved at all
+    # until she submits it (approve_producer 409s on draft), and approval runs
+    # `_assert_approvable` — the MEH-971 license gate, which an admin can
+    # override with ?allow_without_license=true after checking the license
+    # out-of-band. Same exposure, and same override, as the public register
+    # path's `license_pending`; this branch adds no new route to "live".
+    if not data.as_draft:
+        ensure_license_for_categories(
+            db, data.category_ids, data.producer_license_number
+        )
 
     producer = Producer(
         name=data.name,
@@ -592,7 +603,10 @@ def admin_create_producer(
         # MEH-903 A: the legacy delivery_cities column is no longer written —
         # delivery_areas (via _apply_delivery_cities below) is the single store.
         # Column stays declared (drop = Chunk C); new rows keep the [] default.
-        status="approved",  # admin = pre-approved
+        # admin = pre-approved. MEH-2322: an owner-claim draft is NOT — it
+        # has no owner and no declaration, and stays off every public surface
+        # until its owner claims it, completes it and submits it for review.
+        status="draft" if data.as_draft else "approved",
     )
     db.add(producer)
     db.flush()
@@ -1085,10 +1099,15 @@ def approve_producer(
     # approve something that was never submitted; the owner presses the button.
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
-    # path re-reads the row, but nothing in the codebase moves an existing
-    # producer BACK to draft — all three `status="draft"` writes are at creation
-    # (auth.py:561, auth.py:768, producer_queries.py:542). A row that was not
-    # draft when this line ran cannot be draft when the retry reads it.
+    # path re-reads the row. The four literal `status="draft"` writes are all
+    # at creation (auth.py:578, auth.py:785, producer_queries.py:537, and
+    # admin.py:609 — admin_create_producer's `as_draft`, MEH-2322). One more
+    # route CAN move an existing producer back to draft: an admin PUT carrying
+    # {"status": "draft"} (admin_update_producer applies the payload as-is —
+    # found in the MEH-2322 re-review). For the retry to read a draft row, an
+    # admin would have to send that PUT between this check and the retry, i.e.
+    # race her own approval. Accepted; restricting `status` on the admin PUT is
+    # tracked separately.
     if producer.status == "draft":
         raise HTTPException(
             status_code=409,
