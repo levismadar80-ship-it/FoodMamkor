@@ -268,6 +268,30 @@ def _as_utc(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
+def _sequence_start(producer: Producer) -> datetime:
+    """When this producer's nudge clock starts: the LATER of `created_at` and
+    `declared_at` (MEH-2340).
+
+    For a business that registered itself the two are the same moment
+    (`declared_at` is written in the registration request, routers/auth.py), so
+    nothing changes. For a draft an admin prepared and the owner later claimed
+    by link (MEH-2321), `created_at` is the ADMIN's moment and `declared_at` is
+    the owner's: counting from `created_at` sent a draft claimed on day 10 the
+    day-7 email minutes after the claim, and never day-1 or day-3. Sapir ruled
+    26/10: count from the claim. `declared_at` is NULL on rows older than the
+    declaration (and on an unclaimed admin draft, which has no addressee and is
+    skipped anyway), so it falls back to `created_at`.
+
+    DO NOT anchor on `users.terms_accepted_at` instead: it is per-account and
+    moves on a terms re-acceptance, which would restart the sequence.
+    """
+    created = _as_utc(producer.created_at)
+    declared = producer.declared_at
+    if declared is None:
+        return created
+    return max(created, _as_utc(declared))
+
+
 def _due_mark(producer: Producer, now: datetime) -> int | None:
     """Which day-mark this producer is due for right now, or None.
 
@@ -290,7 +314,9 @@ def _due_mark(producer: Producer, now: datetime) -> int | None:
     NEXT mark, whose threshold the stamp precedes.
     """
     marks = _DRAFT_MARK_DAYS if producer.status == "draft" else _LEGACY_MARK_DAYS
-    created = _as_utc(producer.created_at)
+    # Named `created` for the arithmetic below; it is the sequence START, which
+    # is the claim moment for a claimed draft (_sequence_start, MEH-2340).
+    created = _sequence_start(producer)
     sent = producer.email_pending_nudge_sent_at
     sent = _as_utc(sent) if sent is not None else None
 
