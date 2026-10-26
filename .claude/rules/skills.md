@@ -1,3 +1,15 @@
+---
+paths:
+  - ".agents/**"
+  - ".claude/skills/**"
+  - ".claude/skills-allowlist.json"
+  - "skills-lock.json"
+  - ".claude/scripts/audit-skills.sh"
+  - ".claude/scripts/compute-skill-hash.sh"
+  - ".claude/scripts/backfill-skill-hashes.sh"
+  - ".claude/scripts/test/**"
+---
+
 # Skills supply chain rules (MEH-397)
 
 How Mehamakor sandboxes the third-party skills under `.agents/skills/`

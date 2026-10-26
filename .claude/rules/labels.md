@@ -1,3 +1,16 @@
+---
+paths:
+  - "frontend/lib/badges.js"
+  - "frontend/lib/filter-taxonomy.js"
+  - "frontend/lib/attribute-labels.js"
+  - "frontend/lib/producer-filters.js"
+  - "frontend/lib/map-chips.js"
+  - "frontend/components/BadgeRow.jsx"
+  - "frontend/components/FilterSheet.jsx"
+  - "frontend/components/ProducerCard.jsx"
+  - "frontend/__tests__/LabelScopeContract*"
+---
+
 # Label Scope Contract (MEH-1507)
 
 Every **consumer-facing label** on mehamakor.online must state two things:
