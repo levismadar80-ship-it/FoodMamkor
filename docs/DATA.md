@@ -845,8 +845,9 @@ host edits after non-approved verdict → status back to 'pending',
 or an admin — public detail views see `address: null`. Mirrors the
 `home_products.street/zip_code` privacy model.
 
-**Model:** Hardcoded to `claude-haiku-4-5-20251001` in
-`experience_moderation.py`. Home products use `settings.anthropic_model`
+**Model:** the fast-tier Haiku, `AI_FAST_MODEL` in `app/config.py`
+(`claude-haiku-5-5` since MEH-2335 — one constant shared by chat, review /
+experience / recipe moderation, producer risk and the bio draft). Home products use `settings.anthropic_model`
 (Opus) because their verdict triggers immediate publication with a
 badge; experiences still require admin approval, so Haiku is enough.
 
