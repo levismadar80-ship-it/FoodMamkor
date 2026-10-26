@@ -94,10 +94,16 @@ describe("scrubClaimTokens", () => {
     const scope = new Scope();
     const frozen = Object.freeze({ url: "/about" });
     const withGetter = Object.defineProperty({}, "url", { get: () => "/about", enumerable: true });
+    const throwingGetter = Object.defineProperty({}, "url", {
+      get: () => {
+        throw new Error("boom");
+      },
+      enumerable: true,
+    });
     const event = {
       request: { url: `/claim/${TOKEN}` },
       sdkProcessingMetadata: { capturedSpanScope: scope, normalizedRequest: { url: `/claim/${TOKEN}` } },
-      extra: { buf: Buffer.from("x"), frozen, withGetter },
+      extra: { buf: Buffer.from("x"), frozen, withGetter, throwingGetter },
     };
     expect(() => scrubClaimTokens(event)).not.toThrow();
     expect(event.request.url).toBe("/claim/[token]");

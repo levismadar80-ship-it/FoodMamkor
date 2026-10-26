@@ -87,14 +87,13 @@ export function scrubClaimTokens(value, seen = new WeakSet()) {
   seen.add(value);
   for (const key of Object.keys(value)) {
     if (key === "sdkProcessingMetadata") continue;
-    const before = value[key];
-    const after = scrubClaimTokens(before, seen);
-    if (after !== before) {
-      try {
-        value[key] = after;
-      } catch {
-        // Read-only property: leave it rather than lose the event.
-      }
+    try {
+      const before = value[key];
+      const after = scrubClaimTokens(before, seen);
+      if (after !== before) value[key] = after;
+    } catch {
+      // A throwing getter or a read-only property: leave it rather than lose
+      // the event.
     }
   }
   return value;
