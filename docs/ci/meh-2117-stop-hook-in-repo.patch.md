@@ -2,12 +2,13 @@
 
 > **Neither hunk here can be applied by CC.** `.claude/settings.json` is deny-enforced (MEH-442
 > `protect-lint-config.sh` + `permissions.deny`), and `~/.claude/launcher-settings.json` is a
-> machine-level file outside the repo. **Nothing here has been applied.** The scripts both hunks point
+> machine-level file outside the repo. **Hunk 1 APPLIED 26/10 by Sapir in PR #3598** (`timeout: 1800`,
+> script gated by MEH-2343). **Hunk 2 (machine-level) is still not applied.** The scripts both hunks point
 > at ARE committed and self-tested:
 >
 > | script | replaces | self-test |
 > |---|---|---|
-> | [`scripts/hooks/stop-build-and-test.sh`](../../scripts/hooks/stop-build-and-test.sh) | the **four inline** `bash -c '…'` Stop hooks in `.claude/settings.json` (build · ESLint · vitest · pytest) | 14/14 |
+> | [`scripts/hooks/stop-build-and-test.sh`](../../scripts/hooks/stop-build-and-test.sh) | the **four inline** `bash -c '…'` Stop hooks in `.claude/settings.json` (build · ESLint · vitest · pytest) | 25/25 (since MEH-2343) |
 > | [`scripts/hooks/stop-git-check.sh`](../../scripts/hooks/stop-git-check.sh) | `~/.claude/stop-hook-git-check.sh`, the machine-level git-state hook — **the file both cards are actually about** | 11/11 |
 >
 > Same pattern as [`meh-449-settings-hook-registration.patch.md`](./meh-449-settings-hook-registration.patch.md):
@@ -101,7 +102,7 @@ What the first run measured, and what changed because of it:
 Running a hook by hand once before wiring it is what surfaced all three — the exact thing an inline
 `bash -c` string never allowed.
 
-## 2 · Hunk 1 — `.claude/settings.json`, `hooks.Stop` (Sapir; deny-enforced for CC)
+## 2 · Hunk 1 — `.claude/settings.json`, `hooks.Stop` (Sapir; deny-enforced for CC) — ✅ applied in PR #3598
 
 **Delete** the four entries in the `"Stop"` array — the ones whose `_comment` begins with
 *"Defensive frontend build hook."*, *"Defensive ESLint no-undef hook."*, *"Vitest component tests."* and
