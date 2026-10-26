@@ -128,7 +128,7 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         status = data.get("status")
         if status in {"APPROVED", "FLAGGED", "REJECTED"}:
             return status
-        report_fail_open("review", "bad_status")
+        report_fail_open("review", "truncated" if truncated else "bad_status")
         return "APPROVED"
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)

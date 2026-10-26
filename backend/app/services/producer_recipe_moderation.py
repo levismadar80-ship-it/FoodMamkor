@@ -191,7 +191,7 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
             logger.warning(
                 "[recipe-moderation] unexpected status %r → APPROVED", status
             )
-            report_fail_open("recipe", "bad_status")
+            report_fail_open("recipe", "truncated" if truncated else "bad_status")
             return {"status": "APPROVED", "reason": None, "suggestion": None}
 
         return {
