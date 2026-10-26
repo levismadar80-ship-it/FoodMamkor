@@ -48,8 +48,12 @@ def classify_failure(exc: BaseException, *, truncated: bool = False) -> str:
 
 
 def report_fail_open(surface: str, reason: str) -> None:
-    """Record that ``surface`` approved content without a model verdict."""
-    logger.warning("[moderation] fail-open → APPROVED", surface=surface, reason=reason)
+    """Record that ``surface`` acted without a model verdict: the content
+    moderators approved it; ``producer_risk`` left the admin-only score empty
+    (nothing is approved there — filter on ``moderation_surface`` to split)."""
+    logger.warning(
+        "[moderation] fail-open — no model verdict", surface=surface, reason=reason
+    )
     try:
         import sentry_sdk
     except Exception:  # pragma: no cover — SDK absent (sandbox / minimal install)

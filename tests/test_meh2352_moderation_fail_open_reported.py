@@ -238,6 +238,13 @@ def test_producer_risk_failures_are_reported(monkeypatch):
 
     monkeypatch.setattr(anthropic, "Anthropic", _NoContentAttr)
     assert mod._call_anthropic({"name": "x"}) == (None, None)
+
+    class _Refused(_Boom):
+        def create(self, **kwargs):
+            return _Msg(None, stop_reason="refusal")
+
+    monkeypatch.setattr(anthropic, "Anthropic", _Refused)
+    assert mod._call_anthropic({"name": "x"}) == (None, None)
     assert seen == [
         ("producer_risk", "no_client"),
         ("producer_risk", "error"),
@@ -245,4 +252,5 @@ def test_producer_risk_failures_are_reported(monkeypatch):
         ("producer_risk", "truncated"),
         ("producer_risk", "truncated"),
         ("producer_risk", "error"),
+        ("producer_risk", "refusal"),
     ]
