@@ -92,3 +92,10 @@ export const FavoriteWithProducerSchema = z.object({
   producer: ProducerSchema.loose(),
   created_at: z.string().nullable().optional(),
 });
+
+// MEH-1428 chunk 2: GET /producers/me/review-link → ReviewInviteLinkOut = { url:str }.
+// The URL is what the owner pastes into a customer chat, so an empty or
+// non-URL string must route to the card's error state, never to the clipboard.
+export const ReviewInviteLinkSchema = z.object({
+  url: z.string().url(),
+});
