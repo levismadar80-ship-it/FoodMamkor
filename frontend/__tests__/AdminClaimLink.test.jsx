@@ -13,6 +13,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import ProducerForm from "@/components/admin/ProducerForm";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
 import EditProducerPage from "@/app/[locale]/admin/producers/[id]/edit/page";
@@ -33,6 +34,8 @@ vi.mock("@/lib/auth-context", () => ({
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn() },
 }));
+
+vi.mock("@/lib/toast", () => ({ showToast: { error: vi.fn(), success: vi.fn() } }));
 
 const F = he.admin.producers.form.fields;
 const C = he.admin.producers.claim;
@@ -69,6 +72,33 @@ describe("ProducerForm — as_draft (MEH-2325)", () => {
     expect(payload.as_draft).toBe(true);
     await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/producers/new-7/edit"));
     expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  // A 201 with no usable id must not send the admin to /admin/producers/undefined/edit.
+  // The draft was created, so the list is where she finds it.
+  it.each([
+    ["no id", {}],
+    ["an empty id", { id: "" }],
+  ])("ticked, response with %s: lands on the list, never on an undefined edit page", async (_label, data) => {
+    api.post.mockResolvedValue({ data });
+    wrap(<ProducerForm />);
+
+    fireEvent.click(await screen.findByTestId("as-draft-checkbox"));
+    submitCreate();
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin?tab=producers"));
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it("ticked, the create fails: no navigation, and the server's reason is shown", async () => {
+    api.post.mockRejectedValue({ response: { data: { detail: "שם העסק חסר" } } });
+    wrap(<ProducerForm />);
+
+    fireEvent.click(await screen.findByTestId("as-draft-checkbox"));
+    submitCreate();
+
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("שם העסק חסר"));
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("unticked: the payload carries no as_draft key and redirects to the list", async () => {

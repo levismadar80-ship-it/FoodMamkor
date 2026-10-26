@@ -100,6 +100,13 @@ export const ReviewInviteLinkSchema = z.object({
   url: z.string().url(),
 });
 
+// MEH-2325: POST /admin/producers with as_draft → ProducerAdminOut. Only the id
+// is read: it builds the draft's edit URL, so a missing one must not become
+// /admin/producers/undefined/edit.
+export const ProducerAdminCreatedSchema = z.object({
+  id: z.string().min(1),
+});
+
 // MEH-2325: POST /admin/producers/{id}/claim-link (ProducerClaimLinkOut).
 // Same reasoning as the review link above: the admin pastes this URL to the
 // business owner, so a malformed one must surface as an error, not be copied.

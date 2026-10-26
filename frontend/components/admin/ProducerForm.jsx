@@ -9,6 +9,7 @@ import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
@@ -526,7 +527,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           // MEH-2325: land on the draft's edit page, where the claim-link
           // panel lives — the next thing the admin does is mint the link.
           const r = await api.post("/admin/producers", { ...payload, as_draft: true });
-          router.push(`/admin/producers/${r.data.id}/edit`);
+          const created = ProducerAdminCreatedSchema.safeParse(r.data);
+          // The draft exists either way; without an id the list is where she finds it.
+          router.push(created.success ? `/admin/producers/${created.data.id}/edit` : "/admin?tab=producers");
           return;
         } else {
           await api.post("/admin/producers", payload);
