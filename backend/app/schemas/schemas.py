@@ -1137,6 +1137,11 @@ class ProducerClaimPreviewOut(BaseModel):
     category_names: list[str] = []
 
 
+class ProducerClaimPreviewRequest(BaseModel):
+    # In the body, never the query string — see producer_claim.py.
+    token: str = Field(min_length=1, max_length=2048)
+
+
 class ProducerClaimRequest(BaseModel):
     # A signed JWT; 2048 is far above its real length and stops a megabyte
     # body from reaching the decoder.

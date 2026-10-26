@@ -129,7 +129,6 @@ graph TD
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
     Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft]
-    Producers --> DraftProducts[POST /admin/producers/{id}/products · DELETE …/products/{product_id}<br/>🛡️ MEH-2326 catalogue of an ownerless draft only, 409 once claimed / not draft]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]

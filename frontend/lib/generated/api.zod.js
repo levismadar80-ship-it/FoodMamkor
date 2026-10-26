@@ -1940,42 +1940,6 @@ export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*
 
 
 /**
- * @summary Admin Create Draft Product
- */
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
-
-export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
-  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "id": /*#__PURE__*/ zod.uuid(),
-  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault),
-  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault),
-  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault),
-  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault),
-  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault),
-  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault),
-  "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
-})
-
-
-/**
- * @summary Admin Delete Draft Product
- */
-export const AdminDeleteDraftProductAdminProducersProducerIdProductsProductIdDeleteResponse = /*#__PURE__*/ zod.void()
-
-
-/**
  * @summary Reject Producer
  */
 export const RejectProducerAdminProducersProducerIdRejectPostResponse = /*#__PURE__*/ zod.unknown()
@@ -3296,10 +3260,10 @@ export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
 /**
  * @summary Preview Claim
  */
-export const previewClaimProducerClaimPreviewGetResponseCategoryNamesDefault = [];
+export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
 
-export const PreviewClaimProducerClaimPreviewGetResponse = /*#__PURE__*/ zod.object({
-  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewGetResponseCategoryNamesDefault),
+export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),

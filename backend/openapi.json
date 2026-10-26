@@ -5945,6 +5945,21 @@
         "title": "ProducerClaimPreviewOut",
         "type": "object"
       },
+      "ProducerClaimPreviewRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "ProducerClaimPreviewRequest",
+        "type": "object"
+      },
       "ProducerClaimRequest": {
         "properties": {
           "declaration_accepted": {
@@ -13934,115 +13949,6 @@
         ]
       }
     },
-    "/admin/producers/{producer_id}/products": {
-      "post": {
-        "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProductOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Admin Create Draft Product",
-        "tags": [
-          "producer-claim"
-        ]
-      }
-    },
-    "/admin/producers/{producer_id}/products/{product_id}": {
-      "delete": {
-        "operationId": "admin_delete_draft_product_admin_producers__producer_id__products__product_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "product_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Product Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Admin Delete Draft Product",
-        "tags": [
-          "producer-claim"
-        ]
-      }
-    },
     "/admin/producers/{producer_id}/reject": {
       "post": {
         "operationId": "reject_producer_admin_producers__producer_id__reject_post",
@@ -17491,21 +17397,18 @@
       }
     },
     "/producer-claim/preview": {
-      "get": {
-        "operationId": "preview_claim_producer_claim_preview_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "maxLength": 2048,
-              "minLength": 1,
-              "title": "Token",
-              "type": "string"
+      "post": {
+        "operationId": "preview_claim_producer_claim_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerClaimPreviewRequest"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
