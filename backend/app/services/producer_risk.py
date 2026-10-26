@@ -38,8 +38,9 @@ logger = logging.getLogger(__name__)
 
 # Hardcoded per spec — out-of-scope to make configurable in v1.
 _MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
-# 260 = 200 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
-_MAX_TOKENS = 260
+# MEH-2335: reasoning is up to 500 chars of free text inside the JSON; a
+# truncated reply parses to (None, None). 500 tokens keeps clear of that.
+_MAX_TOKENS = 500
 _TIMEOUT_SECONDS = 10.0
 _REASONING_CAP_CHARS = 500
 _SCORE_MIN = 0

@@ -90,7 +90,7 @@ def test_score_producer_success_persists(db, monkeypatch):
     assert mock_create.call_count == 1
     _, kwargs = mock_create.call_args
     assert kwargs["model"] == "claude-haiku-5-5"
-    assert kwargs["max_tokens"] == 260
+    assert kwargs["max_tokens"] == 500
     # MEH-2335: thinking off so it cannot eat the 260-token cap.
     assert kwargs["thinking"] == {"type": "disabled"}
     # System prompt locked in spec.

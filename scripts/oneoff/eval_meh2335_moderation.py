@@ -23,6 +23,7 @@ Usage (needs ANTHROPIC_API_KEY; ~75 calls per model, well under $1 total):
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from collections import Counter
@@ -311,11 +312,29 @@ class _Recorder:
         )
         if resp.stop_reason == "refusal":
             self.last = "refusal"
+        elif resp.stop_reason == "max_tokens":
+            # Truncated JSON fails to parse and the caller fails open; that
+            # APPROVED is not a model judgment.
+            self.last = "truncated"
+        elif text.strip() and not _parses(text):
+            self.last = "unparseable"
         elif not text.strip():
             self.last = f"empty:{resp.stop_reason}"
         else:
             self.last = "ok"
         return resp
+
+
+def _parses(text: str) -> bool:
+    """Same tolerance as the production parsers: outermost {...} must load."""
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return False
+    try:
+        json.loads(text[start : end + 1])
+    except ValueError:
+        return False
+    return True
 
 
 def _run(model_key: str, base: anthropic.Anthropic) -> dict:
@@ -351,7 +370,9 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    key = os.environ.get("ANTHROPIC_API_KEY")
+    key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get(
+        "MEH_EVAL_ANTHROPIC_API_KEY"
+    )
     if not key:
         print(
             "ANTHROPIC_API_KEY not set — refusing to run (every verdict would fail open)."

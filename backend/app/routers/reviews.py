@@ -14,7 +14,6 @@ MEH-103 verified reviews system:
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-import json
 import logging
 import math
 from datetime import datetime
@@ -26,6 +25,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
+from app.services.experience_moderation import _parse_response_text
 from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
@@ -98,8 +98,12 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
     try:
         msg = client.messages.create(
             **ai_fast_request_kwargs(),
-            # 130 = 100 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
-            max_tokens=130,
+            # MEH-2335 eval: Haiku 5.5 spends 70-120 output tokens on this
+            # JSON (the Hebrew "reason" is unbounded), so a 130 cap truncated
+            # 6/15 cases mid-string → parse error → fail-open APPROVED, incl.
+            # spam / personal info / rude. 300 leaves ~2.5x headroom; only
+            # tokens actually generated are billed.
+            max_tokens=300,
             messages=[{"role": "user", "content": prompt}],
         )
         # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
@@ -108,10 +112,16 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         if getattr(msg, "stop_reason", None) == "refusal":
             log.warning("[reviews] model refused → FLAGGED")
             return "FLAGGED"
+        if getattr(msg, "stop_reason", None) == "max_tokens":
+            # Truncated JSON will not parse and falls through to fail-open;
+            # log it by name so a too-small cap is visible, not silent.
+            log.warning("[reviews] moderation hit max_tokens — fail-open")
         raw = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
-        ).strip()
-        data = json.loads(raw)
+        )
+        # Same fence/prose tolerance as the experience/recipe moderators — a
+        # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
+        data = _parse_response_text(raw)
         status = data.get("status", "APPROVED")
         return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"
     except Exception as exc:

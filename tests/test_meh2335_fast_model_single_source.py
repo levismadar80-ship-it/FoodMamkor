@@ -120,3 +120,22 @@ def test_review_refusal_is_flagged(monkeypatch):
     assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "FLAGGED"
     monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(EMPTY))
     assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "APPROVED"
+
+
+class _Text:
+    type = "text"
+
+    def __init__(self, text):
+        self.text = text
+
+
+def test_review_parses_fenced_json(monkeypatch):
+    # MEH-2335 eval: 4/15 review verdicts came back wrapped in ```json fences.
+    # The bare json.loads() raised and the review failed open to APPROVED —
+    # spam and ads published silently. The experience/recipe parsers already
+    # tolerate fences; reviews must too.
+    from app.routers import reviews as mod
+
+    fenced = _Msg("end_turn", [_Text('```json\n{"status": "REJECTED"}\n```')])
+    monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(fenced))
+    assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "REJECTED"

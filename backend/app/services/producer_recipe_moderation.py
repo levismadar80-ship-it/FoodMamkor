@@ -156,8 +156,9 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
     try:
         message = client.messages.create(
             **ai_fast_request_kwargs(),
-            # 520 = 400 + ~30% for Haiku 5.5's tokenizer (MEH-2335).
-            max_tokens=520,
+            # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
+            # well clear of truncation (a truncated JSON fails open).
+            max_tokens=800,
             messages=[{"role": "user", "content": _build_prompt(normalized)}],
         )
         # MEH-2335: Haiku 5.5 runs safety classifiers. A decline is HTTP 200
