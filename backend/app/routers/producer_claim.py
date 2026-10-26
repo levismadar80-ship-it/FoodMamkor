@@ -8,11 +8,14 @@ Touches:  producers (declared_at, declaration_version — read status, locked
           FOR UPDATE on claim), users (producer_id, role, is_producer,
           terms_accepted_at, terms_version — the claimant's row locked FOR
           UPDATE first). Background: WhatsApp welcome to the business phone,
-          producer welcome email, risk score.
+          producer welcome email, risk score. products (admin create / delete
+          on an ownerless draft only) and the deleted product's Cloudinary
+          image.
 Does NOT: create accounts (the owner signs up via /auth/* first), publish
           anything (the draft stays "draft" until she presses «שליחה לבדיקה»
           — producer_me.submit_for_review — and the admin approves it), or
-          claim a live / imported listing (v1: drafts only).
+          claim a live / imported listing (v1: drafts only), or let the admin
+          set a draft product's diet flags (those are the owner's to declare).
 Related:  backend/app/auth.py create/decode_producer_claim_token ·
           backend/app/routers/auth.py register_producer upgrade_path (the same
           stamps, for a business the owner creates herself) ·
@@ -251,6 +254,15 @@ def claim_producer(
 # These two can, and ONLY while the draft is claimable: once she owns the page
 # the products are hers, edited from her dashboard, never from the admin.
 
+_OWNER_DECLARED_FLAGS = {
+    "is_gluten_free",
+    "is_vegan",
+    "is_vegetarian",
+    "is_lactose_free",
+    "is_no_added_sugar",
+    "is_low_carb",
+}
+
 _NOT_EDITABLE = "אפשר לערוך מוצרים מהאדמין רק בטיוטה שעוד לא שויכה לבעלת העסק"
 
 
@@ -284,7 +296,12 @@ def admin_create_draft_product(
     # No new-product alert (producer_me.create_my_product fires one): a draft
     # is not public, so nobody can have favourited it.
     producer = _editable_draft(db, producer_id)
-    product = Product(producer_id=producer.id, **data.model_dump())
+    # The diet flags are a self-declared claim (.claude/rules/labels.md): the
+    # owner asserts them, nobody at Mehamakor does. Dropped here, so a draft
+    # product starts with none and she sets them herself once the page is hers.
+    product = Product(
+        producer_id=producer.id, **data.model_dump(exclude=_OWNER_DECLARED_FLAGS)
+    )
     db.add(product)
     db.commit()
     db.refresh(product)
