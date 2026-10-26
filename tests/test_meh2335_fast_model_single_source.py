@@ -67,3 +67,56 @@ def test_request_kwargs_are_fresh_per_call():
     a = ai_fast_request_kwargs()
     a["thinking"]["type"] = "adaptive"
     assert ai_fast_request_kwargs()["thinking"] == {"type": "disabled"}
+
+
+# --- Haiku 5.5 safety-classifier declines ---------------------------------
+# A refusal is HTTP 200 with stop_reason="refusal" and no text block. Before
+# MEH-2335 every caller read that as an empty reply and failed open to
+# APPROVED; it must surface as FLAGGED instead. The "empty but not a refusal"
+# case pins that genuine infra-shaped emptiness still fails open (LOCK).
+
+
+class _Msg:
+    def __init__(self, stop_reason, content):
+        self.stop_reason = stop_reason
+        self.content = content
+
+
+class _Client:
+    def __init__(self, msg):
+        self._msg = msg
+        self.messages = self
+
+    def create(self, **kwargs):
+        return self._msg
+
+
+REFUSED = _Msg("refusal", [])
+EMPTY = _Msg("end_turn", [])
+
+
+def test_experience_refusal_is_flagged(monkeypatch):
+    from app.services import experience_moderation as mod
+
+    monkeypatch.setattr(mod, "_get_client", lambda: _Client(REFUSED))
+    assert mod.validate_experience({"title": "t"})["status"] == "FLAGGED"
+    monkeypatch.setattr(mod, "_get_client", lambda: _Client(EMPTY))
+    assert mod.validate_experience({"title": "t"})["status"] == "APPROVED"
+
+
+def test_recipe_refusal_is_flagged(monkeypatch):
+    from app.services import producer_recipe_moderation as mod
+
+    monkeypatch.setattr(mod, "_get_client", lambda: _Client(REFUSED))
+    assert mod.validate_producer_recipe({"title": "t"})["status"] == "FLAGGED"
+    monkeypatch.setattr(mod, "_get_client", lambda: _Client(EMPTY))
+    assert mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
+
+
+def test_review_refusal_is_flagged(monkeypatch):
+    from app.routers import reviews as mod
+
+    monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(REFUSED))
+    assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "FLAGGED"
+    monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(EMPTY))
+    assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "APPROVED"

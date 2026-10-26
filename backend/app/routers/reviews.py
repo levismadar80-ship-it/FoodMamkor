@@ -102,6 +102,12 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
             max_tokens=130,
             messages=[{"role": "user", "content": prompt}],
         )
+        # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
+        # "refusal", no text) is a signal about the content, not an infra
+        # failure — don't let it fall through to the fail-open APPROVED.
+        if getattr(msg, "stop_reason", None) == "refusal":
+            log.warning("[reviews] model refused → FLAGGED")
+            return "FLAGGED"
         raw = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
         ).strip()

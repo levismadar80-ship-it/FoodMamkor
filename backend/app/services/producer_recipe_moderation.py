@@ -160,6 +160,17 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
             max_tokens=520,
             messages=[{"role": "user", "content": _build_prompt(normalized)}],
         )
+        # MEH-2335: Haiku 5.5 runs safety classifiers. A decline is HTTP 200
+        # with stop_reason="refusal" and no text — the content itself
+        # tripped a harm classifier, so that is a signal, not an infra
+        # blink: route it to the admin as FLAGGED instead of failing open.
+        if getattr(message, "stop_reason", None) == "refusal":
+            logger.warning("[recipe-moderation] model refused → FLAGGED")
+            return {
+                "status": "FLAGGED",
+                "reason": "המודל סירב לבדוק את התוכן — נדרשת בדיקה ידנית",
+                "suggestion": None,
+            }
         raw = ""
         for block in message.content:
             if getattr(block, "type", None) == "text":
