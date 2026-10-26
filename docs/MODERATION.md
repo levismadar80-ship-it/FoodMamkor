@@ -46,9 +46,9 @@
 הכלל לא השתנה: אין מפתח, שגיאת API או תשובה לא קריאה ← APPROVED (בסיכון: NULL). מה שנוסף הוא אות שזה קרה. `services/moderation_fail_open.py:report_fail_open(surface, reason)` כותב warning ל-structlog (Railway logs) ואירוע Sentry אחד לכל מקרה.
 
 - tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `experience` / `recipe` / `producer_risk`), `fail_open_reason`
-- `fail_open_reason`: `no_client` (אין מפתח), `api_error`, `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status`, `error`
+- `fail_open_reason`: `no_client` (אין מפתח), `api_error`, `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status`, `error`, ובסיכון בלבד גם `refusal` (במשטחי התוכן סירוב הוא FLAGGED ולא fail-open)
 - fingerprint: `["moderation-fail-open", surface, reason]`. ה-burst cap הקיים (`app/sentry.py`, 12 ליום לכל fingerprint) מגביל את צריכת המכסה, ולכן בתקלה מתמשכת המונה ב-Sentry הוא רצפה. הספירה המלאה נמצאת ב-Railway logs.
-- התראה: כלל ב-Sentry על `moderation_fail_open:true` (צעד ידני, ב-`MANUAL_TESTING.md` § MEH-2352).
+- התראה: כלל ב-Sentry ברמת tag (סכום על כל ה-fingerprints) על `moderation_fail_open:true` עם `moderation_surface` ב-`review`/`experience`/`recipe`. `producer_risk` לא נכלל, כי שם לא מאושר כלום, רק ציון ריק. זה צעד ידני, ב-`MANUAL_TESTING.md` § MEH-2352.
 
 ---
 
