@@ -50,3 +50,6 @@ headers.txt
 runs-may6-7.json
 OVERNIGHT-REPORT.md
 .vercel/
+
+# /session-save scratchpad — local only, never committed (MEH-2346)
+/session-state.md
