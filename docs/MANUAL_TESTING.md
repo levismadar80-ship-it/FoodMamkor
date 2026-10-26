@@ -1395,7 +1395,7 @@ Run on Vercel preview before merging to staging.
 
 ### Test 1 — Admin blocked on password upgrade path
 
-- [ ] Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`)
+- [ ] Log in as admin (`<staging-admin-email>` or any account with `role='admin'`)
 - ✅ → admin-producers-queue.spec.ts (an admin on /register/producer gets the terminal gate and no form, on the same URL — ⚠️ STALE: since MEH-1489 it is an in-place gate screen, not a redirect to /admin) — Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever rendered)
 - [ ] In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')}, body: JSON.stringify({producer_name:'X',phone:'0501234567',category_ids:[],primary_contact_method:'whatsapp'})}).then(r => r.json().then(j => console.log(r.status, j)))` → **expected:** `403 {"detail":"מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת."}`
 - [ ] After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/auth/me`
@@ -1426,7 +1426,7 @@ Run on Vercel preview before merging to staging.
 
 ## MEH-669 recovery — for Smadar's local terminal only
 
-**Affected account at time of writing:** `sint12345@gmail.com` (Sapir's staging admin).
+**Affected account at time of writing:** `<staging-admin-email>` (Sapir's staging admin).
 
 Recovery is a data fix, not a schema change — does NOT require Alembic.
 
@@ -1434,7 +1434,7 @@ Recovery is a data fix, not a schema change — does NOT require Alembic.
 -- 1) READ-ONLY inspect first. Capture the producer_id → call it $PID.
 SELECT id, email, role, producer_id, is_producer
 FROM users
-WHERE email = 'sint12345@gmail.com';
+WHERE email = '<staging-admin-email>';
 
 -- 2) Restore admin access (single UPDATE — no cascade).
 --    This step alone is sufficient to unlock /admin.
@@ -1442,7 +1442,7 @@ UPDATE users
 SET role = 'admin',
     producer_id = NULL,
     is_producer = false
-WHERE email = 'sint12345@gmail.com';
+WHERE email = '<staging-admin-email>';
 
 -- 3) (Optional) Delete the orphan producer row.
 --    CASCADE will clean ProducerCategory, DeliveryArea, ProducerReview,
@@ -3683,6 +3683,12 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] **עריכה מעדכנת** — הכותבת עורכת ביקורת מסומנת לנוסח תקין; **תוצאה מצופה:** התג נעלם
 - [ ] **שמירה חוזרת לא מוחקת את התג** — הכותבת שומרת שוב ביקורת מסומנת עם אותו טקסט (משנה רק את הכוכבים); **תוצאה מצופה:** הכוכבים מתעדכנים והתג נשאר
 
+### MEH-2360 — כפתורי הסתרה והחזרה (/admin/reviews)
+
+- [ ] **הסתרה** — ב-`/admin/reviews` לחצי «הסתירי» על ביקורת גלויה; **תוצאה מצופה:** הודעה «הביקורת הוסתרה», בשורה מופיע התג «מוסתרת» והכפתור הופך ל«החזירי», בלי רענון. בעמוד העסק הביקורת כבר לא מופיעה והממוצע לא כולל אותה
+- [ ] **החזרה** — לחצי «החזירי» על ביקורת מוסתרת; **תוצאה מצופה:** הודעה «הביקורת חזרה לאתר», התג נעלם, והביקורת חוזרת לעמוד העסק
+- [ ] **כמה ביקורות** — שלוש ביקורות, אחת מוסתרת; **תוצאה מצופה:** תג אחד וכפתור «החזירי» אחד, ושני כפתורי «הסתירי». פעולה על שורה אחת לא משנה את האחרות
+- [ ] **כשל** — נתקי את הרשת ולחצי «הסתירי»; **תוצאה מצופה:** הודעת שגיאה, והשורה נשארת כמו שהייתה
 ## MEH-2369 — אירועים / חוויות / קניות קבוצתיות מוצגים רק כשיש תוכן (26/10/2026)
 
 - [ ] **sitemap בלי תוכן** — פתחי `/sitemap.xml` כשאין אירועים/חוויות/קניות קבוצתיות — **תוצאה מצופה:** אין `/events`, `/experiences`, `/group-buys` (גם לא `/en/…`). שאר העמודים במקום.

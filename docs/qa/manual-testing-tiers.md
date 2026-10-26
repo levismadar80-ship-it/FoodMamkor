@@ -263,7 +263,7 @@ it fails. Four of its cases are lifted from the real document.
 | 1329 | MEH-1232 — Admin pending queue: photo thumbnails before appr… | **קליק פותח את התמונה המלאה** — לחצי על thumbnail תקין — **תוצאה מצופה:** התמונה המקורית (לא החתוכה) נפתחת בטא… |
 | 1330 | MEH-1232 — Admin pending queue: photo thumbnails before appr… | **רק לממתינים** — בית עסק `approved` — **תוצאה מצופה:** אין רצועת thumbnails (הרצועה מיועדת לתור האישורים בלבד… |
 | 1331 | MEH-1232 — Admin pending queue: photo thumbnails before appr… | **בלי תמונות = בלי רצועה** — בית עסק ממתין ללא תמונות — **תוצאה מצופה:** אין רצועה ריקה (שער התמונה של MEH-799… |
-| 1341 | Test 1 — Admin blocked on password upgrade path | Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`) |
+| 1341 | Test 1 — Admin blocked on password upgrade path | Log in as admin (`<staging-admin-email>` or any account with `role='admin'`) |
 | 1342 | Test 1 — Admin blocked on password upgrade path | Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever re… |
 | 1343 | Test 1 — Admin blocked on password upgrade path | In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-T… |
 | 1344 | Test 1 — Admin blocked on password upgrade path | After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/… |

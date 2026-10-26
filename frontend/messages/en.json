@@ -2100,7 +2100,14 @@
       "expand": "More",
       "collapse": "Less",
       "ai_flagged": "Flagged by AI",
-      "ai_flagged_only": "Only flagged reviews"
+      "ai_flagged_only": "Only flagged reviews",
+      "hidden": "Hidden",
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "hide_aria": "Hide {user}'s review",
+      "unhide_aria": "Unhide {user}'s review",
+      "hidden_toast": "Review hidden",
+      "unhidden_toast": "Review is back on the site"
     },
     "settings": {
       "title": "Settings",
@@ -2394,8 +2401,6 @@
           "intro": "The specific addresses (project IDs, tokens) are not here — they are in the team password manager. The list here points you where to look, it does not provide credentials.",
           "prod_label": "Production site",
           "staging_label": "Staging site",
-          "github_label": "Source code",
-          "github_text": "GitHub",
           "railway_label": "Railway",
           "railway_text": "<placeholder>fill in</placeholder> — project: <code>believable-tenderness</code>, service: backend",
           "vercel_label": "Vercel",
