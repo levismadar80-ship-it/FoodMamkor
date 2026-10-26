@@ -22,6 +22,7 @@ from app.routers import (
     health,
     holiday_mode,
     marketing,
+    producer_claim,
     producer_me,
     producer_name_requests,
     producer_recipes,
@@ -50,6 +51,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(cities.router)
     app.include_router(producer_me.router)
+    # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
+    app.include_router(producer_claim.router)
     app.include_router(producers.router)
     app.include_router(favorites.router)
     app.include_router(admin.router)

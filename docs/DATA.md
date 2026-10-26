@@ -108,7 +108,7 @@
 
 > **MEH-2286 (2026-10-21):** `direct_outreach` («מהמקור פנו אליי ישירות») added to `REFERRAL_SOURCE_KEYS` — 9 keys. Code-side allowlist only; no migration.
 
-> **MEH-1818 (2026-08-02):** day-1 pending-nudge email. `producers.email_pending_nudge_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `d3b7f1a92c64`) records when a business still awaiting approval was sent the one-time "here is what is missing" email. Mirrors the MEH-539 `email_followup_*` tracking columns exactly — `nullable=True`, **no `server_default`, NO backfill** (ADR-007 Expand-only; a backfill would retro-suppress the nudge for the exact pending businesses the feature exists to reach). No new index: the candidate query filters `created_at`, already covered by `idx_producers_created_at`. **Not exposed on any schema** — public, owner, and admin serializers all omit it; the sole consumer is `app/services/pending_nudge.py:send_pending_nudges`, invoked from the daily 10:00 UTC scheduler tick. Candidate predicate: `status IN ('draft','pending') AND created_at <= now()-24h AND email_pending_nudge_sent_at IS NULL` (MEH-2100 added `draft`; MEH-2124 removed `pending_whatsapp`) — status membership is an explicit tuple, so a status value added later is excluded by default (fail-closed, same reasoning as the MEH-1587 approved-only gate). **The stamp is written even when nothing was missing and no email was sent** (a complete-but-unapproved business is waiting on admin review, not on itself): that is what removes it from the candidate set permanently and holds the send to exactly one email per producer.
+> **MEH-1818 (2026-08-02):** day-1 pending-nudge email. `producers.email_pending_nudge_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `d3b7f1a92c64`) records when a business still awaiting approval was sent the one-time "here is what is missing" email. Mirrors the MEH-539 `email_followup_*` tracking columns exactly — `nullable=True`, **no `server_default`, NO backfill** (ADR-007 Expand-only; a backfill would retro-suppress the nudge for the exact pending businesses the feature exists to reach). No new index: the candidate query filters `created_at`, already covered by `idx_producers_created_at`. **Not exposed on any schema** — public, owner, and admin serializers all omit it; the sole consumer is `app/services/pending_nudge.py:send_pending_nudges`, invoked from the daily 10:00 UTC scheduler tick. Candidate predicate: `status IN ('draft','pending') AND created_at <= now()-24h AND email_pending_nudge_sent_at IS NULL`; the day-marks then count from `max(created_at, declared_at)` (MEH-2340), so an admin draft its owner claimed by link starts the sequence at the claim, not at the admin's creation (MEH-2100 added `draft`; MEH-2124 removed `pending_whatsapp`) — status membership is an explicit tuple, so a status value added later is excluded by default (fail-closed, same reasoning as the MEH-1587 approved-only gate). **The stamp is written even when nothing was missing and no email was sent** (a complete-but-unapproved business is waiting on admin review, not on itself): that is what removes it from the candidate set permanently and holds the send to exactly one email per producer.
 >
 > **MEH-2100 (2026-08-16):** draft → submit-for-review state machine. `producers.submitted_for_review_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `e2a7c9d41b06`) records the instant the owner pressed "שליחה לבדיקה" and the row moved `draft` → `pending` — the point from which the 3-business-day review SLA is counted, replacing `created_at` in that role. **No `server_default`, NO backfill** (ADR-007 Expand-only): NULL is honest and permanent for two populations — a producer still in `draft`, and any row seeded before this revision (staging fixtures; production had no businesses, Sapir 16/08). Readers needing a submission instant use `submitted_for_review_at or created_at`, which is what makes the absent backfill correct rather than merely deferred. No new index — nothing filters or sorts on it. The paired `status` value `"draft"` needs no migration at all: `Producer.status` is a free `String(20)` with no enum and no DB CHECK, so a new value is data, not schema. **Not exposed on any schema** — public (`ProducerListOut`), owner (`ProducerOwnerOut`) and admin (`ProducerAdminOut`) serializers all omit it, deliberately: the dashboard banner and the admin queue both key on `status`, so nothing renders a submission instant and adding a field no surface reads would be dead API. Its only writer is `POST /producers/me/submit-for-review` (MEH-2100 PR2); it has **no reader yet**, and the `submitted_for_review_at or created_at` contract above is the rule for the first one that appears. Exposing it (e.g. a "submitted N days ago" column in the admin queue) is a deliberate follow-up, not an oversight.
 >
@@ -584,6 +584,24 @@ POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy +
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
 ```
 
+### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
+
+An admin prepares an ownerless DRAFT (`POST /admin/producers` with `as_draft: true`) and sends its owner a signed link. She signs in with her OWN account and takes it over. No password is created or sent by Mehamakor.
+
+```
+POST   /admin/producers/{id}/claim-link   admin  — 30/hour. Draft-only (409 otherwise), no owner yet (409 «העמוד הזה כבר שויך לחשבון.»), 404 if missing.
+                                                     → {url: {frontend_url}/claim/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_claim"},
+                                                     14-day TTL, exp essential (auth.py create_producer_claim_token). Stateless — no table, no revocation before exp.
+POST   /producer-claim/preview {token}     public — 30/min. Token in the BODY, never a query string (it is a 14-day bearer credential; a URL reaches access logs + Sentry). → {name, city, short_description, image, category_names} ONLY (no phone/email/address/license; category names drive the grower declaration, as in registration).
+                                                     Any unusable link (bad signature, expired, wrong scope, deleted draft) → the same 404; claimed or not a draft → 409.
+POST   /producer-claim                     auth   — 10/hour. Body {token, declaration_accepted, terms_accepted}. Refuses admin (403) and a user who already has a business (409);
+                                                     both boxes required (422). Locks the producer row FOR UPDATE, re-checks draft + ownerless (409), then sets
+                                                     user.producer_id / role="producer" / is_producer, stamps producers.declared_at + declaration_version and
+                                                     users.terms_accepted_at + terms_version. Status STAYS "draft" — she completes the page and submits via
+                                                     POST /producers/me/submit-for-review, so the manual approval gate is unchanged. Background: WhatsApp welcome,
+                                                     producer welcome email, risk score (same three as a self-registered draft). → {producer_id, status}.
+```
+
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
 
 ```
@@ -837,7 +855,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 ```
 # Producer moderation
 GET    /admin/producers                        admin — filter: status, search
-POST   /admin/producers                        admin — create auto-approved
+POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
 PUT    /admin/producers/{id}                   admin
 POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
