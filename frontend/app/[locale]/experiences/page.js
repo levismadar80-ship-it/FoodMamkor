@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import EventsClient from "../events/EventsClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { getHubCount, hubRobots } from "@/lib/listing-supply";
 
 // MEH-740: static metadata → generateMetadata so og:url can be per-locale self.
 // MEH-475 Wave 6: metadata strings → seo.experiences.* (was hardcoded HE) +
@@ -10,7 +11,11 @@ import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.experiences" });
+  // MEH-2369: a hub that is KNOWN to be empty is noindex (an empty listing
+  // reads to Google as a soft 404); an unknown count stays indexable.
+  const robots = hubRobots(await getHubCount("experiences"));
   return {
+    ...(robots ? { robots } : {}),
     // title.absolute — key carries the brand suffix per locale (mirrors
     // seo.about), so the layout `%s | brand` template doesn't double-append.
     title: { absolute: t("title") },
