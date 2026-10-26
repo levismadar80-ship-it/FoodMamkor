@@ -3260,10 +3260,10 @@ export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
 /**
  * @summary Preview Claim
  */
-export const previewClaimProducerClaimPreviewGetResponseCategoryNamesDefault = [];
+export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
 
-export const PreviewClaimProducerClaimPreviewGetResponse = /*#__PURE__*/ zod.object({
-  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewGetResponseCategoryNamesDefault),
+export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
