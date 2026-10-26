@@ -1035,8 +1035,10 @@ async def import_producers_excel(
         raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
     try:
         wb = load_workbook(BytesIO(contents), data_only=True)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"לא ניתן לקרוא את הקובץ: {e}")
+    except Exception:
+        # MEH-2375: the parser's message stays in the log, never in the response.
+        logger.exception("producer import: workbook could not be parsed")
+        raise HTTPException(status_code=400, detail="לא ניתן לקרוא את הקובץ")
 
     ws = wb.active
     # Skip header row
@@ -1576,8 +1578,10 @@ def upload_story_card(
         producer.story_card_url = url
         db.commit()
         return {"url": url, "saved": True}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+    except Exception:
+        # MEH-2375: Cloudinary's error text stays in the log, never in the response.
+        logger.exception("story-card upload failed for producer %s", producer_id)
+        raise HTTPException(status_code=500, detail="העלאת התמונה נכשלה")
 
 
 # --- Stats ---
@@ -1637,8 +1641,10 @@ def seed_cities(
     try:
         resp = httpx.get(_DATA_GOV_URL, timeout=30)
         resp.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"data.gov.il fetch failed: {exc}")
+    except httpx.HTTPError:
+        # MEH-2375: the transport error stays in the log, never in the response.
+        logger.exception("seed-cities: data.gov.il fetch failed")
+        raise HTTPException(status_code=502, detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il")
 
     try:
         cities = parse_localities(resp.json())
