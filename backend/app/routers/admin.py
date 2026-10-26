@@ -1644,7 +1644,9 @@ def seed_cities(
     except httpx.HTTPError:
         # MEH-2375: the transport error stays in the log, never in the response.
         logger.exception("seed-cities: data.gov.il fetch failed")
-        raise HTTPException(status_code=502, detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il")
+        raise HTTPException(
+            status_code=502, detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il"
+        )
 
     try:
         cities = parse_localities(resp.json())
