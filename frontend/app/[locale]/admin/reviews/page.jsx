@@ -171,14 +171,18 @@ export default function AdminReviewsPage() {
       );
       showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
     } catch (err) {
-      // Only the 404 `detail` is known Hebrew; a 429 or proxy 5xx body can be
-      // English, so every other failure gets the generic copy.
+      // "Deleted elsewhere" = the handler's own 404, whose detail is Hebrew
+      // (reviews.py). A route-miss or proxy 404 says "Not Found", and a 429 or
+      // 5xx body can be English too, so all of those get the generic copy and
+      // keep the row.
       const detail = err?.response?.data?.detail;
-      const notFound = err?.response?.status === 404;
-      if (notFound) {
+      const gone =
+        err?.response?.status === 404 && typeof detail === "string" && /[א-ת]/.test(detail);
+      if (gone) {
         setReviews((prev) => prev.filter((item) => item.id !== review.id));
+        setConfirmDelete((open) => (open?.id === review.id ? null : open));
       }
-      showToast.error(notFound && typeof detail === "string" && detail ? detail : tError("generic"));
+      showToast.error(gone ? detail : tError("generic"));
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev);

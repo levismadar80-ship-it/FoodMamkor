@@ -11,13 +11,14 @@
  */
 import { chromium } from "playwright";
 import { mkdirSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // CLI flag, not an env var (scripts/check_env_drift.sh — see qa-meh2209).
 const BASE_FLAG = "--base=";
 const BASE =
   (process.argv.find((a) => a.startsWith(BASE_FLAG)) || "").slice(BASE_FLAG.length) ||
   "http://127.0.0.1:3000";
-const OUT = new URL("../../qa-artifacts/MEH-2360/", import.meta.url).pathname;
+const OUT = fileURLToPath(new URL("../../qa-artifacts/MEH-2360/", import.meta.url));
 mkdirSync(OUT, { recursive: true });
 
 const review = (n, stars, body, hidden, ai = "APPROVED") => ({
@@ -48,7 +49,8 @@ const check = (name, ok, detail = "") => {
 const json = (route, body) =>
   route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
 
-// Pinned sandbox Chromium; `playwright install` is disabled here.
+// Pinned Chromium of the Claude Code sandbox only (`playwright install` is
+// disabled there); anywhere else this falls back to Playwright's own browser.
 const PINNED = "/opt/pw-browsers/chromium";
 const executablePath = existsSync(PINNED) ? PINNED : undefined;
 const browser = await chromium.launch(executablePath ? { executablePath } : {});
