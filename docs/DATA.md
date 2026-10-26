@@ -588,6 +588,8 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 
 An admin prepares an ownerless DRAFT (`POST /admin/producers` with `as_draft: true`) and sends its owner a signed link. She signs in with her OWN account and takes it over. No password is created or sent by Mehamakor.
 
+The page she lands on (MEH-2324) is `frontend/app/[locale]/claim/`. On first load it moves the token into the tab's sessionStorage (`lib/claim-token.js`) and replaces the address with `/claim`, so login/register redirects and analytics never carry it; Sentry and Speed Insights scrub `/claim/<x>`, and Clarity does not load there. The bare link has dots (a JWT), so `middleware.js` lists `/claim/:path*` in its matcher. Without that entry the catch-all skips it and the link 404s.
+
 ```
 POST   /admin/producers/{id}/claim-link   admin  — 30/hour. Draft-only (409 otherwise), no owner yet (409 «העמוד הזה כבר שויך לחשבון.»), 404 if missing.
                                                      → {url: {frontend_url}/claim/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_claim"},
@@ -1019,8 +1021,16 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 GET    /producers/{id}/reviews   public — items do NOT carry `source` (admin-only on GET /admin/reviews via AdminReviewOut; dropped from the public payload on #3368 review — whether a reviewer was invited is moderation signal, not consumer data)
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
-DELETE /reviews/{id}             auth  — owner or admin (stranger → 404)
+DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut)
+PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, recompute aggregates
+PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, recompute aggregates (MEH-2348)
 ```
+
+**MEH-2348 (sticky hide):** only the admin endpoints write `is_hidden`, so a
+hidden review is always admin-hidden. An author edit (POST upsert) keeps it
+hidden, and the author cannot DELETE it (delete + repost would undo the hide).
+Only `PUT /admin/reviews/{id}/unhide` brings it back.
 
 **MEH-1001 (existence-leak):** a non-owner-non-admin DELETE returns **404
 "ביקורת לא נמצאה"**, not 403 — review existence isn't leaked. Admin-override

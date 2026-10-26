@@ -15,6 +15,10 @@ cost, and a Sentry alert on the ``moderation_fail_open`` tag can count them.
 Never raises, and is a no-op when ``sentry_sdk`` is absent or
 uninitialised (sandbox, tests, local dev), mirroring
 ``capture_background_exception``.
+
+Not wired into ``home_product_moderation``: its router is unmounted
+(``router_registry.py``, MEH-1406) and the subsystem is being removed
+(MEH-796), so it can never fail open in production.
 """
 
 from __future__ import annotations
@@ -43,13 +47,19 @@ def classify_failure(exc: BaseException, *, truncated: bool = False) -> str:
         if isinstance(exc, anthropic.APIError):
             return "api_error"
     except Exception:  # pragma: no cover — SDK broken / absent
-        pass
+        logger.debug("[moderation] anthropic import failed while classifying")
     return "error"
 
 
 def report_fail_open(surface: str, reason: str) -> None:
-    """Record that ``surface`` approved content without a model verdict."""
-    logger.warning("[moderation] fail-open → APPROVED", surface=surface, reason=reason)
+    """Record that ``surface`` acted without a model verdict.
+
+    The content moderators approved the item. ``producer_risk`` approves
+    nothing; it left the admin-only score empty. Filter on
+    ``moderation_surface`` to tell them apart."""
+    logger.warning(
+        "[moderation] fail-open — no model verdict", surface=surface, reason=reason
+    )
     try:
         import sentry_sdk
     except Exception:  # pragma: no cover — SDK absent (sandbox / minimal install)

@@ -131,8 +131,28 @@ def test_model_verdict_is_not_reported(monkeypatch, calls, surface, msg):
     assert seen == []
 
 
+@pytest.mark.parametrize("surface", SURFACES)
+def test_lowercase_verdict_is_honoured_not_failed_open(monkeypatch, calls, surface):
+    # Reviews compared case-sensitively, so a lowercase "rejected" published
+    # the review as APPROVED; the other two surfaces already upper-cased.
+    seen, patch = calls
+    mod, getter, run, _ = surface()
+    patch(mod)
+    lower = json.dumps({"status": "rejected", "reason": "x", "suggestion": None})
+    monkeypatch.setattr(mod, getter, lambda: _Client(_Msg(lower)))
+    assert run() == "REJECTED"
+    assert seen == []
+
+
 def test_classify_failure_names():
+    import anthropic
+    import httpx
+
     from app.services.moderation_fail_open import classify_failure
+
+    # The branch a dead key / 429 / 529 hits in production.
+    conn = anthropic.APIConnectionError(request=httpx.Request("POST", "http://x"))
+    assert classify_failure(conn) == "api_error"
 
     assert classify_failure(ValueError(), truncated=True) == "truncated"
     try:
@@ -142,10 +162,31 @@ def test_classify_failure_names():
     assert classify_failure(RuntimeError()) == "error"
 
 
-def test_report_fail_open_never_raises_without_sentry():
-    from app.services.moderation_fail_open import report_fail_open
+def test_report_fail_open_never_raises_when_sentry_breaks(monkeypatch):
+    # A broken Sentry must not turn a fail-open into a 500: the warning is
+    # still logged, the failure lands in the debug fallback, nothing raises.
+    import sentry_sdk
 
-    report_fail_open("review", "no_client")  # sentry_sdk uninitialised here
+    import app.services.moderation_fail_open as mod
+
+    calls: list[tuple[str, str]] = []
+
+    class _Log:
+        def warning(self, msg, **kw):
+            calls.append(("warning", msg))
+
+        def debug(self, msg, **kw):
+            calls.append(("debug", msg))
+
+    def _boom():
+        raise RuntimeError("sentry down")
+
+    monkeypatch.setattr(mod, "logger", _Log())
+    monkeypatch.setattr(sentry_sdk, "new_scope", _boom)
+
+    mod.report_fail_open("review", "no_client")
+
+    assert [level for level, _ in calls] == ["warning", "debug"]
 
 
 def test_report_fail_open_sentry_tags_and_fingerprint(monkeypatch):
@@ -238,6 +279,13 @@ def test_producer_risk_failures_are_reported(monkeypatch):
 
     monkeypatch.setattr(anthropic, "Anthropic", _NoContentAttr)
     assert mod._call_anthropic({"name": "x"}) == (None, None)
+
+    class _Refused(_Boom):
+        def create(self, **kwargs):
+            return _Msg(None, stop_reason="refusal")
+
+    monkeypatch.setattr(anthropic, "Anthropic", _Refused)
+    assert mod._call_anthropic({"name": "x"}) == (None, None)
     assert seen == [
         ("producer_risk", "no_client"),
         ("producer_risk", "error"),
@@ -245,4 +293,5 @@ def test_producer_risk_failures_are_reported(monkeypatch):
         ("producer_risk", "truncated"),
         ("producer_risk", "truncated"),
         ("producer_risk", "error"),
+        ("producer_risk", "refusal"),
     ]

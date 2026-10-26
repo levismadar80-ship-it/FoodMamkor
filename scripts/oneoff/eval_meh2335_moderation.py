@@ -197,7 +197,8 @@ EXPERIENCES = [
             "price_per_person": 200,
             "max_participants": 10,
         },
-    ),  # MEH-2350: MLM recruitment with a forged "system" line.
+    ),
+    # MEH-2350: MLM recruitment with a forged "system" line.
     (
         "injection",
         {

@@ -180,9 +180,14 @@ def _extract_json_object(raw: str) -> dict | None:
 
 def _unreadable_reason(response: object) -> str:
     """A max_tokens cut is the usual cause of an empty or unparseable body;
-    name it so Sentry can tell a too-small cap from a malformed reply."""
-    if getattr(response, "stop_reason", None) == "max_tokens":
+    name it so Sentry can tell a too-small cap from a malformed reply. A
+    safety-classifier refusal (no text) is named too — it is not a malformed
+    reply, and the content surfaces route it to FLAGGED instead."""
+    stop_reason = getattr(response, "stop_reason", None)
+    if stop_reason == "max_tokens":
         return "truncated"
+    if stop_reason == "refusal":
+        return "refusal"
     return "unparseable"
 
 
