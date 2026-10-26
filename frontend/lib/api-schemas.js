@@ -99,3 +99,20 @@ export const FavoriteWithProducerSchema = z.object({
 export const ReviewInviteLinkSchema = z.object({
   url: z.string().url(),
 });
+
+// MEH-2324: POST /producer-claim/preview → ProducerClaimPreviewOut. Only the
+// public fields of a draft (producer_claim.py). `name` is the page heading, so
+// an empty one is a malformed response, not a business to claim.
+export const ProducerClaimPreviewSchema = z.object({
+  name: z.string().min(1),
+  city: z.string().nullable().optional(),
+  short_description: z.string().nullable().optional(),
+  image: z.string().nullable().optional(),
+  category_names: z.array(z.string()).default([]),
+});
+
+// MEH-2324: POST /producer-claim → ProducerClaimOut.
+export const ProducerClaimResultSchema = z.object({
+  producer_id: z.string().min(1),
+  status: z.string(),
+});

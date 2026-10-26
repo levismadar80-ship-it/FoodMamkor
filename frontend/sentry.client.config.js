@@ -3,6 +3,7 @@
 // Loaded automatically by @sentry/nextjs in the browser. Runs only when
 // NEXT_PUBLIC_SENTRY_DSN is set so local dev and CI stay quiet.
 import * as Sentry from "@sentry/nextjs";
+import { scrubClaimTokens } from "./lib/claim-token";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -22,7 +23,10 @@ if (dsn) {
     ],
     beforeSend(event) {
       if (process.env.NODE_ENV === "development") return null;
-      return event;
+      // MEH-2324: the owner-claim link is a bearer credential in its path
+      // (/claim/<token>). Redact it from the URL, breadcrumbs and context.
+      return scrubClaimTokens(event);
     },
+    beforeSendTransaction: (event) => scrubClaimTokens(event),
   });
 }

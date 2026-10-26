@@ -234,6 +234,10 @@ export default async function middleware(request) {
 export const config = {
   matcher: [
     "/((?!api|_next|_vercel|.*\\..*).*)",
+    // MEH-2324: the owner-claim link /claim/<token>. The token is a JWT, so
+    // the path has dots and the entry above skips it; without this it never
+    // gets the locale rewrite and 404s. Two segments, so no slug check below.
+    "/claim/:path*",
     // MEH-2298: API calls, for the visitor-IP stamp only (apiPassThrough).
     "/api/:path*",
   ],
