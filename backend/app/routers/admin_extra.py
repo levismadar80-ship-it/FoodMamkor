@@ -819,7 +819,9 @@ def get_dashboard(
     undelivered_whatsapp_7d = (
         db.query(func.count(OutboundMessage.id))
         .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
-        .filter(OutboundMessage.created_at >= now - timedelta(days=UNDELIVERED_WINDOW_DAYS))
+        .filter(
+            OutboundMessage.created_at >= now - timedelta(days=UNDELIVERED_WINDOW_DAYS)
+        )
         .scalar()
         or 0
     )
