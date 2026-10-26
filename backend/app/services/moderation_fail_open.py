@@ -45,6 +45,12 @@ def classify_failure(exc: BaseException, *, truncated: bool = False) -> str:
         import anthropic
 
         if isinstance(exc, anthropic.APIError):
+            # MEH-2390: an HTTP answer carries its class — a dead key (401) or
+            # rate limit (429) is not an overload (529). Classes, not codes,
+            # to keep the tag low-cardinality. No answer at all → api_error.
+            status = getattr(exc, "status_code", None)
+            if isinstance(status, int):
+                return f"api_error_{status // 100}xx"
             return "api_error"
     except Exception:  # pragma: no cover — SDK broken / absent
         logger.debug("[moderation] anthropic import failed while classifying")
