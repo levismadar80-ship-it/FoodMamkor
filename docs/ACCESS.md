@@ -102,3 +102,38 @@ Then Claude Code updates this file (a docs-only PR), including `Last reviewed:`.
   Sapir (`.claude/rules/security.md`).
 - [ ] `mehamakor-bot`: record its purpose, or remove it as a collaborator if unused.
 - [ ] GitHub iOS holds `admin:org`. Fine if intentional; revoke if the app isn't used.
+- [ ] Repo visibility keeps flipping to private (§8). Find the actor in the
+  security log and decide what the repo should be (MEH-2365).
+
+## 8. Repo visibility: who can flip it, and where to see who did
+
+**Symptom.** The repo has gone private at least three times: 31/08, 25/10
+(public again at 16:23Z), and 26/10 from about 15:44Z. Each time every Actions
+job fails in about 2 seconds with no steps and the message "an Actions budget is
+preventing further use". A private repo on Free has a minutes quota, and its
+rulesets stop applying ([DEPLOYMENT.md](./DEPLOYMENT.md), search "Visibility").
+Check `GET /repos/levismadar80-ship-it/FoodMamkor` → `"visibility"` first.
+
+**Nothing in the repo does it.** `git grep -iE "visibility|private"` over
+`.github/`, `scripts/` and `.claude/` finds only a comment in
+`claude-review.yml` (26/10).
+
+**Only the owner account can.** On a personal-account repo, collaborators
+(`sapirschnapp`, `mehamakor-bot`) cannot change visibility, and `mehamakor-cc`
+has no Administration permission (§2). So the change comes from
+`levismadar80-ship-it` itself: the web UI, GitHub iOS, the `git-bash` token, or
+a Claude in Chrome session running in Sapir's browser.
+
+**Claude Code cannot see who did it.** The repo events API records only the
+private → public direction (`PublicEvent`), and the account security log is
+outside a session's repo-scoped access. The answer is in the security log,
+filtered to visibility changes:
+<https://github.com/settings/security-log?q=action%3Arepo.access>. Each entry
+shows the time and where it came from.
+
+**The conflict behind it (a guess, not verified).** The contact spreadsheets
+that #3604 removed are still in git history, so a public repo still exposes
+those phone numbers. That is a good reason to want the repo private, and it
+conflicts with keeping CI alive. The ways out are Sapir's: purge the history
+(a force-push to `staging` and `main`), pay for Actions minutes, or keep the
+repo public and accept that the numbers stay in history.
