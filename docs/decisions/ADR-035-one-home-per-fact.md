@@ -79,8 +79,13 @@ lapses.** MEH-2346 adds two warn-only guards under `scripts/checks/`. One flags
 
 - **Keep the copies and add a sync checklist.** Rejected: that is the
   mechanism that failed, with one more step to forget.
-- **Make Drive the brand source of truth.** Rejected for now, because CONTEXT
-  §3 already ranks Drive below the repo. If Sapir decides otherwise, that is a
-  new ADR, not an edit to this one.
+- **Make Drive the brand source of truth.** Rejected, because CONTEXT §3
+  already ranks Drive below the repo. **Settled 2026-10-26:** Sapir delegated
+  the call, and the evidence decided it. `docs/BRAND.md` was edited through
+  09/2026 (#3475), and ADR-022/024/027/030 all postdate the Drive brand files
+  (last modified 05–06/2026). Drive `03-Brand-Hub` is an archive with a
+  read-first note saying so; only `06-inspiration-swipe-file.md` stays live
+  there, because it is inspiration material, not a copy of a repo doc. Reversing
+  this is a new ADR, not an edit to this one.
 - **Blocking guards.** Rejected: an over-age HANDOFF section is not a reason to
   stop a release. Start warn-only, same path as `shown-failing-guard.sh`.

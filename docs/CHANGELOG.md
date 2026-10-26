@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+- **‏26/10 (09:15–09:50) — סידור הידע אחרי המעבר לחשבון Claude חדש: בית אחד לכל עובדה (ADR-035), ושומרים שמזהירים כשמשהו מתיישן.**
+  - **‏#3597 `828dde50` (MEH-2345):** ‏ADR-035 קובע לכל סוג עובדה מקום אחד: כללים, מוצר ומותג, החלטות, משימות פתוחות (Linear), מצב נוכחי (HANDOFF), היסטוריה, גישות והעדפות (זיכרון הפרויקט). ‏`HANDOFF.md` ירד מ-13,716 ל-287 שורות. העותק המלא נשמר מילה במילה ב-`docs/archive/handoff/HANDOFF-until-2026-10-21.md`, כך שציטוטי `HANDOFF.md:NNNN` ישנים נפתרים שם. ‏`CONTEXT.md` ו-`DEPLOYMENT.md` נבדקו מול הקוד (דומיין co.il, ‏DoD לפי MEH-2302 וכלל 31). חדש: `docs/PROJECT_INSTRUCTIONS.md`, המקור להוראות של פרויקט Claude, ו-`docs/runbooks/UPTIME.md`.
+  - **‏#3601 `205e24e9` (MEH-2346):** ‏`scripts/docs/knowledge_freshness.py` עם שני שומרים warn-only: `handoff-retention-guard.sh` (סעיף ישן מ-14 יום או קובץ מעל 1,500 שורות) ו-`doc-freshness-guard.sh` (‏`Last reviewed:` ישן מ-120 יום ב-CONTEXT / BRAND / PROJECT_INSTRUCTIONS). ‏`archive-handoff` מעביר סעיפים ישנים ל-`docs/archive/handoff/YYYY-MM.md`. ‏self-test של 14 מקרים רץ לפני כל בדיקה, על הקבצים האמיתיים. ‏`MERGE-QUEUE.md` ו-`session-state.md` עברו לארכיון.
+  - **‏נמדד:** ה-hook של SessionStart לא הזריק את HANDOFF אף פעם. קטע ה-CHANGELOG לבדו ארוך מהתקציב של 3,000 תווים, ו-`tail -40` על קובץ שהחדש בו למעלה מחזיר את הסעיף הישן ביותר. התיקון מוכן ב-`docs/ci/meh-2346-session-start-handoff.patch.md` ומחכה לספיר (`.claude/hooks/**` חסום ל-CC).
+  - **‏הוכרע (ספיר העבירה את ההחלטה):** מקור המותג הוא הריפו, ו-Drive ‏`03-Brand-Hub` הוא ארכיון עם קובץ «קראי קודם» (ADR-035, Alternatives). הוראות פרויקט Claude הוחלפו בנוסח מ-`docs/PROJECT_INSTRUCTIONS.md`. קבצי ה-xlsx עם פרטי אנשי הקשר יוצאים מהריפו ב-PR נפרד.
+
 - **‏26/10 (08:45–09:10) — דיאטת הכללים: הכללים שנטענים בכל סשן ירדו מ-245,672 ל-59,902 bytes, בלי למחוק כלל.**
   - **‏#3589 `27b6b16c` (MEH-2337):** ‏`paths:` frontmatter ל-`skills.md`, `labels.md`, `deployment.md`. ה-diff כולל רק frontmatter.
   - **‏#3590 `da3c166a` (MEH-2338):** ‏`workflow.md` ירד מ-118,110 ל-22,677 bytes. הנוסח המלא נמצא מילה במילה ב-`docs/rules-history/workflow.md`. נוסף guard ‏`scripts/checks/rules-inventory-guard.sh`, שנכשל אם כותרת או כלל ממוספר מהארכיון חסרים בקובץ החי. ה-self-test שלו רץ על הארכיון האמיתי.
