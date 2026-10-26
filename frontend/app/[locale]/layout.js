@@ -17,7 +17,7 @@ import CustomCursor from "@/components/CustomCursor";
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
 import { BRAND_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
@@ -265,7 +265,7 @@ export default async function LocaleLayout({ children, params }) {
           </AuthProvider>
         </NextIntlClientProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}
-        <SpeedInsights />
+        <SpeedInsightsRedacted />
       </body>
     </html>
   );

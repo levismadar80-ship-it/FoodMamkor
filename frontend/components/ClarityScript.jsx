@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { usePathname } from "next/navigation";
+
+// MEH-2324: /claim/<token> carries a bearer credential in its path, and a
+// session recorder keeps the page URL. The claim page swaps the address to
+// /claim on mount; Clarity waits for that.
+const CLAIM_TOKEN_PATH = /\/claim\/[^/]/;
 
 export default function ClarityScript({ projectId }) {
   const [consented, setConsented] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const check = () => {
@@ -19,7 +26,9 @@ export default function ClarityScript({ projectId }) {
     return () => window.removeEventListener("cookie-consent", check);
   }, []);
 
-  if (!consented) return null;
+  // This only keeps Clarity from loading on a token path. It cannot unload a
+  // Clarity already running in the tab; the emailed link is a fresh page load.
+  if (!consented || CLAIM_TOKEN_PATH.test(pathname || "")) return null;
 
   return (
     <Script id="ms-clarity" strategy="afterInteractive">
