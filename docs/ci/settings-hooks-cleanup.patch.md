@@ -1,7 +1,8 @@
 # MEH-2332: two hooks in `.claude/settings.json` that don't do what they say
 
 > **CC cannot apply anything here.** `.claude/settings.json` is deny-enforced (`permissions.deny`
-> plus `protect-lint-config.sh`). **Nothing here has been applied.** Same pattern as
+> plus `protect-lint-config.sh`). **✅ Both hunks APPLIED 26/10 by Sapir in PR #3598** (hunk 1 as
+> MEH-2117 hunk 1 with the MEH-2343 timeout; hunk 2 = the reminder deleted). Same pattern as
 > [`meh-2117-stop-hook-in-repo.patch.md`](./meh-2117-stop-hook-in-repo.patch.md): CC stages the
 > patch, and Sapir applies it.
 
