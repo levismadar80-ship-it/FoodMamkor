@@ -298,6 +298,7 @@ producer_reviews (
   stars int (1-5), title, body,
   created_at,
   source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
+  ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. Fail-open is stored as APPROVED (its signal is the Sentry report). NULL = rows that predate the column. REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
 ```
@@ -1020,7 +1021,7 @@ GET    /producers/{id}/reviews   public — items do NOT carry `source` (admin-o
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
-GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source` and, MEH-2349, `ai_moderation_status`)
 PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, recompute aggregates
 PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, recompute aggregates (MEH-2348)
 ```
