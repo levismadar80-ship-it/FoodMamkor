@@ -48,15 +48,18 @@ export default function AdminHome() {
   }
 
   const stats = data.stats || {};
-  const pendingCount = stats.pending_producers || 0;
+  // A non-number count is unknown, not zero (MEH-2096): the panel then says
+  // the count could not be read instead of «אין עסקים ממתינים».
+  const pendingCount = typeof stats.pending_producers === "number" ? stats.pending_producers : null;
   const pending = data.pending_producers || [];
   // Secondary queues with something in them. `queueCount` returns null when a
   // key is missing (a stats payload without the MEH-2359 keys — a frontend
   // deployed ahead of its backend). A null is "unknown", never "empty": the
   // rows below list only known-busy queues, and the all-clear line renders
   // only when EVERY count is known (MEH-2096 — an unknown state must not read
-  // as a verified-empty one). The sidebar stays the fail-visible surface for
-  // navigation; here the unknown case says so in one line.
+  // as a verified-empty one). Whenever any count is unknown the block says so
+  // in one line, under the known-busy rows if there are any. The sidebar
+  // stays the fail-visible surface for navigation.
   const counted = QUEUES.map((q) => ({ ...q, count: queueCount(stats, q) }));
   const busyQueues = counted.filter((q) => q.count !== null && q.count > 0);
   const countsUnknown = counted.some((q) => q.count === null);
@@ -94,7 +97,11 @@ export default function AdminHome() {
             {t("dashboard.pending_panel.view_all")}
           </Link>
         </div>
-        {pending.length === 0 ? (
+        {pending.length === 0 && pendingCount === null ? (
+          <p className="text-sm text-muted" data-testid="admin-home-pending-unknown">
+            {t("common.error_loading")}
+          </p>
+        ) : pending.length === 0 ? (
           <p className="text-sm text-muted">{t("dashboard.pending_panel.empty")}</p>
         ) : (
           <ul className="divide-y divide-border">
@@ -114,7 +121,7 @@ export default function AdminHome() {
             ))}
           </ul>
         )}
-        {pendingCount > pending.length && (
+        {pendingCount !== null && pendingCount > pending.length && (
           <p className="text-xs text-muted mt-3">
             {t("dashboard.pending_panel.more", { count: pendingCount - pending.length })}
           </p>
@@ -124,16 +131,12 @@ export default function AdminHome() {
       {/* 2. Every other queue — one row per non-empty queue; none → one line. */}
       <section data-testid="admin-home-queues" className="bg-white border border-border rounded-[12px] p-5">
         <h2 className="font-semibold mb-3">{t("dashboard.queues.heading")}</h2>
-        {busyQueues.length === 0 && countsUnknown ? (
-          <p className="text-sm text-muted" data-testid="admin-home-queues-unknown">
-            {t("common.error_loading")}
-          </p>
-        ) : busyQueues.length === 0 ? (
+        {busyQueues.length === 0 && !countsUnknown ? (
           <p className="text-sm text-muted flex items-center gap-2">
             <CheckCircle size={18} weight="fill" aria-hidden="true" className="text-primary" />
             {t("dashboard.queues.all_clear")}
           </p>
-        ) : (
+        ) : busyQueues.length > 0 && (
           <ul className="divide-y divide-border">
             {busyQueues.map((q) => (
               <li key={q.href}>
@@ -152,6 +155,11 @@ export default function AdminHome() {
               </li>
             ))}
           </ul>
+        )}
+        {countsUnknown && (
+          <p className={`text-sm text-muted ${busyQueues.length > 0 ? "mt-3" : ""}`} data-testid="admin-home-queues-unknown">
+            {t("common.error_loading")}
+          </p>
         )}
       </section>
 

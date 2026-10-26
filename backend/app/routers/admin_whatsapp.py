@@ -40,8 +40,6 @@ router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
 # category without flipping a filter. The tuple and the window live in
 # services/whatsapp.py (MEH-2359) so the admin-home count uses the same
 # predicate as this list.
-_UNDELIVERED_STATUSES = UNDELIVERED_STATUSES
-_WINDOW_DAYS = UNDELIVERED_WINDOW_DAYS
 
 
 @router.get("/failed", response_model=list[OutboundMessageAdminOut])
@@ -52,7 +50,7 @@ def list_failed_outbound(
     """Return undelivered outbound WhatsApp rows from the last 7 days.
 
     Filter: status IN ('failed', 'window_expired') AND created_at within
-    the last `_WINDOW_DAYS`. Ordered newest-first so the freshest
+    the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest
     failures show up at the top of the admin table.
 
     No pagination — the per-day failure volume is small (single-digit
@@ -60,10 +58,10 @@ def list_failed_outbound(
     worst case. If the row count ever materially exceeds the page, add
     pagination here; until then, simpler is better.
     """
-    cutoff = datetime.utcnow() - timedelta(days=_WINDOW_DAYS)
+    cutoff = datetime.utcnow() - timedelta(days=UNDELIVERED_WINDOW_DAYS)
     return (
         db.query(OutboundMessage)
-        .filter(OutboundMessage.status.in_(_UNDELIVERED_STATUSES))
+        .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
         .filter(OutboundMessage.created_at >= cutoff)
         .order_by(OutboundMessage.created_at.desc())
         .all()

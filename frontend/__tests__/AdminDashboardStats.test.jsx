@@ -123,6 +123,33 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
     expect(screen.getByTestId("admin-home-queues").querySelectorAll("a")).toHaveLength(0);
   });
 
+  it("a missing pending_producers count is UNKNOWN in the pending panel too, not «אין ממתינים» (R4-1)", async () => {
+    // The count key is absent while the preview list is empty: the panel
+    // must say the count could not be read, not that nothing is waiting.
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({ data: { stats: { total_producers: 12, open_reports: 0 }, pending_producers: [] } }),
+    );
+    render(<AdminHome />);
+    expect(await screen.findByTestId("admin-home-pending-unknown")).toHaveTextContent("admin.common.error_loading");
+    expect(screen.queryByText("admin.dashboard.pending_panel.empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-yellow-400")).toBeNull();
+  });
+
+  it("a busy queue next to a missing key shows the rows AND the unknown line (R4-2)", async () => {
+    // kashrut known-busy, recipes_awaiting_review absent: the known row is
+    // listed and the block still says some counts could not be read.
+    const { recipes_awaiting_review: _dropped, ...rest } = DASHBOARD.stats;
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({ data: { stats: { ...rest, pending_kashrut_requests: 3, pending_name_change_requests: 0 }, pending_producers: [] } }),
+    );
+    render(<AdminHome />);
+    const queues = await screen.findByTestId("admin-home-queues");
+    await waitFor(() => expect(queues.querySelectorAll("a")).toHaveLength(1));
+    expect(queues.querySelector("a").getAttribute("href")).toBe("/admin/kashrut");
+    expect(screen.getByTestId("admin-home-queues-unknown")).toHaveTextContent("admin.common.error_loading");
+    expect(screen.queryByText("admin.dashboard.queues.all_clear")).not.toBeInTheDocument();
+  });
+
   it("says how many more are waiting when the preview is shorter than the count", async () => {
     apiMock.get.mockImplementation(() =>
       Promise.resolve({ data: { stats: { ...DASHBOARD.stats, pending_producers: 7 }, pending_producers: DASHBOARD.pending_producers } }),
