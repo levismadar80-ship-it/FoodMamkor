@@ -715,3 +715,82 @@ def test_no_sent_subject_still_carries_the_placeholder(db, sent_log):
     assert sent_log, "control: nothing was sent, so this test proved nothing"
     for _to, subject, _body in sent_log:
         assert _COUNT_TOKEN not in subject
+
+
+# ---------- MEH-2340: a claimed draft counts from the claim ----------
+
+
+def _claimed_draft(db, *, created_days_ago: float, claimed_days_ago: float):
+    """An admin-prepared draft (created long ago) that its owner claimed later.
+    The claim is what stamps `declared_at` (producer_claim.py, MEH-2322)."""
+    producer, user = _incomplete_draft(db)
+    now = datetime.now(timezone.utc)
+    producer.created_at = now - timedelta(days=created_days_ago)
+    producer.declared_at = now - timedelta(days=claimed_days_ago)
+    producer.email_pending_nudge_sent_at = None
+    db.commit()
+    db.refresh(producer)
+    return producer, user
+
+
+def test_claimed_draft_gets_nothing_right_after_the_claim(db, sent_log):
+    """Created 10 days ago, claimed an hour ago. Counting from created_at, this
+    sent the day-7 email («המקום שלכם שמור») an hour after the owner arrived."""
+    _claimed_draft(db, created_days_ago=10, claimed_days_ago=1 / 24)
+
+    assert pending_nudge.send_pending_nudges(db) == {
+        "sent": 0,
+        "stamped_nothing_missing": 0,
+    }
+    assert sent_log == []
+
+
+def test_claimed_draft_gets_day_1_a_day_after_the_claim(db, sent_log):
+    """The sequence starts at the claim: first email is day-1, not day-7."""
+    _claimed_draft(db, created_days_ago=11, claimed_days_ago=1.1)
+
+    assert pending_nudge.send_pending_nudges(db) == {
+        "sent": 1,
+        "stamped_nothing_missing": 0,
+    }
+    assert sent_log[0][1] == _SUBJECT_DAY_1
+
+
+def test_claimed_draft_runs_the_full_sequence_from_the_claim(db, sent_log):
+    """day-1 → day-3 → day-7, each counted from the claim, nothing in between."""
+    producer, _user = _claimed_draft(db, created_days_ago=20, claimed_days_ago=1.1)
+    pending_nudge.send_pending_nudges(db)
+
+    def advance(days):
+        delta = timedelta(days=days)
+        producer.created_at -= delta
+        producer.declared_at -= delta
+        producer.email_pending_nudge_sent_at -= delta
+        db.commit()
+        db.refresh(producer)
+
+    advance(1.0)  # claim + 2.1 days: between marks
+    pending_nudge.send_pending_nudges(db)
+    advance(1.0)  # claim + 3.1
+    pending_nudge.send_pending_nudges(db)
+    advance(4.0)  # claim + 7.1
+    pending_nudge.send_pending_nudges(db)
+
+    assert [s for _to, s, _b in sent_log] == [
+        _SUBJECT_DAY_1,
+        _SUBJECT_DAY_3_TEMPLATE.replace(_COUNT_TOKEN, "1"),
+        _SUBJECT_DAY_7_TEMPLATE.replace(_COUNT_TOKEN, "1"),
+    ]
+
+
+def test_self_registered_draft_still_counts_from_creation(db, sent_log):
+    """Control: registration stamps declared_at in the same request, so the
+    two anchors coincide and the existing schedule is unchanged."""
+    producer, _user = _incomplete_draft(db)
+    created = datetime.now(timezone.utc) - timedelta(days=1.1)
+    producer.created_at = created
+    producer.declared_at = created + timedelta(seconds=1)
+    db.commit()
+
+    assert pending_nudge.send_pending_nudges(db)["sent"] == 1
+    assert sent_log[0][1] == _SUBJECT_DAY_1

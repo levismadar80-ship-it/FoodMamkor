@@ -937,7 +937,8 @@ export const ListProducersAdminProducersGetResponse = /*#__PURE__*/ zod.array(Li
 
 
 /**
- * Admin-created producers are auto-approved.
+ * Admin-created producers are auto-approved — unless `as_draft`, which
+ * prepares an ownerless draft for the owner-claim link (MEH-2322).
  * @summary Admin Create Producer
  */
 export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = false;
@@ -1903,6 +1904,15 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
  * @summary Approve Producer
  */
 export const ApproveProducerAdminProducersProducerIdApprovePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Create Claim Link
+ */
+export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#__PURE__*/ zod.object({
+  "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "url": /*#__PURE__*/ zod.string()
+})
 
 
 /**
@@ -3236,6 +3246,29 @@ export const SubscribeNewsletterNewsletterPostResponse = /*#__PURE__*/ zod.unkno
  * @summary Unsubscribe Newsletter
  */
 export const UnsubscribeNewsletterNewsletterUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Claim Producer
+ */
+export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Preview Claim
+ */
+export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
+
+export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
 
 
 /**

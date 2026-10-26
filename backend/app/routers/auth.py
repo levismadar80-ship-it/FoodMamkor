@@ -502,7 +502,24 @@ async def register_producer(
         # Authenticated user upgrading to producer. No enumeration vector —
         # the caller already proved control of the account. Still returns
         # a token + whatsapp_sent so the dashboard flow keeps working.
-        user = current_user
+        # MEH-2322: lock and re-read the account row before the checks below —
+        # the same pattern as producer_claim.claim_producer. `current_user` was
+        # read before any lock, so this path and an owner-claim (or a second
+        # register) racing on one account would both see producer_id=None and
+        # the later commit would overwrite the earlier link, leaving one
+        # business owned by nobody. Lock order user → producer, as in the claim
+        # route, so the two cannot deadlock.
+        # DO NOT drop populate_existing() — without it the identity-mapped
+        # `current_user` comes back with its stale attributes.
+        user = (
+            db.query(User)
+            .filter(User.id == current_user.id)
+            .with_for_update()
+            .populate_existing()
+            .first()
+        )
+        if user is None:  # deleted between authentication and the lock
+            raise HTTPException(status_code=401, detail="משתמש לא נמצא")
         # MEH-669: admin accounts must never self-upgrade to producer.
         # Without this guard, line `user.role = "producer"` below silently
         # demotes the admin and locks them out of /admin (vertical privilege
