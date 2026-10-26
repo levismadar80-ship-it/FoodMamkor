@@ -56,12 +56,17 @@
 #   no pytest runner             → skip pytest (warn)
 #   tests/test_api.py missing    → skip pytest (warn)
 #   ESLint exit 2 (config error) → warn + skip, not block (as before)
+#   area unchanged (MEH-2343)    → skip that area: frontend = build+eslint+vitest,
+#                                  backend = pytest. "Unchanged" = identical to
+#                                  origin/staging, or to its last green run.
 #
 # ENV
 #   STOP_HOOK_ROOT   override the repo root (default: CLAUDE_PROJECT_DIR, else
 #                    `git rev-parse --show-toplevel`, else cwd) — used by the
 #                    self-test and by a by-hand run from another checkout
 #   STOP_HOOK_SKIP   comma list of steps to skip: build,eslint,vitest,pytest
+#   STOP_HOOK_FORCE  any non-empty value → ignore the change gating, run every
+#                    area (green stamps live in .git/stop-hook-green-<area>)
 #
 # EXIT CODES
 #   0  everything that could run passed (skips are reported, not fatal)
@@ -118,17 +123,88 @@ resolve_pytest_python() {
   return 1
 }
 
+# ── change gating (MEH-2343) ─────────────────────────────────────────────────
+# Stop fires at the end of EVERY turn, including turns that only answered a
+# question. Running all four steps each time is ~13 min (measured 03/09), and a
+# hook that outlives its `timeout` is cancelled with its output discarded — a
+# silent non-block, the very defect this script replaced. So each AREA
+# (frontend = build+eslint+vitest; backend = pytest over backend/ + tests/) is
+# skipped when it cannot have changed:
+#   - its tree equals origin/staging's and nothing is uncommitted/untracked
+#     there (that code is what CI's required gates already passed), or
+#   - its fingerprint equals the one stamped after its last GREEN run.
+# The fingerprint is taken AFTER the run, so files the steps themselves rewrite
+# (npm run build regenerates frontend/next-env.d.ts) do not re-arm the hook.
+# Outside a git work tree nothing is gated: every step runs, as before.
+# STOP_HOOK_FORCE=1 disables the gating for a by-hand run.
+
+# <root> <path>... → sha256 of the HEAD trees + uncommitted diff + untracked
+# file contents under those paths. Returns 1 outside a git work tree.
+area_fingerprint() {
+  local root="$1" p f; shift
+  git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  {
+    for p in "$@"; do git -C "$root" rev-parse -q --verify "HEAD:$p" 2>/dev/null || echo "absent:$p"; done
+    git -C "$root" diff HEAD --binary -- "$@" 2>/dev/null
+    git -C "$root" ls-files -o --exclude-standard -z -- "$@" 2>/dev/null \
+      | while IFS= read -r -d '' f; do printf '%s ' "$f"; git -C "$root" hash-object -- "$f"; done
+  } | sha256sum | cut -d' ' -f1
+}
+
+# <root> <path>... → 0 when those paths are byte-identical to origin/staging.
+area_matches_base() {
+  local root="$1" p; shift
+  git -C "$root" rev-parse -q --verify refs/remotes/origin/staging >/dev/null 2>&1 || return 1
+  for p in "$@"; do
+    [ "$(git -C "$root" rev-parse -q --verify "HEAD:$p" 2>/dev/null)" = \
+      "$(git -C "$root" rev-parse -q --verify "origin/staging:$p" 2>/dev/null)" ] || return 1
+  done
+  git -C "$root" diff --quiet HEAD -- "$@" 2>/dev/null || return 1
+  [ -z "$(git -C "$root" ls-files -o --exclude-standard -- "$@" 2>/dev/null)" ]
+}
+
+stamp_path() { git -C "$1" rev-parse --path-format=absolute --git-path "stop-hook-green-$2" 2>/dev/null; }
+
+# <root> <area> <path>... → prints why the area may be skipped and returns 0,
+# or returns 1 when it must run.
+area_gate() {
+  local root="$1" name="$2" fp stamp; shift 2
+  [ -n "${STOP_HOOK_FORCE:-}" ] && return 1
+  if area_matches_base "$root" "$@"; then
+    echo "identical to origin/staging, which CI's required gates already passed"; return 0
+  fi
+  fp="$(area_fingerprint "$root" "$@")" || return 1
+  stamp="$(stamp_path "$root" "$name")" || return 1
+  if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$fp" ]; then
+    echo "unchanged since its last green run"; return 0
+  fi
+  return 1
+}
+
+# Stamp an area green. Not when STOP_HOOK_SKIP left a step out — a partial run
+# is not a green one.
+stamp_green() {
+  local root="$1" name="$2" fp stamp; shift 2
+  [ -n "${STOP_HOOK_SKIP:-}" ] && return 0
+  fp="$(area_fingerprint "$root" "$@")" || return 0
+  stamp="$(stamp_path "$root" "$name")" || return 0
+  printf '%s' "$fp" > "$stamp"
+}
+
 # ── the four steps ───────────────────────────────────────────────────────────
 # Each appends to $reasons on failure and echoes what it did. None exits.
 run_all() {
-  local root="$1"
+  local root="$1" why before
   reasons=()
 
   if [ ! -d "$root/frontend" ]; then
     echo "Warning: frontend/ not found at $root, skipping build, eslint and vitest"
   elif [ ! -d "$root/frontend/node_modules" ]; then
     echo "Warning: frontend/node_modules not found, skipping build, eslint and vitest (run npm install)"
+  elif why="$(area_gate "$root" frontend frontend)"; then
+    echo "frontend: skipped build, eslint and vitest — $why"
   else
+    before=${#reasons[@]}
     # 1 · frontend build ------------------------------------------------------
     if skipped_step build; then echo "build: skipped (STOP_HOOK_SKIP)"
     else
@@ -171,6 +247,7 @@ run_all() {
         reasons+=("Vitest component tests failed — fix errors before completing this task")
       fi
     fi
+    [ "${#reasons[@]}" -eq "$before" ] && stamp_green "$root" frontend frontend
   fi
 
   # 4 · backend pytest --------------------------------------------------------
@@ -179,6 +256,8 @@ run_all() {
     echo "Warning: backend/ not found, skipping backend tests"
   elif [ ! -f "$root/tests/test_api.py" ]; then
     echo "Warning: tests/test_api.py not found at the repo root, skipping backend tests"
+  elif why="$(area_gate "$root" backend backend tests)"; then
+    echo "pytest: skipped — backend/ and tests/ $why"
   else
     local py
     if ! py="$(resolve_pytest_python "$root")"; then
@@ -202,6 +281,8 @@ run_all() {
       echo "pytest: $py -m pytest tests/test_api.py -q --tb=short  (cwd: repo root, as CI does; PYTEST_XDIST_WORKER=$PYTEST_XDIST_WORKER → isolated db)"
       if ! (cd "$root" && "$py" -m pytest tests/test_api.py -q --tb=short 2>&1 | tail -20); then
         reasons+=("Backend tests failed — fix errors before completing this task")
+      else
+        stamp_green "$root" backend backend tests
       fi
     fi
   fi
@@ -330,6 +411,56 @@ EOF
   # (j) stop_hook_active → exit 0 immediately, even on a red root
   set +e; out="$(printf '{"stop_hook_active": true}' | STOP_HOOK_ROOT="$tmp/redbuild" bash "$SELF" 2>&1)"; rc=$?; set -e
   check "stop_hook_active=true → exit 0 (no block loop)" 0 "$rc"
+
+  # (k) CHANGE GATING (MEH-2343). A real git repo, so the gate has history to
+  #     read. The fake build echoes a token, so "it ran" is asserted on the
+  #     step's own output, not on the hook's message about it.
+  local g="$tmp/gate"
+  mkdir -p "$g/frontend/node_modules" "$g/backend/.venv/bin" "$g/tests"
+  git -C "$g" init -q
+  git -C "$g" config user.email selftest@example.invalid; git -C "$g" config user.name selftest
+  git -C "$g" config commit.gpgsign false
+  printf 'node_modules/\n.venv/\n' > "$g/.gitignore"
+  green_build() { printf '{"name":"fake","private":true,"scripts":{"build":"echo FAKE-BUILD-RAN"}}\n' > "$g/frontend/package.json"; }
+  green_build; echo a > "$g/frontend/a.js"; echo b > "$g/backend/b.py"
+  printf 'def test_x():\n    pass\n' > "$g/tests/test_api.py"
+  cat > "$g/backend/.venv/bin/python" <<'EOF'
+#!/bin/sh
+case "$*" in *--version*) echo "pytest 0.0 (fake)"; exit 0 ;; *) echo "FAKE-PYTEST-RAN"; exit 0 ;; esac
+EOF
+  chmod +x "$g/backend/.venv/bin/python"
+  git -C "$g" add -A; git -C "$g" commit -qm base
+  git -C "$g" update-ref refs/remotes/origin/staging HEAD
+
+  run_on "$g"
+  check "gate: tree identical to origin/staging → frontend skipped" 0 "$rc" "identical to origin/staging"
+  printf '%s' "$out" | grep -q -e FAKE-BUILD-RAN -e FAKE-PYTEST-RAN && rc=1 || rc=0
+  check "...and neither the build nor pytest actually ran" 0 "$rc"
+
+  echo a2 > "$g/frontend/a.js"; run_on "$g"
+  check "gate: uncommitted frontend change → the build runs" 0 "$rc" "FAKE-BUILD-RAN"
+  printf '%s' "$out" | grep -q FAKE-PYTEST-RAN && rc=1 || rc=0
+  check "...while the untouched backend stays skipped" 0 "$rc"
+
+  run_on "$g"
+  check "gate: no change since that green run → skipped" 0 "$rc" "unchanged since its last green run"
+
+  echo new > "$g/frontend/untracked.js"; run_on "$g"
+  check "gate: a new UNTRACKED frontend file → the build runs" 0 "$rc" "FAKE-BUILD-RAN"
+
+  printf '{"name":"fake","private":true,"scripts":{"build":"echo FAKE-BUILD-RAN; exit 1"}}\n' > "$g/frontend/package.json"
+  run_on "$g"
+  check "gate: a change that breaks the build → runs, exit 2" 2 "$rc" "Frontend build failed"
+  run_on "$g"
+  check "gate: a RED run is not stamped → the next Stop runs it again" 2 "$rc" "Frontend build failed"
+
+  green_build; run_on "$g"; run_on "$g"
+  check "gate: back to green, then unchanged → skipped" 0 "$rc" "unchanged since its last green run"
+  set +e; out="$(STOP_HOOK_FORCE=1 STOP_HOOK_ROOT="$g" bash "$SELF" 2>&1 </dev/null)"; rc=$?; set -e
+  check "STOP_HOOK_FORCE=1 runs an unchanged area anyway" 0 "$rc" "FAKE-BUILD-RAN"
+
+  echo b2 > "$g/backend/b.py"; run_on "$g"
+  check "gate: a backend change → pytest runs" 0 "$rc" "FAKE-PYTEST-RAN"
 
   echo "  $pass/$total self-test cases behaved correctly"
   [ "$pass" -eq "$total" ]

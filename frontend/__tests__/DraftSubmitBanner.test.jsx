@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import {
   submissionMissingItems,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/submission-gate";
 // The REAL locale files — the point of the copy check below is that it reads
 // what ships, not what the next-intl mock echoes back.
+import { ANCHOR_TO_KEY } from "@/lib/dashboard-edit-anchors";
 import heMessages from "@/messages/he.json";
 import enMessages from "@/messages/en.json";
 
@@ -53,6 +54,16 @@ vi.mock("@/lib/toast", () => ({
 // refactor with nothing going red — the CTA would then stay disabled on stale
 // server codes after a successful OTP, which is the gate closing behind a
 // business that just satisfied it.
+// The locale-aware Link renders a plain anchor here; what is under test is
+// the href it is given, not next-intl's prefixing.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("@/components/PhoneVerifyCard", () => ({
   default: ({ onVerified }) => (
     <button type="button" data-testid="phone-verify-card" onClick={onVerified}>
@@ -289,5 +300,83 @@ describe("DraftSubmitBanner — submitting", () => {
   it("renders nothing without a producer (profile still loading)", () => {
     const { container } = render(<DraftSubmitBanner producer={null} />);
     expect(container.firstChild).toBeNull();
+  });
+});
+
+describe("DraftSubmitBanner — each missing item links to where it is filled in (MEH-2327)", () => {
+  const HUB = "/producer/dashboard/edit";
+  const linkIn = (code) =>
+    within(screen.getByTestId(`draft-missing-${code}`)).getByRole("link");
+
+  it.each([
+    ["image", { images: [] }, `${HUB}#profile-images`],
+    ["product", { products: [] }, `${HUB}#profile-products`],
+    ["category", { categories: [] }, `${HUB}#profile-categories`],
+    ["location", { locations: [] }, `${HUB}#locations`],
+    ["phone_verified", { phone_verified: false }, "#phone-verify"],
+  ])("%s is a link to its own card", (code, patch, href) => {
+    render(<DraftSubmitBanner producer={{ ...READY, ...patch }} />);
+    const link = linkIn(code);
+    expect(link).toHaveAttribute("href", href);
+    // The item's own label IS the link text (Sapir 25.10: no new copy).
+    expect(link).toHaveTextContent(`missing.${code}`);
+  });
+
+  it("a delivery-only business is sent to its delivery areas, not to locations", () => {
+    const deliveryOnly = {
+      ...READY,
+      locations: [],
+      has_physical_location: false,
+      offers_delivery: true,
+      delivery_nationwide: false,
+      delivery_areas: [],
+    };
+    // Control: the gate really flags this shape, and only for location.
+    expect(submissionMissingItems(deliveryOnly)).toEqual(["location"]);
+    render(<DraftSubmitBanner producer={deliveryOnly} />);
+    expect(linkIn("location")).toHaveAttribute("href", `${HUB}#delivery`);
+  });
+
+  it("every edit-page target is a registered deep-link anchor, and the same-page one exists", () => {
+    render(
+      <DraftSubmitBanner
+        producer={{ has_physical_location: false, offers_delivery: true }}
+      />,
+    );
+    render(<DraftSubmitBanner producer={{}} />);
+    const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
+    // Both location targets were rendered, so both are checked.
+    expect(hrefs).toEqual(
+      expect.arrayContaining([`${HUB}#delivery`, `${HUB}#locations`]),
+    );
+    for (const href of hrefs) {
+      const [path, hash] = href.split("#");
+      if (path === "") {
+        expect(document.getElementById(hash), href).not.toBeNull();
+      } else {
+        expect(path).toBe(HUB);
+        expect(Object.keys(ANCHOR_TO_KEY), href).toContain(hash);
+      }
+    }
+  });
+
+  it("0 missing: no list · 1 missing: one link · all missing: one link per item", () => {
+    const { unmount } = render(<DraftSubmitBanner producer={READY} />);
+    expect(screen.queryByTestId("draft-missing-list")).toBeNull();
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    unmount();
+
+    const one = render(
+      <DraftSubmitBanner producer={{ ...READY, phone_verified: false }} />,
+    );
+    expect(
+      within(screen.getByTestId("draft-missing-list")).getAllByRole("link"),
+    ).toHaveLength(1);
+    one.unmount();
+
+    render(<DraftSubmitBanner producer={{}} />);
+    expect(
+      within(screen.getByTestId("draft-missing-list")).getAllByRole("link"),
+    ).toHaveLength(SUBMISSION_REQUIREMENTS.length);
   });
 });

@@ -40,6 +40,9 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span />,
+  FacebookLogo: () => <span />, // MEH-2311
+  TiktokLogo: () => <span />,
+  YoutubeLogo: () => <span />,
   ArrowRight: () => <span />,
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));

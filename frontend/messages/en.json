@@ -50,6 +50,9 @@
       "brand_aria": "Mehamakor — Home page",
       "brand_tagline": "Straight from the source — local businesses, all in one place",
       "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
+      "facebook_aria": "Mehamakor's Facebook page — opens in new tab",
+      "tiktok_aria": "Mehamakor's TikTok page — opens in new tab",
+      "youtube_aria": "Mehamakor's YouTube channel — opens in new tab",
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
       "group_discover_heading": "Discover",
@@ -336,8 +339,8 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
-        "submit_next_hint": "Next, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
-        "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
+        "submit_next_hint": "After registering, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
+        "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -711,6 +714,10 @@
     "register_producer": {
       "title": "Register your business | Mehamakor",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
+    },
+    "claim": {
+      "title": "Take your business page | Mehamakor",
+      "description": "We prepared a page for you on Mehamakor"
     }
   },
   "producer": {
@@ -1742,7 +1749,9 @@
           "avail_today": "Available today",
           "avail_full": "Busy this week",
           "avail_vacation": "On break",
-          "vacation_until": "Return date (optional)"
+          "vacation_until": "Return date (optional)",
+          "as_draft": "Draft the owner will receive by invite link",
+          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner."
         }
       },
       "toast_approved": "Business approved",
@@ -1766,6 +1775,23 @@
         "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
         "submit_changes": "Send completion request",
         "submit_reject": "Reject and send email"
+      },
+      "claim": {
+        "title": "Invite link for the business owner",
+        "intro": "The owner opens her own account, accepts the declaration and the terms herself, and the page becomes hers. It stays a draft until she submits it for review. A new link does not revoke an earlier one; each link is valid until its own date.",
+        "create": "Create link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "draft_products": {
+        "title": "Products in this draft",
+        "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
+        "empty": "No products in this draft yet."
       }
     },
     "users": {
@@ -2115,7 +2141,9 @@
       "default_producer": "the business",
       "deleted_toast": "Review deleted",
       "expand": "More",
-      "collapse": "Less"
+      "collapse": "Less",
+      "ai_flagged": "Flagged by AI",
+      "ai_flagged_only": "Only flagged reviews"
     },
     "settings": {
       "title": "Settings",
@@ -2693,7 +2721,7 @@
     "consumer": {
       "hero": {
         "heading": "You used to need to know who to ask. Not anymore",
-        "subheading": "Food from small businesses we've personally checked — close to you, without searching for hours."
+        "subheading": "Food from local businesses we've personally chosen — close to you, without searching for hours."
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
@@ -4601,7 +4629,7 @@
         "assist_title": "A few quick questions — and we'll write it for you",
         "assist_close": "Close writing help",
         "q_sell_label": "What do you sell?",
-        "q_sell_placeholder": "e.g. homemade jams, honey from the hive, almond cookies",
+        "q_sell_placeholder": "e.g. seasonal fruit jams, honey from the hive, almond cookies",
         "q_area_label": "Which area do you serve?",
         "q_area_placeholder": "e.g. Western Galilee, delivery up to Haifa",
         "q_special_label": "What's special about you?",
@@ -4747,6 +4775,13 @@
           "location": "A location or delivery areas",
           "phone_verified": "WhatsApp number verification"
         }
+      },
+      "request_review": {
+        "title": "Ask a customer for a review",
+        "body": "Send the link in your WhatsApp chat with a customer — she can leave a verified review.",
+        "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
+        "cta": "Copy link",
+        "cta_copied": "Copied ✓"
       }
     }
   },
@@ -4918,8 +4953,8 @@
         "description": "Add 3 popular products with a photo and price — it takes 5 minutes, and customers instantly see what you offer.",
         "cta": "+ Add first product",
         "sample_label": "Example — how your product will look",
-        "sample_name": "Homemade fig jam",
-        "sample_price": "₪28 per jar"
+        "sample_name": "Spelt sourdough loaf",
+        "sample_price": "₪32 per loaf"
       },
       "edit_heading": "Edit product",
       "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
@@ -5367,5 +5402,45 @@
         ]
       }
     }
+  },
+  "claim": {
+    "loading": "Loading the page…",
+    "kicker": "We prepared a page for you on Mehamakor",
+    "explainer": "The page is not published yet. Once it is yours you can edit everything, add photos and send it for review. We approve every business by hand before it goes live.",
+    "invalid": {
+      "title": "This link is not active",
+      "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
+      "contact": "Contact us"
+    },
+    "claimed": {
+      "title": "This page is already linked to an account",
+      "body": "If it is your account, sign in and you will find the page in your dashboard. If not, write to us.",
+      "login": "Sign in",
+      "contact": "Contact us"
+    },
+    "logged_out": {
+      "body": "To take this page you need your own account. We never create a password for you.",
+      "email_signup": "Sign up with email",
+      "have_account": "Already have an account?",
+      "login": "Sign in",
+      "email_note": "Signing up with email? After you confirm your address, open the link you received again to finish."
+    },
+    "eligible": {
+      "signed_in_as": "Signed in as <addr>{email}</addr>.",
+      "not_you": "Not you?",
+      "switch_account": "Switch account",
+      "submit": "Take this page",
+      "submitting": "Taking it…"
+    },
+    "admin": {
+      "body": "You are signed in as an admin, and an admin cannot take a business page. To test this page, sign in with another account.",
+      "switch_account": "Switch account"
+    },
+    "has_business": {
+      "body": "This account already has a business on Mehamakor, and each account runs one business. If this page belongs to another business, sign in with another account or write to us.",
+      "dashboard": "Go to dashboard",
+      "switch_account": "Switch account"
+    },
+    "submit_error": "We could not link the page. Try again in a moment."
   }
 }
