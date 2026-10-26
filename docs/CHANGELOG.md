@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+- **‏26/10 (08:30–09:50) — מודלי ה-AI ב-backend עברו ל-Haiku 5.5, ונמצאו שני מסלולי fail-open שפרסמו ספאם.**
+  - **‏#3592 `322ec9a2`:** שש קריאות קוראות עכשיו את `AI_FAST_MODEL` / `ai_fast_request_kwargs()` מ-`backend/app/config.py` (`claude-haiku-5-5`, thinking מכובה, `effort: low`). אין env var חדש. סירוב בטיחות (`stop_reason="refusal"`) → FLAGGED. המחיר ירד מ-$1/$5 ל-$0.10/$0.50 ל-MTok.
+  - **‏נמצא ב-eval ותוקן:** (1) תקרות `max_tokens` חתכו את ה-JSON של 5.5 (ביקורות 130 → 300, חוויה ומתכון 800, סיכון 500). (2) ‏`reviews.py` השתמש ב-`json.loads` חשוף, ולכן ```` ```json ```` נכשל ואושר. הבאג הזה פגע גם ב-4.5 ב-production. עכשיו הוא משתמש ב-parser הסלחני של החוויות.
+  - **‏eval** (`scripts/oneoff/eval_meh2335_moderation.py`, 35 מקרים × 3 מודלים): 0 תאי FAILOPEN אחרי התיקון. התאמה ל-Opus 5.5: ‏4.5 = 28/35, ‏5.5 = 32/35. אין מקרה שבו תוכן מזיק מתפרסם. ספיר אישרה מיזוג.
+  - **‏מחקר מודרציה** ([Doc](https://claude.ai/artifact/QBxhNkRCS8fbkdMHHykNbT)) → כרטיסים MEH-2348 עד MEH-2354.
+  - **‏נמדד:** ה-CI reviewer פרסם הערה על #3592, כלומר עובד אחרי חידוש הטוקן.
+
 - **‏26/10 (08:45–09:10) — דיאטת הכללים: הכללים שנטענים בכל סשן ירדו מ-245,672 ל-59,902 bytes, בלי למחוק כלל.**
   - **‏#3589 `27b6b16c` (MEH-2337):** ‏`paths:` frontmatter ל-`skills.md`, `labels.md`, `deployment.md`. ה-diff כולל רק frontmatter.
   - **‏#3590 `da3c166a` (MEH-2338):** ‏`workflow.md` ירד מ-118,110 ל-22,677 bytes. הנוסח המלא נמצא מילה במילה ב-`docs/rules-history/workflow.md`. נוסף guard ‏`scripts/checks/rules-inventory-guard.sh`, שנכשל אם כותרת או כלל ממוספר מהארכיון חסרים בקובץ החי. ה-self-test שלו רץ על הארכיון האמיתי.

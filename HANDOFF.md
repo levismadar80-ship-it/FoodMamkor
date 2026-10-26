@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-26 09:50 — מודלי ה-AI ב-backend על Haiku 5.5 (#3592), ושבעה כרטיסי מודרציה
+
+**‏שורה אחת:** ‏#3592 מוזג ל-staging (`322ec9a2`). ה-eval מצא שני מסלולים שבהם ספאם ומידע אישי פורסמו כמאושרים, ושניהם תוקנו באותו PR.
+
+**‏מה צריך לדעת לפני עבודה:**
+- מודל ה-fast-tier מוגדר במקום אחד: `AI_FAST_MODEL` ב-`backend/app/config.py`. טסט guard נכשל אם מחרוזת `claude-*` מופיעה בקובץ אחר תחת `backend/app`.
+- בכל שינוי בפרומפט או במודל מריצים את ה-eval: `env -u ANTHROPIC_BASE_URL ANTHROPIC_API_KEY="$MEH_EVAL_ANTHROPIC_API_KEY" PYTHONPATH=backend backend/.venv/bin/python scripts/oneoff/eval_meh2335_moderation.py --with-opus`. המפתח נמצא בסביבת הענן "sapir domains" בשם `MEH_EVAL_ANTHROPIC_API_KEY`, כי השם `ANTHROPIC_API_KEY` מסונן שם.
+- כרטיסי מודרציה ב-Backlog: MEH-2348 (עקיפת הסתרת אדמין, RED) · MEH-2349 (FLAGGED בביקורות לא עושה כלום, RED) · MEH-2350 (prompt injection) · MEH-2351 (structured outputs) · MEH-2352 (מדידת fail-open) · MEH-2353 (פרומפט מתכונים מסמן FLAGGED גם מתכונים לגיטימיים) · MEH-2354 (שכתוב MODERATION.md).
+
+**‏ממתין לספיר:** אין חדש.
+
 ## 2026-10-26 09:45 — סידור הידע אחרי המעבר (MEH-2344): בית אחד לכל עובדה, ו-HANDOFF חזר להיות קצר
 
 **‏שורה אחת:** הפרויקט עבר לחשבון Claude חדש, והבדיקה מצאה את אותן עובדות בחמישה עותקים שהתיישנו כל אחד בקצב שלו. ‏ADR-035 קובע בית אחד לכל סוג עובדה; כל השאר מפנים.
