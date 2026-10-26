@@ -15,6 +15,10 @@ cost, and a Sentry alert on the ``moderation_fail_open`` tag can count them.
 Never raises, and is a no-op when ``sentry_sdk`` is absent or
 uninitialised (sandbox, tests, local dev), mirroring
 ``capture_background_exception``.
+
+Not wired into ``home_product_moderation``: its router is unmounted
+(``router_registry.py``, MEH-1406) and the subsystem is being removed
+(MEH-796), so it can never fail open in production.
 """
 
 from __future__ import annotations
@@ -43,7 +47,7 @@ def classify_failure(exc: BaseException, *, truncated: bool = False) -> str:
         if isinstance(exc, anthropic.APIError):
             return "api_error"
     except Exception:  # pragma: no cover — SDK broken / absent
-        pass
+        logger.debug("[moderation] anthropic import failed while classifying")
     return "error"
 
 

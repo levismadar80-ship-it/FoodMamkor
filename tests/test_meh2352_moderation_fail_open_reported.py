@@ -142,10 +142,31 @@ def test_classify_failure_names():
     assert classify_failure(RuntimeError()) == "error"
 
 
-def test_report_fail_open_never_raises_without_sentry():
-    from app.services.moderation_fail_open import report_fail_open
+def test_report_fail_open_never_raises_when_sentry_breaks(monkeypatch):
+    # A broken Sentry must not turn a fail-open into a 500: the warning is
+    # still logged, the failure lands in the debug fallback, nothing raises.
+    import sentry_sdk
 
-    report_fail_open("review", "no_client")  # sentry_sdk uninitialised here
+    import app.services.moderation_fail_open as mod
+
+    calls: list[tuple[str, str]] = []
+
+    class _Log:
+        def warning(self, msg, **kw):
+            calls.append(("warning", msg))
+
+        def debug(self, msg, **kw):
+            calls.append(("debug", msg))
+
+    def _boom():
+        raise RuntimeError("sentry down")
+
+    monkeypatch.setattr(mod, "logger", _Log())
+    monkeypatch.setattr(sentry_sdk, "new_scope", _boom)
+
+    mod.report_fail_open("review", "no_client")
+
+    assert [level for level, _ in calls] == ["warning", "debug"]
 
 
 def test_report_fail_open_sentry_tags_and_fingerprint(monkeypatch):

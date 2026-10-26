@@ -3631,7 +3631,7 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 
 - [ ] אירוע Sentry ל-fail-open — ב-staging, להסיר זמנית את `ANTHROPIC_API_KEY` (או להשתמש בסביבה בלי מפתח) ולשלוח ביקורת — ב-Sentry מופיע `moderation fail-open: review (no_client)` עם tags ‏`moderation_fail_open=true`, ‏`moderation_surface=review`, ‏`fail_open_reason=no_client`; הביקורת עדיין מתפרסמת (LOCK לא השתנה)
 - [ ] אין רעש על מסלול תקין — ביקורת רגילה עם מפתח תקין — אין אירוע `moderation fail-open` חדש
-- [ ] התראה — Sentry → Alerts: כלל על tag ‏`moderation_fail_open:true`, יותר מ-5 אירועים ביום — מייל לספיר. שימי לב: יש cap של ~12 אירועים ליום לכל fingerprint (`app/sentry.py`, MEH-2114), אז בתקלה מתמשכת המונה ב-Sentry הוא רצפה, לא הספירה האמיתית — הספירה המלאה ב-Railway logs (`[moderation] fail-open`)
+- [ ] התראה — Sentry → Alerts: כלל **ברמת tag (סכום על כל ה-fingerprints)** על ‏`moderation_fail_open:true` ‏+ ‏`moderation_surface` ב-`review`/`experience`/`recipe` (בלי `producer_risk` — שם לא מאושר כלום, רק ציון סיכון ריק), יותר מ-5 אירועים ביום — מייל לספיר. שימי לב: יש cap של ~12 אירועים ליום לכל fingerprint (`app/sentry.py`, MEH-2114), אז בתקלה מתמשכת המונה ב-Sentry הוא רצפה, לא הספירה האמיתית — הספירה המלאה ב-Railway logs (`[moderation] fail-open`)
 
 ## MEH-2326 — מוצרים בטיוטה (אדמין)
 
