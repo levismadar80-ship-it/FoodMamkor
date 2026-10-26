@@ -18,9 +18,9 @@ export const BRAND_NAME_LATIN = "Mehamakor";
 // gets edited in one place and forgotten in the other. layout.js now imports
 // it from here.
 //
-// MEH-2364 (26/10): now the ADR-011 locked tagline, verbatim — Sapir chose to
-// implement ADR-011 on the footer, meta and OG surfaces. Changing it needs a
-// new ADR superseding ADR-011, not a copy edit.
+// MEH-2364 (26/10): now the ADR-011 locked tagline, verbatim, on the footer,
+// meta and OG surfaces (__tests__/adr011-tagline.test.js ties all of them to
+// the ADR). Changing it needs a new ADR superseding ADR-011, not a copy edit.
 export const SITE_DESCRIPTION =
   "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.";
 
