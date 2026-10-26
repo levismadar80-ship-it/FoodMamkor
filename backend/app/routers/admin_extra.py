@@ -40,7 +40,7 @@ from app.models.models import (
     ProducerNameChangeRequest,
     ProducerRecipe,
 )
-from app.routers.admin_whatsapp import _UNDELIVERED_STATUSES, _WINDOW_DAYS
+from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -783,9 +783,27 @@ def get_dashboard(
     )
     # MEH-2359: per-queue counts for the admin home + sidebar — a queue entry
     # is shown only while its count is > 0, so each queue needs its own
-    # number, not the aggregate below. Same predicates as the pages they
-    # link to (category_requests.py / producer_name_requests.py list
-    # `pending`; admin_whatsapp.py lists the undelivered 7-day window).
+    # number, not the aggregate below. `pending_experiences` /
+    # `pending_recipes` above also count the OWNER's turn (changes_requested /
+    # needs_revision) because the aggregate badge was "work in the queue";
+    # the per-queue number must be the ADMIN's turn only, or a queue shows
+    # "2 items pending approval" while nothing needs a decision. Same predicate
+    # as the default «ממתינים» tab of each page (status == "pending").
+    experiences_awaiting_review = (
+        db.query(func.count(Experience.id))
+        .filter(Experience.status == "pending")
+        .scalar()
+        or 0
+    )
+    recipes_awaiting_review = (
+        db.query(func.count(ProducerRecipe.id))
+        .filter(ProducerRecipe.moderation_status == "pending")
+        .scalar()
+        or 0
+    )
+    # Same predicates as the pages they link to (category_requests.py /
+    # producer_name_requests.py list `pending`; admin_whatsapp.py lists the
+    # undelivered 7-day window).
     pending_category_requests = (
         db.query(func.count(CategoryRequest.id))
         .filter(CategoryRequest.status == "pending")
@@ -800,8 +818,8 @@ def get_dashboard(
     )
     undelivered_whatsapp_7d = (
         db.query(func.count(OutboundMessage.id))
-        .filter(OutboundMessage.status.in_(_UNDELIVERED_STATUSES))
-        .filter(OutboundMessage.created_at >= now - timedelta(days=_WINDOW_DAYS))
+        .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
+        .filter(OutboundMessage.created_at >= now - timedelta(days=UNDELIVERED_WINDOW_DAYS))
         .scalar()
         or 0
     )
@@ -851,6 +869,8 @@ def get_dashboard(
         "pending_category_requests": int(pending_category_requests),
         "pending_name_change_requests": int(pending_name_change_requests),
         "undelivered_whatsapp_7d": int(undelivered_whatsapp_7d),
+        "experiences_awaiting_review": int(experiences_awaiting_review),
+        "recipes_awaiting_review": int(recipes_awaiting_review),
         "pending_moderation_count": pending_moderation_count,
     }
 

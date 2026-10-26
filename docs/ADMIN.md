@@ -221,14 +221,26 @@ npx playwright test             # E2E
   workers — אם Railway מריץ את הבקאנד עם יותר מ-worker אחד, המדד
   משקף רק אחד מהם. הערה מוצגת בפאנל.
 
-**Badge "פריטים ממתינים לאישור" על sidebar:**
-- נטען ב-`frontend/app/admin/layout.js` כ-fetch ל-`/admin/dashboard` בכל
+**Badge "פריטים ממתינים לאישור" על sidebar (MEH-2359, 26/10):**
+- נטען ב-`frontend/app/[locale]/admin/layout.js` כ-fetch ל-`/admin/dashboard` בכל
   שינוי של `pathname`, כך שהמספר מתעדכן כשעוברים בין דפי admin.
-- הסכום: `pending_producers + open_reports + flagged_home_products +
-  pending_experiences + pending_kashrut_requests + pending_recipes` (MEH-997).
-- מופיע כ-pill צהוב (`bg-yellow-400 text-yellow-900`) על הניווט "לוח
-  מחוונים" (הסכום הכולל) ועל "כשרות" (pending_kashrut_requests בלבד).
-  רק כשהספירה > 0.
+- **«מה מחכה לטיפול» ו«בתי עסק»** נושאים את `pending_producers` (בתי עסק
+  ממתינים) — לא את הסכום `pending_moderation_count` (MEH-997), שעדיין מוחזר
+  ב-API אבל אין לו צרכן בממשק.
+- **כל תור** נושא את המונה שלו (`admin/queues.js`): דיווחים `open_reports` ·
+  כשרות `pending_kashrut_requests` · בקשות קטגוריה `pending_category_requests` ·
+  שינוי שם `pending_name_change_requests` · הודעות שלא נמסרו
+  `undelivered_whatsapp_7d` · חוויות `experiences_awaiting_review` · מתכונים
+  `recipes_awaiting_review`. שני האחרונים סופרים רק `status == "pending"`
+  (תור האדמין); `pending_experiences` / `pending_recipes` סופרים גם את תור
+  בעלת העסק (`changes_requested` / `needs_revision`) ונשארו לסכום בלבד.
+- pill צהוב (`bg-yellow-400 text-yellow-900`) רק כשהספירה > 0; כשה-fetch
+  נכשל — «!» על שני פריטי האישורים וכל התורים מוצגים בלי מונה (MEH-2096).
+- **מוצרי בית מסומנים (`flagged_home_products`)** נספרו בסכום הישן אבל מעולם
+  לא היה להם מסך אדמין (הטאבים הוסרו ב-MEH-1406); הם אינם תור בסרגל ולא
+  בדף הבית. אם יחזור מסך — מוסיפים שורה ל-`admin/queues.js`.
+- **נייד (MEH-2070, A-narrow):** `/admin` (דף הבית, התאמה מדויקת) ו-`/admin/producers`
+  ומטה הם mobile-ready ובלי באנר «זמין במחשב»; שאר המסכים דסקטופ-בלבד.
 
 ## Trust Ladder — MEH-51 (April 2026)
 

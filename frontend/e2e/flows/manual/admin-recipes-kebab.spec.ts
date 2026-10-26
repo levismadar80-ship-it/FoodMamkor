@@ -138,6 +138,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 type StubOpts = {
   recipes?: Recipe[];
   rows?: Row[];
+  /** MEH-2359: the admin's-turn recipe count (`recipes_awaiting_review`) — the number on the «מתכונים» queue entry. */
   pendingModeration?: number;
   deleteStatus?: number;
   /** Delay before DELETE / set-ambassador answer — the in-flight window. */
@@ -149,12 +150,16 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
   let recipes: Recipe[] = opts.recipes ?? [];
   let rows: Row[] = opts.rows ?? [];
   const { pendingModeration = rows.filter((r) => r.status === "pending").length, deleteStatus = 200, delayMs = 0, writes } = opts;
+  // MEH-2359: the «מתכונים» queue entry is listed only while this is > 0, so by
+  // default it follows the store (read at request time — an approve moves a row
+  // out), and an explicit `pendingModeration` pins it.
+  const recipesAwaitingReview = () => opts.pendingModeration ?? recipes.filter((x) => x.moderation_status === "pending").length;
 
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, ADMIN));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
-    json(r, { stats: { total_producers: rows.length, pending_producers: rows.filter((x) => x.status === "pending").length, total_users: 3, total_group_buys: 0, pending_moderation_count: pendingModeration, pending_kashrut_requests: 0 }, recent_activity: [], monthly_producers: [] }),
+    json(r, { stats: { total_producers: rows.length, pending_producers: rows.filter((x) => x.status === "pending").length, total_users: 3, total_group_buys: 0, pending_moderation_count: pendingModeration, recipes_awaiting_review: recipesAwaitingReview(), pending_kashrut_requests: 0 }, recent_activity: [], monthly_producers: [] }),
   );
 
   // Recipes: the list reads the store by moderation_status; the three actions move a row.
@@ -266,7 +271,9 @@ test.describe("recipes moderation — /admin/recipes", () => {
   test("the admin nav links «מתכונים» to /admin/recipes", async ({ page }) => {
     await stubAdmin(page, { recipes: [recipe()] });
     await page.goto("/admin");
-    const link = page.getByRole("link", { name: "מתכונים" });
+    // MEH-2359: the entry carries the awaiting-review pill (part of its accessible name), and the
+    // home lists a «מתכונים» queue row too — so: the admin nav (sidebar / phone strip), name prefix.
+    const link = page.locator("aside nav, div.md\\:hidden > nav").getByRole("link", { name: /^מתכונים/ });
     await expect(link, "control: the admin nav never rendered its recipes link").toBeVisible({ timeout: 15_000 });
     await expect(link).toHaveAttribute("href", /\/admin\/recipes$/);
     await link.click();
@@ -290,8 +297,10 @@ test.describe("recipes moderation — /admin/recipes", () => {
     await expect(page.getByText("קמח, שמרים, דבש, ביצים")).toBeVisible();
   });
 
-  // MT:MEH-997:3 — the sidebar badge next to «לוח מחוונים» shows the moderation count the dashboard reports.
-  test("the dashboard badge renders the pending-moderation count", async ({ page }) => {
+  // MT:MEH-997:3 — the sidebar badge shows the recipe moderation count the dashboard reports.
+  // MEH-2359: the badge moved from the aggregate on «לוח מחוונים» to the «מתכונים» queue entry
+  // itself (`recipes_awaiting_review`), which is listed only while that count is > 0.
+  test("the «מתכונים» queue entry carries the awaiting-review count", async ({ page }) => {
     await stubAdmin(page, { recipes: [recipe()], pendingModeration: 3 });
     await openRecipes(page);
     // Two navs carry the badge (sidebar + the phone's horizontal nav); only the
@@ -299,7 +308,7 @@ test.describe("recipes moderation — /admin/recipes", () => {
     const badge = page.locator('[aria-label="3 פריטים לאישור"]:visible');
     await expect(badge).toHaveCount(1);
     await expect(badge).toHaveText("3");
-    await expect(page.getByRole("link", { name: /^לוח מחוונים/ }).filter({ has: badge })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: /^מתכונים/ }).filter({ has: badge })).toHaveCount(1);
   });
 
   // MT:MEH-997:4 — «אשרי» → toast, out of pending, into «מאושרים» as published.

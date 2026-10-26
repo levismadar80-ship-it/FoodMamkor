@@ -783,7 +783,12 @@ class TestAdminDashboardAnalytics:
         """MEH-2359: the admin home shows a queue only while its own count is
         > 0, so each queue ships its own number. Seed one pending category
         request and assert the three new keys exist and the seeded one is 1."""
-        from app.models.models import CategoryRequest
+        from app.models.models import (
+            CategoryRequest,
+            OutboundMessage,
+            ProducerNameChangeRequest,
+            ProducerRecipe,
+        )
 
         admin = make_user(db, role="admin")
         before = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
@@ -791,12 +796,48 @@ class TestAdminDashboardAnalytics:
             "pending_category_requests",
             "pending_name_change_requests",
             "undelivered_whatsapp_7d",
+            "experiences_awaiting_review",
+            "recipes_awaiting_review",
         ):
             assert key in before, f"missing: {key}"
         db.add(CategoryRequest(requested_name="קטגוריה חדשה לבדיקה", status="pending"))
+        # One recipe on the admin's turn, one on the owner's: the queue count
+        # moves by 1, the MEH-997 aggregate (`pending_recipes`) by 2.
+        producer = make_producer(db, name="מאפייה למונה", status="approved")
+        for moderation_status in ("pending", "needs_revision"):
+            db.add(
+                ProducerRecipe(
+                    producer_id=producer.id,
+                    title=f"מתכון {moderation_status}",
+                    ingredients="קמח, מים, מלח",
+                    instructions="לערבב ולאפות",
+                    moderation_status=moderation_status,
+                    published=False,
+                )
+            )
+        # One pending name change + one already reviewed: the count moves by 1.
+        for status in ("pending", "approved"):
+            db.add(
+                ProducerNameChangeRequest(
+                    producer_id=producer.id,
+                    current_name=producer.name,
+                    requested_name=f"שם חדש {status}",
+                    status=status,
+                )
+            )
+        # Undelivered WhatsApp: one failed inside the 7-day window, one failed
+        # outside it, one accepted — only the first counts.
+        for status, age_days in (("failed", 1), ("failed", 9), ("accepted", 1)):
+            msg = OutboundMessage(to_phone="+972501234567", kind="test", status=status)
+            msg.created_at = datetime.utcnow() - timedelta(days=age_days)
+            db.add(msg)
         db.commit()
         after = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
         assert after["pending_category_requests"] == before["pending_category_requests"] + 1
+        assert after["pending_name_change_requests"] == before["pending_name_change_requests"] + 1
+        assert after["undelivered_whatsapp_7d"] == before["undelivered_whatsapp_7d"] + 1
+        assert after["recipes_awaiting_review"] == before["recipes_awaiting_review"] + 1
+        assert after["pending_recipes"] == before["pending_recipes"] + 2
 
     def test_admin_dashboard_includes_analytics_series(self, client, db):
         admin = make_user(db, role="admin")

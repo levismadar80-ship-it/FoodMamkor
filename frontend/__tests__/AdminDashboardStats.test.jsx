@@ -17,8 +17,10 @@ const DASHBOARD = {
     pending_category_requests: 0,
     pending_name_change_requests: 1,
     undelivered_whatsapp_7d: 0,
-    pending_experiences: 0,
-    pending_recipes: 0,
+    pending_experiences: 2,
+    pending_recipes: 1,
+    experiences_awaiting_review: 0,
+    recipes_awaiting_review: 0,
   },
   pending_producers: [
     { id: "p1", name: "חוות האגס", city: "כפר סבא" },
@@ -72,7 +74,9 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
     const queues = screen.getByTestId("admin-home-queues");
     const links = Array.from(queues.querySelectorAll("a")).map((a) => a.getAttribute("href"));
     // kashrut (3) and name changes (1) are busy; reports/category/whatsapp/
-    // experiences/recipes are 0 → absent, not rendered-with-zero.
+    // experiences/recipes are 0 → absent, not rendered-with-zero. The
+    // experiences/recipes rows read the admin's-turn keys: the owner's-turn
+    // aggregates (pending_experiences 2 / pending_recipes 1) must NOT surface.
     expect(links).toEqual(["/admin/kashrut", "/admin/name-change-requests"]);
     expect(queues).toHaveTextContent("3");
     expect(queues).toHaveTextContent("1");
@@ -101,6 +105,8 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
     expect(await screen.findByText("admin.dashboard.pending_panel.empty")).toBeInTheDocument();
     expect(screen.getByText("admin.dashboard.queues.all_clear")).toBeInTheDocument();
     expect(screen.getByTestId("admin-home-queues").querySelectorAll("a")).toHaveLength(0);
+    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-yellow-400")).toBeNull();
+    expect(screen.getByTestId("admin-home-pending").className).not.toMatch(/border-yellow/);
   });
 
   it("says how many more are waiting when the preview is shorter than the count", async () => {

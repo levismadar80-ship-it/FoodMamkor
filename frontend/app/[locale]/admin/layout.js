@@ -86,15 +86,21 @@ const NAV_SECTIONS = [
  * settings and outreach are not urgent-on-the-move.
  *
  * Prefix match, so /admin/producers/<id>/edit — the single-business screen the
- * approve/reject decision is actually made on — is included. `/admin` itself is
- * NOT: the dashboard is a desktop overview, and leaving it out is what makes
- * the banner visible on the screen an admin lands on first.
+ * approve/reject decision is actually made on — is included. `/admin` itself
+ * was NOT, while it was a desktop overview of stat cards and charts; since
+ * MEH-2359 it is the approvals landing («מה מחכה לטיפול»: the pending list +
+ * the busy queues, one column), so it is mobile-ready by the same reasoning —
+ * EXACT match only, or every /admin/* would inherit it.
  */
 const MOBILE_READY_PREFIXES = ["/admin/producers"];
+const MOBILE_READY_EXACT = ["/admin"];
 
 export function isMobileReadyAdminPath(pathname) {
-  return MOBILE_READY_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p + "/"),
+  return (
+    MOBILE_READY_EXACT.includes(pathname) ||
+    MOBILE_READY_PREFIXES.some(
+      (p) => pathname === p || pathname.startsWith(p + "/"),
+    )
   );
 }
 
@@ -254,11 +260,20 @@ export default function AdminLayout({ children }) {
             );
             // «עוד» — collapsed by default; the items stay in the DOM (a
             // <details> keeps its children mounted), so deep links and the
-            // MEH-217 nav-presence spec are unaffected. The open/closed state
-            // is per page load, deliberately: nothing to persist.
+            // MEH-217 nav-presence spec are unaffected. It opens itself when
+            // the current page is one of its items (a deep link into
+            // /admin/settings must show where you are); otherwise the
+            // open/closed state is per page load, deliberately: nothing to
+            // persist.
             if (section.collapsible) {
+              const containsActive = items.some((i) => isActive(i.href));
               return (
-                <details key={section.key} className="pt-4 group" data-testid={`admin-nav-${section.key}`}>
+                <details
+                  key={section.key}
+                  className="pt-4 group"
+                  data-testid={`admin-nav-${section.key}`}
+                  open={containsActive || undefined}
+                >
                   <summary className="flex items-center gap-1 text-xs text-white/50 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
                     <span>{t(`layout.nav_sections.${section.key}`)}</span>
                     <CaretDown size={12} className="transition group-open:rotate-180" aria-hidden="true" />

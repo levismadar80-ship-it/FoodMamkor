@@ -29,6 +29,7 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models.models import OutboundMessage, User
 from app.schemas.schemas import OutboundMessageAdminOut
+from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
 
 router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
 
@@ -36,10 +37,11 @@ router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
 # the recipient's perspective: `failed` = Meta reported an error,
 # `window_expired` = the 24h customer-service window closed so a free-form
 # send can't be delivered. Surfacing both lets admins triage either
-# category without flipping a filter. Matches services/whatsapp.py
-# OUTCOME_FAILED / OUTCOME_WINDOW_EXPIRED.
-_UNDELIVERED_STATUSES: tuple[str, ...] = ("failed", "window_expired")
-_WINDOW_DAYS = 7
+# category without flipping a filter. The tuple and the window live in
+# services/whatsapp.py (MEH-2359) so the admin-home count uses the same
+# predicate as this list.
+_UNDELIVERED_STATUSES = UNDELIVERED_STATUSES
+_WINDOW_DAYS = UNDELIVERED_WINDOW_DAYS
 
 
 @router.get("/failed", response_model=list[OutboundMessageAdminOut])

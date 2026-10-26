@@ -360,19 +360,10 @@ test.describe("approvals queue — status chips", () => {
     await expect(rowOf(page, "מושבת").getByText("לא פעילה", { exact: true })).toHaveClass(/bg-gray-200/);
   });
 
-  // MT:MEH-294:6 — the /admin activity feed shows «(label)», not the code.
-  test("the /admin activity feed brackets the translated label next to the business name", async ({ page }) => {
-    await stubAdmin(page, {
-      rows: [],
-      activity: [{ type: "producer_added", id: "77", name: "גבינות הגליל", status: "pending", created_at: "2026-09-01T08:00:00Z" }],
-    });
-    await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: "פעילות אחרונה" }), "control: the dashboard never rendered").toBeVisible({ timeout: 15_000 });
-    const item = page.getByRole("listitem").filter({ hasText: "גבינות הגליל" });
-    await expect(item).toContainText("נוסף בית עסק:");
-    await expect(item).toContainText("(ממתינה לאישור האדמין)");
-    await expect(item.getByText("(pending)")).toHaveCount(0);
-  });
+  // MT:MEH-294:6 — the /admin activity feed showed «(label)», not the code. The feed left
+  // /admin with MEH-2359 (26/10): the home is «מה מחכה לטיפול» and renders no activity
+  // list, so the row has no surface to assert on; the same status→label map is pinned by
+  // the chip rows above (MT:MEH-294:1-5, 8). Flagged for the docs backfill as superseded.
 
   // MT:MEH-294:8 — a status the map does not know renders its raw code, in the fallback colour, without crashing.
   test("an unknown status falls back to the raw code in the neutral colour", async ({ page }) => {

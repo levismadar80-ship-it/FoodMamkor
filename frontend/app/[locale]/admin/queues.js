@@ -29,8 +29,11 @@ export const QUEUES = [
   { href: "/admin/category-requests", key: "category_requests", Icon: Tag, stat: "pending_category_requests" },
   { href: "/admin/name-change-requests", key: "name_change_requests", Icon: TextAa, stat: "pending_name_change_requests" },
   { href: "/admin/whatsapp-failures", key: "whatsapp_failures", Icon: ChatCircleSlash, stat: "undelivered_whatsapp_7d" },
-  { href: "/admin/experiences", key: "experiences", Icon: Sparkle, stat: "pending_experiences" },
-  { href: "/admin/recipes", key: "recipes", Icon: Bread, stat: "pending_recipes" },
+  // Admin's-turn counts only (status == "pending"): `pending_experiences` /
+  // `pending_recipes` also count the owner's turn (changes_requested /
+  // needs_revision), which is work in the queue but not a decision to make.
+  { href: "/admin/experiences", key: "experiences", Icon: Sparkle, stat: "experiences_awaiting_review" },
+  { href: "/admin/recipes", key: "recipes", Icon: Bread, stat: "recipes_awaiting_review" },
 ];
 
 /**

@@ -56,16 +56,22 @@ test.describe("Admin recipes moderation queue (MEH-997)", () => {
       timeout: 15_000,
     });
 
-    // Sidebar nav carries the recipes link.
-    await expect(
-      page.locator('a[href*="/admin/recipes"]').first(),
-    ).toBeVisible();
-
     // Default tab (pending) shows either real rows or the empty state —
     // both prove the queue read the admin_recipes list endpoint.
     const row = page.getByTestId("admin-recipes-row").first();
     const empty = page.getByTestId("admin-recipes-empty");
     await expect(row.or(empty)).toBeVisible({ timeout: 15_000 });
+
+    // MEH-2359: the nav entry is count-gated — listed only while
+    // `recipes_awaiting_review` > 0, which on a real target is exactly "the
+    // pending tab has rows". Both states are pinned (rows ⇒ link, empty ⇒ no
+    // link); the stubbed 3-count case is manual/admin-recipes-kebab MT:MEH-997:3.
+    const navRecipes = page.locator('aside nav a[href*="/admin/recipes"], div.md\\:hidden > nav a[href*="/admin/recipes"]');
+    if (await row.isVisible()) {
+      await expect(navRecipes.locator("visible=true")).toHaveCount(1);
+    } else {
+      await expect(navRecipes).toHaveCount(0);
+    }
 
     // Tab switch re-queries with the moderation_status filter.
     const [listRequest] = await Promise.all([

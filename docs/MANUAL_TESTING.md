@@ -10,7 +10,9 @@
 - [ ] **דף הבית = תור** — `/admin` עם לפחות עסק אחד ב-`pending` — **תוצאה מצופה:** כרטיס «בקשות ממתינות» עם מונה צהוב, שורה לכל עסק + «בדוק» שמוביל ל-`/admin/producers/{id}/edit`, «צפה בכל» ל-`?status=pending`; אין כרטיסי סטטיסטיקה, גרפים או «בריאות שרת»
 - [ ] **אפס ממתינים** — `/admin` כשאין pending ואין פריטים בשום תור — **תוצאה מצופה:** «אין בקשות ממתינות» + «אין פריטים ממתינים בשאר התורים»; שום מספר צהוב בסרגל
 - [ ] **תור מופיע רק כשיש בו משהו** — צרי בקשת כשרות ממתינה — **תוצאה מצופה:** «כשרות» מופיע בסרגל תחת «תורים» עם מונה, ושורה «כשרות · N» בדף הבית; סגרי אותה — הפריט נעלם משני המקומות. «דיווחים» נשאר תמיד
-- [ ] **«עוד» מקופל** — 1440 — **תוצאה מצופה:** משתמשים/תוכן/גיוס/ביקורות/אנליטיקס/הגדרות מוסתרים עד לחיצה על «עוד»; קישורים ישירים (למשל `/admin/settings`) עדיין עובדים ומסומנים כפעילים
+- [ ] **«עוד» מקופל** — 1440 — **תוצאה מצופה:** משתמשים/תוכן/גיוס/ביקורות/אנליטיקס/הגדרות מוסתרים עד לחיצה על «עוד»; בקישור ישיר (למשל `/admin/settings`) «עוד» נפתח מעצמו והפריט מסומן כפעיל
+- [ ] **מונה חוויות/מתכונים = תור האדמין בלבד** — מתכון אחד ב-`pending` ואחד ב-`needs_revision` — **תוצאה מצופה:** «מתכונים» בסרגל ובדף הבית עם המונה 1 (לא 2); אחרי אישור ה-pending השורה נעלמת גם כשה-needs_revision עדיין קיים
+- [ ] **דף הבית בנייד** — `/admin` ב-375 — **תוצאה מצופה:** בלי באנר «המסך הזה זמין במחשב»; הרשימה בעמודה אחת, «בדוק» ו«צפה בכל» לחיצים; `/admin/settings` ב-375 עדיין מציג את הבאנר
 - [ ] **בלי כרום צרכני** — `/admin/producers?status=pending` ב-375 — **תוצאה מצופה:** אין תפריט תחתון צף מעל הטבלה, אין בועת «שאלה? שאלו אותי», הפוטר הוא שורת © דקה (כמו בדשבורד בעלת העסק)
 - [ ] **endpoint מת** — חסמי `GET /api/admin/dashboard` (DevTools) — **תוצאה מצופה:** בסרגל «!» על «מה מחכה לטיפול» ו«בתי עסק», וכל התורים מוצגים בלי מונה (לא נעלמים)
 
@@ -1878,7 +1880,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → admin-producers-queue.spec.ts (the approved chip reads «מאושר» in its own colour, never the raw code) — Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
 - ✅ → admin-producers-queue.spec.ts (the rejected chip reads «נדחה» in its own colour, never the raw code) — Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
 - ✅ → admin-producers-queue.spec.ts (the inactive chip reads «לא פעילה» in its own colour, never the raw code) — Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`.
-- ✅ → admin-producers-queue.spec.ts (the /admin activity feed brackets the translated label next to the business name) — Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(label מתורגם)` ולא קוד גולמי.
+- ~~✅ → admin-producers-queue.spec.ts (the /admin activity feed brackets the translated label next to the business name)~~ — **הוחלף ב-MEH-2359 (26/10):** סקציית «פעילות אחרונה» ירדה מ-/admin (דף הבית = «מה מחכה לטיפול»), אין משטח לבדוק; מיפוי status→label נבדק בצ׳יפים של הטבלה (שורות 1–5, 8 לעיל).
 - [ ] Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending` → `/producer/dashboard`; **תוצאה מצופה:** מתחת לכפתור "השלימי פרופיל ←" מופיעה שורה "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"; "עריכת פרופיל" הוא link ל-`/settings`.
 - ✅ → admin-producers-queue.spec.ts (an unknown status falls back to the raw code in the neutral colour) — Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד הגולמי (לא `undefined`, לא קריסה).
 
