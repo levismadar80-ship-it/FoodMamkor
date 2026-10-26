@@ -109,6 +109,20 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
     expect(screen.getByTestId("admin-home-pending").className).not.toMatch(/border-yellow/);
   });
 
+  it("a stats payload without the per-queue keys is UNKNOWN, not all-clear (MEH-2096)", async () => {
+    // A frontend deployed ahead of its backend: only the pre-MEH-2359 keys.
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({
+        data: { stats: { total_producers: 12, pending_producers: 0, open_reports: 0 }, pending_producers: [] },
+      }),
+    );
+    render(<AdminHome />);
+    expect(await screen.findByText("admin.dashboard.pending_panel.empty")).toBeInTheDocument();
+    expect(screen.queryByText("admin.dashboard.queues.all_clear")).not.toBeInTheDocument();
+    expect(screen.getByTestId("admin-home-queues-unknown")).toHaveTextContent("admin.common.error_loading");
+    expect(screen.getByTestId("admin-home-queues").querySelectorAll("a")).toHaveLength(0);
+  });
+
   it("says how many more are waiting when the preview is shorter than the count", async () => {
     apiMock.get.mockImplementation(() =>
       Promise.resolve({ data: { stats: { ...DASHBOARD.stats, pending_producers: 7 }, pending_producers: DASHBOARD.pending_producers } }),

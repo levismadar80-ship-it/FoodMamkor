@@ -40,7 +40,6 @@ from app.models.models import (
     ProducerNameChangeRequest,
     ProducerRecipe,
 )
-from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -54,6 +53,7 @@ from app.schemas.schemas import (
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.category_slug import resolve_unique_slug
 from app.services.vacation_state import read_vacation_state
+from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
 from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
 

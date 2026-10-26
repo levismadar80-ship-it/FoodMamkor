@@ -107,9 +107,12 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
     // above renders the i18n *key*, so assert on keys, not the Hebrew literals.
     await waitFor(() => expect(screen.getByText("dashboard.title")).toBeInTheDocument());
     expect(screen.getByText("dashboard.pending_panel.empty")).toBeInTheDocument();
-    // MEH-2359: the activity feed left the home page; the queues block's
-    // empty line is the second thing a null-heavy payload must still render.
-    expect(screen.getByText("dashboard.queues.all_clear")).toBeInTheDocument();
+    // MEH-2359: the activity feed left the home page; the queues block is the
+    // second thing a null-heavy payload must still render. This payload has
+    // NONE of the per-queue keys, so the block says "unknown" (MEH-2096), not
+    // all-clear — an absent count is never a verified-empty one.
+    expect(screen.queryByText("dashboard.queues.all_clear")).not.toBeInTheDocument();
+    expect(screen.getByTestId("admin-home-queues-unknown")).toBeInTheDocument();
   });
 
   it("renders pending list when pending_producers is a non-empty array", async () => {

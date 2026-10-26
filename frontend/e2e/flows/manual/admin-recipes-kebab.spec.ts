@@ -311,6 +311,17 @@ test.describe("recipes moderation — /admin/recipes", () => {
     await expect(page.getByRole("link", { name: /^מתכונים/ }).filter({ has: badge })).toHaveCount(1);
   });
 
+  // MEH-2359 — the queue entry is count-gated, except for the page the admin is on:
+  // at 0 pending, standing on /admin/recipes, «מתכונים» is still in the nav and highlighted.
+  test("with nothing pending the «מתכונים» entry stays in the nav while the admin is on it", async ({ page }) => {
+    await stubAdmin(page, { recipes: [], pendingModeration: 0 });
+    await openRecipes(page);
+    const link = page.locator("aside nav, div.md\\:hidden > nav").getByRole("link", { name: /^מתכונים/ });
+    await expect(link).toHaveCount(1);
+    await expect(link).toHaveAttribute("aria-current", "page");
+    await expect(link.locator('[aria-label$="פריטים לאישור"]'), "no pill at 0").toHaveCount(0);
+  });
+
   // MT:MEH-997:4 — «אשרי» → toast, out of pending, into «מאושרים» as published.
   test("«אשרי» approves: toast, gone from pending, present under «מאושרים» as «פורסם»", async ({ page }) => {
     const writes: Rec[] = [];

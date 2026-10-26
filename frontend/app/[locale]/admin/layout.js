@@ -12,6 +12,7 @@ import Link from "next/link";
 import {
   CaretDown,
   Gauge,
+  Question,
   Storefront,
   Users,
   Note,
@@ -50,8 +51,9 @@ import { QUEUES, queueCount, visibleQueues } from "./queues";
 //               default (Shopify-admin pattern: a collapsible secondary group).
 //
 // Dropped from the nav, NOT deleted: /admin/group-buys (0 group buys in
-// production, the card's own tooltip said «לא פעיל כרגע»), /admin/help (now a
-// footer link under «חזרה לאתר»). Every route still answers by URL.
+// production, the card's own tooltip said «לא פעיל כרגע»). /admin/help is the
+// last item of «עוד» — one place, so the phone strip (which flattens the
+// sections) reaches it too. Every route still answers by URL.
 const NAV_SECTIONS = [
   {
     key: "approvals",
@@ -71,6 +73,7 @@ const NAV_SECTIONS = [
       { href: "/admin/reviews", key: "reviews", Icon: Star },
       { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
       { href: "/admin/settings", key: "settings", Icon: GearSix },
+      { href: "/admin/help", key: "help", Icon: Question },
     ],
   },
 ];
@@ -198,7 +201,7 @@ export default function AdminLayout({ children }) {
     return n !== null && n > 0 ? n : null;
   };
   const itemsOf = (section) =>
-    section.key === "queues" ? visibleQueues(stats, countsError) : section.items;
+    section.key === "queues" ? visibleQueues(stats, countsError, isActive) : section.items;
   // Flattened list for the mobile horizontal strip (order follows the sections).
   const navHrefs = NAV_SECTIONS.flatMap(itemsOf);
 
@@ -290,12 +293,9 @@ export default function AdminLayout({ children }) {
             );
           })}
         </nav>
-        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50 flex items-center justify-between gap-3">
+        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50">
           <Link href="/" className="hover:text-white transition">
             {t("common.back_home")}
-          </Link>
-          <Link href="/admin/help" className="hover:text-white transition">
-            {t("layout.nav.help")}
           </Link>
         </div>
       </aside>
@@ -317,6 +317,7 @@ export default function AdminLayout({ children }) {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs transition ${
                   active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
+                aria-current={active ? "page" : undefined}
               >
                 <Icon size={14} />
                 {t(`layout.nav.${n.key}`)}

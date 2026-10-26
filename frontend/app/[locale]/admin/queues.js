@@ -48,11 +48,17 @@ export function queueCount(stats, queue) {
   return typeof v === "number" ? v : null;
 }
 
-/** Queues to show: always-on ones, non-empty ones, and all of them while unknown. */
-export function visibleQueues(stats, countsError = false) {
+/**
+ * Queues to show: always-on ones, non-empty ones, all of them while unknown —
+ * and the one the admin is standing on (`isActive`), whatever its count:
+ * approving the last recipe must not make the «מתכונים» entry vanish from
+ * under the highlighted page.
+ */
+export function visibleQueues(stats, countsError = false, isActive = () => false) {
   return QUEUES.filter((q) => {
     if (q.always) return true;
     if (countsError) return true;
+    if (isActive(q.href)) return true;
     const n = queueCount(stats, q);
     return n === null || n > 0;
   });

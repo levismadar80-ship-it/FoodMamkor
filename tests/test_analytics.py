@@ -15,7 +15,8 @@ All tests are written BEFORE the implementation (TDD, per workflow rule 5).
 They use the shared pytest fixtures in conftest.py.
 """
 import itertools
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 import pytest
 
@@ -785,6 +786,7 @@ class TestAdminDashboardAnalytics:
         request and assert the three new keys exist and the seeded one is 1."""
         from app.models.models import (
             CategoryRequest,
+            Experience,
             OutboundMessage,
             ProducerNameChangeRequest,
             ProducerRecipe,
@@ -815,6 +817,25 @@ class TestAdminDashboardAnalytics:
                     published=False,
                 )
             )
+        # Same split for experiences: one on the admin's turn, one on the host's.
+        for status in ("pending", "changes_requested"):
+            db.add(
+                Experience(
+                    title=f"חוויה {status}",
+                    description="תיאור ארוך מספיק כדי לעבור את הוולידציה של הטופס.",
+                    image_url="https://res.cloudinary.com/demo/image/upload/sample.jpg",
+                    category="בישול",
+                    host_user_id=admin.id,
+                    event_date=(datetime.utcnow() + timedelta(days=7)).date(),
+                    event_time=time(10, 0),
+                    location_type="home",
+                    city="תל אביב",
+                    max_participants=10,
+                    price_per_person=Decimal("150"),
+                    status=status,
+                    moderation_status="APPROVED",
+                )
+            )
         # One pending name change + one already reviewed: the count moves by 1.
         for status in ("pending", "approved"):
             db.add(
@@ -838,6 +859,8 @@ class TestAdminDashboardAnalytics:
         assert after["undelivered_whatsapp_7d"] == before["undelivered_whatsapp_7d"] + 1
         assert after["recipes_awaiting_review"] == before["recipes_awaiting_review"] + 1
         assert after["pending_recipes"] == before["pending_recipes"] + 2
+        assert after["experiences_awaiting_review"] == before["experiences_awaiting_review"] + 1
+        assert after["pending_experiences"] == before["pending_experiences"] + 2
 
     def test_admin_dashboard_includes_analytics_series(self, client, db):
         admin = make_user(db, role="admin")
