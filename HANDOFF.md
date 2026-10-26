@@ -4,6 +4,21 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-26 13:30 — קישור ההזמנה לבעלת העסק הושלם (MEH-2321): ‏#3600, ‏#3599, ‏#3611 מוזגו
+
+**‏שורה אחת:** אדמין יוצרת טיוטה «לבעלת העסק», מכינה מוצרים, ושולחת קישור `/claim/<token>` (14 יום). בעלת העסק מתחברת לחשבון משלה, מסמנת את ההצהרות ומקבלת את העמוד. כל ארבעת ה-chunks ב-Done.
+
+**‏מה צריך לדעת לפני עבודה:**
+- הקישור הוא credential. אסור שיופיע בכתובת שצד שלישי מקליט. העזרים ב-`frontend/lib/claim-token.js`: ‏`redactClaimPath`, ‏`scrubClaimTokens`, ואחסון ב-sessionStorage. כל כלי טלמטריה חדש צריך לעבור דרכם.
+- ‏`/claim/<jwt>` נתפס ב-middleware רק בזכות שתי שורות ב-matcher, כי השורה הכללית מדלגת על נתיבים עם נקודה. טסט: `__tests__/MiddlewareClaimMatcher.test.js`.
+- הרצה מול backend אמיתי: `frontend/scripts/qa-meh2324-claim-e2e.mjs --link= --email= --password-file=<path>`. הסיסמה מקובץ, לא ממשתנה סביבה (env-drift).
+- ‏follow-ups (לא נפתחו כרטיסים): ‏race בין `admin_delete_producer` לבין קבלה (`FOR UPDATE`) · ‏PostHog ‏`$current_url` אם `trackEvent` יופעל אי פעם ב-`/claim` · מצב שבו sessionStorage חסום: אורחת שמתחברת רואה «הקישור לא פעיל» במקום הנחיה לפתוח שוב · ‏`refreshUser` שמשתיק כשל ‏`/auth/me` אחרי קבלה.
+
+**‏ממתין לספיר:**
+- שלושת ה-PR-ים עולים ל-production יחד ב-PR של staging→main (שלה).
+- בדיקה אחת ידנית על staging: כניסה עם Google מתוך קישור הזמנה אמיתי. כפתור Google לא מוצג בהרצה מקומית.
+- אישור הנוסח של `admin.body` ב-he.json (פנייה בלשון נקבה).
+
 ## 2026-10-26 09:50 — מודלי ה-AI ב-backend על Haiku 5.5 (#3592), ושבעה כרטיסי מודרציה
 
 **‏שורה אחת:** ‏#3592 מוזג ל-staging (`322ec9a2`). ה-eval מצא שני מסלולים שבהם ספאם ומידע אישי פורסמו כמאושרים, ושניהם תוקנו באותו PR.
