@@ -54,6 +54,33 @@ describe("Sentry configs redact the claim token", () => {
   });
 });
 
+// rrweb's own recording events carry the page URL and cannot be scrubbed
+// (@sentry/replay: beforeAddRecordingEvent only sees custom events), so a tab
+// that opens on a claim link must record no replay at all.
+describe("Sentry client records no replay on a claim link", () => {
+  const env = { ...process.env };
+  beforeEach(() => {
+    vi.resetModules();
+    init.mockClear();
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://k@o.ingest.sentry.io/1";
+  });
+  afterEach(() => {
+    process.env = { ...env };
+    window.history.replaceState({}, "", "/");
+  });
+
+  it.each([
+    [`/claim/${TOKEN}`, 0],
+    [`/en/claim/${TOKEN}`, 0],
+    ["/claim", 1],
+    ["/producers", 1],
+  ])("opened on %s → %s replay integration(s)", async (path, count) => {
+    window.history.replaceState({}, "", path);
+    await import("../sentry.client.config.js");
+    expect(init.mock.calls[0][0].integrations).toHaveLength(count);
+  });
+});
+
 describe("Speed Insights redacts the claim token", () => {
   it("SpeedInsightsRedacted passes a redacting beforeSend", async () => {
     const { default: SpeedInsightsRedacted } = await import("@/components/SpeedInsightsRedacted");

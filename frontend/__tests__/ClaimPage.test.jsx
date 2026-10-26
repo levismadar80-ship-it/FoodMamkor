@@ -34,7 +34,9 @@ vi.mock("@/lib/auth-context", () => ({
 }));
 
 vi.mock("@/components/GoogleAuthButton", () => ({
-  default: () => <div data-testid="google-button" />,
+  default: ({ onError }) => (
+    <button type="button" data-testid="google-button" onClick={() => onError("ההתחברות עם Google נכשלה")} />
+  ),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -276,6 +278,24 @@ describe("submitting", () => {
     const { container } = wrap(<ClaimClient />);
     await screen.findByTestId("claim-preview");
     expect(container.querySelectorAll("img")).toHaveLength(count);
+  });
+
+  // A failed Google try is shown to the guest; once a retry signs her in, the
+  // form must not open with that stale alert.
+  it("a Google error does not follow her into the signed-in form", async () => {
+    claimOk();
+    asUser(null);
+    const { rerender } = wrap(<ClaimClient />);
+    fireEvent.click(await screen.findByTestId("google-button"));
+    expect(screen.getByTestId("claim-auth-error")).toHaveTextContent("ההתחברות עם Google נכשלה");
+    asUser(OWNER);
+    rerender(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ClaimClient />
+      </NextIntlClientProvider>,
+    );
+    await screen.findByTestId("claim-form");
+    expect(screen.queryByTestId("claim-error")).not.toBeInTheDocument();
   });
 
   // A 2xx means the server already assigned the draft. Reporting failure would

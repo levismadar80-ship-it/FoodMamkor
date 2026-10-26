@@ -67,6 +67,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
   const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   const [validation, setValidation] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  // Sign-in errors are the guest view's only; the form never shows them.
+  const [authError, setAuthError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Move the token out of the address bar before anything else happens.
@@ -228,7 +230,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
       {!user && (
         <div data-testid="claim-logged-out" className="space-y-4">
           <p className="text-text">{t("logged_out.body")}</p>
-          <GoogleAuthButton onError={(msg) => setSubmitError(msg)} />
+          <GoogleAuthButton onError={(msg) => setAuthError(msg)} />
           <PrimaryLink href={registerHref} testid="claim-email-signup">
             {t("logged_out.email_signup")}
           </PrimaryLink>
@@ -239,9 +241,9 @@ export default function ClaimClient({ tokenFromPath = null }) {
               {t("logged_out.login")}
             </Link>
           </p>
-          {submitError && (
+          {authError && (
             <p className="text-sm text-error" role="alert" data-testid="claim-auth-error">
-              {submitError}
+              {authError}
             </p>
           )}
         </div>
