@@ -3,6 +3,21 @@
 
 ---
 
+## MEH-2359 — אדמין = אישור עסקים: דף בית «מה מחכה לטיפול», סרגל מצומצם, בלי כרום צרכני (26/10)
+
+> **מה השתנה:** `/admin` מציג רק מה שדורש החלטה (בתי עסק ממתינים + תורים שיש בהם פריטים); הסרגל = אישורים · תורים (רק כשיש) · עוד (מקופל); ב-/admin אין פוטר צרכני, צ׳אט או `BottomNav`. צילומים: `frontend/qa-artifacts/MEH-2359/` (375 + 1440, נקראו 26/10).
+
+- [ ] **דף הבית = תור** — `/admin` עם לפחות עסק אחד ב-`pending` — **תוצאה מצופה:** כרטיס «בקשות ממתינות» עם מונה צהוב, שורה לכל עסק + «בדוק» שמוביל ל-`/admin/producers/{id}/edit`, «צפה בכל» ל-`?status=pending`; אין כרטיסי סטטיסטיקה, גרפים או «בריאות שרת»
+- [ ] **אפס ממתינים** — `/admin` כשאין pending ואין פריטים בשום תור — **תוצאה מצופה:** «אין בקשות ממתינות» + «אין פריטים ממתינים בשאר התורים»; שום מספר צהוב בסרגל
+- [ ] **תור מופיע רק כשיש בו משהו** — צרי בקשת כשרות ממתינה — **תוצאה מצופה:** «כשרות» מופיע בסרגל תחת «תורים» עם מונה, ושורה «כשרות · N» בדף הבית; סגרי אותה — הפריט נעלם משני המקומות. «דיווחים» נשאר תמיד
+- [ ] **«עוד» מקופל** — 1440 — **תוצאה מצופה:** משתמשים/תוכן/גיוס/ביקורות/אנליטיקס/הגדרות/עזרה מוסתרים עד לחיצה על «עוד»; בקישור ישיר (למשל `/admin/settings`) «עוד» נפתח מעצמו והפריט מסומן כפעיל
+- [ ] **התור הפעיל לא נעלם** — `/admin/recipes` עם מתכון ממתין אחד → אשרי אותו — **תוצאה מצופה:** «מתכונים» נשאר בסרגל ומסומן כפעיל (בלי מונה); אחרי מעבר לדף אחר הוא יורד מהסרגל
+- [ ] **מונה חוויות/מתכונים = תור האדמין בלבד** — מתכון אחד ב-`pending` ואחד ב-`needs_revision` — **תוצאה מצופה:** «מתכונים» בסרגל ובדף הבית עם המונה 1 (לא 2); אחרי אישור ה-pending השורה נעלמת גם כשה-needs_revision עדיין קיים
+- [ ] **דף הבית בנייד** — `/admin` ב-375 — **תוצאה מצופה:** בלי באנר «המסך הזה זמין במחשב»; הרשימה בעמודה אחת, «בדוק» ו«צפה בכל» לחיצים; `/admin/settings` ב-375 עדיין מציג את הבאנר
+- [ ] **בלי כרום צרכני** — `/admin/producers?status=pending` ב-375 — **תוצאה מצופה:** אין תפריט תחתון צף מעל הטבלה, אין בועת «שאלה? שאלו אותי», הפוטר הוא שורת © דקה (כמו בדשבורד בעלת העסק)
+- [ ] **endpoint מת** — חסמי `GET /api/admin/dashboard` (DevTools) — **תוצאה מצופה:** בסרגל «!» על «מה מחכה לטיפול» ו«בתי עסק», וכל התורים מוצגים בלי מונה (לא נעלמים)
+- [ ] **מונה חסר ≠ אפס** — שני תרחישים ב-DevTools (override ל-`GET /api/admin/dashboard`): (א) `stats` בלי `pending_producers` ו-`pending_producers: []` — **תוצאה מצופה:** בכרטיס «בקשות ממתינות» מופיע «שגיאה בטעינת המידע», לא «אין בקשות ממתינות»; (ב) `stats` עם `pending_kashrut_requests: 3` ובלי `recipes_awaiting_review` — **תוצאה מצופה:** שורה «כשרות · 3» **וגם** «שגיאה בטעינת המידע» מתחתיה; «אין פריטים ממתינים» מופיע רק כשכל המונים ידועים ואפס
+
 ## MEH-1981 (שארית) — הודעה בנקודת האיסוף: ניוזלטר בפוטר + טופס צור קשר (22/10)
 
 > **מה השתנה:** שתי נקודות האיסוף האחרונות מתוך 12 שנבדקו קיבלו שורת `CollectionNotice` (תיקון 13 §11 — מטרה + נמען + קישור למדיניות, ליד השדה). הפוטר כהה, ולכן השורה שם ב-`tone="on-dark"` (ירוק-100 / ירוק-50 — אותם צבעים שכבר בפוטר). הקופי נגזר מחמש השורות שאושרו 02/09.
@@ -1380,7 +1395,7 @@ Run on Vercel preview before merging to staging.
 
 ### Test 1 — Admin blocked on password upgrade path
 
-- [ ] Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`)
+- [ ] Log in as admin (`<staging-admin-email>` or any account with `role='admin'`)
 - ✅ → admin-producers-queue.spec.ts (an admin on /register/producer gets the terminal gate and no form, on the same URL — ⚠️ STALE: since MEH-1489 it is an in-place gate screen, not a redirect to /admin) — Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever rendered)
 - [ ] In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')}, body: JSON.stringify({producer_name:'X',phone:'0501234567',category_ids:[],primary_contact_method:'whatsapp'})}).then(r => r.json().then(j => console.log(r.status, j)))` → **expected:** `403 {"detail":"מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת."}`
 - [ ] After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/auth/me`
@@ -1411,7 +1426,7 @@ Run on Vercel preview before merging to staging.
 
 ## MEH-669 recovery — for Smadar's local terminal only
 
-**Affected account at time of writing:** `sint12345@gmail.com` (Sapir's staging admin).
+**Affected account at time of writing:** `<staging-admin-email>` (Sapir's staging admin).
 
 Recovery is a data fix, not a schema change — does NOT require Alembic.
 
@@ -1419,7 +1434,7 @@ Recovery is a data fix, not a schema change — does NOT require Alembic.
 -- 1) READ-ONLY inspect first. Capture the producer_id → call it $PID.
 SELECT id, email, role, producer_id, is_producer
 FROM users
-WHERE email = 'sint12345@gmail.com';
+WHERE email = '<staging-admin-email>';
 
 -- 2) Restore admin access (single UPDATE — no cascade).
 --    This step alone is sufficient to unlock /admin.
@@ -1427,7 +1442,7 @@ UPDATE users
 SET role = 'admin',
     producer_id = NULL,
     is_producer = false
-WHERE email = 'sint12345@gmail.com';
+WHERE email = '<staging-admin-email>';
 
 -- 3) (Optional) Delete the orphan producer row.
 --    CASCADE will clean ProducerCategory, DeliveryArea, ProducerReview,
@@ -1867,7 +1882,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → admin-producers-queue.spec.ts (the approved chip reads «מאושר» in its own colour, never the raw code) — Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
 - ✅ → admin-producers-queue.spec.ts (the rejected chip reads «נדחה» in its own colour, never the raw code) — Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
 - ✅ → admin-producers-queue.spec.ts (the inactive chip reads «לא פעילה» in its own colour, never the raw code) — Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`.
-- ✅ → admin-producers-queue.spec.ts (the /admin activity feed brackets the translated label next to the business name) — Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(label מתורגם)` ולא קוד גולמי.
+- ~~✅ → admin-producers-queue.spec.ts (the /admin activity feed brackets the translated label next to the business name)~~ — **הוחלף ב-MEH-2359 (26/10):** סקציית «פעילות אחרונה» ירדה מ-/admin (דף הבית = «מה מחכה לטיפול»), אין משטח לבדוק; מיפוי status→label נבדק בצ׳יפים של הטבלה (שורות 1–5, 8 לעיל).
 - [ ] Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending` → `/producer/dashboard`; **תוצאה מצופה:** מתחת לכפתור "השלימי פרופיל ←" מופיעה שורה "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"; "עריכת פרופיל" הוא link ל-`/settings`.
 - ✅ → admin-producers-queue.spec.ts (an unknown status falls back to the raw code in the neutral colour) — Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד הגולמי (לא `undefined`, לא קריסה).
 
@@ -3667,3 +3682,17 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] **מתג סינון** — סמני «רק ביקורות שסומנו»; **תוצאה מצופה:** נשארות רק ביקורות עם התג, והמונה מראה «N מתוך סה״כ». כשאין אף ביקורת מסומנת מופיע «אין ביקורות להצגה». ביטול הסימון מחזיר את כל הביקורות
 - [ ] **עריכה מעדכנת** — הכותבת עורכת ביקורת מסומנת לנוסח תקין; **תוצאה מצופה:** התג נעלם
 - [ ] **שמירה חוזרת לא מוחקת את התג** — הכותבת שומרת שוב ביקורת מסומנת עם אותו טקסט (משנה רק את הכוכבים); **תוצאה מצופה:** הכוכבים מתעדכנים והתג נשאר
+
+### MEH-2360 — כפתורי הסתרה והחזרה (/admin/reviews)
+
+- [ ] **הסתרה** — ב-`/admin/reviews` לחצי «הסתירי» על ביקורת גלויה; **תוצאה מצופה:** הודעה «הביקורת הוסתרה», בשורה מופיע התג «מוסתרת» והכפתור הופך ל«החזירי», בלי רענון. בעמוד העסק הביקורת כבר לא מופיעה והממוצע לא כולל אותה
+- [ ] **החזרה** — לחצי «החזירי» על ביקורת מוסתרת; **תוצאה מצופה:** הודעה «הביקורת חזרה לאתר», התג נעלם, והביקורת חוזרת לעמוד העסק
+- [ ] **כמה ביקורות** — שלוש ביקורות, אחת מוסתרת; **תוצאה מצופה:** תג אחד וכפתור «החזירי» אחד, ושני כפתורי «הסתירי». פעולה על שורה אחת לא משנה את האחרות
+- [ ] **כשל** — נתקי את הרשת ולחצי «הסתירי»; **תוצאה מצופה:** הודעת שגיאה, והשורה נשארת כמו שהייתה
+## MEH-2369 — אירועים / חוויות / קניות קבוצתיות מוצגים רק כשיש תוכן (26/10/2026)
+
+- [ ] **sitemap בלי תוכן** — פתחי `/sitemap.xml` כשאין אירועים/חוויות/קניות קבוצתיות — **תוצאה מצופה:** אין `/events`, `/experiences`, `/group-buys` (גם לא `/en/…`). שאר העמודים במקום.
+- [ ] **sitemap עם תוכן** — אחרי אישור אירוע אחד — **תוצאה מצופה:** `/events` מופיע (עד שעה, revalidate).
+- [ ] **noindex כשריק** — `view-source:` של `/group-buys` כשאין קניות פתוחות — **תוצאה מצופה:** `<meta name="robots" content="noindex, follow">`. עם קנייה פתוחה אחת — אין meta robots כזה.
+- [ ] **פוטר** — בלי אירוע קרוב — **תוצאה מצופה:** אין «אירועים» בקבוצת «גלו». עם אירוע קרוב אחד — הקישור מופיע.
+- [ ] **דשבורד** — `/producer/dashboard/tools` — **תוצאה מצופה:** ארבעת הכלים (אירועים, חוויות, קניות קבוצתיות, מתכונים) עדיין שם, בלי שינוי.

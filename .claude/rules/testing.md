@@ -57,6 +57,30 @@ mismatches, 0 orphans.
 
 ---
 
+## Clock-dependent tests seed from the Israel clock (MEH-2290 · MEH-2380)
+
+The code measures days in Asia/Jerusalem (`israel_today()`,
+`business_days_waiting`, `astimezone(ISRAEL_TZ)`). A test that feeds it a
+timestamp built from the UTC clock is green at most hours and red at one.
+
+- **A datetime "N days ago" is `israel_days_ago(N)`** (`tests/conftest.py`),
+  never `datetime.now(timezone.utc) - timedelta(days=N)`: N × 24 h is N Israel
+  days only while the UTC offset is the same at both ends. The week after a
+  DST switch, 21:00–22:00 UTC, it is N ± 1.
+- **A date relative to today is `israel_today() ± timedelta(days=N)`**, never
+  `date.today()`: the runner is UTC and Israel is already tomorrow from
+  21:00/22:00 UTC. Existing `date.today()` seeds survive on margin only.
+- **A hard-coded date compared with the clock freezes the clock** —
+  `monkeypatch.setattr(<consumer module>, "israel_today", lambda: date(...))`
+  — or it expires (MEH-2290).
+- **An exact count over a window is pinned with the clock frozen at the window
+  edge** (the two `*_NOW` anchors in `tests/test_admin_queue_sla_aging.py`),
+  not only at the hour the suite happens to run.
+- Review question: what does this assertion read at 21:30 UTC on the Monday
+  after the clock change — late October, and late March?
+
+---
+
 ## `networkidle` is banned in specs (MEH-215)
 
 No **unbounded** `waitForLoadState("networkidle")` / `waitUntil: "networkidle"`

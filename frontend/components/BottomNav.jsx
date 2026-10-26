@@ -354,6 +354,10 @@ export default function BottomNav() {
   // bottom layer, not two. Scoped to the public producer leaf only (dashboard
   // subtree keeps the nav). Placed after every hook so rules-of-hooks holds.
   if (isProducerDetail(pathname)) return null;
+  // MEH-2359: /admin has its own mobile nav (admin/layout.js horizontal strip);
+  // the consumer BottomNav floated over the approvals table at 375 (measured
+  // 26/10, qa-artifacts/MEH-2359). Gate it off the admin subtree as a whole.
+  if (pathname === "/admin" || (pathname || "").startsWith("/admin/")) return null;
 
   return (
     <>

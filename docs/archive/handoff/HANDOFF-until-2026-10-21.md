@@ -12051,9 +12051,9 @@ heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2
 
 **Branch:** `fix/terms-legal-copy-pii` (off staging). **Draft PR** base `staging`. LOW-RISK copy/i18n. Refs MEH-720 (Linear at free-issue limit → no MEH slot; "Refs" not "Closes").
 
-**Root cause:** prod /terms+/privacy exposed osek-patur ID `325120939` in the operator block, used `noreply@` as the shown contact address, and used the brand anti-pattern "דירקטורי". MEH-720 (CHANGELOG 2026-05-27) had deferred the 5 legal/WhatsApp "דירקטורי" occurrences; Sapir reviewed → legal surfaces lose it.
+**Root cause:** prod /terms+/privacy exposed osek-patur ID `[הוסר]` in the operator block, used `noreply@` as the shown contact address, and used the brand anti-pattern "דירקטורי". MEH-720 (CHANGELOG 2026-05-27) had deferred the 5 legal/WhatsApp "דירקטורי" occurrences; Sapir reviewed → legal surfaces lose it.
 
-**Done (5 files, 15 lines):** `he.json` 6→0 דירקטורי + PII strip + terms section-1 verbatim rewrite; `en.json` PII strip only; `terms/page.js` + `privacy/page.js` operator contact `OPERATOR_EMAIL`(noreply)→`CONTACT_EMAIL`, dead const removed; `HomeProductCard.jsx:158` hardcoded card disclaimer de-directory'd (Sapir-approved scope expansion). **Operator final form (Sapir, follow-up):** `operator_value` → `טופז שנפ.` / `Topaz Schnapp.` — "עוסקת פטורה" descriptor dropped (optional disclosure), name order + regular פ intentional. Verified: grep 325120939 → 0, grep דירקטורי → 0, `npm run build` ✓ (terms/privacy SSG).
+**Done (5 files, 15 lines):** `he.json` 6→0 דירקטורי + PII strip + terms section-1 verbatim rewrite; `en.json` PII strip only; `terms/page.js` + `privacy/page.js` operator contact `OPERATOR_EMAIL`(noreply)→`CONTACT_EMAIL`, dead const removed; `HomeProductCard.jsx:158` hardcoded card disclaimer de-directory'd (Sapir-approved scope expansion). **Operator final form (Sapir, follow-up):** `operator_value` → `טופז שנפ.` / `Topaz Schnapp.` — "עוסקת פטורה" descriptor dropped (optional disclosure), name order + regular פ intentional. Verified: grep [הוסר] → 0, grep דירקטורי → 0, `npm run build` ✓ (terms/privacy SSG).
 
 **Open threads:**
 - **MEH-472 (en i18n wave):** English "directory platform"/"directory-only" wording left intact (no approved English verbatim) at `en.json` lines 1461 (WhatsApp), 2540 (directory.disclaimer), 2678 (privacy), 2793+2807 (terms). Also broader "real-food directory" copy en:304/395/485/491/503 — separate.
@@ -13137,7 +13137,7 @@ LOW/MEDIUM-RISK infra. New `.github/scripts/staging_smoke.py` (httpx + stdlib) +
 2. Promote `staging → main` via the normal release PR — carries the workflow to `main`, but that's a production deploy of 3 commits (MEH-674/661/671).
 
 ### Then — Sapir's wiring + first run
-1. **Secrets** (Settings → Secrets and variables → Actions): `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD` (staging admin, e.g. `sint12345@gmail.com`); confirm `RAILWAY_STAGING_TOKEN` exists. `STAGING_URL` hardcoded; `RAILWAY_SERVICE_NAME` var defaults `FoodMamkor`.
+1. **Secrets** (Settings → Secrets and variables → Actions): `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD` (staging admin, e.g. `<staging-admin-email>`); confirm `RAILWAY_STAGING_TOKEN` exists. `STAGING_URL` hardcoded; `RAILWAY_SERVICE_NAME` var defaults `FoodMamkor`.
 2. Confirm staging `ANTHROPIC_API_KEY` set (else `risk_score` stays NULL → step 5 correctly fails).
 3. **Trigger**: Actions → "Staging smoke" → Run workflow (`pre_wait_seconds=90` right after a deploy). Send CC the run URL — it's a `workflow_dispatch` run, NOT a PR check, so it won't arrive via the #800 subscription.
 4. **Two sandbox-untestable spots to watch on first run** (MEH-360): `railway logs --service FoodMamkor` non-interactive output (steps 3/4) and `railway run --service Postgres -- psql "$DATABASE_URL"` (cleanup CTE).
@@ -13167,7 +13167,7 @@ LOW-RISK fail-open service-layer fix. PR3 risk-score stayed NULL after a staging
 
 ## 2026-05-22 — MEH-669: admin producer-lockout privilege-escalation fix
 
-HIGH-RISK auth fix. Admin accounts hitting `/register/producer` had `role` silently flipped to `"producer"` by the upgrade path, locking them out of `/admin`. Discovered during pre-prod-promote staging smoke (Sapir's `sint12345@gmail.com`).
+HIGH-RISK auth fix. Admin accounts hitting `/register/producer` had `role` silently flipped to `"producer"` by the upgrade path, locking them out of `/admin`. Discovered during pre-prod-promote staging smoke (Sapir's `<staging-admin-email>`).
 
 Approach (a)+(c) per OWASP A01: backend 403 guards on `/auth/register/producer` (`auth.py:432`) and `/auth/register/producer/oauth` (`auth.py:817`) — both reject `role=="admin"` before any state mutation. Frontend defense-in-depth: CTAs hidden from admins in Header/Footer/ProducersClient + admin redirect on `/register/producer`. Hebrew error string uses feminine voice ("מנהלת...יכולה...").
 
@@ -13412,7 +13412,7 @@ Component token (added):
 > Previously: 2026-05-20 (MEH-475 PR-C4b/chunk-2 — accessibility statement i18n via `getTranslations` + `useTranslations` + first production use of `t.rich()`; **PR #738 MERGED** at `58c5472`; LOW-RISK; 35 strings → 26 keys / 1 file)
 > Previously: 2026-05-20 (MEH-475 PR-C4b/chunk-1 — recipe server-page metadata i18n via `getTranslations` + `generateMetadata`; **PR #736 MERGED** at `a35a4da`; LOW-RISK; 2 strings / 1 file; first production use of the `getTranslations` from `"next-intl/server"` + `t()` interpolation pattern; pattern proof-of-concept for the rest of PR-C4b)
 > Previously: 2026-05-20 (MEH-475 PR-C4b inventory doc — per-file complexity catalog, 5-pattern catalog, SEO risk per file, proposed 5-chunk split, STOP criteria, brand-LOCK grep across all 9 candidate files; **PR #735 MERGED** at `599c23e`; LOW-RISK docs-only; planning artifact for the remaining 4 PR-C4b chunks)
-> Previously: 2026-05-20 (MEH-630 — site operator legal disclosure ("פרטי מפעיל האתר": שנף טופז 325120939 / מהמקור / Mehamakor / noreply@mehamakor.co.il) added to top of `/terms` + `/privacy`; **PR #728 MERGED** at `d08fdf8`; LOW-RISK; inline HE per scope agreement (full terms/privacy i18n deferred to follow-up); existing `levismadar80@gmail.com` references in §6/§11 and §5/§10 left untouched per scope)
+> Previously: 2026-05-20 (MEH-630 — site operator legal disclosure ("פרטי מפעיל האתר": שנף טופז [הוסר] / מהמקור / Mehamakor / noreply@mehamakor.co.il) added to top of `/terms` + `/privacy`; **PR #728 MERGED** at `d08fdf8`; LOW-RISK; inline HE per scope agreement (full terms/privacy i18n deferred to follow-up); existing `levismadar80@gmail.com` references in §6/§11 and §5/§10 left untouched per scope)
 > Previously: 2026-05-20 (MEH-475 — Language toggle UI (Globe icon, desktop + mobile drawer); **PR #731 MERGED** at `3a877ed2`; LOW-RISK end-to-end; **closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b + toggle); 3 follow-up hygiene items folded into <issue id="MEH-629">MEH-629</issue> (now 7 items))
 > Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4b — tail components + wired-remaining sweep; 118 strings / 36 files; **PR #730 MERGED** at `22cce33`; final chunk of PR-C4a series; Brand-LOCK STOP triggered on 2 JSDoc comments → folded inline with MEH-543-aware rewrite)
 

@@ -119,7 +119,7 @@ graph TD
 
 ```mermaid
 graph TD
-    Dashboard[/admin dashboard page] --> AdminDash[GET /admin/dashboard<br/>🛡️ stats + monthly_producers chart +<br/>daily_active_users + top_cities +<br/>server_health + pending_moderation_count]
+    Dashboard[/admin «מה מחכה לטיפול» page + admin layout] --> AdminDash[GET /admin/dashboard<br/>🛡️ stats + pending_producers preview +<br/>monthly_producers + daily_active_users +<br/>top_cities + server_health + pending_moderation_count;<br/>MEH-2359 per-queue keys: pending_category_requests,<br/>pending_name_change_requests, undelivered_whatsapp_7d,<br/>experiences_awaiting_review, recipes_awaiting_review —<br/>the page reads stats + pending_producers only;<br/>the layout reads stats for the sidebar pills + queue filter]
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
