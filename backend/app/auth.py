@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.utils.clock import utc_now
 
 # MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
 # default at time of pinning AND all existing user.password_hash rows.
@@ -221,7 +222,7 @@ _LAST_ACTIVE_THROTTLE = timedelta(minutes=5)
 
 def _maybe_bump_last_active(db: Session, user: User) -> None:
     """Update users.last_active_at if the throttle window has elapsed."""
-    now = datetime.utcnow()
+    now = utc_now()
     last = user.last_active_at
     if last is not None and (now - last) < _LAST_ACTIVE_THROTTLE:
         return
