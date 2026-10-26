@@ -37,6 +37,7 @@ from typing import Any
 import structlog
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_schemas import MODERATION_VERDICT_SCHEMA
 
@@ -76,7 +77,9 @@ def _get_client():
         return None
 
 
-def _build_prompt(payload: dict[str, Any]) -> str:
+def _build_prompt(payload: dict[str, Any]) -> tuple[str, str]:
+    """Return ``(system, user)``. The submission is tagged data in the user
+    turn, never part of the instructions (MEH-2350)."""
     title = payload.get("title") or ""
     description = payload.get("description") or ""
     category = payload.get("category") or ""
@@ -86,18 +89,23 @@ def _build_prompt(payload: dict[str, Any]) -> str:
     location_type = payload.get("location_type") or ""
     max_participants = payload.get("max_participants") or ""
 
-    return f"""אתה מודרטור תוכן לאתר מהמקור — פלטפורמה ישראלית לאוכל בריא,
-חקלאות מקומית וחוויות אוכל אצל בתי עסק מקומיים מורשים. בדוק את החוויה הבאה ותחזיר תשובה
+    data_rule, user_content = wrap_submission(
+        "experience",
+        {
+            "כותרת": title,
+            "קטגוריה": category,
+            "תיאור": description,
+            "עיר": city,
+            "סוג מיקום": location_type,
+            "מחיר לאדם": price_str,
+            "מקסימום משתתפים": max_participants,
+        },
+    )
+    system = f"""אתה מודרטור תוכן לאתר מהמקור — פלטפורמה ישראלית לאוכל בריא,
+חקלאות מקומית וחוויות אוכל אצל בתי עסק מקומיים מורשים. בדוק את החוויה המוגשת ותחזיר תשובה
 ב-JSON בלבד.
 
-החוויה המוגשת:
-כותרת: {title}
-קטגוריה: {category}
-תיאור: {description}
-עיר: {city}
-סוג מיקום: {location_type}
-מחיר לאדם: {price_str}
-מקסימום משתתפים: {max_participants}
+{data_rule}
 
 הקריטריונים שלנו — APPROVED אם:
 ✓ חוויה / סדנה / קורס / סיור אוכל לגיטימי
@@ -125,6 +133,7 @@ REJECTED אם:
   "reason": "הסבר קצר בעברית (שורה אחת)",
   "suggestion": "הצעה לשיפור אם FLAGGED, אחרת null"
 }}"""
+    return system, user_content
 
 
 def _parse_response_text(text: str) -> dict:
@@ -184,12 +193,14 @@ def validate_experience(payload: dict[str, Any]) -> dict:
 
     truncated = False
     try:
+        system, user_content = _build_prompt(normalized)
         message = client.messages.create(
             **ai_fast_request_kwargs(json_schema=MODERATION_VERDICT_SCHEMA),
             # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
             # well clear of truncation (a truncated JSON fails open).
             max_tokens=800,
-            messages=[{"role": "user", "content": _build_prompt(normalized)}],
+            system=system,
+            messages=[{"role": "user", "content": user_content}],
         )
         # MEH-2335: Haiku 5.5 runs safety classifiers. A decline is HTTP 200
         # with stop_reason="refusal" and no text — the content itself
