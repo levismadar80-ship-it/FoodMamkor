@@ -34,6 +34,7 @@ from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 from app.database import SessionLocal
 from app.models import Producer
 from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import RISK_SCORE_SCHEMA
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +221,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         # description fields from prematurely closing the wrapper.
         system_prompt, user_content = _build_prompt(profile)
         response = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=RISK_SCORE_SCHEMA),
             max_tokens=_MAX_TOKENS,
             system=system_prompt,
             messages=[{"role": "user", "content": user_content}],
