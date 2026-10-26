@@ -149,6 +149,10 @@ graph TD
     Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
     Reports --> Dismiss[POST /admin/reports/{id}/dismiss<br/>🛡️ 409 if closed]
 
+    ReviewsAdmin[/admin/reviews page] --> AdminRevList[GET /admin/reviews<br/>🛡️ all reviews incl. hidden]
+    ReviewsAdmin --> RevHide[PUT /admin/reviews/{id}/hide<br/>🛡️ sticky — author edit keeps it,<br/>author DELETE → 404 MEH-2348]
+    ReviewsAdmin --> RevUnhide[PUT /admin/reviews/{id}/unhide<br/>🛡️ MEH-2348 the only way back]
+
     Analytics[/admin/analytics page] --> AdminAnalytics[GET /admin/analytics<br/>🛡️ charts + heatmap + top producers]
 
     ExperiencesAdmin[/admin/experiences page] --> AdminExpList[GET /admin/experiences?status=<br/>🛡️ 5-tab queue]
