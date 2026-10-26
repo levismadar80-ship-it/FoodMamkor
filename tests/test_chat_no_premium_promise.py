@@ -22,14 +22,14 @@ def test_system_prompt_keeps_no_fees_lock():
 
 
 def test_system_prompt_does_not_name_raw_milk():
-    # MEH-2373: the site lists licensed businesses only; raw milk is not a
-    # product a licensed Israeli business may sell, so the chat must not
-    # offer it as an example. Approved wording (Sapir, 26/10): «גבינות».
+    # MEH-2373: raw milk was removed from the example list; approved
+    # replacement wording (Sapir, 26/10): «גבינות».
     assert "חלב גולמי" not in chat.SYSTEM_PROMPT
     assert "בשר במרעה, לחם מחמצת, גבינות, ירקות אורגניים ועוד" in chat.SYSTEM_PROMPT
 
 
 def test_system_prompt_instruction_is_feminine():
     # MEH-2373: the prompt addresses the assistant in the feminine throughout.
-    assert "ענה בעברית" not in chat.SYSTEM_PROMPT
+    assert "ענה " not in chat.SYSTEM_PROMPT
     assert "עני בעברית יומיומית" in chat.SYSTEM_PROMPT
+    assert "עני בטקסט פשוט בלבד" in chat.SYSTEM_PROMPT
