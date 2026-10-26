@@ -4,6 +4,20 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-26 21:10 — סבב המודרציה הושלם: MEH-2348 עד MEH-2354 ב-Done (#3612, ‏#3607–#3610, ‏#3621, ‏#3613)
+
+**‏שורה אחת:** כל כרטיסי המודרציה שנפתחו אחרי המעבר ל-Haiku 5.5 מוזגו. הסתרת אדמין נשארת, fail-open נמדד, ה-JSON מוגבל ב-schema, הטקסט נכנס כנתונים, וביקורת שה-AI סימן מסומנת באדמין.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏fail-open = APPROVED נשאר (LOCK), אבל כל מקרה מדווח: `report_fail_open` ב-`backend/app/services/moderation_fail_open.py`. מתכון ההתראה ב-`docs/MODERATION.md`.
+- ה-schemas של התשובות ב-`backend/app/services/moderation_schemas.py`. שינוי בפרומפט או ב-schema → להריץ את ה-eval (הפקודה בסעיף 09:50 למטה).
+- אין תג באדמין ≠ ה-AI בדק. ביקורת שעברה fail-open נשמרת כמאושרת ולא נבדקת שוב בשמירה זהה. זה ממצא פתוח, לא באג ידוע שתוקן.
+
+**‏ממתין לספיר:**
+- ממצאי ביקורת מעבר למגבלת 3 הסבבים: `/mnt/project-files/moderation/review-leftovers.md`. רק הראשון דורש החלטה.
+- MEH-2361: החלטה על מחיקה ופרסום מחדש של ביקורת מוסתרת.
+- **‏visibility:** ספיר עצמה מחליפה את הריפו בין ציבורי לפרטי (נאמר על ידה ב-26/10, בגלל עלות הריצות). כשהוא פרטי, כל job ב-Actions נכשל תוך 2 שניות, וזה לא באג. השאלה איך להסתיר את הקשר בין הריפו למהמקור עברה לשרשור נפרד. ‏`docs/ACCESS.md` §8.
+
 ## 2026-10-26 13:30 — קישור ההזמנה לבעלת העסק הושלם (MEH-2321): ‏#3600, ‏#3599, ‏#3611 מוזגו
 
 **‏שורה אחת:** אדמין יוצרת טיוטה «לבעלת העסק», מכינה מוצרים, ושולחת קישור `/claim/<token>` (14 יום). בעלת העסק מתחברת לחשבון משלה, מסמנת את ההצהרות ומקבלת את העמוד. כל ארבעת ה-chunks ב-Done.
