@@ -47,7 +47,7 @@ async function newPage(browser, width, height) {
     if (p === "/auth/me") return json(route, { id: "admin-1", email: "a@b.co", role: "admin", name: "מנהלת" });
     if (m === "POST" && p === `/admin/producers/${DRAFT.id}/claim-link`)
       return json(route, {
-        url: `https://mehamakor.co.il/he/claim?token=eyJhbGciOiJIUzI1NiJ9.qa-fixture-token`,
+        url: `https://mehamakor.co.il/claim/eyJhbGciOiJIUzI1NiJ9.qa-fixture-token`,
         expires_at: "2026-11-09T08:00:00+00:00",
       });
     if (m === "POST" && p === `/admin/producers/${CLAIMED.id}/claim-link`)
@@ -84,7 +84,7 @@ try {
     await page.getByTestId("claim-link-url").waitFor();
     await page.getByTestId("claim-link-copy").click();
     await page.getByText("הועתק").waitFor({ timeout: 3_000 }).catch(() => {});
-    check(`${w} edit: link shown`, (await page.getByTestId("claim-link-url").inputValue()).includes("/claim?token="));
+    check(`${w} edit: link shown`, (await page.getByTestId("claim-link-url").inputValue()).includes("/claim/eyJ"));
     check(`${w} edit: expiry shown`, (await page.getByTestId("claim-link-expires").innerText()).includes("09.11.2026"));
     await panel.screenshot({ path: `${OUT}edit-draft-link-${w}.png` });
 
