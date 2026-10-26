@@ -31,9 +31,9 @@ import secrets
 from uuid import UUID
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
-from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.database import SessionLocal
 from app.models import Producer
+from app.services.moderation_fail_open import classify_failure, report_fail_open
 
 logger = logging.getLogger(__name__)
 
@@ -177,12 +177,21 @@ def _extract_json_object(raw: str) -> dict | None:
     return None
 
 
+def _unreadable_reason(response: object) -> str:
+    """A max_tokens cut is the usual cause of an empty or unparseable body;
+    name it so Sentry can tell a too-small cap from a malformed reply."""
+    if getattr(response, "stop_reason", None) == "max_tokens":
+        return "truncated"
+    return "unparseable"
+
+
 def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
     """Single non-streaming Anthropic call. Returns (score, reasoning) or
     (None, None) on any failure. Caller is responsible for the DB UPDATE.
     Fail-open: every exception path returns NULLs + logs a warning."""
     if not settings.anthropic_api_key:
         logger.warning("[RISK] ANTHROPIC_API_KEY not set — skipping score")
+        report_fail_open("producer_risk", "no_client")
         return (None, None)
 
     try:
@@ -231,10 +240,12 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         ]
         if not text_blocks:
             logger.warning("[RISK] no text blocks in anthropic response")
+            report_fail_open("producer_risk", _unreadable_reason(response))
             return (None, None)
         body = "".join(text_blocks).strip()
     except (AttributeError, TypeError) as exc:
         logger.warning("[RISK] anthropic response shape unexpected: %s", exc)
+        report_fail_open("producer_risk", "error")
         return (None, None)
 
     parsed = _extract_json_object(body)
@@ -246,10 +257,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
             "[RISK] anthropic response unparseable; first 200 chars: %r",
             body[:200],
         )
-        # A max_tokens cut is the usual cause of an unparseable body; name it
-        # so Sentry can tell a too-small cap from a malformed reply.
-        truncated = getattr(response, "stop_reason", None) == "max_tokens"
-        report_fail_open("producer_risk", "truncated" if truncated else "unparseable")
+        report_fail_open("producer_risk", _unreadable_reason(response))
         return (None, None)
 
     score = _clamp_score(parsed.get("score"))
