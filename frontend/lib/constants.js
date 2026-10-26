@@ -18,10 +18,11 @@ export const BRAND_NAME_LATIN = "Mehamakor";
 // gets edited in one place and forgotten in the other. layout.js now imports
 // it from here.
 //
-// This is NOT new copy and needs no rule-22 approval — it is the string
-// already shipping on every page, reused verbatim.
+// MEH-2364 (26/10): now the ADR-011 locked tagline, verbatim — Sapir chose to
+// implement ADR-011 on the footer, meta and OG surfaces. Changing it needs a
+// new ADR superseding ADR-011, not a copy edit.
 export const SITE_DESCRIPTION =
-  "בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד. כל בית עסק נבחר אישית.";
+  "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.";
 
 // MEH-2192: the ONE brand sentence that machine-identity surfaces share —
 // the Organization JSON-LD `description` and public/llms.txt line 3 (a test
