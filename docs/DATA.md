@@ -600,6 +600,10 @@ POST   /producer-claim                     auth   — 10/hour. Body {token, decl
                                                      users.terms_accepted_at + terms_version. Status STAYS "draft" — she completes the page and submits via
                                                      POST /producers/me/submit-for-review, so the manual approval gate is unchanged. Background: WhatsApp welcome,
                                                      producer welcome email, risk score (same three as a self-registered draft). → {producer_id, status}.
+POST   /admin/producers/{id}/products      admin  — 60/hour. MEH-2326 (chunk D). ProductCreate → ProductOut, 201. ONLY while the draft is claimable
+                                                     (draft + no owner, producer row locked FOR UPDATE); otherwise 409. No new-product alert (a draft is not public).
+DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 rule; a product of another business → 404. Image destroyed after commit. 204.
+                                                     Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
 
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
