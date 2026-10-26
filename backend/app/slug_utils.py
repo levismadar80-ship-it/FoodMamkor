@@ -21,6 +21,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "forgot-password",
         "reset-password",
         "auth",
+        # MEH-2322: owner-claim link landing page (/claim/<token>).
+        "claim",
         # User/producer account routes
         "settings",
         "profile",
