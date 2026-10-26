@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-26 21:15 — משפט המותג של ADR-011 באתר (#3622), ‏BRAND.md נסקר (#3620), ה-hook מציג את HANDOFF (#3606)
+
+**‏שורה אחת:** כל מה שנשאר פתוח בסעיף של 09:45 נסגר. ה-hook תוקן, קבצי ה-xlsx יצאו מהריפו, ‏BRAND.md נסקר, ומשפט המותג הנעול מוצג באתר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- משפט המותג מוצג בפוטר וב-meta/OG, ומקורו ב-`docs/decisions/ADR-011-tagline-locked.md`. ‏`__tests__/adr011-tagline.test.js` קורא אותו מה-ADR ונכשל אם `SITE_DESCRIPTION` או אחד מחמשת המפתחות ב-he.json זזים. כדי לשנות את המשפט צריך ADR חדש, לא עריכת קופי.
+- ה-baselines של about, login ו-register בדסקטופ עדיין מציגים את הנוסח הישן של הפוטר, כי השינוי נשאר בתוך ה-tolerance. הם יתעדכנו ב-regen הבא של המסלולים האלה.
+- ‏`NoEmojiInComponents.test.js` נכשל מקומית ב-Node 22 (‏★ מזוהה כאמוג'י) וירוק ב-CI. זה לא נגרם משינוי בקוד.
+
+**‏ממתין לספיר:**
+- **ייצוא מרכז הסושיאל מהחשבון הקודם:** להדביק שם את הפרומפט מ-`prompts/old-account-export-social-hub.md` (בתיקיית הקבצים של הפרויקט) ולהעביר את ה-JSON. אחרי זה הנתונים ייובאו ללוח החדש, והאוטומציות ייבנו כאן מחדש.
+- **אופציונלי:** נוסח חדש לכותרות האתר ולתיאורים של /about, /login ו-/map, שעדיין אומרים «כולם במקום אחד». זה קופי חדש, ולכן לפי כלל 22 צריך את אישורה מילה במילה.
 ## 2026-10-26 21:10 — סבב המודרציה הושלם: MEH-2348 עד MEH-2354 ב-Done (#3612, ‏#3607–#3610, ‏#3621, ‏#3613)
 
 **‏שורה אחת:** כל כרטיסי המודרציה שנפתחו אחרי המעבר ל-Haiku 5.5 מוזגו. הסתרת אדמין נשארת, fail-open נמדד, ה-JSON מוגבל ב-schema, הטקסט נכנס כנתונים, וביקורת שה-AI סימן מסומנת באדמין.
