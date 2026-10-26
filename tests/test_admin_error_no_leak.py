@@ -98,7 +98,7 @@ def test_seed_cities_parse_error_detail_is_only_our_keys_text(client, db):
     with (
         patch("app.routers.admin.httpx.get", return_value=_Resp()),
         patch(
-            "app.routers.admin.parse_localities",
+            "scripts.seed_cities.parse_localities",
             side_effect=LocalityParseError("keys: foo"),
         ),
     ):
