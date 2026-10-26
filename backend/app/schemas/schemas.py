@@ -4359,6 +4359,9 @@ class AdminReviewOut(BaseModel):
     # MEH-1428: "click" | "invite_link" — how the reviewer passed the contact
     # gate. Admin-only on purpose; the public ReviewOut does not carry it.
     source: Literal["click", "invite_link"] = "click"
+    # MEH-2349: the AI verdict on the body. None = no body, or the review
+    # predates the column. Admin-only, like `source`.
+    ai_moderation_status: Literal["APPROVED", "FLAGGED"] | None = None
 
     model_config = {"from_attributes": True}
 

@@ -17,11 +17,12 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
  *   DELETE /reviews/:id           — reuses owner-or-admin handler
  *
  * Filters: star filter (1–5) + free-text search over producer name,
- * user name, title, body. Delete is guarded by a modal confirm dialog
- * (MEH-1040 — replaced the native browser confirm, mirroring the MEH-1023
- * pattern); after deletion the row is optimistically removed and the
- * producer's avg_rating + reviews_count are recomputed server-side by
- * the existing handler.
+ * user name, title, body + "only AI-flagged" (MEH-2349, client-side over
+ * `ai_moderation_status`; the list endpoint already returns every row).
+ * Delete is guarded by a modal confirm dialog (MEH-1040 — replaced the
+ * native browser confirm, mirroring the MEH-1023 pattern); after deletion
+ * the row is optimistically removed and the producer's avg_rating +
+ * reviews_count are recomputed server-side by the existing handler.
  */
 /**
  * MEH-1902: the review body was `line-clamp-3` with no way to read the rest.
@@ -91,6 +92,9 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [starFilter, setStarFilter] = useState("all");
+  // MEH-2349: a FLAGGED review publishes like an approved one, so this filter
+  // is how an admin finds the ones the AI asked a human to read.
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
@@ -149,6 +153,7 @@ export default function AdminReviewsPage() {
 
   const filtered = reviews.filter((r) => {
     if (starFilter !== "all" && r.stars !== Number(starFilter)) return false;
+    if (flaggedOnly && r.ai_moderation_status !== "FLAGGED") return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -199,6 +204,16 @@ export default function AdminReviewsPage() {
           <option value="4">★ 4</option>
           <option value="5">★ 5</option>
         </select>
+        <label className="inline-flex items-center gap-2 text-sm text-muted whitespace-nowrap">
+          <input
+            type="checkbox"
+            checked={flaggedOnly}
+            onChange={(e) => setFlaggedOnly(e.target.checked)}
+            data-testid="review-ai-flag-filter"
+            className="accent-primary"
+          />
+          {t("reviews.ai_flagged_only")}
+        </label>
       </div>
 
       <div className="bg-white border border-border rounded-[12px] overflow-hidden">
@@ -256,6 +271,14 @@ export default function AdminReviewsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 max-w-md">
+                      {r.ai_moderation_status === "FLAGGED" && (
+                        <span
+                          data-testid="review-ai-flag"
+                          className="inline-block mb-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800"
+                        >
+                          {t("reviews.ai_flagged")}
+                        </span>
+                      )}
                       {r.title && (
                         <div className="font-medium">{r.title}</div>
                       )}

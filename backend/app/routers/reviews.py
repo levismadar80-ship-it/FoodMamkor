@@ -79,6 +79,39 @@ def _get_ai_client():
         return None
 
 
+def _checked_ai_status(body: str | None) -> str | None:
+    """MEH-2349: moderate ``body`` and return the verdict to store on the row
+    — "APPROVED" | "FLAGGED". REJECTED is never stored: it raises the 422
+    here, before any write. The empty-body branch is defensive only —
+    ReviewCreateNested requires a body, so NULL on a row means it predates
+    the column."""
+    if not body:
+        return None
+    verdict = _moderate_review_body(body)
+    if verdict == "REJECTED":
+        raise HTTPException(
+            status_code=422,
+            detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
+        )
+    return verdict
+
+
+def _ai_status_for_write(
+    body: str | None, existing: ProducerReview | None
+) -> str | None:
+    """MEH-2349: an edit that keeps the body keeps its stored verdict, so an
+    author cannot re-save a FLAGGED review until a different verdict (or a
+    fail-open, stored as APPROVED) clears the flag. A changed body, a new
+    review, or a row that predates the column is moderated afresh."""
+    if (
+        existing is not None
+        and existing.body == body
+        and existing.ai_moderation_status is not None
+    ):
+        return existing.ai_moderation_status
+    return _checked_ai_status(body)
+
+
 def _moderate_review_body(body: str | None) -> str:
     """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' | 'REJECTED'.
     Fail-open: any error returns 'APPROVED'.
@@ -395,18 +428,13 @@ def create_review_nested(
                 detail="יש ליצור קשר עם בית העסק לפני כתיבת ביקורת",
             )
 
-    # Haiku moderation (fail-open)
-    if data.body:
-        verdict = _moderate_review_body(data.body)
-        if verdict == "REJECTED":
-            raise HTTPException(
-                status_code=422,
-                detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
-            )
+    # Haiku moderation (fail-open). MEH-2349: the verdict is kept on the row.
+    ai_status = _ai_status_for_write(data.body, existing_review)
 
     if existing_review:
         existing_review.stars = data.stars
         existing_review.body = data.body
+        existing_review.ai_moderation_status = ai_status
         # MEH-2348: an edit never touches is_hidden. Only the admin hide
         # endpoint sets it, so hidden ⇒ admin-hidden, and only an admin may
         # undo it (PUT /admin/reviews/{id}/unhide). If is_hidden ever gains a
@@ -423,6 +451,7 @@ def create_review_nested(
             # MEH-1428: records HOW the gate was passed, set once at creation.
             # An edit never rewrites it — the first proof is the one on record.
             source="invite_link" if invited else "click",
+            ai_moderation_status=ai_status,
         )
         db.add(review)
         try:
@@ -438,8 +467,13 @@ def create_review_nested(
                 )
                 .first()
             )
+            if review is None:
+                # Not the unique-pair race this branch exists for (that row
+                # would be here) — don't mask a different integrity error.
+                raise
             review.stars = data.stars
             review.body = data.body
+            review.ai_moderation_status = ai_status
             db.commit()
 
     _recompute_producer_rating(producer_id, db)
@@ -593,6 +627,8 @@ def admin_list_reviews(
             created_at=r.created_at.isoformat() if r.created_at else "",
             # MEH-1428: "click" | "invite_link".
             source=r.source,
+            # MEH-2349: "APPROVED" | "FLAGGED" | None (no body / predates it).
+            ai_moderation_status=r.ai_moderation_status,
         )
         for r in rows
     ]

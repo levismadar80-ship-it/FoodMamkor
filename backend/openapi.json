@@ -112,6 +112,21 @@
       },
       "AdminReviewOut": {
         "properties": {
+          "ai_moderation_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "APPROVED",
+                  "FLAGGED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Moderation Status"
+          },
           "body": {
             "anyOf": [
               {

@@ -2141,7 +2141,9 @@
       "default_producer": "העסק",
       "deleted_toast": "הביקורת נמחקה",
       "expand": "עוד",
-      "collapse": "פחות"
+      "collapse": "פחות",
+      "ai_flagged": "סומן ע״י AI",
+      "ai_flagged_only": "רק ביקורות שסומנו"
     },
     "settings": {
       "title": "הגדרות",

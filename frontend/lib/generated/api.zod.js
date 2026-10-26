@@ -2264,6 +2264,7 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
 export const adminListReviewsAdminReviewsGetResponseSourceDefault = `click`;
 
 export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.object({
+  "ai_moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['APPROVED', 'FLAGGED']),/*#__PURE__*/ zod.null()])),
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
