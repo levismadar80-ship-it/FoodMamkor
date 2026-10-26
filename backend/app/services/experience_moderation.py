@@ -229,7 +229,7 @@ def validate_experience(payload: dict[str, Any]) -> dict:
                 "[experience-moderation] unexpected status %r → APPROVED",
                 status,
             )
-            report_fail_open("experience", "bad_status")
+            report_fail_open("experience", "truncated" if truncated else "bad_status")
             return {"status": "APPROVED", "reason": None, "suggestion": None}
 
         return {

@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+- **‏26/10 (08:30–09:50) — מודלי ה-AI ב-backend עברו ל-Haiku 5.5, ונמצאו שני מסלולי fail-open שפרסמו ספאם.**
+  - **‏#3592 `322ec9a2`:** שש קריאות קוראות עכשיו את `AI_FAST_MODEL` / `ai_fast_request_kwargs()` מ-`backend/app/config.py` (`claude-haiku-5-5`, thinking מכובה, `effort: low`). אין env var חדש. סירוב בטיחות (`stop_reason="refusal"`) → FLAGGED. המחיר ירד מ-$1/$5 ל-$0.10/$0.50 ל-MTok.
+  - **‏נמצא ב-eval ותוקן:** (1) תקרות `max_tokens` חתכו את ה-JSON של 5.5 (ביקורות 130 → 300, חוויה ומתכון 800, סיכון 500). (2) ‏`reviews.py` השתמש ב-`json.loads` חשוף, ולכן ```` ```json ```` נכשל ואושר. הבאג הזה פגע גם ב-4.5 ב-production. עכשיו הוא משתמש ב-parser הסלחני של החוויות.
+  - **‏eval** (`scripts/oneoff/eval_meh2335_moderation.py`, 35 מקרים × 3 מודלים): 0 תאי FAILOPEN אחרי התיקון. התאמה ל-Opus 5.5: ‏4.5 = 28/35, ‏5.5 = 32/35. אין מקרה שבו תוכן מזיק מתפרסם. ספיר אישרה מיזוג.
+  - **‏מחקר מודרציה** ([Doc](https://claude.ai/artifact/QBxhNkRCS8fbkdMHHykNbT)) → כרטיסים MEH-2348 עד MEH-2354.
+  - **‏נמדד:** ה-CI reviewer פרסם הערה על #3592, כלומר עובד אחרי חידוש הטוקן.
 - **‏26/10 (09:15–09:50) — סידור הידע אחרי המעבר לחשבון Claude חדש: בית אחד לכל עובדה (ADR-035), ושומרים שמזהירים כשמשהו מתיישן.**
   - **‏#3597 `828dde50` (MEH-2345):** ‏ADR-035 קובע לכל סוג עובדה מקום אחד: כללים, מוצר ומותג, החלטות, משימות פתוחות (Linear), מצב נוכחי (HANDOFF), היסטוריה, גישות והעדפות (זיכרון הפרויקט). ‏`HANDOFF.md` ירד מ-13,716 ל-287 שורות. העותק המלא נשמר מילה במילה ב-`docs/archive/handoff/HANDOFF-until-2026-10-21.md`, כך שציטוטי `HANDOFF.md:NNNN` ישנים נפתרים שם. ‏`CONTEXT.md` ו-`DEPLOYMENT.md` נבדקו מול הקוד (דומיין co.il, ‏DoD לפי MEH-2302 וכלל 31). חדש: `docs/PROJECT_INSTRUCTIONS.md`, המקור להוראות של פרויקט Claude, ו-`docs/runbooks/UPTIME.md`.
   - **‏#3601 `205e24e9` (MEH-2346):** ‏`scripts/docs/knowledge_freshness.py` עם שני שומרים warn-only: `handoff-retention-guard.sh` (סעיף ישן מ-14 יום או קובץ מעל 1,500 שורות) ו-`doc-freshness-guard.sh` (‏`Last reviewed:` ישן מ-120 יום ב-CONTEXT / BRAND / PROJECT_INSTRUCTIONS). ‏`archive-handoff` מעביר סעיפים ישנים ל-`docs/archive/handoff/YYYY-MM.md`. ‏self-test של 14 מקרים רץ לפני כל בדיקה, על הקבצים האמיתיים. ‏`MERGE-QUEUE.md` ו-`session-state.md` עברו לארכיון.
