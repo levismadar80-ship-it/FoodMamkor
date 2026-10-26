@@ -113,7 +113,7 @@ Running a hook by hand once before wiring it is what surfaced all three — the 
         "hooks": [
           {
             "type": "command",
-            "timeout": 900000,
+            "timeout": 1800,
             "_comment": "MEH-2117: build + ESLint + vitest + pytest as one committed script (scripts/hooks/stop-build-and-test.sh). Same guards as the four inline hooks it replaces, plus: resolves tests/test_api.py at the REPO ROOT and backend/.venv's pytest (the inline pytest hook looked at backend/tests/ and bare `python`, and skipped on every Stop), finds eslint.config.* (the inline ESLint hook looked for .eslintrc.json only, and skipped on every Stop). Runs all four, reports every failure, exit 2 = block with the reasons on stderr. Honours stop_hook_active. --self-test proves fail-by-construction both ways.",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/scripts/hooks/stop-build-and-test.sh\""
           }
@@ -127,9 +127,15 @@ Notes on the differences, so none of them is read as accidental:
 - **exit 2 instead of `{"decision":"block"}` on stdout.** Both block. Exit 2 is Claude Code's documented
   blocking exit with stderr as the reason, and it is also what a *shell* reader sees — a JSON line on
   exit 0 is invisible to a human running the hook by hand, which is how the two no-ops stayed invisible.
-- **`timeout: 900000`.** The inline entries carried no timeout (Claude Code's default is 60 s per hook).
-  The build alone is minutes and vitest measured 342 s; one script now carries all four, so the ceiling is
-  explicit. If it proves too tight the fix is the number, not a return to four entries.
+- **`timeout: 1800` — seconds, 30 minutes.** The inline entries carried no timeout. _(This read
+  `900000` and "Claude Code's default is 60 s". Both were wrong, re-read from the hooks reference on
+  26/10, MEH-2343: `timeout` is in **seconds** and the default for a command hook is **600**. `900000`
+  was therefore ~10 days, effectively no ceiling.)_ The build alone is minutes and vitest measured 342 s,
+  so the ceiling is explicit. It matters because a command hook that reaches its timeout is cancelled
+  **with its output discarded** — no block, which is the silent no-op this port exists to remove. Since
+  MEH-2343 the script skips any area unchanged since origin/staging or since its last green run, so a
+  turn that touched no code finishes in well under a second and the ceiling only binds when both areas
+  changed. If it proves too tight the fix is the number, not a return to four entries.
 - **ESLint runs `npm run lint`, not `npx eslint . --max-warnings 0`.** Mirrors the CI gate
   (`deploy.yml:146`); see §1.1 for why the inline form was a block-forever in disguise.
 - **pytest runs on an isolated database — `PYTEST_XDIST_WORKER=gw<pid>` by default.** The first
