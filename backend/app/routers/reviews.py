@@ -28,6 +28,8 @@ from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
 from app.services.experience_moderation import _parse_response_text
+from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
 from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
@@ -85,6 +87,7 @@ def _moderate_review_body(body: str | None) -> str:
     client = _get_ai_client()
     if client is None:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
+        report_fail_open("review", "no_client")
         return "APPROVED"
     prompt = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
 בדוק את טקסט הביקורת הבאה ותחזיר JSON בלבד.
@@ -97,9 +100,10 @@ def _moderate_review_body(body: str | None) -> str:
 APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
 FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
 REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
+    truncated = False
     try:
         msg = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=REVIEW_VERDICT_SCHEMA),
             # MEH-2335 eval: Haiku 5.5 spends 70-120 output tokens on this
             # JSON (the Hebrew "reason" is unbounded), so a 130 cap truncated
             # 6/15 cases mid-string → parse error → fail-open APPROVED, incl.
@@ -114,20 +118,25 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         if getattr(msg, "stop_reason", None) == "refusal":
             log.warning("[reviews] model refused → FLAGGED")
             return "FLAGGED"
-        if getattr(msg, "stop_reason", None) == "max_tokens":
-            # Truncated JSON will not parse and falls through to fail-open;
-            # log it by name so a too-small cap is visible, not silent.
-            log.warning("[reviews] moderation hit max_tokens — fail-open")
+        # Truncated JSON will not parse and falls through to fail-open;
+        # remembered so the report names the cause (MEH-2352).
+        truncated = getattr(msg, "stop_reason", None) == "max_tokens"
         raw = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
         )
         # Same fence/prose tolerance as the experience/recipe moderators — a
         # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
         data = _parse_response_text(raw)
-        status = data.get("status", "APPROVED")
-        return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"
+        # Upper-cased like the experience/recipe moderators: a lowercase
+        # "rejected" must not fall through to the fail-open APPROVED.
+        status = str(data.get("status", "")).upper()
+        if status in {"APPROVED", "FLAGGED", "REJECTED"}:
+            return status
+        report_fail_open("review", "truncated" if truncated else "bad_status")
+        return "APPROVED"
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)
+        report_fail_open("review", classify_failure(exc, truncated=truncated))
         return "APPROVED"
 
 

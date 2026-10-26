@@ -33,6 +33,8 @@ from uuid import UUID
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 from app.database import SessionLocal
 from app.models import Producer
+from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import RISK_SCORE_SCHEMA
 
 logger = logging.getLogger(__name__)
 
@@ -176,12 +178,26 @@ def _extract_json_object(raw: str) -> dict | None:
     return None
 
 
+def _unreadable_reason(response: object) -> str:
+    """A max_tokens cut is the usual cause of an empty or unparseable body;
+    name it so Sentry can tell a too-small cap from a malformed reply. A
+    safety-classifier refusal (no text) is named too — it is not a malformed
+    reply, and the content surfaces route it to FLAGGED instead."""
+    stop_reason = getattr(response, "stop_reason", None)
+    if stop_reason == "max_tokens":
+        return "truncated"
+    if stop_reason == "refusal":
+        return "refusal"
+    return "unparseable"
+
+
 def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
     """Single non-streaming Anthropic call. Returns (score, reasoning) or
     (None, None) on any failure. Caller is responsible for the DB UPDATE.
     Fail-open: every exception path returns NULLs + logs a warning."""
     if not settings.anthropic_api_key:
         logger.warning("[RISK] ANTHROPIC_API_KEY not set — skipping score")
+        report_fail_open("producer_risk", "no_client")
         return (None, None)
 
     try:
@@ -205,13 +221,14 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         # description fields from prematurely closing the wrapper.
         system_prompt, user_content = _build_prompt(profile)
         response = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=RISK_SCORE_SCHEMA),
             max_tokens=_MAX_TOKENS,
             system=system_prompt,
             messages=[{"role": "user", "content": user_content}],
         )
     except Exception as exc:  # noqa: BLE001 — fail-open per spec
         logger.warning("[RISK] anthropic call failed: %s", exc)
+        report_fail_open("producer_risk", classify_failure(exc))
         return (None, None)
 
     # Anthropic Messages API returns `content` as a list of content blocks.
@@ -229,10 +246,12 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         ]
         if not text_blocks:
             logger.warning("[RISK] no text blocks in anthropic response")
+            report_fail_open("producer_risk", _unreadable_reason(response))
             return (None, None)
         body = "".join(text_blocks).strip()
     except (AttributeError, TypeError) as exc:
         logger.warning("[RISK] anthropic response shape unexpected: %s", exc)
+        report_fail_open("producer_risk", "error")
         return (None, None)
 
     parsed = _extract_json_object(body)
@@ -244,6 +263,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
             "[RISK] anthropic response unparseable; first 200 chars: %r",
             body[:200],
         )
+        report_fail_open("producer_risk", _unreadable_reason(response))
         return (None, None)
 
     score = _clamp_score(parsed.get("score"))

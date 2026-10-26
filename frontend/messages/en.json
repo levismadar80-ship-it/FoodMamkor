@@ -714,6 +714,10 @@
     "register_producer": {
       "title": "Register your business | Mehamakor",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
+    },
+    "claim": {
+      "title": "Take your business page | Mehamakor",
+      "description": "We prepared a page for you on Mehamakor"
     }
   },
   "producer": {
@@ -5353,5 +5357,45 @@
         ]
       }
     }
+  },
+  "claim": {
+    "loading": "Loading the page…",
+    "kicker": "We prepared a page for you on Mehamakor",
+    "explainer": "The page is not published yet. Once it is yours you can edit everything, add photos and send it for review. We approve every business by hand before it goes live.",
+    "invalid": {
+      "title": "This link is not active",
+      "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
+      "contact": "Contact us"
+    },
+    "claimed": {
+      "title": "This page is already linked to an account",
+      "body": "If it is your account, sign in and you will find the page in your dashboard. If not, write to us.",
+      "login": "Sign in",
+      "contact": "Contact us"
+    },
+    "logged_out": {
+      "body": "To take this page you need your own account. We never create a password for you.",
+      "email_signup": "Sign up with email",
+      "have_account": "Already have an account?",
+      "login": "Sign in",
+      "email_note": "Signing up with email? After you confirm your address, open the link you received again to finish."
+    },
+    "eligible": {
+      "signed_in_as": "Signed in as <addr>{email}</addr>.",
+      "not_you": "Not you?",
+      "switch_account": "Switch account",
+      "submit": "Take this page",
+      "submitting": "Taking it…"
+    },
+    "admin": {
+      "body": "You are signed in as an admin, and an admin cannot take a business page. To test this page, sign in with another account.",
+      "switch_account": "Switch account"
+    },
+    "has_business": {
+      "body": "This account already has a business on Mehamakor, and each account runs one business. If this page belongs to another business, sign in with another account or write to us.",
+      "dashboard": "Go to dashboard",
+      "switch_account": "Switch account"
+    },
+    "submit_error": "We could not link the page. Try again in a moment."
   }
 }

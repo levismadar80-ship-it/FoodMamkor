@@ -37,6 +37,8 @@ from typing import Any
 import structlog
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import MODERATION_VERDICT_SCHEMA
 
 logger = structlog.get_logger(__name__)
 
@@ -177,11 +179,13 @@ def validate_experience(payload: dict[str, Any]) -> dict:
     client = _get_client()
     if client is None:
         logger.info("[experience-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED")
+        report_fail_open("experience", "no_client")
         return {"status": "APPROVED", "reason": None, "suggestion": None}
 
+    truncated = False
     try:
         message = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=MODERATION_VERDICT_SCHEMA),
             # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
             # well clear of truncation (a truncated JSON fails open).
             max_tokens=800,
@@ -198,6 +202,7 @@ def validate_experience(payload: dict[str, Any]) -> dict:
                 "reason": "המודל סירב לבדוק את התוכן — נדרשת בדיקה ידנית",
                 "suggestion": None,
             }
+        truncated = getattr(message, "stop_reason", None) == "max_tokens"
         raw = ""
         for block in message.content:
             if getattr(block, "type", None) == "text":
@@ -213,6 +218,7 @@ def validate_experience(payload: dict[str, Any]) -> dict:
                 "[experience-moderation] unexpected status %r → APPROVED",
                 status,
             )
+            report_fail_open("experience", "truncated" if truncated else "bad_status")
             return {"status": "APPROVED", "reason": None, "suggestion": None}
 
         return {
@@ -222,4 +228,5 @@ def validate_experience(payload: dict[str, Any]) -> dict:
         }
     except Exception as e:  # noqa: BLE001 — moderation must fail safe
         logger.exception("[experience-moderation] Claude call failed: %s", e)
+        report_fail_open("experience", classify_failure(e, truncated=truncated))
         return {"status": "APPROVED", "reason": None, "suggestion": None}
