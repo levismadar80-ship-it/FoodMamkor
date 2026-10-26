@@ -1,6 +1,5 @@
 """MEH-141: Category request flow — public submit + admin review."""
 
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -16,6 +15,7 @@ from app.schemas.schemas import (
     CategoryRequestUpdate,
 )
 from app.services.auth_notifications import notify_admin_new_category_request
+from app.utils.clock import utc_now
 
 router = APIRouter(tags=["category-requests"])
 
@@ -116,7 +116,7 @@ def review_category_request(
     # Only overwrite notes when the caller explicitly provides them.
     if body.admin_notes is not None:
         row.admin_notes = body.admin_notes
-    row.reviewed_at = datetime.utcnow()
+    row.reviewed_at = utc_now()
     db.commit()
     db.refresh(row)
     return row

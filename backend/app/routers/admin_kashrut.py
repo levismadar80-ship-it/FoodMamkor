@@ -1,6 +1,6 @@
 """MEH-51: Admin endpoints for kashrut badge review + ambassador toggle."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -22,6 +22,7 @@ from app.sentry import capture_background_exception
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import KashrutExpiryReminderV1
 from app.utils.pii import mask_phone
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/admin", tags=["admin-kashrut"])
 
@@ -81,7 +82,7 @@ def approve_kashrut_request(
 
     # Only set timestamps when this is the FIRST approved badge; subsequent
     # badge approvals extend the expiry to keep the latest renewal date.
-    now = datetime.utcnow()
+    now = utc_now()
     if producer.kashrut_expires_at is None or producer.kashrut_expires_at < now:
         producer.kashrut_verified_at = now
         producer.kashrut_expires_at = now + timedelta(days=365)
@@ -175,7 +176,7 @@ def kashrut_expiry_reminders(
     explicitly via `capture_background_exception` — a batch loop that
     swallows exceptions is exactly the blindness MEH-1533 documented.
     """
-    now = datetime.utcnow()
+    now = utc_now()
     horizon = now + timedelta(days=EXPIRY_REMINDER_WINDOW_DAYS)
     producers = (
         db.query(Producer)
