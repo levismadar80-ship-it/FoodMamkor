@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
-import { Star, Trash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Star, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -15,6 +15,8 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
  * Backend endpoints:
  *   GET    /admin/reviews         — list all, newest first
  *   DELETE /reviews/:id           — reuses owner-or-admin handler
+ *   PUT    /admin/reviews/:id/hide · /unhide — MEH-2360 buttons for the
+ *          sticky hide from MEH-2348; the row flips in place, no reload
  *
  * Filters: star filter (1–5) + free-text search over producer name,
  * user name, title, body + "only AI-flagged" (MEH-2349, client-side over
@@ -96,6 +98,8 @@ export default function AdminReviewsPage() {
   // is how an admin finds the ones the AI asked a human to read.
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  // MEH-2360: id of the row whose hide/unhide request is in flight.
+  const [togglingId, setTogglingId] = useState(null);
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -150,6 +154,24 @@ export default function AdminReviewsPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [confirmDelete, deleting]);
+
+  // MEH-2360: the row only flips after the server confirms, so a failed
+  // request leaves the admin looking at the real state.
+  const toggleHidden = async (review) => {
+    const hide = !review.is_hidden;
+    setTogglingId(review.id);
+    try {
+      await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}`);
+      setReviews((prev) =>
+        prev.map((item) => (item.id === review.id ? { ...item, is_hidden: hide } : item)),
+      );
+      showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
+    } catch {
+      showToast.error(tError("generic"));
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const filtered = reviews.filter((r) => {
     if (starFilter !== "all" && r.stars !== Number(starFilter)) return false;
@@ -271,6 +293,14 @@ export default function AdminReviewsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 max-w-md">
+                      {r.is_hidden && (
+                        <span
+                          data-testid="review-hidden-tag"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-surface border border-border text-fg-muted"
+                        >
+                          {t("reviews.hidden")}
+                        </span>
+                      )}
                       {r.ai_moderation_status === "FLAGGED" && (
                         <span
                           data-testid="review-ai-flag"
@@ -293,6 +323,20 @@ export default function AdminReviewsPage() {
                         : "—"}
                     </td>
                     <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleHidden(r)}
+                        disabled={togglingId === r.id}
+                        data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+                        aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
+                          user: r.user_name || t("reviews.default_user"),
+                        })}
+                      >
+                        {r.is_hidden ? <Eye size={14} /> : <EyeSlash size={14} />}
+                        {t(r.is_hidden ? "reviews.unhide" : "reviews.hide")}
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(r)}
@@ -303,6 +347,7 @@ export default function AdminReviewsPage() {
                         <Trash size={14} />
                         {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
                       </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -2143,7 +2143,14 @@
       "expand": "עוד",
       "collapse": "פחות",
       "ai_flagged": "סומן ע״י AI",
-      "ai_flagged_only": "רק ביקורות שסומנו"
+      "ai_flagged_only": "רק ביקורות שסומנו",
+      "hidden": "מוסתרת",
+      "hide": "הסתירי",
+      "unhide": "החזירי",
+      "hide_aria": "הסתירי את הביקורת של {user}",
+      "unhide_aria": "החזירי את הביקורת של {user}",
+      "hidden_toast": "הביקורת הוסתרה",
+      "unhidden_toast": "הביקורת חזרה לאתר"
     },
     "settings": {
       "title": "הגדרות",

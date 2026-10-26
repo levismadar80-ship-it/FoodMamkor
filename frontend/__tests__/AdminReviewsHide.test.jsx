@@ -1,0 +1,154 @@
+/**
+ * MEH-2360 — hide / unhide buttons + "hidden" tag on /admin/reviews.
+ *
+ * Before this, the sticky hide from MEH-2348 (`PUT /admin/reviews/{id}/hide`,
+ * `/unhide`) was reachable only through the API, and a hidden review looked
+ * exactly like a visible one on this page.
+ *
+ * 5-state rule (CLAUDE.md): review count 0 / 1 / many × hidden / visible,
+ * each cell asserted, plus a failed request leaving the row unchanged.
+ */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import AdminReviewsPage from "@/app/[locale]/admin/reviews/page";
+
+vi.mock("@phosphor-icons/react", () => ({
+  Star: (props) => <span data-testid="star-icon" {...props} />,
+  Trash: (props) => <span data-testid="trash-icon" {...props} />,
+  EyeSlash: (props) => <span data-testid="eye-slash-icon" {...props} />,
+  Eye: (props) => <span data-testid="eye-icon" {...props} />,
+}));
+
+vi.mock("next-intl", () => {
+  const flat = {
+    "admin.reviews.count": "{filtered} מתוך {total}",
+    "admin.reviews.empty": "אין ביקורות להצגה",
+    "admin.reviews.hidden": "מוסתרת",
+    "admin.reviews.hide": "הסתירי",
+    "admin.reviews.unhide": "החזירי",
+    "admin.reviews.hide_aria": "הסתירי את הביקורת של {user}",
+    "admin.reviews.unhide_aria": "החזירי את הביקורת של {user}",
+    "admin.reviews.hidden_toast": "הביקורת הוסתרה",
+    "admin.reviews.unhidden_toast": "הביקורת חזרה לאתר",
+    "error.generic": "משהו השתבש",
+  };
+  return {
+    useLocale: () => "he",
+    useTranslations: (scope) => (key, values = {}) => {
+      const raw = flat[scope ? `${scope}.${key}` : key] ?? key;
+      let s = raw;
+      for (const [k, v] of Object.entries(values || {})) s = s.replaceAll(`{${k}}`, v);
+      return s;
+    },
+  };
+});
+
+const apiMock = vi.hoisted(() => ({
+  rows: [],
+  get: vi.fn(),
+  put: vi.fn(),
+  delete: vi.fn(() => Promise.resolve({})),
+}));
+vi.mock("@/lib/api", () => ({ default: apiMock }));
+
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
+vi.mock("@/lib/toast", () => ({ showToast: toastMock }));
+
+const row = (id, is_hidden) => ({
+  id,
+  producer_id: "p1",
+  producer_name: `עסק ${id}`,
+  user_id: `u-${id}`,
+  user_name: `משתמשת ${id}`,
+  stars: 4,
+  body: `ביקורת ${id}`,
+  is_hidden,
+  created_at: "2026-10-26T10:00:00",
+  source: "click",
+  ai_moderation_status: null,
+});
+
+async function renderWith(rows) {
+  apiMock.get.mockImplementation(() => Promise.resolve({ data: rows }));
+  render(<AdminReviewsPage />);
+  await screen.findByText(`${rows.length} מתוך ${rows.length}`);
+}
+
+const rowOf = (id) => screen.getByText(`ביקורת ${id}`).closest("tr");
+
+describe("MEH-2360 hide / unhide on /admin/reviews", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset();
+    apiMock.put.mockReset();
+    apiMock.put.mockImplementation(() => Promise.resolve({ data: {} }));
+    toastMock.success.mockReset();
+    toastMock.error.mockReset();
+  });
+
+  it("0 reviews: no hide or unhide control renders", async () => {
+    await renderWith([]);
+    expect(screen.getByText("אין ביקורות להצגה")).toBeTruthy();
+    expect(screen.queryAllByTestId("review-hide")).toHaveLength(0);
+    expect(screen.queryAllByTestId("review-unhide")).toHaveLength(0);
+  });
+
+  it("1 visible: no hidden tag; hide calls PUT /hide and flips the row in place", async () => {
+    await renderWith([row("a", false)]);
+    const r = rowOf("a");
+    expect(within(r).queryByTestId("review-hidden-tag")).toBeNull();
+    expect(within(r).queryByTestId("review-unhide")).toBeNull();
+
+    fireEvent.click(within(r).getByTestId("review-hide"));
+
+    await waitFor(() => expect(within(r).getByTestId("review-hidden-tag").textContent).toBe("מוסתרת"));
+    expect(apiMock.put).toHaveBeenCalledTimes(1);
+    expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/a/hide");
+    expect(within(r).getByTestId("review-unhide")).toBeTruthy();
+    expect(within(r).queryByTestId("review-hide")).toBeNull();
+    expect(toastMock.success).toHaveBeenCalledWith("הביקורת הוסתרה");
+    // No reload: the list was fetched once.
+    expect(apiMock.get).toHaveBeenCalledTimes(1);
+  });
+
+  it("1 hidden: tagged; unhide calls PUT /unhide and removes the tag", async () => {
+    await renderWith([row("h", true)]);
+    const r = rowOf("h");
+    expect(within(r).getByTestId("review-hidden-tag").textContent).toBe("מוסתרת");
+    expect(within(r).queryByTestId("review-hide")).toBeNull();
+
+    fireEvent.click(within(r).getByTestId("review-unhide"));
+
+    await waitFor(() => expect(within(r).queryByTestId("review-hidden-tag")).toBeNull());
+    expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/h/unhide");
+    expect(within(r).getByTestId("review-hide")).toBeTruthy();
+    expect(toastMock.success).toHaveBeenCalledWith("הביקורת חזרה לאתר");
+  });
+
+  it("many, mixed: each row gets the control for its own state; acting on one leaves the others", async () => {
+    await renderWith([row("v1", false), row("h1", true), row("v2", false)]);
+    expect(screen.getAllByTestId("review-hide")).toHaveLength(2);
+    expect(screen.getAllByTestId("review-unhide")).toHaveLength(1);
+    expect(screen.getAllByTestId("review-hidden-tag")).toHaveLength(1);
+    expect(within(rowOf("h1")).getByTestId("review-hidden-tag")).toBeTruthy();
+
+    fireEvent.click(within(rowOf("v2")).getByTestId("review-hide"));
+
+    await waitFor(() => expect(screen.getAllByTestId("review-hidden-tag")).toHaveLength(2));
+    expect(within(rowOf("v1")).queryByTestId("review-hidden-tag")).toBeNull();
+    expect(within(rowOf("v1")).getByTestId("review-hide")).toBeTruthy();
+    expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/v2/hide");
+  });
+
+  it("a failed request leaves the row as it was and shows the error toast", async () => {
+    apiMock.put.mockImplementation(() => Promise.reject(new Error("500")));
+    await renderWith([row("a", false)]);
+    const r = rowOf("a");
+
+    fireEvent.click(within(r).getByTestId("review-hide"));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("משהו השתבש"));
+    expect(within(r).queryByTestId("review-hidden-tag")).toBeNull();
+    expect(within(r).getByTestId("review-hide")).toBeTruthy();
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
+});

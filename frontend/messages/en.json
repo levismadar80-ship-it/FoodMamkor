@@ -2143,7 +2143,14 @@
       "expand": "More",
       "collapse": "Less",
       "ai_flagged": "Flagged by AI",
-      "ai_flagged_only": "Only flagged reviews"
+      "ai_flagged_only": "Only flagged reviews",
+      "hidden": "Hidden",
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "hide_aria": "Hide {user}'s review",
+      "unhide_aria": "Unhide {user}'s review",
+      "hidden_toast": "Review hidden",
+      "unhidden_toast": "Review is back on the site"
     },
     "settings": {
       "title": "Settings",
