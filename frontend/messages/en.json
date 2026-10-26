@@ -2098,7 +2098,9 @@
       "default_producer": "the business",
       "deleted_toast": "Review deleted",
       "expand": "More",
-      "collapse": "Less"
+      "collapse": "Less",
+      "ai_flagged": "Flagged by AI",
+      "ai_flagged_only": "Only flagged reviews"
     },
     "settings": {
       "title": "Settings",
