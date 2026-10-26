@@ -162,8 +162,13 @@ const CARD_EMPTY = he.map.card_list.empty;
 const SHEET = he.filters.sheet;
 const FILTERS_BTN = he.filters.button;
 const LOC = he.modals.location;
-const CHAT_OPEN_HE = he.chat.launcher_open_label;
-const CHAT_OPEN_EN = en.chat.launcher_open_label;
+// MEH-2308: the launcher's name is its visible pill text on a first desktop
+// visit and the aria-label once it is icon-only, so match either. A string for
+// one state would make the absence checks below pass against the other one.
+const reEsc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const eitherName = (a: string, b: string) => new RegExp(`^(${reEsc(a)}|${reEsc(b)})$`);
+const CHAT_OPEN_HE = eitherName(he.chat.launcher_open_label, he.chat.launcher_pill);
+const CHAT_OPEN_EN = eitherName(en.chat.launcher_open_label, en.chat.launcher_pill);
 const MC_EN = en.map.client;
 
 type Axis = { key: string; label: string };
@@ -1080,7 +1085,10 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
     await shell.getByTestId(isDesktop(info) ? "map-gps-button" : "map-near-me-pill").click();
     await expect(locationModal(page)).toBeVisible();
     expect(await geoCalls(page), "control: the click must have prompted once").toBe(1);
-    await locationModal(page).getByRole("button", { name: LOC.close_aria, exact: true }).click();
+    // MEH-1430: the X is desktop-only; the mobile sheet closes via «לא עכשיו».
+    await locationModal(page)
+      .getByRole("button", { name: isDesktop(info) ? LOC.close_aria : LOC.skip, exact: true })
+      .click();
     await expect(locationModal(page)).toHaveCount(0);
     // Inverted bounded wait: a re-prompt would move the counter within the bound.
     const rePrompted = await page
@@ -1205,7 +1213,8 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
     expect(await hitTestIsSelf(pill), "near-me is painted above the sheet").toBe(true);
     await pill.click();
     await expect.poll(() => geoCalls(page)).toBe(1);
-    await locationModal(page).getByRole("button", { name: LOC.close_aria, exact: true }).click();
+    // MEH-1430: mobile sheet has no X — close via «לא עכשיו».
+    await locationModal(page).getByRole("button", { name: LOC.skip, exact: true }).click();
 
     const content = shell.getByTestId("map-sheet-content");
     await content.evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: "auto" }));

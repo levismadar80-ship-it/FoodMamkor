@@ -19,6 +19,7 @@ graph LR
     App[FastAPI app] --> Auth[auth.router<br/>/auth/*]
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router<br/>/producers/me/*]
+    App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
@@ -127,6 +128,8 @@ graph TD
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
+    Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft]
+    Producers --> DraftProducts[POST /admin/producers/{id}/products · DELETE …/products/{product_id}<br/>🛡️ MEH-2326 catalogue of an ownerless draft only, 409 once claimed / not draft]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
@@ -145,6 +148,10 @@ graph TD
     Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ >=1 open report; auto_flagged >=3]
     Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
     Reports --> Dismiss[POST /admin/reports/{id}/dismiss<br/>🛡️ 409 if closed]
+
+    ReviewsAdmin[/admin/reviews page] --> AdminRevList[GET /admin/reviews<br/>🛡️ all reviews incl. hidden]
+    ReviewsAdmin --> RevHide[PUT /admin/reviews/{id}/hide<br/>🛡️ sticky — author edit keeps it,<br/>author DELETE → 404 MEH-2348]
+    ReviewsAdmin --> RevUnhide[PUT /admin/reviews/{id}/unhide<br/>🛡️ MEH-2348 the only way back]
 
     Analytics[/admin/analytics page] --> AdminAnalytics[GET /admin/analytics<br/>🛡️ charts + heatmap + top producers]
 

@@ -187,7 +187,11 @@ describe("MiniMap — B5 Waze next to Google (MEH-1233)", () => {
     expect(waze).toHaveAttribute("rel", "noopener noreferrer");
     // WCAG 2.4.6: accessible name conveys the link purpose despite the short label.
     expect(waze).toHaveAttribute("aria-label", "פתיחה ב-Waze");
-    expect(google).toHaveAttribute("aria-label", "פתיחה במפות Google");
+    // MEH-2308: the Google link has NO aria-label — "פתיחה במפות Google" did
+    // not contain the visible "מפות Google" as a word (axe 4.14
+    // label-content-name-mismatch, WCAG 2.5.3), so the visible text is the name.
+    expect(google).not.toHaveAttribute("aria-label");
+    expect(screen.getByRole("link", { name: "מפות Google" })).toBe(google);
   });
 
   it("renders no nav links without valid coordinates", () => {

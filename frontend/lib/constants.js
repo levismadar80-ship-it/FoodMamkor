@@ -18,10 +18,11 @@ export const BRAND_NAME_LATIN = "Mehamakor";
 // gets edited in one place and forgotten in the other. layout.js now imports
 // it from here.
 //
-// This is NOT new copy and needs no rule-22 approval — it is the string
-// already shipping on every page, reused verbatim.
+// MEH-2364 (26/10): now the ADR-011 locked tagline, verbatim, on the footer,
+// meta and OG surfaces (__tests__/adr011-tagline.test.js ties all of them to
+// the ADR). Changing it needs a new ADR superseding ADR-011, not a copy edit.
 export const SITE_DESCRIPTION =
-  "בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד. כל בית עסק נבחר אישית.";
+  "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.";
 
 // MEH-2192: the ONE brand sentence that machine-identity surfaces share —
 // the Organization JSON-LD `description` and public/llms.txt line 3 (a test
@@ -29,15 +30,22 @@ export const SITE_DESCRIPTION =
 // Rule-22 approved verbatim by Sapir on MEH-2192 (06/09). SITE_DESCRIPTION
 // above stays the per-page <meta name="description">; the two are different
 // jobs — one describes the entity, the other sells the page to a SERP.
+// MEH-2313 (25/10): «קטנים שבדקנו» → «מקומיים שבחרנו», approved verbatim.
 export const CANONICAL_SENTENCE =
-  "אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.";
+  "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.";
 
 // MEH-2192: `sameAs` for the Organization node — the profiles that corroborate
-// the entity. Exactly one canonical brand account exists today; it is the one
-// the footer already links (components/Footer.jsx:138). Do not add speculative
-// or placeholder profiles here: an unresolvable sameAs is worse than an absent
-// one, because it asserts an identity nobody can verify.
-export const BRAND_SAME_AS = ["https://www.instagram.com/meha_makor"];
+// the entity, and the same four the footer links (components/Footer.jsx).
+// MEH-2311 (25/10): Facebook, TikTok and YouTube joined Instagram once each had
+// a fixed handle. Do not add a profile here until its URL is permanent: an
+// unresolvable sameAs is worse than an absent one, because it asserts an
+// identity nobody can verify.
+export const BRAND_SAME_AS = [
+  "https://www.instagram.com/meha_makor",
+  "https://www.facebook.com/mehamakor",
+  "https://www.tiktok.com/@mehamakor",
+  "https://www.youtube.com/@Mehamakor",
+];
 
 // MEH-2192: `founder` for the Organization node. The value is the name as it
 // already appears in the /about signature copy (messages/he.json

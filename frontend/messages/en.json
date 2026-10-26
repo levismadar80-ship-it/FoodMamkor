@@ -21,7 +21,7 @@
     "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
-    "trust_strip": "A real conversation with every business",
+    "trust_strip": "A personal introduction to every business",
     "menu_close": "Close menu",
     "menu_open": "Open menu",
     "lang_switch_to_en": "Switch to English",
@@ -50,6 +50,9 @@
       "brand_aria": "Mehamakor — Home page",
       "brand_tagline": "Straight from the source — local businesses, all in one place",
       "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
+      "facebook_aria": "Mehamakor's Facebook page — opens in new tab",
+      "tiktok_aria": "Mehamakor's TikTok page — opens in new tab",
+      "youtube_aria": "Mehamakor's YouTube channel — opens in new tab",
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
       "group_discover_heading": "Discover",
@@ -236,7 +239,7 @@
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
           "duration": "The whole process takes about 3 minutes",
           "after_title": "What happens next",
-          "after_body": "Every business gets a personal intro — our team reviews the details, reaches out for a short call, and the business usually goes live within a day or two.",
+          "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
           "cta": "Start"
         },
@@ -261,7 +264,7 @@
           },
           "business": {
             "title": "2. Business details",
-            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval.",
+            "subtitle": "Just a few fields — you'll complete the rest in your dashboard, before sending it for review.",
             "free_hint": "Registration and your page — free. No commissions, ever."
           },
           "category": {
@@ -290,7 +293,7 @@
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
-          "address_map_privacy_hint": "Your full address isn't published. It only appears on the map if you choose to show it.",
+          "address_map_privacy_hint": "Your full address isn't published. A pin appears on the map at this spot, and in your dashboard you can make it approximate.",
           "address_optional_hint": "No exact address? The town is enough.",
           "address_city_mismatch": "The address we found is in {found}, but the town you chose is {selected}. Worth checking the town, or searching for a different address.",
           "address_pin_adjusted": "Location adjusted manually on the map",
@@ -335,9 +338,9 @@
           "body": "What you write here becomes your business page on Mehamakor — the place where customers meet you before they meet what you sell. Not a product description. A story."
         },
         "account_reassurance": "Every business is personally reviewed",
-        "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
-        "submit_next_hint": "We'll review your details and get back to you on WhatsApp within 3 business days.",
-        "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
+        "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
+        "submit_next_hint": "After registering, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
+        "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -347,6 +350,7 @@
           "phone_invalid": "Invalid phone number",
           "phone_valid": "✓ Valid number",
           "city_required": "Please enter a city",
+          "city_pick_from_list": "Please pick a town from the list",
           "category_required": "Please select at least one category",
           "terms_required": "Please accept the Terms of Use before joining",
           "declaration_required": "Please confirm the declaration before joining",
@@ -385,11 +389,11 @@
           "cta": "To my dashboard",
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
-          "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
+          "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
           "next_step1": "Personal review",
-          "next_step2": "Intro call",
+          "next_step2": "Personal review",
           "next_step3": "Your page goes live",
           "dashboard_cta": "Go to my dashboard →",
           "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.co.il/register/producer",
@@ -655,7 +659,7 @@
     },
     "join": {
       "title": "Join as a business | Mehamakor",
-      "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
+      "description": "A page of your own with photos and a story, every business hand-picked, and customers contact you directly on the channel you choose. Free to join.",
       "og_title": "Your business. A page of its own. | Mehamakor",
       "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
     },
@@ -710,6 +714,10 @@
     "register_producer": {
       "title": "Register your business | Mehamakor",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
+    },
+    "claim": {
+      "title": "Take your business page | Mehamakor",
+      "description": "We prepared a page for you on Mehamakor"
     }
   },
   "producer": {
@@ -1559,6 +1567,7 @@
         },
         "actions": {
           "approve_short": "✓ Approve",
+          "approve_without_license": "Approve without license",
           "request_changes": "Request completion",
           "edit": "Edit",
           "view": "View",
@@ -1740,7 +1749,9 @@
           "avail_today": "Available today",
           "avail_full": "Busy this week",
           "avail_vacation": "On break",
-          "vacation_until": "Return date (optional)"
+          "vacation_until": "Return date (optional)",
+          "as_draft": "Draft the owner will receive by invite link",
+          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner."
         }
       },
       "toast_approved": "Business approved",
@@ -1764,6 +1775,23 @@
         "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
         "submit_changes": "Send completion request",
         "submit_reject": "Reject and send email"
+      },
+      "claim": {
+        "title": "Invite link for the business owner",
+        "intro": "The owner opens her own account, accepts the declaration and the terms herself, and the page becomes hers. It stays a draft until she submits it for review. A new link does not revoke an earlier one; each link is valid until its own date.",
+        "create": "Create link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "draft_products": {
+        "title": "Products in this draft",
+        "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
+        "empty": "No products in this draft yet."
       }
     },
     "users": {
@@ -2113,7 +2141,9 @@
       "default_producer": "the business",
       "deleted_toast": "Review deleted",
       "expand": "More",
-      "collapse": "Less"
+      "collapse": "Less",
+      "ai_flagged": "Flagged by AI",
+      "ai_flagged_only": "Only flagged reviews"
     },
     "settings": {
       "title": "Settings",
@@ -2691,7 +2721,7 @@
     "consumer": {
       "hero": {
         "heading": "You used to need to know who to ask. Not anymore",
-        "subheading": "Food from small businesses we've personally checked — close to you, without searching for hours."
+        "subheading": "Food from local businesses we've personally chosen — close to you, without searching for hours."
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
@@ -3057,7 +3087,8 @@
       "label": "Sort:",
       "aria_label": "Sort businesses",
       "newest": "Newest",
-      "top_rated": "Top rated"
+      "top_rated": "Top rated",
+      "distance": "Distance"
     },
     "empty": {
       "no_match_search": "We couldn't find any businesses for \"{q}\"",
@@ -3273,7 +3304,7 @@
     "email_subject": "Have you heard of Mehamakor?",
     "email_fallback_toast": "We couldn't open your email app — the message was copied, paste it into your email.",
     "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
-    "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
+    "message": "Discover Mehamakor — local food businesses, each one personally vetted. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
   "gallery": {
@@ -3404,18 +3435,18 @@
   "join": {
     "eyebrow": "For local businesses",
     "h1": "Your business. A page of its own.",
-    "subhead": "A page with your photos and story, every business hand-picked, and direct contact on WhatsApp — local customers meet your story.",
+    "subhead": "A page with your photos and story, every business hand-picked, and customers contact you directly, on WhatsApp or the channel you choose — local customers meet your story.",
     "cta": "Join",
     "trust_hint": "Free to join",
     "how": {
       "eyebrow": "How it works",
       "heading": "Four steps",
       "step1_title": "Sign up",
-      "step1_text": "A short form about your business — story, photos, and contact details. About 3 minutes.",
-      "step2_title": "A personal call",
-      "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
+      "step1_text": "A short form about your business and contact details. About 3 minutes. Photos come later, from the dashboard.",
+      "step2_title": "A personal introduction",
+      "step2_text": "Our team goes over the business and the story, and reaches out for a short intro if needed.",
       "step3_title": "Your page goes live",
-      "step3_text": "Usually within a day or two your business appears on the site.",
+      "step3_text": "Within up to 3 business days of sending it for review, your business appears on the site.",
       "step4_title": "Customers reach you directly",
       "step4_text": "The contact button on the page opens a direct conversation with you — WhatsApp, phone, or another channel. Contact and payment stay strictly between you and your customers.",
       "process_link": "The full acceptance process"
@@ -3427,8 +3458,8 @@
       "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later"
     },
     "card": {
-      "title": "Every business gets a personal call",
-      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and a conversation. That keeps every page on the site trustworthy and personal."
+      "title": "Every business gets a personal introduction",
+      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and sometimes a conversation. That keeps every page on the site trustworthy and personal."
     },
     "testimonial": {
       "eyebrow": "Coming soon — our first testimonial",
@@ -3684,7 +3715,7 @@
     "meta_title": "Terms of Use | Mehamakor",
     "meta_description": "Terms of use for Mehamakor — local food businesses from across Israel, in one place.",
     "heading": "Terms of Use",
-    "date_label": "Last updated: April 2026",
+    "date_label": "Last updated: October 2026",
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -3713,7 +3744,7 @@
       },
       "verified": {
         "title": "5. Verification & display tiers",
-        "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
+        "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and, where needed, a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
         "verified_badge_title": "“Verified” badge",
         "verified_badge_body": "A business that presented us with an official licensing document or exemption approval, whose existence and validity we checked at the time of presentation, is marked with a “Verified” badge together with the date of the check. The check is limited to verifying the document presented, does not include ongoing monitoring with the authorities, and provides no guarantee that the document remained valid after the date of the check. The badge is provided free of charge.",
         "declared_title": "“Declared” business",
@@ -4157,7 +4188,7 @@
       },
       "phone_verify": {
         "title": "Verify your business phone",
-        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying sends your business for team review.",
+        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
         "send_cta": "Send verification code",
         "sending": "Sending...",
         "resend_in": "You can resend a code in {seconds}s",
@@ -4165,7 +4196,7 @@
         "code_placeholder": "6-digit code",
         "confirm_cta": "Verify",
         "confirming": "Verifying...",
-        "success": "Phone verified! Your business has been sent for team review.",
+        "success": "Phone verified! Once every step is ready, press \"Send for review\" so we can get to know your business.",
         "error_invalid": "Wrong or expired code. Please try again.",
         "error_no_phone": "No phone number on your profile. Add one, then verify.",
         "error_generic": "Something went wrong. Please try again.",
@@ -4598,7 +4629,7 @@
         "assist_title": "A few quick questions — and we'll write it for you",
         "assist_close": "Close writing help",
         "q_sell_label": "What do you sell?",
-        "q_sell_placeholder": "e.g. homemade jams, honey from the hive, almond cookies",
+        "q_sell_placeholder": "e.g. seasonal fruit jams, honey from the hive, almond cookies",
         "q_area_label": "Which area do you serve?",
         "q_area_placeholder": "e.g. Western Galilee, delivery up to Haifa",
         "q_special_label": "What's special about you?",
@@ -4744,6 +4775,13 @@
           "location": "A location or delivery areas",
           "phone_verified": "WhatsApp number verification"
         }
+      },
+      "request_review": {
+        "title": "Ask a customer for a review",
+        "body": "Send the link in your WhatsApp chat with a customer — she can leave a verified review.",
+        "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
+        "cta": "Copy link",
+        "cta_copied": "Copied ✓"
       }
     }
   },
@@ -4915,8 +4953,8 @@
         "description": "Add 3 popular products with a photo and price — it takes 5 minutes, and customers instantly see what you offer.",
         "cta": "+ Add first product",
         "sample_label": "Example — how your product will look",
-        "sample_name": "Homemade fig jam",
-        "sample_price": "₪28 per jar"
+        "sample_name": "Spelt sourdough loaf",
+        "sample_price": "₪32 per loaf"
       },
       "edit_heading": "Edit product",
       "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
@@ -5093,7 +5131,7 @@
   "process": {
     "meta": {
       "title": "Our Acceptance Process | Mehamakor",
-      "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
+      "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
       "og_title": "Our Acceptance Process — Mehamakor",
       "og_description": "How a business is accepted to Mehamakor: a personal introduction, and what's checked in every category."
     },
@@ -5112,8 +5150,8 @@
       "lead": "Four steps, one person on the other side. This is how it works from the request to going live.",
       "s1_title": "The request reaches us",
       "s1_body": "It all starts with a short form — what's made, from which ingredients, and where. Every request is read by a person, from the very first word.",
-      "s2_title": "We actually talk",
-      "s2_body": "A personal conversation — on WhatsApp or by phone. Who stands behind the business, what a workday looks like, and where the raw ingredients come from.",
+      "s2_title": "Getting to know the business",
+      "s2_body": "We go over the details, the story and the photos: who stands behind the business, what a workday looks like, and where the raw ingredients come from. When needed, we talk on WhatsApp or by phone.",
       "s3_title": "A visit, if needed",
       "s3_body": "Sometimes we travel. When it helps us understand the place — we come to see the kitchen, the farm, or the hive with our own eyes.",
       "s4_title": "Going live — after we've met",
@@ -5129,8 +5167,8 @@
       "c1_body": "Who stands behind the business. A real name and place. No anonymity.",
       "c2_title": "Story",
       "c2_body": "How and why they work this way. What goes into the product — and what doesn't.",
-      "c3_title": "Conversation",
-      "c3_body": "We talked. A person across from us, not a form that approved itself."
+      "c3_title": "A human eye",
+      "c3_body": "A person reads every application and decides. Not a form that approved itself."
     },
     "badge": {
       "marker": "The badge",
@@ -5364,5 +5402,45 @@
         ]
       }
     }
+  },
+  "claim": {
+    "loading": "Loading the page…",
+    "kicker": "We prepared a page for you on Mehamakor",
+    "explainer": "The page is not published yet. Once it is yours you can edit everything, add photos and send it for review. We approve every business by hand before it goes live.",
+    "invalid": {
+      "title": "This link is not active",
+      "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
+      "contact": "Contact us"
+    },
+    "claimed": {
+      "title": "This page is already linked to an account",
+      "body": "If it is your account, sign in and you will find the page in your dashboard. If not, write to us.",
+      "login": "Sign in",
+      "contact": "Contact us"
+    },
+    "logged_out": {
+      "body": "To take this page you need your own account. We never create a password for you.",
+      "email_signup": "Sign up with email",
+      "have_account": "Already have an account?",
+      "login": "Sign in",
+      "email_note": "Signing up with email? After you confirm your address, open the link you received again to finish."
+    },
+    "eligible": {
+      "signed_in_as": "Signed in as <addr>{email}</addr>.",
+      "not_you": "Not you?",
+      "switch_account": "Switch account",
+      "submit": "Take this page",
+      "submitting": "Taking it…"
+    },
+    "admin": {
+      "body": "You are signed in as an admin, and an admin cannot take a business page. To test this page, sign in with another account.",
+      "switch_account": "Switch account"
+    },
+    "has_business": {
+      "body": "This account already has a business on Mehamakor, and each account runs one business. If this page belongs to another business, sign in with another account or write to us.",
+      "dashboard": "Go to dashboard",
+      "switch_account": "Switch account"
+    },
+    "submit_error": "We could not link the page. Try again in a moment."
   }
 }

@@ -36,3 +36,11 @@ and the canonical docs in [`../`](../).
   new docs is the canonical [`../`](../) directory.
 - **OK to delete** if you're confident the historical context is useless —
   but think twice. Disk is cheap; context is not.
+
+## Moved here from the repo root (2026-10-26, MEH-2346)
+
+| File | What it was |
+|---|---|
+| [`MERGE-QUEUE-2026-06-16.md`](./MERGE-QUEUE-2026-06-16.md) | The auto-batch merge pass of 16/06. One-off session state, finished. |
+| [`session-state-2026-05-26.md`](./session-state-2026-05-26.md) | A `/session-save` scratchpad that was committed by mistake (the command says never to commit it; `/session-state.md` is now in `.gitignore`). |
+| [`handoff/`](./handoff/README.md) | Sections that aged out of `HANDOFF.md` (ADR-035). |

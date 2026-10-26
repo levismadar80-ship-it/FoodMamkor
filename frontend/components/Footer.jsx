@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
+import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -139,13 +139,41 @@ export default function Footer() {
               href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={t("nav.footer.instagram_aria")}
               className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
             >
               <InstagramLogo size={20} aria-hidden="true" />
               {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
               <bdi className="font-body-md">@meha_makor</bdi>
+              {/* MEH-2308: the description rides as sr-only text AFTER the visible
+                  handle instead of an aria-label that replaced it — WCAG 2.5.3
+                  (axe label-content-name-mismatch): the accessible name must
+                  contain the text a voice-control user sees and says. */}
+              <span className="sr-only"> — {t("nav.footer.instagram_aria")}</span>
             </a>
+            {/* MEH-2311: the other three profiles as icon links, same order as
+                BRAND_SAME_AS. No visible text, so the sr-only label IS the
+                accessible name (no 2.5.3 mismatch). 44×44 tap targets; -ms-3
+                pulls the first icon back so the glyph lines up with the
+                Instagram icon above. */}
+            <ul className="mt-2 -ms-3 flex items-center">
+              {[
+                { href: "https://www.facebook.com/mehamakor", Icon: FacebookLogo, label: "nav.footer.facebook_aria" },
+                { href: "https://www.tiktok.com/@mehamakor", Icon: TiktokLogo, label: "nav.footer.tiktok_aria" },
+                { href: "https://www.youtube.com/@Mehamakor", Icon: YoutubeLogo, label: "nav.footer.youtube_aria" },
+              ].map(({ href, Icon, label }) => (
+                <li key={href}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-11 h-11 text-green-100 hover:text-white transition"
+                  >
+                    <Icon size={20} aria-hidden="true" />
+                    <span className="sr-only">{t(label)}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Column 2 — Navigation. MEH-1177: split into two audience groups,

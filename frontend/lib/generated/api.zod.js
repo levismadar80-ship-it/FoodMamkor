@@ -937,7 +937,8 @@ export const ListProducersAdminProducersGetResponse = /*#__PURE__*/ zod.array(Li
 
 
 /**
- * Admin-created producers are auto-approved.
+ * Admin-created producers are auto-approved — unless `as_draft`, which
+ * prepares an ownerless draft for the owner-claim link (MEH-2322).
  * @summary Admin Create Producer
  */
 export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = false;
@@ -1906,6 +1907,15 @@ export const ApproveProducerAdminProducersProducerIdApprovePostResponse = /*#__P
 
 
 /**
+ * @summary Create Claim Link
+ */
+export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#__PURE__*/ zod.object({
+  "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "url": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * Admin-only: up to 3 Google Place candidates for a producer, or 204.
  *
  * Builds the query from the producer's own name + city and runs Places Text
@@ -1927,6 +1937,42 @@ export const GetGooglePlaceCandidatesAdminProducersProducerIdGooglePlaceCandidat
  * @summary Grant Verified
  */
 export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Admin Create Draft Product
+ */
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
+
+
+export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * @summary Admin Delete Draft Product
+ */
+export const AdminDeleteDraftProductAdminProducersProducerIdProductsProductIdDeleteResponse = /*#__PURE__*/ zod.void()
 
 
 /**
@@ -2218,6 +2264,7 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
 export const adminListReviewsAdminReviewsGetResponseSourceDefault = `click`;
 
 export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.object({
+  "ai_moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['APPROVED', 'FLAGGED']),/*#__PURE__*/ zod.null()])),
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
@@ -2238,6 +2285,14 @@ export const AdminListReviewsAdminReviewsGetResponse = /*#__PURE__*/ zod.array(A
  * @summary Hide Review
  */
 export const HideReviewAdminReviewsReviewIdHidePutResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * MEH-2348: set is_hidden=False — the only way a hidden review returns.
+ * Recomputes producer aggregates.
+ * @summary Unhide Review
+ */
+export const UnhideReviewAdminReviewsReviewIdUnhidePutResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -3236,6 +3291,29 @@ export const SubscribeNewsletterNewsletterPostResponse = /*#__PURE__*/ zod.unkno
  * @summary Unsubscribe Newsletter
  */
 export const UnsubscribeNewsletterNewsletterUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Claim Producer
+ */
+export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Preview Claim
+ */
+export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
+
+export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
 
 
 /**

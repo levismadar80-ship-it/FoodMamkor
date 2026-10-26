@@ -172,7 +172,16 @@ describe("MEH-1981 — each of the five surfaces renders its line verbatim", () 
   it("ChatWidget names Anthropic on the line itself, under the composer", () => {
     mockMatchMedia(true);
     renderHe(<ChatWidget />);
-    fireEvent.click(screen.getByLabelText(he.chat.launcher_open_label));
+    // MEH-2308: pill text (first visit) or aria-label (icon-only) — either names the launcher.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: new RegExp(
+          `^(${[he.chat.launcher_open_label, he.chat.launcher_pill]
+            .map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+            .join("|")})$`,
+        ),
+      }),
+    );
     expectNotice("chat-collection-notice", APPROVED.chat);
   });
 

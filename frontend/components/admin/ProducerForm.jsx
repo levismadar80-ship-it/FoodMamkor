@@ -9,6 +9,7 @@ import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
@@ -259,6 +260,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
+  // MEH-2325: create-only. Kept out of `form` so the edit payload can never
+  // carry it — a draft is born as a draft, never turned into one later.
+  const [asDraft, setAsDraft] = useState(false);
   const [categories, setCategories] = useState([]);
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
@@ -519,6 +523,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       async () => {
         if (producerId) {
           await api.put(`/admin/producers/${producerId}`, payload);
+        } else if (asDraft) {
+          // MEH-2325: land on the draft's edit page, where the claim-link
+          // panel lives — the next thing the admin does is mint the link.
+          const r = await api.post("/admin/producers", { ...payload, as_draft: true });
+          const created = ProducerAdminCreatedSchema.safeParse(r.data);
+          // The draft exists either way; without an id the list is where she finds it.
+          router.push(created.success ? `/admin/producers/${created.data.id}/edit` : "/admin?tab=producers");
+          return;
         } else {
           await api.post("/admin/producers", payload);
         }
@@ -1213,6 +1225,24 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           className={`${inputClass} h-20 resize-none`}
         />
       </Section>
+
+      {!producerId && (
+        <Section title={t("producers.claim.title")} testId="as-draft-section">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              data-testid="as-draft-checkbox"
+              checked={asDraft}
+              onChange={(e) => setAsDraft(e.target.checked)}
+              className="w-4 h-4 accent-primary mt-1"
+            />
+            <span>
+              <span className="block text-sm font-medium">{t("producers.form.fields.as_draft")}</span>
+              <span className="block text-xs text-muted mt-1">{t("producers.form.fields.as_draft_hint")}</span>
+            </span>
+          </label>
+        </Section>
+      )}
 
       <div className="flex gap-3">
         <button

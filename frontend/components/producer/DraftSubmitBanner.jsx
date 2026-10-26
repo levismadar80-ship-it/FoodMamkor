@@ -6,12 +6,69 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { Link } from "@/i18n/navigation";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import {
+  MISSING_CATEGORY,
+  MISSING_IMAGE,
+  MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
+  MISSING_PRODUCT,
   SUBMISSION_REQUIREMENTS,
+  isDeliveryOnly,
   submissionMissingItems,
 } from "@/lib/submission-gate";
+
+// MEH-2327: where each missing item is filled in. Every target is an anchor
+// already registered in lib/dashboard-edit-anchors.js (the edit page's deep-
+// link contract) — the same ones ProfileCompletenessCard's steps use. DO NOT
+// invent an id here: an unregistered hash leaves the owner on the edit hub
+// with the card closed, which is the MEH-2262 failure.
+const EDIT_HUB = "/producer/dashboard/edit";
+const MISSING_TARGETS = {
+  [MISSING_IMAGE]: `${EDIT_HUB}#profile-images`,
+  [MISSING_PRODUCT]: `${EDIT_HUB}#profile-products`,
+  [MISSING_CATEGORY]: `${EDIT_HUB}#profile-categories`,
+  [MISSING_LOCATION]: `${EDIT_HUB}#locations`,
+  // Same page: the OTP card is mounted inside this banner, below the list.
+  [MISSING_PHONE_VERIFIED]: "#phone-verify",
+};
+
+/** The fill-in target for a missing code. A delivery-only business has no
+ *  locations to add — the gate reads its delivery declaration instead
+ *  (submission-gate.js hasLocation), so that is where she is sent. */
+function missingItemHref(code, producer) {
+  if (code === MISSING_LOCATION && isDeliveryOnly(producer)) {
+    return `${EDIT_HUB}#delivery`;
+  }
+  return MISSING_TARGETS[code];
+}
+
+// 44px tall: the list is now a column of tap targets on a phone.
+const LINK_CLASS =
+  "inline-flex items-center min-h-[44px] text-primary underline underline-offset-2 hover:text-primary-dark focus-ring rounded";
+
+/** The item label as a link to where it is filled in. A same-page hash is a
+ *  plain anchor (no route change); an edit-page target goes through the
+ *  locale-aware Link so /en stays /en. A code with no target renders as text,
+ *  so a sixth requirement added to the gate can never render a dead link. */
+function MissingItemLink({ code, producer, children }) {
+  const href = missingItemHref(code, producer);
+  const testId = `draft-missing-link-${code}`;
+  if (!href) return <span>{children}</span>;
+  if (href.startsWith("#")) {
+    return (
+      <a href={href} className={LINK_CLASS} data-testid={testId}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={LINK_CLASS} data-testid={testId}>
+      {children}
+    </Link>
+  );
+}
 
 /**
  * Module:   DraftSubmitBanner
@@ -30,7 +87,8 @@ import {
  * Related:  lib/submission-gate.js (the client mirror of the server rule),
  *           backend/app/routers/producer_me.py submit_for_review (the
  *           authority), components/PhoneVerifyCard.jsx.
- * History:  MEH-2100 (creation).
+ * History:  MEH-2100 (creation); MEH-2327 (each missing item links to the
+ *           card where it is filled in).
  *
  * WHY PhoneVerifyCard IS MOUNTED HERE, and why the feature is dead without it.
  * Before MEH-2100 that card existed at exactly one mount point: inside the
@@ -97,21 +155,23 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
       {/* What is still required. Derived from the gate, so it cannot claim
           "ready" while the server disagrees. */}
       {!ready && (
-        <ul className="mt-3 space-y-1" data-testid="draft-missing-list">
+        <ul className="mt-2" data-testid="draft-missing-list">
           {SUBMISSION_REQUIREMENTS.filter((code) => missing.includes(code)).map(
             (code) => (
               <li
                 key={code}
-                className="flex items-start gap-2 text-fg-muted"
+                className="flex items-center gap-2 text-fg-muted"
                 data-testid={`draft-missing-${code}`}
               >
                 <Warning
                   size={14}
                   weight="fill"
-                  className="mt-0.5 shrink-0 text-primary/60"
+                  className="shrink-0 text-primary/60"
                   aria-hidden="true"
                 />
-                <span>{t(`missing.${code}`)}</span>
+                <MissingItemLink code={code} producer={producer}>
+                  {t(`missing.${code}`)}
+                </MissingItemLink>
                 <span className="shrink-0 rounded-full bg-primary/10 px-2 text-xs text-primary">
                   {t("chip_required")}
                 </span>

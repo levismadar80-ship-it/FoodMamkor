@@ -173,14 +173,21 @@ describe("MEH-2200 — Amendment-13 collection notice", () => {
     expect(notice.textContent).not.toMatch(/<\/?[a-zA-Z][\w-]*>/);
   });
 
-  it("states the three s.11 elements the notice exists to carry", async () => {
+  it("states the s.11 elements the notice exists to carry", async () => {
     await reachStoryFrame();
     const text = screen.getByTestId("register-collection-notice").textContent;
     // Asserted against the shipped he.json, not a fixture. These are the
-    // disclosure's reason for existing: volition, consequence of refusal, and
-    // the purposes the data serves.
-    expect(text).toMatch(/אינה חובה על פי חוק/);
-    expect(text).toMatch(/לא נוכל להשלים את ההרשמה/);
-    expect(text).toMatch(/לניהול החשבון/);
+    // disclosure's reason for existing: volition, consequence of refusal, the
+    // purposes the data serves, and who receives it.
+    // MEH-2317: the notice was shortened (~70 → ~40 words, wording approved
+    // verbatim 25/10). Every element is still asserted — one check per
+    // element, never an `||`, so losing any single cue goes red on its own.
+    expect(text, "volition").toMatch(/לא חובה/);
+    expect(text, "consequence of refusal").toMatch(/אי אפשר להירשם/);
+    expect(text, "purpose: the account").toMatch(/לחשבון/);
+    expect(text, "purpose: showing the business").toMatch(/להצגת העסק/);
+    expect(text, "purpose: contact").toMatch(/ליצירת קשר/);
+    expect(text, "recipients").toMatch(/לספקים שמפעילים את האתר/);
+    expect(text, "not sold").toMatch(/לא נמכרים/);
   });
 });

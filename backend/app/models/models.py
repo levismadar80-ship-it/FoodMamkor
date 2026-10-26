@@ -1354,9 +1354,9 @@ class AlertLog(Base):
     same channel within 24h still collapse to one send); it is kept for a
     future digest / analytics.
 
-    Append-only: nothing prunes this table yet — a retention/purge policy is a
-    separate follow-up (see the MEH-1338 exec report). Rows CASCADE-delete with
-    their user/producer.
+    Append-only from the request path; rows older than 30 days are deleted by
+    the daily retention purge (services/retention_purge.py, MEH-2303). Rows
+    CASCADE-delete with their user/producer.
     """
 
     __tablename__ = "alert_log"
@@ -1721,6 +1721,12 @@ class ProducerReview(Base):
             "source IN ('click', 'invite_link')",
             name="ck_producer_reviews_source",
         ),
+        # MEH-2349: REJECTED is never stored (it is a 422), so only these two.
+        # A CHECK passes on NULL, so no "IS NULL OR" is needed.
+        CheckConstraint(
+            "ai_moderation_status IN ('APPROVED', 'FLAGGED')",
+            name="ck_producer_reviews_ai_moderation_status",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1751,6 +1757,12 @@ class ProducerReview(Base):
     # 3f9a7c2e5d18 (down_revision f5b8d2c7a3e9 — re-pointed 05/09 when the
     # branch was synced onto staging; the revision docstring records it).
     source = Column(String(20), nullable=False, server_default="click")
+    # MEH-2349: the AI verdict on the body at the last write — "APPROVED" |
+    # "FLAGGED" (fail-open is stored as APPROVED; its signal is the MEH-2352
+    # Sentry report). NULL = no body, nothing was checked, and every row that
+    # predates the column. Informational: a FLAGGED review still publishes.
+    # Nullable, Expand-only (ADR-007). Alembic revision c4e81a2f9b6d.
+    ai_moderation_status = Column(String(16), nullable=True)
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")

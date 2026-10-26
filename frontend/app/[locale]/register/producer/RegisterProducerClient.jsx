@@ -44,6 +44,7 @@ import {
   packDraft,
   parseDraft,
 } from "@/lib/register-draft";
+import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -58,10 +59,6 @@ const STEP_NAME = {
 };
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
-// MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
-// conditional grower declaration ("תוצרת שגידלתי בחלקתי בלבד"). Hebrew NAMES
-// (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
-const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 
 // MEH-1807: the required fields that live on an EARLIER step than the submit
 // button. Before this, all three were checked ONLY inside the submit handler,
@@ -93,11 +90,12 @@ const CROSS_STEP_REQUIRED = [
     field: "city",
     step: STEP.DETAILS,
     focusId: "producer-city",
-    messageKey: "city_required",
     // MEH-2241 chunk B: free-text towns are forbidden (MEH-213) and this is the
     // layer that enforces it — a typed value CitySearch could not match (0
-    // suggestions, never picked) is as missing as an empty one. Copy stays
-    // `city_required` until Sapir rules on a dedicated string (rule 22).
+    // suggestions, never picked) is as missing as an empty one. The message
+    // differs by cause: empty → «fill it in», typed-but-unknown → «pick from
+    // the list» (MEH-2241 copy, ruled 22/10).
+    messageKey: (f) => (f.city ? "city_pick_from_list" : "city_required"),
     isMissing: (f) => !f.city || !f.city_known,
   },
   {
@@ -197,11 +195,9 @@ const REFERRAL_SOURCE_KEYS = [
   "facebook",
   "google",
   "whatsapp_group",
-  // MEH-2286: "direct_outreach" is temporarily hidden from the dropdown — the
-  // backend that accepts it (v1.1.0) could not deploy during the Railway
-  // 21–22/10 incident, so the live API still 422s on it. Re-enable by adding
-  // "direct_outreach" back here once /api/health reports a post-5980abd7 sha.
-  // he.json / en.json / backend/app/constants.py are untouched on purpose.
+  // MEH-2286: re-enabled once production /api/health reported a post-v1.1.0
+  // sha — the backend that accepts it is live again.
+  "direct_outreach",
   "other",
   "prefer_not_to_say",
 ];
@@ -613,7 +609,8 @@ function RegisterProducerPageBody() {
       const next = { ...prev };
       candidates.forEach((c) => {
         if (offenders.includes(c)) {
-          next[c.field] = t(`auth.register.producer.validation.${c.messageKey}`);
+          const key = typeof c.messageKey === "function" ? c.messageKey(form) : c.messageKey;
+          next[c.field] = t(`auth.register.producer.validation.${key}`);
         } else {
           delete next[c.field];
         }

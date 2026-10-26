@@ -143,7 +143,7 @@
 ### Nav trust strip — homepage (collapsing)
 | Field | Value |
 |---|---|
-| **Current** | `שיחה אישית עם כל בית עסק` |
+| **Current** | `היכרות אישית עם כל בית עסק` — was `שיחה אישית עם כל בית עסק` until 24.10 (MEH-2305: Sapir does not commit to a call with every business; the admin checklist calls only on doubt) |
 | **Previous** | `כל בית עסק עובר אישור אישי` (placeholder shipped in #1262) |
 | **i18n key** | `nav.trust_strip` |
 | **Status** | ⏳ (PR for this copy lock; supersedes the #1262 placeholder) |
@@ -291,8 +291,8 @@
 ### /register/producer — Step 2 subhead
 | Field | Value |
 |---|---|
-| **Current** | `כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.` |
-| **Previous** | `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
+| **Current** | `כמה שדות בלבד — את שאר הפרטים משלימים בלוח הבקרה, לפני השליחה לבדיקה.` |
+| **Previous** | `כמה שדות בלבד — תשלימו את שאר הפרטים מהדשבורד אחרי האישור.` — wrong: the submission gate requires a photo and a product BEFORE review (`submission_gate.py:58-62`), so "after approval" told owners to wait for an approval that could never come (MEH-2305). Before that: `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
 | **i18n key** | `register.producer.steps.business.subtitle` |
 | **Location** | `frontend/app/[locale]/register/producer/page.js:393` |
 | **Status** | ✅ (MEH-608, PR #683, 2026-05-16) |
@@ -462,6 +462,7 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-10-25 | MEH-2313 | Canonical brand sentence — `CANONICAL_SENTENCE` (`lib/constants.js`) + `public/llms.txt` line 3 + `about.consumer.hero.subheading` (he+en); `seo.login.og_description` (he) | `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from small businesses we've personally checked — …`; `…ולתמוך בעסקים קטנים מהסביבה שלך.` | `אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from local businesses we've personally chosen — …`; `…ולתמוך בעסקים מהסביבה שלך.` | Not every business on the site is small. «בדקנו» read as a promise that the food was checked, which collides with the «מאומת» badge (a licence check only); «נבחר» matches «כל בית עסק נבחר אישית» (MEH-1692). Approved verbatim by Sapir 25/10. `about.consumer.story.p4` and `about.consumer.benefits.local.body` keep «קטנים» on purpose: they say some businesses are small, not all. |
 | 2026-07-31 | MEH-1692 | Home trust band — `home.trust.lead` + new count key (threshold 25) | `home.trust.lead` = `בתי עסק שכבר בדקנו בשבילך` (single state, shown at any catalog depth) | below 25: `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` · at/above 25: `{count} בתי עסק · כל אחד נבחר אישית` | Closes a **byte-exact** duplication: the old value was a verbatim substring of `home.hero.subtitle`, rendering the same sentence twice on one screen. Replaces compliance register ("נבדקו" — over-claims across `license` \| `exemption` \| `cosmetics`, MEH-762 / ADR-022) with a structural fact (no intermediary; pickup-or-delivery) below the threshold, and with editorial judgement ("נבחר אישית", value 1 of Brand Hub `04-mission-vision-values`, external) above it. Deliberately avoids an outcome promise ("cheaper") — Barn2Door's `no markups` precedent. Numbers-above-threshold follows CrowdFarming / LocalHarvest / Open Food Network, none of which leads on a verification claim. **`home.hero.subtitle` and `nav.trust_strip` are unchanged** — the duplication is closed from the trust-band side only; `Header.jsx` and `HomeHero.jsx` are out of scope. |
 | 2026-06-05 | MEH-756 | /events S10 copy wave — 12 keys across `events.list.*`, `events.detail.*`, `dashboard.producer.quick_links.add_event.title`, `sweep_tail.event_new.submit`, `experiences.list.cross_link_events` (he+en) | mixed-voice set: `subtitle` `סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור`; feminine-singular `הוסיפי אירוע` / `הגישי חוויה` / `סנן לפי עיר` / `חפשי עיר...` / `טוענת אירועים...` / `טוענת חוויות...` / `טוענת את האירוע...` / `מחפשת… ראי את…`; masculine-imperative outliers `צור קשר עם בית העסק` / `הוסף אירוע` / `פרסם אירוע` | S10-aligned + ADR-014 neutralized: `subtitle` `מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור` / `What's on this month — weekend after weekend, straight from the source` · `add_event` `הוסיפו אירוע` · `submit_experience` `הוסיפו חוויה` / `Add experience` (unified add verb) · `filter_city_label` `חיפוש לפי עיר` / `Search by city` · `filter_city_placeholder` `שם עיר או יישוב` / `City or town name` · `loading_events` `טוענים אירועים...` · `loading_experiences` `טוענים חוויות...` (ellipsis `...` preserved per file convention) · `events.detail.loading` `טוענים את האירוע...` · `events.detail.contact_producer` `יצירת קשר עם בית העסק` (noun phrase — drops masculine imperative) · `dashboard.producer.quick_links.add_event.title` `הוסיפו אירוע` · `sweep_tail.event_new.submit` `פרסמו אירוע` · `experiences.list.cross_link_events` `מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←` / `Also looking for farm events? All events and experiences together ←` (arrow `←` preserved) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns the /events surfaces to S10 design (MEH-134, Direction A "The Almanac") ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (subtitle, submit_experience, filter_city_*, cross_link_events); other 7 EN strings already neutral. **Out of scope:** `events.list.empty_*` + eyebrow + per-tab H1 (JSX-dependent — land with MEH-134 port); rest of `sweep_tail.event_new.*` (~30 keys — needs separate extraction probe); `events.list.title` + tab keys + `events.categories.*` (untouched). |
 | 2026-06-05 | MEH-752 | /login `auth.login.*` chrome neutralization — 10 keys (he+en) | feminine-singular set (`ברוכה הבאה`, `שמרי עסקים`, `דרגי`, `הוסיפי…`, `הזיני סיסמה`, `הציגי/הסתירי סיסמה`, `מתחברת...`, `נסי שוב`, `הצטרפי →`) + `welcome` was generic `Welcome` | neutralized + S9-aligned: `welcome` `טוב לראות אותך שוב` / `Good to see you again` · `value_save` `שמרו עסקים` · `value_rate` `כתבו ביקורות` / `Write reviews` · `value_publish` `הוסיפו את העסק שלך` (**supersedes MEH-751 row** — was `הוסיפי…` feminine, now neutral; EN unchanged `Add your business`) · `password_required` `הזינו סיסמה` · `password_show/hide` noun phrase `הצגת/הסתרת סיסמה` · `submitting` `רגע, נכנסים…` / `One moment, signing in…` · `generic_error` `…נסו שוב` · `register_cta` `הצטרפו →` (arrow preserved per Linear note — RTL forward convention in this file) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns /login to S9 design (MEH-131) ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (welcome / value_rate / submitting); other EN strings were already neutral. |
@@ -612,7 +613,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 ### Registration success — tier trust line
 | Field | Value |
 |---|---|
-| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
+| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור, ולפעמים גם שיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
 | **en** | `Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.` (⏳ en pending Sapir review) |
 | **i18n key** | `auth.register.producer.success.tier_trust` |
 | **Status** | 🕐 key-only — pending S7 register port (06A/06B) to render; Sapir closes after mobile smoke |
@@ -758,7 +759,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 |---|---|
 | **Eyebrow** | `לבתי עסק מקומיים` — aligned with the approved footer tagline; zero partial-category |
 | **H1** | `העסק שלכם. עמוד משלו.` — why-first, editorial through what-you-get |
-| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה ב-WhatsApp — לקוחות מקומיים פוגשים את הסיפור שלכם.` — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
+| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה אליכם, בוואטסאפ או בערוץ שתבחרו — לקוחות מקומיים פוגשים את הסיפור שלכם.` (MEH-2305: the primary contact button is owner-selectable among 7 channels, `frontend/lib/contact-method.js:13-22`, so "direct WhatsApp contact" was not true for every business) — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
 | **CTA** | `מצטרפים` → `/register/producer` — the page's single CTA |
 | **Trust hint** | `חינם להצטרף` — NOT "חינם לעולם"; zero premium mention anywhere on the page (MEH-617 model undecided) |
 | **i18n keys** | `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` |
@@ -767,9 +768,9 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 ### How it works (4 steps)
 | Step | Title | Body | Derived from |
 |---|---|---|---|
-| 01 | `נרשמים` | `טופס קצר על העסק — סיפור, תמונות ופרטי קשר. בערך 10 דקות.` | MEH-994b locked duration |
-| 02 | `שיחה אישית` | `הצוות שלנו יוצר קשר לשיחה קצרה — היכרות עם העסק והסיפור.` | MEH-994 after_body |
-| 03 | `העמוד עולה` | `בדרך כלל תוך יום-יומיים העסק שלכם מופיע באתר.` | chat.py approval timeframe |
+| 01 | `נרשמים` | `טופס קצר על העסק ופרטי קשר. כ־3 דקות. את התמונות מעלים אחר כך, מלוח הבקרה.` | MEH-2185 duration lock · MEH-2305 (no photos in the form) |
+| 02 | `היכרות אישית` | `הצוות שלנו עובר על העסק והסיפור, ואם צריך יוצר קשר להיכרות קצרה.` (MEH-2305, 24.10 — no unconditional call promise) | MEH-994 after_body |
+| 03 | `העמוד עולה` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | MEH-2305 — the 3-business-day clock starts at «שליחה לבדיקה» |
 | 04 | `לקוחות פונים ישירות` | `כפתור WhatsApp בעמוד פותח שיחה ישירה אתכם. הקשר והתשלום — ביניכם ובין הלקוחות בלבד.` | MEH-1003 neutral no-fees copy (avoids forbidden "מתווכים") |
 
 Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/process`.
@@ -778,8 +779,8 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 | Field | Value |
 |---|---|
 | **Checklist** | mirrors the MEH-994 pre-flight items verbatim (`join.prepare.*`) — keep the two surfaces in sync on any copy change |
-| **Card title** | `כל בית עסק עובר שיחה אישית` — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
-| **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
+| **Card title** | `כל בית עסק עובר היכרות אישית` (MEH-2305, was `…שיחה אישית`) — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
+| **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור, ולפעמים גם שיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
 | **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` — the no-fees LOCK lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
 | **Status** | ⏳ MEH-995 |
 

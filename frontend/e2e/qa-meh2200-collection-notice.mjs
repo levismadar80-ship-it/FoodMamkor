@@ -88,8 +88,8 @@ if (!probe.mailto) fail.push("no mailto: link inside the notice");
 // RENAMED in he.json, which is the case worth catching (same fix as the
 // vitest assertion in RegisterCollectionNotice.test.jsx).
 if (/<\/?[a-zA-Z][\w-]*>/.test(probe.text)) fail.push("raw rich-text markup leaked into the notice");
-if (!/אינה חובה על פי חוק/.test(probe.text)) fail.push("volition clause missing");
-if (!/לא נוכל להשלים את ההרשמה/.test(probe.text)) fail.push("consequence-of-refusal clause missing");
+if (!/לא חובה/.test(probe.text)) fail.push("volition clause missing"); // MEH-2317 wording
+if (!/אי אפשר להירשם/.test(probe.text)) fail.push("consequence-of-refusal clause missing");
 if (probe.box.top >= submitBox.top) fail.push("notice does not render ABOVE the submit button");
 if (probe.box.width > 375) fail.push(`notice overflows viewport: ${probe.box.width}px`);
 if (fail.length) throw new Error("REFUSING TO CAPTURE:\n  - " + fail.join("\n  - "));
