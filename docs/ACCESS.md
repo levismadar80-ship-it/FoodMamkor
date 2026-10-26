@@ -102,38 +102,25 @@ Then Claude Code updates this file (a docs-only PR), including `Last reviewed:`.
   Sapir (`.claude/rules/security.md`).
 - [ ] `mehamakor-bot`: record its purpose, or remove it as a collaborator if unused.
 - [ ] GitHub iOS holds `admin:org`. Fine if intentional; revoke if the app isn't used.
-- [ ] Repo visibility keeps flipping to private (§8). Find the actor in the
-  security log and decide what the repo should be (MEH-2365).
 
-## 8. Repo visibility: who can flip it, and where to see who did
+## 8. Repo visibility: Sapir switches it by hand
 
-**Symptom.** The repo has gone private at least three times: 31/08, 25/10
-(public again at 16:23Z), and 26/10 from about 15:44Z. Each time every Actions
-job fails in about 2 seconds with no steps and the message "an Actions budget is
-preventing further use". A private repo on Free has a minutes quota, and its
-rulesets stop applying ([DEPLOYMENT.md](./DEPLOYMENT.md), search "Visibility").
-Check `GET /repos/levismadar80-ship-it/FoodMamkor` → `"visibility"` first.
+**The cause, in her words (26/10).** Sapir flips the repo between public and
+private herself, on purpose, to control what the Actions runs cost. Nothing else
+does it: `git grep -iE "visibility|private"` over `.github/`, `scripts/` and
+`.claude/` finds only a comment in `claude-review.yml`. Collaborators
+(`sapirschnapp`, `mehamakor-bot`) cannot change visibility on a personal-account
+repo, and `mehamakor-cc` has no Administration permission (§2).
 
-**Nothing in the repo does it.** `git grep -iE "visibility|private"` over
-`.github/`, `scripts/` and `.claude/` finds only a comment in
-`claude-review.yml` (26/10).
+**What a private window looks like from a session.** Every Actions job fails in
+about 2 seconds with `runner_id: 0`, no steps, and "an Actions budget is
+preventing further use". Measured windows: 31/08, 25/10 (until 16:23Z), 26/10
+15:44Z–21:05Z. Rulesets also stop applying while private on Free
+([DEPLOYMENT.md](./DEPLOYMENT.md), search "Visibility"). This is not a fault to
+debug: check `GET /repos/levismadar80-ship-it/FoodMamkor` → `"visibility"`, and if
+it says private, tell Sapir CI is waiting on it and stop.
 
-**Only the owner account can.** On a personal-account repo, collaborators
-(`sapirschnapp`, `mehamakor-bot`) cannot change visibility, and `mehamakor-cc`
-has no Administration permission (§2). So the change comes from
-`levismadar80-ship-it` itself: the web UI, GitHub iOS, the `git-bash` token, or
-a Claude in Chrome session running in Sapir's browser.
-
-**Claude Code cannot see who did it.** The repo events API records only the
-private → public direction (`PublicEvent`), and the account security log is
-outside a session's repo-scoped access. The answer is in the security log,
-filtered to visibility changes:
-<https://github.com/settings/security-log?q=action%3Arepo.access>. Each entry
-shows the time and where it came from.
-
-**The conflict behind it (a guess, not verified).** The contact spreadsheets
-that #3604 removed are still in git history, so a public repo still exposes
-those phone numbers. That is a good reason to want the repo private, and it
-conflicts with keeping CI alive. The ways out are Sapir's: purge the history
-(a force-push to `staging` and `main`), pay for Actions minutes, or keep the
-repo public and accept that the numbers stay in history.
+**Where to confirm a flip.** The account security log, filtered to visibility
+changes: <https://github.com/settings/security-log?q=action%3Arepo.access>.
+Claude Code cannot read it (account-level), and the repo events API records only
+the private → public direction.
