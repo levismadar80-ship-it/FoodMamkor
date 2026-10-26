@@ -7,7 +7,7 @@ describe("safeInternalRedirect (MEH-810)", () => {
     expect(safeInternalRedirect("/")).toBe("/");
     expect(safeInternalRedirect("/producer/42")).toBe("/producer/42");
     expect(safeInternalRedirect("/experiences/new")).toBe("/experiences/new");
-    expect(safeInternalRedirect("/search?q=bread")).toBe("/search?q=bread");
+    expect(safeInternalRedirect("/producers?q=bread")).toBe("/producers?q=bread");
   });
 
   it("rejects off-site / hostile targets → fallback", () => {

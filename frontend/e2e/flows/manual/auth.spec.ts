@@ -119,7 +119,7 @@ function robotsContent(page: Page): Promise<string | null> {
 // ────────────────────────────────────────────────────────────────────────────
 
 test.describe("manual › auth chrome is noindex, and the public pages are not (MEH-641)", () => {
-  const PRIVATE = ["/login", "/register", "/contact", "/search"];
+  const PRIVATE = ["/login", "/register", "/contact"];
   const PUBLIC = ["/", "/about", "/map", "/terms", "/privacy"];
 
   for (const locale of ["he", "en"] as const) {

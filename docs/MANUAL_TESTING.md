@@ -195,7 +195,7 @@
 **הבדיקה היא תמיד אותה בדיקה: להקליד את מה שכתוב בשדה, ולוודא שחוזר משהו.** placeholder הוא הבטחה — הוא מלמד מה השדה יודע לחפש, ולכן מחרוזת שמחזירה אפס לא סתם לא עוזרת, היא מלמדת דבר שקר.
 
 - [ ] **`/producers` — שדה החיפוש** — פתחי את הדף, קראי את ה-placeholder (`מאפיית המחמצת`), **הקלידי אותו בדיוק** → **תוצאה מצופה:** לפחות בית עסק אחד ברשימה. **זה מה שהיה שבור:** לפני התיקון היה כתוב שם `לחם מחמצת, גבינת עזים, ירקות אורגניים` — רשימה מופרדת בפסיקים שמחזירה **אפס**
-- [ ] **`/search` — שדה החיפוש** — אותו דבר עם ה-placeholder `לחם מחמצת` → **תוצאה מצופה:** לפחות תוצאה אחת
+- [ ] **`/producers` — שדה החיפוש (מאז MEH-819 זה עמוד התוצאות היחיד; `/search` מפנה אליו)** — אותו דבר עם ה-placeholder `לחם מחמצת` → **תוצאה מצופה:** לפחות תוצאה אחת
 - ✅ → home.spec.ts (the hero rotates exactly the four he.json placeholders and pauses on focus) — **דף הבית — ארבע המחרוזות המתחלפות** — עמדי על ה-hero **בלי ללחוץ על השדה** (הרוטציה נעצרת בפוקוס) ותני לה להחליף. הקלידי כל אחת מארבע: `לחם מחמצת` · `לחמים ואפייה` · `זכרון יעקב` · `מאפיית המחמצת` → **תוצאה מצופה:** כל אחת מחזירה לפחות תוצאה אחת
 - ✅ → home.spec.ts (the broken query is not in the placeholder pool) — **המחרוזת השבורה המוכרת** — הקלידי `גבינת עיזים` → **תוצאה מצופה:** אפס תוצאות. **זה תקין ומכוון** — `עיזים` לא קיים באף שדה בדאטה, והחיפוש הוא AND על טוקנים (MEH-1664), כך שדי בטוקן אחד שלא פוגע. הבדיקה כאן היא שהמחרוזת הזאת **לא** חזרה לשדה
 - [ ] **`/en` — פער ידוע, לא באג חדש** — עברי ל-`/en` והקלידי את ה-placeholder → **תוצאה מצופה:** אפס תוצאות. שמות עסקים, מוצרים, ערים וקטגוריות כולם בעברית, ולכן **שום** מחרוזת אנגלית לא מחזירה דבר. מתועד ב-`scripts/search-placeholder-keys.json`; ההכרעה טרם התקבלה
@@ -250,7 +250,7 @@
 
 ## MEH-1592 — ה-Popover של "+N" לא מתנגש בתגיות שכנות (26/07)
 
-- ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:1) — **אין חפיפה בדסקטופ** — `/producers` או `/search` ב-1440px, כרטיס עם 3+ תגיות **ועם התג "מובילת קהילה"** → לחיצה על ה-"+N" — **תוצאה מצופה:** הפאנל נפתח **מעל** שורת התגיות ואינו מכסה אף תגית שכנה, לא את שם העסק ולא את שורת הדירוג; כל השמות קריאים במלואם
+- ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:1) — **אין חפיפה בדסקטופ** — `/producers` (או `/producers?q=`) ב-1440px, כרטיס עם 3+ תגיות **ועם התג "מובילת קהילה"** → לחיצה על ה-"+N" — **תוצאה מצופה:** הפאנל נפתח **מעל** שורת התגיות ואינו מכסה אף תגית שכנה, לא את שם העסק ולא את שורת הדירוג; כל השמות קריאים במלואם
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:2) — **הפאנל צמוד למונה שלו** — אותה לחיצה — **תוצאה מצופה:** הפאנל נפתח **ליד ה-"+N" שנלחץ**, בתוך אותו כרטיס — לא בצד השני של המסך ולא מעל כרטיס אחר
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:3) — **אין חיתוך בקצה** — כרטיס בעמודה הקיצונית (הימנית ביותר והשמאלית ביותר) → "+N" — **תוצאה מצופה:** הפאנל נשאר שלם בתוך המסך, אף מילה לא נחתכת
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:4) — **פאנל אחד בלבד** — פתחי תגית רגילה (למשל "רישיון יצרן"), ואז לחצי על ה-"+N" — **תוצאה מצופה:** הראשון נסגר, רק הפאנל של ה-"+N" פתוח. וגם הפוך
@@ -883,7 +883,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 ## MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint
 
 - ✅ → home.spec.ts (cards in the same row are the same height) — **גבהים אחידים בבית** — `/`, סקציית "בתי עסק מומלצים", דסקטופ (4 טורים) ונייד (2 טורים) — **תוצאה מצופה:** כל הכרטיסים באותה שורה בגובה זהה (בלי "מדרגות"), גם כשלכרטיס אין מחיר/דירוג/תיאור. שורת המחיר צמודה לתחתית הכרטיס.
-- [ ] **גבהים אחידים במשטחים נוספים** — `/producers`, `/search`, ורצועת "עסקים חדשים" בבית — **תוצאה מצופה:** אותה אחידות גבהים.
+- [ ] **גבהים אחידים במשטחים נוספים** — `/producers`, `/producers?q=`, ורצועת "עסקים חדשים" בבית — **תוצאה מצופה:** אותה אחידות גבהים.
 - [ ] **מועדפים — רשת 2/3/4 (MEH-1203)** — `/favorites` (מחוברת) — **תוצאה מצופה:** 2 עמודות בנייד (375px), 3 ב-lg, 4 ב-xl — זהה ל-/producers; לא כרטיס אחד רחב לשורה.
 - [ ] **מועדפים — אין FAB צ'אט (MEH-1203)** — `/favorites` בנייד — **תוצאה מצופה:** כפתור הצ'אט הצף אינו מרונדר (כמו ב-/map ו-/producer); לא מכסה את הכרטיס הראשון.
 - [ ] **מועדפים — פאנל התראות פתוח** — `/favorites` (מחוברת), לחיצה על פעמון בכרטיס אחד לפתיחת AlertPrefsPanel — **תוצאה מצופה:** הפאנל נפתח מתחת לכרטיס במלואו, בלי גלישה/חיתוך; שאר הכרטיסים בשורה נשארים בגובה זהה.
@@ -1354,7 +1354,7 @@ the toast (right side in he/RTL), inheriting the white text color.
 - [ ] פתיחת drawer = warm-dark (`green-900`) — קישורי Frank Ruhl 24px + ספרות זהב `01·02·03` — תוצאה: drawer כהה, מספרים זהב
 - [ ] drawer: green `הוסיפו עסק` + ghost-on-dark `כניסה לחשבון` (אורח) — תוצאה: שתי כפתורים full-width
 - [ ] drawer מחובר: favorites + admin (אם admin) + logout, restyled כהה — תוצאה: כולם נוכחים וקריאים
-- [ ] search button במובייל עובד — תוצאה: נפתח `/search`
+- [ ] search button במובייל עובד — תוצאה: נפתח `/producers` עם שדה החיפוש ממוקד (MEH-819)
 - [ ] email-verify banner (משתמש לא מאומת) עדיין מופיע מתחת ל-pill — תוצאה: banner צהוב + resend
 
 ---
@@ -1481,8 +1481,8 @@ Cross-check the returned emails against the original admin allowlist (whoever Sm
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-641:1) — both locales, asserted as an exact partition: the four auth-chrome pages carry `noindex` **and** the five public ones do not. Checking only the first half would pass against a build that noindexed the whole site, which is the failure this row exists to catch. The manual bullets below are kept as the human-readable statement of the rule.
 
 **Pages to verify (View Source in browser):**
-- /he/login, /he/register, /he/contact, /he/search → must show `<meta name="robots" content="noindex, nofollow"/>` (or comma-space variant)
-- /en/login, /en/register, /en/contact, /en/search → same
+- /he/login, /he/register, /he/contact → must show `<meta name="robots" content="noindex, nofollow"/>` (or comma-space variant)
+- /en/login, /en/register, /en/contact → same
 
 **Regression check:**
 - /he/about, /he/map, /he/, /he/terms, /he/privacy → must NOT show `noindex` (default index,follow or no robots meta)

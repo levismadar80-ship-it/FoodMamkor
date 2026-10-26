@@ -26,11 +26,11 @@ import { test, expect, type Page, type Locator } from "@playwright/test";
  * `next start` against localhost with NO backend (e2e.yml:158), so a card
  * earning 3+ badges cannot exist unmocked. DO NOT copy this into e2e/flows/.
  *
- * The route target is /search: it client-fetches GET /producers
- * (app/[locale]/search/SearchClient.jsx:80) and renders ProducerCard, so
- * page.route intercepts it. /producers cannot be used — it SSR-seeds its
- * first page (app/[locale]/producers/page.jsx:25), which page.route cannot
- * reach (same constraint parity.spec.ts:302-307 documents for /[slug]).
+ * The route target is /producers?q=: with `q` set, ProducersClient is in
+ * filtered mode and client-fetches GET /producers?q=… (fetchFiltered), which
+ * page.route intercepts. The SSR-seeded first page (producers/page.jsx:25) is
+ * empty here (no backend) and is not what renders in filtered mode. (Before
+ * MEH-819 this spec targeted /search, which is now a 308 to /producers.)
  */
 
 // Sapir's reported case: badge priority is verified > recommended > … > kosher,
@@ -67,7 +67,7 @@ const STRESS_CASE = {
 };
 
 const PRODUCERS = [SAPIR_CASE, STRESS_CASE];
-const SEARCH_URL = `/search?q=${encodeURIComponent("לחם")}`;
+const SEARCH_URL = `/producers?q=${encodeURIComponent("לחם")}`;
 
 type Box = { x: number; y: number; width: number; height: number };
 
@@ -244,7 +244,7 @@ test.describe("MEH-1592 +N popover — one-at-a-time + tap guard", () => {
     // Hidden badge for SAPIR_CASE (visible = verified + recommended) is kosher.
     await expect(page.locator('[data-testid="badge-overflow-popover"]')).toContainText("כשר");
     // The card Link must not have fired.
-    await expect(page).toHaveURL(new RegExp("/search"));
+    await expect(page).toHaveURL(new RegExp("/producers\\?q="));
 
     // Outside-click dismissal still works with the portalled panel.
     await page.locator("h1").first().click({ force: true });
