@@ -48,11 +48,23 @@ describe("scrubClaimTokens", () => {
     expect(out).toContain('"count":3');
   });
 
-  it("stops at its depth cap instead of walking forever", () => {
+  it("survives a cyclic object", () => {
     const cyclic = { a: `/claim/${TOKEN}` };
     cyclic.self = cyclic;
     expect(() => scrubClaimTokens(cyclic)).not.toThrow();
     expect(cyclic.a).toBe("/claim/[token]");
+  });
+
+  it("redacts a token however deep it sits", () => {
+    let deep = { url: `/claim/${TOKEN}` };
+    for (let i = 0; i < 20; i += 1) deep = { child: deep };
+    expect(JSON.stringify(scrubClaimTokens(deep))).not.toContain(TOKEN);
+  });
+
+  it("redacts a token in an object reached twice", () => {
+    const shared = { url: `/claim/${TOKEN}` };
+    const out = scrubClaimTokens({ a: shared, b: [shared] });
+    expect(JSON.stringify(out)).not.toContain(TOKEN);
   });
 });
 

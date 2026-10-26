@@ -145,10 +145,15 @@ export default function ClaimClient({ tokenFromPath = null }) {
         declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
         terms_accepted: agreedToTerms,
       });
+      // Any 2xx means the draft is already hers. An unexpected body is logged,
+      // not shown: calling it a failure would send her into a retry that the
+      // server answers with "already claimed".
       if (!ProducerClaimResultSchema.safeParse(response.data).success) {
-        setSubmitError(t("submit_error"));
-        return;
+        console.warn("[claim] unexpected claim response shape");
       }
+      // Hold the loading view until the dashboard opens: refreshUser returns
+      // her as an owner, and the has-business view would flash in between.
+      setView(VIEW.LOADING);
       clearClaimToken();
       await refreshUser();
       router.push("/producer/dashboard");

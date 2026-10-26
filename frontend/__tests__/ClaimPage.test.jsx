@@ -247,6 +247,40 @@ describe("submitting", () => {
     expect(window.sessionStorage.getItem("mehamakor.claimToken")).toBeNull();
   });
 
+  // refreshUser hands back the new owner (producer_id set) before the dashboard
+  // loads. The page must not flash "this account already has a business".
+  it("after a successful claim it never shows the has-business view", async () => {
+    claimOk();
+    refreshUser.mockImplementationOnce(async () => {
+      auth = { ...auth, user: { ...auth.user, role: "producer", producer_id: "p-1", is_producer: true } };
+    });
+    wrap(<ClaimClient />);
+    await screen.findByTestId("claim-form");
+    fireEvent.click(screen.getByTestId("claim-terms"));
+    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-submit"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByTestId("claim-has-business")).not.toBeInTheDocument();
+  });
+
+  // A 2xx means the server already assigned the draft. Reporting failure would
+  // send the owner into a retry that answers 409 "already claimed".
+  it("a 2xx with an unexpected body still counts as claimed", async () => {
+    api.post.mockImplementation((url) =>
+      Promise.resolve({ data: url === "/producer-claim/preview" ? PREVIEW : {} }),
+    );
+    wrap(<ClaimClient />);
+    await screen.findByTestId("claim-form");
+    fireEvent.click(screen.getByTestId("claim-terms"));
+    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-submit"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+    expect(window.sessionStorage.getItem("mehamakor.claimToken")).toBeNull();
+    expect(screen.queryByTestId("claim-error")).not.toBeInTheDocument();
+  });
+
   it("a vegetable farm also needs the grower line, which folds into declaration_accepted", async () => {
     claimOk({ ...PREVIEW, category_names: ["ירקות"] });
     wrap(<ClaimClient />);

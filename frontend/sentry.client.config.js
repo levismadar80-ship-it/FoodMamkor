@@ -14,6 +14,11 @@ if (dsn) {
     tracesSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
     replaysSessionSampleRate: 0,
+    // MEH-2324: replays skip beforeSend, so a replay buffered on
+    // /claim/<token> would carry the token in its URLs. Not live as of
+    // 26/10/2026 (Sentry shows no browser events or replays in 90 days, so
+    // this file is likely not loaded under Turbopack). Whoever moves this to
+    // instrumentation-client must scrub replay URLs too.
     integrations: [
       Sentry.replayIntegration({
         maskAllText: true,

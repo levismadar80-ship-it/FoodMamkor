@@ -54,16 +54,15 @@ export function redactClaimPath(value) {
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and
-// redacts every string. Depth-capped so a cyclic or huge object cannot hang
-// the reporter; past the cap the value is returned as is.
-export function scrubClaimTokens(value, depth = 0) {
-  if (depth > 8) return value;
+// redacts every string, in place. No depth cap: a redactor that gives up past
+// some depth would let a deep token through. Each object is visited once, so a
+// cyclic payload still terminates.
+export function scrubClaimTokens(value, seen = new WeakSet()) {
   if (typeof value === "string") return redactClaimPath(value);
-  if (Array.isArray(value)) return value.map((v) => scrubClaimTokens(v, depth + 1));
-  if (value && typeof value === "object") {
-    for (const key of Object.keys(value)) {
-      value[key] = scrubClaimTokens(value[key], depth + 1);
-    }
+  if (!value || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  for (const key of Object.keys(value)) {
+    value[key] = scrubClaimTokens(value[key], seen);
   }
   return value;
 }
