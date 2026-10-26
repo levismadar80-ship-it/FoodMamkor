@@ -174,7 +174,8 @@ def claim_producer(
         db.query(User)
         .filter(User.id == user.id)
         .with_for_update()
-        .first()  # RED CONSTRUCTION (i): populate_existing() dropped
+        .populate_existing()
+        .first()
     )
     if user is None:  # deleted between authentication and the lock
         raise HTTPException(status_code=401, detail="משתמש לא נמצא")

@@ -511,7 +511,15 @@ async def register_producer(
         # route, so the two cannot deadlock.
         # DO NOT drop populate_existing() — without it the identity-mapped
         # `current_user` comes back with its stale attributes.
-        user = current_user  # RED CONSTRUCTION (ii): no users-row lock
+        user = (
+            db.query(User)
+            .filter(User.id == current_user.id)
+            .with_for_update()
+            .populate_existing()
+            .first()
+        )
+        if user is None:  # deleted between authentication and the lock
+            raise HTTPException(status_code=401, detail="משתמש לא נמצא")
         # MEH-669: admin accounts must never self-upgrade to producer.
         # Without this guard, line `user.role = "producer"` below silently
         # demotes the admin and locks them out of /admin (vertical privilege
