@@ -35,21 +35,25 @@ def _mounted_routes(routes, out):
     return out
 
 
-def test_follow_routes_are_not_mounted():
-    mounted = _mounted_routes(app.routes, set())
-    assert REMOVED & mounted == set()
-    # Controls: the walk reached the included routers, and a known route is
-    # there, so an empty intersection above is not an empty route table.
-    assert ("GET", "/producers/{producer_id}") in mounted
-    assert len(mounted) > 100
-
-
-def test_follow_routes_are_not_in_the_schema():
-    # The published contract (openapi.json / lib/generated) is built from this.
-    in_schema = {
+def _schema_routes():
+    return {
         (method.upper(), path)
         for path, ops in app.openapi()["paths"].items()
         for method in ops
     }
+
+
+def test_follow_routes_are_not_mounted():
+    mounted = _mounted_routes(app.routes, set())
+    assert REMOVED & mounted == set()
+    # Controls: the walk reached the included routers — every schema route is
+    # a mounted route — so an empty intersection above is not an empty table.
+    assert ("GET", "/producers/{producer_id}") in mounted
+    assert _schema_routes() <= mounted
+
+
+def test_follow_routes_are_not_in_the_schema():
+    # The published contract (openapi.json / lib/generated) is built from this.
+    in_schema = _schema_routes()
     assert REMOVED & in_schema == set()
     assert ("GET", "/producers/{producer_id}") in in_schema
