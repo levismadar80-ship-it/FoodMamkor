@@ -1783,6 +1783,11 @@
         "copy_failed": "Copying failed. You can select the link and copy it manually.",
         "expires": "Valid until {date}",
         "error": "Could not create the link"
+      },
+      "draft_products": {
+        "title": "Products in this draft",
+        "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
+        "empty": "No products in this draft yet."
       }
     },
     "users": {

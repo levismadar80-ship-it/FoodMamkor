@@ -109,3 +109,13 @@ export const ProducerClaimLinkSchema = z.object({
   // would throw there, so an invalid date is a malformed payload.
   expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
 });
+
+// MEH-2326: POST /admin/producers/{id}/products → ProductOut. The admin panel
+// appends the row to its list, so a payload with no id or name must route to
+// the panel's error state instead of rendering a row it cannot delete.
+export const DraftProductSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  price_min: z.union([z.string(), z.number()]).nullable().optional(),
+  price_max: z.union([z.string(), z.number()]).nullable().optional(),
+});
