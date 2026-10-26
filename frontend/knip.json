@@ -21,8 +21,7 @@
     "e2e/**/*.ts"
   ],
   "ignore": [
-    "**/*.d.ts",
-    "lib/env.server.js"
+    "**/*.d.ts"
   ],
   "ignoreDependencies": [
     "autoprefixer",
