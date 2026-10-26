@@ -23,6 +23,10 @@ const STORAGE_KEY = "mehamakor.claimToken";
 // next delimiter. JWTs are base64url + dots, so this stops at / ? # and quotes.
 const CLAIM_PATH = /\/claim\/[^/?#\s"'&]+/g;
 const REDACTED = "/claim/[token]";
+// The same path percent-encoded, as in a ?redirect= built with
+// encodeURIComponent (auth-context's session-expired link). A JWT has no %, so
+// the token ends at the next escape.
+const CLAIM_PATH_ENCODED = /(%2F(?:[a-z]{2}%2F)?claim)%2F[^/?#\s"'&%]+/gi;
 
 export function stashClaimToken(token) {
   try {
@@ -50,7 +54,10 @@ export function clearClaimToken() {
 }
 
 export function redactClaimPath(value) {
-  return typeof value === "string" ? value.replace(CLAIM_PATH, REDACTED) : value;
+  if (typeof value !== "string") return value;
+  return value
+    .replace(CLAIM_PATH, REDACTED)
+    .replace(CLAIM_PATH_ENCODED, "$1%2F[token]");
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and

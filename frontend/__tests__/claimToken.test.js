@@ -24,6 +24,9 @@ describe("redactClaimPath", () => {
     [`https://mehamakor.co.il/claim/${TOKEN}`, "https://mehamakor.co.il/claim/[token]"],
     [`/en/claim/${TOKEN}?utm=x#top`, "/en/claim/[token]?utm=x#top"],
     [`navigated from /claim/${TOKEN} to /claim`, "navigated from /claim/[token] to /claim"],
+    // auth-context builds /login?redirect= with encodeURIComponent(pathname).
+    [`/login?redirect=%2Fclaim%2F${TOKEN}`, "/login?redirect=%2Fclaim%2F[token]"],
+    [`/login?redirect=%2Fen%2Fclaim%2f${TOKEN}&x=1`, "/login?redirect=%2Fen%2Fclaim%2F[token]&x=1"],
   ])("%s", (input, expected) => {
     expect(redactClaimPath(input)).toBe(expected);
   });
