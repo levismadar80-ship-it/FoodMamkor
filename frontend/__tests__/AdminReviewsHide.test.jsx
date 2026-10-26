@@ -139,6 +139,53 @@ describe("MEH-2360 hide / unhide on /admin/reviews", () => {
     expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/v2/hide");
   });
 
+  it("in flight: the clicked row's button is disabled, so a double-click sends one PUT", async () => {
+    let settle;
+    apiMock.put.mockImplementation(() => new Promise((res) => { settle = res; }));
+    await renderWith([row("a", false)]);
+    const btn = within(rowOf("a")).getByTestId("review-hide");
+
+    fireEvent.click(btn);
+    await waitFor(() => expect(btn.disabled).toBe(true));
+    fireEvent.click(btn);
+    expect(apiMock.put).toHaveBeenCalledTimes(1);
+
+    settle({ data: {} });
+    await waitFor(() => expect(within(rowOf("a")).getByTestId("review-hidden-tag")).toBeTruthy());
+  });
+
+  it("two rows in flight: the first one settling does not re-enable the second", async () => {
+    const pending = {};
+    apiMock.put.mockImplementation((url) => new Promise((res) => { pending[url] = res; }));
+    await renderWith([row("a", false), row("b", false)]);
+    const btnA = within(rowOf("a")).getByTestId("review-hide");
+    const btnB = within(rowOf("b")).getByTestId("review-hide");
+
+    fireEvent.click(btnA);
+    fireEvent.click(btnB);
+    await waitFor(() => expect(btnB.disabled).toBe(true));
+
+    pending["/admin/reviews/a/hide"]({ data: {} });
+    await waitFor(() => expect(within(rowOf("a")).getByTestId("review-hidden-tag")).toBeTruthy());
+    expect(within(rowOf("b")).getByTestId("review-hide").disabled).toBe(true);
+
+    pending["/admin/reviews/b/hide"]({ data: {} });
+    await waitFor(() => expect(within(rowOf("b")).getByTestId("review-hidden-tag")).toBeTruthy());
+  });
+
+  it("404 (deleted elsewhere): the row leaves the list and the server's message is shown", async () => {
+    apiMock.put.mockImplementation(() =>
+      Promise.reject({ response: { status: 404, data: { detail: "ביקורת לא נמצאה" } } }),
+    );
+    await renderWith([row("gone", false), row("kept", false)]);
+
+    fireEvent.click(within(rowOf("gone")).getByTestId("review-hide"));
+
+    await waitFor(() => expect(screen.queryByText("ביקורת gone")).toBeNull());
+    expect(screen.getByText("ביקורת kept")).toBeTruthy();
+    expect(toastMock.error).toHaveBeenCalledWith("ביקורת לא נמצאה");
+  });
+
   it("a failed request leaves the row as it was and shows the error toast", async () => {
     apiMock.put.mockImplementation(() => Promise.reject(new Error("500")));
     await renderWith([row("a", false)]);

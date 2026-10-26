@@ -98,8 +98,10 @@ export default function AdminReviewsPage() {
   // is how an admin finds the ones the AI asked a human to read.
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  // MEH-2360: id of the row whose hide/unhide request is in flight.
-  const [togglingId, setTogglingId] = useState(null);
+  // MEH-2360: ids of rows whose hide/unhide request is in flight. A Set, not
+  // one id: with two rows pending, the first to settle must not re-enable the
+  // second (its click-time `is_hidden` would then pick the wrong endpoint).
+  const [togglingIds, setTogglingIds] = useState(() => new Set());
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -156,20 +158,30 @@ export default function AdminReviewsPage() {
   }, [confirmDelete, deleting]);
 
   // MEH-2360: the row only flips after the server confirms, so a failed
-  // request leaves the admin looking at the real state.
+  // request leaves the admin looking at the real state. A 404 means the review
+  // was deleted elsewhere (another tab, or its author): drop the row and show
+  // the backend's Hebrew `detail` instead of the generic error.
   const toggleHidden = async (review) => {
     const hide = !review.is_hidden;
-    setTogglingId(review.id);
+    setTogglingIds((prev) => new Set(prev).add(review.id));
     try {
       await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}`);
       setReviews((prev) =>
         prev.map((item) => (item.id === review.id ? { ...item, is_hidden: hide } : item)),
       );
       showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
-    } catch {
-      showToast.error(tError("generic"));
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      if (err?.response?.status === 404) {
+        setReviews((prev) => prev.filter((item) => item.id !== review.id));
+      }
+      showToast.error(typeof detail === "string" && detail ? detail : tError("generic"));
     } finally {
-      setTogglingId(null);
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(review.id);
+        return next;
+      });
     }
   };
 
@@ -324,29 +336,29 @@ export default function AdminReviewsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col items-start gap-1">
-                      <button
-                        type="button"
-                        onClick={() => toggleHidden(r)}
-                        disabled={togglingId === r.id}
-                        data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
-                        aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
-                          user: r.user_name || t("reviews.default_user"),
-                        })}
-                      >
-                        {r.is_hidden ? <Eye size={14} /> : <EyeSlash size={14} />}
-                        {t(r.is_hidden ? "reviews.unhide" : "reviews.hide")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(r)}
-                        disabled={deletingId === r.id}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
-                        aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
-                      >
-                        <Trash size={14} />
-                        {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleHidden(r)}
+                          disabled={togglingIds.has(r.id)}
+                          data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+                          aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
+                            user: r.user_name || t("reviews.default_user"),
+                          })}
+                        >
+                          {r.is_hidden ? <Eye size={14} /> : <EyeSlash size={14} />}
+                          {t(r.is_hidden ? "reviews.unhide" : "reviews.hide")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(r)}
+                          disabled={deletingId === r.id}
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
+                          aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
+                        >
+                          <Trash size={14} />
+                          {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
+                        </button>
                       </div>
                     </td>
                   </tr>
