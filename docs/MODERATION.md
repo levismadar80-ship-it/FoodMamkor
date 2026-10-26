@@ -1,293 +1,65 @@
-# מהמקור — מערכת מודרציה למהמטבח של השכן
-> קרא CLAUDE.md קודם. עדכן CLAUDE.md בסוף.
+# מהמקור — מודרציית AI
+
+> מה ה-AI בודק באתר, מה קורה עם התשובה שלו, ומי מחליט בסוף.
+> נכון ל-26/10/2026, אחרי מיזוג PR #3607, #3608, #3609, #3610 ו-#3612. הפניות `קובץ:שורה` נבדקו מול הקוד באותו יום; בנתבים מצוין שם הפונקציה כדי שלא יזוז.
 
 ---
 
-## הרקע — למה זה חשוב
+## ארבעת המשטחים
 
-סקציית "מהמטבח של השכן" מאפשרת לכל אחד לפרסם מוצל ביתי ללא אישור.
-הסיכונים: ספאם, תוכן לא הולם, מוצרים מסוכנים, הונאות.
-הפתרון: AI בדיקה מהירה + פרסום עם badge + אדמין רק למקרים קשים.
+| משטח | מה נבדק | REJECTED | APPROVED / FLAGGED | שער אנושי | fail-open |
+|---|---|---|---|---|---|
+| **ביקורות** | גוף הביקורת (`reviews.py:_moderate_review_body`) | 422, לא נשמר (`routers/reviews.py:create_review_nested`) | **מתפרסם מיד**. הסטטוס נשמר ב-`ai_moderation_status`, ו-FLAGGED מקבל תג «סומן ע״י AI» ב-`/admin/reviews` (PR #3621) | אין. אדמין יכולה להסתיר או למחוק בדיעבד | APPROVED |
+| **חוויות** | כותרת, תיאור, קטגוריה, עיר, מחיר, משתתפים (`services/experience_moderation.py`) | 400, לא נשמר (`routers/experiences.py:submit_experience`) | נשמר `status=pending`, והסטטוס של ה-AI נשמר ב-`moderation_status` | תמיד: אדמין מאשרת כל חוויה | APPROVED |
+| **מתכונים** | כותרת, תיאור, מצרכים, הוראות (`services/producer_recipe_moderation.py`) | 400, לא נשמר (`routers/producer_recipes.py:create_my_recipe`) | נשמר `moderation_status=pending`, וסיבת ה-AI נשמרת ב-`moderation_notes` | תמיד: אדמין מאשרת כל מתכון | APPROVED |
+| **סיכון בית עסק** | פרופיל בית העסק בהרשמה ובשיוך (`services/producer_risk.py`) | — | ציון 0–100 + נימוק ב-`producers.risk_score` / `risk_reasoning`, מוצג בטבלת `/admin/producers` | הציון הוא רק מידע לאדמין | ציון NULL (אדמין לא רואה ציון) |
 
----
+הסיכון רץ כ-background task ולא חוסם הרשמה (`routers/auth.py` — שני מסלולי ההרשמה, `routers/producer_claim.py` — שיוך).
 
-## הארכיטקטורה — Hybrid Moderation
+**ביקורות הן המשטח היחיד שמתפרסם בלי אדמין**, ולכן fail-open שם פירושו שביקורת עולה בלי שום בדיקה. זה הנימוק לדיווח ב-Sentry שמתואר בהמשך.
 
-```
-משתמש מגיש טופס
-       ↓
-  Claude API בודק (2-3 שניות)
-       ↓
-  ┌────────────────────────────┐
-  │  תוצאה: APPROVED           │ → פרסם מיידי ✅
-  │  תוצאה: FLAGGED            │ → פרסם עם badge "בבדיקה" 🟡
-  │  תוצאה: REJECTED           │ → חסום + הסבר למשתמש ❌
-  └────────────────────────────┘
-       ↓ (רק FLAGGED)
-  אדמין רואה בדאשבורד → מאשר / מוחק
-```
+### מה עוד לא סגור
+- **ביקורת FLAGGED עדיין מתפרסמת** (PR #3621). הסימון רק מסמן לאדמין. עריכה עם אותו טקסט שומרת את הסימון. fail-open נשמר כ-APPROVED, כך שבדף האדמין אי אפשר להבחין בינו לבין אישור אמיתי.
+- **הסתרה של אדמין דביקה** (PR #3612): כשהכותבת עורכת ביקורת מוסתרת היא נשארת מוסתרת. הכותבת גם לא יכולה למחוק ביקורת מוסתרת (404). רק `PUT /admin/reviews/{id}/unhide` מחזיר אותה.
+- `home_product_moderation.py` שייך למערכת שבהסרה (MEH-796) ועדיין משתמש ב-`settings.anthropic_model`. הוא לא חלק מהמסמך הזה, וגם לא קיבל את השיפורים שלמטה.
 
 ---
 
-## שלב 1 — Claude API Moderation
+## המודל
 
-### Backend endpoint חדש:
-`POST /home-listings/validate`
+כל ארבעת המשטחים קוראים ל-`AI_FAST_MODEL` (`config.py:257`, היום `claude-haiku-5-5`) דרך `ai_fast_request_kwargs()` בלבד. כך יש מקור אחד למודל, ל-`thinking: disabled` ול-`effort: low`. החלפת מודל = שינוי שורה אחת והרצת ה-eval.
 
-```python
-# backend/app/routers/home_listings.py
+**Structured outputs** (PR #3608): כל קריאה מעבירה JSON Schema מתוך `services/moderation_schemas.py` (`MODERATION_VERDICT_SCHEMA`, `REVIEW_VERDICT_SCHEMA`, `RISK_SCORE_SCHEMA`). ה-API מחזיר JSON תקף לסכמה בכל תשובה שהושלמה, כך שתשובה עם fence, עם טקסט מסביב או עם סטטוס מומצא כבר לא נופלת ל-fail-open. מגבלת ה-API: אין `minLength`/`maxLength` או גבולות מספריים, ונדרש `additionalProperties: false`. את הגבולות אוכפים בקוד (`_clamp_score`, `_truncate_reasoning`).
 
-import anthropic
-
-async def validate_listing_with_ai(listing_data: dict) -> dict:
-    client = anthropic.Anthropic()
-    
-    prompt = f"""
-אתה מודרטור תוכן לאתר מהמקור — פלטפורמה ישראלית לאוכל בריא וביתי.
-בדוק את המודעה הבאה ותחזיר תשובה ב-JSON בלבד.
-
-המודעה:
-כותרת: {listing_data['title']}
-תיאור: {listing_data['description']}
-קטגוריה: {listing_data.get('category', '')}
-מחיר: {listing_data.get('price', '')}
-
-הקריטריונים שלנו — APPROVED אם:
-✓ מוצר מזון ביתי / טיפוח טבעי לגיטימי
-✓ תיאור ברור ואמיתי
-✓ מחיר סביר (לא 0 ולא אלפי שקלים לכמות קטנה)
-✓ אין טענות בריאות מוגזמות ("מרפא סרטן")
-
-FLAGGED אם:
-⚠ טענות בריאות מוגזמות
-⚠ מחיר חשוד (גבוה מאוד ביחס לכמות)
-⚠ תוכן לא ברור או חסר מידע
-⚠ נראה כמו עסק גדול שמתחזה לביתי
-
-REJECTED אם:
-✗ מוצרים לא קשורים לאוכל/טיפוח (נשק, תרופות, אלכוהול ללא רישיון)
-✗ ספאם או תוכן כפול ברור
-✗ תוכן פוגעני או גזעני
-✗ מוצרים מסוכנים (פטריות בר ללא זיהוי מקצועי, וכו')
-
-החזר JSON בלבד, בלי טקסט נוסף:
-{{
-  "status": "APPROVED" | "FLAGGED" | "REJECTED",
-  "reason": "הסבר קצר בעברית",
-  "suggestion": "הצעה לשיפור אם FLAGGED (או null)"
-}}
-"""
-    
-    message = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=200,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    import json
-    return json.loads(message.content[0].text)
-
-
-@router.post("/home-listings/validate")
-async def validate_listing(listing: HomeListing):
-    result = await validate_listing_with_ai(listing.dict())
-    return result
-
-
-@router.post("/home-listings")
-async def create_listing(listing: HomeListing, user=Depends(get_current_user)):
-    # בדיקת AI
-    moderation = await validate_listing_with_ai(listing.dict())
-    
-    if moderation['status'] == 'REJECTED':
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "listing_rejected",
-                "reason": moderation['reason']
-            }
-        )
-    
-    # שמור עם סטטוס מתאים
-    listing.moderation_status = moderation['status']  # APPROVED / FLAGGED
-    listing.moderation_reason = moderation.get('reason')
-    
-    db_listing = await save_listing(listing)
-    return db_listing
-```
-
-### עדכון DB schema:
-```sql
-ALTER TABLE home_listings ADD COLUMN moderation_status text DEFAULT 'APPROVED';
--- ערכים: APPROVED | FLAGGED | REJECTED (לא נשמר, נחסם)
-ALTER TABLE home_listings ADD COLUMN moderation_reason text;
-ALTER TABLE home_listings ADD COLUMN moderation_suggestion text;
-```
+**סירוב** (`stop_reason="refusal"`): מטופל כ-FLAGGED ולא כ-fail-open, כי מסווג הבטיחות של המודל זיהה משהו בתוכן עצמו.
 
 ---
 
-## שלב 2 — Frontend: בדיקה בזמן אמת
+## הגנה מפני prompt injection (PR #3609)
 
-### בטופס פרסום — הוסף validation לפני submit:
-
-```jsx
-// components/HomeListing/PublishForm.jsx
-
-const [checking, setChecking] = useState(false)
-const [moderationResult, setModerationResult] = useState(null)
-
-// בדיקה כשמשתמש עוצר להקליד (debounce 1.5 שניות)
-const checkContent = useMemo(
-  () => debounce(async (title, description) => {
-    if (!title || title.length < 5) return
-    setChecking(true)
-    
-    const res = await fetch('/api/home-listings/validate', {
-      method: 'POST',
-      body: JSON.stringify({ title, description }),
-      headers: { 'Content-Type': 'application/json' }
-    })
-    const result = await res.json()
-    setModerationResult(result)
-    setChecking(false)
-  }, 1500),
-  []
-)
-
-// הצג feedback בטופס:
-{checking && (
-  <div className="text-sm text-gray-500 flex items-center gap-2">
-    <Spinner size={14} /> בודקת תוכן...
-  </div>
-)}
-
-{moderationResult?.status === 'FLAGGED' && (
-  <div style={{
-    background: '#FFF9E6',
-    border: '1px solid #F0C040',
-    borderRadius: 8,
-    padding: '12px 16px',
-    fontSize: 14,
-  }}>
-    ⚠️ {moderationResult.reason}
-    {moderationResult.suggestion && (
-      <div style={{marginTop: 6, color: '#666'}}>
-        💡 {moderationResult.suggestion}
-      </div>
-    )}
-  </div>
-)}
-
-{/* כפתור submit — חסום רק אם REJECTED */}
-<button
-  type="submit"
-  disabled={moderationResult?.status === 'REJECTED' || checking}
-  style={{
-    background: moderationResult?.status === 'REJECTED' ? '#ccc' : '#2e6853',
-    color: 'white',
-    // ...
-  }}
->
-  {moderationResult?.status === 'REJECTED' 
-    ? 'לא ניתן לפרסם' 
-    : 'פרסם מוצר'}
-</button>
-
-{moderationResult?.status === 'REJECTED' && (
-  <div style={{
-    background: '#FFF0F0',
-    border: '1px solid #F04040',
-    borderRadius: 8,
-    padding: '12px 16px',
-    fontSize: 14,
-    color: '#c00',
-  }}>
-    ❌ {moderationResult.reason}
-    <div style={{marginTop: 8, color: '#666'}}>
-      יש שאלות? <a href="/contact" style={{color:'#2e6853'}}>צרי קשר</a>
-    </div>
-  </div>
-)}
-```
+ההוראות נמצאות ב-`system`. התוכן שהמשתמשת הגישה עובר ב-`user` כ-JSON, עטוף בתגית עם סיומת אקראית לכל בקשה (`services/moderation_prompt.py:wrap_submission`, `secrets.token_hex(4)`), ונאמר למודל במפורש שזה נתונים ולא הוראות. משתמשת לא יכולה לנחש את הסיומת, ולכן גם לא יכולה "לסגור" את התגית מתוך הטקסט שלה. `producer_risk.py` השתמש באותו דפוס עוד קודם.
 
 ---
 
-## שלב 3 — תצוגה: Badge "בבדיקה"
+## fail-open — LOCK, ועכשיו גם גלוי (PR #3607)
 
-```jsx
-// בכרטיסיית מוצר ביתי:
-{listing.moderation_status === 'FLAGGED' && (
-  <span style={{
-    background: '#FFF9E6',
-    color: '#946A00',
-    border: '1px solid #F0C040',
-    borderRadius: 20,
-    padding: '2px 10px',
-    fontSize: 12,
-  }}>
-    🔍 בבדיקה
-  </span>
-)}
+הכלל לא השתנה: אין מפתח, שגיאת API או תשובה לא קריאה ← APPROVED (בסיכון: NULL). מה שנוסף הוא אות שזה קרה. `services/moderation_fail_open.py:report_fail_open(surface, reason)` כותב warning ל-structlog (Railway logs) ואירוע Sentry אחד לכל מקרה.
 
-{listing.moderation_status === 'APPROVED' && listing.is_verified && (
-  <span style={{
-    background: '#EAF3DE',
-    color: '#2e6853',
-    borderRadius: 20,
-    padding: '2px 10px',
-    fontSize: 12,
-  }}>
-    ✅ מאומת
-  </span>
-)}
-```
+- tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `experience` / `recipe` / `producer_risk`), `fail_open_reason`
+- `fail_open_reason`: `no_client` (אין מפתח), `api_error`, `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status`, `error`, ובסיכון בלבד גם `refusal` (במשטחי התוכן סירוב הוא FLAGGED ולא fail-open)
+- fingerprint: `["moderation-fail-open", surface, reason]`. ה-burst cap הקיים (`app/sentry.py`, 12 ליום לכל fingerprint) מגביל את צריכת המכסה, ולכן בתקלה מתמשכת המונה ב-Sentry הוא רצפה. הספירה המלאה נמצאת ב-Railway logs.
+- התראה: כלל ב-Sentry ברמת tag (סכום על כל ה-fingerprints) על `moderation_fail_open:true` עם `moderation_surface` ב-`review`/`experience`/`recipe`. `producer_risk` לא נכלל, כי שם לא מאושר כלום, רק ציון ריק. זה צעד ידני, ב-`MANUAL_TESTING.md` § MEH-2352.
 
 ---
 
-## שלב 4 — אדמין: רק מה שדורש תשומת לב
+## ה-eval
 
-```
-/admin/reports → טאב חדש: "מוצרים ביתיים"
+`scripts/oneoff/eval_meh2335_moderation.py` מריץ 37 מקרים על שלושת משטחי הטקסט, כולל ניסיונות injection, ומשווה את המודל המהיר ל-Opus (`--with-opus`). מריצים אותו מ-staging עם מפתח API אמיתי. הפקודה המדויקת נמצאת ב-HANDOFF, בסעיף של PR #3592. בכל החלפת מודל או שינוי prompt בודקים שלושה דברים: 0 fail-opens, כל מקרי ה-injection נחסמים, ואחוז ההסכמה עם Opus לא יורד.
 
-טבלה מוצגת רק עם status=FLAGGED:
-  | כותרת | מוכר | סיבת דגל | תאריך | פעולות |
-  
-כפתורי פעולה:
-  ✅ אשר → moderation_status = APPROVED
-  ❌ מחק → is_active = false + הודעה למוכר
-  👁️ צפה → פתח את הדף
-
-הודעה אוטומטית למוכר במחיקה (WhatsApp/מייל):
-  "היי [שם], המוצר '[כותרת]' הוסר כי: [סיבה].
-   לשאלות: mehamakor.co.il/contact"
-```
+תוצאה אחרונה (26/10, על כל ה-stack): 0 fail-opens, כל ה-injection ב-REJECTED, הסכמה עם Opus ב-36/37.
 
 ---
 
-## תוצאה הסופית — חווית משתמש
+## מתכונים — מה ה-prompt לא שופט (PR #3610)
 
-```
-מוכר טוב:
-  מקליד → בדיקה שקטה → "פרסם" ✅ → עולה מיד
-
-מוכר עם תוכן בעייתי:
-  מקליד → הצגת אזהרה → "תוכל לפרסם אבל יעבור בדיקה" 🟡
-  → עולה עם badge "בבדיקה" → אדמין בודקת
-
-מוכר עם תוכן אסור:
-  מקליד → כפתור נחסם → הסבר ברור ❌
-  → לא עולה בכלל
-```
-
----
-
-## עדכן CLAUDE.md:
-```
-עדכן CLAUDE.md:
-- מודרציה מהמטבח של השכן: Claude API (validate endpoint) + Hybrid
-- סטטוסים: APPROVED | FLAGGED | REJECTED
-- DB: home_listings.moderation_status, moderation_reason
-- endpoint חדש: POST /home-listings/validate
-- אדמין: /admin/reports → טאב "מוצרים ביתיים" (רק FLAGGED)
-- הודעה אוטומטית למוכר בהסרה
-```
+מתכון קצר אבל שלם זה בסדר. קישור למוצר של בית העסק הוא רשות. ה-AI לא שופט טעם או טכניקה. FLAGGED רק כשחסרה רשימת מצרכים או שאין הוראות בכלל. הסיבה: האדמין ממילא בודקת כל מתכון, ו-FLAGGED שגוי רק מוסיף לה רעש.
