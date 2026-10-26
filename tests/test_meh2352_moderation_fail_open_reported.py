@@ -164,4 +164,15 @@ def test_producer_risk_failures_are_reported(monkeypatch):
 
     monkeypatch.setattr(anthropic, "Anthropic", _Garbage)
     assert mod._call_anthropic({"name": "x"}) == (None, None)
-    assert seen == [("producer_risk", "error"), ("producer_risk", "unparseable")]
+
+    class _Cut(_Boom):
+        def create(self, **kwargs):
+            return _Msg('{"score": 4', stop_reason="max_tokens")
+
+    monkeypatch.setattr(anthropic, "Anthropic", _Cut)
+    assert mod._call_anthropic({"name": "x"}) == (None, None)
+    assert seen == [
+        ("producer_risk", "error"),
+        ("producer_risk", "unparseable"),
+        ("producer_risk", "truncated"),
+    ]

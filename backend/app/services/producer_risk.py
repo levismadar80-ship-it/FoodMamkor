@@ -246,7 +246,10 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
             "[RISK] anthropic response unparseable; first 200 chars: %r",
             body[:200],
         )
-        report_fail_open("producer_risk", "unparseable")
+        # A max_tokens cut is the usual cause of an unparseable body; name it
+        # so Sentry can tell a too-small cap from a malformed reply.
+        truncated = getattr(response, "stop_reason", None) == "max_tokens"
+        report_fail_open("producer_risk", "truncated" if truncated else "unparseable")
         return (None, None)
 
     score = _clamp_score(parsed.get("score"))
