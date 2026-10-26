@@ -25,7 +25,7 @@ lib/api-schemas.js	exports	1
 lib/category-registry.js	exports	1
 lib/categoryQuestions.js	exports	2
 lib/env.server.js	files	1
-lib/generated/api.zod.js	exports	1030
+lib/generated/api.zod.js	exports	1040
 lib/hours-serialize.js	exports	4
 lib/i18n-key-map.js	exports	1
 lib/launch-cohort.js	exports	2

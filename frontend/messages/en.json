@@ -1769,6 +1769,11 @@
         "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
         "submit_changes": "Send completion request",
         "submit_reject": "Reject and send email"
+      },
+      "draft_products": {
+        "title": "Products in this draft",
+        "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
+        "empty": "No products in this draft yet."
       }
     },
     "users": {

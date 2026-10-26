@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
+import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 
 export default function EditProducerPage() {
@@ -83,6 +84,11 @@ export default function EditProducerPage() {
         </Link>
         <h1 className="text-2xl font-bold mt-2">{t("producers.edit.title", { name: producer.name })}</h1>
       </div>
+      {/* MEH-2326: the catalogue the owner receives with the claim link. Only a
+          draft; once she has claimed it the server answers 409, shown verbatim. */}
+      {producer.status === "draft" && (
+        <DraftProductsPanel producerId={id} initialProducts={producer.products || []} />
+      )}
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );
