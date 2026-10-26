@@ -8,6 +8,8 @@ MEH-103 verified reviews system:
   - Owner guard: producer owners cannot review their own business.
   - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
   - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
+    The hide is sticky (MEH-2348): an author edit keeps it, the author cannot
+    delete a hidden review, and only PUT /admin/reviews/{id}/unhide undoes it.
   - Hidden reviews are excluded from public GET endpoints and aggregates.
   - Pagination: GET /producers/{id}/reviews returns 10 per page.
 
@@ -26,6 +28,9 @@ from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
 from app.services.experience_moderation import _parse_response_text
+from app.services.moderation_prompt import wrap_submission
+from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
 from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
@@ -83,11 +88,15 @@ def _moderate_review_body(body: str | None) -> str:
     client = _get_ai_client()
     if client is None:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
+        report_fail_open("review", "no_client")
         return "APPROVED"
-    prompt = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
-בדוק את טקסט הביקורת הבאה ותחזיר JSON בלבד.
+    # MEH-2350: the review text is tagged data in the user turn, never
+    # part of the instructions.
+    data_rule, user_content = wrap_submission("review", {"טקסט": body})
+    system = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
+בדוק את טקסט הביקורת המוגשת ותחזיר JSON בלבד.
 
-טקסט: {body}
+{data_rule}
 
 החזר JSON בלבד (ללא ```json):
 {{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
@@ -95,16 +104,18 @@ def _moderate_review_body(body: str | None) -> str:
 APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
 FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
 REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
+    truncated = False
     try:
         msg = client.messages.create(
-            **ai_fast_request_kwargs(),
+            **ai_fast_request_kwargs(json_schema=REVIEW_VERDICT_SCHEMA),
             # MEH-2335 eval: Haiku 5.5 spends 70-120 output tokens on this
             # JSON (the Hebrew "reason" is unbounded), so a 130 cap truncated
             # 6/15 cases mid-string → parse error → fail-open APPROVED, incl.
             # spam / personal info / rude. 300 leaves ~2.5x headroom; only
             # tokens actually generated are billed.
             max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
+            system=system,
+            messages=[{"role": "user", "content": user_content}],
         )
         # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
         # "refusal", no text) is a signal about the content, not an infra
@@ -112,20 +123,25 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         if getattr(msg, "stop_reason", None) == "refusal":
             log.warning("[reviews] model refused → FLAGGED")
             return "FLAGGED"
-        if getattr(msg, "stop_reason", None) == "max_tokens":
-            # Truncated JSON will not parse and falls through to fail-open;
-            # log it by name so a too-small cap is visible, not silent.
-            log.warning("[reviews] moderation hit max_tokens — fail-open")
+        # Truncated JSON will not parse and falls through to fail-open;
+        # remembered so the report names the cause (MEH-2352).
+        truncated = getattr(msg, "stop_reason", None) == "max_tokens"
         raw = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
         )
         # Same fence/prose tolerance as the experience/recipe moderators — a
         # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
         data = _parse_response_text(raw)
-        status = data.get("status", "APPROVED")
-        return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"
+        # Upper-cased like the experience/recipe moderators: a lowercase
+        # "rejected" must not fall through to the fail-open APPROVED.
+        status = str(data.get("status", "")).upper()
+        if status in {"APPROVED", "FLAGGED", "REJECTED"}:
+            return status
+        report_fail_open("review", "truncated" if truncated else "bad_status")
+        return "APPROVED"
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)
+        report_fail_open("review", classify_failure(exc, truncated=truncated))
         return "APPROVED"
 
 
@@ -391,8 +407,11 @@ def create_review_nested(
     if existing_review:
         existing_review.stars = data.stars
         existing_review.body = data.body
-        # Unhide on edit (user is updating a previously hidden review)
-        existing_review.is_hidden = False
+        # MEH-2348: an edit never touches is_hidden. Only the admin hide
+        # endpoint sets it, so hidden ⇒ admin-hidden, and only an admin may
+        # undo it (PUT /admin/reviews/{id}/unhide). If is_hidden ever gains a
+        # second writer (e.g. AI auto-hide, MEH-2349 option ב), that premise
+        # dies and this needs a "hidden by whom" column.
         db.commit()
         review = existing_review
     else:
@@ -452,6 +471,11 @@ def delete_review(
     # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
     # review's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    # MEH-2348: the author may not delete a review an admin hid — delete +
+    # repost would publish a fresh, visible review and undo the hide. Same
+    # 404 as a stranger (MEH-1001 style); the admin override stays.
+    if review.is_hidden and not is_admin:
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     producer_id = review.producer_id
     db.delete(review)
@@ -521,6 +545,23 @@ def hide_review(
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
     return {"detail": "Review hidden", "id": str(review_id)}
+
+
+@router.put("/admin/reviews/{review_id}/unhide")
+def unhide_review(
+    review_id: UUID,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2348: set is_hidden=False — the only way a hidden review returns.
+    Recomputes producer aggregates."""
+    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    review.is_hidden = False
+    db.commit()
+    _recompute_producer_rating(review.producer_id, db)
+    return {"detail": "Review unhidden", "id": str(review_id)}
 
 
 @router.get("/admin/reviews", response_model=list[AdminReviewOut])
