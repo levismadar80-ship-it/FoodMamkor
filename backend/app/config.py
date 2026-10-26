@@ -257,7 +257,7 @@ WATCHDOG_LOOKBACK_MINUTES: int = 30
 AI_FAST_MODEL = "claude-haiku-5-5"
 
 
-def ai_fast_request_kwargs() -> dict:
+def ai_fast_request_kwargs() -> dict[str, object]:
     """Model + thinking/effort kwargs for every fast-tier messages.create.
 
     A function, not a shared dict, so no caller can mutate the defaults.
