@@ -64,6 +64,14 @@ function LoginPageBody() {
   const params = useSearchParams();
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
   const redirectTo = safeInternalRedirect(params.get("redirect"));
+  // MEH-1428 chunk 2: hand a valid ?redirect= on to /register, which honours
+  // it too (RegisterClient.jsx:74) — a first-time customer arriving from an
+  // owner's review link must land back on the form after signing up. Only a
+  // clamped, explicitly-passed value travels; otherwise the link stays bare.
+  const passedRedirect = safeInternalRedirect(params.get("redirect"), null);
+  const registerHref = passedRedirect
+    ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
+    : "/register";
   const { user, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
@@ -367,7 +375,7 @@ function LoginPageBody() {
         <p className="text-center text-sm text-fg-muted">
           {t("no_account")}{" "}
           <Link
-            href="/register"
+            href={registerHref}
             data-testid="login-register-link"
             className="font-medium text-accent underline underline-offset-4 decoration-accent/50 hover:decoration-accent transition"
           >
