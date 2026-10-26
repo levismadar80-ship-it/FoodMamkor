@@ -28,6 +28,8 @@ vi.mock("next-intl", () => ({
 vi.mock("@phosphor-icons/react", () => ({
   Star: () => <span />,
   Trash: () => <span />,
+  Eye: () => <span />,
+  EyeSlash: () => <span />,
   Info: () => <span />,
 }));
 
