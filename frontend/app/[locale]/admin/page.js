@@ -2,25 +2,35 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
-import { formatEventDate } from "@/lib/format-date";
-import {
-  CalendarBlank,
-  HourglassSimple,
-  Package,
-  Sparkle,
-  Storefront,
-  Users,
-  Warning,
-} from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
+import { CheckCircle, HourglassSimple } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { getProducerStatusLabel } from "@/lib/producer-status";
-import InfoTooltip from "@/components/InfoTooltip";
+import { QUEUES, queueCount } from "./queues";
 
-export default function AdminDashboard() {
+/**
+ * /admin — «מה מחכה לטיפול» (MEH-2359).
+ *
+ * Purpose:  The admin's job before launch is ONE thing — approving businesses
+ *           (Sapir, 26/10). The home page therefore shows only what needs a
+ *           decision: the pending businesses, then every secondary queue that
+ *           has items. Nothing else: the stat cards, both charts, DAU, top
+ *           cities, the activity feed and the server-health panel that used
+ *           to live here are either on /admin/analytics already (monthly
+ *           growth, top cities, map) or were per-process noise (server health
+ *           "resets on every deploy", by its own footnote). Pattern: a CMS
+ *           dashboard is a statement of priorities — editors arrive with a
+ *           task, so the login screen is where "needs attention" belongs
+ *           (Four Kitchens; Django Monitor's pending-counts summary; Shopify
+ *           Home).
+ * Touches:  GET /admin/dashboard (unchanged endpoint; reads `stats` +
+ *           `pending_producers`, the preview list the endpoint already ships).
+ * Does NOT: fetch anything new, decide approvals (that is the table on
+ *           /admin/producers), or list queues the sidebar does not — both
+ *           read admin/queues.js.
+ */
+export default function AdminHome() {
   const t = useTranslations("admin");
-  const locale = useLocale();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
@@ -37,360 +47,126 @@ export default function AdminDashboard() {
     return <div className="text-muted">{t("common.loading")}</div>;
   }
 
-  const s = data.stats;
-  const cards = [
-    { key: "total_producers",   label: t("dashboard.stats.total_producers"),   value: s.total_producers,     Icon: Storefront, href: "/admin/producers" },
-    { key: "pending_approval",  label: t("dashboard.stats.pending_approval"),  value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
-    { key: "registered_users",  label: t("dashboard.stats.registered_users"),  value: s.total_users,         Icon: Users, href: "/admin/users" },
-    { key: "group_buys",        label: t("dashboard.stats.group_buys"),        value: s.total_group_buys,    Icon: Package, href: "/admin/group-buys" },
-  ];
-
-  // Simple inline SVG line chart for monthly producers
-  const months = data.monthly_producers || [];
-  const maxV = Math.max(1, ...months.map((m) => m.producers));
-  const W = 280;
-  const H = 90;
-  const stepX = months.length > 1 ? W / (months.length - 1) : 0;
-  const points = months
-    .map((m, i) => {
-      const x = i * stepX;
-      const y = H - (m.producers / maxV) * (H - 10) - 5;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
+  const stats = data.stats || {};
+  // A non-number count is unknown, not zero (MEH-2096): the panel then says
+  // the count could not be read instead of «אין עסקים ממתינים».
+  const pendingCount = typeof stats.pending_producers === "number" ? stats.pending_producers : null;
+  const pending = data.pending_producers || [];
+  // Secondary queues with something in them. `queueCount` returns null when a
+  // key is missing (a stats payload without the MEH-2359 keys — a frontend
+  // deployed ahead of its backend). A null is "unknown", never "empty": the
+  // rows below list only known-busy queues, and the all-clear line renders
+  // only when EVERY count is known (MEH-2096 — an unknown state must not read
+  // as a verified-empty one). Whenever any count is unknown the block says so
+  // in one line, under the known-busy rows if there are any. The sidebar
+  // stays the fail-visible surface for navigation.
+  const counted = QUEUES.map((q) => ({ ...q, count: queueCount(stats, q) }));
+  const busyQueues = counted.filter((q) => q.count !== null && q.count > 0);
+  const countsUnknown = counted.some((q) => q.count === null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
         <p className="text-muted text-sm mt-1">{t("dashboard.subtitle")}</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {cards.map((c) => (
-          <Link
-            key={c.label}
-            href={c.href}
-            className={`bg-white border rounded-[12px] p-4 hover:shadow-sm transition ${
-              c.warn ? "border-yellow-300 bg-yellow-50" : "border-border"
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <c.Icon size={28} aria-hidden="true" className="text-primary" />
-              <span className="text-3xl font-bold text-primary">{c.value}</span>
-            </div>
-            <p className="text-xs text-muted mt-2">
-              {c.label}
-              {c.key === "group_buys" && (
-                <span
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <InfoTooltip
-                    content={t("dashboard.stats.group_buys_tooltip")}
-                    label={t("dashboard.stats.group_buys_tooltip_label")}
-                    position="bottom"
-                  />
-                </span>
-              )}
-            </p>
-          </Link>
-        ))}
-      </div>
-
-      {/* Alerts */}
-      {(s.pending_producers > 0 || s.open_reports > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {s.pending_producers > 0 && (
-            <Link
-              href="/admin/producers?status=pending"
-              className="bg-yellow-50 border border-yellow-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-yellow-100 transition"
-            >
-              <HourglassSimple size={28} aria-hidden="true" className="text-yellow-600" />
-              <div>
-                <p className="font-medium text-sm">{t("dashboard.alerts.producers_waiting", { count: s.pending_producers })}</p>
-                <p className="text-xs text-muted">{t("dashboard.alerts.click_to_handle")}</p>
-              </div>
-            </Link>
-          )}
-          {s.open_reports > 0 && (
-            <Link
-              href="/admin/reports"
-              className="bg-red-50 border border-red-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-red-100 transition"
-            >
-              <Warning size={28} weight="fill" aria-hidden="true" className="text-red-500" />
-              <div>
-                <p className="font-medium text-sm">{t("dashboard.alerts.open_reports", { count: s.open_reports })}</p>
-                <p className="text-xs text-muted">{t("dashboard.alerts.needs_review")}</p>
-              </div>
-            </Link>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Mini chart */}
-        <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">{t("dashboard.chart.new_producers_6_months")}</h2>
-          <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-32">
-            <polyline
-              fill="none"
-              stroke="#2e6853"
-              strokeWidth="2"
-              points={points}
+      {/* 1. Pending businesses — the job. 0 / 1 / many share one frame; the
+          count is in the heading so the empty state is explicit, not blank. */}
+      <section
+        data-testid="admin-home-pending"
+        className={`bg-white border rounded-[12px] p-5 ${
+          pendingCount > 0 ? "border-yellow-300" : "border-border"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <h2 className="font-semibold flex items-center gap-2">
+            <HourglassSimple
+              size={20}
+              aria-hidden="true"
+              className={pendingCount > 0 ? "text-yellow-600" : "text-muted"}
             />
-            {months.map((m, i) => {
-              const x = i * stepX;
-              const y = H - (m.producers / maxV) * (H - 10) - 5;
-              return (
-                <g key={m.month}>
-                  <circle cx={x} cy={y} r="3" fill="#2e6853" />
-                  <text x={x} y={H + 15} fontSize="9" textAnchor="middle" fill="#6b6b6b">
-                    {m.month.slice(5)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-
-        {/* Pending preview */}
-        <div className="bg-white border border-border rounded-[12px] p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">{t("dashboard.pending_panel.heading")}</h2>
-            <Link href="/admin/producers?status=pending" className="text-primary text-xs hover:underline">
-              {t("dashboard.pending_panel.view_all")}
-            </Link>
-          </div>
-          {(data.pending_producers || []).length === 0 ? (
-            <p className="text-sm text-muted">{t("dashboard.pending_panel.empty")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {(data.pending_producers || []).map((p) => (
-                <li key={p.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
-                  <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-muted">{p.city || "—"}</p>
-                  </div>
-                  <Link
-                    href={`/admin/producers/${p.id}/edit`}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {t("dashboard.pending_panel.check")}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* Activity feed */}
-      <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-3">{t("dashboard.activity.heading")}</h2>
-        {(data.recent_activity || []).length === 0 && (
-          <p className="text-sm text-muted">{t("dashboard.activity.empty")}</p>
-        )}
-        <ul className="space-y-2">
-          {(data.recent_activity || []).map((a) => (
-            <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
-              <div className="flex items-center gap-2">
-                <Sparkle size={16} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
-                <span>{t("dashboard.activity.added_producer")}</span>
-                <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
-                  {a.name}
-                </Link>
-                <span className="text-xs text-muted">({getProducerStatusLabel(a.status)})</span>
-              </div>
-              <span className="text-xs text-muted">
-                {a.created_at ? formatEventDate(a.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" }) : ""}
+            {t("dashboard.pending_panel.heading")}
+            {pendingCount > 0 && (
+              <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full leading-none">
+                {pendingCount}
               </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* ======== feature/producer-analytics extension ======== */}
-
-      {/* Secondary stats row — weekly deltas + events + experiences */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <DeltaCard
-          label={t("dashboard.weekly.new_users_week")}
-          value={s.new_users_this_week || 0}
-          total={s.total_users || 0}
-          Icon={Users}
-          totalLabel={t("dashboard.weekly.out_of_total", { total: s.total_users || 0 })}
-        />
-        <DeltaCard
-          label={t("dashboard.weekly.new_producers_week")}
-          value={s.new_producers_this_week || 0}
-          total={s.total_producers || 0}
-          Icon={Storefront}
-          totalLabel={t("dashboard.weekly.out_of_total", { total: s.total_producers || 0 })}
-        />
-        <SimpleStat
-          label={t("dashboard.weekly.events")}
-          value={s.total_events || 0}
-          Icon={CalendarBlank}
-          href="/admin/content"
-        />
-        <SimpleStat
-          label={t("dashboard.weekly.experiences")}
-          value={s.total_experiences || 0}
-          Icon={Sparkle}
-          href="/admin/experiences"
-        />
-      </div>
-
-      {/* DAU + top cities */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">{t("dashboard.dau.heading")}</h2>
-          <DauLineChart data={data.daily_active_users || []} emptyLabel={t("dashboard.dau.empty")} ariaLabel={t("dashboard.dau.aria")} />
-        </div>
-        <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">{t("dashboard.top_cities.heading")}</h2>
-          <TopCitiesList data={data.top_cities || []} emptyLabel={t("dashboard.top_cities.empty")} />
-        </div>
-      </div>
-
-      {/* Server health */}
-      <ServerHealthPanel health={data.server_health} />
-    </div>
-  );
-}
-
-function DeltaCard({ label, value, Icon, totalLabel }) {
-  return (
-    <div className="bg-white border border-border rounded-[12px] p-4">
-      <div className="flex items-start justify-between mb-1">
-        <Icon size={24} aria-hidden="true" className="text-primary" />
-        <span className="text-3xl font-bold text-primary">+{value}</span>
-      </div>
-      <p className="text-xs text-muted">{label}</p>
-      <p className="text-xs text-muted">{totalLabel}</p>
-    </div>
-  );
-}
-
-function SimpleStat({ label, value, Icon, href }) {
-  return (
-    <Link
-      href={href}
-      className="bg-white border border-border rounded-[12px] p-4 hover:shadow-sm transition block"
-    >
-      <div className="flex items-start justify-between mb-1">
-        <Icon size={24} aria-hidden="true" className="text-primary" />
-        <span className="text-3xl font-bold text-primary">{value}</span>
-      </div>
-      <p className="text-xs text-muted">{label}</p>
-    </Link>
-  );
-}
-
-/**
- * Inline SVG line chart for daily active users over the last 30 days.
- * Matches the admin/page.js monthly_producers chart pattern — no chart
- * library, zero new dependencies.
- */
-function DauLineChart({ data, emptyLabel, ariaLabel }) {
-  if (!data || data.length === 0) {
-    return <p className="text-sm text-muted">{emptyLabel}</p>;
-  }
-  const W = 320;
-  const H = 110;
-  const pad = 8;
-  const maxV = Math.max(1, ...data.map((d) => d.count));
-  const stepX = data.length > 1 ? (W - pad * 2) / (data.length - 1) : 0;
-  const points = data
-    .map((d, i) => {
-      const x = pad + i * stepX;
-      const y = H - pad - (d.count / maxV) * (H - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-36" role="img" aria-label={ariaLabel}>
-      <polyline fill="none" stroke="#2e6853" strokeWidth="2" points={points} />
-      {data.map((d, i) => {
-        const x = pad + i * stepX;
-        const y = H - pad - (d.count / maxV) * (H - pad * 2);
-        return (
-          <g key={d.date}>
-            <circle cx={x} cy={y} r={d.count > 0 ? 2.5 : 1.5} fill="#2e6853" />
-            {labelIndexes.includes(i) && (
-              <text x={x} y={H + 14} fontSize="9" textAnchor="middle" fill="#6b6b6b">
-                {d.date.slice(5)}
-              </text>
             )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function TopCitiesList({ data, emptyLabel }) {
-  if (!data || data.length === 0) {
-    return (
-      <p className="text-sm text-muted">{emptyLabel}</p>
-    );
-  }
-  const maxV = Math.max(1, ...data.map((d) => d.count));
-  return (
-    <ul className="space-y-2">
-      {data.map((row) => {
-        const pct = (row.count / maxV) * 100;
-        return (
-          <li key={row.city} className="text-sm">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-text">{row.city}</span>
-              <span className="text-muted">{row.count}</span>
-            </div>
-            <div className="h-2 bg-accent rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function ServerHealthPanel({ health }) {
-  const t = useTranslations("admin");
-  if (!health) return null;
-  const empty = (health.sample_count || 0) === 0;
-  return (
-    <div className="bg-white border border-border rounded-[12px] p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold">{t("dashboard.health.heading")}</h2>
-        <span className="text-xs text-muted">
-          {empty ? t("dashboard.health.waiting_traffic") : t("dashboard.health.requests_count", { count: health.sample_count })}
-        </span>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs text-muted mb-1">{t("dashboard.health.response_time_avg")}</p>
-          <p className="text-2xl font-bold text-primary">
-            {health.response_time_avg_ms}
-            <span className="text-sm text-muted ms-1">ms</span>
-          </p>
+          </h2>
+          <Link href="/admin/producers?status=pending" className="text-primary text-sm hover:underline whitespace-nowrap">
+            {t("dashboard.pending_panel.view_all")}
+          </Link>
         </div>
-        <div>
-          <p className="text-xs text-muted mb-1">{t("dashboard.health.requests_per_minute")}</p>
-          <p className="text-2xl font-bold text-primary">
-            {health.requests_per_minute}
-            <span className="text-sm text-muted ms-1">req/min</span>
+        {pending.length === 0 && pendingCount === null ? (
+          <p className="text-sm text-muted" data-testid="admin-home-pending-unknown">
+            {t("common.error_loading")}
           </p>
-        </div>
-      </div>
-      <p className="text-[13px] text-muted mt-3 leading-snug">
-        {t("dashboard.health.footnote")}
+        ) : pending.length === 0 ? (
+          <p className="text-sm text-muted">{t("dashboard.pending_panel.empty")}</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {pending.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 text-sm py-2.5">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{p.name}</p>
+                  <p className="text-xs text-muted">{p.city || "—"}</p>
+                </div>
+                <Link
+                  href={`/admin/producers/${p.id}/edit`}
+                  className="text-sm text-primary hover:underline whitespace-nowrap"
+                >
+                  {t("dashboard.pending_panel.check")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {pendingCount !== null && pendingCount > pending.length && (
+          <p className="text-xs text-muted mt-3">
+            {t("dashboard.pending_panel.more", { count: pendingCount - pending.length })}
+          </p>
+        )}
+      </section>
+
+      {/* 2. Every other queue — one row per non-empty queue; none → one line. */}
+      <section data-testid="admin-home-queues" className="bg-white border border-border rounded-[12px] p-5">
+        <h2 className="font-semibold mb-3">{t("dashboard.queues.heading")}</h2>
+        {busyQueues.length === 0 && !countsUnknown ? (
+          <p className="text-sm text-muted flex items-center gap-2">
+            <CheckCircle size={18} weight="fill" aria-hidden="true" className="text-primary" />
+            {t("dashboard.queues.all_clear")}
+          </p>
+        ) : busyQueues.length > 0 && (
+          <ul className="divide-y divide-border">
+            {busyQueues.map((q) => (
+              <li key={q.href}>
+                <Link
+                  href={q.href}
+                  className="flex items-center justify-between gap-3 text-sm py-2.5 hover:text-primary transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <q.Icon size={18} aria-hidden="true" className="text-primary" />
+                    {t(`layout.nav.${q.key}`)}
+                  </span>
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full leading-none">
+                    {q.count}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {countsUnknown && (
+          <p className={`text-sm text-muted ${busyQueues.length > 0 ? "mt-3" : ""}`} data-testid="admin-home-queues-unknown">
+            {t("common.error_loading")}
+          </p>
+        )}
+      </section>
+
+      <p className="text-xs text-muted">
+        <Link href="/admin/analytics" className="hover:underline">
+          {t("dashboard.analytics_link")}
+        </Link>
       </p>
     </div>
   );

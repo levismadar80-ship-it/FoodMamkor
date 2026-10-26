@@ -26,5 +26,11 @@ export default function FooterSlot() {
   if (pathname === "/producer/dashboard" || pathname?.startsWith("/producer/dashboard/")) {
     return <DashboardFooter />;
   }
+  // MEH-2359: /admin is a management tool too — same slim footer, same reason
+  // as the producer dashboard above (the consumer footer is public navigation
+  // + newsletter signup under an approvals queue).
+  if (pathname === "/admin" || pathname?.startsWith("/admin/")) {
+    return <DashboardFooter />;
+  }
   return <Footer />;
 }

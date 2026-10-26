@@ -2388,7 +2388,7 @@ export const UpdateUserRoleAdminUsersUserIdRolePutResponse = /*#__PURE__*/ zod.u
  * Return undelivered outbound WhatsApp rows from the last 7 days.
  *
  * Filter: status IN ('failed', 'window_expired') AND created_at within
- * the last `_WINDOW_DAYS`. Ordered newest-first so the freshest
+ * the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest
  * failures show up at the top of the admin table.
  *
  * No pagination — the per-day failure volume is small (single-digit
