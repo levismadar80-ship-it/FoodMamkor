@@ -299,6 +299,7 @@ producer_reviews (
   created_at,
   source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
   ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. NULL = no verdict: rows that predate the column, or a fail-open (MEH-2390 — it was stored as APPROVED and so never re-checked on an unchanged re-save; the review still publishes, its signal is the Sentry report). REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
+  edited_after_hidden_at timestamp NULL,  -- MEH-2381: the author's last change to body or stars while is_hidden. NULL = not edited since the admin last hid/unhid it; PUT /hide (also on an already-hidden row) and /unhide clear it. Admin-only (AdminReviewOut). Revision d7a3f5c1e2b8
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
 ```
@@ -1021,9 +1022,9 @@ GET    /producers/{id}/reviews   public — items do NOT carry `source` (admin-o
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
-GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source` and, MEH-2349, `ai_moderation_status`)
-PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, recompute aggregates
-PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, recompute aggregates (MEH-2348)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null)
+PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381; optional ?seen=<the ISO value the page showed> → 409 {code: "review_changed"} when a newer edit landed)
+PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, edited_after_hidden_at=NULL, recompute aggregates (MEH-2348)
 ```
 
 Unknown id on hide/unhide → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
@@ -1033,6 +1034,11 @@ Unknown id on hide/unhide → **404 `{code: "review_not_found", message: "ביק
 hidden review is always admin-hidden. An author edit (POST upsert) keeps it
 hidden, and the author cannot DELETE it (delete + repost would undo the hide).
 Only `PUT /admin/reviews/{id}/unhide` brings it back.
+
+**MEH-2381 (edited after hidden):** an author edit that changes body or stars
+on a hidden row stamps `edited_after_hidden_at` (an unchanged re-save does
+not). The upsert re-reads the row `FOR UPDATE` after the moderation call, so a
+hide/unhide committed while Haiku answered is what it compares against.
 
 **MEH-1001 (existence-leak):** a non-owner-non-admin DELETE returns **404
 "ביקורת לא נמצאה"**, not 403 — review existence isn't leaked. Admin-override

@@ -2244,6 +2244,7 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "ai_moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['APPROVED', 'FLAGGED']),/*#__PURE__*/ zod.null()])),
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
+  "edited_after_hidden_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -2259,6 +2260,11 @@ export const AdminListReviewsAdminReviewsGetResponse = /*#__PURE__*/ zod.array(A
 
 /**
  * Set is_hidden=True on a review. Recomputes producer aggregates.
+ *
+ * MEH-2381: `seen` is the edited_after_hidden_at the admin's page showed
+ * ("keep hidden"). The row is read FOR UPDATE, so an author edit that
+ * commits first is what this compares against; a mismatch is 409 and the
+ * marker stays.
  * @summary Hide Review
  */
 export const HideReviewAdminReviewsReviewIdHidePutResponse = /*#__PURE__*/ zod.unknown()

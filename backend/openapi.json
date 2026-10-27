@@ -142,6 +142,17 @@
             "title": "Created At",
             "type": "string"
           },
+          "edited_after_hidden_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited After Hidden At"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -14932,7 +14943,7 @@
     },
     "/admin/reviews/{review_id}/hide": {
       "put": {
-        "description": "Set is_hidden=True on a review. Recomputes producer aggregates.",
+        "description": "Set is_hidden=True on a review. Recomputes producer aggregates.\n\nMEH-2381: `seen` is the edited_after_hidden_at the admin's page showed\n(\"keep hidden\"). The row is read FOR UPDATE, so an author edit that\ncommits first is what this compares against; a mismatch is 409 and the\nmarker stays.",
         "operationId": "hide_review_admin_reviews__review_id__hide_put",
         "parameters": [
           {
@@ -14943,6 +14954,23 @@
               "format": "uuid",
               "title": "Review Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seen",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seen"
             }
           }
         ],
