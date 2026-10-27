@@ -65,7 +65,7 @@
  * the counter is not wired and the post-fix `0` is worth nothing.
  */
 import { appendFileSync } from "node:fs";
-import { test as base, expect, type Page, type Route } from "@playwright/test";
+import { test as base, expect, type Page, type Locator, type Route } from "@playwright/test";
 
 const STUB_ENABLED = process.env.E2E_CLOUDINARY_STUB !== "0";
 const COUNT_FILE = process.env.E2E_CLOUDINARY_COUNT || "";
@@ -122,4 +122,4 @@ export const test = base.extend({
 });
 
 export { expect };
-export type { Page };
+export type { Page, Locator };

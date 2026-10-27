@@ -100,8 +100,11 @@ in `backend/app/routers/producers.py`.
 user flow on AI failure.
 
 **Pattern:**
-- Missing `ANTHROPIC_API_KEY` → moderation returns `APPROVED`; chat
-  returns a friendly Hebrew "offline" message.
+- Missing `ANTHROPIC_API_KEY` → moderation lets the item through as if
+  `APPROVED`; chat returns a friendly Hebrew "offline" message. (Reviews,
+  MEH-2390: the review publishes, but its stored `ai_moderation_status` is
+  NULL, not `APPROVED`, so an unchanged re-save is checked again. The user
+  flow is identical.)
 - Any `anthropic.*Error` → same fallback; log the error, return a
   graceful response.
 

@@ -423,7 +423,8 @@ export function buildOrganizationNode() {
  * to the site root. Shares the `#organization` / `#website` @ids with
  * buildJsonLd() (seo.js:297-315) so the cross-page entity graph stays
  * consistent. Standalone — the homepage has no producer FoodEstablishment to
- * describe. SearchAction target uses /search?q= (the real param, SearchClient.jsx:50).
+ * describe. SearchAction target uses /producers?q= — the one results page since
+ * MEH-819 (ProducersClient.jsx reads `q`; /search 308s there).
  */
 export function buildHomeJsonLd(locale = "he") {
   // MEH-2192: was a second, hand-written copy of the same node. Now the one
@@ -441,7 +442,7 @@ export function buildHomeJsonLd(locale = "he") {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
+        urlTemplate: `${SITE_URL}/producers?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
