@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CaretDown, MapPinLine, Rows } from "@phosphor-icons/react";
+import { CaretDown, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
@@ -557,8 +557,15 @@ export default function MapPage() {
             {t("map.client.sort.locating_city")}
           </span>
         ) : (
-          <>
-            <span className="text-xs text-fg-muted" data-testid="sort-origin-label">
+          // MEH-2415: ONE removable chip (pin · origin · ✕) instead of two loose
+          // text runs. On mobile there is no sort select beside it, so the old
+          // label + underlined "clear" line read as stray text (Sapir 27/10).
+          // The chip is the Google Maps / Airbnb active-location pattern. The
+          // ✕'s accessible name is the existing clear_location string — no new
+          // copy — and the chip row keeps the 44px tap height.
+          <span className="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted">
+            <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
+            <span className="min-w-0 truncate" data-testid="sort-origin-label">
               {userLoc.source === SOURCE_CITY
                 ? t("map.client.sort.origin_city", { city: userLoc.city })
                 : t("map.client.sort.origin_gps")}
@@ -567,11 +574,13 @@ export default function MapPage() {
               type="button"
               onClick={handleClearLocation}
               data-testid="clear-user-location"
-              className="text-xs text-fg-muted underline underline-offset-2 hover:text-primary min-h-[44px]"
+              aria-label={t("map.client.sort.clear_location")}
+              title={t("map.client.sort.clear_location")}
+              className="inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
             >
-              {t("map.client.sort.clear_location")}
+              <X size={14} weight="bold" aria-hidden="true" />
             </button>
-          </>
+          </span>
         )}
       </div>
     ) : null;
