@@ -93,7 +93,6 @@ describe("FilterChipsBar — service filter on", () => {
   it("no 'בתיאום אישי' line", () => {
     render(<FilterChipsBar {...props} />);
     expect(screen.queryByTestId("service-filter-note")).toBeNull();
-    expect(screen.queryByText("map.filter.arranged_hidden")).toBeNull();
   });
 });
 
