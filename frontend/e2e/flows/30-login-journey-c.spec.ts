@@ -1,5 +1,33 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
 
+// MEH-2323 — a full `goto` onto a streamed page does not leave the form in ONE
+// settled state. Replayed locally 26/10 (prod build, Chromium, DOM sampled every
+// 4 ms): in 1/20 runs the server segment arrives hidden (`<div hidden id="S:0">`,
+// input id `_R_…`), React commits a CLIENT-rendered copy (`_r_0_`) at 243 ms
+// before the `$RC` reveal ran, and the hidden server copy is only removed at
+// 362 ms — two matches for ~120 ms, a strict-mode violation for `fill`. A bare
+// `toHaveCount(1)` is not enough (measured: it passes on the lone server copy
+// and the second copy appears before the fill). The end state is: exactly one
+// copy AND React owns it — a node React created or hydrated carries a
+// `__reactFiber$…` expando; the not-yet-hydrated server copy does not. Waiting
+// for that also covers the 25/10 trace where a revealed server copy was
+// replaced after a fill landed on it. No hydration error is logged in any
+// run: this is a streaming race, not a mismatch, so the product is untouched.
+// Same shape as 01-home-load.spec.ts (MEH-1078). The wait is bounded by the
+// action timeout and goes red if the page keeps two copies or never hydrates.
+async function settledField(page: Page, testId: string): Promise<ReturnType<Page["getByTestId"]>> {
+  await page.waitForFunction((id) => {
+    const els = document.querySelectorAll(`[data-testid="${id}"]`);
+    return (
+      els.length === 1 &&
+      Object.keys(els[0]).some((k) => k.startsWith("__reactFiber"))
+    );
+  }, testId);
+  const field = page.getByTestId(testId);
+  await expect(field).toHaveCount(1);
+  return field;
+}
+
 /**
  * Spec:     30-login-journey-c
  * Purpose:  MEH-215 journey C — sign in with an existing account, and the
@@ -332,7 +360,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     const nav = recordNavigation(page);
     await page.goto("/he/login");
 
-    await page.getByTestId("login-email").fill(VALID_EMAIL);
+    await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill(VALID_PASSWORD);
     await page.getByTestId("login-submit").click();
 
@@ -368,7 +396,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
       if (frame === page.mainFrame()) navigatedTo.push(new URL(frame.url()).pathname);
     });
 
-    await page.getByTestId("login-email").fill(VALID_EMAIL);
+    await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill("wrong-password");
     await page.getByTestId("login-submit").click();
 
@@ -409,7 +437,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
   }) => {
     await stubSuccessfulLogin(page);
     await page.goto("/he/login");
-    await page.getByTestId("login-email").fill(VALID_EMAIL);
+    await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill(VALID_PASSWORD);
     await page.getByTestId("login-submit").click();
     await expectPath(page, "/");
@@ -503,7 +531,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // "no such user" for the other one.
     const knownAck = (await ack.textContent())?.trim();
     await page.goto("/he/forgot-password");
-    await page.getByTestId("forgot-email").fill("definitely-not-registered@example.com");
+    await (await settledField(page, "forgot-email")).fill("definitely-not-registered@example.com");
     await page.getByTestId("forgot-submit").click();
     const unknownAck = (await page.getByTestId("forgot-sent").textContent())?.trim();
     expect(unknownAck).toBe(knownAck);
@@ -523,7 +551,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // Empty field → no submit. The button is disabled, not merely inert.
     await expect(submit).toBeDisabled();
 
-    await page.getByTestId("forgot-email").fill(VALID_EMAIL);
+    await (await settledField(page, "forgot-email")).fill(VALID_EMAIL);
     await expect(submit).toBeEnabled();
     await submit.click();
 
