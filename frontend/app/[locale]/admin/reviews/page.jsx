@@ -196,9 +196,10 @@ export default function AdminReviewsPage() {
         setConfirmDelete((open) => (open?.id === review.id ? null : open));
       }
       // MEH-2381: the author edited again after this page loaded — reload so
-      // the admin reads the new text before clearing the tag.
-      if (detail?.code === "review_changed") load();
-      showToast.error(gone && detail.message ? detail.message : tError("generic"));
+      // the admin reads the new text before clearing the tag, and say why.
+      const changed = detail?.code === "review_changed";
+      if (changed) load();
+      showToast.error((gone || changed) && detail.message ? detail.message : tError("generic"));
       return false;
     } finally {
       setTogglingIds((prev) => {
