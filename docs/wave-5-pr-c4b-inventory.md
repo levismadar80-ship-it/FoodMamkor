@@ -48,7 +48,7 @@ SEO impact + legal sensitivity).
 |---|------|-----|---------|------|-------|-------------------------|----------|------------|
 | 1 | `frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx` | 98 | **2** | server | none → `getTranslations` | `getTranslations` + `generateMetadata` first production use | low — dynamic page, not in sitemap.js, API-dependent; JSON-LD via `<RecipeJsonLd>` component (no translatable strings inside) | 2 UI-text "מהמקור" hits in metadata template (L50, L55) |
 | 2 | `frontend/app/[locale]/accessibility/page.js` | 139 | **35** | server | none → `useTranslations` | none new — same SECTIONS-array shape as MEH-630 | low — not in sitemap.js, no JSON-LD; legal-compliance page (IS 5568) | 2 UI-text "מהמקור" hits (L13 SECTIONS body, L75 contact) + 1 metadata "מהמקור" (L2) |
-| 3 | `frontend/app/[locale]/privacy/page.js` (post-MEH-630) | 274 | **82** | server | none → `useTranslations` | none new — SECTIONS array | **legal sensitivity**; not in sitemap.js, no JSON-LD; PR-C4b would add `generateMetadata` for SERP title translation | 4 UI-text "מהמקור" hits + 2 metadata; MEH-630 operator section ships verbatim ("שנף טופז 325120939") and must NOT be paraphrased through translation |
+| 3 | `frontend/app/[locale]/privacy/page.js` (post-MEH-630) | 274 | **82** | server | none → `useTranslations` | none new — SECTIONS array | **legal sensitivity**; not in sitemap.js, no JSON-LD; PR-C4b would add `generateMetadata` for SERP title translation | 4 UI-text "מהמקור" hits + 2 metadata; MEH-630 operator section ships verbatim ("שנף טופז [הוסר]") and must NOT be paraphrased through translation |
 | 4 | `frontend/app/[locale]/terms/page.js` (post-MEH-630) | 229 | **65** | server | none → `useTranslations` | none new — SECTIONS array | **legal sensitivity**; not in sitemap.js, no JSON-LD; same `generateMetadata` consideration as privacy | 3 UI-text "מהמקור" + "Mehamakor" hits + 2 metadata; same MEH-630 verbatim constraint |
 | 5 | `frontend/app/[locale]/about/for-businesses/page.js` | 227 | **31** | server | none → `useTranslations` | **JSON-LD with translated strings** (`buildFaqJsonLd()` strips `**` markers off `item.a` — translation needs to preserve `**bold**` source); `renderInline()` markdown-in-data; multi-paragraph `\n\n` `renderAnswer()` | **highest active SEO risk** — only file in PR-C4b that emits JSON-LD (`FAQPage`), shipped 2026-05-14; breaking schema mid-translation forfeits Rich Results | 4 UI-text "מהמקור" + 2 metadata + 1 `@meha_makor` handle |
 | 6 | `frontend/app/[locale]/about/for-businesses/guides/page.js` | 166 | **17** | server | none → `useTranslations` | none new — GUIDES array + static metadata + `BRAND_NAME` constant (already extracted) | low — not in sitemap.js, no JSON-LD | 3 UI-text "מהמקור" + 2 metadata via `BRAND_NAME` |
@@ -292,7 +292,7 @@ WAIT-gate after every push.
 - **Risk:** **MEDIUM** — legal sensitivity. Specific guardrails:
   - HE values MUST be byte-identical to the current strings for a
     first pass — no rewording, no smoothing.
-  - The MEH-630 operator section ("שנף טופז 325120939") ships
+  - The MEH-630 operator section ("שנף טופז [הוסר]") ships
     verbatim — translation review must not paraphrase legal IDs.
   - One PR, NOT two — these two pages share the operator section and
     cross-link, so splitting risks a half-translated state where one
