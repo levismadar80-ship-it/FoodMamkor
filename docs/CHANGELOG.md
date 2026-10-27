@@ -10,7 +10,7 @@
   - **‏#3640 `277b8bc1` (MEH-2382):** ‏29 זריעות `date.today()` בתשעה קבצי טסט → `israel_today()`. ‏`scripts/checks/test-clock-guard.sh` חדש (warn-only, נולד עם אפס ממצאים, `--self-test`). הוצג נכשל מול העץ שלפני ה-sweep (29 ממצאים).
   - **‏#3644 `6123fac6` (MEH-2386, chunk 1 של MEH-2384):** ‏`utc_now()` ב-`backend/app/utils/clock.py` מחליף את `datetime.utcnow()` (deprecated מ-Python 3.12) ב-21 קבצים ב-app, כולל ברירות המחדל של העמודות ב-`models.py` (צד Python בלבד, בלי migration). הערך naive-UTC בכוונה, כי העמודות naive.
   - **‏#3653 `df44b3db` (MEH-2387, chunk 2, HIGH-RISK):** תשע הקריאות ב-`auth.py` וב-`routers/auth.py`. בלי שינוי ב-TTL, scope, token_version או fingerprint. ‏/security-review: אין ממצאים.
-  - **‏#3652 (MEH-2388, chunk 3):** ‏28 קבצי טסט + `seed_demo_business.py`. אזהרת ה-deprecation נעלמה מכל הריצה. (ראו HANDOFF לסטטוס המיזוג.)
+  - **‏#3652 `c2134c5d` (MEH-2388, chunk 3):** ‏28 קבצי טסט + `seed_demo_business.py`. אזהרת ה-deprecation נעלמה מכל הריצה.
   - **‏#3642 `95d7f36c` (MEH-2383):** ‏`lib/hours.js` ו-`order-status.js` קוראים את השעון הישראלי דרך `israelNowParts` (‏`lib/orderWindow.js`) במקום שני formatters פרטיים. ‏`israel-clock-guard.sh`: ‏4 WARNING → OK. ‏`computeStatus(map, now)` מקבל `now` להזרקה.
   - **‏#3651 `3ff0dd52` (MEH-2323 C3):** ‏`settledField()` ב-`30-login-journey-c.spec.ts` ממתין לעותק אחד של השדה שגם React מחזיק (`__reactFiber$`), כי בדף streaming יש ~120ms עם שני עותקים. ‏180/180 ירוק אחרי 4/40 אדום. הכרטיס נשאר פתוח (kebab באדמין, `25-role-reachability`).
   - **‏MEH-2398 (needs-sapir):** ה-backend של staging קורס תחת ריצות E2E מקבילות: ‏QueuePool ‏(10+5) מתמלא, ה-PR-ים מקבלים 499 ו-«ZERO COVERAGE». נמדד ב-Railway ב-26/10 22:50Z. התיקון המומלץ: `concurrency` ב-`e2e.yml` (קובץ של ספיר).
