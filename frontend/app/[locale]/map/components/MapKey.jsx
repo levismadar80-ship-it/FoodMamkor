@@ -147,7 +147,7 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
           id={panelId}
           aria-labelledby={`${panelId}-title`}
           data-testid="map-key-panel"
-          className={`absolute z-[1100] rounded-lg border border-border bg-surface-floating p-4 shadow-lg ${panelClassName}`}
+          className={`absolute z-[1000] rounded-lg border border-border bg-surface-floating p-4 shadow-lg ${panelClassName}`}
         >
           <div className="flex items-start justify-between gap-3 mb-2">
             <h2 id={`${panelId}-title`} className="font-headline-md text-base font-bold text-text">
