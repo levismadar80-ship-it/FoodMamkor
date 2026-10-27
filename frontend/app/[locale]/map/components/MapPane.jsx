@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
+import MapKey from "./MapKey";
 
 // MEH-2046: the token set every circular /map control already shares — the
 // desktop GPS circle below and NearMePill.jsx:62 both carry it. Extracted to a
@@ -176,6 +177,32 @@ export default function MapPane({
       >
         <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
       </button>
+
+      {/* MEH-2424: "מה רואים במפה?" — the marker key, one more circle in the
+          same control column as the layer toggle above it, so the column grows
+          upward instead of a new corner opening. Same per-shell split as the
+          layer toggle: desktop sits one step (44px + 8px) above it on the
+          physical-right GPS column; mobile rides the sheet edge one step above
+          it. The panel drops in from the top of the pane: full-width on the
+          phone, a 320px card in the desktop control column. */}
+      <MapKey
+        testIdSuffix="-desktop"
+        // Physical right keeps it in the GPS circle's column, opposite the
+        // physical-left legend, in every locale (the documented map exception).
+        // rtl-ok: geographic map control
+        buttonClassName="hidden lg:flex absolute bottom-[204px] right-4"
+        panelClassName="hidden lg:block top-4 right-4 w-80" // rtl-ok: panel opens in that same column
+      />
+      <MapKey
+        testIdSuffix="-mobile"
+        buttonStyle={{
+          bottom: `calc(var(--map-sheet-h, 14vh) + ${NEAR_ME_STACK_OFFSET_PX + 56}px)`,
+          transitionProperty: "bottom, background-color",
+          transitionDuration: "var(--map-sheet-anim, 300ms)",
+        }}
+        buttonClassName="lg:hidden flex absolute end-4"
+        panelClassName="lg:hidden top-4 inset-x-4"
+      />
 
       {/* MEH-2148: ONE owner for the top-centre slot. Both of these used to be
           their own `absolute top-4 z-1000` — the search-area pill centred, the
