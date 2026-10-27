@@ -104,7 +104,12 @@ class _FakeClient:
         self.text = text
         self.raise_exc = raise_exc
         self.calls = []
+        self.options = []
         self.messages = SimpleNamespace(create=self._create)
+
+    def with_options(self, **kwargs):
+        self.options.append(kwargs)
+        return self
 
     def _create(self, **kwargs):
         self.calls.append(kwargs)
@@ -127,7 +132,8 @@ def test_classify_sends_schema_and_maps_db_query():
     assert sent["output_config"]["format"]["schema"] is router.ROUTE_SCHEMA
     assert "bread" in sent["system"]
     assert sent["max_tokens"] == router.MAX_CLASSIFY_TOKENS
-    assert sent["timeout"] == router.CLASSIFY_TIMEOUT_S
+    # Single bounded attempt: no SDK retries stacked on the timeout.
+    assert client.options == [{"max_retries": 0, "timeout": router.CLASSIFY_TIMEOUT_S}]
 
 
 def test_route_schema_uses_only_the_house_nullable_form():

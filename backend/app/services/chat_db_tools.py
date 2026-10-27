@@ -60,7 +60,6 @@ READER_COLUMNS: dict[str, tuple[str, ...]] = {
         "is_active",
     ),
 }
-READER_TABLES = tuple(READER_COLUMNS)
 
 #: One GRANT per table, byte-identical to the migration's GRANTS tuple.
 READER_GRANTS = tuple(
@@ -85,16 +84,18 @@ TOOL_NAMES = (
 
 #: DDL mirror of migration a29c7a4a41e7, for the pytest fixture only (the
 #: test schema comes from create_all, which creates no roles and no grants).
-#: Idempotent AND race-safe: the role and the membership are cluster-wide,
-#: and CI's `-n auto` workers (one database each, one cluster) create them
-#: concurrently — IF NOT EXISTS alone lets two workers both pass the check.
+#: Idempotent AND race-safe: the role is cluster-wide, and CI's `-n auto`
+#: workers (one database each, one cluster) can create it at the same
+#: instant. A committed role raises duplicate_object; two creations racing
+#: raise unique_violation on pg_authid_rolname_index — both are absorbed
+#: (reproduced with 8 synchronised sessions, round-2 review 28/10).
 # DO NOT import this from the migration — revisions stay self-contained.
 READER_ROLE_SQL = (
     f"""
     DO $$
     BEGIN
         CREATE ROLE {READER_ROLE} NOLOGIN;
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
     END
     $$;
     """,

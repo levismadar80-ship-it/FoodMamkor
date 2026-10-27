@@ -33,11 +33,11 @@ def _reader_role():
     # Function-scoped on purpose: test_lifespan_init's `empty_database` runs
     # drop_all, and a DROP TABLE takes its grants with it, so a module-scoped
     # grant could be gone by the next test on the same xdist worker.
-    # Retried: the role and its membership are cluster-wide and CI's `-n auto`
-    # workers grant them concurrently. CREATE ROLE races are absorbed in SQL
-    # (duplicate_object); a concurrent membership GRANT can still raise
-    # "tuple concurrently updated" (XX000, no handler-able SQLSTATE) —
-    # reproduced with 8 parallel sessions on 28/10.
+    # Retried defensively on "tuple concurrently updated". Round-2 review
+    # (28/10) saw it only when sessions share ONE database, which CI's
+    # per-worker databases avoid; the cluster-wide role race is handled in
+    # READER_ROLE_SQL itself. The match is narrow, so no other error is
+    # swallowed.
     for attempt in range(5):
         try:
             with chat_db_tools.engine.connect() as conn, conn.begin():
@@ -286,6 +286,10 @@ def test_mcp_reader_grants_alone_deny_writes(db):
 )
 def test_mcp_reader_cannot_read_producer_pii(db, column):
     make_producer(db, name="חווה", city="חיפה")
+    # Positive control: the role CAN read a granted column of the same table,
+    # so the denial below is the column boundary, not a role with no grants.
+    with chat_db_tools.reader_transaction() as conn:
+        assert conn.execute(text("SELECT name FROM producers")).scalar_one() == "חווה"
     with (
         pytest.raises(chat_db_tools.ChatDbToolError, match="permission denied"),
         chat_db_tools.reader_transaction() as conn,
@@ -304,3 +308,8 @@ def test_grant_mirror_matches_migration():
         if entry.strip()
     )
     assert migration_grants == chat_db_tools.READER_GRANTS
+    # ...and upgrade() must actually execute that tuple, not a table-level
+    # GRANT that would bypass it.
+    upgrade_body = src.split("def upgrade()", 1)[1].split("def downgrade()", 1)[0]
+    assert "for grant in GRANTS" in upgrade_body
+    assert "GRANT SELECT ON" not in upgrade_body

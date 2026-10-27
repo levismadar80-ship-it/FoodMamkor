@@ -39,7 +39,8 @@ NO_TOOL = "none"
 #: Output budget for the classifier: a short JSON object, nothing else.
 MAX_CLASSIFY_TOKENS = 120
 
-#: Seconds before the classifier gives up and the message goes freeform.
+#: Seconds — total, single attempt — before the classifier gives up and the
+#: message goes freeform.
 #: It runs before every answer, so a hung call must not hold the widget for
 #: the SDK's default (minutes).
 CLASSIFY_TIMEOUT_S = 8.0
@@ -137,10 +138,13 @@ def classify(
     if client is None or not message or not message.strip():
         return FREEFORM
     try:
-        response = client.messages.create(
+        # One attempt, bounded: the shared client keeps the SDK's 2 retries,
+        # which would turn an 8s timeout into ~25s before a message falls
+        # through to freeform (round-2 review, SDK 0.107 _base_client).
+        bounded = client.with_options(max_retries=0, timeout=CLASSIFY_TIMEOUT_S)
+        response = bounded.messages.create(
             **ai_fast_request_kwargs(json_schema=ROUTE_SCHEMA),
             max_tokens=MAX_CLASSIFY_TOKENS,
-            timeout=CLASSIFY_TIMEOUT_S,
             system=_classifier_prompt(categories),
             messages=[{"role": "user", "content": message[:2000]}],
         )

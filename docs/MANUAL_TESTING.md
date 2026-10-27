@@ -3895,4 +3895,4 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] הקלידי `מתי השוק הבא?` כשיש אירוע עתידי של עסק מאושר — **תוצאה מצופה:** שם האירוע, התאריך והעסק; בלי אירועים — «לא מצאתי» + הפניה לעמוד האירועים, לא שגיאה. (#3706)
 - [ ] הקלידי `'; DROP TABLE producers; --` — **תוצאה מצופה:** תשובה רגילה / «לא מצאתי»; `/producers` עדיין עונה. (#3706)
 - [ ] 6 שאלות «כמה עסקים יש?» תוך דקה מאותו IP — **תוצאה מצופה:** השישית עדיין נענית (מהידע הקבוע, בלי מספר חי), לא 429. (#3706)
-- [ ] ב-staging, ב-psql: `SET ROLE mcp_reader; INSERT INTO categories ...` — **תוצאה מצופה:** `permission denied`. `SELECT COUNT(*) FROM users` — `permission denied`. (#3706, DoD)
+- [ ] ב-staging, ב-psql: `SET ROLE mcp_reader; INSERT INTO categories ...` — **תוצאה מצופה:** `permission denied`. `SELECT COUNT(*) FROM users` — `permission denied`. `SELECT phone FROM producers` — `permission denied`; `SELECT name FROM producers` — עובד. (#3706, DoD)
