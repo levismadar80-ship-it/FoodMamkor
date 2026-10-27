@@ -38,13 +38,34 @@ logger = logging.getLogger(__name__)
 #: second credential to provision (MEH-586 decision 1, 27/10).
 READER_ROLE = "mcp_reader"
 
-#: Tables the role may SELECT. No users / home_products / reports / any PII.
-READER_TABLES = (
-    "producers",
-    "categories",
-    "producer_categories",
-    "producer_locations",
-    "events",
+#: Exactly the columns the four tools read — COLUMN-level grants, so the
+#: privilege layer itself keeps producers.phone / contact_email /
+#: contact_name / address / whatsapp_group out of reach, not just the fixed
+#: SQL below. No users / home_products / reports at all. Adding a column to
+#: a tool query means adding it here AND in the migration (the drift test in
+#: tests/test_chat_db_tools.py compares the two).
+READER_COLUMNS: dict[str, tuple[str, ...]] = {
+    "producers": ("id", "name", "city", "slug", "status"),
+    "categories": ("id", "name", "slug"),
+    "producer_categories": ("producer_id", "category_id"),
+    "producer_locations": ("producer_id", "kind", "city"),
+    "events": (
+        "producer_id",
+        "title",
+        "event_date",
+        "event_time",
+        "city",
+        "location",
+        "category",
+        "is_active",
+    ),
+}
+READER_TABLES = tuple(READER_COLUMNS)
+
+#: One GRANT per table, byte-identical to the migration's GRANTS tuple.
+READER_GRANTS = tuple(
+    f"GRANT SELECT ({', '.join(cols)}) ON {table} TO {READER_ROLE}"
+    for table, cols in READER_COLUMNS.items()
 )
 
 #: Hard ceiling on statement time. The card says 5s, no exception.
@@ -64,21 +85,29 @@ TOOL_NAMES = (
 
 #: DDL mirror of migration a29c7a4a41e7, for the pytest fixture only (the
 #: test schema comes from create_all, which creates no roles and no grants).
-#: Idempotent: a role is cluster-wide and xdist workers share the cluster.
+#: Idempotent AND race-safe: the role and the membership are cluster-wide,
+#: and CI's `-n auto` workers (one database each, one cluster) create them
+#: concurrently — IF NOT EXISTS alone lets two workers both pass the check.
 # DO NOT import this from the migration — revisions stay self-contained.
 READER_ROLE_SQL = (
     f"""
     DO $$
     BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{READER_ROLE}') THEN
-            CREATE ROLE {READER_ROLE} NOLOGIN;
-        END IF;
+        CREATE ROLE {READER_ROLE} NOLOGIN;
+    EXCEPTION WHEN duplicate_object THEN NULL;
     END
     $$;
     """,
-    f"GRANT USAGE ON SCHEMA public TO {READER_ROLE};",
-    f"GRANT SELECT ON {', '.join(READER_TABLES)} TO {READER_ROLE};",
-    f"GRANT {READER_ROLE} TO CURRENT_USER;",
+    f"GRANT USAGE ON SCHEMA public TO {READER_ROLE}",
+    *READER_GRANTS,
+    f"""
+    DO $$
+    BEGIN
+        GRANT {READER_ROLE} TO CURRENT_USER;
+    EXCEPTION WHEN unique_violation OR duplicate_object THEN NULL;
+    END
+    $$;
+    """,
 )
 
 

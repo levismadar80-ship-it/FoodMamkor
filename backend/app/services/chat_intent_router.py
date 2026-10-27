@@ -39,6 +39,11 @@ NO_TOOL = "none"
 #: Output budget for the classifier: a short JSON object, nothing else.
 MAX_CLASSIFY_TOKENS = 120
 
+#: Seconds before the classifier gives up and the message goes freeform.
+#: It runs before every answer, so a hung call must not hold the widget for
+#: the SDK's default (minutes).
+CLASSIFY_TIMEOUT_S = 8.0
+
 
 @dataclass(frozen=True)
 class RouteDecision:
@@ -61,9 +66,11 @@ ROUTE_SCHEMA: dict[str, Any] = {
         # structured-output schema subset; a null enum member is not
         # guaranteed, and a rejected schema would fail open forever.
         "tool": {"type": "string", "enum": [*TOOL_NAMES, NO_TOOL]},
-        "city": {"type": ["string", "null"]},
-        "category_slug": {"type": ["string", "null"]},
-        "limit": {"type": ["integer", "null"]},
+        # Nullable in the anyOf form the repo already ships to structured
+        # outputs (services/moderation_schemas.py:22), not a type array.
+        "city": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        "category_slug": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        "limit": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
     },
     "required": ["route", "tool", "city", "category_slug", "limit"],
     "additionalProperties": False,
@@ -133,6 +140,7 @@ def classify(
         response = client.messages.create(
             **ai_fast_request_kwargs(json_schema=ROUTE_SCHEMA),
             max_tokens=MAX_CLASSIFY_TOKENS,
+            timeout=CLASSIFY_TIMEOUT_S,
             system=_classifier_prompt(categories),
             messages=[{"role": "user", "content": message[:2000]}],
         )

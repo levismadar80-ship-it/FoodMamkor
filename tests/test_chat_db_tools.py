@@ -1,16 +1,20 @@
 """MEH-586: the chat's four bounded read-only DB tools + the mcp_reader role.
 
-4 happy-path tests, 3 injection-attempt tests, and one role test proving an
-INSERT under `SET LOCAL ROLE mcp_reader` is denied. The test schema comes
-from create_all (no migration run), so the module fixture applies the DDL
-mirror `chat_db_tools.READER_ROLE_SQL` — the same statements as revision
-a29c7a4a41e7.
+4 happy-path tests, 3 injection-attempt tests, role tests proving writes,
+`users` and the PII columns of `producers` are denied, and a drift test
+pinning the grant mirror to the migration. The test schema comes from
+create_all (no migration run), so the fixture applies the DDL mirror
+`chat_db_tools.READER_ROLE_SQL` — the same grants as revision a29c7a4a41e7.
 """
 
+import re
+import time
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 from tests.conftest import make_producer
 
 from app.models.models import Category, Event, ProducerCategory, ProducerLocation
@@ -18,15 +22,32 @@ from app.services import chat_db_tools
 from app.utils.clock import israel_today
 
 INJECTION = "'; DROP TABLE producers; --"
+MIGRATION = (
+    Path(__file__).resolve().parents[1]
+    / "backend/alembic/versions/20261028_0000_a29c7a4a41e7_meh586_mcp_reader_role.py"
+)
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(autouse=True)
 def _reader_role():
-    # Roles are cluster-wide, grants are per-database: both statements are
-    # idempotent, so this is safe under xdist and on a re-run.
-    with chat_db_tools.engine.connect() as conn, conn.begin():
-        for stmt in chat_db_tools.READER_ROLE_SQL:
-            conn.execute(text(stmt))
+    # Function-scoped on purpose: test_lifespan_init's `empty_database` runs
+    # drop_all, and a DROP TABLE takes its grants with it, so a module-scoped
+    # grant could be gone by the next test on the same xdist worker.
+    # Retried: the role and its membership are cluster-wide and CI's `-n auto`
+    # workers grant them concurrently. CREATE ROLE races are absorbed in SQL
+    # (duplicate_object); a concurrent membership GRANT can still raise
+    # "tuple concurrently updated" (XX000, no handler-able SQLSTATE) —
+    # reproduced with 8 parallel sessions on 28/10.
+    for attempt in range(5):
+        try:
+            with chat_db_tools.engine.connect() as conn, conn.begin():
+                for stmt in chat_db_tools.READER_ROLE_SQL:
+                    conn.execute(text(stmt))
+            break
+        except DBAPIError as exc:
+            if "concurrently" not in str(exc) or attempt == 4:
+                raise
+            time.sleep(0.05 * (attempt + 1))
     yield
 
 
@@ -198,18 +219,33 @@ def test_run_tool_rejects_unknown_tool_and_clamps_limit(db):
     assert chat_db_tools._clamp_limit(10_000) == chat_db_tools.MAX_LIMIT
     assert chat_db_tools._clamp_limit(-5) == 1
     assert chat_db_tools._clamp_limit("abc") == chat_db_tools.DEFAULT_LIMIT
-    assert (
-        chat_db_tools.run_tool("list_upcoming_events", {"limit": 10_000})["results"]
-        == []
+
+
+def test_oversized_limit_reaches_sql_clamped(db):
+    # Seeds MORE rows than MAX_LIMIT, so an unclamped LIMIT 10000 would return
+    # all of them — the count below can only be MAX_LIMIT if the clamp ran.
+    producer = make_producer(db, name="חווה", city="חיפה")
+    tomorrow = israel_today() + timedelta(days=1)
+    db.add_all(
+        Event(
+            producer_id=producer.id,
+            title=f"שוק {i}",
+            event_date=tomorrow,
+            category="שוק",
+            is_active=True,
+        )
+        for i in range(chat_db_tools.MAX_LIMIT + 5)
     )
+    db.commit()
+    out = chat_db_tools.run_tool("list_upcoming_events", {"limit": 10_000})
+    assert len(out["results"]) == chat_db_tools.MAX_LIMIT
 
 
 # ---------- the role itself ----------
 
 
 def test_mcp_reader_cannot_write(db):
-    # READ ONLY rejects the write before the role's grants are even consulted;
-    # either message proves the boundary, both are asserted below.
+    # Through the real tool path: READ ONLY rejects the write first.
     with (
         pytest.raises(
             chat_db_tools.ChatDbToolError, match="read-only|permission denied"
@@ -229,3 +265,42 @@ def test_mcp_reader_cannot_read_users(db):
         chat_db_tools.reader_transaction() as conn,
     ):
         conn.execute(text("SELECT COUNT(*) FROM users"))
+
+
+def test_mcp_reader_grants_alone_deny_writes(db):
+    # Second layer, without READ ONLY: the role's grants by themselves refuse
+    # the INSERT, so dropping READ ONLY by mistake would not open writes.
+    with (
+        pytest.raises(DBAPIError, match="permission denied"),
+        chat_db_tools.engine.connect() as conn,
+        conn.begin(),
+    ):
+        conn.execute(text(f"SET LOCAL ROLE {chat_db_tools.READER_ROLE}"))
+        conn.execute(
+            text("INSERT INTO categories (name, emoji, slug) VALUES ('x', 'y', 'z')")
+        )
+
+
+@pytest.mark.parametrize(
+    "column", ["phone", "contact_email", "contact_name", "address", "whatsapp_group"]
+)
+def test_mcp_reader_cannot_read_producer_pii(db, column):
+    make_producer(db, name="חווה", city="חיפה")
+    with (
+        pytest.raises(chat_db_tools.ChatDbToolError, match="permission denied"),
+        chat_db_tools.reader_transaction() as conn,
+    ):
+        conn.execute(text(f"SELECT {column} FROM producers"))
+
+
+def test_grant_mirror_matches_migration():
+    # READER_ROLE_SQL is what the tests run; the migration is what production
+    # runs. Every grant must appear verbatim in both, in both directions.
+    src = MIGRATION.read_text(encoding="utf-8")
+    block = re.search(r"GRANTS = \((.*?)\n\)", src, re.DOTALL).group(1)
+    migration_grants = tuple(
+        "".join(re.findall(r'"([^"]*)"', entry))
+        for entry in re.split(r",\n", block.strip())
+        if entry.strip()
+    )
+    assert migration_grants == chat_db_tools.READER_GRANTS
