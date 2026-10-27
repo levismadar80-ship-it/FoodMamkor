@@ -16,8 +16,6 @@ import os
 
 import pytest
 
-from app.utils.clock import israel_today
-
 from app.models.models import (
     DeliveryArea,
     Event,
@@ -27,6 +25,7 @@ from app.models.models import (
     Product,
     User,
 )
+from app.utils.clock import israel_today
 
 from tests.conftest import make_category
 

@@ -22,7 +22,12 @@
 #   comment. Prose mentions in docstrings are written with backticks in this
 #   repo (`date.today()`, `< date.today()`): a backtick BEFORE the call on the
 #   same line marks it as prose. A backtick AFTER the call (a real call with a
-#   trailing backticked comment) does not — that line is still reported. The
+#   trailing backticked comment) does not — that line is still reported.
+#   KNOWN LIMIT (review on #3640): the classifier reads the raw line, not
+#   Python tokens, so a `#` or a backtick inside a STRING literal before the
+#   call (`url = "/x#y"; d = date.today()`) also reads as prose and goes
+#   unreported. Warn-only, and the line needs that construction on purpose;
+#   a token-level rewrite is the fix if it ever bites, not a wider regex. The
 #   replacement is `israel_today()` from app.utils.clock, or
 #   `israel_days_ago(N)` from tests/conftest.py for a datetime — see
 #   .claude/rules/testing.md § "Clock-dependent tests seed from the Israel
