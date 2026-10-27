@@ -41,11 +41,13 @@ const PROFILES = {
 
 const APPROVED = {
   he: {
+    instagram_aria: "עמוד האינסטגרם של מהמקור — נפתח בחלון חדש",
     facebook_aria: "עמוד הפייסבוק של מהמקור — נפתח בחלון חדש",
     tiktok_aria: "עמוד הטיקטוק של מהמקור — נפתח בחלון חדש",
     youtube_aria: "ערוץ היוטיוב של מהמקור — נפתח בחלון חדש",
   },
   en: {
+    instagram_aria: "Mehamakor's Instagram page — opens in new tab",
     facebook_aria: "Mehamakor's Facebook page — opens in new tab",
     tiktok_aria: "Mehamakor's TikTok page — opens in new tab",
     youtube_aria: "Mehamakor's YouTube channel — opens in new tab",
@@ -80,15 +82,18 @@ describe("Footer social links (MEH-2311)", () => {
     }
   });
 
-  it.each(["he", "en"])("%s: each new link is named by its approved label; Instagram keeps its handle", (locale) => {
+  // MEH-2417: Instagram joined the icon row — it no longer shows the handle,
+  // and is named by its own approved sr-only label like the other three.
+  it.each(["he", "en"])("%s: each link is a bare icon named by its approved sr-only label", (locale) => {
     const messages = locale === "he" ? he : en;
     for (const [key, text] of Object.entries(APPROVED[locale])) {
       expect(messages.nav.footer[key]).toBe(text);
     }
     const links = outboundLinks(locale, messages);
     const byHref = Object.fromEntries(links.map((a) => [a.getAttribute("href"), a]));
-    expect(byHref[PROFILES.instagram].textContent).toContain("@meha_makor");
+    expect(byHref[PROFILES.instagram].textContent).not.toContain("@meha_makor");
     for (const [name, key] of [
+      ["instagram", "instagram_aria"],
       ["facebook", "facebook_aria"],
       ["tiktok", "tiktok_aria"],
       ["youtube", "youtube_aria"],
