@@ -73,10 +73,10 @@ function DashboardChromeSkeleton({ label }) {
       {/* Mirrors the real <nav> below: same sticky/blur/border and the same
           max-w-5xl px-4 container, so the tab row does not shift on swap. */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto">
+        <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
-            <div key={tab.key} className="shrink-0 px-4 py-3">
-              <div className="h-5 w-20 bg-border rounded-[8px] animate-pulse" />
+            <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
+              <div className="h-5 w-12 sm:w-20 bg-border rounded-[8px] animate-pulse" />
             </div>
           ))}
         </div>
@@ -159,9 +159,12 @@ export default function ProducerDashboardLayout({ children }) {
         aria-label={t("aria")}
         className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border"
       >
-        {/* overflow-x-auto: 4 tabs + icons can exceed 375px; give a scroll
-            affordance rather than clipping (MEH-964 1B). */}
-        <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto">
+        {/* MEH-2429: at 375 the old scrolling row (MEH-964 1B) clipped the 4th
+            tab and pushed "צפייה בדף" fully off-screen — measured on staging
+            27/10. Below sm the tabs now share the width equally with the icon
+            stacked over the label, so all four + the view link fit without
+            horizontal scroll. sm+ keeps the original inline row. */}
+        <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => {
             const active = isActive(tab);
             return (
@@ -169,7 +172,8 @@ export default function ProducerDashboardLayout({ children }) {
                 key={tab.key}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`inline-flex shrink-0 whitespace-nowrap items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors focus-ring ${
+                data-testid={`dashboard-tab-${tab.key}`}
+                className={`inline-flex flex-1 sm:flex-none min-w-0 flex-col sm:flex-row whitespace-nowrap items-center justify-center gap-0.5 sm:gap-2 px-1 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors focus-ring ${
                   active
                     ? "border-primary text-primary"
                     : "border-transparent text-fg-muted hover:text-text"
@@ -197,10 +201,15 @@ export default function ProducerDashboardLayout({ children }) {
           {user.producer_id && (
             <Link
               href={`/producer/${user.producer_id}`}
-              className="ms-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
+              aria-label={t("view_page")}
+              data-testid="dashboard-view-page"
+              // MEH-2429: icon-only below sm (min 44px target, name via
+              // aria-label + title); the visible label returns at sm+.
+              title={t("view_page")}
+              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-[44px] px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
             >
-              <Eye size={18} aria-hidden="true" />
-              {t("view_page")}
+              <Eye size={20} aria-hidden="true" />
+              <span className="hidden sm:inline">{t("view_page")}</span>
             </Link>
           )}
         </div>
