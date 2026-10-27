@@ -240,16 +240,21 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     expect(ids).toEqual(cards);
   });
 
-  it("MEH-2433: an #offer deep link now opens the products group", async () => {
-    window.location.hash = "#offer";
-    mount();
-    await waitFor(() =>
-      expect(routerStub.replace).toHaveBeenCalledWith(
-        { pathname: "/producer/dashboard/edit", query: { group: "products" } },
-        { scroll: false },
-      ),
-    );
-  });
+  // The three anchors MEH-2433 moved or registered: each must route to the
+  // products group, not to its old home (location / trust) or nowhere.
+  it.each(["offer", "dietary-scope", "grass-fed"])(
+    "MEH-2433: a #%s deep link opens the products group",
+    async (anchor) => {
+      window.location.hash = `#${anchor}`;
+      mount();
+      await waitFor(() =>
+        expect(routerStub.replace).toHaveBeenCalledWith(
+          { pathname: "/producer/dashboard/edit", query: { group: "products" } },
+          { scroll: false },
+        ),
+      );
+    },
+  );
 
   it("composes license + kashrut as one unified trust card (no separate cards)", async () => {
     params.group = "trust";
