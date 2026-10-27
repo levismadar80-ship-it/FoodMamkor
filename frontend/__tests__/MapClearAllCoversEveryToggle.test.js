@@ -93,6 +93,22 @@ describe("MEH-2131 follow-up — /map clear controls cover every toggle", () => 
     expect(occurrences).toBe(3);
   });
 
+  it("MapClient's resetEverything (the empty-state «נקו את הסינון») derives too (MEH-2425)", () => {
+    // A fourth site, in another file: the map's empty-state reset. Before
+    // MEH-2425 it was a hand-written literal that still cleared the removed
+    // `organic` and missed `pickup_points`, `vegetarian`, `no_added_sugar`
+    // and `open_for_orders_now`. Sliced to the function body so a literal
+    // elsewhere in MapClient can't satisfy or fail this by accident.
+    const client = readFileSync(resolve(process.cwd(), "app/[locale]/map/MapClient.jsx"), "utf8");
+    const start = client.indexOf("const resetEverything = () => {");
+    expect(start, "resetEverything not found — the probe read nothing").toBeGreaterThan(-1);
+    const body = client.slice(start, client.indexOf("};", start));
+    expect(body).toContain("defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key))");
+    for (const key of [...TOGGLE_KEYS, "organic"]) {
+      expect(body, `${key} is enumerated as a literal — derive instead`).not.toContain(`${key}: false`);
+    }
+  });
+
   it("BEHAVIOUR: a fully-cleared state emits no attribute params", () => {
     // The outcome the whole thing is for, asserted against the real builder.
     const cleared = { categoryKeys: [], ...defaultsForKeys(TOGGLE_KEYS) };
