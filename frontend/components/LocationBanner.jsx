@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { COOKIE_CONSENT_EVENT, hasCookieConsent } from "@/lib/cookie-consent";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
@@ -15,8 +16,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
   // asking for a decision before any content (and the coach-mark tour made a
   // third). The reveal timer is armed only once cookie consent exists: read
   // from localStorage when it is already there, else on the "cookie-consent"
-  // event CookieBanner.jsx dispatches on accept. A localStorage that throws
-  // counts as no consent (CookieBanner shows itself in that case too).
+  // event CookieBanner.jsx dispatches on accept (contract: lib/cookie-consent.js).
   useEffect(() => {
     if (hasCity) return;
     if (sessionStorage.getItem(DISMISS_KEY)) return;
@@ -24,18 +24,11 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
     const arm = () => {
       timer = setTimeout(() => setVisible(true), 3000);
     };
-    let consented = false;
-    try {
-      const v = localStorage.getItem("cookieConsent");
-      consented = v === "all" || v === "essential";
-    } catch {
-      consented = false;
-    }
-    if (consented) arm();
-    else window.addEventListener("cookie-consent", arm, { once: true });
+    if (hasCookieConsent()) arm();
+    else window.addEventListener(COOKIE_CONSENT_EVENT, arm, { once: true });
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("cookie-consent", arm);
+      window.removeEventListener(COOKIE_CONSENT_EVENT, arm);
     };
   }, [hasCity]);
 
