@@ -17,6 +17,7 @@ from app.schemas.schemas import (
 )
 
 from tests.conftest import make_producer
+from app.utils.clock import utc_now
 
 
 def test_public_output_has_no_kosher_field():
@@ -54,10 +55,10 @@ def test_kosher_filter_excludes_free_text_only_producer(client, db):
 
 def test_kosher_filter_excludes_expired_cert(client, db):
     # MEH-1260: expired certificate → out of ?kosher=true, into ?kosher=false.
-    # Naive utcnow mirrors how admin_kashrut.py:73 writes the timestamps.
+    # Naive utc_now() mirrors how admin_kashrut.py writes the timestamps.
     expired = make_producer(db, name="חוות תעודה פגה")
-    expired.kashrut_verified_at = datetime.utcnow() - timedelta(days=730)
-    expired.kashrut_expires_at = datetime.utcnow() - timedelta(days=365)
+    expired.kashrut_verified_at = utc_now() - timedelta(days=730)
+    expired.kashrut_expires_at = utc_now() - timedelta(days=365)
     db.commit()
     names_true = {p["name"] for p in client.get("/producers?kosher=true").json()}
     assert "חוות תעודה פגה" not in names_true
@@ -68,8 +69,8 @@ def test_kosher_filter_excludes_expired_cert(client, db):
 def test_kosher_filter_keeps_valid_cert(client, db):
     # MEH-1260: an in-date certificate is unchanged by the expiry predicate.
     valid = make_producer(db, name="חוות תעודה בתוקף")
-    valid.kashrut_verified_at = datetime.utcnow()
-    valid.kashrut_expires_at = datetime.utcnow() + timedelta(days=180)
+    valid.kashrut_verified_at = utc_now()
+    valid.kashrut_expires_at = utc_now() + timedelta(days=180)
     db.commit()
     names_true = {p["name"] for p in client.get("/producers?kosher=true").json()}
     assert "חוות תעודה בתוקף" in names_true
@@ -81,7 +82,7 @@ def test_kosher_filter_keeps_legacy_null_expires(client, db):
     # MEH-1260 legacy safety: rows verified before the expiry era carry NULL
     # kashrut_expires_at and must stay valid — do not break them.
     legacy = make_producer(db, name="חוות ותיקה ללא תפוגה")
-    legacy.kashrut_verified_at = datetime.utcnow() - timedelta(days=900)
+    legacy.kashrut_verified_at = utc_now() - timedelta(days=900)
     legacy.kashrut_expires_at = None
     db.commit()
     names_true = {p["name"] for p in client.get("/producers?kosher=true").json()}

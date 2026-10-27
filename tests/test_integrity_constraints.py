@@ -15,7 +15,7 @@ API tests prove the surfaced behaviour. Mirrors the IntegrityError-recovery
 precedent in app/routers/reviews.py.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -29,6 +29,7 @@ from app.models.models import (
     ReferralClick,
     Report,
 )
+from app.utils.clock import utc_now
 
 
 # ---------- reports: uq_report_reporter_producer ----------
@@ -64,22 +65,8 @@ class TestReportUnique:
 
 # ---------- referrals: uq_referral_one_per_referee ----------
 class TestReferralUnique:
-    def test_duplicate_referral_claim_idempotent_200(self, client, db):
-        referrer = make_user(db, email="referrer@example.com")
-        referrer.referral_code = "REF12345"
-        db.commit()
-        referee = make_user(db, email="referee@example.com")
-        headers = auth_header(referee)
-        body = {"code": "REF12345"}
-
-        first = client.post("/referral/claim", json=body, headers=headers)
-        assert first.status_code == 200
-        assert first.json()["detail"] == "referral claimed"
-
-        # Idempotent contract: a second claim is a 200 no-op, never 409.
-        second = client.post("/referral/claim", json=body, headers=headers)
-        assert second.status_code == 200
-        assert second.json()["detail"] == "referral already claimed"
+    # MEH-2374: the HTTP claim endpoint is gone; the table and its constraint
+    # stay until their own Expand-Contract drop, so the DB-level check stays.
 
     def test_referral_unique_constraint_enforced_at_db(self, db):
         referrer = make_user(db, email="dbreferrer@example.com")
@@ -103,7 +90,7 @@ class TestProducerDeleteIntegrity:
                 producer_id=producer.id,
                 phone="0501234567",
                 code="123456",
-                expires_at=datetime.utcnow() + timedelta(minutes=10),
+                expires_at=utc_now() + timedelta(minutes=10),
             )
         )
         db.add(KashrutBadgeRequest(producer_id=producer.id, badge_code="MEHADRIN"))
@@ -144,7 +131,7 @@ class TestGroupBuyCapacity:
             price_per_unit_group=90,
             min_participants=5,
             max_participants=max_participants,
-            deadline=datetime.utcnow() + timedelta(days=3),
+            deadline=utc_now() + timedelta(days=3),
             city="תל אביב",
             status="open",
         )
