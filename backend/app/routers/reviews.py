@@ -18,7 +18,6 @@ MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 
 import logging
 import math
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -49,6 +48,7 @@ from app.schemas.schemas import (
     ReviewReplyUpdate,
     ReviewsPage,
 )
+from app.utils.clock import utc_now
 
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
@@ -545,7 +545,7 @@ def set_review_reply(
 
     if data.reply:
         review.reply = data.reply
-        review.reply_at = datetime.utcnow()
+        review.reply_at = utc_now()
     else:
         review.reply = None  # empty/blank → clear
         review.reply_at = None
@@ -565,6 +565,11 @@ def set_review_reply(
 # ---------------------------------------------------------------------------
 
 
+# MEH-2389: /admin/reviews drops the row on this 404 ("deleted elsewhere") and
+# recognises it by `code`, not by the wording — {code, message} per MEH-1943.
+_ADMIN_REVIEW_NOT_FOUND = {"code": "review_not_found", "message": "ביקורת לא נמצאה"}
+
+
 @router.put("/admin/reviews/{review_id}/hide")
 def hide_review(
     review_id: UUID,
@@ -574,7 +579,7 @@ def hide_review(
     """Set is_hidden=True on a review. Recomputes producer aggregates."""
     review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
     if not review:
-        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+        raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
     review.is_hidden = True
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
@@ -591,7 +596,7 @@ def unhide_review(
     Recomputes producer aggregates."""
     review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
     if not review:
-        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+        raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
     review.is_hidden = False
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
