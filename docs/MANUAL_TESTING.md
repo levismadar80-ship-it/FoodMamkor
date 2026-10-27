@@ -1489,6 +1489,11 @@ Cross-check the returned emails against the original admin allowlist (whoever Sm
 
 ---
 
+## MEH-2422 — דף 404 עם תפריט ופוטר, בשפת הכתובת (27/10/2026)
+- [ ] כתובת לא קיימת (`/xxx/yyy`) — כותרת האתר למעלה, «לא מצאנו את הדף הזה», שני כפתורים, הפוטר למטה; בנייד גם הסרגל התחתון. אין שורה באנגלית
+- [ ] `/en/xxx/yyy` — אותו דבר באנגלית, «Back to home» מוביל ל-`/en`
+- [ ] DevTools → Network: הסטטוס של הדף 404 (לא 200)
+
 ## MEH-641 PR-A — auth chrome noindex verification
 
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-641:1) — both locales, asserted as an exact partition: the four auth-chrome pages carry `noindex` **and** the five public ones do not. Checking only the first half would pass against a build that noindexed the whole site, which is the failure this row exists to catch. The manual bullets below are kept as the human-readable statement of the rule.
@@ -3770,10 +3775,6 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] גלילה עד ה-CTA הירוק בתחתית — הכפתור "הוסיפו את העסק שלכם" לא נראה מעל הכותרת
 - [ ] דפים פנימיים (`/about`, `/map`) — ללא שינוי
 
-## MEH-2422 — דף 404 עם תפריט ופוטר, בשפת הכתובת (27/10/2026)
-- [ ] כתובת לא קיימת (`/xxx/yyy`) — כותרת האתר למעלה, «לא מצאנו את הדף הזה», שני כפתורים, הפוטר למטה; בנייד גם הסרגל התחתון. אין שורה באנגלית
-- [ ] `/en/xxx/yyy` — אותו דבר באנגלית, «Back to home» מוביל ל-`/en`
-- [ ] DevTools → Network: הסטטוס של הדף 404 (לא 200)
 ## MEH-2421 — /events: מצב ריק בלי "סינון", כותרת-על בעברית (27/10/2026)
 - [ ] `/events` כשאין אירועים ובלי סינון: «אירועים חדשים בדרך» + «עדיין אוספות אירועים בחוות ואצל בתי עסק. שווה לבדוק שוב בקרוב»; אין שדה עיר וצ'יפים
 - [ ] עם סינון עיר שלא מחזיר כלום: «לא נמצאו תוצאות» + «נקו סינון» (ללא שינוי)
