@@ -398,7 +398,9 @@ test.describe("edit tab — header previews", () => {
 // ── MT:MEH-2138 chunk C — the חובה/רשות chip ───────────────────────────────
 
 test.describe("edit tab — required/optional chip", () => {
-  const GROUPS = ["profile", "trust", "location", "contact"];
+  // MEH-2433: five groups — "products" carries the products card, one of the
+  // five gates, so leaving it out would red the partition test below.
+  const GROUPS = ["profile", "products", "location", "contact", "trust"];
 
   // MT:MEH-2138-C:1 — every card carries one, in every group.
   test("every card in every group carries exactly one chip", async ({ page }) => {
