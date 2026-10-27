@@ -435,6 +435,9 @@ reads as a rendering bug (the ghost-strip class). Rules:
 - **Bottom:** `StickyContactBar` and `BottomNav` must not co-stack. On
   `/producer/[id]` mobile the contact bar is the sole bottom layer and
   `BottomNav` is gated off by route (`isProducerDetail`, `lib/producer-route.js`).
+  `BottomNav` is also off on `/admin/*` and `/producer/dashboard/*` (MEH-2431):
+  both have their own tab nav, and the pill covered list rows at 375. On mobile
+  the way back to the account sheet there is the header logo, then the nav.
 - **Never hardcode a stacked-chrome offset in px/vh.** A sticky layer that sits
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
