@@ -153,6 +153,16 @@ class Producer(Base):
     # invisible draft that simply never gets submitted. Loud and harmless
     # instead of quiet and wrong.
     status = Column(String(20), default="draft")
+    # MEH-2459: 'producer' (a business that sells) | 'organizer' (a market /
+    # event organizer that sells nothing). An organizer is a Producer row, not
+    # a second entity — `events.producer_id` is NOT NULL and 24 routers hang
+    # off Producer, so a parallel table would be workflow smell #1. The row is
+    # hidden from every business surface by `producer_listing.is_business()`
+    # and reachable only through its events. NOT NULL + server_default so the
+    # five create-from-payload sites and psql all mint a business unless they
+    # say otherwise. Values locked by CHECK `producer_kind_values`
+    # (migration f1a2b3c4d5e6). ADR-036.
+    kind = Column(String(20), nullable=False, server_default="producer")
     # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
     # moved draft -> pending. That instant, NOT created_at, is when the
     # 3-business-day review SLA starts once the submit gate ships.
@@ -662,6 +672,12 @@ class Producer(Base):
         CheckConstraint(
             "has_physical_location OR offers_delivery",
             name="producer_location_mode",
+        ),
+        # MEH-2459: the only two kinds. Mirrors migration f1a2b3c4d5e6 so a
+        # bootstrapped DB (`create_all`, CI) carries the same guard as staging.
+        CheckConstraint(
+            "kind IN ('producer', 'organizer')",
+            name="producer_kind_values",
         ),
         CheckConstraint(
             "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
