@@ -21,9 +21,10 @@ def test_utc_now_is_utc_wall_clock_within_a_second():
     value = utc_now()
     after = datetime.now(timezone.utc).replace(tzinfo=None)
     assert before <= value <= after
-    # Loose upper bound (review on #3652): a stalled helper or a wide clock mock
-    # still fails; 5 s leaves room for a loaded CI runner (the 1 s bound was
-    # the flake risk the #3644 review named).
+    # Loose upper bound (review on #3652): the bracket above already pins the
+    # value, so this line catches only a stalled helper, never a skew; 5 s
+    # leaves room for a loaded CI runner (the 1 s bound was the flake risk the
+    # #3644 review named).
     assert after - before < timedelta(seconds=5)
 
 
@@ -40,4 +41,5 @@ def test_model_default_created_at_is_naive(db):
     before = utc_now()
     user = make_user(db)
     assert user.created_at.tzinfo is None
-    assert before - timedelta(seconds=1) <= user.created_at <= utc_now()
+    # make_user() does not backdate created_at, so the lower bound is strict.
+    assert before <= user.created_at <= utc_now()
