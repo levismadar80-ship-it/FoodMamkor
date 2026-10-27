@@ -3642,6 +3642,12 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] **בלי קישור — השער נשאר** — אותה לקוחה, אותו עמוד, בלי `?rt=` ובלי לחיצת וואטסאפ (חלון חדש); **תוצאה מצופה:** אין «כתבו ביקורת»
 - [ ] **קישור של עסק אחר** — פתחי את עמוד עסק ב' עם `rt` שהונפק לעסק א'; **תוצאה מצופה:** הטופס נפתח, אבל השליחה נדחית (403) עם הודעת השרת — האימות הוא בצד השרת
 
+## MEH-2390 — ביקורת שעברה fail-open נבדקת שוב (26/10)
+
+- [ ] **fail-open נשמר כ«לא נבדק»** — ב-staging בלי `ANTHROPIC_API_KEY`, שלחי ביקורת — **תוצאה מצופה:** הביקורת מתפרסמת, וב-`/admin/reviews` אין לה תג AI. ב-DB ‏`ai_moderation_status` הוא NULL (לא APPROVED)
+- [ ] **שמירה חוזרת בודקת שוב** — החזירי את המפתח, ושמרי שוב את אותה ביקורת בלי לשנות טקסט — **תוצאה מצופה:** ה-AI רץ (ב-DB מופיע APPROVED או FLAGGED)
+- [ ] **תג סיבה לפי מחלקת HTTP** — אירוע Sentry של fail-open עם מפתח לא תקין — **תוצאה מצופה:** `fail_open_reason=api_error_4xx`
+
 ## MEH-2352 — מדידת fail-open במודרציה (26/10)
 
 - [ ] אירוע Sentry ל-fail-open — ב-staging, להסיר זמנית את `ANTHROPIC_API_KEY` (או להשתמש בסביבה בלי מפתח) ולשלוח ביקורת — ב-Sentry מופיע `moderation fail-open: review (no_client)` עם tags ‏`moderation_fail_open=true`, ‏`moderation_surface=review`, ‏`fail_open_reason=no_client`; הביקורת עדיין מתפרסמת (LOCK לא השתנה)

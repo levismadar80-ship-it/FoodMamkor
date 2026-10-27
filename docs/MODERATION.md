@@ -9,7 +9,7 @@
 
 | משטח | מה נבדק | REJECTED | APPROVED / FLAGGED | שער אנושי | fail-open |
 |---|---|---|---|---|---|
-| **ביקורות** | גוף הביקורת (`reviews.py:_moderate_review_body`) | 422, לא נשמר (`routers/reviews.py:create_review_nested`) | **מתפרסם מיד**. הסטטוס נשמר ב-`ai_moderation_status`, ו-FLAGGED מקבל תג «סומן ע״י AI» ב-`/admin/reviews` (PR #3621) | אין. אדמין יכולה להסתיר או למחוק בדיעבד | APPROVED |
+| **ביקורות** | גוף הביקורת (`reviews.py:_moderate_review_body`) | 422, לא נשמר (`routers/reviews.py:create_review_nested`) | **מתפרסם מיד**. הסטטוס נשמר ב-`ai_moderation_status`, ו-FLAGGED מקבל תג «סומן ע״י AI» ב-`/admin/reviews` (PR #3621) | אין. אדמין יכולה להסתיר או למחוק בדיעבד | מתפרסם, הסטטוס נשמר NULL (PR של MEH-2390) |
 | **חוויות** | כותרת, תיאור, קטגוריה, עיר, מחיר, משתתפים (`services/experience_moderation.py`) | 400, לא נשמר (`routers/experiences.py:submit_experience`) | נשמר `status=pending`, והסטטוס של ה-AI נשמר ב-`moderation_status` | תמיד: אדמין מאשרת כל חוויה | APPROVED |
 | **מתכונים** | כותרת, תיאור, מצרכים, הוראות (`services/producer_recipe_moderation.py`) | 400, לא נשמר (`routers/producer_recipes.py:create_my_recipe`) | נשמר `moderation_status=pending`, וסיבת ה-AI נשמרת ב-`moderation_notes` | תמיד: אדמין מאשרת כל מתכון | APPROVED |
 | **סיכון בית עסק** | פרופיל בית העסק בהרשמה ובשיוך (`services/producer_risk.py`) | — | ציון 0–100 + נימוק ב-`producers.risk_score` / `risk_reasoning`, מוצג בטבלת `/admin/producers` | הציון הוא רק מידע לאדמין | ציון NULL (אדמין לא רואה ציון) |
@@ -19,7 +19,7 @@
 **ביקורות הן המשטח היחיד שמתפרסם בלי אדמין**, ולכן fail-open שם פירושו שביקורת עולה בלי שום בדיקה. זה הנימוק לדיווח ב-Sentry שמתואר בהמשך.
 
 ### מה עוד לא סגור
-- **ביקורת FLAGGED עדיין מתפרסמת** (PR #3621). הסימון רק מסמן לאדמין. עריכה עם אותו טקסט שומרת את הסימון. fail-open נשמר כ-APPROVED, כך שבדף האדמין אי אפשר להבחין בינו לבין אישור אמיתי.
+- **ביקורת FLAGGED עדיין מתפרסמת** (PR #3621). הסימון רק מסמן לאדמין. עריכה עם אותו טקסט שומרת את הסימון. fail-open נשמר כ-NULL («לא נבדק», MEH-2390). לכן שמירה חוזרת של אותו טקסט שולחת אותו שוב למודל. עד MEH-2390 הוא נשמר כ-APPROVED ולא נבדק שוב.
 - **הסתרה של אדמין דביקה** (PR #3612): כשהכותבת עורכת ביקורת מוסתרת היא נשארת מוסתרת. הכותבת גם לא יכולה למחוק ביקורת מוסתרת (404). רק `PUT /admin/reviews/{id}/unhide` מחזיר אותה.
 - `home_product_moderation.py` שייך למערכת שבהסרה (MEH-796) ועדיין משתמש ב-`settings.anthropic_model`. הוא לא חלק מהמסמך הזה, וגם לא קיבל את השיפורים שלמטה.
 
@@ -43,10 +43,10 @@
 
 ## fail-open — LOCK, ועכשיו גם גלוי (PR #3607)
 
-הכלל לא השתנה: אין מפתח, שגיאת API או תשובה לא קריאה ← APPROVED (בסיכון: NULL). מה שנוסף הוא אות שזה קרה. `services/moderation_fail_open.py:report_fail_open(surface, reason)` כותב warning ל-structlog (Railway logs) ואירוע Sentry אחד לכל מקרה.
+הכלל לא השתנה: אין מפתח, שגיאת API או תשובה לא קריאה ← הפריט עובר כאילו אושר (בביקורות הסטטוס נשמר NULL מאז MEH-2390; בסיכון: ציון NULL). מה שנוסף הוא אות שזה קרה. `services/moderation_fail_open.py:report_fail_open(surface, reason)` כותב warning ל-structlog (Railway logs) ואירוע Sentry אחד לכל מקרה.
 
 - tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `experience` / `recipe` / `producer_risk`), `fail_open_reason`
-- `fail_open_reason`: `no_client` (אין מפתח), `api_error`, `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status`, `error`, ובסיכון בלבד גם `refusal` (במשטחי התוכן סירוב הוא FLAGGED ולא fail-open)
+- `fail_open_reason`: `no_client` (אין מפתח), `api_error_4xx` / `api_error_5xx` (תשובת HTTP מה-API, MEH-2390: 401 מפתח מת ו-429 מכסה הם 4xx, 529 עומס הוא 5xx), `api_error` (אין תשובה בכלל: חיבור, timeout), `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status` (גם JSON תקין שאינו אובייקט), `error`, ובסיכון בלבד גם `refusal` (במשטחי התוכן סירוב הוא FLAGGED ולא fail-open)
 - fingerprint: `["moderation-fail-open", surface, reason]`. ה-burst cap הקיים (`app/sentry.py`, 12 ליום לכל fingerprint) מגביל את צריכת המכסה, ולכן בתקלה מתמשכת המונה ב-Sentry הוא רצפה. הספירה המלאה נמצאת ב-Railway logs.
 - התראה: כלל ב-Sentry ברמת tag (סכום על כל ה-fingerprints) על `moderation_fail_open:true` עם `moderation_surface` ב-`review`/`experience`/`recipe`. `producer_risk` לא נכלל, כי שם לא מאושר כלום, רק ציון ריק. זה צעד ידני, ב-`MANUAL_TESTING.md` § MEH-2352.
 
