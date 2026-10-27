@@ -34,6 +34,9 @@ function StatusSelect({ value, onChange }) {
       <option value="pending">{t("producers.toolbar.pending")}</option>
       <option value="inactive">{t("producers.toolbar.suspended")}</option>
       <option value="rejected">{t("producers.toolbar.rejected")}</option>
+      {/* MEH-2432 follow-up: "all" leaves drafts out (MEH-2100), so this is the
+          only way to reach a draft's row, and its delete action. */}
+      <option value="draft">{t("producers.toolbar.drafts")}</option>
     </select>
   );
 }
