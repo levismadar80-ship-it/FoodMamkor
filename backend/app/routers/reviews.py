@@ -315,6 +315,29 @@ def _invited_by_token(review_token: str | None, producer_id: UUID) -> bool:
     return bool(claims) and claims.get("producer_id") == str(producer_id)
 
 
+def _apply_review_edit(
+    db: Session,
+    review: ProducerReview,
+    data: ReviewCreateNested,
+    ai_status: str | None,
+) -> None:
+    """Write an author edit onto an existing row (both upsert paths).
+
+    MEH-2381: an edit that changes body or stars on a hidden review stamps
+    edited_after_hidden_at, so the admin sees the text she hid has changed.
+    The row is re-read under FOR UPDATE first: the moderation call sits
+    between the first read and this write, and a hide or unhide committed in
+    that window must be the is_hidden this compares against. Compared before
+    the assignment; an unchanged re-save does not stamp.
+    """
+    db.refresh(review, with_for_update=True)
+    if review.is_hidden and (review.body != data.body or review.stars != data.stars):
+        review.edited_after_hidden_at = utc_now()
+    review.stars = data.stars
+    review.body = data.body
+    review.ai_moderation_status = ai_status
+
+
 @router.post(
     "/producers/{producer_id}/reviews",
     response_model=ReviewOut,
@@ -432,9 +455,7 @@ def create_review_nested(
     ai_status = _ai_status_for_write(data.body, existing_review)
 
     if existing_review:
-        existing_review.stars = data.stars
-        existing_review.body = data.body
-        existing_review.ai_moderation_status = ai_status
+        _apply_review_edit(db, existing_review, data, ai_status)
         # MEH-2348: an edit never touches is_hidden. Only the admin hide
         # endpoint sets it, so hidden ⇒ admin-hidden, and only an admin may
         # undo it (PUT /admin/reviews/{id}/unhide). If is_hidden ever gains a
@@ -471,9 +492,7 @@ def create_review_nested(
                 # Not the unique-pair race this branch exists for (that row
                 # would be here) — don't mask a different integrity error.
                 raise
-            review.stars = data.stars
-            review.body = data.body
-            review.ai_moderation_status = ai_status
+            _apply_review_edit(db, review, data, ai_status)
             db.commit()
 
     _recompute_producer_rating(producer_id, db)
@@ -581,6 +600,9 @@ def hide_review(
     if not review:
         raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
     review.is_hidden = True
+    # MEH-2381: hiding (or re-hiding, "keep hidden") means the admin has seen
+    # the current text.
+    review.edited_after_hidden_at = None
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
     return {"detail": "Review hidden", "id": str(review_id)}
@@ -598,6 +620,7 @@ def unhide_review(
     if not review:
         raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
     review.is_hidden = False
+    review.edited_after_hidden_at = None  # MEH-2381: public again
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
     return {"detail": "Review unhidden", "id": str(review_id)}
@@ -634,6 +657,12 @@ def admin_list_reviews(
             source=r.source,
             # MEH-2349: "APPROVED" | "FLAGGED" | None (no body / predates it).
             ai_moderation_status=r.ai_moderation_status,
+            # MEH-2381: None = not edited since the last hide/unhide.
+            edited_after_hidden_at=(
+                r.edited_after_hidden_at.isoformat()
+                if r.edited_after_hidden_at
+                else None
+            ),
         )
         for r in rows
     ]

@@ -2244,6 +2244,7 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "ai_moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['APPROVED', 'FLAGGED']),/*#__PURE__*/ zod.null()])),
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
+  "edited_after_hidden_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),

@@ -4362,6 +4362,9 @@ class AdminReviewOut(BaseModel):
     # MEH-2349: the AI verdict on the body. None = no body, or the review
     # predates the column. Admin-only, like `source`.
     ai_moderation_status: Literal["APPROVED", "FLAGGED"] | None = None
+    # MEH-2381: ISO time of the author's last edit while hidden; None = not
+    # edited since the admin last hid or unhid it. Admin-only, like `source`.
+    edited_after_hidden_at: str | None = None
 
     model_config = {"from_attributes": True}
 
