@@ -127,6 +127,7 @@ function toEntry(row, tab) {
 // 308s to /experiences in next.config.js redirects().
 export default function EventsPage({ initialTab = "events" }) {
   const t = useTranslations("events.list");
+  const tErr = useTranslations("error");
   const tCat = useTranslations("events.categories");
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
@@ -139,6 +140,10 @@ export default function EventsPage({ initialTab = "events" }) {
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  // MEH-2396: a failed load is its own state. Before, the catch did
+  // setRows([]) and the page rendered the editorial "אין אירועים" empty
+  // state — a false statement when the server simply did not answer.
+  const [loadError, setLoadError] = useState(false);
   // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
   // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
@@ -193,15 +198,21 @@ export default function EventsPage({ initialTab = "events" }) {
 
   const load = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const params = {};
       if (city) params.city = city;
       if (category) params.category = category;
       const endpoint = tab === "experiences" ? "/experiences" : "/events";
-      const r = await api.get(endpoint, { params });
+      // MEH-2396: lib/api.js sets no timeout, so when the backend hangs (seen
+      // 26/10: ~40 s of 502 during a Railway redeploy) the skeleton sat on
+      // screen until the proxy gave up. 15 s is per-request on purpose — a
+      // global axios timeout would also cut image uploads.
+      const r = await api.get(endpoint, { params, timeout: 15000 });
       setRows(r.data);
     } catch {
       setRows([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -265,7 +276,9 @@ export default function EventsPage({ initialTab = "events" }) {
   // that traps the reader with no way back but editing the URL, and it cannot
   // happen here.
   const filtersActive = Boolean(city || category);
-  const isZero = !loading && events.length === 0;
+  // MEH-2396: an error is not a zero. Neither zero surface may render on a
+  // failed load, or the page claims a dataset it never received.
+  const isZero = !loading && !loadError && events.length === 0;
   const datasetEmpty = isZero && !filtersActive;
   const filteredToZero = isZero && filtersActive;
 
@@ -444,6 +457,8 @@ export default function EventsPage({ initialTab = "events" }) {
       <section className="max-w-5xl mx-auto px-4 pt-4 pb-16">
         {loading ? (
           <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
+        ) : loadError ? (
+          <LoadError tErr={tErr} onRetry={load} />
         ) : filteredToZero ? (
           <NoResults t={t} onReset={resetFilters} />
         ) : datasetEmpty ? (
@@ -594,6 +609,30 @@ function EmptyState({ tab, t }) {
         </Link>
       </div>
       <span aria-hidden="true" className="mt-6 w-9 h-0.5 bg-accent/50 rounded-full" />
+    </div>
+  );
+}
+
+// LOAD FAILED (MEH-2396) — the request timed out or errored. Same shape as
+// NoResults (fact + one action), because the reader's situation is the same:
+// the chrome is still there, one click puts the page back on track. The
+// filter controls stay for the same reason they stay on filtered-to-zero.
+// Strings are the shared `error.*` pair — no copy of its own.
+function LoadError({ tErr, onRetry }) {
+  return (
+    <div data-testid="events-load-error" role="alert" className="flex flex-col items-center text-center px-6 py-16">
+      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+        {tErr("generic")}
+      </h2>
+      <button
+        type="button"
+        onClick={onRetry}
+        data-testid="events-retry"
+        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+      >
+        <ArrowCounterClockwise size={18} />
+        {tErr("retry")}
+      </button>
     </div>
   );
 }
