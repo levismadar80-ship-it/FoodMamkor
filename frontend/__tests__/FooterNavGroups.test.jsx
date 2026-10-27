@@ -37,6 +37,7 @@ vi.mock("@phosphor-icons/react", () => ({
   FacebookLogo: () => <span />, // MEH-2311
   TiktokLogo: () => <span />,
   YoutubeLogo: () => <span />,
+  CaretDown: () => <span />,
   ArrowRight: () => <span data-testid="arrow" />,
 }));
 

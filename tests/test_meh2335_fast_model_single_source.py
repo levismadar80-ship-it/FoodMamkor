@@ -119,7 +119,8 @@ def test_review_refusal_is_flagged(monkeypatch):
     monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(REFUSED))
     assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "FLAGGED"
     monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(EMPTY))
-    assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") == "APPROVED"
+    # MEH-2390: a review's fail-open is "no verdict" (None), not APPROVED.
+    assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") is None
 
 
 class _Text:

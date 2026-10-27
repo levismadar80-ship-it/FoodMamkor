@@ -20,9 +20,10 @@ per-endpoint and independent — the pre-fix run reddens `/count`, `/cities`,
 The exact pre-fix output is pasted in the PR body.
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 from app.services.availability_validation import ON_VACATION
+from app.utils.clock import israel_today
 from tests.conftest import make_producer
 
 
@@ -40,7 +41,7 @@ def _vacation(db, producer):
     test doing its job, not duplication to be cleaned up.
     """
     producer.availability_state = ON_VACATION
-    producer.vacation_until = date.today() + timedelta(days=10)
+    producer.vacation_until = israel_today() + timedelta(days=10)
     db.commit()
     db.refresh(producer)
     return producer

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,6 +36,7 @@ from app.services.whatsapp_templates import FavoriteAlertHeV1
 # `from app.routers.alerts import AlertContent` callers
 # (events.py, producer_me.py) keep working without scope creep.
 from app.schemas.schemas import AlertContent, AlertPrefsIn, AlertPrefsOut
+from app.utils.clock import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +180,7 @@ _CHANNEL_WHATSAPP = "whatsapp"
 
 def _recently_sent(db: Session, user_id: UUID, producer_id: UUID, channel: str) -> bool:
     """True if `channel` already delivered to (user, producer) within 24h."""
-    cutoff = datetime.utcnow() - _CAP_WINDOW
+    cutoff = utc_now() - _CAP_WINDOW
     return db.query(
         db.query(AlertLog)
         .filter(

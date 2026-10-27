@@ -223,6 +223,9 @@ def validate_experience(payload: dict[str, Any]) -> dict:
             raise ValueError("empty response from Claude")
 
         parsed = _parse_response_text(raw)
+        # MEH-2390: valid JSON that is not an object is a bad status, not a crash.
+        if not isinstance(parsed, dict):
+            parsed = {}
         status = str(parsed.get("status", "")).upper()
         if status not in VALID_STATUSES:
             logger.warning(

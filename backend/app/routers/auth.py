@@ -87,6 +87,7 @@ from app.schemas.schemas import (
     UserOut,
     UserRegister,
 )
+from app.utils.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +305,7 @@ async def register(
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user is None:
         verify_token = secrets.token_urlsafe(32)
-        verify_expires = datetime.utcnow() + timedelta(hours=24)
+        verify_expires = utc_now() + timedelta(hours=24)
         user = User(
             email=data.email,
             name=data.name,
@@ -320,7 +321,8 @@ async def register(
             # MEH-1995: record the terms acceptance instead of discarding it.
             # Stamped only when the flag is genuinely True — an omitted or
             # False flag leaves both columns NULL, which reads as "no record",
-            # not as "refused". now(timezone.utc), never naive utcnow().
+            # not as "refused". This column is timezone=True: aware
+            # now(timezone.utc), never the naive utc_now() helper.
             terms_accepted_at=(
                 datetime.now(timezone.utc) if data.terms_accepted else None
             ),
@@ -819,7 +821,7 @@ async def register_producer(
         create_primary_branch_location(db, producer)
 
         verify_token = secrets.token_urlsafe(32)
-        verify_expires = datetime.utcnow() + timedelta(hours=24)
+        verify_expires = utc_now() + timedelta(hours=24)
         user = User(
             email=data.email,
             name=data.name,
@@ -1387,7 +1389,7 @@ def forgot_password(
     if user:
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
         logger.info(
             "[FORGOT-PW] token_stored user_id=%s expires=%s",
@@ -1414,15 +1416,13 @@ async def reset_password(
     if not user:
         logger.warning("[RESET] token_not_found token_prefix=%s", data.token[:8])
         raise HTTPException(status_code=404, detail="הקישור לא תקין")
-    if (
-        not user.reset_token_expires_at
-        or user.reset_token_expires_at < datetime.utcnow()
-    ):
+    now = utc_now()
+    if not user.reset_token_expires_at or user.reset_token_expires_at < now:
         logger.warning(
             "[RESET] token_expired user_id=%s expires=%s now=%s",
             user.id,
             user.reset_token_expires_at,
-            datetime.utcnow(),
+            now,
         )
         raise HTTPException(
             status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש"
@@ -1463,15 +1463,13 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     if not user:
         logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
         raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
-    if (
-        user.email_verify_expires is None
-        or user.email_verify_expires < datetime.utcnow()
-    ):
+    now = utc_now()
+    if user.email_verify_expires is None or user.email_verify_expires < now:
         logger.warning(
             "[VERIFY-EMAIL] token_expired user_id=%s expires=%s now=%s",
             user.id,
             user.email_verify_expires,
-            datetime.utcnow(),
+            now,
         )
         raise HTTPException(status_code=410, detail="קישור האימות פג תוקף")
     user.email_verified = True
@@ -1493,7 +1491,7 @@ def resend_verify(
     if user.email_verified:
         return {"detail": "האימייל כבר מאומת"}
     token = secrets.token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(hours=24)
+    expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token
     user.email_verify_expires = expires
     db.commit()

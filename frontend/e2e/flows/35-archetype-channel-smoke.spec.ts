@@ -262,10 +262,12 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     // display:none copy and the click times out. The href form is no longer
     // device-dependent (MEH-2189 ruling ב'), so this is wa.me on both projects;
     // the locator still accepts either form per the header.
-    const waChip = waHrefLocator(page, "question-link", true).first();
+    // MEH-2385: the stock question chip no longer renders, so the escalation
+    // row ("שאלה אחרת?") is the wa.me item every whatsapp-primary page carries.
+    const waChip = waHrefLocator(page, "escalation-link", true).first();
     await expect(
       waChip,
-      "CONTROL: a visible WhatsApp question chip must exist on the whatsapp-primary page"
+      "CONTROL: a visible WhatsApp escalation row must exist on the whatsapp-primary page"
     ).toBeVisible();
     await waChip.evaluate((el) => el.setAttribute("target", "_blank"));
     await waChip.click({ noWaitAfter: true });
