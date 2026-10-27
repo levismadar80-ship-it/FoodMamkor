@@ -9,7 +9,7 @@
   - **‏#3629 `8d870a42` (MEH-2368):** לכל כלל ב-`robots.txt` יש תאום `/en`. טסט קורא את הקובץ ומוודא זוגיות.
   - **‏#3630 `b867d91c` (MEH-2371):** ה-hook `useFirstVisit` שאף אחד לא קרא לו נמחק; knip נקי.
   - **‏#3631 `f8ad62d5` (MEH-2369):** ‏/events, ‏/experiences ו-/group-buys מוצעים (ניווט, פוטר, sitemap) רק כשיש בהם תוכן. הפוטר שואל `GET /events/upcoming` דרך `lib/use-events-nav-gate.js`.
-  - **‏#3641 (MEH-2369, המשך):** ה-stub ל-`/api/events/upcoming` בשלושת specs האדמין וב-`parity.spec.ts`, וה-baselines של about / login / register נוצרו מחדש דרך תוויות `vrt-regen:*` ונקראו (שתי viewports). ה-regen רץ שוב על ה-tip שכולל את #3654 ויצא «Baselines unchanged». נמדד: ‏`GET https://mehamakor.co.il/api/events/upcoming` → `200 []`.
+  - **‏#3641 `d3605522` (MEH-2369, המשך):** ה-stub ל-`/api/events/upcoming` בשלושת specs האדמין וב-`parity.spec.ts`, וה-baselines של about / login / register נוצרו מחדש דרך תוויות `vrt-regen:*` ונקראו (שתי viewports). ה-regen רץ שוב על ה-tip שכולל את #3654 ויצא «Baselines unchanged». נמדד: ‏`GET https://mehamakor.co.il/api/events/upcoming` → `200 []`.
   - **‏#3635 `30f230c6` (MEH-2373):** «חלב גולמי» יצא מהפרומפט של העוזרת, כי האתר לא מציע אותו.
   - **‏#3637 `2f9c5c4a` (MEH-2375, RED, נסקר על ידי מודל חזק יותר):** שגיאות אדמין לא מהדהדות יותר טקסט גולמי של exception ל-client.
   - **‏#3638 `d324c3b7` (MEH-2370, RED):** ארבעת endpoints ה«עקיבה» (`producer_follows.py`) הוסרו; עוקבות = מועדפים מאז MEH-1364. הטבלה `producer_followers` נשארת ל-MEH-2392 (post-launch, Expand-Contract).
