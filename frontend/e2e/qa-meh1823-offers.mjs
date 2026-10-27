@@ -114,10 +114,10 @@ for (const [w, h, tag] of [[375, 812, "375"], [1440, 900, "1440"]]) {
     path: "/producer/p1", profile: withoutOffer, probe: countBadge,
   });
   await shot(`dashboard-offers-card-${tag}`, { width: w, height: h }, {
-    // Deep-link straight to the card: ?group=location selects the group (the
+    // Deep-link straight to the card: ?group=products selects the group (the
     // others are `hidden`), #offer opens the accordion. Clicking through the
     // hub worked only intermittently, and a flaky QA harness is worse than none.
-    path: "/producer/dashboard/edit?group=location#offer",
+    path: "/producer/dashboard/edit?group=products#offer",
     profile: withOffer,
     probe: async (page) => {
       // NO hub clicks here. The deep link above already selects the group and

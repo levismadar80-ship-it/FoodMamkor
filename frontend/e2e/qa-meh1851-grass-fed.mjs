@@ -122,7 +122,7 @@ async function openTrustGroup(browser, width, height, grassFed) {
   });
   await page.addInitScript(() => localStorage.setItem("token", "qa-fixture-token"));
   // localePrefix: "as-needed" — /he/* redirects to the bare path.
-  await page.goto(`${BASE}/producer/dashboard/edit?group=trust`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/producer/dashboard/edit?group=products`, { waitUntil: "networkidle" });
 
   // Dismiss the cookie banner — it is fixed to the bottom and covers the card
   // being documented. Best-effort: if it never renders, carry on.
