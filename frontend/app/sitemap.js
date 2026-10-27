@@ -58,7 +58,8 @@ export default async function sitemap() {
     // MEH-1289: reader-facing "why local" editorial page.
     { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
-    // MEH-803: /register, /login, /contact, /search intentionally NOT listed —
+    // MEH-803: /register, /login, /contact intentionally NOT listed (/search
+    // itself is gone — it 308s to /producers since MEH-819) —
     // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility
     // route), so emitting them here produced GSC "Submitted URL marked 'noindex'".
     // The sitemap lists indexable URLs only; the pages' noindex directives stay.

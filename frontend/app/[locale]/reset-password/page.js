@@ -6,7 +6,7 @@ import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-641 PR-B: server-wrapper pattern (MEH-658 precedent) — client
 // components can't export metadata; the wrapper supplies SEO while
 // ResetPasswordClient.jsx keeps the "use client" token flow (useSearchParams
-// inside its own <Suspense>) untouched — same shape as /search.
+// inside its own <Suspense>) untouched — the shape the old /search page used (MEH-819 removed it).
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.reset_password" });

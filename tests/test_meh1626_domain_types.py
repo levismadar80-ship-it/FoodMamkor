@@ -13,7 +13,7 @@ Related: backend/app/schemas/schemas.py (the 5 domain types) ·
 tests/test_meh1537_contact_validation.py (the phone helper's own pins) ·
 tests/test_validation_hardening.py (producer_name, MEH-1623).
 """
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -26,6 +26,7 @@ from app.schemas.schemas import (
     ProducerRegister,
     UserRegister,
 )
+from app.utils.clock import israel_today
 from pydantic import ValidationError
 
 
@@ -44,7 +45,7 @@ def _group_buy(**overrides):
 def _event(**overrides):
     return {
         "title": "שוק איכרים",
-        "event_date": date.today(),
+        "event_date": israel_today(),
         "category": "שוק",
         # MEH-2013: EventCreate.city is required now. Fixture only — every
         # test in this file is about title/description sanitisation.

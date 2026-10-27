@@ -177,7 +177,6 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
 const EXTENDED_PUBLIC_ROUTES = [
   "/contact",
   "/events",
-  "/search",
   "/about",
   "/about/process",
   "/about/for-businesses",

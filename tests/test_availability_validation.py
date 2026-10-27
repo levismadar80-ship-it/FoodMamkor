@@ -140,7 +140,7 @@ def test_api_new_endpoint_rejects_past_vacation(client, db):
     from tests.conftest import auth_header
 
     user, _ = _producer_user(db)
-    past = (date.today() - timedelta(days=5)).isoformat()
+    past = (clock.israel_today() - timedelta(days=5)).isoformat()
     resp = client.post(
         "/producers/me/availability-state",
         json={"state": "on_vacation", "vacation_until": past},
@@ -153,7 +153,7 @@ def test_api_new_endpoint_accepts_future_vacation(client, db):
     from tests.conftest import auth_header
 
     user, _ = _producer_user(db)
-    future = (date.today() + timedelta(days=10)).isoformat()
+    future = (clock.israel_today() + timedelta(days=10)).isoformat()
     resp = client.post(
         "/producers/me/availability-state",
         json={"state": "on_vacation", "vacation_until": future},
@@ -167,7 +167,7 @@ def test_api_legacy_status_rejects_past_vacation(client, db):
     from tests.conftest import auth_header
 
     user, _ = _producer_user(db)
-    past = (date.today() - timedelta(days=3)).isoformat()
+    past = (clock.israel_today() - timedelta(days=3)).isoformat()
     resp = client.post(
         "/producers/me/availability-status",
         json={"status": "vacation", "vacation_until": past},
