@@ -148,9 +148,9 @@ export default async function JoinPage({ params }) {
           </div>
         </section>
 
-        {/* ── Testimonial slot — self-describing placeholder. DO NOT fill with
-               invented business copy — real Template-10 verbatim quote lands
-               pre-launch (MEH-931; COPY_BANK §8 guardrail). ── */}
+        {/* ── Testimonial slot — gated OFF by SHOW_TESTIMONIAL (MEH-2419) until a
+               real Template-10 verbatim quote exists. DO NOT fill with invented
+               business copy (COPY_BANK §8 guardrail). ── */}
         {SHOW_TESTIMONIAL && (
           <section className="mb-14 sm:mb-20 text-center" data-testid="join-testimonial">
             <Quotes size={28} className="text-accent mx-auto mb-3" aria-hidden="true" />

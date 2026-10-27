@@ -234,6 +234,8 @@ test.describe("manual › /join (MEH-995)", () => {
   // MT:MEH-995:8 — MEH-2419: the testimonial slot is render-gated OFF until a
   // real quote exists (same rule as /about, MEH-1112: real social proof or
   // nothing). The placeholder copy must not reach the page at all.
+  // When SHOW_TESTIMONIAL flips to true for a REAL quote, replace this test
+  // with one that asserts that quote — this one is expected to go red then.
   test("testimonial slot: not rendered while there is no real testimonial", async ({ page }) => {
     await gotoJoin(page);
     // Gate on a sibling the change cannot move, so an empty page can't pass.
