@@ -121,6 +121,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(producer_name_requests.router)
     app.include_router(group_buys.router)
     app.include_router(group_buys.admin_router)
+    # MEH-2437: GET /producers/me/group-buys.
+    app.include_router(group_buys.me_router)
     app.include_router(alerts.router)
     app.include_router(admin_kashrut.router)
     app.include_router(admin_checklist.router)
