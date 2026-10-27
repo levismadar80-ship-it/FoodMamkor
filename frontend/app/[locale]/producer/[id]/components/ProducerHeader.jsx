@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
 
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
@@ -229,21 +230,40 @@ export default function ProducerHeader({
         </span>
       )}
 
-      {/* Group 4 — meta line (city · category · status) + one quiet kosher
-          line. The status is colored text, no dot, no chip (mockup 1d). */}
+      {/* Group 4 — meta block (MEH-2403, Sapir's decision 27/10 "גם א וגם ב"):
+          TWO lines instead of the single "city · category · status" row.
+          Line 1, muted: "category · city" — the Google Maps / Yelp pattern
+          (Bakery · Modi'in), with the primary category a real link to the same
+          /producers?category=<id> listing the home category cards reach
+          (MEH-1080). Line 2: the status ALONE, in its own colour — one fact per
+          line, and the page's single green is no longer sharing a row with
+          two grey words. The line is absent from the DOM when there is neither
+          a city nor a category; the status line always renders.
+          The status is colored text, no dot, no chip (mockup 1d). */}
       <div className="flex flex-col gap-1 mt-2 mb-1">
-        <p
-          className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-sm text-muted"
-          data-testid="producer-header-meta"
-        >
-          {producer.city && <span>{producer.city}</span>}
-          {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
-          {primaryCategory && <span>{primaryCategory.name}</span>}
-          {(producer.city || primaryCategory) && <span aria-hidden="true" className="opacity-60">·</span>}
-          {/* MEH-1546: ONE status element, five-branch precedence (see
-              resolveHeaderStatus). order_window feeds this line instead of
-              adding a second one — two order-status assertions on one page
-              would contradict each other. */}
+        {(producer.city || primaryCategory) && (
+          <p
+            className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-sm text-muted"
+            data-testid="producer-header-meta"
+          >
+            {primaryCategory && (
+              <Link
+                href={`/producers?category=${encodeURIComponent(primaryCategory.id)}`}
+                className="inline-flex min-h-[24px] items-center underline-offset-2 hover:underline hover:text-text transition"
+                data-testid="producer-header-category-link"
+              >
+                {primaryCategory.name}
+              </Link>
+            )}
+            {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
+            {producer.city && <span>{producer.city}</span>}
+          </p>
+        )}
+        {/* MEH-1546: ONE status element, five-branch precedence (see
+            resolveHeaderStatus). order_window feeds this line instead of
+            adding a second one — two order-status assertions on one page
+            would contradict each other. */}
+        <p className="text-sm" data-testid="producer-header-status-line">
           <span className={`font-semibold ${status.tone}`} data-testid={status.testid}>
             {statusLabel}
           </span>
