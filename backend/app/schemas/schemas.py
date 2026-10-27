@@ -4754,12 +4754,6 @@ class ProducerViewIn(BaseModel):
     referrer: str | None = None
 
 
-# --- Referrals (referrals.py) ---
-# MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
-class ClaimReferralRequest(BaseModel):
-    code: str
-
-
 # --- Admin: vacation mode (admin_extra.py) ---
 # MEH-509 PR2a: typed wrapper over the AdminSetting key-value store for the
 # two vacation_* keys. Shared by GET + POST /admin/settings/vacation so the
