@@ -10,7 +10,6 @@ DELETE /events/{id}              delete (owner only)
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -27,7 +26,7 @@ from app.database import get_db
 from app.models import Event, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
-from app.utils.clock import israel_today
+from app.utils.clock import israel_today, utc_now
 
 router = APIRouter(tags=["events"])
 
@@ -62,7 +61,7 @@ def _serialize(event: Event) -> EventOut:
         max_participants=event.max_participants,
         registration_url=event.registration_url,
         is_active=bool(event.is_active),
-        created_at=event.created_at or datetime.utcnow(),
+        created_at=event.created_at or utc_now(),
     )
 
 
