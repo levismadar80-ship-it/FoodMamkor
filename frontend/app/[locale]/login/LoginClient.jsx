@@ -165,8 +165,10 @@ function LoginPageBody() {
   return (
     <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
 
-      {/* Image pane — END (left) on desktop, top band on mobile (MEH-788) */}
-      <div className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+      {/* Image pane — END (left) on desktop only (MEH-788). MEH-2397: the
+          30vh top band on mobile pushed the first field below the fold and the
+          footer outgrew the form; desktop keeps the split screen untouched. */}
+      <div className="relative hidden lg:block lg:order-2 overflow-hidden">
         <Image
           src={heroSrc}
           alt=""
@@ -188,7 +190,7 @@ function LoginPageBody() {
       </div>
 
       {/* Form pane — START (right) on desktop */}
-      <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+      <div className="lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
         {/* S9 "Two Doors": open fields on cream — no floating white auth card. */}
         <div className="w-full max-w-[416px] mx-auto grid gap-6">
 
