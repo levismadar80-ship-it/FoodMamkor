@@ -348,13 +348,17 @@ export default function BottomNav() {
   // MEH-1202: on /producer/[id] the StickyContactBar ("שליחת הודעה", z-[598],
   // bottom-16) is the single bottom chrome layer — BottomNav stacked a SECOND
   // fixed bottom bar under it. Gate BottomNav OFF this route so mobile shows one
-  // bottom layer, not two. Scoped to the public producer leaf only (dashboard
-  // subtree keeps the nav). Placed after every hook so rules-of-hooks holds.
+  // bottom layer, not two. Placed after every hook so rules-of-hooks holds.
   if (isProducerDetail(pathname)) return null;
   // MEH-2359: /admin has its own mobile nav (admin/layout.js horizontal strip);
   // the consumer BottomNav floated over the approvals table at 375 (measured
   // 26/10, qa-artifacts/MEH-2359). Gate it off the admin subtree as a whole.
   if (pathname === "/admin" || (pathname || "").startsWith("/admin/")) return null;
+  // MEH-2431: same for the owner dashboard, which has its own tab nav
+  // (producer/dashboard/layout.js). The pill covered rows of the locations
+  // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
+  // keeps the nav"; the account sheet is one tap away via the header logo.
+  if (pathname === "/producer/dashboard" || (pathname || "").startsWith("/producer/dashboard/")) return null;
 
   return (
     <>

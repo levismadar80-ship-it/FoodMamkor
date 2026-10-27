@@ -90,8 +90,21 @@ describe("BottomNav", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("still renders on the /producer/dashboard owner subtree", () => {
-    pathnameRef.current = "/producer/dashboard";
+  // MEH-2431 (reverses the MEH-1202 carve-out above): the owner dashboard has
+  // its own tab nav; the consumer pill floated over its lists at 375.
+  it.each(["/producer/dashboard", "/producer/dashboard/edit", "/producer/dashboard/events/new"])(
+    "renders null on the owner dashboard subtree (%s)",
+    (path) => {
+      pathnameRef.current = path;
+      const { container } = render(<BottomNav />);
+      expect(container).toBeEmptyDOMElement();
+    },
+  );
+
+  // Controls: consumer routes keep the nav, so a gate that hides it
+  // everywhere cannot pass.
+  it.each(["/", "/map", "/favorites"])("still renders on %s", (path) => {
+    pathnameRef.current = path;
     render(<BottomNav />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
   });
