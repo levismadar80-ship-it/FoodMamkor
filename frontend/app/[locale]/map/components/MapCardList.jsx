@@ -10,7 +10,7 @@ import { SkeletonStyles } from "@/components/Skeleton";
  * <MapProducerCard/> per visible producer, with hover + active
  * highlight rings driven by useMapSync state.
  *
- * The empty-state branch ("לא נמצאו עסקים") includes an "אפסי סינון"
+ * The empty-state branch ("לא נמצאו עסקים") includes a "נקו את הסינון"
  * button that does a wider reset than useMapFilters.resetAllFilters
  * — it ALSO clears cityFilter (was MapClient.jsx:693-697 inline).
  * That wider-reset behavior is preserved by passing onResetAll as
@@ -40,6 +40,9 @@ export default function MapCardList({
   onCardMouseLeave,
   onCardClick,
   onResetAll,
+  // MEH-2425: the reset button only renders when a filter is actually on —
+  // "clear filters" under an unfiltered empty area offers nothing to clear.
+  filtered = true,
   // MEH-1671: while the first /producers fetch is in flight the list is
   // empty for a reason that is NOT "no results" — rendering the empty state
   // then is the desktop-sidebar flash this prop closes. The mobile sheet was
@@ -97,13 +100,16 @@ export default function MapCardList({
           <Leaf size={44} className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.card_list.empty.heading")}</h3>
           <p className="text-fg-muted text-sm mb-3">{t("map.card_list.empty.body")}</p>
-          <button
-            type="button"
-            onClick={onResetAll}
-            className="text-sm text-primary font-medium hover:underline"
-          >
-            {t("map.card_list.empty.reset_filters")}
-          </button>
+          {filtered && (
+            <button
+              type="button"
+              onClick={onResetAll}
+              data-testid="map-card-list-reset"
+              className="text-sm text-primary font-medium hover:underline"
+            >
+              {t("map.card_list.empty.reset_filters")}
+            </button>
+          )}
         </div>
       )}
     </div>

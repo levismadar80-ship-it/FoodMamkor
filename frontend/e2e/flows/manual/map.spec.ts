@@ -738,9 +738,10 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
   //   while nothing is active. DRIFT: MEH-1368 removed the inline
   //   [מאומתים][משלוח אליי] quick-chip row the rows describe; those axes live in
   //   the sheet. Desktop: the same two rows + the tag strip once a filter is on.
-  // MT:two-row:m8 — «× נקו הכל» resets every filter and the tag strip goes away
-  //   (copy drift: the row says «נקי», he.json says «נקו»).
-  test("category row + service row + «סינון» with no count; a service chip makes a tag strip that «× נקו הכל» clears", async ({ page }, info) => {
+  // MEH-2425: a lit service chip is NOT repeated as a "× איסוף עצמי" tag under
+  //   it (Sapir 27/10 — the same filter in two places). The chip is its own
+  //   off switch; «× נקו הכל» is covered with sheet-only filters in the next test.
+  test("category row + service row + «סינון» with no count; a service chip lights itself and makes no tag strip", async ({ page }, info) => {
     await stubExternal(page);
     await gotoMap(page);
     const shell = shellOf(page, info);
@@ -755,14 +756,9 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
     await serviceChip(shell, "pickup_points").click();
     await expect(serviceChip(shell, "pickup_points")).toHaveAttribute("aria-pressed", "true");
     await expect(filtersButton(shell)).toContainText("1");
-    const strip = shell.getByTestId("map-active-filter-tags");
-    await expect(strip).toBeVisible();
-    await expect(strip.getByTestId("map-active-filter-tag")).toHaveCount(1);
-    await expect(strip.getByTestId("map-active-filter-tag")).toContainText(AXES.pickup_points.label);
-    await expect(strip.getByTestId("map-clear-all")).toHaveText(MF.clear_all);
-
-    await strip.getByTestId("map-clear-all").click();
     await expect(shell.getByTestId("map-active-filter-tags")).toHaveCount(0);
+
+    await serviceChip(shell, "pickup_points").click();
     await expect(serviceChip(shell, "pickup_points")).toHaveAttribute("aria-pressed", "false");
     await expect(filtersButton(shell)).toHaveText(FILTERS_BTN);
   });
@@ -795,6 +791,15 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
     await filtersButton(shell).click();
     await expect(sheetPanel(page).getByTestId("chip-vegan")).toHaveAttribute("aria-checked", "false");
     await expect(sheetPanel(page).getByTestId("chip-gluten_free")).toHaveAttribute("aria-checked", "true");
+
+    // MT:two-row:m8 — «× נקו הכל» resets every filter and the tag strip goes away.
+    await page.keyboard.press("Escape");
+    await expect(sheetPanel(page)).toHaveCount(0);
+    const strip = shell.getByTestId("map-active-filter-tags");
+    await expect(strip.getByTestId("map-clear-all")).toHaveText(MF.clear_all);
+    await strip.getByTestId("map-clear-all").click();
+    await expect(shell.getByTestId("map-active-filter-tags")).toHaveCount(0);
+    await expect(filtersButton(shell)).toHaveText(FILTERS_BTN);
   });
 
   // MT:MEH-1075:8 — «משלוח» from the sheet with no saved city → CityPickerModal
