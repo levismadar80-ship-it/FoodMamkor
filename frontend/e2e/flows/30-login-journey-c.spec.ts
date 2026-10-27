@@ -1,32 +1,5 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
-
-// MEH-2323 — a full `goto` onto a streamed page does not leave the form in ONE
-// settled state. Replayed locally 26/10 (prod build, Chromium, DOM sampled every
-// 4 ms): in 1/20 runs the server segment arrives hidden (`<div hidden id="S:0">`,
-// input id `_R_…`), React commits a CLIENT-rendered copy (`_r_0_`) at 243 ms
-// before the `$RC` reveal ran, and the hidden server copy is only removed at
-// 362 ms — two matches for ~120 ms, a strict-mode violation for `fill`. A bare
-// `toHaveCount(1)` is not enough (measured: it passes on the lone server copy
-// and the second copy appears before the fill). The end state is: exactly one
-// copy AND React owns it — a node React created or hydrated carries a
-// `__reactFiber$…` expando; the not-yet-hydrated server copy does not. Waiting
-// for that also covers the 25/10 trace where a revealed server copy was
-// replaced after a fill landed on it. No hydration error is logged in any
-// run: this is a streaming race, not a mismatch, so the product is untouched.
-// Same shape as 01-home-load.spec.ts (MEH-1078). The wait is bounded by the
-// action timeout and goes red if the page keeps two copies or never hydrates.
-async function settledField(page: Page, testId: string): Promise<ReturnType<Page["getByTestId"]>> {
-  await page.waitForFunction((id) => {
-    const els = document.querySelectorAll(`[data-testid="${id}"]`);
-    return (
-      els.length === 1 &&
-      Object.keys(els[0]).some((k) => k.startsWith("__reactFiber"))
-    );
-  }, testId);
-  const field = page.getByTestId(testId);
-  await expect(field).toHaveCount(1);
-  return field;
-}
+import type { Locator } from "@playwright/test";
 
 /**
  * Spec:     30-login-journey-c
@@ -101,6 +74,37 @@ async function settledField(page: Page, testId: string): Promise<ReturnType<Page
  * constant. The doc and the merged code disagree about `e2e/flows/`; flows/29
  * flagged that for Sapir and this spec does not re-decide it.
  */
+
+// MEH-2323 — a full `goto` onto a streamed page does not leave the form in ONE
+// settled state. Replayed locally 26/10 (prod build, Chromium, DOM sampled every
+// 4 ms): in 1/20 runs the server segment arrives hidden (`<div hidden id="S:0">`,
+// input id `_R_…`), React commits a CLIENT-rendered copy (`_r_0_`) at 243 ms
+// before the `$RC` reveal ran, and the hidden server copy is only removed at
+// 362 ms — two matches for ~120 ms, a strict-mode violation for `fill`. A bare
+// `toHaveCount(1)` is not enough (measured: it passes on the lone server copy
+// and the second copy appears before the fill). The end state is: exactly one
+// copy AND React owns it — a node React created or hydrated carries a
+// `__reactFiber$…` expando; the not-yet-hydrated server copy does not. Waiting
+// for that also covers the 25/10 trace where a revealed server copy was
+// replaced after a fill landed on it. No hydration error is logged in any
+// run: this is a streaming race, not a mismatch, so the product is untouched.
+// 01-home-load.spec.ts (MEH-1078) waits for the same settling with a bare
+// count; here the count alone was measured insufficient. `__reactFiber$` is a
+// React internal, verified against React 18.3 (package.json); a rename would
+// time this wait out loudly, never pass it silently. The wait is bounded by
+// the action timeout and goes red if the page keeps two copies or never
+// hydrates.
+async function settledField(page: Page, testId: string): Promise<Locator> {
+  await page.waitForFunction((id) => {
+    const els = document.querySelectorAll(`[data-testid="${id}"]`);
+    return (
+      els.length === 1 &&
+      Object.keys(els[0]).some((k) => k.startsWith("__reactFiber"))
+    );
+  }, testId);
+  return page.getByTestId(testId);
+}
+
 
 const LOGIN_TITLE = "כניסה למהמקור";
 const LOGIN_WELCOME = "טוב לראות אותך שוב";
@@ -519,7 +523,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     await page.getByTestId("login-forgot-link").click();
     await expectPath(page, "/forgot-password");
 
-    await page.getByTestId("forgot-email").fill(VALID_EMAIL);
+    await (await settledField(page, "forgot-email")).fill(VALID_EMAIL);
     await page.getByTestId("forgot-submit").click();
     const ack = page.getByTestId("forgot-sent");
     await expect(ack).toBeVisible();
