@@ -357,7 +357,7 @@ export default function BottomNav() {
   // MEH-2431: same for the owner dashboard, which has its own tab nav
   // (producer/dashboard/layout.js). The pill covered rows of the locations
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
-  // keeps the nav"; the account sheet is one tap away via the header logo.
+  // keeps the nav"; the header logo leads back to the site, where the nav returns.
   if (pathname === "/producer/dashboard" || (pathname || "").startsWith("/producer/dashboard/")) return null;
 
   return (
