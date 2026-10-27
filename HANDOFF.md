@@ -17,6 +17,23 @@
 - ה-sandbox של הסשן הזה חסום ל-PyPI → pytest רק ב-CI. GraphQL של GitHub חסום (REST עובד) → אין auto-merge מכאן.
 
 **‏ממתין לספיר:** למזג #3703 (`approved, go merge`); #3706 עבר 3 סבבי adversarial — לסקור את המיגרציה (column grants) ולהסיר `do-not-merge`; להחליט על «במסך «אירועים»» מול «האירועים שלי» בנוסח של #3703; ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
+## 2026-10-28 00:20 — release v1.2.3 בפרודקשן (#3580 → `90a4f9c0`): זרימת «אני ממלאת, הבעלים רק מאשר» חיה; שני אדומים בדרך תוקנו (#3705, ‏#3704)
+
+**‏שורה אחת:** ‏main = staging של 27/10 ערב (161 קומיטים, כולל #3702 שמוזג מ-session מקביל ב-22:08Z תוך כדי). כל שרשרת ההזמנה — טיוטה ע"י אדמין (MEH‑2325), קטלוג על טיוטה (MEH‑2326), ‏`/claim/<token>` (MEH‑2324) — בפרודקשן. אפשר לשלוח קישורי הזמנה לבעלות עסק.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏PR ריליס נגד `main` מריץ שני דברים ש-PR רגיל לא: ‏`pip-audit` (רק כש-`deps == true`, והריליס תמיד נוגע ב-lock) ו-`secrets-scan-guard` על **כל** הריליס (‏`BASE=HEAD~1` = tip של main). שניהם היו אדומים על #3580 ולא על אף PR רגיל.
+- ‏`secrets-scan-guard.sh` עושה עכשיו pre-filter אחד על הדיף ומפעיל את ה-classifier רק על שורות-מועמדות (#3705). ‏1.8 ש' על דיף של 32K שורות, במקום timeout. אותם patterns, אותו ALLOW, אותם verdicts — טבלת 7 מקרי הבקרה ב-PR.
+- ‏`uv.lock` נכתב ידנית ב-#3704 (PyPI חסום גם ב-sandbox של claude.ai, לא רק ב-CC): בלוקי `[[package]]` מה-JSON של PyPI, ‏upload-time נחתך ל-ms (כמו uv), ‏cp310 הושמט (requires-python ≥3.11), wheels ממוינים לפי שם. ‏`uv lock --check` ב-Deploy gate אישר. זה תקף כדרך חירום; הדרך הרגילה נשארת `uv lock --upgrade-package`.
+- ‏CVE-2026-114605 (dnspython) ו-CVE-2026-114613 (msgpack) — שתי תלויות עקיפות (email-validator, cachecontrol). ‏Dependabot לא פתח עליהן PR (הוא לא מרענן uv.lock, MEH‑1527).
+- ‏`Adversarial review (calibration)` נפל על #3704 ו-#3705 עם `is_error:true` של ה-action עצמו (לא ממצא). ‏continue-on-error, לא חוסם. אם זה חוזר על PR שלישי — כרטיס.
+- ‏`mehamakor.co.il` **לא** נגיש מה-sandbox של claude.ai (CONNECT 403), בניגוד ל-CC. ‏`smoke_production.py` יוצא שם עם exit 2 (control נכשל) — זה נכון, לא תקלה בסקריפט. ה-smoke אחרי הריליס רץ דרך Claude בכרום.
+- **‏נמדד אחרי ה-deploy (28/10 00:15):** ‏Vercel READY, ‏Railway production redeploy 67 ש' ירוק. ‏`/api/health/readiness` → `ready`, ‏`migrations: e5b2d8f4a913` (ה-head של הריפו). ‏13 נתיבים ציבוריים ו-API → 200 (‏/, ‏/he, ‏/claim, ‏/claim/<bad>, ‏/producers, ‏/map, ‏/about, ‏/login, ‏/register, ‏liveness, ‏/api/producers, ‏/api/events/upcoming, ‏/api/cities?q=תל ← «תל אביב-יפו» ראשונה, #3702 חי), control `/__smoke-control-must-404__` → 404. ‏`POST /api/producer-claim/preview` עם token שגוי → 404 עם הקופי העברי. ‏Sentry: אפס issues חדשים אחרי ה-deploy (השלושה הפתוחים מלפני: Resend דוחה `example.com` ב-`/auth/register` מה-E2E, שני N+1 באדמין).
+
+**‏ממתין לספיר:**
+- **סימולציית הזמנה בפרודקשן** (היא בודקת): ‏Admin → בתי עסק → עסק חדש עם «טיוטה שבעלת העסק תקבל בקישור הזמנה» → בעמוד העריכה «יצירת קישור» → לפתוח בחלון פרטי, להירשם/להתחבר עם חשבון בלי עסק, לסמן ולאשר → לוח בקרה. צ'קליסט מלא: `docs/MANUAL_TESTING.md` §MEH‑2325 ו-§MEH‑2324.
+- ‏`API contract probe (staging)` אדום על ה-push האחרונים ל-staging (לא required ל-main). לא נחקר הלילה — כרטיס אם נמשך.
+- הודעת ה-WhatsApp לצ'ופצ'יק / חגי והלחם / עלעלים — הנוסח לא הגיע בשיחה; לאשר נוסח לפני שליחה (כלל 22).
 
 ## 2026-10-27 15:35 — טבלאות האדמין בנייד: שורה = כרטיס (#3678, MEH-2426)
 
