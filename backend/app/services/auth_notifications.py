@@ -29,7 +29,7 @@ from app.services.whatsapp import send_template, send_text
 from app.services.whatsapp_templates import (
     ProducerApprovedV1,
     ProducerChangesRequestedV1,
-    ProducerWelcomeV1,
+    ProducerWelcomeV2,
 )
 from app.utils.pii import mask_phone
 
@@ -68,7 +68,7 @@ def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
 def notify_producer_registered(name: str, phone: str | None) -> bool:
     """Send WhatsApp welcome template to the new producer (MEH-509 PR1).
 
-    Fires the Meta-approved ``producer_welcome_v1`` template with one
+    Fires the Meta-approved ``producer_welcome_v2`` template with one
     positional param: business name. Returns True on success, False on
     skip/failure (MEH-287 contract preserved).
     """
@@ -82,7 +82,8 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
         return False
     normalized = _normalize_il_phone(phone)
     try:
-        ok = send_template(normalized, ProducerWelcomeV1(producer_name=name))
+        # MEH-2320: v2 — v1's copy claimed "in review" before submission.
+        ok = send_template(normalized, ProducerWelcomeV2(producer_name=name))
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
             f"[WHATSAPP] Producer welcome unexpected error for {mask_phone(normalized)}: {e}"
