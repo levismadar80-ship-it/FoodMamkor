@@ -67,9 +67,16 @@ export function HomeCategoryGrid({ categoryCards }) {
 
       {/* MEH-2412: phone = flex row that bleeds to the screen edges and
           snaps per card; from md it is the MEH-991 grid again. */}
-      <div
+      {/* MEH-2418: the entrance is driven ONCE by the rail entering the
+          viewport vertically, and the cards stagger from that single trigger
+          (variants). Per-card whileInView fired again for each card as it was
+          SWIPED in sideways on a phone, so cards slid up late mid-swipe. */}
+      <motion.div
         className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-proximity -mx-4 px-4 scroll-px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 lg:gap-6"
         data-testid="home-category-rail"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
       >
         {categoryCards.map((card, idx) => {
           // MEH-683: the glyph map is keyed by canonical DB name. Cards carry
@@ -165,10 +172,10 @@ export function HomeCategoryGrid({ categoryCards }) {
           return (
             <motion.div
               key={card.key}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.42, delay: idx * 0.08, ease: EASE_QUART }}
+              variants={{
+                hidden: { opacity: 0, y: 40 },
+                show: { opacity: 1, y: 0, transition: { duration: 0.42, delay: idx * 0.08, ease: EASE_QUART } },
+              }}
               // MEH-2412: fixed-width snap tile on a phone; a grid cell from md.
               className={[
                 "shrink-0 w-36 snap-start md:w-auto",
@@ -192,7 +199,7 @@ export function HomeCategoryGrid({ categoryCards }) {
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
     </section>
   );
 }
