@@ -285,15 +285,16 @@ export default function AdminReviewsPage() {
 
       <div className="bg-white border border-border rounded-[12px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
+          <table className="table-stack w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.producer")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.user")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.rating")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.content")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.date")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.actions")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.producer")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.user")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.rating")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.content")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.date")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -322,13 +323,13 @@ export default function AdminReviewsPage() {
                 filtered.map((r) => (
                   <tr key={r.id} className="border-t align-top">
                     <td className="px-4 py-3 font-medium">{r.producer_name || "—"}</td>
-                    <td className="px-4 py-3 text-muted">
+                    <td className="px-4 py-3 text-muted" data-label={t("reviews.columns.user")}>
                       <div>{r.user_name || "—"}</div>
                       {r.user_email && (
                         <div className="text-xs opacity-70">{r.user_email}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-label={t("reviews.columns.rating")}>
                       <span
                         className="inline-flex items-center gap-1"
                         aria-label={t("reviews.stars_aria", { stars: r.stars })}
@@ -337,7 +338,7 @@ export default function AdminReviewsPage() {
                         {r.stars}
                       </span>
                     </td>
-                    <td className="px-4 py-3 max-w-md">
+                    <td className="px-4 py-3 md:max-w-md" data-label={t("reviews.columns.content")}>
                       {r.is_hidden && (
                         <span
                           data-testid="review-hidden-tag"
@@ -370,13 +371,13 @@ export default function AdminReviewsPage() {
                         <span className="text-muted opacity-60">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted text-xs">
+                    <td className="px-4 py-3 text-muted text-xs" data-label={t("reviews.columns.date")}>
                       {r.created_at
                         ? formatEventDate(r.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })
                         : "—"}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col items-start gap-2">
+                    <td className="px-4 py-3" data-cell="actions">
+                      <div className="flex flex-wrap md:flex-col items-start gap-2">
                         <button
                           type="button"
                           data-toggle-for={r.id}
