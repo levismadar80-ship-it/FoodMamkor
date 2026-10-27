@@ -169,7 +169,7 @@ export default function AdminReviewsPage() {
   const setHidden = async (review, hide) => {
     // MEH-2389: the button is aria-disabled, not disabled, while in flight —
     // a disabled button drops keyboard focus to <body>. So the guard is here.
-    if (togglingIds.has(review.id)) return;
+    if (togglingIds.has(review.id)) return false;
     setTogglingIds((prev) => new Set(prev).add(review.id));
     try {
       await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}`);
@@ -182,6 +182,7 @@ export default function AdminReviewsPage() {
         ),
       );
       showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
+      return true;
     } catch (err) {
       // "Deleted elsewhere" = the handler's own 404, identified by its `code`
       // (reviews.py _ADMIN_REVIEW_NOT_FOUND, MEH-2389). A route-miss or proxy
@@ -194,6 +195,7 @@ export default function AdminReviewsPage() {
         setConfirmDelete((open) => (open?.id === review.id ? null : open));
       }
       showToast.error(gone && detail.message ? detail.message : tError("generic"));
+      return false;
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev);
@@ -201,6 +203,14 @@ export default function AdminReviewsPage() {
         return next;
       });
     }
+  };
+
+  // MEH-2381: "keep hidden" removes itself on success, so focus moves to the
+  // row's unhide button (already rendered) instead of dropping to <body>
+  // (cf. MEH-2389).
+  const keepHidden = async (review) => {
+    if (!(await setHidden(review, true))) return;
+    document.querySelector(`[data-toggle-for="${review.id}"]`)?.focus();
   };
 
   const filtered = reviews.filter((r) => {
@@ -334,7 +344,7 @@ export default function AdminReviewsPage() {
                       {r.is_hidden && r.edited_after_hidden_at && (
                         <span
                           data-testid="review-edited-after-hidden-tag"
-                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-orange-50 border border-orange-200 text-orange-800"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-accent/10 border border-accent/30 text-gold-deep"
                         >
                           {t("reviews.edited_after_hidden")}
                         </span>
@@ -364,6 +374,7 @@ export default function AdminReviewsPage() {
                       <div className="flex flex-col items-start gap-2">
                         <button
                           type="button"
+                          data-toggle-for={r.id}
                           onClick={() => setHidden(r, !r.is_hidden)}
                           aria-disabled={togglingIds.has(r.id)}
                           data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
@@ -378,7 +389,7 @@ export default function AdminReviewsPage() {
                         {r.is_hidden && r.edited_after_hidden_at && (
                           <button
                             type="button"
-                            onClick={() => setHidden(r, true)}
+                            onClick={() => keepHidden(r)}
                             aria-disabled={togglingIds.has(r.id)}
                             data-testid="review-keep-hidden"
                             className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
