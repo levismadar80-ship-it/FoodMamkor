@@ -94,8 +94,17 @@ describe("BackToTop", () => {
       observe() {}
       disconnect() {}
     };
+    // An in-page <footer> FIRST in DOM order — the observer must skip it.
+    const articleFooter = document.createElement("footer");
+    document.body.appendChild(articleFooter);
     const footer = document.createElement("footer");
+    footer.setAttribute("data-site-footer", "");
     document.body.appendChild(footer);
+    let observed = null;
+    const Base = window.IntersectionObserver;
+    window.IntersectionObserver = class extends Base {
+      observe(el) { observed = el; }
+    };
     // finally, not trailing lines: a failed assertion must not leak the
     // stubbed observer or the footer node into the tests after this one.
     try {
@@ -103,12 +112,29 @@ describe("BackToTop", () => {
       render(<BackToTop />);
       act(() => window.dispatchEvent(new Event("scroll")));
       expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+      expect(observed).toBe(footer);
       act(() => cb([{ isIntersecting: true }]));
       expect(screen.queryByLabelText(LABEL)).not.toBeInTheDocument();
       act(() => cb([{ isIntersecting: false }]));
       expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
     } finally {
+      articleFooter.remove();
       footer.remove();
+      delete window.IntersectionObserver;
+    }
+  });
+
+  it("no site footer on the page: the button still shows", () => {
+    window.IntersectionObserver = class {
+      observe() {}
+      disconnect() {}
+    };
+    try {
+      setViewport(667, 5000);
+      render(<BackToTop />);
+      act(() => window.dispatchEvent(new Event("scroll")));
+      expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+    } finally {
       delete window.IntersectionObserver;
     }
   });

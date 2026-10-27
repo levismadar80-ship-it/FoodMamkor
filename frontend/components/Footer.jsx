@@ -124,7 +124,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="mt-16 bg-primary-dark text-green-50">
+    <footer data-site-footer className="mt-16 bg-primary-dark text-green-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* MEH-721: the "add your business" pitch panel was removed from the
             global footer. The producer CTA stays reachable via the quiet

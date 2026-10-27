@@ -75,11 +75,16 @@ export default function BackToTop() {
   const [footerInView, setFooterInView] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") return;
-    const footer = document.querySelector("footer");
+    // The SITE footer, not the first <footer> in the document: article and
+    // guide pages render their own <footer> earlier in DOM order.
+    const footer = document.querySelector("footer[data-site-footer]");
     if (!footer) return;
     const io = new window.IntersectionObserver(([entry]) => setFooterInView(entry.isIntersecting));
     io.observe(footer);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      setFooterInView(false);
+    };
   }, []);
 
   if (!visible || footerInView) return null;
