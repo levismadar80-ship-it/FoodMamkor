@@ -55,7 +55,7 @@ Derived, not typed: `grep -rhoE "secrets\.[A-Z_0-9]+" .github/workflows | sort -
 |---|---|---|
 | `CLAUDE_CODE_OAUTH_TOKEN` | CI adversarial reviewer (`claude-review.yml`) | 2026-10-26 |
 | `RAILWAY_PRODUCTION_TOKEN`, `RAILWAY_STAGING_TOKEN` | `deploy.yml` redeploys | 2026-10-24 |
-| `VERCEL_AUTOMATION_BYPASS_SECRET` | E2E against protected staging | — |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | E2E against protected staging; `deploy.yml` "Probe staging" API contract probe (MEH-2404) | — |
 | `DEMO_ADMIN_PASSWORD`, `DEMO_OWNER_PASSWORD`, `DEMO_CONSUMER_PASSWORD` | E2E logins (staging) | — |
 | `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD` | `staging-smoke.yml` | — |
 | `SMOKESHOW_AUTH_KEY` | Backend coverage upload (`pr-checks.yml`) | — |
