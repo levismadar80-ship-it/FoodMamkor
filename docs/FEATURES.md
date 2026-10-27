@@ -69,7 +69,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
-| ✅ | v1 | Follow / unfollow producers (`producer_followers` table) | `backend/app/routers/producers.py`, `frontend/components/FollowButton.jsx` |
+| ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table kept until its Expand-Contract drop | — |
 
 ### Home cooks (`/neighbor`)
 
