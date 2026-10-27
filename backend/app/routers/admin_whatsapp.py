@@ -20,7 +20,7 @@ History:  MEH-771 Chunk C (creation — final chunk of the delivery-status
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -30,6 +30,7 @@ from app.database import get_db
 from app.models.models import OutboundMessage, User
 from app.schemas.schemas import OutboundMessageAdminOut
 from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
 
@@ -58,7 +59,7 @@ def list_failed_outbound(
     worst case. If the row count ever materially exceeds the page, add
     pagination here; until then, simpler is better.
     """
-    cutoff = datetime.utcnow() - timedelta(days=UNDELIVERED_WINDOW_DAYS)
+    cutoff = utc_now() - timedelta(days=UNDELIVERED_WINDOW_DAYS)
     return (
         db.query(OutboundMessage)
         .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
