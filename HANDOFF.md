@@ -9,12 +9,14 @@
 **‏שורה אחת:** ‏#3703 (MEH-2457) ירוק וממתין למיזוג; ‏#3706 (MEH-586) ממתין ל-adversarial review ולמיזוג של ספיר — המיגרציה `a29c7a4a41e7` יוצרת role בלבד, לא טבלאות.
 
 **‏מה צריך לדעת לפני עבודה:**
-- `mcp_reader` הוא role `NOLOGIN`; הקוד עושה `SET LOCAL ROLE` בתוך READ ONLY + `statement_timeout=5000` (`chat_db_tools.reader_transaction()`). כלי חדש לצ'אט = פונקציה ב-`chat_db_tools.py` + שם ב-`TOOL_NAMES` + שורה ב-`docs/DATA.md`; לעולם לא SQL מהמודל.
-- הטסטים ב-`tests/test_chat_db_tools.py` מריצים את `READER_ROLE_SQL` (מראה של המיגרציה) כי הסכימה בטסטים מ-create_all. שינוי ב-grants = לעדכן את שניהם.
+- `mcp_reader` הוא role `NOLOGIN` עם `SELECT` **ברמת עמודה** (`chat_db_tools.READER_COLUMNS`); הקוד עושה `SET LOCAL ROLE` בתוך READ ONLY + `statement_timeout=5000`. כלי חדש לצ'אט = פונקציה ב-`chat_db_tools.py` + שם ב-`TOOL_NAMES` + **כל עמודה חדשה שהוא קורא ב-`READER_COLUMNS` וגם ב-`GRANTS` של המיגרציה** (טסט drift משווה ביניהם) + שורה ב-`docs/DATA.md`; לעולם לא SQL מהמודל.
+- נתונים מה-DB נכנסים לפרומפט רק דרך `_fence_live_data` (תגית `<live_data>`, `<`/`>` מקודדים) — כותרות אירועים לא עוברות מודרציה.
+- הטסטים ב-`tests/test_chat_db_tools.py` מריצים את `READER_ROLE_SQL` (מראה של המיגרציה) לפני כל טסט — function-scoped כי `drop_all` ב-`test_lifespan_init` מוחק grants. יצירת role מקבילה ב-xdist זורקת `unique_violation`, לא `duplicate_object` — שניהם מטופלים.
+- `.claude/rules/backend.md:47` אומר httpx 0.27.2; ה-pin בפועל הוא `httpx==0.28.1` (`backend/pyproject.toml:22`, נמצא בסבב 3). לא תוקן — לא בscope.
 - לא אומת: `CREATEROLE` למשתמש ה-DB ב-Railway. אם boot של staging נכשל על `permission denied to create role` → login role + `CHAT_DB_READER_URL` (ראו הכרטיס).
 - ה-sandbox של הסשן הזה חסום ל-PyPI → pytest רק ב-CI. GraphQL של GitHub חסום (REST עובד) → אין auto-merge מכאן.
 
-**‏ממתין לספיר:** למזג #3703 (`approved, go merge`); לסקור את המיגרציה ב-#3706 ולהסיר `do-not-merge` אחרי adversarial review; ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
+**‏ממתין לספיר:** למזג #3703 (`approved, go merge`); #3706 עבר 3 סבבי adversarial — לסקור את המיגרציה (column grants) ולהסיר `do-not-merge`; להחליט על «במסך «אירועים»» מול «האירועים שלי» בנוסח של #3703; ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
 
 ## 2026-10-27 15:35 — טבלאות האדמין בנייד: שורה = כרטיס (#3678, MEH-2426)
 
