@@ -318,7 +318,11 @@ export default function Header() {
         // (!isHomepage); the homepage keeps its float-over-hero transparency
         // (MEH-947-approved) — so the token is gated, not unconditional. Surface
         // only: no geometry / z / blur. Both concerns coexist on this one line.
-        className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`}
+        // MEH-2414: the homepage exemption is now AT REST only (`transparent`
+        // = isHomepage && scrollY < 60). Past the hero the same bleed-through
+        // happened on `/` — hero stats and the CTA button showed under the
+        // iOS status bar beside the pill — so the cream band applies there too.
+        className={`sticky top-0 z-[1050] pointer-events-none${transparent ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
