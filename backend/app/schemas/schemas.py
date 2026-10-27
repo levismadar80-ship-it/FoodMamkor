@@ -4026,8 +4026,8 @@ class GroupBuyCreate(BaseModel):
     def _normalize_deadline_to_naive_utc(cls, v: datetime) -> datetime:
         # MEH-1454: the dashboard form sends `new Date(...).toISOString()` — an
         # aware ISO string with a trailing 'Z'. The DB column and every
-        # `datetime.utcnow()` comparison in group_buys.py are naive UTC, so an
-        # aware value made `data.deadline <= datetime.utcnow()` raise
+        # `utc_now()` comparison in group_buys.py are naive UTC, so an
+        # aware value made `data.deadline <= utc_now()` raise
         # `TypeError: can't compare offset-naive and offset-aware datetimes`
         # → 500 on real creates. Normalize aware → naive UTC at the boundary so
         # DB storage and comparisons stay in one (naive-UTC) world.

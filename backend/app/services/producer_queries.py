@@ -6,7 +6,6 @@ These helpers carry no FastAPI surface and can be imported by any router
 or background job that needs to hydrate or count Producer rows.
 """
 
-from datetime import datetime
 from uuid import UUID
 
 import structlog
@@ -22,6 +21,7 @@ from app.models import (
     ProducerLocation,
 )
 from app.schemas.schemas import DeliveryAreaCreate, ProducerCreate
+from app.utils.clock import utc_now
 
 logger = structlog.get_logger(__name__)
 
@@ -214,7 +214,7 @@ def attach_badge_fields(producer):
     # serialized.
     producer.pickup_points = producer.offers_pickup
     if producer.created_at:
-        delta = datetime.utcnow() - producer.created_at
+        delta = utc_now() - producer.created_at
         producer.days_since_created = max(0, delta.days)
     else:
         producer.days_since_created = None

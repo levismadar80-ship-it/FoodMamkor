@@ -13,7 +13,6 @@ History:  MEH-1872 (creation) — reopens the gap MEH-1851 left when it closed
           the unmoderated setattr path.
 """
 
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -28,6 +27,7 @@ from app.schemas.schemas import (
     ProducerNameChangeRequestOut,
     ProducerNameChangeRequestUpdate,
 )
+from app.utils.clock import utc_now
 
 router = APIRouter(tags=["producer-name-requests"])
 
@@ -162,7 +162,7 @@ def review_name_change_request(
     row.status = body.status
     if body.admin_notes is not None:
         row.admin_notes = body.admin_notes
-    row.reviewed_at = datetime.utcnow()
+    row.reviewed_at = utc_now()
     db.commit()
     db.refresh(row)
     return row
