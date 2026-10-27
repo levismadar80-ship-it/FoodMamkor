@@ -427,6 +427,10 @@
 - ✅ → dashboard-manage-events.spec.ts (the experiences list shows the four status tags with edit + delete on every row — ⚠️ STALE: an APPROVED experience DOES carry a cancel/reactivate toggle since MEH-1419 (`experiences/page.js:167-184`); only non-approved rows have none) — **רשימת החוויות שלי** — `/producer/dashboard/experiences` — **תוצאה מצופה:** רשימת החוויות שלך עם תג סטטוס (מאושרת/בבדיקה/נדחתה/נדרשים תיקונים) + "עריכה · מחיקה". **אין** טוגל ביטול (לחוויה אין `is_active` — מחיקה היא ההסרה; ראו הערת ה-PR על follow-up סכמה).
 - ✅ → dashboard-manage-events.spec.ts (editing an experience opens the form prefilled including the address, the live moderation check fires, and saving returns to the list) — **עריכת חוויה** — "עריכה" על חוויה — **תוצאה מצופה:** טופס היצירה מלא מראש (כולל שדה כתובת + בדיקת מודרציה חיה); "שמירה" → חזרה לרשימה.
 - ✅ → dashboard-manage-events.spec.ts (the address field carries exactly one label in both forms — one accessible name, no sr-only twin) — **נגישות שדה כתובת** — בטופס אירוע/חוויה, שדה "מיקום ספציפי"/"כתובת" — **תוצאה מצופה:** תווית אחת בלבד (בלי הכפלת הכרזה בקורא-מסך).
+## MEH-2427 — אייפון, אפליקציה ממסך הבית: הכותרת לא עולה על השעון
+
+- [ ] אייפון — להסיר את האייקון של מהמקור ממסך הבית ולהוסיף מחדש (iOS קורא את הגדרת שורת המצב בהתקנה) — לפתוח /map ולגלול — שורת השעון אטומה, הלוגו והחיפוש מתחת לשעון ולא נראים דרכו
+
 ## MEH-1401 — מייל "ברוכה הבאה" ב-RTL HTML (21/07)
 
 - [ ] **BiDi תקין בג'ימייל** — הירשמי עם מייל בדיקה (צרכנית) ב-staging → פתחי את מייל ה-welcome בג'ימייל נייד — **תוצאה מצופה:** כותרת "שלום {שם פרטי}," מיושרת לימין; "ברוכה הבאה למהמקור! 🌿" עם סימן הקריאה בקצה השמאלי (לא בהתחלה); כפתור CTA ירוק מרוכז "גלו בתי עסק"; קישור מפה inline; ללא פיסוק שבור.
