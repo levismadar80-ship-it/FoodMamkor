@@ -18,7 +18,7 @@ for (const c of cases) {
   test(`404 ${c.path}: real 404 status, site chrome, ${c.lang} copy only`, async ({ page }) => {
     const res = await page.goto(c.path);
     expect(res?.status()).toBe(404);
-    await expect(page.locator("h1")).toHaveText(c.copy.heading, { timeout: 15_000 });
+    await expect(page.locator("#main-content h1")).toHaveText(c.copy.heading, { timeout: 15_000 });
     await expect(page.locator("html")).toHaveAttribute("lang", c.lang);
     // Site chrome: the shared header (its login link) and the shared footer.
     await expect(page.locator("header").first()).toBeVisible();
