@@ -181,11 +181,11 @@ for (const [width, height, tag] of [[375, 812, "375"], [1440, 900, "1440"]]) {
     path: "/producer/p1", profile: withEmptyHeadline, probe: badgeProbe(false),
   });
   await shot(`dashboard-custom-selected-${tag}`, { width, height }, {
-    path: "/producer/dashboard/edit?group=location#offer",
+    path: "/producer/dashboard/edit?group=products#offer",
     profile: withCustom, probe: dashboardProbe(true),
   });
   await shot(`dashboard-typed-control-${tag}`, { width, height }, {
-    path: "/producer/dashboard/edit?group=location#offer",
+    path: "/producer/dashboard/edit?group=products#offer",
     profile: withCustom, probe: dashboardProbe(false),
   });
 }

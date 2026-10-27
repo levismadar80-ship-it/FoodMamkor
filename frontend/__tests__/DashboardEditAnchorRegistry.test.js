@@ -107,7 +107,10 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
   // refactor that drops one is unambiguous in the failure output.
   it.each([
     ["business-name", "businessName", "profile"],
-    ["offer", "offer", "location"],
+    // MEH-2433: the offer moved to the products group (five-group edit hub).
+    ["offer", "offer", "products"],
+    ["dietary-scope", "dietaryScope", "products"],
+    ["grass-fed", "grassFed", "products"],
     ["special-hours", "specialHours", "location"],
     // The fourth belongs here for the same reason as the other three: the
     // general invariants above already cover it, and the point of naming a
