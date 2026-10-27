@@ -12,7 +12,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
  * 3. Category grid: no 01–10 numerals; the two large tiles are ירקות and
  *    לחמים ואפייה.
  *
- * Featured cells (5-state rule): null → nothing · photo → <img> · failed photo
+ * Featured cells (5-state rule): null → nothing · photo → <img> · no photo or failed photo
  * → tonal plate · no city/category → no place line.
  */
 vi.mock("next-intl", () => ({
@@ -105,6 +105,32 @@ describe("MEH-2441 — featured business on the green band", () => {
     render(<HomeFeaturedProducer featured={{ ...FEATURED, href: undefined }} />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByText(FEATURED.quote)).toBeInTheDocument();
+  });
+
+  it("writeHref → the write link; none → only the meet link", () => {
+    const writeName = `home.featured.cta_write:${FEATURED.name}`;
+    const { unmount } = render(<HomeFeaturedProducer featured={{ ...FEATURED, writeHref: "https://wa.me/972500000000" }} />);
+    expect(screen.getByRole("link", { name: writeName })).toHaveAttribute("href", "https://wa.me/972500000000");
+    unmount();
+    render(<HomeFeaturedProducer featured={FEATURED} />);
+    // by text, not role: an <a> without href has no link role, so a role query
+    // would pass even if the write CTA rendered empty-handed
+    expect(screen.queryByText(writeName)).not.toBeInTheDocument();
+  });
+
+  it("attribution → its line in AA cream; none → no empty line", () => {
+    const attribution = "דנה כהן · מאפיית השדה, בנימינה";
+    const { unmount } = render(<HomeFeaturedProducer featured={{ ...FEATURED, attribution }} />);
+    expect(classes(screen.getByText(attribution))).toContain("text-background/90");
+    unmount();
+    const { container } = render(<HomeFeaturedProducer featured={FEATURED} />);
+    expect(container.querySelectorAll("p.text-sm")).toHaveLength(0);
+  });
+
+  it("no photo → the tonal plate from the start", () => {
+    render(<HomeFeaturedProducer featured={{ ...FEATURED, photo: null }} />);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByTestId("home-featured-plate")).toBeInTheDocument();
   });
 
   it("renders nothing without a featured business", () => {

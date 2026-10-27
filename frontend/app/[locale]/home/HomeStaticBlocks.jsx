@@ -117,7 +117,8 @@ export function HomeFeaturedProducer({ featured }) {
   // MEH-2441 (Sapir 27/10, design-distinct): the feature sits on a full-bleed
   // brand-green band below the businesses grid, so the home page has one
   // strong colour moment instead of cream all the way down. The place leads
-  // in gold, then the name large, then the business's own line as a quote.
+  // (cream /90 — gold-on-dark text is 4.04:1, under AA), then the name large,
+  // then the business's own line as a quote.
   // The "מאחורי הקלעים" sub-heading and the long description were dropped —
   // the band carries one line of the business's voice, the producer page
   // carries the story.
