@@ -745,6 +745,14 @@ export default function ProducerSections({
               business-level column. One resolver so the gate above and this
               render can never disagree. */}
           <OpeningHours opening_hours={storeHours} />
+          {/* MEH-2438 follow-up: a place to visit with no hours would otherwise
+              show only the map and the Waze/Google buttons — an invitation to
+              turn up unannounced at a home producer. */}
+          {!storeHours && parseHasLocation(producer, primaryPin) && (
+            <p data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
+              {t("producer.detail.sections.location_no_hours")}
+            </p>
+          )}
           {/* MEH-1611 chunk 2: the map now shows every point this business has
               — its branch plus each pickup / market stand — not just the primary
               pin. Complements the textual pickup list DeliveryBlock renders

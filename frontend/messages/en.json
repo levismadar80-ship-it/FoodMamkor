@@ -766,6 +766,7 @@
       "sections": {
         "about": "About",
         "location": "Getting there",
+        "location_no_hours": "No fixed hours — arrange before you come",
         "similar": {
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
@@ -1349,7 +1350,8 @@
         "pickup": "Self-pickup",
         "delivery_only": "Delivery",
         "pickup_only": "Self-pickup",
-        "arranged": "By arrangement"
+        "arranged": "By arrangement",
+        "on_site": "Buy on site"
       }
     },
     "mini": {
