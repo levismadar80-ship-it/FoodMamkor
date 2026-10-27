@@ -1161,7 +1161,23 @@
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining"
       },
-      "status_deadline_passed": "Deadline passed"
+      "status_deadline_passed": "Deadline passed",
+      "actions": {
+        "cancel": "Cancel group",
+        "close": "Close group",
+        "deliver": "Mark delivered",
+        "back": "Back",
+        "cancel_title": "Cancel this group buy?",
+        "cancel_body": "The group will be removed from the site and cannot be reopened.",
+        "cancel_funded_note": "{count} participants have already joined and are waiting for delivery.",
+        "cancel_confirm": "Yes, cancel",
+        "close_title": "Close this group buy?",
+        "close_body": "The group did not reach the minimum by the deadline and will be recorded as cancelled.",
+        "deliver_title": "Mark this group as delivered?",
+        "deliver_body": "The group will move to completed.",
+        "toast_cancelled": "Group buy cancelled",
+        "toast_fulfilled": "Group buy marked as delivered"
+      }
     },
     "availability": {
       "status_label": {
