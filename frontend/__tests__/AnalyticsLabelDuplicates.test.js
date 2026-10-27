@@ -156,6 +156,10 @@ describe("MEH-160 — the view tooltips state the dedup the code performs", () =
     // numerator stays raw against a deduped denominator and the ratio can
     // legitimately exceed 100. "% of viewers clicked" cannot express that;
     // "per 100 distinct visitors" can, at any value.
+    // MEH-2430: the Overview no longer renders this line (Sapir, 27/10), so
+    // the key is gone. The rule stays armed: if the line comes back, it must
+    // come back with the honest wording.
+    if (kpi.conversion_line === undefined) return;
     expect(kpi.conversion_line).not.toMatch(/^\{rate\}%/);
     expect(kpi.conversion_line).toMatch(/100 מבקרות שונות|per 100 distinct visitors/i);
   });
