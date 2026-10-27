@@ -4,12 +4,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import (
     get_current_user,
     get_current_user_optional,
     require_admin,
+    require_producer,
     require_verified_producer,
 )
 from app.database import get_db
@@ -26,6 +27,9 @@ from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
 admin_router = APIRouter(prefix="/admin/group-buys", tags=["admin-group-buys"])
+# MEH-2437: the business's own list lives under /producers/me, beside
+# /producers/me/recipes, so it needs a router without the /group-buys prefix.
+me_router = APIRouter(tags=["group-buys"])
 
 
 def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
@@ -71,6 +75,30 @@ def list_group_buys(
     if city:
         q = q.filter(GroupBuy.city == city)
     items = q.order_by(GroupBuy.deadline.asc()).all()
+    return [_enrich(gb) for gb in items]
+
+
+@me_router.get("/producers/me/group-buys", response_model=list[GroupBuyOut])
+@limiter.limit("120/minute")
+def list_my_group_buys(
+    request: Request,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """MEH-2437: the business's own group buys, every status, newest first.
+
+    Replaces the dashboard's four site-wide GET /group-buys calls that were
+    filtered by producer_id in the browser.
+    """
+    if not current_user.producer_id:
+        raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
+    items = (
+        db.query(GroupBuy)
+        .options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        .filter(GroupBuy.producer_id == current_user.producer_id)
+        .order_by(GroupBuy.created_at.desc())
+        .all()
+    )
     return [_enrich(gb) for gb in items]
 
 

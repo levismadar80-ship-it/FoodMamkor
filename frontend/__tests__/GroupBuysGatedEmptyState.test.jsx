@@ -68,18 +68,15 @@ const groupBuy = (over = {}) => ({
 
 vi.mock("@/lib/api", () => ({
   default: {
-    get: vi.fn((url, config) => {
+    get: vi.fn((url) => {
       if (url === "/producers/me/dashboard") {
         return Promise.resolve({
           data: { producer: { id: "p1", city: "תל אביב", status: fixture.status } },
         });
       }
-      if (url === "/group-buys") {
-        // The page fans out over four statuses and concatenates; return the
-        // fixture only for "open" so a single item is not counted four times.
-        return Promise.resolve({
-          data: config?.params?.status === "open" ? fixture.groupBuys : [],
-        });
+      if (url === "/producers/me/group-buys") {
+        // MEH-2437: one call returns the business's own list, every status.
+        return Promise.resolve({ data: fixture.groupBuys });
       }
       return Promise.resolve({ data: [] });
     }),

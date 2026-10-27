@@ -8,7 +8,7 @@
 > Legend for auth columns:
 >   - 🌐 = public (no token)
 >   - 🔑 = any authenticated user (`get_current_user`)
->   - 👤 = producer role (`require_producer`)
+>   - 👤 = producer role (`require_producer`). Includes `GET /producers/me/group-buys` (MEH-2437: the business's own group buys, every status, newest first; no business linked → 403).
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`.
 >   - 🛡️ = admin role (`require_admin`)
 

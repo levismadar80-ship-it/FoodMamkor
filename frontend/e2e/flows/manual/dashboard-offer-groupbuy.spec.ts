@@ -75,7 +75,7 @@ async function stubEdit(page: Page, opts: { profile?: Record<string, unknown>; w
   await page.route("**/favorites**", (r) => json(r, 200, []));
   await page.route("**/api/group-buys**", (r) => json(r, 200, []));
   // The child cards each read their own endpoint; unstubbed they 401 and bounce the tab to /login.
-  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests"]) {
+  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests", "group-buys"]) {
     await page.route(`**/producers/me/${sub}**`, (r) => json(r, 200, []));
   }
   await page.route("**/producers/me/dashboard", (r) =>

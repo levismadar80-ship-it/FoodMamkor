@@ -18563,6 +18563,37 @@
         ]
       }
     },
+    "/producers/me/group-buys": {
+      "get": {
+        "description": "MEH-2437: the business's own group buys, every status, newest first.\n\nReplaces the dashboard's four site-wide GET /group-buys calls that were\nfiltered by producer_id in the browser.",
+        "operationId": "list_my_group_buys_producers_me_group_buys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GroupBuyOut"
+                  },
+                  "title": "Response List My Group Buys Producers Me Group Buys Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Group Buys",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
     "/producers/me/kashrut-request": {
       "post": {
         "operationId": "request_kashrut_badge_producers_me_kashrut_request_post",
