@@ -321,7 +321,8 @@ async def register(
             # MEH-1995: record the terms acceptance instead of discarding it.
             # Stamped only when the flag is genuinely True — an omitted or
             # False flag leaves both columns NULL, which reads as "no record",
-            # not as "refused". now(timezone.utc), never naive utc_now().
+            # not as "refused". This column is timezone=True: aware
+            # now(timezone.utc), never the naive utc_now() helper.
             terms_accepted_at=(
                 datetime.now(timezone.utc) if data.terms_accepted else None
             ),
