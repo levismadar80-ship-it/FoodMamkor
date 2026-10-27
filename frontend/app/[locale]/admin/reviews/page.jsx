@@ -16,7 +16,10 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
  *   GET    /admin/reviews         — list all, newest first
  *   DELETE /reviews/:id           — reuses owner-or-admin handler
  *   PUT    /admin/reviews/:id/hide · /unhide — MEH-2360 buttons for the
- *          sticky hide from MEH-2348; the row flips in place, no reload
+ *          sticky hide from MEH-2348; the row flips in place, no reload.
+ *          MEH-2381: a hidden row the author edited since carries
+ *          `edited_after_hidden_at` → a tag, plus "keep hidden" (PUT /hide
+ *          on the hidden row), which clears the tag without publishing.
  *
  * Filters: star filter (1–5) + free-text search over producer name,
  * user name, title, body + "only AI-flagged" (MEH-2349, client-side over
@@ -161,18 +164,26 @@ export default function AdminReviewsPage() {
   // request leaves the admin looking at the real state. A 404 means the review
   // was deleted elsewhere (another tab, or its author): drop the row and show
   // the backend's message instead of the generic error.
-  const toggleHidden = async (review) => {
+  // `hide` is explicit, not !is_hidden: MEH-2381's "keep hidden" sends a
+  // hide for a row that is already hidden, with `seen` = the edit it showed.
+  const setHidden = async (review, { hide, seen }) => {
     // MEH-2389: the button is aria-disabled, not disabled, while in flight —
     // a disabled button drops keyboard focus to <body>. So the guard is here.
-    if (togglingIds.has(review.id)) return;
-    const hide = !review.is_hidden;
+    if (togglingIds.has(review.id)) return false;
     setTogglingIds((prev) => new Set(prev).add(review.id));
     try {
-      await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}`);
+      const query = seen ? `?seen=${encodeURIComponent(seen)}` : "";
+      await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}${query}`);
+      // MEH-2381: both endpoints clear edited_after_hidden_at server-side.
       setReviews((prev) =>
-        prev.map((item) => (item.id === review.id ? { ...item, is_hidden: hide } : item)),
+        prev.map((item) =>
+          item.id === review.id
+            ? { ...item, is_hidden: hide, edited_after_hidden_at: null }
+            : item,
+        ),
       );
       showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
+      return true;
     } catch (err) {
       // "Deleted elsewhere" = the handler's own 404, identified by its `code`
       // (reviews.py _ADMIN_REVIEW_NOT_FOUND, MEH-2389). A route-miss or proxy
@@ -184,7 +195,12 @@ export default function AdminReviewsPage() {
         setReviews((prev) => prev.filter((item) => item.id !== review.id));
         setConfirmDelete((open) => (open?.id === review.id ? null : open));
       }
-      showToast.error(gone && detail.message ? detail.message : tError("generic"));
+      // MEH-2381: the author edited again after this page loaded — reload so
+      // the admin reads the new text before clearing the tag, and say why.
+      const changed = detail?.code === "review_changed";
+      if (changed) load();
+      showToast.error((gone || changed) && detail.message ? detail.message : tError("generic"));
+      return false;
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev);
@@ -192,6 +208,14 @@ export default function AdminReviewsPage() {
         return next;
       });
     }
+  };
+
+  // MEH-2381: "keep hidden" removes itself on success, so focus moves to the
+  // row's unhide button (already rendered) instead of dropping to <body>
+  // (cf. MEH-2389).
+  const keepHidden = async (review) => {
+    if (!(await setHidden(review, { hide: true, seen: review.edited_after_hidden_at }))) return;
+    document.querySelector(`[data-toggle-for="${review.id}"]`)?.focus();
   };
 
   const filtered = reviews.filter((r) => {
@@ -322,6 +346,14 @@ export default function AdminReviewsPage() {
                           {t("reviews.hidden")}
                         </span>
                       )}
+                      {r.is_hidden && r.edited_after_hidden_at && (
+                        <span
+                          data-testid="review-edited-after-hidden-tag"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-accent/10 border border-accent/30 text-gold-deep"
+                        >
+                          {t("reviews.edited_after_hidden")}
+                        </span>
+                      )}
                       {r.ai_moderation_status === "FLAGGED" && (
                         <span
                           data-testid="review-ai-flag"
@@ -347,7 +379,8 @@ export default function AdminReviewsPage() {
                       <div className="flex flex-col items-start gap-2">
                         <button
                           type="button"
-                          onClick={() => toggleHidden(r)}
+                          data-toggle-for={r.id}
+                          onClick={() => setHidden(r, { hide: !r.is_hidden })}
                           aria-disabled={togglingIds.has(r.id)}
                           data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
                           className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -358,6 +391,18 @@ export default function AdminReviewsPage() {
                           {r.is_hidden ? <Eye size={14} /> : <EyeSlash size={14} />}
                           {t(r.is_hidden ? "reviews.unhide" : "reviews.hide")}
                         </button>
+                        {r.is_hidden && r.edited_after_hidden_at && (
+                          <button
+                            type="button"
+                            onClick={() => keepHidden(r)}
+                            aria-disabled={togglingIds.has(r.id)}
+                            data-testid="review-keep-hidden"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                          >
+                            <EyeSlash size={14} />
+                            {t("reviews.keep_hidden")}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDelete(r)}

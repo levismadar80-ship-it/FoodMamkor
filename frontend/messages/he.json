@@ -2093,6 +2093,8 @@
       "expand": "עוד",
       "collapse": "פחות",
       "ai_flagged": "סומן ע״י AI",
+      "edited_after_hidden": "נערכה אחרי שהוסתרה",
+      "keep_hidden": "להשאיר מוסתרת",
       "ai_flagged_only": "רק ביקורות שסומנו",
       "hidden": "מוסתרת",
       "hide": "הסתירי",
