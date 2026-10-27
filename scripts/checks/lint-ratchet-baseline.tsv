@@ -23,7 +23,6 @@ e2e/auth-fixture.ts	exports	2
 eslint.config.mjs	unlisted	1
 lib/api-schemas.js	exports	1
 lib/category-registry.js	exports	1
-lib/categoryQuestions.js	exports	2
 lib/env.server.js	files	1
 lib/generated/api.zod.js	exports	1041
 lib/hours-serialize.js	exports	4

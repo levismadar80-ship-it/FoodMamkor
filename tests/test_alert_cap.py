@@ -5,13 +5,14 @@ backed by the AlertLog ledger. Blocked alerts are dropped (no digest in v1).
 Channels are capped independently; the cap is isolated per (user, producer).
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from conftest import make_producer, make_user
 
 from app.models import AlertLog, FavoriteAlert
 from app.routers.alerts import fire_alerts
 from app.schemas.schemas import AlertContent
+from app.utils.clock import utc_now
 
 _SUB = {"endpoint": "https://push.example/x", "keys": {"p256dh": "a", "auth": "b"}}
 
@@ -116,7 +117,7 @@ class TestFrequencyCap:
             user,
             producer,
             "push",
-            sent_at=datetime.utcnow() - timedelta(hours=25),
+            sent_at=utc_now() - timedelta(hours=25),
         )
 
         fire_alerts(db, producer.id, "new_product", _content())

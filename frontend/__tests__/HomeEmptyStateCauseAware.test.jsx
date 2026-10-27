@@ -20,7 +20,6 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 // MEH-1774: this suite pulls use-home-page transitively (HomeProducersGrid
 // imports LOAD_MORE_CAP from it), and that module now imports the locale-aware
@@ -37,11 +36,6 @@ const baseProps = {
   categories: [{ id: 3, name: "חלב וגבינות" }],
   showNewUserHint: false,
   fridayMode: false,
-  step0Visible: false,
-  onboardStep: -1,
-  onboardAdvance: () => {},
-  onboardDismiss: () => {},
-  onAdvanceFromStep0: () => {},
   onChipNavigate: () => {},
   onLoadMore: () => {},
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { COOKIE_CONSENT_EVENT, hasFullCookieConsent } from "@/lib/cookie-consent";
 import { usePathname } from "next/navigation";
 
 // MEH-2324: /claim/<token> carries a bearer credential in its path, and a
@@ -14,16 +15,10 @@ export default function ClarityScript({ projectId }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const check = () => {
-      try {
-        setConsented(localStorage.getItem("cookieConsent") === "all");
-      } catch {
-        setConsented(false);
-      }
-    };
+    const check = () => setConsented(hasFullCookieConsent());
     check();
-    window.addEventListener("cookie-consent", check);
-    return () => window.removeEventListener("cookie-consent", check);
+    window.addEventListener(COOKIE_CONSENT_EVENT, check);
+    return () => window.removeEventListener(COOKIE_CONSENT_EVENT, check);
   }, []);
 
   // This only keeps Clarity from loading on a token path. It cannot unload a

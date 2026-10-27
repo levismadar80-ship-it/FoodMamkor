@@ -18,6 +18,7 @@ from app.services.group_buy_notifications import (
     notify_participant_funded,
     notify_producer_funded,
 )
+from app.utils.clock import utc_now
 
 
 def _producer_user(db, *, email="gbprod@test.com", status="approved"):
@@ -49,7 +50,7 @@ def _make_group_buy(
         price_per_unit_group=90,
         min_participants=min_participants,
         max_participants=max_participants,
-        deadline=deadline or (datetime.utcnow() + timedelta(days=7)),
+        deadline=deadline or (utc_now() + timedelta(days=7)),
         city=city,
         status=status,
     )
@@ -67,7 +68,7 @@ def _valid_create_payload(**overrides):
         "price_per_unit_regular": 80,
         "price_per_unit_group": 60,
         "min_participants": 3,
-        "deadline": (datetime.utcnow() + timedelta(days=10)).isoformat(),
+        "deadline": (utc_now() + timedelta(days=10)).isoformat(),
         "city": "חיפה",
     }
     payload.update(overrides)
@@ -161,7 +162,7 @@ class TestCreate:
         resp = client.post(
             "/group-buys",
             json=_valid_create_payload(
-                deadline=(datetime.utcnow() - timedelta(days=1)).isoformat()
+                deadline=(utc_now() - timedelta(days=1)).isoformat()
             ),
             headers=auth_header(user),
         )
@@ -199,7 +200,7 @@ class TestCreate:
         resp = client.post(
             "/group-buys",
             json=_valid_create_payload(
-                deadline=(datetime.utcnow() + timedelta(days=10)).isoformat()
+                deadline=(utc_now() + timedelta(days=10)).isoformat()
             ),
             headers=auth_header(user),
         )
@@ -294,7 +295,7 @@ class TestCommitLifecycle:
     def test_commit_rejected_after_deadline(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(
-            db, producer, deadline=datetime.utcnow() - timedelta(hours=1)
+            db, producer, deadline=utc_now() - timedelta(hours=1)
         )
         user = make_user(db, email="buyer3@test.com")
         resp = client.post(
@@ -366,7 +367,7 @@ class TestCommitLifecycle:
     def test_commit_and_cancel_after_aware_create(self, client, db):
         """MEH-1454 consistency: a group created via the API with an aware
         ISO-Z deadline stores a naive-UTC deadline, so the commit and cancel
-        deadline comparisons (`gb.deadline < datetime.utcnow()`) still work."""
+        deadline comparisons (`gb.deadline < utc_now()`) still work."""
         _, producer_user = _producer_user(db)
         aware = (
             (datetime.now(timezone.utc) + timedelta(days=10))

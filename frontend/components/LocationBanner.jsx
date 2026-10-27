@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { COOKIE_CONSENT_EVENT, hasCookieConsent } from "@/lib/cookie-consent";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
@@ -10,11 +11,27 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
   const t = useTranslations("location.banner");
   const [visible, setVisible] = useState(false);
 
+  // MEH-2394: one prompt at a time. On a first visit this banner used to
+  // appear 3 s in, while the cookie banner was still open — two green boxes
+  // asking for a decision before any content (and the coach-mark tour made a
+  // third). The reveal timer is armed only once cookie consent exists: read
+  // from localStorage when it is already there, else on the "cookie-consent"
+  // event CookieBanner.jsx dispatches on accept (contract: lib/cookie-consent.js).
+  // Intended consequence: a visitor who never answers the cookie banner never
+  // sees the city prompt either — one open question on screen, not two.
   useEffect(() => {
     if (hasCity) return;
     if (sessionStorage.getItem(DISMISS_KEY)) return;
-    const timer = setTimeout(() => setVisible(true), 3000);
-    return () => clearTimeout(timer);
+    let timer;
+    const arm = () => {
+      timer = setTimeout(() => setVisible(true), 3000);
+    };
+    if (hasCookieConsent()) arm();
+    else window.addEventListener(COOKIE_CONSENT_EVENT, arm, { once: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener(COOKIE_CONSENT_EVENT, arm);
+    };
   }, [hasCity]);
 
   // MEH-879: lowest banner precedence — `suppressed` (Friday or Holiday is

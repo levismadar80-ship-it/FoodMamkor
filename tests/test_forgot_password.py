@@ -6,12 +6,13 @@ Coverage:
 - POST /auth/reset-password: valid token updates password, invalid/expired token = 400,
   token is cleared after use (single-use), rate-limited
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
 
 from app.auth import hash_password, verify_password
 from app.models.models import User
 from conftest import make_user
+from app.utils.clock import utc_now
 
 
 class TestForgotPassword:
@@ -37,7 +38,7 @@ class TestForgotPassword:
         assert user.reset_token is not None
         assert len(user.reset_token) >= 32
         assert user.reset_token_expires_at is not None
-        assert user.reset_token_expires_at > datetime.utcnow()
+        assert user.reset_token_expires_at > utc_now()
 
     def test_token_expires_in_one_hour(self, client, db):
         user = make_user(db, email="carol@test.com")
@@ -45,7 +46,7 @@ class TestForgotPassword:
             client.post("/auth/forgot-password", json={"email": "carol@test.com"})
         db.refresh(user)
         # expires_at should be ~1 hour from now (allow 5s drift)
-        delta = user.reset_token_expires_at - datetime.utcnow()
+        delta = user.reset_token_expires_at - utc_now()
         assert timedelta(minutes=59) < delta < timedelta(hours=1, seconds=5)
 
     def test_re_request_replaces_old_token(self, client, db):
@@ -66,9 +67,9 @@ class TestResetPassword:
         token = "test-reset-token-abc123xyz"
         user.reset_token = token
         user.reset_token_expires_at = (
-            datetime.utcnow() - timedelta(seconds=1)
+            utc_now() - timedelta(seconds=1)
             if expired
-            else datetime.utcnow() + timedelta(hours=1)
+            else utc_now() + timedelta(hours=1)
         )
         db.commit()
         return token

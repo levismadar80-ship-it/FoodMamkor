@@ -29,7 +29,6 @@ vi.mock("next-intl", () => ({
       // identically whether the string resolves or is broken — a green with two
       // causes. Mapping them means the expected href is production's shape.
       source_line: "הגעתי דרך מהמקור",
-      recipe_idea_message: "יש לי רעיון למתכון",
     };
     return map[key] ?? key;
   },
@@ -98,13 +97,6 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
     expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(1);
   });
 
-  it("fires on the recipe-idea link", () => {
-    render(<WhatsAppQuestionChips producer={base} />);
-    fireEvent.click(screen.getByTestId("recipe-idea-link"));
-    expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
-    expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(1);
-  });
-
   // THE DISCRIMINATING CASE. An answer-first disclosure opens no WhatsApp
   // conversation, so it must not be attributed. This is also what proves the
   // handlers sit on the <a> elements and not on a shared ancestor: an ancestor
@@ -138,17 +130,6 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
     const href = screen.getByText("יש חלה לשבת?").closest("a").getAttribute("href");
     expect(decodeURIComponent(href)).toBe(
       "https://wa.me/972501234567?text=שלום חוות השקמה, יש חלה לשבת?\n\nהגעתי דרך מהמקור",
-    );
-  });
-
-  // The recipe-idea link carries its OWN Sapir-locked prefill (MEH-1462), not
-  // the greeting_template that wraps every other question, so the assertion
-  // above cannot speak for it.
-  it("leaves the recipe-idea link on its own locked prefill", () => {
-    render(<WhatsAppQuestionChips producer={base} />);
-    const href = screen.getByTestId("recipe-idea-link").getAttribute("href");
-    expect(decodeURIComponent(href)).toBe(
-      "https://wa.me/972501234567?text=יש לי רעיון למתכון\n\nהגעתי דרך מהמקור",
     );
   });
 
