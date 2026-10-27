@@ -91,7 +91,6 @@ class TestProducerOAuthSignup:
                 name="יעל קיימת",
                 google_id=GOOGLE_SUB,
                 role="consumer",
-                referral_code="abc12345",
             )
         )
         db.commit()
@@ -115,7 +114,6 @@ class TestProducerOAuthSignup:
                 name="יעל",
                 password_hash="$argon2id$dummy",
                 role="consumer",
-                referral_code="zzz12345",
             )
         )
         db.commit()
@@ -141,7 +139,6 @@ class TestProducerOAuthSignup:
                 role="producer",
                 producer_id=producer.id,
                 is_producer=True,
-                referral_code="prd12345",
             )
         )
         db.commit()
