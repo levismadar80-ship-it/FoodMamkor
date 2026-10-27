@@ -261,7 +261,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   ) : null;
   // MEH-2440: the line under the name holds the category, plus the distance
   // only when there is no city line to carry it. With neither, it is skipped
-  // instead of rendering an empty row (claude[bot] review on #3694).
+  // instead of rendering an empty row (claude[bot] review on #3694). The
+  // availability dot then moves to the place line; with no city either there
+  // is no line left to carry it and it is dropped on purpose — a status dot
+  // with no text beside it is the MEH-1551 orphan circle, and the status is
+  // still on the producer page. (Registration requires a city, so this is a
+  // data-gap state, not a normal one.)
   const hasLocationText = Boolean(category || (!producer.city && distanceLabel));
 
   // MEH-1880 — derived "open for orders" line.

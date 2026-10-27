@@ -401,6 +401,14 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(place).toContainElement(screen.getByTestId("availability-dot"));
   });
 
+  it("no city, no category, no distance: no empty lines and no orphan dot", () => {
+    render(<ProducerCard producer={{ ...fullProducer, city: null, categories: [] }} />);
+    expect(screen.queryByTestId("card-place")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "חוות השקמה" })).toBeInTheDocument();
+  });
+
   it("keeps the dot in the line under the name when that line has text", () => {
     render(<ProducerCard producer={fullProducer} />);
     expect(screen.getByTestId("location-line")).toContainElement(screen.getByTestId("availability-dot"));
