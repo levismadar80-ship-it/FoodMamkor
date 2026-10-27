@@ -118,11 +118,14 @@ describe("one green per page", () => {
   });
 });
 
-
 // MEH-2383 — the two formatters now derive from lib/orderWindow.js
 // `israelNowParts`. Characterisation: the values below are what the previous
-// private formatter returned on Node's ICU, so a byte-identical refactor is the
-// claim and these pin it on both sides of an Israel midnight, in both offsets.
+// private formatter returned on Node's ICU, and these pin them on both sides
+// of an Israel midnight, in both offsets. The one place the refactor is NOT
+// byte-identical is midnight itself: the old `en-GB` / `hour12:false`
+// formatter could emit "24:MM" on some ICU builds; `israelNowParts` folds
+// that to "00:MM", the stored/transported shape, and the first case pins it.
+// No consumer compares against "24:" (grep, 27/10).
 describe("israelTime / israelDayKey — Israel wall-clock, padded (MEH-2383)", () => {
   it("Mon 22:30Z in winter (IST, +2) is Tuesday 00:30 in Israel", () => {
     const d = new Date("2026-10-26T22:30:00Z");

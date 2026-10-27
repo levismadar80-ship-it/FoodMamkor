@@ -95,6 +95,9 @@ export function computeStatus(map, now = new Date()) {
   // the toLocaleString re-parse MEH-845 removed). This function used to carry
   // a line-for-line private copy; israel-clock-guard.sh flagged it.
   const { dayIndex: dayIdx, minutes: nowMin } = israelNowParts(now);
+  // Same guard as orderWindow.js / order-status.js `israelDayKey`: an ICU
+  // weekday abbreviation that matches nothing is "unknown", not Saturday-1.
+  if (dayIdx < 0) return { isOpen: false };
 
   // MEH-1870: a day holds a LIST of ranges, so "am I open?" is a scan. Ranges
   // are emitted in source order; sort defensively so a hand-edited string with
