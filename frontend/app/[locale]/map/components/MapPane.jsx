@@ -77,7 +77,6 @@ export default function MapPane({
   onMapCanvasClick,
   registerApi,
   mapRef,
-  visitedIds,
   // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
   showSecondaryLayer,
   onToggleSecondaryLayer,
@@ -119,7 +118,6 @@ export default function MapPane({
         onMapCanvasClick={onMapCanvasClick}
         registerApi={registerApi}
         mapRef={mapRef}
-        visitedIds={visitedIds}
         showSecondaryLayer={showSecondaryLayer}
         focusedProducerId={focusedProducerId}
       />

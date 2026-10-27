@@ -628,7 +628,6 @@ export default function MapPage() {
       onMapCanvasClick={sync.handleMapCanvasClick}
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
-      visitedIds={hints.visitedIds}
       showSecondaryLayer={showSecondaryLayer}
       onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
       secondaryHidden={secondaryHidden}
