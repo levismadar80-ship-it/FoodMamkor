@@ -85,6 +85,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: filter
+    concurrency:
+      group: e2e-staging-backend
+      cancel-in-progress: false
 
     # paths-filter (MEH-424): skip when no frontend files changed.
     # Cost sweep (May 2026): skip Dependabot PRs — they get lint/build only.
@@ -509,6 +512,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: filter
+    concurrency:
+      group: e2e-staging-backend-webkit
+      cancel-in-progress: false
     # Never fails the workflow. See property 1 above.
     continue-on-error: true
 
