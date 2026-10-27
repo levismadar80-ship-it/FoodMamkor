@@ -17,7 +17,8 @@ History:  MEH-672 (creation, chunk 1 — base + 4 subclasses + tests).
 The subclasses mirror the live templates exactly (names, languages,
 and field order verified against the call sites in Phase 0):
 
-    producer_welcome_v1    he  1 param  (producer_name)
+    producer_welcome_v1    he  1 param  (producer_name) — superseded at signup by v2
+    producer_welcome_v2    he  1 param  (producer_name) — MEH-2320, sent at signup
     producer_approved_v1   he  1 param  (producer_name)
     producer_changes_requested_v1 he 2 params (producer_name, missing_details)
     after_hours_response_he he 0 params
@@ -82,6 +83,19 @@ class ProducerWelcomeV1(WhatsAppTemplate):
     """Sent to a producer at signup. One param: business name."""
 
     name: ClassVar[str] = "producer_welcome_v1"
+    producer_name: str
+
+
+class ProducerWelcomeV2(WhatsAppTemplate):
+    """Sent to a producer at signup (MEH-2320). One param: business name.
+
+    Replaces V1 at registration. V1's Meta copy says the profile is
+    «נמצא כרגע בבדיקה» right after signup, which has been untrue since
+    the submit-for-review gate (MEH-2097). V2 says the account is open
+    and that the profile goes to review only after «שליחה לבדיקה».
+    """
+
+    name: ClassVar[str] = "producer_welcome_v2"
     producer_name: str
 
 
