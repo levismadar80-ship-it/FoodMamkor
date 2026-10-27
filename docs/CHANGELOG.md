@@ -94,6 +94,11 @@
   - **‏נמדד — Actions לא רץ 11:49Z–16:23Z:** כל job נכשל תוך 1–5 שניות, בלי steps ועם לוג 404. הריפו היה פרטי (מכסת דקות, כלל 21). ספיר הפכה אותו לציבורי, וה-uptime probe של 16:23Z רץ שוב.
   - **‏Lane B:** 14 כרטיסים נבדקו מול B1–B4, ואף אחד לא עבר. MEH-2316–2319 בטיפול סשן מקביל.
 
+- **‏24/10 (19:30–22:10) — release v1.2.2 בייצור, וסיבוב הסודות אחרי אירוע Railway.**
+  - **‏Release — #3571, merge `add01d33` (21:50Z):** כולל את #3570 `d4b51281` (שם נגיש לכפתור הצ'אט, axe 4.14, הממצא האחרון מתוך שלושה), את #3564 `4495eb3a` (‏`railway.json` עם healthcheck על `/health/readiness`) ואת #3569 (docs). ה-deploy בייצור `8b7e13a6` (21:55Z) עבר את ה-healthcheck החדש עם 200 (MEH-1905, נסגר 26/10).
+  - **‏סודות (MEH-2291, נסגר 26/10):** ספיר סיבבה דרך Claude בכרום, ו-CC לא ראה אף ערך. סובבו `SECRET_KEY`, `EDGE_PROXY_SECRET` (חדש, נמדד `X-Client-IP-Source: edge`), ‏`WHATSAPP_VERIFY_TOKEN`, ‏Anthropic, ‏Resend, ‏Cloudinary, ‏R2 (טוקן מוגבל ל-bucket הגיבויים, `Backup OK`) וסיסמת האדמין (דרך האתר). המפתחות הישנים בוטלו. ‏WhatsApp access/app secret, ‏Google Places, ‏VAPID וסיסמת Postgres לא סובבו, בהחלטה של ספיר.
+  - **‏תופעת לוואי:** מפתח Resend החדש נוצר בצוות שבו `mehamakor.co.il` לא מאומת, ולכן כל מייל מייצור נכשל. תוקן ב-26/10 (MEH-2341, deploy `febddc5f`).
+
 - **‏24/10 (15:00–19:30) — הכנות להשקה: ייצור עודכן מ-`8e69ff1` ל-v1.2.0 / v1.2.1, תיקון rate limiter, נגישות, «פנייה ישירה» חזרה.**
   - **‏Rate limit — #3562 `d8f227cf` (MEH-2298):** ערוץ edge מאומת לזיהוי ה-IP של הגולשת מאחורי ה-rewrite של Vercel (`x-edge-client-ip` + `x-edge-secret`, `hmac.compare_digest`, לפחות 32 תווים). header חדש `X-Client-IP-Source`. כבוי עד שמגדירים `EDGE_PROXY_SECRET`. בדיקות אדומות-ראשון: `2f7fbe7f` נכשל, `f4f81449` ירוק.
   - **‏נגישות — #3565 `0f6e0453` (MEH-2308):** אינסטגרם בפוטר ומפות Google ב-MiniMap, label-in-name (axe 4.14). אדום-ראשון: `ad10772c`.
