@@ -796,6 +796,15 @@ class TestOwnerStatusChange:
         assert resp.status_code == 403
         assert self._status_in_db(db, gb) == "open"
 
+    def test_producer_without_a_business_is_403(self, client, db):
+        producer, _ = _producer_user(db, email="own14@test.com")
+        gb = _make_group_buy(db, producer)
+        orphan = make_user(db, role="producer", email="orphan14@test.com")
+        assert orphan.producer_id is None
+        resp = self._patch(client, gb, "cancelled", orphan)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
     def test_unverified_owner_is_403(self, client, db):
         producer, owner = _producer_user(db, email="own7@test.com")
         owner.email_verified = False
@@ -845,14 +854,11 @@ class TestOwnerStatusChange:
 
     def test_transitions_outside_the_table_are_409(self, client, db):
         producer, owner = _producer_user(db, email="own11@test.com")
-        ran = []
         for current, requested in self._forbidden_pairs():
             gb = _make_group_buy(db, producer, status=current)
             resp = self._patch(client, gb, requested, owner)
             assert resp.status_code == 409, (current, requested, resp.json())
             assert self._status_in_db(db, gb) == current, (current, requested)
-            ran.append((current, requested))
-        assert len(ran) == len(self._forbidden_pairs())
 
     def test_admin_overrides_any_group_buy(self, client, db):
         producer, _ = _producer_user(db, email="own12@test.com")
@@ -868,7 +874,6 @@ class TestOwnerStatusChange:
         # record of who took part, and on a funded→fulfilled group the old
         # revert path would even reopen it.
         producer, owner = _producer_user(db, email="own13@test.com")
-        ran = []
         for final in ("cancelled", "fulfilled"):
             gb = _make_group_buy(db, producer, status="funded", min_participants=1)
             buyer = make_user(db, email=f"leaver-{final}@test.com")
@@ -879,5 +884,3 @@ class TestOwnerStatusChange:
             assert resp.status_code == 400, (final, resp.json())
             assert self._status_in_db(db, gb) == final
             assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1
-            ran.append(final)
-        assert ran == ["cancelled", "fulfilled"]

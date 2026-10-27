@@ -4047,11 +4047,11 @@ class GroupBuyCommitRequest(BaseModel):
     # 13 also bars collecting a field that serves no purpose.
 
 
-
 # MEH-2436: the owner's status change. The four values are the whole domain of
 # GroupBuy.status; which of them a caller may move to is decided in the router.
 class GroupBuyStatusUpdate(BaseModel):
     status: Literal["open", "funded", "cancelled", "fulfilled"]
+
 
 # MEH-141: category request flow
 class CategoryRequestCreate(BaseModel):
