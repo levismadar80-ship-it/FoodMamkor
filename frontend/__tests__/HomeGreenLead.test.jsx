@@ -95,6 +95,18 @@ describe("MEH-2441 — featured business on the green band", () => {
     );
   });
 
+  it("the business name is an h3 under the section h2, so heading navigation reaches it", () => {
+    render(<HomeFeaturedProducer featured={FEATURED} />);
+    expect(screen.getByRole("heading", { level: 2, name: "home.featured.eyebrow" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: FEATURED.name })).toBeInTheDocument();
+  });
+
+  it("no href → no meet link, the rest still renders", () => {
+    render(<HomeFeaturedProducer featured={{ ...FEATURED, href: undefined }} />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByText(FEATURED.quote)).toBeInTheDocument();
+  });
+
   it("renders nothing without a featured business", () => {
     const { container } = render(<HomeFeaturedProducer featured={null} />);
     expect(container).toBeEmptyDOMElement();

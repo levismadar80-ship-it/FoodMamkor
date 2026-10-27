@@ -92,7 +92,6 @@ export function HomeRecentlyViewed({ items }) {
  *
  * @param {?{
  *   quote: string,        // feature headline — display line, no terminal period
- *   story: string,        // full description — not rendered on home since MEH-2441
  *   name: string,         // first name — interpolated into both CTAs
  *   attribution: string,  // "שם מלא · עסק, עיר" meta line (middle-dot rhythm)
  *   category?: string,
@@ -155,9 +154,10 @@ export function HomeFeaturedProducer({ featured }) {
                 {place}
               </p>
             )}
-            <p className="font-headline-lg font-black text-[38px] md:text-[60px] leading-none text-background [word-break:keep-all] [overflow-wrap:anywhere]">
+            {/* h3 under the "היכרות" h2, so heading navigation reaches the business. */}
+            <h3 className="font-headline-lg font-black text-[38px] md:text-[60px] leading-none text-background [word-break:keep-all] [overflow-wrap:anywhere]">
               {featured.name}
-            </p>
+            </h3>
             <p className="font-headline-md font-medium text-[20px] md:text-[26px] leading-snug border-s-2 border-gold-on-dark ps-4">
               {featured.quote}
             </p>
