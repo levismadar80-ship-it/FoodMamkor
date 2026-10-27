@@ -306,7 +306,7 @@ erDiagram
         text comment
         timestamp created_at
         string source "MEH-1428: click | invite_link — NOT NULL default 'click' (rev 3f9a7c2e5d18)"
-        string ai_moderation_status "MEH-2349: APPROVED | FLAGGED | NULL — AI verdict on the body at the last write; CHECK ck_producer_reviews_ai_moderation_status (rev c4e81a2f9b6d)"
+        string ai_moderation_status "MEH-2349: APPROVED | FLAGGED | NULL (no verdict: predates column or fail-open, MEH-2390) — AI verdict on the body at the last write; CHECK ck_producer_reviews_ai_moderation_status (rev c4e81a2f9b6d)"
     }
 ```
 
