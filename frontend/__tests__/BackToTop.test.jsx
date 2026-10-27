@@ -96,15 +96,20 @@ describe("BackToTop", () => {
     };
     const footer = document.createElement("footer");
     document.body.appendChild(footer);
-    setViewport(667, 5000);
-    render(<BackToTop />);
-    act(() => window.dispatchEvent(new Event("scroll")));
-    expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
-    act(() => cb([{ isIntersecting: true }]));
-    expect(screen.queryByLabelText(LABEL)).not.toBeInTheDocument();
-    act(() => cb([{ isIntersecting: false }]));
-    expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
-    footer.remove();
-    delete window.IntersectionObserver;
+    // finally, not trailing lines: a failed assertion must not leak the
+    // stubbed observer or the footer node into the tests after this one.
+    try {
+      setViewport(667, 5000);
+      render(<BackToTop />);
+      act(() => window.dispatchEvent(new Event("scroll")));
+      expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+      act(() => cb([{ isIntersecting: true }]));
+      expect(screen.queryByLabelText(LABEL)).not.toBeInTheDocument();
+      act(() => cb([{ isIntersecting: false }]));
+      expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+    } finally {
+      footer.remove();
+      delete window.IntersectionObserver;
+    }
   });
 });
