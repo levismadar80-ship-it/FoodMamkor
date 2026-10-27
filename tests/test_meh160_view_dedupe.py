@@ -29,11 +29,12 @@ days' uniques and always agree with the views_by_day chart.
 whole-window dedupe, which an earlier draft of this change shipped.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app.models.models import Producer, ProducerPageView, ProducerWhatsAppClick
 from app.services.analytics import israel_day_of, unique_views_count
 from conftest import auth_header, make_producer, make_user
+from app.utils.clock import utc_now
 
 
 def _seed(db, producer_id, ip_hash, *, days_ago=0, referrer=None):
@@ -42,7 +43,7 @@ def _seed(db, producer_id, ip_hash, *, days_ago=0, referrer=None):
             producer_id=producer_id,
             viewer_ip_hash=ip_hash,
             referrer=referrer,
-            created_at=datetime.utcnow() - timedelta(days=days_ago),
+            created_at=utc_now() - timedelta(days=days_ago),
         )
     )
     db.commit()

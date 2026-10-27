@@ -19,10 +19,11 @@ its `<verification_step>`:
 reaches Meta. Pure HTTP/DB, mirroring tests/test_admin_approval_transitions.py.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import app.routers.admin_kashrut as kashrut_module
 from conftest import auth_header, make_producer, make_user
+from app.utils.clock import utc_now
 
 ENDPOINT = "/admin/kashrut/expiry-reminders"
 
@@ -36,7 +37,7 @@ def _badged(db, *, days, status="approved", phone="050-123-4567", badges=("badat
     producer = make_producer(db, status=status)
     producer.phone = phone
     producer.kashrut_badges = list(badges)
-    producer.kashrut_expires_at = datetime.utcnow() + timedelta(days=days)
+    producer.kashrut_expires_at = utc_now() + timedelta(days=days)
     db.commit()
     db.refresh(producer)
     return producer

@@ -6,6 +6,7 @@ from app.models.models import KashrutBadgeRequest, PhoneOtpToken
 from app.services.trust_tier import compute_trust_tier, VALID_BADGE_CODES
 
 from tests.conftest import make_producer, make_user, auth_header
+from app.utils.clock import utc_now
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ def test_confirm_otp_success(client, db):
         producer_id=producer.id,
         phone=producer.phone,
         code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=10),
+        expires_at=utc_now() + timedelta(minutes=10),
     ))
     db.commit()
 
@@ -172,7 +173,7 @@ def test_confirm_otp_expired(client, db):
         producer_id=producer.id,
         phone=producer.phone,
         code=code,
-        expires_at=datetime.utcnow() - timedelta(minutes=1),  # expired
+        expires_at=utc_now() - timedelta(minutes=1),  # expired
     ))
     db.commit()
 
