@@ -300,8 +300,10 @@ def create_group_buy(
 
 # MEH-2436: what the business may do to its own group buy. Anything not listed
 # is a 409 — cancelled and fulfilled are final for the owner; only an admin
-# moves a group buy out of them. "open → cancelled" covers both "cancel" before
-# the deadline and "close" after it: the row looks the same either way.
+# moves a group buy out of them, through PATCH /admin/group-buys/{id}/status.
+# "open → cancelled" covers both "cancel" before the deadline and "close" after
+# it: the row looks the same either way. Nothing closes an open group buy past
+# its deadline automatically.
 OWNER_TRANSITIONS = {
     ("open", "cancelled"),
     ("funded", "fulfilled"),
@@ -318,12 +320,12 @@ def update_group_buy_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    is_admin = current_user.role == "admin"
-    if not is_admin:
-        # Same role and email gates, in the same order, as creating a group
-        # buy. Unlike create, a business that is no longer approved may still
-        # close what it opened: its participants are better off with that.
-        require_verified_producer(require_producer(current_user))
+    # Owner-only. An admin changes status through the admin route, so this
+    # table is the one path a business has, and there is no second unchecked
+    # one here. Same role and email gates, in the same order, as creating a
+    # group buy. Unlike create, a business that is no longer approved may still
+    # close what it opened: its participants are better off with that.
+    require_verified_producer(require_producer(current_user))
 
     # Lock the row: a participant joining in the same instant can flip
     # open → funded, and the transition check must see the status it writes over.
@@ -332,13 +334,11 @@ def update_group_buy_status(
     )
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
-    # IDOR (security.md): the group buy must belong to the caller's business,
-    # or the caller is an admin. A producer user with no business owns nothing.
-    if not is_admin and (
-        current_user.producer_id is None or gb.producer_id != current_user.producer_id
-    ):
+    # IDOR (security.md): the group buy must belong to the caller's business.
+    # A producer user with no business owns nothing.
+    if current_user.producer_id is None or gb.producer_id != current_user.producer_id:
         raise HTTPException(status_code=403, detail="אין הרשאה לשנות קבוצת רכש זו")
-    if not is_admin and (gb.status, data.status) not in OWNER_TRANSITIONS:
+    if (gb.status, data.status) not in OWNER_TRANSITIONS:
         raise HTTPException(
             status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
         )

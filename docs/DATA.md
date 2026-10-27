@@ -568,9 +568,10 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > the IDOR check: `gb.producer_id == current_user.producer_id`, else 403.
 > The owner gets exactly `open → cancelled` (before or after the deadline),
 > `funded → fulfilled` and `funded → cancelled` (`OWNER_TRANSITIONS`); any other
-> pair → 409, so cancelled and fulfilled are final for her. An admin may set
-> any of the four on any group buy (as `PATCH /admin/group-buys/{id}/status`,
-> which is unchanged). The check and the write run under a row lock
+> pair → 409, so cancelled and fulfilled are final for her. The route is
+> owner-only: an admin (not a producer) gets 403 here and keeps the full
+> override on `PATCH /admin/group-buys/{id}/status`, which is unchanged — one
+> checked path per caller, not two to the same state. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403

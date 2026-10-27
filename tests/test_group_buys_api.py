@@ -860,11 +860,21 @@ class TestOwnerStatusChange:
             assert resp.status_code == 409, (current, requested, resp.json())
             assert self._status_in_db(db, gb) == current, (current, requested)
 
-    def test_admin_overrides_any_group_buy(self, client, db):
+    def test_admin_uses_the_admin_route_not_this_one(self, client, db):
+        # This route is the business's, held to the transition table. An admin
+        # keeps the full override on PATCH /admin/group-buys/{id}/status, so
+        # there is no second, unchecked path to the same state here.
         producer, _ = _producer_user(db, email="own12@test.com")
         admin = make_user(db, role="admin", email="adm12@test.com")
         gb = _make_group_buy(db, producer, status="cancelled")
         resp = self._patch(client, gb, "open", admin)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "cancelled"
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status",
+            params={"status": "open"},
+            headers=auth_header(admin),
+        )
         assert resp.status_code == 200
         assert self._status_in_db(db, gb) == "open"
 
@@ -873,7 +883,7 @@ class TestOwnerStatusChange:
     ):
         # Creating needs an approved business; closing does not, on purpose: a
         # business that was suspended must still be able to close what it opened.
-        producer, owner = _producer_user(db, email="own14@test.com", status="pending")
+        producer, owner = _producer_user(db, email="own15@test.com", status="pending")
         gb = _make_group_buy(db, producer)
         resp = self._patch(client, gb, "cancelled", owner)
         assert resp.status_code == 200
