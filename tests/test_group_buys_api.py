@@ -1122,3 +1122,31 @@ class TestCancelNotification:
         assert resp.status_code == 200, resp.text
         db.expire_all()
         assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+
+    def test_owner_who_joined_her_own_group_is_not_emailed(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own9@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_o1@test.com")
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(owner)
+        )
+        assert resp.status_code == 201, resp.text
+
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+        assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_o1@test.com"]
+
+    def test_admin_cancel_through_the_admin_route_sends_nothing(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, _ = _producer_user(db, email="cn_own10@test.com")
+        admin = make_user(db, role="admin", email="cn_adm10@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_a1@test.com")
+
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status?status=cancelled", headers=auth_header(admin)
+        )
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+        assert sends == []

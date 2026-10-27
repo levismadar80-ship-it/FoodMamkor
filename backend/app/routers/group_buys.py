@@ -389,6 +389,9 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
             for (email,) in db.query(User.email)
             .join(GroupBuyCommit, GroupBuyCommit.user_id == User.id)
             .filter(GroupBuyCommit.group_buy_id == gb.id)
+            # Nothing stops the owner joining her own group; she cancelled it,
+            # so she is not told that the business cancelled it.
+            .filter(User.id != current_user.id)
             .all()
         ]
 
@@ -404,7 +407,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
             participant_emails,
             title,
             producer_name,
-            str(gb.id),
+            str(group_buy_id),
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}
 
