@@ -270,13 +270,23 @@ margin. Frontend: the vitest files a grep for `new Date()` / `Date.now()` / frid
 surfaced use `vi.useFakeTimers` or mock `isFridayMode`; `CalendarView.test.jsx` derives its expectation from
 the same `new Date()` the component reads.
 
-**Why not a mechanical guard here.** The CI `ruff check` runs from `backend/`
-and never sees `tests/`, and `[tool.ruff*]` is hook-protected (MEH-442/466), so
-`DTZ011` (ban `date.today()`) is Sapir's change, not CC's. A warn-only
-`scripts/checks/*.sh` on `date.today()` in `tests/` is the house pattern
-(`israel-clock-guard.sh` is the frontend sibling) — but a guard born with 29
-standing findings is ignored on day one (MEH-1868), so it ships together with
-the sweep or not at all.
+**Why the mechanical guard came one PR later (MEH-2382).** The CI `ruff check`
+runs from `backend/` and never sees `tests/`, and `[tool.ruff*]` is
+hook-protected (MEH-442/466), so `DTZ011` (ban `date.today()`) is Sapir's
+change, not CC's. A warn-only `scripts/checks/*.sh` on `date.today()` in
+`tests/` is the house pattern (`israel-clock-guard.sh` is the frontend
+sibling) — but a guard born with 29 standing findings is ignored on day one
+(MEH-1868), so it shipped together with the sweep, not before it: MEH-2382
+replaced the 29 calls in nine files with `israel_today()` (verified by running
+each file; `test_availability_validation.py` had to use the `clock` module the
+file already imported, which the sweep script missed and the test run caught)
+and added `scripts/checks/test-clock-guard.sh` with zero standing findings.
+Guard control, run before commit: a probe file with one bare call, one
+`guard-ok:`-covered call and one backticked docstring mention printed exactly
+one WARNING. A first attempt put the `guard-ok:` one line below the bare call
+and the guard printed OK — the ±1 window covered both, which is the window
+working, not the guard failing; the control was rewritten with the marker out
+of reach.
 
 ## `networkidle` is banned in specs (MEH-215)
 
