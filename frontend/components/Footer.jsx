@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight, CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -53,10 +53,22 @@ export default function Footer() {
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
   // MEH-2397: on mobile each link group is a closed accordion row. Desktop
-  // (md:) ignores this state — the lists carry `md:flex` and the heading
-  // button is inert there (`md:pointer-events-none`). Initial state is closed
-  // on both, so SSR and the first client render agree (no hydration diff).
+  // (md:) renders the heading as plain text — an inert `<button
+  // aria-expanded="false">` there would still sit in the tab order and tell a
+  // screen reader the (visible) list is collapsed. SSR and the first client
+  // render are the mobile markup (closed), so there is no hydration diff; the
+  // media query flips it in an effect. `md:flex` on the list keeps the links
+  // visible on desktop even before the effect runs.
   const [openGroup, setOpenGroup] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -208,22 +220,27 @@ export default function Footer() {
                       its links. MEH-2397: the heading is a 44px accordion button on
                       mobile (Baymard: mobile footers fold link groups; the ~340px
                       of open lists was the largest block on every page). From md:
-                      up the button is inert and the caret is gone. */}
+                      up (matchMedia) the heading is plain text — no button, no
+                      caret, nothing in the tab order. */}
                   <h3 className="text-[13px] font-semibold text-green-100 md:mb-3">
-                    <button
-                      type="button"
-                      aria-expanded={open}
-                      aria-controls={group.id}
-                      onClick={() => setOpenGroup(open ? null : group.id)}
-                      className="flex w-full min-h-[44px] items-center justify-between gap-2 text-start md:min-h-0 md:pointer-events-none"
-                    >
-                      {group.heading}
-                      <CaretDown
-                        size={16}
-                        aria-hidden="true"
-                        className={`shrink-0 transition-transform md:hidden ${open ? "rotate-180" : ""}`}
-                      />
-                    </button>
+                    {isDesktop ? (
+                      group.heading
+                    ) : (
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={group.id}
+                        onClick={() => setOpenGroup(open ? null : group.id)}
+                        className="flex w-full min-h-[44px] items-center justify-between gap-2 text-start md:min-h-0"
+                      >
+                        {group.heading}
+                        <CaretDown
+                          size={16}
+                          aria-hidden="true"
+                          className={`shrink-0 transition-transform md:hidden ${open ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
                   </h3>
                   <ul
                     id={group.id}

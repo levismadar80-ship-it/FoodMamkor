@@ -173,8 +173,7 @@ function LoginPageBody() {
           src={heroSrc}
           alt=""
           fill
-          priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
+          sizes="(min-width: 1024px) 50vw"
           className="object-cover"
         />
         {/* scrim — keeps the overlay AA-readable over any part of the photo */}

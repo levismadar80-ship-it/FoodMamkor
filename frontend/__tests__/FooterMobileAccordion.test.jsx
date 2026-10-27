@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-2397: on mobile the two footer link groups ("גלו", "לבתי עסק") are
@@ -37,6 +37,10 @@ const groupButton = (key) => screen.getByRole("button", { name: key });
 const listOf = (button) => document.getElementById(button.getAttribute("aria-controls"));
 
 describe("Footer link groups collapse on mobile (MEH-2397)", () => {
+  afterEach(() => {
+    delete window.matchMedia;
+  });
+
   it("renders both groups closed: aria-expanded=false and the list carries `hidden`", () => {
     render(<Footer />);
     for (const key of ["nav.footer.group_discover_heading", "nav.footer.group_business_heading"]) {
@@ -62,6 +66,30 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
     fireEvent.click(discover);
     expect(discover).toHaveAttribute("aria-expanded", "false");
     expect(listOf(discover).classList.contains("hidden")).toBe(true);
+  });
+
+  // Desktop cell (md: and up). jsdom has no matchMedia, so the three cells
+  // above run as the mobile markup by construction; this one installs a
+  // matching query and asserts the heading is plain text — no
+  // `aria-expanded="false"` button sitting in the tab order over a list that is
+  // in fact visible (CI reviewer on PR #3654). Shown-failing: with the
+  // always-a-button markup `queryByRole("button", { name })` finds it.
+  it("from md: up the group heading is not a button at all", () => {
+    const listeners = new Set();
+    window.matchMedia = vi.fn(() => ({
+      matches: true,
+      addEventListener: (_, fn) => listeners.add(fn),
+      removeEventListener: (_, fn) => listeners.delete(fn),
+    }));
+    render(<Footer />);
+    for (const key of ["nav.footer.group_discover_heading", "nav.footer.group_business_heading"]) {
+      expect(screen.queryByRole("button", { name: key })).toBeNull();
+      expect(screen.getByRole("heading", { level: 3, name: key })).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId("caret")).toBeNull();
+    // the lists are still there, every link intact
+    expect(document.getElementById("footer-group-discover")).not.toBeNull();
+    expect(listeners.size).toBe(1);
   });
 
   it("the links stay in the DOM while closed (no link is dropped by the fold)", () => {
