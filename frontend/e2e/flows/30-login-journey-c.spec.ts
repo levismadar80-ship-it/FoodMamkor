@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "./_cloudinary-stub";
+import { test, expect, type Page, type Locator } from "./_cloudinary-stub";
 
 /**
  * Spec:     30-login-journey-c
@@ -73,6 +73,45 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * constant. The doc and the merged code disagree about `e2e/flows/`; flows/29
  * flagged that for Sapir and this spec does not re-decide it.
  */
+
+// MEH-2323 — a full `goto` onto a streamed page does not leave the form in ONE
+// settled state: the server segment can arrive hidden while React commits a
+// client-rendered copy, so for ~120 ms there are two matches (strict-mode
+// violation for `fill`), and a revealed server copy can be replaced after a
+// fill landed on it. A bare `toHaveCount(1)` was measured insufficient (it
+// passes on the lone server copy before the second appears). The settled
+// state is: exactly one copy AND React owns it — a node React created or
+// hydrated carries a `__reactFiber$…` expando, the not-yet-hydrated server
+// copy does not. Timing traces and the shown-failing runs: PR #3651 and the
+// MEH-2323 card. 01-home-load.spec.ts (MEH-1078) waits for the same settling
+// with a count alone. `__reactFiber$` is a React internal (verified on React
+// 18.3, package.json): a rename cannot pass this silently — the wait fails,
+// and the thrown error names the helper and the suspect so seven timeouts do
+// not have to be read back to one cause. Explicit bound per e2e/CLAUDE.md;
+// `waitForFunction` is not an action, so `actionTimeout` does not cover it.
+async function settledField(page: Page, testId: string): Promise<Locator> {
+  try {
+    await page.waitForFunction(
+      (id) => {
+        const els = document.querySelectorAll(`[data-testid="${id}"]`);
+        return (
+          els.length === 1 &&
+          Object.keys(els[0]).some((k) => k.startsWith("__reactFiber"))
+        );
+      },
+      testId,
+      { timeout: 15_000 },
+    );
+  } catch (err) {
+    throw new Error(
+      `settledField(${testId}): no single React-owned [data-testid="${testId}"] ` +
+        "within 15 s — either the page kept two copies / never hydrated, or " +
+        "React renamed the `__reactFiber$` expando (MEH-2323). " +
+        `Cause: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  return page.getByTestId(testId);
+}
 
 const LOGIN_TITLE = "כניסה למהמקור";
 const LOGIN_WELCOME = "טוב לראות אותך שוב";
@@ -332,7 +371,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     const nav = recordNavigation(page);
     await page.goto("/he/login");
 
-    await page.getByTestId("login-email").fill(VALID_EMAIL);
+    await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill(VALID_PASSWORD);
     await page.getByTestId("login-submit").click();
 
@@ -368,7 +407,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
       if (frame === page.mainFrame()) navigatedTo.push(new URL(frame.url()).pathname);
     });
 
-    await page.getByTestId("login-email").fill(VALID_EMAIL);
+    await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill("wrong-password");
     await page.getByTestId("login-submit").click();
 
@@ -409,7 +448,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
   }) => {
     await stubSuccessfulLogin(page);
     await page.goto("/he/login");
-    await page.getByTestId("login-email").fill(VALID_EMAIL);
+    await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill(VALID_PASSWORD);
     await page.getByTestId("login-submit").click();
     await expectPath(page, "/");
@@ -491,7 +530,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     await page.getByTestId("login-forgot-link").click();
     await expectPath(page, "/forgot-password");
 
-    await page.getByTestId("forgot-email").fill(VALID_EMAIL);
+    await (await settledField(page, "forgot-email")).fill(VALID_EMAIL);
     await page.getByTestId("forgot-submit").click();
     const ack = page.getByTestId("forgot-sent");
     await expect(ack).toBeVisible();
@@ -503,7 +542,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // "no such user" for the other one.
     const knownAck = (await ack.textContent())?.trim();
     await page.goto("/he/forgot-password");
-    await page.getByTestId("forgot-email").fill("definitely-not-registered@example.com");
+    await (await settledField(page, "forgot-email")).fill("definitely-not-registered@example.com");
     await page.getByTestId("forgot-submit").click();
     const unknownAck = (await page.getByTestId("forgot-sent").textContent())?.trim();
     expect(unknownAck).toBe(knownAck);
@@ -523,7 +562,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // Empty field → no submit. The button is disabled, not merely inert.
     await expect(submit).toBeDisabled();
 
-    await page.getByTestId("forgot-email").fill(VALID_EMAIL);
+    await (await settledField(page, "forgot-email")).fill(VALID_EMAIL);
     await expect(submit).toBeEnabled();
     await submit.click();
 
