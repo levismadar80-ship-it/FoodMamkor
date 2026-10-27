@@ -337,8 +337,8 @@
 ### /register/producer — Story reassurance card (frame 03)
 | Field | Value |
 |---|---|
-| **Title (he)** | `הסיפור שלך הופך לעמוד העסק` |
-| **Body (he)** | `מה שתכתבי כאן הופך לעמוד העסק שלך במהמקור — המקום שבו לקוחות פוגשים אותך לפני שהם פוגשים את מה שאת מוכרת. לא תיאור מוצר. סיפור.` |
+| **Title (he)** | `הסיפור שלכם הופך לעמוד העסק` |
+| **Body (he)** | `מה שתכתבו כאן הופך לעמוד העסק שלכם במהמקור — המקום שבו לקוחות פוגשים אתכם לפני שהם פוגשים את מה שאתם מוכרים. לא תיאור מוצר. סיפור.` |
 | **i18n keys** | `auth.register.producer.story_card.title` / `.body` |
 | **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (STORY frame — copy-only card, brand tokens `bg-background border border-primary/20`, no preview/logic) |
 | **Status** | ✅ (MEH-860, PR #1226, 2026-06-18) |
