@@ -16,7 +16,7 @@ in the PR body.
 from datetime import timedelta
 
 from app.models.models import Event, Producer, ProducerLocation
-from app.utils.clock import israel_today
+from app.utils.clock import israel_today, utc_now
 from conftest import auth_header, make_producer, make_user
 
 ORGANIZER_NAME = "שוק גלם — בדיקה"
@@ -242,6 +242,30 @@ class TestOrganizerNeverVerified:
         assert resp.status_code == 409
         db.refresh(organizer)
         assert organizer.verified_at is None
+
+    def test_organizer_cannot_open_group_buy(self, client, db):
+        """A group buy is selling; an organizer sells nothing (ADR-036)."""
+        organizer = _organizer(db)
+        owner = make_user(
+            db, role="producer", email="meh2459-gb@example.com", email_verified=True
+        )
+        owner.producer_id = organizer.id
+        db.commit()
+        resp = client.post(
+            "/group-buys",
+            json={
+                "title": "רכש לבדיקה",
+                "product_name": "מוצר לבדיקה",
+                "unit": "יחידה",
+                "price_per_unit_regular": 80,
+                "price_per_unit_group": 60,
+                "min_participants": 3,
+                "deadline": (utc_now() + timedelta(days=10)).isoformat(),
+                "city": "תל אביב",
+            },
+            headers=auth_header(owner),
+        )
+        assert resp.status_code == 403
 
     def test_admin_queue_still_lists_organizer_with_kind(self, client, db):
         organizer = _organizer(db)
