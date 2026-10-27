@@ -30,6 +30,8 @@ frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:z-[9500]
 frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:zIndex:9990
 frontend/app/[locale]/layout.js:z-[10000]
 frontend/app/[locale]/map/components/CityPickerModal.jsx:z-[9000]
+frontend/app/[locale]/map/components/MapKey.jsx:z-[1000]
+frontend/app/[locale]/map/components/MapKey.jsx:z-[1000]
 frontend/app/[locale]/map/components/MapPane.jsx:z-[1000]
 frontend/app/[locale]/map/components/MapPane.jsx:z-[1000]
 frontend/app/[locale]/map/components/MapPane.jsx:z-[1000]
