@@ -76,7 +76,7 @@ function renderedLabels(container) {
   const more = screen.queryByTestId("more-questions");
   if (more) fireEvent.click(more);
   const rows = container.querySelectorAll(
-    "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link'],[data-testid='recipe-idea-link']",
+    "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link']",
   );
   return [...rows].map((el) => el.textContent.trim());
 }
