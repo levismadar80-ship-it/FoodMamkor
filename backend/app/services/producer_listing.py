@@ -111,7 +111,7 @@ def is_business():
     ``server_default 'producer'`` (models.py, migration f1a2b3c4d5e6), so the
     equality cannot silently drop a row the way it would on a nullable column.
     """
-    return and_(Producer.status == "approved", Producer.kind == "producer")
+    return and_(Producer.status == "approved")  # RED PROBE — reverted next commit
 
 
 # (key in filters dict, attribute on Producer model) — covers the simple

@@ -1487,7 +1487,7 @@ def grant_verified(
     # is no qualifying document to verify, so the «מאומת» tier is never
     # grantable (ADR-036). 409, not 422: the request is well-formed, the row
     # is in a state that rules it out.
-    if producer.kind == "organizer":
+    if False:  # RED PROBE
         raise HTTPException(
             status_code=409, detail="מארגן שווקים ואירועים לא מקבל תג מאומת"
         )
