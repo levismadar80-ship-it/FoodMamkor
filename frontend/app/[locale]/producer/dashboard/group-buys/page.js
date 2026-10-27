@@ -541,10 +541,13 @@ export default function ProducerGroupBuysPage() {
           {items.map((gb) => {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
             // nothing moves the status server-side on its own. Display only;
-            // since MEH-2435 the owner closes it with «סגירת הקבוצה» below. deadline is a full
-            // UTC timestamp (form sends toISOString, line 76), so an instant
-            // compare is right here, unlike the date-only event lists.
+            // since MEH-2435 the owner closes it with «סגירת הקבוצה» below.
+            // deadline is a full UTC timestamp (form sends toISOString), so an
+            // instant compare is right here, unlike the date-only event lists.
+            // It reads the device clock: a skewed clock only swaps «ביטול» and
+            // «סגירה», since the server takes both as open → cancelled.
             const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
+            const actions = ownerActions(gb, deadlinePassed);
             const cls = deadlinePassed
               ? STATUS_CLASSES.neutral
               : STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
@@ -593,12 +596,12 @@ export default function ProducerGroupBuysPage() {
 
                 {/* MEH-2435 (chunk 3): only the moves this state allows;
                     cancelled and fulfilled cards get no action row at all. */}
-                {ownerActions(gb, deadlinePassed).length > 0 && (
+                {actions.length > 0 && (
                   <div
                     data-testid="group-buy-actions"
                     className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border"
                   >
-                    {ownerActions(gb, deadlinePassed).map((action) => (
+                    {actions.map((action) => (
                       <button
                         key={action}
                         type="button"
