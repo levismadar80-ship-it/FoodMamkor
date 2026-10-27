@@ -189,7 +189,18 @@ def _keep_hidden(client, db, review, seen):
     )
 
 
-def test_keep_hidden_with_the_seen_edit_clears_the_marker(client, db):
+@pytest.mark.parametrize(
+    "stamp",
+    [None, datetime(2026, 10, 27, 8, 0)],
+    ids=["real-clock-microseconds", "microsecond-zero"],
+)
+def test_keep_hidden_with_the_seen_edit_clears_the_marker(
+    client, db, monkeypatch, stamp
+):
+    # isoformat() drops the fraction when microsecond == 0; both shapes must
+    # round-trip through GET /admin/reviews → ?seen= unchanged.
+    if stamp is not None:
+        monkeypatch.setattr(reviews_mod, "utc_now", lambda: stamp)
     author, producer, review = _review(db, hidden=True)
     _edit(client, author, producer, body=BODY + " עריכה")
     admin = make_user(db, role="admin", email="admin@example.com")

@@ -19,6 +19,7 @@ MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 
 import logging
 import math
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -603,7 +604,7 @@ _ADMIN_REVIEW_CHANGED = {
 }
 
 
-def _iso_or_none(value) -> str | None:
+def _iso_or_none(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
 
 
