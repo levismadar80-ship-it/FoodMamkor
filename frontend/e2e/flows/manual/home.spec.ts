@@ -1808,6 +1808,18 @@ test.describe("manual › category cards — phone row, desktop grid (MEH-2412)"
     expect(m.scrollW, "the row overflows sideways — there is more to swipe to").toBeGreaterThan(m.clientW);
     expect(m.height, "the row is one card tall, not a 1,400px stack").toBeLessThanOrEqual(320);
     expect(m.visible, "two whole cards plus a peeking third are on screen").toBeGreaterThanOrEqual(3);
+    // Swiping reaches the tenth card: scroll the rail to its far end (RTL, so
+    // the end is the most negative scrollLeft) and require the last card fully
+    // inside the rail's box.
+    const lastInView = await rail(page).evaluate(async (el) => {
+      el.scrollTo({ left: -el.scrollWidth, behavior: "instant" as ScrollBehavior });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const cards = el.querySelectorAll('[data-testid="home-category-card"]');
+      const last = cards[cards.length - 1].getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      return last.left >= box.left - 1 && last.right <= box.right + 1;
+    });
+    expect(lastInView, "the tenth card is reachable by swiping to the end").toBe(true);
   });
 
   test("on desktop the cards stay a 4-column grid with span-2 heroes", async ({ page }, info) => {
