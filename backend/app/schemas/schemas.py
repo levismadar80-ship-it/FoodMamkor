@@ -3280,7 +3280,6 @@ class UserOut(BaseModel):
     is_oauth: bool = False
     # MEH-143: True once the user has a linked producer profile.
     is_producer: bool = False
-    referral_code: str | None = None
     # MEH-138: profile photo URL (Cloudinary or Google picture).
     avatar_url: str | None = None
     # MEH-206: producer status fields — populated by GET /auth/me when
