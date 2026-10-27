@@ -17,6 +17,7 @@ from app.services.whatsapp_templates import (
     AfterHoursResponseHe,
     ProducerApprovedV1,
     ProducerWelcomeV1,
+    ProducerWelcomeV2,
     VacationResponseHeV2,
     WhatsAppTemplate,
 )
@@ -61,6 +62,16 @@ def test_producer_welcome_components():
     comps = ProducerWelcomeV1(producer_name="ספיר").to_components()
     assert comps == [
         {"type": "body", "parameters": [{"type": "text", "text": "ספיר"}]}
+    ]
+
+
+def test_producer_welcome_v2_components():
+    # MEH-2320: same one-param body shape as v1, under the new name.
+    assert ProducerWelcomeV2.name == "producer_welcome_v2"
+    assert ProducerWelcomeV2.language == "he"
+    comps = ProducerWelcomeV2(producer_name="מאפיית הכרם").to_components()
+    assert comps == [
+        {"type": "body", "parameters": [{"type": "text", "text": "מאפיית הכרם"}]}
     ]
 
 
