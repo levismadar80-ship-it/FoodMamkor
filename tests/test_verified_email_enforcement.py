@@ -26,6 +26,7 @@ payloads.
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 
+from app.utils.clock import israel_today
 from conftest import auth_header, make_producer, make_user
 
 # The structured 403 detail raised by require_verified_email /
@@ -181,7 +182,7 @@ class TestExperiencesUnchanged:
             "description": "סדנה מעשית של 3 שעות ללימוד אפיית לחם מחמצת ביתי.",
             "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
             "category": "בישול",
-            "event_date": (date.today() + timedelta(days=14)).isoformat(),
+            "event_date": (israel_today() + timedelta(days=14)).isoformat(),
             "event_time": "10:00",
             "location_type": "home",
             "city": "תל אביב",

@@ -10,6 +10,12 @@ import { render, act, screen } from "@testing-library/react";
 // / ServerPageLinks) all call useTranslations(). Map keys this test asserts on;
 // ICU plural strings resolve via simple substitution so {count} interpolations
 // render naturally.
+// MEH-819: ProducersClient now mounts EnSearchNotice, which pulls LanguageToggle
+// -> @/i18n/navigation -> next-intl's createNavigation, which imports
+// next/navigation for real and fails under the partial mocks in this file.
+// Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
+// its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     const flat = {

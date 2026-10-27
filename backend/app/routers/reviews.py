@@ -6,7 +6,8 @@ MEH-103 verified reviews system:
     WhatsApp-only to ANY channel, so it is enforced via
     producer_whatsapp_clicks.user_id OR producer_contact_clicks.user_id.
   - Owner guard: producer owners cannot review their own business.
-  - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
+  - Haiku AI moderation on body text (fail-open — no API key → the review
+    publishes; its AI status stays NULL so the next save re-checks, MEH-2390).
   - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
     The hide is sticky (MEH-2348): an author edit keeps it, the author cannot
     delete a hidden review, and only PUT /admin/reviews/{id}/unhide undoes it.
@@ -81,10 +82,10 @@ def _get_ai_client():
 
 def _checked_ai_status(body: str | None) -> str | None:
     """MEH-2349: moderate ``body`` and return the verdict to store on the row
-    — "APPROVED" | "FLAGGED". REJECTED is never stored: it raises the 422
-    here, before any write. The empty-body branch is defensive only —
-    ReviewCreateNested requires a body, so NULL on a row means it predates
-    the column."""
+    — "APPROVED" | "FLAGGED", or None when the moderator failed open
+    (MEH-2390: stored as NULL, the review still publishes). REJECTED is never
+    stored: it raises the 422 here, before any write. The empty-body branch is
+    defensive only — ReviewCreateNested requires a body."""
     if not body:
         return None
     verdict = _moderate_review_body(body)
@@ -100,9 +101,10 @@ def _ai_status_for_write(
     body: str | None, existing: ProducerReview | None
 ) -> str | None:
     """MEH-2349: an edit that keeps the body keeps its stored verdict, so an
-    author cannot re-save a FLAGGED review until a different verdict (or a
-    fail-open, stored as APPROVED) clears the flag. A changed body, a new
-    review, or a row that predates the column is moderated afresh."""
+    author cannot re-save a FLAGGED review until a different verdict clears
+    the flag. A changed body, a new review, or a NULL status is moderated
+    afresh. NULL covers rows that predate the column and (MEH-2390) a
+    fail-open: it carries no verdict, so the next save asks the model again."""
     if (
         existing is not None
         and existing.body == body
@@ -112,9 +114,12 @@ def _ai_status_for_write(
     return _checked_ai_status(body)
 
 
-def _moderate_review_body(body: str | None) -> str:
-    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' | 'REJECTED'.
-    Fail-open: any error returns 'APPROVED'.
+def _moderate_review_body(body: str | None) -> str | None:
+    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' |
+    'REJECTED' | None. Fail-open: any error returns None — no verdict. The
+    caller publishes the review exactly as for APPROVED (the fail-open
+    LOCK); None only keeps the stored status NULL so an unchanged re-save
+    is checked again (MEH-2390).
     """
     if not body:
         return "APPROVED"
@@ -122,7 +127,7 @@ def _moderate_review_body(body: str | None) -> str:
     if client is None:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
         report_fail_open("review", "no_client")
-        return "APPROVED"
+        return None
     # MEH-2350: the review text is tagged data in the user turn, never
     # part of the instructions.
     data_rule, user_content = wrap_submission("review", {"טקסט": body})
@@ -152,7 +157,7 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         )
         # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
         # "refusal", no text) is a signal about the content, not an infra
-        # failure — don't let it fall through to the fail-open APPROVED.
+        # failure — don't let it fall through to the fail-open.
         if getattr(msg, "stop_reason", None) == "refusal":
             log.warning("[reviews] model refused → FLAGGED")
             return "FLAGGED"
@@ -166,16 +171,17 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
         data = _parse_response_text(raw)
         # Upper-cased like the experience/recipe moderators: a lowercase
-        # "rejected" must not fall through to the fail-open APPROVED.
-        status = str(data.get("status", "")).upper()
+        # "rejected" must not fall through to the fail-open.
+        # MEH-2390: valid JSON that is not an object has no status either.
+        status = str(data.get("status", "")).upper() if isinstance(data, dict) else ""
         if status in {"APPROVED", "FLAGGED", "REJECTED"}:
             return status
         report_fail_open("review", "truncated" if truncated else "bad_status")
-        return "APPROVED"
+        return None
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)
         report_fail_open("review", classify_failure(exc, truncated=truncated))
-        return "APPROVED"
+        return None
 
 
 PAGE_SIZE = 10
