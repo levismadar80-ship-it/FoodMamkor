@@ -3172,6 +3172,15 @@ export const CommitToGroupBuyGroupBuysGroupBuyIdCommitPostResponse = /*#__PURE__
 
 
 /**
+ * @summary Update Group Buy Status
+ */
+export const UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse = /*#__PURE__*/ zod.object({
+  "detail": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.enum(['open', 'funded', 'cancelled', 'fulfilled'])
+})
+
+
+/**
  * Backwards-compat alias. Pre-MEH-483 shape preserved verbatim.
  *
  * Migrate Railway healthcheck path to ``/health/readiness`` manually
