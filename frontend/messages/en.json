@@ -2100,6 +2100,8 @@
       "expand": "More",
       "collapse": "Less",
       "ai_flagged": "Flagged by AI",
+      "edited_after_hidden": "Edited after hidden",
+      "keep_hidden": "Keep hidden",
       "ai_flagged_only": "Only flagged reviews",
       "hidden": "Hidden",
       "hide": "Hide",
