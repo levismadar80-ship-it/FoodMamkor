@@ -29,9 +29,63 @@ const files = walk(ADMIN_DIR)
   .map((f) => ({ rel: path.relative(ADMIN_DIR, f).split(path.sep).join("/"), src: fs.readFileSync(f, "utf8") }))
   .filter((f) => /<table\b/.test(f.src));
 
+const count = (src, re) => (src.match(re) || []).length;
+
+// Every <th> except one identity column (the row's title, which heads the
+// card) needs a labelled or actions cell. Counted per file, so one labelled
+// cell can no longer stand in for a whole table.
+function unlabelledColumns(src) {
+  const headers = count(src, /<th\b/g);
+  const tables = count(src, /<table\b/g);
+  const covered = count(src, /data-label=/g) + count(src, /data-cell="actions"/g);
+  return Math.max(0, headers - tables - covered);
+}
+
+// An `overflow-hidden` className that reaches a <table> without an
+// `overflow-x-auto` element in between is the experiences bug: whatever
+// overflows is clipped with no way to scroll to it. Comments are ignored —
+// only className strings count.
+function clippingWrappers(src) {
+  const hits = [];
+  const re = /className=(?:"[^"]*|\{`[^`]*)\boverflow-hidden\b/g;
+  let m;
+  while ((m = re.exec(src))) {
+    const rest = src.slice(m.index);
+    const tableAt = rest.search(/<table\b/);
+    if (tableAt === -1) continue;
+    const between = rest.slice(0, tableAt);
+    if (!/className=(?:"[^"]*|\{`[^`]*)\boverflow-x-auto\b/.test(between.slice(m[0].length))) {
+      hits.push(src.slice(0, m.index).split("\n").length);
+    }
+  }
+  return hits;
+}
+
+describe("guard self-test (MEH-1619 — the checks must be able to fail)", () => {
+  // Verbatim shape of the pre-MEH-2426 /admin/experiences wrapper.
+  const OLD_EXPERIENCES = `
+        <div className="bg-white border border-border rounded-[16px] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr><th>t</th><th>h</th><th>d</th><th>c</th><th>ai</th><th>a</th></tr></thead>
+            <tbody><tr><td>x</td><td data-label="h">y</td></tr></tbody>
+          </table>
+        </div>`;
+
+  it("flags the old experiences wrapper and its unlabelled columns", () => {
+    expect(clippingWrappers(OLD_EXPERIENCES)).toHaveLength(1);
+    expect(unlabelledColumns(OLD_EXPERIENCES)).toBe(4);
+  });
+
+  it("passes a clipped-corner card whose table scrolls inside it (real file: AdminProducersTable.jsx)", () => {
+    const real = fs.readFileSync(path.join(ADMIN_DIR, "producers", "AdminProducersTable.jsx"), "utf8");
+    expect(real).toMatch(/overflow-hidden/);
+    expect(clippingWrappers(real)).toEqual([]);
+  });
+});
+
 describe("admin tables stack on a phone (MEH-2426)", () => {
   it("the scan found the admin tables at all (a dead glob would pass every check below)", () => {
-    // Nine tables today; the floor only has to prove the walk reached them.
+    // Ten files carry a <table> today; the floor only has to prove the walk reached them.
     expect(files.length).toBeGreaterThanOrEqual(9);
     expect(files.map((f) => f.rel)).toContain("experiences/page.js");
   });
@@ -43,13 +97,15 @@ describe("admin tables stack on a phone (MEH-2426)", () => {
   });
 
   for (const { rel, src } of files) {
+    it(`${rel}: no overflow-hidden wrapper clips a table`, () => {
+      expect(clippingWrappers(src)).toEqual([]);
+    });
     if (EXCEPTIONS.has(rel)) continue;
-    it(`${rel}: every <table> is a .table-stack with labelled cells`, () => {
-      const tables = src.match(/<table\b[^>]*>/g) || [];
-      for (const tag of tables) expect(tag).toMatch(/table-stack/);
-      expect(src).toMatch(/data-label=/);
-      // A wrapper that hides overflow is what made the actions unreachable.
-      expect(src).not.toMatch(/overflow-hidden"?>\s*\n\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<table/);
+    it(`${rel}: every <table> is a .table-stack`, () => {
+      for (const tag of src.match(/<table\b[^>]*>/g) || []) expect(tag).toMatch(/table-stack/);
+    });
+    it(`${rel}: every column but the row's title has a labelled cell`, () => {
+      expect(unlabelledColumns(src)).toBe(0);
     });
   }
 });
