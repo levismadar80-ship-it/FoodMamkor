@@ -1315,6 +1315,14 @@
         "label": "Self-pickup",
         "aria": "Show or hide self-pickup and market stands on the map",
         "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
+      },
+      "key": {
+        "title": "What's on the map?",
+        "photo": "A business. Tap for details",
+        "verified": "A verified business",
+        "cluster": "How many businesses are in this area. Tap to zoom in",
+        "pickup": "A pickup point or market stall",
+        "approximate": "Approximate location, not an exact address"
       }
     },
     "page": {
