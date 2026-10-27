@@ -110,7 +110,13 @@ const BASE_METADATA = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    // MEH-2427: "default" (opaque). black-translucent drew the iOS clock and
+    // battery OVER the page in the home-screen app, and with no
+    // viewport-fit=cover there is no safe-area inset for the sticky header to
+    // step below them — it scrolled up under the status bar (Sapir, 27/10).
+    // Turning on cover instead would make every env(safe-area-inset-bottom)
+    // in the codebase non-zero at once; that wants a device pass of its own.
+    statusBarStyle: "default",
     title: BRAND_NAME,
   },
   other: {
