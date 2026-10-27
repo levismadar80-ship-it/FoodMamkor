@@ -160,8 +160,11 @@ export default function AdminReviewsPage() {
   // MEH-2360: the row only flips after the server confirms, so a failed
   // request leaves the admin looking at the real state. A 404 means the review
   // was deleted elsewhere (another tab, or its author): drop the row and show
-  // the backend's Hebrew `detail` instead of the generic error.
+  // the backend's message instead of the generic error.
   const toggleHidden = async (review) => {
+    // MEH-2389: the button is aria-disabled, not disabled, while in flight —
+    // a disabled button drops keyboard focus to <body>. So the guard is here.
+    if (togglingIds.has(review.id)) return;
     const hide = !review.is_hidden;
     setTogglingIds((prev) => new Set(prev).add(review.id));
     try {
@@ -171,18 +174,17 @@ export default function AdminReviewsPage() {
       );
       showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
     } catch (err) {
-      // "Deleted elsewhere" = the handler's own 404, whose detail is Hebrew
-      // (reviews.py). A route-miss or proxy 404 says "Not Found", and a 429 or
-      // 5xx body can be English too, so all of those get the generic copy and
-      // keep the row.
+      // "Deleted elsewhere" = the handler's own 404, identified by its `code`
+      // (reviews.py _ADMIN_REVIEW_NOT_FOUND, MEH-2389). A route-miss or proxy
+      // 404, a 429 or a 5xx carries no such code, so all of those get the
+      // generic copy and keep the row.
       const detail = err?.response?.data?.detail;
-      const gone =
-        err?.response?.status === 404 && typeof detail === "string" && /[א-ת]/.test(detail);
+      const gone = err?.response?.status === 404 && detail?.code === "review_not_found";
       if (gone) {
         setReviews((prev) => prev.filter((item) => item.id !== review.id));
         setConfirmDelete((open) => (open?.id === review.id ? null : open));
       }
-      showToast.error(gone ? detail : tError("generic"));
+      showToast.error(gone && detail.message ? detail.message : tError("generic"));
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev);
@@ -346,9 +348,9 @@ export default function AdminReviewsPage() {
                         <button
                           type="button"
                           onClick={() => toggleHidden(r)}
-                          disabled={togglingIds.has(r.id)}
+                          aria-disabled={togglingIds.has(r.id)}
                           data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
                           aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
                             user: r.user_name || t("reviews.default_user"),
                           })}
