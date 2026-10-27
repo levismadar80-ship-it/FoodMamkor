@@ -82,8 +82,12 @@ const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
 // MEH-2369: the Footer's «אירועים» link (lib/use-events-nav-gate.js) and the
 // home UpcomingEventsPreview both read `GET /events/upcoming`. Same race as the
-// experiences gate above; pinned to EMPTY, which is production's state today,
-// so the link and the preview are absent on every frame.
+// experiences gate above; pinned to EMPTY so the link and the preview are
+// absent on every frame. Measured 2026-10-27: `GET
+// https://mehamakor.co.il/api/events/upcoming` → 200 `[]` (no event is live).
+// Baselines refreshed 2026-10-27 (about / login / register, both viewports)
+// through the vrt-regen labels on the tip that already carried #3654's
+// collapsed mobile footer; each PNG was opened and diffed before merge.
 const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
 
 /**
