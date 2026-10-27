@@ -142,6 +142,17 @@
             "title": "Created At",
             "type": "string"
           },
+          "edited_after_hidden_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited After Hidden At"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
