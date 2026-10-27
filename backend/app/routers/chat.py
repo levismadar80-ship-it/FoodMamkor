@@ -23,6 +23,7 @@ Design notes:
     rather than crashing the widget.
 """
 
+import json
 import logging
 
 from fastapi import APIRouter, HTTPException, Request
@@ -32,6 +33,7 @@ from app.rate_limit import limiter
 
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
+from app.services import chat_db_tools, chat_intent_router
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +188,63 @@ def _get_client():
         return None
 
 
+# ---------- live data (MEH-586) ----------
+
+# Per-IP cap on the DB-tool path, on top of the route's 10/minute + 30/hour.
+# A tool call is one classifier call + one query + the answer call, so it is
+# the costliest path; over the cap the question still gets answered, from the
+# fixed knowledge only.
+DB_QUERY_LIMIT = "5/minute"
+
+# Appended to SYSTEM_PROMPT only for a db_query turn. Hebrew copy lives in
+# the MEH-586 card; the model phrases the answer, the JSON is data.
+LIVE_DATA_PREAMBLE = (
+    "נתונים חיים מהאתר לשאלה האחרונה (JSON). עני רק על סמך הנתונים האלה: "
+    "ציטטי מספרים ושמות כפי שהם, ואל תוסיפי בתי עסק או אירועים שלא מופיעים כאן. "
+    "אם results ריק או count הוא 0 — אמרי שלא מצאת כרגע, והציעי לחפש במפה או בעמוד האירועים."
+)
+
+
+def _db_query_allowed(request: Request) -> bool:
+    """MEH-586: per-tool 5/minute cap keyed like the route limits. Any failure
+    to evaluate the cap counts as NOT allowed — the freeform path still
+    answers, so denying is the cheap, safe side."""
+    try:
+        from limits import parse as parse_limit
+
+        key = limiter._key_func(request)
+        return bool(limiter._limiter.hit(parse_limit(DB_QUERY_LIMIT), "chat_db", key))
+    except Exception as e:  # noqa: BLE001 — cap is best-effort, logged
+        logger.warning("chat db_query cap unavailable: %s", e)
+        return False
+
+
+def _live_data_context(
+    client, request: Request, api_messages: list[dict]
+) -> str | None:
+    """Route the latest user message; on db_query run the bounded tool and
+    return a system-prompt addendum with the JSON result. None on any
+    freeform / failure / over-cap outcome (fail-open to the existing flow).
+    """
+    latest = next(
+        (m["content"] for m in reversed(api_messages) if m["role"] == "user"), ""
+    )
+    categories = chat_db_tools.list_category_slugs()
+    decision = chat_intent_router.classify(client, latest, categories)
+    if decision.route != chat_intent_router.ROUTE_DB or not decision.tool:
+        return None
+    if not _db_query_allowed(request):
+        return None
+    try:
+        result = chat_db_tools.run_tool(decision.tool, decision.params)
+    except chat_db_tools.ChatDbToolError:
+        return None
+    payload = json.dumps(
+        {"tool": decision.tool, "data": result}, ensure_ascii=False, default=str
+    )
+    return f"{LIVE_DATA_PREAMBLE}\n{payload}"
+
+
 # ---------- endpoint ----------
 
 
@@ -218,11 +277,18 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     if not api_messages:
         raise HTTPException(status_code=400, detail="Empty conversation after trim")
 
+    # MEH-586: hybrid — a db_query turn gets the live JSON appended to the
+    # fixed knowledge; everything else is the unchanged freeform flow.
+    system_prompt = SYSTEM_PROMPT
+    live = _live_data_context(client, request, api_messages)
+    if live:
+        system_prompt = f"{SYSTEM_PROMPT}\n\n{live}"
+
     try:
         response = client.messages.create(
             **ai_fast_request_kwargs(),
             max_tokens=MAX_OUTPUT_TOKENS,
-            system=SYSTEM_PROMPT,
+            system=system_prompt,
             messages=api_messages,
         )
     except Exception as e:  # pragma: no cover — network/quota

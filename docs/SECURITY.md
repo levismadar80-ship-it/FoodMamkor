@@ -132,6 +132,27 @@ stmt = select(Producer).where(
 )
 ```
 
+#### 3a. ✅ הצ'אט קורא נתונים חיים דרך `mcp_reader` (MEH-586)
+
+`backend/app/services/chat_db_tools.py` מריץ ארבע שאילתות **קבועות** בלבד
+(`count_producers_in_city`, `list_producers_by_category`, `get_site_stats`,
+`list_upcoming_events`). המודל לא כותב SQL — הוא בוחר כלי וממלא פרמטרים
+דרך structured output (`chat_intent_router.py`), והפרמטרים נקשרים כ-bind
+params. הגנה בשכבות:
+
+| שכבה | מה | איפה |
+|---|---|---|
+| Role | `mcp_reader` — `NOLOGIN`, `SELECT` על `producers, categories, producer_categories, producer_locations, events` בלבד. אין גישה ל-`users` / `home_products` / `reports`. | revision `a29c7a4a41e7` |
+| טרנזקציה | `SET TRANSACTION READ ONLY` + `SET LOCAL ROLE mcp_reader` + `SET LOCAL statement_timeout = 5000` | `chat_db_tools.reader_transaction()` |
+| קלט | שם כלי מתוך enum סגור, `LIMIT` מוגבל ל-20, עיר/slug נקשרים — לעולם לא f-string | `chat_intent_router.decision_from_parsed()`, `chat_db_tools._clamp_limit()` |
+| קצב | 5/דקה ל-IP על מסלול ה-DB, מעל 10/דקה + 30/שעה של ה-route | `routers/chat.py::_db_query_allowed` |
+| כשל | כל שגיאה (timeout, הרשאה, JSON) → המסלול הרגיל של הצ'אט, אף פעם לא 5xx | `routers/chat.py::_live_data_context` |
+
+למה `NOLOGIN` + `SET ROLE` ולא משתמש נפרד עם סיסמה: אותו גבול הרשאות, בלי
+secret נוסף ב-Railway. `GRANT mcp_reader TO CURRENT_USER` במיגרציה הוא מי
+שמריץ אותה בפועל (משתמש האפליקציה ב-boot). טסטים: `tests/test_chat_db_tools.py`
+(4 happy + 3 injection + INSERT/`users` נדחים).
+
 ### 4. חשיפת מידע רגיש ב-API
 
 ```python

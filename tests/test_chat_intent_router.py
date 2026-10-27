@@ -1,0 +1,185 @@
+"""MEH-586: the intent router's validation + fail-open contract.
+
+No Anthropic call runs in tests (no API key). What IS exercised:
+- decision_from_parsed(): the structured-output payload → RouteDecision
+  mapping, including every path that must collapse to freeform (unknown
+  tool, unknown slug, missing city, malformed payload).
+- classify(): a fake client proving the schema is sent and that any
+  exception, bad JSON or missing client resolves to freeform.
+- routers/chat.py wiring: a db_query decision appends the live JSON to the
+  system prompt; freeform leaves it byte-identical.
+The ≥85% accuracy figure on the card is measured manually on staging.
+"""
+
+import json
+from types import SimpleNamespace
+
+from app.routers import chat
+from app.services import chat_db_tools
+from app.services import chat_intent_router as router
+
+SLUGS = {"bread", "cheese"}
+
+
+def _db(tool, **params):
+    return {
+        "route": "db_query",
+        "tool": tool,
+        "city": None,
+        "category_slug": None,
+        "limit": None,
+        **params,
+    }
+
+
+# ---------- decision_from_parsed: labeled payload → decision ----------
+
+LABELED = [
+    (
+        _db("count_producers_in_city", city="חיפה"),
+        "db_query",
+        "count_producers_in_city",
+    ),
+    (
+        _db("list_producers_by_category", category_slug="bread", city="תל אביב"),
+        "db_query",
+        "list_producers_by_category",
+    ),
+    (_db("get_site_stats"), "db_query", "get_site_stats"),
+    (_db("list_upcoming_events", city=" ירושלים "), "db_query", "list_upcoming_events"),
+    (
+        {
+            "route": "freeform",
+            "tool": None,
+            "city": None,
+            "category_slug": None,
+            "limit": None,
+        },
+        "freeform",
+        None,
+    ),
+    (_db("count_producers_in_city"), "freeform", None),  # city required
+    (
+        _db("list_producers_by_category", category_slug="no-such"),
+        "freeform",
+        None,
+    ),  # unknown slug
+    (_db("drop_everything"), "freeform", None),  # unknown tool never reaches SQL
+    ({"route": "db_query"}, "freeform", None),  # missing tool
+    ("not a dict", "freeform", None),
+    ({}, "freeform", None),
+]
+
+
+def test_decision_from_parsed_labeled_set():
+    outcomes = [router.decision_from_parsed(p, SLUGS) for p, _, _ in LABELED]
+    assert [(d.route, d.tool) for d in outcomes] == [(r, t) for _, r, t in LABELED]
+    assert len(outcomes) == 11
+
+
+def test_decision_params_are_trimmed_and_scoped():
+    d = router.decision_from_parsed(
+        _db("list_upcoming_events", city=" ירושלים ", category_slug="bread", limit=3),
+        SLUGS,
+    )
+    # category_slug only travels with the category tool; limit stays an int.
+    assert d.params == {"city": "ירושלים", "limit": 3}
+    d2 = router.decision_from_parsed(_db("get_site_stats", limit="5"), SLUGS)
+    assert d2.params == {}
+
+
+def test_every_accepted_tool_is_a_real_tool():
+    assert set(router.ROUTE_SCHEMA["properties"]["tool"]["enum"]) == set(
+        chat_db_tools.TOOL_NAMES
+    ) | {None}
+
+
+# ---------- classify: fake client ----------
+
+
+class _FakeClient:
+    def __init__(self, text=None, raise_exc=None):
+        self.text = text
+        self.raise_exc = raise_exc
+        self.calls = []
+        self.messages = SimpleNamespace(create=self._create)
+
+    def _create(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.raise_exc:
+            raise self.raise_exc
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=self.text)])
+
+
+def test_classify_sends_schema_and_maps_db_query():
+    client = _FakeClient(text=json.dumps(_db("count_producers_in_city", city="חיפה")))
+    d = router.classify(
+        client, "כמה עסקים יש בחיפה?", [{"name": "לחם", "slug": "bread"}]
+    )
+    assert (d.route, d.tool, d.params) == (
+        "db_query",
+        "count_producers_in_city",
+        {"city": "חיפה"},
+    )
+    sent = client.calls[0]
+    assert sent["output_config"]["format"]["schema"] is router.ROUTE_SCHEMA
+    assert "bread" in sent["system"]
+    assert sent["max_tokens"] == router.MAX_CLASSIFY_TOKENS
+
+
+def test_classify_fails_open_to_freeform():
+    assert router.classify(None, "שלום", []) is router.FREEFORM
+    assert router.classify(_FakeClient(text="   "), "   ", []) is router.FREEFORM
+    assert router.classify(_FakeClient(text="not json"), "x", []).route == "freeform"
+    assert (
+        router.classify(_FakeClient(raise_exc=RuntimeError("quota")), "x", []).route
+        == "freeform"
+    )
+
+
+# ---------- routers/chat.py wiring ----------
+
+
+def test_live_data_context_appends_json_on_db_query(monkeypatch):
+    monkeypatch.setattr(chat.chat_db_tools, "list_category_slugs", list)
+    monkeypatch.setattr(
+        chat.chat_intent_router,
+        "classify",
+        lambda client, msg, cats: router.RouteDecision(
+            "db_query", "get_site_stats", {}
+        ),
+    )
+    monkeypatch.setattr(chat, "_db_query_allowed", lambda request: True)
+    monkeypatch.setattr(
+        chat.chat_db_tools, "run_tool", lambda name, params: {"approved_producers": 7}
+    )
+    out = chat._live_data_context(
+        object(), None, [{"role": "user", "content": "כמה עסקים יש?"}]
+    )
+    assert out.startswith(chat.LIVE_DATA_PREAMBLE)
+    assert json.loads(out.split("\n", 1)[1]) == {
+        "tool": "get_site_stats",
+        "data": {"approved_producers": 7},
+    }
+
+
+def test_live_data_context_is_none_for_freeform_cap_and_tool_error(monkeypatch):
+    monkeypatch.setattr(chat.chat_db_tools, "list_category_slugs", list)
+    msgs = [{"role": "user", "content": "שלום"}]
+    monkeypatch.setattr(
+        chat.chat_intent_router, "classify", lambda c, m, k: router.FREEFORM
+    )
+    assert chat._live_data_context(object(), None, msgs) is None
+
+    db = router.RouteDecision("db_query", "get_site_stats", {})
+    monkeypatch.setattr(chat.chat_intent_router, "classify", lambda c, m, k: db)
+    monkeypatch.setattr(chat, "_db_query_allowed", lambda request: False)
+    assert chat._live_data_context(object(), None, msgs) is None
+
+    monkeypatch.setattr(chat, "_db_query_allowed", lambda request: True)
+
+    def _boom(name, params):
+        raise chat_db_tools.ChatDbToolError("timeout")
+
+    monkeypatch.setattr(chat.chat_db_tools, "run_tool", _boom)
+    assert chat._live_data_context(object(), None, msgs) is None

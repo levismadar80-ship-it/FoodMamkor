@@ -1116,7 +1116,20 @@ GET  /search/trending   public — top 5 queries with results_count>0, cached 1h
 
 ```
 POST /chat                       public — one-shot Claude Haiku Q&A about the platform
+                                 MEH-586: hybrid — an intent router (Haiku, structured output)
+                                 may run ONE of four bounded read-only tools and append the JSON
+                                 to the system prompt; otherwise the fixed-knowledge flow.
 ```
+
+`mcp_reader` role (revision `a29c7a4a41e7`, `app/services/chat_db_tools.py`):
+
+| | |
+|---|---|
+| Login | none (`NOLOGIN`; assumed via `SET LOCAL ROLE` inside a READ ONLY transaction) |
+| SELECT | `producers`, `categories`, `producer_categories`, `producer_locations`, `events` |
+| Everything else | denied — including `users`, `home_products`, `reports` and all writes |
+| statement_timeout | 5000 ms, per transaction |
+| Tools | `count_producers_in_city(city)` · `list_producers_by_category(category_slug, city?, limit?)` · `get_site_stats()` · `list_upcoming_events(city?, limit?)` — `LIMIT` clamped to 20 |
 
 ### Upload (`app/routers/upload.py`)
 
