@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -32,7 +31,7 @@ from app.database import Base
 # MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
 # same tz basis as the vacation_until validator. clock.py imports only
 # app.config, so this adds no cycle.
-from app.utils.clock import israel_today
+from app.utils.clock import israel_today, utc_now
 
 
 class City(Base):
@@ -47,7 +46,7 @@ class City(Base):
     name_he = Column(String(100), unique=True, nullable=False)
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class Producer(Base):
@@ -474,8 +473,8 @@ class Producer(Base):
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
+    created_at = Column(DateTime, default=utc_now)
+    last_active_at = Column(DateTime, default=utc_now)  # for v2 activity check
     # MEH-1291: "עודכן לאחרונה" freshness signal. Nullable, NO default, NO
     # server_default, NO backfill — an honest signal: the column stays NULL
     # until a real UPDATE fires `onupdate=func.now()`, so untouched producers
@@ -712,7 +711,7 @@ class User(Base):
     google_id = Column(String(200), unique=True, nullable=True)
     apple_id = Column(String(200), unique=True, nullable=True)
     is_blocked = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     # Analytics (feature/producer-analytics): updated on every authenticated
     # request via a tiny middleware in main.py. Used to compute daily-active-user
     # counts on the /admin/dashboard. Nullable for pre-existing users who
@@ -802,7 +801,7 @@ class AdminSetting(Base):
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class OutreachLead(Base):
@@ -838,8 +837,8 @@ class OutreachLead(Base):
     # whenever the admin clicks the button again.
     prefill_token = Column(String(64), unique=True, nullable=True, index=True)
     prefill_token_expires_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class StaticPage(Base):
@@ -848,7 +847,7 @@ class StaticPage(Base):
     slug = Column(String(50), primary_key=True)  # 'about' | 'terms'
     title = Column(String(200), nullable=False)
     body = Column(Text, nullable=False, default="")
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class Category(Base):
@@ -1114,13 +1113,13 @@ class ProducerLocation(Base):
         server_default=text("'exact'"),
     )
     created_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+        DateTime, nullable=False, default=utc_now, server_default=text("now()")
     )
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utc_now,
+        onupdate=utc_now,
         server_default=text("now()"),
     )
 
@@ -1226,13 +1225,13 @@ class ProducerOffer(Base):
         Boolean, nullable=False, default=True, server_default=text("true")
     )
     created_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+        DateTime, nullable=False, default=utc_now, server_default=text("now()")
     )
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utc_now,
+        onupdate=utc_now,
         server_default=text("now()"),
     )
 
@@ -1295,7 +1294,7 @@ class Favorite(Base):
         ForeignKey("producers.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="favorites")
     producer = relationship("Producer", back_populates="favorited_by")
@@ -1335,8 +1334,8 @@ class FavoriteAlert(Base):
     notify_new_recipe = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     user = relationship("User")
     producer = relationship("Producer")
@@ -1383,7 +1382,7 @@ class AlertLog(Base):
     alert_type = Column(
         String(32), nullable=False
     )  # new_event|new_product|delivery_area
-    sent_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    sent_at = Column(DateTime, default=utc_now, nullable=False)
 
 
 class ProducerFollower(Base):
@@ -1412,7 +1411,7 @@ class ProducerFollower(Base):
     )
     notify_new_products = Column(Boolean, default=True)
     notify_back_in_stock = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User")
     producer = relationship("Producer")
@@ -1469,7 +1468,7 @@ class HomeProduct(Base):
     )  # APPROVED|FLAGGED|REJECTED
     moderation_reason = Column(Text, nullable=True)
     moderation_suggestion = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User")
     ratings = relationship(
@@ -1502,7 +1501,7 @@ class Report(Base):
         nullable=False,
     )
     reason = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     # MEH-1266: report lifecycle. status ∈ {open, resolved, dismissed};
     # dashboard counters + /admin/reports filter on status == "open".
     status = Column(
@@ -1537,7 +1536,7 @@ class HomeProductWhatsAppClick(Base):
         ForeignKey("home_products.id", ondelete="CASCADE"),
         nullable=False,
     )
-    clicked_at = Column(DateTime, default=datetime.utcnow)
+    clicked_at = Column(DateTime, default=utc_now)
     rating_sent = Column(Boolean, default=False)
     rated = Column(Boolean, default=False)
     rating_token = Column(String(100), unique=True, nullable=True)
@@ -1572,7 +1571,7 @@ class Event(Base):
     max_participants = Column(Integer, nullable=True)
     registration_url = Column(String(500), nullable=True)  # external signup link
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     producer = relationship("Producer")
 
@@ -1680,8 +1679,8 @@ class Experience(Base):
         Boolean, nullable=False, server_default=text("true"), default=True
     )
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     host = relationship("User", foreign_keys=[host_user_id])
 
@@ -1691,7 +1690,7 @@ class NewsletterSubscriber(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(200), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class ContactMessage(Base):
@@ -1701,7 +1700,7 @@ class ContactMessage(Base):
     name = Column(String(200), nullable=False)
     email = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class ProducerReview(Base):
@@ -1741,7 +1740,7 @@ class ProducerReview(Base):
     stars = Column(Integer, nullable=False)  # 1-5
     body = Column(Text, nullable=True)
     is_hidden = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     # MEH-1039: business-owner reply to a customer review — one per review,
     # set/edited only by the producer owner (review.producer_id ==
     # user.producer_id). Both nullable / Expand-only (ADR-007) — existing rows
@@ -1788,7 +1787,7 @@ class HomeProductRating(Base):
     )
     stars = Column(Integer, nullable=False)  # 1-5
     comment = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     click = relationship("HomeProductWhatsAppClick", back_populates="rating")
     user = relationship("User")
@@ -1852,7 +1851,7 @@ class ProducerPageView(Base):
         String(30), nullable=True
     )  # search | map | category | home | favorites | follow
     # | producers-index | similar | nearby | None
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
 
 class ProducerWhatsAppClick(Base):
@@ -1884,7 +1883,7 @@ class ProducerWhatsAppClick(Base):
         nullable=True,
         index=True,
     )
-    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    clicked_at = Column(DateTime, default=utc_now, nullable=False, index=True)
     # MEH-1677: the city a coverage-request click ("לא מגיעים אליך?") was
     # asking about. NULL on an ORDINARY WhatsApp click and on every row that
     # predates this column -- only CoverageRequestCta sends a city, so NULL
@@ -2005,7 +2004,7 @@ class ContactClick(Base):
     )
     method = Column(String(20), nullable=False)  # phone | instagram | website | email
     ip_hash = Column(String(64), nullable=True)
-    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    clicked_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
     __table_args__ = (
         Index("ix_contact_clicks_producer_at", "producer_id", "clicked_at"),
@@ -2035,7 +2034,7 @@ class ReferralClick(Base):
         nullable=True,
         index=True,
     )
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
 
 class GroupBuy(Base):
@@ -2073,7 +2072,7 @@ class GroupBuy(Base):
     # DO NOT clear this on the funded->open revert path — that re-arms the
     #        notification, which is the exact failure the column prevents.
     funded_notified_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     producer = relationship("Producer", backref="group_buys")
     commits = relationship(
@@ -2101,7 +2100,7 @@ class GroupBuyCommit(Base):
     )
     quantity = Column(Integer, default=1, nullable=False)
     phone = Column(String(30), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),
@@ -2127,7 +2126,7 @@ class PhoneOtpToken(Base):
     code = Column(String(6), nullable=False)
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     # MEH-773 (Chunk B): passive_deletes defers child cleanup to the DB
     # ON DELETE CASCADE (producer_id is NOT NULL) instead of the ORM
@@ -2160,7 +2159,7 @@ class KashrutBadgeRequest(Base):
         nullable=True,
     )
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     # MEH-773 (Chunk B): passive_deletes defers to DB ON DELETE CASCADE —
     # closes the latent NotNullViolation on producer delete (kashrut_requests
@@ -2187,7 +2186,7 @@ class CategoryRequest(Base):
     )
     status = Column(String(20), default="pending", nullable=False, index=True)
     admin_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
     reviewed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", backref="category_requests")
@@ -2229,7 +2228,7 @@ class ProducerNameChangeRequest(Base):
     reason = Column(Text, nullable=True)
     status = Column(String(20), default="pending", nullable=False, index=True)
     admin_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
     reviewed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", backref="name_change_requests")
@@ -2247,7 +2246,7 @@ class SearchQuery(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     query = Column(Text, nullable=False)
     results_count = Column(Integer, nullable=False, default=0)
-    searched_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    searched_at = Column(DateTime, nullable=False, default=utc_now)
 
 
 # MEH-588: producer-recipes schema (chunk 1/4). M2M link table declared
@@ -2338,13 +2337,13 @@ class ProducerRecipe(Base):
         server_default=text("false"),
     )
     created_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+        DateTime, nullable=False, default=utc_now, server_default=text("now()")
     )
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utc_now,
+        onupdate=utc_now,
         server_default=text("now()"),
     )
 
@@ -2380,7 +2379,7 @@ class InboundMessage(Base):
     received_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utc_now,
         server_default=text("now()"),
         index=True,
     )
@@ -2437,7 +2436,7 @@ class OutboundMessage(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utc_now,
         server_default=text("now()"),
     )
     updated_at = Column(DateTime, nullable=True)

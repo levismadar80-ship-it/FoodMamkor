@@ -1,7 +1,5 @@
 """MEH-49: Referral system endpoints."""
 
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,6 +10,7 @@ from app.models.models import ReferralClick, User
 
 # MEH-460 Pkg 5 (FINAL): ClaimReferralRequest relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ClaimReferralRequest
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/referral", tags=["referral"])
 
@@ -42,7 +41,7 @@ def claim_referral(
     click = ReferralClick(
         referrer_id=referrer.id,
         referee_id=current_user.id,
-        created_at=datetime.utcnow(),
+        created_at=utc_now(),
     )
     db.add(click)
     # MEH-773: uq_referral_one_per_referee backstops the check-then-act race

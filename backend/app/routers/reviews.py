@@ -19,7 +19,6 @@ MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 
 import logging
 import math
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -50,6 +49,7 @@ from app.schemas.schemas import (
     ReviewReplyUpdate,
     ReviewsPage,
 )
+from app.utils.clock import utc_now
 
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
@@ -550,7 +550,7 @@ def set_review_reply(
 
     if data.reply:
         review.reply = data.reply
-        review.reply_at = datetime.utcnow()
+        review.reply_at = utc_now()
     else:
         review.reply = None  # empty/blank → clear
         review.reply_at = None

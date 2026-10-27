@@ -1,6 +1,5 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
@@ -23,6 +22,7 @@ from app.schemas.schemas import (
     GroupBuyOut,
 )
 from app.services.group_buy_notifications import send_funded_notifications
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
 admin_router = APIRouter(prefix="/admin/group-buys", tags=["admin-group-buys"])
@@ -125,8 +125,8 @@ def _maybe_notify_funded(
     owner_email = owner_row[0] if owner_row else None
 
     # MEH-1454: naive datetime. sa.DateTime() is naive and this module uses
-    # datetime.utcnow() throughout — an aware value here breaks comparisons.
-    gb.funded_notified_at = datetime.utcnow()
+    # utc_now() throughout — an aware value here breaks comparisons.
+    gb.funded_notified_at = utc_now()
 
     background_tasks.add_task(
         send_funded_notifications,
@@ -156,7 +156,7 @@ def commit_to_group_buy(
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
     if gb.status != "open":
         raise HTTPException(status_code=400, detail="קבוצת הרכש אינה פתוחה להצטרפות")
-    if gb.deadline < datetime.utcnow():
+    if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
 
     # MEH-773: fresh count under the lock — gb.commits is a cached
@@ -215,7 +215,7 @@ def cancel_commit(
     gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
-    if gb.deadline < datetime.utcnow():
+    if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="לא ניתן לבטל לאחר המועד האחרון")
 
     commit = (
@@ -263,7 +263,7 @@ def create_group_buy(
         raise HTTPException(
             status_code=400, detail="מחיר קבוצתי חייב להיות נמוך מהמחיר הרגיל"
         )
-    if data.deadline <= datetime.utcnow():
+    if data.deadline <= utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חייב להיות בעתיד")
 
     gb = GroupBuy(
