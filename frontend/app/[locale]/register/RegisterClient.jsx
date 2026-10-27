@@ -14,7 +14,6 @@ import PasswordInput from "@/components/PasswordInput";
 import Input from "@/components/ui/Input";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
-import api from "@/lib/api";
 import { safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -23,8 +22,8 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  * Module:   RegisterClient
  * Purpose:  /register surface — consumer signup form, MEH-788 split-editorial
  *           shell (image pane + form pane, mirroring /login). Visual shell
- *           only; signup flow (OWASP ack, password policy, referral claim,
- *           OAuth) is untouched.
+ *           only; signup flow (OWASP ack, password policy, OAuth) is
+ *           untouched.
  * Does NOT: own SEO/metadata (page.js server wrapper) or the password
  *           checklist UX (PasswordInput.jsx, MEH-306). Producer signup is
  *           register/producer/.
@@ -79,17 +78,6 @@ function RegisterPageBody() {
   // identical 200 ack for new-email / password-collision / oauth-collision;
   // the legitimate owner finds out via the duplicate-attempt email.
   const [loading, setLoading] = useState(false);
-  const [referralCode, setReferralCode] = useState(null);
-
-  // MEH-49: detect referral code from localStorage (set by /ref/[code] landing page)
-  useEffect(() => {
-    try {
-      const code = localStorage.getItem("referral_code");
-      if (code) setReferralCode(code);
-    } catch {
-      // private browsing — ignore
-    }
-  }, []);
 
   // MEH-1489 chunk C: an already-authenticated visitor doesn't need the signup
   // form — bounce to the clamped ?redirect= target (MEH-810 helper -> "/"
@@ -140,18 +128,6 @@ function RegisterPageBody() {
       // `form` alone is exactly how the consent was being dropped. The
       // backend stamps users.terms_accepted_at + terms_version from this.
       await register({ ...form, terms_accepted: agreedToTerms });
-      // MEH-49: claim referral after successful registration (best-effort).
-      // The user isn't yet authenticated post-MEH-328, so this endpoint
-      // would 401 — but it's still wrapped in try/catch for safety, and
-      // referral claim is moved to post-verify in a follow-up.
-      if (referralCode) {
-        try {
-          await api.post("/referral/claim", { code: referralCode });
-          localStorage.removeItem("referral_code");
-        } catch {
-          // referral claim is non-blocking
-        }
-      }
       setEmailSent(true);
     } catch (err) {
       const status = err.response?.status;
@@ -309,8 +285,9 @@ function RegisterPageBody() {
             login's retained value_save/rate/publish. */}
 
         {/* MEH-1056: the MEH-49 referral discount badge is removed — a blanket
-            platform promise no business opted into (MEH-1050 ruling). The
-            referralCode state + /referral/claim call below stay live; copy only. */}
+            platform promise no business opted into (MEH-1050 ruling).
+            MEH-2374 then removed the referral claim itself (no screen ever
+            showed a user her link, and the claim 401'd since MEH-328). */}
 
         <form onSubmit={handleSubmit} data-testid="register-form" className="space-y-4">
           {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
