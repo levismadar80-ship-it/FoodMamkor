@@ -18,7 +18,7 @@ import fs from "node:fs";
 
 const OUT = "../qa-artifacts/MEH-2405";
 const BASE = "http://localhost:3100";
-const CHROME = process.env.QA_CHROME || "/opt/pw-browsers/chromium";
+const CHROME = "/opt/pw-browsers/chromium";
 
 const PROFILE = {
   id: 42,
