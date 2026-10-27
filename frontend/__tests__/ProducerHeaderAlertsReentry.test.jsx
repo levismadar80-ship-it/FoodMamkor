@@ -25,6 +25,9 @@ vi.mock("next-intl", () => ({
   useLocale: () => "he",
 }));
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
 vi.mock("@/lib/api", () => ({
   default: { get: () => Promise.resolve({ data: { reviews: [] } }) },
 }));
