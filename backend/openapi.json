@@ -858,19 +858,6 @@
         "title": "CheckPasswordRequest",
         "type": "object"
       },
-      "ClaimReferralRequest": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          }
-        },
-        "required": [
-          "code"
-        ],
-        "title": "ClaimReferralRequest",
-        "type": "object"
-      },
       "ContactClickIn": {
         "properties": {
           "method": {
@@ -19533,148 +19520,6 @@
         ]
       }
     },
-    "/producers/{producer_id}/follow": {
-      "delete": {
-        "description": "Unfollow a producer. No-op if the user doesn't currently follow.",
-        "operationId": "unfollow_producer_producers__producer_id__follow_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Unfollow Producer",
-        "tags": [
-          "producers",
-          "producers"
-        ]
-      },
-      "post": {
-        "description": "Follow a producer. Idempotent — returns the existing follow if\nthe user already follows this producer.",
-        "operationId": "follow_producer_producers__producer_id__follow_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Follow Producer",
-        "tags": [
-          "producers",
-          "producers"
-        ]
-      }
-    },
-    "/producers/{producer_id}/follow-status": {
-      "get": {
-        "description": "Is the current user following this producer? Used by the follow\nbutton on the producer page to initialize its state.",
-        "operationId": "follow_status_producers__producer_id__follow_status_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Follow Status",
-        "tags": [
-          "producers",
-          "producers"
-        ]
-      }
-    },
     "/producers/{producer_id}/google-rating": {
       "get": {
         "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 only when the producer id itself does not exist.",
@@ -20168,51 +20013,6 @@
           }
         },
         "summary": "Get Vapid Public Key"
-      }
-    },
-    "/referral/claim": {
-      "post": {
-        "description": "Link the current user (referee) to the referrer identified by code.\nIdempotent — calling twice for the same user is a no-op.",
-        "operationId": "claim_referral_referral_claim_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClaimReferralRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Claim Referral",
-        "tags": [
-          "referral"
-        ]
       }
     },
     "/register/producer/prefill/{token}": {
@@ -20996,32 +20796,6 @@
         "summary": "Upsert Alert Prefs",
         "tags": [
           "alerts"
-        ]
-      }
-    },
-    "/users/me/following": {
-      "get": {
-        "description": "List the producers the current user is following, with basic\nproducer info joined in.",
-        "operationId": "list_my_following_users_me_following_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "List My Following",
-        "tags": [
-          "producers",
-          "producers"
         ]
       }
     },

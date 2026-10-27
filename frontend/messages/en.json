@@ -28,11 +28,6 @@
     "lang_switch_to_he": "Switch to Hebrew",
     "lang_he": "Hebrew",
     "lang_en": "EN",
-    "onboarding": {
-      "map": "Interactive map — discover local businesses near you",
-      "profile": "Join to save favourite businesses and leave ratings",
-      "profile_cta": "Got it, finish"
-    },
     "footer": {
       "events": "Events",
       "experiences": "Experiences",
@@ -511,8 +506,6 @@
       "explore_map": "Explore on map",
       "load_more": "More businesses",
       "all_businesses": "All businesses →",
-      "onboarding0": "Discover local businesses — fresh vegetables, cheeses, sourdough and more Tap a card to view details",
-      "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
       "day_chip_idle": "Delivery day",
@@ -2869,10 +2862,6 @@
       "prev_aria": "Previous image",
       "next_aria": "Next image",
       "image_error": "Image failed to load"
-    },
-    "onboarding_tip": {
-      "cta_default": "Got it",
-      "close_aria": "Close"
     }
   },
   "kashrut": {
@@ -3314,9 +3303,7 @@
       "ordering_link_label": "Open",
       "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
-      "more_questions": "More questions",
-      "recipe_idea": "Can I share a recipe I made?",
-      "recipe_idea_message": "Hi! I came from your page on Mehamakor — I made something with your products and I'd love to share the recipe:"
+      "more_questions": "More questions"
     }
   },
   "directory": {

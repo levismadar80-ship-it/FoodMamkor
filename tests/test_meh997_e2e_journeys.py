@@ -26,6 +26,7 @@ from app.models.models import (
     ProducerWhatsAppClick,
     User,
 )
+from app.utils.clock import israel_today
 from conftest import (
     auth_header,
     make_producer,
@@ -73,8 +74,6 @@ def _recipe_payload(**overrides) -> dict:
 
 def _experience_payload(**overrides) -> dict:
     """REUSES: tests/test_experiences.py — valid minimal submission."""
-    from datetime import date
-
     base = {
         "title": "סדנת אפיית לחם מחמצת לכל המשפחה",
         "description": (
@@ -83,7 +82,7 @@ def _experience_payload(**overrides) -> dict:
         ),
         "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
         "category": "בישול",
-        "event_date": (date.today() + timedelta(days=14)).isoformat(),
+        "event_date": (israel_today() + timedelta(days=14)).isoformat(),
         "event_time": "10:00",
         "location_type": "home",
         "city": "תל אביב",
@@ -114,12 +113,10 @@ def _group_buy_payload(**overrides) -> dict:
 
 
 def _event_payload(**overrides) -> dict:
-    from datetime import date
-
     base = {
         "title": "יריד טעימות בחווה",
         "description": "בואו לטעום מהתוצרת החדשה",
-        "event_date": (date.today() + timedelta(days=7)).isoformat(),
+        "event_date": (israel_today() + timedelta(days=7)).isoformat(),
         "event_time": "16:00",
         "city": "תל אביב",
         "category": "שוק",

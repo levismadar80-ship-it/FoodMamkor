@@ -28,7 +28,6 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 
 // Hook-test dependencies (Part 2).
@@ -42,9 +41,6 @@ vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn() }),
-}));
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: -1, advance: vi.fn(), dismiss: vi.fn() }),
 }));
 vi.mock("@/lib/recently-viewed", () => ({ getRecentlyViewedIds: () => [] }));
 vi.mock("@/lib/friday-mode", () => ({ isFridayMode: () => false }));
@@ -70,11 +66,6 @@ const baseProps = {
   categories: [],
   showNewUserHint: false,
   fridayMode: false,
-  step0Visible: false,
-  onboardStep: -1,
-  onboardAdvance: () => {},
-  onboardDismiss: () => {},
-  onAdvanceFromStep0: () => {},
   onChipNavigate: () => {},
   onClearCategory: () => {},
   onClearLocation: () => {},

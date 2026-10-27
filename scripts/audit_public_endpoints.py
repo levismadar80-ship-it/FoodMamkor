@@ -139,9 +139,10 @@ def inventory() -> list[dict]:
         # because the table is not empty, just quietly short. A missing row in a
         # security audit reads as "no such endpoint".
         #
-        # NOT hypothetical — this recursion is reached on current code. The
-        # follows router IS nested, and without this branch the walk dropped
-        # four real routes (177 -> 181 when it was added):
+        # NOT hypothetical — when this branch was added, the follows router was
+        # nested, and without it the walk dropped four real routes (177 -> 181).
+        # MEH-2370 later removed that router; the branch stays because every
+        # include_router on this FastAPI yields an _IncludedRouter:
         #
         #   POST   /producers/{producer_id}/follow
         #   DELETE /producers/{producer_id}/follow

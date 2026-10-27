@@ -298,7 +298,7 @@ producer_reviews (
   stars int (1-5), title, body,
   created_at,
   source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
-  ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. Fail-open is stored as APPROVED (its signal is the Sentry report). NULL = rows that predate the column. REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
+  ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. NULL = no verdict: rows that predate the column, or a fail-open (MEH-2390 — it was stored as APPROVED and so never re-checked on an unchanged re-save; the review still publishes, its signal is the Sentry report). REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
 ```
@@ -662,11 +662,9 @@ GET    /producers/random                          public — MEH-1288: one rando
 POST   /producers                                 auth   — self-register (writes pending)
 GET    /categories                                public
 
-# Follow / unfollow producers (v1 data layer only, notifications in v2)
-POST   /producers/{producer_id}/follow            auth
-DELETE /producers/{producer_id}/follow            auth
-GET    /producers/{producer_id}/follow-status     auth
-GET    /users/me/following                        auth
+# Follow / unfollow endpoints removed (MEH-2370). Interest is recorded as a
+# favorite (/users/me/favorites); the producer_followers table stays until its
+# Expand-Contract drop.
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer

@@ -8,8 +8,10 @@
  * answered there is a lead that leaves her own funnel with no order number.
  *
  * The matrix below walks all seven values of `primary_contact_method`
- * (`_ALLOWED_CONTACT_METHODS`, backend schemas.py) against the four item types
- * the ticket names — stock, custom, escalation, recipe. Each fixture carries a
+ * (`_ALLOWED_CONTACT_METHODS`, backend schemas.py) against the item types the
+ * ticket names — stock, custom, escalation, recipe. (MEH-2385 later removed
+ * the stock and recipe rows from EVERY channel; their cases below now assert
+ * absence on WhatsApp too, which is strictly stronger than the gate.) Each fixture carries a
  * phone AND the backing field its own channel needs, so a hidden WhatsApp row
  * can only be explained by the channel gate and never by missing data. That is
  * the discriminating property: gate on `digits` and every non-WhatsApp row of
@@ -37,7 +39,6 @@ vi.mock("next-intl", () => ({
       ordering_q: "איך מזמינים?",
       greeting_template: `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
       source_line: "הגעתי דרך מהמקור",
-      recipe_idea_message: "יש לי רעיון למתכון",
       escalation: "שאלה אחרת? צרו איתנו קשר",
       escalation_email_subject: "שאלה דרך מהמקור",
     };
@@ -71,7 +72,7 @@ const WA_DIGITS = "972501234567";
  * Every backing field is present on every fixture. A row that disappears here
  * disappeared because of the CHANNEL, never because its data was missing.
  * `categories` gives the stock question ("מה יש במלאי השבוע?" — bread's
- * category-specific slot, categoryQuestions.js).
+ * category-specific slot — removed in MEH-2385).
  */
 const baseProducer = {
   id: 7,
@@ -134,15 +135,18 @@ beforeEach(() => {
 describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", () => {
   const wa = { ...baseProducer, primary_contact_method: "whatsapp" };
 
-  it("renders the stock question as a WhatsApp link with the greeting prefill", () => {
-    render(<WhatsAppQuestionChips producer={wa} />);
-    const href = screen.getByText("אילו לחמים יש השבוע?").closest("a").getAttribute("href");
-    expect(decodeURIComponent(href)).toBe(
-      `https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה, אילו לחמים יש השבוע?\n\nהגעתי דרך מהמקור`,
-    );
+  // MEH-2385: the category stock question no longer renders on any channel.
+  // Positive control alongside the negative: the escalation row must still be
+  // a wa.me link, so an empty render cannot pass as "stock hidden".
+  it("does not render the category stock question (MEH-2385)", () => {
+    const { container } = render(<WhatsAppQuestionChips producer={wa} />);
+    expect(container.textContent).not.toContain("אילו לחמים יש השבוע?");
+    // (The fixture has no delivery data, so Q1 still renders as a wa.me
+    // fallback chip — that row is MEH-1302 behaviour and stays.)
+    expect(screen.getByTestId("escalation-link").getAttribute("href")).toContain("wa.me");
   });
 
-  it("renders custom questions as WhatsApp links, replacing the stock set", () => {
+  it("renders custom questions as WhatsApp links", () => {
     const { container } = render(
       <WhatsAppQuestionChips producer={{ ...wa, custom_questions: ["יש חלה לשבת?"] }} />,
     );
@@ -150,7 +154,6 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     expect(decodeURIComponent(href)).toBe(
       `https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה, יש חלה לשבת?\n\nהגעתי דרך מהמקור`,
     );
-    // custom REPLACES the category defaults (categoryQuestions.js:88).
     expect(container.textContent).not.toContain("אילו לחמים יש השבוע?");
   });
 
@@ -162,12 +165,10 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     );
   });
 
-  it("keeps the recipe-idea chip on its own locked prefill (MEH-1462)", () => {
+  it("renders no recipe-idea row, even on WhatsApp (MEH-2385)", () => {
     render(<WhatsAppQuestionChips producer={wa} />);
-    const href = screen.getByTestId("recipe-idea-link").getAttribute("href");
-    expect(decodeURIComponent(href)).toBe(
-      `https://wa.me/${WA_DIGITS}?text=יש לי רעיון למתכון\n\nהגעתי דרך מהמקור`,
-    );
+    expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
+    expect(screen.getByTestId("escalation-link")).toBeInTheDocument();
   });
 
   it("still fires both attribution calls on a WhatsApp escalation", () => {
@@ -183,11 +184,11 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     // NULL has always behaved as WhatsApp via getPrimaryMethod's fallback. A
     // strict `=== "whatsapp"` predicate would silently strip these rows.
     const { primary_contact_method: _omitted, ...noMethod } = wa;
-    render(<WhatsAppQuestionChips producer={noMethod} />);
-    expect(
-      screen.getByText("אילו לחמים יש השבוע?").closest("a").getAttribute("href"),
-    ).toContain("wa.me");
-    expect(screen.getByTestId("recipe-idea-link")).toBeInTheDocument();
+    render(
+      <WhatsAppQuestionChips producer={{ ...noMethod, custom_questions: ["יש חלה לשבת?"] }} />,
+    );
+    expect(screen.getByText("יש חלה לשבת?").closest("a").getAttribute("href")).toContain("wa.me");
+    expect(screen.getByTestId("escalation-link").getAttribute("href")).toContain("wa.me");
   });
 });
 
