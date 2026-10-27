@@ -1028,6 +1028,9 @@ PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, recompute aggregates
 PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, recompute aggregates (MEH-2348)
 ```
 
+Unknown id on hide/unhide → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
+(MEH-2389). `/admin/reviews` reads `code` to drop a row deleted elsewhere.
+
 **MEH-2348 (sticky hide):** only the admin endpoints write `is_hidden`, so a
 hidden review is always admin-hidden. An author edit (POST upsert) keeps it
 hidden, and the author cannot DELETE it (delete + repost would undo the hide).
