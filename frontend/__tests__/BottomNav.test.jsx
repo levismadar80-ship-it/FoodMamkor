@@ -103,7 +103,10 @@ describe("BottomNav", () => {
 
   // Controls: consumer routes keep the nav, so a gate that hides it
   // everywhere cannot pass.
-  it.each(["/", "/map", "/favorites"])("still renders on %s", (path) => {
+  // `/producer/dashboardx/foo` only shares the prefix: it is neither the
+  // dashboard nor a producer leaf, so a bare startsWith("/producer/dashboard")
+  // would hide the nav there by mistake.
+  it.each(["/", "/map", "/favorites", "/producer/dashboardx/foo"])("still renders on %s", (path) => {
     pathnameRef.current = path;
     render(<BottomNav />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
