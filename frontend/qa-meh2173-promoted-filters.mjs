@@ -152,9 +152,9 @@ const BAND_SCRIPT = () => {
   };
 };
 
-/** Returning visitor: the onboarding tour is a first-visit overlay and is not
- *  one of the four meta layers the card counts. `step: null` = dismissed
- *  (lib/use-onboarding.js:18 — `step ?? null`). */
+/** Returning visitor. The onboarding tour this seeded against was removed in
+ *  MEH-2394 (lib/use-onboarding.js is gone); the seed is kept so the probe
+ *  still runs unchanged against older builds and is a no-op on current ones. */
 const SEED_RETURNING = () => {
   try {
     localStorage.setItem("meh_onboarding_v1", JSON.stringify({ step: null, ts: Date.now() }));

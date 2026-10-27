@@ -32,7 +32,6 @@ const HOME_CHIP_KEYS = CHIPS_CONFIG.map((c) => c.key);
 // dashboard login redirect.
 import { useRouter as useLocaleRouter } from "@/i18n/navigation";
 import { trackEvent } from "@/lib/analytics";
-import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
@@ -191,15 +190,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
-  const [step0Visible, setStep0Visible] = useState(false);
   const [fridayMode, setFridayMode] = useState(false);
-
-  useEffect(() => {
-    if (onboardStep !== 0) return;
-    const t = setTimeout(() => setStep0Visible(true), 2000);
-    return () => clearTimeout(t);
-  }, [onboardStep]);
 
   useEffect(() => {
     setFridayMode(isFridayMode());
@@ -909,14 +900,6 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     }
   }, [router]);
 
-  // Advance from Step 0 onboarding tip. Resets the local 2s-delay gate
-  // so a future return to step 0 re-arms the delay (matches the original
-  // inline `() => { setStep0Visible(false); onboardAdvance(); }`).
-  const handleAdvanceFromStep0 = () => {
-    setStep0Visible(false);
-    onboardAdvance();
-  };
-
   // Derived values
   const visibleProducers = producers.slice(0, visibleCount);
   const hasMore = visibleCount < producers.length;
@@ -982,12 +965,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     locationModalOpen,
     setLocationModalOpen,
     fridayMode,
-    step0Visible,
     userCity,
-    // onboarding
-    onboardStep,
-    onboardAdvance,
-    onboardDismiss,
     // derived
     visibleProducers,
     hasMore,
@@ -1027,6 +1005,5 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     toggleFilterSheet,
     handleClearCategory,
     handleLoadMore,
-    handleAdvanceFromStep0,
   };
 }

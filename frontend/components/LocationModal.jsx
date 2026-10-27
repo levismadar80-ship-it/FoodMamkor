@@ -224,7 +224,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
 
         {/* MEH-2038: pe-10 (40px) reserves the button's footprint — it spans
             16→60px from the card edge while the p-6 content box starts at 24px,
-            so 36px of overlap needs clearing. REUSES: OnboardingTip.jsx:55. */}
+            so 36px of overlap needs clearing. */}
         <h2
           id="location-modal-title"
           className="relative font-headline-md text-headline-md font-bold text-text mb-1 sm:pe-10"

@@ -3,6 +3,7 @@
 // once regardless of how many events queue behind it (posthog buffers its
 // own captures internally). Key unset → this is never reached (early return
 // below), so the no-op behaviour that predated MEH-435 is preserved exactly.
+import { hasFullCookieConsent } from "@/lib/cookie-consent";
 let posthogPromise = null;
 
 function loadPosthog(key) {
@@ -38,11 +39,7 @@ function loadPosthog(key) {
 
 export function trackEvent(name, props = {}) {
   if (typeof window === "undefined") return;
-  try {
-    if (localStorage.getItem("cookieConsent") !== "all") return;
-  } catch {
-    return;
-  }
+  if (!hasFullCookieConsent()) return;
   if (process.env.NODE_ENV !== "production") {
     console.log("[track]", name, props);
     return;
