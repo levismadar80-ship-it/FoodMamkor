@@ -18,7 +18,6 @@ from app.models.models import (
     Favorite,
     PhoneOtpToken,
     Producer,
-    ProducerFollower,
     ProducerReview,
 )
 from tests.conftest import auth_header, make_producer, make_user
@@ -46,14 +45,13 @@ def test_delete_account_cascades_producer(client, db):
 
 
 def test_delete_account_cascades_producer_children(client, db):
-    """Reviews, followers, favorites pointing at the producer also go."""
+    """Reviews and favorites pointing at the producer also go."""
     user, producer = _make_producer_user(db)
     producer_id = producer.id
 
     # A consumer leaves a review + favorite on the producer.
     consumer = make_user(db, role="consumer")
     db.add(ProducerReview(producer_id=producer.id, user_id=consumer.id, stars=5))
-    db.add(ProducerFollower(producer_id=producer.id, user_id=consumer.id))
     db.add(Favorite(producer_id=producer.id, user_id=consumer.id))
     db.commit()
 
@@ -61,7 +59,6 @@ def test_delete_account_cascades_producer_children(client, db):
     assert r.status_code == 200
 
     assert db.query(ProducerReview).filter(ProducerReview.producer_id == producer_id).count() == 0
-    assert db.query(ProducerFollower).filter(ProducerFollower.producer_id == producer_id).count() == 0
     assert db.query(Favorite).filter(Favorite.producer_id == producer_id).count() == 0
 
 

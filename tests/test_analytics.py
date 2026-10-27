@@ -27,7 +27,6 @@ from app.models.models import (
     Favorite,
     HomeProduct,
     Producer,
-    ProducerFollower,
     ProducerPageView,
     ProducerReview,
     ProducerWhatsAppClick,
@@ -520,10 +519,9 @@ class TestProducerAnalytics:
         assert body["search_appearances"]["total"] == 2
 
     def test_analytics_follower_counts(self, client, db):
-        """MEH-1364 (decision A): counts come from `favorites`, not
-        producer_followers. Fixture spans the 7-day window boundary (20d/8d
-        outside, 6d/2d inside) and plants one legacy producer_followers row
-        to prove it no longer feeds the metric."""
+        """MEH-1364 (decision A): counts come from `favorites`. Fixture spans
+        the 7-day window boundary (20d/8d outside, 6d/2d inside).
+        producer_followers, the old source, was dropped in MEH-2392."""
         p = make_producer(db)
         user = make_user(db, email="owner6@test.com", role="producer")
         user.producer_id = p.id
@@ -537,13 +535,6 @@ class TestProducerAnalytics:
                 user_id=fan.id,
                 created_at=utc_now() - timedelta(days=age),
             ))
-        # Legacy row — the frozen table must NOT be counted post-repoint.
-        legacy = make_user(db, email="legacy-follower@test.com")
-        db.add(ProducerFollower(
-            producer_id=p.id,
-            user_id=legacy.id,
-            created_at=utc_now() - timedelta(days=1),
-        ))
         db.commit()
 
         body = client.get(

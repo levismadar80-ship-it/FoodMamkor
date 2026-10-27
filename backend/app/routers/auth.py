@@ -1512,7 +1512,7 @@ def delete_account(
     before the user row. Producer-linked tables cascade via the FKs
     defined in models.py (all have ondelete=CASCADE):
       - ProducerCategory, DeliveryArea, Product
-      - ProducerReview, ProducerFollower, Favorite
+      - ProducerReview, Favorite
       - ProducerPageView, ProducerWhatsAppClick
       - Report (on producer), Event, Experience
 

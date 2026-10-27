@@ -1523,7 +1523,7 @@ WHERE email = '<staging-admin-email>';
 
 -- 3) (Optional) Delete the orphan producer row.
 --    CASCADE will clean ProducerCategory, DeliveryArea, ProducerReview,
---    ProducerFollower, ProducerPageView, ProducerWhatsAppClick, etc.
+--    ProducerPageView, ProducerWhatsAppClick, etc.
 --    (all FK'd to producers.id with ondelete=CASCADE).
 DELETE FROM producers WHERE id = '$PID';
 ```

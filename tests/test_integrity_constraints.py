@@ -3,7 +3,6 @@
 Covers the constraints/relationships added in Chunk A (migration 382128b23383)
 and the Chunk B handling:
   - uq_report_reporter_producer  → duplicate report returns 409 (not 500)
-  - uq_referral_one_per_referee  → duplicate referral claim stays idempotent 200
   - users.producer_id ON DELETE SET NULL + passive_deletes on the producer
     otp/kashrut relationships → deleting a producer with children + a linked
     user does not 500; children cascade, the user is nullified.
@@ -26,7 +25,6 @@ from app.models.models import (
     GroupBuy,
     KashrutBadgeRequest,
     PhoneOtpToken,
-    ReferralClick,
     Report,
 )
 from app.utils.clock import utc_now
@@ -58,24 +56,6 @@ class TestReportUnique:
         db.commit()
 
         db.add(Report(reporter_id=reporter.id, producer_id=producer.id, reason="b"))
-        with pytest.raises(IntegrityError):
-            db.commit()
-        db.rollback()
-
-
-# ---------- referrals: uq_referral_one_per_referee ----------
-class TestReferralUnique:
-    # MEH-2374: the HTTP claim endpoint is gone; the table and its constraint
-    # stay until their own Expand-Contract drop, so the DB-level check stays.
-
-    def test_referral_unique_constraint_enforced_at_db(self, db):
-        referrer = make_user(db, email="dbreferrer@example.com")
-        referee = make_user(db, email="dbreferee@example.com")
-        db.add(ReferralClick(referrer_id=referrer.id, referee_id=referee.id))
-        db.commit()
-
-        # Same referee again → violates uq_referral_one_per_referee.
-        db.add(ReferralClick(referrer_id=referrer.id, referee_id=referee.id))
         with pytest.raises(IntegrityError):
             db.commit()
         db.rollback()

@@ -267,15 +267,13 @@ erDiagram
     }
 ```
 
-## 3. Trust & safety — reviews, reports, followers
+## 3. Trust & safety — reviews, reports
 
 ```mermaid
 erDiagram
     users ||--o{ reports : "files"
-    users ||--o{ producer_followers : "follows"
     users ||--o{ producer_reviews : "writes"
     producers ||--o{ reports : "reported"
-    producers ||--o{ producer_followers : "followed_by"
     producers ||--o{ producer_reviews : "reviewed_by"
 
     reports {
@@ -286,15 +284,6 @@ erDiagram
         string status "open|resolved|dismissed (MEH-1266)"
         timestamp resolved_at "MEH-1266"
         uuid resolved_by FK "users, ON DELETE SET NULL (MEH-1266)"
-        timestamp created_at
-    }
-
-    producer_followers {
-        uuid id PK
-        uuid user_id FK
-        uuid producer_id FK
-        boolean notify_new_products
-        boolean notify_back_in_stock
         timestamp created_at
     }
 
@@ -313,8 +302,9 @@ erDiagram
 
 > **MEH-773 integrity constraints (migration `382128b23383` + Chunk B ORM):**
 > `reports` has `UNIQUE(reporter_id, producer_id)` (`uq_report_reporter_producer`)
-> and `referral_clicks` has `UNIQUE(referee_id)` (`uq_referral_one_per_referee`)
-> — one report per (reporter, producer), one referral credit per referee.
+> — one report per (reporter, producer). (`referral_clicks` and its
+> `uq_referral_one_per_referee` were dropped in MEH-2393, and `producer_followers`
+> in MEH-2392 — migration `e5b2d8f4a913`.)
 > `users.producer_id` is `ON DELETE SET NULL`. `phone_otp_tokens` and
 > `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
 > `passive_deletes=True`, so deleting a producer cascades children at the DB

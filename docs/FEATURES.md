@@ -69,7 +69,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
-| ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table kept until its Expand-Contract drop | — |
+| ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table dropped (MEH-2392) | — |
 
 ### Home cooks (`/neighbor`)
 
@@ -214,7 +214,7 @@ Priority: **after v1 launch + 10 real producers onboarded.** See
 | Status | Version | Feature | Notes |
 |---|---|---|---|
 | 📋 | v2 | Claude Agent SDK migration — 3 agents (support chat, search, moderation) | [ROADMAP.md](./ROADMAP.md) → "v2 — Claude Agent SDK Integration" |
-| 📋 | v2 | Push notifications (Twilio + FCM) | Foundation already in place via `producer_followers` |
+| 📋 | v2 | Push notifications (Twilio + FCM) | No foundation yet — `producer_followers` was dropped in MEH-2392; favorites are the interest record |
 | 📋 | v2 | React Native app | — |
 | 📋 | v2 | Bilingual (EN/HE toggle, i18next) | — |
 | ❌ | — | ~~Recipes section (user submissions → admin approval)~~ | Removed in MEH-587 (chunk 0/4); namespace cleared for producer-recipes feature (chunks 1-4) |

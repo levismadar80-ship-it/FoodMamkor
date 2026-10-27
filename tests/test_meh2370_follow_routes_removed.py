@@ -2,8 +2,8 @@
 
 MEH-1363 removed the follow button and MEH-1364 moved the follower count onto
 `favorites`, so nothing in the product called these routes; they only widened
-the authenticated write surface. The `producer_followers` table is untouched
-(its drop is a separate Expand-Contract step).
+the authenticated write surface. The `producer_followers` table was dropped
+afterwards, in MEH-2392 (Expand-Contract).
 
 DISCRIMINATION: on the old code all four (method, path) pairs are mounted,
 so the assertion lists them and goes red.
