@@ -54,6 +54,7 @@ import api from "@/lib/api";
 // matches the dropdown's own "shows after 2 characters" rule below.
 const QUERY_DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
+const MAX_MATCHES = 8;
 // Sorted once at module load — the static list never changes, so the merge
 // below only re-sorts when fetched results actually join it.
 const STATIC_CITIES_SORTED = [...ISRAEL_CITIES].sort((a, b) => a.localeCompare(b, "he"));
@@ -193,7 +194,17 @@ export default function CitySearch({
     // MEH-2318: matched on the same key, so «תל אביב - יפו» or «תל אביב יפו»
     // typed by hand still finds «תל אביב-יפו».
     const qKey = cityKey(q);
-    return allCities.filter((c) => cityKey(c).includes(qKey)).slice(0, 8);
+    // MEH-2456: names that START with the query come first, then names that
+    // only contain it — «תל» used to list «עתלית» above «תל אביב-יפו»
+    // (alphabetical, ע before ת), and the cap could cut real prefix hits.
+    const starts = [];
+    const contains = [];
+    for (const c of allCities) {
+      const k = cityKey(c);
+      if (k.startsWith(qKey)) starts.push(c);
+      else if (k.includes(qKey)) contains.push(c);
+    }
+    return [...starts, ...contains].slice(0, MAX_MATCHES);
   }, [value, allCities]);
 
   // Close on outside click
