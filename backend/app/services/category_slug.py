@@ -18,7 +18,7 @@ History:  MEH-2139 chunk 2 (creation).
 
 import hashlib
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 # MEH-2139: the `Session` import is TYPE_CHECKING-only, and that is load-bearing
 # rather than stylistic. This module imports `hashlib` and `re` and nothing else,
@@ -98,7 +98,7 @@ SLUG_MAX = 50
 
 def transliterate(name: str) -> str:
     """Best-effort ASCII slug. May return "" — callers handle that."""
-    out = []
+    out: list[str] = []
     for ch in (name or "").strip().lower():
         if ch in _HEBREW_TO_LATIN:
             out.append(_HEBREW_TO_LATIN[ch])
@@ -201,8 +201,9 @@ def bulk_slugs(db: "Session", names: "Iterable[str]") -> dict[str, str]:
     """
     from app.models.models import Category
 
-    taken = {row[0] for row in db.query(Category.slug).all() if row[0]}
-    out = {}
+    rows = cast("list[tuple[str | None]]", db.query(Category.slug).all())
+    taken = {row[0] for row in rows if row[0]}
+    out: dict[str, str] = {}
     for name in names:
         base = slug_for_name(name)
         candidate = base
