@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.data.cities import ISRAEL_CITIES
 from app.database import get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.models import DeliveryArea, Producer
 from app.models.models import City
 from app.rate_limit import limiter
@@ -31,7 +32,7 @@ def _live_business_cities(db: Session, clean: str) -> list[str]:
     delivery selections round-trippable until the Chunk B normalization lands.
     """
     prod = db.query(Producer.city).filter(
-        Producer.status == "approved", Producer.city.isnot(None)
+        is_business(), Producer.city.isnot(None)  # MEH-2459
     )
     deliv = db.query(DeliveryArea.city).filter(DeliveryArea.city.isnot(None))
     if clean:

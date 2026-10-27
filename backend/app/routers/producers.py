@@ -46,6 +46,7 @@ from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
     build_producers_query,
     catalog_default_availability_condition,
+    is_business,
 )
 from app.services.producer_queries import (
     attach_badge_fields,
@@ -291,7 +292,7 @@ def producers_count(request: Request, db: Session = Depends(get_db)):
     count = (
         db.query(func.count(Producer.id))
         .filter(
-            Producer.status == "approved",
+            is_business(),  # MEH-2459
             catalog_default_availability_condition(),
         )
         .scalar()
@@ -319,7 +320,7 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
     rows = (
         db.query(Producer.city, func.count(Producer.id).label("count"))
         .filter(
-            Producer.status == "approved",
+            is_business(),  # MEH-2459
             catalog_default_availability_condition(),
             Producer.city.isnot(None),
             func.trim(Producer.city) != "",
@@ -351,7 +352,7 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
     row = (
         db.query(Producer.id, Producer.slug)
         .filter(
-            Producer.status == "approved",
+            is_business(),  # MEH-2459
             catalog_default_availability_condition(),
         )
         .order_by(func.random())
@@ -382,7 +383,7 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
             # or the property fires one query per producer on every list page.
             selectinload(Producer.offers),
         )
-        .filter(Producer.slug == slug, Producer.status == "approved")
+        .filter(Producer.slug == slug, is_business())  # MEH-2459
         .first()
     )
     if not producer:
@@ -435,7 +436,10 @@ def get_producer(
     # MEH-254 — pending/rejected producers are not consented-to-public. Only
     # the owner and admins may fetch them by UUID; everyone else sees 404 so
     # the UUID can't be used to enumerate queue state.
-    if producer.status != "approved":
+    # MEH-2459 — an organizer is never a public business either: same
+    # owner/admin carve-out, same 404 for everyone else (its public face is
+    # /organizers/{slug}, chunk 3).
+    if producer.status != "approved" or producer.kind != "producer":
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == producer.id
         if not (is_admin or is_owner):
