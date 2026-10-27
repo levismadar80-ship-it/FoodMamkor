@@ -18,6 +18,7 @@ from app.services.group_buy_notifications import (
     notify_participant_funded,
     notify_producer_funded,
 )
+from app.utils.clock import utc_now
 
 
 def _producer_user(db, *, email="gbprod@test.com", status="approved"):
@@ -49,7 +50,7 @@ def _make_group_buy(
         price_per_unit_group=90,
         min_participants=min_participants,
         max_participants=max_participants,
-        deadline=deadline or (datetime.utcnow() + timedelta(days=7)),
+        deadline=deadline or (utc_now() + timedelta(days=7)),
         city=city,
         status=status,
     )
@@ -67,7 +68,7 @@ def _valid_create_payload(**overrides):
         "price_per_unit_regular": 80,
         "price_per_unit_group": 60,
         "min_participants": 3,
-        "deadline": (datetime.utcnow() + timedelta(days=10)).isoformat(),
+        "deadline": (utc_now() + timedelta(days=10)).isoformat(),
         "city": "חיפה",
     }
     payload.update(overrides)
@@ -113,6 +114,67 @@ class TestListAndGet:
     def test_get_detail_404(self, client, db):
         resp = client.get(f"/group-buys/{uuid4()}")
         assert resp.status_code == 404
+
+
+# ---------- the owner's own list (MEH-2437) ----------
+class TestMyGroupBuys:
+    """GET /producers/me/group-buys — the business's own group buys, every
+    status, newest first, in one call (the dashboard used to fetch the whole
+    site four times and filter in the browser)."""
+
+    URL = "/producers/me/group-buys"
+
+    def test_returns_only_mine_in_every_status(self, client, db):
+        producer, owner = _producer_user(db, email="mine1@test.com")
+        other, _ = _producer_user(db, email="theirs1@test.com")
+        mine = {
+            s: _make_group_buy(db, producer, status=s)
+            for s in ("open", "funded", "cancelled", "fulfilled")
+        }
+        theirs = _make_group_buy(db, other)
+        resp = client.get(self.URL, headers=auth_header(owner))
+        assert resp.status_code == 200
+        ids = [row["id"] for row in resp.json()]
+        assert sorted(ids) == sorted(str(gb.id) for gb in mine.values())
+        assert str(theirs.id) not in ids
+        statuses = {row["status"] for row in resp.json()}
+        assert statuses == {"open", "funded", "cancelled", "fulfilled"}
+
+    def test_newest_first(self, client, db):
+        producer, owner = _producer_user(db, email="mine2@test.com")
+        older = _make_group_buy(db, producer)
+        older.created_at = utc_now() - timedelta(days=3)
+        newer = _make_group_buy(db, producer)
+        db.commit()
+        resp = client.get(self.URL, headers=auth_header(owner))
+        assert [row["id"] for row in resp.json()] == [str(newer.id), str(older.id)]
+
+    def test_empty_for_a_business_with_none(self, client, db):
+        _, owner = _producer_user(db, email="mine3@test.com")
+        other, _ = _producer_user(db, email="theirs3@test.com")
+        _make_group_buy(db, other)
+        resp = client.get(self.URL, headers=auth_header(owner))
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_consumer_is_403(self, client, db):
+        producer, _ = _producer_user(db, email="mine4@test.com")
+        _make_group_buy(db, producer)
+        consumer = make_user(db, role="consumer", email="c4mine@test.com")
+        # Even pointed at a business, a consumer is not its owner.
+        consumer.producer_id = producer.id
+        db.commit()
+        resp = client.get(self.URL, headers=auth_header(consumer))
+        assert resp.status_code == 403
+
+    def test_producer_without_business_is_403(self, client, db):
+        user = make_user(db, role="producer", email="nobiz5@test.com")
+        resp = client.get(self.URL, headers=auth_header(user))
+        assert resp.status_code == 403
+
+    def test_anonymous_is_401(self, client, db):
+        resp = client.get(self.URL)
+        assert resp.status_code == 401
 
 
 # ---------- create ----------
@@ -161,7 +223,7 @@ class TestCreate:
         resp = client.post(
             "/group-buys",
             json=_valid_create_payload(
-                deadline=(datetime.utcnow() - timedelta(days=1)).isoformat()
+                deadline=(utc_now() - timedelta(days=1)).isoformat()
             ),
             headers=auth_header(user),
         )
@@ -199,7 +261,7 @@ class TestCreate:
         resp = client.post(
             "/group-buys",
             json=_valid_create_payload(
-                deadline=(datetime.utcnow() + timedelta(days=10)).isoformat()
+                deadline=(utc_now() + timedelta(days=10)).isoformat()
             ),
             headers=auth_header(user),
         )
@@ -294,7 +356,7 @@ class TestCommitLifecycle:
     def test_commit_rejected_after_deadline(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(
-            db, producer, deadline=datetime.utcnow() - timedelta(hours=1)
+            db, producer, deadline=utc_now() - timedelta(hours=1)
         )
         user = make_user(db, email="buyer3@test.com")
         resp = client.post(
@@ -366,7 +428,7 @@ class TestCommitLifecycle:
     def test_commit_and_cancel_after_aware_create(self, client, db):
         """MEH-1454 consistency: a group created via the API with an aware
         ISO-Z deadline stores a naive-UTC deadline, so the commit and cancel
-        deadline comparisons (`gb.deadline < datetime.utcnow()`) still work."""
+        deadline comparisons (`gb.deadline < utc_now()`) still work."""
         _, producer_user = _producer_user(db)
         aware = (
             (datetime.now(timezone.utc) + timedelta(days=10))
@@ -723,3 +785,184 @@ class TestFundedNotificationDispatch:
         ).json()
         assert detail["user_commit"] is not None
         assert "phone" not in detail["user_commit"]
+
+
+# ---------- owner status change (MEH-2436) ----------
+class TestOwnerStatusChange:
+    """PATCH /group-buys/{id}/status — the business closes its own group buy.
+
+    The owner gets exactly three transitions: open→cancelled (before or after
+    the deadline), funded→fulfilled, funded→cancelled. Everything else is a
+    409; someone else's group buy is a 403 whatever the transition. The route
+    is owner-only: an admin gets 403 here and keeps the override the IDOR rule
+    grants (security.md) on PATCH /admin/group-buys/{id}/status.
+    """
+
+    def _patch(self, client, gb, status, user=None):
+        headers = auth_header(user) if user else {}
+        return client.patch(
+            f"/group-buys/{gb.id}/status", json={"status": status}, headers=headers
+        )
+
+    def _status_in_db(self, db, gb):
+        db.expire_all()
+        return db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status
+
+    def test_owner_cancels_open(self, client, db):
+        producer, owner = _producer_user(db, email="own1@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cancelled"
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_owner_closes_open_after_deadline(self, client, db):
+        producer, owner = _producer_user(db, email="own2@test.com")
+        gb = _make_group_buy(db, producer, deadline=utc_now() - timedelta(days=1))
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_owner_marks_funded_fulfilled(self, client, db):
+        producer, owner = _producer_user(db, email="own3@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(client, gb, "fulfilled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "fulfilled"
+
+    def test_owner_cancels_funded(self, client, db):
+        producer, owner = _producer_user(db, email="own4@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_other_business_is_403_and_nothing_changes(self, client, db):
+        producer, _ = _producer_user(db, email="own5@test.com")
+        _, other = _producer_user(db, email="other5@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", other)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_consumer_is_403(self, client, db):
+        producer, _ = _producer_user(db, email="own6@test.com")
+        gb = _make_group_buy(db, producer)
+        consumer = make_user(db, role="consumer", email="c6@test.com")
+        # A demoted owner keeps producer_id (admin_extra.py role change does not
+        # clear it), so the ownership check alone would let this through: only
+        # the role gate stops it.
+        consumer.producer_id = producer.id
+        db.commit()
+        resp = self._patch(client, gb, "cancelled", consumer)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_producer_without_a_business_is_403(self, client, db):
+        producer, _ = _producer_user(db, email="own14@test.com")
+        gb = _make_group_buy(db, producer)
+        orphan = make_user(db, role="producer", email="orphan14@test.com")
+        assert orphan.producer_id is None
+        resp = self._patch(client, gb, "cancelled", orphan)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_unverified_owner_is_403(self, client, db):
+        producer, owner = _producer_user(db, email="own7@test.com")
+        owner.email_verified = False
+        db.commit()
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_anonymous_is_401(self, client, db):
+        producer, _ = _producer_user(db, email="own8@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled")
+        assert resp.status_code == 401
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_unknown_group_buy_is_404(self, client, db):
+        _, owner = _producer_user(db, email="own9@test.com")
+        resp = client.patch(
+            f"/group-buys/{uuid4()}/status",
+            json={"status": "cancelled"},
+            headers=auth_header(owner),
+        )
+        assert resp.status_code == 404
+
+    def test_invalid_value_is_422(self, client, db):
+        producer, owner = _producer_user(db, email="own10@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "deleted", owner)
+        assert resp.status_code == 422
+        assert self._status_in_db(db, gb) == "open"
+
+    # Each pair is (current, requested): outside the owner's table → 409.
+    @staticmethod
+    def _forbidden_pairs():
+        return [
+            ("open", "fulfilled"),  # never delivered a group that never filled
+            ("open", "funded"),  # funding is the participants' doing
+            ("open", "open"),
+            ("funded", "open"),
+            ("funded", "funded"),
+            ("cancelled", "open"),  # final
+            ("cancelled", "fulfilled"),
+            ("fulfilled", "cancelled"),  # final
+            ("fulfilled", "open"),
+        ]
+
+    def test_transitions_outside_the_table_are_409(self, client, db):
+        producer, owner = _producer_user(db, email="own11@test.com")
+        for current, requested in self._forbidden_pairs():
+            gb = _make_group_buy(db, producer, status=current)
+            resp = self._patch(client, gb, requested, owner)
+            assert resp.status_code == 409, (current, requested, resp.json())
+            assert self._status_in_db(db, gb) == current, (current, requested)
+
+    def test_admin_uses_the_admin_route_not_this_one(self, client, db):
+        # This route is the business's, held to the transition table. An admin
+        # keeps the full override on PATCH /admin/group-buys/{id}/status, so
+        # there is no second, unchecked path to the same state here.
+        producer, _ = _producer_user(db, email="own12@test.com")
+        admin = make_user(db, role="admin", email="adm12@test.com")
+        gb = _make_group_buy(db, producer, status="cancelled")
+        resp = self._patch(client, gb, "open", admin)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "cancelled"
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status",
+            params={"status": "open"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_owner_of_a_no_longer_approved_business_can_still_cancel(
+        self, client, db
+    ):
+        # Creating needs an approved business; closing does not, on purpose: a
+        # business that was suspended must still be able to close what it opened.
+        producer, owner = _producer_user(db, email="own15@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_participant_cannot_leave_a_closed_group_buy(self, client, db):
+        # Once the owner has cancelled or fulfilled, leaving would rewrite the
+        # record of who took part, and on a funded→fulfilled group the old
+        # revert path would even reopen it.
+        producer, owner = _producer_user(db, email="own13@test.com")
+        for final in ("cancelled", "fulfilled"):
+            gb = _make_group_buy(db, producer, status="funded", min_participants=1)
+            buyer = make_user(db, email=f"leaver-{final}@test.com")
+            db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1))
+            db.commit()
+            assert self._patch(client, gb, final, owner).status_code == 200
+            resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(buyer))
+            assert resp.status_code == 400, (final, resp.json())
+            assert self._status_in_db(db, gb) == final
+            assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1

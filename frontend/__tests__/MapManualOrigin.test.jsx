@@ -102,7 +102,6 @@ vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
     setSplitRatio: vi.fn(),
     sheetSnap: "peek",
     splitRatio: "40fr 60fr",
-    visitedIds: new Set(),
   }),
 }));
 vi.mock("@/app/[locale]/map/state/useProducersFeed", () => ({

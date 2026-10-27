@@ -127,7 +127,9 @@ describe("AdminExperiencesPage — queue rendering (MEH-2280)", () => {
     expect(within(row).getByRole("button", { name: "סדנת לחם מחמצת" })).toBeInTheDocument();
     expect(within(row).getByText("נועה")).toBeInTheDocument();
     expect(within(row).getByText("חיפה")).toBeInTheDocument();
-    expect(within(row).getByText("FLAGGED")).toBeInTheDocument();
+    // MEH-2426: the AI verdict renders as its Hebrew label, never the raw enum.
+    expect(within(row).getByText(X.moderation_labels.FLAGGED)).toBeInTheDocument();
+    expect(within(row).queryByText("FLAGGED")).not.toBeInTheDocument();
     expect(within(row).getByRole("link", { name: X.actions.view })).toHaveAttribute(
       "href",
       "/experiences/e1",
@@ -276,5 +278,36 @@ describe("AdminExperiencesPage — decision wiring", () => {
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("שגיאת שרת"));
     expect(screen.getByRole("heading", { name: X.modal.reject_title })).toBeInTheDocument();
     expect(apiMock.get).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AdminExperiencesPage — phone layout + AI label (MEH-2426)", () => {
+  beforeEach(resetMocks);
+
+  it("every known AI verdict renders its Hebrew label; an unknown one renders as-is", async () => {
+    await renderWith([
+      { ...PENDING, id: "a", moderation_status: "PENDING" },
+      { ...PENDING, id: "b", moderation_status: "APPROVED" },
+      { ...PENDING, id: "c", moderation_status: "REJECTED" },
+      { ...PENDING, id: "d", moderation_status: "SOMETHING_NEW" },
+    ]);
+    const rows = bodyRows();
+    expect(within(rows[0]).getByText(X.moderation_labels.PENDING)).toBeInTheDocument();
+    expect(within(rows[1]).getByText(X.moderation_labels.APPROVED)).toBeInTheDocument();
+    expect(within(rows[2]).getByText(X.moderation_labels.REJECTED)).toBeInTheDocument();
+    expect(within(rows[3]).getByText("SOMETHING_NEW")).toBeInTheDocument();
+  });
+
+  it("the table stacks below md, and each value cell is labelled with its column header", async () => {
+    await renderWith([PENDING]);
+    const table = document.querySelector("table");
+    expect(table).toHaveClass("table-stack");
+    // overflow-hidden on the wrapper is what clipped the actions column at 375.
+    expect(table.parentElement).not.toHaveClass("overflow-hidden");
+    const labels = [...bodyRows()[0].querySelectorAll("td[data-label]")].map((td) =>
+      td.getAttribute("data-label"),
+    );
+    expect(labels).toEqual([X.columns.host, X.columns.date, X.columns.city, X.columns.claude]);
+    expect(bodyRows()[0].querySelectorAll('td[data-cell="actions"]')).toHaveLength(1);
   });
 });

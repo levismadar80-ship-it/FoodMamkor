@@ -263,7 +263,7 @@ it fails. Four of its cases are lifted from the real document.
 | 1329 | MEH-1232 — Admin pending queue: photo thumbnails before appr… | **קליק פותח את התמונה המלאה** — לחצי על thumbnail תקין — **תוצאה מצופה:** התמונה המקורית (לא החתוכה) נפתחת בטא… |
 | 1330 | MEH-1232 — Admin pending queue: photo thumbnails before appr… | **רק לממתינים** — בית עסק `approved` — **תוצאה מצופה:** אין רצועת thumbnails (הרצועה מיועדת לתור האישורים בלבד… |
 | 1331 | MEH-1232 — Admin pending queue: photo thumbnails before appr… | **בלי תמונות = בלי רצועה** — בית עסק ממתין ללא תמונות — **תוצאה מצופה:** אין רצועה ריקה (שער התמונה של MEH-799… |
-| 1341 | Test 1 — Admin blocked on password upgrade path | Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`) |
+| 1341 | Test 1 — Admin blocked on password upgrade path | Log in as admin (`<staging-admin-email>` or any account with `role='admin'`) |
 | 1342 | Test 1 — Admin blocked on password upgrade path | Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever re… |
 | 1343 | Test 1 — Admin blocked on password upgrade path | In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-T… |
 | 1344 | Test 1 — Admin blocked on password upgrade path | After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/… |
@@ -742,7 +742,7 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 644 | MEH-1259 — הסתרת badge "אורגני" מכל משטח ציבורי (17/07) | **הטוגל של בעלת העסק נשמר** — דשבורד → סמני/בטלי "אורגני" → שמירה → רענון — **תוצאה מצופה:** הערך נשמר (הדאטה … |
 | 645 | MEH-1259 — הסתרת badge "אורגני" מכל משטח ציבורי (17/07) | **צ'ק-בוקס אדמין עובד** — טופס אדמין → "אורגני" — **תוצאה מצופה:** ניתן לסמן/לבטל ולשמור כרגיל. |
 | 652 | MEH-1471 — שדה "מאיפה שמעת עלינו?" בהרשמת בית עסק (22/07) | **submit חסום כשריק** — השאירי "בחר אפשרות", סמני את התנאים וההצהרה, לחצי "הצטרפי" — **תוצאה מצופה:** הודעת שג… |
-| 653 | MEH-1471 — שדה "מאיפה שמעת עלינו?" בהרשמת בית עסק (22/07) | **"אחר" חושף שדה חופשי** — בחרי "אחר" — **תוצאה מצופה:** נפתח input "ספרי לנו איפה" (עד 120 תווים); מעבר לאופצ… |
+| 653 | MEH-1471 — שדה "מאיפה שמעת עלינו?" בהרשמת בית עסק (22/07) | **"אחר" חושף שדה חופשי** — בחרי "אחר" — **תוצאה מצופה:** נפתח input "ספרו לנו איפה" (עד 120 תווים); מעבר לאופצ… |
 | 682 | MEH sweep 16/07 — דשבורד בעלת עסק (1234/1236/1237/1238/1239) | **העלאת תמונה נשמרת בלי "שמור" (MEH-1236)** — עריכה → תמונות → העלי תמונה → חזרי לסקירה — **תוצאה מצופה:** צעד… |
 | 684 | MEH sweep 16/07 — דשבורד בעלת עסק (1234/1236/1237/1238/1239) | **באנר שינויים שלא נשמרו מפרט כרטיסים (MEH-1237)** — עריכה → שני שינויים בשני כרטיסים בלי לשמור — **תוצאה מצופ… |
 | 685 | MEH sweep 16/07 — דשבורד בעלת עסק (1234/1236/1237/1238/1239) | **עסק עם מוצר אחד מגיע ל-100% (MEH-1238)** — פרופיל מלא + מוצר אחד בקטלוג — **תוצאה מצופה:** הצ'קליסט 4/4 = "ה… |

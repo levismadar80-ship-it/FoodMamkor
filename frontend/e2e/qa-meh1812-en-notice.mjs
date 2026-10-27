@@ -12,7 +12,7 @@
  *      never a literal, so a key rename fails here instead of passing).
  *   2. The Hebrew route renders it ZERO times. This is the discriminating
  *      assertion — an implementation with no locale gate satisfies (1) too.
- *   3. /en/search renders it as well: the ticket's AC is "all affected consumer
+ *   3. /en/producers renders it as well (was /en/search; redirected since MEH-819): the ticket's AC is "all affected consumer
  *      surfaces", and there are two.
  *   4. Clicking the CTA from a DEEP /en path lands on that path's Hebrew twin,
  *      not the homepage. This is the criterion most likely to regress silently
@@ -20,7 +20,7 @@
  *      LanguageToggle, and it cannot be proven by reading the component.
  *
  * localePrefix is "as-needed" (i18n/routing.js): Hebrew is the bare path and
- * English is /en/*. So the Hebrew twin of `/en/search?q=X` is `/search?q=X`.
+ * English is /en/*. So the Hebrew twin of `/en/producers?q=X` is `/producers?q=X`.
  *
  * Run:  node e2e/qa-meh1812-en-notice.mjs
  *
@@ -119,24 +119,24 @@ async function run(browser, label, width, height) {
   if (heHome !== 0) failures.push(`[${label}] Hebrew home rendered ${heHome} notices, expected 0`);
   await page.screenshot({ path: `${OUT}/${label}-2-he-home.png`, fullPage: false });
 
-  // ---- 3. /en/search: the second consumer surface ----
-  await page.goto(`${BASE}/en/search?q=cheese`, { waitUntil: "networkidle" });
+  // ---- 3. /en/producers: the second consumer surface (MEH-819) ----
+  await page.goto(`${BASE}/en/producers?q=cheese`, { waitUntil: "networkidle" });
   const enSearch = await noticeCount(page);
-  console.log(`[${label}] /en/search      notice=${enSearch} (expect 1)`);
-  if (enSearch !== 1) failures.push(`[${label}] /en/search rendered ${enSearch} notices, expected 1`);
+  console.log(`[${label}] /en/producers   notice=${enSearch} (expect 1)`);
+  if (enSearch !== 1) failures.push(`[${label}] /en/producers rendered ${enSearch} notices, expected 1`);
   await page.screenshot({ path: `${OUT}/${label}-3-en-search.png`, fullPage: false });
 
   // ---- 4. CTA from a DEEP path returns to that path's Hebrew twin ----
-  // Not the homepage. localePrefix "as-needed" => Hebrew twin of /en/search?q=X
-  // is /search?q=X. Proven by clicking, not by reading the component.
+  // Not the homepage. localePrefix "as-needed" => Hebrew twin of /en/producers?q=X
+  // is /producers?q=X. Proven by clicking, not by reading the component.
   const before = page.url();
   await page.getByRole("button", { name: CTA }).first().click();
   await page.waitForURL((u) => !u.pathname.startsWith("/en"), { timeout: 10_000 }).catch(() => {});
   const after = new URL(page.url());
-  const pathOk = after.pathname === "/search";
+  const pathOk = after.pathname === "/producers";
   const queryOk = after.searchParams.get("q") === "cheese";
   console.log(`[${label}] CTA  ${before} -> ${page.url()}  pathOk=${pathOk} queryOk=${queryOk}`);
-  if (!pathOk) failures.push(`[${label}] CTA landed on ${after.pathname}, expected /search (deep path lost)`);
+  if (!pathOk) failures.push(`[${label}] CTA landed on ${after.pathname}, expected /producers (deep path lost)`);
   if (!queryOk) failures.push(`[${label}] CTA dropped ?q= — got ${after.search}`);
   const afterNotice = await noticeCount(page);
   if (afterNotice !== 0) failures.push(`[${label}] notice still present after switching to Hebrew`);

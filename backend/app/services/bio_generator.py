@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 
-from app.config import settings
+from app.config import ai_fast_request_kwargs, settings
 
 logger = logging.getLogger(__name__)
 
@@ -94,8 +94,10 @@ def generate_bio(
 
     try:
         msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=100,
+            **ai_fast_request_kwargs(),
+            # 130 = 100 + ~30% for Haiku 5.5's tokenizer (MEH-2335); the
+            # 150-char cut below still bounds the bio.
+            max_tokens=130,
             messages=[{"role": "user", "content": prompt}],
         )
         bio = next(

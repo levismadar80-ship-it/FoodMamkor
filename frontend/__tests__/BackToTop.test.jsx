@@ -84,4 +84,56 @@ describe("BackToTop", () => {
     expect(btn.className).toContain("end-4");
     expect(btn.className).not.toMatch(/(^|\s)(left-|right-)/);
   });
+
+  // MEH-2417: hidden while the page footer is in view, so it never covers the
+  // footer's utility links. The observer is driven by hand (jsdom has none).
+  it("hides while the footer is in view and returns when it leaves", () => {
+    let cb;
+    let observed = null;
+    window.IntersectionObserver = class {
+      constructor(fn) { cb = fn; }
+      observe(el) { observed = el; }
+      disconnect() {}
+    };
+    // An in-page <footer> FIRST in DOM order — the observer must skip it.
+    const articleFooter = document.createElement("footer");
+    document.body.appendChild(articleFooter);
+    const footer = document.createElement("footer");
+    footer.setAttribute("data-site-footer", "");
+    document.body.appendChild(footer);
+    // finally, not trailing lines: a failed assertion must not leak the
+    // stubbed observer or the footer node into the tests after this one.
+    try {
+      setViewport(667, 5000);
+      render(<BackToTop />);
+      act(() => window.dispatchEvent(new Event("scroll")));
+      expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+      expect(observed).toBe(footer);
+      act(() => cb([{ isIntersecting: true }]));
+      expect(screen.queryByLabelText(LABEL)).not.toBeInTheDocument();
+      act(() => cb([{ isIntersecting: false }]));
+      expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+    } finally {
+      articleFooter.remove();
+      footer.remove();
+      delete window.IntersectionObserver;
+    }
+  });
+
+  it("no site footer on the page: nothing is observed and the button still shows", () => {
+    const observe = vi.fn();
+    window.IntersectionObserver = class {
+      observe(el) { observe(el); }
+      disconnect() {}
+    };
+    try {
+      setViewport(667, 5000);
+      render(<BackToTop />);
+      act(() => window.dispatchEvent(new Event("scroll")));
+      expect(observe).not.toHaveBeenCalled();
+      expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+    } finally {
+      delete window.IntersectionObserver;
+    }
+  });
 });

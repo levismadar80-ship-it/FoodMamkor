@@ -134,7 +134,7 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
   // MEH-1334 chunk 2: progressive disclosure — cap visible ready-made
   // questions at 3, reveal the rest behind "עוד שאלות" (single level).
   it("caps ready-made questions at 3 and reveals the rest via עוד שאלות", () => {
-    // custom_questions overrides the category defaults (categoryQuestions.js:88)
+    // custom_questions are the only Q3+ source (MEH-2385)
     // → a deterministic large set that forces the expander.
     render1({ custom_questions: ["ש1", "ש2", "ש3", "ש4", "ש5"] });
     const before = screen.getAllByTestId("question-link").length;

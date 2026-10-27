@@ -19,13 +19,14 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user
+from app.data.cities import city_key
 from app.database import get_db
 from app.models import AlertLog, Favorite, FavoriteAlert, User
 from app.services.whatsapp import send_template
@@ -36,6 +37,7 @@ from app.services.whatsapp_templates import FavoriteAlertHeV1
 # `from app.routers.alerts import AlertContent` callers
 # (events.py, producer_me.py) keep working without scope creep.
 from app.schemas.schemas import AlertContent, AlertPrefsIn, AlertPrefsOut
+from app.utils.clock import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +181,7 @@ _CHANNEL_WHATSAPP = "whatsapp"
 
 def _recently_sent(db: Session, user_id: UUID, producer_id: UUID, channel: str) -> bool:
     """True if `channel` already delivered to (user, producer) within 24h."""
-    cutoff = datetime.utcnow() - _CAP_WINDOW
+    cutoff = utc_now() - _CAP_WINDOW
     return db.query(
         db.query(AlertLog)
         .filter(
@@ -213,16 +215,13 @@ def _record_alert_send(
 # carries: surrounding whitespace, letter case (latin entries), and the
 # hyphen/maqaf/en-dash family ("תל אביב-יפו" vs "תל אביב – יפו"). Hebrew
 # geresh/gershayim are mapped to their ASCII lookalikes for the same reason.
-_CITY_SEPARATORS = re.compile(r"[-־–—]")  # hyphen, maqaf, en/em dash
-_CITY_QUOTE_MAP = str.maketrans({"׳": "'", "״": '"'})  # geresh, gershayim
-
-
 def _normalize_city(value: str | None) -> str:
-    """Collapse a city string to a comparison form; "" when unusable."""
-    if not value:
-        return ""
-    text = _CITY_SEPARATORS.sub(" ", value.translate(_CITY_QUOTE_MAP))
-    return re.sub(r"\s+", " ", text).strip().casefold()
+    """Collapse a city string to a comparison form; "" when unusable.
+
+    MEH-2456: the rule lives in app.data.cities.city_key, shared with
+    GET /cities, so the two cannot drift apart.
+    """
+    return city_key(value)
 
 
 def _matched_target_cities(

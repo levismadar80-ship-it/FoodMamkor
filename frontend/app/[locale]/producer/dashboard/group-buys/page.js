@@ -275,29 +275,16 @@ export default function ProducerGroupBuysPage() {
 
   const load = async () => {
     try {
+      // MEH-2437: one call for this business's group buys in every status,
+      // newest first — it used to fetch the whole site four times (one per
+      // status) and filter by producer_id here.
       const [gbRes, dashRes] = await Promise.all([
-        api.get("/group-buys", { params: { status: "open" } }),
+        api.get("/producers/me/group-buys"),
         api.get("/producers/me/dashboard"),
       ]);
-      // Filter to only this producer's group buys
-      const producerId = dashRes.data?.producer?.id;
       setProducerCity(dashRes.data?.producer?.city || "");
       setProducerStatus(dashRes.data?.producer?.status || null);
-      const mine = gbRes.data.filter((gb) => gb.producer_id === producerId);
-      // Also fetch funded/cancelled
-      const [fundedRes, cancelledRes, fulfilledRes] = await Promise.all([
-        api.get("/group-buys", { params: { status: "funded" } }),
-        api.get("/group-buys", { params: { status: "cancelled" } }),
-        api.get("/group-buys", { params: { status: "fulfilled" } }),
-      ]);
-      const allMine = [
-        ...mine,
-        ...fundedRes.data.filter((gb) => gb.producer_id === producerId),
-        ...cancelledRes.data.filter((gb) => gb.producer_id === producerId),
-        ...fulfilledRes.data.filter((gb) => gb.producer_id === producerId),
-      ];
-      allMine.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setItems(allMine);
+      setItems(Array.isArray(gbRes.data) ? gbRes.data : []);
     } catch {
       setItems([]);
     }
@@ -404,17 +391,26 @@ export default function ProducerGroupBuysPage() {
       ) : (
         <div className="space-y-4">
           {items.map((gb) => {
-            const cls = STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
+            // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
+            // nothing moves the status server-side and the owner has no
+            // control over it (admin-only PATCH, group_buys.py:303). Display
+            // only; the status itself is a separate card. deadline is a full
+            // UTC timestamp (form sends toISOString, line 76), so an instant
+            // compare is right here, unlike the date-only event lists.
+            const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
+            const cls = deadlinePassed
+              ? STATUS_CLASSES.neutral
+              : STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
-              <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
+              <div key={gb.id} data-testid="manage-group-buy-card" className="bg-white rounded-[14px] border border-border p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <h2 className="font-semibold text-text">{gb.title}</h2>
                     <p className="text-xs text-fg-muted mt-0.5">{gb.product_name}</p>
                   </div>
                   <span className={`text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${cls}`}>
-                    {statusLabel(gb.status)}
+                    {deadlinePassed ? t("status_deadline_passed") : statusLabel(gb.status)}
                   </span>
                 </div>
 

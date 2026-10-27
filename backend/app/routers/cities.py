@@ -7,12 +7,14 @@ unioned with live producer/delivery cities; the static ISRAEL_CITIES list
 
 Rate-limited 60/min (anonymous). Returns up to 20 cities matching the query
 string (prefix match, case-insensitive), exact match first then alphabetical.
+MEH-2456: one entry per city — spelling variants collapse on city_key and the
+answer uses the static list's spelling when one shares the key.
 """
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from app.data.cities import ISRAEL_CITIES
+from app.data.cities import ISRAEL_CITIES, STATIC_SPELLING_BY_KEY, city_key
 from app.database import get_db
 from app.models import DeliveryArea, Producer
 from app.models.models import City
@@ -77,13 +79,21 @@ def list_cities(
     else:
         static_cities = list(ISRAEL_CITIES)
 
-    seen = set()
+    # MEH-2456: one entry per city, not per spelling. The seeded table spells
+    # Tel Aviv «תל אביב - יפו» while the static list, the site's chips and
+    # existing businesses spell it «תל אביב-יפו»; an exact-string set returned
+    # both, and a business that picked the table spelling under "אזורי משלוח"
+    # was then missed by the exact-match delivery filter. Dedupe on city_key
+    # and answer in the static spelling whenever one shares the key.
+    seen: set[str] = set()
     merged = []
-    for name in table_cities + live_cities + static_cities:
-        name = name.strip()
-        if name and name not in seen:
-            seen.add(name)
-            merged.append(name)
+    for raw in table_cities + live_cities + static_cities:
+        name = raw.strip()
+        key = city_key(name)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(STATIC_SPELLING_BY_KEY.get(key, name))
     merged.sort()
     if clean in merged:
         merged.remove(clean)

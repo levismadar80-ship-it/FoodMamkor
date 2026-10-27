@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
+import { useState, useEffect } from "react";
+import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight, CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -51,6 +52,23 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
+  // MEH-2397: on mobile each link group is a closed accordion row. Desktop
+  // (md:) renders the heading as plain text — an inert `<button
+  // aria-expanded="false">` there would still sit in the tab order and tell a
+  // screen reader the (visible) list is collapsed. SSR and the first client
+  // render are the mobile markup (closed), so there is no hydration diff; the
+  // media query flips it in an effect. `md:flex` on the list keeps the links
+  // visible on desktop even before the effect runs.
+  const [openGroup, setOpenGroup] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -70,6 +88,8 @@ export default function Footer() {
 
   // MEH-1918: shared with the Header so one page load makes one request.
   const showExperiences = useExperiencesNavGate();
+  // MEH-2369: same idea for events — no upcoming event, no link.
+  const showEvents = useEventsNavGate();
 
   // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
   // producers). NN/g "Footers 101" — group links by secondary audience rather
@@ -81,7 +101,7 @@ export default function Footer() {
     // walk was previously reachable only via sitemap/pagination, not the footer.
     { href: "/producers", label: t("nav.footer.producers") },
     { href: "/map", label: t("nav.map") },
-    { href: "/events", label: t("nav.footer.events") },
+    ...(showEvents ? [{ href: "/events", label: t("nav.footer.events") }] : []),
     // MEH-1918: data-gated — the experiences link joins "גלו" only once
     // /experiences has real supply (see lib/use-experiences-nav-gate.js). It
     // sits next to /events because the two are the same kind of thing to a
@@ -104,7 +124,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="mt-16 bg-primary-dark text-green-50">
+    <footer data-site-footer className="mt-16 bg-primary-dark text-green-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* MEH-721: the "add your business" pitch panel was removed from the
             global footer. The producer CTA stays reachable via the quiet
@@ -135,64 +155,101 @@ export default function Footer() {
             <p className="text-sm leading-relaxed max-w-xs mb-4 text-green-50">
               {t("nav.footer.brand_tagline")}
             </p>
-            <a
-              href="https://www.instagram.com/meha_makor"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
-            >
-              <InstagramLogo size={20} aria-hidden="true" />
-              {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
-              <bdi className="font-body-md">@meha_makor</bdi>
-              {/* MEH-2308: the description rides as sr-only text AFTER the visible
-                  handle instead of an aria-label that replaced it — WCAG 2.5.3
-                  (axe label-content-name-mismatch): the accessible name must
-                  contain the text a voice-control user sees and says. */}
-              <span className="sr-only"> — {t("nav.footer.instagram_aria")}</span>
-            </a>
+            {/* MEH-2417: all four profiles as ONE row of equal icon links, in
+                BRAND_SAME_AS order. Instagram used to sit alone above as icon +
+                "@meha_makor" text with the other three as bare icons below — two
+                styles for one job (Sapir circled it, 27/10). No visible text, so
+                the sr-only label IS the accessible name and the MEH-2308 2.5.3
+                mismatch cannot arise. 44×44 tap targets (MEH-2311); -ms-3 pulls
+                the first glyph back in line with the tagline's start edge. */}
+            <ul className="-ms-3 flex items-center">
+              {[
+                { href: "https://www.instagram.com/meha_makor", Icon: InstagramLogo, label: "nav.footer.instagram_aria" },
+                { href: "https://www.facebook.com/mehamakor", Icon: FacebookLogo, label: "nav.footer.facebook_aria" },
+                { href: "https://www.tiktok.com/@mehamakor", Icon: TiktokLogo, label: "nav.footer.tiktok_aria" },
+                { href: "https://www.youtube.com/@Mehamakor", Icon: YoutubeLogo, label: "nav.footer.youtube_aria" },
+              ].map(({ href, Icon, label }) => (
+                <li key={href}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-11 h-11 text-green-100 hover:text-white transition"
+                  >
+                    <Icon size={20} aria-hidden="true" />
+                    <span className="sr-only">{t(label)}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
               each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
-              brand → h3 sections). MEH-1278: on mobile the two groups sit
-              side-by-side in a 2-col grid (start-aligned, first group "גלו" at
-              the start side) instead of stacking — the stacked layout wasted
-              ~340px of height and read poorly (Baymard: mobile footers rely on
-              scannable start-aligned lists). Desktop (md:) reverts to the
-              original flex-col stack inside the narrow nav column. */}
+              brand → h3 sections). MEH-1278 put the two groups side-by-side on
+              mobile; MEH-2397 replaces that with two stacked, closed accordion
+              rows (the open 2-col grid still cost ~340px on every page and the
+              footer outgrew the content on /login). Desktop (md:) is the
+              original flex-col stack with both lists open. */}
           <nav
             aria-label={t("nav.footer.nav_aria")}
-            className="grid grid-cols-2 gap-6 md:flex md:flex-col"
+            className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:divide-y-0 md:border-0 md:gap-6"
           >
             {[
-              { heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
-              { heading: t("nav.footer.group_business_heading"), links: businessLinks },
-            ].map((group) => (
-              <div key={group.heading}>
-                {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
-                    uppercase, and letter-spacing harms RTL legibility.
-                    MEH-1281: 11px → 13px (text-[13px] utility, matching the
-                    MEH-1103 nav-link treatment — no inline font sizing) +
-                    font-semibold so the group heading outweighs its links. */}
-                <h3 className="mb-3 text-[13px] font-semibold text-green-100">
-                  {group.heading}
-                </h3>
-                <ul className="flex flex-col gap-2">
-                  {group.links.map((link) => (
-                    <li key={link.href + link.label}>
-                      {/* MEH-1103: inline fontSize → utility class (13px unchanged)
-                          — interactive text carries no inline font sizing. */}
-                      <Link
-                        href={link.href}
-                        className="text-[13px] text-green-100 hover:text-white transition"
+              { id: "footer-group-discover", heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
+              { id: "footer-group-business", heading: t("nav.footer.group_business_heading"), links: businessLinks },
+            ].map((group) => {
+              const open = openGroup === group.id;
+              return (
+                <div key={group.id}>
+                  {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
+                      uppercase, and letter-spacing harms RTL legibility.
+                      MEH-1281: 13px + font-semibold so the group heading outweighs
+                      its links. MEH-2397: the heading is a 44px accordion button on
+                      mobile (Baymard: mobile footers fold link groups; the ~340px
+                      of open lists was the largest block on every page). From md:
+                      up (matchMedia) the heading is plain text — no button, no
+                      caret, nothing in the tab order. */}
+                  <h3 className="text-[13px] font-semibold text-green-100 md:mb-3">
+                    {isDesktop ? (
+                      group.heading
+                    ) : (
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={group.id}
+                        onClick={() => setOpenGroup(open ? null : group.id)}
+                        className="flex w-full min-h-[44px] items-center justify-between gap-2 text-start md:min-h-0"
                       >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                        {group.heading}
+                        <CaretDown
+                          size={16}
+                          aria-hidden="true"
+                          className={`shrink-0 transition-transform md:hidden ${open ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+                  </h3>
+                  <ul
+                    id={group.id}
+                    className={`${open ? "flex" : "hidden"} md:flex flex-col gap-3 pb-4 md:gap-2 md:pb-0`}
+                  >
+                    {group.links.map((link) => (
+                      <li key={link.href + link.label}>
+                        {/* MEH-1103: inline fontSize → utility class (13px unchanged)
+                            — interactive text carries no inline font sizing. */}
+                        <Link
+                          href={link.href}
+                          className="text-[13px] text-green-100 hover:text-white transition"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </nav>
 
           {/* Column 3 — Newsletter */}
@@ -278,7 +335,9 @@ export default function Footer() {
           <p className="text-green-100" style={{ fontSize: "11px" }}>
             © {new Date().getFullYear()} {t("footer.copyright")}
           </p>
-          <ul className="flex items-center gap-4" data-testid="footer-utility-links">
+          {/* MEH-2417: wraps (and centres) at 375 instead of running five links
+              edge to edge under the floating back-to-top button. */}
+          <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2" data-testid="footer-utility-links">
             {[
               { href: "/login", label: t("nav.footer.login") },
               { href: "/terms", label: t("nav.footer.terms") },

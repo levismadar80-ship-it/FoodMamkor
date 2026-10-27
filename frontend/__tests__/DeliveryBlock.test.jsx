@@ -143,6 +143,31 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
   });
 
+  it("MEH-2438: a pickup-only business gets no 'arranged delivery' line", () => {
+    // The section mounts for pickup_points alone (ProducerSections.jsx), so the
+    // no-areas fallback must not promise delivery to a business that has none.
+    const { rerender } = render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={true}
+        producer={{ ...producer, offers_delivery: false }}
+      />,
+    );
+    expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
+    expect(screen.queryByText("בתיאום מראש")).not.toBeInTheDocument();
+    // Control: a business that DOES deliver, with no cities listed, keeps it.
+    rerender(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={true}
+        producer={{ ...producer, offers_delivery: true }}
+      />,
+    );
+    expect(screen.getByText("בתיאום מראש")).toBeInTheDocument();
+  });
+
   it("shows the plain nationwide badge when there are no exclusions", () => {
     render(
       <DeliveryBlock nationwide={true} excluded={[]} areas={[]} pickup={false} producer={producer} />,

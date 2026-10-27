@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 // MEH-731: locale-stripping usePathname so isActive() matches the
 // non-prefixed NAV_HREFS ("/admin", …) under next-intl [locale] routing.
@@ -10,29 +10,23 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "@/i18n/navigation";
 import Link from "next/link";
 import {
+  CaretDown,
   Gauge,
+  Question,
   Storefront,
   Users,
   Note,
-  Warning,
   ChartLineUp,
   GearSix,
-  Sparkle,
   Star,
-  Lifebuoy,
   Megaphone,
-  Seal,
-  Tag,
-  ChatCircleSlash,
-  Bread,
-  Package,
   Lock,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import api from "@/lib/api";
-import AdminDesktopOnlyNotice from "./AdminDesktopOnlyNotice";
+import { QUEUES, queueCount, visibleQueues } from "./queues";
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -43,93 +37,52 @@ import AdminDesktopOnlyNotice from "./AdminDesktopOnlyNotice";
  * without changing the consumer aesthetic.
  */
 
-// MEH-1016: the flat 15-item nav grew past the 5–7 top-level limit and read
-// as an undifferentiated wall. Group it into 5 labeled sections (Shopify
-// Admin pattern). Labels come from admin.layout.nav_sections.*. hrefs, keys,
-// icons, badge wiring, and isActive() are all unchanged — this is markup +
-// i18n only. The desktop sidebar renders the labels; the mobile horizontal
-// nav reuses the flattened NAV_HREFS (derived below), so it now follows the
-// same section order as the sidebar. That reorder is deliberate and benign —
-// it's a horizontal scroll with no fixed tab-order dependency, and keeping a
-// single source of truth (NAV_SECTIONS) avoids two nav lists drifting apart.
-// Same items, hrefs, badges, and active state as before.
+// MEH-1016 grouped the flat 15-item nav into 5 labeled sections. MEH-2359
+// (Sapir, 26/10: "the admin's job before launch is approving businesses;
+// everything else is a burden") cuts it to what the job needs:
+//
+//   approvals — always: the home («מה מחכה לטיפול») and the businesses table,
+//               both carrying the pending-approval count.
+//   queues    — the secondary moderation queues (admin/queues.js, ONE source
+//               shared with the home page). A queue is listed only while it
+//               has items; reports stay at 0 (safety signal, MEH-217 card).
+//   more      — management screens with no queue semantics, collapsed by
+//               default (Shopify-admin pattern: a collapsible secondary group).
+//
+// Dropped from the nav, NOT deleted: /admin/group-buys (0 group buys in
+// production, the card's own tooltip said «לא פעיל כרגע»). /admin/help is the
+// last item of «עוד» — one place, so the phone strip (which flattens the
+// sections) reaches it too. Every route still answers by URL.
 const NAV_SECTIONS = [
   {
-    key: "overview",
+    key: "approvals",
     items: [
-      { href: "/admin", key: "dashboard", Icon: Gauge },
-      { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
+      { href: "/admin", key: "dashboard", Icon: Gauge, stat: "pending_producers" },
+      { href: "/admin/producers", key: "producers", Icon: Storefront, stat: "pending_producers" },
     ],
   },
+  { key: "queues", items: QUEUES },
   {
-    key: "core",
+    key: "more",
+    collapsible: true,
     items: [
-      { href: "/admin/producers", key: "producers", Icon: Storefront },
-      { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/users", key: "users", Icon: Users },
-      // MEH-1021: group-buys page existed but was orphaned (reachable only
-      // via a dashboard stat card). Surface it in the sidebar.
-      { href: "/admin/group-buys", key: "group_buys", Icon: Package },
-    ],
-  },
-  {
-    key: "content",
-    items: [
-      { href: "/admin/experiences", key: "experiences", Icon: Sparkle },
-      // MEH-997: recipes moderation queue — the admin UI chunk the recipes
-      // epic (MEH-587→591) shipped without.
-      { href: "/admin/recipes", key: "recipes", Icon: Bread },
       { href: "/admin/content", key: "content", Icon: Note },
+      { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/reviews", key: "reviews", Icon: Star },
-    ],
-  },
-  {
-    key: "queues",
-    items: [
-      { href: "/admin/kashrut", key: "kashrut", Icon: Seal },
-      { href: "/admin/reports", key: "reports", Icon: Warning },
-      { href: "/admin/category-requests", key: "category_requests", Icon: Tag },
-      // MEH-1872: business-name change requests — the moderation queue for the
-      // only path that moves producers.name.
-      { href: "/admin/name-change-requests", key: "name_change_requests", Icon: Tag },
-      // MEH-771 Chunk C — admin view of undelivered outbound WhatsApp.
-      { href: "/admin/whatsapp-failures", key: "whatsapp_failures", Icon: ChatCircleSlash },
-    ],
-  },
-  {
-    key: "system",
-    items: [
+      { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
       { href: "/admin/settings", key: "settings", Icon: GearSix },
-      { href: "/admin/help", key: "help", Icon: Lifebuoy },
+      { href: "/admin/help", key: "help", Icon: Question },
     ],
   },
 ];
 
-// Flattened list for the mobile horizontal nav (order follows the sections).
-const NAV_HREFS = NAV_SECTIONS.flatMap((s) => s.items);
-
-/**
- * MEH-2070 (A-narrow) — the admin screens that are RESPONSIVE, i.e. the ones a
- * phone is expected to complete work on. Everything else under /admin renders
- * the desktop-only banner above its existing content.
- *
- * Only the approvals queue is listed, and that is the decision rather than an
- * accident of effort: manual approval is a LOCK with no automatic fallback, so
- * a solo operator has to be able to clear it from a phone. Moderation,
- * settings and outreach are not urgent-on-the-move.
- *
- * Prefix match, so /admin/producers/<id>/edit — the single-business screen the
- * approve/reject decision is actually made on — is included. `/admin` itself is
- * NOT: the dashboard is a desktop overview, and leaving it out is what makes
- * the banner visible on the screen an admin lands on first.
- */
-const MOBILE_READY_PREFIXES = ["/admin/producers"];
-
-export function isMobileReadyAdminPath(pathname) {
-  return MOBILE_READY_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p + "/"),
-  );
-}
+// MEH-2070 (A-narrow) once marked every /admin screen except the approvals
+// queue as desktop-only, with a banner («המסך הזה זמין במחשב»). MEH-2426
+// removed both: every admin table is now one card per row below md
+// (globals.css .table-stack) and every /admin screen was measured at 375 with
+// no control off-screen, so the banner had become untrue — and it was the
+// first thing an admin saw above a queue she could not operate.
 
 export default function AdminLayout({ children }) {
   const t = useTranslations("admin");
@@ -137,14 +90,13 @@ export default function AdminLayout({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  // feature/producer-analytics: pending moderation badge on the sidebar —
-  // sums pending producers + open reports + flagged home products +
-  // pending experiences + pending recipes (MEH-997) + pending kashrut.
-  // Fetched from /admin/dashboard, which the admin
-  // home page already calls — but we call it here too so the badge shows
-  // on every /admin/* subpath. Cheap: the endpoint is fast.
-  const [pendingModCount, setPendingModCount] = useState(null);
-  const [pendingKashrutCount, setPendingKashrutCount] = useState(null);
+  // Per-queue counts for the sidebar badges + the queue filter, from
+  // /admin/dashboard (the home page calls it too; the endpoint is fast and
+  // the badge has to show on every /admin/* subpath). MEH-2359: the whole
+  // `stats` object is kept — one number per queue (admin/queues.js), not the
+  // old aggregate that summed six queues (incl. home_products, MEH-796) into
+  // a single badge that said nothing about WHERE to go.
+  const [stats, setStats] = useState(null);
   // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
   const [countsError, setCountsError] = useState(false);
 
@@ -168,20 +120,35 @@ export default function AdminLayout({ children }) {
     api
       .get("/admin/dashboard")
       .then((r) => {
-        setPendingModCount(r.data?.stats?.pending_moderation_count ?? 0);
-        setPendingKashrutCount(r.data?.stats?.pending_kashrut_requests ?? 0);
+        setStats(r.data?.stats ?? null);
         setCountsError(false);
       })
       .catch(() => {
-        // MEH-2096: nulling both counts hid the badge, which is the SAME render
+        // MEH-2096: nulling the counts hid the badge, which is the SAME render
         // as a genuine zero — so a dead dashboard endpoint told the admin the
         // approval queue was clear. The counts stay null (no fabricated number)
-        // and `countsError` carries the distinction to the badge instead.
-        setPendingModCount(null);
-        setPendingKashrutCount(null);
+        // and `countsError` carries the distinction to the badge instead; the
+        // queue filter shows EVERY queue while counts are unknown (queues.js).
+        setStats(null);
         setCountsError(true);
       });
   }, [user, pathname]);
+
+  // MEH-2426: the phone nav strip is ~1700px wide and always opened at its
+  // start, so on a queue further along (חוויות, מתכונים) the highlighted tab
+  // sat off-screen or half-cut. Bring the current tab into view — by scrolling
+  // the STRIP only (scrollIntoView would also scroll the page vertically).
+  // Re-runs when the counts land, because they decide which queues exist.
+  const stripRef = useRef(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const current = strip?.querySelector('[aria-current="page"]');
+    if (!strip || !current) return;
+    const s = strip.getBoundingClientRect();
+    const c = current.getBoundingClientRect();
+    if (c.left >= s.left && c.right <= s.right) return;
+    strip.scrollBy({ left: c.left - s.left - (s.width - c.width) / 2 });
+  }, [pathname, stats, countsError, user]);
 
   // 403 — rendered in place. The two admin pages that repeat this guard
   // (producers/new/page.js:16, producers/[id]/edit/page.js:20) never mount,
@@ -213,23 +180,62 @@ export default function AdminLayout({ children }) {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
-  // MEH-1701: ONE owner for the badge decision, consumed by BOTH navs — the
-  // desktop sidebar and the mobile horizontal nav previously diverged here
-  // (badge desktop-only), the MEH-1698 viewport-parity class in the other
-  // direction. Same derivation idea as NAV_HREFS above: extend the shared
-  // source, don't grow a parallel one. Returns the count to show, or null.
-  // MEH-2096: this used to end at "a failed fetch renders no badge —
-  // indistinguishable from a real 0". That indistinguishability was the bug:
-  // on the one queue with no automatic fallback, "no badge" reads as "nothing
-  // waiting". A failed fetch now returns the UNKNOWN sentinel so the badge can
-  // say "I don't know" instead of "zero". A real 0 still renders no badge.
-  const BADGE_HREFS = ["/admin", "/admin/kashrut"];
+  // MEH-1701: ONE owner for the badge decision, consumed by BOTH navs (desktop
+  // sidebar + mobile strip). MEH-2096: a failed fetch returns the UNKNOWN
+  // sentinel on the approvals items so the badge says "I don't know" instead of
+  // "zero" on the one queue with no automatic fallback. A real 0 renders no
+  // badge. MEH-2359: every item declares its own `stat` key; queues carry the
+  // count that decides whether they are listed at all.
   const COUNT_UNKNOWN = "!";
-  const badgeCountFor = (href) => {
-    if (countsError && BADGE_HREFS.includes(href)) return COUNT_UNKNOWN;
-    if (href === "/admin" && pendingModCount > 0) return pendingModCount;
-    if (href === "/admin/kashrut" && pendingKashrutCount > 0) return pendingKashrutCount;
-    return null;
+  const badgeCountFor = (item) => {
+    if (!item.stat) return null;
+    if (countsError) return item.stat === "pending_producers" ? COUNT_UNKNOWN : null;
+    const n = queueCount(stats, item);
+    return n !== null && n > 0 ? n : null;
+  };
+  const itemsOf = (section) =>
+    section.key === "queues" ? visibleQueues(stats, countsError, isActive) : section.items;
+  // Flattened list for the mobile horizontal strip (order follows the sections).
+  const navHrefs = NAV_SECTIONS.flatMap(itemsOf);
+
+  const badgeProps = (badgeCount) => ({
+    "aria-label":
+      badgeCount === COUNT_UNKNOWN
+        ? t("common.error_loading")
+        : t("common.items_pending_label", { count: badgeCount }),
+    title:
+      badgeCount === COUNT_UNKNOWN
+        ? t("common.error_loading")
+        : t("common.items_pending_title", { count: badgeCount }),
+  });
+
+  const renderSidebarItem = (n) => {
+    const active = isActive(n.href);
+    const Icon = n.Icon;
+    const badgeCount = badgeCountFor(n);
+    return (
+      <Link
+        key={n.href}
+        href={n.href}
+        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-sm transition ${
+          active
+            ? "bg-primary text-white"
+            : "text-green-50/70 hover:bg-white/5 hover:text-white"
+        }`}
+        aria-current={active ? "page" : undefined}
+      >
+        <Icon size={18} weight={active ? "fill" : "regular"} />
+        <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
+        {badgeCount !== null && (
+          <span
+            className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
+            {...badgeProps(badgeCount)}
+          >
+            {badgeCount}
+          </span>
+        )}
+      </Link>
+    );
   };
 
   return (
@@ -241,53 +247,44 @@ export default function AdminLayout({ children }) {
           <p className="text-green-50/60 text-xs mt-1">{user.name}</p>
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.key} className="space-y-1 pt-4 first:pt-0">
+          {NAV_SECTIONS.map((section) => {
+            const items = itemsOf(section);
+            const label = (
               <p className="text-xs text-white/50 px-3 pb-1">
                 {t(`layout.nav_sections.${section.key}`)}
               </p>
-              {section.items.map((n) => {
-                const active = isActive(n.href);
-                const Icon = n.Icon;
-                // MEH-1701: decision moved to badgeCountFor (shared with the
-                // mobile nav); rendering here is unchanged.
-                const badgeCount = badgeCountFor(n.href);
-                const showBadge = badgeCount !== null;
-                return (
-                  <Link
-                    key={n.href}
-                    href={n.href}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-sm transition ${
-                      active
-                        ? "bg-primary text-white"
-                        : "text-green-50/70 hover:bg-white/5 hover:text-white"
-                    }`}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    <Icon size={18} weight={active ? "fill" : "regular"} />
-                    <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
-                    {showBadge && (
-                      <span
-                        className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
-                        aria-label={
-                          badgeCount === COUNT_UNKNOWN
-                            ? t("common.error_loading")
-                            : t("common.items_pending_label", { count: badgeCount })
-                        }
-                        title={
-                          badgeCount === COUNT_UNKNOWN
-                            ? t("common.error_loading")
-                            : t("common.items_pending_title", { count: badgeCount })
-                        }
-                      >
-                        {badgeCount}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+            );
+            // «עוד» — collapsed by default; the items stay in the DOM (a
+            // <details> keeps its children mounted), so deep links and the
+            // MEH-217 nav-presence spec are unaffected. It opens itself when
+            // the current page is one of its items (a deep link into
+            // /admin/settings must show where you are); otherwise the
+            // open/closed state is per page load, deliberately: nothing to
+            // persist.
+            if (section.collapsible) {
+              const containsActive = items.some((i) => isActive(i.href));
+              return (
+                <details
+                  key={section.key}
+                  className="pt-4 group"
+                  data-testid={`admin-nav-${section.key}`}
+                  open={containsActive || undefined}
+                >
+                  <summary className="flex items-center gap-1 text-xs text-white/50 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
+                    <span>{t(`layout.nav_sections.${section.key}`)}</span>
+                    <CaretDown size={12} className="transition group-open:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="space-y-1">{items.map(renderSidebarItem)}</div>
+                </details>
+              );
+            }
+            return (
+              <div key={section.key} className="space-y-1 pt-4 first:pt-0">
+                {label}
+                {items.map(renderSidebarItem)}
+              </div>
+            );
+          })}
         </nav>
         <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50">
           <Link href="/" className="hover:text-white transition">
@@ -297,15 +294,15 @@ export default function AdminLayout({ children }) {
       </aside>
 
       {/* Mobile: horizontal scrollable nav */}
-      <div className="md:hidden w-full bg-primary-dark sticky top-16 z-40 overflow-x-auto">
+      <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-16 z-40 overflow-x-auto">
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
-          {NAV_HREFS.map((n) => {
+          {navHrefs.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
             // MEH-1701: the same badge the desktop sidebar shows — an admin
             // on a phone could not see anywhere in the nav that a queue is
             // waiting. Same decision source (badgeCountFor), smaller pill.
-            const badgeCount = badgeCountFor(n.href);
+            const badgeCount = badgeCountFor(n);
             return (
               <Link
                 key={n.href}
@@ -313,22 +310,14 @@ export default function AdminLayout({ children }) {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs transition ${
                   active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
+                aria-current={active ? "page" : undefined}
               >
                 <Icon size={14} />
                 {t(`layout.nav.${n.key}`)}
                 {badgeCount !== null && (
                   <span
                     className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
-                    aria-label={
-                      badgeCount === COUNT_UNKNOWN
-                        ? t("common.error_loading")
-                        : t("common.items_pending_label", { count: badgeCount })
-                    }
-                    title={
-                      badgeCount === COUNT_UNKNOWN
-                        ? t("common.error_loading")
-                        : t("common.items_pending_title", { count: badgeCount })
-                    }
+                    {...badgeProps(badgeCount)}
                   >
                     {badgeCount}
                   </span>
@@ -341,7 +330,6 @@ export default function AdminLayout({ children }) {
 
       {/* Content — offset by sidebar width on desktop */}
       <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
-        {!isMobileReadyAdminPath(pathname) && <AdminDesktopOnlyNotice />}
         {children}
       </main>
     </div>

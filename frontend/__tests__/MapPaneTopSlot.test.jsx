@@ -47,7 +47,6 @@ const base = {
   onMapCanvasClick: () => {},
   registerApi: () => {},
   mapRef: { current: null },
-  visitedIds: new Set(),
   showSecondaryLayer: false,
   onToggleSecondaryLayer: () => {},
   focusedProducerId: null,

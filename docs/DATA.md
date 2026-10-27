@@ -29,7 +29,7 @@
 | 5 | `products` | Producer's catalog items | `Product` |
 | 6 | `delivery_areas` | Cities a producer delivers to | `DeliveryArea` |
 | 7 | `favorites` | User bookmarks on a producer | `Favorite` |
-| 8 | `producer_followers` | Notification subscriptions per producer | `ProducerFollower` |
+| 8 | ~~`producer_followers`~~ | Dropped in MEH-2392 (migration `e5b2d8f4a913`); interest is a favorite | — |
 | 9 | `producer_reviews` | Public star+text reviews (one per user per producer) | `ProducerReview` |
 | 10 | `home_products` | "מהמטבח של השכן" — community food listings | `HomeProduct` |
 | 11 | `home_product_whatsapp_clicks` | Track when a buyer taps WhatsApp (for 24h rating prompt) | `HomeProductWhatsAppClick` |
@@ -108,7 +108,7 @@
 
 > **MEH-2286 (2026-10-21):** `direct_outreach` («מהמקור פנו אליי ישירות») added to `REFERRAL_SOURCE_KEYS` — 9 keys. Code-side allowlist only; no migration.
 
-> **MEH-1818 (2026-08-02):** day-1 pending-nudge email. `producers.email_pending_nudge_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `d3b7f1a92c64`) records when a business still awaiting approval was sent the one-time "here is what is missing" email. Mirrors the MEH-539 `email_followup_*` tracking columns exactly — `nullable=True`, **no `server_default`, NO backfill** (ADR-007 Expand-only; a backfill would retro-suppress the nudge for the exact pending businesses the feature exists to reach). No new index: the candidate query filters `created_at`, already covered by `idx_producers_created_at`. **Not exposed on any schema** — public, owner, and admin serializers all omit it; the sole consumer is `app/services/pending_nudge.py:send_pending_nudges`, invoked from the daily 10:00 UTC scheduler tick. Candidate predicate: `status IN ('draft','pending') AND created_at <= now()-24h AND email_pending_nudge_sent_at IS NULL` (MEH-2100 added `draft`; MEH-2124 removed `pending_whatsapp`) — status membership is an explicit tuple, so a status value added later is excluded by default (fail-closed, same reasoning as the MEH-1587 approved-only gate). **The stamp is written even when nothing was missing and no email was sent** (a complete-but-unapproved business is waiting on admin review, not on itself): that is what removes it from the candidate set permanently and holds the send to exactly one email per producer.
+> **MEH-1818 (2026-08-02):** day-1 pending-nudge email. `producers.email_pending_nudge_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `d3b7f1a92c64`) records when a business still awaiting approval was sent the one-time "here is what is missing" email. Mirrors the MEH-539 `email_followup_*` tracking columns exactly — `nullable=True`, **no `server_default`, NO backfill** (ADR-007 Expand-only; a backfill would retro-suppress the nudge for the exact pending businesses the feature exists to reach). No new index: the candidate query filters `created_at`, already covered by `idx_producers_created_at`. **Not exposed on any schema** — public, owner, and admin serializers all omit it; the sole consumer is `app/services/pending_nudge.py:send_pending_nudges`, invoked from the daily 10:00 UTC scheduler tick. Candidate predicate: `status IN ('draft','pending') AND created_at <= now()-24h AND email_pending_nudge_sent_at IS NULL`; the day-marks then count from `max(created_at, declared_at)` (MEH-2340), so an admin draft its owner claimed by link starts the sequence at the claim, not at the admin's creation (MEH-2100 added `draft`; MEH-2124 removed `pending_whatsapp`) — status membership is an explicit tuple, so a status value added later is excluded by default (fail-closed, same reasoning as the MEH-1587 approved-only gate). **The stamp is written even when nothing was missing and no email was sent** (a complete-but-unapproved business is waiting on admin review, not on itself): that is what removes it from the candidate set permanently and holds the send to exactly one email per producer.
 >
 > **MEH-2100 (2026-08-16):** draft → submit-for-review state machine. `producers.submitted_for_review_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `e2a7c9d41b06`) records the instant the owner pressed "שליחה לבדיקה" and the row moved `draft` → `pending` — the point from which the 3-business-day review SLA is counted, replacing `created_at` in that role. **No `server_default`, NO backfill** (ADR-007 Expand-only): NULL is honest and permanent for two populations — a producer still in `draft`, and any row seeded before this revision (staging fixtures; production had no businesses, Sapir 16/08). Readers needing a submission instant use `submitted_for_review_at or created_at`, which is what makes the absent backfill correct rather than merely deferred. No new index — nothing filters or sorts on it. The paired `status` value `"draft"` needs no migration at all: `Producer.status` is a free `String(20)` with no enum and no DB CHECK, so a new value is data, not schema. **Not exposed on any schema** — public (`ProducerListOut`), owner (`ProducerOwnerOut`) and admin (`ProducerAdminOut`) serializers all omit it, deliberately: the dashboard banner and the admin queue both key on `status`, so nothing renders a submission instant and adding a field no surface reads would be dead API. Its only writer is `POST /producers/me/submit-for-review` (MEH-2100 PR2); it has **no reader yet**, and the `submitted_for_review_at or created_at` contract above is the rule for the first one that appears. Exposing it (e.g. a "submitted N days ago" column in the admin queue) is a deliberate follow-up, not an oversight.
 >
@@ -286,18 +286,17 @@ delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
   -- the producer-level pair above (bad payload → clean 422, not a 500).
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
-producer_followers (
-  id uuid PK, user_id FK, producer_id FK,
-  notify_new_products bool, notify_back_in_stock bool,
-  created_at,
-  UNIQUE(user_id, producer_id)
-)
+-- producer_followers (MEH-2392) and referral_clicks (MEH-2393): dropped in
+-- e5b2d8f4a913. users.referral_code: unwritten since #3690, excluded from the
+-- User mapper, dropped in MEH-2393 chunk 3.
 
 producer_reviews (
   id uuid PK, producer_id FK, user_id FK,
   stars int (1-5), title, body,
   created_at,
   source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
+  ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. NULL = no verdict: rows that predate the column, or a fail-open (MEH-2390 — it was stored as APPROVED and so never re-checked on an unchanged re-save; the review still publishes, its signal is the Sentry report). REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
+  edited_after_hidden_at timestamp NULL,  -- MEH-2381: the author's last change to body or stars while is_hidden. NULL = not edited since the admin last hid/unhid it; PUT /hide (also on an already-hidden row) and /unhide clear it. Admin-only (AdminReviewOut). Revision d7a3f5c1e2b8
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
 ```
@@ -559,6 +558,27 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > `users.email_verified`. (`POST /group-buys` has no dedicated block below;
 > noted here.)
 >
+> **MEH-2436 — the business changes its own group buy's status.**
+> `PATCH /group-buys/{id}/status`, body `{"status": "open"|"funded"|"cancelled"|"fulfilled"}`
+> (anything else → 422). Non-admin callers pass the same gate as
+> `POST /group-buys` (`require_producer` → `require_verified_producer`), then
+> the IDOR check: `gb.producer_id == current_user.producer_id`, else 403.
+> The owner gets exactly `open → cancelled` (before or after the deadline),
+> `funded → fulfilled` and `funded → cancelled` (`OWNER_TRANSITIONS`); any other
+> pair → 409, so cancelled and fulfilled are final for her. The route is
+> owner-only: an admin (not a producer) gets 403 here and keeps the full
+> override on `PATCH /admin/group-buys/{id}/status`, which is unchanged — one
+> checked path per caller, not two to the same state. The check and the write run under a row lock
+> (`with_for_update`, like `/commit`). 30/minute. No schema change.
+>
+> **MEH-2437 — the business's own group buys.** `GET /producers/me/group-buys`
+> (`require_producer`; a producer user with no business → 403 `לא נמצא עסק
+> מקושר`, like `/producers/me/recipes`). Returns `list[GroupBuyOut]` — the same
+> shape as `GET /group-buys` — filtered to `producer_id == current_user.producer_id`,
+> **all four statuses**, newest `created_at` first. 120/minute. Replaces the
+> owner dashboard's four site-wide `GET /group-buys?status=…` calls that were
+> filtered by `producer_id` in the browser. No schema change.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus
@@ -582,6 +602,30 @@ POST   /auth/check-password      public  — MEH-306 stateless policy preview (3
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
+```
+
+### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
+
+An admin prepares an ownerless DRAFT (`POST /admin/producers` with `as_draft: true`) and sends its owner a signed link. She signs in with her OWN account and takes it over. No password is created or sent by Mehamakor.
+
+The page she lands on (MEH-2324) is `frontend/app/[locale]/claim/`. On first load it moves the token into the tab's sessionStorage (`lib/claim-token.js`) and replaces the address with `/claim`, so login/register redirects and analytics never carry it; Sentry and Speed Insights scrub `/claim/<x>`, and Clarity does not load there. The bare link has dots (a JWT), so `middleware.js` lists `/claim/:path*` in its matcher. Without that entry the catch-all skips it and the link 404s.
+
+```
+POST   /admin/producers/{id}/claim-link   admin  — 30/hour. Draft-only (409 otherwise), no owner yet (409 «העמוד הזה כבר שויך לחשבון.»), 404 if missing.
+                                                     → {url: {frontend_url}/claim/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_claim"},
+                                                     14-day TTL, exp essential (auth.py create_producer_claim_token). Stateless — no table, no revocation before exp.
+POST   /producer-claim/preview {token}     public — 30/min. Token in the BODY, never a query string (it is a 14-day bearer credential; a URL reaches access logs + Sentry). → {name, city, short_description, image, category_names} ONLY (no phone/email/address/license; category names drive the grower declaration, as in registration).
+                                                     Any unusable link (bad signature, expired, wrong scope, deleted draft) → the same 404; claimed or not a draft → 409.
+POST   /producer-claim                     auth   — 10/hour. Body {token, declaration_accepted, terms_accepted}. Refuses admin (403) and a user who already has a business (409);
+                                                     both boxes required (422). Locks the producer row FOR UPDATE, re-checks draft + ownerless (409), then sets
+                                                     user.producer_id / role="producer" / is_producer, stamps producers.declared_at + declaration_version and
+                                                     users.terms_accepted_at + terms_version. Status STAYS "draft" — she completes the page and submits via
+                                                     POST /producers/me/submit-for-review, so the manual approval gate is unchanged. Background: WhatsApp welcome,
+                                                     producer welcome email, risk score (same three as a self-registered draft). → {producer_id, status}.
+POST   /admin/producers/{id}/products      admin  — 60/hour. MEH-2326 (chunk D). ProductCreate → ProductOut, 201. ONLY while the draft is claimable
+                                                     (draft + no owner, producer row locked FOR UPDATE); otherwise 409. No new-product alert (a draft is not public). The six diet flags (is_*) are DROPPED — they are the owner's self-declaration, set from her dashboard after the claim (Sapir, 26/10).
+DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 rule; a product of another business → 404. Image destroyed after commit. 204.
+                                                     Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
 
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
@@ -637,11 +681,9 @@ GET    /producers/random                          public — MEH-1288: one rando
 POST   /producers                                 auth   — self-register (writes pending)
 GET    /categories                                public
 
-# Follow / unfollow producers (v1 data layer only, notifications in v2)
-POST   /producers/{producer_id}/follow            auth
-DELETE /producers/{producer_id}/follow            auth
-GET    /producers/{producer_id}/follow-status     auth
-GET    /users/me/following                        auth
+# Follow / unfollow endpoints removed (MEH-2370). Interest is recorded as a
+# favorite (/users/me/favorites); the producer_followers table was dropped in
+# MEH-2392.
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
@@ -827,8 +869,9 @@ host edits after non-approved verdict → status back to 'pending',
 or an admin — public detail views see `address: null`. Mirrors the
 `home_products.street/zip_code` privacy model.
 
-**Model:** Hardcoded to `claude-haiku-4-5-20251001` in
-`experience_moderation.py`. Home products use `settings.anthropic_model`
+**Model:** the fast-tier Haiku, `AI_FAST_MODEL` in `app/config.py`
+(`claude-haiku-5-5` since MEH-2335 — one constant shared by chat, review /
+experience / recipe moderation, producer risk and the bio draft). Home products use `settings.anthropic_model`
 (Opus) because their verdict triggers immediate publication with a
 badge; experiences still require admin approval, so Haiku is enough.
 
@@ -837,7 +880,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 ```
 # Producer moderation
 GET    /admin/producers                        admin — filter: status, search
-POST   /admin/producers                        admin — create auto-approved
+POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
 PUT    /admin/producers/{id}                   admin
 POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
@@ -996,8 +1039,24 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 GET    /producers/{id}/reviews   public — items do NOT carry `source` (admin-only on GET /admin/reviews via AdminReviewOut; dropped from the public payload on #3368 review — whether a reviewer was invited is moderation signal, not consumer data)
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
-DELETE /reviews/{id}             auth  — owner or admin (stranger → 404)
+DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null)
+PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381; optional ?seen=<the ISO value the page showed> → 409 {code: "review_changed"} when a newer edit landed)
+PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, edited_after_hidden_at=NULL, recompute aggregates (MEH-2348)
 ```
+
+Unknown id on hide/unhide → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
+(MEH-2389). `/admin/reviews` reads `code` to drop a row deleted elsewhere.
+
+**MEH-2348 (sticky hide):** only the admin endpoints write `is_hidden`, so a
+hidden review is always admin-hidden. An author edit (POST upsert) keeps it
+hidden, and the author cannot DELETE it (delete + repost would undo the hide).
+Only `PUT /admin/reviews/{id}/unhide` brings it back.
+
+**MEH-2381 (edited after hidden):** an author edit that changes body or stars
+on a hidden row stamps `edited_after_hidden_at` (an unchanged re-save does
+not). The upsert re-reads the row `FOR UPDATE` after the moderation call, so a
+hide/unhide committed while Haiku answered is what it compares against.
 
 **MEH-1001 (existence-leak):** a non-owner-non-admin DELETE returns **404
 "ביקורת לא נמצאה"**, not 403 — review existence isn't leaked. Admin-override
@@ -1158,8 +1217,8 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 ## Apple App Store compliance
 
 - `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
-  home_products, home_product_ratings, producer_reviews, experiences,
-  producer_followers). Events hosted by the user's producer are NOT
+  home_products, home_product_ratings, producer_reviews, experiences).
+  Events hosted by the user's producer are NOT
   cascaded — they belong to the producer record.
 - `POST /auth/apple` — identity token verification + user create/link.
 - `apple_id` column on `users` (unique when set).

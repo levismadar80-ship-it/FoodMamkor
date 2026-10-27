@@ -31,6 +31,10 @@ vi.mock("next/image", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span data-testid="ig" />,
+  FacebookLogo: () => <span />, // MEH-2311
+  TiktokLogo: () => <span />,
+  YoutubeLogo: () => <span />,
+  CaretDown: () => <span />,
   ArrowRight: () => <span data-testid="arrow" />,
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));

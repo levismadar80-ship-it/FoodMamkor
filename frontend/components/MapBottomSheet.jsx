@@ -70,7 +70,7 @@ export function sheetClaimsGesture({ startedInScroller, scrollTopAtStart, dy, sn
 // every gesture and claim (or release) the sheet essentially at random.
 const GESTURE_SLOP_PX = 4;
 
-export default function MapBottomSheet({ snap, onSnapChange, children, count, loading = false }) {
+export default function MapBottomSheet({ snap, onSnapChange, children, count, loading = false, filtered = false, onResetFilters }) {
   const t = useTranslations("map.bottom_sheet");
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
   const tSkeleton = useTranslations("common.skeleton");
@@ -242,6 +242,24 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
             style={{ width: "120px", height: "14px" }}
             aria-hidden="true"
           />
+        ) : count === 0 && filtered && onResetFilters ? (
+          // MEH-2425: zero BECAUSE of filters is not an empty area. "אין בתי
+          // עסק מקומיים באזור" under five active filters read as "nothing
+          // here" (Sapir 27/10); the peek row is the only line a phone shows,
+          // so the cause and the way out both live on it.
+          <div className="flex items-center justify-between gap-3 w-full">
+            <p className="text-sm font-medium text-accent" data-testid="sheet-filtered-zero">
+              {t("count_filtered_zero")}
+            </p>
+            <button
+              type="button"
+              onClick={onResetFilters}
+              data-testid="sheet-reset-filters"
+              className="inline-flex items-center min-h-[44px] -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
+            >
+              {t("reset_filters")}
+            </button>
+          </div>
         ) : (
           <p className="text-sm font-medium text-accent numeric">
             {t("count", { count })}

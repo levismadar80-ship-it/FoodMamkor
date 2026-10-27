@@ -76,7 +76,7 @@ export default function AdminCategoryRequestsPage() {
       {groups.map((group) => (
         <div
           key={group.requested_name}
-          className="bg-white border border-border rounded-[12px] overflow-hidden"
+          className="bg-white border border-border rounded-[12px] overflow-x-auto"
         >
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div>
@@ -92,7 +92,9 @@ export default function AdminCategoryRequestsPage() {
             )}
           </div>
 
-          <table className="w-full text-sm">
+          {/* MEH-2426: one card per row below md (globals.css .table-stack);
+              the wrapper was overflow-hidden and clipped the actions at 375. */}
+          <table className="table-stack w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-fg-muted text-xs">
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.id")}</th>
@@ -105,16 +107,16 @@ export default function AdminCategoryRequestsPage() {
             <tbody>
               {group.requests.map((req) => (
                 <tr key={req.id} className="border-t border-border hover:bg-gray-50/50">
-                  <td className="px-5 py-3 text-xs text-fg-muted font-mono">
+                  <td className="px-5 py-3 text-xs text-fg-muted font-mono" data-label={t("category_requests.columns.id")}>
                     {req.id.slice(0, 8)}…
                   </td>
-                  <td className="px-5 py-3 text-xs text-fg-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("category_requests.columns.business")}>
                     {req.producer_id ? req.producer_id.slice(0, 8) + "…" : "—"}
                   </td>
-                  <td className="px-5 py-3 text-xs text-fg-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("category_requests.columns.date")}>
                     {formatEventDate(req.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3" data-label={t("category_requests.columns.status")}>
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         STATUS_COLORS[req.status] || "bg-gray-100 text-gray-700"
@@ -123,8 +125,8 @@ export default function AdminCategoryRequestsPage() {
                       {STATUS_LABELS[req.status] || req.status}
                     </span>
                   </td>
-                  <td className="px-5 py-3">
-                    <div className="flex gap-2">
+                  <td className="px-5 py-3" data-cell="actions">
+                    <div className="flex flex-wrap gap-2">
                       {req.status === "pending" && (
                         <>
                           <button

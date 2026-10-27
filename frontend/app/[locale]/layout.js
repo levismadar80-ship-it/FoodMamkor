@@ -17,7 +17,7 @@ import CustomCursor from "@/components/CustomCursor";
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
 import { BRAND_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
@@ -110,7 +110,13 @@ const BASE_METADATA = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    // MEH-2427: "default" (opaque). black-translucent drew the iOS clock and
+    // battery OVER the page in the home-screen app, and with no
+    // viewport-fit=cover there is no safe-area inset for the sticky header to
+    // step below them — it scrolled up under the status bar (Sapir, 27/10).
+    // Turning on cover instead would make every env(safe-area-inset-bottom)
+    // in the codebase non-zero at once; that wants a device pass of its own.
+    statusBarStyle: "default",
     title: BRAND_NAME,
   },
   other: {
@@ -137,8 +143,8 @@ export async function generateMetadata({ params }) {
   // their own override. The 17 public routes in PR 3b2 scope all set their
   // own alternates (per-page URLs), which shallow-merge to replace these
   // root values. Routes still relying on this fallback: /, /en (locale
-  // roots), /login, /register, /favorites, /settings, /search,
-  // /reset-password, /verify-email. (MEH-1555 removed /upgrade from this
+  // roots), /login, /register, /favorites, /settings,
+  // /reset-password, /verify-email. (/search is a redirect since MEH-819.) (MEH-1555 removed /upgrade from this
   // list along with the route.) SEO impact on those is minimal — most
   // are auth chrome, not SEO surfaces.
   //
@@ -265,7 +271,7 @@ export default async function LocaleLayout({ children, params }) {
           </AuthProvider>
         </NextIntlClientProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}
-        <SpeedInsights />
+        <SpeedInsightsRedacted />
       </body>
     </html>
   );

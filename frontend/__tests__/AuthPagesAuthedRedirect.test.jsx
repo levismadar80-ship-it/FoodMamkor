@@ -44,6 +44,7 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ children }) => children,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  CaretDown: () => <span />,
   ArrowRight: () => null,
   EnvelopeSimple: () => null,
   Eye: () => null,

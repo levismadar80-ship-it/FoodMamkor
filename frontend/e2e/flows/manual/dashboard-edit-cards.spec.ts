@@ -110,7 +110,7 @@ async function stubEdit(page: Page, opts: EditOpts = {}): Promise<void> {
     r.fulfill({ status: 200, contentType: "application/json",
       body: JSON.stringify({ id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7 }) }));
   await page.route("**/favorites**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
-  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests"]) {
+  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests", "group-buys"]) {
     await page.route(`**/producers/me/${sub}**`, (r) => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   }
   await page.route("**/producers/me/bio/generate", (r) =>
@@ -234,7 +234,7 @@ test.describe("edit tab — unsaved-changes guard", () => {
 test.describe("edit tab — description card", () => {
   const assistOpen = (page: Page) => cardBody(page, "bio").getByRole("button", { name: "צרו תיאור עם AI" });
   const generateBtn = (page: Page) => cardBody(page, "bio").getByRole("button", { name: "צרו תיאור", exact: true });
-  const q1 = (page: Page) => cardBody(page, "bio").getByPlaceholder(/ריבות ביתיות/);
+  const q1 = (page: Page) => cardBody(page, "bio").getByPlaceholder(/ריבות פרי עונה/);
 
   // MT:MEH-1173:1 — one hero field plus the tagline, both labelled with where they appear.
   test("the card leads with one hero field and one tagline field", async ({ page }) => {

@@ -123,7 +123,6 @@ class TestRegisterProducerOAuthAdminLockout:
                 name="מנהלת",
                 google_id=self.OAUTH_SUB,
                 role="admin",
-                referral_code="adm12345",
             )
         )
         db.commit()

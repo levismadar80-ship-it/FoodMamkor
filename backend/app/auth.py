@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.utils.clock import utc_now
 
 # MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
 # default at time of pinning AND all existing user.password_hash rows.
@@ -140,6 +141,59 @@ def decode_review_invite_token(token: str) -> dict[str, Any] | None:
     return claims
 
 
+# MEH-2322 (MEH-2321 chunk A): owner-claim link. An admin prepares a DRAFT
+# business with no owner and sends its owner this link; she signs in with her
+# OWN account and the draft becomes hers. Same HS256 + secret + scope-per-use
+# shape as the review invite above.
+# REUSES: backend/app/auth.py create/decode_review_invite_token — same pattern.
+#
+# Stateless on purpose — no table, no Alembic. Single-use is not tracked here:
+# it is a property of the claim endpoint, which refuses any producer that
+# already has an owner (routers/producer_claim.py). The cost of statelessness
+# is that a link cannot be revoked before `exp`; deleting the draft kills it,
+# and a claim never publishes anything — the business still goes through the
+# manual approval gate before it is live.
+PRODUCER_CLAIM_SCOPE = "producer_claim"
+PRODUCER_CLAIM_TTL_DAYS = 14
+
+
+def create_producer_claim_token(producer_id: UUID) -> tuple[str, datetime]:
+    """Return (token, expires_at). expires_at is returned so the admin UI can
+    show it without decoding the token."""
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=PRODUCER_CLAIM_TTL_DAYS)
+    payload = {
+        "producer_id": str(producer_id),
+        "exp": expire,
+        "iat": int(now.timestamp()),
+        "scope": PRODUCER_CLAIM_SCOPE,
+    }
+    token = jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
+    return token, expire
+
+
+def decode_producer_claim_token(token: str) -> UUID | None:
+    """Validate a claim token and return its producer id, or None on ANY
+    failure (bad signature, expired, missing exp, wrong scope, malformed id).
+    Never raises — callers branch on None.
+    """
+    try:
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+        # `exp` is essential for the same reason as the review invite: this
+        # travels as a shareable link, and one minted without `exp` must not
+        # become a permanent key to someone's business.
+        JWTClaimsRegistry(exp={"essential": True}).validate(token_obj.claims)
+    except (JoseError, ValueError):
+        return None
+    claims = token_obj.claims
+    if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
+        return None
+    try:
+        return UUID(str(claims.get("producer_id")))
+    except (TypeError, ValueError):
+        return None
+
+
 def generate_fingerprint() -> str:
     """MEH-327: 50 random bytes (100 hex chars) per OWASP JWT Cheat
     Sheet "Token Sidejacking". Sent to the browser as an HttpOnly
@@ -168,7 +222,7 @@ _LAST_ACTIVE_THROTTLE = timedelta(minutes=5)
 
 def _maybe_bump_last_active(db: Session, user: User) -> None:
     """Update users.last_active_at if the throttle window has elapsed."""
-    now = datetime.utcnow()
+    now = utc_now()
     last = user.last_active_at
     if last is not None and (now - last) < _LAST_ACTIVE_THROTTLE:
         return

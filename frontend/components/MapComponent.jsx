@@ -74,8 +74,8 @@ const FIT_MAX_ZOOM = 15;
  *   - Border: 2px primary; selected (active) → 3px primary-dark.
  *   - Verified badge: FROZEN (MEH-762 handoff) — white-on-green ✓, bottom-end.
  *   - Rings: hover → subtle primary; active → primary glow; premium → gold.
- *   - Visited: grayscale + opacity 0.7 (dimmed but still legible — MEH-1277;
- *     0.4 on a 36px circle read as disabled/broken rather than "visited").
+ *   - No "visited" state: MEH-2423 removed the MEH-14 / MEH-1277 grey-out of
+ *     recently viewed businesses — on a 36px circle it read as "closed".
  *
  * MEH-936 intentionally OVERRIDES the MEH-763 F2 lock ("category colour/icon
  * only in legend + card dots; markers carry no category colour, so the
@@ -136,17 +136,11 @@ function markerWrapClass(active) {
 
 function createCategoryMarker(
   producer,
-  { active = false, hovered = false, visited = false, approximate = false } = {},
+  { active = false, hovered = false, approximate = false } = {},
 ) {
   // S5 FINAL: all markers are uniform 36px circles; state shows via border +
   // rings, not size (drops the old 28/32/36 size jump).
   const size = 36;
-  const dimmed = visited && !active && !hovered;
-  // MEH-1277: visited = grayscale + 0.7 (was 0.4). Strong transparency on a
-  // small 36px circle read as disabled/broken; desaturation + softer opacity
-  // stays distinct from a fresh pin yet legible (Airbnb "viewed" pattern).
-  const opacity = dimmed ? 0.7 : 1;
-  const grayscale = dimmed ? "filter:grayscale(1);" : "";
   const isPremium = producer.plan === "premium";
   const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
@@ -236,8 +230,6 @@ function createCategoryMarker(
         width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;
         border:${borderWidth}px solid ${borderColor};
         box-shadow:${boxShadow};
-        opacity:${opacity};
-        ${grayscale}
         transition:all 0.18s ease-out;
       ">
         ${inner}
@@ -262,7 +254,7 @@ function createCategoryMarker(
 // the same divIcon raw-HTML exception documented above createCategoryMarker.
 function createSecondaryMarker(
   producer,
-  { active = false, hovered = false, visited = false, approximate = false } = {},
+  { active = false, hovered = false, approximate = false } = {},
 ) {
   // MEH-1569: 26px → 24px. Against the 36px primary pin (createCategoryMarker,
   // :100 — 36px since the MEH-763 S5 uniform-circle pass), 26px read as "almost
@@ -279,9 +271,6 @@ function createSecondaryMarker(
   // requirement, not a preference. This shipped briefly at 22px in PR #2203 and
   // was corrected to 24 the same day.
   const size = 24;
-  const dimmed = visited && !active && !hovered;
-  const opacity = dimmed ? 0.7 : 1;
-  const grayscale = dimmed ? "filter:grayscale(1);" : "";
   const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const borderWidth = active ? 3 : 2;
   // Preserved: dashed border still carries `approximate` on the secondary pin —
@@ -307,8 +296,6 @@ function createSecondaryMarker(
       background:#fff;
       border:${borderWidth}px ${borderStyle} ${categoryColor};
       box-shadow:${boxShadow};
-      opacity:${opacity};
-      ${grayscale}
       display:flex;align-items:center;justify-content:center;
       transition:all 0.18s ease-out;
     ">${glyph}</div>`;
@@ -406,9 +393,6 @@ export default function MapComponent({
   // one wins because the hidden container produces degenerate bounds (detected
   // in MapClient before use).
   mapRef: parentMapRef = null,
-  // MEH-14: IDs of producers the user has already viewed (from
-  // recently_viewed sessionStorage). These markers render dimmed.
-  visitedIds = null,
   // MEH-1412 (MEH-1388 chunk 3): show/hide the pickup + market_stand secondary
   // marker layer. Default true (all points visible); MapClient owns the toggle.
   showSecondaryLayer = true,
@@ -426,10 +410,6 @@ export default function MapComponent({
   focusedProducerId = null,
 }) {
   const t = useTranslations("map.component");
-  const visitedSet =
-    visitedIds instanceof Set
-      ? visitedIds
-      : new Set(Array.isArray(visitedIds) ? visitedIds : []);
   const containerRef = useRef(null); // DOM node for L.map()
   const mapInstanceRef = useRef(null);
   const clusterGroupRef = useRef(null);
@@ -460,17 +440,16 @@ export default function MapComponent({
   const onMapCanvasClickRef = useRef(onMapCanvasClick);
   onMapCanvasClickRef.current = onMapCanvasClick;
 
-  // Refresh a single marker's icon based on active/hover/visited state
+  // Refresh a single marker's icon based on active/hover state
   const refreshMarkerIcon = (id) => {
     const entry = markersRef.current.get(id);
     if (!entry) return;
     // MEH-1412: a producer now owns N markers (one per location) — refresh the
-    // active/hover/visited state on ALL of them so highlighting a card lights
+    // active/hover state on ALL of them so highlighting a card lights
     // every one of that business's pins.
     const state = {
       active: activeIdRef.current === id,
       hovered: hoveredIdRef.current === id,
-      visited: visitedSet.has(id),
     };
     entry.markers.forEach(({ marker, location }) => {
       marker.setIcon(createLocationIcon(entry.producer, location, state));
@@ -598,10 +577,8 @@ export default function MapComponent({
     };
     registerApi(api);
     return () => registerApi(null);
-    // refreshMarkerIcon closes over the latest visitedSet via the
-    // module-scope `visitedSet` variable; intentionally fire-once on
-    // mount so we don't tear down + re-register the parent's API
-    // every time the visited list changes.
+    // refreshMarkerIcon reads only refs; intentionally fire-once on
+    // mount so we don't tear down + re-register the parent's API.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registerApi]);
 
@@ -851,7 +828,6 @@ export default function MapComponent({
             // faded it along with everything else.
             active: activeIdRef.current === p.id,
             hovered: hoveredIdRef.current === p.id,
-            visited: visitedSet.has(p.id),
           }),
           // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
           // sheet in MapClient (onProducerClickRef). ALL of a producer's markers
@@ -923,7 +899,7 @@ export default function MapComponent({
     // northern Israel when test data was sparse), making the map look
     // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producers, visitedIds, showSecondaryLayer]);
+  }, [producers, showSecondaryLayer]);
 
   // MEH-1611: mirror the selected business onto the map.
   //
@@ -937,8 +913,8 @@ export default function MapComponent({
   // a selection and after it is identical by construction.
   useEffect(() => {
     applyFocus(focusedProducerId);
-    // applyFocus is redefined every render and closes over the current
-    // visitedSet; depending on it would re-run this effect on every render for
+    // applyFocus is redefined every render; depending on it would re-run
+    // this effect on every render for
     // no benefit (its own equality check already makes a repeat call a no-op).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedProducerId]);

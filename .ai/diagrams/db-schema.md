@@ -267,15 +267,13 @@ erDiagram
     }
 ```
 
-## 3. Trust & safety — reviews, reports, followers
+## 3. Trust & safety — reviews, reports
 
 ```mermaid
 erDiagram
     users ||--o{ reports : "files"
-    users ||--o{ producer_followers : "follows"
     users ||--o{ producer_reviews : "writes"
     producers ||--o{ reports : "reported"
-    producers ||--o{ producer_followers : "followed_by"
     producers ||--o{ producer_reviews : "reviewed_by"
 
     reports {
@@ -289,15 +287,6 @@ erDiagram
         timestamp created_at
     }
 
-    producer_followers {
-        uuid id PK
-        uuid user_id FK
-        uuid producer_id FK
-        boolean notify_new_products
-        boolean notify_back_in_stock
-        timestamp created_at
-    }
-
     producer_reviews {
         uuid id PK
         uuid producer_id FK
@@ -306,13 +295,16 @@ erDiagram
         text comment
         timestamp created_at
         string source "MEH-1428: click | invite_link — NOT NULL default 'click' (rev 3f9a7c2e5d18)"
+        string ai_moderation_status "MEH-2349: APPROVED | FLAGGED | NULL (no verdict: predates column or fail-open, MEH-2390) — AI verdict on the body at the last write; CHECK ck_producer_reviews_ai_moderation_status (rev c4e81a2f9b6d)"
+        timestamp edited_after_hidden_at "MEH-2381: author changed body/stars while hidden; NULL after hide/unhide (rev d7a3f5c1e2b8)"
     }
 ```
 
 > **MEH-773 integrity constraints (migration `382128b23383` + Chunk B ORM):**
 > `reports` has `UNIQUE(reporter_id, producer_id)` (`uq_report_reporter_producer`)
-> and `referral_clicks` has `UNIQUE(referee_id)` (`uq_referral_one_per_referee`)
-> — one report per (reporter, producer), one referral credit per referee.
+> — one report per (reporter, producer). (`referral_clicks` and its
+> `uq_referral_one_per_referee` were dropped in MEH-2393, and `producer_followers`
+> in MEH-2392 — migration `e5b2d8f4a913`.)
 > `users.producer_id` is `ON DELETE SET NULL`. `phone_otp_tokens` and
 > `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
 > `passive_deletes=True`, so deleting a producer cascades children at the DB

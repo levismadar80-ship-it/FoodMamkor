@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
+import MapKey from "./MapKey";
 
 // MEH-2046: the token set every circular /map control already shares — the
 // desktop GPS circle below and NearMePill.jsx:62 both carry it. Extracted to a
@@ -76,7 +77,6 @@ export default function MapPane({
   onMapCanvasClick,
   registerApi,
   mapRef,
-  visitedIds,
   // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
   showSecondaryLayer,
   onToggleSecondaryLayer,
@@ -93,6 +93,9 @@ export default function MapPane({
   onSearchThisArea,
   visibleProducers,
   allProducers,
+  // MEH-2425: a filter is on, and the reset that clears every filter.
+  filtered = false,
+  onResetFilters,
   // GPS button (desktop)
   gpsLoading,
   onGpsClick,
@@ -118,7 +121,6 @@ export default function MapPane({
         onMapCanvasClick={onMapCanvasClick}
         registerApi={registerApi}
         mapRef={mapRef}
-        visitedIds={visitedIds}
         showSecondaryLayer={showSecondaryLayer}
         focusedProducerId={focusedProducerId}
       />
@@ -177,6 +179,7 @@ export default function MapPane({
         <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
       </button>
 
+
       {/* MEH-2148: ONE owner for the top-centre slot. Both of these used to be
           their own `absolute top-4 z-1000` — the search-area pill centred, the
           pickup notice at the inline start with `max-w-[240px]` — so at 375px
@@ -231,9 +234,23 @@ export default function MapPane({
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
           <Leaf size={44} className="text-primary mx-auto mb-3" aria-hidden="true" />
-          <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.pane.empty.heading")}</h3>
-          <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
-          <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>
+          {/* MEH-2425: this overlay fires when the loaded set is non-empty but
+              nothing survives the client-side filters — i.e. mostly BECAUSE of
+              a filter. "אין עסקים באזור זה עדיין" + "הוסיפו עסק" read as an
+              empty region there; with a filter on it names the filters and
+              offers to clear them instead. */}
+          {filtered && onResetFilters ? (
+            <>
+              <h3 className="font-headline-md text-lg font-bold text-text mb-4" data-testid="map-pane-filtered-empty">{t("map.bottom_sheet.count_filtered_zero")}</h3>
+              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
+            </>
+          ) : (
+            <>
+              <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.pane.empty.heading")}</h3>
+              <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
+              <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>
+            </>
+          )}
         </div>
       )}
 
@@ -322,6 +339,33 @@ export default function MapPane({
           <SquaresFour size={16} weight="bold" className="text-text" />
         </button>
       </div>
+      {/* MEH-2424: "מה רואים במפה?" — the marker key, one more circle in the
+          same control column as the layer toggle above it, so the column grows
+          upward instead of a new corner opening. Same per-shell split as the
+          layer toggle: desktop sits one step (44px + 8px) above it on the
+          physical-right GPS column; mobile rides the sheet edge one step above
+          it. The panel drops in from the top of the pane: full-width on the
+          phone, a 320px card in the desktop control column. Rendered LAST in
+          the pane: the panel shares the map-control z token, so DOM
+          order is what puts it over the other controls it can cover. */}
+      <MapKey
+        testIdSuffix="-desktop"
+        // Physical right keeps it in the GPS circle's column, opposite the
+        // physical-left legend, in every locale (the documented map exception).
+        // rtl-ok: geographic map control
+        buttonClassName="hidden lg:flex absolute bottom-[204px] right-4"
+        panelClassName="hidden lg:block top-4 right-4 w-80" // rtl-ok: panel opens in that same column
+      />
+      <MapKey
+        testIdSuffix="-mobile"
+        buttonStyle={{
+          bottom: `calc(var(--map-sheet-h, 14vh) + ${NEAR_ME_STACK_OFFSET_PX + 56}px)`,
+          transitionProperty: "bottom, background-color",
+          transitionDuration: "var(--map-sheet-anim, 300ms)",
+        }}
+        buttonClassName="lg:hidden flex absolute end-4"
+        panelClassName="lg:hidden top-4 inset-x-4"
+      />
     </div>
   );
 }

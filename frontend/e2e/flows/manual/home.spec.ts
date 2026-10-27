@@ -1366,34 +1366,6 @@ test.describe("manual › discovery seam — dynamic heading + removable tag (ME
     await noHorizontalOverflow(page);
   });
 
-  // MT:1174:1 — the step-0 onboarding tip opens ABOVE the section heading (not
-  //   between the heading and the chips row) after the 2 s delay, on a first
-  //   visit; the CTA advances the tour.
-  test("the onboarding tip opens above the section heading and advances", async ({ page }, info) => {
-    mobileOnly(info, "the row specifies נייד; the tour's placement claim is about the mobile stack");
-    await consent(page);
-    await stubTiles(page);
-    await mockApi(page);
-    await gotoHome(page);
-    const tip = scope(page).getByTestId("onboarding-tip");
-    await expect(tip).toBeVisible({ timeout: 20_000 }); // 2 s delay, use-home-page.js:199
-    await expect(tip).toContainText(PROD.onboarding0.slice(0, 18));
-    const heading = scope(page).getByRole("heading", { level: 2, name: PROD.heading });
-    const [t, h] = [await box(tip), await box(heading)];
-    expect(t.y + t.height, "the tip sits ABOVE the section heading").toBeLessThanOrEqual(h.y + 1);
-    // The CTA ADVANCES the tour rather than ending it, and — measured here —
-    // step 0's bubble does NOT unmount when step 1's appears: two
-    // `onboarding-tip` elements co-exist (HomeProducersGrid.jsx:257 above the
-    // heading, :363 beside the chips). A `toHaveCount(0)` would therefore assert
-    // the tour is broken, and an unscoped `toContainText` throws on strict mode.
-    // Both bubbles are asserted BY THEIR OWN TEXT, and the co-existence is
-    // recorded as an observation in docs/qa/conversion-progress.md — it is a
-    // 5-state question for MEH-1174's owner, not something this chunk decides.
-    await tip.getByRole("button", { name: he.modals.onboarding_tip.cta_default }).click();
-    const tips = scope(page).getByTestId("onboarding-tip");
-    await expect(tips.filter({ hasText: PROD.onboarding1.slice(0, 18) })).toHaveCount(1, FIRST_PAINT);
-    await expect(tips, "step 0 and step 1 are both mounted after the advance").toHaveCount(2);
-  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1797,6 +1769,83 @@ test.describe("manual › category cards — caption strip + hover zoom (MEH-122
     const ratios = await frames.evaluateAll((els) => els.map((el) => getComputedStyle(el as HTMLElement).aspectRatio));
     expect(ratios.length).toBe(CARDS.length);
     for (const r of ratios) expect(r, "every image frame declares an aspect-ratio (zero CLS)").not.toBe("auto");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEH-2412 — on a phone the ten category cards are ONE swipeable row, not a
+// 2-hero + 2×4 stack (~1,400px of scroll before the first business). Desktop
+// keeps the MEH-991 v8 4-column grid with span-2 heroes. The pair discriminates:
+// the phone test is red on the old stack (section far taller, nothing overflows
+// sideways); the desktop test is red if the row leaked past `md:`.
+test.describe("manual › category cards — phone row, desktop grid (MEH-2412)", () => {
+  const grid = (page: Page) => scope(page).getByTestId("home-category-grid");
+  const rail = (page: Page) => scope(page).getByTestId("home-category-rail");
+
+  test("on a phone the cards are one horizontal row with the next card peeking", async ({ page }, info) => {
+    mobileOnly(info, "the row is the phone layout; desktop is covered by the grid test below");
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    await expect(grid(page).getByTestId("home-category-card")).toHaveCount(CARDS.length, FIRST_PAINT);
+    await grid(page).scrollIntoViewIfNeeded();
+    const m = await rail(page).evaluate((el) => {
+      const cards = [...el.querySelectorAll('[data-testid="home-category-card"]')].map((c) =>
+        c.getBoundingClientRect(),
+      );
+      // Rows from offsetTop, NOT the rect: each card enters on a `whileInView`
+      // y-slide, so off-screen cards still carry translateY(40px) and their rects
+      // read as a second "row" that the layout never had (measured under load).
+      const tops = new Set(
+        [...el.children].map((w) => (w as HTMLElement).offsetTop),
+      );
+      const box = el.getBoundingClientRect();
+      const visible = cards.filter((r) => r.right > box.left + 1 && r.left < box.right - 1).length;
+      return { rows: tops.size, scrollW: el.scrollWidth, clientW: el.clientWidth, height: box.height, visible };
+    });
+    expect(m.rows, "all ten cards share one row").toBe(1);
+    expect(m.scrollW, "the row overflows sideways — there is more to swipe to").toBeGreaterThan(m.clientW);
+    expect(m.height, "the row is one card tall, not a 1,400px stack").toBeLessThanOrEqual(320);
+    expect(m.visible, "two whole cards plus a peeking third are on screen").toBeGreaterThanOrEqual(3);
+    // Swiping reaches the tenth card: scroll the rail to its far end (RTL, so
+    // the end is the most negative scrollLeft) and require the last card fully
+    // inside the rail's box.
+    const lastInView = await rail(page).evaluate(async (el) => {
+      el.scrollTo({ left: -el.scrollWidth, behavior: "instant" as ScrollBehavior });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const cards = el.querySelectorAll('[data-testid="home-category-card"]');
+      const last = cards[cards.length - 1].getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      return last.left >= box.left - 1 && last.right <= box.right + 1;
+    });
+    expect(lastInView, "the tenth card is reachable by swiping to the end").toBe(true);
+  });
+
+  test("on desktop the cards stay a 4-column grid with span-2 heroes", async ({ page }, info) => {
+    desktopOnly(info, "the grid is the desktop layout");
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    await expect(grid(page).getByTestId("home-category-card")).toHaveCount(CARDS.length, FIRST_PAINT);
+    await grid(page).scrollIntoViewIfNeeded();
+    const m = await rail(page).evaluate((el) => {
+      const cards = [...el.querySelectorAll('[data-testid="home-category-card"]')].map((c) =>
+        c.getBoundingClientRect(),
+      );
+      return {
+        display: getComputedStyle(el).display,
+        cols: getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        heroW: cards[0].width,
+        smallW: cards[2].width,
+        overflows: el.scrollWidth > el.clientWidth + 1,
+      };
+    });
+    expect(m.display).toBe("grid");
+    expect(m.cols).toBe(4);
+    expect(m.heroW, "a hero spans two columns").toBeGreaterThan(m.smallW * 1.8);
+    expect(m.overflows, "no sideways scroll on desktop").toBe(false);
   });
 });
 

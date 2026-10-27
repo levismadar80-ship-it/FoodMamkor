@@ -40,6 +40,10 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span />,
+  FacebookLogo: () => <span />, // MEH-2311
+  TiktokLogo: () => <span />,
+  YoutubeLogo: () => <span />,
+  CaretDown: () => <span />,
   ArrowRight: () => <span />,
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));
@@ -182,14 +186,25 @@ describe("useExperiencesNavGate — session cache", () => {
   });
 });
 
+// MEH-2369: the Footer now also asks GET /events/upcoming (the events link is
+// data-gated too). These cases answer by URL so the experiences count stays
+// the variable under test, with one upcoming event so /events is present as
+// the neighbour these assertions lean on.
+const byUrl = (experiencesResult) => (url) =>
+  url === "/experiences/count"
+    ? experiencesResult
+    : Promise.resolve({ data: [{ id: "ev-1" }] });
+const countCalls = () => get.mock.calls.filter(([url]) => url === "/experiences/count").length;
+
 describe("Footer — the link itself (MEH-1918)", () => {
   it("renders /experiences in the discover group once the gate opens", async () => {
-    get.mockReturnValue(ok(4));
+    get.mockImplementation(byUrl(ok(4)));
     render(<Footer />);
     await waitFor(() => expect(experiencesLink()).not.toBeNull());
     expect(experiencesLink().textContent).toBe("nav.footer.experiences");
 
     // It joins the READER group, next to /events — not the business column.
+    await waitFor(() => expect(document.querySelector('a[href="/events"]')).not.toBeNull());
     const group = experiencesLink().closest("div");
     const hrefs = [...group.querySelectorAll("a[href]")].map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/events");
@@ -197,20 +212,20 @@ describe("Footer — the link itself (MEH-1918)", () => {
   });
 
   it("is absent below the threshold, while the rest of the footer is intact", async () => {
-    get.mockReturnValue(ok(1));
+    get.mockImplementation(byUrl(ok(1)));
     render(<Footer />);
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(countCalls()).toBe(1));
+    await waitFor(() => expect(document.querySelector('a[href="/events"]')).not.toBeNull());
     expect(experiencesLink()).toBeNull();
     // Not green by rendering nothing: the neighbours are still there.
-    expect(document.querySelector('a[href="/events"]')).not.toBeNull();
     expect(document.querySelector('a[href="/map"]')).not.toBeNull();
   });
 
   it("is absent when the count request fails", async () => {
-    get.mockReturnValue(Promise.reject(new Error("boom")));
+    get.mockImplementation(byUrl(Promise.reject(new Error("boom"))));
     render(<Footer />);
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(countCalls()).toBe(1));
+    await waitFor(() => expect(document.querySelector('a[href="/events"]')).not.toBeNull());
     expect(experiencesLink()).toBeNull();
-    expect(document.querySelector('a[href="/events"]')).not.toBeNull();
   });
 });

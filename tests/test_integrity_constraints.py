@@ -3,7 +3,6 @@
 Covers the constraints/relationships added in Chunk A (migration 382128b23383)
 and the Chunk B handling:
   - uq_report_reporter_producer  → duplicate report returns 409 (not 500)
-  - uq_referral_one_per_referee  → duplicate referral claim stays idempotent 200
   - users.producer_id ON DELETE SET NULL + passive_deletes on the producer
     otp/kashrut relationships → deleting a producer with children + a linked
     user does not 500; children cascade, the user is nullified.
@@ -15,7 +14,7 @@ API tests prove the surfaced behaviour. Mirrors the IntegrityError-recovery
 precedent in app/routers/reviews.py.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -26,9 +25,9 @@ from app.models.models import (
     GroupBuy,
     KashrutBadgeRequest,
     PhoneOtpToken,
-    ReferralClick,
     Report,
 )
+from app.utils.clock import utc_now
 
 
 # ---------- reports: uq_report_reporter_producer ----------
@@ -62,38 +61,6 @@ class TestReportUnique:
         db.rollback()
 
 
-# ---------- referrals: uq_referral_one_per_referee ----------
-class TestReferralUnique:
-    def test_duplicate_referral_claim_idempotent_200(self, client, db):
-        referrer = make_user(db, email="referrer@example.com")
-        referrer.referral_code = "REF12345"
-        db.commit()
-        referee = make_user(db, email="referee@example.com")
-        headers = auth_header(referee)
-        body = {"code": "REF12345"}
-
-        first = client.post("/referral/claim", json=body, headers=headers)
-        assert first.status_code == 200
-        assert first.json()["detail"] == "referral claimed"
-
-        # Idempotent contract: a second claim is a 200 no-op, never 409.
-        second = client.post("/referral/claim", json=body, headers=headers)
-        assert second.status_code == 200
-        assert second.json()["detail"] == "referral already claimed"
-
-    def test_referral_unique_constraint_enforced_at_db(self, db):
-        referrer = make_user(db, email="dbreferrer@example.com")
-        referee = make_user(db, email="dbreferee@example.com")
-        db.add(ReferralClick(referrer_id=referrer.id, referee_id=referee.id))
-        db.commit()
-
-        # Same referee again → violates uq_referral_one_per_referee.
-        db.add(ReferralClick(referrer_id=referrer.id, referee_id=referee.id))
-        with pytest.raises(IntegrityError):
-            db.commit()
-        db.rollback()
-
-
 # ---------- producer delete: passive_deletes + SET NULL ----------
 class TestProducerDeleteIntegrity:
     def test_delete_cascades_otp_and_kashrut_no_500(self, db):
@@ -103,7 +70,7 @@ class TestProducerDeleteIntegrity:
                 producer_id=producer.id,
                 phone="0501234567",
                 code="123456",
-                expires_at=datetime.utcnow() + timedelta(minutes=10),
+                expires_at=utc_now() + timedelta(minutes=10),
             )
         )
         db.add(KashrutBadgeRequest(producer_id=producer.id, badge_code="MEHADRIN"))
@@ -144,7 +111,7 @@ class TestGroupBuyCapacity:
             price_per_unit_group=90,
             min_participants=5,
             max_participants=max_participants,
-            deadline=datetime.utcnow() + timedelta(days=3),
+            deadline=utc_now() + timedelta(days=3),
             city="תל אביב",
             status="open",
         )

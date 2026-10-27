@@ -4,6 +4,101 @@
 
 ## Unreleased
 
+- **‏27/10 14:45 – 15:35 — טבלאות האדמין בנייד (MEH-2426).**
+  - **‏#3678 `e4325890`:** ב-375 הכפתורים בחוויות, בבקשות קטגוריה ובוואטסאפ נחתכו מאחורי `overflow-hidden`, וחמש טבלאות נוספות דרשו גלילה הצידה. ‏`.table-stack` חדש: מתחת ל-md כל שורה כרטיס. צ'יפ ה-AI בחוויות מוצג בעברית ולא `PENDING`. כותרות `text-end` (שמאל ב-RTL) עברו ל-`text-start`. שורות הקטגוריות בעמוד «תוכן» נשברות לשורה שנייה. באנר «זמין במחשב» הוסר, והפס העליון בנייד גולל לטאב הפעיל. ‏18 מסכי אדמין נבדקו ב-375 וב-1440, ו-21 עמודים ציבוריים בייצור: אפס כפתורים מחוץ למסך.
+
+- **‏26/10 20:30 – 27/10 11:30 — סקירת בעיות בכל הפרויקט: עשרה כרטיסים (MEH-2367 עד MEH-2375, ‏MEH-819), תשעה PR-ים מוזגו, ו-/search אוחד לתוך /producers.**
+  - **‏#3627 `a7a4a214` (MEH-2367):** שלושה mockups פנימיים של עיצוב הפסיקו להיות מוגשים מהאתר החי (`public/`).
+  - **‏#3629 `8d870a42` (MEH-2368):** לכל כלל ב-`robots.txt` יש תאום `/en`. טסט קורא את הקובץ ומוודא זוגיות.
+  - **‏#3630 `b867d91c` (MEH-2371):** ה-hook `useFirstVisit` שאף אחד לא קרא לו נמחק; knip נקי.
+  - **‏#3631 `f8ad62d5` (MEH-2369):** ‏/events, ‏/experiences ו-/group-buys מוצעים (ניווט, פוטר, sitemap) רק כשיש בהם תוכן. הפוטר שואל `GET /events/upcoming` דרך `lib/use-events-nav-gate.js`.
+  - **‏#3641 `d3605522` (MEH-2369, המשך):** ה-stub ל-`/api/events/upcoming` בשלושת specs האדמין וב-`parity.spec.ts`, וה-baselines של about / login / register נוצרו מחדש דרך תוויות `vrt-regen:*` ונקראו (שתי viewports). ה-regen רץ שוב על ה-tip שכולל את #3654 ויצא «Baselines unchanged». נמדד: ‏`GET https://mehamakor.co.il/api/events/upcoming` → `200 []`.
+  - **‏#3635 `30f230c6` (MEH-2373):** «חלב גולמי» יצא מהפרומפט של העוזרת, כי האתר לא מציע אותו.
+  - **‏#3637 `2f9c5c4a` (MEH-2375, RED, נסקר על ידי מודל חזק יותר):** שגיאות אדמין לא מהדהדות יותר טקסט גולמי של exception ל-client.
+  - **‏#3638 `d324c3b7` (MEH-2370, RED):** ארבעת endpoints ה«עקיבה» (`producer_follows.py`) הוסרו; עוקבות = מועדפים מאז MEH-1364. הטבלה `producer_followers` נשארת ל-MEH-2392 (post-launch, Expand-Contract).
+  - **‏#3639 `0065c34b` (MEH-2374):** זרימת «הפניית חברה» הוסרה: הדף `/ref/[code]`, הקריאה ב-RegisterClient, ‏`routers/referrals.py`. העמודה `users.referral_code` ו-`referral_clicks` נשארות ל-MEH-2393 (post-launch).
+  - **‏#3645 `409a05e5` (MEH-819):** ‏`/search` נמחק ו-`/search?q=` עונה 308 ל-`/producers?q=` (שלוש צורות: בלי locale, ‏/he, ‏/en). מחקר הדילמה ([Doc](https://claude.ai/artifact/Tu7gHxzzExka7GnmF94hQz)): דף תוצאות אחד, כמו Yelp / Zomato, ולא שני דפים עם אותה שאילתה. ‏`/producers?q=` כבר מחפש גם בשם ובתיאור של מוצרים (`_token_search_filter`, MEH-1664), ולכן מדור המוצרים של /search לא אבד. מפתחות i18n יתומים (`search.*`, ‏`seo.search`) → MEH-2395.
+  - **‏מסמך הממצאים:** [Doc](https://claude.ai/artifact/UoNFH4jifS9U7X5LjFWsMU). ‏3 PR-ים (‏#3645, ‏#3638, ‏#3639) הגיעו לתקרת שלושת הסבבים (MEH-2334); השאריות רשומות בהערות ה-PR.
+  - **‏נמדד:** ‏`CityProfileBridge.test.jsx` נפל פעם אחת ב-vitest על runner איטי (‏396 שניות import) ועבר מקומית 6/6; ‏`05-map-navigation.spec.ts:150` (נייד) עדיין flaky — שני `h1` בדף העסק. ‏`enable_pr_auto_merge` מדווח MERGE גם כש-SQUASH התבקש: ‏#3645 נחת כ-merge commit.
+
+- **‏26/10 22:20 – 27/10 10:30 — דף האדמין צומצם לאישורים (MEH-2359), ושלושת שכבות השעון הישראלי נסגרו: טסטים (MEH-2380, MEH-2382), ‏backend (MEH-2384) ו-frontend (MEH-2383). גם ה-flake של ההתחברות ב-E2E (MEH-2323 C3).**
+  - **‏#3617 `dfbec184` (MEH-2359):** ‏`/admin` = «מה מחכה לטיפול»: עסקים ממתינים + שורה לכל תור שיש בו פריטים. הסייד-בר: אישורים · תורים (רק כשיש ספירה, דיווחים תמיד) · «עוד» מקופל (נפתח כשעומדים בדף שלו). בלי chrome צרכני ב-`/admin`. ‏`/admin` (מדויק) ו-`/admin/producers*` מוכנים לנייד, שאר מסכי האדמין נשארים desktop-only. רשימת תורים אחת ב-`frontend/app/[locale]/admin/queues.js`; ‏`GET /admin/dashboard` מחזיר ספירה לכל תור, כולל `experiences_awaiting_review` / `recipes_awaiting_review` (תור האדמין בלבד, לא תור הבעלים). ‏/security-review: אין ממצאים.
+  - **‏#3636 `571116e4` (MEH-2380):** ה-flake של `test_admin_get_producer_returns_admin_shape` בשבוע שאחרי מעבר השעון: טסט זרע «לפני N ימים» מהשעון של UTC, והקוד סופר ימים ב-Asia/Jerusalem. ‏`israel_days_ago(N)` ב-`tests/conftest.py`; סעיף «Clock-dependent tests seed from the Israel clock» ב-`.claude/rules/testing.md`.
+  - **‏#3640 `277b8bc1` (MEH-2382):** ‏29 זריעות `date.today()` בתשעה קבצי טסט → `israel_today()`. ‏`scripts/checks/test-clock-guard.sh` חדש (warn-only, נולד עם אפס ממצאים, `--self-test`). הוצג נכשל מול העץ שלפני ה-sweep (29 ממצאים).
+  - **‏#3644 `6123fac6` (MEH-2386, chunk 1 של MEH-2384):** ‏`utc_now()` ב-`backend/app/utils/clock.py` מחליף את `datetime.utcnow()` (deprecated מ-Python 3.12) ב-21 קבצים ב-app, כולל ברירות המחדל של העמודות ב-`models.py` (צד Python בלבד, בלי migration). הערך naive-UTC בכוונה, כי העמודות naive.
+  - **‏#3653 `df44b3db` (MEH-2387, chunk 2, HIGH-RISK):** תשע הקריאות ב-`auth.py` וב-`routers/auth.py`. בלי שינוי ב-TTL, scope, token_version או fingerprint. ‏/security-review: אין ממצאים.
+  - **‏#3652 `c2134c5d` (MEH-2388, chunk 3):** ‏28 קבצי טסט + `seed_demo_business.py`. אזהרת ה-deprecation נעלמה מכל הריצה.
+  - **‏#3642 `95d7f36c` (MEH-2383):** ‏`lib/hours.js` ו-`order-status.js` קוראים את השעון הישראלי דרך `israelNowParts` (‏`lib/orderWindow.js`) במקום שני formatters פרטיים. ‏`israel-clock-guard.sh`: ‏4 WARNING → OK. ‏`computeStatus(map, now)` מקבל `now` להזרקה.
+  - **‏#3651 `3ff0dd52` (MEH-2323 C3):** ‏`settledField()` ב-`30-login-journey-c.spec.ts` ממתין לעותק אחד של השדה שגם React מחזיק (`__reactFiber$`), כי בדף streaming יש ~120ms עם שני עותקים. ‏180/180 ירוק אחרי 4/40 אדום. הכרטיס נשאר פתוח (kebab באדמין, `25-role-reachability`).
+  - **‏MEH-2398 (needs-sapir):** ה-backend של staging קורס תחת ריצות E2E מקבילות: ‏QueuePool ‏(10+5) מתמלא, ה-PR-ים מקבלים 499 ו-«ZERO COVERAGE». נמדד ב-Railway ב-26/10 22:50Z. התיקון המומלץ: `concurrency` ב-`e2e.yml` (קובץ של ספיר).
+  - **‏נמדד:** ב-27/10 04:00–04:35Z ה-`E2E gate` היה אדום על כל ה-PR-ים באותו סט: ‏VRT של about/login/register (שני הפרויקטים) + ה-control ב-`admin-producer-form-licence.spec.ts:287`. אותו סט נפל גם על PR שמשנה רק קובץ spec אחד, כך שזה לא של ה-PR-ים. ה-baselines נוצרים מחדש ב-#3641 / ‏#3654. ‏#3640 ו-#3652 הגיעו לתקרת שלושת הסבבים (MEH-2334); השאריות הקוסמטיות רשומות ב-PR-ים.
+
+- **‏26/10 (09:50–21:15) — המשך סידור הידע: קבצי אנשי הקשר יצאו מהריפו, ה-hook מציג את HANDOFF, ‏BRAND.md נסקר, ומשפט המותג של ADR-011 עלה לאתר.**
+  - **‏#3604 `29e11ab3` (MEH-2356):** שני קבצי ה-xlsx בשורש (20 עסקים, 14 שמות אנשי קשר, 5 טלפונים, הערות אדמין) ושני הסקריפטים החד-פעמיים שקראו אותם נמחקו. ‏`.gitignore` חוסם `/*.xlsx`. הקבצים נשארים בהיסטוריה של git, כי ניקוי ההיסטוריה דורש force-push על `staging` ו-`main`.
+  - **‏#3606 `bf464d6b` (MEH-2357, ספיר דרך Claude בכרום):** ה-hook של SessionStart מזריק את הסעיף החדש ביותר של HANDOFF (`awk '/^## /{n++} n==1'`) במקום קטע ה-CHANGELOG ו-`tail -40`.
+  - **‏#3620 `fc045347` (MEH-2358):** ‏BRAND.md נבדק מול ה-ADRs ומול הקוד. תוקנו: ניסוח הרישוי הדו-שכבתי, אייקוני Tier 2 לפי ה-Amendment של ADR-013, טבלת הגליפים (LOCKED v2.1), וההפניה לעותק ב-Drive כארכיון. נמצא שמשפט המותג של ADR-011 לא מוצג בשום מקום באתר.
+  - **‏#3622 `d4b6ec4e` (MEH-2364):** ספיר בחרה ליישם את ADR-011. «מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.» מוצג עכשיו בפוטר, ב-meta של הבית וב-description / OG / Twitter של האתר (`SITE_DESCRIPTION`). המשפט ארוך 57 תווים, כך שה-fallback של clause 1 לא נדרש. ‏`__tests__/adr011-tagline.test.js` קורא את המשפט מתוך קובץ ה-ADR ובודק את כל חמשת המפתחות ואת הקבוע. הטסט נכשל ב-6 מתוך 7 בדיקות מול הנוסח הקודם. שלושת ה-baselines של VRT במובייל (about, login, register) נוצרו מחדש ונקראו. ה-baselines בדסקטופ נשארו בתוך ה-tolerance, ולכן עדיין מציגים את הנוסח הישן.
+  - **‏לא נכלל ב-#3622 (נוסח חדש, צריך אישור לפי כלל 22):** הכותרות `seo.site.title` / `og_title` / `twitter_title`, והתיאורים של /about, /login ו-/map עדיין אומרים «כולם במקום אחד». גם `en.json` ו-`public/manifest.json` לא שונו.
+  - **‏מרכז הסושיאל:** נבנה מחדש בחשבון הזה (artifact `HjnWgZFNi8Qo1TNPn9LXuJ`). הנתונים של הלוח הישן נעולים בחשבון הקודם ולא נגישים מכאן. הייבוא ממתין לייצוא, לפי הפרומפט ב-`prompts/old-account-export-social-hub.md` בתיקיית הפרויקט.
+  - **‏נמדד:** ‏`Adversarial review (calibration)` נפל על #3622 אחרי 3 turns עם `is_error:true` ולא פרסם כלום. הסקירה הראשונה באותו PR כן פורסמה. ‏`NoEmojiInComponents.test.js` נכשל מקומית ב-Node 22 (‏★ מזוהה כאמוג'י) וירוק ב-CI.
+- **‏26/10 (10:40–17:25) — סבב המודרציה: שבעה PR-ים סוגרים את MEH-2348 עד MEH-2354.**
+  - **‏#3612 `a8aa5479` (MEH-2348):** הסתרה של אדמין נשארת. כשהכותב עורך או מוחק ושולח שוב, הביקורת לא חוזרת לאוויר.
+  - **‏#3607 `7d777a41` (MEH-2352):** כל fail-open במודרציה מדווח ל-Sentry ול-structlog דרך `report_fail_open(surface, reason)`, עם תג סיבה. ‏verdict באותיות קטנות מתקבל בכל שלושת המשטחים.
+  - **‏#3608 `29a66f32` (MEH-2351):** structured outputs. ה-JSON של ה-verdict מוגבל ב-schema (`services/moderation_schemas.py`). בדיקה חיה מול ה-API: שלושת ה-schemas מחזירים `end_turn` ו-JSON תקין.
+  - **‏#3609 `4e6e54f0` (MEH-2350):** הטקסט שנשלח נכנס לפרומפט כנתונים בתוך תג עם סיומת אקראית (`wrap_submission`), ולא כחלק מהפרומפט. טסט injection שסוגר את התג מוודא שהתג נסגר פעם אחת בלבד.
+  - **‏#3610 `c4f733ed` (MEH-2353):** פרומפט המתכונים מפסיק לסמן מתכונים קצרים ושלמים.
+  - **‏#3621 `3157fba9` (MEH-2349):** עמודה `ai_moderation_status` (migration ‏`c4e81a2f9b6d`). ביקורת שה-AI סימן מקבלת באדמין את התג «סומן ע״י AI», ויש מסנן «רק ביקורות שסומנו» (נוסח שספיר אישרה). שמירה חוזרת של אותו טקסט שומרת על הסימון.
+  - **‏#3613 `b8d2c57a` (MEH-2354):** ‏`docs/MODERATION.md` נכתב מחדש סביב ארבעת משטחי ה-AI החיים.
+  - **‏RED (‏MEH-2348, ‏MEH-2349):** תוכנית שעברה סקירה של מודל חזק יותר («APPROVE WITH CHANGES»), ואז ביצוע.
+  - **‏נשאר פתוח:** ממצאים מעבר למגבלת 3 הסבבים נמסרו לספיר ב-`/mnt/project-files/moderation/review-leftovers.md`. כרטיסי המשך: MEH-2360 (כפתורי הסתרה באדמין), MEH-2361 (החלטה: מחיקה ופרסום מחדש של ביקורת מוסתרת).
+  - **‏נמדד:** מ-15:44Z עד 21:05Z כל job ב-Actions נכשל תוך 2 שניות (`runner_id: 0`, אפס steps), כי הריפו היה פרטי. ספיר מחליפה את ה-visibility בעצמה, וב-21:05Z החזירה אותו לציבורי. #3621 ו-#3613 מוזגו על שני השערים הנדרשים, שהיו ירוקים לפני החסימה.
+
+- **‏26/10 (10:00–13:30) — קישור ההזמנה לבעלת העסק הושלם: אדמין מכינה טיוטה, בעלת העסק מקבלת אותה בקישור ובחשבון משלה (MEH-2321, 4 chunks).**
+  - **‏#3600 `8186959b` (MEH-2326):** אדמין מוסיפה ומוחקת מוצרים בטיוטה שעוד לא נתבעה.
+  - **‏#3599 `8afd4caa` (MEH-2325):** אפשרות «טיוטה לבעלת העסק» ביצירת עסק, ולוח «קישור הזמנה» בעריכת הטיוטה. אחרי יצירה מוצלחת התשובה נבדקת ב-Zod (`ProducerAdminCreatedSchema`), ותשובה לא צפויה חוזרת לרשימת העסקים.
+  - **‏#3611 `5b339233` (MEH-2324):** הדף `/claim/<token>`, שבעה מצבים, הנוסח שספיר אישרה. הטוקן עובר ל-sessionStorage והכתובת מתחלפת ל-`/claim`. ב-Sentry (שלוש הסביבות) וב-Speed Insights הטוקן מושחר לפי צורת JWT (`eyJ…`), כך ש-stack frames של קבצי הדף נשארים שלמים. Clarity לא נטען, ו-replay לא מוקלט בלשונית שנפתחה מקישור.
+  - **‏נמצא בהרצה מול backend אמיתי ותוקן:** הקישור `/claim/<jwt>` החזיר 404, כי ה-matcher של ה-middleware מדלג על נתיבים עם נקודה. נוספו `"/claim/:path*"` ו-`"/:locale(he|en)/claim/:path*"`, עם טסט (`unstable_doesMiddlewareMatch`). ה-probe ‏`qa-meh2324-claim-e2e.mjs` עובר 10/10: אורחת → התחברות → סימון מגדלת → קבלה → לוח בקרה → שימוש שני מציג «כבר התקבל».
+  - **‏נמצא בסקירה ותוקן:** ה-scrubber כתב בחזרה לכל מפתח, ובאובייקט קפוא או ב-getter שזורק הוא זרק בתוך `beforeSend`, מה ש-Sentry מגיב עליו בהפלת האירוע (בשרת: כל שגיאה). עכשיו הוא עובר רק על אובייקטים רגילים ומערכים ומדלג על `sdkProcessingMetadata`.
+  - **‏סיכון שחרור:** שלושת ה-PR-ים עולים ל-production יחד, ב-PR של staging→main.
+
+- **‏26/10 (08:30–09:50) — מודלי ה-AI ב-backend עברו ל-Haiku 5.5, ונמצאו שני מסלולי fail-open שפרסמו ספאם.**
+  - **‏#3592 `322ec9a2`:** שש קריאות קוראות עכשיו את `AI_FAST_MODEL` / `ai_fast_request_kwargs()` מ-`backend/app/config.py` (`claude-haiku-5-5`, thinking מכובה, `effort: low`). אין env var חדש. סירוב בטיחות (`stop_reason="refusal"`) → FLAGGED. המחיר ירד מ-$1/$5 ל-$0.10/$0.50 ל-MTok.
+  - **‏נמצא ב-eval ותוקן:** (1) תקרות `max_tokens` חתכו את ה-JSON של 5.5 (ביקורות 130 → 300, חוויה ומתכון 800, סיכון 500). (2) ‏`reviews.py` השתמש ב-`json.loads` חשוף, ולכן ```` ```json ```` נכשל ואושר. הבאג הזה פגע גם ב-4.5 ב-production. עכשיו הוא משתמש ב-parser הסלחני של החוויות.
+  - **‏eval** (`scripts/oneoff/eval_meh2335_moderation.py`, 35 מקרים × 3 מודלים): 0 תאי FAILOPEN אחרי התיקון. התאמה ל-Opus 5.5: ‏4.5 = 28/35, ‏5.5 = 32/35. אין מקרה שבו תוכן מזיק מתפרסם. ספיר אישרה מיזוג.
+  - **‏מחקר מודרציה** ([Doc](https://claude.ai/artifact/QBxhNkRCS8fbkdMHHykNbT)) → כרטיסים MEH-2348 עד MEH-2354.
+  - **‏נמדד:** ה-CI reviewer פרסם הערה על #3592, כלומר עובד אחרי חידוש הטוקן.
+- **‏26/10 (09:15–09:50) — סידור הידע אחרי המעבר לחשבון Claude חדש: בית אחד לכל עובדה (ADR-035), ושומרים שמזהירים כשמשהו מתיישן.**
+  - **‏#3597 `828dde50` (MEH-2345):** ‏ADR-035 קובע לכל סוג עובדה מקום אחד: כללים, מוצר ומותג, החלטות, משימות פתוחות (Linear), מצב נוכחי (HANDOFF), היסטוריה, גישות והעדפות (זיכרון הפרויקט). ‏`HANDOFF.md` ירד מ-13,716 ל-287 שורות. העותק המלא נשמר מילה במילה ב-`docs/archive/handoff/HANDOFF-until-2026-10-21.md`, כך שציטוטי `HANDOFF.md:NNNN` ישנים נפתרים שם. ‏`CONTEXT.md` ו-`DEPLOYMENT.md` נבדקו מול הקוד (דומיין co.il, ‏DoD לפי MEH-2302 וכלל 31). חדש: `docs/PROJECT_INSTRUCTIONS.md`, המקור להוראות של פרויקט Claude, ו-`docs/runbooks/UPTIME.md`.
+  - **‏#3601 `205e24e9` (MEH-2346):** ‏`scripts/docs/knowledge_freshness.py` עם שני שומרים warn-only: `handoff-retention-guard.sh` (סעיף ישן מ-14 יום או קובץ מעל 1,500 שורות) ו-`doc-freshness-guard.sh` (‏`Last reviewed:` ישן מ-120 יום ב-CONTEXT / BRAND / PROJECT_INSTRUCTIONS). ‏`archive-handoff` מעביר סעיפים ישנים ל-`docs/archive/handoff/YYYY-MM.md`. ‏self-test של 14 מקרים רץ לפני כל בדיקה, על הקבצים האמיתיים. ‏`MERGE-QUEUE.md` ו-`session-state.md` עברו לארכיון.
+  - **‏נמדד:** ה-hook של SessionStart לא הזריק את HANDOFF אף פעם. קטע ה-CHANGELOG לבדו ארוך מהתקציב של 3,000 תווים, ו-`tail -40` על קובץ שהחדש בו למעלה מחזיר את הסעיף הישן ביותר. התיקון מוכן ב-`docs/ci/meh-2346-session-start-handoff.patch.md` ומחכה לספיר (`.claude/hooks/**` חסום ל-CC).
+  - **‏הוכרע (ספיר העבירה את ההחלטה):** מקור המותג הוא הריפו, ו-Drive ‏`03-Brand-Hub` הוא ארכיון עם קובץ «קראי קודם» (ADR-035, Alternatives). הוראות פרויקט Claude הוחלפו בנוסח מ-`docs/PROJECT_INSTRUCTIONS.md`. קבצי ה-xlsx עם פרטי אנשי הקשר יוצאים מהריפו ב-PR נפרד.
+
+- **‏26/10 (08:45–09:10) — דיאטת הכללים: הכללים שנטענים בכל סשן ירדו מ-245,672 ל-59,902 bytes, בלי למחוק כלל.**
+  - **‏#3589 `27b6b16c` (MEH-2337):** ‏`paths:` frontmatter ל-`skills.md`, `labels.md`, `deployment.md`. ה-diff כולל רק frontmatter.
+  - **‏#3590 `da3c166a` (MEH-2338):** ‏`workflow.md` ירד מ-118,110 ל-22,677 bytes. הנוסח המלא נמצא מילה במילה ב-`docs/rules-history/workflow.md`. נוסף guard ‏`scripts/checks/rules-inventory-guard.sh`, שנכשל אם כותרת או כלל ממוספר מהארכיון חסרים בקובץ החי. ה-self-test שלו רץ על הארכיון האמיתי.
+  - **‏#3594 (MEH-2339):** ‏`testing.md` ירד מ-56,173 ל-9,543 bytes, והארכיון ב-`docs/rules-history/testing.md`. ה-guard מוצא 85/85 ו-28/28.
+  - **‏נמדד:** ‏`Adversarial review (calibration)` אדום על כל PR, כי `ANTHROPIC_API_KEY` ריק. זה הטוקן של ה-CI reviewer שממתין לספיר, והג'וב לא חוסם מיזוג.
+
+- **‏25/10 (20:20–22:25, drain ל', לילה) — קישור «בקשו ביקורת» עובד מקצה לקצה.**
+  - **‏#3587 `efa4e53e` (MEH-2330, MEH-1428 chunk 2):** ‏`?rt=` פותח את טופס הביקורת ונשלח כ-`review_token`. החזרה אחרי התחברות או הרשמה מגיעה לאזור הביקורות. כרטיס «בקשו ביקורת מלקוחה» בטאב «כלים» (עסק מאושר בלבד). ההפניה של `/p/[slug]` מעבירה עכשיו את ה-query. סקירה אדברסרית: 3 תיקונים. ‏E2E: נוסף stub ל-`review-link` בשני specs של הדשבורד, אחרי ש-401 ניתק את הסשן. ‏MEH-1428 חזר ל-Backlog + `needs-sapir`, על הכרעת התווית הפומבית.
+  - **‏נמדד, בלי PR:** ‏MEH-2323 chunk 2 (מסלול החלפת הטופס בזמן הטעינה, לא הוכח ככשל) · ‏MEH-893 (ה-Babel parser שבתוך `next` חוסם את eslint 10).
+
+- **‏25/10 (19:00–20:20, drain ל', ערב) — כלל 36 עודכן ותוקן race בטסט המפה.**
+  - **‏#3584 `75e7d043` (MEH-2328):** כלל 36 — ההגדרה auto-close-parent ב-Linear פועלת (נמדד). נוספה פסקה על כרטיס בקרה שנסגר מעצמו: MEH-2227 נסגר כשהילד שלו, MEH-2315, נסגר.
+  - **‏#3585 `0c6c1536` (MEH-2323 chunk 1/2):** ‏`24-producer-locations` מחכה שהמפה תתייצב (בלי `leaflet-cluster-anim` / `leaflet-zoom-anim`), ורק אז קורא את ה-clusters ולוחץ. tests-only. ‏chunk 2 (ה-flakes בהתחברות, C2 ו-C3) פתוח ב-Backlog.
+
+- **‏25/10 (11:40–19:00, drain ל') — שלושה PR-ים: גרף הצפיות, קישורי רשתות בפוטר, המשפט הקנוני. ה-CI לא רץ חמש שעות עד שהריפו הפך לציבורי.**
+  - **‏#3572 `63e1b402` (מוזג, MEH-2314) — גרף הצפיות בתובנות:** התוויות הקיצוניות מעוגנות פנימה (start / end) ומוצגות כ-`25.10`. הנקודה שהכרטיס לא חזה: הדף RTL, ובתוך SVG ה-RTL הופך את המשמעות של `text-anchor`. לכן נוסף `direction="ltr"` על ה-svg. זה מתקן גם את מספרי ציר ה-Y, שצוירו על קו הגרף. נמדד ב-Chromium: ב-375 התוויות נחתכו עד שנוסף ה-`direction`.
+  - **‏#3573 `f090e8f4` (מוזג, MEH-2311) — פוטר:** פייסבוק, טיקטוק ויוטיוב כקישורי אייקון מתחת לאינסטגרם. `BRAND_SAME_AS` מחזיק את ארבעת הפרופילים. התוויות הנגישות לקוחות מהקופי המאושר. שלושה baselines של VRT (about / login / register, מובייל) נוצרו מחדש על ה-runner, כי הפוטר גבוה ב-52px. כל אחד נפתח ונקרא.
+  - **‏#3581 `c317cf6b` (מוזג, MEH-2313) — המשפט הקנוני:** «מקומיים שבחרנו» במקום «קטנים שבדקנו», בקבוע, ב-`llms.txt`, בכותרת עמוד הצרכנים (he+en) וב-og של `/login`. הנוסח אושר מילה במילה. VRT של `about` עבר כי השינוי מתחת לסף 2%, ולכן ה-baseline עדיין מציג את הנוסח הישן (MEH-1765).
+  - **‏נמדד — Actions לא רץ 11:49Z–16:23Z:** כל job נכשל תוך 1–5 שניות, בלי steps ועם לוג 404. הריפו היה פרטי (מכסת דקות, כלל 21). ספיר הפכה אותו לציבורי, וה-uptime probe של 16:23Z רץ שוב.
+  - **‏Lane B:** 14 כרטיסים נבדקו מול B1–B4, ואף אחד לא עבר. MEH-2316–2319 בטיפול סשן מקביל.
+
+- **‏24/10 (19:30–22:10) — release v1.2.2 בייצור, וסיבוב הסודות אחרי אירוע Railway.**
+  - **‏Release — #3571, merge `add01d33` (21:50Z):** כולל את #3570 `d4b51281` (שם נגיש לכפתור הצ'אט, axe 4.14, הממצא האחרון מתוך שלושה), את #3564 `4495eb3a` (‏`railway.json` עם healthcheck על `/health/readiness`) ואת #3569 (docs). ה-deploy בייצור `8b7e13a6` (21:55Z) עבר את ה-healthcheck החדש עם 200 (MEH-1905, נסגר 26/10).
+  - **‏סודות (MEH-2291, נסגר 26/10):** ספיר סיבבה דרך Claude בכרום, ו-CC לא ראה אף ערך. סובבו `SECRET_KEY`, `EDGE_PROXY_SECRET` (חדש, נמדד `X-Client-IP-Source: edge`), ‏`WHATSAPP_VERIFY_TOKEN`, ‏Anthropic, ‏Resend, ‏Cloudinary, ‏R2 (טוקן מוגבל ל-bucket הגיבויים, `Backup OK`) וסיסמת האדמין (דרך האתר). המפתחות הישנים בוטלו. ‏WhatsApp access/app secret, ‏Google Places, ‏VAPID וסיסמת Postgres לא סובבו, בהחלטה של ספיר.
+  - **‏תופעת לוואי:** מפתח Resend החדש נוצר בצוות שבו `mehamakor.co.il` לא מאומת, ולכן כל מייל מייצור נכשל. תוקן ב-26/10 (MEH-2341, deploy `febddc5f`).
+
 - **‏24/10 (15:00–19:30) — הכנות להשקה: ייצור עודכן מ-`8e69ff1` ל-v1.2.0 / v1.2.1, תיקון rate limiter, נגישות, «פנייה ישירה» חזרה.**
   - **‏Rate limit — #3562 `d8f227cf` (MEH-2298):** ערוץ edge מאומת לזיהוי ה-IP של הגולשת מאחורי ה-rewrite של Vercel (`x-edge-client-ip` + `x-edge-secret`, `hmac.compare_digest`, לפחות 32 תווים). header חדש `X-Client-IP-Source`. כבוי עד שמגדירים `EDGE_PROXY_SECRET`. בדיקות אדומות-ראשון: `2f7fbe7f` נכשל, `f4f81449` ירוק.
   - **‏נגישות — #3565 `0f6e0453` (MEH-2308):** אינסטגרם בפוטר ומפות Google ב-MiniMap, label-in-name (axe 4.14). אדום-ראשון: `ad10772c`.
@@ -3363,7 +3458,7 @@ SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-
 ### 2026-06-03 — fix/terms-legal-copy-pii: legal-copy PII removal + MEH-720 deferred "דירקטורי" review (Refs MEH-720)
 
 `fix`: שלוש בעיות בעמודי /terms + /privacy בפרודקשן. **(1) PII** — מספר עוסקת
-פטורה (ת.ז.) `325120939` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
+פטורה (ת.ז.) `[הוסר]` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
 בשתי השפות (he+en, terms+privacy). גם ה-descriptor האופציונלי "עוסקת פטורה" הוסר
 והשם תוקן ל-`טופז שנפ.` / `Topaz Schnapp.` (סדר שם + פ רגילה, מכוון).
 **(2) contact** — בלוק המפעיל הציג `noreply@mehamakor.co.il` ככתובת ליצירת קשר;
@@ -3377,7 +3472,7 @@ split-key, admin WhatsApp share-string) + מופע 6 שהתגלה ב-`HomeProduc
 הוחלף verbatim לנוסח "פלטפורמה המציגה מידע בלבד" (המונח `בין המוכרת לקונה` נשמר).
 **en.json:** רק מחיקת ה-PII (אין English verbatim מאושר) — נוסח "directory
 platform" באנגלית **דחוי ל-MEH-472** (en:1461/2540/2678/2793/2807; /en הוא
-noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep 325120939 →
+noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep [הוסר] →
 0; grep דירקטורי → 0; `npm run build` ✓.
 
 ### 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
@@ -4354,7 +4449,7 @@ Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text
 
 ### 2026-05-22 — MEH-669: admin role lock-out via producer self-registration (OWASP A01)
 
-`fix(MEH-669)`: HIGH-RISK auth fix — closes a vertical privilege-escalation gap where any admin account that hit `/register/producer` (link, URL, or direct API call) had its `users.role` silently overwritten from `"admin"` to `"producer"` by the upgrade path at `backend/app/routers/auth.py:463`, locking the admin out of `/admin` (`frontend/app/[locale]/admin/layout.js:64` rejects non-admin role → push to `/login`). Discovered during staging smoke pre-production-promote (Sapir's `sint12345@gmail.com` admin account).
+`fix(MEH-669)`: HIGH-RISK auth fix — closes a vertical privilege-escalation gap where any admin account that hit `/register/producer` (link, URL, or direct API call) had its `users.role` silently overwritten from `"admin"` to `"producer"` by the upgrade path at `backend/app/routers/auth.py:463`, locking the admin out of `/admin` (`frontend/app/[locale]/admin/layout.js:64` rejects non-admin role → push to `/login`). Discovered during staging smoke pre-production-promote (Sapir's `<staging-admin-email>` admin account).
 
 **Approach: (a) + (c) per OWASP A01 — server-side enforcement is the source of truth; frontend is UX layer.**
 
@@ -4369,7 +4464,7 @@ Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text
 **Deferred (per Phase 0 decision):**
 - Approach (b) — Alembic `CHECK (NOT (role = 'admin' AND producer_id IS NOT NULL))` constraint, defense-in-depth at the DB layer. Post-launch ticket.
 - Approach (d) — role-model refactor (single `role` enum → permissions matrix). Out of scope.
-- Recovery SQL for Sapir's locked account (`UPDATE users SET role='admin', producer_id=NULL, is_producer=false WHERE email='sint12345@gmail.com';` then optional `DELETE FROM producers WHERE id='<that producer_id>';`) — documented in `docs/MANUAL_TESTING.md`, executed manually by Smadar (FK `users.producer_id → producers.id` has no `ondelete=`, so the UPDATE must precede the DELETE).
+- Recovery SQL for Sapir's locked account (`UPDATE users SET role='admin', producer_id=NULL, is_producer=false WHERE email='<staging-admin-email>';` then optional `DELETE FROM producers WHERE id='<that producer_id>';`) — documented in `docs/MANUAL_TESTING.md`, executed manually by Smadar (FK `users.producer_id → producers.id` has no `ondelete=`, so the UPDATE must precede the DELETE).
 - Audit query for other affected admin accounts — manual, by Smadar.
 
 Backend pytest verification deferred to local run (sandbox lacks FastAPI per MEH-360 pattern). AST parse + import-target existence confirmed. Frontend build clean: `✓ Compiled successfully in 14.7s`, 101 static pages.
@@ -4835,7 +4930,7 @@ Two PRs landed end-to-end via autopilot, plus this docs closeout:
 
 **Two PRs merged via autopilot.** Total: 178 source strings extracted to 131 translation keys across 3 files, 2 new top-level namespaces, 1 new architectural pattern proven.
 
-- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ 325120939.` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
+- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ [הוסר].` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
 - **PR #741 MERGED** at `807ff2e` — `feat(MEH-475 PR-C4b/chunk-4)`: for-businesses FAQ + FAQPage JSON-LD i18n (31 strings → 29 keys). New `about_business.*` top-level namespace. **First production pattern for JSON-LD consuming translation keys**: `buildFaqJsonLd(t)` builds the schema from the same translation keys the visible `<details>` rendering uses; `**bold**` markdown preserved in source values, stripped before schema emission. Accept-both JSON merge resolved against PR #740's privacy/terms additions.
 
 **Chunk 5 (3 guide pages + index, ~300 strings) DEFERRED** to a fresh session. Pattern is well understood (BLOCKS-array → per-position translation keys), but volume + EN-prose-translation quality bar exceeds remaining session runtime. See `HANDOFF.md` → "Next session pickup" for the resume instructions.
@@ -4900,7 +4995,7 @@ CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + br
 
 ### 2026-05-17 — MEH-630: Site operator legal disclosure on /terms + /privacy
 
-`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number (325120939), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
+`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number ([הוסר]), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
 
 `scope`: 2 files touched — `frontend/app/[locale]/terms/page.js` + `frontend/app/[locale]/privacy/page.js`. Inline Hebrew JSX as a new `SECTIONS` entry (id `operator`), matching the existing pattern verbatim — same card layout, same `<strong>` markup, same `dir="ltr"` email link convention. New section is unnumbered and sits before §1 of each page.
 

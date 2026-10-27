@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { PEEK } from "@/components/MapBottomSheet";
 
 /**
@@ -13,8 +12,7 @@ import { PEEK } from "@/components/MapBottomSheet";
  * Owns:
  *   - legendOpen + legendRef (with click-outside dismiss)
  *     ← MapClient.jsx:79-80 + :82-89
- *   - visitedIds (seeded once on mount from getRecentlyViewedIds)
- *     ← MapClient.jsx:96 + :132
+ *   (visitedIds — the recently-viewed grey-out list — removed in MEH-2423)
  *   - splitRatio (desktop) ← MapClient.jsx:100
  *   - sheetSnap (mobile, default PEEK) ← MapClient.jsx:101
  *   - mobileView (legacy state, unused but preserved per regression
@@ -59,17 +57,10 @@ export function useFirstVisitHints() {
       if (!n.isConnected) legendNodesRef.current.delete(n);
     }
   }, []);
-  const [visitedIds, setVisitedIds] = useState([]);
   const [splitRatio, setSplitRatio] = useState("40fr 60fr");
   const [sheetSnap, setSheetSnap] = useState(PEEK);
   // MEH-14: mobile map/list toggle. Desktop ignores this (always shows both).
   const [mobileView, setMobileView] = useState("map");
-
-  // Recently-viewed seed on mount (was bundled into the producers/
-  // categories fetch effect at MapClient.jsx:129-133; harmless split).
-  useEffect(() => {
-    setVisitedIds(getRecentlyViewedIds());
-  }, []);
 
   // Legend click-outside dismiss. MEH-1010: "inside" = inside ANY mounted
   // legend instance (the hidden one can't receive events anyway) — map
@@ -91,7 +82,6 @@ export function useFirstVisitHints() {
     legendOpen,
     setLegendOpen,
     legendRef,
-    visitedIds,
     splitRatio,
     setSplitRatio,
     sheetSnap,
