@@ -678,3 +678,68 @@ body.sheet-open .cookie-banner {
   @keyframes lightboxFadeIn  { from { opacity: 1; } }
   @keyframes lightboxImgFade { from { opacity: 1; transform: scale(1); } }
 }
+
+/* MEH-2426 — `.table-stack`: a data table that becomes one card per row below
+   md. At 375 a five-to-seven-column admin table either clipped its actions
+   column behind `overflow-hidden` (/admin/experiences: approve/reject sat at
+   x < 0, unreachable) or pushed it behind a sideways scroll. Below md each
+   <tr> is a card, each <td> a "label: value" line whose label is the cell's
+   `data-label` (the column header, passed by the page), and the actions cell
+   (`data-cell="actions"`) spans the card with ≥40px tap targets. The header
+   row stays in the DOM for assistive tech but is visually hidden. md and up:
+   untouched — the rules below do not exist there.
+   Shopify Polaris does the same by default (`s-table` variant "auto" renders a
+   list on small screens); sideways scroll is the last resort for a record.
+   A <td class="hidden md:table-cell"> stays hidden: `:not(.hidden)`. */
+@media (max-width: 767.98px) {
+  .table-stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .table-stack,
+  .table-stack tbody,
+  .table-stack tr,
+  .table-stack td:not(.hidden) {
+    display: block;
+    width: 100%;
+  }
+  .table-stack tr {
+    padding: 0.75rem 1rem;
+  }
+  .table-stack td:not(.hidden) {
+    padding: 0.25rem 0;
+    text-align: start;
+  }
+  /* Label in a fixed start-side gutter, value in the rest: whatever the cell
+     holds (text, a badge, a link, several of them) keeps its own flow. */
+  .table-stack td[data-label]:not(.hidden) {
+    position: relative;
+    padding-inline-start: 6rem;
+    min-height: 1.75rem;
+  }
+  .table-stack td[data-label]::before {
+    content: attr(data-label);
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0.3rem;
+    width: 5.5rem;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    letter-spacing: normal;
+    /* A `font-mono` value cell must not turn its label monospace. */
+    @apply font-body-sm text-fg-muted;
+  }
+  .table-stack td[data-cell="actions"] {
+    padding-top: 0.5rem;
+  }
+  .table-stack td[data-cell="actions"] :is(button, a) {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
