@@ -407,7 +407,9 @@ export default function ProducerGroupBuysPage() {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
             // nothing moves the status server-side and the owner has no
             // control over it (admin-only PATCH, group_buys.py:303). Display
-            // only; the status itself is a separate card.
+            // only; the status itself is a separate card. deadline is a full
+            // UTC timestamp (form sends toISOString, line 76), so an instant
+            // compare is right here, unlike the date-only event lists.
             const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
             const cls = deadlinePassed
               ? STATUS_CLASSES.neutral

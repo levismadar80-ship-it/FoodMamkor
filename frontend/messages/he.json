@@ -5046,7 +5046,7 @@
         "primary_must_be_branch": "המיקום הראשי חייב להיות סניף. אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק.",
         "one_primary_required": "חובה מיקום ראשי אחד"
       },
-      "count_summary": "{count, plural, one {מיקום אחד} other {# מיקומים}}"
+      "count_summary": "{count, plural, one {מיקום אחד} two {שני מיקומים} other {# מיקומים}}"
     },
     "security": {
       "common": {
