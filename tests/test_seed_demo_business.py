@@ -14,9 +14,9 @@ Covers backend/scripts/seed_demo_business.py:
 import importlib.util
 import os
 
-from app.utils.clock import israel_today
-
 import pytest
+
+from app.utils.clock import israel_today
 
 from app.models.models import (
     DeliveryArea,

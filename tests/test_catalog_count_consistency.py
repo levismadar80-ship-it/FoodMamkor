@@ -22,9 +22,8 @@ The exact pre-fix output is pasted in the PR body.
 
 from datetime import timedelta
 
-from app.utils.clock import israel_today
-
 from app.services.availability_validation import ON_VACATION
+from app.utils.clock import israel_today
 from tests.conftest import make_producer
 
 

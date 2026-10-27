@@ -17,8 +17,6 @@ History:  MEH-997 (creation — functional E2E audit; seed: /admin/recipes
 """
 
 from datetime import datetime, timedelta
-
-from app.utils.clock import israel_today
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -28,6 +26,7 @@ from app.models.models import (
     ProducerWhatsAppClick,
     User,
 )
+from app.utils.clock import israel_today
 from conftest import (
     auth_header,
     make_producer,
@@ -75,7 +74,6 @@ def _recipe_payload(**overrides) -> dict:
 
 def _experience_payload(**overrides) -> dict:
     """REUSES: tests/test_experiences.py — valid minimal submission."""
-
     base = {
         "title": "סדנת אפיית לחם מחמצת לכל המשפחה",
         "description": (
@@ -115,7 +113,6 @@ def _group_buy_payload(**overrides) -> dict:
 
 
 def _event_payload(**overrides) -> dict:
-
     base = {
         "title": "יריד טעימות בחווה",
         "description": "בואו לטעום מהתוצרת החדשה",

@@ -24,10 +24,9 @@ payloads.
 """
 
 from datetime import date, datetime, timedelta
-
-from app.utils.clock import israel_today
 from uuid import uuid4
 
+from app.utils.clock import israel_today
 from conftest import auth_header, make_producer, make_user
 
 # The structured 403 detail raised by require_verified_email /

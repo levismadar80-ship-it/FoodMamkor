@@ -20,11 +20,13 @@
 # THE RULE
 #   `date.today()` (or `datetime.date.today()`) in tests/**/*.py, outside a
 #   comment. Prose mentions in docstrings are written with backticks in this
-#   repo (`date.today()`, `< date.today()`), and a backtick is never Python
-#   code, so a line carrying one is prose. The replacement is `israel_today()` from
-#   app.utils.clock, or `israel_days_ago(N)` from tests/conftest.py for a
-#   datetime — see .claude/rules/testing.md § "Clock-dependent tests seed from
-#   the Israel clock".
+#   repo (`date.today()`, `< date.today()`): a backtick BEFORE the call on the
+#   same line marks it as prose. A backtick AFTER the call (a real call with a
+#   trailing backticked comment) does not — that line is still reported. The
+#   replacement is `israel_today()` from app.utils.clock, or
+#   `israel_days_ago(N)` from tests/conftest.py for a datetime — see
+#   .claude/rules/testing.md § "Clock-dependent tests seed from the Israel
+#   clock".
 #
 # WARN-ONLY, ON PURPOSE — AND HOW THAT IS ENCODED
 #   This exits 0 always. It prints the token WARNING, which run-all.sh surfaces
@@ -42,6 +44,13 @@
 # USAGE
 #   bash scripts/checks/test-clock-guard.sh            # always exit 0 (warn-only)
 #   bash scripts/checks/test-clock-guard.sh <dir>      # scan another tree
+#   bash scripts/checks/test-clock-guard.sh --self-test
+#       Writes a fixture file with one line per classifier branch (bare call,
+#       backtick after a real call, backticked docstring mention, guard-ok
+#       cover, `#` comment, datetime.date.today()), runs THIS script on it and
+#       asserts exactly the expected lines are reported. Exit 1 on a miss —
+#       the only mode in which this script can fail. run-all.sh never passes
+#       arguments, so CI always runs the warn-only scan.
 #
 set -uo pipefail
 
@@ -62,14 +71,52 @@ suppressed() {
 }
 
 is_prose_line() {
-  # The match sits after a `#` on the line, or the line carries a backtick —
-  # a backtick is never Python code, so it is a docstring mention.
+  # The match sits after a `#` on the line, or after a backtick on the line —
+  # a backtick is never Python code, so what follows it is a docstring
+  # mention. A backtick or `#` AFTER the call does not make the call prose
+  # (review on #3640: `y = date.today()  # see \`israel_today\`` is real code).
   local text="$1"
   case "$text" in
-    *'#'*'date.today()'*|*'`'*) return 0 ;;
+    *'#'*'date.today()'*) return 0 ;;
+    *'`'*'date.today()'*) return 0 ;;
   esac
   return 1
 }
+
+self_test() {
+  local tmp expected got
+  tmp="$(mktemp -d)"
+  cat > "$tmp/test_probe.py" <<'FIXTURE'
+import datetime
+from datetime import date
+today = date.today()
+x = 1
+"""Docstring: the old seed was `date.today()`, now israel_today()."""
+y = date.today()  # the OLD assertion skipped this line: see `israel_today`
+z = 1
+# guard-ok: fixture pins the runner's own day on purpose
+w = date.today()
+# date.today() in a comment is prose
+v = datetime.date.today()
+FIXTURE
+  # Lines 3 (bare), 6 (real call, backtick AFTER it) and 11 (datetime.date.today()).
+  # Lines 5 (backtick BEFORE), 9 (guard-ok one line above) and 10 (comment) must
+  # stay silent.
+  expected="3 6 11"
+  got="$(bash "${BASH_SOURCE[0]}" "$tmp" | sed -n 's/^  WARNING .*:\([0-9]*\)$/\1/p' | tr '\n' ' ' | sed 's/ $//')"
+  rm -rf "$tmp"
+  if [ "$got" = "$expected" ]; then
+    echo "test-clock-guard self-test PASS — reported lines: $got"
+    return 0
+  fi
+  echo "test-clock-guard self-test FAIL — expected lines [$expected], got [$got]"
+  return 1
+}
+
+if [ "${1:-}" = "--self-test" ]; then
+  self_test
+  exit $?
+fi
 
 report() {
   echo "  WARNING $1:$2"

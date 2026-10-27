@@ -14,8 +14,6 @@ tests/test_meh1537_contact_validation.py (the phone helper's own pins) ·
 tests/test_validation_hardening.py (producer_name, MEH-1623).
 """
 from datetime import datetime, timedelta
-
-from app.utils.clock import israel_today
 from decimal import Decimal
 
 import pytest
@@ -28,6 +26,7 @@ from app.schemas.schemas import (
     ProducerRegister,
     UserRegister,
 )
+from app.utils.clock import israel_today
 from pydantic import ValidationError
 
 
