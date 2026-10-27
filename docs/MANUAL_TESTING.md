@@ -1318,6 +1318,11 @@ the toast (right side in he/RTL), inheriting the white text color.
 - ✅ → home.spec.ts (in the Friday window the strip renders real Hebrew copy, not a key path) — בחלון שוק שישי (ד׳ 18:00–ו׳ 14:00, או עקיפת אדמין) + יש בתי עסק עם משלוח היום — סרגל "בתי עסק עם משלוח היום" בראש דף הבית — תוצאה: טקסט אמיתי (לא נתיבי מפתח כמו group_buys.friday_delivery.title), badge "🛒 היום" על הכרטיסים
 - ✅ → home.spec.ts (the same strip renders in English on /en) — אותו סרגל ב-`/en` — תוצאה: "Businesses delivering today" + "today"
 
+## MEH-2419 — /join: משבצת העדות מוסתרת עד שיש עדות אמיתית (27/10/2026)
+- [ ] `/join` — אחרי הכרטיס «כל בית עסק עובר היכרות אישית» מגיע ישר «שאלות נפוצות · כמה זה עולה?»; אין «בקרוב — עדות ראשונה» ואין סימן ציטוט
+- [ ] 375 + 1440: אין רווח ריק כפול בין הכרטיס לשאלות
+- [ ] `/en/join` — אותו דבר, בלי משבצת העדות
+
 ## MEH-788 — /register split-editorial (תמונה + טופס)
 
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:MEH-788:1) — the heading is on /login's scale and the three-feature strip is gone — כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) לא מופיעה
