@@ -289,3 +289,46 @@ describe("MEH-2318 — notation variants collapse to the static spelling", () =>
     expect(optionTexts()).toContain(SEEDED_ONLY);
   });
 });
+
+/**
+ * MEH-2456 — names that START with the query come before names that only
+ * contain it. Sapir's production screenshot (27/10): «תל» listed «עתלית»
+ * first, above every «תל …» city, because the filter was a substring match
+ * sorted alphabetically (ע before ת).
+ *
+ * DISCRIMINATION: the first case is red against origin/staging's
+ * CitySearch.jsx (first option «עתלית»). The second is the 0 / 1 / many
+ * matrix the CLAUDE.md conditional-UI rule asks for; the third is a control:
+ * a contains-only match is still offered when nothing starts with the query.
+ * All three use useBackend={false} so the static list (data/cities.js, which
+ * holds «עתלית», «תל אביב-יפו» and «תל מונד») is the whole corpus.
+ */
+describe("MEH-2456 — prefix matches rank first", () => {
+  it("«תל» lists the «תל …» cities before «עתלית»", () => {
+    const { input } = mount({ useBackend: false });
+    typed(input, "תל");
+    const opts = optionTexts();
+    expect(opts[0].startsWith("תל")).toBe(true);
+    const atlit = opts.indexOf("עתלית");
+    const lastPrefix = opts.reduce((at, t, i) => (t.startsWith("תל") ? i : at), -1);
+    expect(atlit === -1 || atlit > lastPrefix).toBe(true);
+  });
+
+  it("0 / 1 / many: none → no options, one → one option, many → capped at 8", () => {
+    const { input } = mount({ useBackend: false });
+    typed(input, "קקקק");
+    expect(optionTexts()).toEqual([]);
+    typed(input, "עתלית");
+    expect(optionTexts()).toEqual(["עתלית"]);
+    typed(input, "רמת");
+    const many = optionTexts();
+    expect(many.length).toBeGreaterThan(1);
+    expect(many.length).toBeLessThanOrEqual(8);
+  });
+
+  it("control: a contains-only match is still offered", () => {
+    const { input } = mount({ useBackend: false });
+    typed(input, "תלית");
+    expect(optionTexts()).toEqual(["עתלית"]);
+  });
+});
