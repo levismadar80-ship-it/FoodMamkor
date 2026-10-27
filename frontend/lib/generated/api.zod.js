@@ -4364,6 +4364,37 @@ export const DashboardProducersMeDashboardGetResponse = /*#__PURE__*/ zod.unknow
 
 
 /**
+ * MEH-2437: the business's own group buys, every status, newest first.
+ *
+ * Replaces the dashboard's four site-wide GET /group-buys calls that were
+ * filtered by producer_id in the browser.
+ * @summary List My Group Buys
+ */
+export const listMyGroupBuysProducersMeGroupBuysGetResponseCommitsCountDefault = 0;
+
+export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyGroupBuysProducersMeGroupBuysGetResponseCommitsCountDefault),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.int(),
+  "price_per_unit_group": /*#__PURE__*/ zod.string(),
+  "price_per_unit_regular": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "product_name": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string(),
+  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const ListMyGroupBuysProducersMeGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListMyGroupBuysProducersMeGroupBuysGetResponseItem)
+
+
+/**
  * @summary Request Kashrut Badge
  */
 export const RequestKashrutBadgeProducersMeKashrutRequestPostResponse = /*#__PURE__*/ zod.object({

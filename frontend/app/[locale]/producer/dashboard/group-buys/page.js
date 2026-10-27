@@ -275,29 +275,16 @@ export default function ProducerGroupBuysPage() {
 
   const load = async () => {
     try {
+      // MEH-2437: one call for this business's group buys in every status,
+      // newest first — it used to fetch the whole site four times (one per
+      // status) and filter by producer_id here.
       const [gbRes, dashRes] = await Promise.all([
-        api.get("/group-buys", { params: { status: "open" } }),
+        api.get("/producers/me/group-buys"),
         api.get("/producers/me/dashboard"),
       ]);
-      // Filter to only this producer's group buys
-      const producerId = dashRes.data?.producer?.id;
       setProducerCity(dashRes.data?.producer?.city || "");
       setProducerStatus(dashRes.data?.producer?.status || null);
-      const mine = gbRes.data.filter((gb) => gb.producer_id === producerId);
-      // Also fetch funded/cancelled
-      const [fundedRes, cancelledRes, fulfilledRes] = await Promise.all([
-        api.get("/group-buys", { params: { status: "funded" } }),
-        api.get("/group-buys", { params: { status: "cancelled" } }),
-        api.get("/group-buys", { params: { status: "fulfilled" } }),
-      ]);
-      const allMine = [
-        ...mine,
-        ...fundedRes.data.filter((gb) => gb.producer_id === producerId),
-        ...cancelledRes.data.filter((gb) => gb.producer_id === producerId),
-        ...fulfilledRes.data.filter((gb) => gb.producer_id === producerId),
-      ];
-      allMine.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setItems(allMine);
+      setItems(Array.isArray(gbRes.data) ? gbRes.data : []);
     } catch {
       setItems([]);
     }

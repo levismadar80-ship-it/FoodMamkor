@@ -116,6 +116,67 @@ class TestListAndGet:
         assert resp.status_code == 404
 
 
+# ---------- the owner's own list (MEH-2437) ----------
+class TestMyGroupBuys:
+    """GET /producers/me/group-buys — the business's own group buys, every
+    status, newest first, in one call (the dashboard used to fetch the whole
+    site four times and filter in the browser)."""
+
+    URL = "/producers/me/group-buys"
+
+    def test_returns_only_mine_in_every_status(self, client, db):
+        producer, owner = _producer_user(db, email="mine1@test.com")
+        other, _ = _producer_user(db, email="theirs1@test.com")
+        mine = {
+            s: _make_group_buy(db, producer, status=s)
+            for s in ("open", "funded", "cancelled", "fulfilled")
+        }
+        theirs = _make_group_buy(db, other)
+        resp = client.get(self.URL, headers=auth_header(owner))
+        assert resp.status_code == 200
+        ids = [row["id"] for row in resp.json()]
+        assert sorted(ids) == sorted(str(gb.id) for gb in mine.values())
+        assert str(theirs.id) not in ids
+        statuses = {row["status"] for row in resp.json()}
+        assert statuses == {"open", "funded", "cancelled", "fulfilled"}
+
+    def test_newest_first(self, client, db):
+        producer, owner = _producer_user(db, email="mine2@test.com")
+        older = _make_group_buy(db, producer)
+        older.created_at = utc_now() - timedelta(days=3)
+        newer = _make_group_buy(db, producer)
+        db.commit()
+        resp = client.get(self.URL, headers=auth_header(owner))
+        assert [row["id"] for row in resp.json()] == [str(newer.id), str(older.id)]
+
+    def test_empty_for_a_business_with_none(self, client, db):
+        _, owner = _producer_user(db, email="mine3@test.com")
+        other, _ = _producer_user(db, email="theirs3@test.com")
+        _make_group_buy(db, other)
+        resp = client.get(self.URL, headers=auth_header(owner))
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_consumer_is_403(self, client, db):
+        producer, _ = _producer_user(db, email="mine4@test.com")
+        _make_group_buy(db, producer)
+        consumer = make_user(db, role="consumer", email="c4mine@test.com")
+        # Even pointed at a business, a consumer is not its owner.
+        consumer.producer_id = producer.id
+        db.commit()
+        resp = client.get(self.URL, headers=auth_header(consumer))
+        assert resp.status_code == 403
+
+    def test_producer_without_business_is_403(self, client, db):
+        user = make_user(db, role="producer", email="nobiz5@test.com")
+        resp = client.get(self.URL, headers=auth_header(user))
+        assert resp.status_code == 403
+
+    def test_anonymous_is_401(self, client, db):
+        resp = client.get(self.URL)
+        assert resp.status_code == 401
+
+
 # ---------- create ----------
 class TestCreate:
     def test_create_happy(self, client, db):
