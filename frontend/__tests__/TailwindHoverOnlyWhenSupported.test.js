@@ -41,15 +41,36 @@ describe("no control is revealed only by hover (MEH-2418)", () => {
     expect(files.some((f) => f.endsWith(path.join("admin", "ProducerForm.jsx")))).toBe(true);
   });
 
-  it("no class list combines a bare opacity-0 with group-hover:opacity-100", () => {
+  // A class list hides a control at rest (`opacity-0`, under any responsive
+  // prefix such as `md:`) and reveals it only through a group-hover variant.
+  // With hoverOnlyWhenSupported that variant never fires on touch, so the
+  // rest state must itself be gated to hover-capable pointers — any token
+  // carrying `[@media(hover:hover)...]` is that gate and is exempt.
+  const HIDE_AT_REST = /^(?:[a-z0-9]+:)*opacity-0$/;
+  const REVEAL_ON_HOVER = /(?:^|:)group-hover:opacity-100$/;
+  const offendersIn = (classList) => {
+    const tokens = classList.split(/\s+/);
+    return (
+      tokens.some((t) => HIDE_AT_REST.test(t) && !t.includes("@media(hover")) &&
+      tokens.some((t) => REVEAL_ON_HOVER.test(t))
+    );
+  };
+
+  it("matcher: catches bare and md:-prefixed hide-at-rest, spares the hover-gated form (self-test)", () => {
+    expect(offendersIn("opacity-0 group-hover:opacity-100")).toBe(true);
+    expect(offendersIn("opacity-30 md:opacity-0 md:group-hover:opacity-100")).toBe(true);
+    expect(offendersIn("opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100")).toBe(false);
+    expect(offendersIn("opacity-30 md:[@media(hover:hover)_and_(pointer:fine)]:opacity-0 md:group-hover:opacity-100")).toBe(false);
+    expect(offendersIn("opacity-0 transition")).toBe(false);
+  });
+
+  it("no class list hides a control at rest and reveals it only on group-hover", () => {
     const offenders = [];
     for (const f of files) {
       const src = fs.readFileSync(f, "utf8");
-      for (const m of src.matchAll(/className="([^"]*)"/g)) {
-        const tokens = m[1].split(/\s+/);
-        if (tokens.includes("opacity-0") && tokens.includes("group-hover:opacity-100")) {
-          offenders.push(path.relative(ROOT, f));
-        }
+      // "..." literals and `...` template literals (className={`...`}).
+      for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+        if (offendersIn(m[1] ?? m[2])) offenders.push(path.relative(ROOT, f));
       }
     }
     expect(offenders).toEqual([]);
