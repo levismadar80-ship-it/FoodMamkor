@@ -154,6 +154,8 @@ describe("MEH-2381 edited-after-hidden tag", () => {
     expect(within(rowOf("a")).getByTestId("review-hidden-tag")).toBeTruthy();
     expect(within(rowOf("a")).getByTestId("review-unhide")).toBeTruthy();
     expect(within(rowOf("a")).queryByTestId("review-keep-hidden")).toBeNull();
+    // focus lands on the row's unhide button, not <body>
+    expect(document.activeElement).toBe(within(rowOf("a")).getByTestId("review-unhide"));
     // the other edited row is untouched
     expect(within(rowOf("b")).getByTestId("review-edited-after-hidden-tag")).toBeTruthy();
   });
