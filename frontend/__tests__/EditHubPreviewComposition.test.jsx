@@ -141,12 +141,16 @@ describe("hub tile preview composition (MEH-1920)", () => {
   it("leaves the other tiles showing their structured previews", async () => {
     await mount(FILLED);
 
-    // license → masked chip; contact → channel label. These are the previews
+    // license → "רישיון ✓" chip (MEH-2430; was a masked "•••4567");
+    // contact → channel label. These are the previews
     // MEH-1408 already put on those tiles; the fix must not touch them.
     // (The "location" tile's city preview was removed under MEH-2058 along
     // with the duplicate "מיקום על המפה" card — it now shows a plain
     // completion count like every other non-fixed-shape group member.)
-    expect(screen.getByTestId("hub-card-trust")).toHaveTextContent("•••4567");
+    expect(screen.getByTestId("hub-card-trust")).toHaveTextContent(
+      he.dashboard.producer.license.summary_present,
+    );
+    expect(screen.getByTestId("hub-card-trust")).not.toHaveTextContent("•••");
     expect(screen.getByTestId("hub-card-contact")).toHaveTextContent(
       he.dashboard.producer.edit_accordion.channel_whatsapp,
     );
