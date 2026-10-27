@@ -214,9 +214,18 @@ def cancel_commit(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
+    # MEH-2436: lock the row like /commit and the owner's status change do.
+    # Unlocked, a leave that read "funded" could write "open" over an owner's
+    # cancel or fulfil committed in between, reopening a closed group buy.
+    gb = (
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    )
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+    # MEH-2436: the owner can now close a group buy before its deadline; after
+    # that, the list of who took part is a record, not something to edit.
+    if gb.status not in ("open", "funded"):
+        raise HTTPException(status_code=400, detail="קבוצת הרכש כבר נסגרה")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="לא ניתן לבטל לאחר המועד האחרון")
 
@@ -311,7 +320,9 @@ def update_group_buy_status(
 ):
     is_admin = current_user.role == "admin"
     if not is_admin:
-        # Same gates, in the same order, as creating a group buy.
+        # Same role and email gates, in the same order, as creating a group
+        # buy. Unlike create, a business that is no longer approved may still
+        # close what it opened: its participants are better off with that.
         require_verified_producer(require_producer(current_user))
 
     # Lock the row: a participant joining in the same instant can flip

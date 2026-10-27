@@ -787,6 +787,11 @@ class TestOwnerStatusChange:
         producer, _ = _producer_user(db, email="own6@test.com")
         gb = _make_group_buy(db, producer)
         consumer = make_user(db, role="consumer", email="c6@test.com")
+        # A demoted owner keeps producer_id (admin_extra.py role change does not
+        # clear it), so the ownership check alone would let this through: only
+        # the role gate stops it.
+        consumer.producer_id = producer.id
+        db.commit()
         resp = self._patch(client, gb, "cancelled", consumer)
         assert resp.status_code == 403
         assert self._status_in_db(db, gb) == "open"
@@ -856,3 +861,23 @@ class TestOwnerStatusChange:
         resp = self._patch(client, gb, "open", admin)
         assert resp.status_code == 200
         assert self._status_in_db(db, gb) == "open"
+
+
+    def test_participant_cannot_leave_a_closed_group_buy(self, client, db):
+        # Once the owner has cancelled or fulfilled, leaving would rewrite the
+        # record of who took part, and on a funded→fulfilled group the old
+        # revert path would even reopen it.
+        producer, owner = _producer_user(db, email="own13@test.com")
+        ran = []
+        for final in ("cancelled", "fulfilled"):
+            gb = _make_group_buy(db, producer, status="funded", min_participants=1)
+            buyer = make_user(db, email=f"leaver-{final}@test.com")
+            db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1))
+            db.commit()
+            assert self._patch(client, gb, final, owner).status_code == 200
+            resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(buyer))
+            assert resp.status_code == 400, (final, resp.json())
+            assert self._status_in_db(db, gb) == final
+            assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1
+            ran.append(final)
+        assert ran == ["cancelled", "fulfilled"]
