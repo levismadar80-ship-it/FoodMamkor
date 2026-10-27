@@ -33,6 +33,9 @@ ROUTE_DB = "db_query"
 ROUTE_FREEFORM = "freeform"
 ROUTES = (ROUTE_DB, ROUTE_FREEFORM)
 
+#: Sentinel the classifier returns for `tool` on a freeform route.
+NO_TOOL = "none"
+
 #: Output budget for the classifier: a short JSON object, nothing else.
 MAX_CLASSIFY_TOKENS = 120
 
@@ -54,7 +57,10 @@ ROUTE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "route": {"type": "string", "enum": list(ROUTES)},
-        "tool": {"type": ["string", "null"], "enum": [*TOOL_NAMES, None]},
+        # "none" rather than null: a plain string enum is inside every
+        # structured-output schema subset; a null enum member is not
+        # guaranteed, and a rejected schema would fail open forever.
+        "tool": {"type": "string", "enum": [*TOOL_NAMES, NO_TOOL]},
         "city": {"type": ["string", "null"]},
         "category_slug": {"type": ["string", "null"]},
         "limit": {"type": ["integer", "null"]},
@@ -80,7 +86,7 @@ def _classifier_prompt(categories: list[dict[str, str]]) -> str:
         "list_upcoming_events(city?).\n"
         f"Known category slugs (pick the slug, never invent one): {cats}.\n"
         "city: the city exactly as the user wrote it in Hebrew, else null. "
-        "Set tool=null and all parameters null when route=freeform."
+        "Set tool=none and all parameters null when route=freeform."
     )
 
 

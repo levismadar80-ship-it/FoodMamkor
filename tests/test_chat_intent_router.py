@@ -50,7 +50,7 @@ LABELED = [
     (
         {
             "route": "freeform",
-            "tool": None,
+            "tool": "none",
             "city": None,
             "category_slug": None,
             "limit": None,
@@ -66,6 +66,7 @@ LABELED = [
     ),  # unknown slug
     (_db("drop_everything"), "freeform", None),  # unknown tool never reaches SQL
     ({"route": "db_query"}, "freeform", None),  # missing tool
+    ({"route": "db_query", "tool": None}, "freeform", None),  # null tool
     ("not a dict", "freeform", None),
     ({}, "freeform", None),
 ]
@@ -74,7 +75,7 @@ LABELED = [
 def test_decision_from_parsed_labeled_set():
     outcomes = [router.decision_from_parsed(p, SLUGS) for p, _, _ in LABELED]
     assert [(d.route, d.tool) for d in outcomes] == [(r, t) for _, r, t in LABELED]
-    assert len(outcomes) == 11
+    assert len(outcomes) == 12
 
 
 def test_decision_params_are_trimmed_and_scoped():
@@ -91,7 +92,8 @@ def test_decision_params_are_trimmed_and_scoped():
 def test_every_accepted_tool_is_a_real_tool():
     assert set(router.ROUTE_SCHEMA["properties"]["tool"]["enum"]) == set(
         chat_db_tools.TOOL_NAMES
-    ) | {None}
+    ) | {router.NO_TOOL}
+    assert router.NO_TOOL not in chat_db_tools.TOOL_NAMES
 
 
 # ---------- classify: fake client ----------
