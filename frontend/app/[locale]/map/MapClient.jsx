@@ -565,7 +565,7 @@ export default function MapPage() {
           // copy — and the chip row keeps the 44px tap height.
           <span className="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted">
             <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
-            <span className="truncate" data-testid="sort-origin-label">
+            <span className="min-w-0 truncate" data-testid="sort-origin-label">
               {userLoc.source === SOURCE_CITY
                 ? t("map.client.sort.origin_city", { city: userLoc.city })
                 : t("map.client.sort.origin_gps")}
