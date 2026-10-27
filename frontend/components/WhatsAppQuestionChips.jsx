@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
-import { getProducerQuestions } from "@/lib/categoryQuestions";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
 import {
   getPrimaryContactHref,
   getPrimaryMethod,
@@ -25,7 +25,7 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  *
  *   Q1  "אפשר משלוח ל{city}?"  → buildDeliveryAnswer disclosure, else WA link
  *   Q2  "איך מזמינים?"          → buildOrderingAnswer disclosure, else WA link
- *   Q3+ stock / custom          → WhatsApp (getProducerQuestions, category-aware)
+ *   Q3+ custom (owner-written)  → WhatsApp (MEH-2385: category stock set no longer renders)
  *   Escalation "שאלה אחרת?"     → the business's PRIMARY channel
  *
  * Unlike the pre-1302 version this no longer bails with `return null` when the
@@ -44,11 +44,10 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  * So the gate is now `isWhatsAppPrimary(producer) && digits` (contact-method.js
  * — the single owner of channel logic). When it is false:
  *
- *   - stock / custom question chips  → hidden
- *   - recipe-idea chip (MEH-1462)    → hidden. The prefill string is
- *     Sapir-locked WhatsApp copy with no equivalent on any other channel, so
- *     narrowing its gate is the honest option and NOT a silent one — it is
- *     flagged on the MEH-2154 PR as a decision, not an implementation detail.
+ *   - custom question chips          → hidden
+ *   - (the category stock rows and the recipe-idea chip of MEH-1462 no longer
+ *     exist at all — MEH-2385 cut the block to Q1 / Q2 / owner questions /
+ *     escalation, so there is nothing channel-specific left to gate there)
  *   - escalation "שאלה אחרת?"        → **still rendered**, pointed at the
  *     primary channel via getPrimaryContactHref. MEH-1538's lock is that the
  *     ready-made questions have no off switch; this ticket ROUTES them, it does
@@ -63,6 +62,27 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  * The attribution beacon stays bound to wa.me rows ONLY (see below): a tel:,
  * mailto: or https: escalation opens no WhatsApp conversation, so counting it
  * would inflate the very metric MEH-1426 exists to keep honest.
+ *
+ * MEH-2385 — WHAT THE BLOCK SHOWS BY DEFAULT SHRANK, AND WHY.
+ * Sapir (26/10): five rows + a button under the CTA read as a form and took a
+ * quarter of a 375px screen. Industry pages (Google Business Profile, Yelp,
+ * Airbnb, Wolt) show one primary action, an icon row, and facts as facts —
+ * none of them lists questions beside the button, and Google retired its own
+ * Q&A section in 12/2025. So:
+ *
+ *   - Q1 / Q2 (answer-first)        → unchanged, byte-for-byte (MEH-1302).
+ *   - Q3+ category STOCK question   → gone. It had no in-page answer and only
+ *     opened WhatsApp, which the escalation row already does.
+ *   - Q3+ owner `custom_questions`  → still rendered. She wrote them herself
+ *     and there is no off switch for them (MEH-1538 lock, unchanged).
+ *   - recipe-idea row (MEH-1462)    → gone; "שאלה אחרת?" covers it.
+ *   - escalation "שאלה אחרת?"       → unchanged.
+ *
+ * The hairline above the block is also conditional now: a producer with no
+ * primary CTA (no channel resolves) used to get a card that opened with a
+ * detached rule and a "שאלות נפוצות:" caption over one disclosure. The rule
+ * separates the block from the button; with no button there is nothing to
+ * separate from.
  */
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
@@ -220,7 +240,7 @@ export default function WhatsAppQuestionChips({ producer }) {
   // MEH-1524: every prefill that opens a chat with a specific business ends
   // with a source line on its own final line, so the owner sees the referral
   // source in her own inbox. LOCKED copy — the `source_line` key is defined
-  // once and appended here + at the recipe-idea call site.
+  // once and appended here.
   const waHref = (q) =>
     digits
       ? getWhatsAppHref(
@@ -228,18 +248,6 @@ export default function WhatsAppQuestionChips({ producer }) {
           `${t("greeting_template", { name, q })}\n\n${t("source_line")}`,
         )
       : null;
-
-  // MEH-1462: "יש לי רעיון למתכון" — routes the recipe-idea intent to the
-  // existing WhatsApp channel (research 22/07: no in-app suggestion box, no
-  // moderation). Uses its own Sapir-locked prefill (NOT the greeting_template
-  // that wraps the other questions), no in-page answer, gated on a phone like
-  // every other WhatsApp row.
-  const recipeIdeaHref = waEnabled
-    ? getWhatsAppHref(
-        digits,
-        `${t("recipe_idea_message")}\n\n${t("source_line")}`,
-      )
-    : null;
 
   // MEH-2154: the escalation row follows the declared channel. WhatsApp-primary
   // keeps today's wa.me href byte-for-byte (same greeting_template + locked
@@ -260,11 +268,14 @@ export default function WhatsAppQuestionChips({ producer }) {
       ? `${primaryHref}?subject=${encodeURIComponent(t("escalation_email_subject"))}`
       : primaryHref;
 
-  // Category-aware stock / custom questions stay WhatsApp — minus the two
-  // canonical slots (delivery + ordering) handled above, to avoid duplicates.
-  const waQuestions = getProducerQuestions(producer || {})
-    .map((q) => q.replace("[עיר]", city))
-    .filter((q) => q !== orderingQ && q !== deliveryQ && q !== "יש משלוח?");
+  // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
+  // the category stock set no longer renders. One derivation, shared with the
+  // dashboard preview (lib/resolvedQuestions.js), so the two cannot drift.
+  const waQuestions = ownerQuestionLabels(producer, {
+    city,
+    deliveryQuestion: deliveryQ,
+    orderingQuestion: orderingQ,
+  });
 
   const items = [];
 
@@ -296,7 +307,7 @@ export default function WhatsAppQuestionChips({ producer }) {
     );
   }
 
-  // Q3+ — stock / custom, WhatsApp only.
+  // Q3+ — her custom questions, WhatsApp only.
   if (waEnabled) {
     waQuestions.forEach((q, i) => {
       items.push(
@@ -305,11 +316,17 @@ export default function WhatsAppQuestionChips({ producer }) {
     });
   }
 
-  // Nothing to show at all — no answers, no escalation channel, no recipe row.
+  // Nothing to show at all — no answers, no escalation channel.
   // (Pre-MEH-2154 this read `items.length === 0 && !digits`, where `digits` was
   // a proxy for "an escalation row will render". Now that the escalation can
   // ride a non-WhatsApp channel, ask the real question instead of the proxy.)
-  if (items.length === 0 && !escalationHref && !recipeIdeaHref) return null;
+  if (items.length === 0 && !escalationHref) return null;
+
+  // MEH-2385: the hairline exists to separate this block from the primary CTA
+  // above it. PrimaryContactButton returns null when no channel resolves
+  // (getPrimaryContactHref → null), and then a rule with nothing above it is
+  // the "empty white card" Sapir photographed on demo-delivery-pickup.
+  const underCta = !!getPrimaryContactHref(producer);
 
   return (
     <QuestionList
@@ -320,8 +337,7 @@ export default function WhatsAppQuestionChips({ producer }) {
       // one. `null` here is the discriminating case, not an omission.
       escalationOnTrack={waEnabled ? trackWhatsAppOpen : null}
       escalationExternal={waEnabled || isPrimaryExternal(producer)}
-      recipeIdeaHref={recipeIdeaHref}
-      onTrack={trackWhatsAppOpen}
+      underCta={underCta}
       t={t}
     />
   );
@@ -340,8 +356,7 @@ function QuestionList({
   escalationHref,
   escalationOnTrack,
   escalationExternal,
-  recipeIdeaHref,
-  onTrack,
+  underCta,
   t,
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -349,7 +364,10 @@ function QuestionList({
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
 
   return (
-    <div className="mb-4 border-t border-border pt-3">
+    <div
+      data-testid="question-chips"
+      className={underCta ? "mb-4 border-t border-border pt-3" : "mb-4"}
+    >
       <p className="text-xs mb-1.5 font-body-md text-fg-muted">{t("common_questions")}:</p>
       <ul className="flex flex-col">{visible}</ul>
 
@@ -385,24 +403,6 @@ function QuestionList({
         >
           <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
           {t("escalation")}
-        </a>
-      )}
-
-      {/* MEH-1462: recipe-idea chip — always rendered LAST in the row (never
-          capped by the "עוד שאלות" expander), only when a WhatsApp channel
-          exists. No in-page disclosure: it always opens WhatsApp with the
-          Sapir-locked recipe-idea prefill. */}
-      {recipeIdeaHref && (
-        <a
-          href={recipeIdeaHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onTrack}
-          data-testid="recipe-idea-link"
-          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
-        >
-          <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
-          {t("recipe_idea")}
         </a>
       )}
     </div>

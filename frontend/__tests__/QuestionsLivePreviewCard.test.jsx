@@ -90,15 +90,16 @@ beforeEach(() => {
 });
 
 describe("live list — what the page is actually showing", () => {
-  it("lists the default questions, and does NOT say there are none", async () => {
+  it("lists the default rows, and does NOT say there are none", async () => {
     mount(BASE);
     await openQuestionsCard();
 
     const items = await screen.findAllByTestId("live-question-item");
-    expect(items.length).toBeGreaterThan(0);
-    // The stock question the category actually contributes (MEH-2154 Phase 0:
-    // exactly one survives the Q1/Q2 de-duplication).
-    expect(screen.getByTestId("live-questions-list").textContent).toContain(
+    // MEH-2385: delivery + ordering + escalation. The category stock question
+    // no longer renders on the public page, so it must not be listed here
+    // either — the list's whole purpose is to be the page.
+    expect(items.length).toBe(3);
+    expect(screen.getByTestId("live-questions-list").textContent).not.toContain(
       "אילו לחמים יש השבוע?",
     );
     // The empty state that used to lie is not rendered at all.

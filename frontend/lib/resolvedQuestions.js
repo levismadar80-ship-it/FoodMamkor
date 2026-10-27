@@ -13,9 +13,10 @@
  *           derivation from the same producer payload the page receives.
  * Related:  frontend/components/WhatsAppQuestionChips.jsx (the public renderer
  *           this mirrors), frontend/lib/quickAnswers.js:41,103,
- *           frontend/lib/categoryQuestions.js:88 (getProducerQuestions),
  *           frontend/lib/contact-method.js (isWhatsAppPrimary, MEH-2154).
- * History:  MEH-2155 (creation).
+ * History:  MEH-2155 (creation) · MEH-2385 (category stock set + recipe row
+ *           dropped from the public block; only her custom questions remain
+ *           as Q3+).
  *
  * ── THE HONESTY PROBLEM THIS SOLVES, AND THE ONE IT DOES NOT ────────────────
  * The dashboard card is titled "שאלות שמופיעות בדף שלך" and then showed
@@ -37,10 +38,10 @@
  * helper; until then, the test is the contract.
  *
  * ── WHY THE LABELS ARE ARGUMENTS ───────────────────────────────────────────
- * Q3+ has to drop the two stock questions that duplicate Q1/Q2, and the
- * component does that by comparing the raw Hebrew strings in categoryQuestions
- * against its own TRANSLATED `delivery_to_city` / `ordering_q`
- * (WhatsAppQuestionChips.jsx — the `.filter()` after getProducerQuestions).
+ * Q3+ has to drop any custom question that duplicates Q1/Q2, and the
+ * component does that by comparing her raw Hebrew strings against its own
+ * TRANSLATED `delivery_to_city` / `ordering_q`
+ * (WhatsAppQuestionChips.jsx — the `.filter()` over `custom_questions`).
  * Re-deriving those strings here would make the two implementations agree only
  * in Hebrew: under `/en` the component's comparison stops matching, and a
  * helper that filtered on the Hebrew literals would then disagree with the page
@@ -49,7 +50,6 @@
  * filter does not work, which the dashboard must reflect rather than correct.
  */
 import { normalizePhone } from "@/lib/utils";
-import { getProducerQuestions } from "@/lib/categoryQuestions";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
 import {
   getPrimaryContactHref,
@@ -59,11 +59,29 @@ import {
 
 /**
  * The literal the component also strips, on top of the two resolved labels.
- * It is a raw categoryQuestions value ("יש משלוח?"), not an i18n string, so it
- * is safe to name here — but it lives in one place so a future edit to the
- * question data has a single site to update.
+ * It is the legacy stock wording ("יש משלוח?") that older custom lists may
+ * still carry, not an i18n string, so it is safe to name here — and it lives
+ * in one place so a future edit has a single site to update.
  */
 const DUPLICATE_OF_DELIVERY = "יש משלוח?";
+
+/**
+ * The owner's Q3+ rows, as labels — the ONE derivation (MEH-2385 reviewer
+ * note: it used to live twice, here and in WhatsAppQuestionChips.jsx, and
+ * could drift). `[עיר]` is replaced with `city` when one is given; the two
+ * canonical slots (delivery / ordering) and the legacy stock wording are
+ * dropped so a row never duplicates Q1 / Q2.
+ *
+ * @param {object|null|undefined} producer
+ * @param {{ city?: string, deliveryQuestion: string, orderingQuestion: string }} opts
+ * @returns {string[]}
+ */
+export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, orderingQuestion }) {
+  return (producer?.custom_questions || [])
+    .filter(Boolean)
+    .map((q) => (city ? q.replace("[עיר]", city) : q))
+    .filter((q) => q !== orderingQuestion && q !== deliveryQuestion && q !== DUPLICATE_OF_DELIVERY);
+}
 
 /**
  * @param {object|null|undefined} producer — public ProducerDetailOut shape
@@ -71,7 +89,6 @@ const DUPLICATE_OF_DELIVERY = "יש משלוח?";
  *   deliveryQuestion: string,   // t("delivery_to_city", { city })
  *   orderingQuestion: string,   // t("ordering_q")
  *   escalationQuestion: string, // t("escalation")
- *   recipeQuestion: string,     // t("recipe_idea")
  * }} labels — resolved by the caller from `whatsapp.question_chips`
  * @returns {{
  *   items: Array<{
@@ -79,9 +96,10 @@ const DUPLICATE_OF_DELIVERY = "יש משלוח?";
  *     label: string,
  *     answered: boolean,        // true = answered in-page from her own data
  *     channel: string|null,     // primary_contact_method the row opens, if any
- *     source: "delivery"|"ordering"|"custom"|"category"|"escalation"|"recipe",
+ *     source: "delivery"|"ordering"|"custom"|"escalation",
  *   }>,
- *   usesCustom: boolean,        // her custom questions replaced the defaults
+ *   usesCustom: boolean,        // she wrote custom questions (MEH-2385: there
+ *                               // is no default set to replace any more)
  *   customCount: number,
  * }}
  */
@@ -137,27 +155,23 @@ export function resolveProducerQuestions(producer, labels) {
     });
   }
 
-  // Q3+ — her custom questions, or the category defaults, minus the two that
-  // would duplicate Q1/Q2. WhatsApp-only, per MEH-2154.
+  // Q3+ — her custom questions only (MEH-2385: the category stock set no
+  // longer renders), minus the two that would duplicate Q1/Q2. WhatsApp-only,
+  // per MEH-2154.
   if (waEnabled) {
-    const city = producer?.city || "";
-    getProducerQuestions(producer || {})
-      .map((q) => (city ? q.replace("[עיר]", city) : q))
-      .filter(
-        (q) =>
-          q !== labels.orderingQuestion &&
-          q !== labels.deliveryQuestion &&
-          q !== DUPLICATE_OF_DELIVERY,
-      )
-      .forEach((label, i) => {
-        items.push({
-          id: `q-${i}`,
-          label,
-          answered: false,
-          channel: "whatsapp",
-          source: usesCustom ? "custom" : "category",
-        });
+    ownerQuestionLabels(producer, {
+      city: producer?.city || "",
+      deliveryQuestion: labels.deliveryQuestion,
+      orderingQuestion: labels.orderingQuestion,
+    }).forEach((label, i) => {
+      items.push({
+        id: `q-${i}`,
+        label,
+        answered: false,
+        channel: "whatsapp",
+        source: "custom",
       });
+    });
   }
 
   // Escalation — the contact channel itself. Present whenever ANY channel
@@ -170,17 +184,6 @@ export function resolveProducerQuestions(producer, labels) {
       answered: false,
       channel: waEnabled ? "whatsapp" : method,
       source: "escalation",
-    });
-  }
-
-  // Recipe idea — WhatsApp-locked prefill (MEH-1462), so WhatsApp-only.
-  if (waEnabled) {
-    items.push({
-      id: "recipe",
-      label: labels.recipeQuestion,
-      answered: false,
-      channel: "whatsapp",
-      source: "recipe",
     });
   }
 
