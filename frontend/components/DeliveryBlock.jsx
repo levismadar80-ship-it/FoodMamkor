@@ -648,7 +648,10 @@ export default function DeliveryBlock({
             </div>
           )}
         </div>
-      ) : (
+      ) : producer?.offers_delivery === false ? null : (
+        // MEH-2438: the section also mounts for pickup_points alone, so this
+        // no-areas fallback must not promise delivery to a business that has
+        // none. `=== false`, not falsy: callers without a producer keep it.
         <p className="text-sm text-fg-muted mb-4">{t("arranged")}</p>
       )}
 
