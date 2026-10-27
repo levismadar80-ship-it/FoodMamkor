@@ -161,10 +161,10 @@ def test_empty_list_stays_empty_list():
     """NOT collapsed to None.
 
     The two are indistinguishable to every reader measured — the frontend goes
-    through `getProducerQuestions` (frontend/lib/categoryQuestions.js:88),
-    whose `producer.custom_questions?.length > 0` test sends both to the
-    category defaults — but collapsing them would still change what the column
-    stores, on a path this ticket has no reason to touch.
+    through `ownerQuestionLabels` (frontend/lib/resolvedQuestions.js), whose
+    `(producer?.custom_questions || [])` read yields no rows for either — but
+    collapsing them would still change what the column stores, on a path this
+    ticket has no reason to touch.
     """
     result = _questions([])
     assert result == []
