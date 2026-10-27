@@ -196,7 +196,9 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         stranger gets 404 from both, never 204 from one and 404 from the other
         (MEH-254 enumeration oracle, MEH-2156 counter integrity)."""
         organizer = _organizer(db)
-        resp = client.post(f"/producers/{organizer.id}/view")
+        resp = client.post(
+            f"/producers/{organizer.id}/view", json={}
+        )  # schema-valid body (regression rule 6)
         assert resp.status_code == 404
 
 
