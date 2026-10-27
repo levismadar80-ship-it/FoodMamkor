@@ -34,6 +34,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  CaretDown: () => <span />,
   ArrowRight: () => null,
   EnvelopeSimple: () => null,
   Eye: () => null,
