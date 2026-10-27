@@ -43,11 +43,10 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  * So the gate is now `isWhatsAppPrimary(producer) && digits` (contact-method.js
  * — the single owner of channel logic). When it is false:
  *
- *   - stock / custom question chips  → hidden
- *   - recipe-idea chip (MEH-1462)    → hidden. The prefill string is
- *     Sapir-locked WhatsApp copy with no equivalent on any other channel, so
- *     narrowing its gate is the honest option and NOT a silent one — it is
- *     flagged on the MEH-2154 PR as a decision, not an implementation detail.
+ *   - custom question chips          → hidden
+ *   - (the category stock rows and the recipe-idea chip of MEH-1462 no longer
+ *     exist at all — MEH-2385 cut the block to Q1 / Q2 / owner questions /
+ *     escalation, so there is nothing channel-specific left to gate there)
  *   - escalation "שאלה אחרת?"        → **still rendered**, pointed at the
  *     primary channel via getPrimaryContactHref. MEH-1538's lock is that the
  *     ready-made questions have no off switch; this ticket ROUTES them, it does
