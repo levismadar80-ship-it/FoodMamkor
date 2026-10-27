@@ -626,12 +626,6 @@
       "og_title": "צרו קשר עם מהמקור",
       "og_description": "שאלות, הצעות, או רעיונות לשיתוף פעולה — אנחנו כאן."
     },
-    "search": {
-      "title": "תוצאות חיפוש | מהמקור",
-      "description": "חיפשו בתי עסק מקומיים ותוצרת מקומית במהמקור. כל בית עסק נבחר אישית.",
-      "og_title": "חיפוש במהמקור",
-      "og_description": "מצאו בתי עסק ותוצרת מקומית בקלות."
-    },
     "forgot_password": {
       "title": "שחזור סיסמה | מהמקור",
       "description": "שכחתם את הסיסמה? הזינו את כתובת האימייל ונשלח קישור לאיפוס הסיסמה לחשבון מהמקור.",
@@ -3160,23 +3154,6 @@
     "privacy_notice": "בשליחת הטופס את מאשרת שקראת את <link>מדיניות הפרטיות</link>."
   },
   "search": {
-    "breadcrumb_home": "בית",
-    "breadcrumb_search": "חיפוש",
-    "breadcrumb_query": "חיפוש: {q}",
-    "title_default": "חיפוש",
-    "title_results": "תוצאות חיפוש עבור \"{q}\"",
-    "input_placeholder": "לחם מחמצת",
-    "input_aria": "חיפוש",
-    "submit": "חפשו",
-    "no_results_hint": "לא מצאנו התאמות — נסו מילה אחרת או גלו לפי קטגוריות",
-    "results_count": "{totalHits, plural, one {תוצאה אחת} two {{totalHits} תוצאות} other {{totalHits} תוצאות}}",
-    "empty_prompt": "מה תרצו למצוא?",
-    "section_producers": "בתי עסק",
-    "section_products": "מוצרים",
-    "product_by_prefix": "אצל",
-    "empty_title": "לא מצאנו התאמות — נסו מילה אחרת",
-    "empty_subtitle": "נסו לשנות את החיפוש או לעיין בקטגוריות בדף הבית.",
-    "empty_home_cta": "חזרה לדף הבית",
     "hero": {
       "submit_aria": "חפש",
       "loading": "טעינת תוצאות...",
