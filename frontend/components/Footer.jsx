@@ -337,7 +337,7 @@ export default function Footer() {
           </p>
           {/* MEH-2417: wraps (and centres) at 375 instead of running five links
               edge to edge under the floating back-to-top button. */}
-          <ul className="flex flex-wrap items-center justify-center gap-x-4" data-testid="footer-utility-links">
+          <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2" data-testid="footer-utility-links">
             {[
               { href: "/login", label: t("nav.footer.login") },
               { href: "/terms", label: t("nav.footer.terms") },
