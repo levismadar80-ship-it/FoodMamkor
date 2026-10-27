@@ -1166,7 +1166,8 @@
         "submitting": "ביצירה...",
         "submit": "צרו קבוצת רכש",
         "toast_created": "קבוצת הרכש נוצרה ופתוחה להצטרפות"
-      }
+      },
+      "status_deadline_passed": "המועד עבר"
     },
     "availability": {
       "status_label": {
@@ -4223,17 +4224,16 @@
         "stats_window_label": "7 ימים / ב-30 הימים האחרונים / סה״כ",
         "kpi": {
           "whatsapp_leads": "קליקים בוואטסאפ",
-          "contact_clicks": "קליקים ליצירת קשר (בלי וואטסאפ)",
+          "contact_clicks": "קליקים על טלפון, אתר ועוד",
           "rating": "דירוג",
           "views": "צפיות",
           "window_7d": "7 הימים האחרונים",
-          "rating_sub": "{count} ביקורות",
-          "conversion_line": "{rate} לחיצות על אחד מכפתורי יצירת הקשר לכל 100 מבקרות שונות ב-30 הימים האחרונים. קליק אינו בהכרח פנייה שנשלחה."
+          "rating_sub": "{count} ביקורות"
         },
         "hero": {
           "views_week_label": "צפיות השבוע",
           "views_week_sub": "7 הימים האחרונים",
-          "whatsapp_clicks_label": "לחיצות וואטסאפ",
+          "whatsapp_clicks_label": "קליקים בוואטסאפ",
           "whatsapp_clicks_sub": "7 הימים האחרונים",
           "conversion_label": "המרה %",
           "conversion_tooltip": "אחוז הצפיות שהפכו ללחיצה על וואטסאפ ב-30 הימים האחרונים. ככל שיותר גבוה — הפרופיל משכנע יותר.",
@@ -4242,23 +4242,20 @@
           "rank_tooltip": "המיקום שלך בעיר לפי צפיות ב-30 הימים האחרונים. מתעדכן אוטומטית.",
           "rank_sub": "לפי צפיות ב-30 הימים האחרונים"
         },
-        "eligible_weekly_title": "מועמדות לבעלת עסק השבוע — צרו קשר עם הצוות",
-        "eligible_weekly_tooltip": "הצוות בוחר מדי שבוע בעלת עסק עם דירוג ראשון בעיר וחוזק פרופיל גבוה. אם את מועמדת — יופיע כאן הודעה.",
-        "eligible_weekly_sub": "דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!",
         "windowed": {
           "profile_views": "צפיות בפרופיל",
           "profile_views_tooltip": "כמה מבקרות שונות פתחו את עמוד העסק שלך. מבקרת שנכנסת כמה פעמים באותו יום נספרת פעם אחת.",
           "search_appearances": "הופעות בחיפוש",
           "search_appearances_tooltip": "כמה מבקרות שונות הגיעו לעמוד העסק שלך מתוך תוצאות חיפוש. אותה מבקרת נספרת פעם אחת ביום. לא כולל הופעות שלא נלחצו.",
-          "whatsapp_clicks": "לחיצות וואטסאפ",
+          "whatsapp_clicks": "קליקים בוואטסאפ",
           "whatsapp_clicks_tooltip": "כמה פעמים נלחץ כפתור הוואטסאפ. קליק אינו בהכרח הודעה שנשלחה.",
-          "contact_clicks": "קליקים ליצירת קשר (בלי וואטסאפ)",
+          "contact_clicks": "קליקים על טלפון, אתר ועוד",
           "contact_clicks_tooltip": "קליקים על טלפון, אינסטגרם, אתר או אימייל. וואטסאפ נספר בנפרד."
         },
         "simple_cards": {
-          "followers_label": "עוקבות",
+          "followers_label": "שמרו במועדפים",
           "followers_sub_template": "+{count} השבוע",
-          "followers_zero_prefix": "עדיין אין עוקבות — ",
+          "followers_zero_prefix": "עדיין אף אחת — ",
           "followers_zero_share": "שתפו את העמוד",
           "rating_label": "דירוג ממוצע",
           "rating_sub_template": "מתוך {count} ביקורות"
@@ -4441,7 +4438,8 @@
         "saving": "בשמירה…",
         "saved": "נשמר ✓",
         "save_success": "מספר הרישיון נשמר",
-        "save_error": "השמירה נכשלה. נסו שוב."
+        "save_error": "השמירה נכשלה. נסו שוב.",
+        "summary_present": "רישיון ✓"
       },
       "pricing": {
         "heading": "מחיר התחלתי",
@@ -4672,7 +4670,8 @@
         "action_activate": "הפעלה",
         "action_delete": "מחיקה",
         "action_error": "הפעולה נכשלה. נסי שוב.",
-        "delete_confirm": "למחוק את האירוע \"{title}\"? הפעולה בלתי הפיכה."
+        "delete_confirm": "למחוק את האירוע \"{title}\"? הפעולה בלתי הפיכה.",
+        "badge_past": "הסתיים"
       },
       "manage_experiences": {
         "heading": "החוויות שלי",
@@ -4695,7 +4694,8 @@
         "status_pending": "בבדיקה",
         "status_approved": "מאושרת",
         "status_rejected": "נדחתה",
-        "status_changes_requested": "נדרשים תיקונים"
+        "status_changes_requested": "נדרשים תיקונים",
+        "badge_past": "הסתיימה"
       },
       "name_change": {
         "heading": "שינוי שם העסק",
@@ -4763,17 +4763,17 @@
     },
     "followers": {
       "back_link": "חזרה ללוח הבקרה",
-      "heading": "העוקבות שלי",
+      "heading": "שמרו במועדפים",
       "loading": "בטעינה...",
-      "empty_title": "עוד אין עוקבות — וזה בסדר",
-      "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — העתיקו את הקישור לפרופיל שלך ושתפו אותו עם לקוחות.",
+      "empty_title": "עוד אף אחת לא שמרה — וזה בסדר",
+      "empty_description": "העתיקו את הקישור לפרופיל שלך ושתפו אותו עם לקוחות.",
       "share_cta": "העתיקו קישור לשיתוף",
       "share_cta_copied": "הועתק! ✓",
       "share_toast": "הקישור הועתק!",
       "share_error": "העתקת הקישור נכשלה. נסו שוב.",
       "share_locked": "קישור השיתוף יהיה זמין ברגע שהעסק יאושר ויפורסם.",
-      "followers_label": "עוקבות",
-      "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפו את הפרופיל שלך כדי להגיע ליותר לקוחות."
+      "followers_label": "שמרו במועדפים",
+      "share_hint": "שתפו את הפרופיל שלך כדי להגיע ליותר לקוחות."
     },
     "alert_prefs": {
       "loading": "בטעינה...",
@@ -5046,7 +5046,8 @@
         },
         "primary_must_be_branch": "המיקום הראשי חייב להיות סניף. אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק.",
         "one_primary_required": "חובה מיקום ראשי אחד"
-      }
+      },
+      "count_summary": "{count, plural, one {מיקום אחד} two {שני מיקומים} other {# מיקומים}}"
     },
     "security": {
       "common": {

@@ -150,13 +150,14 @@ describe("MEH-160 — the view tooltips state the dedup the code performs", () =
   it.each([
     ["he", he],
     ["en", en],
-  ])("%s: the conversion line does not claim a bounded percentage", (_locale, messages) => {
+  ])("%s: the conversion line stays removed", (_locale, messages) => {
     const { kpi } = messages.dashboard.producer.analytics;
-    // producer_whatsapp_clicks carries no viewer hash (models.py), so the
-    // numerator stays raw against a deduped denominator and the ratio can
-    // legitimately exceed 100. "% of viewers clicked" cannot express that;
-    // "per 100 distinct visitors" can, at any value.
-    expect(kpi.conversion_line).not.toMatch(/^\{rate\}%/);
-    expect(kpi.conversion_line).toMatch(/100 מבקרות שונות|per 100 distinct visitors/i);
+    // MEH-2430: the Overview no longer renders this line (Sapir, 27/10), so
+    // the key is gone. Whoever brings it back must replace this test, and the
+    // rule it used to carry still applies: producer_whatsapp_clicks has no
+    // viewer hash (models.py), so the numerator is raw against a deduped
+    // denominator and the ratio can exceed 100. "% of viewers clicked" cannot
+    // say that; "per 100 distinct visitors" can.
+    expect(kpi.conversion_line).toBeUndefined();
   });
 });
