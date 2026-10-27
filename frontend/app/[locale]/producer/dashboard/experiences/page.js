@@ -20,6 +20,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
+import { israelToday } from "@/lib/israel-date";
 import { detailToMessage } from "@/lib/errors";
 // MEH-999: the empty list was a bare <p> — now the shared EmptyState, same as
 // the recipes manage list (recipes/page.js:25).
@@ -41,6 +42,7 @@ const KNOWN_STATUSES = ["pending", "approved", "rejected", "changes_requested"];
 
 export default function ManageExperiencesPage() {
   const t = useTranslations("dashboard.producer.manage_experiences");
+  const today = israelToday();
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -133,7 +135,10 @@ export default function ManageExperiencesPage() {
         <ul className="space-y-3">
           {items.map((ex) => {
             // MEH-1419: cancelled = an approved experience the host toggled off.
-            const cancelled = ex.status === "approved" && !ex.is_active;
+            // MEH-2430: an approved experience whose date has passed read
+            // «מאושרת» with a «ביטול» button (staging 27/10, three from 09/2026).
+            const past = ex.status === "approved" && ex.event_date < today;
+            const cancelled = !past && ex.status === "approved" && !ex.is_active;
             return (
             <li
               key={ex.id}
@@ -143,9 +148,15 @@ export default function ManageExperiencesPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-semibold text-text truncate">{ex.title}</h2>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[ex.status] || STATUS_CLASSES.neutral}`}>
-                      {statusLabel(ex.status)}
-                    </span>
+                    {past ? (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_CLASSES.neutral}`}>
+                        {t("badge_past")}
+                      </span>
+                    ) : (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[ex.status] || STATUS_CLASSES.neutral}`}>
+                        {statusLabel(ex.status)}
+                      </span>
+                    )}
                     {cancelled && (
                       <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_CLASSES.warning}`}>
                         {t("badge_inactive")}
@@ -166,7 +177,7 @@ export default function ManageExperiencesPage() {
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
                   </Link>
-                  {ex.status === "approved" && (
+                  {ex.status === "approved" && !past && (
                     <button
                       type="button"
                       onClick={() => toggleActive(ex)}
