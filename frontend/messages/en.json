@@ -1287,7 +1287,6 @@
         "remove": "Remove filter {label}"
       },
       "clear_all": "× Clear all",
-      "arranged_hidden": "Businesses arranged personally aren't shown in this filter",
       "delivery_context_banner": "Businesses that deliver to {city}. The map pin is the business location — not the delivery area",
       "banner_dismiss_aria": "Close this explanation",
       "day_bridge_cta": "Filter by delivery day across all businesses"
@@ -1369,7 +1368,9 @@
       "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
-      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
+      "count_filtered_zero": "No results for these filters",
+      "reset_filters": "Clear filters"
     },
     "chip_scroll": {
       "category_aria": "Filter by category",

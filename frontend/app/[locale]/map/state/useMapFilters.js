@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
+  SERVICE_CHIP_KEYS,
   TOGGLE_CHIPS,
   chipStateToParams,
   resolveCategoryId,
@@ -392,9 +393,14 @@ export function useMapFilters({
   // ONLY. A category selection is shown by its chip ring in the category row,
   // never mirrored as a removable tag — its exit affordance is the "כל" chip.
   // ("נקו הכל" → resetAllFilters still clears BOTH categories and attributes.)
+  // MEH-2425: the promoted service chips (SERVICE_CHIP_KEYS) are skipped too —
+  // they show their own on/off state one row up, so a "× משלוח" tag under a lit
+  // משלוח chip was the same filter twice (Sapir's screenshot, 27/10). Tags are
+  // only for filters whose state is otherwise hidden inside FilterSheet.
   const activeFilterTags = useMemo(() => {
     const tags = [];
     TOGGLE_CHIPS.forEach((c) => {
+      if (SERVICE_CHIP_KEYS.includes(c.key)) return;
       if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
     });
     return tags;
@@ -408,6 +414,17 @@ export function useMapFilters({
     () => TOGGLE_CHIPS.filter((c) => chipState[c.key]).length,
     [chipState],
   );
+
+  // MEH-2425: any filter at all — a category or an attribute. Lets an empty
+  // result say "the filters did this" (and offer to clear them) instead of
+  // reading as an empty area.
+  // The desktop legend's category toggles (activeCategoryNames) and the city
+  // search narrow the list too, so they count — resetEverything clears both.
+  const hasActiveFilters =
+    activeAttributeCount > 0 ||
+    chipState.categoryKeys.length > 0 ||
+    activeCategoryNames !== null ||
+    cityFilter.trim() !== "";
 
   // MEH-2170: which toggle chips FilterSheet offers. Derived from the mount
   // snapshot + the active state only — NOT from allProducers, which reloads
@@ -446,6 +463,7 @@ export function useMapFilters({
     cancelPendingSheetFetch,
     handleCityPickerSelect,
     resetAllFilters,
+    hasActiveFilters,
     handleCityFilter,
     toggleCategory,
     isCategoryActive,

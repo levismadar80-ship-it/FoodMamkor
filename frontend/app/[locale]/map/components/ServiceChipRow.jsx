@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 import { chipIcon } from "@/lib/chip-icons";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
+import { SERVICE_CHIP_KEYS as SERVICE_KEYS, TOGGLE_CHIPS } from "@/lib/map-chips";
 
 /**
  * Module:   ServiceChipRow
@@ -34,10 +34,10 @@ import { TOGGLE_CHIPS } from "@/lib/map-chips";
  * shared `chipState` is what stops the two surfaces drifting.
  */
 
-// MEH-2046: the two axes this row promotes, in RTL reading order
-// (משלוח first). Both live in TOGGLE_CHIPS, so labels + scope/evidence come
-// from ATTRIBUTE_LABELS and cannot drift from FilterSheet's copy of them.
-const SERVICE_KEYS = ["has_delivery", "pickup_points"];
+// MEH-2046: the two axes this row promotes (SERVICE_CHIP_KEYS, lib/map-chips —
+// MEH-2425 moved it there so the tag row can skip them). Both live in
+// TOGGLE_CHIPS, so labels + scope/evidence come from ATTRIBUTE_LABELS and
+// cannot drift from FilterSheet's copy of them.
 
 export default function ServiceChipRow({ chipState, onToggleChip, children }) {
   // REUSES: FilterChipsBar.jsx — glyphs attached at the render site so
