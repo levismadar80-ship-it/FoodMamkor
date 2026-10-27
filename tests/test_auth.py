@@ -22,8 +22,8 @@ from joserfc.jwk import OctKey
 
 from app.config import settings
 from app.services import password_policy
-from conftest import auth_header, make_user, valid_producer_register_payload
 from app.utils.clock import utc_now
+from conftest import auth_header, make_user, valid_producer_register_payload
 
 
 # 12-char value vetted in test_password_policy.py — not in deny_list_10k,

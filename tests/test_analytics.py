@@ -33,8 +33,8 @@ from app.models.models import (
     ProducerWhatsAppClick,
     Report,
 )
-from conftest import auth_header, make_category, make_producer, make_user
 from app.utils.clock import utc_now
+from conftest import auth_header, make_category, make_producer, make_user
 
 
 # ============================================================

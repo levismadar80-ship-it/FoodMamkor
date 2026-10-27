@@ -336,7 +336,7 @@ class TestAuth:
 
     def test_register_stores_timezone_aware_consent_timestamp(self, client, db):
         # MEH-1995 (adversarial review R-3): the column is DateTime(timezone=True)
-        # and naive utcnow() is in use 16 lines from the stamp, so "is not None"
+        # and naive utc_now() is in use 16 lines from the stamp, so "is not None"
         # would pass just as happily on a naive value. For a column whose whole
         # evidentiary worth is WHICH INSTANT, a silent offset is the failure that
         # matters — a naive datetime lands in a TIMESTAMPTZ interpreted in the

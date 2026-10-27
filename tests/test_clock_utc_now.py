@@ -21,6 +21,10 @@ def test_utc_now_is_utc_wall_clock_within_a_second():
     value = utc_now()
     after = datetime.now(timezone.utc).replace(tzinfo=None)
     assert before <= value <= after
+    # Loose upper bound (review on #3652): a stalled helper or a wide clock mock
+    # still fails; 5 s leaves room for a loaded CI runner (the 1 s bound was
+    # the flake risk the #3644 review named).
+    assert after - before < timedelta(seconds=5)
 
 
 def test_utc_now_compares_with_a_naive_value_without_raising():

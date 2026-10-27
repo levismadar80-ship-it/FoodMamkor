@@ -13,8 +13,8 @@ area fixture pattern) · tests/test_meh1644_delivery_day.py (vocabulary pins).
 """
 
 from app.models import DeliveryArea
-from tests.conftest import make_producer
 from app.utils.clock import utc_now
+from tests.conftest import make_producer
 
 
 def _approved(db, name, *, nationwide=False, areas=()):

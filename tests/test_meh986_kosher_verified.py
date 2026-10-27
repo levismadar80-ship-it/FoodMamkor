@@ -55,7 +55,7 @@ def test_kosher_filter_excludes_free_text_only_producer(client, db):
 
 def test_kosher_filter_excludes_expired_cert(client, db):
     # MEH-1260: expired certificate → out of ?kosher=true, into ?kosher=false.
-    # Naive utcnow mirrors how admin_kashrut.py:73 writes the timestamps.
+    # Naive utc_now() mirrors how admin_kashrut.py writes the timestamps.
     expired = make_producer(db, name="חוות תעודה פגה")
     expired.kashrut_verified_at = utc_now() - timedelta(days=730)
     expired.kashrut_expires_at = utc_now() - timedelta(days=365)
