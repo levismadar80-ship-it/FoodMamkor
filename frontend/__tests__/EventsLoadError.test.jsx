@@ -62,7 +62,13 @@ vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "" }));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 vi.mock("@/components/CalendarView", () => ({ default: () => null }));
 vi.mock("@/components/CitySearch", () => ({ default: () => <input data-testid="city-input" /> }));
-vi.mock("@/components/ChipScrollRow", () => ({ default: () => <div data-testid="chip-row" /> }));
+// The chip row exposes one button so a test can change the category filter
+// (which re-runs load) while a previous request is still pending — cell (d).
+vi.mock("@/components/ChipScrollRow", () => ({
+  default: ({ onChipClick }) => (
+    <button type="button" data-testid="chip-harvest" onClick={() => onChipClick("harvest")} />
+  ),
+}));
 
 const row = (id) => ({
   id,
@@ -118,6 +124,31 @@ describe("/events — a failed load is an error, not a zero (MEH-2396)", () => {
     expect(screen.queryByTestId("events-load-error")).not.toBeInTheDocument();
     expect(screen.getByText("event 1")).toBeInTheDocument();
     expect(screen.getByText("event 2")).toBeInTheDocument();
+  });
+
+  it("(d) a late result from a superseded request is ignored — the retry's rows win", async () => {
+    // First request hangs; the retry answers at once; then the first one
+    // finally rejects. Without the ticket guard the late rejection flips the
+    // page back to the error surface over the rows the retry rendered.
+    let rejectFirst;
+    let calls = 0;
+    responder = () => {
+      calls += 1;
+      if (calls === 1) return new Promise((_, reject) => { rejectFirst = reject; });
+      return Promise.resolve({ data: [row(1)] });
+    };
+    render(<EventsClient initialTab="events" />);
+    await waitFor(() => expect(calls).toBe(1));
+    // change a filter while the first request is still in flight (the skeleton
+    // is up, so there is no retry button yet) — that issues request #2
+    fireEvent.click(screen.getByTestId("chip-harvest"));
+    await waitFor(() => expect(calls).toBe(2));
+    await settle();
+    expect(screen.getByText("event 1")).toBeInTheDocument();
+    rejectFirst(new Error("timeout of 15000ms exceeded"));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("events-load-error")).not.toBeInTheDocument();
+    expect(screen.getByText("event 1")).toBeInTheDocument();
   });
 
   it("(c) the list request carries a per-call timeout", async () => {

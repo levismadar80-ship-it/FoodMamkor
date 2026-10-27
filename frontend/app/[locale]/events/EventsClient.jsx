@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 // MEH-2245: the tab is the ROUTE (/events vs /experiences), so switching it is
@@ -144,6 +144,10 @@ export default function EventsPage({ initialTab = "events" }) {
   // setRows([]) and the page rendered the editorial "אין אירועים" empty
   // state — a false statement when the server simply did not answer.
   const [loadError, setLoadError] = useState(false);
+  // MEH-2396: a retry (or a filter change) while an earlier request is still
+  // pending must not let that earlier request's late result overwrite the
+  // newer one. Each load() takes a ticket; only the latest ticket may commit.
+  const loadTicket = useRef(0);
   // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
   // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
@@ -197,6 +201,7 @@ export default function EventsPage({ initialTab = "events" }) {
   }, [tab, city, category]);
 
   const load = async () => {
+    const ticket = ++loadTicket.current;
     setLoading(true);
     setLoadError(false);
     try {
@@ -209,12 +214,14 @@ export default function EventsPage({ initialTab = "events" }) {
       // screen until the proxy gave up. 15 s is per-request on purpose — a
       // global axios timeout would also cut image uploads.
       const r = await api.get(endpoint, { params, timeout: 15000 });
+      if (ticket !== loadTicket.current) return; // superseded
       setRows(r.data);
     } catch {
+      if (ticket !== loadTicket.current) return; // superseded
       setRows([]);
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (ticket === loadTicket.current) setLoading(false);
     }
   };
 
