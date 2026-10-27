@@ -17,6 +17,8 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
   // third). The reveal timer is armed only once cookie consent exists: read
   // from localStorage when it is already there, else on the "cookie-consent"
   // event CookieBanner.jsx dispatches on accept (contract: lib/cookie-consent.js).
+  // Intended consequence: a visitor who never answers the cookie banner never
+  // sees the city prompt either — one open question on screen, not two.
   useEffect(() => {
     if (hasCity) return;
     if (sessionStorage.getItem(DISMISS_KEY)) return;
