@@ -19,6 +19,7 @@ graph LR
     App[FastAPI app] --> Auth[auth.router<br/>/auth/*]
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router<br/>/producers/me/*]
+    App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
@@ -80,10 +81,6 @@ graph TD
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
-
-    Account --> Follow[POST /producers/{id}/follow<br/>🔑 notification prefs]
-    Account --> Unfollow[DELETE /producers/{id}/follow<br/>🔑]
-    Account --> Following[GET /users/me/following<br/>🔑]
 ```
 
 ## 4. Producer self-management (role=producer)
@@ -118,7 +115,7 @@ graph TD
 
 ```mermaid
 graph TD
-    Dashboard[/admin dashboard page] --> AdminDash[GET /admin/dashboard<br/>🛡️ stats + monthly_producers chart +<br/>daily_active_users + top_cities +<br/>server_health + pending_moderation_count]
+    Dashboard[/admin «מה מחכה לטיפול» page + admin layout] --> AdminDash[GET /admin/dashboard<br/>🛡️ stats + pending_producers preview +<br/>monthly_producers + daily_active_users +<br/>top_cities + server_health + pending_moderation_count;<br/>MEH-2359 per-queue keys: pending_category_requests,<br/>pending_name_change_requests, undelivered_whatsapp_7d,<br/>experiences_awaiting_review, recipes_awaiting_review —<br/>the page reads stats + pending_producers only;<br/>the layout reads stats for the sidebar pills + queue filter]
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
@@ -127,6 +124,8 @@ graph TD
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
+    Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft]
+    Producers --> DraftProducts[POST /admin/producers/{id}/products · DELETE …/products/{product_id}<br/>🛡️ MEH-2326 catalogue of an ownerless draft only, 409 once claimed / not draft]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
@@ -145,6 +144,10 @@ graph TD
     Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ >=1 open report; auto_flagged >=3]
     Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
     Reports --> Dismiss[POST /admin/reports/{id}/dismiss<br/>🛡️ 409 if closed]
+
+    ReviewsAdmin[/admin/reviews page] --> AdminRevList[GET /admin/reviews<br/>🛡️ all reviews incl. hidden]
+    ReviewsAdmin --> RevHide[PUT /admin/reviews/{id}/hide<br/>🛡️ sticky — author edit keeps it,<br/>author DELETE → 404 MEH-2348<br/>clears edited_after_hidden_at MEH-2381]
+    ReviewsAdmin --> RevUnhide[PUT /admin/reviews/{id}/unhide<br/>🛡️ MEH-2348 the only way back]
 
     Analytics[/admin/analytics page] --> AdminAnalytics[GET /admin/analytics<br/>🛡️ charts + heatmap + top producers]
 

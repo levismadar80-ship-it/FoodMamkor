@@ -22,11 +22,11 @@ from app.routers import (
     health,
     holiday_mode,
     marketing,
+    producer_claim,
     producer_me,
     producer_name_requests,
     producer_recipes,
     producers,
-    referrals,
     report_info,
     reports,
     reviews,
@@ -50,6 +50,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(cities.router)
     app.include_router(producer_me.router)
+    # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
+    app.include_router(producer_claim.router)
     app.include_router(producers.router)
     app.include_router(favorites.router)
     app.include_router(admin.router)
@@ -117,7 +119,6 @@ def register_routers(app: FastAPI) -> None:
     # MEH-1872: the re-moderated name-change route. Deliberately NOT part of
     # producer_me — that router's writable-field set is what MEH-1851 closed.
     app.include_router(producer_name_requests.router)
-    app.include_router(referrals.router)
     app.include_router(group_buys.router)
     app.include_router(group_buys.admin_router)
     app.include_router(alerts.router)

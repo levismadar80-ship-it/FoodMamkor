@@ -6,11 +6,17 @@ import type { Route } from "@playwright/test";
  * Purpose:  Convert the CONVERT-verdict rows of the «Analytics — Producer +
  *           Admin dashboards» section (no card id — the heading is mapped to
  *           the marker ANALYTICS, like SWEEP1607 in chunk 11h):
- *             MT:ANALYTICS:19-22   /admin — stat cards, alerts, the DAU chart,
- *                                  top cities, the server-health panel
+ *             MT:ANALYTICS:19-22   /admin — WAS stat cards, alerts, the DAU chart,
+ *                                  top cities, the server-health panel. MEH-2359
+ *                                  (26/10) replaced the page with «מה מחכה לטיפול»
+ *                                  — the pending businesses + the busy queues;
+ *                                  the block now asserts THAT (MT:MEH-2359:1-2,
+ *                                  :5-6 in MANUAL_TESTING.md).
  *             MT:ANALYTICS:25, :26 /admin/settings — the vacation-mode toggle
  *             MT:ANALYTICS:28, :29 /admin/producers — the AI risk badge + tooltip
- *             MT:ANALYTICS:44-47   the sidebar pending-moderation pill
+ *             MT:ANALYTICS:44-47   the sidebar pill — since MEH-2359 it is the
+ *                                  pending-BUSINESSES count on «מה מחכה לטיפול»
+ *                                  and «בתי עסק», not the moderation aggregate
  * Touches:  NO backend. `/admin/dashboard` is answered from a fixture the
  *           layout and the page both read; `/admin/settings/vacation` is a
  *           per-test store the POST mutates and the reload reads back; the
@@ -36,7 +42,8 @@ import type { Route } from "@playwright/test";
  *      from a fixed /admin/dashboard payload, which body the vacation save
  *      sends, and which badge a fixed risk_score earns.
  *   2. The contracts are pinned: the dashboard payload keys the page reads
- *      (page.js:40-260), VacationSettings in/out (settings/page.js:111-118),
+ *      (page.js `stats` + `pending_producers`; admin/queues.js the per-queue
+ *      keys), VacationSettings in/out (settings/page.js:111-118),
  *      ProducerAdminOut.risk_score / risk_reasoning (AdminProducersTable.jsx:477).
  *   3. The unmocked alternative needs 30 days of real DAU, real page views in
  *      ten cities, a fresh signup scored by Anthropic, and a vacation flag
@@ -46,19 +53,12 @@ import type { Route } from "@playwright/test";
  *
  * ─── Doc-vs-code drift found, REPORTED and not fixed ───────────────────────
  *
- * D1 · MT:ANALYTICS:44 expects the dashboard's alert cards to "list the 4"
- *      (pending producer, open report, flagged home product, pending
- *      experience). The dashboard renders TWO alert cards — pending producers
- *      and open reports (page.js:104-131); flagged products and pending
- *      experiences have no card, only their share of the sidebar count.
- *      Asserted as measured: two cards, and the pill still reads 4.
- * D2 · MT:ANALYTICS:19 counts "2 charts". Measured: two SVG line charts
- *      (6-month producers, DAU) plus the top-cities bar list — asserted as
- *      the two headings + the list, since a bar list is not an SVG chart.
- * D3 · MT:ANALYTICS:22 says the panel shows `response_time_avg_ms` and
- *      `requests_per_minute` "+ a per-process note". The footnote is a raw
- *      i18n string carrying Markdown asterisks («**מידע:** …») that the page
- *      renders literally — asserted by the words, not the glyphs.
+ * D1-D3 (12g) described the pre-MEH-2359 dashboard — two alert cards vs the
+ * four MT:ANALYTICS:44 listed, "2 charts", the Markdown-asterisk footnote.
+ * That page is gone (stat cards, charts, DAU, top cities, server health all
+ * left /admin; growth + cities live on /admin/analytics), so the rows are
+ * asserted against the MEH-2359 shape and the ANALYTICS:19-22/44-47 rows in
+ * MANUAL_TESTING.md are flagged for the docs backfill as superseded.
  *
  * ─── Rows this chunk does NOT convert ──────────────────────────────────────
  *
@@ -106,6 +106,11 @@ function dashboard(over: Partial<Omit<Dashboard, "stats">> & { stats?: Partial<S
       total_experiences: 8,
       pending_moderation_count: 4,
       pending_kashrut_requests: 0,
+      pending_category_requests: 0,
+      pending_name_change_requests: 0,
+      undelivered_whatsapp_7d: 0,
+      experiences_awaiting_review: 0,
+      recipes_awaiting_review: 0,
       ...(over.stats ?? {}),
     },
     recent_activity: over.recent_activity ?? [],
@@ -157,13 +162,15 @@ type StubOpts = {
   vacation?: { active: boolean; return_date: string | null };
   /** Status the vacation POST answers with. */
   vacationStatus?: number;
+  /** Status GET /admin/dashboard answers with — 500 exercises the fail-visible nav (MEH-2096). */
+  dashboardStatus?: number;
 };
 type Stub = { unstubbed: string[]; dashboardCalls: () => number; setDashboard: (d: Dashboard) => void };
 
 async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   let dash = opts.dashboard ?? dashboard();
   let vacation = opts.vacation ?? { active: false, return_date: null };
-  const { rows = [], writes, vacationStatus = 200 } = opts;
+  const { rows = [], writes, vacationStatus = 200, dashboardStatus = 200 } = opts;
   const unstubbed: string[] = [];
   let dashboardCalls = 0;
 
@@ -178,8 +185,13 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   await page.route("**/auth/me", (r) => json(r, ADMIN));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
+  // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
+  await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route("**/categories", (r) => json(r, [{ id: 2, name: "פירות וירקות", slug: "veg" }]));
-  await page.route("**/admin/dashboard", (r) => { dashboardCalls += 1; return json(r, dash); });
+  await page.route("**/admin/dashboard", (r) => {
+    dashboardCalls += 1;
+    return dashboardStatus === 200 ? json(r, dash) : json(r, { detail: "boom" }, dashboardStatus);
+  });
   // The queue — the 12a inventory.
   // Pathname predicate, not a glob: the settings page asks for ?include_inactive=true (the 12c lesson).
   await page.route((u) => /\/api\/admin\/checklist-items\/?$/.test(u.pathname), (r) => json(r, []));
@@ -204,9 +216,14 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
 
 async function openDashboard(page: Page): Promise<void> {
   await page.goto("/he/admin");
-  await expect(page.getByRole("heading", { name: "לוח מחוונים" }), "control: the dashboard never rendered").toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" }), "control: the health panel never rendered").toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "מה מחכה לטיפול" }), "control: the home never rendered").toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("admin-home-pending"), "control: the pending panel never rendered").toBeVisible({ timeout: 15_000 });
 }
+/** The two MEH-2359 home panels. */
+const pendingPanel = (page: Page) => page.getByTestId("admin-home-pending");
+const queuesPanel = (page: Page) => page.getByTestId("admin-home-queues");
+/** The one «עוד» disclosure — desktop sidebar only; the attribute is readable while hidden. */
+const moreGroup = (page: Page) => page.getByTestId("admin-nav-more");
 /**
  * The dashboard card whose <h2> reads `heading`, scoped to the page's <main> so
  * neither nav can match. `.last()` picks the innermost white container around
@@ -216,109 +233,75 @@ async function openDashboard(page: Page): Promise<void> {
  */
 const card = (page: Page, heading: string) =>
   page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
-/** The one pill that is actually rendered — the desktop sidebar and the mobile nav each carry one; the other is display:none. */
+/** The pills that are actually rendered — the desktop sidebar and the mobile nav each carry a set; the other is display:none.
+ *  MEH-2359: the pending-businesses count sits on BOTH approvals entries («מה מחכה לטיפול» + «בתי עסק»), so a count resolves to two. */
 const pill = (page: Page, count: number) => page.locator(`[aria-label="${count} פריטים לאישור"]:visible`);
+/** A visible ADMIN-nav link (sidebar or phone strip, never the home's queue rows) by its accessible-name prefix — the pill text is part of the name. */
+const navLink = (page: Page, label: string) =>
+  page.locator("aside nav, div.md\\:hidden > nav").getByRole("link", { name: new RegExp(`^${label}`) }).locator("visible=true");
 
-// ── MT:ANALYTICS:19-22 — /admin ─────────────────────────────────────────────
+// ── MT:ANALYTICS:19-22 → MEH-2359 — /admin «מה מחכה לטיפול» ───────────────
 
-test.describe("/admin — the dashboard", () => {
-  test("control: every read the dashboard makes is stubbed", async ({ page }) => {
+test.describe("/admin — «מה מחכה לטיפול»", () => {
+  test("control: every read the home makes is stubbed", async ({ page }) => {
     const stub = await stubAdmin(page);
     await openDashboard(page);
     expect(stub.unstubbed, "an /api/* read reached the 404 catch-all — a stub is missing").toEqual([]);
     expect(stub.dashboardCalls(), "the layout and the page each read /admin/dashboard once").toBe(2);
   });
 
-  // MT:ANALYTICS:19 — 4 main cards + 4 secondary + alert cards + 2 charts + health + activity. (D2 on "2 charts".)
-  test("4 main stat cards, 4 secondary, both alert cards, two chart headings, the health panel and the activity feed", async ({ page }) => {
+  // MT:MEH-2359:1 — the pending list IS the page: one row per preview entry, «בדוק» → the edit screen,
+  // «צפה בכל» → the pending filter, the count in the heading. And none of the 12g furniture.
+  test("the pending businesses list with «בדוק» + «צפה בכל», and no stat cards / charts / health panel", async ({ page }) => {
     await stubAdmin(page);
     await openDashboard(page);
-    for (const [label, value] of [["סה״כ בתי עסק", "42"], ["ממתינים לאישור", "1"], ["משתמשים רשומים", "310"], ["קבוצות רכש", "0"]] as const) {
-      // A stat card is the <a> carrying the 3xl number; the alert card below shares the words «ממתינים לאישור».
-      const c = page.locator("a").filter({ has: page.locator("span.text-3xl") }).filter({ hasText: label });
-      await expect(c, label).toHaveCount(1);
-      await expect(c.locator("span.text-3xl")).toHaveText(value);
+    const panel = pendingPanel(page);
+    await expect(panel.getByRole("heading", { name: /^בקשות ממתינות/ })).toContainText("1");
+    await expect(panel.locator("span.bg-yellow-400"), "the count pill in the heading").toHaveText("1");
+    await expect(panel.getByRole("listitem")).toHaveCount(1);
+    await expect(panel.getByRole("listitem").first()).toContainText("עסק ממתין");
+    await expect(panel.getByRole("listitem").first()).toContainText("חיפה");
+    await expect(panel.getByRole("link", { name: "בדוק" })).toHaveAttribute("href", /\/admin\/producers\/501\/edit$/);
+    await expect(panel.getByRole("link", { name: /^צפה בכל/ })).toHaveAttribute("href", /\/admin\/producers\?status=pending$/);
+    await expect(page.getByRole("link", { name: /^סטטיסטיקה ואנליטיקס/ })).toHaveAttribute("href", /\/admin\/analytics$/);
+    // The 12g furniture — pinned ABSENT, by the selectors 12g pinned it present with.
+    await expect(page.locator("main span.text-3xl"), "no stat cards").toHaveCount(0);
+    await expect(page.locator("main svg polyline"), "no line chart").toHaveCount(0);
+    for (const heading of ["לוח מחוונים", "בתי עסק חדשים — 6 חודשים אחרונים", "משתמשים פעילים — 30 ימים אחרונים", "ערים מובילות", "בריאות שרת — שעה אחרונה", "פעילות אחרונה"]) {
+      await expect(page.getByRole("heading", { name: heading }), `«${heading}» left the home`).toHaveCount(0);
     }
-    await expect(page.getByText("משתמשים חדשים השבוע")).toBeVisible();
-    await expect(page.locator("div").filter({ hasText: /^\+12משתמשים חדשים השבוע/ }).last()).toContainText("מתוך 310 סה״כ");
-    await expect(page.locator("div").filter({ hasText: /^\+3עסקים חדשים השבוע/ }).last()).toContainText("מתוך 42 סה״כ");
-    for (const [label, value] of [["אירועים", "5"], ["חוויות", "8"]] as const) {
-      const c = page.locator("a").filter({ has: page.locator("span.text-3xl") }).filter({ hasText: label });
-      await expect(c, label).toHaveCount(1);
-      await expect(c.locator("span.text-3xl")).toHaveText(value);
-    }
-    await expect(page.getByRole("link", { name: /1 בתי עסק ממתינים לאישור/ })).toHaveAttribute("href", /\/admin\/producers\?status=pending$/);
-    await expect(page.getByRole("link", { name: /1 דיווחים פתוחים/ })).toHaveAttribute("href", /\/admin\/reports$/);
-    await expect(page.getByRole("heading", { name: "בתי עסק חדשים — 6 חודשים אחרונים" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "משתמשים פעילים — 30 ימים אחרונים" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "ערים מובילות" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "בריאות שרת — שעה אחרונה" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "פעילות אחרונה" })).toBeVisible();
-    await expect(page.getByText("אין נתונים עדיין", { exact: true }), "empty activity feed").toBeVisible();
-    await expect(page.getByRole("img", { name: "DAU 30 ימים" })).toBeVisible();
   });
 
-  // MT:ANALYTICS:20 — the DAU chart: 30 points, date labels at start / middle / end; and its empty state.
-  test("the DAU chart draws 30 points and labels the first, middle and last date", async ({ page }) => {
-    await stubAdmin(page);
+  // MT:MEH-2359:3 — a queue row exists only while its count is > 0; reports is NOT special on the home.
+  test("the queues panel lists only the non-empty queues, with their counts", async ({ page }) => {
+    await stubAdmin(page, { dashboard: dashboard({ stats: { open_reports: 0, pending_kashrut_requests: 2, undelivered_whatsapp_7d: 5 } }) });
     await openDashboard(page);
-    const svg = page.getByRole("img", { name: "DAU 30 ימים" });
-    await expect(svg.locator("circle")).toHaveCount(30);
-    // Only the MM-DD labels — a future axis label or title must not turn a date-format failure into a count mismatch.
-    const dateLabels = svg.locator("text").filter({ hasText: /^\d\d-\d\d$/ });
-    await expect(dateLabels).toHaveText(["08-07", "08-22", "09-05"]);
-    // Pinned on purpose: a new <text> node (axis, title, tooltip) is a chart change this row should notice and re-pin.
-    await expect(svg.locator("text"), "the chart renders exactly the three date labels").toHaveCount(3);
-    // The line joins the same 30 points — a count, not a pixel offset (chart padding is not this row's claim).
-    const points = await svg.locator("polyline").getAttribute("points");
-    expect(points, "the polyline has a non-empty points attribute").toBeTruthy();
-    expect(points!.trim().split(/\s+/), "the polyline carries one x,y pair per day").toHaveLength(30);
+    const rows = queuesPanel(page).getByRole("link");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toHaveAttribute("href", /\/admin\/kashrut$/);
+    await expect(rows.nth(0)).toContainText("כשרות");
+    await expect(rows.nth(0).locator("span.bg-yellow-400")).toHaveText("2");
+    await expect(rows.nth(1)).toHaveAttribute("href", /\/admin\/whatsapp-failures$/);
+    await expect(rows.nth(1).locator("span.bg-yellow-400")).toHaveText("5");
+    await expect(queuesPanel(page).getByText("אין פריטים ממתינים בשאר התורים")).toHaveCount(0);
   });
 
-  test("with no DAU data the chart card reads «אין נתונים עדיין»", async ({ page }) => {
-    await stubAdmin(page, { dashboard: dashboard({ daily_active_users: [] }) });
+  // MT:MEH-2359:2 — 0 pending + 0 in every queue: both empty lines, nothing yellow anywhere.
+  test("with nothing waiting both panels say so and nothing is yellow", async ({ page }) => {
+    await stubAdmin(page, { dashboard: dashboard({ stats: { pending_producers: 0, open_reports: 0 }, pending_producers: [] }) });
     await openDashboard(page);
-    const c = card(page, "משתמשים פעילים — 30 ימים אחרונים");
-    await expect(c.getByText("אין נתונים עדיין")).toBeVisible();
-    await expect(page.getByRole("img", { name: "DAU 30 ימים" })).toHaveCount(0);
+    await expect(pendingPanel(page).getByText("אין בקשות ממתינות")).toBeVisible();
+    await expect(queuesPanel(page).getByText("אין פריטים ממתינים בשאר התורים")).toBeVisible();
+    await expect(queuesPanel(page).getByRole("link")).toHaveCount(0);
+    await expect(page.locator(".bg-yellow-400"), "no yellow count on the page or in either nav").toHaveCount(0);
   });
 
-  // MT:ANALYTICS:21 — top cities: up to 10, name + count, a bar per row; and its empty state.
-  test("top cities lists the ten rows in order with their counts", async ({ page }) => {
-    await stubAdmin(page);
+  // The preview is capped by the endpoint; the remainder is said, not hidden.
+  test("when the count exceeds the preview the panel says how many more are in the queue", async ({ page }) => {
+    await stubAdmin(page, { dashboard: dashboard({ stats: { pending_producers: 7 } }) });
     await openDashboard(page);
-    const items = card(page, "ערים מובילות").getByRole("listitem");
-    await expect(items).toHaveCount(10);
-    await expect(items.first()).toContainText("תל אביב-יפו");
-    await expect(items.first()).toContainText("100");
-    await expect(items.nth(9)).toContainText("הרצליה");
-    await expect(items.nth(9)).toContainText("19");
-    await expect(items.first().locator("div.bg-primary")).toHaveAttribute("style", /width: 100%/);
-    await expect(items.nth(9).locator("div.bg-primary")).toHaveAttribute("style", /width: 19%/);
-  });
-
-  test("with no city data the card explains why", async ({ page }) => {
-    await stubAdmin(page, { dashboard: dashboard({ top_cities: [] }) });
-    await openDashboard(page);
-    await expect(card(page, "ערים מובילות").getByText("עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר.")).toBeVisible();
-  });
-
-  // MT:ANALYTICS:22 — the health panel: the two numbers, the sample count, the per-process footnote. (D3.)
-  test("the health panel shows avg response time, requests per minute, the sample count and the per-process note", async ({ page }) => {
-    await stubAdmin(page);
-    await openDashboard(page);
-    const c = card(page, "בריאות שרת — שעה אחרונה");
-    await expect(c.getByText("120 בקשות")).toBeVisible();
-    await expect(c.locator("p").filter({ hasText: "זמן תגובה ממוצע" }).locator("xpath=following-sibling::*[1]")).toContainText("42");
-    await expect(c.locator("p").filter({ hasText: "בקשות לדקה" }).locator("xpath=following-sibling::*[1]")).toContainText("7");
-    await expect(c).toContainText("per-process בזיכרון");
-    await expect(c).toContainText("מתאפסים בכל deploy");
-  });
-
-  test("with no samples yet the health panel waits for traffic", async ({ page }) => {
-    await stubAdmin(page, { dashboard: dashboard({ server_health: { sample_count: 0, response_time_avg_ms: 0, requests_per_minute: 0 } }) });
-    await openDashboard(page);
-    await expect(card(page, "בריאות שרת — שעה אחרונה").getByText("בהמתנה לתנועה...")).toBeVisible();
+    await expect(pendingPanel(page).getByText("ועוד 6 בתור")).toBeVisible();
+    await expect(pendingPanel(page).locator("span.bg-yellow-400")).toHaveText("7");
   });
 });
 
@@ -429,58 +412,86 @@ test.describe("/admin/producers — the risk badge", () => {
   });
 });
 
-// ── MT:ANALYTICS:44-47 — the sidebar pending-moderation pill ───────────────
+// ── MT:ANALYTICS:44-47 → MEH-2359 — the sidebar pill + the queue filter ────
 
-test.describe("admin nav — the pending-moderation pill", () => {
-  // MT:ANALYTICS:44 — the dashboard's alert cards. D1: two cards render, not four.
-  test("with 4 pending items the dashboard shows the two alert cards it has, and the pill still reads 4 (D1)", async ({ page }) => {
-    await stubAdmin(page);
+test.describe("admin nav — the pending-businesses pill, the queue filter, «עוד»", () => {
+  // MT:ANALYTICS:44/45 — the yellow pill carries pending_producers, on BOTH approvals entries.
+  test("«מה מחכה לטיפול» and «בתי עסק» each carry a yellow pill with the pending-businesses count", async ({ page }) => {
+    await stubAdmin(page, { dashboard: dashboard({ stats: { pending_producers: 3, pending_moderation_count: 9 } }) });
     await openDashboard(page);
-    await expect(page.getByRole("link", { name: /1 בתי עסק ממתינים לאישור/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /1 דיווחים פתוחים/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /ממתינים לאישור|דיווחים פתוחים/ }).filter({ has: page.getByText("לחצו לטיפול").or(page.getByText("דורש בדיקה")) }), "exactly two alert cards").toHaveCount(2);
-    await expect(pill(page, 4)).toHaveText("4");
-  });
-
-  // MT:ANALYTICS:45 — the yellow pill on «לוח מחוונים» carries the count.
-  test("the «לוח מחוונים» entry carries a yellow pill with the count", async ({ page }) => {
-    await stubAdmin(page);
-    await openDashboard(page);
-    const p = pill(page, 4);
-    await expect(p).toHaveText("4");
-    await expect(p).toHaveClass(/bg-yellow-400/);
-    await expect(p).toHaveAttribute("title", "4 פריטים ממתינים לאישור");
-    await expect(p.locator("xpath=ancestor::a[1]")).toHaveAttribute("href", /\/admin$/);
-    await expect(p.locator("xpath=ancestor::a[1]")).toContainText("לוח מחוונים");
+    const pills = pill(page, 3);
+    await expect(pills).toHaveCount(2);
+    for (const [i, href] of [[0, /\/admin$/], [1, /\/admin\/producers$/]] as const) {
+      await expect(pills.nth(i)).toHaveText("3");
+      await expect(pills.nth(i)).toHaveClass(/bg-yellow-400/);
+      await expect(pills.nth(i)).toHaveAttribute("title", "3 פריטים ממתינים לאישור");
+      await expect(pills.nth(i).locator("xpath=ancestor::a[1]")).toHaveAttribute("href", href);
+    }
+    await expect(pill(page, 9), "the old moderation aggregate is not a pill anywhere").toHaveCount(0);
   });
 
   // MT:ANALYTICS:46 — the pill survives a route change; the layout re-reads on every pathname.
   test("moving to /admin/producers keeps the pill — the layout re-reads the count on the new pathname", async ({ page }) => {
-    const stub = await stubAdmin(page);
+    // open_reports 0: the fixture's one open report would be a third «1» pill, on «דיווחים».
+    const stub = await stubAdmin(page, { dashboard: dashboard({ stats: { open_reports: 0 } }) });
     await openDashboard(page);
     const before = stub.dashboardCalls();
     // getByRole excludes hidden elements, so of the two navs (sidebar hidden on the
     // phone, mobile strip hidden on desktop) exactly one «בתי עסק» link resolves.
-    const producersLink = page.getByRole("link", { name: "בתי עסק", exact: true });
+    const producersLink = navLink(page, "בתי עסק");
     await expect(producersLink, "the nav link to the queue is visible").toBeVisible();
     await producersLink.click();
     await expect(page).toHaveURL(/\/admin\/producers$/);
     await expect(page.getByRole("heading", { name: /בתי עסק/ }).first()).toBeVisible();
-    await expect(pill(page, 4)).toHaveText("4");
+    await expect(pill(page, 1)).toHaveCount(2);
     expect(stub.dashboardCalls(), "one more /admin/dashboard read for the new pathname").toBeGreaterThan(before);
   });
 
   // MT:ANALYTICS:47 — once the count reaches 0 the pill is gone on the next load.
   test("when the count is 0 the next load renders no pill", async ({ page }) => {
-    const stub = await stubAdmin(page);
+    const stub = await stubAdmin(page, { dashboard: dashboard({ stats: { open_reports: 0 } }) });
     await openDashboard(page);
-    await expect(pill(page, 4)).toHaveText("4");
-    stub.setDashboard(dashboard({ stats: { pending_moderation_count: 0, pending_producers: 0, open_reports: 0 } }));
+    await expect(pill(page, 1)).toHaveCount(2);
+    stub.setDashboard(dashboard({ stats: { pending_producers: 0, open_reports: 0 }, pending_producers: [] }));
     await page.reload();
     await openDashboard(page);
-    await expect(page.locator('a:visible').filter({ hasText: "לוח מחוונים" }).first(), "the nav is rendered").toBeVisible();
+    await expect(navLink(page, "מה מחכה לטיפול"), "the nav is rendered").toBeVisible();
     await expect(page.locator('[aria-label$="פריטים לאישור"]')).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /ממתינים לאישור/ }).filter({ hasText: "לחצו לטיפול" }), "no alert card either").toHaveCount(0);
+  });
+
+  // MT:MEH-2359:3 — a queue is listed only while its count is > 0; «דיווחים» stays at 0.
+  test("the queues section lists «דיווחים» at 0 and every other queue only while it has items", async ({ page }) => {
+    await stubAdmin(page, { dashboard: dashboard({ stats: { open_reports: 0, pending_kashrut_requests: 0, recipes_awaiting_review: 4 } }) });
+    await openDashboard(page);
+    await expect(navLink(page, "דיווחים")).toBeVisible();
+    await expect(navLink(page, "מתכונים")).toBeVisible();
+    await expect(pill(page, 4).locator("xpath=ancestor::a[1]")).toHaveAttribute("href", /\/admin\/recipes$/);
+    for (const label of ["כשרות", "בקשות קטגוריה", "בקשות שינוי שם", "הודעות שלא נמסרו", "חוויות"]) {
+      await expect(navLink(page, label), `«${label}» is hidden at 0`).toHaveCount(0);
+    }
+  });
+
+  // MT:MEH-2359:6 — the endpoint dies: «!» on both approvals entries and every queue listed, none hidden.
+  test("when /admin/dashboard fails the approvals entries show «!» and every queue is listed without a count", async ({ page }) => {
+    await stubAdmin(page, { dashboardStatus: 500 });
+    await page.goto("/he/admin");
+    const unknown = page.locator('[aria-label="שגיאה בטעינת המידע"]:visible');
+    await expect(unknown).toHaveCount(2);
+    await expect(unknown.first()).toHaveText("!");
+    for (const label of ["דיווחים", "כשרות", "בקשות קטגוריה", "בקשות שינוי שם", "הודעות שלא נמסרו", "חוויות", "מתכונים"]) {
+      await expect(navLink(page, label), `«${label}» stays listed`).toBeVisible();
+    }
+    await expect(page.locator('[aria-label$="פריטים לאישור"]'), "no numeric pill while the count is unknown").toHaveCount(0);
+  });
+
+  // MT:MEH-2359:4 — «עוד» is collapsed on the home and opens itself on a deep link into one of its pages.
+  test("«עוד» is closed on /admin and open on /admin/settings, where the active item lives", async ({ page }) => {
+    await stubAdmin(page);
+    await openDashboard(page);
+    await expect(moreGroup(page)).not.toHaveAttribute("open", /.*/);
+    await openSettings(page);
+    await expect(moreGroup(page)).toHaveAttribute("open", /.*/);
+    // A plain locator, not getByRole: on the phone the sidebar is display:none and role queries skip hidden nodes.
+    await expect(moreGroup(page).locator("a", { hasText: "הגדרות" })).toHaveAttribute("aria-current", "page");
   });
 });
-

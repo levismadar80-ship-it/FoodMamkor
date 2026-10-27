@@ -53,10 +53,6 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/AccountSheet", () => ({
   default: ({ open }) => (open ? <div data-testid="account-sheet" /> : null),
 }));
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: 0, advance: vi.fn(), dismiss: vi.fn() }),
-}));
 
 describe("BottomNav", () => {
   beforeEach(() => {
@@ -94,8 +90,24 @@ describe("BottomNav", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("still renders on the /producer/dashboard owner subtree", () => {
-    pathnameRef.current = "/producer/dashboard";
+  // MEH-2431 (reverses the MEH-1202 carve-out above): the owner dashboard has
+  // its own tab nav; the consumer pill floated over its lists at 375.
+  it.each(["/producer/dashboard", "/producer/dashboard/edit", "/producer/dashboard/events/new"])(
+    "renders null on the owner dashboard subtree (%s)",
+    (path) => {
+      pathnameRef.current = path;
+      const { container } = render(<BottomNav />);
+      expect(container).toBeEmptyDOMElement();
+    },
+  );
+
+  // Controls: consumer routes keep the nav, so a gate that hides it
+  // everywhere cannot pass.
+  // `/producer/dashboardx/foo` only shares the prefix: it is neither the
+  // dashboard nor a producer leaf, so a bare startsWith("/producer/dashboard")
+  // would hide the nav there by mistake.
+  it.each(["/", "/map", "/favorites", "/producer/dashboardx/foo"])("still renders on %s", (path) => {
+    pathnameRef.current = path;
     render(<BottomNav />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
   });

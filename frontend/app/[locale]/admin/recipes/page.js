@@ -159,17 +159,18 @@ export default function AdminRecipesPage() {
           {t("recipes.empty")}
         </div>
       ) : (
-        // overflow-x-auto (not -hidden like experiences): on 375px the
-        // actions column must stay reachable by scrolling inside the card
+        // overflow-x-auto (never -hidden) keeps the actions reachable between
+        // md and lg; below md the table is one card per row (MEH-2426,
+        // globals.css .table-stack), so nothing scrolls sideways on a phone.
         <div className="bg-white border border-border rounded-[16px] overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
-                <th className="text-end p-3 font-medium">{t("recipes.columns.title")}</th>
-                <th className="text-end p-3 font-medium">{t("recipes.columns.created")}</th>
-                <th className="text-end p-3 font-medium">{t("recipes.columns.published")}</th>
-                <th className="text-end p-3 font-medium">{t("recipes.columns.status")}</th>
-                <th className="text-end p-3 font-medium">{t("recipes.columns.actions")}</th>
+                <th className="text-start p-3 font-medium">{t("recipes.columns.title")}</th>
+                <th className="text-start p-3 font-medium">{t("recipes.columns.created")}</th>
+                <th className="text-start p-3 font-medium">{t("recipes.columns.published")}</th>
+                <th className="text-start p-3 font-medium">{t("recipes.columns.status")}</th>
+                <th className="text-start p-3 font-medium">{t("recipes.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -267,21 +268,21 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
         <td className="p-3">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="font-medium text-text hover:text-primary text-end"
+            className="font-medium text-text hover:text-primary text-start"
           >
             {recipe.title}
           </button>
         </td>
-        <td className="p-3 text-fg-muted">{formatDate(recipe.created_at, locale)}</td>
-        <td className="p-3 text-fg-muted">
+        <td className="p-3 text-fg-muted" data-label={t("recipes.columns.created")}>{formatDate(recipe.created_at, locale)}</td>
+        <td className="p-3 text-fg-muted" data-label={t("recipes.columns.published")}>
           {recipe.published ? t("recipes.published_yes") : t("recipes.published_no")}
         </td>
-        <td className="p-3">
+        <td className="p-3" data-label={t("recipes.columns.status")}>
           <span className={`text-xs px-2 py-1 rounded-full ${STATUS_BADGE[status] || STATUS_BADGE.pending}`}>
             {t(`recipes.status_labels.${status}`)}
           </span>
         </td>
-        <td className="p-3">
+        <td className="p-3" data-cell="actions">
           <div className="flex gap-1 flex-wrap">
             {status !== "approved" && (
               <button

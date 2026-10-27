@@ -60,17 +60,17 @@ const FIXTURES = [
     slug: "qa-wa",
     method: "whatsapp",
     isControl: true,
-    expect: { waLinks: "> 0", recipe: true },
+    expect: { waLinks: "> 0" },
   },
   {
     slug: "qa-mail",
     method: "email",
-    expect: { waLinks: 0, recipe: false, escalationStartsWith: "mailto:hi@shikma.example.com" },
+    expect: { waLinks: 0, escalationStartsWith: "mailto:hi@shikma.example.com" },
   },
   {
     slug: "qa-form",
     method: "external_order",
-    expect: { waLinks: 0, recipe: false, escalationStartsWith: "https://order.shikma.example.com" },
+    expect: { waLinks: 0, escalationStartsWith: "https://order.shikma.example.com" },
   },
 ];
 
@@ -80,7 +80,7 @@ function readBlocks() {
     "[data-testid='escalation-link']",
     "[data-testid='question-link']",
     "[data-testid='quick-answer-toggle']",
-    "[data-testid='recipe-idea-link']",
+    // recipe-idea-link dropped — the chip was removed in MEH-2385.
   ].join(",");
   const blocks = [...document.querySelectorAll("div")].filter(
     (d) => d.querySelector(OWNED) && !d.querySelector("div:has([data-testid='escalation-link'])"),
@@ -100,7 +100,6 @@ function readBlocks() {
       anchors,
       escalation:
         scope.querySelector("[data-testid='escalation-link']")?.getAttribute("href") ?? null,
-      recipe: !!scope.querySelector("[data-testid='recipe-idea-link']"),
       questionLinks: scope.querySelectorAll("[data-testid='question-link']").length,
       toggles: scope.querySelectorAll("[data-testid='quick-answer-toggle']").length,
     });
@@ -188,7 +187,6 @@ for (const vp of VIEWPORTS) {
     const anchors = blocks.flatMap((b) => b.anchors);
     const waCount = anchors.filter(isWa).length;
     const escalations = [...new Set(blocks.map((b) => b.escalation).filter(Boolean))];
-    const recipe = blocks.some((b) => b.recipe);
     const questionLinks = Math.max(...blocks.map((b) => b.questionLinks));
 
     if (fx.isControl) {
@@ -200,7 +198,6 @@ for (const vp of VIEWPORTS) {
         ok,
         `${waCount} wa link(s) of ${anchors.length} anchor(s)`,
       );
-      check(`${label} — recipe chip present`, recipe);
       check(`${label} — stock/custom chips present`, questionLinks > 0, `${questionLinks}`);
       check(
         `${label} — escalation is a WhatsApp deep-link`,
@@ -214,7 +211,6 @@ for (const vp of VIEWPORTS) {
         waCount === 0,
         `${waCount} of ${anchors.length} anchor(s)`,
       );
-      check(`${label} — recipe chip hidden`, recipe === false);
       check(`${label} — stock/custom chips hidden`, questionLinks === 0, `${questionLinks}`);
       check(
         `${label} — escalation points at the primary channel`,

@@ -44,6 +44,7 @@ import {
   packDraft,
   parseDraft,
 } from "@/lib/register-draft";
+import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -58,10 +59,6 @@ const STEP_NAME = {
 };
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
-// MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
-// conditional grower declaration ("תוצרת שגידלתי בחלקתי בלבד"). Hebrew NAMES
-// (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
-const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 
 // MEH-1807: the required fields that live on an EARLIER step than the submit
 // button. Before this, all three were checked ONLY inside the submit handler,
@@ -1888,7 +1885,7 @@ function RegisterProducerPageBody() {
             </div>
 
             {/* MEH-1471: self-reported attribution — dropdown directly above
-                the ToS consent (final step). Default "בחרי אפשרות" with no
+                the ToS consent (final step). Default "בחרו אפשרות" with no
                 preselection (Ruler Analytics speed-bias → first-option overcount).
                 Selecting "other" reveals an optional free-text input. English
                 keys stored; Hebrew from i18n.

@@ -22,7 +22,6 @@ const CHROME = existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chrom
 // differs from CI and none of the numbers below transfer.
 const TARGETS = [
   { route: "/he/events", label: "/events (quarantined)" },
-  { route: "/he/search", label: "/search (quarantined)" },
   { route: "/he/about", label: "/about (CONTROL — gated, expect 0)" },
   { route: "/he/login", label: "/login (CONTROL — gated, expect 0)" },
 ];

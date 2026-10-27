@@ -6,15 +6,17 @@ MEH-103 verified reviews system:
     WhatsApp-only to ANY channel, so it is enforced via
     producer_whatsapp_clicks.user_id OR producer_contact_clicks.user_id.
   - Owner guard: producer owners cannot review their own business.
-  - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
+  - Haiku AI moderation on body text (fail-open — no API key → the review
+    publishes; its AI status stays NULL so the next save re-checks, MEH-2390).
   - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
+    The hide is sticky (MEH-2348): an author edit keeps it, the author cannot
+    delete a hidden review, and only PUT /admin/reviews/{id}/unhide undoes it.
   - Hidden reviews are excluded from public GET endpoints and aggregates.
   - Pagination: GET /producers/{id}/reviews returns 10 per page.
 
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-import json
 import logging
 import math
 from datetime import datetime
@@ -25,6 +27,11 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, joinedload
 
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs
+from app.services.experience_moderation import _parse_response_text
+from app.services.moderation_prompt import wrap_submission
+from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
 from app.auth import decode_review_invite_token, get_current_user, require_admin
 from app.database import get_db
 from app.models import (
@@ -43,11 +50,12 @@ from app.schemas.schemas import (
     ReviewReplyUpdate,
     ReviewsPage,
 )
+from app.utils.clock import utc_now
 
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
 
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 _ai_client = None
 
 
@@ -73,20 +81,61 @@ def _get_ai_client():
         return None
 
 
-def _moderate_review_body(body: str | None) -> str:
-    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' | 'REJECTED'.
-    Fail-open: any error returns 'APPROVED'.
+def _checked_ai_status(body: str | None) -> str | None:
+    """MEH-2349: moderate ``body`` and return the verdict to store on the row
+    — "APPROVED" | "FLAGGED", or None when the moderator failed open
+    (MEH-2390: stored as NULL, the review still publishes). REJECTED is never
+    stored: it raises the 422 here, before any write. The empty-body branch is
+    defensive only — ReviewCreateNested requires a body."""
+    if not body:
+        return None
+    verdict = _moderate_review_body(body)
+    if verdict == "REJECTED":
+        raise HTTPException(
+            status_code=422,
+            detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
+        )
+    return verdict
+
+
+def _ai_status_for_write(
+    body: str | None, existing: ProducerReview | None
+) -> str | None:
+    """MEH-2349: an edit that keeps the body keeps its stored verdict, so an
+    author cannot re-save a FLAGGED review until a different verdict clears
+    the flag. A changed body, a new review, or a NULL status is moderated
+    afresh. NULL covers rows that predate the column and (MEH-2390) a
+    fail-open: it carries no verdict, so the next save asks the model again."""
+    if (
+        existing is not None
+        and existing.body == body
+        and existing.ai_moderation_status is not None
+    ):
+        return existing.ai_moderation_status
+    return _checked_ai_status(body)
+
+
+def _moderate_review_body(body: str | None) -> str | None:
+    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' |
+    'REJECTED' | None. Fail-open: any error returns None — no verdict. The
+    caller publishes the review exactly as for APPROVED (the fail-open
+    LOCK); None only keeps the stored status NULL so an unchanged re-save
+    is checked again (MEH-2390).
     """
     if not body:
         return "APPROVED"
     client = _get_ai_client()
     if client is None:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
-        return "APPROVED"
-    prompt = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
-בדוק את טקסט הביקורת הבאה ותחזיר JSON בלבד.
+        report_fail_open("review", "no_client")
+        return None
+    # MEH-2350: the review text is tagged data in the user turn, never
+    # part of the instructions.
+    data_rule, user_content = wrap_submission("review", {"טקסט": body})
+    system = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
+בדוק את טקסט הביקורת המוגשת ותחזיר JSON בלבד.
 
-טקסט: {body}
+{data_rule}
 
 החזר JSON בלבד (ללא ```json):
 {{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
@@ -94,21 +143,46 @@ def _moderate_review_body(body: str | None) -> str:
 APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
 FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
 REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
+    truncated = False
     try:
         msg = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}],
+            **ai_fast_request_kwargs(json_schema=REVIEW_VERDICT_SCHEMA),
+            # MEH-2335 eval: Haiku 5.5 spends 70-120 output tokens on this
+            # JSON (the Hebrew "reason" is unbounded), so a 130 cap truncated
+            # 6/15 cases mid-string → parse error → fail-open APPROVED, incl.
+            # spam / personal info / rude. 300 leaves ~2.5x headroom; only
+            # tokens actually generated are billed.
+            max_tokens=300,
+            system=system,
+            messages=[{"role": "user", "content": user_content}],
         )
+        # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
+        # "refusal", no text) is a signal about the content, not an infra
+        # failure — don't let it fall through to the fail-open.
+        if getattr(msg, "stop_reason", None) == "refusal":
+            log.warning("[reviews] model refused → FLAGGED")
+            return "FLAGGED"
+        # Truncated JSON will not parse and falls through to fail-open;
+        # remembered so the report names the cause (MEH-2352).
+        truncated = getattr(msg, "stop_reason", None) == "max_tokens"
         raw = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
-        ).strip()
-        data = json.loads(raw)
-        status = data.get("status", "APPROVED")
-        return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"
+        )
+        # Same fence/prose tolerance as the experience/recipe moderators — a
+        # bare json.loads() failed open on ```json-wrapped verdicts (MEH-2335).
+        data = _parse_response_text(raw)
+        # Upper-cased like the experience/recipe moderators: a lowercase
+        # "rejected" must not fall through to the fail-open.
+        # MEH-2390: valid JSON that is not an object has no status either.
+        status = str(data.get("status", "")).upper() if isinstance(data, dict) else ""
+        if status in {"APPROVED", "FLAGGED", "REJECTED"}:
+            return status
+        report_fail_open("review", "truncated" if truncated else "bad_status")
+        return None
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)
-        return "APPROVED"
+        report_fail_open("review", classify_failure(exc, truncated=truncated))
+        return None
 
 
 PAGE_SIZE = 10
@@ -248,6 +322,31 @@ def _invited_by_token(review_token: str | None, producer_id: UUID) -> bool:
     return bool(claims) and claims.get("producer_id") == str(producer_id)
 
 
+def _apply_review_edit(
+    db: Session,
+    review: ProducerReview,
+    data: ReviewCreateNested,
+    ai_status: str | None,
+) -> None:
+    """Write an author edit onto an existing row (both upsert paths).
+
+    MEH-2381: an edit that changes body or stars on a hidden review stamps
+    edited_after_hidden_at, so the admin sees the text she hid has changed.
+    The row is re-read under FOR UPDATE first: the moderation call sits
+    between the first read and this write, and a hide or unhide committed in
+    that window must be the is_hidden this compares against. Compared before
+    the assignment; an unchanged re-save does not stamp.
+    """
+    # The refresh discards unflushed changes on `review`: nothing may be
+    # assigned to it before this line.
+    db.refresh(review, with_for_update=True)
+    if review.is_hidden and (review.body != data.body or review.stars != data.stars):
+        review.edited_after_hidden_at = utc_now()
+    review.stars = data.stars
+    review.body = data.body
+    review.ai_moderation_status = ai_status
+
+
 @router.post(
     "/producers/{producer_id}/reviews",
     response_model=ReviewOut,
@@ -361,20 +460,16 @@ def create_review_nested(
                 detail="יש ליצור קשר עם בית העסק לפני כתיבת ביקורת",
             )
 
-    # Haiku moderation (fail-open)
-    if data.body:
-        verdict = _moderate_review_body(data.body)
-        if verdict == "REJECTED":
-            raise HTTPException(
-                status_code=422,
-                detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
-            )
+    # Haiku moderation (fail-open). MEH-2349: the verdict is kept on the row.
+    ai_status = _ai_status_for_write(data.body, existing_review)
 
     if existing_review:
-        existing_review.stars = data.stars
-        existing_review.body = data.body
-        # Unhide on edit (user is updating a previously hidden review)
-        existing_review.is_hidden = False
+        _apply_review_edit(db, existing_review, data, ai_status)
+        # MEH-2348: an edit never touches is_hidden. Only the admin hide
+        # endpoint sets it, so hidden ⇒ admin-hidden, and only an admin may
+        # undo it (PUT /admin/reviews/{id}/unhide). If is_hidden ever gains a
+        # second writer (e.g. AI auto-hide, MEH-2349 option ב), that premise
+        # dies and this needs a "hidden by whom" column.
         db.commit()
         review = existing_review
     else:
@@ -386,6 +481,7 @@ def create_review_nested(
             # MEH-1428: records HOW the gate was passed, set once at creation.
             # An edit never rewrites it — the first proof is the one on record.
             source="invite_link" if invited else "click",
+            ai_moderation_status=ai_status,
         )
         db.add(review)
         try:
@@ -401,8 +497,11 @@ def create_review_nested(
                 )
                 .first()
             )
-            review.stars = data.stars
-            review.body = data.body
+            if review is None:
+                # Not the unique-pair race this branch exists for (that row
+                # would be here) — don't mask a different integrity error.
+                raise
+            _apply_review_edit(db, review, data, ai_status)
             db.commit()
 
     _recompute_producer_rating(producer_id, db)
@@ -434,6 +533,11 @@ def delete_review(
     # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
     # review's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    # MEH-2348: the author may not delete a review an admin hid — delete +
+    # repost would publish a fresh, visible review and undo the hide. Same
+    # 404 as a stranger (MEH-1001 style); the admin override stays.
+    if review.is_hidden and not is_admin:
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     producer_id = review.producer_id
     db.delete(review)
@@ -469,7 +573,7 @@ def set_review_reply(
 
     if data.reply:
         review.reply = data.reply
-        review.reply_at = datetime.utcnow()
+        review.reply_at = utc_now()
     else:
         review.reply = None  # empty/blank → clear
         review.reply_at = None
@@ -489,20 +593,76 @@ def set_review_reply(
 # ---------------------------------------------------------------------------
 
 
+# MEH-2389: /admin/reviews drops the row on this 404 ("deleted elsewhere") and
+# recognises it by `code`, not by the wording — {code, message} per MEH-1943.
+_ADMIN_REVIEW_NOT_FOUND = {"code": "review_not_found", "message": "ביקורת לא נמצאה"}
+# MEH-2381: "keep hidden" names the edit it saw; a newer edit must not be
+# cleared unseen. /admin/reviews reloads the list on this code.
+_ADMIN_REVIEW_CHANGED = {
+    "code": "review_changed",
+    "message": "הביקורת נערכה שוב מאז שהעמוד נטען",
+}
+
+
+def _iso_or_none(value: datetime | None) -> str | None:
+    return value.isoformat() if value else None
+
+
 @router.put("/admin/reviews/{review_id}/hide")
 def hide_review(
+    review_id: UUID,
+    seen: str | None = Query(None, max_length=40),
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Set is_hidden=True on a review. Recomputes producer aggregates.
+
+    MEH-2381: `seen` is the edited_after_hidden_at the admin's page showed
+    ("keep hidden"). The row is read FOR UPDATE, so an author edit that
+    commits first is what this compares against; a mismatch is 409 and the
+    marker stays.
+    """
+    review = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review_id)
+        .with_for_update()
+        .first()
+    )
+    if not review:
+        raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
+    if seen is not None and seen != _iso_or_none(review.edited_after_hidden_at):
+        db.rollback()
+        raise HTTPException(status_code=409, detail=_ADMIN_REVIEW_CHANGED)
+    review.is_hidden = True
+    # MEH-2381: hiding (or re-hiding, "keep hidden") means the admin has seen
+    # the current text.
+    review.edited_after_hidden_at = None
+    db.commit()
+    _recompute_producer_rating(review.producer_id, db)
+    return {"detail": "Review hidden", "id": str(review_id)}
+
+
+@router.put("/admin/reviews/{review_id}/unhide")
+def unhide_review(
     review_id: UUID,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Set is_hidden=True on a review. Recomputes producer aggregates."""
-    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    """MEH-2348: set is_hidden=False — the only way a hidden review returns.
+    Recomputes producer aggregates."""
+    review = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review_id)
+        .with_for_update()
+        .first()
+    )
     if not review:
-        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
-    review.is_hidden = True
+        raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
+    review.is_hidden = False
+    review.edited_after_hidden_at = None  # MEH-2381: public again
     db.commit()
     _recompute_producer_rating(review.producer_id, db)
-    return {"detail": "Review hidden", "id": str(review_id)}
+    return {"detail": "Review unhidden", "id": str(review_id)}
 
 
 @router.get("/admin/reviews", response_model=list[AdminReviewOut])
@@ -534,6 +694,10 @@ def admin_list_reviews(
             created_at=r.created_at.isoformat() if r.created_at else "",
             # MEH-1428: "click" | "invite_link".
             source=r.source,
+            # MEH-2349: "APPROVED" | "FLAGGED" | None (no body / predates it).
+            ai_moderation_status=r.ai_moderation_status,
+            # MEH-2381: None = not edited since the last hide/unhide.
+            edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),
         )
         for r in rows
     ]

@@ -112,6 +112,21 @@
       },
       "AdminReviewOut": {
         "properties": {
+          "ai_moderation_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "APPROVED",
+                  "FLAGGED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Moderation Status"
+          },
           "body": {
             "anyOf": [
               {
@@ -126,6 +141,17 @@
           "created_at": {
             "title": "Created At",
             "type": "string"
+          },
+          "edited_after_hidden_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited After Hidden At"
           },
           "id": {
             "format": "uuid",
@@ -841,19 +867,6 @@
           "candidate"
         ],
         "title": "CheckPasswordRequest",
-        "type": "object"
-      },
-      "ClaimReferralRequest": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          }
-        },
-        "required": [
-          "code"
-        ],
-        "title": "ClaimReferralRequest",
         "type": "object"
       },
       "ContactClickIn": {
@@ -1601,7 +1614,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -1847,7 +1859,6 @@
           "price_per_person": {
             "anyOf": [
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -2056,7 +2067,6 @@
           "price_per_person": {
             "anyOf": [
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -2297,7 +2307,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -2409,7 +2418,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -2697,7 +2705,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               }
             ],
@@ -2710,7 +2717,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               }
             ],
@@ -2824,12 +2830,10 @@
             "type": "integer"
           },
           "price_per_unit_group": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Price Per Unit Group",
             "type": "string"
           },
           "price_per_unit_regular": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Price Per Unit Regular",
             "type": "string"
           },
@@ -2974,12 +2978,10 @@
             "type": "integer"
           },
           "price_per_unit_group": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Price Per Unit Group",
             "type": "string"
           },
           "price_per_unit_regular": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Price Per Unit Regular",
             "type": "string"
           },
@@ -3888,6 +3890,11 @@
               }
             ],
             "title": "Admin Notes"
+          },
+          "as_draft": {
+            "default": false,
+            "title": "As Draft",
+            "type": "boolean"
           },
           "category_ids": {
             "default": [],
@@ -5846,6 +5853,138 @@
           "count"
         ],
         "title": "ProducerCityOut",
+        "type": "object"
+      },
+      "ProducerClaimLinkOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "ProducerClaimLinkOut",
+        "type": "object"
+      },
+      "ProducerClaimOut": {
+        "properties": {
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "status"
+        ],
+        "title": "ProducerClaimOut",
+        "type": "object"
+      },
+      "ProducerClaimPreviewOut": {
+        "properties": {
+          "category_names": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Category Names",
+            "type": "array"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProducerClaimPreviewOut",
+        "type": "object"
+      },
+      "ProducerClaimPreviewRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "ProducerClaimPreviewRequest",
+        "type": "object"
+      },
+      "ProducerClaimRequest": {
+        "properties": {
+          "declaration_accepted": {
+            "default": false,
+            "title": "Declaration Accepted",
+            "type": "boolean"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
+          },
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "ProducerClaimRequest",
         "type": "object"
       },
       "ProducerCreate": {
@@ -10451,7 +10590,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -10468,7 +10606,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               }
             ],
@@ -10611,7 +10748,6 @@
           "price_max": {
             "anyOf": [
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -10623,7 +10759,6 @@
           "price_min": {
             "anyOf": [
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -10761,7 +10896,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -10778,7 +10912,6 @@
                 "type": "number"
               },
               {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                 "type": "string"
               },
               {
@@ -13280,7 +13413,7 @@
         ]
       },
       "post": {
-        "description": "Admin-created producers are auto-approved.",
+        "description": "Admin-created producers are auto-approved — unless `as_draft`, which\nprepares an ownerless draft for the owner-claim link (MEH-2322).",
         "operationId": "admin_create_producer_admin_producers_post",
         "requestBody": {
           "content": {
@@ -13660,6 +13793,54 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/claim-link": {
+      "post": {
+        "operationId": "create_claim_link_admin_producers__producer_id__claim_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerClaimLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Claim Link",
+        "tags": [
+          "producer-claim"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/google-place-candidates": {
       "get": {
         "description": "Admin-only: up to 3 Google Place candidates for a producer, or 204.\n\nBuilds the query from the producer's own name + city and runs Places Text\nSearch. 204 (fail-quiet) when: no server key, no results, or any Google API\nerror. 403 for non-admins (require_admin). 404 for an unknown producer.\nNO auto-select — the admin picks one in ProducerForm; the response is\ndisplay-only and nothing here is stored (ToS §3.2.3(b)).",
@@ -13761,6 +13942,115 @@
         "summary": "Grant Verified",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/products": {
+      "post": {
+        "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Create Draft Product",
+        "tags": [
+          "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/products/{product_id}": {
+      "delete": {
+        "operationId": "admin_delete_draft_product_admin_producers__producer_id__products__product_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete Draft Product",
+        "tags": [
+          "producer-claim"
         ]
       }
     },
@@ -14653,8 +14943,72 @@
     },
     "/admin/reviews/{review_id}/hide": {
       "put": {
-        "description": "Set is_hidden=True on a review. Recomputes producer aggregates.",
+        "description": "Set is_hidden=True on a review. Recomputes producer aggregates.\n\nMEH-2381: `seen` is the edited_after_hidden_at the admin's page showed\n(\"keep hidden\"). The row is read FOR UPDATE, so an author edit that\ncommits first is what this compares against; a mismatch is 409 and the\nmarker stays.",
         "operationId": "hide_review_admin_reviews__review_id__hide_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seen",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seen"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Hide Review",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/admin/reviews/{review_id}/unhide": {
+      "put": {
+        "description": "MEH-2348: set is_hidden=False — the only way a hidden review returns.\nRecomputes producer aggregates.",
+        "operationId": "unhide_review_admin_reviews__review_id__unhide_put",
         "parameters": [
           {
             "in": "path",
@@ -14692,7 +15046,7 @@
             "OAuth2PasswordBearer": []
           }
         ],
-        "summary": "Hide Review",
+        "summary": "Unhide Review",
         "tags": [
           "reviews"
         ]
@@ -15155,7 +15509,7 @@
     },
     "/admin/whatsapp/failed": {
       "get": {
-        "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: status IN ('failed', 'window_expired') AND created_at within\nthe last `_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
+        "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: status IN ('failed', 'window_expired') AND created_at within\nthe last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
         "operationId": "list_failed_outbound_admin_whatsapp_failed_get",
         "responses": {
           "200": {
@@ -17165,6 +17519,93 @@
         ]
       }
     },
+    "/producer-claim": {
+      "post": {
+        "operationId": "claim_producer_producer_claim_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerClaimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerClaimOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Claim Producer",
+        "tags": [
+          "producer-claim"
+        ]
+      }
+    },
+    "/producer-claim/preview": {
+      "post": {
+        "operationId": "preview_claim_producer_claim_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerClaimPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerClaimPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Claim",
+        "tags": [
+          "producer-claim"
+        ]
+      }
+    },
     "/producers": {
       "get": {
         "operationId": "list_producers_producers_get",
@@ -19107,148 +19548,6 @@
         ]
       }
     },
-    "/producers/{producer_id}/follow": {
-      "delete": {
-        "description": "Unfollow a producer. No-op if the user doesn't currently follow.",
-        "operationId": "unfollow_producer_producers__producer_id__follow_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Unfollow Producer",
-        "tags": [
-          "producers",
-          "producers"
-        ]
-      },
-      "post": {
-        "description": "Follow a producer. Idempotent — returns the existing follow if\nthe user already follows this producer.",
-        "operationId": "follow_producer_producers__producer_id__follow_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Follow Producer",
-        "tags": [
-          "producers",
-          "producers"
-        ]
-      }
-    },
-    "/producers/{producer_id}/follow-status": {
-      "get": {
-        "description": "Is the current user following this producer? Used by the follow\nbutton on the producer page to initialize its state.",
-        "operationId": "follow_status_producers__producer_id__follow_status_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Follow Status",
-        "tags": [
-          "producers",
-          "producers"
-        ]
-      }
-    },
     "/producers/{producer_id}/google-rating": {
       "get": {
         "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 only when the producer id itself does not exist.",
@@ -19742,51 +20041,6 @@
           }
         },
         "summary": "Get Vapid Public Key"
-      }
-    },
-    "/referral/claim": {
-      "post": {
-        "description": "Link the current user (referee) to the referrer identified by code.\nIdempotent — calling twice for the same user is a no-op.",
-        "operationId": "claim_referral_referral_claim_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClaimReferralRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Claim Referral",
-        "tags": [
-          "referral"
-        ]
       }
     },
     "/register/producer/prefill/{token}": {
@@ -20570,32 +20824,6 @@
         "summary": "Upsert Alert Prefs",
         "tags": [
           "alerts"
-        ]
-      }
-    },
-    "/users/me/following": {
-      "get": {
-        "description": "List the producers the current user is following, with basic\nproducer info joined in.",
-        "operationId": "list_my_following_users_me_following_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "List My Following",
-        "tags": [
-          "producers",
-          "producers"
         ]
       }
     },

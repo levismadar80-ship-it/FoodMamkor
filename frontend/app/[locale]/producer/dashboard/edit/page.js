@@ -187,7 +187,7 @@ const GROUP_MEMBERS = {
 const HUB_PREVIEW_KEYS = new Set([
   "images", // PreviewThumbs — fixed 40px squares
   "categories", // PreviewChips — closed vocabulary, capped at 3 (MEH-1297)
-  "license", // masked "•••1234" chip (MEH-1258)
+  "license", // "רישיון ✓" chip (MEH-1258, MEH-2430)
   "contact", // channel glyph + channel label
 ]);
 
@@ -476,8 +476,12 @@ function EditPageInner() {
   // MEH-1258: masked license value for the header preview/summary — bullets +
   // last 4 digits (7-10-digit Ministry-of-Health numbers stay identifiable
   // without exposing the whole value in the always-visible header).
+  // MEH-2430: the header used to show "•••" + the last 4 digits — which told
+  // the owner nothing (staging 27/10: "•••0001"). It now says the licence is
+  // on file; the number itself stays inside the open card only, so MEH-1258's
+  // "never the full number in the collapsed header" still holds.
   const licenseRaw = (profile.producer_license_number || "").trim();
-  const licenseMasked = licenseRaw ? `•••${licenseRaw.slice(-4)}` : "";
+  const licenseSummary = licenseRaw ? t("license.summary_present") : "";
   // MEH-1173: the MEH-532 seed description is not a real description — show the
   // empty-preview placeholder for it, matching the summary + next-step marker.
   const realDescription =
@@ -541,14 +545,12 @@ function EditPageInner() {
       ) : (
         <PreviewEmpty />
       ),
-    // MEH-1258: masked license chip — never the full number in the collapsed
-    // header (it scrolls past shoulders/screenshots); the open card shows it.
-    license: licenseMasked ? (
-      <span
-        dir="ltr"
-        className="inline-block px-2 py-0.5 rounded-full border border-border text-xs font-normal text-fg-muted"
-      >
-        {licenseMasked}
+    // MEH-1258: never the full number in the collapsed header (it scrolls
+    // past shoulders/screenshots); the open card shows it. MEH-2430: the chip
+    // says "רישיון ✓" instead of a masked fragment.
+    license: licenseSummary ? (
+      <span className="inline-block px-2 py-0.5 rounded-full border border-border text-xs font-normal text-fg-muted">
+        {licenseSummary}
       </span>
     ) : (
       <PreviewEmpty />
@@ -594,7 +596,6 @@ function EditPageInner() {
       }),
       orderingQuestion: tChips("ordering_q"),
       escalationQuestion: tChips("escalation"),
-      recipeQuestion: tChips("recipe_idea"),
     });
     return { usesCustom, customCount, liveCount: items.length };
   })();
@@ -904,7 +905,7 @@ function EditPageInner() {
           anchorId="trust"
           title={tAcc("hub_trust_card")}
           summary={[
-            licenseMasked || t("license.summary_empty"),
+            licenseSummary || t("license.summary_empty"),
             (profile.kashrut_badges || []).length
               ? tAcc("kashrut_has")
               : tAcc("kashrut_none"),
@@ -1002,8 +1003,9 @@ function EditPageInner() {
           anchorId="locations"
           title={tLoc("section_heading")}
           summary={
+            // MEH-2430: was a bare number ("10"); now "N מיקומים".
             profile.locations?.length
-              ? String(profile.locations.length)
+              ? tLoc("count_summary", { count: profile.locations.length })
               : tLoc("empty_title")
           }
           open={openKey === "locations"}
@@ -1282,7 +1284,6 @@ function CustomQuestionsCard({
     }),
     orderingQuestion: tChips("ordering_q"),
     escalationQuestion: tChips("escalation"),
-    recipeQuestion: tChips("recipe_idea"),
   });
 
   // Nothing to save when every input is blank AND nothing is stored — the save

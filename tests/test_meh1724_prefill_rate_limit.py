@@ -19,9 +19,10 @@ The second test guards the other direction — that adding the limiter did not
 break the endpoint itself. Without it, deleting the handler body would still
 leave the rate-limit test green.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app.models.models import OutreachLead
+from app.utils.clock import utc_now
 
 # Shape of secrets.token_urlsafe(32) (~43 chars) and comfortably over the
 # handler's `len(token) < 16` guard, so requests reach the DB lookup and 404
@@ -55,7 +56,7 @@ class TestPrefillRateLimit:
             phone="0501234567",
             city="חיפה",
             prefill_token=token,
-            prefill_token_expires_at=datetime.utcnow() + timedelta(days=7),
+            prefill_token_expires_at=utc_now() + timedelta(days=7),
         )
         db.add(lead)
         db.commit()

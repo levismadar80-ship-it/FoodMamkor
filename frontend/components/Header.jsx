@@ -191,7 +191,7 @@ export default function Header() {
       if (tag === "input" || tag === "textarea" || tag === "select") return;
       if (document.activeElement?.isContentEditable) return;
       e.preventDefault();
-      router.push("/search?focus=1");
+      router.push("/producers?focus=1");
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -318,7 +318,11 @@ export default function Header() {
         // (!isHomepage); the homepage keeps its float-over-hero transparency
         // (MEH-947-approved) — so the token is gated, not unconditional. Surface
         // only: no geometry / z / blur. Both concerns coexist on this one line.
-        className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`}
+        // MEH-2414: the homepage exemption is now AT REST only (`transparent`
+        // = isHomepage && scrollY < 60). Past the hero the same bleed-through
+        // happened on `/` — hero stats and the CTA button showed under the
+        // iOS status bar beside the pill — so the cream band applies there too.
+        className={`sticky top-0 z-[1050] pointer-events-none${transparent ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
@@ -445,7 +449,7 @@ export default function Header() {
                 competed with the add-business CTA + lengthened the pill. Same
                 route + a11y as the mobile circle (:261). */}
             <button
-              onClick={() => router.push("/search?focus=1")}
+              onClick={() => router.push("/producers?focus=1")}
               aria-label={t("nav.search_label")}
               className="hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring text-fg-muted hover:bg-primary/5"
             >
@@ -497,7 +501,7 @@ export default function Header() {
 
             {/* Mobile: search (44px circle) — nav lives in BottomNav (MEH-789 PR-A) */}
             <button
-              onClick={() => router.push("/search?focus=1")}
+              onClick={() => router.push("/producers?focus=1")}
               aria-label={t("nav.search_label")}
               className="md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring text-fg-muted"
             >

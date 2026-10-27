@@ -404,17 +404,26 @@ export default function ProducerGroupBuysPage() {
       ) : (
         <div className="space-y-4">
           {items.map((gb) => {
-            const cls = STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
+            // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
+            // nothing moves the status server-side and the owner has no
+            // control over it (admin-only PATCH, group_buys.py:303). Display
+            // only; the status itself is a separate card. deadline is a full
+            // UTC timestamp (form sends toISOString, line 76), so an instant
+            // compare is right here, unlike the date-only event lists.
+            const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
+            const cls = deadlinePassed
+              ? STATUS_CLASSES.neutral
+              : STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
-              <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
+              <div key={gb.id} data-testid="manage-group-buy-card" className="bg-white rounded-[14px] border border-border p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <h2 className="font-semibold text-text">{gb.title}</h2>
                     <p className="text-xs text-fg-muted mt-0.5">{gb.product_name}</p>
                   </div>
                   <span className={`text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${cls}`}>
-                    {statusLabel(gb.status)}
+                    {deadlinePassed ? t("status_deadline_passed") : statusLabel(gb.status)}
                   </span>
                 </div>
 

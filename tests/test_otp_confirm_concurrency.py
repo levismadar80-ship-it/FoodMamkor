@@ -74,7 +74,7 @@ flip, and prints the same failure either way.
 
 import itertools
 import threading
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -82,6 +82,7 @@ from fastapi.testclient import TestClient
 from app.database import SessionLocal, get_db
 from app.models.models import PhoneOtpToken
 from tests.conftest import auth_header, make_category, make_producer, make_user
+from app.utils.clock import utc_now
 
 PING_TARGET = "app.routers.producer_me.notify_admin_producer_review_ready"
 
@@ -140,7 +141,7 @@ def _setup(db):
             producer_id=producer.id,
             phone=producer.phone,
             code=CODE,
-            expires_at=datetime.utcnow() + timedelta(minutes=10),
+            expires_at=utc_now() + timedelta(minutes=10),
         )
     )
     db.commit()

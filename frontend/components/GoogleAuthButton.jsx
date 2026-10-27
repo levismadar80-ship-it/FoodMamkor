@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
-import { useGoogleSignIn } from "@/lib/use-google-sign-in";
+import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
@@ -29,7 +29,7 @@ export default function GoogleAuthButton({ onSuccess, onError }) {
         size: "large",
         width: buttonRef.current.offsetWidth,
         text: "continue_with",
-        locale: "he",
+        locale: gsiLang(),
       });
     }
   });

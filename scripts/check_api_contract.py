@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections import Counter, defaultdict
@@ -390,11 +391,34 @@ def _probe_url(base: str, path: str) -> str:
     return base.rstrip("/") + "/api" + path.replace("{_}", SAFE_UUID)
 
 
+BYPASS_ENV = "VERCEL_AUTOMATION_BYPASS_SECRET"
+
+
+def _probe_headers(env=None) -> dict:
+    """Request headers for the probe (MEH-2404).
+
+    staging sits behind Vercel Deployment Protection, so without the
+    automation-bypass header every route answers 302 to vercel.com/sso-api.
+    With the secret in the environment the probe sends the header; without it
+    nothing changes. Only the bypass header, never `x-vercel-set-bypass-cookie`:
+    that one answers each first hit with a 307 back to the same URL (it is for
+    browsers), which allow_redirects=False would score as a failure. Measured
+    27/10 from the sandbox: header alone → 200 on /api/producers, both headers
+    → 307.
+    """
+    env = os.environ if env is None else env
+    headers = {"User-Agent": "meh-245-probe/1.0"}
+    secret = env.get(BYPASS_ENV, "").strip()
+    if secret:
+        headers["x-vercel-protection-bypass"] = secret
+    return headers
+
+
 def run_probe(base_url: str, static_result):
     import requests  # lazy — not needed for static mode
 
     session = requests.Session()
-    session.headers.update({"User-Agent": "meh-245-probe/1.0"})
+    session.headers.update(_probe_headers())
     unique = sorted({(m, p) for m, p, _, _ in static_result["frontend_calls"]})
     rows = []
     for method, path in unique:
@@ -608,6 +632,18 @@ def probe_self_test() -> int:
     if not [r for r in all_302 if not _verdict(r[0], r[1], r[2])[0]]:
         failures.append("all-302 fixture produced no per-route failure")
 
+    # MEH-2404: the bypass header rides only when the secret is set, and the
+    # browser-only cookie header never does.
+    if "x-vercel-protection-bypass" in _probe_headers({}):
+        failures.append("bypass header sent with no secret in the environment")
+    if "x-vercel-protection-bypass" in _probe_headers({BYPASS_ENV: "  "}):
+        failures.append("bypass header sent for a blank secret")
+    with_secret = _probe_headers({BYPASS_ENV: "s3cret"})
+    if with_secret.get("x-vercel-protection-bypass") != "s3cret":
+        failures.append("secret in the environment did not reach the bypass header")
+    if "x-vercel-set-bypass-cookie" in with_secret:
+        failures.append("cookie header sent — it turns every first hit into a 307")
+
     if failures:
         print("PROBE SELF-TEST FAILED")
         for f in failures:
@@ -615,7 +651,8 @@ def probe_self_test() -> int:
         return 1
     print(
         f"probe self-test OK — {len(ran)} status cases, 6 aggregate cases, "
-        "1 discrimination case against the 404-only rule this replaces"
+        "1 discrimination case against the 404-only rule this replaces, "
+        "4 bypass-header cases"
     )
     return 0
 

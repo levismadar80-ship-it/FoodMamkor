@@ -189,8 +189,6 @@ export const GetDashboardAdminDashboardGetResponse = /*#__PURE__*/ zod.unknown()
 export const adminListExperiencesAdminExperiencesGetResponseIsActiveDefault = true;
 export const adminListExperiencesAdminExperiencesGetResponseIsRecurringDefault = false;
 export const adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault = 0;
-export const adminListExperiencesAdminExperiencesGetResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -218,7 +216,7 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminListExperiencesAdminExperiencesGetResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -235,8 +233,6 @@ export const AdminListExperiencesAdminExperiencesGetResponse = /*#__PURE__*/ zod
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsActiveDefault = true;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsRecurringDefault = false;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault = 0;
-export const approveExperienceAdminExperiencesExperienceIdApprovePostResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -264,7 +260,7 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(approveExperienceAdminExperiencesExperienceIdApprovePostResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -280,8 +276,6 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsActiveDefault = true;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsRecurringDefault = false;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault = 0;
-export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -309,7 +303,7 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(rejectExperienceAdminExperiencesExperienceIdRejectPostResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -325,8 +319,6 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsActiveDefault = true;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsRecurringDefault = false;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault = 0;
-export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -354,7 +346,7 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(requestChangesAdminExperiencesExperienceIdRequestChangesPostResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -368,8 +360,6 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
  * @summary Admin List Group Buys
  */
 export const adminListGroupBuysAdminGroupBuysGetResponseCommitsCountDefault = 0;
-export const adminListGroupBuysAdminGroupBuysGetResponsePricePerUnitGroupRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const adminListGroupBuysAdminGroupBuysGetResponsePricePerUnitRegularRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault = false;
 
 export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
@@ -382,8 +372,8 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
-  "price_per_unit_group": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminListGroupBuysAdminGroupBuysGetResponsePricePerUnitGroupRegExp)),
-  "price_per_unit_regular": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminListGroupBuysAdminGroupBuysGetResponsePricePerUnitRegularRegExp)),
+  "price_per_unit_group": /*#__PURE__*/ zod.string(),
+  "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "product_name": /*#__PURE__*/ zod.string(),
@@ -764,8 +754,6 @@ export const listProducersAdminProducersGetResponseProductsItemIsLowCarbDefault 
 export const listProducersAdminProducersGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVeganDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault = false;
-export const listProducersAdminProducersGetResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const listProducersAdminProducersGetResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const listProducersAdminProducersGetResponseProductsDefault = [];
 export const listProducersAdminProducersGetResponseProductsCountDefault = 0;
 export const listProducersAdminProducersGetResponseReportCountDefault = 0;
@@ -897,8 +885,8 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listProducersAdminProducersGetResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listProducersAdminProducersGetResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersAdminProducersGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseProductsCountDefault),
@@ -937,7 +925,8 @@ export const ListProducersAdminProducersGetResponse = /*#__PURE__*/ zod.array(Li
 
 
 /**
- * Admin-created producers are auto-approved.
+ * Admin-created producers are auto-approved — unless `as_draft`, which
+ * prepares an ownerless draft for the owner-claim link (MEH-2322).
  * @summary Admin Create Producer
  */
 export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = false;
@@ -989,8 +978,6 @@ export const adminCreateProducerAdminProducersPostResponseProductsItemIsLowCarbD
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVeganDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault = false;
-export const adminCreateProducerAdminProducersPostResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const adminCreateProducerAdminProducersPostResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const adminCreateProducerAdminProducersPostResponseProductsDefault = [];
 export const adminCreateProducerAdminProducersPostResponseProductsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReportCountDefault = 0;
@@ -1122,8 +1109,8 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminCreateProducerAdminProducersPostResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminCreateProducerAdminProducersPostResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminCreateProducerAdminProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseProductsCountDefault),
@@ -1219,8 +1206,6 @@ export const pendingProducersAdminProducersPendingGetResponseProductsItemIsLowCa
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVeganDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault = false;
-export const pendingProducersAdminProducersPendingGetResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const pendingProducersAdminProducersPendingGetResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const pendingProducersAdminProducersPendingGetResponseProductsDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseProductsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReportCountDefault = 0;
@@ -1352,8 +1337,8 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(pendingProducersAdminProducersPendingGetResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(pendingProducersAdminProducersPendingGetResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), pendingProducersAdminProducersPendingGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseProductsCountDefault),
@@ -1505,8 +1490,6 @@ export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLo
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
-export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
@@ -1638,8 +1621,8 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminGetProducerAdminProducersProducerIdGetResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminGetProducerAdminProducersProducerIdGetResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminGetProducerAdminProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault),
@@ -1728,8 +1711,6 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemI
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVeganDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault = false;
-export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault = 0;
@@ -1861,8 +1842,8 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault),
@@ -1906,6 +1887,15 @@ export const ApproveProducerAdminProducersProducerIdApprovePostResponse = /*#__P
 
 
 /**
+ * @summary Create Claim Link
+ */
+export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#__PURE__*/ zod.object({
+  "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "url": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * Admin-only: up to 3 Google Place candidates for a producer, or 204.
  *
  * Builds the query from the producer's own name + city and runs Places Text
@@ -1927,6 +1917,39 @@ export const GetGooglePlaceCandidatesAdminProducersProducerIdGooglePlaceCandidat
  * @summary Grant Verified
  */
 export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Admin Create Draft Product
+ */
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
+
+export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * @summary Admin Delete Draft Product
+ */
+export const AdminDeleteDraftProductAdminProducersProducerIdProductsProductIdDeleteResponse = /*#__PURE__*/ zod.void()
 
 
 /**
@@ -2218,8 +2241,10 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
 export const adminListReviewsAdminReviewsGetResponseSourceDefault = `click`;
 
 export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.object({
+  "ai_moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['APPROVED', 'FLAGGED']),/*#__PURE__*/ zod.null()])),
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
+  "edited_after_hidden_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -2235,9 +2260,22 @@ export const AdminListReviewsAdminReviewsGetResponse = /*#__PURE__*/ zod.array(A
 
 /**
  * Set is_hidden=True on a review. Recomputes producer aggregates.
+ *
+ * MEH-2381: `seen` is the edited_after_hidden_at the admin's page showed
+ * ("keep hidden"). The row is read FOR UPDATE, so an author edit that
+ * commits first is what this compares against; a mismatch is 409 and the
+ * marker stays.
  * @summary Hide Review
  */
 export const HideReviewAdminReviewsReviewIdHidePutResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * MEH-2348: set is_hidden=False — the only way a hidden review returns.
+ * Recomputes producer aggregates.
+ * @summary Unhide Review
+ */
+export const UnhideReviewAdminReviewsReviewIdUnhidePutResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -2333,7 +2371,7 @@ export const UpdateUserRoleAdminUsersUserIdRolePutResponse = /*#__PURE__*/ zod.u
  * Return undelivered outbound WhatsApp rows from the last 7 days.
  *
  * Filter: status IN ('failed', 'window_expired') AND created_at within
- * the last `_WINDOW_DAYS`. Ordered newest-first so the freshest
+ * the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest
  * failures show up at the top of the admin table.
  *
  * No pagination — the per-day failure volume is small (single-digit
@@ -2810,8 +2848,6 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
  */
 export const listExperiencesExperiencesGetResponseIsRecurringDefault = false;
 export const listExperiencesExperiencesGetResponseParticipantsCountDefault = 0;
-export const listExperiencesExperiencesGetResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2831,7 +2867,7 @@ export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.objec
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listExperiencesExperiencesGetResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),
@@ -2851,8 +2887,6 @@ export const ListExperiencesExperiencesGetResponse = /*#__PURE__*/ zod.array(Lis
 export const submitExperienceExperiencesPostResponseIsActiveDefault = true;
 export const submitExperienceExperiencesPostResponseIsRecurringDefault = false;
 export const submitExperienceExperiencesPostResponseParticipantsCountDefault = 0;
-export const submitExperienceExperiencesPostResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2880,7 +2914,7 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(submitExperienceExperiencesPostResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2915,8 +2949,6 @@ export const CountExperiencesExperiencesCountGetResponse = /*#__PURE__*/ zod.obj
 export const listMyExperiencesExperiencesMineGetResponseIsActiveDefault = true;
 export const listMyExperiencesExperiencesMineGetResponseIsRecurringDefault = false;
 export const listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault = 0;
-export const listMyExperiencesExperiencesMineGetResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2944,7 +2976,7 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listMyExperiencesExperiencesMineGetResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2980,8 +3012,6 @@ export const DeleteExperienceExperiencesExperienceIdDeleteResponse = /*#__PURE__
 export const getExperienceExperiencesExperienceIdGetResponseIsActiveDefault = true;
 export const getExperienceExperiencesExperienceIdGetResponseIsRecurringDefault = false;
 export const getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault = 0;
-export const getExperienceExperiencesExperienceIdGetResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3009,7 +3039,7 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getExperienceExperiencesExperienceIdGetResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3025,8 +3055,6 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
 export const updateExperienceExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const updateExperienceExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
-export const updateExperienceExperiencesExperienceIdPutResponsePricePerPersonOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3054,7 +3082,7 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault),
-  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(updateExperienceExperiencesExperienceIdPutResponsePricePerPersonOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3068,9 +3096,6 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
  * @summary List Group Buys
  */
 export const listGroupBuysGroupBuysGetResponseCommitsCountDefault = 0;
-export const listGroupBuysGroupBuysGetResponsePricePerUnitGroupRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const listGroupBuysGroupBuysGetResponsePricePerUnitRegularRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3082,8 +3107,8 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
-  "price_per_unit_group": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listGroupBuysGroupBuysGetResponsePricePerUnitGroupRegExp)),
-  "price_per_unit_regular": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listGroupBuysGroupBuysGetResponsePricePerUnitRegularRegExp)),
+  "price_per_unit_group": /*#__PURE__*/ zod.string(),
+  "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "product_name": /*#__PURE__*/ zod.string(),
@@ -3104,8 +3129,6 @@ export const CreateGroupBuyGroupBuysPostResponse = /*#__PURE__*/ zod.unknown()
  * @summary Get Group Buy
  */
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault = 0;
-export const getGroupBuyGroupBuysGroupBuyIdGetResponsePricePerUnitGroupRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const getGroupBuyGroupBuysGroupBuyIdGetResponsePricePerUnitRegularRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault = false;
 
 export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.object({
@@ -3118,8 +3141,8 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
-  "price_per_unit_group": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getGroupBuyGroupBuysGroupBuyIdGetResponsePricePerUnitGroupRegExp)),
-  "price_per_unit_regular": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getGroupBuyGroupBuysGroupBuyIdGetResponsePricePerUnitRegularRegExp)),
+  "price_per_unit_group": /*#__PURE__*/ zod.string(),
+  "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "product_name": /*#__PURE__*/ zod.string(),
@@ -3236,6 +3259,29 @@ export const SubscribeNewsletterNewsletterPostResponse = /*#__PURE__*/ zod.unkno
  * @summary Unsubscribe Newsletter
  */
 export const UnsubscribeNewsletterNewsletterUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Claim Producer
+ */
+export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Preview Claim
+ */
+export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
+
+export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
 
 
 /**
@@ -3460,8 +3506,6 @@ export const createProducerProducersPostResponseProductsItemIsLowCarbDefault = f
 export const createProducerProducersPostResponseProductsItemIsNoAddedSugarDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVeganDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVegetarianDefault = false;
-export const createProducerProducersPostResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const createProducerProducersPostResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const createProducerProducersPostResponseProductsDefault = [];
 export const createProducerProducersPostResponseProductsCountDefault = 0;
 export const createProducerProducersPostResponseReportCountDefault = 0;
@@ -3582,8 +3626,8 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(createProducerProducersPostResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(createProducerProducersPostResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), createProducerProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseProductsCountDefault),
@@ -3659,8 +3703,6 @@ export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsLowCar
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVeganDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault = false;
-export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault = 0;
@@ -3781,8 +3823,8 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getProducerBySlugProducersBySlugSlugGetResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getProducerBySlugProducersBySlugSlugGetResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerBySlugProducersBySlugSlugGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault),
@@ -3892,8 +3934,6 @@ export const getMyProducerProducersMeGetResponseProductsItemIsLowCarbDefault = f
 export const getMyProducerProducersMeGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVeganDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault = false;
-export const getMyProducerProducersMeGetResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const getMyProducerProducersMeGetResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const getMyProducerProducersMeGetResponseProductsDefault = [];
 export const getMyProducerProducersMeGetResponseProductsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReportCountDefault = 0;
@@ -4019,8 +4059,8 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getMyProducerProducersMeGetResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getMyProducerProducersMeGetResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getMyProducerProducersMeGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseProductsCountDefault),
@@ -4100,8 +4140,6 @@ export const updateMyProducerProducersMePutResponseProductsItemIsLowCarbDefault 
 export const updateMyProducerProducersMePutResponseProductsItemIsNoAddedSugarDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVeganDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault = false;
-export const updateMyProducerProducersMePutResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const updateMyProducerProducersMePutResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const updateMyProducerProducersMePutResponseProductsDefault = [];
 export const updateMyProducerProducersMePutResponseProductsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReportCountDefault = 0;
@@ -4227,8 +4265,8 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(updateMyProducerProducersMePutResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(updateMyProducerProducersMePutResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), updateMyProducerProducersMePutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseProductsCountDefault),
@@ -4467,9 +4505,6 @@ export const listMyProductsProducersMeProductsGetResponseIsLowCarbDefault = fals
 export const listMyProductsProducersMeProductsGetResponseIsNoAddedSugarDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVeganDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVegetarianDefault = false;
-export const listMyProductsProducersMeProductsGetResponsePriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const listMyProductsProducersMeProductsGetResponsePriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4482,8 +4517,8 @@ export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zo
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listMyProductsProducersMeProductsGetResponsePriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listMyProductsProducersMeProductsGetResponsePriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListMyProductsProducersMeProductsGetResponse = /*#__PURE__*/ zod.array(ListMyProductsProducersMeProductsGetResponseItem)
@@ -4498,9 +4533,6 @@ export const createMyProductProducersMeProductsPostResponseIsLowCarbDefault = fa
 export const createMyProductProducersMeProductsPostResponseIsNoAddedSugarDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVeganDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVegetarianDefault = false;
-export const createMyProductProducersMeProductsPostResponsePriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const createMyProductProducersMeProductsPostResponsePriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4513,8 +4545,8 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(createMyProductProducersMeProductsPostResponsePriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(createMyProductProducersMeProductsPostResponsePriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -4534,9 +4566,6 @@ export const updateMyProductProducersMeProductsProductIdPutResponseIsLowCarbDefa
 export const updateMyProductProducersMeProductsProductIdPutResponseIsNoAddedSugarDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault = false;
-export const updateMyProductProducersMeProductsProductIdPutResponsePriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const updateMyProductProducersMeProductsProductIdPutResponsePriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-
 
 export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4549,8 +4578,8 @@ export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE_
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(updateMyProductProducersMeProductsProductIdPutResponsePriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(updateMyProductProducersMeProductsProductIdPutResponsePriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -4835,8 +4864,6 @@ export const getProducerProducersProducerIdGetResponseProductsItemIsLowCarbDefau
 export const getProducerProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
-export const getProducerProducersProducerIdGetResponseProductsItemPriceMaxOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
-export const getProducerProducersProducerIdGetResponseProductsItemPriceMinOneRegExp = new RegExp('^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$');
 export const getProducerProducersProducerIdGetResponseProductsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReportCountDefault = 0;
@@ -4957,8 +4984,8 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
   "name": /*#__PURE__*/ zod.string(),
-  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getProducerProducersProducerIdGetResponseProductsItemPriceMaxOneRegExp)),/*#__PURE__*/ zod.null()])),
-  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(getProducerProducersProducerIdGetResponseProductsItemPriceMinOneRegExp)),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseProductsCountDefault),
@@ -4994,29 +5021,6 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
  * @summary Record Contact Click
  */
 export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#__PURE__*/ zod.void()
-
-
-/**
- * Unfollow a producer. No-op if the user doesn't currently follow.
- * @summary Unfollow Producer
- */
-export const UnfollowProducerProducersProducerIdFollowDeleteResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Follow a producer. Idempotent — returns the existing follow if
- * the user already follows this producer.
- * @summary Follow Producer
- */
-export const FollowProducerProducersProducerIdFollowPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Is the current user following this producer? Used by the follow
- * button on the producer page to initialize its state.
- * @summary Follow Status
- */
-export const FollowStatusProducersProducerIdFollowStatusGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -5195,14 +5199,6 @@ export const GetPublicRecipeProducersSlugRecipesRecipeIdGetResponse = /*#__PURE_
  * @summary Get Vapid Public Key
  */
 export const GetVapidPublicKeyPushVapidKeyGetResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Link the current user (referee) to the referrer identified by code.
- * Idempotent — calling twice for the same user is a no-op.
- * @summary Claim Referral
- */
-export const ClaimReferralReferralClaimPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -5615,14 +5611,6 @@ export const UpsertAlertPrefsUsersMeFavoritesProducerIdAlertsPutResponse = /*#__
   "notify_new_recipe": /*#__PURE__*/ zod.boolean(),
   "whatsapp_opt_in": /*#__PURE__*/ zod.boolean()
 })
-
-
-/**
- * List the producers the current user is following, with basic
- * producer info joined in.
- * @summary List My Following
- */
-export const ListMyFollowingUsersMeFollowingGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**

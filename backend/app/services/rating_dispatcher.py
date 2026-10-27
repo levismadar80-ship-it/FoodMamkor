@@ -25,6 +25,7 @@ import structlog
 from sqlalchemy.orm import Session
 
 from app.models.models import HomeProductWhatsAppClick
+from app.utils.clock import utc_now
 
 logger = structlog.get_logger(__name__)
 
@@ -54,7 +55,7 @@ def dispatch_pending_rating_requests(
     Returns:
         The number of rating requests successfully dispatched.
     """
-    now = now or datetime.utcnow()
+    now = now or utc_now()
     cutoff = now - RATING_DELAY
     send = sender or _default_sender
 

@@ -28,11 +28,6 @@
     "lang_switch_to_he": "Switch to Hebrew",
     "lang_he": "Hebrew",
     "lang_en": "EN",
-    "onboarding": {
-      "map": "Interactive map — discover local businesses near you",
-      "profile": "Join to save favourite businesses and leave ratings",
-      "profile_cta": "Got it, finish"
-    },
     "footer": {
       "events": "Events",
       "experiences": "Experiences",
@@ -50,6 +45,9 @@
       "brand_aria": "Mehamakor — Home page",
       "brand_tagline": "Straight from the source — local businesses, all in one place",
       "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
+      "facebook_aria": "Mehamakor's Facebook page — opens in new tab",
+      "tiktok_aria": "Mehamakor's TikTok page — opens in new tab",
+      "youtube_aria": "Mehamakor's YouTube channel — opens in new tab",
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
       "group_discover_heading": "Discover",
@@ -336,8 +334,8 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
-        "submit_next_hint": "Next, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
-        "collection_notice": "Providing your details is voluntary and not required by law — without them we can't complete your registration. We use them to manage your account, show your business on Mehamakor, and contact you, and we store them in Mehamakor's database. We don't sell your data — it's shared only with the service providers that run the site, and the full list is in the <privacy>Privacy Policy</privacy>. You can view, correct, or delete it at any time: <email>our email address</email>.",
+        "submit_next_hint": "After registering, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
+        "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -508,8 +506,6 @@
       "explore_map": "Explore on map",
       "load_more": "More businesses",
       "all_businesses": "All businesses →",
-      "onboarding0": "Discover local businesses — fresh vegetables, cheeses, sourdough and more Tap a card to view details",
-      "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
       "day_chip_idle": "Delivery day",
@@ -630,12 +626,6 @@
       "og_title": "Contact Mehamakor",
       "og_description": "Questions, suggestions, or ideas for collaboration — we're here."
     },
-    "search": {
-      "title": "Search results | Mehamakor",
-      "description": "Search and discover local food businesses across Israel on Mehamakor.",
-      "og_title": "Search Mehamakor",
-      "og_description": "Find local food businesses and real food easily."
-    },
     "forgot_password": {
       "title": "Reset your password | Mehamakor",
       "description": "Forgot your password? Enter your email and we'll send a reset link for your Mehamakor account.",
@@ -711,6 +701,10 @@
     "register_producer": {
       "title": "Register your business | Mehamakor",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
+    },
+    "claim": {
+      "title": "Take your business page | Mehamakor",
+      "description": "We prepared a page for you on Mehamakor"
     }
   },
   "producer": {
@@ -1166,7 +1160,8 @@
         "submitting": "Creating...",
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining"
-      }
+      },
+      "status_deadline_passed": "Deadline passed"
     },
     "availability": {
       "status_label": {
@@ -1287,7 +1282,6 @@
         "remove": "Remove filter {label}"
       },
       "clear_all": "× Clear all",
-      "arranged_hidden": "Businesses arranged personally aren't shown in this filter",
       "delivery_context_banner": "Businesses that deliver to {city}. The map pin is the business location — not the delivery area",
       "banner_dismiss_aria": "Close this explanation",
       "day_bridge_cta": "Filter by delivery day across all businesses"
@@ -1315,6 +1309,14 @@
         "label": "Self-pickup",
         "aria": "Show or hide self-pickup and market stands on the map",
         "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
+      },
+      "key": {
+        "title": "What's on the map?",
+        "photo": "A business. Tap for details",
+        "verified": "A verified business",
+        "cluster": "How many businesses are in this area. Tap to zoom in",
+        "pickup": "A pickup point or market stall",
+        "approximate": "Approximate location, not an exact address"
       }
     },
     "page": {
@@ -1361,7 +1363,9 @@
       "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
-      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
+      "count_filtered_zero": "No results for these filters",
+      "reset_filters": "Clear filters"
     },
     "chip_scroll": {
       "category_aria": "Filter by category",
@@ -1402,9 +1406,8 @@
     },
     "layout": {
       "nav": {
-        "dashboard": "Dashboard",
+        "dashboard": "Needs attention",
         "producers": "Businesses",
-        "group_buys": "Group buys",
         "outreach": "Outreach",
         "experiences": "Experiences",
         "recipes": "Recipes",
@@ -1421,69 +1424,26 @@
         "name_change_requests": "Name changes"
       },
       "nav_sections": {
-        "overview": "Overview",
-        "core": "Core",
-        "content": "Content",
-        "queues": "Pending",
-        "system": "System"
-      },
-      "desktop_only": "This screen is available on desktop"
+        "approvals": "Approvals",
+        "queues": "Queues",
+        "more": "More"
+      }
     },
     "dashboard": {
-      "title": "Dashboard",
-      "subtitle": "Platform overview",
-      "stats": {
-        "total_producers": "Total businesses",
-        "pending_approval": "Awaiting approval",
-        "registered_users": "Registered users",
-        "group_buys": "Group buys",
-        "group_buys_tooltip": "Manage user group buys. Not active currently.",
-        "group_buys_tooltip_label": "Group buys info"
-      },
-      "alerts": {
-        "producers_waiting": "{count} businesses awaiting approval",
-        "click_to_handle": "Click to handle",
-        "open_reports": "{count} open reports",
-        "needs_review": "Needs review"
-      },
-      "chart": {
-        "new_producers_6_months": "New businesses — last 6 months"
-      },
+      "title": "Needs attention",
+      "subtitle": "Only what needs a decision. Stats and charts live in Analytics.",
       "pending_panel": {
         "heading": "Pending requests",
         "view_all": "View all →",
         "empty": "No pending requests",
-        "check": "Review"
+        "check": "Review",
+        "more": "{count} more in the queue"
       },
-      "activity": {
-        "heading": "Recent activity",
-        "empty": "No data yet",
-        "added_producer": "Business added:"
+      "queues": {
+        "heading": "Other queues",
+        "all_clear": "Nothing waiting in the other queues"
       },
-      "weekly": {
-        "new_users_week": "New users this week",
-        "new_producers_week": "New businesses this week",
-        "out_of_total": "out of {total} total",
-        "events": "Events",
-        "experiences": "Experiences"
-      },
-      "dau": {
-        "heading": "Active users — last 30 days",
-        "empty": "No data yet",
-        "aria": "DAU 30 days"
-      },
-      "top_cities": {
-        "heading": "Top cities",
-        "empty": "No city data yet — users who aren't logged in don't report their city."
-      },
-      "health": {
-        "heading": "Server health — last hour",
-        "waiting_traffic": "Waiting for traffic...",
-        "requests_count": "{count} requests",
-        "response_time_avg": "Average response time",
-        "requests_per_minute": "Requests per minute",
-        "footnote": "**Note:** Per-process in-memory data — resets on every deploy (docs/SECURITY.md)."
-      }
+      "analytics_link": "Stats and analytics →"
     },
     "producers": {
       "list": {
@@ -1742,7 +1702,9 @@
           "avail_today": "Available today",
           "avail_full": "Busy this week",
           "avail_vacation": "On break",
-          "vacation_until": "Return date (optional)"
+          "vacation_until": "Return date (optional)",
+          "as_draft": "Draft the owner will receive by invite link",
+          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner."
         }
       },
       "toast_approved": "Business approved",
@@ -1766,6 +1728,23 @@
         "free_text_placeholder": "Exactly what is missing or incorrect — this goes into her email",
         "submit_changes": "Send completion request",
         "submit_reject": "Reject and send email"
+      },
+      "claim": {
+        "title": "Invite link for the business owner",
+        "intro": "The owner opens her own account, accepts the declaration and the terms herself, and the page becomes hers. It stays a draft until she submits it for review. A new link does not revoke an earlier one; each link is valid until its own date.",
+        "create": "Create link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "draft_products": {
+        "title": "Products in this draft",
+        "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
+        "empty": "No products in this draft yet."
       }
     },
     "users": {
@@ -1893,6 +1872,12 @@
       },
       "claude_tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
       "claude_tooltip_label": "Claude moderation info",
+      "moderation_labels": {
+        "PENDING": "Pending",
+        "FLAGGED": "Changes required",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
       "actions": {
         "approve": "Approve",
         "changes": "Changes",
@@ -2115,7 +2100,18 @@
       "default_producer": "the business",
       "deleted_toast": "Review deleted",
       "expand": "More",
-      "collapse": "Less"
+      "collapse": "Less",
+      "ai_flagged": "Flagged by AI",
+      "edited_after_hidden": "Edited after hidden",
+      "keep_hidden": "Keep hidden",
+      "ai_flagged_only": "Only flagged reviews",
+      "hidden": "Hidden",
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "hide_aria": "Hide {user}'s review",
+      "unhide_aria": "Unhide {user}'s review",
+      "hidden_toast": "Review hidden",
+      "unhidden_toast": "Review is back on the site"
     },
     "settings": {
       "title": "Settings",
@@ -2409,8 +2405,6 @@
           "intro": "The specific addresses (project IDs, tokens) are not here — they are in the team password manager. The list here points you where to look, it does not provide credentials.",
           "prod_label": "Production site",
           "staging_label": "Staging site",
-          "github_label": "Source code",
-          "github_text": "GitHub",
           "railway_label": "Railway",
           "railway_text": "<placeholder>fill in</placeholder> — project: <code>believable-tenderness</code>, service: backend",
           "vercel_label": "Vercel",
@@ -2693,7 +2687,7 @@
     "consumer": {
       "hero": {
         "heading": "You used to need to know who to ask. Not anymore",
-        "subheading": "Food from small businesses we've personally checked — close to you, without searching for hours."
+        "subheading": "Food from local businesses we've personally chosen — close to you, without searching for hours."
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
@@ -2879,10 +2873,6 @@
       "prev_aria": "Previous image",
       "next_aria": "Next image",
       "image_error": "Image failed to load"
-    },
-    "onboarding_tip": {
-      "cta_default": "Got it",
-      "close_aria": "Close"
     }
   },
   "kashrut": {
@@ -3164,23 +3154,6 @@
     "privacy_notice": "By submitting the form you confirm you have read the <link>privacy policy</link>."
   },
   "search": {
-    "breadcrumb_home": "Home",
-    "breadcrumb_search": "Search",
-    "breadcrumb_query": "Search: {q}",
-    "title_default": "Search",
-    "title_results": "Search results for \"{q}\"",
-    "input_placeholder": "Sourdough bread, organic eggs, vegetables and fruit",
-    "input_aria": "Search",
-    "submit": "Search",
-    "no_results_hint": "We couldn't find a match — try another word or browse by category",
-    "results_count": "{totalHits, plural, one {1 result} other {{totalHits} results}}",
-    "empty_prompt": "Type a query in the search field at the top of the page.",
-    "section_producers": "Businesses",
-    "section_products": "Products",
-    "product_by_prefix": "at",
-    "empty_title": "We couldn't find a match — try another word",
-    "empty_subtitle": "Try changing the search or browsing categories on the homepage.",
-    "empty_home_cta": "Back to home",
     "hero": {
       "submit_aria": "Search",
       "loading": "Loading results...",
@@ -3324,9 +3297,7 @@
       "ordering_link_label": "Open",
       "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
-      "more_questions": "More questions",
-      "recipe_idea": "Can I share a recipe I made?",
-      "recipe_idea_message": "Hi! I came from your page on Mehamakor — I made something with your products and I'd love to share the recipe:"
+      "more_questions": "More questions"
     }
   },
   "directory": {
@@ -4234,12 +4205,11 @@
         "stats_window_label": "7 days / in the last 30 days / total",
         "kpi": {
           "whatsapp_leads": "WhatsApp clicks",
-          "contact_clicks": "Contact clicks (non-WhatsApp)",
+          "contact_clicks": "Clicks on phone, website and more",
           "rating": "Rating",
           "views": "Views",
           "window_7d": "Last 7 days",
-          "rating_sub": "{count} reviews",
-          "conversion_line": "{rate} clicks on one of the contact buttons per 100 distinct visitors in the last 30 days. A click is not necessarily an inquiry sent."
+          "rating_sub": "{count} reviews"
         },
         "hero": {
           "views_week_label": "Views this week",
@@ -4253,9 +4223,6 @@
           "rank_tooltip": "Your rank in the city by views in the last 30 days. Updates automatically.",
           "rank_sub": "By views in the last 30 days"
         },
-        "eligible_weekly_title": "You're a candidate for business of the week — contact the team",
-        "eligible_weekly_tooltip": "The team picks a business of the week from those ranked first in their city with high profile strength. If you're a candidate, a message will appear here.",
-        "eligible_weekly_sub": "First in your city + strong profile — well done!",
         "windowed": {
           "profile_views": "Profile views",
           "profile_views_tooltip": "How many distinct visitors opened your page. A visitor who returns several times in the same day counts once.",
@@ -4263,13 +4230,13 @@
           "search_appearances_tooltip": "How many distinct visitors reached your page from search results. The same visitor counts once per day. Appearances without a click are not counted.",
           "whatsapp_clicks": "WhatsApp clicks",
           "whatsapp_clicks_tooltip": "How many times the WhatsApp button was clicked. A click is not necessarily a message sent.",
-          "contact_clicks": "Contact clicks (non-WhatsApp)",
+          "contact_clicks": "Clicks on phone, website and more",
           "contact_clicks_tooltip": "Clicks on phone, Instagram, website, or email. WhatsApp is counted separately."
         },
         "simple_cards": {
-          "followers_label": "Followers",
+          "followers_label": "Saved to favorites",
           "followers_sub_template": "+{count} this week",
-          "followers_zero_prefix": "No followers yet — ",
+          "followers_zero_prefix": "No one yet — ",
           "followers_zero_share": "share your page",
           "rating_label": "Average rating",
           "rating_sub_template": "From {count} reviews"
@@ -4451,7 +4418,8 @@
         "saving": "Saving…",
         "saved": "Saved ✓",
         "save_success": "License number saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "summary_present": "License ✓"
       },
       "pricing": {
         "heading": "Starting price",
@@ -4601,7 +4569,7 @@
         "assist_title": "A few quick questions — and we'll write it for you",
         "assist_close": "Close writing help",
         "q_sell_label": "What do you sell?",
-        "q_sell_placeholder": "e.g. homemade jams, honey from the hive, almond cookies",
+        "q_sell_placeholder": "e.g. seasonal fruit jams, honey from the hive, almond cookies",
         "q_area_label": "Which area do you serve?",
         "q_area_placeholder": "e.g. Western Galilee, delivery up to Haifa",
         "q_special_label": "What's special about you?",
@@ -4661,7 +4629,8 @@
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
         "empty": "No kosher badge yet. You can request one here.",
-        "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification."
+        "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification.",
+        "missing_cert": "The \"{badge}\" badge shows on your business page without a certificate. Upload a photo of it below so customers can tap the badge and see it."
       },
       "manage_events": {
         "heading": "My events",
@@ -4681,7 +4650,8 @@
         "action_activate": "Reactivate",
         "action_delete": "Delete",
         "action_error": "Action failed. Please try again.",
-        "delete_confirm": "Delete the event \"{title}\"? This cannot be undone."
+        "delete_confirm": "Delete the event \"{title}\"? This cannot be undone.",
+        "badge_past": "Ended"
       },
       "manage_experiences": {
         "heading": "My experiences",
@@ -4704,7 +4674,8 @@
         "status_pending": "Under review",
         "status_approved": "Approved",
         "status_rejected": "Rejected",
-        "status_changes_requested": "Changes requested"
+        "status_changes_requested": "Changes requested",
+        "badge_past": "Ended"
       },
       "name_change": {
         "heading": "Change business name",
@@ -4747,6 +4718,13 @@
           "location": "A location or delivery areas",
           "phone_verified": "WhatsApp number verification"
         }
+      },
+      "request_review": {
+        "title": "Ask a customer for a review",
+        "body": "Send the link in your WhatsApp chat with a customer — she can leave a verified review.",
+        "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
+        "cta": "Copy link",
+        "cta_copied": "Copied ✓"
       }
     }
   },
@@ -4765,17 +4743,17 @@
     },
     "followers": {
       "back_link": "Back to dashboard",
-      "heading": "My followers",
+      "heading": "Saved to favorites",
       "loading": "Loading…",
-      "empty_title": "No followers yet — and that's fine",
-      "empty_description": "Followers are customers who want to stay updated on what's new with you. They'll appear here as soon as they start following. In the meantime — copy your profile link and share it with customers.",
+      "empty_title": "No one has saved you yet — and that's okay",
+      "empty_description": "Copy the link to your profile and share it with customers.",
       "share_cta": "Copy share link",
       "share_cta_copied": "Copied! ✓",
       "share_toast": "Link copied!",
       "share_error": "Couldn't copy the link. Please try again.",
       "share_locked": "Your share link will be available once your business is approved and published.",
-      "followers_label": "followers",
-      "share_hint": "A detailed list of followers is coming soon — share your profile to reach more customers."
+      "followers_label": "Saved to favorites",
+      "share_hint": "Share your profile to reach more customers."
     },
     "alert_prefs": {
       "loading": "Loading…",
@@ -4918,8 +4896,8 @@
         "description": "Add 3 popular products with a photo and price — it takes 5 minutes, and customers instantly see what you offer.",
         "cta": "+ Add first product",
         "sample_label": "Example — how your product will look",
-        "sample_name": "Homemade fig jam",
-        "sample_price": "₪28 per jar"
+        "sample_name": "Spelt sourdough loaf",
+        "sample_price": "₪32 per loaf"
       },
       "edit_heading": "Edit product",
       "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
@@ -5048,7 +5026,8 @@
         },
         "primary_must_be_branch": "The primary location must be a branch. If the business has no physical address, the primary location can be left empty.",
         "one_primary_required": "Exactly one primary location is required"
-      }
+      },
+      "count_summary": "{count, plural, one {One location} other {# locations}}"
     },
     "security": {
       "common": {
@@ -5367,5 +5346,45 @@
         ]
       }
     }
+  },
+  "claim": {
+    "loading": "Loading the page…",
+    "kicker": "We prepared a page for you on Mehamakor",
+    "explainer": "The page is not published yet. Once it is yours you can edit everything, add photos and send it for review. We approve every business by hand before it goes live.",
+    "invalid": {
+      "title": "This link is not active",
+      "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
+      "contact": "Contact us"
+    },
+    "claimed": {
+      "title": "This page is already linked to an account",
+      "body": "If it is your account, sign in and you will find the page in your dashboard. If not, write to us.",
+      "login": "Sign in",
+      "contact": "Contact us"
+    },
+    "logged_out": {
+      "body": "To take this page you need your own account. We never create a password for you.",
+      "email_signup": "Sign up with email",
+      "have_account": "Already have an account?",
+      "login": "Sign in",
+      "email_note": "Signing up with email? After you confirm your address, open the link you received again to finish."
+    },
+    "eligible": {
+      "signed_in_as": "Signed in as <addr>{email}</addr>.",
+      "not_you": "Not you?",
+      "switch_account": "Switch account",
+      "submit": "Take this page",
+      "submitting": "Taking it…"
+    },
+    "admin": {
+      "body": "You are signed in as an admin, and an admin cannot take a business page. To test this page, sign in with another account.",
+      "switch_account": "Switch account"
+    },
+    "has_business": {
+      "body": "This account already has a business on Mehamakor, and each account runs one business. If this page belongs to another business, sign in with another account or write to us.",
+      "dashboard": "Go to dashboard",
+      "switch_account": "Switch account"
+    },
+    "submit_error": "We could not link the page. Try again in a moment."
   }
 }

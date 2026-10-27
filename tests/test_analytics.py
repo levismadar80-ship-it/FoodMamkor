@@ -15,7 +15,8 @@ All tests are written BEFORE the implementation (TDD, per workflow rule 5).
 They use the shared pytest fixtures in conftest.py.
 """
 import itertools
-from datetime import datetime, timedelta
+from datetime import time, timedelta
+from decimal import Decimal
 
 import pytest
 
@@ -32,6 +33,7 @@ from app.models.models import (
     ProducerWhatsAppClick,
     Report,
 )
+from app.utils.clock import utc_now
 from conftest import auth_header, make_category, make_producer, make_user
 
 
@@ -61,7 +63,7 @@ def _distinct_hash():
 
 def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash=None):
     ip_hash = _distinct_hash() if ip_hash is None else ip_hash
-    ts = datetime.utcnow() - timedelta(days=days_ago)
+    ts = utc_now() - timedelta(days=days_ago)
     row = ProducerPageView(
         producer_id=producer_id,
         viewer_ip_hash=ip_hash,
@@ -75,7 +77,7 @@ def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash
 
 
 def _seed_whatsapp_click(db, producer_id, *, days_ago=0):
-    ts = datetime.utcnow() - timedelta(days=days_ago)
+    ts = utc_now() - timedelta(days=days_ago)
     row = ProducerWhatsAppClick(producer_id=producer_id, clicked_at=ts)
     db.add(row)
     db.commit()
@@ -88,7 +90,7 @@ def _seed_contact_click(db, producer_id, *, method="phone", days_ago=0):
     Seeded directly, like the WhatsApp helper above, so the window arithmetic
     can be asserted without going through the rate-limited HTTP tracker.
     """
-    ts = datetime.utcnow() - timedelta(days=days_ago)
+    ts = utc_now() - timedelta(days=days_ago)
     row = ContactClick(producer_id=producer_id, method=method, clicked_at=ts)
     db.add(row)
     db.commit()
@@ -533,14 +535,14 @@ class TestProducerAnalytics:
             db.add(Favorite(
                 producer_id=p.id,
                 user_id=fan.id,
-                created_at=datetime.utcnow() - timedelta(days=age),
+                created_at=utc_now() - timedelta(days=age),
             ))
         # Legacy row — the frozen table must NOT be counted post-repoint.
         legacy = make_user(db, email="legacy-follower@test.com")
         db.add(ProducerFollower(
             producer_id=p.id,
             user_id=legacy.id,
-            created_at=datetime.utcnow() - timedelta(days=1),
+            created_at=utc_now() - timedelta(days=1),
         ))
         db.commit()
 
@@ -779,6 +781,88 @@ class TestAdminDashboardAnalytics:
         ):
             assert key in stats, f"missing: {key}"
 
+    def test_admin_dashboard_per_queue_counts(self, client, db):
+        """MEH-2359: the admin home shows a queue only while its own count is
+        > 0, so each queue ships its own number. Assert the five new keys exist
+        and that each moves by exactly 1 for the row that belongs to it."""
+        from app.models.models import (
+            CategoryRequest,
+            Experience,
+            OutboundMessage,
+            ProducerNameChangeRequest,
+            ProducerRecipe,
+        )
+
+        admin = make_user(db, role="admin")
+        before = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        for key in (
+            "pending_category_requests",
+            "pending_name_change_requests",
+            "undelivered_whatsapp_7d",
+            "experiences_awaiting_review",
+            "recipes_awaiting_review",
+        ):
+            assert key in before, f"missing: {key}"
+        db.add(CategoryRequest(requested_name="קטגוריה חדשה לבדיקה", status="pending"))
+        # One recipe on the admin's turn, one on the owner's: the queue count
+        # moves by 1, the MEH-997 aggregate (`pending_recipes`) by 2.
+        producer = make_producer(db, name="מאפייה למונה", status="approved")
+        for moderation_status in ("pending", "needs_revision"):
+            db.add(
+                ProducerRecipe(
+                    producer_id=producer.id,
+                    title=f"מתכון {moderation_status}",
+                    ingredients="קמח, מים, מלח",
+                    instructions="לערבב ולאפות",
+                    moderation_status=moderation_status,
+                    published=False,
+                )
+            )
+        # Same split for experiences: one on the admin's turn, one on the host's.
+        for status in ("pending", "changes_requested"):
+            db.add(
+                Experience(
+                    title=f"חוויה {status}",
+                    description="תיאור ארוך מספיק כדי לעבור את הוולידציה של הטופס.",
+                    image_url="https://res.cloudinary.com/demo/image/upload/sample.jpg",
+                    category="בישול",
+                    host_user_id=admin.id,
+                    event_date=(utc_now() + timedelta(days=7)).date(),
+                    event_time=time(10, 0),
+                    location_type="home",
+                    city="תל אביב",
+                    max_participants=10,
+                    price_per_person=Decimal("150"),
+                    status=status,
+                    moderation_status="APPROVED",
+                )
+            )
+        # One pending name change + one already reviewed: the count moves by 1.
+        for status in ("pending", "approved"):
+            db.add(
+                ProducerNameChangeRequest(
+                    producer_id=producer.id,
+                    current_name=producer.name,
+                    requested_name=f"שם חדש {status}",
+                    status=status,
+                )
+            )
+        # Undelivered WhatsApp: one failed inside the 7-day window, one failed
+        # outside it, one accepted — only the first counts.
+        for status, age_days in (("failed", 1), ("failed", 9), ("accepted", 1)):
+            msg = OutboundMessage(to_phone="+972501234567", kind="test", status=status)
+            msg.created_at = utc_now() - timedelta(days=age_days)
+            db.add(msg)
+        db.commit()
+        after = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        assert after["pending_category_requests"] == before["pending_category_requests"] + 1
+        assert after["pending_name_change_requests"] == before["pending_name_change_requests"] + 1
+        assert after["undelivered_whatsapp_7d"] == before["undelivered_whatsapp_7d"] + 1
+        assert after["recipes_awaiting_review"] == before["recipes_awaiting_review"] + 1
+        assert after["pending_recipes"] == before["pending_recipes"] + 2
+        assert after["experiences_awaiting_review"] == before["experiences_awaiting_review"] + 1
+        assert after["pending_experiences"] == before["pending_experiences"] + 2
+
     def test_admin_dashboard_includes_analytics_series(self, client, db):
         admin = make_user(db, role="admin")
         body = client.get("/admin/dashboard", headers=auth_header(admin)).json()
@@ -797,7 +881,7 @@ class TestAdminDashboardAnalytics:
         admin = make_user(db, role="admin")
         # Seed one old user and two new
         old_u = make_user(db, email="old@test.com")
-        old_u.created_at = datetime.utcnow() - timedelta(days=20)
+        old_u.created_at = utc_now() - timedelta(days=20)
         make_user(db, email="fresh1@test.com")
         make_user(db, email="fresh2@test.com")
         db.commit()
@@ -822,7 +906,7 @@ class TestAdminDashboardAnalytics:
         db.add(Experience(
             host_user_id=owner.id, title="workshop", description="x",
             city="TLV", status="pending",
-            event_date=(datetime.utcnow() + timedelta(days=5)).date(),
+            event_date=(utc_now() + timedelta(days=5)).date(),
             duration_minutes=60, price_per_person=50, max_participants=10,
         ))
         db.commit()

@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 
 from app.models.models import OutboundMessage
 from conftest import auth_header, make_user
+from app.utils.clock import utc_now
 
 
 _ENDPOINT = "/admin/whatsapp/failed"
@@ -139,7 +140,7 @@ def test_excludes_accepted_and_delivered(client, db):
 
 def test_excludes_rows_older_than_7_days(client, db):
     admin = make_user(db, role="admin")
-    eight_days_ago = datetime.utcnow() - timedelta(days=8)
+    eight_days_ago = utc_now() - timedelta(days=8)
     _seed(
         db,
         status="failed",
@@ -166,7 +167,7 @@ def test_excludes_rows_older_than_7_days(client, db):
 def test_includes_row_exactly_at_window_edge(client, db):
     """A row created ~6 days ago is still inside the 7-day window."""
     admin = make_user(db, role="admin")
-    six_days_ago = datetime.utcnow() - timedelta(days=6)
+    six_days_ago = utc_now() - timedelta(days=6)
     _seed(
         db,
         status="failed",
@@ -184,8 +185,8 @@ def test_includes_row_exactly_at_window_edge(client, db):
 
 def test_ordered_newest_first(client, db):
     admin = make_user(db, role="admin")
-    two_days_ago = datetime.utcnow() - timedelta(days=2)
-    five_days_ago = datetime.utcnow() - timedelta(days=5)
+    two_days_ago = utc_now() - timedelta(days=2)
+    five_days_ago = utc_now() - timedelta(days=5)
 
     _seed(
         db,
