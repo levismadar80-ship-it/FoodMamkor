@@ -3754,3 +3754,8 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] `producer-detail-minimal-{desktop,mobile}-linux.png` + `phone-revealed` / `two-channel-revealed` (desktop) — עסק בלי תמונות: השם ב-masthead, ומתחתיו אותן שתי שורות מטא; כרטיס הקשר עם 2 השאלות + "שאלה אחרת?" + ערוץ הטלפון/אינסטגרם שנחשף
 - [ ] `producer-detail-disclosure-open-mobile-linux.png` — ה-disclosure פתוח, אותם שני שינויים בכותרת
 - [ ] frames שלא נגעו בהם (home / map / about / login / register) לא השתנו ב-diff של ה-PR
+
+## MEH-2416 — אודות: "מה כדאי לדעת" נפתח כשכל השאלות סגורות (27/10/2026)
+- [ ] `/about` פרק 05 — שלוש השאלות סגורות בטעינה, אין תשובה פתוחה
+- [ ] לחיצה על שאלה — רק היא נפתחת; לחיצה נוספת — נסגרת
+- [ ] פתיחת שאלה אחרת סוגרת את הקודמת
