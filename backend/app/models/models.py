@@ -1762,6 +1762,11 @@ class ProducerReview(Base):
     # predates the column. Informational: a FLAGGED review still publishes.
     # Nullable, Expand-only (ADR-007). Alembic revision c4e81a2f9b6d.
     ai_moderation_status = Column(String(16), nullable=True)
+    # MEH-2381: when the author last changed body or stars while the review
+    # was hidden. NULL = not edited since the admin last hid or unhid it (both
+    # clear it). Admin-only signal. Nullable, Expand-only (ADR-007). Alembic
+    # revision d7a3f5c1e2b8.
+    edited_after_hidden_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")
