@@ -47,6 +47,7 @@ from app.models.models import OutboundMessage
 from app.rate_limit import limiter
 from app.services.whatsapp import send_text
 from app.utils.phone import canonical_il_msisdn
+from app.utils.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -624,13 +625,13 @@ def _build_status_update(status_obj: dict) -> dict | None:
     if raw_status in _STATUS_TO_DELIVERED:
         return {
             "status": "delivered",
-            "updated_at": datetime.utcnow(),
+            "updated_at": utc_now(),
         }
     if raw_status == _STATUS_FAILED:
         err = _extract_first_error(status_obj.get("errors"))
         return {
             "status": "failed",
-            "updated_at": datetime.utcnow(),
+            "updated_at": utc_now(),
             "error_code": err["code"],
             "error_message": err["message"],
         }

@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -11,6 +10,7 @@ from app.database import get_db
 from app.models import Producer, Report, User
 from app.rate_limit import limiter
 from app.schemas.schemas import ReportCreate
+from app.utils.clock import utc_now
 
 router = APIRouter(tags=["reports"])
 
@@ -138,7 +138,7 @@ def _close_report(report_id: UUID, new_status: str, admin: User, db: Session) ->
     if report.status != OPEN_STATUS:
         raise HTTPException(status_code=409, detail="הדיווח כבר טופל")
     report.status = new_status
-    report.resolved_at = datetime.utcnow()
+    report.resolved_at = utc_now()
     report.resolved_by = admin.id
     db.commit()
     return {"detail": "Report closed", "status": new_status}
