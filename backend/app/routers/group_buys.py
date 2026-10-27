@@ -10,6 +10,7 @@ from app.auth import (
     get_current_user,
     get_current_user_optional,
     require_admin,
+    require_producer,
     require_verified_producer,
 )
 from app.database import get_db
@@ -20,6 +21,7 @@ from app.schemas.schemas import (
     GroupBuyCreate,
     GroupBuyDetail,
     GroupBuyOut,
+    GroupBuyStatusUpdate,
 )
 from app.services.group_buy_notifications import send_funded_notifications
 from app.utils.clock import utc_now
@@ -285,6 +287,54 @@ def create_group_buy(
     db.commit()
     db.refresh(gb)
     return {"id": str(gb.id), "detail": "קבוצת הרכש נוצרה בהצלחה"}
+
+
+# MEH-2436: what the business may do to its own group buy. Anything not listed
+# is a 409 — cancelled and fulfilled are final for the owner; only an admin
+# moves a group buy out of them. "open → cancelled" covers both "cancel" before
+# the deadline and "close" after it: the row looks the same either way.
+OWNER_TRANSITIONS = {
+    ("open", "cancelled"),
+    ("funded", "fulfilled"),
+    ("funded", "cancelled"),
+}
+
+
+@router.patch("/{group_buy_id}/status")
+@limiter.limit("30/minute")
+def update_group_buy_status(
+    request: Request,
+    group_buy_id: UUID,
+    data: GroupBuyStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    is_admin = current_user.role == "admin"
+    if not is_admin:
+        # Same gates, in the same order, as creating a group buy.
+        require_verified_producer(require_producer(current_user))
+
+    # Lock the row: a participant joining in the same instant can flip
+    # open → funded, and the transition check must see the status it writes over.
+    gb = (
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    )
+    if not gb:
+        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+    # IDOR (security.md): the group buy must belong to the caller's business,
+    # or the caller is an admin. A producer user with no business owns nothing.
+    if not is_admin and (
+        current_user.producer_id is None or gb.producer_id != current_user.producer_id
+    ):
+        raise HTTPException(status_code=403, detail="אין הרשאה לשנות קבוצת רכש זו")
+    if not is_admin and (gb.status, data.status) not in OWNER_TRANSITIONS:
+        raise HTTPException(
+            status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
+        )
+
+    gb.status = data.status
+    db.commit()
+    return {"detail": "סטטוס עודכן", "status": gb.status}
 
 
 @admin_router.get("", response_model=list[GroupBuyDetail])

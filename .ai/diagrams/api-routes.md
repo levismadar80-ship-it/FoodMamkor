@@ -9,7 +9,7 @@
 >   - 🌐 = public (no token)
 >   - 🔑 = any authenticated user (`get_current_user`)
 >   - 👤 = producer role (`require_producer`)
->   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`.
+>   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` for a non-admin caller (MEH-2436: owner of that business only; admin overrides).
 >   - 🛡️ = admin role (`require_admin`)
 
 ## 1. Registered routers at a glance

@@ -724,3 +724,135 @@ class TestFundedNotificationDispatch:
         ).json()
         assert detail["user_commit"] is not None
         assert "phone" not in detail["user_commit"]
+
+
+# ---------- owner status change (MEH-2436) ----------
+class TestOwnerStatusChange:
+    """PATCH /group-buys/{id}/status — the business closes its own group buy.
+
+    The owner gets exactly three transitions: open→cancelled (before or after
+    the deadline), funded→fulfilled, funded→cancelled. Everything else is a
+    409; someone else's group buy is a 403 whatever the transition. Admin keeps
+    the override the IDOR rule grants (security.md).
+    """
+
+    def _patch(self, client, gb, status, user=None):
+        headers = auth_header(user) if user else {}
+        return client.patch(
+            f"/group-buys/{gb.id}/status", json={"status": status}, headers=headers
+        )
+
+    def _status_in_db(self, db, gb):
+        db.expire_all()
+        return db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status
+
+    def test_owner_cancels_open(self, client, db):
+        producer, owner = _producer_user(db, email="own1@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cancelled"
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_owner_closes_open_after_deadline(self, client, db):
+        producer, owner = _producer_user(db, email="own2@test.com")
+        gb = _make_group_buy(db, producer, deadline=utc_now() - timedelta(days=1))
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_owner_marks_funded_fulfilled(self, client, db):
+        producer, owner = _producer_user(db, email="own3@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(client, gb, "fulfilled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "fulfilled"
+
+    def test_owner_cancels_funded(self, client, db):
+        producer, owner = _producer_user(db, email="own4@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_other_business_is_403_and_nothing_changes(self, client, db):
+        producer, _ = _producer_user(db, email="own5@test.com")
+        _, other = _producer_user(db, email="other5@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", other)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_consumer_is_403(self, client, db):
+        producer, _ = _producer_user(db, email="own6@test.com")
+        gb = _make_group_buy(db, producer)
+        consumer = make_user(db, role="consumer", email="c6@test.com")
+        resp = self._patch(client, gb, "cancelled", consumer)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_unverified_owner_is_403(self, client, db):
+        producer, owner = _producer_user(db, email="own7@test.com")
+        owner.email_verified = False
+        db.commit()
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_anonymous_is_401(self, client, db):
+        producer, _ = _producer_user(db, email="own8@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled")
+        assert resp.status_code == 401
+        assert self._status_in_db(db, gb) == "open"
+
+    def test_unknown_group_buy_is_404(self, client, db):
+        _, owner = _producer_user(db, email="own9@test.com")
+        resp = client.patch(
+            f"/group-buys/{uuid4()}/status",
+            json={"status": "cancelled"},
+            headers=auth_header(owner),
+        )
+        assert resp.status_code == 404
+
+    def test_invalid_value_is_422(self, client, db):
+        producer, owner = _producer_user(db, email="own10@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "deleted", owner)
+        assert resp.status_code == 422
+        assert self._status_in_db(db, gb) == "open"
+
+    # Each pair is (current, requested): outside the owner's table → 409.
+    @staticmethod
+    def _forbidden_pairs():
+        return [
+            ("open", "fulfilled"),  # never delivered a group that never filled
+            ("open", "funded"),  # funding is the participants' doing
+            ("open", "open"),
+            ("funded", "open"),
+            ("funded", "funded"),
+            ("cancelled", "open"),  # final
+            ("cancelled", "fulfilled"),
+            ("fulfilled", "cancelled"),  # final
+            ("fulfilled", "open"),
+        ]
+
+    def test_transitions_outside_the_table_are_409(self, client, db):
+        producer, owner = _producer_user(db, email="own11@test.com")
+        ran = []
+        for current, requested in self._forbidden_pairs():
+            gb = _make_group_buy(db, producer, status=current)
+            resp = self._patch(client, gb, requested, owner)
+            assert resp.status_code == 409, (current, requested, resp.json())
+            assert self._status_in_db(db, gb) == current, (current, requested)
+            ran.append((current, requested))
+        assert len(ran) == len(self._forbidden_pairs())
+
+    def test_admin_overrides_any_group_buy(self, client, db):
+        producer, _ = _producer_user(db, email="own12@test.com")
+        admin = make_user(db, role="admin", email="adm12@test.com")
+        gb = _make_group_buy(db, producer, status="cancelled")
+        resp = self._patch(client, gb, "open", admin)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "open"
