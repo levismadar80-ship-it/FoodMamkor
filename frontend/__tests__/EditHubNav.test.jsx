@@ -1,7 +1,8 @@
 /**
  * MEH-1408 — edit-tab hub-and-spoke group navigation.
  *
- * Covers the shell added over the existing accordion: the 4-group hub, entering
+ * Covers the shell added over the existing accordion: the group hub (5 groups
+ * since MEH-2433), entering
  * a group (router.push with ?group, scroll:false), the back-to-hub link, and
  * anchor→group deep-link resolution (#bio → profile group). The card bodies +
  * their own accordion behavior are covered by the per-card EditTab* suites and
@@ -69,14 +70,19 @@ beforeEach(() => {
 });
 
 describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
-  it("renders the 4 group tiles as the default hub view", async () => {
+  // MEH-2433: five groups, in the order Sapir approved 27/10 (owner-dashboard
+  // audit, finding 12). Asserting the ORDER, not just presence: the point of
+  // the change was that products stopped being buried.
+  it("renders the 5 group tiles as the default hub view, in the approved order", async () => {
     mount();
     await screen.findByTestId("edit-hub");
 
     expect(screen.getByTestId("edit-hub")).toBeVisible();
-    for (const g of ["profile", "trust", "location", "contact"]) {
-      expect(screen.getByTestId(`hub-card-${g}`)).toBeInTheDocument();
-    }
+    const tiles = [...screen.getByTestId("edit-hub").querySelectorAll('[data-testid^="hub-card-"]')].map(
+      (el) => el.getAttribute("data-testid").replace("hub-card-", ""),
+    );
+    expect(tiles).toEqual(["profile", "products", "location", "contact", "trust"]);
+    expect(screen.getByTestId("hub-card-products")).toHaveTextContent(tHub.hub_group_products);
     // Group panels are mounted but hidden until entered.
     expect(screen.getByTestId("group-profile")).not.toBeVisible();
     expect(screen.getByTestId("group-contact")).not.toBeVisible();
@@ -215,6 +221,34 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     expect(scrollSpy).toHaveBeenCalled();
     // Already in the profile group — no group switch needed.
     expect(routerStub.replace).not.toHaveBeenCalled();
+  });
+
+  // MEH-2433: which cards each group holds, in order. Every group is listed,
+  // so a card that lands in the wrong group (or in two) fails here by name.
+  it.each([
+    ["profile", ["images", "categories", "bio", "owner-story", "business-name"]],
+    ["products", ["products", "pricing", "offer", "dietary-scope", "grass-fed"]],
+    ["location", ["locations", "delivery", "order-window", "special-hours"]],
+    ["contact", ["contact-channels", "questions"]],
+    ["trust", ["trust"]],
+  ])("the %s group holds exactly %j", async (g, cards) => {
+    mount();
+    const panel = await screen.findByTestId(`group-${g}`);
+    const ids = [...panel.querySelectorAll('[data-testid^="accordion-"]')].map((el) =>
+      el.getAttribute("data-testid").replace("accordion-", ""),
+    );
+    expect(ids).toEqual(cards);
+  });
+
+  it("MEH-2433: an #offer deep link now opens the products group", async () => {
+    window.location.hash = "#offer";
+    mount();
+    await waitFor(() =>
+      expect(routerStub.replace).toHaveBeenCalledWith(
+        { pathname: "/producer/dashboard/edit", query: { group: "products" } },
+        { scroll: false },
+      ),
+    );
   });
 
   it("composes license + kashrut as one unified trust card (no separate cards)", async () => {
