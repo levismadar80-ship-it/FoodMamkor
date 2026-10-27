@@ -11655,17 +11655,6 @@
             ],
             "title": "Producer Status"
           },
-          "referral_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Referral Code"
-          },
           "role": {
             "title": "Role",
             "type": "string"

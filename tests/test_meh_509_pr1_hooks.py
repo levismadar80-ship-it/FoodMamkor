@@ -76,7 +76,9 @@ def test_signup_with_phone_fires_welcome_template(client, db, monkeypatch):
     assert len(captured) == 1
     payload = captured[0]["json"]
     assert payload["type"] == "template"
-    assert payload["template"]["name"] == "producer_welcome_v1"
+    # MEH-2320: registration sends v2 (v1's Meta copy said "in review"
+    # before the owner had submitted anything).
+    assert payload["template"]["name"] == "producer_welcome_v2"
     assert payload["template"]["language"]["code"] == "he"
     params = payload["template"]["components"][0]["parameters"]
     # MEH-509 PR1 prod-fix: template signature is 1 param (name only).
@@ -234,7 +236,7 @@ def test_welcome_sends_exactly_one_body_param(client, db, monkeypatch):
     assert len(captured) == 1
     params = captured[0]["json"]["template"]["components"][0]["parameters"]
     assert len(params) == 1, (
-        f"producer_welcome_v1 expects exactly 1 body param; got {len(params)}. "
+        f"producer_welcome_v2 expects exactly 1 body param; got {len(params)}. "
         "Adding/removing params requires a matching template update in Meta."
     )
 
