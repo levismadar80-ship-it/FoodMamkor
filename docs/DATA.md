@@ -1023,7 +1023,7 @@ POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
 GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null)
-PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381)
+PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381; optional ?seen=<the ISO value the page showed> → 409 {code: "review_changed"} when a newer edit landed)
 PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, edited_after_hidden_at=NULL, recompute aggregates (MEH-2348)
 ```
 

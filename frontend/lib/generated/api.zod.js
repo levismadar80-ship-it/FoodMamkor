@@ -2260,6 +2260,11 @@ export const AdminListReviewsAdminReviewsGetResponse = /*#__PURE__*/ zod.array(A
 
 /**
  * Set is_hidden=True on a review. Recomputes producer aggregates.
+ *
+ * MEH-2381: `seen` is the edited_after_hidden_at the admin's page showed
+ * ("keep hidden"). The row is read FOR UPDATE, so an author edit that
+ * commits first is what this compares against; a mismatch is 409 and the
+ * marker stays.
  * @summary Hide Review
  */
 export const HideReviewAdminReviewsReviewIdHidePutResponse = /*#__PURE__*/ zod.unknown()

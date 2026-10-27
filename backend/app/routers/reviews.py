@@ -593,18 +593,43 @@ def set_review_reply(
 # MEH-2389: /admin/reviews drops the row on this 404 ("deleted elsewhere") and
 # recognises it by `code`, not by the wording — {code, message} per MEH-1943.
 _ADMIN_REVIEW_NOT_FOUND = {"code": "review_not_found", "message": "ביקורת לא נמצאה"}
+# MEH-2381: "keep hidden" names the edit it saw; a newer edit must not be
+# cleared unseen. /admin/reviews reloads the list on this code.
+_ADMIN_REVIEW_CHANGED = {
+    "code": "review_changed",
+    "message": "הביקורת נערכה שוב מאז שהעמוד נטען",
+}
+
+
+def _iso_or_none(value) -> str | None:
+    return value.isoformat() if value else None
 
 
 @router.put("/admin/reviews/{review_id}/hide")
 def hide_review(
     review_id: UUID,
+    seen: str | None = Query(None, max_length=40),
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Set is_hidden=True on a review. Recomputes producer aggregates."""
-    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    """Set is_hidden=True on a review. Recomputes producer aggregates.
+
+    MEH-2381: `seen` is the edited_after_hidden_at the admin's page showed
+    ("keep hidden"). The row is read FOR UPDATE, so an author edit that
+    commits first is what this compares against; a mismatch is 409 and the
+    marker stays.
+    """
+    review = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review_id)
+        .with_for_update()
+        .first()
+    )
     if not review:
         raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
+    if seen is not None and seen != _iso_or_none(review.edited_after_hidden_at):
+        db.rollback()
+        raise HTTPException(status_code=409, detail=_ADMIN_REVIEW_CHANGED)
     review.is_hidden = True
     # MEH-2381: hiding (or re-hiding, "keep hidden") means the admin has seen
     # the current text.
@@ -664,11 +689,7 @@ def admin_list_reviews(
             # MEH-2349: "APPROVED" | "FLAGGED" | None (no body / predates it).
             ai_moderation_status=r.ai_moderation_status,
             # MEH-2381: None = not edited since the last hide/unhide.
-            edited_after_hidden_at=(
-                r.edited_after_hidden_at.isoformat()
-                if r.edited_after_hidden_at
-                else None
-            ),
+            edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),
         )
         for r in rows
     ]
