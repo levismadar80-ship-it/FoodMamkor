@@ -1773,6 +1773,71 @@ test.describe("manual › category cards — caption strip + hover zoom (MEH-122
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// MEH-2412 — on a phone the ten category cards are ONE swipeable row, not a
+// 2-hero + 2×4 stack (~1,400px of scroll before the first business). Desktop
+// keeps the MEH-991 v8 4-column grid with span-2 heroes. The pair discriminates:
+// the phone test is red on the old stack (section far taller, nothing overflows
+// sideways); the desktop test is red if the row leaked past `md:`.
+test.describe("manual › category cards — phone row, desktop grid (MEH-2412)", () => {
+  const grid = (page: Page) => scope(page).getByTestId("home-category-grid");
+  const rail = (page: Page) => scope(page).getByTestId("home-category-rail");
+
+  test("on a phone the cards are one horizontal row with the next card peeking", async ({ page }, info) => {
+    mobileOnly(info, "the row is the phone layout; desktop is covered by the grid test below");
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    await expect(grid(page).getByTestId("home-category-card")).toHaveCount(CARDS.length, FIRST_PAINT);
+    await grid(page).scrollIntoViewIfNeeded();
+    const m = await rail(page).evaluate((el) => {
+      const cards = [...el.querySelectorAll('[data-testid="home-category-card"]')].map((c) =>
+        c.getBoundingClientRect(),
+      );
+      // Rows from offsetTop, NOT the rect: each card enters on a `whileInView`
+      // y-slide, so off-screen cards still carry translateY(40px) and their rects
+      // read as a second "row" that the layout never had (measured under load).
+      const tops = new Set(
+        [...el.children].map((w) => (w as HTMLElement).offsetTop),
+      );
+      const box = el.getBoundingClientRect();
+      const visible = cards.filter((r) => r.right > box.left + 1 && r.left < box.right - 1).length;
+      return { rows: tops.size, scrollW: el.scrollWidth, clientW: el.clientWidth, height: box.height, visible };
+    });
+    expect(m.rows, "all ten cards share one row").toBe(1);
+    expect(m.scrollW, "the row overflows sideways — there is more to swipe to").toBeGreaterThan(m.clientW);
+    expect(m.height, "the row is one card tall, not a 1,400px stack").toBeLessThanOrEqual(320);
+    expect(m.visible, "two whole cards plus a peeking third are on screen").toBeGreaterThanOrEqual(3);
+  });
+
+  test("on desktop the cards stay a 4-column grid with span-2 heroes", async ({ page }, info) => {
+    desktopOnly(info, "the grid is the desktop layout");
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    await expect(grid(page).getByTestId("home-category-card")).toHaveCount(CARDS.length, FIRST_PAINT);
+    await grid(page).scrollIntoViewIfNeeded();
+    const m = await rail(page).evaluate((el) => {
+      const cards = [...el.querySelectorAll('[data-testid="home-category-card"]')].map((c) =>
+        c.getBoundingClientRect(),
+      );
+      return {
+        display: getComputedStyle(el).display,
+        cols: getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        heroW: cards[0].width,
+        smallW: cards[2].width,
+        overflows: el.scrollWidth > el.clientWidth + 1,
+      };
+    });
+    expect(m.display).toBe("grid");
+    expect(m.cols).toBe(4);
+    expect(m.heroW, "a hero spans two columns").toBeGreaterThan(m.smallW * 1.8);
+    expect(m.overflows, "no sideways scroll on desktop").toBe(false);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
   // MT:T9:1 + MT:T9:6 — 2 columns on mobile, 4 on desktop.
   test("the producer grid is 2 columns on mobile and 4 on desktop", async ({ page }, info) => {
