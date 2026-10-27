@@ -448,8 +448,9 @@ def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
 
     None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
     indistinguishable to every reader measured (frontend
-    lib/resolvedQuestions.js `(producer?.custom_questions || []).filter(Boolean)`,
-    tests `custom_questions?.length > 0`, so both yield no owner rows), but
+    lib/resolvedQuestions.js `ownerQuestionLabels` — the one derivation the
+    page component and the dashboard preview share — and tests
+    `custom_questions?.length > 0`, so both yield no owner rows), but
     collapsing them would still rewrite what the column stores
     on a path this ticket has no reason to touch.
 

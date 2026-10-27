@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
 import {
   getPrimaryContactHref,
   getPrimaryMethod,
@@ -268,12 +269,13 @@ export default function WhatsAppQuestionChips({ producer }) {
       : primaryHref;
 
   // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
-  // the category stock set no longer renders. Minus the two canonical slots
-  // (delivery + ordering) handled above, to avoid duplicates.
-  const waQuestions = (producer?.custom_questions || [])
-    .filter(Boolean)
-    .map((q) => q.replace("[עיר]", city))
-    .filter((q) => q !== orderingQ && q !== deliveryQ && q !== "יש משלוח?");
+  // the category stock set no longer renders. One derivation, shared with the
+  // dashboard preview (lib/resolvedQuestions.js), so the two cannot drift.
+  const waQuestions = ownerQuestionLabels(producer, {
+    city,
+    deliveryQuestion: deliveryQ,
+    orderingQuestion: orderingQ,
+  });
 
   const items = [];
 

@@ -66,6 +66,24 @@ import {
 const DUPLICATE_OF_DELIVERY = "יש משלוח?";
 
 /**
+ * The owner's Q3+ rows, as labels — the ONE derivation (MEH-2385 reviewer
+ * note: it used to live twice, here and in WhatsAppQuestionChips.jsx, and
+ * could drift). `[עיר]` is replaced with `city` when one is given; the two
+ * canonical slots (delivery / ordering) and the legacy stock wording are
+ * dropped so a row never duplicates Q1 / Q2.
+ *
+ * @param {object|null|undefined} producer
+ * @param {{ city?: string, deliveryQuestion: string, orderingQuestion: string }} opts
+ * @returns {string[]}
+ */
+export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, orderingQuestion }) {
+  return (producer?.custom_questions || [])
+    .filter(Boolean)
+    .map((q) => (city ? q.replace("[עיר]", city) : q))
+    .filter((q) => q !== orderingQuestion && q !== deliveryQuestion && q !== DUPLICATE_OF_DELIVERY);
+}
+
+/**
  * @param {object|null|undefined} producer — public ProducerDetailOut shape
  * @param {{
  *   deliveryQuestion: string,   // t("delivery_to_city", { city })
@@ -141,24 +159,19 @@ export function resolveProducerQuestions(producer, labels) {
   // longer renders), minus the two that would duplicate Q1/Q2. WhatsApp-only,
   // per MEH-2154.
   if (waEnabled) {
-    const city = producer?.city || "";
-    custom
-      .map((q) => (city ? q.replace("[עיר]", city) : q))
-      .filter(
-        (q) =>
-          q !== labels.orderingQuestion &&
-          q !== labels.deliveryQuestion &&
-          q !== DUPLICATE_OF_DELIVERY,
-      )
-      .forEach((label, i) => {
-        items.push({
-          id: `q-${i}`,
-          label,
-          answered: false,
-          channel: "whatsapp",
-          source: "custom",
-        });
+    ownerQuestionLabels(producer, {
+      city: producer?.city || "",
+      deliveryQuestion: labels.deliveryQuestion,
+      orderingQuestion: labels.orderingQuestion,
+    }).forEach((label, i) => {
+      items.push({
+        id: `q-${i}`,
+        label,
+        answered: false,
+        channel: "whatsapp",
+        source: "custom",
       });
+    });
   }
 
   // Escalation — the contact channel itself. Present whenever ANY channel

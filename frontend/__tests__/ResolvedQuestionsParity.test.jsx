@@ -137,6 +137,22 @@ const FIXTURES = [
       has_physical_location: true,
     },
   },
+  {
+    // MEH-2385 reviewer: the custom list carries a duplicate of Q2, the legacy
+    // stock wording of Q1, and a [עיר] placeholder — both sides must drop the
+    // two duplicates and fill the city the same way.
+    name: "(c2) whatsapp-primary, custom list with duplicates of Q1/Q2 + [עיר]",
+    producer: {
+      id: 31,
+      name: "מאפיית השקמה",
+      city: "זכרון יעקב",
+      phone: "0501234567",
+      primary_contact_method: "whatsapp",
+      categories: [{ name: "לחמים ואפייה" }],
+      custom_questions: [chips.ordering_q, "יש משלוח?", "יש משלוח ל[עיר] בשישי?", "יש חלה לשבת?"],
+      delivery_nationwide: true,
+    },
+  },
 ];
 
 describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", () => {
@@ -161,15 +177,25 @@ describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", 
         return n;
       },
     );
-    expect(counts.length).toBe(4);
+    expect(counts.length).toBe(5); // (a) (b) (c) (e) (c2)
     for (const n of counts) expect(n).toBeGreaterThan(0);
   });
 
   it("fixture (d) is genuinely the empty case on both sides", () => {
-    const { producer } = FIXTURES[3];
+    const { producer } = FIXTURES.find((f) => f.name.startsWith("(d)"));
     const { container } = render(<WhatsAppQuestionChips producer={producer} />);
     expect(container.innerHTML).toBe("");
     expect(resolveProducerQuestions(producer, labelsFor(producer)).items).toEqual([]);
+  });
+});
+
+describe("the owner-question derivation is shared (MEH-2385 reviewer)", () => {
+  it("drops the Q1/Q2 duplicates and fills [עיר] identically on both sides", () => {
+    const { producer } = FIXTURES.find((f) => f.name.startsWith("(c2)"));
+    const custom = resolveProducerQuestions(producer, labelsFor(producer))
+      .items.filter((i) => i.source === "custom")
+      .map((i) => i.label);
+    expect(custom).toEqual(["יש משלוח לזכרון יעקב בשישי?", "יש חלה לשבת?"]);
   });
 });
 
