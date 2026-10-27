@@ -95,18 +95,22 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
 
 // MEH-2308: axe 4.14 `label-content-name-mismatch` (WCAG 2.5.3 Label in Name).
 // The Instagram link used to carry an aria-label that REPLACED its visible
-// handle, so a voice-control user saying "@meha…" had nothing to match. The
-// handle is read from the DOM rather than restated, so a handle change (MEH-2301)
-// does not touch this test. DISCRIMINATION: the old markup fails the first
-// assertion (aria-label present) and the second (name did not start with it).
-describe("Footer Instagram link — the accessible name starts with the visible handle (MEH-2308)", () => {
-  it("has no overriding aria-label and keeps the description as sr-only text", () => {
+// handle. MEH-2417 moved Instagram into the icon row, so it has NO visible
+// text at all now — the property that still matters is that the name is not
+// an overriding aria-label and comes only from the sr-only description, with
+// nothing visible left that the name could fail to contain.
+describe("Footer Instagram link — icon-only, named by its sr-only text (MEH-2308 · MEH-2417)", () => {
+  it("has no aria-label, no visible text, and the sr-only description is its name", () => {
     render(<Footer />);
     const link = document.querySelector('a[href*="instagram.com"]');
-    const handle = link.querySelector("bdi").textContent;
     expect(link).not.toHaveAttribute("aria-label");
-    const name = link.textContent.trim();
-    expect(name.startsWith(handle)).toBe(true);
-    expect(name).toContain("nav.footer.instagram_aria");
+    expect(link.querySelector("bdi")).toBeNull();
+    const visible = [...link.childNodes]
+      .filter((n) => !(n.nodeType === 1 && (n.classList.contains("sr-only") || n.tagName.toLowerCase() === "svg")))
+      .map((n) => n.textContent)
+      .join("")
+      .trim();
+    expect(visible).toBe("");
+    expect(link.textContent.trim()).toBe("nav.footer.instagram_aria");
   });
 });
