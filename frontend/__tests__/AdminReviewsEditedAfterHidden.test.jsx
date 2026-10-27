@@ -127,8 +127,12 @@ describe("MEH-2381 edited-after-hidden tag", () => {
     fireEvent.click(within(rowOf("a")).getByTestId("review-unhide"));
     await waitFor(() => expect(within(rowOf("a")).getByTestId("review-hide")).toBeTruthy());
     expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/a/unhide");
-    expect(tags()).toHaveLength(0);
     expect(keepButtons()).toHaveLength(0);
+    // hiding again must not resurrect the stale timestamp
+    fireEvent.click(within(rowOf("a")).getByTestId("review-hide"));
+    await waitFor(() => expect(within(rowOf("a")).getByTestId("review-hidden-tag")).toBeTruthy());
+    expect(apiMock.put).toHaveBeenLastCalledWith("/admin/reviews/a/hide");
+    expect(tags()).toHaveLength(0);
   });
 
   it("keep-hidden shows only on hidden + edited rows", async () => {
@@ -150,7 +154,9 @@ describe("MEH-2381 edited-after-hidden tag", () => {
       expect(within(rowOf("a")).queryByTestId("review-edited-after-hidden-tag")).toBeNull(),
     );
     expect(apiMock.put).toHaveBeenCalledTimes(1);
-    expect(apiMock.put).toHaveBeenCalledWith("/admin/reviews/a/hide");
+    expect(apiMock.put).toHaveBeenCalledWith(
+      `/admin/reviews/a/hide?seen=${encodeURIComponent(EDITED)}`,
+    );
     expect(within(rowOf("a")).getByTestId("review-hidden-tag")).toBeTruthy();
     expect(within(rowOf("a")).getByTestId("review-unhide")).toBeTruthy();
     expect(within(rowOf("a")).queryByTestId("review-keep-hidden")).toBeNull();
@@ -183,6 +189,21 @@ describe("MEH-2381 edited-after-hidden tag", () => {
     await waitFor(() => expect(screen.queryByText("ביקורת a")).toBeNull());
     expect(toastMock.error).toHaveBeenCalledWith("ביקורת לא נמצאה");
     expect(screen.getByText("ביקורת b")).toBeTruthy();
+  });
+
+  it("keep-hidden after a newer edit (409 review_changed) keeps the tag and reloads", async () => {
+    apiMock.put.mockImplementation(() =>
+      Promise.reject({
+        response: { status: 409, data: { detail: { code: "review_changed", message: "x" } } },
+      }),
+    );
+    await renderWith([row("a", { edited: EDITED })]);
+    expect(apiMock.get).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(rowOf("a")).getByTestId("review-keep-hidden"));
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
+    expect(toastMock.error).toHaveBeenCalledWith("generic");
+    await screen.findByText("ביקורת a");
+    expect(within(rowOf("a")).getByTestId("review-edited-after-hidden-tag")).toBeTruthy();
   });
 
   it("hidden + edited + AI-flagged: all three tags in one cell", async () => {

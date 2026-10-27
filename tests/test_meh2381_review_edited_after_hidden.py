@@ -178,3 +178,46 @@ def test_owner_reply_on_hidden_review_does_not_set_marker(client, db):
     )
     assert r.status_code == 200, r.text
     assert _marker(db, review) is None
+
+
+def _keep_hidden(client, db, review, seen):
+    admin = make_user(db, role="admin", email="keeper@example.com")
+    return client.put(
+        f"/admin/reviews/{review.id}/hide",
+        params={"seen": seen},
+        headers=auth_header(admin),
+    )
+
+
+def test_keep_hidden_with_the_seen_edit_clears_the_marker(client, db):
+    author, producer, review = _review(db, hidden=True)
+    _edit(client, author, producer, body=BODY + " עריכה")
+    admin = make_user(db, role="admin", email="admin@example.com")
+    row = next(
+        r
+        for r in client.get("/admin/reviews", headers=auth_header(admin)).json()
+        if r["id"] == str(review.id)
+    )
+    r = _keep_hidden(client, db, review, row["edited_after_hidden_at"])
+    assert r.status_code == 200, r.text
+    db.refresh(review)
+    assert review.is_hidden is True
+    assert review.edited_after_hidden_at is None
+
+
+def test_keep_hidden_after_a_newer_edit_is_409_and_keeps_the_marker(
+    client, db, monkeypatch
+):
+    author, producer, review = _review(db, hidden=True)
+    first, second = datetime(2026, 10, 27, 8, 0), datetime(2026, 10, 27, 9, 30)
+    monkeypatch.setattr(reviews_mod, "utc_now", lambda: first)
+    _edit(client, author, producer, body=BODY + " א")
+    seen = first.isoformat()  # what the admin's page showed
+    monkeypatch.setattr(reviews_mod, "utc_now", lambda: second)
+    _edit(client, author, producer, body=BODY + " ב")  # unseen edit
+
+    r = _keep_hidden(client, db, review, seen)
+    assert r.status_code == 409, r.text
+    assert r.json()["detail"]["code"] == "review_changed"
+    assert _marker(db, review) == second
+    assert review.is_hidden is True

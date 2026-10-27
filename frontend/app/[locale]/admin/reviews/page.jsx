@@ -165,14 +165,15 @@ export default function AdminReviewsPage() {
   // was deleted elsewhere (another tab, or its author): drop the row and show
   // the backend's message instead of the generic error.
   // `hide` is explicit, not !is_hidden: MEH-2381's "keep hidden" sends a
-  // hide for a row that is already hidden.
-  const setHidden = async (review, hide) => {
+  // hide for a row that is already hidden, with `seen` = the edit it showed.
+  const setHidden = async (review, { hide, seen }) => {
     // MEH-2389: the button is aria-disabled, not disabled, while in flight —
     // a disabled button drops keyboard focus to <body>. So the guard is here.
     if (togglingIds.has(review.id)) return false;
     setTogglingIds((prev) => new Set(prev).add(review.id));
     try {
-      await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}`);
+      const query = seen ? `?seen=${encodeURIComponent(seen)}` : "";
+      await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}${query}`);
       // MEH-2381: both endpoints clear edited_after_hidden_at server-side.
       setReviews((prev) =>
         prev.map((item) =>
@@ -194,6 +195,9 @@ export default function AdminReviewsPage() {
         setReviews((prev) => prev.filter((item) => item.id !== review.id));
         setConfirmDelete((open) => (open?.id === review.id ? null : open));
       }
+      // MEH-2381: the author edited again after this page loaded — reload so
+      // the admin reads the new text before clearing the tag.
+      if (detail?.code === "review_changed") load();
       showToast.error(gone && detail.message ? detail.message : tError("generic"));
       return false;
     } finally {
@@ -209,7 +213,7 @@ export default function AdminReviewsPage() {
   // row's unhide button (already rendered) instead of dropping to <body>
   // (cf. MEH-2389).
   const keepHidden = async (review) => {
-    if (!(await setHidden(review, true))) return;
+    if (!(await setHidden(review, { hide: true, seen: review.edited_after_hidden_at }))) return;
     document.querySelector(`[data-toggle-for="${review.id}"]`)?.focus();
   };
 
@@ -375,7 +379,7 @@ export default function AdminReviewsPage() {
                         <button
                           type="button"
                           data-toggle-for={r.id}
-                          onClick={() => setHidden(r, !r.is_hidden)}
+                          onClick={() => setHidden(r, { hide: !r.is_hidden })}
                           aria-disabled={togglingIds.has(r.id)}
                           data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
                           className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
