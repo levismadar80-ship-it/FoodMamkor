@@ -76,7 +76,7 @@ export function HomeCategoryGrid({ categoryCards }) {
         data-testid="home-category-rail"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: true, amount: 0.2 }}
+        viewport={{ once: true, amount: 0.1 }}
       >
         {categoryCards.map((card, idx) => {
           // MEH-683: the glyph map is keyed by canonical DB name. Cards carry
