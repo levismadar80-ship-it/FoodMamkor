@@ -8,6 +8,8 @@ import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
+import { defaultsForKeys } from "@/lib/filter-taxonomy";
+import { TOGGLE_CHIPS } from "@/lib/map-chips";
 import { geocodeCity } from "@/lib/places";
 import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
@@ -585,6 +587,23 @@ export default function MapPage() {
       </div>
     ) : null;
 
+  // The empty state's "נקו את הסינון" — a wider reset than
+  // filters.resetAllFilters: it also drops the city refinement and the legend's
+  // category names. MEH-2425: shared by the card list AND the mobile sheet's
+  // zero row, and its toggle defaults are now DERIVED from TOGGLE_CHIPS. The
+  // inline literal it replaces was the fourth hand-written key list MEH-2131
+  // warned about: it still named the removed `organic` and never cleared
+  // `pickup_points`, `vegetarian`, `no_added_sugar` or `open_for_orders_now`,
+  // so the button left those filters on while claiming to reset.
+  const resetEverything = () => {
+    filters.cancelPendingSheetFetch();
+    filters.setChipState({ categoryKeys: [], ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)) });
+    filters.setActiveCategoryNames(null);
+    filters.setCommittedBounds(null);
+    filters.setCityFilter("");
+    feed.loadProducers();
+  };
+
   const filterChipsBar = (
     <FilterChipsBar
       visibleCategoryChips={filters.visibleCategoryChips}
@@ -636,6 +655,8 @@ export default function MapPage() {
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
       allProducers={feed.allProducers}
+      filtered={filters.hasActiveFilters}
+      onResetFilters={resetEverything}
       gpsLoading={gpsLoading}
       onGpsClick={handleGpsClick}
       legendOpen={hints.legendOpen}
@@ -671,17 +692,8 @@ export default function MapPage() {
       onCardMouseEnter={sync.handleCardMouseEnter}
       onCardMouseLeave={sync.handleCardMouseLeave}
       onCardClick={sync.handleCardClick}
-      onResetAll={() => {
-        // MEH-1075: completed to all toggle keys (was missing the diet trio);
-        // cancel any pending debounced sheet fetch so it can't clobber this reset.
-        // MEH-1087: + kosher (verified-only kashrut toggle).
-        filters.cancelPendingSheetFetch();
-        filters.setChipState({ categoryKeys: [], organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
-        filters.setActiveCategoryNames(null);
-        filters.setCommittedBounds(null);
-        filters.setCityFilter("");
-        feed.loadProducers();
-      }}
+      onResetAll={resetEverything}
+      filtered={filters.hasActiveFilters}
     />
   );
 
@@ -722,7 +734,13 @@ export default function MapPage() {
             <div className="flex items-start justify-between mb-3">
               {/* MEH-826: locked count copy + "near you · {region}" subhead under it */}
               <div>
-                <p className="text-xs text-fg-muted" data-testid="map-list-count">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
+                <p className="text-xs text-fg-muted" data-testid="map-list-count">
+                  {/* MEH-2425: zero under active filters names the filters as
+                      the cause, same as the mobile sheet's peek row. */}
+                  {filters.visibleProducers.length === 0 && filters.hasActiveFilters
+                    ? t("map.bottom_sheet.count_filtered_zero")
+                    : t("map.client.business_count", { count: filters.visibleProducers.length })}
+                </p>
                 {mapRegion && (
                   <p className="text-[11px] text-fg-muted mt-0.5" data-testid="map-list-subhead">{t("map.client.subhead", { region: mapRegion })}</p>
                 )}
@@ -900,7 +918,7 @@ export default function MapPage() {
         {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
             fetch so the sheet shows a list skeleton instead of flashing an
             empty "0" state before the first /producers response lands. */}
-        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading}>
+        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading} filtered={filters.hasActiveFilters} onResetFilters={resetEverything}>
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
             selectedLocation={sync.selectedLocation}
