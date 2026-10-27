@@ -397,6 +397,29 @@ describe("Header", () => {
       expect(container.querySelector("nav").className).toMatch(/bg-background\/60/);
     });
 
+    // MEH-2414: the sticky SHELL (the <header>, not the pill) — transparent
+    // only on the homepage at rest; past 60px page content bled through
+    // beside the pill and under the iOS status bar.
+    it("homepage shell at rest → transparent (hero shows through)", () => {
+      pathnameRef.current = "/";
+      const { container } = render(<Header />);
+      expect(container.querySelector("header").className).not.toMatch(/\bbg-background\b/);
+    });
+
+    it("homepage shell scrolled past 60px → solid cream band", () => {
+      pathnameRef.current = "/";
+      const { container } = render(<Header />);
+      setScrollY(120);
+      fireEvent.scroll(window);
+      expect(container.querySelector("header").className).toMatch(/\bbg-background\b/);
+    });
+
+    it("inner page shell → solid cream band at rest (MEH-1195)", () => {
+      pathnameRef.current = "/about";
+      const { container } = render(<Header />);
+      expect(container.querySelector("header").className).toMatch(/\bbg-background\b/);
+    });
+
     it("inner pages → SOLID cream pill, no translucent glass (MEH-947)", () => {
       pathnameRef.current = "/about";
       const { container } = render(<Header />);
