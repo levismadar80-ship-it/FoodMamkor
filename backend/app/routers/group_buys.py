@@ -24,7 +24,10 @@ from app.schemas.schemas import (
     GroupBuyStatusOut,
     GroupBuyStatusUpdate,
 )
-from app.services.group_buy_notifications import send_funded_notifications
+from app.services.group_buy_notifications import (
+    send_cancelled_notifications,
+    send_funded_notifications,
+)
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -341,10 +344,11 @@ OWNER_TRANSITIONS = {
 
 @router.patch("/{group_buy_id}/status", response_model=GroupBuyStatusOut)
 @limiter.limit("30/minute")
-def update_group_buy_status(
+def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2449 added the cancel-email hop
     request: Request,
     group_buy_id: UUID,
     data: GroupBuyStatusUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -371,8 +375,40 @@ def update_group_buy_status(
             status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
         )
 
+    # MEH-2435 chunk 4: tell every participant the group was cancelled.
+    # Recipients are resolved here, while the session is open; the background
+    # task gets plain strings (as in _maybe_notify_funded). Sent once by
+    # construction: cancelled is final in OWNER_TRANSITIONS and this check ran
+    # under the row lock, so a repeat cancel is a 409 above and never gets here.
+    # An admin's cancel (admin route) sends nothing — the wording names the
+    # business as the one who cancelled.
+    participant_emails: list[str] = []
+    if data.status == "cancelled":
+        participant_emails = [
+            email
+            for (email,) in db.query(User.email)
+            .join(GroupBuyCommit, GroupBuyCommit.user_id == User.id)
+            .filter(GroupBuyCommit.group_buy_id == gb.id)
+            # Nothing stops the owner joining her own group; she cancelled it,
+            # so she is not told that the business cancelled it.
+            .filter(User.id != current_user.id)
+            .all()
+        ]
+
+    title = gb.title
+    producer_name = gb.producer.name if gb.producer else ""
+
     gb.status = data.status
     db.commit()
+
+    if participant_emails:
+        background_tasks.add_task(
+            send_cancelled_notifications,
+            participant_emails,
+            title,
+            producer_name,
+            str(group_buy_id),
+        )
     return {"detail": "סטטוס עודכן", "status": gb.status}
 
 
