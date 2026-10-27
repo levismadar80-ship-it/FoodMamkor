@@ -70,8 +70,10 @@ characters of every heading — the one position guaranteed to collide. The same
 component reviewed in English looks fine, because there `start-` is the empty
 left margin.
 
-**Reference implementation: `OnboardingTip.jsx:53,58`** — `top-0 end-0 w-11 h-11` on the
-button *and* `pe-8` on the paragraph (MEH-1687: 0 + 44 − 16 = 28px needed, 32px reserved). `Lightbox.jsx:156` (`top-4 end-4`) is the
+**Reference implementation: `LocationModal.jsx` (MEH-2038)** — the close button at
+`end-4` (16→60px from the card edge) *and* `sm:pe-10` on the heading + subtitle (16 + 44 − 24 = 36px needed, 40px reserved).
+The earlier reference, `OnboardingTip.jsx` (`top-0 end-0 w-11 h-11` + `pe-8`, MEH-1687: 0 + 44 − 16 = 28px needed, 32px reserved),
+left with the coach-mark tour in MEH-2394. `Lightbox.jsx:156` (`top-4 end-4`) is the
 position half.
 
 **Reserving the space is arithmetic, not a guess:** the button is absolutely
@@ -153,7 +155,6 @@ over a CTA), which is why the gate sits in front of it.
 | `z-[1002]` | 1 | `components/AccountSheet.jsx:125` | account sheet panel |
 | `z-[1001]` | 2 | `components/AccountSheet.jsx:114` · `Header.jsx` | account sheet overlay + UserMenu dropdown |
 | `z-[1000]` | 11 | `components/BottomNav.jsx:359` · `map/components/NearMePill.jsx:62` | BottomNav pill + map controls. Was 14 until MEH-2108 moved `CitySearch.jsx:206` up to 1010; 13 → 12 in MEH-2148, which merged MapPane's two top-centre overlays (the search-area pill and the pickup-layer notice) into ONE `z-[1000]` stack — see the MEH-1187 one-corner-one-job note there; **12 → 11 in MEH-2148 close-out**, which took `MiniMap.jsx`'s shared map-button token OFF the page scale entirely (`z-[1000]` → local `z-10`) after it was measured painting over the producer page's `z-[598]` StickyContactBar at 88.5% of the bar width. Its two buttons now rely on a stacking context each — the inline wrapper carries `isolate`, the fullscreen overlay is `z-[1150]` — so neither appears in this table any more |
-| `z-[900]` | 2 | `components/OnboardingTip.jsx:39` | onboarding tip |
 | `z-[800]` | 4 | `map/components/MapPane.jsx:238` · `AdminRowMenu.jsx` | map legend, admin row menu |
 | `z-[600]` | 1 | `components/MapBottomSheet.jsx:122` | map bottom sheet |
 | `z-[598]` | 1 | `producer/[id]/components/StickyContactBar.jsx:71` | sticky contact bar — just under the sheet |

@@ -448,9 +448,10 @@ def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
 
     None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
     indistinguishable to every reader measured (frontend
-    `getProducerQuestions`, lib/categoryQuestions.js:88, tests
-    `custom_questions?.length > 0`, so both fall through to the category
-    defaults), but collapsing them would still rewrite what the column stores
+    lib/resolvedQuestions.js `ownerQuestionLabels` — the one derivation the
+    page component and the dashboard preview share — and tests
+    `custom_questions?.length > 0`, so both yield no owner rows), but
+    collapsing them would still rewrite what the column stores
     on a path this ticket has no reason to touch.
 
     Order-preserving throughout: the owner's five inputs are positional in the
@@ -4755,12 +4756,6 @@ class ProducerViewIn(BaseModel):
     """
 
     referrer: str | None = None
-
-
-# --- Referrals (referrals.py) ---
-# MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
-class ClaimReferralRequest(BaseModel):
-    code: str
 
 
 # --- Admin: vacation mode (admin_extra.py) ---

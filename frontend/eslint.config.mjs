@@ -228,7 +228,6 @@ export default [
     files: [
       "data/**",                  // cities/regions — data, not copy
       "lib/holidays.js",          // date registry, not copy
-      "lib/categoryQuestions.js", // MEH-1617 §2ג — deliberate data structure
       "lib/badges.js",            // MEH-1617 §2ג
       "lib/contact-method.js",    // MEH-1617 §2ג
       "lib/attribute-labels.js",  // MEH-1507 label registry (scope+evidence)

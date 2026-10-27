@@ -5202,14 +5202,6 @@ export const GetVapidPublicKeyPushVapidKeyGetResponse = /*#__PURE__*/ zod.unknow
 
 
 /**
- * Link the current user (referee) to the referrer identified by code.
- * Idempotent — calling twice for the same user is a no-op.
- * @summary Claim Referral
- */
-export const ClaimReferralReferralClaimPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * Public lookup — the token IS the auth. Returns 404 for invalid /
  * expired tokens so the registration form just renders empty (no leak).
  *
