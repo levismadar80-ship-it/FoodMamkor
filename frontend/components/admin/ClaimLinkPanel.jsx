@@ -74,6 +74,7 @@ export default function ClaimLinkPanel({ producerId }) {
 
   const expires = link
     ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
+        // guard-ok: display formatting of a server-issued expiry, not a "today" decision (MEH-2383)
         timeZone: "Asia/Jerusalem",
         day: "2-digit",
         month: "2-digit",

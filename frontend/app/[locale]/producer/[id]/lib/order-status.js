@@ -10,19 +10,24 @@
  * History:  MEH-1546 — extracted from ProducerHeader so the mapper is unit
  *           testable: importing the component pulls next-intl → next/navigation
  *           into vitest, which does not resolve under this config.
+ *           MEH-2383 — `israelTime` / `israelDayKey` derive from
+ *           lib/orderWindow.js `israelNowParts` instead of carrying a second
+ *           private Asia/Jerusalem formatter (israel-clock-guard.sh).
  */
 
-const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+import { DAY_KEYS } from "@/lib/hours";
+import { israelNowParts } from "@/lib/orderWindow";
 
-/** Israel-local "HH:MM" for a Date. */
+const pad2 = (n) => String(n).padStart(2, "0");
+
+/**
+ * Israel-local "HH:MM" for a Date — zero-padded, the stored/transported shape
+ * (lib/time-format.js `humanTime` strips the pad at render). Midnight is
+ * "00:MM": `israelNowParts` already folds the "24" some ICU builds emit.
+ */
 export function israelTime(date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Jerusalem",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
+  const { minutes } = israelNowParts(date);
+  return `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
 }
 
 /**
@@ -32,12 +37,8 @@ export function israelTime(date) {
  * Mirrors the `if (dayIndex < 0) return null` guard in orderWindow.js.
  */
 export function israelDayKey(date) {
-  const abbr = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Jerusalem",
-    weekday: "short",
-  }).format(date);
-  const idx = DAY_ABBR.findIndex((d) => abbr.startsWith(d));
-  return idx < 0 ? null : DAY_KEYS[idx];
+  const { dayIndex } = israelNowParts(date);
+  return dayIndex < 0 ? null : DAY_KEYS[dayIndex];
 }
 
 /**
