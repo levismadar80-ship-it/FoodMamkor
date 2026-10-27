@@ -2,8 +2,8 @@
 
 No screen ever showed a user her referral link, and since MEH-328 the only
 caller (RegisterClient, right after signup) ran unauthenticated and got a 401.
-Registration stopped minting `users.referral_code` under MEH-2393; the
-column and the `referral_clicks` table go in the Expand-Contract drop.
+Registration stopped minting `users.referral_code` (MEH-2393 chunk 1), and
+the column and the `referral_clicks` table were dropped in chunk 2.
 
 DISCRIMINATION: on the old code `POST /referral/claim` is mounted, so the
 assertion lists it and goes red.
@@ -27,11 +27,10 @@ def test_referral_claim_returns_404(client):
 
 
 def test_registration_no_longer_mints_a_referral_code(client, db):
-    # MEH-2393, Contract step 1: nothing reads users.referral_code, so the
-    # register paths stop writing it and UserOut stops exposing it. The drop
-    # migration can then remove the column without any live writer.
-    # DISCRIMINATION: on the old code every register path set an 8-hex code
-    # and UserOut carried the key, so both assertions go red.
+    # MEH-2393: the register paths stopped writing users.referral_code
+    # (chunk 1) and the column is gone from the model (chunk 2).
+    # DISCRIMINATION: before chunk 1 every register path set an 8-hex code
+    # and UserOut carried the key; before chunk 2 the column was still mapped.
     from app.models.models import User
     from tests.conftest import auth_header, valid_user_register_payload
 
@@ -40,7 +39,7 @@ def test_registration_no_longer_mints_a_referral_code(client, db):
     assert resp.status_code == 200, resp.text
 
     user = db.query(User).filter(User.email == payload["email"]).one()
-    assert user.referral_code is None
+    assert "referral_code" not in User.__table__.c
 
     # /auth/register answers with a neutral detail only, so read the UserOut
     # shape where it is served: GET /auth/me.

@@ -29,7 +29,7 @@
 | 5 | `products` | Producer's catalog items | `Product` |
 | 6 | `delivery_areas` | Cities a producer delivers to | `DeliveryArea` |
 | 7 | `favorites` | User bookmarks on a producer | `Favorite` |
-| 8 | `producer_followers` | Notification subscriptions per producer | `ProducerFollower` |
+| 8 | ~~`producer_followers`~~ | Dropped in MEH-2392 (migration `e5b2d8f4a913`); interest is a favorite | — |
 | 9 | `producer_reviews` | Public star+text reviews (one per user per producer) | `ProducerReview` |
 | 10 | `home_products` | "מהמטבח של השכן" — community food listings | `HomeProduct` |
 | 11 | `home_product_whatsapp_clicks` | Track when a buyer taps WhatsApp (for 24h rating prompt) | `HomeProductWhatsAppClick` |
@@ -286,12 +286,8 @@ delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
   -- the producer-level pair above (bad payload → clean 422, not a 500).
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
-producer_followers (
-  id uuid PK, user_id FK, producer_id FK,
-  notify_new_products bool, notify_back_in_stock bool,
-  created_at,
-  UNIQUE(user_id, producer_id)
-)
+-- producer_followers: dropped in MEH-2392 (e5b2d8f4a913). users.referral_code
+-- and referral_clicks: dropped in MEH-2393, same revision.
 
 producer_reviews (
   id uuid PK, producer_id FK, user_id FK,
@@ -664,8 +660,8 @@ POST   /producers                                 auth   — self-register (writ
 GET    /categories                                public
 
 # Follow / unfollow endpoints removed (MEH-2370). Interest is recorded as a
-# favorite (/users/me/favorites); the producer_followers table stays until its
-# Expand-Contract drop.
+# favorite (/users/me/favorites); the producer_followers table was dropped in
+# MEH-2392.
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
@@ -1199,8 +1195,8 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 ## Apple App Store compliance
 
 - `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
-  home_products, home_product_ratings, producer_reviews, experiences,
-  producer_followers). Events hosted by the user's producer are NOT
+  home_products, home_product_ratings, producer_reviews, experiences).
+  Events hosted by the user's producer are NOT
   cascaded — they belong to the producer record.
 - `POST /auth/apple` — identity token verification + user create/link.
 - `apple_id` column on `users` (unique when set).
