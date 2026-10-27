@@ -350,12 +350,12 @@ describe("/producers — removing city/search preserves the category selection (
   const lastFetchCategory = () => producersCalls().at(-1)?.category;
 
   it("removing the city chip keeps the 2 selected categories (URL + fetch)", async () => {
-    params = { city: "חיפה" }; // city seeded from the URL → the city-× chip renders
+    params = { city: "חיפה" }; // city seeded from the URL → the lit city chip renders
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
     fireEvent.click(within(row).getByText("בשר")); // id 1
     fireEvent.click(within(row).getByText("דבש")); // id 18
-    // remove the city chip (its label is "×" + city, so match by content)
+    // remove the city via its chip (MEH-2428: the chip is the ONLY city control)
     const cityBtn = screen.getAllByRole("button").find((b) => b.textContent.includes("חיפה"));
     fireEvent.click(cityBtn);
     // the two categories survive — URL keeps repeated ?category=, city is gone
@@ -376,5 +376,22 @@ describe("/producers — removing city/search preserves the category selection (
     expect(catParams(lastReplaceUrl())).toEqual(["18"]);
     expect(lastReplaceUrl()).not.toContain("q=");
     await waitFor(() => expect(lastFetchCategory()).toEqual(["18"]));
+  });
+});
+
+// MEH-2428: the filtered city shows once — on its lit chip in the toggle row.
+// The control line used to repeat it as "× 📍 חיפה" (the same filter twice),
+// and that tag cleared the city without the delivery day.
+describe("/producers — a city filter has one control (MEH-2428)", () => {
+  it("?city=חיפה → exactly one button names the city, and it is the lit chip", async () => {
+    params = { city: "חיפה", vegetarian: "1" };
+    render(<ProducersClient {...PROPS} />);
+    await screen.findByTestId("chip-row-category");
+    const named = screen.getAllByRole("button").filter((b) => b.textContent.includes("חיפה"));
+    expect(named).toHaveLength(1);
+    expect(within(screen.getByTestId("chip-row-toggle")).getByText("חיפה")).toHaveAttribute("data-active", "true");
+    // Control: the control line is mounted (the vegetarian tag is on it), so
+    // the single match above is not an unrendered line.
+    expect(within(screen.getByTestId("producers-control-line")).getAllByRole("button").length).toBeGreaterThan(0);
   });
 });
