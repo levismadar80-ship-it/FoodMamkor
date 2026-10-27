@@ -448,9 +448,10 @@ def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
 
     None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
     indistinguishable to every reader measured (frontend
-    `getProducerQuestions`, lib/categoryQuestions.js:88, tests
-    `custom_questions?.length > 0`, so both fall through to the category
-    defaults), but collapsing them would still rewrite what the column stores
+    lib/resolvedQuestions.js `ownerQuestionLabels` — the one derivation the
+    page component and the dashboard preview share — and tests
+    `custom_questions?.length > 0`, so both yield no owner rows), but
+    collapsing them would still rewrite what the column stores
     on a path this ticket has no reason to touch.
 
     Order-preserving throughout: the owner's five inputs are positional in the
@@ -4026,8 +4027,8 @@ class GroupBuyCreate(BaseModel):
     def _normalize_deadline_to_naive_utc(cls, v: datetime) -> datetime:
         # MEH-1454: the dashboard form sends `new Date(...).toISOString()` — an
         # aware ISO string with a trailing 'Z'. The DB column and every
-        # `datetime.utcnow()` comparison in group_buys.py are naive UTC, so an
-        # aware value made `data.deadline <= datetime.utcnow()` raise
+        # `utc_now()` comparison in group_buys.py are naive UTC, so an
+        # aware value made `data.deadline <= utc_now()` raise
         # `TypeError: can't compare offset-naive and offset-aware datetimes`
         # → 500 on real creates. Normalize aware → naive UTC at the boundary so
         # DB storage and comparisons stay in one (naive-UTC) world.
@@ -4752,12 +4753,6 @@ class ProducerViewIn(BaseModel):
     """
 
     referrer: str | None = None
-
-
-# --- Referrals (referrals.py) ---
-# MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
-class ClaimReferralRequest(BaseModel):
-    code: str
 
 
 # --- Admin: vacation mode (admin_extra.py) ---

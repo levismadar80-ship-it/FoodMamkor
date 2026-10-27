@@ -11,7 +11,11 @@
  * tone (one green) and the data-testid contract.
  */
 import { describe, it, expect } from "vitest";
-import { resolveHeaderStatus } from "@/app/[locale]/producer/[id]/lib/order-status";
+import {
+  israelDayKey,
+  israelTime,
+  resolveHeaderStatus,
+} from "@/app/[locale]/producer/[id]/lib/order-status";
 
 const OPEN = { state: "open", nextChange: new Date("2026-07-26T11:00:00Z") };
 const CLOSING = { state: "closing_soon", nextChange: new Date("2026-07-26T11:00:00Z") };
@@ -111,5 +115,37 @@ describe("one green per page", () => {
     expect(cases.filter((c) => c.tone === "text-primary")).toHaveLength(2);
     // …and every case yields exactly ONE element (one branch, one testid).
     expect(new Set(cases.map((c) => c.branch)).size).toBe(5);
+  });
+});
+
+// MEH-2383 — the two formatters now derive from lib/orderWindow.js
+// `israelNowParts`. Characterisation: the values below are what the previous
+// private formatter returned on Node's ICU, and these pin them on both sides
+// of an Israel midnight, in both offsets. The one place the refactor is NOT
+// byte-identical is midnight itself: the old `en-GB` / `hour12:false`
+// formatter could emit "24:MM" on some ICU builds; `israelNowParts` folds
+// that to "00:MM", the stored/transported shape, and the first case pins it.
+// No consumer compares against "24:" (grep, 27/10).
+describe("israelTime / israelDayKey — Israel wall-clock, padded (MEH-2383)", () => {
+  it("Mon 22:30Z in winter (IST, +2) is Tuesday 00:30 in Israel", () => {
+    const d = new Date("2026-10-26T22:30:00Z");
+    expect(israelTime(d)).toBe("00:30");
+    expect(israelDayKey(d)).toBe("tue");
+  });
+
+  it("Mon 21:30Z in winter is still Monday 23:30 in Israel", () => {
+    const d = new Date("2026-10-26T21:30:00Z");
+    expect(israelTime(d)).toBe("23:30");
+    expect(israelDayKey(d)).toBe("mon");
+  });
+
+  it("Fri 20:30Z in summer (IDT, +3) is Friday 23:30 — the hour keeps its pad", () => {
+    const d = new Date("2026-06-05T20:30:00Z");
+    expect(israelTime(d)).toBe("23:30");
+    expect(israelDayKey(d)).toBe("fri");
+  });
+
+  it("Fri 06:05Z in summer is 09:05 — a single-digit hour is zero-padded", () => {
+    expect(israelTime(new Date("2026-06-05T06:05:00Z"))).toBe("09:05");
   });
 });

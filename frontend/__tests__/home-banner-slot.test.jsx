@@ -102,6 +102,10 @@ async function renderSlot(props) {
 beforeEach(() => {
   vi.useFakeTimers();
   sessionStorage.clear();
+  // MEH-2394: LocationBanner arms its reveal only once cookie consent exists.
+  // This suite is about the slot's precedence, not the gate (that is
+  // LocationBannerCookieGate.test.jsx), so consent is a given here.
+  localStorage.setItem("cookieConsent", "all");
   api.get.mockReset();
   getActiveHoliday.mockReset();
 });

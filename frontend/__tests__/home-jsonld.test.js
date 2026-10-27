@@ -2,7 +2,7 @@
 // supplies the site-level Organization + WebSite graph plus a SearchAction
 // (sitelinks search box). These guards lock the @id wiring (must match
 // buildJsonLd's #organization/#website so the cross-page graph is consistent),
-// the SearchAction target (/search?q= — the real param), and locale-awareness.
+// the SearchAction target (/producers?q= — the real param, MEH-819), and locale-awareness.
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/env", () => ({
@@ -28,10 +28,10 @@ describe("buildHomeJsonLd (MEH-804)", () => {
     expect(org.logo.url).toBe(`${SITE}/logo.png`);
   });
 
-  it("includes a SearchAction targeting the real /search?q= param", () => {
+  it("includes a SearchAction targeting the real /producers?q= param", () => {
     const { potentialAction } = webNode("he");
     expect(potentialAction["@type"]).toBe("SearchAction");
-    expect(potentialAction.target.urlTemplate).toBe(`${SITE}/search?q={search_term_string}`);
+    expect(potentialAction.target.urlTemplate).toBe(`${SITE}/producers?q={search_term_string}`);
     expect(potentialAction["query-input"]).toBe("required name=search_term_string");
   });
 

@@ -81,10 +81,6 @@ graph TD
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
-
-    Account --> Follow[POST /producers/{id}/follow<br/>🔑 notification prefs]
-    Account --> Unfollow[DELETE /producers/{id}/follow<br/>🔑]
-    Account --> Following[GET /users/me/following<br/>🔑]
 ```
 
 ## 4. Producer self-management (role=producer)

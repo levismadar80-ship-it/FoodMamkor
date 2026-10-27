@@ -84,6 +84,11 @@ vi.mock("@/components/ProducerCard", () => ({ default: () => <div data-testid="c
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
+// MEH-819: the /en search-locale notice moved here from /search. The locale
+// gate (renders on /en, nothing on /he) is the component's own contract and
+// is pinned both ways in EnSearchNotice.test.jsx; this file pins only that
+// /producers mounts it at all, since a dropped mount is invisible to that test.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => <div data-testid="en-search-notice-mount" /> }));
 
 // Filter lib — neutralize chips so syncUrl only handles q.
 vi.mock("@/lib/producer-filters", () => ({
@@ -167,6 +172,11 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     params = {};
     render(<ProducersClient {...PROPS} />);
     expect(screen.getByRole("searchbox")).not.toHaveFocus();
+  });
+
+  it("mounts EnSearchNotice next to the search box (MEH-819: /search is gone)", () => {
+    render(<ProducersClient {...PROPS} />);
+    expect(screen.getByTestId("en-search-notice-mount")).toBeInTheDocument();
   });
 
   it("hydrates the box from an existing ?q= param", () => {

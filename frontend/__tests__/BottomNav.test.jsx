@@ -53,10 +53,6 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/AccountSheet", () => ({
   default: ({ open }) => (open ? <div data-testid="account-sheet" /> : null),
 }));
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: 0, advance: vi.fn(), dismiss: vi.fn() }),
-}));
 
 describe("BottomNav", () => {
   beforeEach(() => {

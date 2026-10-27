@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { hasCookieConsent, setCookieConsent } from "@/lib/cookie-consent";
 
 /**
  * Cookie consent — compact bottom bar.
@@ -26,12 +27,7 @@ export default function CookieBanner() {
   const bannerRef = useRef(null);
 
   useEffect(() => {
-    try {
-      const v = localStorage.getItem("cookieConsent");
-      if (v !== "all" && v !== "essential") setVisible(true);
-    } catch (e) {
-      setVisible(true);
-    }
+    if (!hasCookieConsent()) setVisible(true);
   }, []);
 
   // MEH-850: publish the banner's live height to a CSS var so the chat FAB's
@@ -56,12 +52,12 @@ export default function CookieBanner() {
   }, [visible]);
 
   const accept = (mode) => {
-    try { localStorage.setItem("cookieConsent", mode); } catch (e) {}
+    // setCookieConsent also fires the "cookie-consent" event. Still required:
+    // ClarityScript.jsx listens for it to activate analytics on consent, and
+    // LocationBanner.jsx arms its reveal on it (MEH-2394). MEH-850 only moved
+    // the chat-FAB *positioning* off this event onto the --cookie-banner-h var.
+    setCookieConsent(mode);
     setVisible(false);
-    // Still required: ClarityScript.jsx listens for this to activate analytics on
-    // consent. MEH-850 only moved the chat-FAB *positioning* off this event onto
-    // the --cookie-banner-h var; the consent signal itself stays.
-    window.dispatchEvent(new CustomEvent("cookie-consent"));
   };
 
   if (!visible) return null;

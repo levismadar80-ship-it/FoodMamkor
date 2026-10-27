@@ -20,7 +20,7 @@ from app.services.availability_validation import (
 )
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import OtpCodeV1
-from app.utils.clock import ISRAEL_TZ, israel_today
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -931,7 +931,7 @@ def toggle_availability(
             if producer.availability_state == "available_today"
             else "available_today"
         )
-    producer.last_active_at = datetime.utcnow()
+    producer.last_active_at = utc_now()
     db.commit()
     return {
         # Derived for the response, not read back off a column. MEH-2272
@@ -981,7 +981,7 @@ def set_availability_status(
         producer.availability_state, data.status
     )
     producer.vacation_until = data.vacation_until if data.status == "vacation" else None
-    producer.last_active_at = datetime.utcnow()
+    producer.last_active_at = utc_now()
     db.commit()
     return {
         # Derived, same as the toggle above.
@@ -1032,7 +1032,7 @@ def set_availability_state(
     # value, so writing them here would be a second authority over one fact.
     producer.availability_state = data.state
     producer.vacation_until = vacation_until
-    producer.last_active_at = datetime.utcnow()
+    producer.last_active_at = utc_now()
     db.commit()
     return {
         "availability_state": producer.availability_state,
@@ -1063,7 +1063,7 @@ def dashboard(
 
     # feature/producer-analytics: replace the hardcoded 0 with real counts
     # from producer_whatsapp_clicks.
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = utc_now() - timedelta(days=7)
     whatsapp_clicks_week = (
         db.query(func.count(ProducerWhatsAppClick.id))
         .filter(
@@ -1127,7 +1127,7 @@ def _rank_in_city(db: Session, producer, israel_day):
     """
     if not producer.city:
         return None
-    cutoff_30d = datetime.utcnow() - timedelta(days=30)
+    cutoff_30d = utc_now() - timedelta(days=30)
     rank_views = unique_views_count(israel_day)
     city_ranks = (
         db.query(Producer.id, rank_views.label("views"))
@@ -1207,7 +1207,7 @@ def _count_in_window(
     q = db.query(counter).filter(model.producer_id == producer_id)
     rolled_up = 0
     if window.days is not None:
-        cutoff = datetime.utcnow() - timedelta(days=window.days)
+        cutoff = utc_now() - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
     elif window.rollup_col is not None:
         # One statement for both halves — a roll-up committing between a
@@ -1292,7 +1292,7 @@ def producer_analytics(
     # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
     # the canonical interest record, since MEH-1363 removed the follow button
     # and producer_followers stopped receiving writes (Expand half only —
-    # the table + producer_follows.py stay until the Contract ticket).
+    # the table stays until the Contract ticket; the endpoints went in MEH-2370).
     # favorites has a composite PK (user_id, producer_id) and NO id column —
     # count on a key column (REUSES: :510 func.count(Favorite.producer_id)).
     follower_count = (
@@ -1301,7 +1301,7 @@ def producer_analytics(
         .scalar()
         or 0
     )
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = utc_now() - timedelta(days=7)
     new_followers_this_week = (
         db.query(func.count(Favorite.producer_id))
         .filter(
@@ -1462,7 +1462,7 @@ def producer_analytics(
     profile_strength = int(strength_score)
 
     # MEH-57 ── weekly_trend: compare last 7d views vs previous 7d (days 14→7).
-    now = datetime.utcnow()
+    now = utc_now()
     prev_start = now - timedelta(days=14)
     prev_end = now - timedelta(days=7)
     # MEH-160: the comparison arm has to use the SAME unit as `last_7d`, which
@@ -1611,7 +1611,7 @@ def send_phone_otp(
     # other number takes exactly the path it took before this line existed.
     test_code = _otp_test_code_for(producer.phone)
     code = test_code or "".join(secrets.choice(string.digits) for _ in range(6))
-    expires = datetime.utcnow() + timedelta(minutes=10)
+    expires = utc_now() + timedelta(minutes=10)
 
     # Invalidate any previous unused tokens for this producer
     db.query(PhoneOtpToken).filter(
@@ -1698,7 +1698,7 @@ def confirm_phone_otp(
             PhoneOtpToken.producer_id == producer.id,
             PhoneOtpToken.code == body.code,
             PhoneOtpToken.used.is_(False),
-            PhoneOtpToken.expires_at > datetime.utcnow(),
+            PhoneOtpToken.expires_at > utc_now(),
         )
         .update({PhoneOtpToken.used: True}, synchronize_session=False)
     )

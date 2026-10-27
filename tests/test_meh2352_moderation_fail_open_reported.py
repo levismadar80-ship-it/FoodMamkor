@@ -96,6 +96,9 @@ def calls(monkeypatch):
             _Client(_Msg(json.dumps({"reason": "x"}), stop_reason="max_tokens")),
             "truncated",
         ),
+        # MEH-2390: valid JSON that is not an object used to die on `.get`
+        # (AttributeError) and be reported as a generic "error".
+        (_Client(_Msg("[1, 2]")), "bad_status"),
     ],
     ids=[
         "no-client",
@@ -104,6 +107,7 @@ def calls(monkeypatch):
         "call-raises",
         "bad-status",
         "cut-but-parses-without-status",
+        "json-not-an-object",
     ],
 )
 @pytest.mark.parametrize("surface", SURFACES, ids=["experience", "recipe", "review"])
@@ -112,7 +116,10 @@ def test_fail_open_is_reported(monkeypatch, calls, surface, client, reason):
     mod, getter, run, name = surface()
     patch(mod)
     monkeypatch.setattr(mod, getter, lambda: client)
-    assert run() == "APPROVED"
+    # MEH-2390: a review has no verdict on fail-open (None → stored NULL, so
+    # the next save re-checks); the item still publishes. Experiences and
+    # recipes keep APPROVED — their status gates nothing an edit can reuse.
+    assert run() == (None if name == "review" else "APPROVED")
     assert seen == [(name, reason)]
 
 
@@ -150,9 +157,19 @@ def test_classify_failure_names():
 
     from app.services.moderation_fail_open import classify_failure
 
-    # The branch a dead key / 429 / 529 hits in production.
-    conn = anthropic.APIConnectionError(request=httpx.Request("POST", "http://x"))
+    # No HTTP answer at all (DNS, timeout, reset): no status class to report.
+    req = httpx.Request("POST", "http://x")
+    conn = anthropic.APIConnectionError(request=req)
     assert classify_failure(conn) == "api_error"
+    # MEH-2390: an HTTP answer carries its class, so a dead key (401) and a
+    # rate limit (429) read apart from an overload (529) on the dashboard.
+    for exc_cls, code, expected in [
+        (anthropic.AuthenticationError, 401, "api_error_4xx"),
+        (anthropic.RateLimitError, 429, "api_error_4xx"),
+        (anthropic.InternalServerError, 529, "api_error_5xx"),
+    ]:
+        exc = exc_cls("x", response=httpx.Response(code, request=req), body=None)
+        assert classify_failure(exc) == expected, (code, classify_failure(exc))
 
     assert classify_failure(ValueError(), truncated=True) == "truncated"
     try:
@@ -295,3 +312,45 @@ def test_producer_risk_failures_are_reported(monkeypatch):
         ("producer_risk", "error"),
         ("producer_risk", "refusal"),
     ]
+
+
+def test_review_fail_open_reaches_sentry_end_to_end(monkeypatch):
+    # MEH-2390: one path from the failing call to the Sentry event, with
+    # nothing in between stubbed — the pieces above are each tested alone.
+    import contextlib
+
+    import sentry_sdk
+
+    from app.routers import reviews as mod
+
+    class _Scope:
+        def __init__(self):
+            self.tags: dict[str, str] = {}
+            self.fingerprint = None
+
+        def set_tag(self, k, v):
+            self.tags[k] = v
+
+    scope = _Scope()
+    captured: list[tuple[str, str]] = []
+
+    @contextlib.contextmanager
+    def _new_scope():
+        yield scope
+
+    monkeypatch.setattr(sentry_sdk, "new_scope", _new_scope, raising=False)
+    monkeypatch.setattr(
+        sentry_sdk,
+        "capture_message",
+        lambda msg, level=None: captured.append((msg, level)),
+    )
+    monkeypatch.setattr(mod, "_get_ai_client", lambda: _Client(exc=RuntimeError("x")))
+
+    assert mod._moderate_review_body("ביקורת כלשהי לבדיקה") is None
+    assert scope.tags == {
+        "moderation_fail_open": "true",
+        "moderation_surface": "review",
+        "fail_open_reason": "error",
+    }
+    assert scope.fingerprint == ["moderation-fail-open", "review", "error"]
+    assert captured == [("moderation fail-open: review (error)", "warning")]

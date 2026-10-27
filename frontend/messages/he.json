@@ -28,11 +28,6 @@
     "lang_switch_to_he": "החלף לעברית",
     "lang_he": "עברית",
     "lang_en": "EN",
-    "onboarding": {
-      "map": "מפה אינטראקטיבית — גלו בתי עסק קרובים אליכם",
-      "profile": "הצטרפו כדי לשמור עסקים מועדפים ולדרג",
-      "profile_cta": "הבנתי, סיום"
-    },
     "footer": {
       "events": "אירועים",
       "experiences": "חוויות",
@@ -511,8 +506,6 @@
       "explore_map": "גלו על המפה",
       "load_more": "עוד בתי עסק",
       "all_businesses": "לכל בתי העסק ←",
-      "onboarding0": "גלו בתי עסק מקומיים — ירקות טריים, גבינות, לחם מחמצת ועוד לחצו על כרטיס כדי לצפות בפרטים",
-      "onboarding1": "סננו לפי אורגני, כשר, משלוח ועוד — לחצו על אחד מהכפתורים למעלה",
       "geo_chip": "בתי עסק ליד המיקום שלך",
       "city_chip": "עסקים באזור {city}",
       "day_chip_idle": "יום משלוח",
@@ -2100,7 +2093,14 @@
       "expand": "עוד",
       "collapse": "פחות",
       "ai_flagged": "סומן ע״י AI",
-      "ai_flagged_only": "רק ביקורות שסומנו"
+      "ai_flagged_only": "רק ביקורות שסומנו",
+      "hidden": "מוסתרת",
+      "hide": "הסתירי",
+      "unhide": "החזירי",
+      "hide_aria": "הסתירי את הביקורת של {user}",
+      "unhide_aria": "החזירי את הביקורת של {user}",
+      "hidden_toast": "הביקורת הוסתרה",
+      "unhidden_toast": "הביקורת חזרה לאתר"
     },
     "settings": {
       "title": "הגדרות",
@@ -2862,10 +2862,6 @@
       "prev_aria": "תמונה קודמת",
       "next_aria": "תמונה הבאה",
       "image_error": "התמונה לא נטענה"
-    },
-    "onboarding_tip": {
-      "cta_default": "הבנתי",
-      "close_aria": "סגירה"
     }
   },
   "kashrut": {
@@ -3303,9 +3299,7 @@
       "ordering_link_label": "למעבר",
       "escalation": "שאלה אחרת? צרו איתנו קשר",
       "escalation_email_subject": "שאלה דרך מהמקור",
-      "more_questions": "עוד שאלות",
-      "recipe_idea": "אפשר לשתף מתכון שהכנתי?",
-      "recipe_idea_message": "היי! הגעתי מהעמוד שלכם במהמקור — הכנתי משהו מהמוצרים שלכם ואשמח לשתף את המתכון:"
+      "more_questions": "עוד שאלות"
     }
   },
   "directory": {

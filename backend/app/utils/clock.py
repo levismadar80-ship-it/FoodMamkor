@@ -11,7 +11,8 @@ Related:  app/config.py:182 (BUSINESS_HOURS_TIMEZONE),
           app/services/availability_validation.py (vacation past-date guard).
 History:  AUD-039/040 (creation) — UTC-vs-Israel drift in the vacation
           write-path validation (MEH-214); MEH-2110 (business-day aging
-          for the admin review queue's SLA badge).
+          for the admin review queue's SLA badge); MEH-2384 (`utc_now`, the
+          naive-UTC replacement for the deprecated `datetime.utcnow()`).
 """
 
 from __future__ import annotations
@@ -39,6 +40,20 @@ def israel_today() -> date:
     told their "today" return date is in the past.
     """
     return israel_now().date()
+
+
+def utc_now() -> datetime:
+    """Current UTC time as a tz-NAIVE datetime — the `datetime.utcnow()` shape.
+
+    `datetime.utcnow()` is deprecated from Python 3.12 (scheduled for removal)
+    and this is its one replacement in the codebase (MEH-2384). It is naive on
+    purpose: the naive `Column(DateTime)` columns and the comparisons against
+    them (`group_buys.py`, `schemas.py` — "an aware value here breaks
+    comparisons") need a naive value. An aware column
+    (`DateTime(timezone=True)`) keeps stamping `datetime.now(timezone.utc)`;
+    this helper is not for those.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # --- Business-day aging (MEH-2110) ------------------------------------------

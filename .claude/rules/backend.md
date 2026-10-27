@@ -78,7 +78,8 @@ path, so there's no 5xx warning you). Full trap:
 ## AI fail-open
 
 If `ANTHROPIC_API_KEY` is missing or any Anthropic call raises:
-- moderation returns `APPROVED`
+- moderation lets the item through as if `APPROVED` (a review stores no
+  verdict, NULL, so its next save re-checks — MEH-2390)
 - chat returns a friendly Hebrew "offline" message
 
 Never crash the user flow on AI failure. This is the mechanism that

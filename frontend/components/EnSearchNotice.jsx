@@ -15,8 +15,8 @@ import LanguageToggle from "@/components/LanguageToggle";
  *           categories carry a Latin character, and no engine is installed).
  *           This component states the gap; it does not close it.
  * Related:  components/LanguageToggle.jsx (the CTA's mechanism),
- *           components/HeroSearch.jsx + app/[locale]/search/SearchClient.jsx
- *           (the two consumer surfaces that mount it).
+ *           components/HeroSearch.jsx + components/ProducersClient.jsx
+ *           (the two consumer surfaces that mount it; /search is gone, MEH-819).
  * History:  MEH-1812 (creation; copy locked by Sapir 02/08, recorded in
  *           docs/COPY_BANK.md Section 13 before this component existed).
  */
@@ -57,7 +57,7 @@ export default function EnSearchNotice({ className = "" }) {
       // NO text colour here on purpose — the caller owns it. The two mount
       // points sit on opposite backgrounds: the hero pill rides the photo scrim
       // (where HomeHero.jsx:285 records that `text-fg-muted` fails AA, so the
-      // on-scrim tone is `text-green-50`), while /search is on cream. Baking a
+      // on-scrim tone is `text-green-50`), while /producers is on cream. Baking a
       // default in and letting callers "override" it would put two Tailwind
       // colour classes in one attribute, where the winner is decided by
       // stylesheet order rather than by the caller — a coin flip, not an override.

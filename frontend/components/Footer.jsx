@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight } from "@phosphor-icons/react";
+import { useState, useEffect } from "react";
+import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight, CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -52,6 +52,23 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
+  // MEH-2397: on mobile each link group is a closed accordion row. Desktop
+  // (md:) renders the heading as plain text — an inert `<button
+  // aria-expanded="false">` there would still sit in the tab order and tell a
+  // screen reader the (visible) list is collapsed. SSR and the first client
+  // render are the mobile markup (closed), so there is no hydration diff; the
+  // media query flips it in an effect. `md:flex` on the list keeps the links
+  // visible on desktop even before the effect runs.
+  const [openGroup, setOpenGroup] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -181,45 +198,70 @@ export default function Footer() {
 
           {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
               each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
-              brand → h3 sections). MEH-1278: on mobile the two groups sit
-              side-by-side in a 2-col grid (start-aligned, first group "גלו" at
-              the start side) instead of stacking — the stacked layout wasted
-              ~340px of height and read poorly (Baymard: mobile footers rely on
-              scannable start-aligned lists). Desktop (md:) reverts to the
-              original flex-col stack inside the narrow nav column. */}
+              brand → h3 sections). MEH-1278 put the two groups side-by-side on
+              mobile; MEH-2397 replaces that with two stacked, closed accordion
+              rows (the open 2-col grid still cost ~340px on every page and the
+              footer outgrew the content on /login). Desktop (md:) is the
+              original flex-col stack with both lists open. */}
           <nav
             aria-label={t("nav.footer.nav_aria")}
-            className="grid grid-cols-2 gap-6 md:flex md:flex-col"
+            className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:divide-y-0 md:border-0 md:gap-6"
           >
             {[
-              { heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
-              { heading: t("nav.footer.group_business_heading"), links: businessLinks },
-            ].map((group) => (
-              <div key={group.heading}>
-                {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
-                    uppercase, and letter-spacing harms RTL legibility.
-                    MEH-1281: 11px → 13px (text-[13px] utility, matching the
-                    MEH-1103 nav-link treatment — no inline font sizing) +
-                    font-semibold so the group heading outweighs its links. */}
-                <h3 className="mb-3 text-[13px] font-semibold text-green-100">
-                  {group.heading}
-                </h3>
-                <ul className="flex flex-col gap-2">
-                  {group.links.map((link) => (
-                    <li key={link.href + link.label}>
-                      {/* MEH-1103: inline fontSize → utility class (13px unchanged)
-                          — interactive text carries no inline font sizing. */}
-                      <Link
-                        href={link.href}
-                        className="text-[13px] text-green-100 hover:text-white transition"
+              { id: "footer-group-discover", heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
+              { id: "footer-group-business", heading: t("nav.footer.group_business_heading"), links: businessLinks },
+            ].map((group) => {
+              const open = openGroup === group.id;
+              return (
+                <div key={group.id}>
+                  {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
+                      uppercase, and letter-spacing harms RTL legibility.
+                      MEH-1281: 13px + font-semibold so the group heading outweighs
+                      its links. MEH-2397: the heading is a 44px accordion button on
+                      mobile (Baymard: mobile footers fold link groups; the ~340px
+                      of open lists was the largest block on every page). From md:
+                      up (matchMedia) the heading is plain text — no button, no
+                      caret, nothing in the tab order. */}
+                  <h3 className="text-[13px] font-semibold text-green-100 md:mb-3">
+                    {isDesktop ? (
+                      group.heading
+                    ) : (
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={group.id}
+                        onClick={() => setOpenGroup(open ? null : group.id)}
+                        className="flex w-full min-h-[44px] items-center justify-between gap-2 text-start md:min-h-0"
                       >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                        {group.heading}
+                        <CaretDown
+                          size={16}
+                          aria-hidden="true"
+                          className={`shrink-0 transition-transform md:hidden ${open ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+                  </h3>
+                  <ul
+                    id={group.id}
+                    className={`${open ? "flex" : "hidden"} md:flex flex-col gap-3 pb-4 md:gap-2 md:pb-0`}
+                  >
+                    {group.links.map((link) => (
+                      <li key={link.href + link.label}>
+                        {/* MEH-1103: inline fontSize → utility class (13px unchanged)
+                            — interactive text carries no inline font sizing. */}
+                        <Link
+                          href={link.href}
+                          className="text-[13px] text-green-100 hover:text-white transition"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </nav>
 
           {/* Column 3 — Newsletter */}

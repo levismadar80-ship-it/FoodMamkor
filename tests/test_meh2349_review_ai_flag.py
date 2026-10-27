@@ -5,10 +5,10 @@ a FLAGGED review published exactly like an APPROVED one and the admin list
 carried no trace of it. Now the verdict lands on
 ``producer_reviews.ai_moderation_status`` and GET /admin/reviews returns it.
 
-Fail-open stays APPROVED (the LOCK); its signal is the Sentry report from
-MEH-2352, not this column. NULL = never checked: every row that predates the
-column (the body is required by ReviewCreateNested, so the API itself always
-checks).
+A fail-open still publishes (the LOCK); its signal is the Sentry report from
+MEH-2352. NULL = no verdict: a row that predates the column, or (MEH-2390,
+tests/test_meh2390_review_fail_open_rechecks.py) a fail-open, which used to
+be stored as APPROVED and so was never checked again on an unchanged re-save.
 """
 
 import pytest
@@ -95,15 +95,6 @@ def test_resaving_the_same_body_keeps_the_flag(client, db, monkeypatch):
     row = db.query(ProducerReview).filter_by(user_id=author.id).one()
     assert (row.stars, row.ai_moderation_status) == (2, "FLAGGED")
     assert calls == []
-
-
-def test_fail_open_records_approved(client, db, monkeypatch):
-    # No AI client → the real moderator fails open → APPROVED on the row.
-    author, producer = _setup(db)
-    monkeypatch.setattr(reviews_mod, "_get_ai_client", lambda: None)
-    _post(client, author, producer)
-    row = db.query(ProducerReview).filter_by(user_id=author.id).one()
-    assert row.ai_moderation_status == "APPROVED"
 
 
 def test_admin_list_returns_verdict(client, db, monkeypatch):
