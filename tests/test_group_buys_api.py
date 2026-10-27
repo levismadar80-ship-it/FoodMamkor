@@ -868,6 +868,16 @@ class TestOwnerStatusChange:
         assert resp.status_code == 200
         assert self._status_in_db(db, gb) == "open"
 
+    def test_owner_of_a_no_longer_approved_business_can_still_cancel(
+        self, client, db
+    ):
+        # Creating needs an approved business; closing does not, on purpose: a
+        # business that was suspended must still be able to close what it opened.
+        producer, owner = _producer_user(db, email="own14@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
 
     def test_participant_cannot_leave_a_closed_group_buy(self, client, db):
         # Once the owner has cancelled or fulfilled, leaving would rewrite the

@@ -3173,6 +3173,12 @@ export const CommitToGroupBuyGroupBuysGroupBuyIdCommitPostResponse = /*#__PURE__
 
 
 /**
+ * @summary Update Group Buy Status
+ */
+export const UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Backwards-compat alias. Pre-MEH-483 shape preserved verbatim.
  *
  * Migrate Railway healthcheck path to ``/health/readiness`` manually

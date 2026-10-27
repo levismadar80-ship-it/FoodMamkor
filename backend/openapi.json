@@ -3040,6 +3040,25 @@
         "title": "GroupBuyOut",
         "type": "object"
       },
+      "GroupBuyStatusUpdate": {
+        "properties": {
+          "status": {
+            "enum": [
+              "open",
+              "funded",
+              "cancelled",
+              "fulfilled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "GroupBuyStatusUpdate",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -17310,6 +17329,62 @@
           }
         ],
         "summary": "Commit To Group Buy",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/{group_buy_id}/status": {
+      "patch": {
+        "operationId": "update_group_buy_status_group_buys__group_buy_id__status_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupBuyStatusUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Group Buy Status",
         "tags": [
           "group-buys"
         ]
