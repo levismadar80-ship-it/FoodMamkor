@@ -231,12 +231,22 @@ export function HomeHowItWorks() {
 
 /**
  * COMPARISON TEASER — MEH-841 (supersedes MEH-525 placement). The full
- * comparison moved to /about as an early narrative beat; here only a calm
- * one-line teaser remains, linking to /about. S4 voice: cream surface,
- * hairline-free, gold accent on the link only — flat, no shadows. Static.
+ * comparison moved to /about as an early narrative beat; here a calm teaser
+ * remains, linking to /about. S4 voice: cream surface, hairline-free, gold
+ * accent on the link only — flat, no shadows. Static.
+ *
+ * MEH-2394: the teaser was a heading + a link with nothing between them, and
+ * read as a section that failed to load (design review 26/10, finding 8). It
+ * now carries the three comparison rows themselves — the SAME strings /about
+ * renders (`about.comparison.row*`), so there is one home for that copy — as a
+ * plain list: no table (the full table left home in MEH-841 and an E2E guard
+ * asserts `table` count 0 on `/`), no numerals, no icons.
  */
+const TEASER_ROWS = ["row1", "row2", "row3"];
+
 export function HomeComparisonTeaser() {
   const t = useTranslations("home.comparison_teaser");
+  const tCompare = useTranslations("about.comparison");
   return (
     <section className="max-w-3xl mx-auto px-4 section-y text-center" data-testid="home-comparison-teaser">
       <FadeInSection>
@@ -244,10 +254,22 @@ export function HomeComparisonTeaser() {
           {t("eyebrow")}
         </p>
         <h2
-          className="font-headline-lg text-headline-lg text-text mb-5"
+          className="font-headline-lg text-headline-lg text-text mb-6"
         >
           {t("heading")}
         </h2>
+        <ul className="mx-auto max-w-xl space-y-4 mb-7 text-start" data-testid="home-comparison-rows">
+          {TEASER_ROWS.map((row) => (
+            <li key={row}>
+              <p className="font-headline-md font-bold text-primary-dark text-lg leading-snug">
+                {tCompare(`${row}_brand`)}
+              </p>
+              <p className="text-fg-muted text-[15px] leading-relaxed mt-0.5">
+                {tCompare(`${row}_super`)}
+              </p>
+            </li>
+          ))}
+        </ul>
         <Link
           href="/about"
           className="inline-flex items-center gap-2 text-accent font-medium hover:underline"
