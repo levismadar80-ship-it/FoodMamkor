@@ -69,6 +69,11 @@ export const ANCHOR_TO_KEY = {
   // gap as `businessName` in KEY_TO_GROUP, one map over.
   offer: "offer",
   "special-hours": "specialHours",
+  // MEH-2433: dietary scope + grass-fed were sub-sections of the trust card
+  // with no deep link of their own; in the five-group hub each is its own
+  // card in the products group, so each gets an entry in all three maps.
+  "dietary-scope": "dietaryScope",
+  "grass-fed": "grassFed",
 };
 
 // Canonical section id per open-state key — hash aliases above scroll to the
@@ -104,18 +109,28 @@ export const KEY_TO_ANCHOR = {
   // without an entry renders but is unreachable by anchor, which is the
   // silent-gap class .claude/rules/testing.md documents for path registries.
   offer: "offer",
+  dietaryScope: "dietary-scope",
+  grassFed: "grass-fed",
 };
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub
 // status/next-step aggregation. license/kashrut both live in the trust group
-// (rendered as one card — see OPEN_KEY_FOR).
+// (rendered as one card — see OPEN_KEY_FOR). Group keys are URL values
+// (?group=…); MEH-2433 added "products" and kept the other four as they were,
+// so existing links still land.
 export const KEY_TO_GROUP = {
   images: "profile",
   categories: "profile",
   bio: "profile",
-  products: "profile",
-  pricing: "profile",
   ownerStory: "profile",
+  // MEH-2433: products + pricing left the profile group for their own
+  // «מוצרים ומחירים» group (owner-dashboard audit 27/10, finding 12 — the most
+  // edited, required card sat fourth inside «הפרופיל שלך»). The offer and the
+  // two owner-declared catalog claims moved in beside them.
+  products: "products",
+  pricing: "products",
+  dietaryScope: "products",
+  grassFed: "products",
   // MEH-2262: the MEH-1872 business-name card had an ANCHOR_TO_KEY entry but
   // no group, so the resolver returned early and #business-name never opened
   // it. Deliberately NOT a GROUP_MEMBERS entry — a rename request is not a
@@ -132,13 +147,15 @@ export const KEY_TO_GROUP = {
   // MEH-2264: same group as the order window it overrides; NOT a
   // GROUP_MEMBERS entry, for exactly orderWindow's reason above.
   specialHours: "location",
-  // MEH-1823: the offer lives in the location group — it is read against the
-  // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
+  // MEH-1823: the offer used to live in the location group, read against the
+  // delivery terms. MEH-2433 moved it to the products group: an owner looks
+  // for a discount next to her prices, not next to her delivery radius.
+  // Deliberately NOT added to GROUP_MEMBERS below,
   // for the same reason orderWindow isn't: membership drives the hub's
   // "{done}/{total}", and an opt-in field would show every existing business
   // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
   // for — the GBP-staleness risk that note already cites.
-  offer: "location",
+  offer: "products",
   contact: "contact",
   questions: "contact",
 };

@@ -3404,7 +3404,7 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 CHECK שישי — `custom` בלי כותרת מתקבל ב-200 ומוצג כ**כלום**. הדרישה לכותרת חיה
 בטופס בלבד, כי שם אפשר לתקן אותה.
 
-- ✅ → dashboard-offer-groupbuy.spec.ts (the type select holds the five types plus «אין הטבה פעילה» — six options, custom last — «אין הטבה פעילה» renders FIRST (value ""), the five types after it in code order; the card is reached via ?group=location because #offer is a dead deep link (MEH-2262)) — **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
+- ✅ → dashboard-offer-groupbuy.spec.ts (the type select holds the five types plus «אין הטבה פעילה» — six options, custom last — «אין הטבה פעילה» renders FIRST (value ""), the five types after it in code order; the card is reached via ?group=products — ?group=location until MEH-2433 moved the offer) — **חמישה סוגים ב-dropdown** — לוח בקרה → עריכה → הטבה — **תוצאה מצופה:** חמישה סוגים + "אין הטבה פעילה" (שש אפשרויות סך הכול). האחרון הוא "הטבה בניסוח חופשי"
 - ✅ → dashboard-offer-groupbuy.spec.ts (choosing the custom type removes the threshold amount and unit from the DOM) — **שדות הסף נעלמים** — בוחרות "הטבה בניסוח חופשי" — **תוצאה מצופה:** שדה הסכום ותפריט יחידת המידה **נעלמים לגמרי** (לא אפורים — לא קיימים). לסוג אחר הם חוזרים
 - ✅ → dashboard-offer-groupbuy.spec.ts (a custom offer with an expiry but no headline blocks the save and says why) — **הכותרת חובה** — "הטבה בניסוח חופשי" עם תאריך סיום תקין וכותרת ריקה — **תוצאה מצופה:** כפתור השמירה חסום, ומתחת לשדה מופיע "להטבה בניסוח חופשי חייבת להיות כותרת". רווחים בלבד ("   ") נחשבים ריק
 - ✅ → dashboard-offer-groupbuy.spec.ts (typing a headline clears the error and enables the save) — **הכותרת מתמלאת** — כותבות משהו — **תוצאה מצופה:** השגיאה נעלמת והשמירה נפתחת
@@ -3869,6 +3869,15 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] `{"status":"fulfilled"}` לקבוצה ממומנת — **תוצאה מצופה:** 200
 - [ ] קבוצה מבוטלת → `{"status":"open"}` — **תוצאה מצופה:** 409 (מצב סופי; רק אדמין)
 
+## MEH-2433 — עריכת העסק: 5 קבוצות (27/10/2026)
+- [ ] `/producer/dashboard/edit` (375 ו-1440) — **תוצאה מצופה:** חמישה אריחים בסדר: העסק · מוצרים ומחירים · מיקום, משלוחים ושעות · קשר · רישיון וכשרות
+- [ ] «העסק» — תמונות, קטגוריות, תיאור, מאחורי העסק, שינוי שם (אחרון)
+- [ ] «מוצרים ומחירים» — מוצרים, מחיר התחלתי, הטבה, תזונה, גידול במרעה; תזונה וגידול במרעה כרטיסים נפרדים, כל אחד עם כפתור שמירה אחד
+- [ ] «רישיון וכשרות» — כרטיס אחד, רישיון וכשרות בלבד (בלי תזונה וגידול במרעה)
+- [ ] «מיקום, משלוחים ושעות» — בלי הטבה
+- [ ] קישור ישן `?group=profile` / `?group=location` / `#offer` / `#products` — נפתח במקום הנכון (הטבה ומוצרים בקבוצת מוצרים ומחירים)
+- [ ] שינוי בתזונה בלי שמירה → באנר «שינויים שלא נשמרו» מציג «תזונה» עם קישור שמוביל לכרטיס
+- [ ] אותו דבר בגידול במרעה → הבאנר מציג «גידול במרעה» עם קישור שמוביל לכרטיס
 ## MEH-2431 — לוח בעלת העסק בנייד: בלי סרגל הצרכנים התחתון (27/10/2026)
 - [ ] 375px, `/producer/dashboard` וכל טאב (עריכה, תובנות, כלים, אירועים) — **תוצאה מצופה:** אין את הגלולה התחתונה גלו / מפה / אודות / חשבון; הניווט היחיד הוא הטאבים בראש הלוח; רשימת המיקומים בעריכה לא מוסתרת
 - [ ] 375px, לחיצה על הלוגו מהלוח → דף הבית — **תוצאה מצופה:** הסרגל התחתון חוזר, טאב החשבון פותח את הגיליון עם «לוח הבקרה שלי»
