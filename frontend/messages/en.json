@@ -4640,7 +4640,8 @@
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
         "empty": "No kosher badge yet. You can request one here.",
-        "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification."
+        "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification.",
+        "missing_cert": "The \"{badge}\" badge shows on your business page without a certificate. Upload a photo of it below so customers can tap the badge and see it."
       },
       "manage_events": {
         "heading": "My events",
