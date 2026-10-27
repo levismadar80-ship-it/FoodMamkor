@@ -1759,7 +1759,8 @@ class ProducerReview(Base):
     # MEH-2349: the AI verdict on the body at the last write — "APPROVED" |
     # "FLAGGED". NULL = no verdict: no body, every row that predates the
     # column, and (MEH-2390) a fail-open, so its next save re-checks; the
-    # fail-open signal is the MEH-2352 Sentry report. Informational: a FLAGGED review still publishes.
+    # fail-open signal is the MEH-2352 Sentry report. Informational: a
+    # FLAGGED review still publishes.
     # Nullable, Expand-only (ADR-007). Alembic revision c4e81a2f9b6d.
     ai_moderation_status = Column(String(16), nullable=True)
     # MEH-2381: when the author last changed body or stars while the review
