@@ -15,7 +15,7 @@ All tests are written BEFORE the implementation (TDD, per workflow rule 5).
 They use the shared pytest fixtures in conftest.py.
 """
 import itertools
-from datetime import datetime, time, timedelta
+from datetime import time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -34,6 +34,7 @@ from app.models.models import (
     Report,
 )
 from conftest import auth_header, make_category, make_producer, make_user
+from app.utils.clock import utc_now
 
 
 # ============================================================
@@ -62,7 +63,7 @@ def _distinct_hash():
 
 def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash=None):
     ip_hash = _distinct_hash() if ip_hash is None else ip_hash
-    ts = datetime.utcnow() - timedelta(days=days_ago)
+    ts = utc_now() - timedelta(days=days_ago)
     row = ProducerPageView(
         producer_id=producer_id,
         viewer_ip_hash=ip_hash,
@@ -76,7 +77,7 @@ def _seed_view(db, producer_id, *, days_ago=0, city=None, referrer=None, ip_hash
 
 
 def _seed_whatsapp_click(db, producer_id, *, days_ago=0):
-    ts = datetime.utcnow() - timedelta(days=days_ago)
+    ts = utc_now() - timedelta(days=days_ago)
     row = ProducerWhatsAppClick(producer_id=producer_id, clicked_at=ts)
     db.add(row)
     db.commit()
@@ -89,7 +90,7 @@ def _seed_contact_click(db, producer_id, *, method="phone", days_ago=0):
     Seeded directly, like the WhatsApp helper above, so the window arithmetic
     can be asserted without going through the rate-limited HTTP tracker.
     """
-    ts = datetime.utcnow() - timedelta(days=days_ago)
+    ts = utc_now() - timedelta(days=days_ago)
     row = ContactClick(producer_id=producer_id, method=method, clicked_at=ts)
     db.add(row)
     db.commit()
@@ -534,14 +535,14 @@ class TestProducerAnalytics:
             db.add(Favorite(
                 producer_id=p.id,
                 user_id=fan.id,
-                created_at=datetime.utcnow() - timedelta(days=age),
+                created_at=utc_now() - timedelta(days=age),
             ))
         # Legacy row — the frozen table must NOT be counted post-repoint.
         legacy = make_user(db, email="legacy-follower@test.com")
         db.add(ProducerFollower(
             producer_id=p.id,
             user_id=legacy.id,
-            created_at=datetime.utcnow() - timedelta(days=1),
+            created_at=utc_now() - timedelta(days=1),
         ))
         db.commit()
 
@@ -826,7 +827,7 @@ class TestAdminDashboardAnalytics:
                     image_url="https://res.cloudinary.com/demo/image/upload/sample.jpg",
                     category="בישול",
                     host_user_id=admin.id,
-                    event_date=(datetime.utcnow() + timedelta(days=7)).date(),
+                    event_date=(utc_now() + timedelta(days=7)).date(),
                     event_time=time(10, 0),
                     location_type="home",
                     city="תל אביב",
@@ -850,7 +851,7 @@ class TestAdminDashboardAnalytics:
         # outside it, one accepted — only the first counts.
         for status, age_days in (("failed", 1), ("failed", 9), ("accepted", 1)):
             msg = OutboundMessage(to_phone="+972501234567", kind="test", status=status)
-            msg.created_at = datetime.utcnow() - timedelta(days=age_days)
+            msg.created_at = utc_now() - timedelta(days=age_days)
             db.add(msg)
         db.commit()
         after = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
@@ -880,7 +881,7 @@ class TestAdminDashboardAnalytics:
         admin = make_user(db, role="admin")
         # Seed one old user and two new
         old_u = make_user(db, email="old@test.com")
-        old_u.created_at = datetime.utcnow() - timedelta(days=20)
+        old_u.created_at = utc_now() - timedelta(days=20)
         make_user(db, email="fresh1@test.com")
         make_user(db, email="fresh2@test.com")
         db.commit()
@@ -905,7 +906,7 @@ class TestAdminDashboardAnalytics:
         db.add(Experience(
             host_user_id=owner.id, title="workshop", description="x",
             city="TLV", status="pending",
-            event_date=(datetime.utcnow() + timedelta(days=5)).date(),
+            event_date=(utc_now() + timedelta(days=5)).date(),
             duration_minutes=60, price_per_person=50, max_participants=10,
         ))
         db.commit()

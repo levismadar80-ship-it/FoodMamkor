@@ -15,7 +15,7 @@ API tests prove the surfaced behaviour. Mirrors the IntegrityError-recovery
 precedent in app/routers/reviews.py.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -29,6 +29,7 @@ from app.models.models import (
     ReferralClick,
     Report,
 )
+from app.utils.clock import utc_now
 
 
 # ---------- reports: uq_report_reporter_producer ----------
@@ -103,7 +104,7 @@ class TestProducerDeleteIntegrity:
                 producer_id=producer.id,
                 phone="0501234567",
                 code="123456",
-                expires_at=datetime.utcnow() + timedelta(minutes=10),
+                expires_at=utc_now() + timedelta(minutes=10),
             )
         )
         db.add(KashrutBadgeRequest(producer_id=producer.id, badge_code="MEHADRIN"))
@@ -144,7 +145,7 @@ class TestGroupBuyCapacity:
             price_per_unit_group=90,
             min_participants=5,
             max_participants=max_participants,
-            deadline=datetime.utcnow() + timedelta(days=3),
+            deadline=utc_now() + timedelta(days=3),
             city="תל אביב",
             status="open",
         )

@@ -23,6 +23,7 @@ from joserfc.jwk import OctKey
 from app.config import settings
 from app.services import password_policy
 from conftest import auth_header, make_user, valid_producer_register_payload
+from app.utils.clock import utc_now
 
 
 # 12-char value vetted in test_password_policy.py — not in deny_list_10k,
@@ -109,7 +110,7 @@ class TestResetPasswordPolicy:
     def _seed_token(self, db, user, ttl_minutes=30):
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(minutes=ttl_minutes)
+        user.reset_token_expires_at = utc_now() + timedelta(minutes=ttl_minutes)
         db.commit()
         return token
 

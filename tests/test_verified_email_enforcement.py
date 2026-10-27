@@ -23,10 +23,11 @@ tests/test_experiences.py — the producer-user wiring and valid create
 payloads.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from uuid import uuid4
 
 from conftest import auth_header, make_producer, make_user
+from app.utils.clock import utc_now
 
 # The structured 403 detail raised by require_verified_email /
 # require_verified_producer (auth.py). MEH-1164 sub-chunk B made this an
@@ -94,7 +95,7 @@ def _group_buy_payload(**overrides):
         "price_per_unit_regular": 80,
         "price_per_unit_group": 60,
         "min_participants": 3,
-        "deadline": (datetime.utcnow() + timedelta(days=10)).isoformat(),
+        "deadline": (utc_now() + timedelta(days=10)).isoformat(),
         "city": "חיפה",
     }
     payload.update(overrides)
