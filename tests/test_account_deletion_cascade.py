@@ -11,7 +11,7 @@ Cloudinary asset with bypass_reserved=True (the asset lives under
 mehamakor/producers/*, which is in RESERVED_PUBLIC_ID_PREFIXES; a plain
 destroy call would be silently rejected).
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app import cloudinary_utils
 from app.models.models import (
@@ -22,6 +22,7 @@ from app.models.models import (
     ProducerReview,
 )
 from tests.conftest import auth_header, make_producer, make_user
+from app.utils.clock import utc_now
 
 
 def _make_producer_user(db):
@@ -217,7 +218,7 @@ def _add_otp_tokens(db, producer_id, n=3):
                 producer_id=producer_id,
                 phone="0501234567",
                 code=f"{100000 + i}",
-                expires_at=datetime.utcnow() + timedelta(minutes=10),
+                expires_at=utc_now() + timedelta(minutes=10),
             )
         )
     db.commit()

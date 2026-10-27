@@ -5,10 +5,11 @@ consumes from already-loaded ORM collections. These tests exercise it
 against lightweight stand-ins (no DB) to lock the dietary-flag
 aggregation, license boolean, and counts.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 from types import SimpleNamespace
 
 from app.services.producer_queries import attach_badge_fields
+from app.utils.clock import utc_now
 
 
 def _product(**flags):
@@ -70,7 +71,7 @@ class TestAttachBadgeFields:
         assert p.has_producer_license is False
 
     def test_days_since_created_computed(self):
-        p = _producer(created_at=datetime.utcnow() - timedelta(days=5))
+        p = _producer(created_at=utc_now() - timedelta(days=5))
         attach_badge_fields(p)
         assert p.days_since_created == 5
 

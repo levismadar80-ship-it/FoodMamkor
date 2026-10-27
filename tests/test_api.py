@@ -20,6 +20,7 @@ from conftest import (
     valid_producer_register_payload,
     valid_review_payload,
 )
+from app.utils.clock import utc_now
 
 
 # ---------- Auth ----------
@@ -336,7 +337,7 @@ class TestAuth:
 
     def test_register_stores_timezone_aware_consent_timestamp(self, client, db):
         # MEH-1995 (adversarial review R-3): the column is DateTime(timezone=True)
-        # and naive utcnow() is in use 16 lines from the stamp, so "is not None"
+        # and naive utc_now() is in use 16 lines from the stamp, so "is not None"
         # would pass just as happily on a naive value. For a column whose whole
         # evidentiary worth is WHICH INSTANT, a silent offset is the failure that
         # matters — a naive datetime lands in a TIMESTAMPTZ interpreted in the
@@ -4354,11 +4355,11 @@ class TestResetPasswordFlow:
 
     def test_happy_path(self, client, db):
         import secrets
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         user = make_user(db, password="OldPass1!")
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
 
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
@@ -4380,11 +4381,11 @@ class TestResetPasswordFlow:
 
     def test_expired_token_returns_410(self, client, db):
         import secrets
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         user = make_user(db)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
+        user.reset_token_expires_at = utc_now() - timedelta(seconds=1)
         db.commit()
 
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
@@ -4396,11 +4397,11 @@ class TestResetPasswordFlow:
 
     def test_short_password_returns_422(self, client, db):
         import secrets
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         user = make_user(db)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "short"})
         assert res.status_code == 422
@@ -4530,14 +4531,14 @@ class TestRefreshTokenFlow:
         get_current_user must fail-open on absent scope (treat as access)
         so existing 24h sessions don't get invalidated by the deploy.
         """
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from joserfc import jwt as jose_jwt
         from joserfc.jwk import OctKey
         from app.config import settings
 
         user = make_user(db, email="t8@test.com")
         # Craft token with only sub/exp/tv — no scope claim (pre-MEH-326 shape)
-        expire = datetime.utcnow() + timedelta(hours=24)
+        expire = utc_now() + timedelta(hours=24)
         payload = {"sub": str(user.id), "exp": expire, "tv": user.token_version}
         key = OctKey.import_key(settings.secret_key.encode())
         old_token = jose_jwt.encode({"alg": settings.algorithm}, payload, key)
@@ -4685,13 +4686,13 @@ class TestFingerprintCookie:
         Fail-open window: max 15 min (access token TTL). After expiry the
         next login issues a fingerprinted token and the guard is active.
         """
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from joserfc import jwt as jose_jwt
         from joserfc.jwk import OctKey
         from app.config import settings
 
         user = make_user(db, email="fp5@test.com")
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = utc_now() + timedelta(minutes=15)
         payload = {
             "sub": str(user.id),
             "exp": expire,

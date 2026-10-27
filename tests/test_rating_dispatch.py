@@ -11,11 +11,12 @@ This module tests the pure dispatcher in isolation with a fake sender — no
 Twilio network call. The dispatcher returns the number of requests it sent.
 """
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app.models.models import HomeProduct, HomeProductWhatsAppClick
 from app.services.rating_dispatcher import dispatch_pending_rating_requests
 from tests.conftest import make_user
+from app.utils.clock import utc_now
 
 
 def _make_listing(db, owner) -> HomeProduct:
@@ -39,7 +40,7 @@ def _make_click(db, *, buyer, listing, hours_ago: float, **overrides) -> HomePro
     click = HomeProductWhatsAppClick(
         user_id=buyer.id,
         home_product_id=listing.id,
-        clicked_at=datetime.utcnow() - timedelta(hours=hours_ago),
+        clicked_at=utc_now() - timedelta(hours=hours_ago),
         rating_token=f"tok-{uuid.uuid4().hex}",
         **overrides,
     )

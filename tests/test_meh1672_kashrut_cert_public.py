@@ -15,11 +15,12 @@ counting assert from its <verification_step>: ZERO occurrences of cert_url /
 the raw Cloudinary address in any public API response.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import app.routers.producers as producers_module
 from app.models.models import KashrutBadgeRequest
 from conftest import make_producer, make_user
+from app.utils.clock import utc_now
 
 CERT_URL = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/kashrut/abc123.jpg"
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"0" * 64
@@ -76,9 +77,9 @@ def _certified(
 ):
     producer = make_producer(db, status=status)
     producer.kashrut_badges = [badge_code]
-    producer.kashrut_verified_at = datetime.utcnow()
+    producer.kashrut_verified_at = utc_now()
     producer.kashrut_expires_at = (
-        None if expires_in_days is None else datetime.utcnow() + timedelta(days=expires_in_days)
+        None if expires_in_days is None else utc_now() + timedelta(days=expires_in_days)
     )
     db.add(
         KashrutBadgeRequest(
