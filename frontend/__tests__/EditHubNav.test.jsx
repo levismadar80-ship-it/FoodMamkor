@@ -2,8 +2,8 @@
  * MEH-1408 — edit-tab hub-and-spoke group navigation.
  *
  * Covers the shell added over the existing accordion: the group hub (5 groups
- * since MEH-2433), entering
- * a group (router.push with ?group, scroll:false), the back-to-hub link, and
+ * since MEH-2433), entering a group (router.push with ?group, scroll:false),
+ * the back-to-hub link, and
  * anchor→group deep-link resolution (#bio → profile group). The card bodies +
  * their own accordion behavior are covered by the per-card EditTab* suites and
  * EditUnsavedGuard; this file only exercises the group layer.
@@ -245,6 +245,23 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
   it.each(["offer", "dietary-scope", "grass-fed"])(
     "MEH-2433: a #%s deep link opens the products group",
     async (anchor) => {
+      window.location.hash = `#${anchor}`;
+      mount();
+      await waitFor(() =>
+        expect(routerStub.replace).toHaveBeenCalledWith(
+          { pathname: "/producer/dashboard/edit", query: { group: "products" } },
+          { scroll: false },
+        ),
+      );
+    },
+  );
+
+  // An old link that still names the trust group (where both cards lived
+  // before MEH-2433) must follow the anchor, not the stale ?group.
+  it.each(["dietary-scope", "grass-fed"])(
+    "MEH-2433: ?group=trust#%s moves to the products group",
+    async (anchor) => {
+      params.group = "trust";
       window.location.hash = `#${anchor}`;
       mount();
       await waitFor(() =>
