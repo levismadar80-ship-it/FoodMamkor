@@ -263,7 +263,7 @@ function ownerActions(gb, deadlinePassed) {
 // Same dialog contract as the product delete confirm (ProductsSection.jsx,
 // MEH-1447): a state flag rather than window.confirm, aria-modal, Escape and
 // «חזרה» close it, both buttons locked while the request is in flight.
-function GroupBuyActionDialog({ pending, busy, error, onConfirm, onClose }) {
+function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose }) {
   const t = useTranslations("group_buys.dashboard.actions");
 
   useEffect(() => {
@@ -299,7 +299,10 @@ function GroupBuyActionDialog({ pending, busy, error, onConfirm, onClose }) {
           <button
             type="button"
             data-testid="group-buy-action-confirm"
-            disabled={busy}
+            // stale: the server refused (409) because the group changed while
+            // the dialog was open. Confirming again would only repeat the 409;
+            // «חזרה» returns her to the card, which now shows the real state.
+            disabled={busy || stale}
             onClick={onConfirm}
             className={`px-4 py-2 min-h-[44px] rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
               destructive ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-primary-dark"
@@ -309,8 +312,11 @@ function GroupBuyActionDialog({ pending, busy, error, onConfirm, onClose }) {
                 the approved copy names a confirm label only for cancel. */}
             {action === "cancel" ? t("cancel_confirm") : t(action)}
           </button>
+          {/* Focus lands on the safe choice, so a keyboard user starts inside
+              the dialog and Enter never confirms by accident. */}
           <button
             type="button"
+            autoFocus
             disabled={busy}
             onClick={onClose}
             className="px-4 py-2 min-h-[44px] rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -343,6 +349,7 @@ export default function ProducerGroupBuysPage() {
   const [pending, setPending] = useState(null);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [actionStale, setActionStale] = useState(false);
   const tActions = useTranslations("group_buys.dashboard.actions");
   const tError = useTranslations("error");
 
@@ -383,12 +390,14 @@ export default function ProducerGroupBuysPage() {
 
   const openAction = (gb, action) => {
     setActionError("");
+    setActionStale(false);
     setPending({ gb, action });
   };
 
   const closeAction = useCallback(() => {
     setPending(null);
     setActionError("");
+    setActionStale(false);
   }, []);
 
   const confirmAction = async () => {
@@ -415,11 +424,15 @@ export default function ProducerGroupBuysPage() {
         tActions(ACTION_TARGET[action] === "fulfilled" ? "toast_fulfilled" : "toast_cancelled"),
       );
     } catch (err) {
-      // 409 = the group changed under her (e.g. it filled while the dialog was
-      // open); the server's Hebrew detail says so. Refresh the list so the
-      // card shows the state the server actually holds.
+      // 409 = the group changed under her (e.g. a participant left and a
+      // funded group fell back to open); the server's Hebrew detail says so.
+      // Lock the confirm and refresh the list so the card shows the state the
+      // server actually holds.
       setActionError(detailToMessage(err.response?.data?.detail) || tError("generic"));
-      if (err.response?.status === 409) load();
+      if (err.response?.status === 409) {
+        setActionStale(true);
+        load();
+      }
     } finally {
       setActing(false);
     }
@@ -527,9 +540,8 @@ export default function ProducerGroupBuysPage() {
         <div className="space-y-4">
           {items.map((gb) => {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
-            // nothing moves the status server-side and the owner has no
-            // control over it (admin-only PATCH, group_buys.py:303). Display
-            // only; the status itself is a separate card. deadline is a full
+            // nothing moves the status server-side on its own. Display only;
+            // since MEH-2435 the owner closes it with «סגירת הקבוצה» below. deadline is a full
             // UTC timestamp (form sends toISOString, line 76), so an instant
             // compare is right here, unlike the date-only event lists.
             const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
@@ -613,6 +625,7 @@ export default function ProducerGroupBuysPage() {
         <GroupBuyActionDialog
           pending={pending}
           busy={acting}
+          stale={actionStale}
           error={actionError}
           onConfirm={confirmAction}
           onClose={closeAction}

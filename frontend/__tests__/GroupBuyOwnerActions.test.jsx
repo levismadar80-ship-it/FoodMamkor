@@ -191,6 +191,24 @@ describe("the confirm dialog", () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
+  it("focus starts on «חזרה», the safe choice", async () => {
+    await renderWith([groupBuy()]);
+    fireEvent.click(screen.getByTestId("group-buy-action-cancel"));
+    expect(document.activeElement).toBe(screen.getByText(`${A}.back`));
+  });
+
+  it("reopening after a 409 starts unlocked", async () => {
+    patch.mockRejectedValueOnce({ response: { status: 409, data: { detail: "x" } } });
+    await renderWith([groupBuy()]);
+    fireEvent.click(screen.getByTestId("group-buy-action-cancel"));
+    fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByText(`${A}.back`));
+    fireEvent.click(await screen.findByTestId("group-buy-action-cancel"));
+    expect(screen.getByTestId("group-buy-action-confirm")).toBeEnabled();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("Escape closes it and sends nothing", async () => {
     await renderWith([groupBuy()]);
     fireEvent.click(screen.getByTestId("group-buy-action-cancel"));
@@ -245,7 +263,7 @@ describe("confirming", () => {
     expect(patch).toHaveBeenCalledTimes(1);
   });
 
-  it("a 409 keeps the dialog open with the server's message and reloads the list", async () => {
+  it("a 409 keeps the dialog open with the server's message, locks confirm and reloads the list", async () => {
     patch.mockRejectedValue({ response: { status: 409, data: { detail: "אי אפשר לשנות את קבוצת הרכש למצב הזה" } } });
     await renderWith([groupBuy()]);
     const before = get.mock.calls.filter(([u]) => u === "/producers/me/group-buys").length;
@@ -253,6 +271,9 @@ describe("confirming", () => {
     fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
     expect(await screen.findByRole("alert")).toHaveTextContent("אי אפשר לשנות את קבוצת הרכש למצב הזה");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    // Confirming again would only repeat the 409; «חזרה» stays usable.
+    expect(screen.getByTestId("group-buy-action-confirm")).toBeDisabled();
+    expect(screen.getByText(`${A}.back`)).toBeEnabled();
     await waitFor(() =>
       expect(get.mock.calls.filter(([u]) => u === "/producers/me/group-buys").length).toBe(before + 1),
     );
