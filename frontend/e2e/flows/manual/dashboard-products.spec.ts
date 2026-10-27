@@ -64,7 +64,7 @@ async function stubEdit(page: Page, rows: Product[], writes: Rec[] = [], opts: {
   await page.route("**/auth/me", (r) => json(r, 200, { id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7 }));
   await page.route("**/users/me/favorites", (r) => json(r, 200, []));
   await page.route("**/api/group-buys**", (r) => json(r, 200, []));
-  for (const sub of ["locations", "name-change-requests", "kashrut-requests"]) {
+  for (const sub of ["locations", "name-change-requests", "kashrut-requests", "group-buys"]) {
     await page.route(`**/producers/me/${sub}**`, (r) => json(r, 200, []));
   }
   await page.route("**/producers/me/dashboard", (r) =>
