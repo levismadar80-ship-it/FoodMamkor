@@ -54,7 +54,7 @@ from app.services.analytics import israel_day_of, server_health, unique_views_co
 from app.services.category_slug import resolve_unique_slug
 from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
-from app.utils.clock import ISRAEL_TZ, israel_today
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
@@ -155,7 +155,7 @@ def list_users(
                 is_blocked=bool(u.is_blocked),
                 producer_id=u.producer_id,
                 favorites_count=fav_counts.get(u.id, 0),
-                created_at=u.created_at or datetime.utcnow(),
+                created_at=u.created_at or utc_now(),
             )
         )
     return out
@@ -479,7 +479,7 @@ def get_analytics(
     db: Session = Depends(get_db),
 ):
     """Compact analytics for the admin dashboard."""
-    now = datetime.utcnow()
+    now = utc_now()
 
     # Time series: producers/users per month for last 6 months
     months = []
@@ -738,7 +738,7 @@ def get_dashboard(
     db: Session = Depends(get_db),
 ):
     """Single endpoint that returns everything the dashboard needs."""
-    now = datetime.utcnow()
+    now = utc_now()
     week_ago = now - timedelta(days=7)
 
     # feature/producer-analytics: pending moderation is the sum across
