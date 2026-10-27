@@ -20,6 +20,7 @@ export default function Breadcrumb({ items = [], className = "" }) {
   return (
     <nav
       aria-label={t("aria")}
+      data-testid="breadcrumb-nav"
       className={`text-sm text-fg-muted ${className}`}
     >
       <ol className="flex flex-wrap items-center gap-x-1">
