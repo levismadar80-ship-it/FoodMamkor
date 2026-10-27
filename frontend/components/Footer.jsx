@@ -155,28 +155,16 @@ export default function Footer() {
             <p className="text-sm leading-relaxed max-w-xs mb-4 text-green-50">
               {t("nav.footer.brand_tagline")}
             </p>
-            <a
-              href="https://www.instagram.com/meha_makor"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
-            >
-              <InstagramLogo size={20} aria-hidden="true" />
-              {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
-              <bdi className="font-body-md">@meha_makor</bdi>
-              {/* MEH-2308: the description rides as sr-only text AFTER the visible
-                  handle instead of an aria-label that replaced it — WCAG 2.5.3
-                  (axe label-content-name-mismatch): the accessible name must
-                  contain the text a voice-control user sees and says. */}
-              <span className="sr-only"> — {t("nav.footer.instagram_aria")}</span>
-            </a>
-            {/* MEH-2311: the other three profiles as icon links, same order as
-                BRAND_SAME_AS. No visible text, so the sr-only label IS the
-                accessible name (no 2.5.3 mismatch). 44×44 tap targets; -ms-3
-                pulls the first icon back so the glyph lines up with the
-                Instagram icon above. */}
-            <ul className="mt-2 -ms-3 flex items-center">
+            {/* MEH-2417: all four profiles as ONE row of equal icon links, in
+                BRAND_SAME_AS order. Instagram used to sit alone above as icon +
+                "@meha_makor" text with the other three as bare icons below — two
+                styles for one job (Sapir circled it, 27/10). No visible text, so
+                the sr-only label IS the accessible name and the MEH-2308 2.5.3
+                mismatch cannot arise. 44×44 tap targets (MEH-2311); -ms-3 pulls
+                the first glyph back in line with the tagline's start edge. */}
+            <ul className="-ms-3 flex items-center">
               {[
+                { href: "https://www.instagram.com/meha_makor", Icon: InstagramLogo, label: "nav.footer.instagram_aria" },
                 { href: "https://www.facebook.com/mehamakor", Icon: FacebookLogo, label: "nav.footer.facebook_aria" },
                 { href: "https://www.tiktok.com/@mehamakor", Icon: TiktokLogo, label: "nav.footer.tiktok_aria" },
                 { href: "https://www.youtube.com/@Mehamakor", Icon: YoutubeLogo, label: "nav.footer.youtube_aria" },
@@ -347,7 +335,9 @@ export default function Footer() {
           <p className="text-green-100" style={{ fontSize: "11px" }}>
             © {new Date().getFullYear()} {t("footer.copyright")}
           </p>
-          <ul className="flex items-center gap-4" data-testid="footer-utility-links">
+          {/* MEH-2417: wraps (and centres) at 375 instead of running five links
+              edge to edge under the floating back-to-top button. */}
+          <ul className="flex flex-wrap items-center justify-center gap-x-4" data-testid="footer-utility-links">
             {[
               { href: "/login", label: t("nav.footer.login") },
               { href: "/terms", label: t("nav.footer.terms") },

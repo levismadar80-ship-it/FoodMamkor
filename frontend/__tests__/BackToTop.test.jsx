@@ -84,4 +84,27 @@ describe("BackToTop", () => {
     expect(btn.className).toContain("end-4");
     expect(btn.className).not.toMatch(/(^|\s)(left-|right-)/);
   });
+
+  // MEH-2417: hidden while the page footer is in view, so it never covers the
+  // footer's utility links. The observer is driven by hand (jsdom has none).
+  it("hides while the footer is in view and returns when it leaves", () => {
+    let cb;
+    window.IntersectionObserver = class {
+      constructor(fn) { cb = fn; }
+      observe() {}
+      disconnect() {}
+    };
+    const footer = document.createElement("footer");
+    document.body.appendChild(footer);
+    setViewport(667, 5000);
+    render(<BackToTop />);
+    act(() => window.dispatchEvent(new Event("scroll")));
+    expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+    act(() => cb([{ isIntersecting: true }]));
+    expect(screen.queryByLabelText(LABEL)).not.toBeInTheDocument();
+    act(() => cb([{ isIntersecting: false }]));
+    expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
+    footer.remove();
+    delete window.IntersectionObserver;
+  });
 });

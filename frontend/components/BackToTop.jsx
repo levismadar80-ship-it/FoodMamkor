@@ -68,7 +68,21 @@ export default function BackToTop() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (!visible) return null;
+  // MEH-2417: step aside while the page footer is on screen. At the very end
+  // of the page the fixed button sat on top of the footer's utility links
+  // ("צרו קשר" was untappable at 375) — and a reader who has reached the
+  // footer is already at the end, where the jump is least needed.
+  const [footerInView, setFooterInView] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") return;
+    const footer = document.querySelector("footer");
+    if (!footer) return;
+    const io = new window.IntersectionObserver(([entry]) => setFooterInView(entry.isIntersecting));
+    io.observe(footer);
+    return () => io.disconnect();
+  }, []);
+
+  if (!visible || footerInView) return null;
 
   const handleClick = () => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
