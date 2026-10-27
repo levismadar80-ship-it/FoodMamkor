@@ -732,8 +732,9 @@ class TestOwnerStatusChange:
 
     The owner gets exactly three transitions: open→cancelled (before or after
     the deadline), funded→fulfilled, funded→cancelled. Everything else is a
-    409; someone else's group buy is a 403 whatever the transition. Admin keeps
-    the override the IDOR rule grants (security.md).
+    409; someone else's group buy is a 403 whatever the transition. The route
+    is owner-only: an admin gets 403 here and keeps the override the IDOR rule
+    grants (security.md) on PATCH /admin/group-buys/{id}/status.
     """
 
     def _patch(self, client, gb, status, user=None):

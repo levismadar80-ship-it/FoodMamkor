@@ -4052,6 +4052,11 @@ class GroupBuyStatusUpdate(BaseModel):
     status: Literal["open", "funded", "cancelled", "fulfilled"]
 
 
+class GroupBuyStatusOut(BaseModel):
+    detail: str
+    status: Literal["open", "funded", "cancelled", "fulfilled"]
+
+
 # MEH-141: category request flow
 class CategoryRequestCreate(BaseModel):
     requested_name: str = Field(..., min_length=1, max_length=100)

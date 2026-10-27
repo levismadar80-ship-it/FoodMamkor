@@ -3174,7 +3174,10 @@ export const CommitToGroupBuyGroupBuysGroupBuyIdCommitPostResponse = /*#__PURE__
 /**
  * @summary Update Group Buy Status
  */
-export const UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse = /*#__PURE__*/ zod.unknown()
+export const UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse = /*#__PURE__*/ zod.object({
+  "detail": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.enum(['open', 'funded', 'cancelled', 'fulfilled'])
+})
 
 
 /**

@@ -3040,6 +3040,30 @@
         "title": "GroupBuyOut",
         "type": "object"
       },
+      "GroupBuyStatusOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "funded",
+              "cancelled",
+              "fulfilled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "status"
+        ],
+        "title": "GroupBuyStatusOut",
+        "type": "object"
+      },
       "GroupBuyStatusUpdate": {
         "properties": {
           "status": {
@@ -17352,7 +17376,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyStatusOut"
+                }
               }
             },
             "description": "Successful Response"

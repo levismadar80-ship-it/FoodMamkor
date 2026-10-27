@@ -21,6 +21,7 @@ from app.schemas.schemas import (
     GroupBuyCreate,
     GroupBuyDetail,
     GroupBuyOut,
+    GroupBuyStatusOut,
     GroupBuyStatusUpdate,
 )
 from app.services.group_buy_notifications import send_funded_notifications
@@ -311,7 +312,7 @@ OWNER_TRANSITIONS = {
 }
 
 
-@router.patch("/{group_buy_id}/status")
+@router.patch("/{group_buy_id}/status", response_model=GroupBuyStatusOut)
 @limiter.limit("30/minute")
 def update_group_buy_status(
     request: Request,
