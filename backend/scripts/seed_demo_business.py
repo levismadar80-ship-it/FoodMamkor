@@ -56,6 +56,7 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
     ProducerReview,
     User,
 )
+from app.utils.clock import utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
@@ -741,7 +742,7 @@ def _seed_group_buy(db, producer) -> None:
         price_per_unit_group=DEMO_GROUP_BUY["price_per_unit_group"],
         min_participants=DEMO_GROUP_BUY["min_participants"],
         max_participants=DEMO_GROUP_BUY["max_participants"],
-        deadline=datetime.utcnow() + timedelta(days=DEMO_GROUP_BUY["days_ahead"]),
+        deadline=utc_now() + timedelta(days=DEMO_GROUP_BUY["days_ahead"]),
         city=DEMO_PRODUCER["city"],
         fulfillment_note=DEMO_GROUP_BUY["fulfillment_note"],
         status="open",
@@ -999,7 +1000,7 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
                 stars=r["stars"],
                 body=r["body"],
                 reply=r.get("reply"),
-                reply_at=datetime.utcnow() if r.get("reply") else None,
+                reply_at=utc_now() if r.get("reply") else None,
             )
         )
 

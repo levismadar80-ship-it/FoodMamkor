@@ -16,7 +16,6 @@ enough, because the interesting failures are minting the WRONG one (a reserved
 route, a duplicate) or overwriting one that already existed.
 """
 
-from datetime import datetime
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -30,6 +29,7 @@ from app.routers import admin as admin_module
 # been slug_utils'. Unifying the three slug helpers removed that incidental path.
 from app.slug_utils import RESERVED_SLUGS
 from tests.conftest import auth_header, make_producer, make_user
+from app.utils.clock import utc_now
 
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/x.jpg"
 
@@ -235,7 +235,7 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
 
     loser = _pending(db, name="חוות התאומים")
     loser.requested_changes = "חסרה תמונה"
-    loser.changes_requested_at = datetime.utcnow()
+    loser.changes_requested_at = utc_now()
     db.commit()
     loser_id = loser.id
 

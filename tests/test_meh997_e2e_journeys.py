@@ -16,7 +16,7 @@ History:  MEH-997 (creation — functional E2E audit; seed: /admin/recipes
           frontend page missing while backend router existed).
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -33,6 +33,7 @@ from conftest import (
     make_user,
     valid_producer_register_payload,
 )
+from app.utils.clock import utc_now
 
 # ---------- shared helpers ----------
 
@@ -105,7 +106,7 @@ def _group_buy_payload(**overrides) -> dict:
         "price_per_unit_regular": 80,
         "price_per_unit_group": 60,
         "min_participants": 3,
-        "deadline": (datetime.utcnow() + timedelta(days=10)).isoformat(),
+        "deadline": (utc_now() + timedelta(days=10)).isoformat(),
         "city": "חיפה",
     }
     base.update(overrides)
