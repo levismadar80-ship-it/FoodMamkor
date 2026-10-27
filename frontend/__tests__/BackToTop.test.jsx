@@ -89,9 +89,10 @@ describe("BackToTop", () => {
   // footer's utility links. The observer is driven by hand (jsdom has none).
   it("hides while the footer is in view and returns when it leaves", () => {
     let cb;
+    let observed = null;
     window.IntersectionObserver = class {
       constructor(fn) { cb = fn; }
-      observe() {}
+      observe(el) { observed = el; }
       disconnect() {}
     };
     // An in-page <footer> FIRST in DOM order — the observer must skip it.
@@ -100,11 +101,6 @@ describe("BackToTop", () => {
     const footer = document.createElement("footer");
     footer.setAttribute("data-site-footer", "");
     document.body.appendChild(footer);
-    let observed = null;
-    const Base = window.IntersectionObserver;
-    window.IntersectionObserver = class extends Base {
-      observe(el) { observed = el; }
-    };
     // finally, not trailing lines: a failed assertion must not leak the
     // stubbed observer or the footer node into the tests after this one.
     try {
@@ -124,15 +120,17 @@ describe("BackToTop", () => {
     }
   });
 
-  it("no site footer on the page: the button still shows", () => {
+  it("no site footer on the page: nothing is observed and the button still shows", () => {
+    const observe = vi.fn();
     window.IntersectionObserver = class {
-      observe() {}
+      observe(el) { observe(el); }
       disconnect() {}
     };
     try {
       setViewport(667, 5000);
       render(<BackToTop />);
       act(() => window.dispatchEvent(new Event("scroll")));
+      expect(observe).not.toHaveBeenCalled();
       expect(screen.getByLabelText(LABEL)).toBeInTheDocument();
     } finally {
       delete window.IntersectionObserver;
