@@ -48,7 +48,6 @@ const baseProps = {
   onMapCanvasClick: () => {},
   registerApi: () => {},
   mapRef: { current: null },
-  visitedIds: new Set(),
   showSecondaryLayer: true,
   onToggleSecondaryLayer: () => {},
   focusedProducerId: null,
