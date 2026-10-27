@@ -3729,6 +3729,6 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 
 ## MEH-2407 — VRT: baselines של דף בית העסק אחרי #3643 / #3655 / #3657 (27/10/2026)
 - [ ] `producer-detail-{desktop,mobile}-linux.png` — כרטיס יצירת הקשר מציג 2 שורות תשובה + "שאלה אחרת?"; שורת המטא בשתי שורות (קטגוריה · עיר אפור / סטטוס לבד בצבעו)
-- [ ] `producer-detail-minimal-mobile-linux.png` — עסק בלי קטגוריה/עיר: שורת המטא נעלמת, הסטטוס נשאר
+- [ ] `producer-detail-minimal-{desktop,mobile}-linux.png` + `phone-revealed` / `two-channel-revealed` (desktop) — עסק בלי תמונות: השם ב-masthead, ומתחתיו אותן שתי שורות מטא; כרטיס הקשר עם 2 השאלות + "שאלה אחרת?" + ערוץ הטלפון/אינסטגרם שנחשף
 - [ ] `producer-detail-disclosure-open-mobile-linux.png` — ה-disclosure פתוח, אותם שני שינויים בכותרת
 - [ ] frames שלא נגעו בהם (home / map / about / login / register) לא השתנו ב-diff של ה-PR
