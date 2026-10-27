@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+- **‏26/10 20:30 – 27/10 11:30 — סקירת בעיות בכל הפרויקט: עשרה כרטיסים (MEH-2367 עד MEH-2375, ‏MEH-819), תשעה PR-ים מוזגו, ו-/search אוחד לתוך /producers.**
+  - **‏#3627 `a7a4a214` (MEH-2367):** שלושה mockups פנימיים של עיצוב הפסיקו להיות מוגשים מהאתר החי (`public/`).
+  - **‏#3629 `8d870a42` (MEH-2368):** לכל כלל ב-`robots.txt` יש תאום `/en`. טסט קורא את הקובץ ומוודא זוגיות.
+  - **‏#3630 `b867d91c` (MEH-2371):** ה-hook `useFirstVisit` שאף אחד לא קרא לו נמחק; knip נקי.
+  - **‏#3631 `f8ad62d5` (MEH-2369):** ‏/events, ‏/experiences ו-/group-buys מוצעים (ניווט, פוטר, sitemap) רק כשיש בהם תוכן. הפוטר שואל `GET /events/upcoming` דרך `lib/use-events-nav-gate.js`.
+  - **‏#3641 (MEH-2369, המשך):** ה-stub ל-`/api/events/upcoming` בשלושת specs האדמין וב-`parity.spec.ts`, וה-baselines של about / login / register נוצרו מחדש דרך תוויות `vrt-regen:*` ונקראו (שתי viewports). ה-regen רץ שוב על ה-tip שכולל את #3654 ויצא «Baselines unchanged». נמדד: ‏`GET https://mehamakor.co.il/api/events/upcoming` → `200 []`.
+  - **‏#3635 `30f230c6` (MEH-2373):** «חלב גולמי» יצא מהפרומפט של העוזרת, כי האתר לא מציע אותו.
+  - **‏#3637 `2f9c5c4a` (MEH-2375, RED, נסקר על ידי מודל חזק יותר):** שגיאות אדמין לא מהדהדות יותר טקסט גולמי של exception ל-client.
+  - **‏#3638 `d324c3b7` (MEH-2370, RED):** ארבעת endpoints ה«עקיבה» (`producer_follows.py`) הוסרו; עוקבות = מועדפים מאז MEH-1364. הטבלה `producer_followers` נשארת ל-MEH-2392 (post-launch, Expand-Contract).
+  - **‏#3639 `0065c34b` (MEH-2374):** זרימת «הפניית חברה» הוסרה: הדף `/ref/[code]`, הקריאה ב-RegisterClient, ‏`routers/referrals.py`. העמודה `users.referral_code` ו-`referral_clicks` נשארות ל-MEH-2393 (post-launch).
+  - **‏#3645 `409a05e5` (MEH-819):** ‏`/search` נמחק ו-`/search?q=` עונה 308 ל-`/producers?q=` (שלוש צורות: בלי locale, ‏/he, ‏/en). מחקר הדילמה ([Doc](https://claude.ai/artifact/Tu7gHxzzExka7GnmF94hQz)): דף תוצאות אחד, כמו Yelp / Zomato, ולא שני דפים עם אותה שאילתה. ‏`/producers?q=` כבר מחפש גם בשם ובתיאור של מוצרים (`_token_search_filter`, MEH-1664), ולכן מדור המוצרים של /search לא אבד. מפתחות i18n יתומים (`search.*`, ‏`seo.search`) → MEH-2395.
+  - **‏מסמך הממצאים:** [Doc](https://claude.ai/artifact/UoNFH4jifS9U7X5LjFWsMU). ‏3 PR-ים (‏#3645, ‏#3638, ‏#3639) הגיעו לתקרת שלושת הסבבים (MEH-2334); השאריות רשומות בהערות ה-PR.
+  - **‏נמדד:** ‏`CityProfileBridge.test.jsx` נפל פעם אחת ב-vitest על runner איטי (‏396 שניות import) ועבר מקומית 6/6; ‏`05-map-navigation.spec.ts:150` (נייד) עדיין flaky — שני `h1` בדף העסק. ‏`enable_pr_auto_merge` מדווח MERGE גם כש-SQUASH התבקש: ‏#3645 נחת כ-merge commit.
+
 - **‏26/10 22:20 – 27/10 10:30 — דף האדמין צומצם לאישורים (MEH-2359), ושלושת שכבות השעון הישראלי נסגרו: טסטים (MEH-2380, MEH-2382), ‏backend (MEH-2384) ו-frontend (MEH-2383). גם ה-flake של ההתחברות ב-E2E (MEH-2323 C3).**
   - **‏#3617 `dfbec184` (MEH-2359):** ‏`/admin` = «מה מחכה לטיפול»: עסקים ממתינים + שורה לכל תור שיש בו פריטים. הסייד-בר: אישורים · תורים (רק כשיש ספירה, דיווחים תמיד) · «עוד» מקופל (נפתח כשעומדים בדף שלו). בלי chrome צרכני ב-`/admin`. ‏`/admin` (מדויק) ו-`/admin/producers*` מוכנים לנייד, שאר מסכי האדמין נשארים desktop-only. רשימת תורים אחת ב-`frontend/app/[locale]/admin/queues.js`; ‏`GET /admin/dashboard` מחזיר ספירה לכל תור, כולל `experiences_awaiting_review` / `recipes_awaiting_review` (תור האדמין בלבד, לא תור הבעלים). ‏/security-review: אין ממצאים.
   - **‏#3636 `571116e4` (MEH-2380):** ה-flake של `test_admin_get_producer_returns_admin_shape` בשבוע שאחרי מעבר השעון: טסט זרע «לפני N ימים» מהשעון של UTC, והקוד סופר ימים ב-Asia/Jerusalem. ‏`israel_days_ago(N)` ב-`tests/conftest.py`; סעיף «Clock-dependent tests seed from the Israel clock» ב-`.claude/rules/testing.md`.
