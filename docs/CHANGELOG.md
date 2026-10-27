@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+- **‏26/10 22:20 – 27/10 10:30 — דף האדמין צומצם לאישורים (MEH-2359), ושלושת שכבות השעון הישראלי נסגרו: טסטים (MEH-2380, MEH-2382), ‏backend (MEH-2384) ו-frontend (MEH-2383). גם ה-flake של ההתחברות ב-E2E (MEH-2323 C3).**
+  - **‏#3617 `dfbec184` (MEH-2359):** ‏`/admin` = «מה מחכה לטיפול»: עסקים ממתינים + שורה לכל תור שיש בו פריטים. הסייד-בר: אישורים · תורים (רק כשיש ספירה, דיווחים תמיד) · «עוד» מקופל (נפתח כשעומדים בדף שלו). בלי chrome צרכני ב-`/admin`. ‏`/admin` (מדויק) ו-`/admin/producers*` מוכנים לנייד, שאר מסכי האדמין נשארים desktop-only. רשימת תורים אחת ב-`frontend/app/[locale]/admin/queues.js`; ‏`GET /admin/dashboard` מחזיר ספירה לכל תור, כולל `experiences_awaiting_review` / `recipes_awaiting_review` (תור האדמין בלבד, לא תור הבעלים). ‏/security-review: אין ממצאים.
+  - **‏#3636 `571116e4` (MEH-2380):** ה-flake של `test_admin_get_producer_returns_admin_shape` בשבוע שאחרי מעבר השעון: טסט זרע «לפני N ימים» מהשעון של UTC, והקוד סופר ימים ב-Asia/Jerusalem. ‏`israel_days_ago(N)` ב-`tests/conftest.py`; סעיף «Clock-dependent tests seed from the Israel clock» ב-`.claude/rules/testing.md`.
+  - **‏#3640 `277b8bc1` (MEH-2382):** ‏29 זריעות `date.today()` בתשעה קבצי טסט → `israel_today()`. ‏`scripts/checks/test-clock-guard.sh` חדש (warn-only, נולד עם אפס ממצאים, `--self-test`). הוצג נכשל מול העץ שלפני ה-sweep (29 ממצאים).
+  - **‏#3644 `6123fac6` (MEH-2386, chunk 1 של MEH-2384):** ‏`utc_now()` ב-`backend/app/utils/clock.py` מחליף את `datetime.utcnow()` (deprecated מ-Python 3.12) ב-21 קבצים ב-app, כולל ברירות המחדל של העמודות ב-`models.py` (צד Python בלבד, בלי migration). הערך naive-UTC בכוונה, כי העמודות naive.
+  - **‏#3653 `df44b3db` (MEH-2387, chunk 2, HIGH-RISK):** תשע הקריאות ב-`auth.py` וב-`routers/auth.py`. בלי שינוי ב-TTL, scope, token_version או fingerprint. ‏/security-review: אין ממצאים.
+  - **‏#3652 `c2134c5d` (MEH-2388, chunk 3):** ‏28 קבצי טסט + `seed_demo_business.py`. אזהרת ה-deprecation נעלמה מכל הריצה.
+  - **‏#3642 `95d7f36c` (MEH-2383):** ‏`lib/hours.js` ו-`order-status.js` קוראים את השעון הישראלי דרך `israelNowParts` (‏`lib/orderWindow.js`) במקום שני formatters פרטיים. ‏`israel-clock-guard.sh`: ‏4 WARNING → OK. ‏`computeStatus(map, now)` מקבל `now` להזרקה.
+  - **‏#3651 `3ff0dd52` (MEH-2323 C3):** ‏`settledField()` ב-`30-login-journey-c.spec.ts` ממתין לעותק אחד של השדה שגם React מחזיק (`__reactFiber$`), כי בדף streaming יש ~120ms עם שני עותקים. ‏180/180 ירוק אחרי 4/40 אדום. הכרטיס נשאר פתוח (kebab באדמין, `25-role-reachability`).
+  - **‏MEH-2398 (needs-sapir):** ה-backend של staging קורס תחת ריצות E2E מקבילות: ‏QueuePool ‏(10+5) מתמלא, ה-PR-ים מקבלים 499 ו-«ZERO COVERAGE». נמדד ב-Railway ב-26/10 22:50Z. התיקון המומלץ: `concurrency` ב-`e2e.yml` (קובץ של ספיר).
+  - **‏נמדד:** ב-27/10 04:00–04:35Z ה-`E2E gate` היה אדום על כל ה-PR-ים באותו סט: ‏VRT של about/login/register (שני הפרויקטים) + ה-control ב-`admin-producer-form-licence.spec.ts:287`. אותו סט נפל גם על PR שמשנה רק קובץ spec אחד, כך שזה לא של ה-PR-ים. ה-baselines נוצרים מחדש ב-#3641 / ‏#3654. ‏#3640 ו-#3652 הגיעו לתקרת שלושת הסבבים (MEH-2334); השאריות הקוסמטיות רשומות ב-PR-ים.
+
 - **‏26/10 (09:50–21:15) — המשך סידור הידע: קבצי אנשי הקשר יצאו מהריפו, ה-hook מציג את HANDOFF, ‏BRAND.md נסקר, ומשפט המותג של ADR-011 עלה לאתר.**
   - **‏#3604 `29e11ab3` (MEH-2356):** שני קבצי ה-xlsx בשורש (20 עסקים, 14 שמות אנשי קשר, 5 טלפונים, הערות אדמין) ושני הסקריפטים החד-פעמיים שקראו אותם נמחקו. ‏`.gitignore` חוסם `/*.xlsx`. הקבצים נשארים בהיסטוריה של git, כי ניקוי ההיסטוריה דורש force-push על `staging` ו-`main`.
   - **‏#3606 `bf464d6b` (MEH-2357, ספיר דרך Claude בכרום):** ה-hook של SessionStart מזריק את הסעיף החדש ביותר של HANDOFF (`awk '/^## /{n++} n==1'`) במקום קטע ה-CHANGELOG ו-`tail -40`.

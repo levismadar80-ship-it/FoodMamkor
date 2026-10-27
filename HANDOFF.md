@@ -4,6 +4,21 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-27 10:30 — דף האדמין = אישורים בלבד (#3617), והשעון הישראלי בשלוש שכבות: טסטים, backend, frontend (#3636, ‏#3640, ‏#3644, ‏#3653, ‏#3652, ‏#3642)
+
+**‏שורה אחת:** ‏`/admin` מציג רק מה שמחכה להחלטה. כל זריעת זמן בטסטים עוברת דרך `israel_today()` / `israel_days_ago()`, כל קריאת שעון ב-backend דרך `utc_now()`, וכל קריאה ל-frontend דרך `israelNowParts`. שני guards (‏`test-clock-guard.sh`, ‏`israel-clock-guard.sh`) שומרים על אפס ממצאים.
+
+**‏מה צריך לדעת לפני עבודה:**
+- משטח מודרציה חדש באדמין = שורה אחת ב-`admin/queues.js` + מפתח ספירה ב-`GET /admin/dashboard`. ‏`__tests__/AdminQueuesContract.test.js` נכשל על מפתח שה-backend לא שולח. ספירה לא ידועה מוצגת כשגיאה, לא כ«אין פריטים».
+- טסט שצריך «לפני N ימים» משתמש ב-`israel_days_ago(N)`; תאריך יחסי להיום ב-`israel_today()`. ‏`date.today()` ו-`datetime.now(timezone.utc) - timedelta(days=N)` בטסטים הם הבאג של MEH-2380 ו-MEH-2382 (ירוק ברוב השעות, אדום ב-21:00–22:00 UTC בשבוע שאחרי מעבר השעון).
+- ‏`datetime.utcnow()` לא קיים יותר ב-`backend/app`. ‏`utc_now()` הוא naive-UTC בכוונה (העמודות naive). עמודה עם `timezone=True` (כמו `terms_accepted_at`) ממשיכה לקבל `datetime.now(timezone.utc)`.
+- ‏E2E במקביל על כמה PR-ים מפיל את ה-backend של staging (MEH-2398). ‏499 / «ZERO COVERAGE» ב-`Playwright E2E` הם סימפטום של זה, לא של ה-PR. ‏`E2E gate` לא נדרש למיזוג.
+
+**‏ממתין לספיר:**
+- **‏MEH-2398:** להוסיף `concurrency` ל-`.github/workflows/e2e.yml` (קובץ שלה), או להגדיל את ה-pool בסטייג'ינג.
+- שאריות קוסמטיות אחרי תקרת שלושת הסבבים, רשומות ב-#3640 (הערת lookbehind ישנה ב-`test-clock-guard.sh`; האם רוצים guard גם ל-`datetime.now()` בטסטים) וב-#3652 (מיקום ייבוא `utc_now` בכמה קבצי טסט).
+- ‏#3617: שלושת פריטי הסוקר שנדחו (vitest ל-`visibleQueues`/`queueCount`, שורת ADMIN.md על יציאת `/admin/group-buys` מהניווט, endpoint ספירות בלבד) נמצאים ב-MEH-2399 (Backlog).
+
 ## 2026-10-26 21:15 — משפט המותג של ADR-011 באתר (#3622), ‏BRAND.md נסקר (#3620), ה-hook מציג את HANDOFF (#3606)
 
 **‏שורה אחת:** כל מה שנשאר פתוח בסעיף של 09:45 נסגר. ה-hook תוקן, קבצי ה-xlsx יצאו מהריפו, ‏BRAND.md נסקר, ומשפט המותג הנעול מוצג באתר.
