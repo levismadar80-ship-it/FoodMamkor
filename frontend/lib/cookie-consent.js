@@ -7,7 +7,7 @@
  * read. A localStorage that throws (private mode, blocked storage) reads as
  * "no consent" — the banner shows itself in that case too.
  */
-export const COOKIE_CONSENT_KEY = "cookieConsent";
+const COOKIE_CONSENT_KEY = "cookieConsent";
 export const COOKIE_CONSENT_EVENT = "cookie-consent";
 const CONSENT_VALUES = new Set(["all", "essential"]);
 
