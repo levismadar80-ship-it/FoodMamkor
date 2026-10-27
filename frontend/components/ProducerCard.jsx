@@ -251,6 +251,18 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       : rawDescription;
 
   const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
+  const availabilityDotEl = dotClass ? (
+    <span
+      className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`}
+      data-testid="availability-dot"
+      data-status={dotStatus}
+      aria-hidden="true"
+    />
+  ) : null;
+  // MEH-2440: the line under the name holds the category, plus the distance
+  // only when there is no city line to carry it. With neither, it is skipped
+  // instead of rendering an empty row (claude[bot] review on #3694).
+  const hasLocationText = Boolean(category || (!producer.city && distanceLabel));
 
   // MEH-1880 — derived "open for orders" line.
   //
@@ -334,14 +346,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               // brand wordmark on green-50 (the same tile on 17/29 cards read as
               // a template). Bottom-aligned; pb clears the bottom-start badge row
               // so a long name never sits under a badge. keep-all: no mid-word
-              // Hebrew break at 22px.
+              // Hebrew break at 22px; overflow-wrap:anywhere is the fallback for
+              // a single token wider than the tile, which keep-all can't break.
               <div
                 className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pb-12 sm:p-5 sm:pb-14"
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
                 <span
-                  className="font-headline-lg font-black text-[22px] sm:text-[30px] leading-[1.05] text-text line-clamp-3 [word-break:keep-all]"
+                  className="font-headline-lg font-black text-[22px] sm:text-[30px] leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
                   data-testid="card-name-plate"
                   aria-hidden="true"
                 >
@@ -515,7 +528,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             names the place first. The category moved to the line under the
             name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
         {producer.city && (
-          <p className="text-[12px] font-semibold text-accent flex min-w-0" data-testid="card-place">
+          <p className="text-[12px] font-semibold text-accent flex items-center gap-1.5 min-w-0" data-testid="card-place">
+            {/* The location line below is skipped when it would hold no text;
+                the availability dot then rides here, so it is never lost and
+                never sits alone as an orphan circle (MEH-1551). */}
+            {!hasLocationText && availabilityDotEl}
             <span className="truncate">
               {producer.city}
               {distanceLabel && (
@@ -549,18 +566,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           )}
         </div>
 
+        {hasLocationText && (
         <p
           className="text-[13px] text-fg-muted truncate flex items-center gap-1.5"
           data-testid="location-line"
         >
-          {dotClass && (
-            <span
-              className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`}
-              data-testid="availability-dot"
-              data-status={dotStatus}
-              aria-hidden="true"
-            />
-          )}
+          {availabilityDotEl}
           <span className="truncate">
             {category}
             {/* No city → no place line above, so the distance stays here. */}
@@ -572,6 +583,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             )}
           </span>
         </p>
+        )}
 
         {/* MEH-1880: rendered ONLY when the declared window is open right now.
             Closed, absent, or pre-mount → this whole node is absent, so a card

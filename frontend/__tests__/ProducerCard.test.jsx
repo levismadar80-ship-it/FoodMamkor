@@ -390,6 +390,28 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.getByTestId("location-line").textContent).toContain("חלב וגבינות");
   });
 
+  // MEH-2440 (claude[bot] review on #3694): city, no category, no distance —
+  // the line under the name would be empty, so it is skipped, and the
+  // availability dot moves up to the place line instead of being lost.
+  it("skips the empty line under the name and keeps the dot with the city", () => {
+    render(<ProducerCard producer={{ ...fullProducer, categories: [] }} />);
+    expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
+    const place = screen.getByTestId("card-place");
+    expect(place.textContent).toBe("רחובות");
+    expect(place).toContainElement(screen.getByTestId("availability-dot"));
+  });
+
+  it("keeps the dot in the line under the name when that line has text", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.getByTestId("location-line")).toContainElement(screen.getByTestId("availability-dot"));
+    expect(screen.getAllByTestId("availability-dot")).toHaveLength(1);
+  });
+
+  it("the name plate can break a single over-long token instead of overflowing", () => {
+    render(<ProducerCard producer={{ ...fullProducer, images: [] }} />);
+    expect(screen.getByTestId("card-name-plate").className).toContain("[overflow-wrap:anywhere]");
+  });
+
   it("does NOT render distance when user has no geolocation", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, lat: 32.0853, lng: 34.7818 }} />,
