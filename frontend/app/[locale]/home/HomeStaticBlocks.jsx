@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Leaf, ArrowLeft } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
@@ -88,12 +88,11 @@ export function HomeRecentlyViewed({ items }) {
  * feature — null/missing ⇒ the section renders NOTHING (the prod state until
  * a real business is featured). No fictional placeholder content ships; the
  * design's persona example copy stays in the freeze file only. Frame copy
- * (eyebrow / heading / CTA patterns) is locked from the freeze via
- * home.featured.*.
+ * (eyebrow / CTA patterns) is locked from the freeze via home.featured.*.
  *
  * @param {?{
  *   quote: string,        // feature headline — display line, no terminal period
- *   story: string,        // short narrative paragraph (body prose, keeps periods)
+ *   story: string,        // full description — not rendered on home since MEH-2441
  *   name: string,         // first name — interpolated into both CTAs
  *   attribution: string,  // "שם מלא · עסק, עיר" meta line (middle-dot rhythm)
  *   category?: string,
@@ -116,168 +115,76 @@ export function HomeFeaturedProducer({ featured }) {
   // held only for a MISSING url. A url that 401s (MEH-1925) reached the <Image>
   // and rendered the broken glyph on the homepage. Now it falls through here.
   const photoFailed = failedSrc !== null && failedSrc === photo;
-  const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
-    .filter(Boolean)
-    .join(" · ");
+  // MEH-2441 (Sapir 27/10, design-distinct): the feature sits on a full-bleed
+  // brand-green band below the businesses grid, so the home page has one
+  // strong colour moment instead of cream all the way down. The place leads
+  // in gold, then the name large, then the business's own line as a quote.
+  // The "מאחורי הקלעים" sub-heading and the long description were dropped —
+  // the band carries one line of the business's voice, the producer page
+  // carries the story.
+  const place = [featured.city, featured.category].filter(Boolean).join(" · ");
   return (
-    <section className="max-w-6xl mx-auto px-4 md:px-12 section-y">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
-        {/* photo — leading/start column (Direction A: image leads, 4:5) */}
-        <FadeInSection className="md:col-span-5">
-          {/* MEH-991 (HOME-23): FREEZE §10 — framed 4:5, radius 16, --light loading
-              fill, SOLID caption chip bottom/inline-start (blur dropped per FREEZE §10.4). */}
-          <figure className="relative m-0 rounded-2xl bg-surface-card border border-border p-2">
+    <section className="bg-primary text-background" data-testid="home-featured">
+      <div className="max-w-7xl mx-auto px-4 md:px-12 py-12 md:py-20">
+        <div className="relative pt-4 mb-8">
+          <span className="absolute top-0 start-0 w-10 h-[2px] bg-gold-on-dark" aria-hidden="true" />
+          <h2 className="font-headline-lg text-[26px] md:text-[34px] font-black text-background">{t("eyebrow")}</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-end">
+          <FadeInSection className="md:col-span-7">
             {photo && !photoFailed ? (
               <Image
                 src={photo}
                 alt={featured.name}
-                width={500}
-                height={625}
-                sizes="(max-width: 768px) 100vw, 42vw"
-                className="aspect-[4/5] w-full rounded-xl object-cover"
+                width={900}
+                height={675}
+                sizes="(max-width: 768px) 100vw, 58vw"
+                className="aspect-[4/3] w-full object-cover"
                 onError={() => setFailedSrc(photo)}
               />
             ) : (
               // tonal plate fallback — never a broken <img> (IMG-01 pattern)
-              <div className="aspect-[4/5] rounded-xl bg-green-50" aria-hidden="true" />
+              <div className="aspect-[4/3] bg-primary-dark" aria-hidden="true" data-testid="home-featured-plate" />
             )}
-            {meta && (
-              <figcaption className="absolute bottom-4 start-4 max-w-[85%] truncate bg-surface-card border border-border rounded-full px-3 py-1 text-[12px] text-text">
-                {meta}
-              </figcaption>
-            )}
-          </figure>
-        </FadeInSection>
-
-        {/* editorial text — end column */}
-        <FadeInSection className="md:col-span-7" delay={0.1}>
-          <p className="flex items-center gap-3 text-sm font-medium text-accent mb-1">
-            {t("eyebrow")}
-            <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
-          </p>
-          <h2 className="font-headline-md text-xl font-bold text-text mb-4">{t("heading")}</h2>
-          {/* MEH-991 (HOME-23): meta moved into the on-image caption chip per FREEZE §10. */}
-          <p
-            className="font-headline-lg text-headline-lg text-text leading-snug mb-4"
-          >
-            {featured.quote}
-          </p>
-          {featured.story && (
-            <p className="text-text/85 leading-relaxed mb-5 max-w-xl">{featured.story}</p>
-          )}
-          {featured.attribution && (
-            <p className="text-sm text-fg-muted mb-6">{featured.attribution}</p>
-          )}
-          <div className="flex flex-wrap items-center gap-4">
-            {featured.href && (
-              <Link
-                href={featured.href}
-                className="inline-block bg-primary text-white px-6 py-2.5 rounded-sm hover:bg-primary-dark transition font-medium"
-              >
-                {t("cta_meet", { name: featured.name })}
-              </Link>
-            )}
-            {featured.writeHref && (
-              <a
-                href={featured.writeHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline decoration-accent underline-offset-4 hover:text-primary-dark transition"
-              >
-                {t("cta_write", { name: featured.name })}
-              </a>
-            )}
-          </div>
-        </FadeInSection>
-      </div>
-    </section>
-  );
-}
-
-/**
- * HOW IT WORKS — three-step explainer block.
- */
-export function HomeHowItWorks() {
-  const t = useTranslations();
-  return (
-    // id="how-it-works" — anchor target for the hero "איך זה עובד" link (MEH-643).
-    <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y" data-testid="home-how-it-works">
-      <FadeInSection>
-        {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
-            ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
-        <p className="text-sm font-medium text-fg-muted text-center mb-2">
-          {t("home.how_it_works.eyebrow")}
-        </p>
-        <h2 className="font-headline-lg text-headline-lg text-text text-center mb-10">
-          {t("home.how_it_works.heading")}
-        </h2>
-      </FadeInSection>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-        {[
-          { step: "01", title: t("home.how_it_works.step01_title"), text: t("home.how_it_works.step01_text") },
-          { step: "02", title: t("home.how_it_works.step02_title"), text: t("home.how_it_works.step02_text") },
-          { step: "03", title: t("home.how_it_works.step03_title"), text: t("home.how_it_works.step03_text") },
-        ].map((step, idx) => (
-          <FadeInSection key={step.step} delay={idx * 0.12} data-testid="home-how-step">
-            <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
-            <h3 className="font-headline-md text-2xl font-bold mb-2">{step.title}</h3>
-            <p className="text-text/85 leading-relaxed">{step.text}</p>
           </FadeInSection>
-        ))}
+          <FadeInSection className="md:col-span-5 flex flex-col gap-4" delay={0.1}>
+            {place && (
+              <p className="text-[13px] font-semibold text-gold-on-dark" data-testid="home-featured-place">
+                {place}
+              </p>
+            )}
+            <p className="font-headline-lg font-black text-[38px] md:text-[60px] leading-none text-background [word-break:keep-all] [overflow-wrap:anywhere]">
+              {featured.name}
+            </p>
+            <p className="font-headline-md font-medium text-[20px] md:text-[26px] leading-snug border-s-2 border-gold-on-dark ps-4">
+              {featured.quote}
+            </p>
+            {featured.attribution && (
+              <p className="text-sm text-background/90">{featured.attribution}</p>
+            )}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {featured.href && (
+                <Link
+                  href={featured.href}
+                  className="font-semibold text-background underline decoration-gold-on-dark underline-offset-4 hover:text-gold-on-dark transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
+                >
+                  {t("cta_meet", { name: featured.name })}
+                </Link>
+              )}
+              {featured.writeHref && (
+                <a
+                  href={featured.writeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-background/90 underline decoration-gold-on-dark underline-offset-4 hover:text-gold-on-dark transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
+                >
+                  {t("cta_write", { name: featured.name })}
+                </a>
+              )}
+            </div>
+          </FadeInSection>
+        </div>
       </div>
-    </section>
-  );
-}
-
-/**
- * COMPARISON TEASER — MEH-841 (supersedes MEH-525 placement). The full
- * comparison moved to /about as an early narrative beat; here a calm teaser
- * remains, linking to /about. S4 voice: cream surface, hairline-free, gold
- * accent on the link only — flat, no shadows. Static.
- *
- * MEH-2394: the teaser was a heading + a link with nothing between them, and
- * read as a section that failed to load (design review 26/10, finding 8). It
- * now carries the three comparison rows themselves — the SAME strings /about
- * renders (`about.comparison.row*`), so there is one home for that copy — as a
- * plain list: no table (the full table left home in MEH-841 and an E2E guard
- * asserts `table` count 0 on `/`), no numerals, no icons.
- */
-const TEASER_ROWS = ["row1", "row2", "row3"];
-
-export function HomeComparisonTeaser() {
-  const t = useTranslations("home.comparison_teaser");
-  const tCompare = useTranslations("about.comparison");
-  return (
-    <section className="max-w-3xl mx-auto px-4 section-y text-center" data-testid="home-comparison-teaser">
-      <FadeInSection>
-        <p className="text-sm font-medium text-fg-muted mb-2">
-          {t("eyebrow")}
-        </p>
-        <h2
-          className="font-headline-lg text-headline-lg text-text mb-6"
-        >
-          {t("heading")}
-        </h2>
-        <ul className="mx-auto max-w-xl space-y-4 mb-7 text-start" data-testid="home-comparison-rows">
-          {TEASER_ROWS.map((row) => (
-            <li key={row}>
-              <p className="font-headline-md font-bold text-primary-dark text-lg leading-snug">
-                {tCompare(`${row}_brand`)}
-              </p>
-              <p className="text-fg-muted text-[15px] leading-relaxed mt-0.5">
-                {tCompare(`${row}_super`)}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/about"
-          className="inline-flex items-center gap-2 text-accent font-medium hover:underline"
-        >
-          {t("cta")}
-          <ArrowLeft size={18} aria-hidden="true" />
-        </Link>
-      </FadeInSection>
     </section>
   );
 }
