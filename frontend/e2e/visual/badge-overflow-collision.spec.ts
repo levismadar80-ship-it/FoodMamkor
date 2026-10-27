@@ -26,11 +26,11 @@ import { test, expect, type Page, type Locator } from "@playwright/test";
  * `next start` against localhost with NO backend (e2e.yml:158), so a card
  * earning 3+ badges cannot exist unmocked. DO NOT copy this into e2e/flows/.
  *
- * The route target is /search: it client-fetches GET /producers
- * (app/[locale]/search/SearchClient.jsx:80) and renders ProducerCard, so
- * page.route intercepts it. /producers cannot be used — it SSR-seeds its
- * first page (app/[locale]/producers/page.jsx:25), which page.route cannot
- * reach (same constraint parity.spec.ts:302-307 documents for /[slug]).
+ * The route target is /producers?q=: with `q` set, ProducersClient is in
+ * filtered mode and client-fetches GET /producers?q=… (fetchFiltered), which
+ * page.route intercepts. The SSR-seeded first page (producers/page.jsx:25) is
+ * empty here (no backend) and is not what renders in filtered mode. (Before
+ * MEH-819 this spec targeted /search, which is now a 308 to /producers.)
  */
 
 // Sapir's reported case: badge priority is verified > recommended > … > kosher,
@@ -67,7 +67,7 @@ const STRESS_CASE = {
 };
 
 const PRODUCERS = [SAPIR_CASE, STRESS_CASE];
-const SEARCH_URL = `/search?q=${encodeURIComponent("לחם")}`;
+const SEARCH_URL = `/producers?q=${encodeURIComponent("לחם")}`;
 
 type Box = { x: number; y: number; width: number; height: number };
 
@@ -156,14 +156,40 @@ for (const viewport of [
         const panelBox = (await panel.boundingBox())!;
         expect(panelBox, `card ${i}: panel has no box`).toBeTruthy();
 
-        // ── exactly 0 intersections ──────────────────────────────────────
-        const hits = (await collisionTargets(chip))
-          .map((target) => ({ name: target.name, hit: overlap(panelBox, target.box) }))
-          .filter((entry) => entry.hit);
-        expect(
-          hits.map((entry) => `${entry.name} (${entry.hit!.w.toFixed(1)}x${entry.hit!.h.toFixed(1)}px)`),
-          `card ${i} "${PRODUCERS[i].name}": popover must not overlap any sibling pill or the title/rating row`,
-        ).toEqual([]);
+        // ── exactly 0 intersections (anchored / overlay presentation) ─────
+        // Below lg the +N presents as the MEH-1334 bottom sheet: a modal,
+        // full-width, bottom-anchored panel behind a backdrop. A sheet covers
+        // whatever sits in the lower part of the viewport by design, so the
+        // card-text collision rule is for the anchored presentation only.
+        // (While this spec targeted /search the 1-column card was tall enough
+        // that its title row sat below the fold at 375px, so the assertion was
+        // green by geometry, not by the sheet clearing anything; on the 2-column
+        // /producers grid the title is on-screen and under the sheet. Measured
+        // on the pre-MEH-819 build, same component, same result.)
+        // The branch is decided by the viewport (Popover.jsx switches to the
+        // sheet at `(max-width: 1023px)`), never by the panel's own width: a
+        // regression that stretched the desktop overlay to full width must
+        // still meet the 0-intersection rule, not be waved through as a sheet.
+        const isSheetViewport = viewport.width < 1024;
+        const isFullWidthSheet = panelBox.width >= viewport.width - 1;
+        expect(isFullWidthSheet, `card ${i}: full-width sheet only below lg (viewport ${viewport.width}px)`)
+          .toBe(isSheetViewport);
+        if (isSheetViewport) {
+          expect(panelBox.y + panelBox.height, `card ${i}: sheet must sit on the viewport bottom`)
+            .toBeCloseTo(viewport.height, 0);
+          await expect(
+            page.locator("[data-testid='badge-overflow-popover-backdrop']"),
+            `card ${i}: the sheet is modal — its backdrop must be visible`,
+          ).toBeVisible();
+        } else {
+          const hits = (await collisionTargets(chip))
+            .map((target) => ({ name: target.name, hit: overlap(panelBox, target.box) }))
+            .filter((entry) => entry.hit);
+          expect(
+            hits.map((entry) => `${entry.name} (${entry.hit!.w.toFixed(1)}x${entry.hit!.h.toFixed(1)}px)`),
+            `card ${i} "${PRODUCERS[i].name}": popover must not overlap any sibling pill or the title/rating row`,
+          ).toEqual([]);
+        }
 
         // ── still ANCHORED to its own trigger ────────────────────────────
         // "0 intersections" alone is satisfiable by flinging the panel to the
@@ -173,7 +199,6 @@ for (const viewport of [
         // presentation (<lg) the panel is deliberately full-width, so the
         // anchor check only applies to the anchored/overlay presentation.
         const triggerBox = (await chip.boundingBox())!;
-        const isFullWidthSheet = panelBox.width >= viewport.width - 1;
         if (!isFullWidthSheet) {
           const inlineGap = Math.min(
             Math.abs(triggerBox.x - panelBox.x),
@@ -244,7 +269,7 @@ test.describe("MEH-1592 +N popover — one-at-a-time + tap guard", () => {
     // Hidden badge for SAPIR_CASE (visible = verified + recommended) is kosher.
     await expect(page.locator('[data-testid="badge-overflow-popover"]')).toContainText("כשר");
     // The card Link must not have fired.
-    await expect(page).toHaveURL(new RegExp("/search"));
+    await expect(page).toHaveURL(new RegExp("/producers\\?q="));
 
     // Outside-click dismissal still works with the portalled panel.
     await page.locator("h1").first().click({ force: true });

@@ -33,7 +33,7 @@ const scan = async (page) => {
 
 const CASES = [
   {
-    route: "/he/search",
+    route: "/he/producers", // was /he/search; /search 308s here since MEH-819
     defect: "document-title (the serious that held /search out)",
     // The original defect was a route with no document title. Returns "ok"
     // only after confirming the title is actually gone — the guard below

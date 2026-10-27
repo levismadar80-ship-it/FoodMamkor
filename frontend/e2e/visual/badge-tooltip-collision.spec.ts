@@ -275,7 +275,7 @@ for (const vp of [
 
     test("S1 — card badge pill popover clears siblings and its clip ancestor", async ({ page }) => {
       await mockCards(page);
-      await page.goto(`/search?q=${encodeURIComponent("לחם")}`);
+      await page.goto(`/producers?q=${encodeURIComponent("לחם")}`);
       const card = page.locator("article").first();
       const pill = card.locator("button[data-badge][aria-haspopup]").first();
       await expect(pill).toBeVisible();
@@ -298,7 +298,7 @@ for (const vp of [
 
     test("S3 — TrustBadge tooltip clears the card title and rating", async ({ page }) => {
       await mockCards(page);
-      await page.goto(`/search?q=${encodeURIComponent("לחם")}`);
+      await page.goto(`/producers?q=${encodeURIComponent("לחם")}`);
       const card = page.locator("article").first();
       const trust = card.locator("[aria-label*='ביקורות']").first();
       await expect(trust).toBeVisible();
