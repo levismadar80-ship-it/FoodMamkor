@@ -110,7 +110,7 @@ async function stubEdit(page: Page, opts: EditOpts = {}): Promise<void> {
     r.fulfill({ status: 200, contentType: "application/json",
       body: JSON.stringify({ id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7 }) }));
   await page.route("**/favorites**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
-  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests"]) {
+  for (const sub of ["products", "locations", "name-change-requests", "kashrut-requests", "group-buys"]) {
     await page.route(`**/producers/me/${sub}**`, (r) => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   }
   await page.route("**/producers/me/bio/generate", (r) =>
