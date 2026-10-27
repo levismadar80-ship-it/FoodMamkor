@@ -19,7 +19,6 @@ the badge / favorites attachment all preserved.
 # previously covered this complexity in producers.py cannot be migrated here
 # because pyproject.toml is protected by MEH-442 protect-lint-config hook.
 
-from datetime import datetime
 from typing import Any
 
 import structlog
@@ -43,7 +42,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_min_km,
 )
-from app.utils.clock import israel_now, israel_today
+from app.utils.clock import israel_now, israel_today, utc_now
 from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -512,14 +511,14 @@ def _kosher_condition(kosher: bool):
             Producer.kashrut_verified_at.isnot(None),
             or_(
                 Producer.kashrut_expires_at.is_(None),
-                Producer.kashrut_expires_at > datetime.utcnow(),
+                Producer.kashrut_expires_at > utc_now(),
             ),
         )
     return or_(
         Producer.kashrut_verified_at.is_(None),
         and_(
             Producer.kashrut_expires_at.isnot(None),
-            Producer.kashrut_expires_at <= datetime.utcnow(),
+            Producer.kashrut_expires_at <= utc_now(),
         ),
     )
 
