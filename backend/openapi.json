@@ -1276,7 +1276,6 @@
                 "type": "null"
               }
             ],
-            "default": null,
             "title": "Owner Slug"
           },
           "price": {
