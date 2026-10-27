@@ -208,6 +208,20 @@ describe("Edit-tab KashrutCard (isolation)", () => {
       expect(text).not.toContain(BADGES.rabanut.label);
     });
 
+    it("the row goes away once a request with a photo is sent (list reloads after submit)", async () => {
+      api.get
+        .mockResolvedValueOnce({ data: [] })
+        .mockResolvedValue({
+          data: [{ id: "p", badge_code: "badatz", status: "pending", cert_url: "https://x/c.jpg" }],
+        });
+      renderCard({ kashrut_badges: ["badatz"] });
+      await waitFor(() => expect(rows()).toHaveLength(1));
+      fireEvent.change(screen.getByTestId("kashrut-badge-select"), { target: { value: "badatz" } });
+      fireEvent.click(screen.getByRole("button", { name: K.submit_cta }));
+      await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(rows()).toHaveLength(0));
+    });
+
     it("request list failed to load → no row (unknown is not 'missing')", async () => {
       api.get.mockRejectedValue(new Error("network"));
       renderCard({ kashrut_badges: ["badatz"] });
