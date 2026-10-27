@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-27 11:30 — סקירת הפרויקט נסגרה: 9 PR-ים מוזגו, ‏/search אוחד ל-/producers (#3645), ‏E2E של staging חוזר לירוק (#3641)
+
+**‏שורה אחת:** כל הכרטיסים מסקירת 26/10 (MEH-2367 עד MEH-2375, ‏MEH-819) ב-Done. מה שנשאר הם שלושה כרטיסי Expand-Contract / ניקוי ל-post-launch (MEH-2392, ‏MEH-2393, ‏MEH-2395).
+
+**‏מה צריך לדעת לפני עבודה:**
+- אין יותר `/search`. חיפוש = `/producers?q=`, וההפניה 308 נבדקת ב-`__tests__/SearchRouteRedirect.test.js` וב-`17-producers-search.spec.ts`. קומפוננטה שמרנדרת את `ProducersClient` בטסט צריכה `vi.mock("@/components/EnSearchNotice")`, אחרת `next-intl` מושך את `next/navigation` האמיתי.
+- הפוטר שואל `GET /events/upcoming`. spec אדמין חדש שמרנדר את הפוטר חייב stub לנתיב הזה (ליד ה-stub של `/experiences/count`), אחרת ה-404 catch-all מפיל אותו.
+- ‏regen של VRT: תווית אחת בכל פעם (`concurrency` של ה-workflow מבטל ריצות מקבילות), ה-workflow מסיר את התווית בסיום. ‏«Baselines unchanged» הוא תוצאה תקינה. אחרי commit של ה-bot צריך push רגיל כדי להריץ את השערים.
+- ‏`producer_followers`, ‏`users.referral_code` ו-`referral_clicks` עדיין בסכימה בכוונה (Expand-Contract, ADR-007). לא להסיר בלי הכרטיסים שלהם.
+
+**‏ממתין לספיר:** אין חדש מהשרשור הזה. ‏MEH-2398 (concurrency ב-`e2e.yml`) עדיין פתוח מהסעיף למטה.
+
 ## 2026-10-27 10:30 — דף האדמין = אישורים בלבד (#3617), והשעון הישראלי בשלוש שכבות: טסטים, backend, frontend (#3636, ‏#3640, ‏#3644, ‏#3653, ‏#3652, ‏#3642)
 
 **‏שורה אחת:** ‏`/admin` מציג רק מה שמחכה להחלטה. כל זריעת זמן בטסטים עוברת דרך `israel_today()` / `israel_days_ago()`, כל קריאת שעון ב-backend דרך `utc_now()`, וכל קריאה ל-frontend דרך `israelNowParts`. שני guards (‏`test-clock-guard.sh`, ‏`israel-clock-guard.sh`) שומרים על אפס ממצאים.

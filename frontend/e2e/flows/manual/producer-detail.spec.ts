@@ -324,7 +324,9 @@ test.describe("manual › /producer/[id] — header and breadcrumb", () => {
     await expect(identity).toHaveCount(1);
     await expect(identity).toHaveText(target.name);
 
-    // Logistics row — exactly one, and BELOW the identity row.
+    // Logistics row — exactly one, and BELOW the identity row. Since MEH-2403
+    // the line is absent when the business has neither city nor category; the
+    // seeded targets all carry a city, so one is still the expected count.
     const meta = header.getByTestId("producer-header-meta");
     await expect(meta).toHaveCount(1);
     const identityBox = await identity.boundingBox();

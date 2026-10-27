@@ -206,6 +206,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   await page.route("**/users/me/favorites", (r) => json(r, []));
   // Public, and incidental: the admin nav badge counter. Answered so the 404 catch-all stays a clean instrument.
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
+  // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
+  await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route("**/categories", (r) => json(r, categories.map(({ producer_count: _c, ...c }) => ({ ...c, producer_count: null }))));
   await page.route("**/admin/dashboard", (r) =>
     json(r, {
