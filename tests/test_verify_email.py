@@ -9,11 +9,12 @@ Coverage:
 Modeled after tests/test_forgot_password.py — reset-password got the same
 404/410 split + structured logging treatment in MEH-304.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
 
 from app.models.models import User
 from conftest import make_user
+from app.utils.clock import utc_now
 
 
 class TestVerifyEmail:
@@ -22,9 +23,9 @@ class TestVerifyEmail:
         token = "test-verify-token-abc123xyz"
         user.email_verify_token = token
         user.email_verify_expires = (
-            datetime.utcnow() - timedelta(seconds=1)
+            utc_now() - timedelta(seconds=1)
             if expired
-            else datetime.utcnow() + timedelta(hours=24)
+            else utc_now() + timedelta(hours=24)
         )
         user.email_verified = False
         db.commit()
@@ -83,7 +84,7 @@ class TestRegisterFiresVerifyEmail:
         assert user.email_verify_token is not None
         assert len(user.email_verify_token) >= 32
         assert user.email_verify_expires is not None
-        assert user.email_verify_expires > datetime.utcnow()
+        assert user.email_verify_expires > utc_now()
         # Background task should have been called with the SAME token
         # that's now stored on the user — catches any "wrong token sent
         # in email" regression at the source.
