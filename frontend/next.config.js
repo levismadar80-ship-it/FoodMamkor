@@ -169,8 +169,15 @@ const nextConfig = {
     // precedent for that is app/[locale]/p/[slug]/page.js:18, which issues a
     // 307; this rule's `permanent: true` is the 308 the ticket asks for, and
     // it lets the page file (metadata and all) be deleted outright.
+    //
+    // MEH-819: /search was a second, thinner results page for the same intent
+    // as /producers?q= (no filters, no counts). The header's search button and
+    // the sitelinks SearchAction now go straight to /producers; old links 308
+    // there. Next forwards the query, so ?q= and ?focus=1 survive the hop.
     const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
     return [
+      { source: "/:locale(he|en)/search", destination: "/:locale/producers", permanent: true },
+      { source: "/search", destination: "/producers", permanent: true },
       { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
       { source: "/neighbor/:path*", destination: "/", permanent: false },
       {
