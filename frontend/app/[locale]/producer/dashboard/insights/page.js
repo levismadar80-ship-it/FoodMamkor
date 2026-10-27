@@ -115,6 +115,10 @@ export default function ProducerDashboardInsightsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
+      {/* MEH-2429: every other dashboard page has an h1; this one had none, so
+          a screen reader landed on a page with no heading. The visible text is
+          the existing nav label — no new copy. */}
+      <h1 className="font-headline-lg text-xl font-bold text-text mb-6">{t("nav.insights")}</h1>
       {/* MEH-1101: pre-publish zero-state — all-zero KPIs read as failure
           without the context that data starts flowing after approval
           (Site Kit hasZeroData pattern). KPI cards still render below. */}
