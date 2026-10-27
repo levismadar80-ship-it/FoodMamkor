@@ -321,7 +321,7 @@ async def register(
             # MEH-1995: record the terms acceptance instead of discarding it.
             # Stamped only when the flag is genuinely True — an omitted or
             # False flag leaves both columns NULL, which reads as "no record",
-            # not as "refused". now(timezone.utc), never naive utcnow().
+            # not as "refused". now(timezone.utc), never naive utc_now().
             terms_accepted_at=(
                 datetime.now(timezone.utc) if data.terms_accepted else None
             ),
@@ -1415,12 +1415,13 @@ async def reset_password(
     if not user:
         logger.warning("[RESET] token_not_found token_prefix=%s", data.token[:8])
         raise HTTPException(status_code=404, detail="הקישור לא תקין")
-    if not user.reset_token_expires_at or user.reset_token_expires_at < utc_now():
+    now = utc_now()
+    if not user.reset_token_expires_at or user.reset_token_expires_at < now:
         logger.warning(
             "[RESET] token_expired user_id=%s expires=%s now=%s",
             user.id,
             user.reset_token_expires_at,
-            utc_now(),
+            now,
         )
         raise HTTPException(
             status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש"
@@ -1461,12 +1462,13 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     if not user:
         logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
         raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
-    if user.email_verify_expires is None or user.email_verify_expires < utc_now():
+    now = utc_now()
+    if user.email_verify_expires is None or user.email_verify_expires < now:
         logger.warning(
             "[VERIFY-EMAIL] token_expired user_id=%s expires=%s now=%s",
             user.id,
             user.email_verify_expires,
-            utc_now(),
+            now,
         )
         raise HTTPException(status_code=410, detail="קישור האימות פג תוקף")
     user.email_verified = True
