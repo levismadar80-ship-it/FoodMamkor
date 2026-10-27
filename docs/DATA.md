@@ -558,6 +558,19 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > `users.email_verified`. (`POST /group-buys` has no dedicated block below;
 > noted here.)
 >
+> **MEH-2436 — the business changes its own group buy's status.**
+> `PATCH /group-buys/{id}/status`, body `{"status": "open"|"funded"|"cancelled"|"fulfilled"}`
+> (anything else → 422). Non-admin callers pass the same gate as
+> `POST /group-buys` (`require_producer` → `require_verified_producer`), then
+> the IDOR check: `gb.producer_id == current_user.producer_id`, else 403.
+> The owner gets exactly `open → cancelled` (before or after the deadline),
+> `funded → fulfilled` and `funded → cancelled` (`OWNER_TRANSITIONS`); any other
+> pair → 409, so cancelled and fulfilled are final for her. The route is
+> owner-only: an admin (not a producer) gets 403 here and keeps the full
+> override on `PATCH /admin/group-buys/{id}/status`, which is unchanged — one
+> checked path per caller, not two to the same state. The check and the write run under a row lock
+> (`with_for_update`, like `/commit`). 30/minute. No schema change.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus

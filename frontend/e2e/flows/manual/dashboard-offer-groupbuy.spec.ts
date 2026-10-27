@@ -45,7 +45,8 @@ import { test, expect, type Page, type Route } from "../_cloudinary-stub";
  *      `offer` entry, though KEY_TO_ANCHOR (:184) and KEY_TO_GROUP (:223) know
  *      the key. The mirror of chunk 11g's business-name finding, added to the
  *      same card (MEH-2262). One test asserts the correct behaviour under
- *      test.fail(); the rest open the card through `?group=location`.
+ *      test.fail(); the rest open the card through `?group=products`
+ *      (`?group=location` until MEH-2433 moved the offer).
  * D4 · MT:MEH-992 opens the form via «+ קבוצת רכש חדשה». That toggle renders
  *      only when at least one group buy exists (page.js:340); with none, the
  *      empty state's «+ צרו קבוצה ראשונה» is the way in. The 0-items path is
@@ -108,10 +109,10 @@ test.describe("offer card — the custom type", () => {
   const headlineError = (page: Page) => page.getByTestId("offer-headline-error");
   const REQUIRED = "להטבה בניסוח חופשי חייבת להיות כותרת";
 
-  /** `#offer` is a dead deep link (drift D3 / MEH-2262): open the location group and the card by hand. */
+  /** Opens the products group and the card by hand (drift D3 / MEH-2262). MEH-2433 moved the offer from the location group to products. */
   async function openOffer(page: Page) {
-    await page.goto("/producer/dashboard/edit?group=location");
-    await expect(page.getByTestId("group-location"), "control: the location group never rendered — every assertion here is void").toBeVisible({ timeout: 15_000 });
+    await page.goto("/producer/dashboard/edit?group=products");
+    await expect(page.getByTestId("group-products"), "control: the products group never rendered — every assertion here is void").toBeVisible({ timeout: 15_000 });
     await card(page).click();
     await expect(body(page)).toBeVisible();
   }
@@ -119,7 +120,8 @@ test.describe("offer card — the custom type", () => {
   // The deep-link contract: ANCHOR_TO_KEY (page.js:100-116) has no `offer` entry while
   // KEY_TO_ANCHOR (:184) and KEY_TO_GROUP (:223) know the key — the mirror of the
   // business-name gap. Correct behaviour asserted; expected to fail until fixed.
-  test("#offer opens the offer card through the location group", async ({ page }) => {
+  // MEH-2433: the card now lives in the products group; the hash resolves it there.
+  test("#offer opens the offer card through the products group", async ({ page }) => {
     await stubEdit(page);
     await page.goto("/producer/dashboard/edit#offer");
     await expect(card(page)).toBeVisible({ timeout: 15_000 });
