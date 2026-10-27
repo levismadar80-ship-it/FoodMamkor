@@ -314,7 +314,7 @@
             "label": "מאיפה שמעת עלינו?",
             "optional_hint": "אפשר לדלג — התשובה רק עוזרת לנו להכיר אותך.",
             "placeholder": "בחרו אפשרות",
-            "other_placeholder": "ספרי לנו איפה",
+            "other_placeholder": "ספרו לנו איפה",
             "options": {
               "business_referral": "המלצה מבית עסק אחר",
               "friends_family": "המלצה מחברים או משפחה",
