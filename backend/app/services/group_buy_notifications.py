@@ -136,3 +136,47 @@ def send_funded_notifications(
                 "(group_buy=%s)",
                 group_buy_id,
             )
+
+
+# --- Cancel (MEH-2435 chunk 4) ---
+
+
+def notify_participant_cancelled(
+    participant_email: str, title: str, producer_name: str
+) -> None:
+    """Fired when the business cancels or closes its group buy, once per participant.
+
+    Wording approved by Sapir 27/10/2026. No link: a cancelled group is off the
+    site. Same direction of contact as the funded email (participant ->
+    business), by NAME only — see the module PRIVACY CONTRACT.
+    """
+    subject = f'מהמקור — הקבוצה "{title}" בוטלה'
+    body = (
+        f"שלום,\n\n"
+        f'הקבוצה שהצטרפת אליה, "{title}", בוטלה על ידי {producer_name}.\n'
+        f"לשאלות צרו קשר עם {producer_name}.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(participant_email, subject, body)
+
+
+def send_cancelled_notifications(
+    participant_emails: list[str], title: str, producer_name: str, group_buy_id: str
+) -> None:
+    """BackgroundTasks entry point for the cancel email — never raises.
+
+    Same reasoning as send_funded_notifications: nothing captures an exception
+    that escapes a background task, and one participant's failure must not cost
+    the rest their email. group_buy_id is for the log line only.
+    """
+    for participant_email in participant_emails:
+        if not participant_email:
+            continue
+        try:
+            notify_participant_cancelled(participant_email, title, producer_name)
+        except Exception:  # noqa: BLE001 — one failure must not stop the rest
+            logger.exception(
+                "[group-buy] cancel notification to a participant failed "
+                "(group_buy=%s)",
+                group_buy_id,
+            )
