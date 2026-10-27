@@ -656,6 +656,8 @@ export default function MapPage() {
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
       allProducers={feed.allProducers}
+      filtered={filters.hasActiveFilters}
+      onResetFilters={resetEverything}
       gpsLoading={gpsLoading}
       onGpsClick={handleGpsClick}
       legendOpen={hints.legendOpen}
