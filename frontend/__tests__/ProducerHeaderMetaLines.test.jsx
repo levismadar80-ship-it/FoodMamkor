@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 
 // MEH-2403: the header meta block is TWO lines — "category · city" (muted, the
 // category a link to its /producers listing) and the status alone underneath.
-// Cells: (category+city) · (city only) · (neither → line 1 absent, status
+// Cells: (category+city) · (category only) · (city only) · (neither → line 1 absent, status
 // present). The status never shares a <p> with the grey words.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
@@ -12,8 +12,8 @@ vi.mock("next-intl", () => ({
   },
   useLocale: () => "he",
 }));
-vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }) => (
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
     <a href={href} {...rest}>
       {children}
     </a>
@@ -75,6 +75,14 @@ describe("ProducerHeader meta block — two lines (MEH-2403)", () => {
     expect(status.className).toMatch(/text-primary/);
     // Nothing but the status in that line.
     expect(statusLine.textContent).toBe(status.textContent);
+  });
+
+  it("category only: line 1 is the link alone, no stray separator", () => {
+    render(<ProducerHeader producer={{ ...baseProducer, city: null }} primaryCategory={category} hasImages />);
+    const meta = screen.getByTestId("producer-header-meta");
+    expect(within(meta).getByRole("link", { name: "חלב וגבינות" })).toHaveAttribute("href", "/producers?category=12");
+    expect(meta.textContent).not.toContain("·");
+    expect(meta.textContent.trim()).toBe("חלב וגבינות");
   });
 
   it("city only: line 1 is just the city, no link, no stray separator", () => {

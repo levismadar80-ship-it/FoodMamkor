@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
 
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
@@ -230,16 +230,12 @@ export default function ProducerHeader({
         </span>
       )}
 
-      {/* Group 4 — meta block (MEH-2403, Sapir's decision 27/10 "גם א וגם ב"):
-          TWO lines instead of the single "city · category · status" row.
-          Line 1, muted: "category · city" — the Google Maps / Yelp pattern
-          (Bakery · Modi'in), with the primary category a real link to the same
-          /producers?category=<id> listing the home category cards reach
-          (MEH-1080). Line 2: the status ALONE, in its own colour — one fact per
-          line, and the page's single green is no longer sharing a row with
-          two grey words. The line is absent from the DOM when there is neither
-          a city nor a category; the status line always renders.
-          The status is colored text, no dot, no chip (mockup 1d). */}
+      {/* Group 4 — meta block (MEH-2403): two lines. Line 1, muted:
+          "category · city", the primary category a locale-aware link to its
+          /producers?category=<id> listing (same target as the home category
+          cards, MEH-1080); absent when there is neither. Line 2: the status
+          alone, coloured text, no dot, no chip. Rationale: docs/DESIGN.md
+          § Quiet Direction v3. */}
       <div className="flex flex-col gap-1 mt-2 mb-1">
         {(producer.city || primaryCategory) && (
           <p
