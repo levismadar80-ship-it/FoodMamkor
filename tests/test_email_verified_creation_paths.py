@@ -177,7 +177,6 @@ class TestCreateAdminVerified:
                 name="צרכנית קיימת",
                 password_hash="$argon2id$dummy",
                 role="consumer",
-                referral_code="exi15530",
                 email_verified=False,
             )
         )
