@@ -36,6 +36,7 @@ from app.services.whatsapp_templates import (
     VacationResponseHeV2,
     WhatsAppTemplate,
 )
+from app.utils.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +119,7 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
     the rest of the batch.
     """
     if now is None:
-        now = datetime.utcnow()
+        now = utc_now()
     cutoff = now - timedelta(minutes=WATCHDOG_LOOKBACK_MINUTES)
 
     candidates = (

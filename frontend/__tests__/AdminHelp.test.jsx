@@ -80,7 +80,6 @@ vi.mock("next-intl", () => {
     "admin.help.sections.emergency.login_broken_title": "Login שבור לכולם",
     "admin.help.sections.emergency.spam_title": "סופת ספאם / רישומים מזויפים",
     "admin.help.sections.emergency.ai_silent_title": "AI features מחזירים שגיאות silent",
-    "admin.help.sections.urls.github_text": "GitHub",
   };
   return {
     useTranslations: (scope) => {
@@ -194,7 +193,7 @@ describe("AdminHelp page", () => {
     expect(emergency.textContent).toContain("ספאם");
   });
 
-  it("URLs section points to the canonical site + GitHub externally", () => {
+  it("URLs section points to the canonical site and never to the repo (MEH-2379)", () => {
     render(<AdminHelpPage />);
     const hrefs = screen
       .getAllByRole("link")
@@ -203,7 +202,9 @@ describe("AdminHelp page", () => {
     expect(
       hrefs.some((h) => h && /^https:\/\/mehamakor\.(online|co\.il)$/.test(h)),
     ).toBe(true);
-    expect(hrefs.some((h) => h?.includes("github.com"))).toBe(true);
+    // MEH-2379: the repo is public; a hard-coded repo URL ships in a public JS
+    // chunk and ties the repo to the live site. The page must not link to it.
+    expect(hrefs.some((h) => h?.includes("github.com"))).toBe(false);
   });
 
   it("does NOT leak placeholder values as real URLs", () => {

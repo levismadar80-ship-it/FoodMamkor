@@ -20,7 +20,8 @@
  *           reachable via AccountSheet + ProfileCompletenessCard; added
  *           Phosphor icons + action-noun titles); MEH-1357 (removed the
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
- *           in the dashboard shell nav; reviews card marked candidate-to-move).
+ *           in the dashboard shell nav; reviews card marked candidate-to-move);
+ *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -32,6 +33,7 @@ import { useTranslations } from "next-intl";
 import { CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import RequestReviewCard from "@/components/producer/RequestReviewCard";
 
 export default function ProducerDashboardToolsPage() {
   const router = useRouter();
@@ -98,6 +100,10 @@ export default function ProducerDashboardToolsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
+      {/* MEH-2429: every other dashboard page has an h1; this one had none, so
+          a screen reader landed on a page with no heading. The visible text is
+          the existing nav label — no new copy. */}
+      <h1 className="font-headline-lg text-xl font-bold text-text mb-6">{t("nav.tools")}</h1>
       {/* Quick links. MEH-1102: the עריכת פרופיל card was removed — after
           MEH-1095 it targeted /producer/dashboard/edit, duplicating the
           עריכה nav tab one row above. */}
@@ -154,6 +160,10 @@ export default function ProducerDashboardToolsPage() {
           <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
       </div>
+      {/* MEH-1428 chunk 2: the "request a review" link. Approved only — the
+          endpoint 403s for any other status, and a pending business's public
+          page does not exist yet, so the link would open a 404. */}
+      {producer.status === "approved" && <RequestReviewCard />}
     </div>
   );
 }

@@ -356,9 +356,12 @@ front matter for the normative token bindings.
   ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or
   **"אין ביקורות עדיין"** at zero reviews — a rating-slot fallback, not a badge.
   The word "חדש" is reserved for the *tenure* claim on the card badge
-  (`badges.js`); it never appears in this slot (MEH-1746)] · [meta line
-  city · category · **status** + one quiet kosher line]. The page's ONLY order
-  status is colored text in the meta line — open=`primary`,
+  (`badges.js`); it never appears in this slot (MEH-1746)] · [meta block —
+  **two lines since MEH-2403 (27/10/2026):** line 1 muted "category · city",
+  the primary category a `<Link>` to `/producers?category=<id>` (the Google
+  Maps / Yelp pattern; absent when there is neither); line 2 the **status**
+  alone, in its own colour — one fact per line — + one quiet kosher line]. The
+  page's ONLY order status is colored text on that status line — open=`primary`,
   "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
   #7a5a10** (5.61:1 on cream, AA; the vacation banner was removed — the status
   owns the return date, "one home per fact"). Dropped from the header: premium
@@ -432,6 +435,9 @@ reads as a rendering bug (the ghost-strip class). Rules:
 - **Bottom:** `StickyContactBar` and `BottomNav` must not co-stack. On
   `/producer/[id]` mobile the contact bar is the sole bottom layer and
   `BottomNav` is gated off by route (`isProducerDetail`, `lib/producer-route.js`).
+  `BottomNav` is also off on `/admin/*` and `/producer/dashboard/*` (MEH-2431):
+  both have their own tab nav, and the pill covered list rows at 375. On mobile
+  the way back to the account sheet there is the header logo, then the nav.
 - **Never hardcode a stacked-chrome offset in px/vh.** A sticky layer that sits
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky

@@ -60,14 +60,15 @@ const labelsFor = (producer) => ({
   deliveryQuestion: chips.delivery_to_city.replace("{city}", producer?.city || chips.my_area),
   orderingQuestion: chips.ordering_q,
   escalationQuestion: chips.escalation,
-  recipeQuestion: chips.recipe_idea,
 });
 
 /**
  * Every question label the component put on screen, in render order.
  *
- * Reads the three row types the component emits — the disclosure buttons, the
- * WhatsApp chips, and the escalation/recipe anchors — and strips nothing else,
+ * Reads the row types the component emits — the disclosure buttons, the
+ * WhatsApp chips, and the escalation anchor (the recipe anchor stays in the
+ * selector so its return would surface as a mismatch, MEH-2385) — and strips
+ * nothing else,
  * so a row the helper forgets shows up as a length mismatch rather than being
  * quietly skipped.
  */
@@ -75,7 +76,7 @@ function renderedLabels(container) {
   const more = screen.queryByTestId("more-questions");
   if (more) fireEvent.click(more);
   const rows = container.querySelectorAll(
-    "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link'],[data-testid='recipe-idea-link']",
+    "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link']",
   );
   return [...rows].map((el) => el.textContent.trim());
 }
@@ -136,6 +137,22 @@ const FIXTURES = [
       has_physical_location: true,
     },
   },
+  {
+    // MEH-2385 reviewer: the custom list carries a duplicate of Q2, the legacy
+    // stock wording of Q1, and a [עיר] placeholder — both sides must drop the
+    // two duplicates and fill the city the same way.
+    name: "(c2) whatsapp-primary, custom list with duplicates of Q1/Q2 + [עיר]",
+    producer: {
+      id: 31,
+      name: "מאפיית השקמה",
+      city: "זכרון יעקב",
+      phone: "0501234567",
+      primary_contact_method: "whatsapp",
+      categories: [{ name: "לחמים ואפייה" }],
+      custom_questions: [chips.ordering_q, "יש משלוח?", "יש משלוח ל[עיר] בשישי?", "יש חלה לשבת?"],
+      delivery_nationwide: true,
+    },
+  },
 ];
 
 describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", () => {
@@ -160,15 +177,25 @@ describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", 
         return n;
       },
     );
-    expect(counts.length).toBe(4);
+    expect(counts.length).toBe(5); // (a) (b) (c) (e) (c2)
     for (const n of counts) expect(n).toBeGreaterThan(0);
   });
 
   it("fixture (d) is genuinely the empty case on both sides", () => {
-    const { producer } = FIXTURES[3];
+    const { producer } = FIXTURES.find((f) => f.name.startsWith("(d)"));
     const { container } = render(<WhatsAppQuestionChips producer={producer} />);
     expect(container.innerHTML).toBe("");
     expect(resolveProducerQuestions(producer, labelsFor(producer)).items).toEqual([]);
+  });
+});
+
+describe("the owner-question derivation is shared (MEH-2385 reviewer)", () => {
+  it("drops the Q1/Q2 duplicates and fills [עיר] identically on both sides", () => {
+    const { producer } = FIXTURES.find((f) => f.name.startsWith("(c2)"));
+    const custom = resolveProducerQuestions(producer, labelsFor(producer))
+      .items.filter((i) => i.source === "custom")
+      .map((i) => i.label);
+    expect(custom).toEqual(["יש משלוח לזכרון יעקב בשישי?", "יש חלה לשבת?"]);
   });
 });
 
@@ -204,7 +231,7 @@ describe("the annotations the dashboard renders", () => {
     expect(items.some((i) => i.source === "category")).toBe(false);
   });
 
-  it("reports the category defaults as such when she has written none", () => {
+  it("reports no category rows when she has written none (MEH-2385)", () => {
     const producer = FIXTURES[0].producer;
     const { items, usesCustom, customCount } = resolveProducerQuestions(
       producer,
@@ -212,10 +239,9 @@ describe("the annotations the dashboard renders", () => {
     );
     expect(usesCustom).toBe(false);
     expect(customCount).toBe(0);
-    // MEH-2154's Phase 0 measured this: after the Q1/Q2 duplicates are stripped
-    // every category yields exactly one stock question.
-    expect(items.filter((i) => i.source === "category").map((i) => i.label)).toEqual([
-      "אילו לחמים יש השבוע?",
-    ]);
+    // The stock question is gone from the public block, so the live list is
+    // exactly the two answered rows + the escalation — nothing she never wrote.
+    expect(items.map((i) => i.source)).toEqual(["delivery", "ordering", "escalation"]);
+    expect(items.some((i) => i.source === "category")).toBe(false);
   });
 });

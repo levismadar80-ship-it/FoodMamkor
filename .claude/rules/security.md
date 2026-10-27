@@ -83,6 +83,11 @@ Workflow rule 5a requires an additional **web-search CVE check** for
 these files. Run the check before `/adversarial-review` and include
 findings in the PR description.
 
+Also run the built-in **`/security-review`** on the branch, for these files
+and for any change under `backend/app/routers/**`. Its findings go in the PR
+description, or the line `/security-review: no findings`. It is an added
+layer, not a replacement for `/adversarial-review` (MEH-2334).
+
 ---
 
 ## Production safety — deny-list (MEH-408)

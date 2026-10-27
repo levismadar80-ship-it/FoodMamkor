@@ -64,8 +64,7 @@ export default function HomeClient({
     producers, regionFallback, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
-    fridayMode, step0Visible, userCity,
-    onboardStep, onboardAdvance, onboardDismiss,
+    fridayMode, userCity,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showTrustCount,
     featuredProducer, geoActive, cityActive, daysActive, geoEmptyNotice,
@@ -81,7 +80,7 @@ export default function HomeClient({
     // same way MEH-1684 dropped `scrollToProducers` from this list.
     handleWhatsAppClick, handleRemoveChip, handleToggleChip, handleClearChips,
     filterSheetOpen, closeFilterSheet, toggleFilterSheet,
-    handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
+    handleClearCategory, handleLoadMore,
   } = useHomePage({ initialProducers, initialCategories });
 
   // MEH-879: banner single-slot — at most ONE of {FridayStrip, HolidayBanner,
@@ -235,11 +234,6 @@ export default function HomeClient({
         categories={categories}
         showNewUserHint={showNewUserHint}
         fridayMode={fridayMode}
-        step0Visible={step0Visible}
-        onboardStep={onboardStep}
-        onboardAdvance={onboardAdvance}
-        onboardDismiss={onboardDismiss}
-        onAdvanceFromStep0={handleAdvanceFromStep0}
         onRemoveChip={handleRemoveChip}
         onToggleChip={handleToggleChip}
         onClearChips={handleClearChips}

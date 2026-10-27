@@ -196,13 +196,12 @@ Additional notes:
   no user association. Fixed in `feature/fix-producers-post-auth`
   (PR #33): now requires `get_current_user`. The public producer
   signup flow at `POST /auth/register/producer` was always correct.
-- **`ProducerFollower` notification preferences:** each follower row
-  stores `notify_new_products` + `notify_back_in_stock` booleans
-  (`backend/app/models/models.py::ProducerFollower`). Reads and writes
-  go through `/producers/{id}/follow` and friends; each route checks
-  that the caller owns the follower row before returning/updating
-  the flags. Admin override is intentionally **not** granted for
-  these — notification preferences are personal data.
+- **`ProducerFollower` notification preferences (historical):** each
+  follower row stored `notify_new_products` + `notify_back_in_stock`
+  booleans. Personal data — admin override was intentionally **not**
+  granted. MEH-2370 removed every HTTP route; MEH-2392 dropped the
+  `producer_followers` table (migration `e5b2d8f4a913`), so this data no
+  longer exists.
 - **MEH-254 — `GET /producers/{uuid}` status filter:** pending/rejected
   producers may only be fetched by their owner (`viewer.producer_id ==
   producer.id`) or an admin. Anonymous or non-owner callers get the

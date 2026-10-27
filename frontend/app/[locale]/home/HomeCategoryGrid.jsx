@@ -29,8 +29,11 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * or category absent in this environment) renders inert — same visual,
  * no dead link.
  *
- * Layout: desktop 2+8 (4-col grid, hero span-2) · tablet uniform · mobile
- * 2 full-width heroes + 8 small in 2×4. No producer counters (LOCK).
+ * Layout: desktop 2+8 (4-col grid, hero span-2) · tablet uniform 2-col ·
+ * phone ONE swipeable row of ten equal square cards, the third peeking as the
+ * scroll cue (MEH-2412 — the old 2 full-width heroes + 2×4 stack cost ~1,400px
+ * of scroll before the first business; same rail pattern as home-recent-rail).
+ * No producer counters (LOCK).
  *
  * Does NOT: own the card set or id resolution (lib/home-categories.js) or
  * the glyph paths (CategoryIcons.jsx).
@@ -62,7 +65,19 @@ export function HomeCategoryGrid({ categoryCards }) {
         </h2>
       </FadeInSection>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+      {/* MEH-2412: phone = flex row that bleeds to the screen edges and
+          snaps per card; from md it is the MEH-991 grid again. */}
+      {/* MEH-2418: the entrance is driven ONCE by the rail entering the
+          viewport vertically, and the cards stagger from that single trigger
+          (variants). Per-card whileInView fired again for each card as it was
+          SWIPED in sideways on a phone, so cards slid up late mid-swipe. */}
+      <motion.div
+        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-proximity -mx-4 px-4 scroll-px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 lg:gap-6"
+        data-testid="home-category-rail"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.1 }}
+      >
         {categoryCards.map((card, idx) => {
           // MEH-683: the glyph map is keyed by canonical DB name. Cards carry
           // photos (MEH-1183) so this glyph is the no-photo fallback only.
@@ -78,9 +93,11 @@ export function HomeCategoryGrid({ categoryCards }) {
             // the border/focus ring render cleanly over both.
             "group relative flex flex-col h-full overflow-hidden bg-surface-card border border-border hover:border-primary transition-colors duration-base ease-quart focus-ring",
           ].join(" ");
-          // MEH-991 (HOME-18): v8 aspect matrix — small 1:1 desktop+mobile / 4:3 tablet; hero mobile 16:7.
+          // MEH-991 (HOME-18): v8 aspect matrix — small 1:1 desktop / 4:3 tablet;
+          // hero 4:3 tablet / 16:9 desktop. MEH-2412: on a phone every card is
+          // the same 1:1 rail tile (the 16:7 full-width hero is gone there).
           const aspectClassName = isHero
-            ? "aspect-[16/7] md:aspect-[4/3] lg:aspect-[16/9]"
+            ? "aspect-square md:aspect-[4/3] lg:aspect-[16/9]"
             : "aspect-square md:aspect-[4/3] lg:aspect-square";
           // Gold Cormorant numeral (LTR-isolated) + display-font name. Shared by
           // the photo and glyph paths so the tokens/position stay identical.
@@ -93,7 +110,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline
                 // + photo zooms scale-1.05 (photo path only, motion-safe); glyph never scales.
                 "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
-                isHero ? "text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
+                isHero ? "text-[15px] md:text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
               ].join(" ")}>
                 {card.name}
               </h3>
@@ -115,8 +132,8 @@ export function HomeCategoryGrid({ categoryCards }) {
                   alt={card.name}
                   fill
                   sizes={isHero
-                    ? "(min-width: 1024px) 50vw, (min-width: 768px) 33vw, 100vw"
-                    : "(min-width: 1024px) 25vw, 50vw"}
+                    ? "(min-width: 1024px) 50vw, (min-width: 768px) 50vw, 144px"
+                    : "(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 144px"}
                   className="object-cover transition-transform duration-base ease-quart motion-safe:group-hover:scale-105"
                   priority={isHero}
                 />
@@ -134,12 +151,12 @@ export function HomeCategoryGrid({ categoryCards }) {
                   green (MEH-683 unified set); Phosphor Leaf if name is unmapped. */}
               <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")} data-testid="home-category-image-frame">
                 {glyphIsFallback ? (
-                  <LineArt weight="thin" className={isHero ? "w-24 h-24 lg:w-[120px] lg:h-[120px]" : "w-16 h-16"} aria-hidden="true" />
+                  <LineArt weight="thin" className={isHero ? "w-16 h-16 md:w-24 md:h-24 lg:w-[120px] lg:h-[120px]" : "w-16 h-16"} aria-hidden="true" />
                 ) : (
                   <LineArt
                     className={
                       isHero
-                        ? "w-24 h-24 lg:w-[120px] lg:h-[120px]"
+                        ? "w-16 h-16 md:w-24 md:h-24 lg:w-[120px] lg:h-[120px]"
                         : "w-16 h-16"
                     }
                   />
@@ -155,11 +172,15 @@ export function HomeCategoryGrid({ categoryCards }) {
           return (
             <motion.div
               key={card.key}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.42, delay: idx * 0.08, ease: EASE_QUART }}
-              className={isHero ? "col-span-2 md:col-span-1 lg:col-span-2" : "col-span-1"}
+              variants={{
+                hidden: { opacity: 0, y: 40 },
+                show: { opacity: 1, y: 0, transition: { duration: 0.42, delay: idx * 0.08, ease: EASE_QUART } },
+              }}
+              // MEH-2412: fixed-width snap tile on a phone; a grid cell from md.
+              className={[
+                "shrink-0 w-36 snap-start md:w-auto",
+                isHero ? "md:col-span-1 lg:col-span-2" : "md:col-span-1",
+              ].join(" ")}
             >
               {card.categoryId != null ? (
                 <Link
@@ -178,7 +199,7 @@ export function HomeCategoryGrid({ categoryCards }) {
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
     </section>
   );
 }

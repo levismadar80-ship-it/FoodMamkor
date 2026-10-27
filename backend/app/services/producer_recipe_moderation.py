@@ -28,14 +28,17 @@ from typing import Any
 
 import structlog
 
-from app.config import settings
+from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.services.moderation_prompt import wrap_submission
+from app.services.moderation_fail_open import classify_failure, report_fail_open
+from app.services.moderation_schemas import MODERATION_VERDICT_SCHEMA
 
 logger = structlog.get_logger(__name__)
 
 # REUSES: experience_moderation.py:45 — Haiku model pin. Haiku is cheap
 # and fast enough for per-recipe pre-check; admins still review every
 # recipe before it ships.
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 
 VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
 
@@ -70,33 +73,41 @@ def _get_client():
         return None
 
 
-def _build_prompt(payload: dict[str, Any]) -> str:
+def _build_prompt(payload: dict[str, Any]) -> tuple[str, str]:
+    """Return ``(system, user)``. The submission is tagged data in the user
+    turn, never part of the instructions (MEH-2350)."""
     title = payload.get("title") or ""
     description = payload.get("description") or ""
     ingredients = payload.get("ingredients") or ""
     instructions = payload.get("instructions") or ""
 
-    return f"""אתה מודרטור תוכן לאתר מהמקור — פלטפורמה ישראלית לאוכל בריא,
-חקלאות מקומית ובתי עסק מקומיים. בדקי את המתכון הבא שהוגש על ידי בעלת
+    data_rule, user_content = wrap_submission(
+        "recipe",
+        {
+            "כותרת": title,
+            "תיאור קצר": description,
+            "מצרכים": ingredients,
+            "הוראות הכנה": instructions,
+        },
+    )
+    system = f"""אתה מודרטור תוכן לאתר מהמקור — פלטפורמה ישראלית לאוכל בריא,
+חקלאות מקומית ובתי עסק מקומיים. בדקי את המתכון המוגש על ידי בעלת
 עסק (היצרנית מקדמת את המוצרים שלה דרך מתכון), והחזירי תשובה ב-JSON בלבד.
 
-המתכון המוגש:
-כותרת: {title}
-תיאור קצר: {description}
-מצרכים: {ingredients}
-הוראות הכנה: {instructions}
+{data_rule}
 
 הקריטריונים שלנו — APPROVED אם:
-✓ מתכון בישול / אפייה לגיטימי
-✓ מצרכים והוראות ברורים
-✓ קישור סביר למוצר של היצרנית (למשל: מתכון לחלה שמשתמש בקמח של היצרנית)
+✓ מתכון בישול / אפייה לגיטימי שאפשר להכין לפיו (מצרכים + שלבים)
+✓ מתכון קצר ופשוט הוא תקין — קיצור לבדו אינו סיבה לסימון
 ✓ אין טענות בריאות מוגזמות
+✓ קישור למוצר של היצרנית אינו חובה; אם יש — שיהיה סביר (למשל: חלה מהקמח שלה)
+אל תשפטי טעם, טכניקה או "מה הייתי מוסיפה" (מלח, תבלינים, ביצה) — את זה בעלת העסק
+מחליטה. התפקיד הוא לסנן תוכן בעייתי, לא לערוך מתכונים.
 
 FLAGGED אם:
-⚠ הוראות הכנה קצרות מאוד או חסרות פירוט
+⚠ אי אפשר להכין לפי המתכון בכלל: אין רשימת מצרכים, או אין שלבי הכנה
 ⚠ טענות בריאות חריגות אבל לא פרודיות ("מנקה רעלים")
 ⚠ כותרת ספאמית / clickbait-it
-⚠ חסרים מצרכים מרכזיים בהוראות
 
 REJECTED אם:
 ✗ תוכן לא קשור לאוכל / מתכון
@@ -111,6 +122,7 @@ REJECTED אם:
   "reason": "הסבר קצר בעברית (שורה אחת)",
   "suggestion": "הצעה לשיפור אם FLAGGED, אחרת null"
 }}"""
+    return system, user_content
 
 
 def _parse_response_text(text: str) -> dict:
@@ -151,14 +163,32 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
     client = _get_client()
     if client is None:
         logger.info("[recipe-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED")
+        report_fail_open("recipe", "no_client")
         return {"status": "APPROVED", "reason": None, "suggestion": None}
 
+    truncated = False
     try:
+        system, user_content = _build_prompt(normalized)
         message = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=400,
-            messages=[{"role": "user", "content": _build_prompt(normalized)}],
+            **ai_fast_request_kwargs(json_schema=MODERATION_VERDICT_SCHEMA),
+            # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
+            # well clear of truncation (a truncated JSON fails open).
+            max_tokens=800,
+            system=system,
+            messages=[{"role": "user", "content": user_content}],
         )
+        # MEH-2335: Haiku 5.5 runs safety classifiers. A decline is HTTP 200
+        # with stop_reason="refusal" and no text — the content itself
+        # tripped a harm classifier, so that is a signal, not an infra
+        # blink: route it to the admin as FLAGGED instead of failing open.
+        if getattr(message, "stop_reason", None) == "refusal":
+            logger.warning("[recipe-moderation] model refused → FLAGGED")
+            return {
+                "status": "FLAGGED",
+                "reason": "המודל סירב לבדוק את התוכן — נדרשת בדיקה ידנית",
+                "suggestion": None,
+            }
+        truncated = getattr(message, "stop_reason", None) == "max_tokens"
         raw = ""
         for block in message.content:
             if getattr(block, "type", None) == "text":
@@ -168,11 +198,15 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
             raise ValueError("empty response from Claude")
 
         parsed = _parse_response_text(raw)
+        # MEH-2390: valid JSON that is not an object is a bad status, not a crash.
+        if not isinstance(parsed, dict):
+            parsed = {}
         status = str(parsed.get("status", "")).upper()
         if status not in VALID_STATUSES:
             logger.warning(
                 "[recipe-moderation] unexpected status %r → APPROVED", status
             )
+            report_fail_open("recipe", "truncated" if truncated else "bad_status")
             return {"status": "APPROVED", "reason": None, "suggestion": None}
 
         return {
@@ -182,4 +216,5 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
         }
     except Exception as e:  # noqa: BLE001 — moderation must fail safe
         logger.exception("[recipe-moderation] Claude call failed: %s", e)
+        report_fail_open("recipe", classify_failure(e, truncated=truncated))
         return {"status": "APPROVED", "reason": None, "suggestion": None}

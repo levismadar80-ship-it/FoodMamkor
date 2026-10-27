@@ -20,15 +20,22 @@ export default function Breadcrumb({ items = [], className = "" }) {
   return (
     <nav
       aria-label={t("aria")}
+      data-testid="breadcrumb-nav"
       className={`text-sm text-fg-muted ${className}`}
     >
       <ol className="flex flex-wrap items-center gap-x-1">
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
+          // MEH-2400: linked crumbs get a 24×24 minimum box (WCAG 2.5.8). The
+          // one-glyph "בית" crumb measured 20×20 inside text-sm; the box
+          // grows, the type does not.
           return (
             <li key={`${item.label}-${i}`} className="flex items-center">
               {item.href && !isLast ? (
-                <Link href={item.href} className="hover:text-primary transition">
+                <Link
+                  href={item.href}
+                  className="inline-flex min-h-[24px] min-w-[24px] items-center justify-center hover:text-primary transition"
+                >
                   {item.label}
                 </Link>
               ) : (

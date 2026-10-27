@@ -20,7 +20,7 @@ History:  MEH-771 Chunk C (creation — final chunk of the delivery-status
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -29,6 +29,8 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models.models import OutboundMessage, User
 from app.schemas.schemas import OutboundMessageAdminOut
+from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
 
@@ -36,10 +38,9 @@ router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
 # the recipient's perspective: `failed` = Meta reported an error,
 # `window_expired` = the 24h customer-service window closed so a free-form
 # send can't be delivered. Surfacing both lets admins triage either
-# category without flipping a filter. Matches services/whatsapp.py
-# OUTCOME_FAILED / OUTCOME_WINDOW_EXPIRED.
-_UNDELIVERED_STATUSES: tuple[str, ...] = ("failed", "window_expired")
-_WINDOW_DAYS = 7
+# category without flipping a filter. The tuple and the window live in
+# services/whatsapp.py (MEH-2359) so the admin-home count uses the same
+# predicate as this list.
 
 
 @router.get("/failed", response_model=list[OutboundMessageAdminOut])
@@ -50,7 +51,7 @@ def list_failed_outbound(
     """Return undelivered outbound WhatsApp rows from the last 7 days.
 
     Filter: status IN ('failed', 'window_expired') AND created_at within
-    the last `_WINDOW_DAYS`. Ordered newest-first so the freshest
+    the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest
     failures show up at the top of the admin table.
 
     No pagination — the per-day failure volume is small (single-digit
@@ -58,10 +59,10 @@ def list_failed_outbound(
     worst case. If the row count ever materially exceeds the page, add
     pagination here; until then, simpler is better.
     """
-    cutoff = datetime.utcnow() - timedelta(days=_WINDOW_DAYS)
+    cutoff = utc_now() - timedelta(days=UNDELIVERED_WINDOW_DAYS)
     return (
         db.query(OutboundMessage)
-        .filter(OutboundMessage.status.in_(_UNDELIVERED_STATUSES))
+        .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
         .filter(OutboundMessage.created_at >= cutoff)
         .order_by(OutboundMessage.created_at.desc())
         .all()

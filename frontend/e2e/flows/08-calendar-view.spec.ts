@@ -74,3 +74,28 @@ test.describe("Calendar view on /events", () => {
     }
   });
 });
+
+// MEH-2400 — the breadcrumb's first crumb ("בית") is a real pointer target:
+// 24×24 CSS px minimum (WCAG 2.5.8). The vitest cell pins the Tailwind
+// utilities; this one measures the rendered box, so a purge or a config change
+// that stops producing the box goes red here. Before the fix the 27/10 sweep
+// measured this exact element at 20×20 on /events at 375 and 1440. Both
+// Playwright projects (desktop 1440, mobile Pixel 5 at 393) run this spec, so both
+// widths are measured on every CI run.
+test.describe("Breadcrumb target size on /events (MEH-2400)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/events**", (route) =>
+      route.fulfill({ contentType: "application/json", body: "[]" })
+    );
+  });
+
+  test("the first crumb renders at least 24×24", async ({ page }) => {
+    await page.goto("/events");
+    const crumb = page.getByTestId("breadcrumb-nav").getByRole("link").first();
+    await expect(crumb).toBeVisible({ timeout: 20_000 });
+    const box = await crumb.boundingBox();
+    expect(box, "crumb has a box").not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(24);
+    expect(box!.height).toBeGreaterThanOrEqual(24);
+  });
+});

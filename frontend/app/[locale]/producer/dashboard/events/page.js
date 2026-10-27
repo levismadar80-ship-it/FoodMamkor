@@ -24,9 +24,11 @@ import EmptyState from "@/components/ui/EmptyState";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
+import { israelToday } from "@/lib/israel-date";
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
+  const today = israelToday();
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -113,20 +115,32 @@ export default function ManageEventsPage() {
         />
       ) : (
         <ul className="space-y-3">
-          {items.map((ev) => (
+          {items.map((ev) => {
+            // MEH-2430: a past event read «פעיל» with a «ביטול» button (staging
+            // 27/10: an event from 23/09). Past = before Israel's today, the
+            // same calendar the public list filters on (events.py:114).
+            const past = ev.event_date < today;
+            return (
             <li
               key={ev.id}
-              className={`bg-white border rounded-[12px] p-4 ${ev.is_active ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
+              data-testid="manage-event-row"
+              className={`bg-white border rounded-[12px] p-4 ${ev.is_active || past ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-semibold text-text truncate">{ev.title}</h2>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${ev.is_active ? STATUS_CLASSES.success : STATUS_CLASSES.warning}`}
-                    >
-                      {ev.is_active ? t("badge_active") : t("badge_inactive")}
-                    </span>
+                    {past ? (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_CLASSES.neutral}`}>
+                        {t("badge_past")}
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${ev.is_active ? STATUS_CLASSES.success : STATUS_CLASSES.warning}`}
+                      >
+                        {ev.is_active ? t("badge_active") : t("badge_inactive")}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-fg-muted mt-1">
                     {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long", year: "numeric" })}
@@ -142,6 +156,7 @@ export default function ManageEventsPage() {
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
                   </Link>
+                  {!past && (
                   <button
                     type="button"
                     onClick={() => toggleActive(ev)}
@@ -160,6 +175,7 @@ export default function ManageEventsPage() {
                       </>
                     )}
                   </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => remove(ev)}
@@ -173,7 +189,8 @@ export default function ManageEventsPage() {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

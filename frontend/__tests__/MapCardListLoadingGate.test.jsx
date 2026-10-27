@@ -60,3 +60,18 @@ describe("MapCardList — MEH-1671 loading gate", () => {
     expect(screen.getByText("map.card_list.empty.heading")).toBeInTheDocument();
   });
 });
+
+// MEH-2425: "נקו את הסינון" under an UNFILTERED empty area offered nothing to
+// clear (seen on the 1440 sidebar with no filter on).
+describe("MapCardList — MEH-2425 reset only when something is filtered", () => {
+  it("empty + filtered → reset button", () => {
+    render(<MapCardList {...base} visibleProducers={[]} filtered />);
+    expect(screen.getByTestId("map-card-list-reset")).toBeInTheDocument();
+  });
+
+  it("empty + not filtered → empty state without the reset button", () => {
+    render(<MapCardList {...base} visibleProducers={[]} filtered={false} />);
+    expect(screen.getByText("map.card_list.empty.heading")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-card-list-reset")).toBeNull();
+  });
+});

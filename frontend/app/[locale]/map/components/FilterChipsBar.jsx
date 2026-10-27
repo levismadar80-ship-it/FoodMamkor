@@ -70,11 +70,6 @@ export default function FilterChipsBar({
   // Stable ref (PR #1565 review): an inline arrow would retrigger the sheet's
   // [open, onClose] keydown effect on every chipState re-render.
   const closeSheet = useCallback(() => setSheetOpen(false), []);
-  // MEH-2046: either promoted service axis being on is what surfaces the
-  // "בתיאום אישי" explanation below — the two are OR-ed server-side, so one
-  // is enough to exclude a no-service business.
-  const serviceFilterActive =
-    !!chipState.has_delivery || !!chipState.pickup_points;
   // MEH-2046 PR-6: Option C's REFINED state — the משלוח chip is on AND a city
   // was set (the optional refinement, MEH-2046 decision 1). Unscoped delivery
   // (chip on, no city) gets no banner — there is no single city to caption.
@@ -136,25 +131,11 @@ export default function FilterChipsBar({
           />
         </div>
       </ServiceChipRow>
-      {/* MEH-2046 decision 8: a business with neither axis ("בתיאום אישי") is
-          excluded by either service filter — correctly, the filter is literal.
-          Say so rather than hiding silently.
-          The ticket asked for this "under the result counter"; /map has no such
-          element (the only count is inside FilterSheet's apply button), so it
-          sits under the row that was just toggled. It renders whenever a service
-          filter is active rather than gating on a hidden COUNT, because the
-          excluded businesses are dropped server-side and never reach the client
-          — the count is not cheaply derivable here, and inventing one would be
-          worse than omitting it. */}
-      {serviceFilterActive && (
-        <p
-          className="mt-2 text-[11px] text-fg-muted"
-          data-testid="service-filter-note"
-          aria-live="polite"
-        >
-          {t("map.filter.arranged_hidden")}
-        </p>
-      )}
+      {/* MEH-2425: the MEH-2046 decision-8 line ("בתי עסק בתיאום אישי לא
+          מוצגים בסינון הזה") was removed — on a phone it read as an unexplained
+          sentence (Sapir 27/10: "המשתמש לא יבין למה התכוונתי"). A literal
+          service filter excluding no-service businesses needs no caption; the
+          card list's own empty state covers the case where it empties the map. */}
       {/* MEH-2046 PR-6: joins this cluster deliberately — the ticket asked
           for the day-bridge banner beside the counter/explanation line, one
           chrome block, not a second floating element over the map canvas.

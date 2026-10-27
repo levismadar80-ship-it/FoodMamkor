@@ -7,6 +7,13 @@
 # History:  MEH-1997 (creation) — a committed admin email + password was found
 #           in `frontend/e2e/screenshots.spec.ts` while sweeping for something
 #           else entirely. Nothing would have caught it; nothing was looking.
+#           MEH-2462 (pre-filter) — the per-line `grep` forks made the walk
+#           O(added lines × patterns); on release PR #3580 (base=main, 32,461
+#           added lines) that was ~350K processes and the `Repo guards` job
+#           died at its 10-minute cap three runs in a row. One `grep` over the
+#           whole diff now names the candidate lines; the walk forks only on
+#           those. Same patterns, same verdicts — see PRE-FILTER below.
+# Touches:  one mktemp scratch file holding the diff, removed on exit.
 #
 # SCOPE: the DIFF, not the tree. Deliberate, and the reason matters.
 #
@@ -179,7 +186,36 @@ hits=0
 file=""
 lineno=0
 
+# The diff is materialised once: the pre-filter below and the walk read the
+# same bytes, so a line the pre-filter never saw cannot reach the walk either.
+diff_file="$(mktemp)"
+trap 'rm -f "$diff_file"' EXIT
+git diff "$BASE"...HEAD --unified=1 -- . > "$diff_file"
+
+# PRE-FILTER (MEH-2462). ONE grep over the whole diff with the union of every
+# pattern looks_like_secret can fire on. A line that matches none of them can
+# never be flagged — ALLOW only ever REMOVES a match, it never adds one — so the
+# union is a strict superset and the walk may skip everything it does not name.
+# The walk still runs over every line (it needs the `+++`/`@@` bookkeeping for
+# file:line), but it forks looks_like_secret/suppressed only on candidates.
+#
+# Why this is the same classifier and not a looser one: same `grep -iE`, same
+# pattern strings, same locale; the only addition is `-a`, so a diff with a
+# non-UTF-8 byte is still scanned line by line instead of collapsing to
+# "binary file matches" and silently naming no lines. Candidates are keyed by
+# diff line index, which `read` and `grep -n` count identically.
+superset=""
+for p in "${HIGH_CONFIDENCE[@]}" "${HEURISTIC[@]}"; do
+  superset="${superset:+$superset|}$p"
+done
+declare -A candidate=()
+while IFS= read -r n; do
+  candidate["$n"]=1
+done < <(grep -naiE -- "$superset" "$diff_file" | sed -n 's/^\([0-9][0-9]*\):+.*/\1/p')
+
+idx=0
 while IFS= read -r raw; do
+  idx=$(( idx + 1 ))
   case "$raw" in
     '+++ b/'*) file="${raw#+++ b/}" ;;
     '+++ '*|'--- '*|'diff '*|'index '*|'new file'*|'deleted file'*) : ;;
@@ -189,7 +225,7 @@ while IFS= read -r raw; do
       ;;
     '+'*)
       line="${raw#+}"
-      if looks_like_secret "$line"; then
+      if [ -n "${candidate[$idx]:-}" ] && looks_like_secret "$line"; then
         if suppressed "$file" "$lineno"; then
           echo "  suppressed $file:$lineno — guard-ok: present"
         else
@@ -206,7 +242,7 @@ while IFS= read -r raw; do
     '-'*) : ;;
     *) lineno=$(( lineno + 1 )) ;;
   esac
-done < <(git diff "$BASE"...HEAD --unified=1 -- .)
+done < "$diff_file"
 
 if [ "$hits" -gt 0 ]; then
   echo "secrets-scan: FAIL — $hits added line(s) look like a credential."

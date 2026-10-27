@@ -6,7 +6,6 @@ import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
-import OnboardingTip from "@/components/OnboardingTip";
 import { useEffect, useMemo, useState } from "react";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 // MEH-2173: the same grouped sheet /map and /producers mount. Its chip SET is
@@ -87,14 +86,14 @@ function deliveryDaysForCity(producer, city) {
 }
 
 /**
- * Producers grid section — heading + map link, onboarding tips,
+ * Producers grid section — heading + map link,
  * chip filter row, active-category pill, "showing X of Y" counter,
  * new-user-hint banner, the producer grid itself, the empty-state,
  * and the "load more" button.
  *
  * All state ownership stays in useHomePage; this component is purely
  * presentational and emits its callbacks (onChipNavigate / onClearCategory
- * / onLoadMore / onSurprise) plus the onboarding-advance/dismiss pair.
+ * / onLoadMore / onSurprise).
  *
  * MEH-1774: the attribute chip row is NAVIGATION, not filtering — a tap
  * deep-links to /producers with that attribute applied, so attribute filtering
@@ -116,11 +115,6 @@ export function HomeProducersGrid({
   categories,
   showNewUserHint,
   fridayMode,
-  step0Visible,
-  onboardStep,
-  onboardAdvance,
-  onboardDismiss,
-  onAdvanceFromStep0,
   // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
   onRemoveChip,
   // MEH-2173: the promoted chips AND the sheet's switches both call this — one
@@ -251,15 +245,12 @@ export function HomeProducersGrid({
   );
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
-      {/* Step 0 — producers grid tip (2s delay). MEH-1174: mounted ABOVE the
-          heading so the tour opens over the section title, not between the
-          heading and the chips row. Tour state machine unchanged. */}
-      <OnboardingTip
-        show={step0Visible && onboardStep === 0}
-        text={t("home.producers.onboarding0")}
-        onDismiss={onboardDismiss}
-        onNext={onAdvanceFromStep0}
-      />
+      {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
+          chips, steps 2–3 on the bottom nav) is gone. On a first visit it was
+          the THIRD thing asking for attention above the content, after the
+          cookie banner and the city banner, and it explained what the cards
+          and chips already show. Google / Yelp / Airbnb run no coach-mark tour
+          on a listing page. */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-headline-lg text-headline-lg text-text">
           {/* MEH-1174: default vs "בתי עסק · {name}" when a category is active. */}
@@ -359,13 +350,6 @@ export function HomeProducersGrid({
           />
         </div>
       </div>
-      {/* Step 1 — filter chips tip */}
-      <OnboardingTip
-        show={onboardStep === 1}
-        text={t("home.producers.onboarding1")}
-        onDismiss={onboardDismiss}
-        onNext={onboardAdvance}
-      />
       {/* MEH-1174: single applied-filters summary row — the active category
           now lives here as a removable "× {name}" tag alongside the chip
           summary (replacing the old separate "מציג:" row). */}

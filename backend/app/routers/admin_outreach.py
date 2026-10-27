@@ -10,7 +10,7 @@ later it would be a single new POST endpoint here.
 """
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -27,6 +27,7 @@ from app.schemas.schemas import (
     OutreachLeadUpdate,
     OutreachPrefillResponse,
 )
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/admin/outreach", tags=["admin"])
 
@@ -155,7 +156,7 @@ def mint_prefill_token(
 
     # secrets.token_urlsafe(32) → ~43 chars URL-safe base64.
     lead.prefill_token = secrets.token_urlsafe(32)
-    lead.prefill_token_expires_at = datetime.utcnow() + timedelta(days=PREFILL_TTL_DAYS)
+    lead.prefill_token_expires_at = utc_now() + timedelta(days=PREFILL_TTL_DAYS)
     db.commit()
     db.refresh(lead)
     return lead
@@ -222,7 +223,7 @@ def get_prefill(request: Request, token: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="אסימון לא נמצא")
     if (
         lead.prefill_token_expires_at is None
-        or lead.prefill_token_expires_at < datetime.utcnow()
+        or lead.prefill_token_expires_at < utc_now()
     ):
         raise HTTPException(status_code=404, detail="תוקף האסימון פג")
 

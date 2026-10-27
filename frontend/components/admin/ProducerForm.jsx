@@ -9,6 +9,7 @@ import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
@@ -259,6 +260,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
+  // MEH-2325: create-only. Kept out of `form` so the edit payload can never
+  // carry it — a draft is born as a draft, never turned into one later.
+  const [asDraft, setAsDraft] = useState(false);
   const [categories, setCategories] = useState([]);
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
@@ -439,7 +443,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     // in-flight lock + central error toast (no swallowed failures).
     const payload = {
       name: form.name,
-      contact_name: form.contact_name,
+      // MEH-2432: the server rejects "" for a name field, so blank goes as null.
+      contact_name: form.contact_name?.trim() || null,
       opening_hours: form.opening_hours,
       phone: form.phone,
       instagram: form.instagram,
@@ -460,7 +465,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       google_place_id: form.google_place_id?.trim() || null,
       description: form.description,
       short_description: form.short_description,
-      top_product_name: form.top_product_name,
+      top_product_name: form.top_product_name?.trim() || null,
       price_range: form.price_range,
       // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
       established_year:
@@ -519,6 +524,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       async () => {
         if (producerId) {
           await api.put(`/admin/producers/${producerId}`, payload);
+        } else if (asDraft) {
+          // MEH-2325: land on the draft's edit page, where the claim-link
+          // panel lives — the next thing the admin does is mint the link.
+          const r = await api.post("/admin/producers", { ...payload, as_draft: true });
+          const created = ProducerAdminCreatedSchema.safeParse(r.data);
+          // The draft exists either way; without an id the list is where she finds it.
+          router.push(created.success ? `/admin/producers/${created.data.id}/edit` : "/admin?tab=producers");
+          return;
         } else {
           await api.post("/admin/producers", payload);
         }
@@ -1149,7 +1162,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
                   aria-label={t("common.delete")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
@@ -1213,6 +1226,24 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           className={`${inputClass} h-20 resize-none`}
         />
       </Section>
+
+      {!producerId && (
+        <Section title={t("producers.claim.title")} testId="as-draft-section">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              data-testid="as-draft-checkbox"
+              checked={asDraft}
+              onChange={(e) => setAsDraft(e.target.checked)}
+              className="w-4 h-4 accent-primary mt-1"
+            />
+            <span>
+              <span className="block text-sm font-medium">{t("producers.form.fields.as_draft")}</span>
+              <span className="block text-xs text-muted mt-1">{t("producers.form.fields.as_draft_hint")}</span>
+            </span>
+          </label>
+        </Section>
+      )}
 
       <div className="flex gap-3">
         <button

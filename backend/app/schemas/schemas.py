@@ -448,9 +448,10 @@ def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
 
     None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
     indistinguishable to every reader measured (frontend
-    `getProducerQuestions`, lib/categoryQuestions.js:88, tests
-    `custom_questions?.length > 0`, so both fall through to the category
-    defaults), but collapsing them would still rewrite what the column stores
+    lib/resolvedQuestions.js `ownerQuestionLabels` — the one derivation the
+    page component and the dashboard preview share — and tests
+    `custom_questions?.length > 0`, so both yield no owner rows), but
+    collapsing them would still rewrite what the column stores
     on a path this ticket has no reason to touch.
 
     Order-preserving throughout: the owner's five inputs are positional in the
@@ -1120,6 +1121,41 @@ class ProducerRegistrationResponse(Token):
     whatsapp_sent: bool
 
 
+# MEH-2322 (MEH-2321 chunk A): owner-claim link. Shapes for
+# routers/producer_claim.py. The preview is PUBLIC (anyone holding the link),
+# so it carries only what the business already shows on its own site — never
+# phone, email, address, license or admin fields.
+class ProducerClaimLinkOut(BaseModel):
+    url: str
+    expires_at: datetime
+
+
+class ProducerClaimPreviewOut(BaseModel):
+    name: str
+    city: str | None = None
+    short_description: str | None = None
+    image: str | None = None
+    category_names: list[str] = []
+
+
+class ProducerClaimPreviewRequest(BaseModel):
+    # In the body, never the query string — see producer_claim.py.
+    token: str = Field(min_length=1, max_length=2048)
+
+
+class ProducerClaimRequest(BaseModel):
+    # A signed JWT; 2048 is far above its real length and stops a megabyte
+    # body from reaching the decoder.
+    token: str = Field(min_length=1, max_length=2048)
+    declaration_accepted: bool = False
+    terms_accepted: bool = False
+
+
+class ProducerClaimOut(BaseModel):
+    producer_id: UUID
+    status: str
+
+
 # MEH-328: generic ack returned by POST /auth/register on ALL branches
 # (new email, existing password user, existing OAuth user). Body bytes
 # must be identical across branches to prevent email enumeration; the
@@ -1730,6 +1766,10 @@ class ProducerCreate(BaseModel):
 class ProducerAdminCreate(BaseModel):
     """Used by admin form — pre-approved, supports all extended fields."""
 
+    # MEH-2322: True = a DRAFT prepared for its owner to claim (owner-claim
+    # link, routers/producer_claim.py) — status "draft", no owner, not live.
+    # False (default) = today's behaviour: pre-approved and live at once.
+    as_draft: bool = False
     # MEH-229: mirror ProducerCreate — cap at the String(200) column width.
     name: SanitizedBusinessNameField = Field(max_length=200)
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
@@ -3240,7 +3280,6 @@ class UserOut(BaseModel):
     is_oauth: bool = False
     # MEH-143: True once the user has a linked producer profile.
     is_producer: bool = False
-    referral_code: str | None = None
     # MEH-138: profile photo URL (Cloudinary or Google picture).
     avatar_url: str | None = None
     # MEH-206: producer status fields — populated by GET /auth/me when
@@ -3987,8 +4026,8 @@ class GroupBuyCreate(BaseModel):
     def _normalize_deadline_to_naive_utc(cls, v: datetime) -> datetime:
         # MEH-1454: the dashboard form sends `new Date(...).toISOString()` — an
         # aware ISO string with a trailing 'Z'. The DB column and every
-        # `datetime.utcnow()` comparison in group_buys.py are naive UTC, so an
-        # aware value made `data.deadline <= datetime.utcnow()` raise
+        # `utc_now()` comparison in group_buys.py are naive UTC, so an
+        # aware value made `data.deadline <= utc_now()` raise
         # `TypeError: can't compare offset-naive and offset-aware datetimes`
         # → 500 on real creates. Normalize aware → naive UTC at the boundary so
         # DB storage and comparisons stay in one (naive-UTC) world.
@@ -4005,6 +4044,17 @@ class GroupBuyCommitRequest(BaseModel):
     # MEH-1626's intent (no silently broken WhatsApp link) is served better by
     # not collecting the number than by validating one nobody dials. Amendment
     # 13 also bars collecting a field that serves no purpose.
+
+
+# MEH-2436: the owner's status change. The four values are the whole domain of
+# GroupBuy.status; which of them a caller may move to is decided in the router.
+class GroupBuyStatusUpdate(BaseModel):
+    status: Literal["open", "funded", "cancelled", "fulfilled"]
+
+
+class GroupBuyStatusOut(BaseModel):
+    detail: str
+    status: Literal["open", "funded", "cancelled", "fulfilled"]
 
 
 # MEH-141: category request flow
@@ -4320,6 +4370,12 @@ class AdminReviewOut(BaseModel):
     # MEH-1428: "click" | "invite_link" — how the reviewer passed the contact
     # gate. Admin-only on purpose; the public ReviewOut does not carry it.
     source: Literal["click", "invite_link"] = "click"
+    # MEH-2349: the AI verdict on the body. None = no body, or the review
+    # predates the column. Admin-only, like `source`.
+    ai_moderation_status: Literal["APPROVED", "FLAGGED"] | None = None
+    # MEH-2381: ISO time of the author's last edit while hidden; None = not
+    # edited since the admin last hid or unhid it. Admin-only, like `source`.
+    edited_after_hidden_at: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -4710,12 +4766,6 @@ class ProducerViewIn(BaseModel):
     """
 
     referrer: str | None = None
-
-
-# --- Referrals (referrals.py) ---
-# MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
-class ClaimReferralRequest(BaseModel):
-    code: str
 
 
 # --- Admin: vacation mode (admin_extra.py) ---

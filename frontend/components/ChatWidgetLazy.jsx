@@ -46,5 +46,9 @@ export default function ChatWidgetLazy() {
   // z-9999) sits over the first card. Same pathname-gate pattern as /map and
   // /producer/[id] above; the widget stays mounted everywhere else.
   if (pathname === "/favorites") return null;
+  // MEH-2359: the consumer chat FAB has no job on the admin backoffice and
+  // its bottom-END corner sat over the row-action column of the approvals
+  // table. Same pathname gate as above.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
   return <ChatWidget />;
 }

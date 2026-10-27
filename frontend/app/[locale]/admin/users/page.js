@@ -149,16 +149,17 @@ export default function AdminUsersPage() {
 
       <div className="bg-white border border-border rounded-[12px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
+          <table className="table-stack w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.name")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.email")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.city")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.role")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.favorites")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.joined")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.actions")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.name")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.email")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.city")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.role")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.favorites")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.joined")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -185,9 +186,9 @@ export default function AdminUsersPage() {
                 <>
                   <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
-                    <td className="px-4 py-3 text-muted text-xs">{u.email}</td>
-                    <td className="px-4 py-3 text-muted">{u.city || "—"}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-muted text-xs break-all" data-label={t("users.columns.email")}>{u.email}</td>
+                    <td className="px-4 py-3 text-muted" data-label={t("users.columns.city")}>{u.city || "—"}</td>
+                    <td className="px-4 py-3" data-label={t("users.columns.role")}>
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* Role badge */}
                         {u.role === "admin" ? (
@@ -221,16 +222,16 @@ export default function AdminUsersPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted text-xs">
+                    <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.favorites")}>
                       <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary hover:underline">
                         {u.favorites_count}
                         <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-muted text-xs">
+                    <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.joined")}>
                       {formatEventDate(u.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-cell="actions">
                       <div className="flex items-center gap-2">
                         {/* Routine action stays inline */}
                         <button

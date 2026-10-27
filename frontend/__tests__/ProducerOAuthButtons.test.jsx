@@ -57,6 +57,8 @@ vi.mock("@/lib/env", () => envMock);
 // render, so `callback` is always the latest closure.
 const gsi = vi.hoisted(() => ({ clientId: undefined, callback: null, onReady: null }));
 vi.mock("@/lib/use-google-sign-in", () => ({
+  // MEH-2319: the component reads the page language for renderButton.
+  gsiLang: () => "he",
   useGoogleSignIn: (clientId, callback, onReady) => {
     gsi.clientId = clientId;
     gsi.callback = callback;

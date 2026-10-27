@@ -10,12 +10,16 @@ Does NOT: Serve seeded environments — there the canonical source is the
 Related:  frontend/data/cities.js (ISRAEL_CITIES — the sibling copy),
           backend/app/routers/cities.py, backend/scripts/seed_cities.py
 History:  MEH-1349 (creation — GET /cities empty on fresh DB);
-          MEH-1343 (demoted to unseeded-env fallback).
+          MEH-1343 (demoted to unseeded-env fallback);
+          MEH-2456 (city_key + STATIC_SPELLING_BY_KEY: the one comparison
+          form for city names, and the spelling /cities prefers).
 
 SYNC DUTY: this list is a byte-for-byte copy of ISRAEL_CITIES in
 frontend/data/cities.js. Any city added/removed there must land here in
 the same PR, and vice versa.
 """
+
+import re
 
 # MEH-1349: keep ordering identical to frontend/data/cities.js for easy diffing.
 ISRAEL_CITIES = [
@@ -125,3 +129,27 @@ ISRAEL_CITIES = [
     "הדר הכרמל",
     "רמת הנשיא",
 ]
+
+
+# MEH-2456: the ONE comparison form for a city name. Moved here from
+# routers/alerts.py (MEH-1360 `_normalize_city`, which now delegates) so
+# /cities and the alert targeting cannot drift apart. It folds the notation
+# drift the data carries: hyphen / maqaf / en / em dash
+# («תל אביב-יפו» vs the data.gov «תל אביב - יפו»), geresh / gershayim,
+# whitespace and letter case.
+_CITY_SEPARATORS = re.compile(r"[-־–—]")  # hyphen, maqaf, en/em dash
+_CITY_QUOTE_MAP = str.maketrans({"׳": "'", "״": '"'})  # geresh, gershayim
+
+
+def city_key(value: str | None) -> str:
+    """Collapse a city string to a comparison form; "" when unusable."""
+    if not value:
+        return ""
+    text = _CITY_SEPARATORS.sub(" ", value.translate(_CITY_QUOTE_MAP))
+    return re.sub(r"\s+", " ", text).strip().casefold()
+
+
+# The site's own filters and chips spell a city the way this list does
+# (LocationModal / CityPickerModal «תל אביב-יפו»), so /cities answers in this
+# spelling whenever a table or live name has the same key.
+STATIC_SPELLING_BY_KEY: dict[str, str] = {city_key(c): c for c in ISRAEL_CITIES}

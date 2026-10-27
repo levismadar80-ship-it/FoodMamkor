@@ -34,6 +34,8 @@ const RESERVED = new Set([
   "forgot-password", "group-buys", "home", "join", "privacy",
   "producers", "ref", "reset-password", "search", "share",
   "verify-email",
+  // MEH-2324: the owner-claim page.
+  "claim",
 ]);
 
 // Real slugs are produced by backend _slugify

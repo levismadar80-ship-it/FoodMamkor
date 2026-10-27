@@ -216,7 +216,8 @@ export default function AdminKashrutPage() {
         <p className="text-fg-muted">{t("kashrut.no_requests")}</p>
       ) : (
         <div className="overflow-x-auto rounded-[12px] border border-border">
-          <table className="w-full text-sm">
+          {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
+          <table className="table-stack w-full text-sm">
             <thead className="bg-green-50">
               <tr>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.producer")}</th>
@@ -233,12 +234,12 @@ export default function AdminKashrutPage() {
               {rows.map((row) => (
                 <tr key={row.id} className="hover:bg-green-50/50 transition">
                   <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label={t("kashrut.columns.badge")}>
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">
                       {CODE_TO_KEY[row.badge_code] ? tBadges(`${CODE_TO_KEY[row.badge_code]}.label`) : row.badge_code}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label={t("kashrut.columns.cert")}>
                     {row.cert_url ? (
                       <a
                         href={row.cert_url}
@@ -252,10 +253,10 @@ export default function AdminKashrutPage() {
                       <span className="text-fg-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-fg-muted">{formatDate(row.created_at, locale)}</td>
-                  <td className="px-4 py-3 text-fg-muted text-xs">{row.notes || "—"}</td>
+                  <td className="px-4 py-3 text-fg-muted" data-label={t("kashrut.columns.date")}>{formatDate(row.created_at, locale)}</td>
+                  <td className="px-4 py-3 text-fg-muted text-xs" data-label={t("kashrut.columns.notes")}>{row.notes || "—"}</td>
                   {statusFilter === "pending" && (
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-cell="actions">
                       <div className="flex gap-2">
                         <button
                           onClick={() => approve(row.id)}

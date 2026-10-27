@@ -10,6 +10,7 @@ Coverage:
 """
 import pytest
 from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage, User
+from app.utils.clock import israel_today
 from conftest import (
     auth_header,
     make_category,
@@ -19,6 +20,7 @@ from conftest import (
     valid_producer_register_payload,
     valid_review_payload,
 )
+from app.utils.clock import utc_now
 
 
 # ---------- Auth ----------
@@ -335,7 +337,7 @@ class TestAuth:
 
     def test_register_stores_timezone_aware_consent_timestamp(self, client, db):
         # MEH-1995 (adversarial review R-3): the column is DateTime(timezone=True)
-        # and naive utcnow() is in use 16 lines from the stamp, so "is not None"
+        # and naive utc_now() is in use 16 lines from the stamp, so "is not None"
         # would pass just as happily on a naive value. For a column whose whole
         # evidentiary worth is WHICH INSTANT, a silent offset is the failure that
         # matters — a naive datetime lands in a TIMESTAMPTZ interpreted in the
@@ -3321,13 +3323,13 @@ class TestVacationBadgeClear:
 
     def test_set_vacation_with_future_date(self, client, db):
         """POST availability-status with vacation + future vacation_until persists both."""
-        from datetime import date, timedelta
+        from datetime import timedelta
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
         db.commit()
 
-        future = (date.today() + timedelta(days=7)).isoformat()
+        future = (israel_today() + timedelta(days=7)).isoformat()
         resp = client.post(
             "/producers/me/availability-status",
             json={"status": "vacation", "vacation_until": future},
@@ -3340,13 +3342,13 @@ class TestVacationBadgeClear:
 
     def test_expired_vacation_clears_in_api_response(self, client, db):
         """A producer with vacation_until in the past should appear as 'available' in GET /producers."""
-        from datetime import date, timedelta
+        from datetime import timedelta
         producer = make_producer(db)
         # MEH-2271: the enum is what every write path sets, so it is what the
         # auto-clear reads. Setting the legacy column here instead would build
         # a row the application can no longer produce.
         producer.availability_state = "on_vacation"
-        producer.vacation_until = date.today() - timedelta(days=1)
+        producer.vacation_until = israel_today() - timedelta(days=1)
         db.commit()
 
         resp = client.get(f"/producers/{producer.id}")
@@ -3359,10 +3361,10 @@ class TestVacationBadgeClear:
 
     def test_active_vacation_stays_in_api_response(self, client, db):
         """A producer with vacation_until in the future stays as 'vacation'."""
-        from datetime import date, timedelta
+        from datetime import timedelta
         producer = make_producer(db)
         producer.availability_state = "on_vacation"
-        producer.vacation_until = date.today() + timedelta(days=3)
+        producer.vacation_until = israel_today() + timedelta(days=3)
         db.commit()
 
         resp = client.get(f"/producers/{producer.id}")
@@ -3386,12 +3388,12 @@ class TestVacationBadgeClear:
         The construction discriminates: a naive two-way toggle returns
         available_today on both rows below and fails both assertions.
         """
-        from datetime import date, timedelta
+        from datetime import timedelta
         from app.models import User
 
         for state, extra in (
             ("full_this_week", {}),
-            ("on_vacation", {"vacation_until": date.today() + timedelta(days=5)}),
+            ("on_vacation", {"vacation_until": israel_today() + timedelta(days=5)}),
         ):
             user = make_user(db, role="producer", email=f"toggle-{state}@x.com")
             producer = make_producer(db, name=f"עסק-{state}")
@@ -3452,10 +3454,10 @@ class TestVacationBadgeClear:
         was measured at 0 of 29 rows on staging (06/09) before the switch — had
         it been non-zero, those rows would have needed a backfill first.
         """
-        from datetime import date, timedelta
+        from datetime import timedelta
         producer = make_producer(db)
         producer.availability_status = "vacation"
-        producer.vacation_until = date.today() + timedelta(days=3)
+        producer.vacation_until = israel_today() + timedelta(days=3)
         db.commit()
         assert producer.availability_state == "accepting_orders"
 
@@ -3466,12 +3468,12 @@ class TestVacationBadgeClear:
 
     def test_switching_away_from_vacation_clears_date(self, client, db):
         """Setting status to 'available' must clear vacation_until."""
-        from datetime import date, timedelta
+        from datetime import timedelta
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
         producer.availability_status = "vacation"
-        producer.vacation_until = date.today() + timedelta(days=5)
+        producer.vacation_until = israel_today() + timedelta(days=5)
         db.commit()
 
         resp = client.post(
@@ -3570,9 +3572,9 @@ class TestAvailabilityState:
     def test_new_endpoint_on_vacation_with_date_derives_the_legacy_pair(
         self, client, db
     ):
-        from datetime import date, timedelta
+        from datetime import timedelta
         user, producer = self._setup(db)
-        future = (date.today() + timedelta(days=10)).isoformat()
+        future = (israel_today() + timedelta(days=10)).isoformat()
         resp = client.post(
             "/producers/me/availability-state",
             json={"state": "on_vacation", "vacation_until": future},
@@ -3621,11 +3623,11 @@ class TestAvailabilityState:
         assert producer.availability_state == "full_this_week"
 
     def test_auto_clear_past_vacation_normalizes_both_fields(self, client, db):
-        from datetime import date, timedelta
+        from datetime import timedelta
         producer = make_producer(db)
         producer.availability_status = "vacation"
         producer.availability_state = "on_vacation"
-        producer.vacation_until = date.today() - timedelta(days=2)
+        producer.vacation_until = israel_today() - timedelta(days=2)
         db.commit()
 
         resp = client.get(f"/producers/{producer.id}")
@@ -3636,9 +3638,9 @@ class TestAvailabilityState:
         assert body.get("vacation_until") is None
 
     def test_vacation_until_preserved_through_state_round_trip(self, client, db):
-        from datetime import date, timedelta
+        from datetime import timedelta
         user, producer = self._setup(db)
-        future = (date.today() + timedelta(days=14)).isoformat()
+        future = (israel_today() + timedelta(days=14)).isoformat()
         # Set on_vacation with a date.
         client.post(
             "/producers/me/availability-state",
@@ -4353,11 +4355,11 @@ class TestResetPasswordFlow:
 
     def test_happy_path(self, client, db):
         import secrets
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         user = make_user(db, password="OldPass1!")
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
 
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
@@ -4379,11 +4381,11 @@ class TestResetPasswordFlow:
 
     def test_expired_token_returns_410(self, client, db):
         import secrets
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         user = make_user(db)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
+        user.reset_token_expires_at = utc_now() - timedelta(seconds=1)
         db.commit()
 
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
@@ -4395,11 +4397,11 @@ class TestResetPasswordFlow:
 
     def test_short_password_returns_422(self, client, db):
         import secrets
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         user = make_user(db)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "short"})
         assert res.status_code == 422
@@ -4529,14 +4531,14 @@ class TestRefreshTokenFlow:
         get_current_user must fail-open on absent scope (treat as access)
         so existing 24h sessions don't get invalidated by the deploy.
         """
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from joserfc import jwt as jose_jwt
         from joserfc.jwk import OctKey
         from app.config import settings
 
         user = make_user(db, email="t8@test.com")
         # Craft token with only sub/exp/tv — no scope claim (pre-MEH-326 shape)
-        expire = datetime.utcnow() + timedelta(hours=24)
+        expire = utc_now() + timedelta(hours=24)
         payload = {"sub": str(user.id), "exp": expire, "tv": user.token_version}
         key = OctKey.import_key(settings.secret_key.encode())
         old_token = jose_jwt.encode({"alg": settings.algorithm}, payload, key)
@@ -4684,13 +4686,13 @@ class TestFingerprintCookie:
         Fail-open window: max 15 min (access token TTL). After expiry the
         next login issues a fingerprinted token and the guard is active.
         """
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from joserfc import jwt as jose_jwt
         from joserfc.jwk import OctKey
         from app.config import settings
 
         user = make_user(db, email="fp5@test.com")
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = utc_now() + timedelta(minutes=15)
         payload = {
             "sub": str(user.id),
             "exp": expire,

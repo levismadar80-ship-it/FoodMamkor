@@ -69,7 +69,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
-| ✅ | v1 | Follow / unfollow producers (`producer_followers` table) | `backend/app/routers/producers.py`, `frontend/components/FollowButton.jsx` |
+| ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table dropped (MEH-2392) | — |
 
 ### Home cooks (`/neighbor`)
 
@@ -89,7 +89,7 @@ left in v1" vs "what's planned for v2".
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-4-5, desktop only) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
+| ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop only) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
 | ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate chat widget to `claude-agent-sdk` with tool use | [ROADMAP.md](./ROADMAP.md) |
@@ -214,7 +214,7 @@ Priority: **after v1 launch + 10 real producers onboarded.** See
 | Status | Version | Feature | Notes |
 |---|---|---|---|
 | 📋 | v2 | Claude Agent SDK migration — 3 agents (support chat, search, moderation) | [ROADMAP.md](./ROADMAP.md) → "v2 — Claude Agent SDK Integration" |
-| 📋 | v2 | Push notifications (Twilio + FCM) | Foundation already in place via `producer_followers` |
+| 📋 | v2 | Push notifications (Twilio + FCM) | No foundation yet — `producer_followers` was dropped in MEH-2392; favorites are the interest record |
 | 📋 | v2 | React Native app | — |
 | 📋 | v2 | Bilingual (EN/HE toggle, i18next) | — |
 | ❌ | — | ~~Recipes section (user submissions → admin approval)~~ | Removed in MEH-587 (chunk 0/4); namespace cleared for producer-recipes feature (chunks 1-4) |

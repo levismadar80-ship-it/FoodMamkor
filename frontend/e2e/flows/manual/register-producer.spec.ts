@@ -285,7 +285,7 @@ test.describe("/register/producer — MANUAL_TESTING conversion (MEH-1249 chunk 
 
   // MT:Registration-forms-RTL:8 — «textarea תיאור העסק — RTL». The item places
   // it on שלב 2; it lives on STORY (step 4) and its label reads
-  // «ספרו על העסק שלך». Both recorded as drift; the direction is asserted where
+  // «ספרו על העסק שלכם». Both recorded as drift; the direction is asserted where
   // the field actually is.
   test("STORY: the business-description textarea is RTL", async ({ page }) => {
     await gotoCategory(page);

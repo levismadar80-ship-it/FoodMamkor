@@ -54,10 +54,32 @@ import api from "@/lib/api";
 // matches the dropdown's own "shows after 2 characters" rule below.
 const QUERY_DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
+const MAX_MATCHES = 8;
 // Sorted once at module load — the static list never changes, so the merge
 // below only re-sorts when fetched results actually join it.
 const STATIC_CITIES_SORTED = [...ISRAEL_CITIES].sort((a, b) => a.localeCompare(b, "he"));
 const NO_FETCHED = Object.freeze([]);
+
+// MEH-2318: the static list and the /cities table spell some names differently
+// — «תל אביב-יפו» here (data/cities.js, and the Tel Aviv chip in
+// LocationModal.jsx:14 / CityPickerModal.jsx:30) vs «תל אביב - יפו» in the
+// seeded data.gov table — and an exact-string Set showed both. The city filter
+// matches exactly (producer_listing.py:920), so a business that picked the
+// table spelling would be invisible under the site's own Tel Aviv chip. The
+// merge therefore keys on a notation-free form and keeps the STATIC spelling.
+// REUSES: backend/app/routers/alerts.py:216-225 (_normalize_city) — same
+// hyphen/maqaf/dash family, geresh/gershayim, whitespace and case folding.
+const CITY_SEPARATORS = /[-־–—]/g; // hyphen, maqaf, en/em dash
+function cityKey(name) {
+  return (name || "")
+    .replace(/׳/g, "'")
+    .replace(/״/g, '"')
+    .replace(CITY_SEPARATORS, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+const STATIC_KEYS = new Set(STATIC_CITIES_SORTED.map(cityKey));
 
 export default function CitySearch({
   value,
@@ -128,11 +150,25 @@ export default function CitySearch({
 
   const allCities = useMemo(() => {
     if (fetched.length === 0) return STATIC_CITIES_SORTED;
-    const set = new Set([...STATIC_CITIES_SORTED, ...fetched]);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "he"));
+    // MEH-2318: a fetched name joins only if no static name already has its
+    // key, and fetched names are de-duplicated among themselves the same way.
+    const seen = new Set(STATIC_KEYS);
+    const extra = [];
+    for (const name of fetched) {
+      const key = cityKey(name);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      extra.push(name);
+    }
+    if (extra.length === 0) return STATIC_CITIES_SORTED;
+    return [...STATIC_CITIES_SORTED, ...extra].sort((a, b) => a.localeCompare(b, "he"));
   }, [fetched]);
 
-  const isKnown = (candidate) => allCities.includes((candidate || "").trim());
+  // Known by key, not by exact string: a value already saved in the table's
+  // spelling («תל אביב - יפו») must still count as a picked city after the
+  // merge above stopped listing that spelling.
+  const knownKeys = useMemo(() => new Set(allCities.map(cityKey)), [allCities]);
+  const isKnown = (candidate) => knownKeys.has(cityKey((candidate || "").trim()));
 
   // Every emit goes through here so the second argument is never forgotten.
   const emit = (next, known = isKnown(next)) => {
@@ -146,16 +182,29 @@ export default function CitySearch({
   useEffect(() => {
     if (!onKnownChange) return;
     if (lastKnown.current.value !== value) return;
-    const known = allCities.includes((value || "").trim());
+    const known = knownKeys.has(cityKey((value || "").trim()));
     if (known === lastKnown.current.known) return;
     lastKnown.current = { value, known };
     onKnownChange(known);
-  }, [allCities, value, onKnownChange]);
+  }, [knownKeys, value, onKnownChange]);
 
   const matches = useMemo(() => {
     const q = (value || "").trim();
     if (q.length < 2) return [];
-    return allCities.filter((c) => c.includes(q)).slice(0, 8);
+    // MEH-2318: matched on the same key, so «תל אביב - יפו» or «תל אביב יפו»
+    // typed by hand still finds «תל אביב-יפו».
+    const qKey = cityKey(q);
+    // MEH-2456: names that START with the query come first, then names that
+    // only contain it — «תל» used to list «עתלית» above «תל אביב-יפו»
+    // (alphabetical, ע before ת), and the cap could cut real prefix hits.
+    const starts = [];
+    const contains = [];
+    for (const c of allCities) {
+      const k = cityKey(c);
+      if (k.startsWith(qKey)) starts.push(c);
+      else if (k.includes(qKey)) contains.push(c);
+    }
+    return [...starts, ...contains].slice(0, MAX_MATCHES);
   }, [value, allCities]);
 
   // Close on outside click

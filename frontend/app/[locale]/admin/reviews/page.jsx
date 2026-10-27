@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
-import { Star, Trash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Star, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -15,13 +15,19 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
  * Backend endpoints:
  *   GET    /admin/reviews         — list all, newest first
  *   DELETE /reviews/:id           — reuses owner-or-admin handler
+ *   PUT    /admin/reviews/:id/hide · /unhide — MEH-2360 buttons for the
+ *          sticky hide from MEH-2348; the row flips in place, no reload.
+ *          MEH-2381: a hidden row the author edited since carries
+ *          `edited_after_hidden_at` → a tag, plus "keep hidden" (PUT /hide
+ *          on the hidden row), which clears the tag without publishing.
  *
  * Filters: star filter (1–5) + free-text search over producer name,
- * user name, title, body. Delete is guarded by a modal confirm dialog
- * (MEH-1040 — replaced the native browser confirm, mirroring the MEH-1023
- * pattern); after deletion the row is optimistically removed and the
- * producer's avg_rating + reviews_count are recomputed server-side by
- * the existing handler.
+ * user name, title, body + "only AI-flagged" (MEH-2349, client-side over
+ * `ai_moderation_status`; the list endpoint already returns every row).
+ * Delete is guarded by a modal confirm dialog (MEH-1040 — replaced the
+ * native browser confirm, mirroring the MEH-1023 pattern); after deletion
+ * the row is optimistically removed and the producer's avg_rating +
+ * reviews_count are recomputed server-side by the existing handler.
  */
 /**
  * MEH-1902: the review body was `line-clamp-3` with no way to read the rest.
@@ -91,7 +97,14 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [starFilter, setStarFilter] = useState("all");
+  // MEH-2349: a FLAGGED review publishes like an approved one, so this filter
+  // is how an admin finds the ones the AI asked a human to read.
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  // MEH-2360: ids of rows whose hide/unhide request is in flight. A Set, not
+  // one id: with two rows pending, the first to settle must not re-enable the
+  // second (its click-time `is_hidden` would then pick the wrong endpoint).
+  const [togglingIds, setTogglingIds] = useState(() => new Set());
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -147,8 +160,67 @@ export default function AdminReviewsPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [confirmDelete, deleting]);
 
+  // MEH-2360: the row only flips after the server confirms, so a failed
+  // request leaves the admin looking at the real state. A 404 means the review
+  // was deleted elsewhere (another tab, or its author): drop the row and show
+  // the backend's message instead of the generic error.
+  // `hide` is explicit, not !is_hidden: MEH-2381's "keep hidden" sends a
+  // hide for a row that is already hidden, with `seen` = the edit it showed.
+  const setHidden = async (review, { hide, seen }) => {
+    // MEH-2389: the button is aria-disabled, not disabled, while in flight —
+    // a disabled button drops keyboard focus to <body>. So the guard is here.
+    if (togglingIds.has(review.id)) return false;
+    setTogglingIds((prev) => new Set(prev).add(review.id));
+    try {
+      const query = seen ? `?seen=${encodeURIComponent(seen)}` : "";
+      await api.put(`/admin/reviews/${review.id}/${hide ? "hide" : "unhide"}${query}`);
+      // MEH-2381: both endpoints clear edited_after_hidden_at server-side.
+      setReviews((prev) =>
+        prev.map((item) =>
+          item.id === review.id
+            ? { ...item, is_hidden: hide, edited_after_hidden_at: null }
+            : item,
+        ),
+      );
+      showToast.success(t(hide ? "reviews.hidden_toast" : "reviews.unhidden_toast"));
+      return true;
+    } catch (err) {
+      // "Deleted elsewhere" = the handler's own 404, identified by its `code`
+      // (reviews.py _ADMIN_REVIEW_NOT_FOUND, MEH-2389). A route-miss or proxy
+      // 404, a 429 or a 5xx carries no such code, so all of those get the
+      // generic copy and keep the row.
+      const detail = err?.response?.data?.detail;
+      const gone = err?.response?.status === 404 && detail?.code === "review_not_found";
+      if (gone) {
+        setReviews((prev) => prev.filter((item) => item.id !== review.id));
+        setConfirmDelete((open) => (open?.id === review.id ? null : open));
+      }
+      // MEH-2381: the author edited again after this page loaded — reload so
+      // the admin reads the new text before clearing the tag, and say why.
+      const changed = detail?.code === "review_changed";
+      if (changed) load();
+      showToast.error((gone || changed) && detail.message ? detail.message : tError("generic"));
+      return false;
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(review.id);
+        return next;
+      });
+    }
+  };
+
+  // MEH-2381: "keep hidden" removes itself on success, so focus moves to the
+  // row's unhide button (already rendered) instead of dropping to <body>
+  // (cf. MEH-2389).
+  const keepHidden = async (review) => {
+    if (!(await setHidden(review, { hide: true, seen: review.edited_after_hidden_at }))) return;
+    document.querySelector(`[data-toggle-for="${review.id}"]`)?.focus();
+  };
+
   const filtered = reviews.filter((r) => {
     if (starFilter !== "all" && r.stars !== Number(starFilter)) return false;
+    if (flaggedOnly && r.ai_moderation_status !== "FLAGGED") return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -199,19 +271,30 @@ export default function AdminReviewsPage() {
           <option value="4">★ 4</option>
           <option value="5">★ 5</option>
         </select>
+        <label className="inline-flex items-center gap-2 text-sm text-muted whitespace-nowrap">
+          <input
+            type="checkbox"
+            checked={flaggedOnly}
+            onChange={(e) => setFlaggedOnly(e.target.checked)}
+            data-testid="review-ai-flag-filter"
+            className="accent-primary"
+          />
+          {t("reviews.ai_flagged_only")}
+        </label>
       </div>
 
       <div className="bg-white border border-border rounded-[12px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
+          <table className="table-stack w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.producer")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.user")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.rating")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.content")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.date")}</th>
-                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.actions")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.producer")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.user")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.rating")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.content")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.date")}</th>
+                <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -240,13 +323,13 @@ export default function AdminReviewsPage() {
                 filtered.map((r) => (
                   <tr key={r.id} className="border-t align-top">
                     <td className="px-4 py-3 font-medium">{r.producer_name || "—"}</td>
-                    <td className="px-4 py-3 text-muted">
+                    <td className="px-4 py-3 text-muted" data-label={t("reviews.columns.user")}>
                       <div>{r.user_name || "—"}</div>
                       {r.user_email && (
                         <div className="text-xs opacity-70">{r.user_email}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-label={t("reviews.columns.rating")}>
                       <span
                         className="inline-flex items-center gap-1"
                         aria-label={t("reviews.stars_aria", { stars: r.stars })}
@@ -255,7 +338,31 @@ export default function AdminReviewsPage() {
                         {r.stars}
                       </span>
                     </td>
-                    <td className="px-4 py-3 max-w-md">
+                    <td className="px-4 py-3 md:max-w-md" data-label={t("reviews.columns.content")}>
+                      {r.is_hidden && (
+                        <span
+                          data-testid="review-hidden-tag"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-surface border border-border text-fg-muted"
+                        >
+                          {t("reviews.hidden")}
+                        </span>
+                      )}
+                      {r.is_hidden && r.edited_after_hidden_at && (
+                        <span
+                          data-testid="review-edited-after-hidden-tag"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-accent/10 border border-accent/30 text-gold-deep"
+                        >
+                          {t("reviews.edited_after_hidden")}
+                        </span>
+                      )}
+                      {r.ai_moderation_status === "FLAGGED" && (
+                        <span
+                          data-testid="review-ai-flag"
+                          className="inline-block mb-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800"
+                        >
+                          {t("reviews.ai_flagged")}
+                        </span>
+                      )}
                       {r.title && (
                         <div className="font-medium">{r.title}</div>
                       )}
@@ -264,22 +371,50 @@ export default function AdminReviewsPage() {
                         <span className="text-muted opacity-60">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted text-xs">
+                    <td className="px-4 py-3 text-muted text-xs" data-label={t("reviews.columns.date")}>
                       {r.created_at
                         ? formatEventDate(r.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })
                         : "—"}
                     </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(r)}
-                        disabled={deletingId === r.id}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
-                        aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
-                      >
-                        <Trash size={14} />
-                        {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
-                      </button>
+                    <td className="px-4 py-3" data-cell="actions">
+                      <div className="flex flex-wrap md:flex-col items-start gap-2">
+                        <button
+                          type="button"
+                          data-toggle-for={r.id}
+                          onClick={() => setHidden(r, { hide: !r.is_hidden })}
+                          aria-disabled={togglingIds.has(r.id)}
+                          data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                          aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
+                            user: r.user_name || t("reviews.default_user"),
+                          })}
+                        >
+                          {r.is_hidden ? <Eye size={14} /> : <EyeSlash size={14} />}
+                          {t(r.is_hidden ? "reviews.unhide" : "reviews.hide")}
+                        </button>
+                        {r.is_hidden && r.edited_after_hidden_at && (
+                          <button
+                            type="button"
+                            onClick={() => keepHidden(r)}
+                            aria-disabled={togglingIds.has(r.id)}
+                            data-testid="review-keep-hidden"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                          >
+                            <EyeSlash size={14} />
+                            {t("reviews.keep_hidden")}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(r)}
+                          disabled={deletingId === r.id}
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
+                          aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
+                        >
+                          <Trash size={14} />
+                          {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

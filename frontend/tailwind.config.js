@@ -62,6 +62,13 @@ function withFontVariables(tokenFontFamily) {
 }
 
 module.exports = {
+  // MEH-2418: `hover:` only applies where a real pointer can hover. On touch
+  // (iOS keeps :hover on the last tapped element) a tapped card stayed in its
+  // hover look — green border + underline — after the tap. This is Tailwind
+  // 3's documented opt-in and the default behaviour in Tailwind 4.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     "./app/**/*.{js,jsx}",
     "./components/**/*.{js,jsx}",

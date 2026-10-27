@@ -64,6 +64,14 @@ function LoginPageBody() {
   const params = useSearchParams();
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
   const redirectTo = safeInternalRedirect(params.get("redirect"));
+  // MEH-1428 chunk 2: hand a valid ?redirect= on to /register, which honours
+  // it too (RegisterClient.jsx:74) — a first-time customer arriving from an
+  // owner's review link must land back on the form after signing up. Only a
+  // clamped, explicitly-passed value travels; otherwise the link stays bare.
+  const passedRedirect = safeInternalRedirect(params.get("redirect"), null);
+  const registerHref = passedRedirect
+    ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
+    : "/register";
   const { user, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
@@ -157,14 +165,15 @@ function LoginPageBody() {
   return (
     <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
 
-      {/* Image pane — END (left) on desktop, top band on mobile (MEH-788) */}
-      <div className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+      {/* Image pane — END (left) on desktop only (MEH-788). MEH-2397: the
+          30vh top band on mobile pushed the first field below the fold and the
+          footer outgrew the form; desktop keeps the split screen untouched. */}
+      <div className="relative hidden lg:block lg:order-2 overflow-hidden">
         <Image
           src={heroSrc}
           alt=""
           fill
-          priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
+          sizes="(min-width: 1024px) 50vw"
           className="object-cover"
         />
         {/* scrim — keeps the overlay AA-readable over any part of the photo */}
@@ -180,7 +189,7 @@ function LoginPageBody() {
       </div>
 
       {/* Form pane — START (right) on desktop */}
-      <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+      <div className="lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
         {/* S9 "Two Doors": open fields on cream — no floating white auth card. */}
         <div className="w-full max-w-[416px] mx-auto grid gap-6">
 
@@ -367,7 +376,7 @@ function LoginPageBody() {
         <p className="text-center text-sm text-fg-muted">
           {t("no_account")}{" "}
           <Link
-            href="/register"
+            href={registerHref}
             data-testid="login-register-link"
             className="font-medium text-accent underline underline-offset-4 decoration-accent/50 hover:decoration-accent transition"
           >

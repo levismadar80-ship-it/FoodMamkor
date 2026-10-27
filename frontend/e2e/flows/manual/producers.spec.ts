@@ -432,6 +432,26 @@ test.describe("manual › /producers hierarchy (MEH-1186)", () => {
     await expect.poll(() => query(page).toString()).toBe("");
     await expect(scope(page).getByTestId("producers-filter-empty")).toHaveCount(0);
   });
+
+  // MEH-2428: a filtered city shows ONCE — on its own lit chip. The control
+  //   line used to repeat it as «× 📍 עיר», and that tag cleared the city
+  //   without the delivery day (MEH-1825: the day cannot outlive its city).
+  test("a city filter lives on its lit chip only — no city × on the control line; the chip clears it", async ({ page }) => {
+    const city = "חיפה";
+    await gotoFiltered(page, `/producers?city=${encodeURIComponent(city)}&vegetarian=1`);
+    const cityChip = scope(page).getByRole("button", { name: city, exact: true });
+    await expect(cityChip).toHaveAttribute("aria-pressed", "true");
+    const line = scope(page).getByTestId("producers-control-line");
+    // Control: the line IS rendered with its other removable tag, so a zero
+    // below is not an unmounted line.
+    await expect(line.getByRole("button", { name: AXES.vegetarian.label })).toHaveCount(1);
+    await expect(line.getByRole("button", { name: new RegExp(city) })).toHaveCount(0);
+    await expect(line.getByRole("button")).toHaveCount(2); // the × chip + «נקו הכל»
+
+    await cityChip.click();
+    await expect.poll(() => query(page).has("city")).toBe(false);
+    await expect(query(page).get("vegetarian")).toBe("1");
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════

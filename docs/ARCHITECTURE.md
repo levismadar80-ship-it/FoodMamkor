@@ -70,6 +70,7 @@ Current set: `MapClient.jsx`, `MapComponent.jsx`, `producers/page.jsx`,
 - DB schema + endpoints → [`docs/DATA.md`](./DATA.md)
 - Branch strategy + deploy → [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md)
 - Security model → [`docs/SECURITY.md`](./SECURITY.md)
+- Who/what has access (apps, bots, tokens, external accounts) → [`docs/ACCESS.md`](./ACCESS.md)
 - Migrations workflow → [`docs/MIGRATIONS.md`](./MIGRATIONS.md)
 - Design tokens + voice → [`docs/DESIGN.md`](./DESIGN.md)
 - Bug patterns → [`docs/BUG_PATTERNS.md`](./BUG_PATTERNS.md)

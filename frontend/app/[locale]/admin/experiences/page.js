@@ -150,15 +150,19 @@ export default function AdminExperiencesPage() {
           {t("experiences.empty")}
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-[16px] overflow-hidden">
-          <table className="w-full text-sm">
+        // MEH-2426: overflow-x-auto, not -hidden — between md and lg the six
+        // columns can still outgrow the card, and -hidden clipped the actions
+        // column out of reach. Below md the table is one card per row
+        // (`.table-stack`, globals.css), so nothing scrolls sideways at all.
+        <div className="bg-white border border-border rounded-[16px] overflow-x-auto">
+          <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
-                <th className="text-end p-3 font-medium">{t("experiences.columns.title")}</th>
-                <th className="text-end p-3 font-medium">{t("experiences.columns.host")}</th>
-                <th className="text-end p-3 font-medium">{t("experiences.columns.date")}</th>
-                <th className="text-end p-3 font-medium">{t("experiences.columns.city")}</th>
-                <th className="text-end p-3 font-medium">
+                <th className="text-start p-3 font-medium">{t("experiences.columns.title")}</th>
+                <th className="text-start p-3 font-medium">{t("experiences.columns.host")}</th>
+                <th className="text-start p-3 font-medium">{t("experiences.columns.date")}</th>
+                <th className="text-start p-3 font-medium">{t("experiences.columns.city")}</th>
+                <th className="text-start p-3 font-medium">
                   {t("experiences.columns.claude")}
                   <InfoTooltip
                     content={t("experiences.claude_tooltip")}
@@ -166,7 +170,7 @@ export default function AdminExperiencesPage() {
                     position="bottom"
                   />
                 </th>
-                <th className="text-end p-3 font-medium">{t("experiences.columns.actions")}</th>
+                <th className="text-start p-3 font-medium">{t("experiences.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -238,6 +242,18 @@ export default function AdminExperiencesPage() {
   );
 }
 
+// MEH-2426: the AI verdict rendered raw ("PENDING"). Labels are the ones the
+// column tooltip already defines (ממתין / דורש תיקון) plus the recipes queue's
+// approved/rejected; an unknown value still shows as-is rather than vanishing.
+const MODERATION_LABEL_KEYS = ["PENDING", "FLAGGED", "APPROVED", "REJECTED"];
+
+function moderationLabel(status, t) {
+  if (!status) return "—";
+  return MODERATION_LABEL_KEYS.includes(status)
+    ? t(`experiences.moderation_labels.${status}`)
+    : status;
+}
+
 function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) {
   const [expanded, setExpanded] = useState(false);
   const modBadge =
@@ -253,20 +269,20 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
         <td className="p-3">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="font-medium text-text hover:text-primary text-end"
+            className="font-medium text-text hover:text-primary text-start"
           >
             {ex.title}
           </button>
         </td>
-        <td className="p-3 text-fg-muted">{ex.host?.name || "—"}</td>
-        <td className="p-3 text-fg-muted">{formatDate(ex.event_date, locale)}</td>
-        <td className="p-3 text-fg-muted">{ex.city || "—"}</td>
-        <td className="p-3">
+        <td className="p-3 text-fg-muted" data-label={t("experiences.columns.host")}>{ex.host?.name || "—"}</td>
+        <td className="p-3 text-fg-muted" data-label={t("experiences.columns.date")}>{formatDate(ex.event_date, locale)}</td>
+        <td className="p-3 text-fg-muted" data-label={t("experiences.columns.city")}>{ex.city || "—"}</td>
+        <td className="p-3" data-label={t("experiences.columns.claude")}>
           <span className={`text-xs px-2 py-1 rounded-full ${modBadge}`}>
-            {ex.moderation_status || "—"}
+            {moderationLabel(ex.moderation_status, t)}
           </span>
         </td>
-        <td className="p-3">
+        <td className="p-3" data-cell="actions">
           <div className="flex gap-1 flex-wrap">
             {ex.status !== "approved" && (
               <button

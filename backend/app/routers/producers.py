@@ -1,4 +1,3 @@
-from datetime import datetime
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -23,7 +22,6 @@ from app.models import (
 )
 from app.rate_limit import limiter
 from app.utils.stack_probe import log_depth
-from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
@@ -55,14 +53,10 @@ from app.services.producer_queries import (
     create_producer_with_relations,
     get_producer_or_404,
 )
+from app.utils.clock import utc_now
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["producers"])
-
-# Compose the follow / unfollow / follow-status / my-following sub-router.
-# FastAPI mounts these endpoints transitively when router_registry.py
-# registers `producers.router` — no separate registration needed.
-router.include_router(producer_follows_router)
 
 
 # MEH-1833: the shared CDN policy for the two PUBLIC catalog GETs.
@@ -722,7 +716,7 @@ def _servable_kashrut_certs(
     if producer.status != "approved":
         return []
     expires_at = producer.kashrut_expires_at
-    if expires_at is not None and expires_at <= datetime.utcnow():
+    if expires_at is not None and expires_at <= utc_now():
         return []
     return (
         db.query(KashrutBadgeRequest)

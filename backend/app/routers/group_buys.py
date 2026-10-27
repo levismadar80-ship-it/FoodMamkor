@@ -1,16 +1,16 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import (
     get_current_user,
     get_current_user_optional,
     require_admin,
+    require_producer,
     require_verified_producer,
 )
 from app.database import get_db
@@ -21,11 +21,17 @@ from app.schemas.schemas import (
     GroupBuyCreate,
     GroupBuyDetail,
     GroupBuyOut,
+    GroupBuyStatusOut,
+    GroupBuyStatusUpdate,
 )
 from app.services.group_buy_notifications import send_funded_notifications
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
 admin_router = APIRouter(prefix="/admin/group-buys", tags=["admin-group-buys"])
+# MEH-2437: the business's own list lives under /producers/me, beside
+# /producers/me/recipes, so it needs a router without the /group-buys prefix.
+me_router = APIRouter(tags=["group-buys"])
 
 
 def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
@@ -71,6 +77,30 @@ def list_group_buys(
     if city:
         q = q.filter(GroupBuy.city == city)
     items = q.order_by(GroupBuy.deadline.asc()).all()
+    return [_enrich(gb) for gb in items]
+
+
+@me_router.get("/producers/me/group-buys", response_model=list[GroupBuyOut])
+@limiter.limit("120/minute")
+def list_my_group_buys(
+    request: Request,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """MEH-2437: the business's own group buys, every status, newest first.
+
+    Replaces the dashboard's four site-wide GET /group-buys calls that were
+    filtered by producer_id in the browser.
+    """
+    if not current_user.producer_id:
+        raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
+    items = (
+        db.query(GroupBuy)
+        .options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        .filter(GroupBuy.producer_id == current_user.producer_id)
+        .order_by(GroupBuy.created_at.desc())
+        .all()
+    )
     return [_enrich(gb) for gb in items]
 
 
@@ -125,8 +155,8 @@ def _maybe_notify_funded(
     owner_email = owner_row[0] if owner_row else None
 
     # MEH-1454: naive datetime. sa.DateTime() is naive and this module uses
-    # datetime.utcnow() throughout — an aware value here breaks comparisons.
-    gb.funded_notified_at = datetime.utcnow()
+    # utc_now() throughout — an aware value here breaks comparisons.
+    gb.funded_notified_at = utc_now()
 
     background_tasks.add_task(
         send_funded_notifications,
@@ -156,7 +186,7 @@ def commit_to_group_buy(
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
     if gb.status != "open":
         raise HTTPException(status_code=400, detail="קבוצת הרכש אינה פתוחה להצטרפות")
-    if gb.deadline < datetime.utcnow():
+    if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
 
     # MEH-773: fresh count under the lock — gb.commits is a cached
@@ -212,10 +242,19 @@ def cancel_commit(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
+    # MEH-2436: lock the row like /commit and the owner's status change do.
+    # Unlocked, a leave that read "funded" could write "open" over an owner's
+    # cancel or fulfil committed in between, reopening a closed group buy.
+    gb = (
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    )
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
-    if gb.deadline < datetime.utcnow():
+    # MEH-2436: the owner can now close a group buy before its deadline; after
+    # that, the list of who took part is a record, not something to edit.
+    if gb.status not in ("open", "funded"):
+        raise HTTPException(status_code=400, detail="קבוצת הרכש כבר נסגרה")
+    if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="לא ניתן לבטל לאחר המועד האחרון")
 
     commit = (
@@ -263,7 +302,7 @@ def create_group_buy(
         raise HTTPException(
             status_code=400, detail="מחיר קבוצתי חייב להיות נמוך מהמחיר הרגיל"
         )
-    if data.deadline <= datetime.utcnow():
+    if data.deadline <= utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חייב להיות בעתיד")
 
     gb = GroupBuy(
@@ -285,6 +324,56 @@ def create_group_buy(
     db.commit()
     db.refresh(gb)
     return {"id": str(gb.id), "detail": "קבוצת הרכש נוצרה בהצלחה"}
+
+
+# MEH-2436: what the business may do to its own group buy. Anything not listed
+# is a 409 — cancelled and fulfilled are final for the owner; only an admin
+# moves a group buy out of them, through PATCH /admin/group-buys/{id}/status.
+# "open → cancelled" covers both "cancel" before the deadline and "close" after
+# it: the row looks the same either way. Nothing closes an open group buy past
+# its deadline automatically.
+OWNER_TRANSITIONS = {
+    ("open", "cancelled"),
+    ("funded", "fulfilled"),
+    ("funded", "cancelled"),
+}
+
+
+@router.patch("/{group_buy_id}/status", response_model=GroupBuyStatusOut)
+@limiter.limit("30/minute")
+def update_group_buy_status(
+    request: Request,
+    group_buy_id: UUID,
+    data: GroupBuyStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Owner-only. An admin changes status through the admin route, so this
+    # table is the one path a business has, and there is no second unchecked
+    # one here. Same role and email gates, in the same order, as creating a
+    # group buy. Unlike create, a business that is no longer approved may still
+    # close what it opened: its participants are better off with that.
+    require_verified_producer(require_producer(current_user))
+
+    # Lock the row: a participant joining in the same instant can flip
+    # open → funded, and the transition check must see the status it writes over.
+    gb = (
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    )
+    if not gb:
+        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+    # IDOR (security.md): the group buy must belong to the caller's business.
+    # A producer user with no business owns nothing.
+    if current_user.producer_id is None or gb.producer_id != current_user.producer_id:
+        raise HTTPException(status_code=403, detail="אין הרשאה לשנות קבוצת רכש זו")
+    if (gb.status, data.status) not in OWNER_TRANSITIONS:
+        raise HTTPException(
+            status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
+        )
+
+    gb.status = data.status
+    db.commit()
+    return {"detail": "סטטוס עודכן", "status": gb.status}
 
 
 @admin_router.get("", response_model=list[GroupBuyDetail])

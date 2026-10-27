@@ -3,6 +3,7 @@
 Mirrors test_home_product_moderation_unit: pure-logic + fail-open coverage
 for the experiences AI moderation path. No network, no DB.
 """
+
 import json
 from decimal import Decimal
 
@@ -81,19 +82,21 @@ class TestParseResponseText:
 
 class TestBuildPrompt:
     def test_free_price_label(self):
-        prompt = mod._build_prompt(
-            {"title": "סיור שוק", "price_per_person": 0, "city": "חיפה"}
+        prompt = "\n".join(
+            mod._build_prompt(
+                {"title": "סיור שוק", "price_per_person": 0, "city": "חיפה"}
+            )
         )
         assert "חינם" in prompt
         assert "סיור שוק" in prompt
         assert "חיפה" in prompt
 
     def test_paid_price_label(self):
-        prompt = mod._build_prompt({"title": "סדנה", "price_per_person": 80})
+        prompt = "\n".join(mod._build_prompt({"title": "סדנה", "price_per_person": 80}))
         assert "₪80" in prompt
 
     def test_missing_fields_no_crash(self):
-        assert isinstance(mod._build_prompt({}), str)
+        assert all(isinstance(p, str) for p in mod._build_prompt({}))
 
 
 class TestValidateExperience:
@@ -112,9 +115,7 @@ class TestValidateExperience:
         assert result["status"] == verdict
 
     def test_unknown_status_approved(self, monkeypatch):
-        _install_client(
-            monkeypatch, _FakeClient([_FakeBlock('{"status":"HUH"}')])
-        )
+        _install_client(monkeypatch, _FakeClient([_FakeBlock('{"status":"HUH"}')]))
         assert mod.validate_experience({"title": "t"})["status"] == "APPROVED"
 
     def test_empty_response_approved(self, monkeypatch):

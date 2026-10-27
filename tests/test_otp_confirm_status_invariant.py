@@ -31,13 +31,14 @@ Does NOT: cover the token-claim race (tests/test_otp_confirm_concurrency.py) or
 History:  MEH-2124 (creation, replacing test_otp_pending_whatsapp_transition).
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
 from app.models.models import PhoneOtpToken
 
 from tests.conftest import auth_header, make_producer, make_user
+from app.utils.clock import utc_now
 
 
 def _setup(db, status):
@@ -56,7 +57,7 @@ def _add_token(db, producer, code="123456", minutes=10):
             producer_id=producer.id,
             phone=producer.phone,
             code=code,
-            expires_at=datetime.utcnow() + timedelta(minutes=minutes),
+            expires_at=utc_now() + timedelta(minutes=minutes),
         )
     )
     db.commit()

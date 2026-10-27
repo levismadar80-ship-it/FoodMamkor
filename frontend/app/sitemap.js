@@ -18,6 +18,8 @@ import {
   DIET_PAGE_MIN,
   dietPagePath,
 } from "@/lib/diet-pages";
+// MEH-2369: the three "something happening" hubs are listed only with supply.
+import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -49,22 +51,31 @@ export default async function sitemap() {
   const staticDefs = [
     { path: "", priority: 1.0, changeFrequency: "daily" },
     { path: "/map", priority: 0.9, changeFrequency: "daily" },
-    { path: "/events", priority: 0.8, changeFrequency: "daily" },
     { path: "/about", priority: 0.6, changeFrequency: "monthly" },
     // MEH-875: secondary indexable landing routes (all under app/[locale]/).
-    { path: "/experiences", priority: 0.8, changeFrequency: "daily" },
-    { path: "/group-buys", priority: 0.8, changeFrequency: "daily" },
     { path: "/about/process", priority: 0.5, changeFrequency: "monthly" },
     { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
     // MEH-1289: reader-facing "why local" editorial page.
     { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
-    // MEH-803: /register, /login, /contact, /search intentionally NOT listed —
+    // MEH-803: /register, /login, /contact intentionally NOT listed (/search
+    // itself is gone — it 308s to /producers since MEH-819) —
     // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility
     // route), so emitting them here produced GSC "Submitted URL marked 'noindex'".
     // The sitemap lists indexable URLs only; the pages' noindex directives stay.
     { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
   ];
+  // MEH-2369: /events, /experiences and /group-buys used to sit in staticDefs
+  // unconditionally — three empty pages offered to Google daily while
+  // production had zero of each. They join only when the hub is KNOWN to list
+  // at least one item; an unknown count (API down at build) omits them, the
+  // same fail-closed choice the diet pages below make.
+  const hubCounts = await getAllHubCounts();
+  for (const [key, hub] of Object.entries(HUBS)) {
+    if (hubBelongsInSitemap(hubCounts[key])) {
+      staticDefs.push({ path: hub.path, priority: 0.8, changeFrequency: "daily" });
+    }
+  }
   const staticPages = staticDefs.flatMap(({ path, priority, changeFrequency }) =>
     localizeEntry(path, { lastModified: now, priority, changeFrequency }),
   );

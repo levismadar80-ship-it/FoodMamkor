@@ -80,6 +80,12 @@ export const CATEGORY_CHIPS = [
 // and MEH-2047's removed "דל פחמימות". Read the taxonomy for any of them.
 export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
 
+// MEH-2046: the two axes /map promotes to always-visible chips (ServiceChipRow),
+// in RTL reading order. MEH-2425: shared so the active-filter tag row can skip
+// them — a chip that already shows its own on/off state is not repeated as a
+// removable tag under it.
+export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points"];
+
 // MEH-2170 (option ב׳, Sapir 25/08): the five diet axes are gated on /map the
 // way /producers already gates them (DIET_CHIP_MIN, MEH-1934) — a toggle that
 // is guaranteed to return "0 businesses" on the current catalog is not

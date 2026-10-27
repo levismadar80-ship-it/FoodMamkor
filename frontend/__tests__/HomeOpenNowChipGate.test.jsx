@@ -35,7 +35,6 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
@@ -117,11 +116,6 @@ const props = (producers, overrides = {}) => ({
   categories: [],
   showNewUserHint: false,
   fridayMode: false,
-  step0Visible: false,
-  onboardStep: -1,
-  onboardAdvance: () => {},
-  onboardDismiss: () => {},
-  onAdvanceFromStep0: () => {},
   onRemoveChip: () => {},
   // MEH-2173 wiring.
   onToggleChip: () => {},

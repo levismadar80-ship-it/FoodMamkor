@@ -15,5 +15,14 @@ export const metadata = {
 
 export default async function ProducerVanityRedirect(props) {
   const params = await props.params;
-  redirect(`/${params.slug}`);
+  // MEH-1428 chunk 2: keep the query string. The owner's "request a review"
+  // link is minted as /p/{slug}?rt=<token>; dropping it here delivered the
+  // customer without the token, so the review form never unlocked.
+  const searchParams = (await props.searchParams) || {};
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    for (const v of [].concat(value)) query.append(key, v);
+  }
+  const qs = query.toString();
+  redirect(qs ? `/${params.slug}?${qs}` : `/${params.slug}`);
 }

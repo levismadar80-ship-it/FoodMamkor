@@ -12,7 +12,7 @@ Backend tests — kill logic explained per mutant in
 docs/testing/2026-06-mutation-test-plan.md (domain B1). CI Postgres is the
 healer (no sandbox DB).
 """
-from datetime import date, timedelta
+from datetime import timedelta
 
 from app.utils.clock import israel_today
 from tests.conftest import auth_header, make_producer, make_user
@@ -35,7 +35,7 @@ def test_on_vacation_excluded_from_default_listing(client, db):
     """
     open_p = make_producer(db, name="חוות פתוחה")
     vac_p = make_producer(db, name="חוות בחופשה")
-    _set_state(db, vac_p, "on_vacation", date.today() + timedelta(days=10))
+    _set_state(db, vac_p, "on_vacation", israel_today() + timedelta(days=10))
 
     resp = client.get("/producers")
     assert resp.status_code == 200
@@ -47,7 +47,7 @@ def test_on_vacation_excluded_from_default_listing(client, db):
 def test_on_vacation_included_with_explicit_filter(client, db):
     """Explicit ?availability_state=on_vacation opts back in (AV-2 guard)."""
     vac_p = make_producer(db, name="חוות בחופשה מפורשת")
-    _set_state(db, vac_p, "on_vacation", date.today() + timedelta(days=10))
+    _set_state(db, vac_p, "on_vacation", israel_today() + timedelta(days=10))
 
     resp = client.get("/producers?availability_state=on_vacation")
     assert resp.status_code == 200
@@ -59,7 +59,7 @@ def test_on_vacation_still_reachable_by_id(client, db):
     """Exclusion is listing-only — direct fetch by id still 200 (AV-1/AV-2
     must not over-reach into the detail route)."""
     vac_p = make_producer(db, name="חוות ישירה")
-    _set_state(db, vac_p, "on_vacation", date.today() + timedelta(days=10))
+    _set_state(db, vac_p, "on_vacation", israel_today() + timedelta(days=10))
 
     resp = client.get(f"/producers/{vac_p.id}")
     assert resp.status_code == 200
@@ -98,7 +98,7 @@ def test_past_vacation_is_auto_cleared(client, db):
     cleared. Confirms the auto-clear actually fires (guards AV-3/AV-4 from
     over-correcting and never clearing)."""
     vac_p = make_producer(db, name="חוות חופשה שעברה")
-    _set_state(db, vac_p, "on_vacation", date.today() - timedelta(days=1))
+    _set_state(db, vac_p, "on_vacation", israel_today() - timedelta(days=1))
 
     resp = client.get(f"/producers/{vac_p.id}")
     assert resp.status_code == 200

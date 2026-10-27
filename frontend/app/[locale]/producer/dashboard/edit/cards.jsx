@@ -440,7 +440,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
               <button
                 type="button"
                 onClick={() => removeImage(i)}
-                className="absolute top-1 start-1 bg-error text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                className="absolute top-1 start-1 bg-error text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
                 aria-label={t("remove_aria")}
               >
                 <X size={14} weight="bold" aria-hidden="true" />
@@ -1289,6 +1289,9 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.kashrut");
   const tBadges = useTranslations("kashrut.badges");
   const [requests, setRequests] = useState([]);
+  // MEH-2405: the missing-cert nudge reads `requests`; until the list has
+  // actually loaded, "no cert on file" is unknown, not missing.
+  const [requestsLoaded, setRequestsLoaded] = useState(false);
   const [badgeCode, setBadgeCode] = useState("");
   const [certUrl, setCertUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -1307,6 +1310,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
     try {
       const r = await api.get("/producers/me/kashrut-requests");
       setRequests(Array.isArray(r.data) ? r.data : []);
+      setRequestsLoaded(true);
     } catch {
       // Non-blocking: the request form still works if the list read fails.
     }
@@ -1359,6 +1363,20 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
     (r) => r.status === "pending" || r.status === "rejected",
   );
   const isEmpty = approvedBadges.length === 0 && openRequests.length === 0;
+  // MEH-2405: an approved badge is tappable on the public page only when a
+  // certificate is servable for it (MEH-1672). Approved or pending with a
+  // photo counts as covered — pending already shows its own chip below.
+  const missingCert = requestsLoaded
+    ? approvedBadges.filter(
+        (code) =>
+          !requests.some(
+            (r) =>
+              r.badge_code === code &&
+              r.cert_url &&
+              (r.status === "approved" || r.status === "pending"),
+          ),
+      )
+    : [];
 
   return (
     <div className="space-y-4">
@@ -1383,6 +1401,18 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
             verified_at={profile?.kashrut_verified_at}
             expires_at={profile?.kashrut_expires_at}
           />
+          {missingCert.map((code) => {
+            const key = CODE_TO_KEY[code];
+            return (
+              <p
+                key={code}
+                data-testid="kashrut-missing-cert"
+                className="text-xs text-fg-muted"
+              >
+                {t("missing_cert", { badge: key ? tBadges(`${key}.label`) : code })}
+              </p>
+            );
+          })}
         </div>
       )}
 

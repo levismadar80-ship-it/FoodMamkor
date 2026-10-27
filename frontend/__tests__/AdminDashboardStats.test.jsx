@@ -1,27 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import AdminDashboard from "@/app/[locale]/admin/page";
+import AdminHome from "@/app/[locale]/admin/page";
 
-// MEH-1267: the group-buys dashboard card binds the real total_group_buys
-// stat — the hardcoded "›" placeholder is gone.
+// MEH-2359: /admin is «מה מחכה לטיפול» — pending businesses + the secondary
+// queues that have items. This file used to pin the group-buys stat card
+// (MEH-1267); that card, and every other stat, left the home page.
 
 const DASHBOARD = {
   stats: {
     total_producers: 12,
-    pending_producers: 0,
+    pending_producers: 2,
     total_users: 40,
     total_group_buys: 7,
     open_reports: 0,
-    new_users_this_week: 0,
-    new_producers_this_week: 0,
-    total_events: 0,
-    total_experiences: 0,
+    pending_kashrut_requests: 3,
+    pending_category_requests: 0,
+    pending_name_change_requests: 1,
+    undelivered_whatsapp_7d: 0,
+    pending_experiences: 2,
+    pending_recipes: 1,
+    experiences_awaiting_review: 0,
+    recipes_awaiting_review: 0,
   },
-  monthly_producers: [],
-  pending_producers: [],
-  recent_activity: [],
-  daily_active_users: [],
-  top_cities: [],
+  pending_producers: [
+    { id: "p1", name: "חוות האגס", city: "כפר סבא" },
+    { id: "p2", name: "מאפיית הכפר", city: "בנימינה" },
+  ],
 };
 
 const apiMock = vi.hoisted(() => ({
@@ -35,16 +39,9 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next-intl", () => {
-  const flat = {
-    "admin.dashboard.stats.group_buys": "קבוצות רכש",
-    "admin.dashboard.stats.group_buys_tooltip": "ניהול קבוצות רכש",
-    "admin.dashboard.stats.group_buys_tooltip_label": "מידע",
-  };
   const resolve = (fullKey, values) => {
-    const raw = flat[fullKey] ?? fullKey;
-    if (!values || Object.keys(values).length === 0) return raw;
-    let s = raw;
-    for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
+    let s = fullKey;
+    for (const [k, v] of Object.entries(values || {})) s = s.replaceAll(`{${k}}`, v);
     return s;
   };
   return {
@@ -54,15 +51,110 @@ vi.mock("next-intl", () => {
   };
 });
 
-describe("AdminDashboard — group-buys stat card (MEH-1267)", () => {
-  beforeEach(() => apiMock.get.mockClear());
+describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
+  beforeEach(() => {
+    apiMock.get.mockClear();
+    apiMock.get.mockImplementation(() => Promise.resolve({ data: DASHBOARD }));
+  });
 
-  it("renders the numeric group-buys stat and not the '›' placeholder", async () => {
-    render(<AdminDashboard />);
-    // group-buys label + its real value render once data resolves.
-    expect(await screen.findByText("קבוצות רכש")).toBeInTheDocument();
-    expect(screen.getByText("7")).toBeInTheDocument();
-    // the hardcoded placeholder is gone.
-    expect(screen.queryByText("›")).not.toBeInTheDocument();
+  it("lists the pending businesses with a link to each edit page", async () => {
+    render(<AdminHome />);
+    expect(await screen.findByText("חוות האגס")).toBeInTheDocument();
+    expect(screen.getByText("מאפיית הכפר")).toBeInTheDocument();
+    const checks = screen.getAllByText("admin.dashboard.pending_panel.check");
+    expect(checks.map((a) => a.getAttribute("href"))).toEqual([
+      "/admin/producers/p1/edit",
+      "/admin/producers/p2/edit",
+    ]);
+  });
+
+  it("shows ONLY the secondary queues whose count is > 0, with the count", async () => {
+    render(<AdminHome />);
+    await screen.findByText("חוות האגס");
+    const queues = screen.getByTestId("admin-home-queues");
+    const links = Array.from(queues.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    // kashrut (3) and name changes (1) are busy; reports/category/whatsapp/
+    // experiences/recipes are 0 → absent, not rendered-with-zero. The
+    // experiences/recipes rows read the admin's-turn keys: the owner's-turn
+    // aggregates (pending_experiences 2 / pending_recipes 1) must NOT surface.
+    expect(links).toEqual(["/admin/kashrut", "/admin/name-change-requests"]);
+    expect(queues).toHaveTextContent("3");
+    expect(queues).toHaveTextContent("1");
+    expect(screen.queryByText("admin.dashboard.queues.all_clear")).not.toBeInTheDocument();
+  });
+
+  it("renders no stat cards, charts or server health — those moved to analytics", async () => {
+    render(<AdminHome />);
+    await screen.findByText("חוות האגס");
+    expect(screen.queryByText("קבוצות רכש")).not.toBeInTheDocument();
+    expect(screen.queryByText(/dashboard\.(stats|health|dau|top_cities|chart|weekly|activity)\./)).not.toBeInTheDocument();
+    expect(document.querySelector("svg polyline")).toBeNull();
+    expect(screen.getByText("admin.dashboard.analytics_link").getAttribute("href")).toBe("/admin/analytics");
+  });
+
+  it("0 pending + 0 busy queues → both empty lines, no yellow count", async () => {
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({
+        data: {
+          stats: { ...DASHBOARD.stats, pending_producers: 0, pending_kashrut_requests: 0, pending_name_change_requests: 0 },
+          pending_producers: [],
+        },
+      }),
+    );
+    render(<AdminHome />);
+    expect(await screen.findByText("admin.dashboard.pending_panel.empty")).toBeInTheDocument();
+    expect(screen.getByText("admin.dashboard.queues.all_clear")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-home-queues").querySelectorAll("a")).toHaveLength(0);
+    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-yellow-400")).toBeNull();
+    expect(screen.getByTestId("admin-home-pending").className).not.toMatch(/border-yellow/);
+  });
+
+  it("a stats payload without the per-queue keys is UNKNOWN, not all-clear (MEH-2096)", async () => {
+    // A frontend deployed ahead of its backend: only the pre-MEH-2359 keys.
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({
+        data: { stats: { total_producers: 12, pending_producers: 0, open_reports: 0 }, pending_producers: [] },
+      }),
+    );
+    render(<AdminHome />);
+    expect(await screen.findByText("admin.dashboard.pending_panel.empty")).toBeInTheDocument();
+    expect(screen.queryByText("admin.dashboard.queues.all_clear")).not.toBeInTheDocument();
+    expect(screen.getByTestId("admin-home-queues-unknown")).toHaveTextContent("admin.common.error_loading");
+    expect(screen.getByTestId("admin-home-queues").querySelectorAll("a")).toHaveLength(0);
+  });
+
+  it("a missing pending_producers count is UNKNOWN in the pending panel too, not «אין ממתינים» (R4-1)", async () => {
+    // The count key is absent while the preview list is empty: the panel
+    // must say the count could not be read, not that nothing is waiting.
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({ data: { stats: { total_producers: 12, open_reports: 0 }, pending_producers: [] } }),
+    );
+    render(<AdminHome />);
+    expect(await screen.findByTestId("admin-home-pending-unknown")).toHaveTextContent("admin.common.error_loading");
+    expect(screen.queryByText("admin.dashboard.pending_panel.empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-yellow-400")).toBeNull();
+  });
+
+  it("a busy queue next to a missing key shows the rows AND the unknown line (R4-2)", async () => {
+    // kashrut known-busy, recipes_awaiting_review absent: the known row is
+    // listed and the block still says some counts could not be read.
+    const { recipes_awaiting_review: _dropped, ...rest } = DASHBOARD.stats;
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({ data: { stats: { ...rest, pending_kashrut_requests: 3, pending_name_change_requests: 0 }, pending_producers: [] } }),
+    );
+    render(<AdminHome />);
+    const queues = await screen.findByTestId("admin-home-queues");
+    await waitFor(() => expect(queues.querySelectorAll("a")).toHaveLength(1));
+    expect(queues.querySelector("a").getAttribute("href")).toBe("/admin/kashrut");
+    expect(screen.getByTestId("admin-home-queues-unknown")).toHaveTextContent("admin.common.error_loading");
+    expect(screen.queryByText("admin.dashboard.queues.all_clear")).not.toBeInTheDocument();
+  });
+
+  it("says how many more are waiting when the preview is shorter than the count", async () => {
+    apiMock.get.mockImplementation(() =>
+      Promise.resolve({ data: { stats: { ...DASHBOARD.stats, pending_producers: 7 }, pending_producers: DASHBOARD.pending_producers } }),
+    );
+    render(<AdminHome />);
+    expect(await screen.findByText("admin.dashboard.pending_panel.more")).toBeInTheDocument();
   });
 });

@@ -141,4 +141,94 @@ describe("Edit-tab KashrutCard (isolation)", () => {
       expect(screen.queryByTestId("kashrut-filter-hint")).not.toBeInTheDocument();
     });
   });
+
+  // MEH-2405: an approved badge with no certificate behind it renders as plain
+  // text on the public page (MEH-1672 makes it tappable only when a cert is
+  // servable). The owner had no way to know. One quiet row per such badge.
+  describe("missing-certificate nudge (MEH-2405)", () => {
+    const rows = () => screen.queryAllByTestId("kashrut-missing-cert");
+    const settle = () =>
+      waitFor(() => expect(api.get).toHaveBeenCalledWith("/producers/me/kashrut-requests"));
+
+    it("no approved badge → no row", async () => {
+      renderCard({ kashrut_badges: [] });
+      await settle();
+      expect(rows()).toHaveLength(0);
+    });
+
+    it("approved badge, no request at all → one row naming the badge", async () => {
+      renderCard({ kashrut_badges: ["badatz"] });
+      await waitFor(() => expect(rows()).toHaveLength(1));
+      expect(rows()[0].textContent).toContain(BADGES.badatz.label);
+    });
+
+    it("approved badge + approved request carrying a cert → no row", async () => {
+      api.get.mockResolvedValue({
+        data: [{ id: "a", badge_code: "badatz", status: "approved", cert_url: "https://x/c.jpg" }],
+      });
+      renderCard({ kashrut_badges: ["badatz"] });
+      await settle();
+      await waitFor(() => expect(rows()).toHaveLength(0));
+    });
+
+    it("approved badge + pending request carrying a cert → no row (the pending chip already says it)", async () => {
+      api.get.mockResolvedValue({
+        data: [{ id: "p", badge_code: "badatz", status: "pending", cert_url: "https://x/c.jpg" }],
+      });
+      renderCard({ kashrut_badges: ["badatz"] });
+      await screen.findByTestId("kashrut-requests");
+      expect(rows()).toHaveLength(0);
+    });
+
+    it("approved badge + approved request WITHOUT a cert → row", async () => {
+      api.get.mockResolvedValue({
+        data: [{ id: "a", badge_code: "badatz", status: "approved", cert_url: null }],
+      });
+      renderCard({ kashrut_badges: ["badatz"] });
+      await waitFor(() => expect(rows()).toHaveLength(1));
+    });
+
+    it("rejected request with a cert does not count as covered", async () => {
+      api.get.mockResolvedValue({
+        data: [{ id: "r", badge_code: "badatz", status: "rejected", cert_url: "https://x/c.jpg" }],
+      });
+      renderCard({ kashrut_badges: ["badatz"] });
+      await waitFor(() => expect(rows()).toHaveLength(1));
+    });
+
+    it("two uncovered badges → two rows; a covered third adds none", async () => {
+      api.get.mockResolvedValue({
+        data: [{ id: "a", badge_code: "rabanut", status: "approved", cert_url: "https://x/c.jpg" }],
+      });
+      renderCard({ kashrut_badges: ["badatz", "chalak", "rabanut"] });
+      await waitFor(() => expect(rows()).toHaveLength(2));
+      const text = rows().map((r) => r.textContent).join("|");
+      expect(text).toContain(BADGES.badatz.label);
+      expect(text).toContain(BADGES.chalak.label);
+      expect(text).not.toContain(BADGES.rabanut.label);
+    });
+
+    it("the row goes away once a request with a photo is sent (list reloads after submit)", async () => {
+      api.get
+        .mockResolvedValueOnce({ data: [] })
+        .mockResolvedValue({
+          data: [{ id: "p", badge_code: "badatz", status: "pending", cert_url: "https://x/c.jpg" }],
+        });
+      renderCard({ kashrut_badges: ["badatz"] });
+      await waitFor(() => expect(rows()).toHaveLength(1));
+      fireEvent.change(screen.getByTestId("kashrut-badge-select"), { target: { value: "badatz" } });
+      fireEvent.click(screen.getByRole("button", { name: K.submit_cta }));
+      await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(rows()).toHaveLength(0));
+    });
+
+    it("request list failed to load → no row (unknown is not 'missing')", async () => {
+      api.get.mockRejectedValue(new Error("network"));
+      renderCard({ kashrut_badges: ["badatz"] });
+      await settle();
+      // Give the rejected promise a tick to land before asserting absence.
+      await new Promise((r) => setTimeout(r, 0));
+      expect(rows()).toHaveLength(0);
+    });
+  });
 });

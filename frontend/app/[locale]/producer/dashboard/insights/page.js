@@ -115,6 +115,10 @@ export default function ProducerDashboardInsightsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
+      {/* MEH-2429: every other dashboard page has an h1; this one had none, so
+          a screen reader landed on a page with no heading. The visible text is
+          the existing nav label — no new copy. */}
+      <h1 className="font-headline-lg text-xl font-bold text-text mb-6">{t("nav.insights")}</h1>
       {/* MEH-1101: pre-publish zero-state — all-zero KPIs read as failure
           without the context that data starts flowing after approval
           (Site Kit hasZeroData pattern). KPI cards still render below. */}
@@ -337,10 +341,23 @@ function ViewsLineChart({ data }) {
   const yTicks = [...new Set([0, Math.round(maxV / 2), maxV])];
   // Show labels for start / mid / end only to avoid x-axis clutter.
   const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
+  const lastIndex = data.length - 1;
+  // MEH-2314: the edge labels anchor inward — a "middle" anchor at
+  // x = W - padRight pushed half the last label out of the viewBox.
+  const anchorFor = (i) => (i === 0 ? "start" : i === lastIndex ? "end" : "middle");
+  // MEH-2314: YYYY-MM-DD → DD.MM by string slicing, so no timezone can
+  // shift the day (no Date parsing).
+  const shortDate = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;
 
   return (
+    // MEH-2314: direction="ltr" — the page is dir="rtl", which SVG text
+    // inherits and which swaps what text-anchor start/end mean. The
+    // coordinates here are LTR (oldest left), so the text must be too;
+    // measured in a browser, RTL put both edge labels outside the box
+    // and the y-ticks inside the plot.
     <svg
       viewBox={`0 0 ${W} ${H + 20}`}
+      direction="ltr"
       className="w-full h-40"
       role="img"
       aria-label={t("views_chart_aria")}
@@ -397,11 +414,11 @@ function ViewsLineChart({ data }) {
                 x={x}
                 y={H + 14}
                 fontSize="10"
-                textAnchor="middle"
+                textAnchor={anchorFor(i)}
                 className="text-fg-muted"
                 fill="currentColor"
               >
-                {d.date.slice(5)}
+                {shortDate(d.date)}
               </text>
             )}
           </g>

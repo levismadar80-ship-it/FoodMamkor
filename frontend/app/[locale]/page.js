@@ -4,7 +4,7 @@
  *           feed + categories on the server so the first HTML byte already
  *           carries producer cards, then hands them to HomeClient.
  * Touches:  GET /producers and GET /categories via serverFetch (revalidate 60).
- * Does NOT: own any interactivity — geo, chips, onboarding, friday strip,
+ * Does NOT: own any interactivity — geo, chips, friday strip,
  *           recently-viewed and every effect live in home/HomeClient.jsx.
  * Related:  app/[locale]/home/HomeClient.jsx (the moved client body),
  *           lib/use-home-page.js (accepts the initialData below),

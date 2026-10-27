@@ -93,7 +93,6 @@ function hookState(producersCount) {
     recentlyViewed: [], showNewUserHint: false,
     locationModalOpen: false, setLocationModalOpen: vi.fn(),
     fridayMode: false, step0Visible: false, userCity: null,
-    onboardStep: -1, onboardAdvance: vi.fn(), onboardDismiss: vi.fn(),
     visibleProducers: [], hasMore: false, categoryCards: [],
     statsProducersCount: producersCount,
     statsCategoriesCount: CATEGORIES,

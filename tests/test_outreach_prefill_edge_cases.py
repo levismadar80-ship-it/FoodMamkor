@@ -29,7 +29,7 @@ Related source: backend/app/routers/admin_outreach.py ·
 backend/app/schemas/schemas.py:3500-3547 · backend/app/models/models.py:743-777
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -37,6 +37,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.models import OutreachLead
 from tests.conftest import auth_header, make_user, valid_producer_register_payload
+from app.utils.clock import utc_now
 
 # ---------------------------------------------------------------------------
 # Fixtures lifted from the real outreach sheet, format preserved.
@@ -500,7 +501,7 @@ class TestPrefillToken:
         minted, token = self._lead_with_token(client, h, name="פג תוקף")
 
         lead = db.query(OutreachLead).filter(OutreachLead.id == minted["id"]).first()
-        lead.prefill_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
+        lead.prefill_token_expires_at = utc_now() - timedelta(seconds=1)
         db.commit()
 
         assert client.get(f"/register/producer/prefill/{token}").status_code == 404

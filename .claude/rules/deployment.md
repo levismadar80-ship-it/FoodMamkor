@@ -1,3 +1,12 @@
+---
+paths:
+  - "frontend/vercel.json"
+  - "railway.json"
+  - "Dockerfile"
+  - ".github/**"
+  - "docs/DEPLOYMENT.md"
+---
+
 # Deployment rules
 
 Branch strategy, Railway/Vercel specifics, and the PR testing matrix.

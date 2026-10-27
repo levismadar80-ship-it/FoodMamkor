@@ -6,6 +6,8 @@ import AdminReviewsPage from "@/app/[locale]/admin/reviews/page";
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="star-icon" {...props} />,
   Trash: (props) => <span data-testid="trash-icon" {...props} />,
+  Eye: (props) => <span data-testid="eye-icon" {...props} />,
+  EyeSlash: (props) => <span data-testid="eye-slash-icon" {...props} />,
 }));
 
 // MEH-475 PR-B: reviews/page.jsx reads useTranslations("admin") with PR-B's

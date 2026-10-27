@@ -13,6 +13,7 @@ import pytest
 
 from app.services import password_policy
 from app.services.password_policy import PolicyResult, validate_password
+from app.utils.clock import utc_now
 
 # Sentinel known to be in deny_list_10k.txt (verified at PR time).
 DENY_LIST_SENTINEL = "unbelievable"
@@ -295,7 +296,7 @@ class TestJWTPasswordChangedAtCheck:
         create_access_token to exercise the validation side independently
         of issuance.
         """
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from joserfc import jwt as _jwt
         from joserfc.jwk import OctKey
 
@@ -303,7 +304,7 @@ class TestJWTPasswordChangedAtCheck:
 
         payload = {
             "sub": str(user_id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
+            "exp": utc_now() + timedelta(minutes=30),
             "iat": iat_override,
             "tv": 1,
             "scope": "access",
@@ -315,7 +316,7 @@ class TestJWTPasswordChangedAtCheck:
         )
 
     def _build_refresh_token_with_iat(self, user_id, iat_override):
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from joserfc import jwt as _jwt
         from joserfc.jwk import OctKey
 
@@ -323,7 +324,7 @@ class TestJWTPasswordChangedAtCheck:
 
         payload = {
             "sub": str(user_id),
-            "exp": datetime.utcnow() + timedelta(days=14),
+            "exp": utc_now() + timedelta(days=14),
             "iat": iat_override,
             "tv": 1,
             "scope": "refresh",
@@ -410,7 +411,7 @@ class TestJWTPasswordChangedAtCheck:
         # Token deliberately missing iat claim.
         payload = {
             "sub": str(user_id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
+            "exp": utc_now() + timedelta(minutes=30),
             "tv": 1,
             "scope": "access",
         }

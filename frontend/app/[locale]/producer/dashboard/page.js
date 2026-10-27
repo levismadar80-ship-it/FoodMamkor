@@ -70,7 +70,8 @@ function VanityLinkCard({ slug }) {
  * Purpose:  The slim Overview index of the dashboard hub (MEH-964). Shows the
  *           at-a-glance surfaces: greeting, status banners, holiday hint,
  *           vanity link, availability toggle, completeness card, and the
- *           top-line 4-KPI strip + quiet conversion line (OverviewStatsHero).
+ *           top-line 4-KPI strip (OverviewStatsHero; the conversion line
+ *           and weekly badge were removed in MEH-2430).
  * Touches:  GET /producers/me/dashboard, /producers/me/analytics,
  *           /producers/me; POST /producers/me/availability-state.
  * Does NOT: render the deep analytics (windowed cards + charts) — those live
@@ -613,8 +614,11 @@ export default function ProducerDashboardPage() {
             <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
             <div>
               <p className="font-semibold text-text">{h.dashboardHint}</p>
+              {/* MEH-2429: this pointed at /producer/dashboard — the page it
+                  sits on, so the CTA did nothing. The catalog is the products
+                  card on the edit tab (KEY_TO_ANCHOR.products). */}
               <LocaleLink
-                href="/producer/dashboard"
+                href="/producer/dashboard/edit#products"
                 className="text-xs mt-1 inline-block hover:underline"
                 style={{ color: h.color }}
               >
@@ -802,7 +806,7 @@ export default function ProducerDashboardPage() {
           (pending OR incomplete), where the green collapse still gives value
           ("סיימת הכל, מחכים לאישור" while complete-but-pending). */}
 
-      {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
+      {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
           Deep analytics (windowed cards + charts) live in the insights tab
           (dashboard/insights); these KPIs render only here (FLAG-1 — never
           duplicated in insights/).
@@ -860,7 +864,7 @@ export default function ProducerDashboardPage() {
 }
 
 // ============================================================
-// MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
+// MEH-964 1B: locked top-line 4-KPI strip (conversion line removed, MEH-2430).
 // RTL order (right->left): WhatsApp leads -> contact clicks -> rating ->
 // views. 2x2 grid, identical mobile + desktop. Uniform "last 7 days" window
 // label, NO per-KPI deltas/arrows — the analytics payload has no per-metric
@@ -868,8 +872,8 @@ export default function ProducerDashboardPage() {
 // "labeled deltas" is superseded by data reality and deferred to a backend
 // follow-up. The DEEP analytics (windowed cards + charts) live in the
 // insights tab (dashboard/insights); the top-line KPIs render ONLY here
-// (FLAG-1 — never duplicated in insights/). The eligibility badge is kept
-// here (status/recognition signal, belongs on the at-a-glance Overview).
+// (FLAG-1 — never duplicated in insights/). The eligibility badge that lived
+// here was removed in MEH-2430 (no such feature exists).
 // ============================================================
 
 // ============================================================
@@ -919,6 +923,11 @@ function ActivityPulse({ analytics }) {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* MEH-2429: the populated card had no heading — with views only it
+              was a lone "צפייה בפרופיל" row under the KPI strip that read as
+              an unfinished card (staging, 27/10). Same visible title the empty
+              state already carries (MEH-1345); the row rulings are unchanged. */}
+          <p data-testid="activity-pulse-title" className="font-semibold text-text">{t("title")}</p>
           {waCount > 0 && (
             <p
               data-testid="activity-pulse-hero"
@@ -966,12 +975,7 @@ function OverviewStatsHero({ analytics }) {
     contact_clicks,
     average_rating,
     total_reviews,
-    rank_in_city,
-    conversion_rate,
-    profile_strength,
   } = analytics;
-
-  const eligibleForWeekly = profile_strength >= 80 && rank_in_city === 1;
 
   // DOM order == locked RTL order; the dir="rtl" page lays the 2-col grid out
   // right->left, so kpis[0] renders top-right and reading flows as locked.
@@ -996,35 +1000,13 @@ function OverviewStatsHero({ analytics }) {
         ))}
       </div>
 
-      {/* Quiet conversion line — whatsapp / views (30d), the existing
-          conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
-          tinted, not a card. */}
-      <p className="text-sm text-fg-muted text-center">
-        {/* MEH-160: the clamp is gone, and removing it is the fix rather than a
-            regression of MEH-1118. MEH-1118 clamped because a >100 value read
-            as broken under "% מהצופות". The denominator is now unique daily
-            visitors while producer_whatsapp_clicks carries no viewer hash, so
-            >100 is a real reading — one visitor clicking twice — and the copy
-            says "per 100 distinct visitors", which is true at any value.
-            Clamping here would hide a wrong contract behind a screen that
-            looked fine, which is exactly what it was doing before. */}
-        {t("kpi.conversion_line", { rate: conversion_rate })}
-      </p>
-
-      {/* "Business of the week" eligibility badge — kept on the Overview
-          (status/recognition signal, not deep analytics; MEH-57). */}
-      {eligibleForWeekly && (
-        <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
-          <Sparkle size={24} weight="fill" className="text-primary" aria-hidden="true" />
-          <div>
-            <p className="font-semibold text-primary text-sm">
-              {t("eligible_weekly_title")}
-              <InfoTooltip content={t("eligible_weekly_tooltip")} />
-            </p>
-            <p className="text-xs text-fg-muted">{t("eligible_weekly_sub")}</p>
-          </div>
-        </div>
-      )}
+      {/* MEH-2430: two blocks removed here, both approved by Sapir 27/10.
+          - The conversion line ("{rate} לחיצות … לכל 100 מבקרות שונות ב-30
+            הימים האחרונים") mixed a 30-day window into a strip of 7-day
+            numbers and was hard to read on a phone.
+          - The "בעלת עסק השבוע" eligibility badge promised a feature that
+            does not exist (no such pick anywhere in the code or docs), and its
+            title ("צרו קשר") contradicted its tooltip ("יופיע כאן הודעה"). */}
     </div>
   );
 }

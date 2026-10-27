@@ -49,8 +49,8 @@ import { LICENSE_REQUIRED_CATEGORIES, PRODUCER_LICENSE_REGEX } from "../../../li
  *      "תעודת כשרות" after it). The trust group renders ONE card,
  *      «אישורים ותעודות» (anchorId="trust", page.js:975-1030), composing the
  *      licence and kashrut bodies as stacked sections; `#license` and
- *      `#kashrut` both resolve to it (page.js:233). Its summary carries the
- *      masked licence («•••4567») and the kashrut state. Asserted as merged.
+ *      `#kashrut` both resolve to it (page.js:233). Its summary carries
+ *      «רישיון ✓» (MEH-2430; was the masked «•••4567») and the kashrut state. Asserted as merged.
  * D4 · `#business-name` is a DEAD deep link. ANCHOR_TO_KEY maps it to
  *      `businessName` (page.js:102), but KEY_TO_GROUP (page.js:202-231) has no
  *      such key, so the hash resolver (page.js:392, :479) finds no group and the
@@ -166,8 +166,10 @@ test.describe("licence card", () => {
     await page.reload();
     await openAt(page, "license");
     await expect(field(page)).toHaveValue("1234567");
-    // The card header previews the masked number (page.js:568 — last four digits).
-    await expect(card(page, "license")).toContainText("•••4567");
+    // The card header says the licence is on file (MEH-2430 — it used to
+    // preview a masked "•••4567" fragment); the number itself never shows there.
+    await expect(card(page, "license")).toContainText("רישיון ✓");
+    await expect(card(page, "license")).not.toContainText("4567");
   });
 
   // MT:MEH-1258:2 — the format warning is advisory: it shows, and the save stays enabled.

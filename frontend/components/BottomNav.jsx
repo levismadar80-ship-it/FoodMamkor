@@ -12,8 +12,6 @@ import { motion } from "framer-motion";
 import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
-import OnboardingTip from "@/components/OnboardingTip";
-import { useOnboarding } from "@/lib/use-onboarding";
 import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
 
@@ -63,7 +61,6 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const t = useTranslations();
-  const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
   const [sheetOpen, setSheetOpen] = useState(false);
   // Stable identity so AccountSheet's focus effect (deps [open, onClose]) runs
   // only on open-state transitions — an inline arrow would re-fire it on every
@@ -351,9 +348,17 @@ export default function BottomNav() {
   // MEH-1202: on /producer/[id] the StickyContactBar ("שליחת הודעה", z-[598],
   // bottom-16) is the single bottom chrome layer — BottomNav stacked a SECOND
   // fixed bottom bar under it. Gate BottomNav OFF this route so mobile shows one
-  // bottom layer, not two. Scoped to the public producer leaf only (dashboard
-  // subtree keeps the nav). Placed after every hook so rules-of-hooks holds.
+  // bottom layer, not two. Placed after every hook so rules-of-hooks holds.
   if (isProducerDetail(pathname)) return null;
+  // MEH-2359: /admin has its own mobile nav (admin/layout.js horizontal strip);
+  // the consumer BottomNav floated over the approvals table at 375 (measured
+  // 26/10, qa-artifacts/MEH-2359). Gate it off the admin subtree as a whole.
+  if (pathname === "/admin" || (pathname || "").startsWith("/admin/")) return null;
+  // MEH-2431: same for the owner dashboard, which has its own tab nav
+  // (producer/dashboard/layout.js). The pill covered rows of the locations
+  // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
+  // keeps the nav"; the header logo leads back to the site, where the nav returns.
+  if (pathname === "/producer/dashboard" || (pathname || "").startsWith("/producer/dashboard/")) return null;
 
   return (
     <>
@@ -390,7 +395,7 @@ export default function BottomNav() {
           data-testid="bottom-nav"
           className={[
             // MEH-1253: pointer-events-auto re-enables events on the pill (and
-            // everything inside it — tabs, account button, onboarding tips)
+            // everything inside it — tabs, account button)
             // after the wrapper shield set pointer-events-none above.
             "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)] pointer-events-auto",
             "transition-[height] duration-base ease-quart motion-reduce:transition-none",
@@ -418,8 +423,6 @@ export default function BottomNav() {
           {destinations.map((tab, idx) => {
             const active = isActive(tab.href);
             const Icon = tab.Icon;
-            // Onboarding step 2 → map tab (idx 1).
-            const showStep2 = idx === 1 && onboardStep === 2;
             return (
               <div
                 key={tab.id}
@@ -428,15 +431,6 @@ export default function BottomNav() {
                 }}
                 className="relative flex-1 flex"
               >
-                {showStep2 && (
-                  <OnboardingTip
-                    show
-                    text={t("nav.onboarding.map")}
-                    onDismiss={onboardDismiss}
-                    onNext={onboardAdvance}
-                    placement="above"
-                  />
-                )}
                 <Link
                   href={tab.href}
                   className={tabCls(active)}
@@ -460,17 +454,6 @@ export default function BottomNav() {
 
           {/* Account — toggles the sheet (not a route). Avatar when logged in. */}
           <div className="relative flex-1 flex">
-            {/* Onboarding step 3 → account tab. */}
-            {onboardStep === 3 && (
-              <OnboardingTip
-                show
-                text={t("nav.onboarding.profile")}
-                cta={t("nav.onboarding.profile_cta")}
-                onDismiss={onboardDismiss}
-                onNext={onboardDismiss}
-                placement="above"
-              />
-            )}
             <button
               type="button"
               onClick={() => setSheetOpen((v) => !v)}

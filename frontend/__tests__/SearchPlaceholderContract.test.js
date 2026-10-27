@@ -65,7 +65,10 @@ const UNANSWERABLE_CHARS = [",", ".", "…", ";", ":", "|", "/", "\\", "!", "?"]
 // The registry is the guard's only subject list. A truncated or emptied one
 // would let every assertion below pass having checked nothing — the
 // count()===0 silent-pass shape (.claude/rules/testing.md, MEH-1698).
-const MIN_REGISTERED_PLACEHOLDERS = 7;
+// 6 since MEH-2395: `search.input_placeholder` belonged to the /search page,
+// which #3645 (MEH-819) turned into a redirect to /producers, so the key was
+// deleted from he.json and the registry. The floor tracks the live list.
+const MIN_REGISTERED_PLACEHOLDERS = 6;
 
 function lookup(obj, dottedKey) {
   return dottedKey

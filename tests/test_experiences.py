@@ -17,7 +17,7 @@ Coverage:
 Claude calls are mocked via monkeypatch so tests are deterministic
 and don't need ANTHROPIC_API_KEY.
 """
-from datetime import date, time, timedelta
+from datetime import time, timedelta
 from decimal import Decimal
 
 from app.models.models import Experience, User
@@ -67,7 +67,7 @@ def _payload(**overrides) -> dict:
         ),
         "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
         "category": "בישול",
-        "event_date": (date.today() + timedelta(days=14)).isoformat(),
+        "event_date": (israel_today() + timedelta(days=14)).isoformat(),
         "event_time": "10:00",
         "location_type": "home",
         "city": "תל אביב",
@@ -93,7 +93,7 @@ def _make_experience(db, host: User, **overrides) -> Experience:
         "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
         "category": "בישול",
         "host_user_id": host.id,
-        "event_date": date.today() + timedelta(days=7),
+        "event_date": israel_today() + timedelta(days=7),
         "event_time": time(10, 0),
         "location_type": "home",
         "city": "תל אביב",
@@ -380,14 +380,14 @@ class TestExperienceCount:
             host,
             title="Old",
             status="approved",
-            event_date=date.today() - timedelta(days=2),
+            event_date=israel_today() - timedelta(days=2),
         )
         _make_experience(
             db,
             host,
             title="Soon",
             status="approved",
-            event_date=date.today() + timedelta(days=2),
+            event_date=israel_today() + timedelta(days=2),
         )
         assert client.get("/experiences/count").json() == {"count": 1}
 
@@ -447,7 +447,7 @@ class TestExperienceCount:
             host,
             title="E",
             status="approved",
-            event_date=date.today() - timedelta(days=1),
+            event_date=israel_today() - timedelta(days=1),
         )
         _make_experience(db, other, title="F", status="approved")
 
@@ -545,14 +545,14 @@ class TestExperienceListing:
             host,
             title="Old",
             status="approved",
-            event_date=date.today() - timedelta(days=2),
+            event_date=israel_today() - timedelta(days=2),
         )
         _make_experience(
             db,
             host,
             title="Soon",
             status="approved",
-            event_date=date.today() + timedelta(days=2),
+            event_date=israel_today() + timedelta(days=2),
         )
         resp = client.get("/experiences")
         titles = [e["title"] for e in resp.json()]

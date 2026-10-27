@@ -16,12 +16,17 @@ import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
  *           MEH-758), mention premium/fees outside the FAQ answer (MEH-617
  *           model undecided — "no-fees" sits in the FAQ like Etsy, not the
  *           headline), or carry a real testimonial yet (Template-10 verbatim
- *           intake pre-launch — MEH-931; the slot below is self-describing).
+ *           intake pre-launch — MEH-931; the slot is render-gated OFF, MEH-2419).
  * Related:  frontend/components/Footer.jsx:77 (nav entry) ·
  *           docs/COPY_BANK.md § /join (locked strings) ·
  *           RegisterPreflight.jsx (sister surface, MEH-994)
  * History:  MEH-995 (creation — positioning-FINAL port)
  */
+
+// MEH-2419: testimonial slot render-gated OFF until a real quote exists — the
+// same rule as /about (MEH-1112): real social proof or nothing, no empty shelf
+// on a persuasion page. JSX + i18n keys kept intact; flip to true when it lands.
+const SHOW_TESTIMONIAL = false;
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -143,18 +148,20 @@ export default async function JoinPage({ params }) {
           </div>
         </section>
 
-        {/* ── Testimonial slot — self-describing placeholder. DO NOT fill with
-               invented business copy — real Template-10 verbatim quote lands
-               pre-launch (MEH-931; COPY_BANK §8 guardrail). ── */}
-        <section className="mb-14 sm:mb-20 text-center" data-testid="join-testimonial">
-          <Quotes size={28} className="text-accent mx-auto mb-3" aria-hidden="true" />
-          <p className="text-sm font-medium text-fg-muted mb-3">
-            {t("testimonial.eyebrow")}
-          </p>
-          <blockquote className="font-headline-md text-xl text-text/70 leading-relaxed max-w-xl mx-auto italic">
-            {t("testimonial.quote")}
-          </blockquote>
-        </section>
+        {/* ── Testimonial slot — gated OFF by SHOW_TESTIMONIAL (MEH-2419) until a
+               real Template-10 verbatim quote exists. DO NOT fill with invented
+               business copy (COPY_BANK §8 guardrail). ── */}
+        {SHOW_TESTIMONIAL && (
+          <section className="mb-14 sm:mb-20 text-center" data-testid="join-testimonial">
+            <Quotes size={28} className="text-accent mx-auto mb-3" aria-hidden="true" />
+            <p className="text-sm font-medium text-fg-muted mb-3">
+              {t("testimonial.eyebrow")}
+            </p>
+            <blockquote className="font-headline-md text-xl text-text/70 leading-relaxed max-w-xl mx-auto italic">
+              {t("testimonial.quote")}
+            </blockquote>
+          </section>
+        )}
 
         {/* ── FAQ teaser — the price answer lives here (Etsy pattern), not in
                the hero. Answer string is LOCKED (BRAND no-fees LOCK). ── */}

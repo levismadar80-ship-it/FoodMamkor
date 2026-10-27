@@ -50,6 +50,11 @@ flowchart TD
     ReturnTokenC --> Client[Frontend stores JWT<br/>in auth-context]
     ReturnTokenP --> Client
     ReturnTokenO --> Client
+
+    Client -.->|MEH-2322: arrived via an owner-claim link<br/>/claim/&lt;token&gt;, signed in with ANY path above| Claim[POST /producer-claim<br/>body: token + declaration + terms<br/>token scope=producer_claim, 14d, exp essential]
+    Claim --> ClaimLock[Producer row FOR UPDATE<br/>must be status=draft AND ownerless<br/>else 409; admin 403; already-owner 409]
+    ClaimLock --> ClaimLink[User role=producer,<br/>producer_id=draft.id<br/>stamp declared_at + terms_accepted_at]
+    ClaimLink -.->|same path as a self-registered draft| SubmitReview
 ```
 
 ## 2. Login — single endpoint, rate-limited

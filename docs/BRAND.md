@@ -1,7 +1,7 @@
 # Mehamakor — Brand
 
 **Single source of truth for brand narrative and voice.**
-**Last reviewed:** 2026-05-23 · **Format:** one-page brand summary (metabrand.digital / zyner.io pattern, pre-launch solo)
+**Last reviewed:** 2026-10-26 (against ADR-011/013/022/024/027/030/031/035 and the live code — MEH-2358) · **Format:** one-page brand summary (metabrand.digital / zyner.io pattern, pre-launch solo)
 
 > This file holds the **brand narrative** — positioning, voice, anti-patterns, inspiration. For design **tokens** (colors, fonts, spacing, components), see `docs/DESIGN.md`. For permanent **decisions** locking specific elements, see `docs/decisions/ADR-NNN-*.md`. Repository apex SoT is `docs/CONTEXT.md`.
 
@@ -9,7 +9,7 @@
 
 ## 1 · Positioning
 
-**Mehamakor is a magazine, not a marketplace.** It is a Hebrew-RTL editorial directory for licensed Israeli local food businesses, positioned against the marketplace category that dominates Israeli food discovery (Wolt, 10bis, Cherry, Yad2 food).
+**Mehamakor is a magazine, not a marketplace.** It is a Hebrew-RTL editorial directory for Israeli local food businesses — licensing is two-tier (ADR-022): the license decides the badge, not entry — positioned against the marketplace category that dominates Israeli food discovery (Wolt, 10bis, Cherry, Yad2 food).
 
 The opposing axes:
 
@@ -36,7 +36,7 @@ Surfaces may use clause 1 alone where space forbids the full version (mobile met
 
 ### Tagline vs hero subtitle — different decisions
 
-The **tagline** appears in: footer brand line, meta description, OpenGraph card, `/about` narrative. The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16): `"ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך."` — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
+The **tagline** is specced for: footer brand line, meta description, OpenGraph card, `/about` narrative. **As of 2026-10-26 no code surface renders it** — the footer brand line is `nav.footer.brand_tagline` = `"ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד"` (`Footer.jsx:136`), a string that predates ADR-011 and was never switched. Implement-or-retire is open: MEH-2364. The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
 
 ## 3 · Brand LOCKs (cannot change without formal discussion)
 
@@ -64,7 +64,7 @@ The **tagline** appears in: footer brand line, meta description, OpenGraph card,
 ### Iconography LOCK (see ADR-013)
 
 - **Tier 1** (functional UI): `@phosphor-icons/react` exclusively. Lucide FORBIDDEN.
-- **Tier 2** (category glyphs): hand-drawn SVG (MEH-683 owns, MEH-666 prerequisite)
+- **Tier 2** (category glyphs): the same geometric line family as Tier 1 — 18 glyphs in `frontend/components/CategoryIcons.jsx` (Phosphor + vendored, normalized to regular weight). The hand-drawn track is archived (ADR-013 Amendment 2026-07-22, PR #2026)
 - **Tier 3** (editorial illustrations): post-launch only
 
 ### Emoji LOCK v2 (MEH-657, surface-scoped)
@@ -111,7 +111,7 @@ Design **patterns** (component-level decisions like navbar shape, hero layout, c
 | Hero direction hierarchy (A canonical, B campaign-only) | ADR-018 + MEH-656 (canceled, content absorbed) | LOCKED |
 | ProducerCard state token compliance (opacity-on-cream + --fg-muted) | ADR-019 + MEH-656 (canceled, content absorbed) | LOCKED |
 | Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix) |
-| Category glyph system | MEH-683 (blocked-by MEH-666) | Backlog |
+| Category glyph system | ADR-013 Amendment + PR #2026 (hand-drawn MEH-683/666 archived) | LOCKED v2.1 |
 
 **Rule:** before opening a new design pattern, search this index. If the pattern overlaps with a Done entry, extend the existing one rather than starting parallel work.
 
@@ -206,7 +206,7 @@ A new brand decision lands as an ADR first, then this file is updated to referen
 
 ## 9 · לשון פנייה (נקבע 16/07/2026 — MEH-1244)
 
-Canonical home of the address-form rule. The Drive twin is `03-Brand-Hub/07a-language-rules-נספח-לשון-פנייה-v1.2.md` (06/09); when the two disagree, this section wins. Source: the 16/07 copy review under MEH-1231. Locked copy — reproduced verbatim from the card; not a paraphrase.
+Canonical home of the address-form rule. The Drive copy `03-Brand-Hub/07a-language-rules-נספח-לשון-פנייה-v1.2.md` (06/09) is archive only since 2026-10-26 (ADR-035) — never edit it; this section is the rule. Source: the 16/07 copy review under MEH-1231. Locked copy — reproduced verbatim from the card; not a paraphrase.
 
 **שלוש שכבות, לפי סדר עדיפות:**
 
@@ -224,4 +224,4 @@ _Sweep of the existing copy in `frontend/messages/he.json` against this rule = a
 
 ---
 
-*This is the canonical brand narrative. When BRAND.md and an ADR disagree, the ADR wins (per Truth Hierarchy in `docs/CONTEXT.md` §3). When BRAND.md and DESIGN.md disagree on a token, DESIGN.md wins. When BRAND.md and `MEH-124-v4-content-sync.md` (legacy, slated for archive) disagree, this file wins.*
+*This is the canonical brand narrative. When BRAND.md and an ADR disagree, the ADR wins (per Truth Hierarchy in `docs/CONTEXT.md` §3). When BRAND.md and DESIGN.md disagree on a token, DESIGN.md wins.*

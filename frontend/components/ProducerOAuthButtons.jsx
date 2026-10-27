@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
-import { useGoogleSignIn } from "@/lib/use-google-sign-in";
+import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 
 /**
@@ -83,7 +83,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
           size: "large",
           width: googleBtnRef.current.offsetWidth,
           text: "continue_with",
-          locale: "he",
+          locale: gsiLang(),
         });
       }
     },

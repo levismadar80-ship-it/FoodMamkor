@@ -27,7 +27,7 @@
  *           chips / first line / channel glyph) built from the same fetched
  *           profile, via EditAccordionCard's additive `preview` prop;
  *           MEH-1408 — hub-and-spoke: the flat accordion list became a hub of
- *           4 group tiles (?group=…), shell-only — every card stays MOUNTED
+ *           group tiles (?group=…; 4 at launch, 5 since MEH-2433), shell-only — every card stays MOUNTED
  *           (hidden-toggle at the group level) so unsaved state + the MEH-1100
  *           aggregate survive hub↔group nav; card bodies are untouched.
  *
@@ -134,20 +134,30 @@ const METHOD_FIELD = {
 
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
 // keys and anchor contract above are UNCHANGED — this only assigns each card to
-// one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
-// pricing → profile; delivery → location; license + kashrut → the one
-// unified "trust" card.
+// a group (4 groups until MEH-2433, 5 since). Membership per the 21/07 SYNC
+// (Phase 0 STOP-a resolution): delivery → location; license + kashrut → the
+// one unified "trust" card. The SYNC also put pricing in profile; MEH-2433
+// moved it, with products, to the "products" group.
 // MEH-2142: the 21/07 SYNC also assigned `hours` to the location group. That
 // card no longer exists — store hours became a per-location fact — so the
 // membership line above is written as it stands TODAY rather than as the SYNC
 // recorded it. Noted rather than left contradicting the registries below,
 // which is what a reader checks it against.
-const GROUP_KEYS = ["profile", "trust", "location", "contact"];
+// MEH-2433 (owner-dashboard audit 27/10, finding 12): five groups, in this
+// order — העסק · מוצרים ומחירים · מיקום, משלוחים ושעות · קשר · רישיון וכשרות.
+// "products" is new; the other four keys are unchanged because they are URL
+// values (?group=…) that links and tests already use. This array is the hub's
+// tile order.
+const GROUP_KEYS = ["profile", "products", "location", "contact", "trust"];
 
 // Ordered member card keys per group — for the hub completion count + the
 // next-step marker placement.
 const GROUP_MEMBERS = {
-  profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
+  profile: ["images", "categories", "bio", "ownerStory"],
+  // MEH-2433: offer, dietaryScope and grassFed are deliberately NOT members —
+  // all three are opt-in, and the orderWindow note below says why opt-in
+  // fields stay out of the "{done}/{total}" count.
+  products: ["products", "pricing"],
   trust: ["license", "kashrut"],
   // MEH-1544: `orderWindow` is deliberately NOT a member. Membership drives the
   // hub's "{done}/{total}" completion count, and the order window is an opt-in
@@ -187,7 +197,7 @@ const GROUP_MEMBERS = {
 const HUB_PREVIEW_KEYS = new Set([
   "images", // PreviewThumbs — fixed 40px squares
   "categories", // PreviewChips — closed vocabulary, capped at 3 (MEH-1297)
-  "license", // masked "•••1234" chip (MEH-1258)
+  "license", // "רישיון ✓" chip (MEH-1258, MEH-2430)
   "contact", // channel glyph + channel label
 ]);
 
@@ -476,8 +486,12 @@ function EditPageInner() {
   // MEH-1258: masked license value for the header preview/summary — bullets +
   // last 4 digits (7-10-digit Ministry-of-Health numbers stay identifiable
   // without exposing the whole value in the always-visible header).
+  // MEH-2430: the header used to show "•••" + the last 4 digits — which told
+  // the owner nothing (staging 27/10: "•••0001"). It now says the licence is
+  // on file; the number itself stays inside the open card only, so MEH-1258's
+  // "never the full number in the collapsed header" still holds.
   const licenseRaw = (profile.producer_license_number || "").trim();
-  const licenseMasked = licenseRaw ? `•••${licenseRaw.slice(-4)}` : "";
+  const licenseSummary = licenseRaw ? t("license.summary_present") : "";
   // MEH-1173: the MEH-532 seed description is not a real description — show the
   // empty-preview placeholder for it, matching the summary + next-step marker.
   const realDescription =
@@ -541,14 +555,12 @@ function EditPageInner() {
       ) : (
         <PreviewEmpty />
       ),
-    // MEH-1258: masked license chip — never the full number in the collapsed
-    // header (it scrolls past shoulders/screenshots); the open card shows it.
-    license: licenseMasked ? (
-      <span
-        dir="ltr"
-        className="inline-block px-2 py-0.5 rounded-full border border-border text-xs font-normal text-fg-muted"
-      >
-        {licenseMasked}
+    // MEH-1258: never the full number in the collapsed header (it scrolls
+    // past shoulders/screenshots); the open card shows it. MEH-2430: the chip
+    // says "רישיון ✓" instead of a masked fragment.
+    license: licenseSummary ? (
+      <span className="inline-block px-2 py-0.5 rounded-full border border-border text-xs font-normal text-fg-muted">
+        {licenseSummary}
       </span>
     ) : (
       <PreviewEmpty />
@@ -594,7 +606,6 @@ function EditPageInner() {
       }),
       orderingQuestion: tChips("ordering_q"),
       escalationQuestion: tChips("escalation"),
-      recipeQuestion: tChips("recipe_idea"),
     });
     return { usesCustom, customCount, liveCount: items.length };
   })();
@@ -640,17 +651,22 @@ function EditPageInner() {
     orderWindow: t("order_window.heading"),
     specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
+    // MEH-2433: both cards already reported dirty state, but had no name here,
+    // so the banner flagged unsaved work without saying where. Now that each
+    // is its own card with its own anchor, the jump link has somewhere to go.
+    dietaryScope: t("dietaryScope.heading"),
+    grassFed: t("grassFed.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "orderWindow", "specialHours", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
   // MEH-1408: "back to all sections" — a <button> (router.push, NOT an <a>), so
   // the MEH-1100 nav guard doesn't intercept it: hub↔group keeps every card
   // mounted, so returning to the hub never risks unsaved work. Reused across
-  // the 4 group wrappers.
+  // every group wrapper.
   const backLink = (
     <button
       type="button"
@@ -727,8 +743,9 @@ function EditPageInner() {
         </div>
       </div>
 
-      {/* ===== GROUP: profile — images, categories, bio, products, pricing,
-              owner-story ===== */}
+      {/* ===== GROUP: profile («העסק») — images, categories, bio, owner-story,
+              business name. Products + pricing moved to their own group
+              (MEH-2433). ===== */}
       <div
         hidden={group !== "profile"}
         className="space-y-6"
@@ -793,60 +810,6 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* ⑤ MEH-999 follow-up — producer-facing product-catalog editor. Self-
-            fetching (no profile prop): full CRUD against /producers/me/products.
-            Relocated from settings/page.jsx, where it was defined but never
-            mounted. MEH-1116: summary count seeds from the page profile's joined
-            products and goes live via onCountChange once the card has fetched. */}
-        <EditAccordionCard
-          anchorId="products"
-          title={tProducts("section_heading")}
-          summary={tAcc("products_summary", {
-            count: productsCount ?? profile.products?.length ?? 0,
-          })}
-          preview={previews.products}
-          marker={nextStepKey === "products" ? nextStepDot : undefined}
-          open={openKey === "products"}
-          onToggle={() => toggleKey("products")}
-        >
-          {/* MEH-1306: back-link to the public products section — lives in the
-              expanded body (the header is a <button>; no nested interactives). */}
-          <ViewOnPageLink producerId={profile.id} anchor="section-products" />
-          {/* MEH-2094: the top-product choice lives in the product row now.
-              Same onSave patch shape every other card here uses, so the
-              pricing completeness check (:627) and the accordion summary
-              (:866) see the new value on the same tick. */}
-          <ProductsSection
-            embedded
-            onCountChange={setProductsCount}
-            topProductName={profile.top_product_name}
-            topProductId={profile.top_product_id}
-            onTopProductChange={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          />
-        </EditAccordionCard>
-
-        {/* MEH-1242 PR3 — price range + top product editor. MEH-1408: moved into
-            the profile group (descriptive marketing info; the DNA carries no
-            transactions, so it belongs with the profile, not a checkout flow). */}
-        <EditAccordionCard
-          anchorId="pricing"
-          title={t("pricing.heading")}
-          summary={
-            [profile.top_product_name, profile.price_range]
-              .filter(Boolean)
-              .join(" · ") || tAcc("pricing_summary_empty")
-          }
-          preview={previews.pricing}
-          open={openKey === "pricing"}
-          onToggle={() => toggleKey("pricing")}
-        >
-          <PricingCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-
         {/* ④b MEH-1335 chunk 3 — owner-story editor (bio + photo). The public
             owner card (OwnerCard, MEH-1334 — heading key owner_story.heading)
             wakes its bio/photo variants up on its own once these fields hold
@@ -889,99 +852,138 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: trust — one unified "אישורים ותעודות" card composing the
-              existing license + kashrut bodies as stacked sections (composition
-              only — the card internals are untouched; the #license / #kashrut
-              deep-link anchors move to the inner sub-sections). ===== */}
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, dietary
+              scope, grass-fed. Split out of the profile group: the products
+              card is the most edited and a submit requirement, and it sat
+              fourth inside «הפרופיל שלך». ===== */}
       <div
-        hidden={group !== "trust"}
+        hidden={group !== "products"}
         className="space-y-6"
-        data-testid="group-trust"
+        data-testid="group-products"
       >
         {backLink}
 
+        {/* ⑤ MEH-999 follow-up — producer-facing product-catalog editor. Self-
+            fetching (no profile prop): full CRUD against /producers/me/products.
+            Relocated from settings/page.jsx, where it was defined but never
+            mounted. MEH-1116: summary count seeds from the page profile's joined
+            products and goes live via onCountChange once the card has fetched. */}
         <EditAccordionCard
-          anchorId="trust"
-          title={tAcc("hub_trust_card")}
-          summary={[
-            licenseMasked || t("license.summary_empty"),
-            (profile.kashrut_badges || []).length
-              ? tAcc("kashrut_has")
-              : tAcc("kashrut_none"),
-          ].join(" · ")}
-          preview={previews.license}
-          open={openKey === "trust"}
-          onToggle={() => toggleKey("trust")}
+          anchorId="products"
+          title={tProducts("section_heading")}
+          summary={tAcc("products_summary", {
+            count: productsCount ?? profile.products?.length ?? 0,
+          })}
+          preview={previews.products}
+          marker={nextStepKey === "products" ? nextStepDot : undefined}
+          open={openKey === "products"}
+          onToggle={() => toggleKey("products")}
         >
-          {/* ②b MEH-1258 — producer license editor (sub-section of the unified
-              trust card; heading reuses the prior accordion-header key). */}
-          <div id="license" className="scroll-mt-24">
-            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
-              {t("license.heading")}
-            </h3>
-            <LicenseCard
-              profile={profile}
-              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-              reportDirty={reportDirty}
-            />
-          </div>
+          {/* MEH-1306: back-link to the public products section — lives in the
+              expanded body (the header is a <button>; no nested interactives). */}
+          <ViewOnPageLink producerId={profile.id} anchor="section-products" />
+          {/* MEH-2094: the top-product choice lives in the product row now.
+              Same onSave patch shape every other card here uses, so the
+              pricing completeness check (:627) and the accordion summary
+              (:866) see the new value on the same tick. */}
+          <ProductsSection
+            embedded
+            onCountChange={setProductsCount}
+            topProductName={profile.top_product_name}
+            topProductId={profile.top_product_id}
+            onTopProductChange={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          />
+        </EditAccordionCard>
 
-          {/* ②c MEH-1167 — kashrut-request card (second sub-section). Self-
-              fetches its request list; no onSave — badges land via admin
-              approval, not a producer profile write. */}
-          <div
-            id="kashrut"
-            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
-          >
-            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
-              {t("kashrut.heading")}
-            </h3>
-            <KashrutCard profile={profile} reportDirty={reportDirty} />
-          </div>
+        {/* MEH-1242 PR3 — price range + top product editor. MEH-1408 put it in
+            the profile group (descriptive marketing info; the DNA carries no
+            transactions, so it is not a checkout flow). MEH-2433: it moved
+            with the products into their own group — still descriptive, now
+            beside the catalog it describes. */}
+        <EditAccordionCard
+          anchorId="pricing"
+          title={t("pricing.heading")}
+          summary={
+            [profile.top_product_name, profile.price_range]
+              .filter(Boolean)
+              .join(" · ") || tAcc("pricing_summary_empty")
+          }
+          preview={previews.pricing}
+          open={openKey === "pricing"}
+          onToggle={() => toggleKey("pricing")}
+        >
+          <PricingCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
 
-          {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
-              vegan/vegetarian + gluten facility). Sub-section next to kashrut;
-              writes producer scope fields via PUT /producers/me (onSave merges). */}
-          <div
-            id="dietary-scope"
-            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
-          >
-            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
-              {t("dietaryScope.heading")}
-            </h3>
-            <DietaryScopeCard
-              profile={profile}
-              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-              reportDirty={reportDirty}
-            />
-          </div>
+        {/* MEH-1823 — the owner's single typed offer. MEH-2433 moved it from
+            the location group (after delivery) to here, beside her prices:
+            that is where an owner looks for a discount. Summary shows the live
+            offer sentence, or "no active offer" — the empty state is a real
+            state here, not a placeholder. */}
+        <EditAccordionCard
+          anchorId="offer"
+          title={tOffer("card_title")}
+          summary={
+            profile.active_offer
+              ? tOffer(`types.${profile.active_offer.offer_type}`)
+              : tOffer("type_none")
+          }
+          open={openKey === "offer"}
+          onToggle={() => toggleKey("offer")}
+        >
+          <OffersCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
 
-          {/* ②e MEH-1851 row 23 — owner-declared grass_fed. Sits in the trust
-              group next to dietary scope because it is the same KIND of claim:
-              a business-level property the owner asserts and nobody verifies
-              (labels.md records its evidence as `self-declared` already). It is
-              NOT inside DietaryScopeCard: that card asks what the catalog
-              CONTAINS, and how livestock was raised is not a dietary scope —
-              folding it in would mislabel the question. The column was already
-              writable via PUT /producers/me; only the ADMIN form could produce
-              a value, which bought friction and no verification. */}
-          <div
-            id="grass-fed"
-            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
-          >
-            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
-              {t("grassFed.heading")}
-            </h3>
-            <GrassFedCard
-              profile={profile}
-              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-              reportDirty={reportDirty}
-            />
-          </div>
+        {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
+            vegan/vegetarian + gluten facility); writes producer scope fields
+            via PUT /producers/me (onSave merges). MEH-2433: was a sub-section
+            of the trust card; it is the owner's own claim about her catalog,
+            not a certificate, so it now sits with the products as its own
+            card (one card, one save button). No summary line: none existed
+            for it, and inventing one would be new copy. */}
+        <EditAccordionCard
+          anchorId="dietary-scope"
+          title={t("dietaryScope.heading")}
+          open={openKey === "dietaryScope"}
+          onToggle={() => toggleKey("dietaryScope")}
+        >
+          <DietaryScopeCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* ②e MEH-1851 row 23 — owner-declared grass_fed: a business-level
+            property the owner asserts and nobody verifies (labels.md records
+            its evidence as `self-declared`). Kept OUT of DietaryScopeCard: that
+            card asks what the catalog CONTAINS, and how livestock was raised is
+            not a dietary scope. MEH-2433: moved out of the trust card for the
+            same reason as dietary scope above. */}
+        <EditAccordionCard
+          anchorId="grass-fed"
+          title={t("grassFed.heading")}
+          open={openKey === "grassFed"}
+          onToggle={() => toggleKey("grassFed")}
+        >
+          <GrassFedCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: location — locations, delivery, order window ===== */}
+      {/* ===== GROUP: location — locations, delivery, order window, special
+              hours (the offer moved to products, MEH-2433) ===== */}
       <div
         hidden={group !== "location"}
         className="space-y-6"
@@ -1002,8 +1004,9 @@ function EditPageInner() {
           anchorId="locations"
           title={tLoc("section_heading")}
           summary={
+            // MEH-2430: was a bare number ("10"); now "N מיקומים".
             profile.locations?.length
-              ? String(profile.locations.length)
+              ? tLoc("count_summary", { count: profile.locations.length })
               : tLoc("empty_title")
           }
           open={openKey === "locations"}
@@ -1035,28 +1038,6 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1823 — the owner's single typed offer. Sits after delivery
-            because the most common offer (free delivery over a threshold) is
-            read against the delivery terms above it. Summary shows the live
-            offer sentence, or "no active offer" — the empty state is a real
-            state here, not a placeholder. */}
-        <EditAccordionCard
-          anchorId="offer"
-          title={tOffer("card_title")}
-          summary={
-            profile.active_offer
-              ? tOffer(`types.${profile.active_offer.offer_type}`)
-              : tOffer("type_none")
-          }
-          open={openKey === "offer"}
-          onToggle={() => toggleKey("offer")}
-        >
-          <OffersCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
 
         {/* MEH-2142 — the business-level opening-hours card stood here and was
             REMOVED. Store hours are a per-location fact: the owner edits them
@@ -1194,6 +1175,60 @@ function EditPageInner() {
           />
         </EditAccordionCard>
       </div>
+
+      {/* ===== GROUP: trust — one unified "אישורים ותעודות" card composing the
+              existing license + kashrut bodies as stacked sections (composition
+              only — the card internals are untouched; the #license / #kashrut
+              deep-link anchors move to the inner sub-sections). MEH-2433: last
+              in the hub, and down to licence + kashrut only — the dietary and
+              grass-fed claims moved to the products group. ===== */}
+      <div
+        hidden={group !== "trust"}
+        className="space-y-6"
+        data-testid="group-trust"
+      >
+        {backLink}
+
+        <EditAccordionCard
+          anchorId="trust"
+          title={tAcc("hub_trust_card")}
+          summary={[
+            licenseSummary || t("license.summary_empty"),
+            (profile.kashrut_badges || []).length
+              ? tAcc("kashrut_has")
+              : tAcc("kashrut_none"),
+          ].join(" · ")}
+          preview={previews.license}
+          open={openKey === "trust"}
+          onToggle={() => toggleKey("trust")}
+        >
+          {/* ②b MEH-1258 — producer license editor (sub-section of the unified
+              trust card; heading reuses the prior accordion-header key). */}
+          <div id="license" className="scroll-mt-24">
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("license.heading")}
+            </h3>
+            <LicenseCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
+
+          {/* ②c MEH-1167 — kashrut-request card (second sub-section). Self-
+              fetches its request list; no onSave — badges land via admin
+              approval, not a producer profile write. */}
+          <div
+            id="kashrut"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("kashrut.heading")}
+            </h3>
+            <KashrutCard profile={profile} reportDirty={reportDirty} />
+          </div>
+        </EditAccordionCard>
+      </div>
     </div>
   );
 }
@@ -1282,7 +1317,6 @@ function CustomQuestionsCard({
     }),
     orderingQuestion: tChips("ordering_q"),
     escalationQuestion: tChips("escalation"),
-    recipeQuestion: tChips("recipe_idea"),
   });
 
   // Nothing to save when every input is blank AND nothing is stored — the save

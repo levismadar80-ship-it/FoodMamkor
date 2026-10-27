@@ -27,7 +27,6 @@ from app.auth import (
 )
 from app.config import settings
 from app.services.auth_emails import (
-    gen_referral_code,
     # Aliases preserve the legacy underscore-prefixed module attribute
     # surface so tests that monkeypatch `app.routers.auth._send_*` keep
     # working. New code should use the public names directly.
@@ -87,6 +86,7 @@ from app.schemas.schemas import (
     UserOut,
     UserRegister,
 )
+from app.utils.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +304,7 @@ async def register(
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user is None:
         verify_token = secrets.token_urlsafe(32)
-        verify_expires = datetime.utcnow() + timedelta(hours=24)
+        verify_expires = utc_now() + timedelta(hours=24)
         user = User(
             email=data.email,
             name=data.name,
@@ -316,11 +316,11 @@ async def register(
             city=data.city,
             phone=data.phone,
             role="consumer",
-            referral_code=gen_referral_code(),
             # MEH-1995: record the terms acceptance instead of discarding it.
             # Stamped only when the flag is genuinely True — an omitted or
             # False flag leaves both columns NULL, which reads as "no record",
-            # not as "refused". now(timezone.utc), never naive utcnow().
+            # not as "refused". This column is timezone=True: aware
+            # now(timezone.utc), never the naive utc_now() helper.
             terms_accepted_at=(
                 datetime.now(timezone.utc) if data.terms_accepted else None
             ),
@@ -502,7 +502,24 @@ async def register_producer(
         # Authenticated user upgrading to producer. No enumeration vector —
         # the caller already proved control of the account. Still returns
         # a token + whatsapp_sent so the dashboard flow keeps working.
-        user = current_user
+        # MEH-2322: lock and re-read the account row before the checks below —
+        # the same pattern as producer_claim.claim_producer. `current_user` was
+        # read before any lock, so this path and an owner-claim (or a second
+        # register) racing on one account would both see producer_id=None and
+        # the later commit would overwrite the earlier link, leaving one
+        # business owned by nobody. Lock order user → producer, as in the claim
+        # route, so the two cannot deadlock.
+        # DO NOT drop populate_existing() — without it the identity-mapped
+        # `current_user` comes back with its stale attributes.
+        user = (
+            db.query(User)
+            .filter(User.id == current_user.id)
+            .with_for_update()
+            .populate_existing()
+            .first()
+        )
+        if user is None:  # deleted between authentication and the lock
+            raise HTTPException(status_code=401, detail="משתמש לא נמצא")
         # MEH-669: admin accounts must never self-upgrade to producer.
         # Without this guard, line `user.role = "producer"` below silently
         # demotes the admin and locks them out of /admin (vertical privilege
@@ -802,7 +819,7 @@ async def register_producer(
         create_primary_branch_location(db, producer)
 
         verify_token = secrets.token_urlsafe(32)
-        verify_expires = datetime.utcnow() + timedelta(hours=24)
+        verify_expires = utc_now() + timedelta(hours=24)
         user = User(
             email=data.email,
             name=data.name,
@@ -814,7 +831,6 @@ async def register_producer(
             role="producer",
             producer_id=producer.id,
             is_producer=True,
-            referral_code=gen_referral_code(),
             # MEH-1995: same as the consumer path above. Note this is the ToS
             # checkbox, which is a DIFFERENT consent from the licensing
             # declaration stamped onto the producer row as declared_at /
@@ -956,7 +972,6 @@ def google_auth(
                 name=name,
                 google_id=google_id,
                 role="consumer",
-                referral_code=gen_referral_code(),
                 avatar_url=picture,
                 email_verified=True,
             )
@@ -1075,7 +1090,6 @@ def register_producer_oauth(
                 "email": email,
                 "name": full_name,
                 "role": "consumer",
-                "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
                 # MEH-1553: the OAuth provider already verified the email, so
                 # stamp email_verified=True — one-to-one with the /auth/google
@@ -1308,7 +1322,6 @@ def apple_auth(
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
-                referral_code=gen_referral_code(),
                 email_verified=True,
             )
             db.add(user)
@@ -1370,7 +1383,7 @@ def forgot_password(
     if user:
         token = secrets.token_urlsafe(32)
         user.reset_token = token
-        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
         logger.info(
             "[FORGOT-PW] token_stored user_id=%s expires=%s",
@@ -1397,15 +1410,13 @@ async def reset_password(
     if not user:
         logger.warning("[RESET] token_not_found token_prefix=%s", data.token[:8])
         raise HTTPException(status_code=404, detail="הקישור לא תקין")
-    if (
-        not user.reset_token_expires_at
-        or user.reset_token_expires_at < datetime.utcnow()
-    ):
+    now = utc_now()
+    if not user.reset_token_expires_at or user.reset_token_expires_at < now:
         logger.warning(
             "[RESET] token_expired user_id=%s expires=%s now=%s",
             user.id,
             user.reset_token_expires_at,
-            datetime.utcnow(),
+            now,
         )
         raise HTTPException(
             status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש"
@@ -1446,15 +1457,13 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     if not user:
         logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
         raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
-    if (
-        user.email_verify_expires is None
-        or user.email_verify_expires < datetime.utcnow()
-    ):
+    now = utc_now()
+    if user.email_verify_expires is None or user.email_verify_expires < now:
         logger.warning(
             "[VERIFY-EMAIL] token_expired user_id=%s expires=%s now=%s",
             user.id,
             user.email_verify_expires,
-            datetime.utcnow(),
+            now,
         )
         raise HTTPException(status_code=410, detail="קישור האימות פג תוקף")
     user.email_verified = True
@@ -1476,7 +1485,7 @@ def resend_verify(
     if user.email_verified:
         return {"detail": "האימייל כבר מאומת"}
     token = secrets.token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(hours=24)
+    expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token
     user.email_verify_expires = expires
     db.commit()
@@ -1503,7 +1512,7 @@ def delete_account(
     before the user row. Producer-linked tables cascade via the FKs
     defined in models.py (all have ondelete=CASCADE):
       - ProducerCategory, DeliveryArea, Product
-      - ProducerReview, ProducerFollower, Favorite
+      - ProducerReview, Favorite
       - ProducerPageView, ProducerWhatsAppClick
       - Report (on producer), Event, Experience
 

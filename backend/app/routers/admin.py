@@ -536,7 +536,8 @@ def admin_create_producer(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Admin-created producers are auto-approved."""
+    """Admin-created producers are auto-approved — unless `as_draft`, which
+    prepares an ownerless draft for the owner-claim link (MEH-2322)."""
     slug = data.slug or _slugify(data.name)
     # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
     if data.slug:
@@ -547,7 +548,17 @@ def admin_create_producer(
     # admin form can still persist non-regex license values verbatim
     # (manual-approval flow), but missing-license-for-required-category
     # is still a 422.
-    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
+    # owner's to supply after she claims it. A draft cannot be approved at all
+    # until she submits it (approve_producer 409s on draft), and approval runs
+    # `_assert_approvable` — the MEH-971 license gate, which an admin can
+    # override with ?allow_without_license=true after checking the license
+    # out-of-band. Same exposure, and same override, as the public register
+    # path's `license_pending`; this branch adds no new route to "live".
+    if not data.as_draft:
+        ensure_license_for_categories(
+            db, data.category_ids, data.producer_license_number
+        )
 
     producer = Producer(
         name=data.name,
@@ -592,7 +603,10 @@ def admin_create_producer(
         # MEH-903 A: the legacy delivery_cities column is no longer written —
         # delivery_areas (via _apply_delivery_cities below) is the single store.
         # Column stays declared (drop = Chunk C); new rows keep the [] default.
-        status="approved",  # admin = pre-approved
+        # admin = pre-approved. MEH-2322: an owner-claim draft is NOT — it
+        # has no owner and no declaration, and stays off every public surface
+        # until its owner claims it, completes it and submits it for review.
+        status="draft" if data.as_draft else "approved",
     )
     db.add(producer)
     db.flush()
@@ -1021,8 +1035,10 @@ async def import_producers_excel(
         raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
     try:
         wb = load_workbook(BytesIO(contents), data_only=True)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"לא ניתן לקרוא את הקובץ: {e}")
+    except Exception:
+        # MEH-2375: the parser's message stays in the log, never in the response.
+        logger.exception("producer import: workbook could not be parsed")
+        raise HTTPException(status_code=400, detail="לא ניתן לקרוא את הקובץ")
 
     ws = wb.active
     # Skip header row
@@ -1085,10 +1101,15 @@ def approve_producer(
     # approve something that was never submitted; the owner presses the button.
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
-    # path re-reads the row, but nothing in the codebase moves an existing
-    # producer BACK to draft — all three `status="draft"` writes are at creation
-    # (auth.py:561, auth.py:768, producer_queries.py:542). A row that was not
-    # draft when this line ran cannot be draft when the retry reads it.
+    # path re-reads the row. The four literal `status="draft"` writes are all
+    # at creation (auth.py:578, auth.py:785, producer_queries.py:537, and
+    # admin.py:609 — admin_create_producer's `as_draft`, MEH-2322). One more
+    # route CAN move an existing producer back to draft: an admin PUT carrying
+    # {"status": "draft"} (admin_update_producer applies the payload as-is —
+    # found in the MEH-2322 re-review). For the retry to read a draft row, an
+    # admin would have to send that PUT between this check and the retry, i.e.
+    # race her own approval. Accepted; restricting `status` on the admin PUT is
+    # tracked separately.
     if producer.status == "draft":
         raise HTTPException(
             status_code=409,
@@ -1557,8 +1578,10 @@ def upload_story_card(
         producer.story_card_url = url
         db.commit()
         return {"url": url, "saved": True}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+    except Exception:
+        # MEH-2375: Cloudinary's error text stays in the log, never in the response.
+        logger.exception("story-card upload failed for producer %s", producer_id)
+        raise HTTPException(status_code=500, detail="העלאת התמונה נכשלה")
 
 
 # --- Stats ---
@@ -1618,15 +1641,20 @@ def seed_cities(
     try:
         resp = httpx.get(_DATA_GOV_URL, timeout=30)
         resp.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"data.gov.il fetch failed: {exc}")
+    except httpx.HTTPError:
+        # MEH-2375: the transport error stays in the log, never in the response.
+        logger.exception("seed-cities: data.gov.il fetch failed")
+        raise HTTPException(
+            status_code=502, detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il"
+        )
 
     try:
         cities = parse_localities(resp.json())
     except LocalityParseError as exc:
         # The message names the keys the records DID carry — the one piece of
         # evidence nobody could get from the sandbox. Surfacing it beats a 200
-        # that says "seeded 0" and explains nothing.
+        # that says "seeded 0" and explains nothing. Excluded from MEH-2375 on
+        # purpose: the text is ours (scripts/seed_cities.py), not a library's.
         raise HTTPException(
             status_code=502,
             detail=f"הרשומות התקבלו אך לא נמצאה בהן עמודת שם יישוב: {exc}",

@@ -85,7 +85,9 @@ import { test, expect, type Page } from "../_cloudinary-stub";
  *      אלייך" is now a longer sentence that ends "קליק אינו בהכרח פנייה
  *      שנשלחה." The rewrite reads as a deliberate precision fix (a click is
  *      not an inquiry), so this is reported as copy drift, not as a bug. The
- *      ORDER the doc locks is unchanged and IS asserted.
+ *      ORDER the doc locks is unchanged and IS asserted. MEH-2430 (27/10)
+ *      renamed the second KPI again, to "קליקים על טלפון, אתר ועוד", and
+ *      removed the conversion line.
  * D5 · MT:MEH-964-1B:1 describes the 2×2 strip unconditionally. It is
  *      conditional: with no activity at all, MEH-1345 substitutes
  *      `overview-zero-state` and the strip does not render (page.js:832-848).
@@ -244,6 +246,16 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
         },
         stats: {},
       }),
+    }),
+  );
+  // An approved business gets the «בקשו ביקורת מלקוחה» card on the tools tab
+  // (RequestReviewCard), which reads this on mount. Unstubbed, the fake token
+  // draws a 401 → failed refresh → api.js expires the session mid-test.
+  await page.route("**/producers/me/review-link", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ url: "https://mehamakor.co.il/p/maafiat-shaked?rt=e2e-review-invite" }),
     }),
   );
   await page.route("**/producers/me/analytics**", (route) =>
@@ -459,7 +471,8 @@ test.describe("dashboard shell — KPI strip", () => {
     // lays kpis[0] out top-right. Asserting the order, not just membership.
     for (const [i, label] of [
       "קליקים בוואטסאפ",
-      "קליקים ליצירת קשר (בלי וואטסאפ)",
+      // MEH-2430 renamed this KPI (was «קליקים ליצירת קשר (בלי וואטסאפ)»).
+      "קליקים על טלפון, אתר ועוד",
       "דירוג",
       "צפיות",
     ].entries()) {

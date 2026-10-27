@@ -241,3 +241,94 @@ describe("CONTROL — unchanged behaviour (green on both versions)", () => {
     expect(optionTexts().length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * MEH-2318 — one Tel Aviv, spelled the way the site's filters spell it.
+ *
+ * Measured on production 25/10: GET /cities?q=תל אביב returns
+ * ["תל אביב - יפו"] (the seeded data.gov spelling), while data/cities.js
+ * carries «תל אביב-יפו». The old exact-string Set listed both. The fetched
+ * value below is that real response, not an invented fixture (MEH-1909).
+ *
+ * DISCRIMINATION: the first two cases are red against origin/staging's
+ * CitySearch.jsx (two Tel Aviv options; the table spelling is unknown until
+ * the fetch lands). The third is a control: a city that exists only in the
+ * table must still be offered.
+ */
+describe("MEH-2318 — notation variants collapse to the static spelling", () => {
+  const TA_STATIC = "תל אביב-יפו";
+  const TA_TABLE = "תל אביב - יפו"; // production /cities response, 25/10
+
+  it("lists exactly one Tel Aviv, spelled as the static list spells it", async () => {
+    api.get.mockResolvedValue({ data: [TA_TABLE] });
+    const { input } = mount();
+    typed(input, "תל אביב");
+    await act(async () => {
+      vi.advanceTimersByTime(DEBOUNCE);
+    });
+    await flush();
+    const telAviv = optionTexts().filter((t) => t === TA_STATIC || t === TA_TABLE);
+    expect(telAviv).toEqual([TA_STATIC]);
+  });
+
+  it("treats a value saved in the table's spelling as a known city at once", () => {
+    const onChangeSpy = vi.fn();
+    const { input } = mount({ onChangeSpy });
+    typed(input, TA_TABLE);
+    expect(onChangeSpy).toHaveBeenLastCalledWith(TA_TABLE, { known: true });
+  });
+
+  it("control: a table-only city is still offered after the merge", async () => {
+    api.get.mockResolvedValue({ data: [TA_TABLE, SEEDED_ONLY] });
+    const { input } = mount();
+    typed(input, "שדות");
+    await act(async () => {
+      vi.advanceTimersByTime(DEBOUNCE);
+    });
+    await flush();
+    expect(optionTexts()).toContain(SEEDED_ONLY);
+  });
+});
+
+/**
+ * MEH-2456 — names that START with the query come before names that only
+ * contain it. Sapir's production screenshot (27/10): «תל» listed «עתלית»
+ * first, above every «תל …» city, because the filter was a substring match
+ * sorted alphabetically (ע before ת).
+ *
+ * DISCRIMINATION: the first case is red against origin/staging's
+ * CitySearch.jsx (first option «עתלית»). The second is the 0 / 1 / many
+ * matrix the CLAUDE.md conditional-UI rule asks for; the third is a control:
+ * a contains-only match is still offered when nothing starts with the query.
+ * All three use useBackend={false} so the static list (data/cities.js, which
+ * holds «עתלית», «תל אביב-יפו» and «תל מונד») is the whole corpus.
+ */
+describe("MEH-2456 — prefix matches rank first", () => {
+  it("«תל» lists the «תל …» cities before «עתלית»", () => {
+    const { input } = mount({ useBackend: false });
+    typed(input, "תל");
+    const opts = optionTexts();
+    expect(opts[0].startsWith("תל")).toBe(true);
+    const atlit = opts.indexOf("עתלית");
+    const lastPrefix = opts.reduce((at, t, i) => (t.startsWith("תל") ? i : at), -1);
+    expect(atlit === -1 || atlit > lastPrefix).toBe(true);
+  });
+
+  it("0 / 1 / many: none → no options, one → one option, many → capped at 8", () => {
+    const { input } = mount({ useBackend: false });
+    typed(input, "קקקק");
+    expect(optionTexts()).toEqual([]);
+    typed(input, "עתלית");
+    expect(optionTexts()).toEqual(["עתלית"]);
+    typed(input, "רמת");
+    const many = optionTexts();
+    expect(many.length).toBeGreaterThan(1);
+    expect(many.length).toBeLessThanOrEqual(8);
+  });
+
+  it("control: a contains-only match is still offered", () => {
+    const { input } = mount({ useBackend: false });
+    typed(input, "תלית");
+    expect(optionTexts()).toEqual(["עתלית"]);
+  });
+});

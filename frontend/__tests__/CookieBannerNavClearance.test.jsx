@@ -44,10 +44,6 @@ vi.mock("@phosphor-icons/react", () => ({
   User: (props) => <span {...props} />,
 }));
 vi.mock("@/components/AccountSheet", () => ({ default: () => null }));
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: 0, advance: vi.fn(), dismiss: vi.fn() }),
-}));
 
 // jsdom has no ResizeObserver; CookieBanner's MEH-850 publish effect news one
 // unconditionally. Inert stub — geometry is fed via getBoundingClientRect mocks.

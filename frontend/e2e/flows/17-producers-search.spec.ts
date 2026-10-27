@@ -64,6 +64,22 @@ test.describe("Producers search", () => {
     await expect(page.locator("main, [role='main']").first()).toBeVisible();
   });
 
+  // MEH-819: /search is gone and the one results page is /producers. The
+  // vitest guard reads the rule out of next.config.js; this one asks the
+  // running server, so a rule that is present but shadowed or malformed still
+  // goes red here. maxRedirects: 0 keeps the 308 itself observable.
+  test("/search?q= answers 308 to /producers?q= (MEH-819)", async ({ request }) => {
+    for (const [from, to] of [
+      ["/search?q=bread", "/producers?q=bread"],
+      ["/he/search?q=bread", "/he/producers?q=bread"],
+      ["/en/search?q=bread", "/en/producers?q=bread"],
+    ]) {
+      const res = await request.get(from, { maxRedirects: 0 });
+      expect(res.status(), `${from} must 308`).toBe(308);
+      expect(new URL(res.headers().location, "http://x").pathname + new URL(res.headers().location, "http://x").search, `${from} → ${to}`).toBe(to);
+    }
+  });
+
   test("/producers?focus=1 autofocuses the search input on load", async ({ page }) => {
     await page.goto("/producers?focus=1");
     const input = page.locator("#producers-search-input:visible").first();

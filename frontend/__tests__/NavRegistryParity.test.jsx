@@ -127,10 +127,6 @@ vi.mock("@/components/LanguageToggle", () => ({
   ),
 }));
 
-vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
-vi.mock("@/lib/use-onboarding", () => ({
-  useOnboarding: () => ({ step: -1, advance: vi.fn(), dismiss: vi.fn() }),
-}));
 vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => experiencesGateRef.current,
 }));

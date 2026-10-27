@@ -77,7 +77,6 @@ vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
     setSplitRatio: vi.fn(),
     sheetSnap: "peek",
     splitRatio: "40fr 60fr", // real shape (useFirstVisitHints.js:63) — read via .startsWith
-    visitedIds: new Set(),
   }),
 }));
 vi.mock("@/app/[locale]/map/state/useProducersFeed", () => ({
@@ -287,6 +286,13 @@ describe("MEH-2014 — the clear affordance", () => {
     // either must clear.
     const clears = screen.getAllByTestId("clear-user-location");
     expect(clears).toHaveLength(2);
+    // MEH-2415: the clear control is the ✕ of ONE chip that also carries the
+    // origin label — icon-only, so its accessible name must be the clear copy.
+    for (const btn of clears) {
+      expect(btn).toHaveAccessibleName("נקו את המיקום השמור");
+      expect(btn).toHaveTextContent("");
+      expect(btn.parentElement.querySelector('[data-testid="sort-origin-label"]')).not.toBeNull();
+    }
     await act(async () => {
       fireEvent.click(clears[0]);
     });

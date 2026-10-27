@@ -259,7 +259,6 @@ export default function AdminHelpPage() {
             <ul className="space-y-2">
               <ExternalRow label={t("sections.urls.prod_label")} href="https://mehamakor.co.il">mehamakor.co.il</ExternalRow>
               <ExternalRow label={t("sections.urls.staging_label")} href="https://staging.mehamakor.online">staging.mehamakor.online</ExternalRow>
-              <ExternalRow label={t("sections.urls.github_label")} href="https://github.com/levismadar80-ship-it/FoodMamkor">{t("sections.urls.github_text")}</ExternalRow>
               <li className="flex items-start gap-3 text-sm">
                 <span className="text-muted min-w-[140px]">{t("sections.urls.railway_label")}</span>
                 <span className="text-fg-muted">{t.rich("sections.urls.railway_text", richComponents)}</span>

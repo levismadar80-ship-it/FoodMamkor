@@ -153,6 +153,35 @@ describe("computeStatus (clock pinned to Asia/Jerusalem)", () => {
   });
 });
 
+// MEH-2383 — `now` is an argument. The system clock is pinned to a Monday noon
+// in June on purpose: an implementation that ignores `now` and reads the clock
+// answers for Monday, so the Israel-midnight cases below go red on it, and a
+// UTC-day implementation goes red on the first case (22:30Z is still Monday in
+// UTC, Tuesday 00:30 in Israel). Winter instants (IST, UTC+2) — the two cases
+// straddle one Israel midnight, 23:30 ↔ 00:30, one hour apart in UTC.
+describe("computeStatus — injected `now` across Israel midnight (MEH-2383)", () => {
+  const MAP = parseHours("Mon 09:00-18:00, Tue 00:00-02:00");
+
+  it("Tue 00:30 IST (Mon 22:30Z): open on Tuesday's early range", () => {
+    at("2026-06-15T09:00:00Z"); // system clock: Mon 12:00 IDT — a decoy
+    expect(computeStatus(MAP, new Date("2026-10-26T22:30:00Z"))).toEqual({
+      isOpen: true,
+      openTime: "00:00",
+      closeTime: "02:00",
+    });
+  });
+
+  it("Mon 23:30 IST (Mon 21:30Z): closed, next opening is Tuesday 00:00", () => {
+    at("2026-06-15T09:00:00Z");
+    expect(computeStatus(MAP, new Date("2026-10-26T21:30:00Z"))).toEqual({
+      isOpen: false,
+      nextDayKey: "tue",
+      nextTime: "00:00",
+      nextIsTomorrow: true,
+    });
+  });
+});
+
 // MEH-1870 — the lunch break. A day with two ranges has a genuinely CLOSED
 // stretch in the middle, and the next opening is later the SAME day. Before
 // the split-ranges change that state was not representable at all.
