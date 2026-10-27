@@ -1,7 +1,8 @@
 """MEH-2352: make a moderation fail-open visible.
 
 The AI moderators fail open by LOCK: no key, an API error, or an
-unreadable reply all resolve to APPROVED. That rule stays. What was missing
+unreadable reply all let the item through as if APPROVED (a review stores
+no verdict, NULL, so its next save re-checks — MEH-2390). That rule stays. What was missing
 is any signal that it happened. On reviews, which publish with no admin
 gate, a dead key meant every review went live unchecked with nothing in
 any log or dashboard saying so. The MEH-2335 eval found 10 silent
@@ -60,7 +61,7 @@ def classify_failure(exc: BaseException, *, truncated: bool = False) -> str:
 def report_fail_open(surface: str, reason: str) -> None:
     """Record that ``surface`` acted without a model verdict.
 
-    The content moderators approved the item. ``producer_risk`` approves
+    The content moderators let the item through. ``producer_risk`` approves
     nothing; it left the admin-only score empty. Filter on
     ``moderation_surface`` to tell them apart."""
     logger.warning(
