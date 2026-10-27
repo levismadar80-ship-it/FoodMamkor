@@ -31,7 +31,6 @@
     "home.search.placeholders.q2",
     "home.search.placeholders.q3",
     "home.search.placeholders.q4",
-    "producers.search_input.placeholder",
-    "search.input_placeholder"
+    "producers.search_input.placeholder"
   ]
 }

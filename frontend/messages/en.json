@@ -626,12 +626,6 @@
       "og_title": "Contact Mehamakor",
       "og_description": "Questions, suggestions, or ideas for collaboration — we're here."
     },
-    "search": {
-      "title": "Search results | Mehamakor",
-      "description": "Search and discover local food businesses across Israel on Mehamakor.",
-      "og_title": "Search Mehamakor",
-      "og_description": "Find local food businesses and real food easily."
-    },
     "forgot_password": {
       "title": "Reset your password | Mehamakor",
       "description": "Forgot your password? Enter your email and we'll send a reset link for your Mehamakor account.",
@@ -3159,23 +3153,6 @@
     "privacy_notice": "By submitting the form you confirm you have read the <link>privacy policy</link>."
   },
   "search": {
-    "breadcrumb_home": "Home",
-    "breadcrumb_search": "Search",
-    "breadcrumb_query": "Search: {q}",
-    "title_default": "Search",
-    "title_results": "Search results for \"{q}\"",
-    "input_placeholder": "Sourdough bread, organic eggs, vegetables and fruit",
-    "input_aria": "Search",
-    "submit": "Search",
-    "no_results_hint": "We couldn't find a match — try another word or browse by category",
-    "results_count": "{totalHits, plural, one {1 result} other {{totalHits} results}}",
-    "empty_prompt": "Type a query in the search field at the top of the page.",
-    "section_producers": "Businesses",
-    "section_products": "Products",
-    "product_by_prefix": "at",
-    "empty_title": "We couldn't find a match — try another word",
-    "empty_subtitle": "Try changing the search or browsing categories on the homepage.",
-    "empty_home_cta": "Back to home",
     "hero": {
       "submit_aria": "Search",
       "loading": "Loading results...",
