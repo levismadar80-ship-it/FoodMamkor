@@ -16,6 +16,7 @@ import { render, screen, within, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
+import { israelToday } from "@/lib/israel-date";
 
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() },
@@ -77,6 +78,20 @@ describe("events list (MEH-2430 §1)", () => {
     expect(future.getByText(P.manage_events.badge_active)).toBeInTheDocument();
     expect(future.getByText(P.manage_events.action_cancel)).toBeInTheDocument();
   });
+
+  // The boundary: an event dated today (Israel calendar) is still on, so a
+  // `<=` in place of `<` turns this red.
+  it("an event dated today is not «הסתיים»", async () => {
+    api.get.mockResolvedValue({
+      data: [{ id: "e3", title: "אירוע היום", event_date: israelToday(), city: "חיפה", is_active: true }],
+    });
+    renderIntl(<EventsPage />);
+    await waitFor(() => screen.getByText("אירוע היום"));
+
+    const today = within(rowOf("אירוע היום"));
+    expect(today.queryByText(P.manage_events.badge_past)).not.toBeInTheDocument();
+    expect(today.getByText(P.manage_events.action_cancel)).toBeInTheDocument();
+  });
 });
 
 describe("experiences list (MEH-2430 §1)", () => {
@@ -120,10 +135,10 @@ describe("group buys list (MEH-2430 §2)", () => {
     await waitFor(() => screen.getByText("רכש שעבר"));
 
     const G = he.group_buys.dashboard;
-    const pastCard = screen.getByText("רכש שעבר").closest("div.rounded-\\[14px\\]");
+    const pastCard = screen.getByText("רכש שעבר").closest('[data-testid="manage-group-buy-card"]');
     expect(within(pastCard).getByText(G.status_deadline_passed)).toBeInTheDocument();
     expect(within(pastCard).queryByText(G.status.open)).not.toBeInTheDocument();
-    const openCard = screen.getByText("רכש פתוח").closest("div.rounded-\\[14px\\]");
+    const openCard = screen.getByText("רכש פתוח").closest('[data-testid="manage-group-buy-card"]');
     expect(within(openCard).getByText(G.status.open)).toBeInTheDocument();
   });
 });

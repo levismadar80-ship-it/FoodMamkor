@@ -416,7 +416,7 @@ export default function ProducerGroupBuysPage() {
               : STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
-              <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
+              <div key={gb.id} data-testid="manage-group-buy-card" className="bg-white rounded-[14px] border border-border p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <h2 className="font-semibold text-text">{gb.title}</h2>
