@@ -34,6 +34,12 @@ import { TOGGLE_CHIPS } from "@/lib/map-chips";
 const router = { replace: vi.fn(), push: vi.fn() };
 let params = {};
 
+// MEH-819: ProducersClient now mounts EnSearchNotice, which pulls LanguageToggle
+// -> @/i18n/navigation -> next-intl's createNavigation, which imports
+// next/navigation for real and fails under the partial mocks in this file.
+// Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
+// its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
   useSearchParams: () => ({

@@ -191,7 +191,7 @@ export default function Header() {
       if (tag === "input" || tag === "textarea" || tag === "select") return;
       if (document.activeElement?.isContentEditable) return;
       e.preventDefault();
-      router.push("/search?focus=1");
+      router.push("/producers?focus=1");
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -445,7 +445,7 @@ export default function Header() {
                 competed with the add-business CTA + lengthened the pill. Same
                 route + a11y as the mobile circle (:261). */}
             <button
-              onClick={() => router.push("/search?focus=1")}
+              onClick={() => router.push("/producers?focus=1")}
               aria-label={t("nav.search_label")}
               className="hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring text-fg-muted hover:bg-primary/5"
             >
@@ -497,7 +497,7 @@ export default function Header() {
 
             {/* Mobile: search (44px circle) — nav lives in BottomNav (MEH-789 PR-A) */}
             <button
-              onClick={() => router.push("/search?focus=1")}
+              onClick={() => router.push("/producers?focus=1")}
               aria-label={t("nav.search_label")}
               className="md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring text-fg-muted"
             >
