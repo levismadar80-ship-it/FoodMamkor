@@ -2,8 +2,8 @@
 
 No screen ever showed a user her referral link, and since MEH-328 the only
 caller (RegisterClient, right after signup) ran unauthenticated and got a 401.
-Registration stopped minting `users.referral_code` (MEH-2393 chunk 1), and
-the column and the `referral_clicks` table were dropped in chunk 2.
+Registration stopped minting `users.referral_code` (MEH-2393 chunk 1); chunk 2
+dropped `referral_clicks` and deferred the column, which chunk 3 drops.
 
 DISCRIMINATION: on the old code `POST /referral/claim` is mounted, so the
 assertion lists it and goes red.
@@ -28,9 +28,12 @@ def test_referral_claim_returns_404(client):
 
 def test_registration_no_longer_mints_a_referral_code(client, db):
     # MEH-2393: the register paths stopped writing users.referral_code
-    # (chunk 1) and the column is gone from the model (chunk 2).
+    # (chunk 1) and the ORM no longer maps it (chunk 2) — the precondition for
+    # dropping the column without breaking the container still serving.
     # DISCRIMINATION: before chunk 1 every register path set an 8-hex code
-    # and UserOut carried the key; before chunk 2 the column was still mapped.
+    # and UserOut carried the key; before chunk 2 the column was mapped.
+    from sqlalchemy import inspect as sa_inspect
+
     from app.models.models import User
     from tests.conftest import auth_header, valid_user_register_payload
 
@@ -39,7 +42,9 @@ def test_registration_no_longer_mints_a_referral_code(client, db):
     assert resp.status_code == 200, resp.text
 
     user = db.query(User).filter(User.email == payload["email"]).one()
-    assert "referral_code" not in User.__table__.c
+    assert "referral_code" not in sa_inspect(User).attrs
+    # Control: still in the table, so alembic's model-vs-DB check stays clean.
+    assert "referral_code" in User.__table__.c
 
     # /auth/register answers with a neutral detail only, so read the UserOut
     # shape where it is served: GET /auth/me.

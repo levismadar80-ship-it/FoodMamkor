@@ -693,6 +693,7 @@ class Producer(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __mapper_args__ = {"exclude_properties": ["referral_code"]}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(200), unique=True, nullable=False)
@@ -717,6 +718,12 @@ class User(Base):
     # counts on the /admin/dashboard. Nullable for pre-existing users who
     # haven't made a request yet after this column was added.
     last_active_at = Column(DateTime, nullable=True, index=True)
+    # MEH-2393 chunk 2: unread and unwritten since #3639/#3690. The column
+    # stays in the TABLE (so `alembic check` matches the DB) but is excluded
+    # from the MAPPER (see __mapper_args__): no ORM SELECT or INSERT names it,
+    # so chunk 3 can drop it while this code is still serving. `deferred()`
+    # is not enough — the ORM INSERT still lists every mapped column.
+    referral_code = Column(String(20), unique=True, nullable=True, index=True)
     # MEH-143: one account / multiple roles. True once the user has ever
     # registered a producer, even if role is later changed by admin.
     is_producer = Column(Boolean, default=False)

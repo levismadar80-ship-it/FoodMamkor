@@ -94,6 +94,7 @@ Frontend: no Zod schema; implicit in `auth-context.js` + `app/settings/page.jsx:
 | is_blocked | Boolean default False (m:158) | — | **excluded** | — | INFO — intentional gap; admin-only signal |
 | is_oauth (computed) | (Property `not password_hash`, m:196–202) | — | bool default False (s:542) | `user.is_oauth` (settings:177) | ✓ |
 | is_producer | Boolean default False (m:170) | — | bool default False (s:544) | `user.is_producer` (settings:68) | ✓ |
+| referral_code | String(20) UNIQUE NULL (m:167) | — | str\|None (s:545) | implicit | ✓ |
 | avatar_url | String NULL (m:173) | — | str\|None (s:547) | `user.avatar_url` (settings:244) | ✓ |
 | email_verified | Boolean default False (m:189) | — | bool default False (s:554) | implicit | ✓ |
 | reset_token / reset_token_expires_at | (m:176–177) | — | **excluded** | — | ✓ |
