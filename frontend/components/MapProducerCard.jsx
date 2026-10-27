@@ -274,7 +274,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             {
               delivers: !!p.delivers,
               offersPickup: !!p.offers_pickup,
-              storeWithHours: p.has_physical_location !== false && !!resolveStoreHours(p),
+              storeWithHours: p.has_physical_location === true && !!resolveStoreHours(p),
             },
             t,
           ).map((tag) => (

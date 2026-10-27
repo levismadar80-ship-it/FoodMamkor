@@ -312,6 +312,16 @@ describe("ProducerSections — no-hours line in the location section", () => {
     expect(screen.queryByTestId("location-no-hours")).toBeNull();
   });
 
+  it("only a secondary location has hours → the line still shows (store hours are the primary's)", () => {
+    // resolveStoreHours reads the PRIMARY row (then the legacy column); a pickup
+    // point's hours are not the shop's, and DeliveryBlock lists them separately.
+    renderWith({
+      locations: [pin, { kind: "pickup", is_primary: false, lat: 32.1, lng: 34.1, id: 2, opening_hours: "Fri 08:00-13:00" }],
+    });
+
+    expect(screen.getByTestId("location-no-hours")).toBeInTheDocument();
+  });
+
   it("hours without a location → no line (nowhere to arrive at)", () => {
     renderWith({ has_physical_location: false, locations: [], opening_hours: "Fri 08:00-13:00" });
 

@@ -151,6 +151,14 @@ describe("MapProducerCard — the 'neither' cell splits on a store with hours (M
     expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
   });
 
+  it("hours with the location flag absent stay arranged (a missing flag is false here)", () => {
+    // The API always sends has_physical_location; a payload without it must
+    // not claim a walk-in shop the detail page would show no location for.
+    renderCard({ delivers: false, offers_pickup: false, opening_hours: "Fri 08:00-13:00" });
+
+    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
+  });
+
   it("hours never replace a declared service tag", () => {
     renderCard({ delivers: true, offers_pickup: false, has_physical_location: true, locations: primaryWithHours });
 
