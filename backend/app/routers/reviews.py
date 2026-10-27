@@ -336,6 +336,8 @@ def _apply_review_edit(
     that window must be the is_hidden this compares against. Compared before
     the assignment; an unchanged re-save does not stamp.
     """
+    # The refresh discards unflushed changes on `review`: nothing may be
+    # assigned to it before this line.
     db.refresh(review, with_for_update=True)
     if review.is_hidden and (review.body != data.body or review.stars != data.stars):
         review.edited_after_hidden_at = utc_now()
@@ -647,7 +649,12 @@ def unhide_review(
 ):
     """MEH-2348: set is_hidden=False — the only way a hidden review returns.
     Recomputes producer aggregates."""
-    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    review = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review_id)
+        .with_for_update()
+        .first()
+    )
     if not review:
         raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
     review.is_hidden = False
