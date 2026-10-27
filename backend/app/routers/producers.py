@@ -516,9 +516,11 @@ def record_producer_view(
     # is what makes "any view of a non-approved profile is necessarily the
     # owner or an admin" true. is_internal_viewer is that same shape,
     # extracted (services/analytics.py).
-    if producer.status != "approved" and not is_internal_viewer(
-        current_user, producer_id
-    ):
+    # MEH-2459: `or kind != "producer"` mirrors the GET's gate above — an
+    # organizer is 404 to strangers there, so it is 404 here too.
+    if (
+        producer.status != "approved" or producer.kind != "producer"
+    ) and not is_internal_viewer(current_user, producer_id):
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     record_analytics_event(

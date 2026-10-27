@@ -15,7 +15,7 @@ in the PR body.
 
 from datetime import timedelta
 
-from app.models.models import Event, Producer
+from app.models.models import Event, Producer, ProducerLocation
 from app.utils.clock import israel_today
 from conftest import auth_header, make_producer, make_user
 
@@ -45,14 +45,40 @@ def _organizer(db, *, status: str = "approved") -> Producer:
         has_physical_location=True,
     )
     db.add(producer)
+    db.flush()
+    _pin(db, producer)
     db.commit()
     db.refresh(producer)
     return producer
 
 
+def _pin(db, producer: Producer) -> None:
+    """The primary `branch` row every write path creates with the coordinates.
+
+    MEH-1938 chunk 5a: geo distance reads ONLY `producer_locations` — a row
+    without one has no distance and drops out of the /map query on its own,
+    which would make the organizer's absence follow from the fixture rather
+    than from the predicate. Both fixtures get a pin so the control business
+    is found and the organizer is excluded for the right reason.
+    REUSES: tests/test_producer_location_types.py:163 — _pin.
+    """
+    db.add(
+        ProducerLocation(
+            producer_id=producer.id,
+            kind="branch",
+            is_primary=True,
+            city=producer.city,
+            lat=producer.lat,
+            lng=producer.lng,
+            location_precision="exact",
+        )
+    )
+
+
 def _business(db) -> Producer:
     producer = make_producer(db, name=BUSINESS_NAME, status="approved")
     producer.slug = BUSINESS_SLUG
+    _pin(db, producer)
     db.commit()
     db.refresh(producer)
     return producer
@@ -117,14 +143,27 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         assert BUSINESS_NAME in names
         assert ORGANIZER_NAME not in names
 
-    def test_absent_from_count_cities_random_stats(self, client, db):
+    def test_absent_from_count_cities_stats(self, client, db):
         _organizer(db)
         _business(db)
         assert client.get("/producers/count").json()["count"] == 1
         cities = client.get("/producers/cities").json()
         assert sum(c["count"] for c in cities) == 1
-        assert client.get("/producers/random").json()["name"] == BUSINESS_NAME
         assert client.get("/stats").json()["producers_count"] == 1
+
+    def test_random_is_404_when_only_an_organizer_exists(self, client, db):
+        """/producers/random picks among businesses; with one business and
+        one organizer the old code still picked the business half the time,
+        so the discriminating construction is: organizer alone → 404."""
+        _organizer(db)
+        assert client.get("/producers/random").status_code == 404
+
+    def test_random_picks_the_business_not_the_organizer(self, client, db):
+        _organizer(db)
+        business = _business(db)
+        resp = client.get("/producers/random")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(business.id)
 
     def test_absent_from_sitemap_source_slug_route(self, client, db):
         """sitemap.js builds producer URLs from GET /producers (above) and the
@@ -144,9 +183,21 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         assert resp.json()["kind"] == "organizer"
 
     def test_producer_kind_default_is_producer(self, client, db):
-        _business(db)
+        """A business minted without `kind` carries the column default — read
+        back from the DB row, not from the Pydantic default."""
+        business = _business(db)
+        db.expire(business)
+        assert business.kind == "producer"
         resp = client.get("/producers")
         assert resp.json()[0]["kind"] == "producer"
+
+    def test_page_view_gate_agrees_with_get_by_id(self, client, db):
+        """producers.py: the POST /view must share the GET's gate — a
+        stranger gets 404 from both, never 204 from one and 404 from the other
+        (MEH-254 enumeration oracle, MEH-2156 counter integrity)."""
+        organizer = _organizer(db)
+        resp = client.post(f"/producers/{organizer.id}/view")
+        assert resp.status_code == 404
 
 
 class TestOrganizerPresentThroughEvents:
@@ -172,6 +223,8 @@ class TestOrganizerPresentThroughEvents:
         assert {ev["producer_id"] for ev in resp.json()} == {str(organizer.id)}
 
     def test_pending_organizer_event_stays_hidden(self, client, db):
+        """Pin, not a check of this change: the MEH-1161 status gate already
+        hides it. Kept so the kind branch never widens the status gate."""
         organizer = _organizer(db, status="pending")
         _event(db, organizer)
         assert client.get("/events").json() == []

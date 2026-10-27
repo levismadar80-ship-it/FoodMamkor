@@ -162,7 +162,9 @@ class Producer(Base):
     # five create-from-payload sites and psql all mint a business unless they
     # say otherwise. Values locked by CHECK `producer_kind_values`
     # (migration f1a2b3c4d5e6). ADR-036.
-    kind = Column(String(20), nullable=False, server_default="producer")
+    kind = Column(
+        String(20), nullable=False, default="producer", server_default="producer"
+    )
     # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
     # moved draft -> pending. That instant, NOT created_at, is when the
     # 3-business-day review SLA starts once the submit gate ships.

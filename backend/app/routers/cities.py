@@ -34,7 +34,8 @@ def _live_business_cities(db: Session, clean: str) -> list[str]:
     delivery selections round-trippable until the Chunk B normalization lands.
     """
     prod = db.query(Producer.city).filter(
-        is_business(), Producer.city.isnot(None)  # MEH-2459
+        is_business(),  # MEH-2459
+        Producer.city.isnot(None),
     )
     deliv = db.query(DeliveryArea.city).filter(DeliveryArea.city.isnot(None))
     if clean:
