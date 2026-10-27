@@ -231,20 +231,14 @@ test.describe("manual › /join (MEH-995)", () => {
 
   // MT:MEH-995:7 — footer "הוסיפו את העסק שלכם" → /join: COVERED by frontend/__tests__/FooterNavGroups.test.jsx:62 (not duplicated here).
 
-  // MT:MEH-995:8 — testimonial slot is a self-explaining placeholder, not a fabricated-looking testimonial.
-  test("testimonial slot: the self-describing placeholder, with no attribution that would read as real", async ({
-    page,
-  }) => {
+  // MT:MEH-995:8 — MEH-2419: the testimonial slot is render-gated OFF until a
+  // real quote exists (same rule as /about, MEH-1112: real social proof or
+  // nothing). The placeholder copy must not reach the page at all.
+  test("testimonial slot: not rendered while there is no real testimonial", async ({ page }) => {
     await gotoJoin(page);
-    const slot = scope(page).getByTestId("join-testimonial");
-    await slot.scrollIntoViewIfNeeded();
-    await expect(slot).toContainText(COPY.testimonial.eyebrow);
-    const quote = slot.locator("blockquote");
-    await expect(quote).toHaveCount(1);
-    // Exact equality, not containment: the placeholder is the whole quote. Any
-    // other text in the blockquote is invented business copy (COPY_BANK §8).
-    await expect(quote).toHaveText(COPY.testimonial.quote);
-    // A real-looking testimonial carries an attribution; the placeholder must not.
-    await expect(slot.locator("cite, figcaption")).toHaveCount(0);
+    // Gate on a sibling the change cannot move, so an empty page can't pass.
+    await expect(scope(page).getByTestId("join-faq")).toBeVisible(FIRST_PAINT);
+    await expect(scope(page).getByTestId("join-testimonial")).toHaveCount(0);
+    await expect(scope(page).getByText(COPY.testimonial.quote)).toHaveCount(0);
   });
 });

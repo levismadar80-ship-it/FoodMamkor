@@ -3754,3 +3754,8 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] `producer-detail-minimal-{desktop,mobile}-linux.png` + `phone-revealed` / `two-channel-revealed` (desktop) — עסק בלי תמונות: השם ב-masthead, ומתחתיו אותן שתי שורות מטא; כרטיס הקשר עם 2 השאלות + "שאלה אחרת?" + ערוץ הטלפון/אינסטגרם שנחשף
 - [ ] `producer-detail-disclosure-open-mobile-linux.png` — ה-disclosure פתוח, אותם שני שינויים בכותרת
 - [ ] frames שלא נגעו בהם (home / map / about / login / register) לא השתנו ב-diff של ה-PR
+
+## MEH-2419 — /join: משבצת העדות מוסתרת עד שיש עדות אמיתית (27/10/2026)
+- [ ] `/join` — אחרי הכרטיס «כל בית עסק עובר היכרות אישית» מגיע ישר «שאלות נפוצות · כמה זה עולה?»; אין «בקרוב — עדות ראשונה» ואין סימן ציטוט
+- [ ] 375 + 1440: אין רווח ריק כפול בין הכרטיס לשאלות
+- [ ] `/en/join` — אותו דבר, בלי משבצת העדות
