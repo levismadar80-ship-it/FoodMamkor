@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-27 15:35 — טבלאות האדמין בנייד: שורה = כרטיס (#3678, MEH-2426)
+
+**‏שורה אחת:** כל טבלאות האדמין נשאות `.table-stack` (globals.css): מתחת ל-md כל שורה כרטיס, וכל תא «תווית: ערך» מ-`data-label`. הבאנר «המסך הזה זמין במחשב» הוסר. ‏A-narrow של MEH-2070 כבר לא בתוקף.
+
+**‏מה צריך לדעת לפני עבודה:**
+- טבלת אדמין חדשה = `className="table-stack ..."` + `data-label` לכל תא חוץ מתא הכותרת + `data-cell="actions"`. בלי זה `AdminTablesStackGuard.test.js` אדום. עטיפה עם `overflow-hidden` מעל `<table>` מותרת רק אם יש בתוכה `overflow-x-auto`.
+- «נבדק בנייד» חל עכשיו על כל `/admin` (CLAUDE.md עודכן במקום).
+- ‏`e2e/qa-meh2070-admin-mobile.mjs` (סקריפט חד-פעמי, לא ב-CI) עדיין מצפה לבאנר. הוא היסטוריה ולא מריצים אותו.
+- בזמן העבודה ה-API של staging לא ענה (‏`/api/health` → timeout, 14:45Z). הסריקה רצה מקומית עם fixtures.
+
+**‏ממתין לספיר:** אין.
+
 ## 2026-10-27 11:30 — סקירת הפרויקט נסגרה: 9 PR-ים מוזגו, ‏/search אוחד ל-/producers (#3645), ‏E2E של staging חוזר לירוק (#3641)
 
 **‏שורה אחת:** כל הכרטיסים מסקירת 26/10 (MEH-2367 עד MEH-2375, ‏MEH-819) ב-Done. מה שנשאר הם שלושה כרטיסי Expand-Contract / ניקוי ל-post-launch (MEH-2392, ‏MEH-2393, ‏MEH-2395).
