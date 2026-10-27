@@ -252,8 +252,12 @@ npx playwright test             # E2E
 - **מוצרי בית מסומנים (`flagged_home_products`)** נספרו בסכום הישן אבל מעולם
   לא היה להם מסך אדמין (הטאבים הוסרו ב-MEH-1406); הם אינם תור בסרגל ולא
   בדף הבית. אם יחזור מסך — מוסיפים שורה ל-`admin/queues.js`.
-- **נייד (MEH-2070, A-narrow):** `/admin` (דף הבית, התאמה מדויקת) ו-`/admin/producers`
-  ומטה הם mobile-ready ובלי באנר «זמין במחשב»; שאר המסכים דסקטופ-בלבד.
+- **נייד (MEH-2426, מחליף את A-narrow של MEH-2070):** כל מסכי `/admin` mobile-ready
+  ואין יותר באנר «זמין במחשב». כל טבלת אדמין נושאת `.table-stack` (globals.css):
+  מתחת ל-md כל שורה = כרטיס, כל תא «תווית: ערך» מ-`data-label`, תא הפעולות
+  (`data-cell="actions"`) ברוחב מלא. טבלה חדשה בלי זה — `AdminTablesStackGuard.test.js`
+  אדום. החריג היחיד: `AdminProducersTable` (מסתירה עמודות, MEH-2070). בנייד ה-strip
+  העליון גולל את הטאב הפעיל לתוך המסך.
 
 ## Trust Ladder — MEH-51 (April 2026)
 

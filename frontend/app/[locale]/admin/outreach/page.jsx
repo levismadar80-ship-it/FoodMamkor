@@ -179,16 +179,17 @@ export default function AdminOutreachPage() {
       {/* Leads table */}
       <div className="bg-white border border-border rounded-[12px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
+          <table className="table-stack w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.name")}</th>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.city")}</th>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.category")}</th>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.phone")}</th>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.instagram")}</th>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.status")}</th>
-                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.actions")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.name")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.city")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.category")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.phone")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.instagram")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.status")}</th>
+                <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -217,20 +218,23 @@ export default function AdminOutreachPage() {
                 leads.map((lead) => (
                   <tr key={lead.id} className="border-t align-top">
                     <td className="px-3 py-3 font-medium">{lead.name}</td>
-                    <td className="px-3 py-3 text-muted">{lead.city || "—"}</td>
-                    <td className="px-3 py-3 text-muted">{lead.category || "—"}</td>
-                    <td className="px-3 py-3 text-muted" dir="ltr">
+                    <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.city")}>{lead.city || "—"}</td>
+                    <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.category")}>{lead.category || "—"}</td>
+                    {/* MEH-2426: dir="ltr" moved from the <td> to the value, so
+                        the stacked-card label keeps the RTL start side. */}
+                    <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.phone")}>
                       {lead.phone ? (
-                        <a href={`tel:${lead.phone}`} className="text-primary hover:underline">
+                        <a href={`tel:${lead.phone}`} dir="ltr" className="text-primary hover:underline">
                           {lead.phone}
                         </a>
                       ) : (
                         "—"
                       )}
                     </td>
-                    <td className="px-3 py-3 text-muted" dir="ltr">
+                    <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.instagram")}>
                       {instagramHandle(lead.instagram) ? (
                         <a
+                          dir="ltr"
                           href={instagramUrl(lead.instagram)}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -242,7 +246,7 @@ export default function AdminOutreachPage() {
                         "—"
                       )}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3" data-label={t("outreach.columns.status")}>
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
@@ -256,7 +260,7 @@ export default function AdminOutreachPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3" data-cell="actions">
                       <div className="flex flex-wrap gap-1.5">
                         <button
                           type="button"

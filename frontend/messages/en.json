@@ -1423,8 +1423,7 @@
         "approvals": "Approvals",
         "queues": "Queues",
         "more": "More"
-      },
-      "desktop_only": "This screen is available on desktop"
+      }
     },
     "dashboard": {
       "title": "Needs attention",
@@ -1869,6 +1868,12 @@
       },
       "claude_tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
       "claude_tooltip_label": "Claude moderation info",
+      "moderation_labels": {
+        "PENDING": "Pending",
+        "FLAGGED": "Changes required",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
       "actions": {
         "approve": "Approve",
         "changes": "Changes",

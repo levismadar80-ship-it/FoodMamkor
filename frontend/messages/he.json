@@ -1423,8 +1423,7 @@
         "approvals": "אישורים",
         "queues": "תורים",
         "more": "עוד"
-      },
-      "desktop_only": "המסך הזה זמין במחשב"
+      }
     },
     "dashboard": {
       "title": "מה מחכה לטיפול",
@@ -1869,6 +1868,12 @@
       },
       "claude_tooltip": "Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך.",
       "claude_tooltip_label": "מידע על מודרציית Claude",
+      "moderation_labels": {
+        "PENDING": "ממתין",
+        "FLAGGED": "דורש תיקון",
+        "APPROVED": "מאושר",
+        "REJECTED": "נדחה"
+      },
       "actions": {
         "approve": "אשרי",
         "changes": "שינויים",

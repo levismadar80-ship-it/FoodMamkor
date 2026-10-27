@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 // MEH-731: locale-stripping usePathname so isActive() matches the
 // non-prefixed NAV_HREFS ("/admin", …) under next-intl [locale] routing.
@@ -26,7 +26,6 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import api from "@/lib/api";
-import AdminDesktopOnlyNotice from "./AdminDesktopOnlyNotice";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
 
 /**
@@ -78,34 +77,12 @@ const NAV_SECTIONS = [
   },
 ];
 
-/**
- * MEH-2070 (A-narrow) — the admin screens that are RESPONSIVE, i.e. the ones a
- * phone is expected to complete work on. Everything else under /admin renders
- * the desktop-only banner above its existing content.
- *
- * Only the approvals queue is listed, and that is the decision rather than an
- * accident of effort: manual approval is a LOCK with no automatic fallback, so
- * a solo operator has to be able to clear it from a phone. Moderation,
- * settings and outreach are not urgent-on-the-move.
- *
- * Prefix match, so /admin/producers/<id>/edit — the single-business screen the
- * approve/reject decision is actually made on — is included. `/admin` itself
- * was NOT, while it was a desktop overview of stat cards and charts; since
- * MEH-2359 it is the approvals landing («מה מחכה לטיפול»: the pending list +
- * the busy queues, one column), so it is mobile-ready by the same reasoning —
- * EXACT match only, or every /admin/* would inherit it.
- */
-const MOBILE_READY_PREFIXES = ["/admin/producers"];
-const MOBILE_READY_EXACT = ["/admin"];
-
-export function isMobileReadyAdminPath(pathname) {
-  return (
-    MOBILE_READY_EXACT.includes(pathname) ||
-    MOBILE_READY_PREFIXES.some(
-      (p) => pathname === p || pathname.startsWith(p + "/"),
-    )
-  );
-}
+// MEH-2070 (A-narrow) once marked every /admin screen except the approvals
+// queue as desktop-only, with a banner («המסך הזה זמין במחשב»). MEH-2426
+// removed both: every admin table is now one card per row below md
+// (globals.css .table-stack) and every /admin screen was measured at 375 with
+// no control off-screen, so the banner had become untrue — and it was the
+// first thing an admin saw above a queue she could not operate.
 
 export default function AdminLayout({ children }) {
   const t = useTranslations("admin");
@@ -156,6 +133,22 @@ export default function AdminLayout({ children }) {
         setCountsError(true);
       });
   }, [user, pathname]);
+
+  // MEH-2426: the phone nav strip is ~1700px wide and always opened at its
+  // start, so on a queue further along (חוויות, מתכונים) the highlighted tab
+  // sat off-screen or half-cut. Bring the current tab into view — by scrolling
+  // the STRIP only (scrollIntoView would also scroll the page vertically).
+  // Re-runs when the counts land, because they decide which queues exist.
+  const stripRef = useRef(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const current = strip?.querySelector('[aria-current="page"]');
+    if (!strip || !current) return;
+    const s = strip.getBoundingClientRect();
+    const c = current.getBoundingClientRect();
+    if (c.left >= s.left && c.right <= s.right) return;
+    strip.scrollBy({ left: c.left - s.left - (s.width - c.width) / 2 });
+  }, [pathname, stats, countsError, user]);
 
   // 403 — rendered in place. The two admin pages that repeat this guard
   // (producers/new/page.js:16, producers/[id]/edit/page.js:20) never mount,
@@ -301,7 +294,7 @@ export default function AdminLayout({ children }) {
       </aside>
 
       {/* Mobile: horizontal scrollable nav */}
-      <div className="md:hidden w-full bg-primary-dark sticky top-16 z-40 overflow-x-auto">
+      <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-16 z-40 overflow-x-auto">
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
           {navHrefs.map((n) => {
             const active = isActive(n.href);
@@ -337,7 +330,6 @@ export default function AdminLayout({ children }) {
 
       {/* Content — offset by sidebar width on desktop */}
       <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
-        {!isMobileReadyAdminPath(pathname) && <AdminDesktopOnlyNotice />}
         {children}
       </main>
     </div>

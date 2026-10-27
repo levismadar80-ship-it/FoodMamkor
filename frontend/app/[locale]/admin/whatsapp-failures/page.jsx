@@ -52,8 +52,10 @@ export default function AdminWhatsappFailuresPage() {
           {t("whatsapp_failures.empty")}
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-[12px] overflow-hidden">
-          <table className="w-full text-sm">
+        // MEH-2426: -hidden clipped the status / error columns at 375 with no
+        // way to reach them. Below md: one card per row (.table-stack).
+        <div className="bg-white border border-border rounded-[12px] overflow-x-auto">
+          <table className="table-stack w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-fg-muted text-xs">
                 <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.columns.phone")}</th>
@@ -69,8 +71,8 @@ export default function AdminWhatsappFailuresPage() {
               {rows.map((row) => (
                 <tr key={row.id} className="border-t border-border hover:bg-gray-50/50">
                   <td className="px-5 py-3 font-mono text-xs">{row.to_phone}</td>
-                  <td className="px-5 py-3 text-xs text-fg-muted">{row.kind}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.kind")}>{row.kind}</td>
+                  <td className="px-5 py-3" data-label={t("whatsapp_failures.columns.status")}>
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         STATUS_COLORS[row.status] || "bg-gray-100 text-gray-700"
@@ -79,13 +81,13 @@ export default function AdminWhatsappFailuresPage() {
                       {t(`whatsapp_failures.status.${row.status}`)}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-xs text-fg-muted font-mono">
+                  <td className="px-5 py-3 text-xs text-fg-muted font-mono" data-label={t("whatsapp_failures.columns.error_code")}>
                     {row.error_code ?? "—"}
                   </td>
-                  <td className="px-5 py-3 text-xs text-fg-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.error_message")}>
                     {row.error_message || "—"}
                   </td>
-                  <td className="px-5 py-3 text-xs text-fg-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.sent_at")}>
                     {row.created_at
                       ? formatEventDate(row.created_at, locale, {
                           day: "numeric",
@@ -96,7 +98,7 @@ export default function AdminWhatsappFailuresPage() {
                         })
                       : "—"}
                   </td>
-                  <td className="px-5 py-3 text-xs text-fg-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.updated_at")}>
                     {row.updated_at
                       ? formatEventDate(row.updated_at, locale, {
                           day: "numeric",

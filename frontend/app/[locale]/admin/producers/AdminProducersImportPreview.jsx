@@ -11,6 +11,8 @@ import { Check } from "@phosphor-icons/react";
 // during the MEH-439 refactor.
 
 function ImportRow({ row }) {
+  const t = useTranslations("admin");
+  const L = (k) => t(`producers.preview.table.${k}`);
   const hasErrors = row.errors.length > 0;
   const hasWarnings = row.warnings.length > 0;
   const rowClass = hasErrors
@@ -20,12 +22,12 @@ function ImportRow({ row }) {
       : "border-t";
   return (
     <tr className={rowClass}>
-      <td className="px-3 py-2">{row.row_number}</td>
-      <td className="px-3 py-2">{row.data.name || "—"}</td>
-      <td className="px-3 py-2">{row.data.city || "—"}</td>
-      <td className="px-3 py-2">{row.data.category_name || "—"}</td>
-      <td className="px-3 py-2 font-mono text-xs">{row.data.slug || "—"}</td>
-      <td className="px-3 py-2 text-xs">
+      <td className="px-3 py-2" data-label={L("row")}>{row.row_number}</td>
+      <td className="px-3 py-2" data-label={L("name")}>{row.data.name || "—"}</td>
+      <td className="px-3 py-2" data-label={L("city")}>{row.data.city || "—"}</td>
+      <td className="px-3 py-2" data-label={L("category")}>{row.data.category_name || "—"}</td>
+      <td className="px-3 py-2 font-mono text-xs" data-label={L("slug")}>{row.data.slug || "—"}</td>
+      <td className="px-3 py-2 text-xs" data-label={L("status")}>
         {hasErrors && <span className="text-red-700">{row.errors.join(", ")}</span>}
         {!hasErrors && hasWarnings && <span className="text-yellow-700">{row.warnings.join(", ")}</span>}
         {!hasErrors && !hasWarnings && <Check size={16} weight="bold" className="text-primary" aria-hidden="true" />}
@@ -79,15 +81,16 @@ function PreviewTable({ rows }) {
   const t = useTranslations("admin");
   return (
     <div className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded-[8px]">
-      <table className="w-full text-sm">
+      {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
+      <table className="table-stack w-full text-sm">
         <thead className="bg-gray-50 sticky top-0">
           <tr>
-            <th className="text-end px-3 py-2">{t("producers.preview.table.row")}</th>
-            <th className="text-end px-3 py-2">{t("producers.preview.table.name")}</th>
-            <th className="text-end px-3 py-2">{t("producers.preview.table.city")}</th>
-            <th className="text-end px-3 py-2">{t("producers.preview.table.category")}</th>
-            <th className="text-end px-3 py-2">{t("producers.preview.table.slug")}</th>
-            <th className="text-end px-3 py-2">{t("producers.preview.table.status")}</th>
+            <th className="text-start px-3 py-2">{t("producers.preview.table.row")}</th>
+            <th className="text-start px-3 py-2">{t("producers.preview.table.name")}</th>
+            <th className="text-start px-3 py-2">{t("producers.preview.table.city")}</th>
+            <th className="text-start px-3 py-2">{t("producers.preview.table.category")}</th>
+            <th className="text-start px-3 py-2">{t("producers.preview.table.slug")}</th>
+            <th className="text-start px-3 py-2">{t("producers.preview.table.status")}</th>
           </tr>
         </thead>
         <tbody>

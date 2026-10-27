@@ -122,7 +122,7 @@ function CategoriesEditor() {
           placeholder={t("content.categories.name_placeholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 min-w-0 border border-border rounded-[12px] px-3 py-2"
         />
         <button
           type="submit"
@@ -203,14 +203,17 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
   const locked = cat.is_system === true;
 
   return (
-    <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
+    // MEH-2426: flex-wrap + a floor on the input — at 375 the input's
+    // intrinsic width pushed the count and the save/delete buttons past the
+    // card's edge; now they drop to a second line instead.
+    <li className="flex flex-wrap gap-2 items-center border border-border rounded-[12px] p-2">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         readOnly={locked}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
-        className={`flex-1 border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
+        className={`flex-1 min-w-[10rem] border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
       />
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
@@ -220,8 +223,8 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
         // Replaces both action buttons rather than disabling them: a greyed
         // save + a greyed delete say "broken", a label says "not yours". The
         // `title` carries the where-it-belongs half for a reader who wants it
-        // (/admin is desktop-only by decision, MEH-2070, so a title is
-        // reachable here).
+        // (a title is a desktop affordance; the badge text alone carries the
+        // "not yours" half on a phone).
         <span
           data-testid={`category-system-badge-${cat.id}`}
           title={t("content.categories.system_hint")}
