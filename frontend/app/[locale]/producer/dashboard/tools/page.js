@@ -100,6 +100,10 @@ export default function ProducerDashboardToolsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
+      {/* MEH-2429: every other dashboard page has an h1; this one had none, so
+          a screen reader landed on a page with no heading. The visible text is
+          the existing nav label — no new copy. */}
+      <h1 className="font-headline-lg text-xl font-bold text-text mb-6">{t("nav.tools")}</h1>
       {/* Quick links. MEH-1102: the עריכת פרופיל card was removed — after
           MEH-1095 it targeted /producer/dashboard/edit, duplicating the
           עריכה nav tab one row above. */}

@@ -145,6 +145,8 @@ describe("Dashboard ActivityPulse (MEH-964 1C)", () => {
     render(<ProducerDashboardPage />);
 
     await screen.findByTestId("activity-pulse-row-view");
+    // MEH-2429: a views-only card used to be a lone, title-less row.
+    expect(screen.getByTestId("activity-pulse-title")).toHaveTextContent("title");
     expect(screen.queryByTestId("activity-pulse-row-whatsapp")).not.toBeInTheDocument();
     expect(screen.queryByTestId("activity-pulse-hero")).not.toBeInTheDocument();
     expect(screen.queryByTestId("activity-pulse-cta")).not.toBeInTheDocument();
