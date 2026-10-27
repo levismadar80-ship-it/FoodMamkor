@@ -149,7 +149,9 @@ export function HomeFeaturedProducer({ featured }) {
           </FadeInSection>
           <FadeInSection className="md:col-span-5 flex flex-col gap-4" delay={0.1}>
             {place && (
-              <p className="text-[13px] font-semibold text-gold-on-dark" data-testid="home-featured-place">
+              // Cream, not gold: gold-on-dark on bg-primary is 4.04:1, under AA
+              // for 13px text. The gold stays on the rule, quote border and link.
+              <p className="text-[13px] font-semibold text-background/90" data-testid="home-featured-place">
                 {place}
               </p>
             )}

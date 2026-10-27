@@ -5,7 +5,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
  * MEH-2441 — home page, design-distinct pass (Sapir 27/10).
  *
  * 1. The featured business ("היכרות") is a full-bleed brand-green band: the
- *    place (city · category) leads in gold, then the name, then the quote.
+ *    place (city · category) leads, then the name, then the quote.
  *    The "מאחורי הקלעים" sub-heading and the long description are gone.
  * 2. "איך זה עובד" and the comparison teaser left home — the module no longer
  *    exports them (HomeClient can't mount what doesn't exist).
@@ -73,11 +73,13 @@ describe("MEH-2441 — featured business on the green band", () => {
     expect(classes(band)).toEqual(expect.arrayContaining(["bg-primary", "text-background"]));
   });
 
-  it("leads with the place in gold, above the name", () => {
+  it("leads with the place, above the name, in an AA-passing cream", () => {
     render(<HomeFeaturedProducer featured={FEATURED} />);
     const place = screen.getByTestId("home-featured-place");
     expect(place.textContent).toBe("בנימינה · לחמים ואפייה");
-    expect(classes(place)).toContain("text-gold-on-dark");
+    // gold-on-dark on bg-primary is 4.04:1 — under AA for 13px text.
+    expect(classes(place)).toContain("text-background/90");
+    expect(classes(place)).not.toContain("text-gold-on-dark");
     const name = screen.getByText(FEATURED.name);
     expect(place.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
