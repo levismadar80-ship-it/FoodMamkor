@@ -125,7 +125,7 @@ describe("group buys list (MEH-2430 §2)", () => {
     api.get.mockImplementation((url, opts) => {
       if (url === "/producers/me/dashboard")
         return Promise.resolve({ data: { producer: { id: "p1", status: "approved", city: "חיפה" } } });
-      if (url === "/group-buys" && opts?.params?.status === "open")
+      if (url === "/producers/me/group-buys")
         return Promise.resolve({
           data: [gb("g1", "רכש שעבר", "2020-01-01T10:00:00Z"), gb("g2", "רכש פתוח", "2099-01-01T10:00:00Z")],
         });
@@ -140,6 +140,29 @@ describe("group buys list (MEH-2430 §2)", () => {
     expect(within(pastCard).queryByText(G.status.open)).not.toBeInTheDocument();
     const openCard = screen.getByText("רכש פתוח").closest('[data-testid="manage-group-buy-card"]');
     expect(within(openCard).getByText(G.status.open)).toBeInTheDocument();
+  });
+
+  // MEH-2437: the list is the business's own, in one call — the page used to
+  // fetch the whole site's group buys once per status and filter here.
+  it("reads its own list from /producers/me/group-buys, never the site-wide /group-buys", async () => {
+    api.get.mockImplementation((url) => {
+      if (url === "/producers/me/dashboard")
+        return Promise.resolve({ data: { producer: { id: "p1", status: "approved", city: "חיפה" } } });
+      if (url === "/producers/me/group-buys")
+        return Promise.resolve({
+          data: [{
+            id: "g9", title: "רכש שלי", product_name: "קמח", producer_id: "p1", status: "funded",
+            deadline: "2099-01-01T10:00:00Z", price_per_unit_group: 13, price_per_unit_regular: 18,
+            commits_count: 2, min_participants: 2, created_at: "2026-01-01T00:00:00Z",
+          }],
+        });
+      return Promise.resolve({ data: [] });
+    });
+    renderIntl(<GroupBuysPage />);
+    await waitFor(() => screen.getByText("רכש שלי"));
+    const urls = api.get.mock.calls.map(([url]) => url);
+    expect(urls.filter((u) => u === "/producers/me/group-buys")).toHaveLength(1);
+    expect(urls).not.toContain("/group-buys");
   });
 });
 
