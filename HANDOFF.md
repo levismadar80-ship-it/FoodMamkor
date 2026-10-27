@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-28 00:40 — הצ'אט: דוכני שוק בידע הקבוע (#3703) ונתונים חיים (#3706, RED)
+
+**‏שורה אחת:** ‏#3703 (MEH-2457) ירוק וממתין למיזוג; ‏#3706 (MEH-586) ממתין ל-adversarial review ולמיזוג של ספיר — המיגרציה `a29c7a4a41e7` יוצרת role בלבד, לא טבלאות.
+
+**‏מה צריך לדעת לפני עבודה:**
+- `mcp_reader` הוא role `NOLOGIN`; הקוד עושה `SET LOCAL ROLE` בתוך READ ONLY + `statement_timeout=5000` (`chat_db_tools.reader_transaction()`). כלי חדש לצ'אט = פונקציה ב-`chat_db_tools.py` + שם ב-`TOOL_NAMES` + שורה ב-`docs/DATA.md`; לעולם לא SQL מהמודל.
+- הטסטים ב-`tests/test_chat_db_tools.py` מריצים את `READER_ROLE_SQL` (מראה של המיגרציה) כי הסכימה בטסטים מ-create_all. שינוי ב-grants = לעדכן את שניהם.
+- לא אומת: `CREATEROLE` למשתמש ה-DB ב-Railway. אם boot של staging נכשל על `permission denied to create role` → login role + `CHAT_DB_READER_URL` (ראו הכרטיס).
+- ה-sandbox של הסשן הזה חסום ל-PyPI → pytest רק ב-CI. GraphQL של GitHub חסום (REST עובד) → אין auto-merge מכאן.
+
+**‏ממתין לספיר:** למזג #3703 (`approved, go merge`); לסקור את המיגרציה ב-#3706 ולהסיר `do-not-merge` אחרי adversarial review; ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
+
 ## 2026-10-27 15:35 — טבלאות האדמין בנייד: שורה = כרטיס (#3678, MEH-2426)
 
 **‏שורה אחת:** כל טבלאות האדמין נשאות `.table-stack` (globals.css): מתחת ל-md כל שורה כרטיס, וכל תא «תווית: ערך» מ-`data-label`. הבאנר «המסך הזה זמין במחשב» הוסר. ‏A-narrow של MEH-2070 כבר לא בתוקף.
