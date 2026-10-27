@@ -1161,7 +1161,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
                   aria-label={t("common.delete")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />

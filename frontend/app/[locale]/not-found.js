@@ -1,19 +1,19 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
+// MEH-2422: locale-aware Link — next/link dropped /en (localePrefix
+// as-needed), so "back to home" on /en/… landed on the Hebrew home.
+import { Link } from "@/i18n/navigation";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { BRAND_NAME } from "@/lib/constants";
 
+// MEH-2422: no logo of its own — the site header above already carries it
+// (here and in the global 404, which now renders the same chrome).
 export default function NotFound() {
   const t = useTranslations("errors.not_found");
   return (
-    <main className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+    // A <div>, not <main>: both callers already wrap this in #main-content.
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
       <div className="text-center max-w-md">
-        <Link href="/" className="inline-block mb-8" tabIndex={-1} aria-hidden="true">
-          <Image src="/logo.png" alt={BRAND_NAME} width={120} height={40} className="mx-auto" />
-        </Link>
         <Leaf
           size={72}
           color="#2e6853"
@@ -42,6 +42,6 @@ export default function NotFound() {
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

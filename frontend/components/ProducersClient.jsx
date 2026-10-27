@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, MapPin, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -888,7 +888,7 @@ export default function ProducersClient({
       />
 
       {/* Results counter + active filters — MEH-1186: one control line.
-          The removable chips (category ×, toggle ×, city ×, search ×) and
+          The removable chips (toggle ×, search ×) and
           "נקו הכל" sit beside the counter, replacing the full-bleed green
           filter strip. In the zero-result state counterText is null but the
           chips still render so the user can escape the empty state. */}
@@ -914,22 +914,10 @@ export default function ProducersClient({
               {chip.label}
             </button>
           ))}
-          {cityFilter && (
-            <button
-              type="button"
-              onClick={() => {
-                // MEH-1470: thread categoryFilter through so removing the city
-                // chip doesn't silently drop the active category selection.
-                setCityFilter(null);
-                syncUrl(chips, null, searchQ, categoryFilter);
-                fetchFiltered(chips, null, searchQ, categoryFilter);
-              }}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
-            >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
-              <MapPin size={13} weight="fill" aria-hidden="true" />{cityFilter}
-            </button>
-          )}
+          {/* MEH-2428: no city × here. The city chip in the row above is
+              lit with the city's name and is its one control — tapping it
+              clears the city AND its delivery day (MEH-1825). The tag that
+              stood here repeated the filter and cleared only the city. */}
           {searchQ && (
             <button
               type="button"

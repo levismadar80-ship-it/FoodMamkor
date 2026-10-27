@@ -614,8 +614,11 @@ export default function ProducerDashboardPage() {
             <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
             <div>
               <p className="font-semibold text-text">{h.dashboardHint}</p>
+              {/* MEH-2429: this pointed at /producer/dashboard — the page it
+                  sits on, so the CTA did nothing. The catalog is the products
+                  card on the edit tab (KEY_TO_ANCHOR.products). */}
               <LocaleLink
-                href="/producer/dashboard"
+                href="/producer/dashboard/edit#products"
                 className="text-xs mt-1 inline-block hover:underline"
                 style={{ color: h.color }}
               >
@@ -920,6 +923,11 @@ function ActivityPulse({ analytics }) {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* MEH-2429: the populated card had no heading — with views only it
+              was a lone "צפייה בפרופיל" row under the KPI strip that read as
+              an unfinished card (staging, 27/10). Same visible title the empty
+              state already carries (MEH-1345); the row rulings are unchanged. */}
+          <p data-testid="activity-pulse-title" className="font-semibold text-text">{t("title")}</p>
           {waCount > 0 && (
             <p
               data-testid="activity-pulse-hero"

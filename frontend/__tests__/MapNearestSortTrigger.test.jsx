@@ -77,7 +77,6 @@ vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
     setSplitRatio: vi.fn(),
     sheetSnap: "peek",
     splitRatio: "40fr 60fr", // real shape (useFirstVisitHints.js:63) — read via .startsWith
-    visitedIds: new Set(),
   }),
 }));
 vi.mock("@/app/[locale]/map/state/useProducersFeed", () => ({

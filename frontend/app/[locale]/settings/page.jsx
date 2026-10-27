@@ -330,8 +330,9 @@ export function ProfileTab() {
               {initial}
             </div>
           )}
-          {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover. */}
-          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover.
+              MEH-2418: the md+ hide is gated to hover-capable pointers — with hoverOnlyWhenSupported a touch tablet never fires group-hover, so a bare md:opacity-0 left the overlay invisible there. */}
+          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:[@media(hover:hover)_and_(pointer:fine)]:opacity-0 md:group-hover:opacity-100 transition-opacity">
             <Camera size={24} weight="light" className="text-white" aria-hidden="true" />
           </div>
           {uploading && (

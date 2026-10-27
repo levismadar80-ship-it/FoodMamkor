@@ -427,52 +427,64 @@ export default function LocationsEditor() {
 
 function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary }) {
   const t = useTranslations("settings.locations");
+  // MEH-2429: at 375 the name, "קבעו כראשי" and two 16px icons shared one
+  // line, so names truncated to "איסוף — מרכז ז…" (staging, 27/10). The row
+  // now wraps: the text block keeps at least 60% of the row, and the actions
+  // drop to their own line when they do not fit. Icon buttons are 44px
+  // targets.
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
-      <MapPin size={18} weight="fill" className="shrink-0 text-primary" />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate font-medium text-text">
-            {loc.label || kindLabel}
-          </span>
-          {loc.is_primary ? (
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-              <Star size={11} weight="fill" />
-              {t("primary_badge")}
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface p-3"
+      data-testid="location-row"
+    >
+      <div className="flex min-w-[60%] flex-1 items-center gap-3">
+        <MapPin size={18} weight="fill" className="shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="break-words font-medium text-text">
+              {loc.label || kindLabel}
             </span>
-          ) : null}
-        </div>
-        <div className="truncate text-xs text-fg-muted">
-          {kindLabel}
-          {loc.city ? ` · ${loc.city}` : ""}
+            {loc.is_primary ? (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                <Star size={11} weight="fill" />
+                {t("primary_badge")}
+              </span>
+            ) : null}
+          </div>
+          <div className="break-words text-xs text-fg-muted">
+            {kindLabel}
+            {loc.city ? ` · ${loc.city}` : ""}
+          </div>
         </div>
       </div>
-      {!loc.is_primary ? (
+      <div className="ms-auto flex shrink-0 items-center" data-testid="location-row-actions">
+        {!loc.is_primary ? (
+          <button
+            type="button"
+            onClick={onSetPrimary}
+            className="min-h-[44px] px-2 text-xs font-medium text-primary hover:underline"
+          >
+            {t("set_primary_cta")}
+          </button>
+        ) : null}
         <button
           type="button"
-          onClick={onSetPrimary}
-          className="shrink-0 text-xs font-medium text-primary hover:underline"
+          onClick={onEdit}
+          aria-label={t("edit_aria")}
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-fg-muted hover:text-primary"
         >
-          {t("set_primary_cta")}
+          <Pencil size={18} />
         </button>
-      ) : null}
-      <button
-        type="button"
-        onClick={onEdit}
-        aria-label={t("edit_aria")}
-        className="shrink-0 text-fg-muted hover:text-primary"
-      >
-        <Pencil size={16} />
-      </button>
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={deleting}
-        aria-label={t("delete_aria")}
-        className="shrink-0 text-fg-muted hover:text-error disabled:opacity-50"
-      >
-        <Trash size={16} />
-      </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={deleting}
+          aria-label={t("delete_aria")}
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
+        >
+          <Trash size={18} />
+        </button>
+      </div>
     </div>
   );
 }
