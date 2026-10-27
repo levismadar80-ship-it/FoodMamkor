@@ -42,7 +42,7 @@ export default function MapCardList({
   onResetAll,
   // MEH-2425: the reset button only renders when a filter is actually on —
   // "clear filters" under an unfiltered empty area offers nothing to clear.
-  filtered = true,
+  filtered = false,
   // MEH-1671: while the first /producers fetch is in flight the list is
   // empty for a reason that is NOT "no results" — rendering the empty state
   // then is the desktop-sidebar flash this prop closes. The mobile sheet was
