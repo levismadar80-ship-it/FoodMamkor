@@ -443,7 +443,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     // in-flight lock + central error toast (no swallowed failures).
     const payload = {
       name: form.name,
-      contact_name: form.contact_name,
+      // MEH-2432: the server rejects "" for a name field, so blank goes as null.
+      contact_name: form.contact_name?.trim() || null,
       opening_hours: form.opening_hours,
       phone: form.phone,
       instagram: form.instagram,
@@ -464,7 +465,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       google_place_id: form.google_place_id?.trim() || null,
       description: form.description,
       short_description: form.short_description,
-      top_product_name: form.top_product_name,
+      top_product_name: form.top_product_name?.trim() || null,
       price_range: form.price_range,
       // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
       established_year:
