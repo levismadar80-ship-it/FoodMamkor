@@ -1885,7 +1885,7 @@ function RegisterProducerPageBody() {
             </div>
 
             {/* MEH-1471: self-reported attribution — dropdown directly above
-                the ToS consent (final step). Default "בחרי אפשרות" with no
+                the ToS consent (final step). Default "בחרו אפשרות" with no
                 preselection (Ruler Analytics speed-bias → first-option overcount).
                 Selecting "other" reveals an optional free-text input. English
                 keys stored; Hebrew from i18n.
