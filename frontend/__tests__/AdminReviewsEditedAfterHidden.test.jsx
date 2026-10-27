@@ -194,14 +194,17 @@ describe("MEH-2381 edited-after-hidden tag", () => {
   it("keep-hidden after a newer edit (409 review_changed) keeps the tag and reloads", async () => {
     apiMock.put.mockImplementation(() =>
       Promise.reject({
-        response: { status: 409, data: { detail: { code: "review_changed", message: "x" } } },
+        response: {
+          status: 409,
+          data: { detail: { code: "review_changed", message: "הביקורת נערכה שוב מאז שהעמוד נטען" } },
+        },
       }),
     );
     await renderWith([row("a", { edited: EDITED })]);
     expect(apiMock.get).toHaveBeenCalledTimes(1);
     fireEvent.click(within(rowOf("a")).getByTestId("review-keep-hidden"));
     await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
-    expect(toastMock.error).toHaveBeenCalledWith("generic");
+    expect(toastMock.error).toHaveBeenCalledWith("הביקורת נערכה שוב מאז שהעמוד נטען");
     await screen.findByText("ביקורת a");
     expect(within(rowOf("a")).getByTestId("review-edited-after-hidden-tag")).toBeTruthy();
   });
