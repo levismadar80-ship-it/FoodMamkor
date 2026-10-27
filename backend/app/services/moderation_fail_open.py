@@ -1,12 +1,12 @@
 """MEH-2352: make a moderation fail-open visible.
 
 The AI moderators fail open by LOCK: no key, an API error, or an
-unreadable reply all let the item through as if APPROVED (a review stores
-no verdict, NULL, so its next save re-checks — MEH-2390). That rule stays. What was missing
-is any signal that it happened. On reviews, which publish with no admin
-gate, a dead key meant every review went live unchecked with nothing in
-any log or dashboard saying so. The MEH-2335 eval found 10 silent
-fail-opens in 35 checks before its fixes.
+unreadable reply all let the item through as if APPROVED. That rule
+stays. (A review stores no verdict, NULL, so its next save re-checks —
+MEH-2390.) What was missing is any signal that it happened. On reviews,
+which publish with no admin gate, a dead key meant every review went
+live unchecked with nothing in any log or dashboard saying so. The
+MEH-2335 eval found 10 silent fail-opens in 35 checks before its fixes.
 
 ``report_fail_open`` writes one structured warning and one Sentry event
 per occurrence, fingerprinted by (surface, reason), so the existing

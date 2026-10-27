@@ -115,10 +115,11 @@ def _ai_status_for_write(
 
 
 def _moderate_review_body(body: str | None) -> str | None:
-    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' | 'REJECTED'.
-    Fail-open: any error returns None — no verdict. The caller publishes the
-    review exactly as for APPROVED (the fail-open LOCK); None only keeps the
-    stored status NULL so an unchanged re-save is checked again (MEH-2390).
+    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' |
+    'REJECTED' | None. Fail-open: any error returns None — no verdict. The
+    caller publishes the review exactly as for APPROVED (the fail-open
+    LOCK); None only keeps the stored status NULL so an unchanged re-save
+    is checked again (MEH-2390).
     """
     if not body:
         return "APPROVED"
@@ -156,7 +157,7 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         )
         # MEH-2335: a Haiku 5.5 safety-classifier decline (stop_reason
         # "refusal", no text) is a signal about the content, not an infra
-        # failure — don't let it fall through to the fail-open APPROVED.
+        # failure — don't let it fall through to the fail-open.
         if getattr(msg, "stop_reason", None) == "refusal":
             log.warning("[reviews] model refused → FLAGGED")
             return "FLAGGED"
