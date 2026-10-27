@@ -137,8 +137,8 @@ export async function generateMetadata({ params }) {
   // their own override. The 17 public routes in PR 3b2 scope all set their
   // own alternates (per-page URLs), which shallow-merge to replace these
   // root values. Routes still relying on this fallback: /, /en (locale
-  // roots), /login, /register, /favorites, /settings, /search,
-  // /reset-password, /verify-email. (MEH-1555 removed /upgrade from this
+  // roots), /login, /register, /favorites, /settings,
+  // /reset-password, /verify-email. (/search is a redirect since MEH-819.) (MEH-1555 removed /upgrade from this
   // list along with the route.) SEO impact on those is minimal — most
   // are auth chrome, not SEO surfaces.
   //

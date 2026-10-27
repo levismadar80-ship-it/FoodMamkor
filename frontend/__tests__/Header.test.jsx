@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import Header from "@/components/Header";
 
 const mockLogout = vi.fn();
+const mockPush = vi.fn();
 const userRef = { current: null };
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: userRef.current, logout: mockLogout }),
@@ -16,7 +17,7 @@ vi.mock("@/lib/auth-context", () => ({
 const pathnameRef = { current: "/about" };
 vi.mock("next/navigation", () => ({
   usePathname: () => "/about",
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
 }));
 
 // MEH-629 item 6: the setLang mock was removed — PR #731 dropped the
@@ -119,7 +120,35 @@ describe("Header", () => {
     userRef.current = null;
     pathnameRef.current = "/about";
     mockLogout.mockClear();
+    mockPush.mockClear();
     setScrollY(0);
+  });
+
+  describe("search entry → /producers (MEH-819)", () => {
+    // /search was a second, thinner results page. Every header entry now lands
+    // on the one results page with the box focused. Against the old code all
+    // three go red (push("/search?focus=1")).
+    it("desktop + mobile search buttons push /producers?focus=1", () => {
+      render(<Header />);
+      const buttons = screen.getAllByRole("button", { name: "חיפוש" });
+      expect(buttons).toHaveLength(2);
+      for (const b of buttons) fireEvent.click(b);
+      expect(mockPush).toHaveBeenCalledTimes(2);
+      for (const call of mockPush.mock.calls) expect(call[0]).toBe("/producers?focus=1");
+    });
+
+    it('the "/" shortcut pushes /producers?focus=1', () => {
+      render(<Header />);
+      fireEvent.keyDown(document, { key: "/" });
+      expect(mockPush).toHaveBeenCalledWith("/producers?focus=1");
+    });
+
+    it("never pushes the retired /search route", () => {
+      render(<Header />);
+      for (const b of screen.getAllByRole("button", { name: "חיפוש" })) fireEvent.click(b);
+      fireEvent.keyDown(document, { key: "/" });
+      expect(mockPush.mock.calls.flat().some((h) => String(h).startsWith("/search"))).toBe(false);
+    });
   });
 
   describe("navigation (MEH-789/MEH-907 chrome)", () => {
