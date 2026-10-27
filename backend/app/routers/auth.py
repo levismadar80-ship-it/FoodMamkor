@@ -27,7 +27,6 @@ from app.auth import (
 )
 from app.config import settings
 from app.services.auth_emails import (
-    gen_referral_code,
     # Aliases preserve the legacy underscore-prefixed module attribute
     # surface so tests that monkeypatch `app.routers.auth._send_*` keep
     # working. New code should use the public names directly.
@@ -317,7 +316,6 @@ async def register(
             city=data.city,
             phone=data.phone,
             role="consumer",
-            referral_code=gen_referral_code(),
             # MEH-1995: record the terms acceptance instead of discarding it.
             # Stamped only when the flag is genuinely True — an omitted or
             # False flag leaves both columns NULL, which reads as "no record",
@@ -833,7 +831,6 @@ async def register_producer(
             role="producer",
             producer_id=producer.id,
             is_producer=True,
-            referral_code=gen_referral_code(),
             # MEH-1995: same as the consumer path above. Note this is the ToS
             # checkbox, which is a DIFFERENT consent from the licensing
             # declaration stamped onto the producer row as declared_at /
@@ -975,7 +972,6 @@ def google_auth(
                 name=name,
                 google_id=google_id,
                 role="consumer",
-                referral_code=gen_referral_code(),
                 avatar_url=picture,
                 email_verified=True,
             )
@@ -1094,7 +1090,6 @@ def register_producer_oauth(
                 "email": email,
                 "name": full_name,
                 "role": "consumer",
-                "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
                 # MEH-1553: the OAuth provider already verified the email, so
                 # stamp email_verified=True — one-to-one with the /auth/google
@@ -1327,7 +1322,6 @@ def apple_auth(
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
-                referral_code=gen_referral_code(),
                 email_verified=True,
             )
             db.add(user)

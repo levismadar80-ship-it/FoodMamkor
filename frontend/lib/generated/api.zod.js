@@ -2531,7 +2531,6 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMeAuthMeGetResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "referral_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "role": /*#__PURE__*/ zod.string()
 })
 
@@ -5406,7 +5405,6 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateProfileUsersMePatchResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "referral_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "role": /*#__PURE__*/ zod.string()
 })
 

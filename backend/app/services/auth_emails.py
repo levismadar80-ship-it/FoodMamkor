@@ -5,24 +5,15 @@ All four functions wrap app.services.email.send_email with a complete
 RTL Hebrew text body + matching HTML body. No security logic, no DB
 writes — pure body construction + send. Lifted verbatim from
 backend/app/routers/auth.py during the MEH-440 refactor.
-
-`gen_referral_code` lives here because every registration path that
-creates a User row uses it together with one of the email senders
-below, so they share imports and call-site context.
 """
 
 import logging
-import uuid
 from html import escape as html_escape
 
 from app.config import settings
 from app.services.email import send_email
 
 logger = logging.getLogger(__name__)
-
-
-def gen_referral_code() -> str:
-    return uuid.uuid4().hex[:8]
 
 
 def send_reset_email(email: str, name: str, reset_link: str) -> None:
