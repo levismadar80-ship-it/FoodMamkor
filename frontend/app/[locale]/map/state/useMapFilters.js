@@ -418,10 +418,13 @@ export function useMapFilters({
   // MEH-2425: any filter at all — a category or an attribute. Lets an empty
   // result say "the filters did this" (and offer to clear them) instead of
   // reading as an empty area.
-  // The desktop legend's category toggles (activeCategoryNames) narrow the
-  // list too, so they count.
+  // The desktop legend's category toggles (activeCategoryNames) and the city
+  // search narrow the list too, so they count — resetEverything clears both.
   const hasActiveFilters =
-    activeAttributeCount > 0 || chipState.categoryKeys.length > 0 || activeCategoryNames !== null;
+    activeAttributeCount > 0 ||
+    chipState.categoryKeys.length > 0 ||
+    activeCategoryNames !== null ||
+    cityFilter.trim() !== "";
 
   // MEH-2170: which toggle chips FilterSheet offers. Derived from the mount
   // snapshot + the active state only — NOT from allProducers, which reloads

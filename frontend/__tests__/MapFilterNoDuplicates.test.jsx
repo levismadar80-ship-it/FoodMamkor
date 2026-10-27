@@ -65,6 +65,14 @@ describe("active-filter tags never repeat a chip that is already on screen", () 
     act(() => result.current.setChipState((s) => ({ ...s, categoryKeys: [CATEGORY_CHIPS.find((c) => c.key !== "all").key] })));
     expect(result.current.hasActiveFilters).toBe(true);
   });
+
+  it("useMapFilters: a city alone counts — a city-only empty list still offers the reset", () => {
+    const result = hook();
+    act(() => result.current.setCityFilter("   "));
+    expect(result.current.hasActiveFilters).toBe(false);
+    act(() => result.current.setCityFilter("חדרה"));
+    expect(result.current.hasActiveFilters).toBe(true);
+  });
 });
 
 describe("FilterChipsBar — service filter on", () => {
