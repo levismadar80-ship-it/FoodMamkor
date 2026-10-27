@@ -1292,7 +1292,7 @@ def producer_analytics(
     # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
     # the canonical interest record, since MEH-1363 removed the follow button
     # and producer_followers stopped receiving writes (Expand half only —
-    # the table + producer_follows.py stay until the Contract ticket).
+    # the table stays until the Contract ticket; the endpoints went in MEH-2370).
     # favorites has a composite PK (user_id, producer_id) and NO id column —
     # count on a key column (REUSES: :510 func.count(Favorite.producer_id)).
     follower_count = (

@@ -198,11 +198,10 @@ Additional notes:
   signup flow at `POST /auth/register/producer` was always correct.
 - **`ProducerFollower` notification preferences:** each follower row
   stores `notify_new_products` + `notify_back_in_stock` booleans
-  (`backend/app/models/models.py::ProducerFollower`). Reads and writes
-  go through `/producers/{id}/follow` and friends; each route checks
-  that the caller owns the follower row before returning/updating
-  the flags. Admin override is intentionally **not** granted for
-  these — notification preferences are personal data.
+  (`backend/app/models/models.py::ProducerFollower`). Personal data —
+  admin override was intentionally **not** granted. Since MEH-2370 no
+  HTTP route reads or writes these rows at all; the table is kept only
+  until its Expand-Contract drop.
 - **MEH-254 — `GET /producers/{uuid}` status filter:** pending/rejected
   producers may only be fetched by their owner (`viewer.producer_id ==
   producer.id`) or an admin. Anonymous or non-owner callers get the

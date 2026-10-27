@@ -662,11 +662,9 @@ GET    /producers/random                          public — MEH-1288: one rando
 POST   /producers                                 auth   — self-register (writes pending)
 GET    /categories                                public
 
-# Follow / unfollow producers (v1 data layer only, notifications in v2)
-POST   /producers/{producer_id}/follow            auth
-DELETE /producers/{producer_id}/follow            auth
-GET    /producers/{producer_id}/follow-status     auth
-GET    /users/me/following                        auth
+# Follow / unfollow endpoints removed (MEH-2370). Interest is recorded as a
+# favorite (/users/me/favorites); the producer_followers table stays until its
+# Expand-Contract drop.
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
