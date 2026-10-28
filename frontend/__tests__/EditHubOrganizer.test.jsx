@@ -117,6 +117,18 @@ describe("MEH-2460 — edit hub for an organizer", () => {
     window.location.hash = "#products";
     mount();
     await screen.findByTestId("edit-hub");
+    // Sentinel (review #3711 round 3): the hashchange listener is added right
+    // after the first applyHash() in the same effect, so once a later #bio
+    // link moves her into "profile", the #products pass has certainly run —
+    // the negative below is not read before the effect it is about.
+    window.location.hash = "#bio";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    await waitFor(() =>
+      expect(routerStub.replace).toHaveBeenCalledWith(
+        expect.objectContaining({ query: { group: "profile" } }),
+        expect.anything(),
+      ),
+    );
     expect(routerStub.replace).not.toHaveBeenCalledWith(
       expect.objectContaining({ query: { group: "products" } }),
       expect.anything(),

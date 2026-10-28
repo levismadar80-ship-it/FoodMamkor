@@ -70,7 +70,8 @@ export const REQUIRED_ANCHORS = new Set(
 /** The same, for an organizer (kind='organizer', ADR-036) — derived from her
  *  own gate, so «חובה» never lands on a card her gate does not read (products,
  *  categories, locations) and never misses one it does (bio). */
-export const ORGANIZER_REQUIRED_ANCHORS = new Set(
+// Not exported: chipKeyFor is the one consumer (Knip dead-code ratchet).
+const ORGANIZER_REQUIRED_ANCHORS = new Set(
   ORGANIZER_SUBMISSION_REQUIREMENTS.map((code) => CODE_TO_ANCHOR[code]).filter(Boolean),
 );
 
