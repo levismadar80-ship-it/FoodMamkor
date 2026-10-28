@@ -24,7 +24,7 @@ graph LR
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
-    App --> Experiences[experiences.router<br/>/experiences/*]
+    App --> Experiences[experiences.router<br/>/experiences/*<br/>MEH-2476: host carries her public business]
     App --> Reviews[reviews.router<br/>/producers/:id/reviews/*]
     App --> Reports[reports.router<br/>/reports/*]
     App --> Upload[upload.router<br/>/upload/*]

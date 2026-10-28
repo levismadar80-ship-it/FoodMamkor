@@ -43,7 +43,9 @@ def admin_list_experiences(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    q = db.query(Experience).options(joinedload(Experience.host))
+    q = db.query(Experience).options(
+        joinedload(Experience.host).joinedload(User.producer)
+    )
     if status and status != "all":
         q = q.filter(Experience.status == status)
     rows = q.order_by(Experience.created_at.desc()).all()
@@ -61,7 +63,7 @@ def approve_experience(
 ):
     ex = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == experience_id)
         .first()
     )
@@ -98,7 +100,7 @@ def request_changes(
 
     ex = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == experience_id)
         .first()
     )
@@ -130,7 +132,7 @@ def reject_experience(
 ):
     ex = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == experience_id)
         .first()
     )

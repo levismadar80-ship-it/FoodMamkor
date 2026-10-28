@@ -3724,6 +3724,13 @@ class ExperienceValidateResult(BaseModel):
 class ExperienceHostOut(BaseModel):
     id: UUID
     name: str
+    # MEH-2476: the host's business, when it is approved — the page links to
+    # it and its WhatsApp CTA reaches her. All four are already public on the
+    # business page. None for a host whose business is not public.
+    producer_id: UUID | None = None
+    producer_slug: str | None = None
+    producer_name: str | None = None
+    producer_phone: str | None = None
 
     model_config = {"from_attributes": True}
 

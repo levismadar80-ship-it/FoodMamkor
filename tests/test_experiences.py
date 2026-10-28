@@ -1120,3 +1120,48 @@ class TestEventsUntouched:
         resp = client.get("/events")
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
+
+
+# ---------- MEH-2476: the host's business is linked ----------
+
+
+class TestHostBusinessLink:
+    """The public payload names the host's approved business so the page can
+    link to it and its WhatsApp CTA can reach her. A host's business is
+    always approved on a public path (MEH-1749), so the fields are filled
+    whenever the experience is visible at all."""
+
+    def _approved_with_business(self, db):
+        host = _make_host(db)
+        producer = host.producer
+        producer.slug = "meh2476-farm"
+        producer.phone = "0521234567"
+        db.commit()
+        _make_experience(db, host, status="approved")
+        return producer
+
+    def test_list_carries_the_business(self, client, db):
+        producer = self._approved_with_business(db)
+        rows = client.get("/experiences").json()
+        assert len(rows) == 1
+        host = rows[0]["host"]
+        assert host["producer_id"] == str(producer.id)
+        assert host["producer_slug"] == "meh2476-farm"
+        assert host["producer_name"] == producer.name
+        assert host["producer_phone"] == "0521234567"
+
+    def test_detail_carries_the_business(self, client, db):
+        producer = self._approved_with_business(db)
+        ex_id = client.get("/experiences").json()[0]["id"]
+        host = client.get(f"/experiences/{ex_id}").json()["host"]
+        assert host["producer_id"] == str(producer.id)
+
+    def test_owner_without_an_approved_business_gets_no_link(self, client, db):
+        """The owner still sees her pending business's experience (owner path),
+        but no link is built to a business page that 404s for everyone else."""
+        host = _make_host(db, producer_status="pending")
+        ex = _make_experience(db, host, status="approved")
+        host_out = client.get(f"/experiences/{ex.id}", headers=auth_header(host)).json()["host"]
+        assert host_out["name"] == host.name
+        assert host_out.get("producer_id") is None
+        assert host_out.get("producer_slug") is None
