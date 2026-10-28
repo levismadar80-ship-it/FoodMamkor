@@ -31,6 +31,7 @@ vi.mock("next-intl", () => ({
     if (full === "producer.detail.sections.products.diet.vegan") return "טבעוני";
     if (full === "producer.detail.sections.products.diet.vegetarian") return "צמחוני";
     if (full === "producer.detail.sections.products.diet.lactose_free") return "ללא לקטוז";
+    if (full === "producer.detail.sections.products.diet.no_added_sugar") return "ללא סוכר מוסף";
     if (full === "producer.detail.sections.products.sheet_cta") return "שאלי על המוצר בוואטסאפ";
     if (full === "producer.detail.sections.products.sheet_secondary_wa")
       return "או שאלי על המוצר בוואטסאפ";
@@ -162,6 +163,20 @@ describe("ProductSheet — diet chips render only true flags", () => {
       is_lactose_free: false,
     });
     expect(screen.queryByTestId("product-sheet-diet")).not.toBeInTheDocument();
+  });
+
+  // MEH-2473: the owner ticks «ללא סוכר מוסף» per product (ProductsSection);
+  // it lit only the business badge and never showed on the product itself.
+  it("is_no_added_sugar → its chip, alongside the others", () => {
+    renderSheet({ ...baseProduct, is_vegan: true, is_no_added_sugar: true });
+    const chips = screen.getByTestId("product-sheet-diet");
+    expect(chips.querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByText("ללא סוכר מוסף")).toBeInTheDocument();
+  });
+
+  it("is_no_added_sugar false → no chip for it", () => {
+    renderSheet({ ...baseProduct, is_vegan: true, is_no_added_sugar: false });
+    expect(screen.queryByText("ללא סוכר מוסף")).not.toBeInTheDocument();
   });
 
   it("a truthy-but-not-true value does not earn a chip (flags are booleans)", () => {

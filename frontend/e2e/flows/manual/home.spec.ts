@@ -1912,7 +1912,7 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
   });
 
   // MT:T9:9 + MT:T9:11 — the photo fills its frame with object-cover, and the
-  //   city/category line truncates rather than wrapping.
+  //   city line truncates rather than wrapping.
   test("card photos are object-cover and the city line truncates", async ({ page }) => {
     // P5 — the deliberately over-long name and the one card carrying a photo —
     // exists only in the fixture, so this row needs the fixture to be what
@@ -1925,10 +1925,12 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
     await expect(long).toHaveCount(1);
     await long.scrollIntoViewIfNeeded();
     await expect(long.locator("img").first()).toHaveCSS("object-fit", "cover");
-    // The clipping element is the INNER `truncate` span (ProducerCard.jsx:546),
-    // not the flex `<p>` around it — the row overflows inside, so measuring the
-    // wrapper reports scrollWidth === clientWidth and proves nothing.
-    const line = long.getByTestId("location-line");
+    // The clipping element is the INNER `truncate` span, not the flex `<p>`
+    // around it — the row overflows inside, so measuring the wrapper reports
+    // scrollWidth === clientWidth and proves nothing. MEH-2440: the city now
+    // leads in the place line above the name (`card-place`), so that is the
+    // line the over-long city has to truncate in.
+    const line = long.getByTestId("card-place");
     await expect(line).toHaveCSS("text-overflow", "ellipsis");
     const inner = line.locator("span.truncate");
     await expect(inner).toHaveCSS("text-overflow", "ellipsis");

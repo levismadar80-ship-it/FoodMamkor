@@ -36,6 +36,7 @@ const DEFAULTS = {
   description: "",
   event_date: "",
   event_time: "",
+  end_time: "", // MEH-2469
   location: "",
   lat: null,
   lng: null,
@@ -59,6 +60,7 @@ function seed(initial) {
     event_date: initial.event_date ?? "",
     // EventOut.event_time is "HH:MM:SS"; the <input type=time> wants "HH:MM".
     event_time: initial.event_time ? String(initial.event_time).slice(0, 5) : "",
+    end_time: initial.end_time ? String(initial.end_time).slice(0, 5) : "", // MEH-2469
     location: initial.location ?? "",
     lat: initial.lat ?? null,
     lng: initial.lng ?? null,
@@ -82,6 +84,7 @@ function seed(initial) {
 const EVENT_FIELD_ORDER = [
   "title",
   "event_date",
+  "end_time",
   "city",
   "category",
   "price",
@@ -114,6 +117,12 @@ function validateEventForm(f, t) {
   // WAS enforced server-side, but the form is noValidate so the native
   // `required` on the <select> is dead — the only failure path was a raw 422
   // with no message beside the field.
+  // MEH-2469: same rule as the server (schemas.py event_end_time_problem):
+  // an end time needs a start time and must be after it. "HH:MM" strings
+  // compare correctly as text.
+  if (f.end_time && (!f.event_time || f.end_time <= f.event_time)) {
+    errors.end_time = t("error_end_time_after_start");
+  }
   if (!f.city.trim()) errors.city = t("error_city_required");
   if (!f.category) errors.category = t("error_category_required");
   if (f.price !== "") {
@@ -202,6 +211,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         price: Number(form.price) || 0,
         max_participants: form.max_participants ? Number(form.max_participants) : null,
         event_time: form.event_time || null,
+        end_time: form.end_time || null, // MEH-2469
         registration_url: form.registration_url || null,
       };
       const r = isEdit
@@ -251,7 +261,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           />
         </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <Input
             id="event_date"
             type="date"
@@ -267,6 +277,15 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             label={t("field_time_label")}
             value={form.event_time}
             onChange={update("event_time")}
+          />
+          {/* MEH-2469: optional end time — shown as «09:30–15:00». */}
+          <Input
+            id="end_time"
+            type="time"
+            label={t("field_end_time_label")}
+            value={form.end_time}
+            onChange={update("end_time")}
+            error={fieldErrors.end_time}
           />
         </div>
 
