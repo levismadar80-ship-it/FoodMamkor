@@ -203,21 +203,26 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(imageWrapper).toBeTruthy();
   });
 
-  it("renders fallback placeholder when images array is empty", () => {
+  // MEH-2440: the no-photo state is a typographic name plate (the business's
+  // own name, set large), not the leaf + brand wordmark tile.
+  it("renders the name plate when images array is empty", () => {
     render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    const plate = screen.getByTestId("card-name-plate");
+    expect(plate.textContent).toBe("חנות פשוטה");
+    expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
   });
 
   // MEH-1211: a present-but-dead image URL must fall back to the canonical
   // no-photo placeholder instead of the browser broken-glyph + alt overflow.
   it("renders fallback when the image errors (present-but-dead URL)", () => {
     render(<ProducerCard producer={fullProducer} />);
-    // Image is present at first paint — no placeholder wordmark yet.
-    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
+    // Image is present at first paint — no name plate yet.
+    expect(screen.queryByTestId("card-name-plate")).not.toBeInTheDocument();
     const img = screen.getByAltText("חוות השקמה");
     fireEvent.error(img);
-    // After the load failure the canonical placeholder (leaf + wordmark) shows.
-    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    // After the load failure the canonical placeholder (MEH-2440 name plate) shows.
+    expect(screen.getByTestId("card-name-plate").textContent).toBe("חוות השקמה");
     expect(screen.queryByAltText("חוות השקמה")).not.toBeInTheDocument();
   });
 
@@ -346,6 +351,75 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.getByText(/רחובות/)).toBeInTheDocument();
   });
 
+  // MEH-2440: the PLACE leads — city above the name; the category moves down
+  // to the line under the name.
+  it("puts the city above the name and the category in the line below it", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const place = screen.getByTestId("card-place");
+    expect(place.textContent).toBe("רחובות");
+    const heading = screen.getByRole("heading", { level: 3, name: "חוות השקמה" });
+    // DOCUMENT_POSITION_FOLLOWING (4): the heading comes after the place line.
+    expect(place.compareDocumentPosition(heading) & 4).toBe(4);
+    const line = screen.getByTestId("location-line");
+    expect(line.textContent).toContain("חלב וגבינות");
+    expect(line.textContent).not.toContain("רחובות");
+  });
+
+  it("keeps the distance in the line under the name when there is no city", () => {
+    window.localStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          city: null,
+          lat: 31.7683,
+          lng: 35.2137,
+          locations: [{ id: "loc-0", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("location-line")).toContainElement(screen.getByTestId("distance-pill"));
+  });
+
+  it("renders no place line when the business has no city", () => {
+    render(<ProducerCard producer={{ ...fullProducer, city: null }} />);
+    expect(screen.queryByTestId("card-place")).not.toBeInTheDocument();
+    expect(screen.getByTestId("location-line").textContent).toContain("חלב וגבינות");
+  });
+
+  // MEH-2440 (claude[bot] review on #3694): city, no category, no distance —
+  // the line under the name would be empty, so it is skipped, and the
+  // availability dot moves up to the place line instead of being lost.
+  it("skips the empty line under the name and keeps the dot with the city", () => {
+    render(<ProducerCard producer={{ ...fullProducer, categories: [] }} />);
+    expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
+    const place = screen.getByTestId("card-place");
+    expect(place.textContent).toBe("רחובות");
+    expect(place).toContainElement(screen.getByTestId("availability-dot"));
+  });
+
+  it("no city, no category, no distance: no empty lines and no orphan dot", () => {
+    render(<ProducerCard producer={{ ...fullProducer, city: null, categories: [] }} />);
+    expect(screen.queryByTestId("card-place")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "חוות השקמה" })).toBeInTheDocument();
+  });
+
+  it("keeps the dot in the line under the name when that line has text", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.getByTestId("location-line")).toContainElement(screen.getByTestId("availability-dot"));
+    expect(screen.getAllByTestId("availability-dot")).toHaveLength(1);
+  });
+
+  it("the name plate can break a single over-long token instead of overflowing", () => {
+    render(<ProducerCard producer={{ ...fullProducer, images: [] }} />);
+    expect(screen.getByTestId("card-name-plate").className).toContain("[overflow-wrap:anywhere]");
+  });
+
   it("does NOT render distance when user has no geolocation", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, lat: 32.0853, lng: 34.7818 }} />,
@@ -370,6 +444,8 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     const distance = screen.getByTestId("distance-pill");
+    // MEH-2440: distance belongs to the place, so it rides in the city line.
+    expect(screen.getByTestId("card-place")).toContainElement(distance);
     // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
     expect(distance.textContent).toMatch(/ק"מ$/);
     expect(distance.textContent).not.toContain("ממך");
@@ -426,6 +502,17 @@ describe("ProducerCard — Phase B anatomy", () => {
     const desc = screen.getByTestId("card-description");
     expect(desc.textContent).toMatch(/…$/);
     expect(desc.textContent.length).toBeLessThanOrEqual(81);
+  });
+
+  it("the description clamps to two lines on desktop — no display utility overrides the clamp (MEH-2487)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const cls = screen.getByTestId("card-description").className.split(/\s+/);
+    // line-clamp works only on display:-webkit-box. A `sm:block` (or any
+    // display utility at sm+) replaces it and the text wraps without limit.
+    expect(cls).toContain("line-clamp-2");
+    expect(cls).toContain("hidden");
+    expect(cls).toContain("sm:[display:-webkit-box]");
+    expect(cls.filter((c) => /^sm:(block|flex|grid|inline)/.test(c))).toEqual([]);
   });
 
   it("renders the verified badge via BadgeRow when verification_tier='verified'", () => {

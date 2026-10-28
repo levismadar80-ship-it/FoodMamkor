@@ -40,7 +40,10 @@ from __future__ import annotations
 
 import math
 
-from app.models.models import Producer
+from sqlalchemy.orm import object_session
+
+from app.models.models import Event, Producer
+from app.utils.clock import israel_today
 
 # Machine-readable requirement codes. These cross the API boundary — the
 # submit endpoint returns them in `detail.params.missing` — so they are part
@@ -59,6 +62,34 @@ SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
     MISSING_PRODUCT,
     MISSING_CATEGORY,
     MISSING_LOCATION,
+    MISSING_PHONE_VERIFIED,
+)
+
+# MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing, so the
+# product / category / location requirements do not apply. Its page is a
+# description and its events, so those two are what must exist before review.
+# Prefixed ORGANIZER_ so frontend/__tests__/SubmissionGateParity.test.js's
+# `^MISSING_` parser keeps comparing the business set exactly; the organizer
+# tuple has its own parity check in that same test file (MEH-2460 block).
+ORGANIZER_MISSING_DESCRIPTION = "description"
+ORGANIZER_MISSING_EVENT = "upcoming_event"
+
+# Review #3711 F4: the registration STORY step's «אכתוב אחר כך» writes this
+# placeholder (he.json / en.json auth.register.producer.default_description);
+# it is not a description. Mirrors DEFAULT_PRODUCER_DESCRIPTIONS in
+# frontend/lib/producer-completeness.js — SubmissionGateParity.test.js parses
+# this frozenset and compares it to the JS list.
+DEFAULT_PRODUCER_DESCRIPTIONS: frozenset[str] = frozenset(
+    {
+        "בית עסק מקומי. עוד פרטים בקרוב.",
+        "Local business. More details coming soon.",
+    }
+)
+
+ORGANIZER_SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
+    MISSING_IMAGE,
+    ORGANIZER_MISSING_DESCRIPTION,
+    ORGANIZER_MISSING_EVENT,
     MISSING_PHONE_VERIFIED,
 )
 
@@ -134,6 +165,9 @@ def submission_missing_items(producer: Producer) -> list[str]:
     one confused owner; the cost of a false "ready" is an unreviewable row in
     the admin queue, which is the bug this whole ticket exists to remove.
     """
+    if getattr(producer, "kind", "producer") == "organizer":
+        return _organizer_missing_items(producer)
+
     missing: list[str] = []
 
     # MEH-799: `images` is ARRAY(Text) with default=[], so an untouched row can
@@ -169,6 +203,52 @@ def submission_missing_items(producer: Producer) -> list[str]:
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
 
+    return missing
+
+
+def upcoming_events_count(producer: Producer) -> int:
+    """Active events on or after Israel's today — the organizer's one content
+    requirement. Read through the row's own session (Event.producer has no
+    back-reference). No session attached → 0, i.e. MISSING: fail-closed, same
+    direction as every other check here."""
+    session = object_session(producer)
+    if session is None or producer.id is None:
+        return 0
+    return (
+        session.query(Event)
+        .filter(
+            Event.producer_id == producer.id,
+            Event.is_active.is_(True),
+            Event.event_date >= israel_today(),
+        )
+        .count()
+    )
+
+
+def attach_upcoming_events_count(producer: Producer) -> None:
+    """Set the transient `upcoming_events_count` that ProducerOwnerOut serializes
+    (the client gate mirror reads it). Organizers only — a business never
+    reads it, so it keeps the schema default 0 without an extra query."""
+    if getattr(producer, "kind", "producer") == "organizer":
+        producer.upcoming_events_count = upcoming_events_count(producer)
+
+
+def _organizer_missing_items(producer: Producer) -> list[str]:
+    """MEH-2460: the organizer gate — photo, description, ≥1 upcoming event,
+    verified WhatsApp. Same fail-closed shape as the business gate above; the
+    phone requirement stays because the approval gate (admin.py, MEH-2121)
+    requires it of every row and a gate that let her submit into a guaranteed
+    approval failure would be the MEH-2100 bug in another form."""
+    missing: list[str] = []
+    if not (producer.images or []):
+        missing.append(MISSING_IMAGE)
+    description = (producer.description or "").strip()
+    if not description or description in DEFAULT_PRODUCER_DESCRIPTIONS:
+        missing.append(ORGANIZER_MISSING_DESCRIPTION)
+    if upcoming_events_count(producer) < 1:
+        missing.append(ORGANIZER_MISSING_EVENT)
+    if not producer.phone_verified:
+        missing.append(MISSING_PHONE_VERIFIED)
     return missing
 
 

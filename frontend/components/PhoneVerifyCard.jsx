@@ -23,6 +23,38 @@ import { showToast } from "@/lib/toast";
  */
 const RESEND_COOLDOWN_SECONDS = 60;
 const OTP_LENGTH = 6;
+// MEH-2481: mirrors the server's token TTL (producer_me.py send_phone_otp,
+// `timedelta(minutes=10)`). After that the stored code is dead anyway.
+const OTP_TTL_MS = 10 * 60 * 1000;
+const SENT_AT_KEY = "mehamakor.otp_sent_at";
+
+/** When the last code was sent in this tab, or 0. Storage may be absent or
+ *  throw (private mode, cleared data) — then it is simply 0. */
+function readOtpSentAt() {
+  try {
+    const raw = globalThis.sessionStorage?.getItem(SENT_AT_KEY);
+    const ts = raw ? Number(raw) : 0;
+    return Number.isFinite(ts) && Date.now() - ts < OTP_TTL_MS ? ts : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function rememberOtpSent() {
+  try {
+    globalThis.sessionStorage?.setItem(SENT_AT_KEY, String(Date.now()));
+  } catch {
+    /* per-viewer convenience only — losing it costs one extra tap */
+  }
+}
+
+function forgetOtpSent() {
+  try {
+    globalThis.sessionStorage?.removeItem(SENT_AT_KEY);
+  } catch {
+    /* same */
+  }
+}
 
 export default function PhoneVerifyCard({ onVerified }) {
   const t = useTranslations("dashboard.producer.phone_verify");
@@ -32,6 +64,18 @@ export default function PhoneVerifyCard({ onVerified }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+
+  // MEH-2481: a reload used to hide the code box, so the seller asked for a
+  // NEW code — which invalidated the one already on her phone (measured on
+  // staging, 28/10). If a code went out from this tab less than 10 minutes
+  // ago, open on the code box with whatever cooldown is left.
+  useEffect(() => {
+    const sentAt = readOtpSentAt();
+    if (!sentAt) return;
+    setCodeSent(true);
+    const elapsed = Math.floor((Date.now() - sentAt) / 1000);
+    setCooldown(Math.max(0, RESEND_COOLDOWN_SECONDS - elapsed));
+  }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return undefined;
@@ -47,6 +91,7 @@ export default function PhoneVerifyCard({ onVerified }) {
       await api.post("/producers/me/verify-phone");
       setCodeSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
+      rememberOtpSent();
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_no_phone"));
@@ -63,6 +108,7 @@ export default function PhoneVerifyCard({ onVerified }) {
     setError("");
     try {
       await api.post("/producers/me/verify-phone/confirm", { code });
+      forgetOtpSent();
       showToast.success(t("success"));
       onVerified?.();
     } catch (err) {

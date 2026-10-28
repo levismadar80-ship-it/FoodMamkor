@@ -23,6 +23,7 @@ from sqlalchemy import or_, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
 from app.schemas.schemas import CategoryHit, ProducerHit, ProductHit, SearchOut
@@ -95,11 +96,18 @@ def smart_search(
     # so the relevance boosts keep comparing against what the user typed.
     tokens = tokenize(q_clean)
 
-    # -------- Producers (approved only, name + description) --------
+    # -------- Producers (approved only, name + description + tagline) --------
+    # MEH-2478: short_description (the card tagline) is searched too, same as
+    # the /producers?q= path (producer_listing._token_search_filter).
     producer_rows = (
         db.query(Producer)
-        .filter(Producer.status == "approved")
-        .filter(*_token_conditions(tokens, [Producer.name, Producer.description]))
+        .filter(is_business())  # MEH-2459
+        .filter(
+            *_token_conditions(
+                tokens,
+                [Producer.name, Producer.description, Producer.short_description],
+            )
+        )
         # Exact-name match first, then alphabetically. SQLite doesn't
         # support nullslast everywhere, so we use a simple CASE.
         .order_by((Producer.name != q_clean), Producer.name.asc())
@@ -124,7 +132,7 @@ def smart_search(
         db.query(Product)
         .options(joinedload(Product.producer))
         .join(Producer, Producer.id == Product.producer_id)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .filter(*_token_conditions(tokens, [Product.name, Product.description]))
         .order_by((Product.name != q_clean), Product.name.asc())
         .limit(limit)
@@ -145,7 +153,7 @@ def smart_search(
     # -------- Cities (distinct over approved producers + delivery areas) --------
     city_rows = (
         db.query(Producer.city)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .filter(*_token_conditions(tokens, [Producer.city]))
         .distinct()
         .limit(limit)

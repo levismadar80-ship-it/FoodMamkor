@@ -142,6 +142,42 @@ class TestSearchMatchesDeliveryCity:
         assert "עסק ללא כיסוי" not in names
 
 
+class TestSearchMatchesTagline:
+    """MEH-2478 — the card tagline (Producer.short_description) is searched by
+    both paths: GET /producers?q= and the /search autocomplete.
+
+    The query word appears ONLY in the tagline — not in the name, the factory
+    description ("Test producer"), the city, a category or a product — so a
+    hit can only come from short_description. The second business has no
+    tagline and shares nothing with the query: it must stay out, so a filter
+    that matched everything would not pass either.
+    """
+
+    TAGLINE = "לחם שאור בעבודת יד, נאפה כל בוקר"
+
+    def _seed(self, db):
+        tagged = make_producer(db, name="מאפיית הגבעה", city="גבעתיים")
+        tagged.short_description = self.TAGLINE
+        db.commit()
+        make_producer(db, name="מחלבת העמק", city="עפולה")
+
+    def test_producers_q_matches_tagline_only_word(self, client, db):
+        self._seed(db)
+        resp = client.get("/producers", params={"q": "שאור"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "מאפיית הגבעה" in names
+        assert "מחלבת העמק" not in names
+
+    def test_search_autocomplete_matches_tagline_only_word(self, client, db):
+        self._seed(db)
+        resp = client.get("/search", params={"q": "שאור"})
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()["producers"]]
+        assert "מאפיית הגבעה" in names
+        assert "מחלבת העמק" not in names
+
+
 class TestSmartSearchAutocomplete:
     """Regression: /search?q= autocomplete still returns grouped results."""
 

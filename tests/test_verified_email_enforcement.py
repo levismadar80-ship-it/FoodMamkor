@@ -98,6 +98,7 @@ def _group_buy_payload(**overrides):
         "min_participants": 3,
         "deadline": (utc_now() + timedelta(days=10)).isoformat(),
         "city": "חיפה",
+        "fulfillment_note": "איסוף מהמשק ביום שישי",  # MEH-2453: required
     }
     payload.update(overrides)
     return payload

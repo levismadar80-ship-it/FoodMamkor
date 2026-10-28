@@ -145,8 +145,8 @@ const CHIP_CLASS =
  *     the eye is looking for a hint about SEARCH, not a claim about the
  *     directory. Its gold seal was also the only accent-coloured mark above the
  *     fold, pulling the eye to the least important point in the zone.
- *   · the how-it-works text link, which now lives only in the block it pointed
- *     at (HomeStaticBlocks.jsx `#how-it-works`).
+ *   · the how-it-works text link. The block it pointed at (`#how-it-works`)
+ *     was itself removed from home in MEH-2441, so there is no anchor left.
  * Neither the removed copy nor its message keys are quoted anywhere in this
  * file ON PURPOSE: the ticket's absence assertions are greps, and a comment
  * naming the string would answer 1 forever and hide a real regression.

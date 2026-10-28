@@ -25,6 +25,7 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
+import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
@@ -96,28 +97,38 @@ const CATEGORY_ICON = {
   "חקלאות": Plant,
 };
 
-function formatTime(t) {
-  if (!t) return "";
-  return t.slice(0, 5);
-}
 
 // Normalize an event OR experience row into one shape the rail renderer
 // understands. Field names diverge between the two APIs; the accent
 // ("green" event / "gold" experience) drives the species styling.
-function toEntry(row, tab) {
+function toEntry(row, tab, t) {
   const isExp = tab === "experiences";
+  // MEH-2461: an organizer-owned event names its organizer with the approved
+  // «מארגן: {name}» line; a business keeps the bare business name.
+  const isOrganizerEvent = !isExp && row.owner_kind === "organizer" && row.producer_name;
   return {
     id: row.id,
     title: row.title,
     date: row.event_date,
     time: row.event_time,
-    who: isExp ? row.host?.name : row.producer_name,
+    endTime: row.end_time ?? null, // MEH-2469
+    who: isExp
+      ? row.host?.name
+      : isOrganizerEvent
+        ? t("organizer_line", { name: row.producer_name })
+        : row.producer_name,
     city: row.city,
+    // MEH-2476: a recurring experience names its schedule in the meta line,
+    // so the date rail reads as the first occasion, not the only one.
+    schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
     category: row.category,
     price: isExp ? row.price_per_person : row.price,
     description: row.description,
     accent: isExp ? "gold" : "green",
     href: isExp ? `/experiences/${row.id}` : `/events/${row.id}`,
+    // MEH-2468: the cover image the owner uploaded (EventForm, MEH-988) —
+    // until now it showed only on the event page itself.
+    image: row.image_url || null,
   };
 }
 
@@ -482,14 +493,14 @@ export default function EventsPage({ initialTab = "events" }) {
                   <h2 className="font-headline-md text-2xl font-bold text-text leading-none">
                     {group.monthLabel}
                   </h2>
-                  <span className="font-english italic text-base font-medium text-accent numeric">
+                  <span dir="ltr" className="font-english italic text-base font-medium text-accent numeric">
                     {group.yearLabel}
                   </span>
                   <span className="flex-1 h-px bg-border" />
                 </div>
                 <div>
                   {group.items.map((row) => (
-                    <EntryRow key={row.id} entry={toEntry(row, tab)} freeLabel={t("free")} />
+                    <EntryRow key={row.id} entry={toEntry(row, tab, t)} freeLabel={t("free")} />
                   ))}
                 </div>
               </section>
@@ -518,14 +529,21 @@ function EntryRow({ entry, freeLabel }) {
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
-  const time = formatTime(entry.time);
-  const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
+  // MEH-2469: «09:30–15:00» when the event has an end time.
+  const time = formatTimeRange(entry.time, entry.endTime);
+  const meta = [entry.who, entry.city, entry.schedule].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
+
+  // MEH-2468: a third column only when there is an image — a row without one
+  // keeps today's two-column layout (no empty placeholder box).
+  const cols = entry.image
+    ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]"
+    : "grid-cols-[64px_1fr] md:grid-cols-[104px_1fr]";
 
   return (
     <Link
       href={entry.href}
-      className="relative grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border transition hover:bg-surface-card"
+      className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
     >
       {/* species tick — start edge, full height */}
       <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
@@ -550,7 +568,9 @@ function EntryRow({ entry, freeLabel }) {
         <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
           {entry.title}
         </h3>
-        {meta && <p className="text-sm text-fg-muted mt-1">{meta}</p>}
+        {/* MEH-2476: line-clamp — a long recurring schedule must not stack
+            several lines into a 375px row. */}
+        {meta && <p className="text-sm text-fg-muted mt-1 line-clamp-2">{meta}</p>}
         {entry.description && (
           <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
         )}
@@ -570,6 +590,15 @@ function EntryRow({ entry, freeLabel }) {
           )}
         </div>
       </div>
+      {entry.image && (
+        // Decorative: the row is a link already named by its title.
+        <div
+          aria-hidden="true"
+          data-testid="event-row-image"
+          className="my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-border bg-cover bg-center"
+          style={{ backgroundImage: `url(${optimizeCloudinary(entry.image, { aspectRatio: "1:1", width: 224 })})` }}
+        />
+      )}
     </Link>
   );
 }

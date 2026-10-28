@@ -191,7 +191,8 @@ instead, and *Do's and Don'ts* for why.
   (`green-900` sheets/footers), where `accent` fails contrast (≈1.6:1 on
   `green-900`'s family). Same role as `accent`, lighter expression — numerals,
   small glyph accents on dark panels (MEH-730; first consumer: the account
-  sheet). Never use it on cream/white — there it's the drift, `accent` is the
+  sheet; also the separators and focus ring on the `bg-primary` closing bands,
+  MEH-2439). Never use it on cream/white — there it's the drift, `accent` is the
   token.
 - **Border (`#E5DFD3`):** Warm hairline for card borders and dividers on cream.
   Low-contrast by design; structure should be felt, not drawn.
@@ -255,6 +256,19 @@ DESIGN.md token transform briefly dropped it). The document root
 
 **Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
 Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
+Cormorant has **no Hebrew glyphs**, and its size-adjusted fallback face
+(`local(Times New Roman)`, no unicode-range) catches every glyph it lacks — so
+Hebrew set in `.font-english` used to render in a system serif. Since MEH-2488
+the `.font-english` stack leads with Frank Ruhl's Hebrew half
+(`var(--font-headline)`, Hebrew unicode-range only): Hebrew gets the brand face,
+Latin and digits still get Cormorant. The change is global — it reaches every
+`.font-english` use (home, process, events, join, producer sign-up, account
+sheet) — but it only moves Hebrew glyphs, which had no brand face there before.
+
+**Headings never strand one word on the last line** — `h1, h2, h3` carry
+`text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
+letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
+the home trust band and the admin help ToC label).
 
 ## Layout
 
@@ -325,6 +339,13 @@ front matter for the normative token bindings.
     `after:bg-accent` underline is a **nav-only** active indicator, deliberately
     not on the card (Sapir, v4). The v4 mock showed it on name-hover; it was
     intentionally not shipped. A future re-port must not reintroduce it.
+  - **Place first (MEH-2440, Sapir 27/10/2026):** the line above the name is the
+    **city** (`accent` gold, 12px semibold) with the distance beside it; the
+    category sits in the muted line under the name. No city → no place line.
+  - **No photo (MEH-2440):** a typographic name plate — the business name in
+    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
+    above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
+    `green-50`, which read as a template when most cards had no photo.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
@@ -407,6 +428,28 @@ front matter for the normative token bindings.
   The active pill follows the scroll (IntersectionObserver, `aria-current`);
   `prefers-reduced-motion` → instant jump. RTL logical props only.
 
+### Home page — section rhythm (MEH-2441, Sapir 27/10)
+
+- **Order:** hero → mini-map → category grid → businesses grid → **היכרות** (featured
+  business) → seasonal → events → recently viewed → closing CTA. "איך זה עובד"
+  and the comparison teaser are **not** on home: `/about` carries the full
+  comparison (MEH-841) and `/about/process` the real four steps.
+- **Featured business ("היכרות")** = the page's one strong colour moment: a
+  full-bleed `bg-primary` band, `text-background`. h2 "היכרות" with a short
+  `gold-on-dark` rule above it; photo 7/12 columns at 4:3 (`IMAGE_RATIOS.featured`);
+  then, in the 5/12 column: place line `city · category` in
+  `text-background/90` 13px semibold (not gold: `gold-on-dark` on `primary` is
+  4.04:1, under AA for small text) → the name in Frank Ruhl black 38/60px (`keep-all`) → the
+  business's `short_description` as a quote with a `gold-on-dark`
+  `border-s-2` → "להכיר את {name}" as an underlined text link. No sub-heading,
+  no long description (the producer page owns the story). Missing photo or a
+  failed load → a `primary-dark` tonal plate.
+- **Category grid:** layout A — 2 large + 8 small on desktop, the phone rail
+  unchanged (MEH-2412). Photos stay. The two large tiles are **ירקות** and
+  **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
+  largest share of the Wave 1 leads). Captions are the name only — no 01–10
+  numerals.
+
 ## Action hierarchy
 
 **Exactly one primary-styled action per viewport; new page actions enter as
@@ -458,6 +501,34 @@ reads as a rendering bug (the ghost-strip class). Rules:
   hard-code hex values in JSX.
 - **Don't** add gradient orbs, blurred/glass backgrounds, or hover shadow lift —
   all signal "app", the opposite of "magazine" (BRAND.md §3).
+- **Don't** number blocks that aren't a sequence. "01 / 02 / 03" over benefit
+  cards, values or section marks is the generic template tell; numerals stay
+  only where they order something the reader follows (the 4 steps on
+  `/about/process`, `/join`, the register wizard) (MEH-2439).
+- **Don't** set Frank Ruhl Libre in `italic` or letter-space Hebrew. The font
+  ships no italic face, so the browser fakes a slant; tracking pulls Hebrew
+  letters apart. Emphasis in a headline = weight or the `accent` colour
+  (MEH-2439). **Enforced since MEH-2487** by one rule in `app/globals.css`:
+  under `[dir="rtl"]`, `.italic` / `<em>` / `<i>` render upright; only a
+  `dir="ltr"` island (the Cormorant numerals, English) keeps its real italic.
+  Write it as `[dir]` selectors, never `:dir(rtl)` — the CSS minifier rewrites
+  `:dir()` into `:lang(he)`, which also straightens the `ltr` islands.
+- **Do** end a page on the full brand green when it closes with a CTA band
+  (`bg-primary text-background`, cream button `bg-background text-primary`,
+  gold separators `text-gold-on-dark`). Small text on that green is
+  `text-background/90` at least (4.99:1; `/80` is 4.34:1 and fails AA), and the
+  focus ring is `ring-gold-on-dark ring-offset-primary` (`ring-primary/40`
+  disappears on green). **Don't** use mint `green-50` as a section band — it
+  reads off-palette next to the cream (MEH-2439: `/about`, `/about/process`).
+  When that green band is the **last** thing on the page, mark it
+  `data-meets-footer` so it runs straight into the footer without the footer's
+  64px cream top margin (MEH-2487, `/about/process`). `/about` is not marked:
+  its contact form follows the green close.
+- **Do** clamp a card's preview text with `line-clamp-N`, and show it at a
+  breakpoint with `sm:[display:-webkit-box]`, never `sm:block`: line-clamp only
+  works on `-webkit-box`, so `sm:block` silently lets the text wrap without
+  limit. The producer card's description is at most 2 lines (and 80 chars + «…»;
+  the owner can type 160) (MEH-2487).
 
 ### Why we don't have a state-color palette
 

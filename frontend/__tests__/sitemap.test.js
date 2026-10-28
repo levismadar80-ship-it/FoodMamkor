@@ -38,3 +38,31 @@ describe("sitemap noindex exclusion (MEH-803)", () => {
     expect(urls).toContain(BASE); // home ("")
   });
 });
+
+describe("MEH-2461 — organizer pages in the sitemap", () => {
+  it("lists /organizers/{slug} for both locales from GET /organizers, never under /producers", async () => {
+    global.fetch = vi.fn((url) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () =>
+          String(url).endsWith("/organizers") ? [{ slug: "gelem", name: "שוק גלם" }] : [],
+      }),
+    );
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls).toContain(`${BASE}/organizers/gelem`);
+    expect(urls).toContain(`${BASE}/en/organizers/gelem`);
+    expect(urls.filter((u) => u.includes("gelem"))).toHaveLength(2);
+  });
+
+  it("control: GET /organizers down → no organizer URLs, sitemap still builds", async () => {
+    global.fetch = vi.fn((url) =>
+      String(url).endsWith("/organizers")
+        ? Promise.reject(new Error("down"))
+        : Promise.resolve({ ok: true, status: 200, json: async () => [] }),
+    );
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls.some((u) => u.includes("/organizers/"))).toBe(false);
+    expect(urls).toContain(BASE);
+  });
+});
