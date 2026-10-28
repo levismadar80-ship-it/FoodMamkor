@@ -33,9 +33,26 @@ let protectedCalls;
 let expiredEvents;
 let onExpired;
 
+// MEH-2467: the two non-verdict ways a refresh can fail — the request never
+// reached a server (axios sets no `response`), or the server was down (5xx).
+function rejectNetwork(config) {
+  const err = new Error("Network Error");
+  err.config = config;
+  err.code = "ERR_NETWORK";
+  return Promise.reject(err);
+}
+
+function reject503(config) {
+  const err = new Error("Request failed with status code 503");
+  err.config = config;
+  err.response = { status: 503, data: "Service Unavailable" };
+  return Promise.reject(err);
+}
+
 /**
  * Install a mock adapter:
- * - /auth/refresh → refreshResult ("ok" resolves with a new token, "fail" 401s)
+ * - /auth/refresh → refreshResult ("ok" resolves with a new token, "fail" 401s,
+ *   "network" rejects with no response, "503" rejects with a 503 — MEH-2467)
  * - protected URLs → per-call script from protectedScript ("401" | "200")
  */
 function installAdapter({ refreshResult = "ok", protectedScript }) {
@@ -43,9 +60,10 @@ function installAdapter({ refreshResult = "ok", protectedScript }) {
     const url = config.url ?? "";
     if (url.startsWith("/auth/refresh")) {
       refreshCalls.push(config);
-      return refreshResult === "ok"
-        ? resolve200(config, { access_token: "new-token" })
-        : reject401(config);
+      if (refreshResult === "ok") return resolve200(config, { access_token: "new-token" });
+      if (refreshResult === "network") return rejectNetwork(config);
+      if (refreshResult === "503") return reject503(config);
+      return reject401(config);
     }
     if (url.startsWith("/auth/login")) {
       return reject401(config);
@@ -210,5 +228,62 @@ describe("MEH-1627 anonymous retry after failed refresh", () => {
     ).rejects.toMatchObject({ response: { status: 401 } });
 
     expect(refreshCalls).toHaveLength(0);
+  });
+});
+
+// MEH-2467: a refresh that fails WITHOUT a server verdict (the request never
+// arrived, or the server was down) must not end the session. Sapir was logged
+// out of the admin twice on 28.10 with no 401/refresh/logout in the backend
+// logs — the token was discarded client-side. Only 401/403 may do that.
+describe("MEH-2467 transient refresh failure keeps the session", () => {
+  it("401 → refresh Network Error: token kept, no auth:expired, rejects with the refresh error", async () => {
+    installAdapter({ refreshResult: "network", protectedScript: ["401", "200"] });
+
+    await expect(api.get("/users/me/favorites")).rejects.toMatchObject({
+      code: "ERR_NETWORK",
+    });
+
+    expect(refreshCalls).toHaveLength(1);
+    expect(expiredEvents).toBe(0);
+    expect(localStorage.getItem("token")).toBe("stale-token");
+    // No anonymous replay either: the session is not over, so there is no
+    // guest to show a public view to.
+    expect(protectedCalls).toHaveLength(1);
+  });
+
+  it("401 → refresh 503: same — the session outlives a backend outage", async () => {
+    installAdapter({ refreshResult: "503", protectedScript: ["401", "200"] });
+
+    await expect(api.get("/users/me/favorites")).rejects.toMatchObject({
+      response: { status: 503 },
+    });
+
+    expect(refreshCalls).toHaveLength(1);
+    expect(expiredEvents).toBe(0);
+    expect(localStorage.getItem("token")).toBe("stale-token");
+    expect(protectedCalls).toHaveLength(1);
+  });
+
+  it("401 → refresh 401 still ends the session (the verdict path is unchanged)", async () => {
+    installAdapter({ refreshResult: "fail", protectedScript: ["401", "401"] });
+
+    await expect(api.get("/users/me/favorites")).rejects.toMatchObject({
+      response: { status: 401 },
+    });
+
+    expect(expiredEvents).toBe(1);
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("the shared in-flight refresh is released after a transient failure (next 401 refreshes again)", async () => {
+    installAdapter({ refreshResult: "network", protectedScript: ["401", "401"] });
+    await expect(api.get("/users/me/favorites")).rejects.toMatchObject({ code: "ERR_NETWORK" });
+
+    installAdapter({ refreshResult: "ok", protectedScript: ["401", "200"] });
+    const res = await api.get("/users/me/favorites");
+
+    expect(res.data).toEqual({ ok: true });
+    expect(refreshCalls).toHaveLength(1); // the second adapter's own count
+    expect(expiredEvents).toBe(0);
   });
 });
