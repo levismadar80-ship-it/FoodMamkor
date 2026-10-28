@@ -13,6 +13,7 @@ from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
 from app.services.producer_listing import is_business  # MEH-2459
+from app.services.city_centroid import city_centroid  # MEH-2480
 from app.rate_limit import limiter
 from app.services.availability_validation import (
     AvailabilityValidationError,
@@ -2299,6 +2300,27 @@ def _same_city_label_error_detail(
     }
 
 
+def _fill_centroid_when_unpinned(db: Session, loc: ProducerLocation) -> None:
+    """MEH-2480: a location saved with a town but no coordinates gets the
+    town's seeded centre, stamped `approximate`.
+
+    Before this, such a row was created with lat/lng NULL — invisible to the
+    map, to "near me", and to `submission_gate._has_location`, so the owner
+    saw «מיקום או אזורי משלוח» stay red with a saved location on screen. The
+    only way through was the address search, which on 28/10/2026 was a 403 for
+    everyone. Explicit coordinates (address search, manual entry) are never
+    touched: the fill runs only when BOTH are missing. An unknown town leaves
+    the row exactly as submitted.
+    """
+    if loc.lat is not None and loc.lng is not None:
+        return
+    centroid = city_centroid(db, loc.city)
+    if centroid is None:
+        return
+    loc.lat, loc.lng = centroid
+    loc.location_precision = "approximate"
+
+
 def _reject_same_city_without_label(
     db: Session,
     producer_id: UUID,
@@ -2554,6 +2576,7 @@ def create_my_location(
         .count()
     )
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
+    _fill_centroid_when_unpinned(db, loc)
 
     # MEH-1938 follow-up (Sapir, 02/09) — branch-only primaries are enforced
     # HERE too, not only on the update path. A rule that the create path can
@@ -2626,6 +2649,7 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
     want_primary = patch.pop("is_primary", None)
     for field, value in patch.items():
         setattr(loc, field, value)
+    _fill_centroid_when_unpinned(db, loc)
 
     if want_primary is True:
         # MEH-1938 follow-up (Sapir, 02/09): promotion is BRANCH-ONLY, and this
