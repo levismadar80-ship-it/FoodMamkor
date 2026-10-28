@@ -249,6 +249,59 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
     expect(sessionStorage.getItem("pending_action")).toBeNull();
   });
 
+  it("a failed prefs GET leaves the button inert — no click can PUT defaults over stored prefs", async () => {
+    mockUser.current = { id: "u1", phone: "0501234567" };
+    api.get.mockImplementation((url) => {
+      if (url === "/users/me/favorites") return Promise.resolve({ data: [{ producer_id: PID }] });
+      if (url === ALERTS_URL) return Promise.reject(new Error("network"));
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+    renderButton();
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith(ALERTS_URL));
+    // Let the rejected GET settle before probing.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(button()).toBeDisabled();
+    fireEvent.click(button());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(api.put).not.toHaveBeenCalled();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("POST favorite ok + alerts PUT fails: shared favorites state reads saved, error toasted once", async () => {
+    const { showToast } = await import("@/lib/toast");
+    mockUser.current = { id: "u1" };
+    const onChanged = vi.fn();
+    api.put.mockRejectedValueOnce(new Error("network"));
+    renderButton({ onChanged });
+    await waitFor(() => expect(button()).not.toBeDisabled());
+    expect(isFavorited(PID)).toBe(false);
+
+    fireEvent.click(button());
+
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledTimes(1));
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(isFavorited(PID)).toBe(true);
+    expect(button()).toHaveAttribute("aria-pressed", "false");
+    expect(showToast.success).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it("a successful write reports onChanged so the page can re-read an open panel", async () => {
+    mockUser.current = { id: "u1", phone: "0501234567" };
+    const onChanged = vi.fn();
+    serve({
+      favorites: [{ producer_id: PID }],
+      alerts: { ...OFF, enabled: true, notify_new_event: true, whatsapp_opt_in: true },
+    });
+    renderButton({ onChanged });
+    await waitFor(() => expect(button()).toHaveAttribute("aria-pressed", "true"));
+
+    fireEvent.click(button());
+
+    await waitFor(() => expect(button()).toHaveAttribute("aria-pressed", "false"));
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+
   it("a failed alerts PUT reverts the on state and toasts an error", async () => {
     const { showToast } = await import("@/lib/toast");
     mockUser.current = { id: "u1" };

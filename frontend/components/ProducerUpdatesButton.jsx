@@ -44,13 +44,21 @@ import LoginPromptModal from "./LoginPromptModal";
  * Reuses the two existing endpoints only: POST /users/me/favorites/{id} and
  * GET/PUT /users/me/favorites/{id}/alerts. `refreshSignal` re-reads the prefs
  * when it changes (ProducerHeader passes the panel's open state, so a save in
- * the panel is reflected here once it closes).
+ * the panel is reflected here once it closes). The reverse direction is
+ * `onChanged`, called after every successful write, so the page can re-mount an
+ * open panel instead of leaving it on pre-write values. A failed prefs GET
+ * leaves the button disabled rather than assuming OFF.
  */
 const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe"];
 
 const typesTo = (value) => Object.fromEntries(TYPES.map((k) => [k, value]));
 
-export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refreshSignal }) {
+export default function ProducerUpdatesButton({
+  producerId,
+  onOpenAlerts,
+  onChanged,
+  refreshSignal,
+}) {
   const t = useTranslations("favorites");
   const tError = useTranslations("error");
   const tPrefs = useTranslations("sweep_tail.alert_prefs");
@@ -58,6 +66,10 @@ export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refres
   // null = not known yet (favorites cache / prefs still loading)
   const [favorited, setFavorited] = useState(null);
   const [prefs, setPrefs] = useState(null);
+  // A failed prefs GET is NOT "no prefs": treating it as OFF would let the next
+  // click PUT defaults over a stored row (e.g. drop a WhatsApp opt-in). The
+  // button stays inert until a later read (refreshSignal) succeeds.
+  const [loadFailed, setLoadFailed] = useState(false);
   // Bumped after every write; a GET that started before the bump is stale and
   // must not overwrite the state the write just set.
   const writeVersion = useRef(0);
@@ -89,21 +101,27 @@ export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refres
   useEffect(() => {
     if (!user || favorited === null) {
       setPrefs(null);
+      setLoadFailed(false);
       return undefined;
     }
     if (!favorited) {
       setPrefs({ enabled: false });
+      setLoadFailed(false);
       return undefined;
     }
     let alive = true;
     const version = writeVersion.current;
-    const apply = (data) => {
-      if (alive && version === writeVersion.current) setPrefs(data);
-    };
+    const current = () => alive && version === writeVersion.current;
     api
       .get(`/users/me/favorites/${producerId}/alerts`)
-      .then((r) => apply(r.data || { enabled: false }))
-      .catch(() => apply({ enabled: false }));
+      .then((r) => {
+        if (!current()) return;
+        setPrefs(r.data || { enabled: false });
+        setLoadFailed(false);
+      })
+      .catch(() => {
+        if (current()) setLoadFailed(true);
+      });
     return () => {
       alive = false;
     };
@@ -139,6 +157,9 @@ export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refres
       await api.put(`/users/me/favorites/${producerId}/alerts`, body);
       writeVersion.current += 1;
       setPrefs({ ...(prefs || {}), ...body, enabled: true });
+      // Lets the page re-read an AlertPrefsPanel that is open right now —
+      // otherwise its Save would PUT the pre-write values back.
+      onChanged?.();
       if (next && !whatsapp && !prefs?.has_push) {
         // No delivery channel yet — open the panel where it is chosen.
         onOpenAlerts?.();
@@ -152,7 +173,7 @@ export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refres
     } finally {
       setBusy(false);
     }
-  }, [user, producerId, prefs, hasPhone, onOpenAlerts, tPrefs, tError]);
+  }, [user, producerId, prefs, hasPhone, onOpenAlerts, onChanged, tPrefs, tError]);
 
   // Finish a guest's "updates" intent after sign-in (one-shot, see
   // lib/pending-action). Waits until the prefs are known so the toggle reads
@@ -168,10 +189,10 @@ export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refres
     window.scrollTo({ top: intent.scrollY });
   }, [user, producerId]);
   useEffect(() => {
-    if (!intentRef.current || prefs === null || busy) return;
+    if (!intentRef.current || prefs === null || loadFailed || busy) return;
     intentRef.current = null;
     if (!on) toggleRef.current();
-  }, [prefs, on, busy]);
+  }, [prefs, on, busy, loadFailed]);
 
   const nextPath =
     typeof window !== "undefined" ? window.location.pathname + window.location.search : "/";
@@ -181,7 +202,7 @@ export default function ProducerUpdatesButton({ producerId, onOpenAlerts, refres
       <button
         type="button"
         onClick={toggle}
-        disabled={busy || (Boolean(user) && prefs === null)}
+        disabled={busy || (Boolean(user) && (prefs === null || loadFailed))}
         aria-pressed={on}
         data-testid="producer-updates-button"
         className={`inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-full text-sm font-medium border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${

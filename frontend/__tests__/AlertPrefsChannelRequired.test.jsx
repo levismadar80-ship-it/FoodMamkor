@@ -26,9 +26,9 @@ vi.mock("@/lib/toast", () => {
   return { showToast };
 });
 
-const push = vi.hoisted(() => ({ key: null }));
+const push = vi.hoisted(() => ({ key: null, pending: null }));
 vi.mock("@/lib/push", () => ({
-  getVapidPublicKey: () => Promise.resolve(push.key),
+  getVapidPublicKey: () => push.pending || Promise.resolve(push.key),
   requestPushPermission: vi.fn(),
   subscribeToPush: vi.fn(),
 }));
@@ -67,6 +67,7 @@ const loaded = () => screen.findByText(he.sweep_tail.alert_prefs.group_how);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  push.pending = null;
   setPushPermission(null);
 });
 
@@ -116,14 +117,32 @@ describe("MEH-2526 · channel-required message", () => {
     expect(screen.queryByTestId("alert-channel-required")).toBeNull();
   });
 
+  it("push status still resolving → message NOT shown (no flash for a granted-push user)", async () => {
+    api.get.mockResolvedValue({ data: prefs(false) });
+    window.Notification = { permission: "granted" };
+    let resolveKey;
+    push.pending = new Promise((r) => {
+      resolveKey = r;
+    });
+    renderPanel();
+    await loaded();
+    expect(screen.queryByTestId("alert-channel-required")).toBeNull();
+    resolveKey("vapid-key");
+    await waitFor(() =>
+      expect(screen.getByText(he.sweep_tail.alert_prefs.push_active)).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("alert-channel-required")).toBeNull();
+    push.pending = null;
+  });
+
   it("switching the only channel off makes the message appear", async () => {
     api.get.mockResolvedValue({ data: prefs(true) });
     renderPanel();
     await loaded();
     expect(screen.queryByTestId("alert-channel-required")).toBeNull();
-    const switches = screen.getAllByRole("switch");
-    // The WhatsApp switch is the fifth row (four alert types, then channels).
-    fireEvent.click(switches[4]);
+    fireEvent.click(
+      screen.getByRole("switch", { name: he.sweep_tail.alert_prefs.row_whatsapp_opt_in }),
+    );
     expect(screen.getByTestId("alert-channel-required")).toHaveTextContent(CHANNEL_REQUIRED);
   });
 });

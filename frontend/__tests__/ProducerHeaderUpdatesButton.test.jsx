@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 /**
  * MEH-2526 — ProducerHeader mounts the permanent «קבלת עדכונים» button.
@@ -24,9 +24,18 @@ vi.mock("@/components/BadgeRow", () => ({ default: () => <div /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div /> }));
 vi.mock("@/components/FavoriteButton", () => ({ default: () => <button data-testid="fav" /> }));
 vi.mock("@/components/ShareButton", () => ({ default: () => <button /> }));
-vi.mock("@/components/AlertPrefsPanel", () => ({
-  default: () => <div data-testid="alert-prefs-panel" />,
-}));
+const panel = vi.hoisted(() => ({ mounts: 0 }));
+vi.mock("@/components/AlertPrefsPanel", async () => {
+  const { useEffect } = await import("react");
+  return {
+    default: function PanelStub() {
+      useEffect(() => {
+        panel.mounts += 1;
+      }, []);
+      return <div data-testid="alert-prefs-panel" />;
+    },
+  };
+});
 vi.mock("@phosphor-icons/react", () => ({
   Star: () => <span />,
   StarOfDavid: () => <span />,
@@ -37,15 +46,19 @@ vi.mock("@/components/ProducerUpdatesButton", () => ({
   default: (props) => {
     seen.props.push(props);
     return (
-      <button data-testid="producer-updates-button" onClick={() => props.onOpenAlerts?.()} />
+      <>
+        <button data-testid="producer-updates-button" onClick={() => props.onOpenAlerts?.()} />
+        <button data-testid="stub-write" onClick={() => props.onChanged?.()} />
+      </>
     );
   },
 }));
 
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
+const session = vi.hoisted(() => ({ user: null, favorited: false }));
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: session.user }) }));
 vi.mock("@/lib/favorites-cache", () => ({
   ensureFavoritesLoaded: () => Promise.resolve(),
-  isFavorited: () => false,
+  isFavorited: () => session.favorited,
   subscribeFavorites: () => () => {},
 }));
 
@@ -62,6 +75,9 @@ const producer = {
 
 beforeEach(() => {
   seen.props = [];
+  panel.mounts = 0;
+  session.user = null;
+  session.favorited = false;
 });
 
 describe("MEH-2526 · ProducerHeader mounts the updates button", () => {
@@ -89,5 +105,31 @@ describe("MEH-2526 · ProducerHeader mounts the updates button", () => {
     expect(seen.props.at(-1).producerId).toBe("p-1");
     fireEvent.click(screen.getByTestId("producer-updates-button"));
     expect(onOpenAlerts).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("MEH-2526 · an open panel never shows prefs older than the button's write", () => {
+  it("a write from the updates button re-mounts (re-reads) the open AlertPrefsPanel", async () => {
+    session.user = { id: "u1" };
+    session.favorited = true;
+    render(
+      <ProducerHeader
+        producer={producer}
+        primaryCategory={null}
+        hasImages
+        alertsOpen
+        onOpenAlerts={() => {}}
+        onCloseAlerts={() => {}}
+      />,
+    );
+    await screen.findByTestId("alert-prefs-panel");
+    expect(panel.mounts).toBe(1);
+
+    fireEvent.click(screen.getByTestId("stub-write"));
+
+    // The panel reads its prefs once, on mount; a stale mount would let its
+    // Save button PUT the pre-write values back over the button's write.
+    await waitFor(() => expect(panel.mounts).toBe(2));
+    expect(screen.getAllByTestId("alert-prefs-panel")).toHaveLength(1);
   });
 });

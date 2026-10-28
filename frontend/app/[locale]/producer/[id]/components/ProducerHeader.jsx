@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -104,6 +104,12 @@ export default function ProducerHeader({
   }, [favorited, onCloseAlerts]);
 
   const showAlerts = Boolean(favorited && user);
+
+  // MEH-2526: the panel reads prefs once, on mount. A write from the updates
+  // button while it is open would leave it showing (and on Save, re-sending)
+  // the pre-write values — bumping its key re-mounts it so it re-reads.
+  const [panelKey, setPanelKey] = useState(0);
+  const remountPanel = useCallback(() => setPanelKey((k) => k + 1), []);
 
   // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
   // matches the old ContactCard OPEN_STATES default-open behavior.
@@ -376,6 +382,7 @@ export default function ProducerHeader({
         <ProducerUpdatesButton
           producerId={producer.id}
           onOpenAlerts={onOpenAlerts}
+          onChanged={remountPanel}
           refreshSignal={alertsOpen}
         />
       </div>
@@ -398,6 +405,7 @@ export default function ProducerHeader({
       {showAlerts && alertsOpen && (
         <div className="mt-3" data-testid="alerts-reentry-panel">
           <AlertPrefsPanel
+            key={panelKey}
             producerId={producer.id}
             producerName={producer.name}
             onClose={onCloseAlerts}
