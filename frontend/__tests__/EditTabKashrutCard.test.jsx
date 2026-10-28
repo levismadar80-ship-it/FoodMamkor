@@ -81,6 +81,34 @@ describe("Edit-tab KashrutCard (isolation)", () => {
     expect(within(list).getByText("התעודה לא ברורה")).toBeInTheDocument();
   });
 
+  // MEH-2518: revoke. Cells: revoked alone → shown with reason; revoked with a
+  // newer request for the same badge → hidden (it is history).
+  it("shows a revoked badge as «התג הוסר» with the admin's reason", async () => {
+    api.get.mockResolvedValue({
+      data: [
+        { id: "v1", badge_code: "rabanut", status: "revoked", notes: "התעודה בוטלה", created_at: "2026-09-01T10:00:00" },
+      ],
+    });
+    renderCard();
+    const list = await screen.findByTestId("kashrut-requests");
+    expect(within(list).getByText(K.status_revoked)).toBeInTheDocument();
+    expect(within(list).getByText("התעודה בוטלה")).toBeInTheDocument();
+  });
+
+  it("hides a revoked row once a newer request for the same badge exists", async () => {
+    api.get.mockResolvedValue({
+      data: [
+        { id: "v1", badge_code: "rabanut", status: "revoked", notes: "התעודה בוטלה", created_at: "2026-09-01T10:00:00" },
+        { id: "p2", badge_code: "rabanut", status: "pending", notes: null, created_at: "2026-10-01T10:00:00" },
+      ],
+    });
+    renderCard();
+    const list = await screen.findByTestId("kashrut-requests");
+    expect(within(list).getByText(K.status_pending)).toBeInTheDocument();
+    expect(within(list).queryByText(K.status_revoked)).toBeNull();
+    expect(within(list).queryByText("התעודה בוטלה")).toBeNull();
+  });
+
   it("submits a request via POST /producers/me/kashrut-request and shows success", async () => {
     renderCard();
     await waitFor(() => expect(api.get).toHaveBeenCalled());

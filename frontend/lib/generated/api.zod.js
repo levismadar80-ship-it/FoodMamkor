@@ -482,6 +482,17 @@ export const RejectKashrutRequestAdminKashrutRequestIdRejectPostResponse = /*#__
 
 
 /**
+ * MEH-2518: take an approved kashrut badge down (e.g. the certificate was
+ * withdrawn). Before this the only way was SQL. Revokes every approved
+ * request for that badge code on the business — a renewal leaves two — and
+ * when no badge is left clears the verified/expiry pair, so the «כשר» header
+ * line, the ?kosher filter and the certificate proxy all stop at once.
+ * @summary Revoke Kashrut Badge
+ */
+export const RevokeKashrutBadgeAdminKashrutRequestIdRevokePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * MEH-2072: approved businesses whose licence expires within 30 days.
  *
  * Read-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1

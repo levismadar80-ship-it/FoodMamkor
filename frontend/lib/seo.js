@@ -25,6 +25,8 @@ import {
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 import { instagramUrl } from "./social-links";
+// Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
+import { parseNaiveUtc } from "./dates";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -698,15 +700,6 @@ export function isGroupBuyLive(groupBuy, now = new Date()) {
   if (groupBuy?.status !== "open" || !groupBuy.deadline) return false;
   const deadline = parseNaiveUtc(groupBuy.deadline);
   return deadline != null && deadline > now;
-}
-
-/** Review #3726: the backend stores deadlines as naive UTC (utc_now()), so a
- *  string without a zone is read as UTC — never as the runtime's local time. */
-function parseNaiveUtc(value) {
-  if (typeof value !== "string") return null;
-  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
-  const d = new Date(hasZone || !value.includes("T") ? value : `${value}Z`);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /** The Israel calendar date ("YYYY-MM-DD") of an instant. */

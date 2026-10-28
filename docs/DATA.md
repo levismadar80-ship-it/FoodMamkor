@@ -1016,8 +1016,18 @@ PUT    /admin/producers/{producer_id}/review-checks   admin — MEH-1399: record
                                                see). Both writes are set-based statements — INSERT ... ON CONFLICT DO NOTHING and
                                                one bulk DELETE ... WHERE — so a concurrent save resolves instead of 500ing on the
                                                unique constraint or raising StaleDataError on a row already gone. 60/minute.
-GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
-POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
+GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected|revoked)
+POST   /admin/kashrut/{id}/approve             admin — body {expires_on: date} = the expiry printed on the certificate
+                                               (MEH-2518; 422 unless after today and ≤ today+400d). Activates the badge in
+                                               kashrut_badges[]; kashrut_expires_at = end of that day in Israel (naive UTC).
+                                               With another badge still live the EARLIER date wins (one expiry per
+                                               business); approving the only badge replaces it. KNOWN LIMIT (fail-closed):
+                                               with no per-badge date, renewing one badge while another is live, or
+                                               revoking one of two, cannot move the date LATER — the badge may drop
+                                               early, never late. Per-badge expiry needs an Alembic expand (follow-up).
+POST   /admin/kashrut/{id}/revoke              admin — MEH-2518: body {notes?}. 409 unless approved. Marks every approved
+                                               request for that badge code "revoked", drops the code from kashrut_badges[];
+                                               no badge left → kashrut_verified_at/expires_at cleared.
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
 GET    /admin/producers/rejection-presets      admin — MEH-226: the 5 canonical rejection reasons as [{key,label}].
                                                Backend is the single owner of the Hebrew labels; the admin reject

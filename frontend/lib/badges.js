@@ -76,6 +76,8 @@
  * -- not because anything currently differs.
  */
 
+import { parseNaiveUtc } from "./dates";
+
 export const BADGE_CONFIG = {
   verified: {
     key: "verified",
@@ -354,11 +356,7 @@ function earnsBadge(producer, key) {
       // MEH-1260: expiry enforcement — an expired certificate earns no badge.
       // Legacy rows verified before the expiry era carry NULL expires_at and
       // stay valid (do NOT break them). Mirrors producer_listing.py ?kosher.
-      return (
-        !!producer.kashrut_verified_at &&
-        (!producer.kashrut_expires_at ||
-          new Date(producer.kashrut_expires_at) > new Date())
-      );
+      return isKashrutCurrent(producer);
     case "delivery":
       // MEH-1841 — specific supersedes generic. A delivery-only business
       // already carries the "משלוחים בלבד" pill on ProducerCard
@@ -422,4 +420,15 @@ export function topBadges(producer, limit = 2) {
 /** Total count — handy for "..." overflow indicators. */
 export function badgeCount(producer) {
   return allBadges(producer).length;
+}
+
+// MEH-1260 / MEH-2518: admin-verified kashrut whose certificate has not
+// expired. The ONE predicate for a public «כשר» claim — the kosher badge above
+// and the producer-header fallback line both read it, so neither can show
+// «כשר» for a lapsed certificate. Legacy NULL expiry stays valid (MEH-1260).
+export function isKashrutCurrent(producer, now = new Date()) {
+  return (
+    !!producer?.kashrut_verified_at &&
+    (!producer.kashrut_expires_at || parseNaiveUtc(producer.kashrut_expires_at) > now)
+  );
 }

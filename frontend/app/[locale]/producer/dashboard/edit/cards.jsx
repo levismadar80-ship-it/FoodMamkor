@@ -1359,8 +1359,19 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
   };
 
   const approvedBadges = profile?.kashrut_badges || [];
+  // MEH-2518: a revoked badge stays in the list with its reason, like a
+  // rejected request — the owner should see why it left the page.
+  // A rejected/revoked row is history once a newer request for the same badge
+  // exists (a re-request or renewal) — showing «התג הוסר» beside the re-approved
+  // badge would contradict it.
+  const newerRequestFor = (r) =>
+    requests.some(
+      (o) => o.id !== r.id && o.badge_code === r.badge_code && o.created_at > r.created_at,
+    );
   const openRequests = requests.filter(
-    (r) => r.status === "pending" || r.status === "rejected",
+    (r) =>
+      r.status === "pending" ||
+      ((r.status === "rejected" || r.status === "revoked") && !newerRequestFor(r)),
   );
   const isEmpty = approvedBadges.length === 0 && openRequests.length === 0;
   // MEH-2405: an approved badge is tappable on the public page only when a
@@ -1422,7 +1433,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           {openRequests.map((r) => {
             const key = CODE_TO_KEY[r.badge_code];
             const label = key ? tBadges(`${key}.label`) : r.badge_code;
-            const rejected = r.status === "rejected";
+            const rejected = r.status === "rejected" || r.status === "revoked";
             return (
               <li key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-medium">{label}</span>
@@ -1431,7 +1442,11 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
                     rejected ? "bg-error/10 text-error" : "bg-primary/10 text-primary"
                   }`}
                 >
-                  {rejected ? t("status_rejected") : t("status_pending")}
+                  {r.status === "revoked"
+                    ? t("status_revoked")
+                    : rejected
+                      ? t("status_rejected")
+                      : t("status_pending")}
                 </span>
                 {rejected && r.notes && (
                   <span className="text-xs text-fg-muted">{r.notes}</span>

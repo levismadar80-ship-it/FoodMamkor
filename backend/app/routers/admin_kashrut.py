@@ -1,6 +1,6 @@
 """MEH-51: Admin endpoints for kashrut badge review + ambassador toggle."""
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -14,15 +14,17 @@ from app.rate_limit import limiter
 from app.schemas.schemas import (
     KashrutExpiryReminderOut,
     KashrutExpiryReminderRow,
+    KashrutApproveIn,
     KashrutRequestOut,
     KashrutRejectIn,
+    KashrutRevokeIn,
     SetAmbassadorIn,
 )
 from app.sentry import capture_background_exception
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import KashrutExpiryReminderV1
 from app.utils.pii import mask_phone
-from app.utils.clock import utc_now
+from app.utils.clock import ISRAEL_TZ, utc_now
 
 router = APIRouter(prefix="/admin", tags=["admin-kashrut"])
 
@@ -55,9 +57,19 @@ def list_kashrut_requests(
     return results
 
 
+def _certificate_expiry(expires_on) -> datetime:
+    """The last moment of the printed expiry day in Israel, as the naive UTC
+    the `kashrut_expires_at` column stores (it is compared against utc_now())."""
+    end_of_day = datetime.combine(expires_on, time.max, tzinfo=ISRAEL_TZ)
+    return end_of_day.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 @router.post("/kashrut/{request_id}/approve")
+@limiter.limit("60/minute")
 def approve_kashrut_request(
+    request: Request,
     request_id: UUID,
+    body: KashrutApproveIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -75,20 +87,28 @@ def approve_kashrut_request(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    now = utc_now()
+    new_expiry = _certificate_expiry(body.expires_on)
+    live = producer.kashrut_expires_at is None or producer.kashrut_expires_at >= now
+    other_live_badges = live and any(
+        code != req.badge_code for code in (producer.kashrut_badges or [])
+    )
+
     badges = list(producer.kashrut_badges or [])
     if req.badge_code not in badges:
         badges.append(req.badge_code)
         producer.kashrut_badges = badges
 
-    # Only set timestamps when this is the FIRST approved badge; subsequent
-    # badge approvals extend the expiry to keep the latest renewal date.
-    now = utc_now()
-    if producer.kashrut_expires_at is None or producer.kashrut_expires_at < now:
-        producer.kashrut_verified_at = now
-        producer.kashrut_expires_at = now + timedelta(days=365)
+    # MEH-2518: the expiry is the date printed on the certificate, never
+    # approval + 365 days (which also stacked a year per extra badge). There is
+    # one expiry per business, so while ANOTHER badge is still live the earlier
+    # of the two dates wins — the public «תקף עד» must never outlast a
+    # certificate. Approving the business's only badge (a renewal) replaces it.
+    if other_live_badges and producer.kashrut_expires_at is not None:
+        producer.kashrut_expires_at = min(producer.kashrut_expires_at, new_expiry)
     else:
-        # Extend by 1 year from latest expiry so cert chains don't shrink.
-        producer.kashrut_expires_at = producer.kashrut_expires_at + timedelta(days=365)
+        producer.kashrut_expires_at = new_expiry
+    producer.kashrut_verified_at = now
 
     req.status = "approved"
     req.reviewed_by = user.id
@@ -118,6 +138,58 @@ def reject_kashrut_request(
     req.notes = body.notes
     db.commit()
     return {"detail": "בקשה נדחתה"}
+
+
+@router.post("/kashrut/{request_id}/revoke")
+@limiter.limit("60/minute")
+def revoke_kashrut_badge(
+    request: Request,
+    request_id: UUID,
+    body: KashrutRevokeIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2518: take an approved kashrut badge down (e.g. the certificate was
+    withdrawn). Before this the only way was SQL. Revokes every approved
+    request for that badge code on the business — a renewal leaves two — and
+    when no badge is left clears the verified/expiry pair, so the «כשר» header
+    line, the ?kosher filter and the certificate proxy all stop at once."""
+    req = (
+        db.query(KashrutBadgeRequest)
+        .filter(KashrutBadgeRequest.id == request_id)
+        .first()
+    )
+    if not req:
+        raise HTTPException(status_code=404, detail="בקשה לא נמצאה")
+    if req.status != "approved":
+        raise HTTPException(status_code=409, detail="אפשר לבטל רק תג שאושר")
+
+    producer = db.query(Producer).filter(Producer.id == req.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    for sibling in (
+        db.query(KashrutBadgeRequest)
+        .filter(
+            KashrutBadgeRequest.producer_id == req.producer_id,
+            KashrutBadgeRequest.badge_code == req.badge_code,
+            KashrutBadgeRequest.status == "approved",
+        )
+        .all()
+    ):
+        sibling.status = "revoked"
+        sibling.reviewed_by = user.id
+        sibling.notes = body.notes
+
+    badges = [
+        code for code in (producer.kashrut_badges or []) if code != req.badge_code
+    ]
+    producer.kashrut_badges = badges
+    if not badges:
+        producer.kashrut_verified_at = None
+        producer.kashrut_expires_at = None
+    db.commit()
+    return {"detail": "התג בוטל"}
 
 
 @router.post("/producers/{producer_id}/set-ambassador")
