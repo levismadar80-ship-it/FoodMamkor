@@ -1,5 +1,4 @@
 import { test, expect, type Page } from "@playwright/test";
-import sharp from "sharp";
 import { openDetail, pickProducer, watchPageErrors, type FeedProducer } from "./_producer-fixture";
 
 /**
@@ -28,15 +27,9 @@ import { openDetail, pickProducer, watchPageErrors, type FeedProducer } from "./
 // icon, grey border) comes near it, so a magenta pixel inside the button's box
 // can only be a tile painted over it.
 const TILE_RGB = [255, 0, 255] as const;
-let tilePng: Buffer | null = null;
-async function tile(): Promise<Buffer> {
-  tilePng ??= await sharp({
-    create: { width: 256, height: 256, channels: 3, background: { r: TILE_RGB[0], g: TILE_RGB[1], b: TILE_RGB[2] } },
-  })
-    .png()
-    .toBuffer();
-  return tilePng;
-}
+// 1×1 PNG of TILE_RGB; Leaflet sizes every tile <img> to 256px, so it fills the
+// tile box. Inlined so the spec needs no image library.
+const TILE_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWP4z/AfAAQAAf93FxdGAAAAAElFTkSuQmCC", "base64");
 
 const HAS_LOCATION = {
   label: "has lat and lng (the location section mounts the MiniMap only then)",
@@ -70,28 +63,35 @@ async function tileZoomsUnderButton(page: Page, name: string): Promise<number[]>
  * (leaflet.css), so hit-testing falls through a tile to the button even while
  * the tile hides it — the buggy build passed an `elementFromPoint` version of
  * this check. The covered button was still tappable, just invisible.
+ *
+ * The screenshot is decoded by the browser itself (canvas), so the spec needs
+ * no image library.
  */
 async function tileShareOver(page: Page, name: string) {
   const shot = await page.getByRole("button", { name }).screenshot();
-  // The button is a circle in a square box: the box corners are map, legitimately
-  // (~21% of the box). Read only the inscribed central square — inside the circle.
-  const meta = await sharp(shot).metadata();
-  const side = Math.floor(Math.min(meta.width!, meta.height!) * 0.6);
-  const { data, info } = await sharp(shot)
-    .extract({
-      left: Math.floor((meta.width! - side) / 2),
-      top: Math.floor((meta.height! - side) / 2),
-      width: side,
-      height: side,
-    })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  let tilePx = 0;
-  for (let i = 0; i < data.length; i += info.channels) {
-    if (data[i] > 230 && data[i + 1] < 40 && data[i + 2] > 230) tilePx += 1;
-  }
-  return tilePx / (data.length / info.channels);
+  return page.evaluate(
+    async ([b64, rgb]) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      // The button is a circle in a square box: the box corners are map,
+      // legitimately (~21% of the box). Read only the central square — inside
+      // the circle.
+      const side = Math.floor(Math.min(img.width, img.height) * 0.6);
+      const canvas = document.createElement("canvas");
+      canvas.width = side;
+      canvas.height = side;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, -Math.floor((img.width - side) / 2), -Math.floor((img.height - side) / 2));
+      const { data } = ctx.getImageData(0, 0, side, side);
+      let tilePx = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (Math.abs(data[i] - rgb[0]) < 25 && Math.abs(data[i + 1] - rgb[1]) < 40 && Math.abs(data[i + 2] - rgb[2]) < 25) tilePx += 1;
+      }
+      return tilePx / (data.length / 4);
+    },
+    [shot.toString("base64"), [...TILE_RGB]] as const,
+  );
 }
 
 /**
@@ -125,8 +125,8 @@ test.describe("MiniMap — expand and close buttons paint above the tiles", () =
   test("expand button, then the overlay X before and after a zoom", async ({ page, request }) => {
     const producer = await pickProducer(request, HAS_LOCATION);
     const pageErrors = watchPageErrors(page);
-    await page.route(/tile\.openstreetmap\.org/, async (route) =>
-      route.fulfill({ status: 200, contentType: "image/png", body: await tile() }),
+    await page.route(/tile\.openstreetmap\.org/, (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: TILE_PNG }),
     );
     await openDetail(page, producer, pageErrors);
 
