@@ -1459,6 +1459,7 @@
         "pending": "Pending",
         "suspended": "Suspended",
         "rejected": "Rejected",
+        "drafts": "Drafts",
         "incomplete_title": "Show only businesses missing required details",
         "show_all": "Show all",
         "incomplete_label": "Missing details",
