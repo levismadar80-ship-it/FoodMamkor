@@ -87,7 +87,10 @@ describe("ChatWidget on mobile (MEH-2499, was desktop-only MEH-1410)", () => {
     localStorage.removeItem("chatWasOpened");
   });
 
-  it("renders the icon-only launcher on mobile (< 768px)", () => {
+  it("renders the icon-only launcher on mobile (< 768px), even on a first visit", () => {
+    // First visit: on desktop this state shows the pill text, so its absence
+    // here is evidence of the mobile branch, not of chatWasOpened.
+    localStorage.removeItem("chatWasOpened");
     mockMatchMedia(false);
     renderWidget();
     const btn = screen.getByRole("button", { name: he.chat.launcher_open_label });
@@ -114,6 +117,25 @@ describe("ChatWidget on mobile (MEH-2499, was desktop-only MEH-1410)", () => {
     renderWidget();
     act(() => setScrollY(400));
     expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
+  });
+
+  it("does not hide while the launcher has keyboard focus", () => {
+    mockMatchMedia(false);
+    renderWidget();
+    screen.getByTestId("chat-launcher").focus();
+    act(() => setScrollY(400));
+    expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
+  });
+
+  it("comes back when the panel closes after a scroll while it was open", () => {
+    mockMatchMedia(false);
+    renderWidget();
+    const btn = () => screen.getByTestId("chat-launcher");
+    fireEvent.click(btn());
+    act(() => setScrollY(400));
+    fireEvent.click(btn());
+    btn().blur();
+    expect(btn()).toHaveAttribute("data-hidden", "false");
   });
 
   it("stays visible while the panel is open", () => {

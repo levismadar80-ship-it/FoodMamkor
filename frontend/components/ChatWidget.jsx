@@ -134,6 +134,7 @@ export default function ChatWidget() {
   // shows; past that, direction decides (a few px of hysteresis so iOS
   // rubber-band jitter does not flicker it). Desktop never hides.
   const [scrollHidden, setScrollHidden] = useState(false);
+  const launcherRef = useRef(null);
   useEffect(() => {
     if (typeof window === "undefined" || isDesktop) {
       setScrollHidden(false);
@@ -144,8 +145,11 @@ export default function ChatWidget() {
     const update = () => {
       ticking = false;
       const y = Math.max(0, window.scrollY);
+      // Never hide the launcher out from under keyboard focus (axe
+      // aria-hidden-focus; an invisible focused control).
+      const focused = document.activeElement === launcherRef.current;
       if (y < 60) setScrollHidden(false);
-      else if (y > lastY + 4) setScrollHidden(true);
+      else if (y > lastY + 4) setScrollHidden(!focused);
       else if (y < lastY - 4) setScrollHidden(false);
       else return;
       lastY = y;
@@ -159,6 +163,10 @@ export default function ChatWidget() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [isDesktop]);
+  // The mobile panel does not lock page scroll, so a scroll while it is open
+  // could leave the hidden flag set — closing the panel must bring the
+  // launcher back, not make it vanish.
+  useEffect(() => { setScrollHidden(false); }, [open]);
 
   // MEH-850: cookie-banner clearance is now handled purely in CSS via the
   // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
@@ -253,6 +261,12 @@ export default function ChatWidget() {
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
     transition: "opacity 200ms ease, transform 200ms ease",
   };
+  // MEH-2499: on mobile the launcher sits just above the BottomNav pill and
+  // BackToTop (z-1000) but BELOW every sheet/prompt that can cover the same
+  // corner — CookieBanner 1100, FilterSheet 1200, Toaster 2000, InstallPrompt
+  // 9997. At 9999 it painted over the open filter sheet's end corner. The
+  // panel keeps 9999 (it is the sheet here).
+  if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
   // MEH-2499: never hidden while the panel is open (it is the close control).
   const launcherHidden = scrollHidden && !open;
   if (launcherHidden) {
@@ -280,6 +294,7 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
+        ref={launcherRef}
         style={launcherStyle}
         data-testid="chat-launcher"
         data-hidden={launcherHidden ? "true" : "false"}
