@@ -1772,6 +1772,7 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - ✅ → admin-recipes-kebab.spec.ts (same test — the canvas box is 9:16 ±2px and >200px wide; discriminates only on the webkit-* projects, i.e. the non-voting e2e-webkit job) — MEH-2511 — כרטיס הסטורי ב-iPhone — ⋮ → "סטורי" ב-Safari בנייד; **תוצאה מצופה:** התצוגה המקדימה ביחס 9:16, רואים תמונה, שם, עיר ולוגו — לא מתוחה ולא חתוכה.
 - ✅ → admin-recipes-kebab.spec.ts («הגדרה כשגרירה» POSTs ambassador:true and the menu then offers the removal) — שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
 - ~~שגריר מהתפריט~~ — הוסר ב-MEH-2509 (כפילות של «בחירת העורכת»).
+- [ ] MEH-2516 — אין ייבוא Excel/CSV — `/admin/producers` בנייד ובמחשב; **תוצאה מצופה:** בסרגל יש «ייצוא» ו«בית עסק חדש» בלבד, אין כפתור ייבוא; `POST /admin/producers/import` מחזיר 404/405.
 - ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
 - ✅ → admin-recipes-kebab.spec.ts (a second click, a click outside and Escape close the menu; Escape returns focus to ⋮) — פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
 - [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.

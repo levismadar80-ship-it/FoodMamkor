@@ -1472,32 +1472,9 @@
         "show_all": "Show all",
         "incomplete_label": "Missing details",
         "export": "Export",
-        "import_excel": "Import from Excel",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
         "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
-      },
-      "import": {
-        "errors_loading": "Error reading file",
-        "errors_importing": "Import error"
-      },
-      "preview": {
-        "title": "Import preview",
-        "importing": "Importing...",
-        "confirm": "Confirm import ({count})",
-        "stats": {
-          "to_import": "To import",
-          "skipped": "Skipped",
-          "errors": "Errors"
-        },
-        "table": {
-          "row": "Row",
-          "name": "Name",
-          "city": "City",
-          "category": "Category",
-          "slug": "Slug",
-          "status": "Status"
-        }
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",

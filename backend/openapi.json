@@ -468,20 +468,6 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
-      "Body_import_producers_excel_admin_producers_import_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_producers_excel_admin_producers_import_post",
-        "type": "object"
-      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -13946,65 +13932,6 @@
           }
         ],
         "summary": "Admin Create Producer",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/producers/import": {
-      "post": {
-        "description": "Upload Excel/CSV file and import producers. dry_run=true returns preview only.",
-        "operationId": "import_producers_excel_admin_producers_import_post",
-        "parameters": [
-          {
-            "description": "Preview only — set false to actually save",
-            "in": "query",
-            "name": "dry_run",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Preview only — set false to actually save",
-              "title": "Dry Run",
-              "type": "boolean"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_import_producers_excel_admin_producers_import_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Import Producers Excel",
         "tags": [
           "admin"
         ]
