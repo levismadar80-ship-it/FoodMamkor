@@ -794,6 +794,20 @@ def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
         producer.recommended_at = None
 
 
+def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> None:
+    """MEH-2528 — an admin edit that changes or clears the slug retires the old
+    one, so the next business with that name cannot inherit its links; a slug
+    this business retired earlier and now takes back is released again.
+
+    Must run before the payload is applied: it reads the OLD `producer.slug`.
+    """
+    if "slug" not in payload or (payload["slug"] or None) == producer.slug:
+        return
+    retired_slugs.retire_slug(db, producer, "renamed")
+    if payload["slug"]:
+        retired_slugs.reclaim(db, payload["slug"], producer.id)
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -861,14 +875,8 @@ def admin_update_producer(
         candidate = _slugify(payload["slug"])
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
 
-    # MEH-2528: the URL being given up (changed or cleared) is retired, so the
-    # next business with that name cannot inherit its links; a slug this
-    # business retired earlier and now takes back is released again. Read
-    # before the setattr loop below overwrites `producer.slug`.
-    if "slug" in payload and (payload["slug"] or None) != producer.slug:
-        retired_slugs.retire_slug(db, producer, "renamed")
-        if payload["slug"]:
-            retired_slugs.reclaim(db, payload["slug"], producer.id)
+    # MEH-2528: read before the setattr loop below overwrites `producer.slug`.
+    _retire_replaced_slug(db, producer, payload)
 
     # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
