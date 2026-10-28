@@ -489,7 +489,11 @@ def get_analytics(
         next_month = (ref + timedelta(days=32)).replace(day=1)
         producers = (
             db.query(func.count(Producer.id))
-            .filter(Producer.created_at >= ref, Producer.created_at < next_month)
+            .filter(
+                Producer.created_at >= ref,
+                Producer.created_at < next_month,
+                Producer.kind == "producer",  # MEH-2465
+            )
             .scalar()
         )
         users = (
@@ -836,14 +840,18 @@ def get_dashboard(
     )
 
     stats = {
-        "total_producers": db.query(func.count(Producer.id)).scalar() or 0,
+        # MEH-2465: «בתי עסק» counts businesses — organizers are not one.
+        "total_producers": db.query(func.count(Producer.id))
+        .filter(Producer.kind == "producer")
+        .scalar()
+        or 0,
         "approved_producers": db.query(func.count(Producer.id))
         .filter(is_business())  # MEH-2459
         .scalar()
         or 0,
         "pending_producers": int(pending_producers),
         "new_producers_this_week": db.query(func.count(Producer.id))
-        .filter(Producer.created_at >= week_ago)
+        .filter(Producer.created_at >= week_ago, Producer.kind == "producer")
         .scalar()
         or 0,
         "total_users": db.query(func.count(User.id)).scalar() or 0,
@@ -913,7 +921,11 @@ def get_dashboard(
         next_month = (ref + timedelta(days=32)).replace(day=1)
         producers = (
             db.query(func.count(Producer.id))
-            .filter(Producer.created_at >= ref, Producer.created_at < next_month)
+            .filter(
+                Producer.created_at >= ref,
+                Producer.created_at < next_month,
+                Producer.kind == "producer",  # MEH-2465
+            )
             .scalar()
         )
         months.append(

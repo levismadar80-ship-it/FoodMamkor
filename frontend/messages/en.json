@@ -2555,7 +2555,14 @@
       "sold_out": "Sold out",
       "spots_count": "{spots} of {max}",
       "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences"
+      "breadcrumb_experiences": "Experiences",
+      "duration_minutes": "{count} min",
+      "duration_hours": "{count, plural, one {# hour} other {# hours}}",
+      "duration_hours_half": "{count, plural, other {#.5 hours}}",
+      "duration_mixed": "{hours} {minutes} min",
+      "recurring": "Recurring: {schedule}",
+      "recurring_bare": "Recurring",
+      "starts_from": "Starting {date}"
     },
     "new": {
       "crumb_current": "New experience",
@@ -3239,6 +3246,7 @@
   "share": {
     "trigger": "Share",
     "modal_title": "Share a link to the business",
+    "modal_title_event": "Share this event",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",

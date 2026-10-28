@@ -171,6 +171,8 @@ export const ProducerListSchema = z.object({
     // served field the parse silently drops is the same trap either way — but
     // it is a LATENT gap, not a repaired feature. Stated so nobody inherits
     // "we fixed click-to-call" from this comment.
+    // MEH-2477 (28/10): now built — DeliveryBlock.jsx PickupRow renders it as a
+    // tel: link. The paragraph above is the history of why it was missing.
     //
     // Permissive per field, like every sibling above: a partial row must never
     // drop a whole producer from the all-or-nothing parse.

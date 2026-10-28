@@ -24,7 +24,7 @@ graph LR
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
-    App --> Experiences[experiences.router<br/>/experiences/*]
+    App --> Experiences[experiences.router<br/>/experiences/*<br/>MEH-2476: host carries her public business]
     App --> Reviews[reviews.router<br/>/producers/:id/reviews/*]
     App --> Reports[reports.router<br/>/reports/*]
     App --> Upload[upload.router<br/>/upload/*]
@@ -53,13 +53,13 @@ graph TD
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
-    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
+    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b<br/>404 for an organizer MEH-2465]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
-    GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist]
+    GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
 ```
 
 ## 3. Auth + account self-service
@@ -79,7 +79,7 @@ graph TD
     Account --> Delete[DELETE /users/me<br/>🔑 cascade delete<br/>App Store requirement]
 
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑]
-    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑]
+    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
 ```
 

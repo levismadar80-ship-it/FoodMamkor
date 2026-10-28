@@ -2555,7 +2555,14 @@
       "sold_out": "אזל",
       "spots_count": "{spots} מתוך {max}",
       "breadcrumb_home": "בית",
-      "breadcrumb_experiences": "חוויות"
+      "breadcrumb_experiences": "חוויות",
+      "duration_minutes": "{count} דקות",
+      "duration_hours": "{count, plural, one {שעה} two {שעתיים} other {# שעות}}",
+      "duration_hours_half": "{count, plural, one {שעה וחצי} two {שעתיים וחצי} other {# שעות וחצי}}",
+      "duration_mixed": "{hours} ו-{minutes} דקות",
+      "recurring": "מתקיימת באופן קבוע: {schedule}",
+      "recurring_bare": "מתקיימת באופן קבוע",
+      "starts_from": "החל מ-{date}"
     },
     "new": {
       "crumb_current": "חוויה חדשה",
@@ -3235,6 +3242,7 @@
   "share": {
     "trigger": "שתפו",
     "modal_title": "שתפו לינק לעסק",
+    "modal_title_event": "שתפו את האירוע",
     "copy_link": "שתפו לינק",
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
