@@ -54,6 +54,8 @@ export default function NearMePill({ onClick, originLabel = null, originPending 
       // published by MapBottomSheet); fallbacks make it inert (0ms) before the
       // sheet mounts and publishes the vars. MEH-2506 moved the positioning from
       // the button onto this wrapper so the origin chip rides with it.
+      // globals.css `[data-origin-chip] .leaflet-control-attribution` lifts the
+      // map credit by this +12px plus the pill's 46px height — change one, change both.
       style={{
         bottom: "calc(var(--map-sheet-h, 14vh) + 12px)",
         transitionProperty: "bottom",
