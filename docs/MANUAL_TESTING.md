@@ -1761,16 +1761,17 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - ✅ → admin-recipes-kebab.spec.ts («ביטול» and Escape close without deleting; Escape mid-delete does nothing) — ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה).
 - ✅ → admin-recipes-kebab.spec.ts (confirming deletes: one DELETE, «מוחקים…» with both buttons locked, then the row is gone) — אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתרעננת. התנהגות MEH-747 (FK מנותק) ללא שינוי.
 - ✅ → admin-recipes-kebab.spec.ts (a failed DELETE shows the error toast and keeps the dialog open) — כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול.
-- ✅ → admin-recipes-kebab.spec.ts (a busy menu item is aria-disabled, still focusable, and a click on it fires nothing — exercised on the ambassador toggle, the one busy item reachable while the menu is open) — a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
+- ✅ → admin-recipes-kebab.spec.ts (a busy menu item is aria-disabled, still focusable, and a click on it fires nothing — exercised on «השהה» (toggle-status) since MEH-2509 removed the ambassador toggle) — a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
 - [ ] נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'.
 
 ### MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/producers
-- ✅ → admin-recipes-kebab.spec.ts (suspend / ambassador / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are) — Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "שגריר", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
+- ✅ → admin-recipes-kebab.spec.ts (suspend / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are) — Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
 - ✅ → admin-recipes-kebab.spec.ts (a pending row's menu holds «דחייה» and «מחקו» only — ⚠️ STALE: «דחייה» joined the menu in MEH-226; it is no longer «מחקו» alone) — שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
-- ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, ambassador, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger).
+- ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · 📸 סטורי · מחקו (אדום, danger). אין «שגריר» (MEH-2509).
 - ✅ → admin-recipes-kebab.spec.ts («סטורי» opens the story-card panel under the row; its close button removes it) — סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
 - ✅ → admin-recipes-kebab.spec.ts (same test — the canvas box is 9:16 ±2px and >200px wide; discriminates only on the webkit-* projects, i.e. the non-voting e2e-webkit job) — MEH-2511 — כרטיס הסטורי ב-iPhone — ⋮ → "סטורי" ב-Safari בנייד; **תוצאה מצופה:** התצוגה המקדימה ביחס 9:16, רואים תמונה, שם, עיר ולוגו — לא מתוחה ולא חתוכה.
 - ✅ → admin-recipes-kebab.spec.ts («הגדרה כשגרירה» POSTs ambassador:true and the menu then offers the removal) — שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
+- ~~שגריר מהתפריט~~ — הוסר ב-MEH-2509 (כפילות של «בחירת העורכת»).
 - ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
 - ✅ → admin-recipes-kebab.spec.ts (a second click, a click outside and Escape close the menu; Escape returns focus to ⋮) — פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
 - [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.
@@ -2032,7 +2033,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 - [ ] ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard צריכה להציג badge ירוק
 - [ ] ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge
-- [ ] ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill
+- [ ] ProducerCard: ambassador=true לא מציג שום תג ולא משנה trust_tier (MEH-2509)
 - [ ] ProducerDetail: TrustBadge shows next to name in header badge row
 - [ ] ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut_badges=["badatz"]` בDB → strip עם "בדצ׳ה" מופיע
 - [ ] KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים קדימה → "⚠️ תעודה פגה בקרוב"
@@ -2046,7 +2047,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set
 - [ ] /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB
 - [ ] /admin/kashrut: filter by status (pending/approved/rejected)
-- [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response
+- [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier נשאר כמו קודם (MEH-2509)
 - [ ] Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; code always enforced 3/min — stricter wins, pinned by tests/test_meh1176_otp_confirm_rate_limit.py)
 
 רשימת בדיקות ידניות על הסביבה החיה לפני שחרור לפרודקשן.
@@ -3253,7 +3254,7 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - ✅ → admin-settings-licence-actions.spec.ts (/admin/reports — a double click on «השהה עסק» fires one toggle-status · a double click on the dismiss confirm sends one dismiss per report — ⚠️ STALE on «אשר»/«הסר»/«שחזר»: the flagged and auto-hidden home-product tabs were removed with the home-products feature (MEH-1406); only «השהה עסק» and «התעלם» remain) — `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בזמן הבקשה
 - ✅ → admin-settings-licence-actions.spec.ts (/admin/users — a double click on «חסום» fires one block) — `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה
 - [ ] `/admin/content` (מוצרי בית מוסתרים) — לחיצה כפולה על "שחזר"/"מחק" — תוצאה: בקשה אחת
-- ✅ → admin-producers-decisions.spec.ts (a double click on «✓ אשר» fires one POST and disables the button while it flies — the approve button; suspend / ambassador / delete stay unconverted (writes on approved rows, chunk 12c)) — `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
+- ✅ → admin-producers-decisions.spec.ts (a double click on «✓ אשר» fires one POST and disables the button while it flies — the approve button; suspend / delete stay unconverted; ambassador retired MEH-2509 (writes on approved rows, chunk 12c)) — `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
 - ✅ → admin-producers-decisions.spec.ts (a network failure on approve shows the Hebrew connection toast — the approve action; the other pages are chunk 12c) — כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט)
 
 ## /map producer card — distance from user (MEH-826 Gap 2)
@@ -4070,6 +4071,13 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] אותו קישור ‎/group-buys/{id} בחלון פרטי — **תוצאה מצופה:** «קבוצת הרכש לא נמצאה» (404); אין כפתור הצטרפות
 - [ ] אותו קישור כבעלת העסק או כאדמין — **תוצאה מצופה:** גם להן 404 (העמוד נטען בשרת בלי התחברות); בלוח הבקרה/באדמין הקבוצה ממשיכה להופיע
 
+## MEH-2506 — מפה: «מרחק מ…» כתגית קטנה מתחת לסינונים (28/10/2026)
+- [ ] `/map` בטלפון — לוחצים על כפתור המיקום (עיגול הכוונת) ומאשרים מיקום — **תוצאה מצופה:** מתחת לשורת «משלוח · איסוף עצמי · סינון» מופיעה תגית ירוקה קטנה «📍 מרחק מהמיקום שלכם ✕»; מעל הסינונים אין שורה; כפתור המיקום נשאר עיגול
+- [ ] לוחצים ✕ בתגית — **תוצאה מצופה:** התגית נעלמת, המיון חוזר לברירת המחדל
+- [ ] בטלפון צר (320) עם עיר ארוכה — **תוצאה מצופה:** «מרחק מ: מודיעין-מכבים-רעות» בשורה אחת, ה-✕ לא נוגע בכפתורי הסינון
+- [ ] עם מיקום, בוחרים ב«סינון» כשר — **תוצאה מצופה:** באותה שורה: תגית המרחק ראשונה, אחריה «× כשרות מאומתת» ו«× נקו הכל»; «נקו הכל» מנקה את הסינון ולא את המרחק
+- [ ] במחשב — **תוצאה מצופה:** בלי שינוי, השורה נשארת ליד בורר המיון
+
 ## MEH-2508 — חיפוש: אייקון «חיפושים פופולריים» (28/10/2026)
 - [ ] דף הבית, בלי חיפושים אחרונים (חלון גלישה בסתר) — לוחצים על שדה החיפוש — **תוצאה מצופה:** תחת «חיפושים פופולריים» כל שורה מתחילה בחץ מגמה אפור קטן (כמו השעון של «חיפושים אחרונים»), לא בלהבה ירוקה
 
@@ -4080,3 +4088,9 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] בית עסק מאושר עם קבוצת רכש פתוחה ומשתתפת → אדמין «השעיה» — **תוצאה מצופה:** הקבוצה ב«בוטלה» באדמין/בלוח; למשתתפת מייל «…בוטלה כי בית העסק {שם} כבר לא מופיע במהמקור»
 - [ ] אותו דבר עם «דחייה» לבית עסק שהיה מאושר — **תוצאה מצופה:** כנ"ל, ובעלת העסק מקבלת רק את מייל הדחייה
 - [ ] «הפעלה מחדש» של בית העסק — **תוצאה מצופה:** הקבוצה נשארת מבוטלת (לא חוזרת)
+
+## MEH-2513 — בית עסק לא מאושר לא מגיע לצרכניות דרך מועדפים, ביקורות והתראות (28/10/2026)
+- [ ] צרכנית שמרה בית עסק במועדפים → אדמין «השעיה» → `/favorites` — **תוצאה מצופה:** העסק לא מופיע ברשימה; «הפעלה מחדש» — חוזר לרשימה
+- [ ] `POST /users/me/favorites/{id}` לבית עסק מושעה/דחוי/טיוטה — **תוצאה מצופה:** 404
+- [ ] `POST /producers/{id}/reviews` לבית עסק מושעה — **תוצאה מצופה:** 404 «בית עסק לא נמצא», לא נשמרת ביקורת
+- [ ] בעלת עסק מושעה מוסיפה מוצר/אירוע; עוקבת עם התראות פעילות — **תוצאה מצופה:** לא נשלחים push/WhatsApp

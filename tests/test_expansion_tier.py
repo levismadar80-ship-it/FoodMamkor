@@ -1,6 +1,6 @@
 """Mutation-guided test expansion (2026-06, Refs MEH-214) — domain B6.
 
-trust_tier computation. test_trust_ladder.py covers tiers 1-5, precedence,
+trust_tier computation. test_trust_ladder.py covers tiers 1-4, precedence,
 and the (10, 4.4)/(9, 4.5) near-miss boundary. The remaining genuine gap is
 the None-coalescing guard: a producer with NULL reviews_count / avg_rating
 (a brand-new row) must compute tier 1, not raise.
@@ -53,10 +53,11 @@ def test_exactly_ten_reviews_and_4_5_rating_is_tier_4():
     assert compute_trust_tier(p) == 4
 
 
-def test_ambassador_with_no_reviews_still_tier_5():
-    """ambassador outranks the tier-4 criteria even with 0 reviews.
+def test_ambassador_with_no_reviews_is_tier_1():
+    """MEH-2509: ambassador is hidden and no longer outranks anything.
 
-    Kills TR-4 (moving the ambassador check below tier-4 → returns 1).
+    A producer flagged ambassador with no other signal computes tier 1 —
+    the stored flag must not leak into the public trust_tier.
     """
     p = _producer(ambassador=True, reviews_count=0, avg_rating=0)
-    assert compute_trust_tier(p) == 5
+    assert compute_trust_tier(p) == 1
