@@ -27,6 +27,20 @@ const MAP_CONTROL_OFF = "bg-surface-floating text-primary border border-border h
 // NearMePill sits at sheet-edge + 12px and is 44px tall; +12px again clears it.
 const NEAR_ME_STACK_OFFSET_PX = 68;
 
+// MEH-2517: `bottom` for a control in the mobile sheet-edge column, `offsetPx`
+// above the sheet's top edge. The pane's bottom is the viewport's only while
+// no cookie banner shows. With the banner up, MapClient pads the pane wrapper
+// by the banner's footprint and publishes that length as --map-pane-reserve.
+// A ride measured from the pane's bottom would count the strip twice. Measured
+// at 375x667 before this: the column climbed to y=240, the key circle sat on
+// «סינון», and axe target-size failed on both Leaflet zoom buttons. So the
+// reserve is subtracted, and the result is floored at the slot the control
+// would hold with NearMePill out of the column, because with the banner up the
+// pill is behind the banner. With no banner the reserve is 0 and the floor
+// never wins (sheet height + offset > offset - 56), so nothing moves.
+const sheetRide = (offsetPx) =>
+  `max(calc(var(--map-sheet-h, 14vh) + ${offsetPx}px - var(--map-pane-reserve, 0px)), ${offsetPx - NEAR_ME_STACK_OFFSET_PX + 12}px)`;
+
 // MEH-473: extracted to a real component so useTranslations() works.
 // next/dynamic's loading callback runs outside any component's render
 // context, so hooks can't be called inline; wrapping in MapLoadingState
@@ -168,7 +182,7 @@ export default function MapPane({
         // it). The sheet-edge ride is what keeps a bottom control clear of that,
         // which is why the pill already uses it.
         style={{
-          bottom: `calc(var(--map-sheet-h, 14vh) + ${NEAR_ME_STACK_OFFSET_PX}px)`,
+          bottom: sheetRide(NEAR_ME_STACK_OFFSET_PX),
           transitionProperty: "bottom, background-color",
           transitionDuration: "var(--map-sheet-anim, 300ms)",
         }}
@@ -359,7 +373,7 @@ export default function MapPane({
       <MapKey
         testIdSuffix="-mobile"
         buttonStyle={{
-          bottom: `calc(var(--map-sheet-h, 14vh) + ${NEAR_ME_STACK_OFFSET_PX + 56}px)`,
+          bottom: sheetRide(NEAR_ME_STACK_OFFSET_PX + 56),
           transitionProperty: "bottom, background-color",
           transitionDuration: "var(--map-sheet-anim, 300ms)",
         }}
