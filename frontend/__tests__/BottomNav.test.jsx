@@ -159,3 +159,40 @@ describe("BottomNav", () => {
     expect(screen.getByText("חשבון")).toBeInTheDocument();
   });
 });
+
+// MEH-2490: on routes with no bottom layer at all the pill's clearance var is
+// the safe area alone. Removing it (the old behaviour) let globals.css
+// --bottom-inset fall back to the expanded-pill value: ~80px of dead padding.
+describe("bottom clearance on routes without a pill (MEH-2490)", () => {
+  const clearance = () =>
+    document.documentElement.style.getPropertyValue("--bottom-nav-clearance");
+
+  beforeEach(() => {
+    userRef.current = null;
+    document.documentElement.style.removeProperty("--bottom-nav-clearance");
+  });
+
+  it.each(["/producer/dashboard", "/producer/dashboard/group-buys", "/admin", "/admin/reviews"])(
+    "%s publishes the safe area only",
+    (path) => {
+      pathnameRef.current = path;
+      render(<BottomNav />);
+      expect(clearance()).toBe("env(safe-area-inset-bottom, 0px)");
+    },
+  );
+
+  // The StickyContactBar sits at the bottom of a business page; the fallback is
+  // what keeps content clear of it, so that gate must NOT publish anything.
+  it("a business page leaves the var unset", () => {
+    pathnameRef.current = "/producer/123";
+    render(<BottomNav />);
+    expect(clearance()).toBe("");
+  });
+
+  it("leaving the dashboard drops the override", () => {
+    pathnameRef.current = "/producer/dashboard";
+    const { unmount } = render(<BottomNav />);
+    unmount();
+    expect(clearance()).toBe("");
+  });
+});

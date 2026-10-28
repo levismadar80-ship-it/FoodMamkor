@@ -6,11 +6,12 @@
  * the organizer page arrives in MEH-2461).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 const authState = { user: null };
+const logout = vi.fn();
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: authState.user, loading: false }),
+  useAuth: () => ({ user: authState.user, loading: false, logout }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (scope) => (key) => `${scope}.${key}` }));
 vi.mock("@/i18n/navigation", () => ({
@@ -56,5 +57,32 @@ describe("MEH-2460 dashboard tabs by producer_kind", () => {
     expect(events.getAttribute("href")).toBe("/producer/dashboard/events");
     expect(events.textContent).toContain("dashboard.producer.nav.organizer_events");
     expect(screen.queryByTestId("dashboard-view-page")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-2490: below md the header avatar menu is hidden and the consumer pill is
+// gated off the dashboard, so the layout carries its own «התנתקות».
+describe("MEH-2490 logout on the mobile dashboard", () => {
+  it("renders a md:hidden logout button with the shared key, and it logs out", () => {
+    logout.mockClear();
+    authState.user = { role: "producer", producer_id: "p-1" };
+    render(<DashboardLayout><div /></DashboardLayout>);
+    const btn = screen.getByTestId("dashboard-mobile-logout");
+    expect(btn).toHaveTextContent("account.menu.logout");
+    expect(btn.parentElement.className).toContain("md:hidden");
+    fireEvent.click(btn);
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it("an organizer gets it too", () => {
+    authState.user = { role: "producer", producer_id: "p-2", producer_kind: "organizer" };
+    render(<DashboardLayout><div /></DashboardLayout>);
+    expect(screen.getByTestId("dashboard-mobile-logout")).toBeInTheDocument();
+  });
+
+  it("the access-denied state has no logout button", () => {
+    authState.user = { role: "consumer" };
+    render(<DashboardLayout><div /></DashboardLayout>);
+    expect(screen.queryByTestId("dashboard-mobile-logout")).toBeNull();
   });
 });
