@@ -75,7 +75,12 @@ export function UpcomingEventsPreview() {
               </p>
               <h3 className="font-headline-md text-xl font-bold text-text mb-1">{ev.title}</h3>
               <p className="text-sm text-fg-muted mb-2">
-                {ev.producer_name} · {ev.city}
+                {/* MEH-2468: an organizer's event names its organizer with the
+                    approved «מארגן: {name}» line, as /events does (MEH-2461). */}
+                {ev.owner_kind === "organizer" && ev.producer_name
+                  ? t("events.list.organizer_line", { name: ev.producer_name })
+                  : ev.producer_name}{" "}
+                · {ev.city}
               </p>
               <p className="text-sm text-accent font-semibold">
                 {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}

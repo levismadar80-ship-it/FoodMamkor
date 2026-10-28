@@ -189,13 +189,27 @@ export default async function OrganizerPage(props) {
                 <Link
                   href={`/events/${ev.id}`}
                   data-testid="organizer-event"
-                  className="block rounded-[12px] border border-border bg-white p-4 hover:border-primary transition focus-ring"
+                  className="flex items-center gap-4 rounded-[12px] border border-border bg-white p-4 hover:border-primary transition focus-ring"
                 >
-                  <span className="block text-sm text-fg-muted">
-                    {formatEventDate(ev.event_date, locale)}
-                    {ev.city ? ` · ${ev.city}` : ""}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-fg-muted">
+                      {formatEventDate(ev.event_date, locale)}
+                      {ev.city ? ` · ${ev.city}` : ""}
+                    </span>
+                    <span className="block font-medium text-text mt-1">{ev.title}</span>
                   </span>
-                  <span className="block font-medium text-text mt-1">{ev.title}</span>
+                  {/* MEH-2468: the event's cover image when it has one;
+                      decorative — the link is named by the title. */}
+                  {ev.image_url && (
+                    <span
+                      aria-hidden="true"
+                      data-testid="organizer-event-image"
+                      className="shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-[10px] bg-border bg-cover bg-center"
+                      style={{
+                        backgroundImage: `url(${optimizeCloudinary(ev.image_url, { aspectRatio: "1:1", width: 160 })})`,
+                      }}
+                    />
+                  )}
                 </Link>
               </li>
             ))}

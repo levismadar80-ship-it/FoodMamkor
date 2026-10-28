@@ -6,7 +6,7 @@
  * Cells: organizer with slug / organizer without slug / business.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
@@ -26,8 +26,12 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
-  return { Calendar: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
+  return { Calendar: Stub, CalendarPlus: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
 });
+// MEH-2468: the page now mounts ShareButton; its own suite covers it.
+vi.mock("@/components/ShareButton", () => ({
+  default: ({ url, title }) => <span data-testid="share-button" data-url={url} data-title={title} />,
+}));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u, IMAGE_RATIOS: {} }));
 vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "" }));
@@ -78,3 +82,42 @@ describe("MEH-2461 — event page owner line by kind", () => {
     expect(screen.getByText("חוות הניסוי").getAttribute("href")).toBe("/producer/p-1");
   });
 });
+
+/**
+ * MEH-2468 — share + «הוספה ליומן» on the event page (both owner kinds).
+ */
+describe("MEH-2468 — event page actions", () => {
+  it("renders the share button with the page URL and the event title", async () => {
+    await renderEvent({ producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: "gelem" });
+    const share = screen.getByTestId("share-button");
+    expect(share.getAttribute("data-title")).toBe("שוק החורף");
+    expect(share.getAttribute("data-url")).toBe(`${window.location.origin}${window.location.pathname}`);
+  });
+
+  it("«הוספה ליומן» downloads a .ics for this event", async () => {
+    const created = [];
+    const origCreate = URL.createObjectURL;
+    const origRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn((blob) => {
+      created.push(blob);
+      return "blob:ics";
+    });
+    URL.revokeObjectURL = vi.fn();
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    try {
+      await renderEvent({ producer_name: "חוות הניסוי", owner_kind: "producer" });
+      const btn = screen.getByTestId("event-add-to-calendar");
+      expect(btn.textContent).toBe("events.detail.add_to_calendar");
+      fireEvent.click(btn);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("text/calendar;charset=utf-8");
+      // The file body is pinned in EventIcs.test.js (pure builder).
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      URL.createObjectURL = origCreate;
+      URL.revokeObjectURL = origRevoke;
+      clickSpy.mockRestore();
+    }
+  });
+});
+

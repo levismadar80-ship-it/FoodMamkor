@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
+import { Calendar, CalendarPlus, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
@@ -12,6 +12,26 @@ import { formatEventDate } from "@/lib/format-date";
 import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
+import ShareButton from "@/components/ShareButton";
+import { buildEventIcs } from "@/lib/event-ics";
+
+// MEH-2468: «הוספה ליומן» — the .ics is built in the browser from the event
+// already on the page (no endpoint) and downloaded through a Blob URL. What a
+// phone does with a text/calendar download (open the calendar app, or save it
+// to Files) varies by browser — NOT verified on devices from the CC sandbox.
+function downloadIcs(event, url) {
+  const blob = new Blob([buildEventIcs(event, { url })], { type: "text/calendar;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = `event-${event.id}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoking synchronously can abort the download in WebKit (review #3716 F7;
+  // FileSaver.js delays it for the same reason).
+  setTimeout(() => URL.revokeObjectURL(href), 30_000);
+}
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -82,6 +102,10 @@ export default function EventDetailClient() {
 
   // MEH-2461: who owns this event — a business or an organizer (ADR-036).
   const isOrganizerEvent = event.owner_kind === "organizer";
+
+  // The canonical page address for share + the calendar entry. Client-only
+  // component past the loading gate, so window is defined here.
+  const pageUrl = typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}`;
 
   return (
     <div>
@@ -182,6 +206,28 @@ export default function EventDetailClient() {
           >
             {t("all_events")}
           </Link>
+        </div>
+
+        {/* MEH-2468: share + add-to-calendar, the two actions every event
+            listing offers (Eventbrite, Facebook Events). Share reuses the
+            site's ShareButton; the calendar file is built client-side. */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4" data-testid="event-actions">
+          <ShareButton
+            variant="quiet"
+            url={pageUrl}
+            title={event.title}
+            city={event.city}
+            category={event.category}
+          />
+          <button
+            type="button"
+            onClick={() => downloadIcs(event, pageUrl)}
+            data-testid="event-add-to-calendar"
+            className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <CalendarPlus size={17} className="text-primary-dark" aria-hidden="true" />
+            {t("add_to_calendar")}
+          </button>
         </div>
 
         {/* MEH-2461: an organizer's event links to /organizers/{slug} (its

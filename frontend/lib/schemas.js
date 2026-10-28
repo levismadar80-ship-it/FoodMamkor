@@ -494,6 +494,7 @@ export const OrganizerPageSchema = z.object({
         title: z.string(),
         event_date: z.string(),
         city: z.string().nullable().optional(),
+        image_url: z.string().nullable().optional(), // MEH-2468
       }),
     )
     .optional(),
