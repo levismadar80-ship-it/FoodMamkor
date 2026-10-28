@@ -3209,7 +3209,8 @@
     },
     "address_search": {
       "placeholder": "Search address...",
-      "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
+      "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual.",
+      "provider_down_hint": "Address search is unavailable right now. You can continue with the town only — we'll place the business at the town centre and you can refine it later."
     },
     "en_notice": {
       "body": "Business listings are in Hebrew — searching in English returns no results.",

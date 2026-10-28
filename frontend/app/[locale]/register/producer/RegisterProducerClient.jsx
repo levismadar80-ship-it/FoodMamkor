@@ -1041,6 +1041,11 @@ function RegisterProducerPageBody() {
               onChange={set("name")}
               required
               dir="rtl"
+              // MEH-2481: without these, Chrome's autofill put the saved
+              // EMAIL into the name field and the saved PASSWORD into the
+              // new-password field (measured on staging, 28/10). The
+              // attributes tell the browser which slot is which.
+              autoComplete="name"
             />
             <Input
               id="producer-account-email"
@@ -1052,6 +1057,7 @@ function RegisterProducerPageBody() {
               onChange={set("email")}
               required
               dir="ltr"
+              autoComplete="email"
             />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
@@ -1074,6 +1080,7 @@ function RegisterProducerPageBody() {
                 className="w-full border rounded-md px-3 py-2 min-h-[44px]"
                 dir="ltr"
                 minLength={12}
+                autoComplete="new-password"
               />
               <PasswordStrength password={form.password} />
             </div>
