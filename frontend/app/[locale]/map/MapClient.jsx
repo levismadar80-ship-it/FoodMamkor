@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CaretDown, MapPinLine, Rows, X } from "@phosphor-icons/react";
+import { CaretDown, MapPin, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
@@ -548,7 +548,14 @@ export default function MapPage() {
   // card labels change meaning silently (MEH-1307 dropped the "ממך" suffix, so
   // a label is a bare magnitude). Naming the active origin is what keeps the
   // numbers readable; the clear button is unchanged beneath it.
-  const clearLocationControl =
+  // MEH-2506: one origin chip, two sizes. Desktop keeps the 44px bordered chip
+  // beside the sort select. On mobile it is a compact tag BELOW the filter chips
+  // (Sapir 28/10: the full-height row above them read as one more filter, and
+  // a chip grown out of the near-me button looked wrong) — the same green tag
+  // language as the active-filter strip, with the ✕ keeping a 44px hit area
+  // through negative margin (the MEH-825 tag pattern), so the bar grows by
+  // mt-3 + the 20px tag + mb-1 instead of a 44px row (map.spec pins the ✕ box).
+  const originChip = (compact) =>
     cityOriginPending || (userLoc && !geoSortPending) ? (
       <div
         className="flex flex-wrap items-center gap-x-2 gap-y-1"
@@ -564,9 +571,21 @@ export default function MapPage() {
           // label + underlined "clear" line read as stray text (Sapir 27/10).
           // The chip is the Google Maps / Airbnb active-location pattern. The
           // ✕'s accessible name is the existing clear_location string — no new
-          // copy — and the chip row keeps the 44px tap height.
-          <span className="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted">
-            <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
+          // copy. Desktop: the chip row keeps the 44px tap height. Compact
+          // (MEH-2506): the ✕ alone keeps 44px via -my-3, and FilterChipsBar's
+          // origin row (mt-3 mb-1) is what keeps that hit area clear.
+          <span
+            className={
+              compact
+                ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-[11px]"
+                : "inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted"
+            }
+          >
+            {compact ? (
+              <MapPin size={12} weight="fill" aria-hidden="true" className="shrink-0" />
+            ) : (
+              <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
+            )}
             <span className="min-w-0 truncate" data-testid="sort-origin-label">
               {userLoc.source === SOURCE_CITY
                 ? t("map.client.sort.origin_city", { city: userLoc.city })
@@ -578,14 +597,20 @@ export default function MapPage() {
               data-testid="clear-user-location"
               aria-label={t("map.client.sort.clear_location")}
               title={t("map.client.sort.clear_location")}
-              className="inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
+              className={
+                compact
+                  ? "inline-flex shrink-0 items-center justify-center w-11 h-11 -my-3 rounded-full hover:opacity-80 focus-ring"
+                  : "inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
+              }
             >
-              <X size={14} weight="bold" aria-hidden="true" />
+              <X size={compact ? 12 : 14} weight="bold" aria-hidden="true" />
             </button>
           </span>
         )}
       </div>
     ) : null;
+  const clearLocationControl = originChip(false);
+  const mobileOriginTag = originChip(true);
 
   // The empty state's "נקו את הסינון" — a wider reset than
   // filters.resetAllFilters: it also drops the city refinement and the legend's
@@ -604,7 +629,9 @@ export default function MapPage() {
     feed.loadProducers();
   };
 
-  const filterChipsBar = (
+  // MEH-2506: the mobile bar passes its origin tag in, so it shares one row
+  // with the active-filter tags instead of opening a row of its own.
+  const renderFilterChipsBar = (originTag = null) => (
     <FilterChipsBar
       visibleCategoryChips={filters.visibleCategoryChips}
       chipState={filters.chipState}
@@ -616,8 +643,8 @@ export default function MapPage() {
       resultCount={filters.visibleProducers.length}
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
-      activeAttributeCount={filters.activeAttributeCount}
       cityFilter={filters.cityFilter}
+      originTag={originTag}
     />
   );
 
@@ -724,7 +751,7 @@ export default function MapPage() {
             <div className="mb-3">
               <CitySearch id="map-city-search-desktop" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
             </div>
-            {filterChipsBar}
+            {renderFilterChipsBar()}
           </div>
           {/* MEH-1230: pt-3.5 gives the sort <select>'s focus ring clearance at the
               scroll container's top edge. The control keeps -my-2.5 (compact count
@@ -873,9 +900,10 @@ export default function MapPage() {
           {/* MEH-2014: the mobile half of the clear affordance. There is no sort
               <select> on this shell, but the NearMePill writes a location here,
               and a persisted fix with no way out is the failure this ticket's
-              "explicit clear" requirement exists to prevent. */}
-          {clearLocationControl && <div className="mb-2">{clearLocationControl}</div>}
-          {filterChipsBar}
+              "explicit clear" requirement exists to prevent. MEH-2506: a compact
+              tag on the active-filter row under the chips (FilterChipsBar),
+              not a full row above them. */}
+          {renderFilterChipsBar(mobileOriginTag)}
         </div>
 
         {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height

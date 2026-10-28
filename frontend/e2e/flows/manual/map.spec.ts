@@ -887,6 +887,43 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
   });
 
+  // MEH-2506 — the mobile origin is a compact tag UNDER the filter chips (it was
+  //   a full row above them): named after near me, cleared by its ✕.
+  test("mobile: after near me the origin tag sits under the filter chips and clears", async ({ page, context }, info) => {
+    mobileOnly(info, "the origin tag is the mobile bar's; desktop keeps it by the sort select");
+    await grantGps(context, GPS_NEAR);
+    const { shell } = await gotoWithCatalog(page, info);
+    const bar = shell.getByTestId("map-mobile-bar");
+    await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
+    await shell.getByTestId("map-near-me-pill").click();
+    const label = bar.getByTestId("sort-origin-label");
+    await expect(label).toHaveText(MC.sort.origin_gps);
+    const filters = await bar.getByTestId("map-filters-button").boundingBox();
+    const tag = await label.boundingBox();
+    expect(tag!.y).toBeGreaterThan(filters!.y + filters!.height);
+    // …and the ✕'s 44px hit area (negative margin) stays off the filter buttons.
+    const clearBox = await bar.getByTestId("clear-user-location").boundingBox();
+    expect(clearBox!.y, "the ✕ 44px hit area (-my-3) must start below «סינון» — the origin row's mt-3 keeps it clear").toBeGreaterThanOrEqual(filters!.y + filters!.height);
+    await bar.getByTestId("clear-user-location").click();
+    await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
+  });
+
+  // MEH-2506 — an over-long origin label truncates inside the tag; the ✕ must
+  //   stay on screen (in the flex-wrap row it was pushed past the inline-end).
+  //   Real city names fit at 320 (measured: «מודיעין-מכבים-רעות» 136px), so the
+  //   label is the name ×3 (×2 still fits, 234px) — the guard is for the row.
+  test("mobile: at 320px an over-long origin label keeps its ✕ on screen", async ({ page }, info) => {
+    mobileOnly(info, "the origin tag is the mobile bar's");
+    await page.setViewportSize({ width: 320, height: 700 });
+    await seedStorage(page, "user_location", JSON.stringify({ lat: 31.9, lng: 35.0, source: "city", city: "מודיעין-מכבים-רעות ".repeat(3).trim() }));
+    const { shell } = await gotoWithCatalog(page, info);
+    const clear = shell.getByTestId("map-mobile-bar").getByTestId("clear-user-location");
+    await expect(clear).toBeVisible();
+    const box = (await clear.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  });
+
   // MT:MEH-970:3 — nothing within 25 km: the toast, the camera back on the
   //   default view (zoom 8), and ALL businesses still listed — never a blank map.
   test("mobile: near me with nothing within 25 km toasts, returns to the default view and keeps every business", async ({ page, context }, info) => {
