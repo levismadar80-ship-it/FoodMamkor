@@ -1539,9 +1539,6 @@
           "view": "צפה",
           "suspend": "השהה",
           "activate": "הפעל",
-          "remove_ambassador_title": "הסרת תפקיד שגרירה",
-          "set_ambassador_title": "הגדרה כשגרירה",
-          "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "סטורי",
           "delete": "מחקי",
@@ -2976,10 +2973,6 @@
     "tier_4": {
       "label": "מובילת קהילה",
       "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
-    },
-    "tier_5": {
-      "label": "שגרירת מהמקור",
-      "tooltip": "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור"
     }
   },
   "forms": {
