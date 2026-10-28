@@ -380,7 +380,9 @@ export default function AboutPage() {
             </p>
             {/* aria-labelledby, and it is load-bearing rather than belt-and-braces.
                 The copy used to be ONE string inside the anchor, so the link's
-                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing.
+                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing
+                (MEH-2507 renamed the CTA «שאלות נפוצות על הצטרפות»: the old one
+                read like the checking process, which is the /about/process link).
                 Splitting the lead out into a sibling <p> for the visual design
                 silently cut that name down to «כך זה עובד אצלנו», which in a
                 screen reader's link list reads "here's how it works" with nothing

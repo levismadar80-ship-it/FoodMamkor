@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Check } from "@phosphor-icons/react";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
@@ -385,13 +386,26 @@ export default function ChipScrollRow({
               className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
               style={stateStyle}
             >
-              {chip.icon && (
-                <span
-                  aria-hidden="true"
-                  style={!glyphSolidWhite && chip.iconColor ? { color: chip.iconColor } : undefined}
-                >
-                  {chip.icon}
+              {/* MEH-2500: a SELECTED category chip swaps its glyph for a ✓.
+                  Direction A carries the selection in the category's own tint,
+                  and every category has a different one, so on /map a selected
+                  «בשר ודגים» (red) and «ירקות» (green) read as decoration, not
+                  as a choice (Sapir 28/10). Colour can't be the only cue (WCAG
+                  1.4.1); the check is the Material filter-chip pattern. It
+                  keeps the tint, so the chip still says which category. */}
+              {isCategorySelected ? (
+                <span aria-hidden="true" style={{ color: catRing }}>
+                  <Check size={16} weight="bold" />
                 </span>
+              ) : (
+                chip.icon && (
+                  <span
+                    aria-hidden="true"
+                    style={!glyphSolidWhite && chip.iconColor ? { color: chip.iconColor } : undefined}
+                  >
+                    {chip.icon}
+                  </span>
+                )
               )}
               {chip.label}
             </button>
