@@ -3143,6 +3143,23 @@
       },
       "GroupBuyStatusUpdate": {
         "properties": {
+          "expected_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "funded",
+                  "cancelled",
+                  "fulfilled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Status"
+          },
           "status": {
             "enum": [
               "open",

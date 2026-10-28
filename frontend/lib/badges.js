@@ -155,7 +155,7 @@ export const BADGE_CONFIG = {
     scope: "business",
     evidence: "self-declared",
     label: "גראס פד",
-    tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
+    tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית, לפי הצהרת בית העסק.",
     color: "muted",
   },
   // MEH-1439: tooltips state any-product semantics, not an all-products claim.

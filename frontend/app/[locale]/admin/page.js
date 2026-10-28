@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CheckCircle, HourglassSimple } from "@phosphor-icons/react";
-import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { QUEUES, queueCount } from "./queues";
+import { useAdminDashboard } from "./dashboard-data";
 
 /**
  * /admin — «מה מחכה לטיפול» (MEH-2359).
@@ -23,22 +22,18 @@ import { QUEUES, queueCount } from "./queues";
  *           task, so the login screen is where "needs attention" belongs
  *           (Four Kitchens; Django Monitor's pending-counts summary; Shopify
  *           Home).
- * Touches:  GET /admin/dashboard (unchanged endpoint; reads `stats` +
- *           `pending_producers`, the preview list the endpoint already ships).
+ * Touches:  GET /admin/dashboard via the layout's shared fetch
+ *           (admin/dashboard-data.js, MEH-2399 — one request, not one per
+ *           consumer); reads `stats` + `pending_producers`, the preview list
+ *           the endpoint already ships.
  * Does NOT: fetch anything new, decide approvals (that is the table on
  *           /admin/producers), or list queues the sidebar does not — both
  *           read admin/queues.js.
  */
 export default function AdminHome() {
   const t = useTranslations("admin");
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api.get("/admin/dashboard")
-      .then((r) => setData(r.data))
-      .catch((e) => setError(detailToMessage(e.response?.data?.detail) || t("common.error_loading")));
-  }, [t]);
+  const { data, loadError, errorDetail } = useAdminDashboard();
+  const error = loadError ? detailToMessage(errorDetail) || t("common.error_loading") : "";
 
   if (error) {
     return <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">{error}</div>;

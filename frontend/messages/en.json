@@ -2763,11 +2763,15 @@
       },
       "verification": {
         "heading": "How we verify",
-        "body": "Every business on Mehamakor is approved by hand — we check a valid business license and talk with the owner before anything goes live. No automatic sign-ups, no shortcuts. So when you see the ✓ Verified seal, you know a real person actually checked."
+        "body": "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts. And if the business has a licence, we check it ourselves: when you see the ✓ Verified seal, you know a real person actually saw the document."
       },
       "editors_pick": {
         "heading": "Editor's Pick",
         "body": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+      },
+      "community_leader": {
+        "heading": "Community leader",
+        "body": "We don't award this badge, customers do. It appears on its own for a business with at least 10 reviews and an average rating of 4.5 or higher. You can't ask for it and you can't pay for it, and it goes away on its own if the average drops. And a business without it is no less good: sometimes it's simply new here, and you haven't had the chance to write about it yet."
       },
       "cta": {
         "heading": "Built a business that deserves a home? We'd love to meet you.",
@@ -3433,11 +3437,11 @@
       },
       "analytics": {
         "q": "How will I know if this is even working for me?",
-        "a": "You get your own dashboard: how many viewed your page this week, how many tapped WhatsApp, which cities they came from, and how many saved you to their favourites. No need to guess — you can see it."
+        "a": "You get your own dashboard: how many viewed your page this week, how many tapped WhatsApp, which cities the signed-in visitors came from, and how many saved you to their favourites. No need to guess, you can see it."
       },
       "repeat_customers": {
         "q": "What makes customers come back to me?",
-        "a": "Everyone who saves you to their favourites gets an automatic update whenever you have something new — a product, an event, a recipe or a delivery area. Like a mailing list that works for you, without you having to manage it."
+        "a": "Customers who save you to their favourites can turn on alerts, and then they get an update whenever you have something new: a product, an event, a recipe or a delivery area. Like a mailing list that works for you, without you having to manage it."
       },
       "visibility": {
         "q": "How do I avoid disappearing among all the businesses on the site? Is there paid promotion?",
@@ -3449,7 +3453,7 @@
       },
       "license": {
         "q": "Why do you require a licence — and what if I'm still in the process?",
-        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after a cross-check against the Ministry of Health's official registry, and a kashrut badge if you have a certificate."
+        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after we have checked the licence or exemption ourselves, and a kashrut badge if you have a certificate."
       },
       "time": {
         "q": "How much time and effort does this take from me?",
@@ -3477,7 +3481,7 @@
         },
         "verified": {
           "title": "Verified badge",
-          "desc": "A checked, valid license — customers see a clear trust mark next to your name."
+          "desc": "A licence or approval we checked ourselves, and customers see a clear trust mark next to your name."
         },
         "products": {
           "title": "Items with price ranges",
@@ -5339,7 +5343,7 @@
       },
       "no_added_sugar": {
         "meta_description": "Local businesses that marked products with no added sugar in their catalog — sweets, breads and spreads. Marked by the business itself.",
-        "intro": "Sweets without white sugar, sourdough breads with no sweetening, and spreads where the fruit does the work. Every business here marked at least one product in its catalog as having no added sugar — suitable both for those building a low-carb or ketogenic menu, and for anyone who simply wants less sugar at home.",
+        "intro": "Sweets without white sugar, sourdough breads with no sweetening, and spreads where the fruit does the work. Every business here marked at least one product in its catalog as having no added sugar, for anyone who simply wants less sugar at home.",
         "faq": [
           {
             "question": "What counts as no added sugar?",
