@@ -444,6 +444,10 @@ export default function ProducerDashboardPage() {
   // (GBP Profile Strength pattern). Once approved AND complete, today's
   // order stands — availability first, the daily action of a live business.
   const completenessFirst = !isApproved || !isComplete;
+  // MEH-2460: organizer (ADR-036) — no availability, no business checklist.
+  // Review #3711 F9: fall back to /auth/me while /producers/me is loading (or
+  // failed), so business-only cards never flash for an organizer.
+  const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
 
   return (
     <div
@@ -474,7 +478,9 @@ export default function ProducerDashboardPage() {
           page without losing the dashboard. */}
       {producer.slug && (
         <LocaleLink
-          href={`/${producer.slug}`}
+          // MEH-2460: an organizer's public page is /organizers/{slug}
+          // (MEH-2461); /{slug} is the business route and 404s it.
+          href={isOrganizer ? `/organizers/${producer.slug}` : `/${producer.slug}`}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="view-public-link"
@@ -590,7 +596,9 @@ export default function ProducerDashboardPage() {
       {/* MEH-1134: completeness-first while pending/incomplete — the single
           mount for that state (the mirror-gated mount below covers the
           approved+complete state, so the card renders exactly once). */}
-      {completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
+      {/* MEH-2460: an organizer's checklist is the draft banner (photo,
+          description, event, phone) — this card counts products / location. */}
+      {completenessFirst && profile && !isOrganizer && <ProfileCompletenessCard producer={profile} />}
       {/* MEH-1261 F2: profile fetch failed → say so where the completeness
           card would render (completenessFirst is true when profile is null). */}
       {completenessFirst && !profile && profileError && (
@@ -602,8 +610,9 @@ export default function ProducerDashboardPage() {
         />
       )}
 
-      {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
-      {(() => {
+      {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
+          MEH-2460: its CTA is the catalog — not for an organizer. */}
+      {!isOrganizer && (() => {
         const h = getUpcomingHoliday();
         if (!h) return null;
         return (
@@ -633,7 +642,9 @@ export default function ProducerDashboardPage() {
           surfaces ONLY when the profile is complete AND approved — sharing an
           unpublished/incomplete page sends visitors to a dead listing. When
           locked, a warm why-locked hint takes its place (not silent hiding). */}
-      {producer.slug && isComplete && isApproved ? (
+      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
+          organizer (its public link above points to /organizers/{slug}). */}
+      {isOrganizer ? null : producer.slug && isComplete && isApproved ? (
         <VanityLinkCard slug={producer.slug} />
       ) : producer.slug ? (
         <div
@@ -649,6 +660,9 @@ export default function ProducerDashboardPage() {
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
           enum. Backend dual-writes to legacy columns during the 7-day
           overlap (Phase 4 drops them). */}
+      {/* MEH-2460: no availability states for an organizer — it takes no
+          orders (ADR-036). */}
+      {!isOrganizer && (
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
           {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
@@ -794,6 +808,7 @@ export default function ProducerDashboardPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics

@@ -12,6 +12,8 @@ from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
+from app.services.producer_listing import is_business  # MEH-2459
+from app.services.city_centroid import city_centroid  # MEH-2480
 from app.rate_limit import limiter
 from app.services.availability_validation import (
     AvailabilityValidationError,
@@ -42,6 +44,7 @@ import string
 from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
     AVAILABILITY_STATES,
+    clean_display_city,
     AvailabilityStateUpdate,
     AvailabilityStatusUpdate,
     BioGenerateIn,
@@ -65,7 +68,10 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services.submission_confirmation import send_submission_confirmation
-from app.services.submission_gate import submission_missing_items
+from app.services.submission_gate import (
+    attach_upcoming_events_count,
+    submission_missing_items,
+)
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -99,6 +105,7 @@ def get_my_producer(
     )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    attach_upcoming_events_count(producer)  # MEH-2460
     return producer
 
 
@@ -544,6 +551,21 @@ def _resolve_top_product(db, producer, payload: dict) -> None:
     payload["top_product_name"] = product.name
 
 
+def _apply_organizer_city(producer, raw) -> bool:
+    """MEH-2475: write an organizer's display city under the registration rule
+    (`clean_display_city`: bleach, 100 chars, ≥1 letter). A blank or
+    letterless value is refused rather than stored — the page shows the city
+    line and registration requires one. Returns whether the city changed, so
+    the caller can ping the admin for an approved organizer (review #3728)."""
+    try:
+        city = clean_display_city(raw)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="יש לבחור עיר") from None
+    changed = city != (producer.city or "")
+    producer.city = city
+    return changed
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -786,6 +808,18 @@ def update_my_producer(
     # gone, DB still references them) if commit raises.
     old_images = list(producer.images or [])
 
+    # MEH-2475: an ORGANIZER's city. `city` stays out of the set above for a
+    # business (ruling A: its city follows the primary location row, and a PUT
+    # would be a second writer racing that sync). An organizer has no location
+    # rows at all (MEH-2460), so for her this PUT is the only writer, and its
+    # editor ships in the same PR (OrganizerCityCard.jsx) — the standing rule
+    # the blocks above state.
+    organizer_city_changed = (
+        producer.kind == "organizer"
+        and "city" in payload
+        and _apply_organizer_city(producer, payload["city"])
+    )
+
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
@@ -852,7 +886,13 @@ def update_my_producer(
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
+    # MEH-2475 (review #3728): an approved organizer moving her city is the same
+    # admin-visible event as a business moving its primary location (the
+    # locations CRUD pings "city" through the same gate).
+    if organizer_city_changed:
+        _fire_sensitive_edit(background_tasks, producer, ["city"])
 
+    attach_upcoming_events_count(producer)  # MEH-2460
     return producer
 
 
@@ -1138,7 +1178,7 @@ def _rank_in_city(db: Session, producer, israel_day):
                 ProducerPageView.created_at >= cutoff_30d,
             ),
         )
-        .filter(Producer.city == producer.city, Producer.status == "approved")
+        .filter(Producer.city == producer.city, is_business())  # MEH-2459
         .group_by(Producer.id)
         .order_by(rank_views.desc())
         .all()
@@ -2293,6 +2333,27 @@ def _same_city_label_error_detail(
     }
 
 
+def _fill_centroid_when_unpinned(db: Session, loc: ProducerLocation) -> None:
+    """MEH-2480: a location saved with a town but no coordinates gets the
+    town's seeded centre, stamped `approximate`.
+
+    Before this, such a row was created with lat/lng NULL — invisible to the
+    map, to "near me", and to `submission_gate._has_location`, so the owner
+    saw «מיקום או אזורי משלוח» stay red with a saved location on screen. The
+    only way through was the address search, which on 28/10/2026 was a 403 for
+    everyone. Explicit coordinates (address search, manual entry) are never
+    touched: the fill runs only when BOTH are missing. An unknown town leaves
+    the row exactly as submitted.
+    """
+    if loc.lat is not None and loc.lng is not None:
+        return
+    centroid = city_centroid(db, loc.city)
+    if centroid is None:
+        return
+    loc.lat, loc.lng = centroid
+    loc.location_precision = "approximate"
+
+
 def _reject_same_city_without_label(
     db: Session,
     producer_id: UUID,
@@ -2548,6 +2609,7 @@ def create_my_location(
         .count()
     )
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
+    _fill_centroid_when_unpinned(db, loc)
 
     # MEH-1938 follow-up (Sapir, 02/09) — branch-only primaries are enforced
     # HERE too, not only on the update path. A rule that the create path can
@@ -2620,6 +2682,7 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
     want_primary = patch.pop("is_primary", None)
     for field, value in patch.items():
         setattr(loc, field, value)
+    _fill_centroid_when_unpinned(db, loc)
 
     if want_primary is True:
         # MEH-1938 follow-up (Sapir, 02/09): promotion is BRANCH-ONLY, and this

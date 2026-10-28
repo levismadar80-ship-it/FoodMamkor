@@ -74,6 +74,8 @@ export const ANCHOR_TO_KEY = {
   // card in the products group, so each gets an entry in all three maps.
   "dietary-scope": "dietaryScope",
   "grass-fed": "grassFed",
+  // MEH-2475: an organizer's city (she has no locations editor).
+  "organizer-city": "organizerCity",
 };
 
 // Canonical section id per open-state key — hash aliases above scroll to the
@@ -111,6 +113,7 @@ export const KEY_TO_ANCHOR = {
   offer: "offer",
   dietaryScope: "dietary-scope",
   grassFed: "grass-fed",
+  organizerCity: "organizer-city",
 };
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub
@@ -158,6 +161,10 @@ export const KEY_TO_GROUP = {
   offer: "products",
   contact: "contact",
   questions: "contact",
+  // MEH-2475: organizer-only card in the contact group (the only group she
+  // shares with a business besides «profile»). Not a GROUP_MEMBERS entry —
+  // her city was set at registration, so it is never an open step.
+  organizerCity: "contact",
 };
 
 // The accordion open-state key a card key maps to. The trust group renders ONE

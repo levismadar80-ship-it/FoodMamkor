@@ -68,6 +68,7 @@ import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import EditAccordionCard, {
+  EditAccordionKindContext,
   PreviewThumbs,
   PreviewChips,
   PreviewEmpty,
@@ -78,6 +79,7 @@ import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -149,6 +151,9 @@ const METHOD_FIELD = {
 // values (?group=…) that links and tests already use. This array is the hub's
 // tile order.
 const GROUP_KEYS = ["profile", "products", "location", "contact", "trust"];
+// MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing — no
+// products, no location / delivery, no license or kashrut. Profile + contact.
+const ORGANIZER_GROUP_KEYS = ["profile", "contact"];
 
 // Ordered member card keys per group — for the hub completion count + the
 // next-step marker placement.
@@ -399,6 +404,10 @@ function EditPageInner() {
       const key = ANCHOR_TO_KEY[window.location.hash.replace(/^#/, "")];
       if (!key) return;
       const g = KEY_TO_GROUP[key];
+      // MEH-2460: a deep link into a group an organizer never sees (#products,
+      // #license) stays on the hub — no hidden group in the URL, no openKey on
+      // a card she cannot reach.
+      if (profile.kind === "organizer" && g && !ORGANIZER_GROUP_KEYS.includes(g)) return;
       // Deep link arriving outside its group → switch first (replace, so the
       // link doesn't leave a hub entry in history); the group-change effect
       // below opens + scrolls once the target group renders.
@@ -446,6 +455,22 @@ function EditPageInner() {
     );
   }
 
+  // MEH-2460: the groups this owner may see. A group outside the set stays
+  // hidden even when reached by ?group= directly.
+  const isOrganizer = profile.kind === "organizer";
+  const visibleGroupKeys = isOrganizer ? ORGANIZER_GROUP_KEYS : GROUP_KEYS;
+  // Review #3711 F2: a group outside the visible set resolves to the HUB, not
+  // to "every group hidden" — `?group=products` or an `#products` deep link
+  // (holiday hint, reason links) must never leave an organizer on a blank page.
+  const effectiveGroup = group && visibleGroupKeys.includes(group) ? group : null;
+  const groupHidden = (key) => effectiveGroup !== key;
+  // Review #3711 F3: an organizer's profile tile has no categories card, so it
+  // must not count one — a member with no card makes a group incompletable.
+  const membersOf = (g) =>
+    isOrganizer && g === "profile"
+      ? GROUP_MEMBERS.profile.filter((k) => k !== "categories")
+      : GROUP_MEMBERS[g];
+
   // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
   // whose summary signal reads empty gets a single 8px accent dot — so the
   // owner always knows where to start. Derived from the SAME profile fields
@@ -455,11 +480,11 @@ function EditPageInner() {
   const nextStepKey =
     (profile.images?.length ?? 0) === 0
       ? "images"
-      : (profile.categories?.length ?? 0) === 0
+      : !isOrganizer && (profile.categories?.length ?? 0) === 0
         ? "categories"
         : !(profile.description || "").trim() || isDefaultDescription(profile.description)
           ? "bio"
-          : productsForMarker < 3
+          : !isOrganizer && productsForMarker < 3
             ? "products"
             : !(profile.phone || "").trim()
               ? "contact"
@@ -614,7 +639,7 @@ function EditPageInner() {
   // next-step dot when the next step lands in this group, and up to two of the
   // group's existing filled previews (MEH-1158 peek).
   const groupTile = (g) => {
-    const members = GROUP_MEMBERS[g];
+    const members = membersOf(g);
     const done = members.filter((k) => cardFilled[k]).length;
     const withPreview = members.filter((k) => cardFilled[k] && previews[k]);
     // MEH-1920: hub tiles take only fixed-shape previews (see HUB_PREVIEW_KEYS).
@@ -651,6 +676,9 @@ function EditPageInner() {
     orderWindow: t("order_window.heading"),
     specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
+    // MEH-2475 (review #3728): the organizer's city card reports dirty state;
+    // without a name the banner would flag unsaved work without saying where.
+    organizerCity: t("organizer_city.heading"),
     // MEH-2433: both cards already reported dirty state, but had no name here,
     // so the banner flagged unsaved work without saying where. Now that each
     // is its own card with its own anchor, the jump link has somewhere to go.
@@ -659,7 +687,7 @@ function EditPageInner() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -680,6 +708,8 @@ function EditPageInner() {
   );
 
   return (
+    // MEH-2460: the chips read the organizer's gate when she is one.
+    <EditAccordionKindContext.Provider value={profile.kind ?? "producer"}>
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
       {/* MEH-1100 + MEH-1237: sticky unsaved-changes banner — sits just under
           the layout's sticky tab nav (top-0 z-10, ~46px tall). Names the dirty
@@ -721,12 +751,12 @@ function EditPageInner() {
           carry over; only their grouping + render order moved. */}
 
       {/* ===== HUB (default — no ?group) ===== */}
-      <div hidden={group !== null} className="space-y-6" data-testid="edit-hub">
+      <div hidden={effectiveGroup !== null} className="space-y-6" data-testid="edit-hub">
         <h1 className="font-headline-lg text-xl font-bold text-text">
           {tAcc("hub_title")}
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {GROUP_KEYS.map((g) => {
+          {visibleGroupKeys.map((g) => {
             const tile = groupTile(g);
             return (
               <EditHubCard
@@ -747,7 +777,7 @@ function EditPageInner() {
               business name. Products + pricing moved to their own group
               (MEH-2433). ===== */}
       <div
-        hidden={group !== "profile"}
+        hidden={groupHidden("profile")}
         className="space-y-6"
         data-testid="group-profile"
       >
@@ -770,7 +800,9 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* ② Edit-tab chunk A — producer-facing categories editor */}
+        {/* ② Edit-tab chunk A — producer-facing categories editor.
+            MEH-2460: never for an organizer — no food category (ADR-036). */}
+        {!isOrganizer && (
         <EditAccordionCard
           anchorId="categories"
           title={t("categories.heading")}
@@ -788,6 +820,7 @@ function EditPageInner() {
             reportDirty={reportDirty}
           />
         </EditAccordionCard>
+        )}
 
         {/* ④ MEH-1173: business description card (hero description + tagline + AI assist) */}
         <EditAccordionCard
@@ -857,7 +890,7 @@ function EditPageInner() {
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
       <div
-        hidden={group !== "products"}
+        hidden={groupHidden("products")}
         className="space-y-6"
         data-testid="group-products"
       >
@@ -985,7 +1018,7 @@ function EditPageInner() {
       {/* ===== GROUP: location — locations, delivery, order window, special
               hours (the offer moved to products, MEH-2433) ===== */}
       <div
-        hidden={group !== "location"}
+        hidden={groupHidden("location")}
         className="space-y-6"
         data-testid="group-location"
       >
@@ -1116,7 +1149,7 @@ function EditPageInner() {
 
       {/* ===== GROUP: contact — contact-channels, questions ===== */}
       <div
-        hidden={group !== "contact"}
+        hidden={groupHidden("contact")}
         className="space-y-6"
         data-testid="group-contact"
       >
@@ -1148,6 +1181,24 @@ function EditPageInner() {
             onMethodChange={setLiveContactMethod}
           />
         </EditAccordionCard>
+
+        {/* MEH-2475: an organizer's city — shown on her public page, and she
+            has no locations editor (the location group is hidden for her). */}
+        {isOrganizer && (
+          <EditAccordionCard
+            anchorId="organizer-city"
+            title={t("organizer_city.heading")}
+            summary={profile.city || ""}
+            open={openKey === "organizerCity"}
+            onToggle={() => toggleKey("organizerCity")}
+          >
+            <OrganizerCityCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </EditAccordionCard>
+        )}
 
         {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
         <EditAccordionCard
@@ -1183,7 +1234,7 @@ function EditPageInner() {
               in the hub, and down to licence + kashrut only — the dietary and
               grass-fed claims moved to the products group. ===== */}
       <div
-        hidden={group !== "trust"}
+        hidden={groupHidden("trust")}
         className="space-y-6"
         data-testid="group-trust"
       >
@@ -1230,6 +1281,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
     </div>
+    </EditAccordionKindContext.Provider>
   );
 }
 

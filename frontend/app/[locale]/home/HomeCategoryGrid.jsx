@@ -18,9 +18,9 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * MEH-1080. Ten flat editorial cards in the 2-hero + 8-small asymmetric
  * layout: warm-white surface-card, 1px border, sharp corners, a geometric
  * glyph on a cream panel (MEH-683 unified set, keyed by canonical name;
- * Phosphor Leaf fallback only if a name is unmapped), a gold Cormorant-italic
- * numeral (01-10, LTR-isolated),
- * and the category name (= DB value verbatim).
+ * Phosphor Leaf fallback only if a name is unmapped), and the category name
+ * (= DB value verbatim). MEH-2441 removed the gold 01–10 numerals (Sapir 27/10:
+ * a numbered list of things that aren't a sequence is the template tell).
  *
  * MEH-1080 [T-A] (MEH-1077 DISC-01): each card is a real <Link> to
  * /producers?category=<id> — navigable, crawlable, Back-able. The old
@@ -46,7 +46,7 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * photos with a glyph/Leaf fallback — flat, NO scrim; the PREMIUM_DESIGN 65%
  * green overlay that leaked an Act+Acre logo is deliberately NOT
  * reintroduced); caption-strip layout — the photo lives in the top aspect
- * block and the caption (gold numeral + name) sits on a solid surface-card
+ * block and the caption (the name) sits on a solid surface-card
  * strip BELOW it (NN/g text-over-images pattern), so category names are never
  * illegible over a busy photo; a subtle motion-safe photo zoom on hover.
  */
@@ -86,7 +86,6 @@ export function HomeCategoryGrid({ categoryCards }) {
           const { glyph: LineArt, isFallback: glyphIsFallback } =
             resolveCategoryGlyph(card);
           const isHero = idx < 2;
-          const numeral = String(idx + 1).padStart(2, "0");
           const cardClassName = [
             // MEH-1183: relative flex column + overflow-hidden — keeps the sharp
             // card frame, stacks the image block over the caption strip, and lets
@@ -99,13 +98,10 @@ export function HomeCategoryGrid({ categoryCards }) {
           const aspectClassName = isHero
             ? "aspect-square md:aspect-[4/3] lg:aspect-[16/9]"
             : "aspect-square md:aspect-[4/3] lg:aspect-square";
-          // Gold Cormorant numeral (LTR-isolated) + display-font name. Shared by
-          // the photo and glyph paths so the tokens/position stay identical.
+          // Display-font name. Shared by the photo and glyph paths so the
+          // tokens/position stay identical.
           const caption = (
             <>
-              <span dir="ltr" className="font-english italic text-accent leading-none text-[22px] lg:text-[28px]">
-                {numeral}
-              </span>
               <h3 className={[
                 // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline
                 // + photo zooms scale-1.05 (photo path only, motion-safe); glyph never scales.
@@ -139,7 +135,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 />
               </div>
               {/* Caption strip — solid surface-card (from the card bg), sits BELOW
-                  the photo so the numeral + name are never over a busy image.
+                  the photo so the name is never over a busy image.
                   Same tokens/position as the glyph path. */}
               <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6" data-testid="home-category-caption">
                 {caption}
@@ -163,7 +159,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 )}
               </div>
 
-              {/* Body — gold Cormorant numeral (LTR-isolated) + display-font name. */}
+              {/* Body — display-font name. */}
               <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6" data-testid="home-category-caption">
                 {caption}
               </div>

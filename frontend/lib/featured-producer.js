@@ -35,7 +35,8 @@ export function selectFeaturedProducer(producers) {
     category: source.categories?.[0]?.name,
     photo: source.images?.[0],
     quote: source.short_description.trim(),
-    story: (source.description || "").trim(),
+    // MEH-2441: no `story` — the green band shows one line (the quote); the
+    // producer page owns the long description.
     // slug → pretty URL, else the UUID fallback (mirrors ProducerCard.jsx:185).
     href: source.slug ? `/${source.slug}` : `/producer/${source.id}`,
   };

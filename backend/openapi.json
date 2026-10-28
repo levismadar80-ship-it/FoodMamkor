@@ -1044,6 +1044,18 @@
             ],
             "title": "Description"
           },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
           "event_date": {
             "format": "date",
             "title": "Event Date",
@@ -1181,6 +1193,18 @@
             ],
             "title": "Description"
           },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
           "event_date": {
             "format": "date",
             "title": "Event Date",
@@ -1261,6 +1285,22 @@
               }
             ],
             "title": "Max Participants"
+          },
+          "owner_kind": {
+            "default": "producer",
+            "title": "Owner Kind",
+            "type": "string"
+          },
+          "owner_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Slug"
           },
           "price": {
             "title": "Price",
@@ -1345,6 +1385,18 @@
               }
             ],
             "title": "Description"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
           },
           "event_date": {
             "anyOf": [
@@ -1942,6 +1994,51 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "producer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Id"
+          },
+          "producer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Name"
+          },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
+          "producer_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Slug"
           }
         },
         "required": [
@@ -2670,16 +2767,9 @@
             "title": "Description"
           },
           "fulfillment_note": {
-            "anyOf": [
-              {
-                "maxLength": 1000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fulfillment Note"
+            "maxLength": 1000,
+            "title": "Fulfillment Note",
+            "type": "string"
           },
           "max_participants": {
             "anyOf": [
@@ -2753,7 +2843,8 @@
           "price_per_unit_regular",
           "price_per_unit_group",
           "min_participants",
-          "deadline"
+          "deadline",
+          "fulfillment_note"
         ],
         "title": "GroupBuyCreate",
         "type": "object"
@@ -3432,6 +3523,231 @@
           "token"
         ],
         "title": "NewsletterUnsubscribeIn",
+        "type": "object"
+      },
+      "OrganizerPublicOut": {
+        "description": "GET /organizers/{slug}. Public fields only — no street address, no\nlicense, nothing business-shaped (no products, categories or delivery).",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "established_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Established Year"
+          },
+          "external_order_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Order Form"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "images": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Images",
+            "type": "array"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
+          },
+          "owner_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Photo Url"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "upcoming_events": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EventOut"
+            },
+            "title": "Upcoming Events",
+            "type": "array"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "whatsapp_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Group"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
+        "title": "OrganizerPublicOut",
+        "type": "object"
+      },
+      "OrganizerSlugOut": {
+        "description": "One sitemap entry for /organizers/{slug}.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "OrganizerSlugOut",
         "type": "object"
       },
       "OtpConfirmIn": {
@@ -4674,6 +4990,11 @@
               }
             ],
             "title": "Kashrut Verified At"
+          },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
           },
           "kosher": {
             "anyOf": [
@@ -6546,6 +6867,11 @@
             ],
             "title": "Kashrut Verified At"
           },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
+          },
           "lactose_free_facility": {
             "default": "unknown",
             "title": "Lactose Free Facility",
@@ -7269,6 +7595,11 @@
               }
             ],
             "title": "Kashrut Verified At"
+          },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
           },
           "lactose_free_facility": {
             "default": "unknown",
@@ -8701,6 +9032,11 @@
             ],
             "title": "Kashrut Verified At"
           },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
+          },
           "kosher": {
             "anyOf": [
               {
@@ -9002,6 +9338,11 @@
           "trust_tier": {
             "default": 1,
             "title": "Trust Tier",
+            "type": "integer"
+          },
+          "upcoming_events_count": {
+            "default": 0,
+            "title": "Upcoming Events Count",
             "type": "integer"
           },
           "updated_at": {
@@ -9608,6 +9949,15 @@
               }
             ],
             "title": "Instagram"
+          },
+          "kind": {
+            "default": "producer",
+            "enum": [
+              "producer",
+              "organizer"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "lat": {
             "anyOf": [
@@ -11640,6 +11990,17 @@
               }
             ],
             "title": "Producer Id"
+          },
+          "producer_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Kind"
           },
           "producer_rejection_reason": {
             "anyOf": [
@@ -17483,6 +17844,23 @@
         "summary": "Liveness"
       }
     },
+    "/health/places": {
+      "get": {
+        "description": "MEH-2482 — is the Google Places key answering right now?\n\nUnauthenticated so a cron (docs/ci/places-health-probe.patch.md) or an\nuptime monitor can hit it; rate-limited so it cannot be used to spend the\nkey's quota. 503 is the alerting signal.",
+        "operationId": "places_health_health_places_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Places Health"
+      }
+    },
     "/health/readiness": {
       "get": {
         "operationId": "readiness_health_readiness_get",
@@ -17606,6 +17984,75 @@
         "summary": "Unsubscribe Newsletter",
         "tags": [
           "marketing"
+        ]
+      }
+    },
+    "/organizers": {
+      "get": {
+        "description": "Slugs of every public organizer — the sitemap's source for\n/organizers/{slug} (MEH-2461: organizer pages are public, so they are\nlisted; never under /producers).",
+        "operationId": "list_organizer_slugs_organizers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizerSlugOut"
+                  },
+                  "title": "Response List Organizer Slugs Organizers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Organizer Slugs",
+        "tags": [
+          "organizers"
+        ]
+      }
+    },
+    "/organizers/{slug}": {
+      "get": {
+        "description": "An approved organizer's page: profile + its upcoming events.\n\n404 for a business slug, a pending organizer and an unknown slug alike —\nthe business has its own page, and a pending row is not consented-to-public\n(MEH-254). Upcoming = active and dated today-or-later in Israel, soonest\nfirst; past events are not listed.",
+        "operationId": "get_organizer_organizers__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizerPublicOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Organizer",
+        "tags": [
+          "organizers"
         ]
       }
     },
@@ -19671,7 +20118,7 @@
     },
     "/producers/{producer_id}/google-rating": {
       "get": {
-        "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 only when the producer id itself does not exist.",
+        "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 when the producer id does not exist or is an organizer (MEH-2465).",
         "operationId": "get_google_rating_producers__producer_id__google_rating_get",
         "parameters": [
           {
@@ -19875,7 +20322,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {

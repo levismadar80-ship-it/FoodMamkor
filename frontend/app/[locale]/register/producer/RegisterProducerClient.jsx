@@ -103,7 +103,8 @@ const CROSS_STEP_REQUIRED = [
     step: STEP.CATEGORY,
     focusId: "register-category-selector",
     messageKey: "category_required",
-    isMissing: (f) => f.category_ids.length === 0,
+    // MEH-2460: an organizer carries no category — the step is skipped.
+    isMissing: (f) => f.kind !== "organizer" && f.category_ids.length === 0,
   },
 ];
 
@@ -178,6 +179,10 @@ const EMPTY_FORM = {
   // Producer column of the same name. The router folds a non-empty list into
   // delivery_areas rows (auth.py:586-588) — the only store the consumer filter
   // reads (producer_listing.py:258). The column is never written (auth.py:550).
+  // MEH-2460: "producer" (a business) | "organizer" (markets / events, sells
+  // nothing — ADR-036). An organizer skips CATEGORY and the delivery axis;
+  // the server writes its location shape (schemas.py _validate_location_mode).
+  kind: "producer",
   has_physical_location: true,
   offers_delivery: false,
   delivery_nationwide: false,
@@ -346,7 +351,9 @@ function RegisterProducerPageBody() {
   // directly (no toggle). Whether the path is required is derived live from
   // the selected category IDs against the categories list fetched at mount.
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
-  const licenseRequired = requiresProducerLicense(categories, form.category_ids);
+  const isOrganizer = form.kind === "organizer"; // MEH-2460
+  const licenseRequired =
+    !isOrganizer && requiresProducerLicense(categories, form.category_ids);
   const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
   // MEH-1807: the phone field has two distinct error sources — the pre-existing
   // as-you-type format check (fires only once something is typed) and the new
@@ -382,9 +389,11 @@ function RegisterProducerPageBody() {
   // MEH-759 Chunk C: the grower declaration line is shown (and required) only
   // for the two agricultural categories. Name-match mirrors requiresProducerLicense
   // (IDs are seed-ordering-dependent; names are stable). Source: seed_data.py:15-16.
-  const farmerDeclarationRequired = categories
-    .filter((c) => form.category_ids.includes(c.id))
-    .some((c) => FARMER_DECLARATION_CATEGORIES.includes(c.name));
+  const farmerDeclarationRequired =
+    !isOrganizer &&
+    categories
+      .filter((c) => form.category_ids.includes(c.id))
+      .some((c) => FARMER_DECLARATION_CATEGORIES.includes(c.name));
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -520,7 +529,13 @@ function RegisterProducerPageBody() {
           let hasToken = false;
           try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
           const resumeAt = safeResumeStep(draft.step, hasToken);
-          if (resumeAt) setStep(resumeAt);
+          // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
+          // neither as a resume target nor as the frame she was on when she
+          // pressed «continue».
+          const organizerDraft = draft.form?.kind === "organizer";
+          const skipCategory = (s) => (organizerDraft && s === STEP.CATEGORY ? STEP.STORY : s);
+          if (resumeAt) setStep(skipCategory(resumeAt));
+          else if (organizerDraft) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
         }
@@ -672,12 +687,18 @@ function RegisterProducerPageBody() {
         // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
         // paths (shared body above the !isUpgrade branch).
         city: form.city,
-        address: form.address,
+        // MEH-2460: an organizer has no address step — a stale value typed
+        // before she toggled must not 422 on a field she can no longer see
+        // (the server drops it for her anyway).
+        address: isOrganizer ? null : form.address,
         // MEH-1808: sending these is what makes the "המיקום זוהה" confirmation
         // a true statement rather than a promise the payload breaks.
-        lat: form.lat,
-        lng: form.lng,
-        category_ids: form.category_ids,
+        lat: isOrganizer ? null : form.lat,
+        lng: isOrganizer ? null : form.lng,
+        // MEH-2460: kind decides the server's validation branch; an organizer
+        // sends no categories (any it had selected before toggling are dropped).
+        kind: form.kind,
+        category_ids: isOrganizer ? [] : form.category_ids,
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
         producer_license_number: form.producer_license_number,
@@ -915,7 +936,10 @@ function RegisterProducerPageBody() {
               { s: STEP.DETAILS, caption: t("auth.register.producer.step_captions.details") },
               { s: STEP.CATEGORY, caption: t("auth.register.producer.step_captions.category") },
               { s: STEP.STORY, caption: t("auth.register.producer.step_captions.story") },
-            ].map(({ s, caption }) => (
+            ]
+              // MEH-2460: an organizer never visits CATEGORY, so it is not a step.
+              .filter(({ s }) => !(isOrganizer && s === STEP.CATEGORY))
+              .map(({ s, caption }) => (
               <div
                 key={s}
                 aria-current={s === step ? "step" : undefined}
@@ -1017,6 +1041,11 @@ function RegisterProducerPageBody() {
               onChange={set("name")}
               required
               dir="rtl"
+              // MEH-2481: without these, Chrome's autofill put the saved
+              // EMAIL into the name field and the saved PASSWORD into the
+              // new-password field (measured on staging, 28/10). The
+              // attributes tell the browser which slot is which.
+              autoComplete="name"
             />
             <Input
               id="producer-account-email"
@@ -1028,6 +1057,7 @@ function RegisterProducerPageBody() {
               onChange={set("email")}
               required
               dir="ltr"
+              autoComplete="email"
             />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
@@ -1050,6 +1080,7 @@ function RegisterProducerPageBody() {
                 className="w-full border rounded-md px-3 py-2 min-h-[44px]"
                 dir="ltr"
                 minLength={12}
+                autoComplete="new-password"
               />
               <PasswordStrength password={form.password} />
             </div>
@@ -1207,6 +1238,11 @@ function RegisterProducerPageBody() {
                 business registering here landed with lat/lng NULL and never
                 appeared on the map, whether or not the seller picked from the
                 list. */}
+            {/* MEH-2460 (review #3711 F5): an organizer has no fixed address,
+                and this block's map copy («במפה מופיעה נקודה») contradicts the
+                approved organizer hint. Hidden with the multi-location intake. */}
+            {!isOrganizer && (
+            <>
             <div>
               <label
                 htmlFor="producer-address"
@@ -1415,6 +1451,8 @@ function RegisterProducerPageBody() {
                 {t("auth.register.producer.fields.multi_location_hint")}
               </p>
             </div>
+            </>
+            )}
 
             {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a
                 location question and sits with city/address above. Idiom mirrors
@@ -1427,6 +1465,32 @@ function RegisterProducerPageBody() {
                 scopes `useTranslations("admin")` (ProducerForm.jsx:57). This
                 component's `t` is UNSCOPED, so copying the admin call verbatim
                 would silently render the key name instead of the string. */}
+            {/* MEH-2460: the organizer option (copy approved on MEH-2458,
+                rule 22). Checked → no category step, no delivery axis, no
+                license; the payload carries kind="organizer". */}
+            <div className="pt-1" data-testid="register-organizer-option">
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isOrganizer}
+                  data-testid="register-organizer-toggle"
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setAndSave((prev) => ({ ...prev, kind: on ? "organizer" : "producer" }));
+                  }}
+                  className="w-4 h-4 mt-0.5 accent-primary"
+                />
+                {t("auth.register.producer.fields.organizer_label")}
+              </label>
+              <p
+                data-testid="register-organizer-hint"
+                className="text-xs text-fg-muted mt-1 ms-6 text-start"
+              >
+                {t("auth.register.producer.fields.organizer_hint")}
+              </p>
+            </div>
+
+            {!isOrganizer && (
             <div className="pt-1 space-y-3" data-testid="register-delivery-axis">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
@@ -1526,6 +1590,7 @@ function RegisterProducerPageBody() {
                 </div>
               )}
             </div>
+            )}
 
             <div className="flex gap-3">
               {!isUpgrade && (
@@ -1547,6 +1612,13 @@ function RegisterProducerPageBody() {
                   // on it. A 422 two frames later names a field the seller can no
                   // longer see; blocking the advance is the whole point, same as
                   // the runRequiredGate above.
+                  // MEH-2460: an organizer has no delivery axis and no
+                  // category step — straight on to STORY.
+                  if (isOrganizer) {
+                    setStepError("");
+                    setStep(STEP.STORY);
+                    return;
+                  }
                   if (!form.has_physical_location && !form.offers_delivery) {
                     setStepError(t("admin.producers.form.fields.type_validation"));
                     return;
@@ -2059,7 +2131,7 @@ function RegisterProducerPageBody() {
             </p>
 
             <div className="flex gap-3">
-              <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+              <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(isOrganizer ? STEP.DETAILS : STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
                 data-testid="register-story-submit"
                 onClick={() => {
@@ -2191,7 +2263,11 @@ function RegisterProducerPageBody() {
             </div>
             <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
             <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
-            <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
+            <p className="text-fg-muted text-xs mb-3">{t("auth.register.producer.success.inbox_hint")}</p>
+            {/* MEH-2492: say the next step up front — the link verifies, it does not log in. */}
+            <p className="text-text text-sm font-medium mb-6" data-testid="register-confirm-next-step">
+              {t("auth.register.producer.success.inbox_next")}
+            </p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <button
               onClick={() => router.push("/")}

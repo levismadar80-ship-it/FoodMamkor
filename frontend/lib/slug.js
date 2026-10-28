@@ -36,6 +36,8 @@ const RESERVED = new Set([
   "verify-email",
   // MEH-2324: the owner-claim page.
   "claim",
+  // MEH-2461: public organizer pages (/organizers/{slug}).
+  "organizers",
 ]);
 
 // Real slugs are produced by backend _slugify

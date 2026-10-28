@@ -15,7 +15,10 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.email import send_email
-from app.services.producer_listing import catalog_default_availability_condition
+from app.services.producer_listing import (
+    catalog_default_availability_condition,
+    is_business,  # MEH-2459
+)
 from app.database import get_db
 from app.models import (
     Category,
@@ -96,7 +99,7 @@ def get_stats(request: Request, db: Session = Depends(get_db)):
     producers_count = (
         db.query(func.count(Producer.id))
         .filter(
-            Producer.status == "approved",
+            is_business(),  # MEH-2459
             catalog_default_availability_condition(),
         )
         .scalar()

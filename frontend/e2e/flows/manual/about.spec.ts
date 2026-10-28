@@ -49,9 +49,9 @@ import en from "../../../messages/en.json";
  *           asserts nothing about the animation itself.
  * Does NOT: assert MT:MEH-841:3 (the HOME teaser «גלו את ההבדל» on `/`) or
  *           the `/en/` half of MT:MEH-841:4 — both live on the home surface,
- *           which is chunk 7's route (producer fixture, 184 items) and whose
- *           teaser (HomeStaticBlocks.jsx `HomeComparisonTeaser`) carries no
- *           testid yet; recorded as residuals, not silently dropped. Does NOT
+ *           which is chunk 7's route (producer fixture, 184 items). The home
+ *           teaser itself was removed in MEH-2441 (its absence is asserted in
+ *           home.spec.ts), so MT:MEH-841:3 no longer has a subject. Does NOT
  *           duplicate MT:MEH-534:10 / MT:MEH-1289:5's footer half (the footer
  *           nav hrefs) — COVERED at component level by
  *           frontend/__tests__/FooterNavGroups.test.jsx:61-62. Does NOT convert
@@ -325,8 +325,10 @@ test.describe("manual › /about/process (MEH-534)", () => {
     );
   });
 
-  // MT:MEH-534:2 — hero H1 with the <em> phrase in gold italic; not clipped; RTL.
-  test("hero: h1 from copy with the <em> phrase italic in the accent colour, unclipped, RTL", async ({
+  // MT:MEH-534:2 — hero H1 with the <em> phrase in gold; not clipped; RTL.
+  //   MEH-2487: upright, not italic — no Hebrew face we ship has an italic, so
+  //   the old slant was browser-synthesised. Gold carries the emphasis.
+  test("hero: h1 from copy with the <em> phrase upright in the accent colour, unclipped, RTL", async ({
     page,
   }) => {
     const emText = richChunk(PROCESS_HE.hero.h1, "em");
@@ -338,7 +340,7 @@ test.describe("manual › /about/process (MEH-534)", () => {
     const em = h1.locator("em");
     await expect(em).toHaveCount(1);
     await expect(em).toHaveText(emText);
-    expect(await computed(em, "font-style")).toBe("italic");
+    expect(await computed(em, "font-style")).toBe("normal");
     // "gold": the em shares the accent token with the eyebrow and differs from the h1's own ink.
     const eyebrow = hero.getByText(PROCESS_HE.hero.eyebrow, { exact: true });
     await expect(eyebrow).toHaveCount(1);
@@ -396,8 +398,9 @@ test.describe("manual › /about/process (MEH-534)", () => {
     );
   });
 
-  // MT:MEH-534:4 — "What's checked": 3 cards (זהות · סיפור · שיחה) on the alt background, gold numerals 01–03.
-  test("what's checked: three cards from copy on the alt-tone band, accent numerals 01–03", async ({
+  // MT:MEH-534:4 — "What's checked": 3 cards (זהות · סיפור · שיחה) on the alt background.
+  //   MEH-2439 removed the decorative 01–03 card numerals (and the Marker's own).
+  test("what's checked: three cards from copy on the alt-tone band, no decorative numerals", async ({
     page,
   }) => {
     await gotoProcess(page);
@@ -406,17 +409,11 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await expect(everyone.getByRole("heading", { level: 2 })).toHaveText(PROCESS_HE.everyone.h2);
     const cards = everyone.getByRole("heading", { level: 3 });
     await expect(cards).toHaveCount(EVERYONE_TITLES_HE.length);
-    // The band also carries the section Marker's own numeral ("02"); the CARD
-    // numerals are the ones that wrap the trailing "—" in a child span.
-    const numerals = everyone.locator("span[aria-hidden].numeric", { has: page.locator("span") });
-    await expect(numerals).toHaveCount(EVERYONE_TITLES_HE.length);
     for (let i = 0; i < EVERYONE_TITLES_HE.length; i += 1) {
       await expect(cards.nth(i)).toHaveText(EVERYONE_TITLES_HE[i]);
-      await expect(numerals.nth(i)).toContainText(`0${i + 1}`);
     }
-    // "gold": the numerals share the accent token with the hero's <em>.
-    const heroEm = scope(page).getByTestId("process-hero").locator("h1 em");
-    expect(await computed(numerals.first(), "color")).toBe(await computed(heroEm, "color"));
+    // MEH-2439: no "0N" ornament anywhere in the band (cards or Marker).
+    await expect(everyone.getByText(/^0\d/)).toHaveCount(0);
     // "background-alt": this band shares its fill with the matrix band and differs from the hero's.
     const bg = (el: Locator) => computed(el, "background-color");
     const [everyoneBg, matrixBg, heroBg] = await Promise.all([
@@ -526,15 +523,17 @@ test.describe("manual › /about/process (MEH-534)", () => {
     expect(declareLines).toBeGreaterThan(0);
   });
 
-  // MT:MEH-534:8 — closing: Sapir's quote in italic, eyebrow «מהמקור», credit «— ספיר».
-  test("closing: the founder quote as an italic blockquote, eyebrow + credit from copy", async ({ page }) => {
+  // MT:MEH-534:8 — closing: Sapir's quote, eyebrow «מהמקור», credit «— ספיר».
+  //   MEH-2439: upright, not italic — Frank Ruhl Libre has no italic face, so the
+  //   old `italic` was a browser-synthesised slant.
+  test("closing: the founder quote as an upright blockquote, eyebrow + credit from copy", async ({ page }) => {
     await gotoProcess(page);
     const closing = scope(page).getByTestId("process-closing");
     await closing.scrollIntoViewIfNeeded();
     const quote = closing.locator("blockquote");
     await expect(quote).toHaveCount(1);
     await expect(quote).toHaveText(PROCESS_HE.closing.quote);
-    expect(await computed(quote, "font-style")).toBe("italic");
+    expect(await computed(quote, "font-style")).toBe("normal");
     await expect(closing.getByText(PROCESS_HE.closing.em_mark, { exact: true })).toHaveCount(1);
     await expect(closing.getByText(PROCESS_HE.closing.attrib, { exact: true })).toHaveCount(1);
     expect(await precedes(closing.getByText(PROCESS_HE.closing.em_mark, { exact: true }), quote)).toBe(true);
@@ -723,4 +722,79 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     await expect(cta).toHaveText(WHY_EN.cta);
     await expect(cta).toHaveAttribute("href", /^\/en\/producers(?:[/?#]|$)/);
   });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+test.describe("manual › design leftovers (MEH-2487)", () => {
+  /** Every element whose OWN text holds Hebrew and whose computed style is italic. */
+  async function slantedHebrew(page: Page): Promise<string[]> {
+    return page.evaluate(() => {
+      const out: string[] = [];
+      for (const el of document.querySelectorAll("main *")) {
+        const own = [...el.childNodes]
+          .filter((n) => n.nodeType === Node.TEXT_NODE)
+          .map((n) => n.textContent ?? "")
+          .join("")
+          .trim();
+        if (!/[\u0590-\u05FF]/.test(own)) continue;
+        if (getComputedStyle(el).fontStyle === "italic") out.push(`${el.tagName.toLowerCase()}: ${own.slice(0, 40)}`);
+      }
+      return out;
+    });
+  }
+
+  for (const path of ["/about", "/about/process"]) {
+    test(`${path}: no Hebrew text renders in a browser-faked italic`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.locator("main h1")).toHaveCount(1, FIRST_PAINT);
+      // Control: the probe sees Hebrew text at all (a dead probe would also return []).
+      const hebrewCount = await page.evaluate(
+        () => [...document.querySelectorAll("main *")].filter((el) => /[\u0590-\u05FF]/.test(el.textContent ?? "")).length,
+      );
+      expect(hebrewCount, "control: the page renders Hebrew text").toBeGreaterThan(10);
+      expect(await slantedHebrew(page)).toEqual([]);
+    });
+  }
+
+  // Control: the upright rule is for Hebrew only. The step numerals 01–04 are
+  // Cormorant digits with a real italic face, so they are a dir="ltr" island and
+  // stay italic — without `dir="ltr"` the rtl rule straightened them too.
+  test("/about/process: the step numerals keep their real Cormorant italic", async ({ page }) => {
+    await gotoProcess(page);
+    const numeral = page.locator('[data-testid="process-steps"] span.numeric').first();
+    await expect(numeral).toHaveText(/^\d+$/);
+    expect(await numeral.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+  });
+
+  // /about/process ends on its green CTA band. (/about does NOT: its contact
+  // form follows the green close, so it keeps the footer margin — control below.)
+  test("/about/process: the green close runs straight into the footer — no cream strip", async ({ page }) => {
+    await gotoProcess(page);
+    const footer = page.locator("footer[data-site-footer]");
+    await expect(footer).toHaveCount(1, FIRST_PAINT);
+    const band = page.locator("[data-meets-footer]");
+    await expect(band).toHaveCount(1);
+    await footer.scrollIntoViewIfNeeded();
+    const gap = await page.evaluate(() => {
+      const b = document.querySelector("[data-meets-footer]")!.getBoundingClientRect();
+      const f = document.querySelector("footer[data-site-footer]")!.getBoundingClientRect();
+      return Math.round(f.top - b.bottom);
+    });
+    expect(gap).toBe(0);
+  });
+
+  // Control for the rule above: pages that do NOT end on a coloured band keep
+  // the footer's own top margin (64px was the strip measured on /about/process).
+  for (const [path, go] of [
+    ["/about", gotoAbout],
+    ["/about/why-local", gotoWhyLocal],
+  ] as const) {
+    test(`${path} keeps the footer's top margin`, async ({ page }) => {
+      await go(page);
+      const footer = page.locator("footer[data-site-footer]");
+      await expect(footer).toHaveCount(1);
+      await expect(page.locator("[data-meets-footer]")).toHaveCount(0);
+      expect(await computed(footer, "margin-top")).toBe("64px");
+    });
+  }
 });

@@ -124,9 +124,11 @@
       "loading_title": "באימות...",
       "loading_subtitle": "אנא המתינו",
       "fallback_loading": "בטעינה...",
-      "success_title": "האימייל אומת בהצלחה!",
+      "success_title": "האימייל אומת ✓",
       "success_subtitle": "מעבירים אותך לאתר...",
       "success_cta": "המשיכו לאתר",
+      "success_login_subtitle": "עכשיו נכנסים עם האימייל והסיסמה, וממשיכים מאיפה שעצרתם.",
+      "success_login_cta": "כניסה להמשך",
       "error_title": "האימות נכשל",
       "error_cta": "חזרו לאתר",
       "errors": {
@@ -297,6 +299,8 @@
           "address_pick_from_list": "בחרו כתובת מהרשימה כדי שהעסק יופיע במפה.",
           "multi_location_label": "יש לכם יותר מנקודת מכירה או איסוף אחת?",
           "multi_location_hint": "אפשר להוסיף את כל הנקודות בלוח הבקרה אחרי ההרשמה.",
+          "organizer_label": "אני מארגן/ת שווקים או אירועים (לא מוכר/ת מוצרים)",
+          "organizer_hint": "מארגנים מקבלים עמוד עם האירועים שלהם. הם לא מופיעים ברשימת בתי העסק ובמפה.",
           "tagline_label": "במשפט אחד",
           "tagline_placeholder": "מה שהכי חשוב שידעו עליכם",
           "description_label": "ספרו על העסק שלכם",
@@ -396,6 +400,7 @@
           "inbox_title": "בדקו את תיבת האימייל שלכם",
           "inbox_body": "אם האימייל פנוי, נשלחה אליכם הודעת אימות. אנא בדקו את תיבת הדואר.",
           "inbox_hint": "לא קיבלתם? בדקו בספאם או נסו שוב בעוד דקה.",
+          "inbox_next": "אחרי הלחיצה על הקישור במייל נכנסים עם האימייל והסיסמה וממשיכים להשלים את העמוד.",
           "back_home": "חזרה לדף הראשי"
         }
       }
@@ -474,14 +479,8 @@
     },
     "featured": {
       "eyebrow": "היכרות",
-      "heading": "מאחורי הקלעים",
       "cta_meet": "להכיר את {name}",
       "cta_write": "לכתוב ל{name}"
-    },
-    "comparison_teaser": {
-      "eyebrow": "ההבדל",
-      "heading": "מה שמשתנה בדרך",
-      "cta": "גלו את ההבדל"
     },
     "categories": {
       "eyebrow": "קטגוריות",
@@ -527,16 +526,6 @@
     },
     "recent": {
       "heading": "צפית לאחרונה"
-    },
-    "how_it_works": {
-      "eyebrow": "איך זה עובד",
-      "heading": "שלושה צעדים",
-      "step01_title": "מצאו",
-      "step01_text": "גלו בתי עסק קרובים אליכם",
-      "step02_title": "צרו קשר עם העסק",
-      "step02_text": "דברו ישירות עם בית העסק",
-      "step03_title": "קנייה",
-      "step03_text": "ישר מהמקור, איך שמתאים לך"
     },
     "cta": {
       "heading": "יש לך עסק? בואו אלינו",
@@ -766,6 +755,7 @@
       "sections": {
         "about": "אודות",
         "location": "הגעה ומיקום",
+        "location_no_hours": "אין שעות קבועות — כדאי לתאם לפני שמגיעים",
         "similar": {
           "heading": "בתי עסק דומים",
           "in_area": "{category} · באזור שלך"
@@ -786,7 +776,8 @@
             "gluten_free": "ללא גלוטן",
             "vegan": "טבעוני",
             "vegetarian": "צמחוני",
-            "lactose_free": "ללא לקטוז"
+            "lactose_free": "ללא לקטוז",
+            "no_added_sugar": "ללא סוכר מוסף"
           },
           "sheet_open_aria": "פרטים על {name}",
           "sheet_close_aria": "סגירת פרטי המוצר",
@@ -1157,11 +1148,29 @@
         "city_label": "עיר",
         "fulfillment_label": "מתי ואיך מקבלים את המוצרים?",
         "fulfillment_placeholder": "לדוגמה: איסוף מהמשק ביום שישי אחרי סגירת הקבוצה, או משלוח עד הבית תוך 3 ימים",
+        "fulfillment_helper": "המשתתפות רואות את זה לפני שהן מצטרפות. כתבו איפה אוספים ולאילו ערים יש משלוח.",
+        "fulfillment_required": "יש לכתוב מתי ואיך מקבלים את המוצרים",
         "submitting": "ביצירה...",
         "submit": "צרו קבוצת רכש",
         "toast_created": "קבוצת הרכש נוצרה ופתוחה להצטרפות"
       },
-      "status_deadline_passed": "המועד עבר"
+      "status_deadline_passed": "המועד עבר",
+      "actions": {
+        "cancel": "ביטול הקבוצה",
+        "close": "סגירת הקבוצה",
+        "deliver": "סימון שנמסר",
+        "back": "חזרה",
+        "cancel_title": "לבטל את קבוצת הרכש?",
+        "cancel_body": "הקבוצה תוסר מהאתר ואי אפשר לפתוח אותה מחדש.",
+        "cancel_funded_note": "{count} משתתפות כבר הצטרפו ומחכות למשלוח.",
+        "cancel_confirm": "כן, לבטל",
+        "close_title": "לסגור את קבוצת הרכש?",
+        "close_body": "הקבוצה לא הגיעה למינימום עד המועד ותירשם כמבוטלת.",
+        "deliver_title": "לסמן שהקבוצה נמסרה?",
+        "deliver_body": "הקבוצה תסומן כהושלמה.",
+        "toast_cancelled": "קבוצת הרכש בוטלה",
+        "toast_fulfilled": "קבוצת הרכש סומנה כנמסרה"
+      }
     },
     "availability": {
       "status_label": {
@@ -1349,7 +1358,8 @@
         "pickup": "איסוף עצמי",
         "delivery_only": "משלוח",
         "pickup_only": "איסוף עצמי",
-        "arranged": "בתיאום אישי"
+        "arranged": "בתיאום מראש",
+        "on_site": "קנייה במקום"
       }
     },
     "mini": {
@@ -1457,6 +1467,7 @@
         "pending": "ממתינים",
         "suspended": "מושהים",
         "rejected": "נדחו",
+        "drafts": "טיוטות",
         "incomplete_title": "הצג רק עסקים שחסרים להם פרטים נדרשים",
         "show_all": "הצג הכל",
         "incomplete_label": "פרטים חסרים",
@@ -1513,6 +1524,8 @@
           "pickup_points": "נקודות איסוף",
           "license_pending": "רישיון ממתין",
           "license_pending_title": "בקטגוריה הדורשת רישיון, ללא מספר רישיון — יש לאמת לפני אישור.",
+          "organizer": "מארגן",
+          "organizer_title": "מארגן שווקים ואירועים — לא בית עסק: בלי רישיון, בלי מוצרים, בלי תג מאומת.",
           "dedup": "כפילות?",
           "dedup_name_title": "שם זהה לעסק אחר — בדקי אם מדובר בכפילות.",
           "dedup_city_title": "עיר זהה לעסק אחר — בדקי אם מדובר בכפילות.",
@@ -2468,7 +2481,8 @@
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
-      "free": "חינם"
+      "free": "חינם",
+      "organizer_line": "מארגן: {name}"
     },
     "categories": {
       "all": "הכל",
@@ -2498,7 +2512,9 @@
       "participants_limit": "עד {n} משתתפים",
       "free": "חינם",
       "breadcrumb_home": "בית",
-      "breadcrumb_events": "אירועים"
+      "breadcrumb_events": "אירועים",
+      "organizer_line": "מארגן: {name}",
+      "add_to_calendar": "הוספה ליומן"
     },
     "calendar": {
       "previous_month": "חודש קודם",
@@ -2546,7 +2562,14 @@
       "sold_out": "אזל",
       "spots_count": "{spots} מתוך {max}",
       "breadcrumb_home": "בית",
-      "breadcrumb_experiences": "חוויות"
+      "breadcrumb_experiences": "חוויות",
+      "duration_minutes": "{count} דקות",
+      "duration_hours": "{count, plural, one {שעה} two {שעתיים} other {# שעות}}",
+      "duration_hours_half": "{count, plural, one {שעה וחצי} two {שעתיים וחצי} other {# שעות וחצי}}",
+      "duration_mixed": "{hours} ו-{minutes} דקות",
+      "recurring": "מתקיימת באופן קבוע: {schedule}",
+      "recurring_bare": "מתקיימת באופן קבוע",
+      "starts_from": "החל מ-{date}"
     },
     "new": {
       "crumb_current": "חוויה חדשה",
@@ -3189,7 +3212,8 @@
     },
     "address_search": {
       "placeholder": "חפשו כתובת...",
-      "no_results_hint": "לא מצאנו הצעות לכתובת הזו. אפשר להקליד אותה ידנית — היא תישמר כרגיל."
+      "no_results_hint": "לא מצאנו הצעות לכתובת הזו. אפשר להקליד אותה ידנית — היא תישמר כרגיל.",
+      "provider_down_hint": "חיפוש הכתובת לא זמין כרגע. אפשר להמשיך עם היישוב בלבד — נמקם את העסק במרכז היישוב ואפשר לדייק אחר כך."
     }
   },
   "favorites": {
@@ -3226,6 +3250,7 @@
   "share": {
     "trigger": "שתפו",
     "modal_title": "שתפו לינק לעסק",
+    "modal_title_event": "שתפו את האירוע",
     "copy_link": "שתפו לינק",
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
@@ -4047,7 +4072,8 @@
         "edit": "עריכה",
         "insights": "תובנות",
         "tools": "כלים",
-        "view_page": "צפייה בדף"
+        "view_page": "צפייה בדף",
+        "organizer_events": "האירועים שלכם"
       },
       "load_error": {
         "title": "לא הצלחנו לטעון את לוח הבקרה",
@@ -4631,6 +4657,7 @@
       },
       "manage_events": {
         "heading": "האירועים שלי",
+        "organizer_heading": "האירועים שלכם",
         "create_cta": "אירוע חדש",
         "empty_title": "עדיין אין אירועים",
         "empty_description": "יום פתוח, דוכן בשוק או קטיף — אירוע חד-פעמי שמופיע בעמוד העסק שלך ומביא לקוחות חדשות.",
@@ -4713,7 +4740,9 @@
           "product": "מוצר ראשון בקטלוג",
           "category": "קטגוריה אחת לפחות",
           "location": "מיקום או אזורי משלוח",
-          "phone_verified": "אימות מספר הוואטסאפ"
+          "phone_verified": "אימות מספר הוואטסאפ",
+          "description": "כמה מילים על השוק או האירועים",
+          "upcoming_event": "אירוע קרוב אחד לפחות"
         }
       },
       "request_review": {
@@ -4722,6 +4751,15 @@
         "hint": "שלחו לכל לקוחה שקנתה — לא רק למי שבטוח תפרגן. ככה הביקורות נשארות אמינות.",
         "cta": "העתקת קישור",
         "cta_copied": "הועתק ✓"
+      },
+      "organizer_city": {
+        "heading": "העיר שלכם",
+        "label": "עיר",
+        "hint": "מופיעה בעמוד המארגן מתחת לשם.",
+        "save": "שמירה",
+        "saving": "שומרים...",
+        "saved": "העיר עודכנה",
+        "error": "לא הצלחנו לשמור — נסו שוב"
       }
     }
   },
@@ -4787,6 +4825,8 @@
       "field_category_label": "קטגוריה",
       "field_date_label": "תאריך",
       "field_time_label": "שעה",
+      "field_end_time_label": "שעת סיום (לא חובה)",
+      "error_end_time_after_start": "שעת הסיום צריכה להיות אחרי שעת ההתחלה",
       "field_time_hint": "אופציונלי — אם לא הוזן, יוצג רק תאריך",
       "field_location_label": "מיקום ספציפי",
       "field_location_placeholder": "כתובת מדויקת או הוראות הגעה",
@@ -5383,5 +5423,21 @@
       "switch_account": "החלפת חשבון"
     },
     "submit_error": "לא הצלחנו לשייך את העמוד. נסו שוב בעוד רגע."
+  },
+  "organizers": {
+    "page": {
+      "events_heading": "אירועים קרובים",
+      "empty": "אין אירועים קרובים כרגע",
+      "whatsapp": "וואטסאפ",
+      "instagram": "אינסטגרם",
+      "website": "אתר",
+      "facebook": "פייסבוק",
+      "owner_heading": "מאחורי האירועים",
+      "since_prefix": "פעילים מאז",
+      "phone": "התקשרו",
+      "email": "אימייל",
+      "whatsapp_group": "קבוצת וואטסאפ",
+      "external_order": "טופס הזמנה"
+    }
   }
 }

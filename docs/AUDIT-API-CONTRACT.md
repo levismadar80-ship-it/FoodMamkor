@@ -41,8 +41,8 @@ CI-integrated.
 |---|---|---|---|
 | `static` (default) | `python scripts/check_api_contract.py` | Frontend calls with no backend route; method mismatches; dead backend routes. | Orphan frontend calls exist or a method mismatch is found. |
 | `probe` | `python scripts/check_api_contract.py --probe https://…` | Any route that does not answer within the status contract — deploy drift (`404`), method mismatch (`405`), server error (`5xx`), an unexpected redirect (`3xx`), or no response at all. | A probed path answers outside `ACCEPTED_STATUSES`, **or** one rejected status covers >20% of routes, **or** no route returned `2xx`, **or** zero routes were probed. |
-| `cross-env` | `python scripts/check_api_contract.py --cross-env --staging https://… --prod https://…` | Deploy drift: routes that respond on staging but 404 on production. | Any probe result differs between the two environments, **or** either side trips an aggregate alarm on its own. |
-| `self-test` | `python scripts/check_api_contract.py --self-test` | A probe verdict classifier that has stopped discriminating. No network. | Any known-answer case disagrees with the classifier. |
+| `cross-env` | `python scripts/check_api_contract.py --cross-env --staging https://… --prod https://…` | Deploy drift: routes that respond on staging but 404 on production. A handler 404 (route served) and a routing 404 (route missing) are different answers, so they count as drift even though both are `404` (MEH-2411). | Any probe result differs between the two environments, **or** either side trips an aggregate alarm on its own. |
+| `self-test` | `python scripts/check_api_contract.py --self-test` | A probe verdict classifier that has stopped discriminating. No network. Also runs in the required pytest job via `tests/test_api_contract_probe.py` (MEH-2411). | Any known-answer case disagrees with the classifier. |
 
 > **Probe mode fails on 3xx, and that is the point (MEH-2077).** Until
 > 2026-08-14 the only failing status was a literal `404`; every other answer
@@ -66,18 +66,39 @@ needed for `--probe` / `--cross-env`.
   `/producers/${id}` matches `/producers/{producer_id}`.
 - Dynamic verb segments like `` api.post(`/admin/experiences/${id}/${endpoint}`) ``
   are handled via an explicit allowlist in the script (`KNOWN_DYNAMIC_EXPANSIONS`).
-  One entry today — add more only when the variable is constrained to a
-  finite set of known literals in the same file.
+  Two entries today (experiences, recipes) — add more only when the variable
+  is constrained to a finite set of known literals in the same file. Probe
+  mode requests each listed literal (`.../reject`, `.../request-changes`),
+  never a placeholder UUID in the action slot (MEH-2411).
+- Static mode reads only routers that `backend/app/router_registry.py`
+  mounts (`app.include_router(<module>.<var>)`, uncommented). A router file
+  that exists but is not included serves nothing — `home_products` since
+  MEH-1406 — so a frontend call to it is an orphan (MEH-2411). The script
+  exits non-zero if the registry yields no includes, or names a module with
+  no file.
 - `fetch()` reads the HTTP method from the balanced `{...}` options object
   that follows the URL and comma. Missing option defaults to `GET`.
   `navigator.sendBeacon()` is treated as `POST`.
-- Probe mode cannot distinguish a missing route from a missing resource —
-  handlers that raise `HTTPException(404)` on unknown IDs (e.g.
-  `POST /producers/{_}/whatsapp-click`) will show up as `404` in
-  `--probe` output even though the route exists. Cross-env mode is not
-  affected for the MEH-244 endpoints because both `/holiday-mode` and
-  `/admin/group-buys` are parameter-free. For parameter-based routes,
-  rely on static mode + cross-env drift, not the raw probe status.
+- Probe mode tells a missing route from a missing resource by the 404 body
+  (MEH-2411). Starlette answers an unmatched path with exactly
+  `{"detail": "Not Found"}` — that is deploy drift. A handler that matched
+  and found no row for the placeholder UUID answers in its own words
+  (`בית עסק לא נמצא`, `Event not found`, measured on staging 28/10) — the
+  route is served, and the row is accepted like a `401`. A `404` with no
+  JSON body (the edge, not the app) stays drift. Consequence: a handler
+  that raises a bare `HTTPException(404)` reads as drift — the loud
+  direction; give it a `detail`, as `backend/app/routers/CLAUDE.md` requires.
+  `tests/test_api_contract_probe.py` pins the app's routing-404 body, so a
+  custom 404 exception handler would red pytest before it blinds the probe.
+  **Known blind spot:** a literal path shadowed by a `str` path param. Today
+  that is `/producers/me/recipes[/{id}]` vs `/producers/{slug}/recipes`
+  (`producer_recipes.py`). If a deploy lacked only the `/me` routes, the
+  request falls through to the slug route and gets a handler 404
+  (`Producer not found`), which reads as served. Every other shadowing param is
+  a `UUID`, so a shadowed literal gets `422` — the same answer as before.
+- The bypass header (`VERCEL_AUTOMATION_BYPASS_SECRET`) is sent only to
+  `staging.mehamakor.online` (`BYPASS_HOSTS`); `--cross-env` no longer hands
+  it to production.
 - Rate-limited endpoints (`@limiter.limit(...)`) can return `429` during
   a probe burst. `429` is inside `ACCEPTED_STATUSES` — the rate limiter
   answering proves the request reached the router — so the tool still

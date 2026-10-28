@@ -132,4 +132,16 @@ describe("edit accordion — required/optional chips (MEH-2138 chunk C)", () => 
     // and not render an empty pill.
     expect(chipKeyFor("a-card-that-does-not-exist")).toBe("chip_optional");
   });
+
+  it("MEH-2460: an organizer's required set is derived from HER gate", () => {
+    // bio carries her required description; the business-only cards do not
+    // gate her; the default kind is still the business set.
+    expect(chipKeyFor("bio", "organizer")).toBe("chip_required");
+    expect(chipKeyFor("images", "organizer")).toBe("chip_required");
+    expect(chipKeyFor("contact-channels", "organizer")).toBe("chip_required");
+    for (const anchor of ["products", "categories", "locations"]) {
+      expect(chipKeyFor(anchor, "organizer")).toBe("chip_optional");
+    }
+    expect(chipKeyFor("bio")).toBe("chip_optional");
+  });
 });

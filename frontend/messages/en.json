@@ -124,9 +124,11 @@
       "loading_title": "Verifying...",
       "loading_subtitle": "Please wait",
       "fallback_loading": "Loading...",
-      "success_title": "Email verified successfully!",
+      "success_title": "Email verified ✓",
       "success_subtitle": "Redirecting you to the site...",
       "success_cta": "Continue to the site",
+      "success_login_subtitle": "Now log in with your email and password and pick up where you left off.",
+      "success_login_cta": "Log in to continue",
       "error_title": "Verification failed",
       "error_cta": "Back to the site",
       "errors": {
@@ -297,6 +299,8 @@
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
           "multi_location_hint": "You can add all your points from the dashboard after signing up.",
+          "organizer_label": "I organize markets or events (I don't sell products)",
+          "organizer_hint": "Organizers get a page with their events. They don't appear in the business list or on the map.",
           "tagline_label": "In one sentence",
           "tagline_placeholder": "The most important thing to know about you",
           "description_label": "Tell us about your business",
@@ -396,6 +400,7 @@
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
           "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
+          "inbox_next": "After you click the link in the email, log in with your email and password and continue completing your page.",
           "back_home": "Back to home"
         }
       }
@@ -474,14 +479,8 @@
     },
     "featured": {
       "eyebrow": "Get to know",
-      "heading": "Behind the scenes",
       "cta_meet": "Meet {name}",
       "cta_write": "Message {name}"
-    },
-    "comparison_teaser": {
-      "eyebrow": "The difference",
-      "heading": "What changes along the way",
-      "cta": "See the difference"
     },
     "categories": {
       "eyebrow": "Categories",
@@ -527,16 +526,6 @@
     },
     "recent": {
       "heading": "Recently viewed"
-    },
-    "how_it_works": {
-      "eyebrow": "How it works",
-      "heading": "Three steps",
-      "step01_title": "Find",
-      "step01_text": "Discover businesses near you",
-      "step02_title": "Contact the business",
-      "step02_text": "Talk directly with the business",
-      "step03_title": "Buy",
-      "step03_text": "Straight from the source, however suits you"
     },
     "cta": {
       "heading": "Have a business? Join us",
@@ -766,6 +755,7 @@
       "sections": {
         "about": "About",
         "location": "Getting there",
+        "location_no_hours": "No fixed hours — arrange before you come",
         "similar": {
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
@@ -786,7 +776,8 @@
             "gluten_free": "Gluten-free",
             "vegan": "Vegan",
             "vegetarian": "Vegetarian",
-            "lactose_free": "Lactose-free"
+            "lactose_free": "Lactose-free",
+            "no_added_sugar": "No added sugar"
           },
           "sheet_open_aria": "Details about {name}",
           "sheet_close_aria": "Close product details",
@@ -1157,11 +1148,29 @@
         "city_label": "City",
         "fulfillment_label": "When and how do buyers receive the products?",
         "fulfillment_placeholder": "e.g. Pickup from the farm on Friday after the group closes, or home delivery within 3 days",
+        "fulfillment_helper": "Participants see this before they join. Say where to pick up and which cities get delivery.",
+        "fulfillment_required": "Say when and how buyers receive the products",
         "submitting": "Creating...",
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining"
       },
-      "status_deadline_passed": "Deadline passed"
+      "status_deadline_passed": "Deadline passed",
+      "actions": {
+        "cancel": "Cancel group",
+        "close": "Close group",
+        "deliver": "Mark delivered",
+        "back": "Back",
+        "cancel_title": "Cancel this group buy?",
+        "cancel_body": "The group will be removed from the site and cannot be reopened.",
+        "cancel_funded_note": "{count} participants have already joined and are waiting for delivery.",
+        "cancel_confirm": "Yes, cancel",
+        "close_title": "Close this group buy?",
+        "close_body": "The group did not reach the minimum by the deadline and will be recorded as cancelled.",
+        "deliver_title": "Mark this group as delivered?",
+        "deliver_body": "The group will be marked as completed.",
+        "toast_cancelled": "Group buy cancelled",
+        "toast_fulfilled": "Group buy marked as delivered"
+      }
     },
     "availability": {
       "status_label": {
@@ -1349,7 +1358,8 @@
         "pickup": "Self-pickup",
         "delivery_only": "Delivery",
         "pickup_only": "Self-pickup",
-        "arranged": "By arrangement"
+        "arranged": "By arrangement",
+        "on_site": "Buy on site"
       }
     },
     "mini": {
@@ -1457,6 +1467,7 @@
         "pending": "Pending",
         "suspended": "Suspended",
         "rejected": "Rejected",
+        "drafts": "Drafts",
         "incomplete_title": "Show only businesses missing required details",
         "show_all": "Show all",
         "incomplete_label": "Missing details",
@@ -1513,6 +1524,8 @@
           "pickup_points": "Pickup points",
           "license_pending": "License pending",
           "license_pending_title": "In a license-required category with no license number — verify before approving.",
+          "organizer": "Organizer",
+          "organizer_title": "Markets and events organizer — not a business: no license, no products, never verified.",
           "dedup": "Duplicate?",
           "dedup_name_title": "Same name as another producer — check whether it's a duplicate.",
           "dedup_city_title": "Same city as another producer — check whether it's a duplicate.",
@@ -2468,7 +2481,8 @@
       "empty_browse_producers": "Meanwhile, explore the businesses",
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
-      "free": "Free"
+      "free": "Free",
+      "organizer_line": "Organizer: {name}"
     },
     "categories": {
       "all": "All",
@@ -2498,7 +2512,9 @@
       "participants_limit": "Up to {n} participants",
       "free": "Free",
       "breadcrumb_home": "Home",
-      "breadcrumb_events": "Events"
+      "breadcrumb_events": "Events",
+      "organizer_line": "Organizer: {name}",
+      "add_to_calendar": "Add to calendar"
     },
     "calendar": {
       "previous_month": "Previous month",
@@ -2546,7 +2562,14 @@
       "sold_out": "Sold out",
       "spots_count": "{spots} of {max}",
       "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences"
+      "breadcrumb_experiences": "Experiences",
+      "duration_minutes": "{count} min",
+      "duration_hours": "{count, plural, one {# hour} other {# hours}}",
+      "duration_hours_half": "{count, plural, one {#.5 hours} other {#.5 hours}}",
+      "duration_mixed": "{hours} {minutes} min",
+      "recurring": "Recurring: {schedule}",
+      "recurring_bare": "Recurring",
+      "starts_from": "Starting {date}"
     },
     "new": {
       "crumb_current": "New experience",
@@ -3189,7 +3212,8 @@
     },
     "address_search": {
       "placeholder": "Search address...",
-      "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
+      "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual.",
+      "provider_down_hint": "Address search is unavailable right now. You can continue with the town only — we'll place the business at the town centre and you can refine it later."
     },
     "en_notice": {
       "body": "Business listings are in Hebrew — searching in English returns no results.",
@@ -3230,6 +3254,7 @@
   "share": {
     "trigger": "Share",
     "modal_title": "Share a link to the business",
+    "modal_title_event": "Share this event",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
@@ -4051,7 +4076,8 @@
         "edit": "Edit",
         "insights": "Insights",
         "tools": "Tools",
-        "view_page": "View page"
+        "view_page": "View page",
+        "organizer_events": "Your events"
       },
       "load_error": {
         "title": "We couldn't load your dashboard",
@@ -4635,6 +4661,7 @@
       },
       "manage_events": {
         "heading": "My events",
+        "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
         "empty_description": "An open day, a market stall or a harvest — a one-time event that appears on your business page and brings in new customers.",
@@ -4717,7 +4744,9 @@
           "product": "Your first catalog product",
           "category": "At least one category",
           "location": "A location or delivery areas",
-          "phone_verified": "WhatsApp number verification"
+          "phone_verified": "WhatsApp number verification",
+          "description": "A few words about the market or events",
+          "upcoming_event": "At least one upcoming event"
         }
       },
       "request_review": {
@@ -4726,6 +4755,15 @@
         "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
         "cta": "Copy link",
         "cta_copied": "Copied ✓"
+      },
+      "organizer_city": {
+        "heading": "Your city",
+        "label": "City",
+        "hint": "Shown on your organizer page under your name.",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "City updated",
+        "error": "Couldn't save — try again"
       }
     }
   },
@@ -4791,6 +4829,8 @@
       "field_category_label": "Category",
       "field_date_label": "Date",
       "field_time_label": "Time",
+      "field_end_time_label": "End time (optional)",
+      "error_end_time_after_start": "The end time must be after the start time",
       "field_time_hint": "Optional — if blank, only the date is shown",
       "field_location_label": "Specific location",
       "field_location_placeholder": "Exact address or directions",
@@ -5387,5 +5427,21 @@
       "switch_account": "Switch account"
     },
     "submit_error": "We could not link the page. Try again in a moment."
+  },
+  "organizers": {
+    "page": {
+      "events_heading": "Upcoming events",
+      "empty": "No upcoming events right now",
+      "whatsapp": "WhatsApp",
+      "instagram": "Instagram",
+      "website": "Website",
+      "facebook": "Facebook",
+      "owner_heading": "Behind the events",
+      "since_prefix": "Active since",
+      "phone": "Call",
+      "email": "Email",
+      "whatsapp_group": "WhatsApp group",
+      "external_order": "Order form"
+    }
   }
 }

@@ -38,6 +38,7 @@ def _group_buy(**overrides):
         "price_per_unit_group": Decimal("8"),
         "min_participants": 2,
         "deadline": utc_now() + timedelta(days=7),
+        "fulfillment_note": "איסוף מהמשק",  # MEH-2453: required
         **overrides,
     }
 

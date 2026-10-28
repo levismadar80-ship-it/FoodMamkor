@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     EmailStr,
     Field,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -247,6 +248,15 @@ def _special_hours_validator(v):
                 f"מה-{_SPECIAL_HOURS_RETENTION_DAYS} הימים האחרונים ואילך"
             )
     return normalized
+
+
+def clean_display_city(value: str | None) -> str:
+    """MEH-2475 (review #3728): the registration city rule as a plain function
+    — bleach (`sanitize_text`, 100 chars) then ≥1 letter — for the one write
+    path that is not a Pydantic field (an organizer's PUT /producers/me city).
+    REUSES: ProducerRegister._sanitize_city + _validate_city_letters below.
+    Raises ValueError like the field validators do."""
+    return _min_letters_validator(sanitize_text(value, max_length=100), min_count=1)
 
 
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
@@ -834,6 +844,10 @@ class ProducerRegister(BaseModel):
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
+    # MEH-2460: 'organizer' registers a market / events organizer (ADR-036).
+    # Declared BEFORE category_ids on purpose: the category validator reads it
+    # from `info.data`, and Pydantic v2 only exposes fields declared earlier.
+    kind: Literal["producer", "organizer"] = "producer"
     # MEH-1153: server-side parity with the client's ≥1-category gate.
     # validate_default=True runs _require_categories_validator on the absent
     # case (default []) too, so both "missing" and "[]" 422.
@@ -1050,7 +1064,11 @@ class ProducerRegister(BaseModel):
 
     @field_validator("category_ids")
     @classmethod
-    def _require_categories(cls, v):
+    def _require_categories(cls, v, info: ValidationInfo):
+        # MEH-2460: an organizer carries no food category (ADR-036, decision 4)
+        # — whatever was sent is dropped, and the ≥1 rule does not apply.
+        if info.data.get("kind") == "organizer":
+            return []
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
 
@@ -1073,6 +1091,28 @@ class ProducerRegister(BaseModel):
     # live filter. See the router-side comment at auth.py for the write.
     @model_validator(mode="after")
     def _validate_location_mode(self):
+        # MEH-2460: an organizer has no fixed address and delivers nothing, so
+        # the form does not ask (address / map / delivery are hidden for it). The DB CHECK producer_location_mode
+        # (has_physical_location OR offers_delivery) still applies to the row,
+        # so the server writes the one shape that satisfies it and claims no
+        # delivery: physical=True, delivery off. The row is never shown as a
+        # business (is_business()), so the flag carries no public meaning.
+        # License fields are cleared for the same reason — nothing to license.
+        if self.kind == "organizer":
+            self.has_physical_location = True
+            self.offers_delivery = False
+            self.delivery_nationwide = False
+            self.delivery_cities = []
+            self.delivery_areas = []
+            self.producer_license_number = None
+            self.license_pending = False
+            # Review #3711 F5: no street address and no map point — the form
+            # does not ask, and coordinates would mint a producer_locations
+            # row (create_primary_branch_location skips when lat/lng is None).
+            self.address = None
+            self.lat = None
+            self.lng = None
+            return self
         if not self.has_physical_location and not self.offers_delivery:
             raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
         if self.delivery_nationwide and len(self.delivery_cities) > 0:
@@ -2463,6 +2503,11 @@ class ProducerListOut(BaseModel):
     lat: float | None = None
     lng: float | None = None
     status: str = "pending"
+    # MEH-2459: 'producer' | 'organizer'. Public business surfaces never
+    # serialize an organizer (is_business() filters it out); the field is
+    # read by the owner dashboard and the admin queue. Default mirrors the
+    # column's server_default so pre-migration fixtures still validate.
+    kind: str = "producer"
     # MEH-766 ch5: is_verified removed from the public contract — the tier
     # surface is verification_tier/verified_at (ADR-022). Column drops in ch6.
     plan: str = "free"
@@ -3003,6 +3048,10 @@ class ProducerOwnerOut(ProducerDetailOut):
     rejection_reason_code: str | None = None
     resubmission_count: int = 0
     resubmitted_at: datetime | None = None
+    # MEH-2460: the organizer submission gate needs ≥1 upcoming event; the
+    # client mirror (lib/submission-gate.js) reads this count. Filled by
+    # GET/PUT /producers/me; 0 for every other serializer path.
+    upcoming_events_count: int = 0
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -3286,6 +3335,9 @@ class UserOut(BaseModel):
     # the user has a linked producer. Used by /settings to show the
     # correct business tab state (pending/approved/rejected/suspended).
     producer_status: str | None = None
+    # MEH-2460: 'producer' | 'organizer' — the dashboard layout branches its
+    # tab set on this, same reason producer_status rides here (no extra fetch).
+    producer_kind: str | None = None
     producer_rejection_reason: str | None = None
     # MEH-2210: the structured code beside the free text, plus how many
     # resubmissions the business has used — the dashboard's rejected banner
@@ -3681,6 +3733,13 @@ class ExperienceValidateResult(BaseModel):
 class ExperienceHostOut(BaseModel):
     id: UUID
     name: str
+    # MEH-2476: the host's business, when it is approved — the page links to
+    # it and its WhatsApp CTA reaches her. All four are already public on the
+    # business page. None for a host whose business is not public.
+    producer_id: UUID | None = None
+    producer_slug: str | None = None
+    producer_name: str | None = None
+    producer_phone: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -4008,8 +4067,12 @@ class GroupBuyCreate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     deadline: datetime
     city: str | None = Field(None, max_length=100)
-    # MEH-1457: optional free-text "מתי ואיך מקבלים" (OFN "Ready for").
-    fulfillment_note: str | None = Field(None, max_length=1000)
+    # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for").
+    # MEH-2453: required. A participant from another city reads it before she
+    # joins; without it she cannot tell whether the product reaches her.
+    # Existing rows keep NULL (the column stays nullable); only new creates
+    # must carry it.
+    fulfillment_note: str = Field(..., max_length=1000)
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -4020,6 +4083,16 @@ class GroupBuyCreate(BaseModel):
     @classmethod
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
+
+    @field_validator("fulfillment_note")
+    @classmethod
+    def _require_fulfillment_note(cls, v: str) -> str:
+        # Blank, or no real words ("." / "כן"): the MEH-555 letter floor, with
+        # the field's own message rather than the generic one.
+        v = v.strip()
+        if len(_LETTER_REGEX.sub("", v)) < 3:
+            raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+        return v
 
     @field_validator("deadline")
     @classmethod
@@ -4149,6 +4222,32 @@ class ProducerNameChangeRequestUpdate(BaseModel):
 # --- Event ---
 # MEH-458: relocated from routers/events.py per ADR-006 R1.
 # Pure relocation — fields, validators, model_config preserved verbatim.
+# MEH-2469: the one rule for an event's end time, shared by EventCreate and
+# the update route (which must check against the persisted start). The detail
+# is the copy Sapir approved 28.10.
+EVENT_END_TIME_ERROR = "שעת הסיום צריכה להיות אחרי שעת ההתחלה"
+
+
+def event_end_time_problem(
+    event_time: time | None, end_time: time | None
+) -> str | None:
+    """None when the pair is valid. An end time needs a start time and must be
+    strictly after it (same-day events only; no overnight ranges)."""
+    if end_time is None:
+        return None
+    if event_time is None or end_time <= event_time:
+        return EVENT_END_TIME_ERROR
+    return None
+
+
+def naive_wall_clock(value: time | None) -> time | None:
+    """Event times are Israel wall-clock. An offset on one ("15:00+02:00") means
+    nothing here, and comparing an aware time with a naive one raises TypeError
+    (→ 500). Drop it at the boundary (review #3717; datetime precedent: the
+    MEH-1454 deadline normaliser)."""
+    return value.replace(tzinfo=None) if value is not None else None
+
+
 class EventCreate(BaseModel):
     # MEH-1626 chunk 1: the exact asymmetry the audit flagged — `description`
     # below was bleached, `title` (the more visible field) was not.
@@ -4156,6 +4255,7 @@ class EventCreate(BaseModel):
     description: str | None = None
     event_date: date
     event_time: time | None = None
+    end_time: time | None = None  # MEH-2469
     location: str | None = None
     # MEH-2013: "עיר *" is labelled required on the event form too and was
     # enforced in neither layer — the same class as ExperienceCreate.city
@@ -4169,6 +4269,12 @@ class EventCreate(BaseModel):
     price: int = 0
     max_participants: int | None = None
     registration_url: str | None = None
+
+    # MEH-2469: wall-clock times, offsets dropped before any comparison.
+    @field_validator("event_time", "end_time")
+    @classmethod
+    def _naive_times(cls, v):
+        return naive_wall_clock(v)
 
     @field_validator("description")
     @classmethod
@@ -4210,6 +4316,14 @@ class EventCreate(BaseModel):
     def _validate_registration_url(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-2469: end after start, both on the same day.
+    @model_validator(mode="after")
+    def _check_end_time(self):
+        problem = event_end_time_problem(self.event_time, self.end_time)
+        if problem:
+            raise ValueError(problem)
+        return self
+
 
 class EventUpdate(BaseModel):
     # MEH-1626 chunk 1: parity with the Create twin. Optional, so an omitted
@@ -4219,6 +4333,8 @@ class EventUpdate(BaseModel):
     description: str | None = None
     event_date: date | None = None
     event_time: time | None = None
+    # MEH-2469 — checked against the stored start in the route.
+    end_time: time | None = None
     location: str | None = None
     city: str | None = None
     lat: float | None = None
@@ -4229,6 +4345,12 @@ class EventUpdate(BaseModel):
     max_participants: int | None = None
     registration_url: str | None = None
     is_active: bool | None = None
+
+    # MEH-2469: wall-clock times, offsets dropped before any comparison.
+    @field_validator("event_time", "end_time")
+    @classmethod
+    def _naive_times(cls, v):
+        return naive_wall_clock(v)
 
     @field_validator("description")
     @classmethod
@@ -4259,10 +4381,17 @@ class EventOut(BaseModel):
     id: UUID
     producer_id: UUID
     producer_name: str | None = None
+    # MEH-2459: who owns the event — a business ('producer', link to its
+    # business page) or an organizer ('organizer', link to /organizers/{slug},
+    # chunk 3). owner_slug is the owner's slug either way; None before approval
+    # mints one.
+    owner_kind: str = "producer"
+    owner_slug: str | None = None
     title: str
     description: str | None = None
     event_date: date
     event_time: time | None = None
+    end_time: time | None = None  # MEH-2469
     location: str | None = None
     city: str | None = None
     lat: float | None = None
@@ -4276,6 +4405,43 @@ class EventOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-2461: public organizer page (kind='organizer', ADR-036) ---
+class OrganizerSlugOut(BaseModel):
+    """One sitemap entry for /organizers/{slug}."""
+
+    slug: str
+    name: str
+
+
+class OrganizerPublicOut(BaseModel):
+    """GET /organizers/{slug}. Public fields only — no street address, no
+    license, nothing business-shaped (no products, categories or delivery)."""
+
+    id: UUID
+    name: str
+    slug: str
+    description: str | None = None
+    short_description: str | None = None
+    city: str | None = None
+    images: list[str] = []
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    facebook: str | None = None
+    # MEH-2475: what the organizer fills in the dashboard's profile + contact
+    # groups. All already public on the business page (ProducerDetailOut);
+    # null when unfilled so the page renders nothing for them.
+    owner_bio: str | None = None
+    owner_photo_url: str | None = None
+    contact_name: str | None = None
+    established_year: int | None = None
+    primary_contact_method: str | None = None
+    contact_email: str | None = None
+    whatsapp_group: str | None = None
+    external_order_form: str | None = None
+    upcoming_events: list[EventOut] = []
 
 
 class EventFilters(BaseModel):

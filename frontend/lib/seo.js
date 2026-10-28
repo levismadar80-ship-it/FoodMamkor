@@ -24,6 +24,7 @@ import {
 } from "./constants";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
+import { instagramUrl } from "./social-links";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -90,15 +91,18 @@ export function buildTitle(producer) {
 }
 
 /**
- * Build the meta description. Prefer producer.description (truncated to
- * 160 chars — Google's rough display limit) over a generated fallback.
+ * Build the meta description: «tagline — description» (either alone when the
+ * other is empty), truncated to 160 chars — Google's rough display limit —
+ * over a generated fallback.
  */
 export function buildDescription(producer) {
   if (!producer) return "";
-  if (producer.description) {
-    return producer.description.length > 160
-      ? producer.description.slice(0, 157) + "..."
-      : producer.description;
+  // MEH-2474: the card tagline is the owner's own one-line summary — it leads
+  // when present, joined to the description (audit MEH-2470 finding 11).
+  const tagline = producer.short_description?.trim() || "";
+  const text = [tagline, producer.description?.trim() || ""].filter(Boolean).join(" — ");
+  if (text) {
+    return text.length > 160 ? text.slice(0, 157) + "..." : text;
   }
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";
@@ -285,6 +289,18 @@ export function buildJsonLd(producer, locale = "he") {
     if (raw) {
       business.sameAs = [/^https?:\/\//i.test(raw) ? raw : `https://${raw}`];
     }
+  }
+  // MEH-2474: the owner's social profiles are part of the entity's identity
+  // (schema.org sameAs). Instagram is stored as a handle; Facebook as a URL
+  // and only an http(s) one is emitted.
+  const social = [
+    instagramUrl(producer.instagram),
+    /^https?:\/\//i.test(producer.facebook?.trim() || "") ? producer.facebook.trim() : null,
+  ].filter(Boolean);
+  // Deduped: an owner may enter the same URL as website and Facebook.
+  if (social.length) business.sameAs = [...new Set([...(business.sameAs || []), ...social])];
+  if (/^\d{4}$/.test(String(producer.established_year ?? ""))) {
+    business.foundingDate = String(producer.established_year);
   }
 
   if (producer.images?.length > 0) business.image = producer.images;
@@ -492,6 +508,16 @@ export function buildProducerMetadata(producer) {
   };
 }
 
+/** MEH-2461: the page of whoever runs the event. A business → /producer/{id};
+ *  an organizer → /organizers/{slug} (its /producer/{id} 404s since MEH-2459),
+ *  or no URL at all when the organizer has no slug yet. */
+function eventOwnerUrl(event) {
+  if (event.owner_kind === "organizer") {
+    return event.owner_slug ? `${SITE_URL}/organizers/${event.owner_slug}` : null;
+  }
+  return event.producer_id ? `${SITE_URL}/producer/${event.producer_id}` : null;
+}
+
 /**
  * MEH-1062: schema.org/Event JSON-LD for the /events/[id] detail page (which
  * previously carried no structured data — only metadata + OG). Emits a
@@ -511,6 +537,13 @@ export function buildEventJsonLd(event, locale = "he") {
     startDate = `${startDate}T${String(event.event_time).slice(0, 5)}`;
   }
 
+  // MEH-2469: endDate (Google "recommended") — same day, only with a start
+  // time (the API rejects an end without a start).
+  const endDate =
+    event.event_date && event.event_time && event.end_time
+      ? `${event.event_date}T${String(event.end_time).slice(0, 5)}`
+      : undefined;
+
   const ev = {
     "@type": "Event",
     "@id": `${eventUrl}#event`,
@@ -519,6 +552,7 @@ export function buildEventJsonLd(event, locale = "he") {
     eventStatus: "https://schema.org/EventScheduled",
   };
   if (startDate) ev.startDate = startDate;
+  if (endDate) ev.endDate = endDate;
   if (event.description) ev.description = event.description;
   if (event.image_url) ev.image = event.image_url;
 
@@ -546,9 +580,8 @@ export function buildEventJsonLd(event, locale = "he") {
 
   if (event.producer_name) {
     ev.organizer = { "@type": "Organization", name: event.producer_name };
-    if (event.producer_id) {
-      ev.organizer.url = `${SITE_URL}/producer/${event.producer_id}`;
-    }
+    const ownerUrl = eventOwnerUrl(event);
+    if (ownerUrl) ev.organizer.url = ownerUrl;
   }
 
   // offers — price is a required int on EventOut (0 = free); emit the real
@@ -566,17 +599,174 @@ export function buildEventJsonLd(event, locale = "he") {
   const crumbs = [
     { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
   ];
-  if (event.producer_name && event.producer_id) {
-    crumbs.push({
-      name: event.producer_name,
-      item: `${SITE_URL}/producer/${event.producer_id}`,
-    });
+  const ownerCrumbUrl = eventOwnerUrl(event);
+  if (event.producer_name && ownerCrumbUrl) {
+    crumbs.push({ name: event.producer_name, item: ownerCrumbUrl });
   }
   crumbs.push({ name: event.title, item: eventUrl });
 
   return {
     "@context": "https://schema.org",
     "@graph": [ev, buildBreadcrumbList(crumbs, `${eventUrl}#breadcrumb`)],
+  };
+}
+
+/** MEH-2478: a Decimal from the API ("45.00") as a schema.org price ("45"),
+ *  or null when it is not a non-negative number. */
+function toPrice(value) {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? String(n) : null;
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+
+/**
+ * MEH-2478: schema.org/Event JSON-LD for /experiences/[id]. Google's event
+ * docs ask for one Event per page with name + startDate + location, so this
+ * returns null — no Event markup at all — unless the experience has a
+ * concrete date AND a city to place it in. A recurring experience is
+ * described by the dated occurrence the page itself shows (event_date).
+ * Shape: backend ExperienceDetailOut, as served to a stranger (address and,
+ * for a home experience, lat/lng already removed by the API).
+ */
+export function buildExperienceJsonLd(experience, locale = "he") {
+  if (!experience?.id || !experience.title) return null;
+  const date =
+    typeof experience.event_date === "string" && ISO_DATE.test(experience.event_date)
+      ? experience.event_date.slice(0, 10)
+      : null;
+  const city = typeof experience.city === "string" ? experience.city.trim() : "";
+  if (!date || !city) return null;
+
+  const url = `${SITE_URL}/experiences/${experience.id}`;
+  const time = /^\d{2}:\d{2}/.test(String(experience.event_time ?? ""))
+    ? String(experience.event_time).slice(0, 5)
+    : null;
+
+  const place = {
+    "@type": "Place",
+    name: city,
+    address: { "@type": "PostalAddress", addressLocality: city, addressCountry: "IL" },
+  };
+  if (typeof experience.lat === "number" && typeof experience.lng === "number") {
+    place.geo = { "@type": "GeoCoordinates", latitude: experience.lat, longitude: experience.lng };
+  }
+
+  const ev = {
+    "@type": "Event",
+    "@id": `${url}#event`,
+    name: experience.title,
+    url,
+    startDate: time ? `${date}T${time}` : date,
+    // MEH-1419: a host-cancelled experience stays reachable by link.
+    eventStatus:
+      experience.is_active === false
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: place,
+  };
+  if (experience.description) ev.description = experience.description;
+  if (experience.image_url) ev.image = experience.image_url;
+  if (experience.host?.name) ev.organizer = { "@type": "Person", name: experience.host.name };
+  // price_per_person NULL means free (ExperienceCreate), so it is a real 0.
+  ev.offers = {
+    "@type": "Offer",
+    price: toPrice(experience.price_per_person) ?? "0",
+    priceCurrency: "ILS",
+    url,
+  };
+
+  const crumbs = [
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: experience.title, item: url },
+  ];
+  return {
+    "@context": "https://schema.org",
+    "@graph": [ev, buildBreadcrumbList(crumbs, `${url}#breadcrumb`)],
+  };
+}
+
+/**
+ * MEH-2478: the ONE rule for "this group buy can still be joined" — open AND
+ * before its deadline. Nothing closes an open group buy when its deadline
+ * passes (group_buys.py, OWNER_TRANSITIONS note), so status alone is not
+ * enough. Shared by the sitemap and the Offer availability below.
+ */
+export function isGroupBuyLive(groupBuy, now = new Date()) {
+  if (groupBuy?.status !== "open" || !groupBuy.deadline) return false;
+  const deadline = parseNaiveUtc(groupBuy.deadline);
+  return deadline != null && deadline > now;
+}
+
+/** Review #3726: the backend stores deadlines as naive UTC (utc_now()), so a
+ *  string without a zone is read as UTC — never as the runtime's local time. */
+function parseNaiveUtc(value) {
+  if (typeof value !== "string") return null;
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  const d = new Date(hasZone || !value.includes("T") ? value : `${value}Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** The Israel calendar date ("YYYY-MM-DD") of an instant. */
+function israelDate(d) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
+}
+
+/** Review #3726: commits at the cap — joining is refused, so it is not InStock. */
+function isGroupBuyFull(groupBuy) {
+  const max = Number(groupBuy?.max_participants);
+  return Number.isFinite(max) && max > 0 && Number(groupBuy?.commits_count ?? 0) >= max;
+}
+
+/**
+ * MEH-2478: schema.org Product + Offer for /group-buys/[id]. The offer is the
+ * GROUP price (the price the page is about), in ILS, InStock only while the
+ * group buy can be joined, valid until the deadline's date. GroupBuyOut has
+ * no image field, so no `image` is emitted — omit, never invent.
+ */
+export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
+  const name = groupBuy?.product_name || groupBuy?.title;
+  const price = toPrice(groupBuy?.price_per_unit_group);
+  if (!groupBuy?.id || !name || price == null) return null;
+
+  const url = `${SITE_URL}/group-buys/${groupBuy.id}`;
+  const producerUrl = groupBuy.producer_id
+    ? `${SITE_URL}/producer/${groupBuy.producer_id}`
+    : null;
+
+  const offer = {
+    "@type": "Offer",
+    price,
+    priceCurrency: "ILS",
+    availability: !isGroupBuyLive(groupBuy, now)
+      ? "https://schema.org/OutOfStock"
+      : isGroupBuyFull(groupBuy)
+        ? "https://schema.org/SoldOut"
+        : "https://schema.org/InStock",
+    url,
+  };
+  // Review #3726: the deadline's ISRAEL date — a naive-UTC 22:30 on 1 Nov is
+  // 2 Nov here, and slicing the string would state the day before.
+  const deadline = parseNaiveUtc(groupBuy.deadline);
+  if (deadline) offer.priceValidUntil = israelDate(deadline);
+  if (groupBuy.producer_name) {
+    offer.seller = { "@type": "Organization", name: groupBuy.producer_name };
+    if (producerUrl) offer.seller.url = producerUrl;
+  }
+
+  const product = { "@type": "Product", "@id": `${url}#product`, name, url, offers: offer };
+  if (groupBuy.description) product.description = groupBuy.description;
+
+  const crumbs = [{ name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL }];
+  if (groupBuy.producer_name && producerUrl) {
+    crumbs.push({ name: groupBuy.producer_name, item: producerUrl });
+  }
+  crumbs.push({ name: groupBuy.title || name, item: url });
+  return {
+    "@context": "https://schema.org",
+    "@graph": [product, buildBreadcrumbList(crumbs, `${url}#breadcrumb`)],
   };
 }
 

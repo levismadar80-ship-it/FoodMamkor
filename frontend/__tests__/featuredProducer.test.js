@@ -25,7 +25,6 @@ describe("selectFeaturedProducer", () => {
       category: "Cheese",
       photo: "photo-1.jpg",
       quote: "Goat cheese from our farm", // trimmed
-      story: "The farm story.", // trimmed
       href: "/havat-hashikma",
     });
   });
@@ -84,7 +83,7 @@ describe("selectFeaturedProducer", () => {
     expect(selectFeaturedProducer([noSlug]).href).toBe("/producer/uuid-1");
   });
 
-  it("leaves photo/category/story undefined-safe when absent", () => {
+  it("leaves photo/category undefined-safe when absent", () => {
     const sparse = {
       id: "uuid-2",
       name: "Morning Bakery",
@@ -95,7 +94,7 @@ describe("selectFeaturedProducer", () => {
     const result = selectFeaturedProducer([sparse]);
     expect(result.photo).toBeUndefined();
     expect(result.category).toBeUndefined();
-    expect(result.story).toBe("");
+    expect(result).not.toHaveProperty("story"); // MEH-2441: not mapped
     expect(result.quote).toBe("Sourdough bread");
   });
 

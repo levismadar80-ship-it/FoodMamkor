@@ -87,6 +87,33 @@ def catalog_default_availability_condition():
     return Producer.availability_state != ON_VACATION
 
 
+def is_business():
+    """The ONE rule for "this row is a live business" (MEH-2459, ADR-036).
+
+    ``status == 'approved' AND kind == 'producer'``. Every surface that lists,
+    counts, searches, maps or resolves businesses composes THIS condition,
+    so an organizer row (``kind='organizer'`` — a market / event organizer
+    that sells nothing) is invisible as a business on all of them at once:
+
+      - ``_build_base_queries``                (GET /producers: list, ?q=, geo/map, X-Total-Count)
+      - ``GET /producers/count`` · ``/cities`` · ``/random`` · ``/by-slug/{slug}``
+      - ``GET /search`` (legacy)              · ``GET /stats``            · ``cities.py``
+      - public experiences and recipes joins · the dashboard city rank
+      - admin analytics / stats business counts and the admin map pins
+
+    Deliberately NOT applied to the events feed (an organizer exists to be
+    seen through its events) and NOT to the admin queue (admins must see
+    organizers to approve them). Same shape and same reasoning as
+    ``catalog_default_availability_condition`` above: one owner for the
+    decision, or the surfaces drift apart one reader at a time.
+
+    NULL-safety: ``producers.kind`` is ``nullable=False`` with
+    ``server_default 'producer'`` (models.py, migration f1a2b3c4d5e6), so the
+    equality cannot silently drop a row the way it would on a nullable column.
+    """
+    return and_(Producer.status == "approved", Producer.kind == "producer")
+
+
 # (key in filters dict, attribute on Producer model) — covers the simple
 # `if v is not None: q = q.filter(Producer.<attr> == v)` pattern. The
 # remaining filter pairs (kosher, category, delivery_city, has_delivery,
@@ -224,12 +251,12 @@ def _build_base_queries(
                 # or the property fires one query per producer on every list page.
                 selectinload(Producer.offers),
             )
-            .filter(Producer.status == "approved")
+            .filter(is_business())  # MEH-2459
         )
         count_q = (
             db.query(func.count(Producer.id.distinct()))
             .select_from(Producer)
-            .filter(Producer.status == "approved")
+            .filter(is_business())  # MEH-2459
         )
         if require_physical:
             # MEH-213 map-pin semantics: pinnable producers only. MEH-1282
@@ -309,13 +336,13 @@ def _build_base_queries(
             # or the property fires one query per producer on every list page.
             selectinload(Producer.offers),
         )
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .order_by(*order)
     )
     count_q = (
         db.query(func.count(Producer.id.distinct()))
         .select_from(Producer)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
     )
     return q, count_q
 
@@ -925,7 +952,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
 def _token_search_filter(db: Session, token: str):
     """MEH-1664 — the match condition for ONE search token.
 
-    OR across the six searchable sources; within each source, OR across the
+    OR across the seven searchable sources (tagline added by MEH-2478); within each source, OR across the
     token's variants. The caller AND-s one of these per token.
 
     Every pattern comes from token_patterns (escape_like-escaped); the
@@ -975,8 +1002,15 @@ def _token_search_filter(db: Session, token: str):
         )
         .exists()
     )
+    # MEH-2478: short_description (the card tagline) joins name/description —
+    # a business is findable by the one line it chose to describe itself.
     return (
-        _any(Producer.name, Producer.description, Producer.city)
+        _any(
+            Producer.name,
+            Producer.description,
+            Producer.short_description,
+            Producer.city,
+        )
         | has_category
         | has_product
         | has_delivery_city
@@ -986,7 +1020,7 @@ def _token_search_filter(db: Session, token: str):
 def _apply_search_filter(
     db: Session, q, count_q, search_q: str | None, *, geo_search: bool
 ):
-    """MEH-99 cross-field search: name · description · city · category names · product names + descriptions · delivery cities.
+    """MEH-99 cross-field search: name · description · tagline (MEH-2478) · city · category names · product names + descriptions · delivery cities.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
     prefix, then rating, then created_at) — geo mode keeps distance ASC.
@@ -996,7 +1030,7 @@ def _apply_search_filter(
     own Producer.city differs (the city the owner typed under "אזורי משלוח").
 
     MEH-1664: matching is per token, not one literal substring. Each token
-    contributes its own OR-over-all-six-sources condition and the tokens are
+    contributes its own OR-over-all-seven-sources condition and the tokens are
     AND-ed, so "גבינה עיזים" matches a product named "גבינת עיזים" in either
     word order while "גבינה חיפה" does NOT match a Tel-Aviv cheese business.
     The has_product EXISTS also covers Product.description now, so this path

@@ -30,11 +30,14 @@
 const unsplash = (id) =>
   `https://images.unsplash.com/${id}?q=80&w=1200&auto=format&fit=crop`;
 
+// MEH-2441 (Sapir 27/10): the first two are the large tiles. ירקות = the
+// growers, the core of "from the source"; לחמים ואפייה = the largest share of
+// the Wave 1 leads (about a third). Then the rest in the previous order.
 export const CATEGORY_CARDS = [
-  { key: "meat",   name: "בשר",              image: unsplash("photo-1613454320437-0c228c8b1723") },
   { key: "veg",    name: "ירקות",            image: unsplash("photo-1575218823251-f9d243b6f720") },
-  { key: "dairy",  name: "חלב וגבינות",      image: unsplash("photo-1667645895855-2d3f7000a7be") },
   { key: "bread",  name: "לחמים ואפייה",     image: unsplash("photo-1509440159596-0249088772ff") },
+  { key: "meat",   name: "בשר",              image: unsplash("photo-1613454320437-0c228c8b1723") },
+  { key: "dairy",  name: "חלב וגבינות",      image: unsplash("photo-1667645895855-2d3f7000a7be") },
   { key: "oil",    name: "שמנים",            image: unsplash("photo-1474979266404-7eaacbcd87c5") },
   { key: "care",   name: "סבונים טבעיים",    image: unsplash("photo-1614806687007-2215a9db3b1c") },
   { key: "fish",   name: "דגים",             image: unsplash("photo-1500732917506-30dc38b6477f") },

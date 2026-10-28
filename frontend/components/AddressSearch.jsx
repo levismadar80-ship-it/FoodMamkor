@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import * as Sentry from "@sentry/nextjs";
 import {
   autocompleteAddresses,
   resolveSuggestion,
@@ -69,6 +70,8 @@ export default function AddressSearch({
   // MEH-1766: null while the field is quiet or a lookup is in flight; set to
   // "empty" | "error" only once a query has actually COMPLETED with nothing.
   const [providerIssue, setProviderIssue] = useState(null);
+  // MEH-2481: (provider:status) pairs already reported to Sentry this mount.
+  const reportedRef = useRef(new Set());
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   // Track the latest in-flight request so a slow earlier response can't
@@ -129,14 +132,26 @@ export default function AddressSearch({
         // (the hint) instead of silently: the input still accepts free text.
         setSuggestions([]);
         setProviderIssue("error");
+        const provider = err?.provider ?? "unknown";
+        const status = err?.status ?? null;
         console.warn(
           `[AddressSearch] provider REJECTED the lookup for ${JSON.stringify(q)} — this is NOT a no-match. Suggestions are unavailable until it is fixed.`,
-          {
-            provider: err?.provider ?? "unknown",
-            status: err?.status ?? null,
-            detail: err?.detail ?? err?.message ?? String(err),
-          },
+          { provider, status, detail: err?.detail ?? err?.message ?? String(err) },
         );
+        // MEH-2481: a console line is read by nobody. The 403 of 28/10/2026 ran
+        // for two weeks because this was the only trace of it. Report ONCE per
+        // mount per (provider, status) — not per keystroke — with a stable
+        // fingerprint so Sentry groups every seller's instance into one issue.
+        const reportKey = `${provider}:${status}`;
+        if (!reportedRef.current.has(reportKey)) {
+          reportedRef.current.add(reportKey);
+          Sentry.captureMessage("AddressSearch provider rejected the lookup", {
+            level: "warning",
+            tags: { provider, status: String(status) },
+            fingerprint: ["address-search-provider", provider, String(status)],
+            extra: { detail: err?.detail ?? err?.message ?? String(err) },
+          });
+        }
       } finally {
         if (seq === requestSeq.current) setLoading(false);
       }
@@ -318,10 +333,17 @@ export default function AddressSearch({
           no aria-invalid, no submit gating, free text still wins. */}
       {providerIssue && !loading && (
         <p
-          data-testid="address-search-no-results-hint"
+          data-testid={
+            providerIssue === "error"
+              ? "address-search-provider-down-hint"
+              : "address-search-no-results-hint"
+          }
           className="mt-1 text-xs text-fg-muted text-start"
         >
-          {t("no_results_hint")}
+          {/* MEH-2481: "the provider said no" and "nothing matched" are
+              different situations for the seller — the first is not her
+              fault and the town alone will do (MEH-2480 places it). */}
+          {providerIssue === "error" ? t("provider_down_hint") : t("no_results_hint")}
         </p>
       )}
     </div>

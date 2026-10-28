@@ -14,7 +14,11 @@ import {
   MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
   MISSING_PRODUCT,
+  ORGANIZER_MISSING_DESCRIPTION,
+  ORGANIZER_MISSING_EVENT,
+  ORGANIZER_SUBMISSION_REQUIREMENTS,
   SUBMISSION_REQUIREMENTS,
+  isOrganizer,
   isDeliveryOnly,
   submissionMissingItems,
 } from "@/lib/submission-gate";
@@ -32,6 +36,10 @@ const MISSING_TARGETS = {
   [MISSING_LOCATION]: `${EDIT_HUB}#locations`,
   // Same page: the OTP card is mounted inside this banner, below the list.
   [MISSING_PHONE_VERIFIED]: "#phone-verify",
+  // MEH-2460 (organizer): the description lives in the profile group of the
+  // edit hub; events have their own dashboard page.
+  [ORGANIZER_MISSING_DESCRIPTION]: `${EDIT_HUB}#bio`,
+  [ORGANIZER_MISSING_EVENT]: "/producer/dashboard/events",
 };
 
 /** The fill-in target for a missing code. A delivery-only business has no
@@ -156,7 +164,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
           "ready" while the server disagrees. */}
       {!ready && (
         <ul className="mt-2" data-testid="draft-missing-list">
-          {SUBMISSION_REQUIREMENTS.filter((code) => missing.includes(code)).map(
+          {(isOrganizer(producer) ? ORGANIZER_SUBMISSION_REQUIREMENTS : SUBMISSION_REQUIREMENTS).filter((code) => missing.includes(code)).map(
             (code) => (
               <li
                 key={code}

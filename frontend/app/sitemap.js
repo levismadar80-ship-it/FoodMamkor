@@ -20,6 +20,8 @@ import {
 } from "@/lib/diet-pages";
 // MEH-2369: the three "something happening" hubs are listed only with supply.
 import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply";
+// MEH-2478: one owner of "a group buy can still be joined" (open + before deadline).
+import { isGroupBuyLive } from "@/lib/seo";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -187,6 +189,70 @@ export default async function sitemap() {
     // ignore
   }
 
+  // MEH-2461: organizer pages are public (approved organizers only, via
+  // GET /organizers) — listed under /organizers, never under /producers.
+  let organizerPages = [];
+  try {
+    const res = await serverFetch(`${API_URL}/organizers`);
+    if (res.ok) {
+      const organizers = await res.json();
+      organizerPages = organizers.flatMap((o) =>
+        localizeEntry(`/organizers/${o.slug}`, {
+          lastModified: now,
+          priority: 0.6,
+          changeFrequency: "weekly",
+        }),
+      );
+    }
+  } catch {
+    // API unavailable during build — skip organizer pages.
+  }
+
+  // MEH-2478: experience detail pages. GET /experiences is the hub's own feed
+  // and already returns only approved, upcoming, not-cancelled experiences of
+  // an approved business (experiences.py _public_listing_query), so every id
+  // it returns is listable — pending/hidden/past never reach this list.
+  let experiencePages = [];
+  try {
+    const res = await serverFetch(`${API_URL}/experiences`);
+    if (res.ok) {
+      const experiences = await res.json();
+      experiencePages = (Array.isArray(experiences) ? experiences : [])
+        .filter((x) => x?.id)
+        .flatMap((x) =>
+          localizeEntry(`/experiences/${x.id}`, {
+            lastModified: now,
+            priority: 0.7,
+            changeFrequency: "weekly",
+          }),
+        );
+    }
+  } catch {
+    // API unavailable during build — skip experience pages.
+  }
+
+  // MEH-2478: group-buy detail pages. GET /group-buys returns status=open, but
+  // nothing closes an open group buy when its deadline passes, so expired ones
+  // are dropped here by the same rule the page's Offer availability uses.
+  let groupBuyPages = [];
+  try {
+    const res = await serverFetch(`${API_URL}/group-buys`);
+    if (res.ok) {
+      const groupBuys = await res.json();
+      groupBuyPages = (Array.isArray(groupBuys) ? groupBuys : [])
+        .filter((g) => g?.id && isGroupBuyLive(g, now))
+        .flatMap((g) =>
+          localizeEntry(`/group-buys/${g.id}`, {
+            lastModified: now,
+            priority: 0.6,
+            changeFrequency: "daily",
+          }),
+        );
+    }
+  } catch {
+    // API unavailable during build — skip group-buy pages.
+  }
+
   return [
     ...staticPages,
     ...producerIndexPages,
@@ -194,5 +260,8 @@ export default async function sitemap() {
     ...producerPages,
     ...recipePages,
     ...eventPages,
+    ...organizerPages,
+    ...experiencePages,
+    ...groupBuyPages,
   ];
 }

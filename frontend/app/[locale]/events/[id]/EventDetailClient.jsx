@@ -4,14 +4,35 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
+import { Calendar, CalendarPlus, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
+import ShareButton from "@/components/ShareButton";
+import { buildEventIcs } from "@/lib/event-ics";
+
+// MEH-2468: «הוספה ליומן» — the .ics is built in the browser from the event
+// already on the page (no endpoint) and downloaded through a Blob URL. What a
+// phone does with a text/calendar download (open the calendar app, or save it
+// to Files) varies by browser — NOT verified on devices from the CC sandbox.
+function downloadIcs(event, url) {
+  const blob = new Blob([buildEventIcs(event, { url })], { type: "text/calendar;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = `event-${event.id}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoking synchronously can abort the download in WebKit (review #3716 F7;
+  // FileSaver.js delays it for the same reason).
+  setTimeout(() => URL.revokeObjectURL(href), 30_000);
+}
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -80,6 +101,13 @@ export default function EventDetailClient() {
     );
   }
 
+  // MEH-2461: who owns this event — a business or an organizer (ADR-036).
+  const isOrganizerEvent = event.owner_kind === "organizer";
+
+  // The canonical page address for share + the calendar entry. Client-only
+  // component past the loading gate, so window is defined here.
+  const pageUrl = typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}`;
+
   return (
     <div>
       {event.image_url && (
@@ -114,7 +142,14 @@ export default function EventDetailClient() {
             {/* MEH-857: emoji to Phosphor, mirrors MapPin markup at :96 */}
             <Calendar size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
             {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
-            {event.event_time && ` · ${event.event_time.slice(0, 5)}`}
+            {event.event_time && (
+              // MEH-2469: «09:30–15:00» when there is an end time. The «·» stays
+              // outside the LTR isolate so it keeps following the date in RTL.
+              <>
+                {" · "}
+                <span dir="ltr">{formatTimeRange(event.event_time, event.end_time)}</span>
+              </>
+            )}
           </p>
           {event.location && (
             <p className="flex items-center gap-2">
@@ -163,7 +198,9 @@ export default function EventDetailClient() {
             >
               {t("register")}
             </a>
-          ) : (
+          ) : isOrganizerEvent ? null : (
+            // MEH-2461: «יצירת קשר עם בית העסק» names a business; an
+            // organizer is reached through the «מארגן:» link below instead.
             <Link
               href={`/producer/${event.producer_id}`}
               className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition"
@@ -179,7 +216,46 @@ export default function EventDetailClient() {
           </Link>
         </div>
 
-        {event.producer_name && (
+        {/* MEH-2468: share + add-to-calendar, the two actions every event
+            listing offers (Eventbrite, Facebook Events). Share reuses the
+            site's ShareButton; the calendar file is built client-side. */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4" data-testid="event-actions">
+          <ShareButton
+            variant="quiet"
+            subject="event"
+            url={pageUrl}
+            title={event.title}
+            city={event.city}
+            category={event.category}
+          />
+          <button
+            type="button"
+            onClick={() => downloadIcs(event, pageUrl)}
+            data-testid="event-add-to-calendar"
+            className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <CalendarPlus size={17} className="text-primary-dark" aria-hidden="true" />
+            {t("add_to_calendar")}
+          </button>
+        </div>
+
+        {/* MEH-2461: an organizer's event links to /organizers/{slug} (its
+            business page 404s since MEH-2459) with the approved line. */}
+        {event.producer_name && isOrganizerEvent && (
+          <p className="text-sm text-fg-muted mt-8" data-testid="event-organizer-line">
+            {event.owner_slug ? (
+              <Link
+                href={`/organizers/${event.owner_slug}`}
+                className="text-primary hover:underline"
+              >
+                {t("organizer_line", { name: event.producer_name })}
+              </Link>
+            ) : (
+              t("organizer_line", { name: event.producer_name })
+            )}
+          </p>
+        )}
+        {event.producer_name && !isOrganizerEvent && (
           <p className="text-sm text-fg-muted mt-8">
             {t("organized_by")}{" "}
             <Link href={`/producer/${event.producer_id}`} className="text-primary hover:underline">

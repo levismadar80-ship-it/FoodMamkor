@@ -124,7 +124,7 @@ _CORPUS = [
     ("group-buy-funded-producer", gb, lambda: gb.notify_producer_funded(
         "her@example.com", "קמח מלא", 12, "gb-1")),
     ("group-buy-funded-participant", gb, lambda: gb.notify_participant_funded(
-        "her@example.com", "קמח מלא", "מאפיית הדגן", "gb-1")),
+        "her@example.com", "קמח מלא", "מאפיית הדגן", "gb-1", "p-1")),
 
     # MEH-2027 — the three admin -> producer bodies. They reach the corpus via
     # `admin._send_notification_email`, which calls the `send_email` symbol

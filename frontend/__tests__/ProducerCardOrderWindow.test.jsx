@@ -167,9 +167,12 @@ describe("ProducerCard — order-window line (MEH-1880)", () => {
   it("leaves the rest of the card untouched when no line renders", () => {
     // Guards the "no layout shift / byte-identical" half of the AC: a card with
     // no window must still render its location line exactly as before.
+    // MEH-2440: the city moved to the place line above the name, and `base`
+    // has no category, so the place line is what carries this fixture's
+    // location now (an empty line under the name is no longer rendered).
     vi.setSystemTime(SUNDAY_1000_ISRAEL);
     render(<ProducerCard producer={{ ...base, order_window: null }} />);
-    expect(screen.getByTestId("location-line")).toBeTruthy();
+    expect(screen.getByTestId("card-place").textContent).toBe(base.city);
     expect(LINE()).toBeNull();
   });
 });

@@ -73,6 +73,13 @@ function LoginPageBody() {
     ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
     : "/register";
   const { user, loading: authLoading, login } = useAuth();
+  // MEH-2481: a business owner who signs in without an explicit ?redirect=
+  // lands in her dashboard, not on the homepage — measured on staging 28/10,
+  // a fresh owner was dropped on "/" with no path to the three required
+  // items. An explicit, clamped ?redirect= still wins (review links,
+  // MEH-1428), and consumers keep the MEH-810 default.
+  const landingFor = (me) =>
+    passedRedirect === null && me?.producer_id ? "/producer/dashboard" : redirectTo;
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -95,8 +102,8 @@ function LoginPageBody() {
   // so user stays null there (no redirect). Post-login/OAuth push() lands on
   // the same target, so this is idempotent, not a second navigation elsewhere.
   useEffect(() => {
-    if (!authLoading && user) router.replace(redirectTo);
-  }, [authLoading, user, router, redirectTo]);
+    if (!authLoading && user) router.replace(landingFor(user));
+  }, [authLoading, user, router, redirectTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,8 +114,8 @@ function LoginPageBody() {
     }
     setLoading(true);
     try {
-      await login(email, password);
-      router.push(redirectTo);
+      const me = await login(email, password);
+      router.push(landingFor(me));
     } catch (err) {
       setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
@@ -255,6 +262,7 @@ function LoginPageBody() {
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setEmailTouched(true)}
                 required
+                autoComplete="username"
                 // MEH-991 (LOGIN-04): S9 email field shows a format example.
                 // MEH-1617: value moved to auth.login.email_placeholder.
                 placeholder={t("email_placeholder")}
@@ -304,6 +312,7 @@ function LoginPageBody() {
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setPasswordTouched(true)}
                 required
+                autoComplete="current-password"
                 // MEH-835: DO NOT add a minLength floor — login validates the
                 // stored hash only (OWASP), so legacy <8-char accounts must be
                 // able to sign in. Empty-submit is still blocked via formIsValid

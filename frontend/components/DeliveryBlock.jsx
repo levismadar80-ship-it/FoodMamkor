@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Package, CaretDown, CaretUp, NavigationArrow } from "@phosphor-icons/react";
+import { Truck, Package, CaretDown, CaretUp, NavigationArrow, Phone } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
@@ -232,13 +232,15 @@ function CompactCities({ areas, t }) {
 
 // MEH-1512 (MEH-1509 chunk 2): one pickup / market_stand location row from the
 // producer's locations[] — label (falls back to city) · city · opening_hours ·
-// an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
+// phone as tel: (MEH-2477) · an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
 // second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
 function PickupRow({ loc, t, tMap }) {
   const hasCoords =
     loc.lat != null && loc.lng != null && !isNaN(Number(loc.lat)) && !isNaN(Number(loc.lng));
   const wazeUrl = hasCoords ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : null;
   const heading = loc.label || loc.city;
+  const phone = (loc.phone || "").trim();
+  const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : null;
   return (
     <li className="flex items-start justify-between gap-3 py-2.5 text-sm">
       <div className="min-w-0">
@@ -246,6 +248,20 @@ function PickupRow({ loc, t, tMap }) {
         {/* city as a subline only when a distinct label already owns the top line */}
         {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
         {loc.opening_hours && <p className="text-[13px] text-fg-muted">{loc.opening_hours}</p>}
+        {/* MEH-2477: the stand's own number (LocationsEditor), tap-to-call —
+            the click-to-call MEH-1509 served the field for. The number is its
+            own label (as on a Google Maps place card); dir=ltr keeps
+            «052-123 4567» from reordering inside the RTL row. */}
+        {telHref && (
+          <a
+            href={telHref}
+            dir="ltr"
+            className="inline-flex items-center gap-1 min-h-[44px] text-[13px] font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          >
+            <Phone size={14} aria-hidden="true" />
+            {phone}
+          </a>
+        )}
       </div>
       <div className="flex-shrink-0 flex items-center gap-3">
         {/* MEH-1646 (b): pickup is free — stated at the same hierarchy as the
