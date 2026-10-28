@@ -16,8 +16,9 @@ import ShareButton from "@/components/ShareButton";
 import { buildEventIcs } from "@/lib/event-ics";
 
 // MEH-2468: «הוספה ליומן» — the .ics is built in the browser from the event
-// already on the page (no endpoint), and downloaded through a Blob URL. iOS
-// Safari and Android hand a text/calendar download to the calendar app.
+// already on the page (no endpoint) and downloaded through a Blob URL. What a
+// phone does with a text/calendar download (open the calendar app, or save it
+// to Files) varies by browser — NOT verified on devices from the CC sandbox.
 function downloadIcs(event, url) {
   const blob = new Blob([buildEventIcs(event, { url })], { type: "text/calendar;charset=utf-8" });
   const href = URL.createObjectURL(blob);
@@ -27,7 +28,9 @@ function downloadIcs(event, url) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(href);
+  // Revoking synchronously can abort the download in WebKit (review #3716 F7;
+  // FileSaver.js delays it for the same reason).
+  setTimeout(() => URL.revokeObjectURL(href), 30_000);
 }
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events

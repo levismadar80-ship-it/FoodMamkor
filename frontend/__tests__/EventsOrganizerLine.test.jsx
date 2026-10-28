@@ -183,6 +183,18 @@ describe("MEH-2468 — event cover image on the /events row", () => {
     expect(screen.queryByTestId("event-row-image")).not.toBeInTheDocument();
   });
 
+  it("the /experiences tab gets the same rule (experiences carry image_url too)", async () => {
+    unfilteredRows = [
+      row(1, { image_url: "https://res.cloudinary.com/x/image/upload/exp.jpg", host: { name: "מארחת" } }),
+      row(2, { image_url: null, host: { name: "מארחת" } }),
+    ];
+    render(<EventsClient initialTab="experiences" />);
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    const thumbs = screen.getAllByTestId("event-row-image");
+    expect(thumbs).toHaveLength(1);
+    expect(thumbs[0].style.backgroundImage).toContain("exp.jpg");
+  });
+
   it("many rows, mixed: a thumbnail only on the rows that have an image", async () => {
     unfilteredRows = [
       row(1, { image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" }),

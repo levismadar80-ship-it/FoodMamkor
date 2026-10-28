@@ -110,7 +110,7 @@ export function buildEventIcs(event, { url = "", now = new Date() } = {}) {
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:event-${event.id}@mehamakor`,
+    `UID:event-${event.id}@mehamakor.co.il`,
     `DTSTAMP:${stamp}`,
   ];
   if (event.event_time) {

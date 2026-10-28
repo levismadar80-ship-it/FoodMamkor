@@ -25,11 +25,19 @@ describe("israelLocalToUtcStamp", () => {
   it("summer: 09:30 Israel = 06:30Z", () => {
     expect(israelLocalToUtcStamp("2026-07-01", "09:30:00")).toBe("20260701T063000Z");
   });
+  // Review #3716 F2: the two-pass resolution only matters within an offset
+  // change of the switch — a single-pass version returns 22:30Z for both.
+  it("night of the autumn switch (25 Oct 2026, 00:30, still +3) = 21:30Z the day before", () => {
+    expect(israelLocalToUtcStamp("2026-10-25", "00:30")).toBe("20261024T213000Z");
+  });
+  it("night of the spring switch (27 Mar 2026, 01:30, still +2) = 23:30Z the day before", () => {
+    expect(israelLocalToUtcStamp("2026-03-27", "01:30")).toBe("20260326T233000Z");
+  });
 });
 
 describe("escapeIcsText", () => {
   it("escapes backslash, semicolon, comma and newlines (RFC 5545 §3.3.11)", () => {
-    expect(escapeIcsText("a\\b;c,d\ne")).toBe("a\\\\b\;c\\,d\\ne");
+    expect(escapeIcsText("a\\b;c,d\ne")).toBe("a\\\\b\\;c\\,d\\ne");
   });
 });
 
@@ -41,7 +49,7 @@ describe("buildEventIcs", () => {
     const l = lines(ics);
     expect(l[0]).toBe("BEGIN:VCALENDAR");
     expect(l).toContain("DTSTART:20261031T073000Z");
-    expect(l).toContain("UID:event-e1@mehamakor");
+    expect(l).toContain("UID:event-e1@mehamakor.co.il");
     expect(l).toContain("SUMMARY:שוק גלם בנמל תל אביב");
     expect(l).toContain("LOCATION:האנגר 11\\, תל אביב");
     expect(l).toContain("URL:https://mehamakor.co.il/events/e1");
