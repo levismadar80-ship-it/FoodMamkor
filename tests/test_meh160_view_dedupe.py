@@ -164,6 +164,8 @@ class TestTheOtherThreeReaders:
     deduped `profile_views`, `search_appearances` and `views_by_day` and left
     `top_cities`, `rank_in_city` and `weekly_trend`'s comparison arm counting
     rows — a screen showing visitors in one number and refreshes in the next.
+    (`rank_in_city` was later removed from the response, MEH-2529: no screen
+    read it. Its regression anchor went with it.)
 
     WHICH RIVAL EACH TEST SEPARATES — measured, not assumed. This docstring
     first claimed "every one of these fails against round 1", and running the
@@ -177,7 +179,6 @@ class TestTheOtherThreeReaders:
     | `weekly_trend_is_stable_on_flat_repeat_traffic` | round 1 — reads "down", fails |
     | `unique_views_count_scores_a_viewless_producer_zero` | round 2 written WITHOUT `row_id_col` — returns 1, fails |
     | `conversion_rate_denominator_is_the_deduped_view_count` | the rejected option B (raw denominator) — returns 50.0, fails |
-    | `rank_in_city_still_ranks_on_real_views` | nothing — a refactor anchor, and says so |
     """
 
     def test_top_cities_counts_visitors_not_refreshes(self, client, db):
@@ -242,22 +243,6 @@ class TestTheOtherThreeReaders:
             .scalar()
         )
         assert score == 0
-
-    def test_rank_in_city_still_ranks_on_real_views(self, client, db):
-        """Regression anchor for the endpoint after the extraction to
-        `_rank_in_city`. Passes in round 1 too — it is here to catch the
-        refactor breaking the query, not to prove the dedupe."""
-        p, user = _setup(db, "readers2@test.com")
-        p.city = "חיפה"
-        p.status = "approved"
-        rival = make_producer(db)
-        rival.city = "חיפה"
-        rival.status = "approved"
-        db.commit()
-        _seed(db, p.id, "b" * 64)
-
-        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
-        assert body["rank_in_city"] == 1
 
     def test_weekly_trend_is_stable_on_flat_repeat_traffic(self, client, db):
         """The permanent regression round one shipped.
