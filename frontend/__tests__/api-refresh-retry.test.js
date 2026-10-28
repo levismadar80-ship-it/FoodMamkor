@@ -279,11 +279,13 @@ describe("MEH-2467 transient refresh failure keeps the session", () => {
     installAdapter({ refreshResult: "network", protectedScript: ["401", "401"] });
     await expect(api.get("/users/me/favorites")).rejects.toMatchObject({ code: "ERR_NETWORK" });
 
+    // Same module-level counters, deliberately not reset: the second round
+    // must add exactly one refresh call on top of the first round's one.
     installAdapter({ refreshResult: "ok", protectedScript: ["401", "200"] });
     const res = await api.get("/users/me/favorites");
 
     expect(res.data).toEqual({ ok: true });
-    expect(refreshCalls).toHaveLength(1); // the second adapter's own count
+    expect(refreshCalls).toHaveLength(2); // 1 (network) + 1 (ok) — not stuck on the dead promise
     expect(expiredEvents).toBe(0);
   });
 });
