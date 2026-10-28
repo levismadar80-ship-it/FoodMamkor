@@ -105,6 +105,10 @@ jobs:
             backend:
               - 'backend/**'
               - 'tests/**'
+              # MEH-2486: the contract tool is covered by tests/ (pytest, incl.
+              # --self-test) and by the static audit, both gated on this filter.
+              # Without this line a PR touching only the tool skips both.
+              - 'scripts/check_api_contract.py'
             workflows:
               - '.github/workflows/**'
 
