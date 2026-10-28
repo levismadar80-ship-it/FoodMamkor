@@ -28,6 +28,7 @@ from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
 )
+from app.services.producer_listing import is_business
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -68,6 +69,34 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
     return base
 
 
+def _public_group_buys(db: Session):
+    """The ONE definition of "this group buy is public" (MEH-2484).
+
+    LOCK (בתי עסק מאושרים בלבד): a group buy reaches the public only while its
+    business is a live business — ``producer_listing.is_business()``, i.e.
+    approved and ``kind='producer'``. Creation already required a verified
+    business, but a business rejected or suspended AFTER opening a group buy
+    left it in the public list, on its page, and (since MEH-2478) in the
+    sitemap with a ``seller.url`` that 404s.
+
+    Three callers: the public list, the detail route's stranger branch and the
+    join. DO NOT re-express the predicate inline in a route — same reasoning as
+    ``experiences._publicly_visible_query`` (MEH-1749 / MEH-1740): a second
+    copy drifts and the surface leaks.
+    """
+    return (
+        db.query(GroupBuy)
+        .join(Producer, GroupBuy.producer_id == Producer.id)
+        .filter(is_business())
+    )
+
+
+def _is_public(db: Session, group_buy_id: UUID) -> bool:
+    return (
+        _public_group_buys(db).filter(GroupBuy.id == group_buy_id).first() is not None
+    )
+
+
 @router.get("", response_model=list[GroupBuyOut])
 @limiter.limit("120/minute")
 def list_group_buys(
@@ -76,7 +105,7 @@ def list_group_buys(
     status: str = Query("open"),
     db: Session = Depends(get_db),
 ):
-    q = db.query(GroupBuy).filter(GroupBuy.status == status)
+    q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
     if city:
         q = q.filter(GroupBuy.city == city)
     items = q.order_by(GroupBuy.deadline.asc()).all()
@@ -117,6 +146,16 @@ def get_group_buy(
 ):
     gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
     if not gb:
+        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+    # MEH-2484: a stranger gets the SAME 404 when the business is not public,
+    # so the row's existence does not leak. Owner and admin still see it.
+    is_owner = bool(
+        current_user
+        and current_user.producer_id
+        and current_user.producer_id == gb.producer_id
+    )
+    is_admin = bool(current_user and current_user.role == "admin")
+    if not (is_owner or is_admin) and not _is_public(db, gb.id):
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
     return _enrich(gb, current_user)
 
@@ -186,7 +225,8 @@ def commit_to_group_buy(
     gb = (
         db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
     )
-    if not gb:
+    # MEH-2484: a group buy whose page is 404 cannot be joined via a held link.
+    if not gb or not _is_public(db, gb.id):
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
     if gb.status != "open":
         raise HTTPException(status_code=400, detail="קבוצת הרכש אינה פתוחה להצטרפות")
