@@ -5312,7 +5312,8 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  * Submit or update a review.
  *
  * Guards (checked in order):
- *   1. Producer must exist.
+ *   1. Producer must exist and be live (status approved) — a suspended,
+ *      rejected, draft or pending one is a 404 like a missing one (MEH-2513).
  *   1b. Producer must be a business — an organizer gets 409 (MEH-2465).
  *   2. Producer owner cannot review their own business.
  *   2b. Producer owner cannot review a business sharing a category with
