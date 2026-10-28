@@ -799,9 +799,6 @@
         "favorites_count": "{count, plural, one {1 saved this business} other {# saved this business}}",
         "behind": "Behind the business: {name}",
         "attr": {
-          "grass_fed": "Grass-fed",
-          "organic": "Certified organic",
-          "delivery": "Delivery",
           "kosher": "Kosher"
         },
         "gluten_facility": {
@@ -2962,14 +2959,6 @@
     }
   },
   "trust": {
-    "tier_2": {
-      "label": "✓ Phone verified",
-      "tooltip": "The business owner's phone number was verified via a one-time code"
-    },
-    "tier_3": {
-      "label": "Verified business",
-      "tooltip": "The business was manually verified by the Mehamakor team"
-    },
     "tier_4": {
       "label": "Community leader",
       "tooltip": "10+ reviews with an average rating of 4.5 or above"
@@ -3103,7 +3092,6 @@
   "reviews": {
     "section_heading": "What customers say",
     "anonymous_fallback": "Customer",
-    "user_anonymous": "Anonymous",
     "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
     "summary_based_on": "{total, plural, one {Based on 1 review} other {Based on {total} reviews}}",
     "summary_count": "{count, plural, one {1 review} other {{count} reviews}}",
