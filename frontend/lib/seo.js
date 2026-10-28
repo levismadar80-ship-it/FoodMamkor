@@ -521,6 +521,13 @@ export function buildEventJsonLd(event, locale = "he") {
     startDate = `${startDate}T${String(event.event_time).slice(0, 5)}`;
   }
 
+  // MEH-2469: endDate (Google "recommended") — same day, only with a start
+  // time (the API rejects an end without a start).
+  const endDate =
+    event.event_date && event.event_time && event.end_time
+      ? `${event.event_date}T${String(event.end_time).slice(0, 5)}`
+      : undefined;
+
   const ev = {
     "@type": "Event",
     "@id": `${eventUrl}#event`,
@@ -529,6 +536,7 @@ export function buildEventJsonLd(event, locale = "he") {
     eventStatus: "https://schema.org/EventScheduled",
   };
   if (startDate) ev.startDate = startDate;
+  if (endDate) ev.endDate = endDate;
   if (event.description) ev.description = event.description;
   if (event.image_url) ev.image = event.image_url;
 

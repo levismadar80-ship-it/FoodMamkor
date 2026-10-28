@@ -245,6 +245,7 @@ erDiagram
         text description
         date event_date
         time event_time
+        time end_time "MEH-2469, nullable"
         numeric price
         int capacity
         string city
