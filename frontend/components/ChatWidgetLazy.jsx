@@ -25,6 +25,8 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 // The dashboard subtree (/producer/dashboard/...) keeps the FAB.
 // MEH-1203: /favorites joins /map + /producer/[id] in the gate — the FAB
 // overlapped the first card of the canonical 2-col favorites grid.
+const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact"];
+
 export default function ChatWidgetLazy() {
   const pathname = usePathname();
   // /map is the second page where the FAB does damage instead of good: the
@@ -50,5 +52,10 @@ export default function ChatWidgetLazy() {
   // its bottom-END corner sat over the row-action column of the approvals
   // table. Same pathname gate as above.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
-  return <ChatWidget />;
+  // MEH-2512: on phones the launcher's bottom-END corner sat over the primary
+  // control of every form page (login submit, register preflight, password
+  // field, contact input). No floating launcher over a form — mobile only; on
+  // desktop it sits in the page corner, clear of the centred form.
+  const isFormPage = FORM_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
+  return <ChatWidget hideOnMobile={isFormPage} />;
 }

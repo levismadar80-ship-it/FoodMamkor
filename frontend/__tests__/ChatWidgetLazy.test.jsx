@@ -14,7 +14,9 @@ import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 // we assert the lazy wrapper mounts and its `next/dynamic` import resolves,
 // not ChatWidget's internals (next-intl / api / browser APIs).
 vi.mock("@/components/ChatWidget", () => ({
-  default: () => <div data-testid="chat-widget-stub" />,
+  default: ({ hideOnMobile }) => (
+    <div data-testid="chat-widget-stub" data-hide-on-mobile={hideOnMobile ? "true" : "false"} />
+  ),
 }));
 
 describe("ChatWidgetLazy", () => {
@@ -60,5 +62,23 @@ describe("ChatWidgetLazy", () => {
     mockUsePathname.mockReturnValue("/favorites");
     const { container } = render(<ChatWidgetLazy />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // MEH-2512: on phones the launcher sat over primary form buttons (login
+  // submit, register preflight, password field, contact input). Form pages
+  // ask the widget to skip mobile; desktop keeps it.
+  it.each(["/login", "/register", "/register/producer", "/forgot-password", "/reset-password", "/contact"])(
+    "asks the widget to hide on mobile on the form page %s",
+    async (route) => {
+      mockUsePathname.mockReturnValue(route);
+      render(<ChatWidgetLazy />);
+      expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-hide-on-mobile", "true");
+    },
+  );
+
+  it("does not ask it on a content page (control)", async () => {
+    mockUsePathname.mockReturnValue("/about");
+    render(<ChatWidgetLazy />);
+    expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-hide-on-mobile", "false");
   });
 });
