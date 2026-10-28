@@ -21,6 +21,7 @@ from app.models import (
     ProducerLocation,
 )
 from app.schemas.schemas import DeliveryAreaCreate, ProducerCreate
+from app.services.city_centroid import city_centroid
 from app.utils.clock import utc_now
 
 logger = structlog.get_logger(__name__)
@@ -380,8 +381,26 @@ def create_primary_branch_location(
     # DO NOT add a backfill for existing producers here — that is chunk 2, and
     # it is an Alembic data migration, not application code.
     """
+    # Coordinates on a signup payload come from AddressSearch's geocode
+    # (MEH-1808), so when they are present the point is a real street-level fix.
+    precision = "exact"
     if producer.lat is None or producer.lng is None:
-        return None
+        # MEH-2480: a town with no street address used to produce NO row, which
+        # left «שליחה לבדיקה» locked whenever the address provider was down
+        # (28/10/2026: Google answered 403 for everyone). The town's seeded
+        # centre is a real, usable point — stamped `approximate` so the map and
+        # the owner both know it is the town, not the door. Still None when the
+        # town is unknown to the table: that path is unchanged. A business that
+        # declared NO physical presence (MEH-213, delivery-only) keeps having no
+        # point — its location signal is the delivery declaration, and a pin
+        # in the town centre would put it on the map as a place to walk into.
+        if producer.has_physical_location is False:
+            return None
+        centroid = city_centroid(db, producer.city)
+        if centroid is None:
+            return None
+        producer.lat, producer.lng = centroid
+        precision = "approximate"
 
     location = ProducerLocation(
         producer_id=producer.id,
@@ -391,11 +410,7 @@ def create_primary_branch_location(
         address=producer.address,
         lat=producer.lat,
         lng=producer.lng,
-        # Coordinates on a signup payload come from AddressSearch's geocode
-        # (MEH-1808), so the point is a real street-level fix. The
-        # `approximate` case is a town with no address, which by the guard
-        # above produces no row at all.
-        location_precision="exact",
+        location_precision=precision,
     )
     db.add(location)
     return location
