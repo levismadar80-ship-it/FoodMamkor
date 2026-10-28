@@ -33,7 +33,8 @@ const STATUS_CLS = {
 // MEH-2453: the server's floor for the fulfillment note (GroupBuyCreate,
 // MEH-555 pattern): at least 3 letters once stripped, counted over the same
 // scripts as _LETTER_REGEX (Hebrew, Latin, Arabic). "." or "כן" is not an
-// answer to "how do I get this".
+// answer to "how do I get this". GroupBuyNoteLetterContract.test.js pins the
+// class below to _LETTER_REGEX, so the two cannot drift apart.
 const NOTE_MIN_LETTERS = 3;
 const NOTE_LETTER = /[\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]/g;
 const countLetters = (text) => (text.match(NOTE_LETTER) || []).length;
