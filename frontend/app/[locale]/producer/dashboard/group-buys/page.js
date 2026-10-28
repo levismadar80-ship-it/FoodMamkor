@@ -1,7 +1,7 @@
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
@@ -30,6 +30,15 @@ const STATUS_CLS = {
   fulfilled: STATUS_CLASSES.success,
 };
 
+// MEH-2453: the server's floor for the fulfillment note (GroupBuyCreate,
+// MEH-555 pattern): at least 3 letters once stripped, counted over the same
+// scripts as _LETTER_REGEX (Hebrew, Latin, Arabic). "." or "כן" is not an
+// answer to "how do I get this". GroupBuyNoteLetterContract.test.js pins the
+// class below to _LETTER_REGEX, so the two cannot drift apart.
+const NOTE_MIN_LETTERS = 3;
+const NOTE_LETTER = /[\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]/g;
+const countLetters = (text) => (text.match(NOTE_LETTER) || []).length;
+
 function NewGroupBuyForm({ producerCity, onCreated }) {
   const t = useTranslations("group_buys.dashboard.form");
   // MEH-848: shared generic error copy (collapsed from group_buys.dashboard.form.errors.generic).
@@ -51,6 +60,10 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
   const [unverified, setUnverified] = useState(false);
+  // MEH-2453: the note is required. Native `required` lets whitespace through,
+  // so the blank check is ours; the error sits under the field, not at the end.
+  const [noteError, setNoteError] = useState(false);
+  const noteRef = useRef(null);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -66,10 +79,17 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     e.preventDefault();
     setError("");
     setUnverified(false);
+    const fulfillmentNote = form.fulfillment_note.trim();
+    if (countLetters(fulfillmentNote) < NOTE_MIN_LETTERS) {
+      setNoteError(true);
+      noteRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post("/group-buys", {
         ...form,
+        fulfillment_note: fulfillmentNote,
         price_per_unit_regular: Number(form.price_per_unit_regular),
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
@@ -216,20 +236,46 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           onChange={(val) => setForm({ ...form, city: val })}
         />
 
-        {/* MEH-1457: optional "מתי ואיך מקבלים" — free text (OFN "Ready for"). */}
-        <div className="sm:col-span-2">
-          <label htmlFor="gb-fulfillment" className="block text-sm font-medium mb-1">
+        {/* MEH-1457: "מתי ואיך מקבלים" — free text (OFN "Ready for").
+            MEH-2453: required, with a helper saying who reads it. A textarea,
+            so it cannot ride ui/Input; the label marker, helper and error
+            copy Input's markup and aria wiring. */}
+        <div className="sm:col-span-2 flex flex-col gap-1.5">
+          <label htmlFor="gb-fulfillment" className="text-sm font-medium text-text">
             {t("fulfillment_label")}
+            <span className="text-error" aria-hidden="true">
+              {" *"}
+            </span>
           </label>
           <textarea
             id="gb-fulfillment"
+            ref={noteRef}
             value={form.fulfillment_note}
-            onChange={set("fulfillment_note")}
+            onChange={(e) => {
+              setNoteError(false);
+              set("fulfillment_note")(e);
+            }}
             placeholder={t("fulfillment_placeholder")}
+            required
+            maxLength={1000}
+            aria-invalid={noteError || undefined}
+            aria-describedby={
+              noteError ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
+            }
             rows={2}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-start resize-none"
+            className={`w-full border rounded-[8px] px-3 py-2 text-start resize-none ${
+              noteError ? "border-error" : "border-border"
+            }`}
             dir="rtl"
           />
+          <p id="gb-fulfillment-helper" className="text-xs text-fg-muted">
+            {t("fulfillment_helper")}
+          </p>
+          {noteError && (
+            <p id="gb-fulfillment-error" role="alert" className="text-xs text-error">
+              {t("fulfillment_required")}
+            </p>
+          )}
         </div>
       </div>
 

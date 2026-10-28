@@ -167,3 +167,29 @@ export const GroupBuyStatusResultSchema = z.object({
   detail: z.string(),
   status: z.enum(["open", "funded", "cancelled", "fulfilled"]),
 });
+
+// MEH-2453: the slice of GET /producers/{id} (ProducerDetailOut) the public
+// group page reads — the delivery fields DeliveryChecker matches over, plus
+// the id the business link is built from. `.loose()` keeps the rest of the
+// body (phone, name) because CoverageRequestCta, under a "no" verdict, reads
+// them from the same object, exactly as on the producer page. Defaults mirror
+// the backend's (`= []` / `= False` on ProducerListOut).
+export const GroupBuyProducerDeliverySchema = z
+  .object({
+    id: z.string().min(1),
+    offers_delivery: z.boolean().default(false),
+    delivery_nationwide: z.boolean().default(false),
+    delivery_excluded_cities: z.array(z.string()).default([]),
+    delivery_areas: z
+      .array(
+        z
+          .object({
+            city: z.string(),
+            delivery_day: z.string().nullable().optional(),
+            min_order: z.number().nullable().optional(),
+          })
+          .loose(),
+      )
+      .default([]),
+  })
+  .loose();

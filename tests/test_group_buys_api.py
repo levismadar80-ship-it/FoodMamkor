@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from conftest import auth_header, make_producer, make_user
 
+from app.config import settings
 from app.models.models import GroupBuy, GroupBuyCommit
 from app.services.group_buy_notifications import (
     notify_participant_cancelled,
@@ -71,6 +72,8 @@ def _valid_create_payload(**overrides):
         "min_participants": 3,
         "deadline": (utc_now() + timedelta(days=10)).isoformat(),
         "city": "חיפה",
+        # MEH-2453: required. Participants read it before they join.
+        "fulfillment_note": "איסוף מהמשק ביום שישי",
     }
     payload.update(overrides)
     return payload
@@ -283,18 +286,70 @@ class TestCreate:
         assert detail.status_code == 200
         assert detail.json()["fulfillment_note"] == note
 
-    def test_create_without_fulfillment_note_is_null(self, client, db):
+    # ---- MEH-2453: fulfillment_note is required ----
+    # Each case is a body a participant would have read as "no idea how I get
+    # this". Missing, empty, whitespace and null are four different payloads
+    # the form or another client can send; all four must be refused and none
+    # may create a row.
+    @staticmethod
+    def _blank_note_payloads():
+        missing = _valid_create_payload()
+        del missing["fulfillment_note"]
+        return [
+            ("missing", missing),
+            ("empty", _valid_create_payload(fulfillment_note="")),
+            ("whitespace", _valid_create_payload(fulfillment_note="   \n ")),
+            ("null", _valid_create_payload(fulfillment_note=None)),
+            # Not blank, still no answer: the free-text letter floor (MEH-555).
+            ("punctuation", _valid_create_payload(fulfillment_note=". - ?")),
+            ("two letters", _valid_create_payload(fulfillment_note="כן")),
+        ]
+
+    def test_create_without_fulfillment_note_is_422_and_creates_nothing(
+        self, client, db
+    ):
+        producer, user = _producer_user(db)
+        ran = []
+        for label, payload in self._blank_note_payloads():
+            resp = client.post("/group-buys", json=payload, headers=auth_header(user))
+            assert resp.status_code == 422, (label, resp.text)
+            ran.append(label)
+        assert len(ran) == len(self._blank_note_payloads())
+        assert (
+            db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).count()
+            == 0
+        )
+
+    def test_blank_fulfillment_note_error_is_hebrew(self, client, db):
         _, user = _producer_user(db)
         resp = client.post(
             "/group-buys",
-            json=_valid_create_payload(),
+            json=_valid_create_payload(fulfillment_note="   "),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+        assert "יש לכתוב מתי ואיך מקבלים את המוצרים" in resp.text
+
+    def test_three_letter_note_is_accepted(self, client, db):
+        # The floor's edge, so a stricter floor shows up here.
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys",
+            json=_valid_create_payload(fulfillment_note="משק"),
             headers=auth_header(user),
         )
         assert resp.status_code == 201, resp.text
-        gb_id = resp.json()["id"]
-        detail = client.get(f"/group-buys/{gb_id}")
-        assert detail.status_code == 200
-        assert detail.json()["fulfillment_note"] is None
+
+    def test_fulfillment_note_is_stored_stripped(self, client, db):
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys",
+            json=_valid_create_payload(fulfillment_note="  משלוח לחדרה ולפרדס חנה \n"),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
+        detail = client.get(f"/group-buys/{resp.json()['id']}").json()
+        assert detail["fulfillment_note"] == "משלוח לחדרה ולפרדס חנה"
 
     def test_create_past_aware_deadline_is_400_not_500(self, client, db):
         """A past aware deadline → Hebrew 400, never a 500."""
@@ -569,6 +624,7 @@ def _contact_details_in(text: str) -> list[str]:
 # contain an all-digit run that trips a phone regex, which would make this
 # test flaky for a reason unrelated to what it guards.
 _FIXED_GB_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+_FIXED_PRODUCER_ID = "ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee"
 
 
 class TestFundedNotificationPrivacy:
@@ -614,7 +670,11 @@ class TestFundedNotificationPrivacy:
             "app.services.group_buy_notifications.send_email", _capture
         ):
             notify_participant_funded(
-                "buyer@test.com", "רכש קמח מלא", "מאפיית הגליל", _FIXED_GB_ID
+                "buyer@test.com",
+                "רכש קמח מלא",
+                "מאפיית הגליל",
+                _FIXED_GB_ID,
+                _FIXED_PRODUCER_ID,
             )
 
         assert _contact_details_in(sent["body"]) == []
@@ -622,6 +682,10 @@ class TestFundedNotificationPrivacy:
         # name is not a contact detail.
         assert "מאפיית הגליל" in sent["body"]
         assert f"/group-buys/{_FIXED_GB_ID}" in sent["body"]
+        # MEH-2453: the business page is where its delivery areas and pickup
+        # points live. A link, never the business's contact details.
+        business_line = f"לדף העסק: {settings.frontend_url}/producer/{_FIXED_PRODUCER_ID}"
+        assert business_line in sent["body"]
 
 
 class TestFundedNotificationDispatch:
@@ -691,8 +755,13 @@ class TestFundedNotificationDispatch:
         # stripped first — a random uuid4 can contain a phone-shaped digit run,
         # which would be a false positive about the URL, not about a leak.
         for s in sends:
-            scrubbed = s["body"].replace(str(gb.id), "")
+            scrubbed = s["body"].replace(str(gb.id), "").replace(str(producer.id), "")
             assert _contact_details_in(scrubbed) == [], s["body"]
+
+        # MEH-2453: each participant gets a link to THIS business's page.
+        for m in participant_msgs:
+            assert f"/producer/{producer.id}" in m["body"], m["body"]
+        assert f"/producer/{producer.id}" not in owner_msg["body"]
 
     def test_flap_around_threshold_sends_nothing_the_second_time(
         self, client, db, monkeypatch
