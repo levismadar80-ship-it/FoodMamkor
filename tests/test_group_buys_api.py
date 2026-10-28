@@ -6,6 +6,7 @@ min_participants, revert-to-open on cancel, duplicate/closed/full/deadline
 error paths). Uses the shared conftest fixtures + a producer-user helper
 mirroring test_producer_recipes.py.
 """
+
 import re
 from datetime import datetime, timedelta, timezone
 from unittest import mock
@@ -45,7 +46,7 @@ def _make_group_buy(
     gb = GroupBuy(
         producer_id=producer.id,
         title="רכש קמח מלא",
-        description="שק 25 ק\"ג",
+        description='שק 25 ק"ג',
         product_name="קמח מלא",
         unit="שק",
         price_per_unit_regular=120,
@@ -118,6 +119,63 @@ class TestListAndGet:
     def test_get_detail_404(self, client, db):
         resp = client.get(f"/group-buys/{uuid4()}")
         assert resp.status_code == 404
+
+
+# ---------- MEH-2484: only an approved business's group buys are public ----------
+#
+# LOCK «בתי עסק מאושרים בלבד». A group buy whose business was rejected or is
+# still pending must not reach the public list (and through it the sitemap),
+# its public page, or a stranger's join. Each case carries an approved-business
+# control on the same path, so a red names the gate and not the fixture.
+class TestApprovedBusinessOnly:
+    def test_list_hides_a_non_approved_business(self, client, db):
+        approved, _ = _producer_user(db, email="gb-ok@test.com")
+        _make_group_buy(db, approved, city="approved-city")
+        for i, status in enumerate(("pending", "rejected")):
+            hidden, _ = _producer_user(
+                db, email=f"gb-hidden{i}@test.com", status=status
+            )
+            _make_group_buy(db, hidden, city=f"{status}-city")
+        cities = {g["city"] for g in client.get("/group-buys").json()}
+        assert "approved-city" in cities
+        assert "pending-city" not in cities
+        assert "rejected-city" not in cities
+
+    def test_detail_is_404_for_a_stranger_when_the_business_is_not_approved(
+        self, client, db
+    ):
+        producer, _ = _producer_user(db, email="gb-pend@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        stranger = make_user(db, email="gb-stranger@test.com")
+        assert client.get(f"/group-buys/{gb.id}").status_code == 404
+        resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(stranger))
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "קבוצת הרכש לא נמצאה"
+
+    def test_detail_stays_visible_to_its_owner_and_to_admin(self, client, db):
+        producer, owner = _producer_user(db, email="gb-own@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        admin = make_user(db, email="gb-admin@test.com", role="admin")
+        assert (
+            client.get(f"/group-buys/{gb.id}", headers=auth_header(owner)).status_code
+            == 200
+        )
+        assert (
+            client.get(f"/group-buys/{gb.id}", headers=auth_header(admin)).status_code
+            == 200
+        )
+
+    def test_stranger_cannot_join_when_the_business_is_not_approved(self, client, db):
+        producer, _ = _producer_user(db, email="gb-rej@test.com", status="rejected")
+        gb = _make_group_buy(db, producer)
+        buyer = make_user(db, email="gb-buyer@test.com")
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(buyer),
+        )
+        assert resp.status_code == 404
+        assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
 
 
 # ---------- the owner's own list (MEH-2437) ----------
@@ -316,8 +374,7 @@ class TestCreate:
             ran.append(label)
         assert len(ran) == len(self._blank_note_payloads())
         assert (
-            db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).count()
-            == 0
+            db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).count() == 0
         )
 
     def test_blank_fulfillment_note_error_is_hebrew(self, client, db):
@@ -354,8 +411,10 @@ class TestCreate:
     def test_create_past_aware_deadline_is_400_not_500(self, client, db):
         """A past aware deadline → Hebrew 400, never a 500."""
         _, user = _producer_user(db)
-        past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat().replace(
-            "+00:00", "Z"
+        past = (
+            (datetime.now(timezone.utc) - timedelta(days=1))
+            .isoformat()
+            .replace("+00:00", "Z")
         )
         resp = client.post(
             "/group-buys",
@@ -411,9 +470,7 @@ class TestCommitLifecycle:
 
     def test_commit_rejected_after_deadline(self, client, db):
         producer, _ = _producer_user(db)
-        gb = _make_group_buy(
-            db, producer, deadline=utc_now() - timedelta(hours=1)
-        )
+        gb = _make_group_buy(db, producer, deadline=utc_now() - timedelta(hours=1))
         user = make_user(db, email="buyer3@test.com")
         resp = client.post(
             f"/group-buys/{gb.id}/commit",
@@ -441,9 +498,7 @@ class TestCommitLifecycle:
 
     def test_commit_rejected_when_full(self, client, db):
         producer, _ = _producer_user(db)
-        gb = _make_group_buy(
-            db, producer, min_participants=5, max_participants=1
-        )
+        gb = _make_group_buy(db, producer, min_participants=5, max_participants=1)
         first_user = make_user(db, email="full1@test.com")
         client.post(
             f"/group-buys/{gb.id}/commit",
@@ -467,18 +522,14 @@ class TestCommitLifecycle:
             json={"quantity": 1},
             headers=auth_header(user),
         )
-        resp = client.delete(
-            f"/group-buys/{gb.id}/commit", headers=auth_header(user)
-        )
+        resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(user))
         assert resp.status_code == 200
 
     def test_cancel_without_commit_404(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(db, producer)
         user = make_user(db, email="nocommit@test.com")
-        resp = client.delete(
-            f"/group-buys/{gb.id}/commit", headers=auth_header(user)
-        )
+        resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(user))
         assert resp.status_code == 404
 
     def test_commit_and_cancel_after_aware_create(self, client, db):
@@ -594,9 +645,7 @@ class TestFullLifecycle:
         assert funded["commits_count"] == 2
 
         # 6. Consumer #2 cancels → drops below min → reverts to open, count 1.
-        cancel = client.delete(
-            f"/group-buys/{gb_id}/commit", headers=auth_header(c2)
-        )
+        cancel = client.delete(f"/group-buys/{gb_id}/commit", headers=auth_header(c2))
         assert cancel.status_code == 200, cancel.text
         reopened = client.get(f"/group-buys/{gb_id}").json()
         assert reopened["status"] == "open"
@@ -645,12 +694,8 @@ class TestFundedNotificationPrivacy:
         def _capture(to, subject, body, html=None):
             sent.update(to=to, subject=subject, body=body)
 
-        with mock.patch(
-            "app.services.group_buy_notifications.send_email", _capture
-        ):
-            notify_producer_funded(
-                "owner@test.com", "רכש קמח מלא", 7, _FIXED_GB_ID
-            )
+        with mock.patch("app.services.group_buy_notifications.send_email", _capture):
+            notify_producer_funded("owner@test.com", "רכש קמח מלא", 7, _FIXED_GB_ID)
 
         # Absence: zero phone numbers, zero email addresses in the body.
         assert _contact_details_in(sent["body"]) == []
@@ -666,9 +711,7 @@ class TestFundedNotificationPrivacy:
         def _capture(to, subject, body, html=None):
             sent.update(to=to, subject=subject, body=body)
 
-        with mock.patch(
-            "app.services.group_buy_notifications.send_email", _capture
-        ):
+        with mock.patch("app.services.group_buy_notifications.send_email", _capture):
             notify_participant_funded(
                 "buyer@test.com",
                 "רכש קמח מלא",
@@ -684,7 +727,9 @@ class TestFundedNotificationPrivacy:
         assert f"/group-buys/{_FIXED_GB_ID}" in sent["body"]
         # MEH-2453: the business page is where its delivery areas and pickup
         # points live. A link, never the business's contact details.
-        business_line = f"לדף העסק: {settings.frontend_url}/producer/{_FIXED_PRODUCER_ID}"
+        business_line = (
+            f"לדף העסק: {settings.frontend_url}/producer/{_FIXED_PRODUCER_ID}"
+        )
         assert business_line in sent["body"]
 
 
@@ -786,9 +831,7 @@ class TestFundedNotificationDispatch:
         assert first_round == 3  # 1 business + 2 participants
 
         # funded -> cancel -> open
-        cancel = client.delete(
-            f"/group-buys/{gb.id}/commit", headers=auth_header(b2)
-        )
+        cancel = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b2))
         assert cancel.status_code == 200, cancel.text
         assert client.get(f"/group-buys/{gb.id}").json()["status"] == "open"
 
@@ -812,9 +855,7 @@ class TestFundedNotificationDispatch:
         def _boom(*args, **kwargs):
             raise RuntimeError("Resend is down")
 
-        monkeypatch.setattr(
-            "app.services.group_buy_notifications.send_email", _boom
-        )
+        monkeypatch.setattr("app.services.group_buy_notifications.send_email", _boom)
         producer, _ = _producer_user(db, email="gbowner_boom@test.com")
         gb = _make_group_buy(db, producer, min_participants=1)
         buyer = make_user(db, email="boom_b1@test.com")
@@ -850,9 +891,7 @@ class TestFundedNotificationDispatch:
         assert stored.phone is None
 
         # And the field is gone from the API contract entirely.
-        detail = client.get(
-            f"/group-buys/{gb.id}", headers=auth_header(buyer)
-        ).json()
+        detail = client.get(f"/group-buys/{gb.id}", headers=auth_header(buyer)).json()
         assert detail["user_commit"] is not None
         assert "phone" not in detail["user_commit"]
 
@@ -1010,9 +1049,7 @@ class TestOwnerStatusChange:
         assert resp.status_code == 200
         assert self._status_in_db(db, gb) == "open"
 
-    def test_owner_of_a_no_longer_approved_business_can_still_cancel(
-        self, client, db
-    ):
+    def test_owner_of_a_no_longer_approved_business_can_still_cancel(self, client, db):
         # Creating needs an approved business; closing does not, on purpose: a
         # business that was suspended must still be able to close what it opened.
         producer, owner = _producer_user(db, email="own15@test.com", status="pending")
@@ -1032,7 +1069,9 @@ class TestOwnerStatusChange:
             db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1))
             db.commit()
             assert self._patch(client, gb, final, owner).status_code == 200
-            resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(buyer))
+            resp = client.delete(
+                f"/group-buys/{gb.id}/commit", headers=auth_header(buyer)
+            )
             assert resp.status_code == 400, (final, resp.json())
             assert self._status_in_db(db, gb) == final
             assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1
@@ -1070,14 +1109,18 @@ class TestCancelNotification:
         for email in emails:
             buyer = make_user(db, email=email)
             resp = client.post(
-                f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+                f"/group-buys/{gb.id}/commit",
+                json={"quantity": 1},
+                headers=auth_header(buyer),
             )
             assert resp.status_code == 201, resp.text
 
     @staticmethod
     def _patch(client, gb, status, user):
         return client.patch(
-            f"/group-buys/{gb.id}/status", json={"status": status}, headers=auth_header(user)
+            f"/group-buys/{gb.id}/status",
+            json={"status": status},
+            headers=auth_header(user),
         )
 
     def test_template_wording_and_no_contact_details(self):
@@ -1087,7 +1130,9 @@ class TestCancelNotification:
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch("app.services.group_buy_notifications.send_email", _capture):
-            notify_participant_cancelled("buyer@test.com", "רכש קמח מלא", "מאפיית הגליל")
+            notify_participant_cancelled(
+                "buyer@test.com", "רכש קמח מלא", "מאפיית הגליל"
+            )
 
         assert sent["to"] == "buyer@test.com"
         assert sent["subject"] == 'מהמקור — הקבוצה "רכש קמח מלא" בוטלה'
@@ -1099,7 +1144,9 @@ class TestCancelNotification:
         )
         assert _contact_details_in(sent["body"]) == []
 
-    def test_owner_cancels_open_group_every_participant_is_told(self, client, db, monkeypatch):
+    def test_owner_cancels_open_group_every_participant_is_told(
+        self, client, db, monkeypatch
+    ):
         sends = self._capture_sends(monkeypatch)
         producer, owner = _producer_user(db, email="cn_own1@test.com")
         gb = _make_group_buy(db, producer, min_participants=5)
@@ -1128,7 +1175,9 @@ class TestCancelNotification:
             "cn_f2@test.com",
         ]
 
-    def test_closing_after_the_deadline_also_tells_participants(self, client, db, monkeypatch):
+    def test_closing_after_the_deadline_also_tells_participants(
+        self, client, db, monkeypatch
+    ):
         sends = self._capture_sends(monkeypatch)
         producer, owner = _producer_user(db, email="cn_own3@test.com")
         gb = _make_group_buy(db, producer, min_participants=5)
@@ -1190,22 +1239,30 @@ class TestCancelNotification:
         resp = self._patch(client, gb, "cancelled", owner)
         assert resp.status_code == 200, resp.text
         db.expire_all()
-        assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+        assert (
+            db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+        )
 
-    def test_owner_who_joined_her_own_group_is_not_emailed(self, client, db, monkeypatch):
+    def test_owner_who_joined_her_own_group_is_not_emailed(
+        self, client, db, monkeypatch
+    ):
         sends = self._capture_sends(monkeypatch)
         producer, owner = _producer_user(db, email="cn_own9@test.com")
         gb = _make_group_buy(db, producer, min_participants=5)
         self._join(client, db, gb, "cn_o1@test.com")
         resp = client.post(
-            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(owner)
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(owner),
         )
         assert resp.status_code == 201, resp.text
 
         assert self._patch(client, gb, "cancelled", owner).status_code == 200
         assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_o1@test.com"]
 
-    def test_admin_cancel_through_the_admin_route_sends_nothing(self, client, db, monkeypatch):
+    def test_admin_cancel_through_the_admin_route_sends_nothing(
+        self, client, db, monkeypatch
+    ):
         sends = self._capture_sends(monkeypatch)
         producer, _ = _producer_user(db, email="cn_own10@test.com")
         admin = make_user(db, role="admin", email="cn_adm10@test.com")
@@ -1213,9 +1270,12 @@ class TestCancelNotification:
         self._join(client, db, gb, "cn_a1@test.com")
 
         resp = client.patch(
-            f"/admin/group-buys/{gb.id}/status?status=cancelled", headers=auth_header(admin)
+            f"/admin/group-buys/{gb.id}/status?status=cancelled",
+            headers=auth_header(admin),
         )
         assert resp.status_code == 200, resp.text
         db.expire_all()
-        assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+        assert (
+            db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+        )
         assert sends == []
