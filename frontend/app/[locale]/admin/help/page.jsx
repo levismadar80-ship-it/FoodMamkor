@@ -59,7 +59,7 @@ export default function AdminHelpPage() {
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
         {/* Sticky TOC */}
         <aside className="md:sticky md:top-24 self-start bg-white border border-border rounded-[12px] p-4 text-sm">
-          <p className="text-xs uppercase tracking-wider text-muted mb-2">{t("toc_label")}</p>
+          <p className="text-xs text-muted mb-2">{t("toc_label")}</p>
           <nav className="flex flex-col gap-1.5">
             <a href="#dashboard" className="hover:text-primary transition">{t("toc.dashboard")}</a>
             <a href="#producers" className="hover:text-primary transition">{t("toc.producers")}</a>
