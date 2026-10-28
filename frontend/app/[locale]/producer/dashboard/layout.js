@@ -33,6 +33,7 @@ import {
   Wrench,
   Eye,
   Storefront,
+  CalendarBlank,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
@@ -46,6 +47,20 @@ const TABS = [
   { key: "insights", href: "/producer/dashboard/insights", Icon: ChartLine },
   { key: "tools", href: "/producer/dashboard/tools", Icon: Wrench },
 ];
+
+// MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing — no
+// insights over a catalog, no seller tools. Profile + its events only. The
+// events tab label is the organizer dashboard heading approved on MEH-2458.
+const ORGANIZER_TABS = [
+  { key: "overview", href: "/producer/dashboard", Icon: SquaresFour, exact: true },
+  { key: "edit", href: "/producer/dashboard/edit", Icon: PencilSimple },
+  { key: "organizer_events", href: "/producer/dashboard/events", Icon: CalendarBlank },
+];
+
+/** The tab set for this owner. `/auth/me` carries producer_kind (MEH-2460). */
+function tabsFor(user) {
+  return user?.producer_kind === "organizer" ? ORGANIZER_TABS : TABS;
+}
 
 /**
  * MEH-1638: what renders while useAuth() is still resolving /auth/me.
@@ -152,6 +167,8 @@ export default function ProducerDashboardLayout({ children }) {
 
   const isActive = (tab) =>
     tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+  const tabs = tabsFor(user);
+  const isOrganizer = user.producer_kind === "organizer";
 
   return (
     <div>
@@ -165,7 +182,7 @@ export default function ProducerDashboardLayout({ children }) {
             stacked over the label, so all four + the view link fit without
             horizontal scroll. sm+ keeps the original inline row. */}
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const active = isActive(tab);
             return (
               <Link
@@ -198,7 +215,10 @@ export default function ProducerDashboardLayout({ children }) {
               covers /producer/{id} (middleware.js) and the owner-exception is
               once again what decides. Do not "fix" this href — the edge was the
               bug, not the URL. */}
-          {user.producer_id && (
+          {/* MEH-2460: hidden for an organizer — /producer/{id} is a business
+              page, and an organizer's public page is /organizers/{slug}
+              (MEH-2461 chunk 3), which re-points this link. */}
+          {user.producer_id && !isOrganizer && (
             <Link
               href={`/producer/${user.producer_id}`}
               aria-label={t("view_page")}

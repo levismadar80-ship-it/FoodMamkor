@@ -444,6 +444,8 @@ export default function ProducerDashboardPage() {
   // (GBP Profile Strength pattern). Once approved AND complete, today's
   // order stands — availability first, the daily action of a live business.
   const completenessFirst = !isApproved || !isComplete;
+  // MEH-2460: organizer (ADR-036) — no availability, no business checklist.
+  const isOrganizer = profile?.kind === "organizer";
 
   return (
     <div
@@ -590,7 +592,9 @@ export default function ProducerDashboardPage() {
       {/* MEH-1134: completeness-first while pending/incomplete — the single
           mount for that state (the mirror-gated mount below covers the
           approved+complete state, so the card renders exactly once). */}
-      {completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
+      {/* MEH-2460: an organizer's checklist is the draft banner (photo,
+          description, event, phone) — this card counts products / location. */}
+      {completenessFirst && profile && !isOrganizer && <ProfileCompletenessCard producer={profile} />}
       {/* MEH-1261 F2: profile fetch failed → say so where the completeness
           card would render (completenessFirst is true when profile is null). */}
       {completenessFirst && !profile && profileError && (
@@ -649,6 +653,9 @@ export default function ProducerDashboardPage() {
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
           enum. Backend dual-writes to legacy columns during the 7-day
           overlap (Phase 4 drops them). */}
+      {/* MEH-2460: no availability states for an organizer — it takes no
+          orders (ADR-036). */}
+      {!isOrganizer && (
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
           {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
@@ -794,6 +801,7 @@ export default function ProducerDashboardPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics

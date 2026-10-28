@@ -4055,7 +4055,8 @@
         "edit": "Edit",
         "insights": "Insights",
         "tools": "Tools",
-        "view_page": "View page"
+        "view_page": "View page",
+        "organizer_events": "Your events"
       },
       "load_error": {
         "title": "We couldn't load your dashboard",
@@ -4639,6 +4640,7 @@
       },
       "manage_events": {
         "heading": "My events",
+        "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
         "empty_description": "An open day, a market stall or a harvest — a one-time event that appears on your business page and brings in new customers.",

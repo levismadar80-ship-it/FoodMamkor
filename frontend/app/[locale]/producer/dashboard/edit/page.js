@@ -149,6 +149,9 @@ const METHOD_FIELD = {
 // values (?group=…) that links and tests already use. This array is the hub's
 // tile order.
 const GROUP_KEYS = ["profile", "products", "location", "contact", "trust"];
+// MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing — no
+// products, no location / delivery, no license or kashrut. Profile + contact.
+const ORGANIZER_GROUP_KEYS = ["profile", "contact"];
 
 // Ordered member card keys per group — for the hub completion count + the
 // next-step marker placement.
@@ -446,6 +449,12 @@ function EditPageInner() {
     );
   }
 
+  // MEH-2460: the groups this owner may see. A group outside the set stays
+  // hidden even when reached by ?group= directly.
+  const isOrganizer = profile.kind === "organizer";
+  const visibleGroupKeys = isOrganizer ? ORGANIZER_GROUP_KEYS : GROUP_KEYS;
+  const groupHidden = (key) => group !== key || !visibleGroupKeys.includes(key);
+
   // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
   // whose summary signal reads empty gets a single 8px accent dot — so the
   // owner always knows where to start. Derived from the SAME profile fields
@@ -726,7 +735,7 @@ function EditPageInner() {
           {tAcc("hub_title")}
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {GROUP_KEYS.map((g) => {
+          {visibleGroupKeys.map((g) => {
             const tile = groupTile(g);
             return (
               <EditHubCard
@@ -747,7 +756,7 @@ function EditPageInner() {
               business name. Products + pricing moved to their own group
               (MEH-2433). ===== */}
       <div
-        hidden={group !== "profile"}
+        hidden={groupHidden("profile")}
         className="space-y-6"
         data-testid="group-profile"
       >
@@ -770,7 +779,9 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* ② Edit-tab chunk A — producer-facing categories editor */}
+        {/* ② Edit-tab chunk A — producer-facing categories editor.
+            MEH-2460: never for an organizer — no food category (ADR-036). */}
+        {!isOrganizer && (
         <EditAccordionCard
           anchorId="categories"
           title={t("categories.heading")}
@@ -788,6 +799,7 @@ function EditPageInner() {
             reportDirty={reportDirty}
           />
         </EditAccordionCard>
+        )}
 
         {/* ④ MEH-1173: business description card (hero description + tagline + AI assist) */}
         <EditAccordionCard
@@ -857,7 +869,7 @@ function EditPageInner() {
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
       <div
-        hidden={group !== "products"}
+        hidden={groupHidden("products")}
         className="space-y-6"
         data-testid="group-products"
       >
@@ -985,7 +997,7 @@ function EditPageInner() {
       {/* ===== GROUP: location — locations, delivery, order window, special
               hours (the offer moved to products, MEH-2433) ===== */}
       <div
-        hidden={group !== "location"}
+        hidden={groupHidden("location")}
         className="space-y-6"
         data-testid="group-location"
       >
@@ -1116,7 +1128,7 @@ function EditPageInner() {
 
       {/* ===== GROUP: contact — contact-channels, questions ===== */}
       <div
-        hidden={group !== "contact"}
+        hidden={groupHidden("contact")}
         className="space-y-6"
         data-testid="group-contact"
       >
@@ -1183,7 +1195,7 @@ function EditPageInner() {
               in the hub, and down to licence + kashrut only — the dietary and
               grass-fed claims moved to the products group. ===== */}
       <div
-        hidden={group !== "trust"}
+        hidden={groupHidden("trust")}
         className="space-y-6"
         data-testid="group-trust"
       >
