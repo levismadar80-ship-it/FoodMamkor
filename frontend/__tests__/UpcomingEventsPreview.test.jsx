@@ -72,4 +72,12 @@ describe("UpcomingEventsPreview", () => {
     expect(screen.getAllByTestId("event-image-missing")).toHaveLength(1);
     expect(screen.getByText(BRAND_NAME)).toBeInTheDocument();
   });
+
+  it("MEH-2469: a start–end range renders inside an LTR isolate (no «15:00–09:30» flip)", async () => {
+    apiResponseRef.current = { data: [{ ...IMAGED, event_time: "09:30:00", end_time: "15:00:00" }] };
+    render(<UpcomingEventsPreview />);
+    const range = await screen.findByText("09:30–15:00");
+    expect(range.getAttribute("dir")).toBe("ltr");
+  });
 });
+

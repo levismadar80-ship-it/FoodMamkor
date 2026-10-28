@@ -143,3 +143,43 @@ class TestUpdate:
         )
         assert resp.status_code == 200, resp.text
         assert resp.json()["end_time"] is None
+
+
+class TestReviewRound1:
+    """Review #3717: offsets, start moved past the end, the list read."""
+
+    def test_time_with_an_offset_is_wall_clock_not_a_500(self, client, db):
+        user = _owner(db, "meh2469-i@example.com")
+        resp = client.post(
+            "/events",
+            json=_payload(event_time="09:30+02:00", end_time="15:00"),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["event_time"] == "09:30:00"
+        assert resp.json()["end_time"] == "15:00:00"
+
+    def test_moving_the_start_past_the_stored_end_is_rejected(self, client, db):
+        user = _owner(db, "meh2469-j@example.com")
+        created = client.post(
+            "/events",
+            json=_payload(event_time="09:30", end_time="15:00"),
+            headers=auth_header(user),
+        ).json()
+        resp = client.put(
+            f"/events/{created['id']}",
+            json={"event_time": "16:00"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+        assert resp.json()["detail"] == MSG
+
+    def test_the_public_list_carries_end_time(self, client, db):
+        user = _owner(db, "meh2469-k@example.com")
+        client.post(
+            "/events",
+            json=_payload(event_time="09:30", end_time="15:00"),
+            headers=auth_header(user),
+        )
+        rows = client.get("/events").json()
+        assert [r["end_time"] for r in rows] == ["15:00:00"]

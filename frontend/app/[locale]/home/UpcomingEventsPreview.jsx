@@ -8,6 +8,7 @@ import api from "@/lib/api";
 // MEH-785: locale-aware dates via the shared helper — replaces the local
 // formatEventDate that hardcoded "he-IL" (escaped the MEH-753/MEH-777 sweeps).
 import { formatEventDate } from "@/lib/format-date";
+import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -71,7 +72,12 @@ export function UpcomingEventsPreview() {
             )}
             <div className="p-4">
               <p className="text-primary text-sm font-semibold mb-1">
-                {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long" })} {ev.event_time && `· ${ev.event_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`}
+                {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long" })} {ev.event_time && (
+                  <>
+                    {"· "}
+                    <span dir="ltr">{formatTimeRange(ev.event_time, ev.end_time)}</span>
+                  </>
+                )}
               </p>
               <h3 className="font-headline-md text-xl font-bold text-text mb-1">{ev.title}</h3>
               <p className="text-sm text-fg-muted mb-2">

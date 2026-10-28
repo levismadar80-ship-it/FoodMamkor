@@ -4210,6 +4210,14 @@ def event_end_time_problem(
     return None
 
 
+def naive_wall_clock(value: time | None) -> time | None:
+    """Event times are Israel wall-clock. An offset on one ("15:00+02:00") means
+    nothing here, and comparing an aware time with a naive one raises TypeError
+    (→ 500). Drop it at the boundary (review #3717; datetime precedent: the
+    MEH-1454 deadline normaliser)."""
+    return value.replace(tzinfo=None) if value is not None else None
+
+
 class EventCreate(BaseModel):
     # MEH-1626 chunk 1: the exact asymmetry the audit flagged — `description`
     # below was bleached, `title` (the more visible field) was not.
@@ -4231,6 +4239,12 @@ class EventCreate(BaseModel):
     price: int = 0
     max_participants: int | None = None
     registration_url: str | None = None
+
+    # MEH-2469: wall-clock times, offsets dropped before any comparison.
+    @field_validator("event_time", "end_time")
+    @classmethod
+    def _naive_times(cls, v):
+        return naive_wall_clock(v)
 
     @field_validator("description")
     @classmethod
@@ -4301,6 +4315,12 @@ class EventUpdate(BaseModel):
     max_participants: int | None = None
     registration_url: str | None = None
     is_active: bool | None = None
+
+    # MEH-2469: wall-clock times, offsets dropped before any comparison.
+    @field_validator("event_time", "end_time")
+    @classmethod
+    def _naive_times(cls, v):
+        return naive_wall_clock(v)
 
     @field_validator("description")
     @classmethod

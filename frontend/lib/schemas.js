@@ -494,6 +494,8 @@ export const OrganizerPageSchema = z.object({
         id: z.union([z.string(), z.number()]),
         title: z.string(),
         event_date: z.string(),
+        event_time: z.string().nullable().optional(), // MEH-2469
+        end_time: z.string().nullable().optional(), // MEH-2469
         city: z.string().nullable().optional(),
       }),
     )

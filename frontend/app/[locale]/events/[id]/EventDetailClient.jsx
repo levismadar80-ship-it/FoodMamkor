@@ -8,6 +8,7 @@ import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -118,12 +119,12 @@ export default function EventDetailClient() {
             <Calendar size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
             {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
             {event.event_time && (
-              // MEH-2469: «09:30–15:00» when there is an end time.
-              <span dir="ltr">
+              // MEH-2469: «09:30–15:00» when there is an end time. The «·» stays
+              // outside the LTR isolate so it keeps following the date in RTL.
+              <>
                 {" · "}
-                {event.event_time.slice(0, 5)}
-                {event.end_time ? `–${event.end_time.slice(0, 5)}` : ""}
-              </span>
+                <span dir="ltr">{formatTimeRange(event.event_time, event.end_time)}</span>
+              </>
             )}
           </p>
           {event.location && (

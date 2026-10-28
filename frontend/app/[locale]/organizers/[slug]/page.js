@@ -22,6 +22,7 @@ import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { isSlugShaped } from "@/lib/slug";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { formatTimeRange } from "@/lib/time-range";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramUrl } from "@/lib/social-links";
 import { OrganizerPageSchema } from "@/lib/schemas";
@@ -194,9 +195,12 @@ export default async function OrganizerPage(props) {
                   <span className="block text-sm text-fg-muted">
                     {formatEventDate(ev.event_date, locale)}
                     {/* MEH-2469: start, or «09:30–15:00» with an end time. */}
-                    {ev.event_time
-                      ? ` · ${String(ev.event_time).slice(0, 5)}${ev.end_time ? `–${String(ev.end_time).slice(0, 5)}` : ""}`
-                      : ""}
+                    {ev.event_time && (
+                      <>
+                        {" · "}
+                        <span dir="ltr">{formatTimeRange(ev.event_time, ev.end_time)}</span>
+                      </>
+                    )}
                     {ev.city ? ` · ${ev.city}` : ""}
                   </span>
                   <span className="block font-medium text-text mt-1">{ev.title}</span>

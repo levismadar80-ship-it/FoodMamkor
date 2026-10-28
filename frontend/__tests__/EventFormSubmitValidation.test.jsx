@@ -234,4 +234,3 @@ describe("EventForm — submit validation (MEH-1809)", () => {
     expect(api.post.mock.calls[0][1].end_time).toBeNull();
   });
 });
-

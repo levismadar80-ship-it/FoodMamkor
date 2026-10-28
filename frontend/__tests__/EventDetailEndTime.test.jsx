@@ -55,7 +55,10 @@ beforeEach(() => vi.clearAllMocks());
 describe("MEH-2469 — event page time line", () => {
   it("start + end: «09:30–15:00»", async () => {
     await renderEvent({ event_time: "09:30:00", end_time: "15:00:00" });
-    expect(document.body.textContent).toContain("09:30–15:00");
+    const range = screen.getByText("09:30–15:00");
+    // review #3717: the range is LTR-isolated, the «·» separator is not.
+    expect(range.getAttribute("dir")).toBe("ltr");
+    expect(range.textContent).not.toContain("·");
   });
 
   it("start only: «09:30» with no dash", async () => {
