@@ -369,3 +369,20 @@ describe("the confirm dialog keeps and returns focus (MEH-2491)", () => {
     expect(document.activeElement).toBe(trigger);
   });
 });
+
+// Review finding on #3780: a confirmed cancel leaves the card with no action
+// row, so the button that opened the dialog is gone at close time.
+describe("after a confirmed action focus lands on the card (MEH-2491)", () => {
+  it("cancel confirmed: focus is on that card, not <body>", async () => {
+    patch.mockResolvedValue({ data: { detail: "ok", status: "cancelled" } });
+    await renderWith([groupBuy({ id: "a" }), groupBuy({ id: "b" })]);
+    const second = screen.getAllByTestId("manage-group-buy-card")[1];
+    const trigger = within(second).getByTestId("group-buy-action-cancel");
+    trigger.focus();
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.contains(trigger)).toBe(false);
+    expect(document.activeElement).toBe(screen.getAllByTestId("manage-group-buy-card")[1]);
+  });
+});

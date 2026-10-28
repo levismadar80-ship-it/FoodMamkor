@@ -317,7 +317,11 @@ function ownerActions(gb, deadlinePassed) {
 function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose }) {
   const t = useTranslations("group_buys.dashboard.actions");
   const dialogRef = useRef(null);
-  useDialogFocus(dialogRef, true);
+  // A confirmed cancel/deliver ends in a state with no action row, so the
+  // button that opened this is gone by close time; focus goes to its card.
+  useDialogFocus(dialogRef, true, () =>
+    document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`),
+  );
 
   useEffect(() => {
     const onKey = (e) => {
@@ -623,7 +627,15 @@ export default function ProducerGroupBuysPage() {
               : STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
-              <div key={gb.id} data-testid="manage-group-buy-card" className="bg-white rounded-[14px] border border-border p-5">
+              <div
+                key={gb.id}
+                data-testid="manage-group-buy-card"
+                // MEH-2491: focus target after the dialog closes on a card
+                // whose action buttons are gone (useDialogFocus fallback).
+                data-group-buy-card={gb.id}
+                tabIndex={-1}
+                className="bg-white rounded-[14px] border border-border p-5 focus:outline-none"
+              >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <h2 className="font-semibold text-text">{gb.title}</h2>

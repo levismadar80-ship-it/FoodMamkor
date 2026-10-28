@@ -474,7 +474,11 @@ export default function ProductsSection({
   // add form's submit).
   const deleteDialogRef = useRef(null);
   const duplicateDialogRef = useRef(null);
-  useDialogFocus(deleteDialogRef, !!confirmDelete);
+  // A confirmed delete removes the row, and its button, before close: focus
+  // falls back to the products section rather than the top of the page (the
+  // section, not its heading: embedded mode renders no heading).
+  const sectionRef = useRef(null);
+  useDialogFocus(deleteDialogRef, !!confirmDelete, () => sectionRef.current);
   useDialogFocus(duplicateDialogRef, confirmDuplicate);
 
   // MEH-1447: Escape closes the delete-confirm dialog unless a delete is in
@@ -503,7 +507,11 @@ export default function ProductsSection({
   if (loading) return null;
 
   return (
-    <div className={embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}>
+    <div
+      ref={sectionRef}
+      tabIndex={-1}
+      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}`}
+    >
       <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
         {!embedded && (
           <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
