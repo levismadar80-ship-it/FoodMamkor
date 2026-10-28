@@ -13,7 +13,7 @@ import AdminReviewChecklist from "./AdminReviewChecklist";
 import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { BADGE_CONFIG } from "@/lib/badges";
+import { BADGE_CONFIG, isKashrutCurrent } from "@/lib/badges";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -211,15 +211,7 @@ function CompletenessBadge({ missing, priority }) {
 // MEH-2521: the admin ✡ follows VERIFIED kashrut — the same predicate the
 // public kosher badge uses (lib/badges.js, case "kosher": MEH-986 + MEH-1260
 // expiry) — never the free-text `producer.kosher` string, which no public
-// surface renders. Inlined because badges.js exports no named predicate.
-function isKashrutCurrent(producer) {
-  return (
-    !!producer.kashrut_verified_at &&
-    (!producer.kashrut_expires_at ||
-      new Date(producer.kashrut_expires_at) > new Date())
-  );
-}
-
+// surface renders. Same predicate as the public strip (lib/badges.js).
 export function ProducerTags({ producer }) {
   const t = useTranslations("admin");
   return (
