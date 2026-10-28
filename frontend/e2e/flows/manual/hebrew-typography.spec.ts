@@ -97,6 +97,8 @@ test.describe("manual › Hebrew typography (MEH-2488)", () => {
     await page.locator(h1).first().waitFor({ state: "visible", ...FIRST_PAINT });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const m = await lastLine(page, h1);
+    // The share threshold depends on the copy; the computed style pins the cause.
+    expect(await page.locator(h1).first().evaluate((el) => getComputedStyle(el).getPropertyValue("text-wrap-style"))).toBe("balance");
     expect(m.lines, `"${m.text}" must wrap at 375, else balance has nothing to do`).toBeGreaterThanOrEqual(2);
     expect(m.lastShare, `"${m.text}" last line is ${Math.round(m.lastShare * 100)}% of the box`).toBeGreaterThan(0.3);
   });
