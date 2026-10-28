@@ -77,13 +77,10 @@ export default function AboutProcessClient() {
   const t = useTranslations("process");
   const tBadge = useTranslations("producer.badge");
 
-  // section marker: hairline gold rule + Cormorant italic numeral + eyebrow
-  const Marker = ({ n, children }) => (
+  // section marker: hairline gold rule + eyebrow (MEH-2439 dropped the numeral)
+  const Marker = ({ children }) => (
     <div className="flex items-center gap-3.5 mb-6">
       <span className="h-px w-10 bg-accent/70" aria-hidden />
-      <span aria-hidden className="numeric font-english italic font-semibold text-accent text-[21px]">
-        {n}
-      </span>
       <span className="font-body-md font-medium text-[11px] text-fg-muted">
         {children}
       </span>
@@ -142,7 +139,7 @@ export default function AboutProcessClient() {
       {/* ======== 02 — The 4-step personal process ======== */}
       <section className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <Marker n="01">{t("steps.marker")}</Marker>
+          <Marker>{t("steps.marker")}</Marker>
           <p className="font-english italic text-[19px] text-fg-muted mb-8 max-w-[48ch]">
             {t("steps.lead")}
           </p>
@@ -190,7 +187,7 @@ export default function AboutProcessClient() {
       {/* ======== 03 — What's checked for everyone ======== */}
       <section data-testid="process-everyone" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <Marker n="02">{t("everyone.marker")}</Marker>
+          <Marker>{t("everyone.marker")}</Marker>
           <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
             {t("everyone.h2")}
           </h2>
@@ -200,13 +197,6 @@ export default function AboutProcessClient() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-8">
             {EVERYONE.map(({ Icon }, i) => (
               <div key={i}>
-                <span
-                  aria-hidden
-                  className="numeric font-english italic font-semibold text-accent text-3xl md:text-[34px] block mb-2.5"
-                >
-                  {`0${i + 1}`}
-                  <span className="opacity-50">—</span>
-                </span>
                 <h3 className="font-headline-md font-bold text-[20px] leading-tight text-text mb-2 flex items-center gap-2">
                   <Icon size={18} className="text-primary shrink-0" aria-hidden />
                   {t(`everyone.c${i + 1}_title`)}
@@ -223,7 +213,7 @@ export default function AboutProcessClient() {
       {/* ======== 04 — The badge: what it adds ======== */}
       <section data-testid="process-badge" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <Marker n="03">{t("badge.marker")}</Marker>
+          <Marker>{t("badge.marker")}</Marker>
           <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
             <div>
               <p className="font-headline-md font-bold text-text text-[clamp(23px,5vw,28px)] leading-snug max-w-[24ch] tracking-tight">
@@ -267,7 +257,7 @@ export default function AboutProcessClient() {
       {/* ======== 05 — Public verification matrix ======== */}
       <section data-testid="process-matrix" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <Marker n="04">{t("matrix.marker")}</Marker>
+          <Marker>{t("matrix.marker")}</Marker>
           <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
             {t("matrix.h2")}
           </h2>
@@ -373,42 +363,46 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 06 — Founder closing line ======== */}
+      {/* MEH-2439: the quote is upright. Frank Ruhl Libre ships no italic, so
+          `italic` was a browser-synthesised slant, and the tracked eyebrow
+          spaced Hebrew letters apart. */}
       <section data-testid="process-closing" className="bg-background py-16 md:py-24 scroll-mt-24" aria-label={t("closing.em_mark")}>
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <span className="block font-english italic text-[15px] tracking-[0.16em] uppercase text-accent mb-5 ps-6 md:ps-8">
+          <span className="block font-body-md font-semibold text-[13px] text-accent mb-5 ps-6 md:ps-8">
             {t("closing.em_mark")}
           </span>
-          <blockquote className="border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[17ch] md:max-w-[19ch] font-headline-display italic font-medium text-primary-dark text-[clamp(28px,8vw,52px)] leading-tight tracking-tight">
+          <blockquote className="border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[20ch] md:max-w-[22ch] font-headline-display font-bold text-primary-dark text-[clamp(28px,8vw,52px)] leading-[1.15]">
             {t("closing.quote")}
           </blockquote>
-          <div className="ps-6 md:ps-8 mt-4 font-body-md text-[11px] tracking-wider uppercase text-fg-muted">
+          <div className="ps-6 md:ps-8 mt-5 font-body-md text-[15px] text-fg-muted">
             {t("closing.attrib")}
           </div>
         </div>
       </section>
 
       {/* ======== 07 — CTA → register ======== */}
-      <section id="join" data-testid="process-cta" className="bg-green-50 border-y border-border py-12 md:py-20 scroll-mt-24">
+      {/* MEH-2439: full brand green (was mint green-50), one column, cream button. */}
+      <section id="join" data-testid="process-cta" className="bg-primary text-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
+          <div className="grid grid-cols-1 gap-8 items-start">
             <div>
-              <h2 className="font-headline-lg font-bold text-text text-[clamp(27px,5.6vw,34px)] leading-tight tracking-tight max-w-[18ch]">
+              <h2 className="font-headline-lg font-black text-background text-[clamp(28px,6vw,44px)] leading-tight max-w-[22ch] text-balance">
                 {t("cta.h2")}
               </h2>
-              <p className="mt-3.5 font-body-md text-[16.5px] leading-relaxed text-fg-muted max-w-[46ch]">
+              <p className="mt-3.5 font-body-md text-[16.5px] leading-relaxed text-background/90 max-w-[46ch]">
                 {t("cta.intro")}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3.5 md:mt-1.5">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
               <BusinessCtaLink
                 href="/register/producer"
-                className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-primary text-white rounded-2xl font-body-md font-semibold text-base hover:bg-primary-dark transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 whitespace-nowrap"
+                className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-background text-primary rounded-lg font-body-md font-semibold text-base hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary whitespace-nowrap"
               >
                 {t("cta.submit")}
                 <ArrowLeft size={19} aria-hidden />
               </BusinessCtaLink>
-              <span className="font-body-md text-[13px] text-fg-muted">{t("cta.secondary")}</span>
+              <span className="font-body-md text-[13px] text-background/90">{t("cta.secondary")}</span>
             </div>
           </div>
         </div>

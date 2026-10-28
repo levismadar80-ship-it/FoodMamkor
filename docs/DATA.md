@@ -49,7 +49,7 @@
 | 25 | `producer_locations` | Physical presence points of a producer — branch / pickup / market_stand (a business can have many; e.g. 10 pickup points). Multi-location model (epic MEH-1388) | `ProducerLocation` |
 | 26 | `producer_offers` | ONE owner-declared, typed, expiring offer per business — free delivery / gift / first-order / pickup discount, with an optional non-monetary threshold. At most one row ACTIVE at a time (unique partial index); superseded rows persist as history (MEH-1823) | `ProducerOffer` |
 
-> **MEH-1388 — `producer_locations` (multi-location, 2026-07-21):** moves the map from one-pin-per-business to one-marker-per-location. Columns: `id` · `producer_id` (FK CASCADE) · `kind` (`branch`\|`pickup`\|`market_stand`, CHECK) · `label` · `city` · `address` · `lat` · `lng` · `opening_hours` · `phone` · `is_primary` · `location_precision` (`exact`\|`approximate`, CHECK) · `created_at`/`updated_at`. **Expand-Contract** (ADR-007, chunk 1 `MEH-1395`): a `primary` row is backfilled from `Producer.lat/lng/city`; the old producer columns stay as a mirror during overlap. **Serialization (chunk 2 `MEH-1402`):** `ProducerListOut.locations[]` / `ProducerDetailOut.locations[]` emit `{kind, label, city, lat, lng, is_primary, precision}` (public — street `address`/`phone`/`hours` withheld per MEH-829; the owner-facing `ProducerLocationOwnerOut` on the CRUD includes them). **Geo (chunk 2):** "near me" distance = `MIN(Haversine)` over a correlated scalar subquery on `producer_locations`, with a `COALESCE` fallback to the producer's own `lat/lng` during the Expand overlap — **removed in MEH-1938 chunk 5a (02/09): rows are the only source, `ProducerListOut.lat/lng` are derived from the `is_primary` row (or null), the owner `PUT /producers/me` ignores `city/lat/lng`, and `producers.lat/lng` carry a `LEGACY(2026-10-15)` marker ahead of the chunk-5b drop**; BOTH the list query and the count query stay `DISTINCT` on `producer.id` so a multi-location business counts as **one** result, not N (the historic `_build_base_queries` trap). A delivery-only producer that has a `pickup` location now reappears on the map (controlled reversal of the MEH-213 delivery-only filter); a zero-location delivery-only producer stays hidden. **Map (chunk 3 `MEH-1412`):** per-location markers (pickup/market_stand = a secondary outline), a pickup-layer toggle, a location-label tooltip, and a cluster badge that counts **unique businesses** (dedup by `producerId`), not markers. **Owner CRUD (chunk 4a `MEH-1421`):** `GET/POST/PUT/DELETE /producers/me/locations` (see the API section) with an IDOR ownership 403, a single-primary invariant, and a same-city-label rule. Admin sees a read-only name/city dedup badge on `/admin/producers`. No PostGIS (Haversine in raw SQL, per DEPLOYMENT.md). **Town-only coordinates (MEH-2480, 28/10):** when a location is written with a `city` but no `lat/lng` — at registration (`create_primary_branch_location`) or on the owner `POST`/`PUT` — the server fills the town's seeded centre from `cities.lat/lng` (`services/city_centroid.py`, exact `name_he` first, then `city_key`) and stamps `location_precision='approximate'`. Explicit coordinates are never touched; an unknown town or a delivery-only registration (`has_physical_location=false`) still writes no row. This is how a business passes the submission gate's location requirement with no address provider at all.
+> **MEH-1388 — `producer_locations` (multi-location, 2026-07-21):** moves the map from one-pin-per-business to one-marker-per-location. Columns: `id` · `producer_id` (FK CASCADE) · `kind` (`branch`\|`pickup`\|`market_stand`, CHECK) · `label` · `city` · `address` · `lat` · `lng` · `opening_hours` · `phone` · `is_primary` · `location_precision` (`exact`\|`approximate`, CHECK) · `created_at`/`updated_at`. **Expand-Contract** (ADR-007, chunk 1 `MEH-1395`): a `primary` row is backfilled from `Producer.lat/lng/city`; the old producer columns stay as a mirror during overlap. **Serialization (chunk 2 `MEH-1402`):** `ProducerListOut.locations[]` / `ProducerDetailOut.locations[]` emit `{kind, label, city, lat, lng, is_primary, precision}` plus `opening_hours` + `phone` since MEH-1509 (public — only the street `address` is withheld per MEH-829; the owner-facing `ProducerLocationOwnerOut` on the CRUD includes it). The business page renders a pickup / market-stand row's hours and, since MEH-2477, its phone as a tap-to-call link (`DeliveryBlock.jsx` `PickupRow`). **Geo (chunk 2):** "near me" distance = `MIN(Haversine)` over a correlated scalar subquery on `producer_locations`, with a `COALESCE` fallback to the producer's own `lat/lng` during the Expand overlap — **removed in MEH-1938 chunk 5a (02/09): rows are the only source, `ProducerListOut.lat/lng` are derived from the `is_primary` row (or null), the owner `PUT /producers/me` ignores `city/lat/lng`, and `producers.lat/lng` carry a `LEGACY(2026-10-15)` marker ahead of the chunk-5b drop**; BOTH the list query and the count query stay `DISTINCT` on `producer.id` so a multi-location business counts as **one** result, not N (the historic `_build_base_queries` trap). A delivery-only producer that has a `pickup` location now reappears on the map (controlled reversal of the MEH-213 delivery-only filter); a zero-location delivery-only producer stays hidden. **Map (chunk 3 `MEH-1412`):** per-location markers (pickup/market_stand = a secondary outline), a pickup-layer toggle, a location-label tooltip, and a cluster badge that counts **unique businesses** (dedup by `producerId`), not markers. **Owner CRUD (chunk 4a `MEH-1421`):** `GET/POST/PUT/DELETE /producers/me/locations` (see the API section) with an IDOR ownership 403, a single-primary invariant, and a same-city-label rule. Admin sees a read-only name/city dedup badge on `/admin/producers`. No PostGIS (Haversine in raw SQL, per DEPLOYMENT.md). **Town-only coordinates (MEH-2480, 28/10):** when a location is written with a `city` but no `lat/lng` — at registration (`create_primary_branch_location`) or on the owner `POST`/`PUT` — the server fills the town's seeded centre from `cities.lat/lng` (`services/city_centroid.py`, exact `name_he` first, then `city_key`) and stamps `location_precision='approximate'`. Explicit coordinates are never touched; an unknown town or a delivery-only registration (`has_physical_location=false`) still writes no row. This is how a business passes the submission gate's location requirement with no address provider at all.
 
 > **MEH-509 PR3 (2026-05-22):** `producers.risk_score` (Integer nullable) + `producers.risk_reasoning` (Text nullable) added by migration `92afa3cb76e2`. Populated asynchronously by `app/services/producer_risk.py` via FastAPI BackgroundTasks after producer signup using Claude Haiku 4.5. NULL on both = "not scored yet OR Anthropic call failed (fail-open)". Admin-only — `ProducerAdminOut` schema surfaces them; `ProducerDetailOut` (public) intentionally does not. New endpoint: `GET /admin/producers/{id}/risk-score` returns `{score, reasoning}`.
 
@@ -106,8 +106,10 @@
 
 > **MEH-2459 (2026-10-28) — `producers.kind` (ADR-036):** `VARCHAR(20) NOT NULL DEFAULT 'producer'`, CHECK `producer_kind_values` (`producer`\|`organizer`), migration `f1a2b3c4d5e6`. An **organizer** (markets / events, sells nothing) is a `producers` row, not a new entity — `events.producer_id` is NOT NULL. One predicate, `producer_listing.is_business()` = `status='approved' AND kind='producer'`, is composed by every business surface: `GET /producers` (list, `?q=`, geo), `/producers/count` · `/cities` · `/random` · `/by-slug/{slug}` (organizer → 404) · `/producers/{id}` (public 404; owner/admin 200), `GET /search`, `GET /stats`, `cities.py`, public experiences/recipes joins, the dashboard city rank, admin stats/analytics/map pins. **Not** applied to `GET /events` / `/events/upcoming` (organizer events are the point) or the admin queue (`ProducerAdminOut.kind`, «מארגן» chip). `POST /admin/producers/{id}/grant-verified` → **409** for an organizer (never «מאומת»). Serialized as `ProducerListOut.kind`; `EventOut` gains `owner_kind` (`producer`\|`organizer`) + `owner_slug` for the event card's owner link (chunk 3).
 >
+> **MEH-2465 (2026-10-28) — existence-only gates closed:** endpoints that used to check only that the row exists now refuse or skip `kind='organizer'`: `POST /favorites/{id}` → 404, `GET /favorites` skips organizer rows; `POST /producers/{id}/reviews` → **409** «אי אפשר לכתוב ביקורת על מארגן», `GET /producers/{id}/reviews` + legacy `GET /reviews` return nothing for an organizer; `GET /producers/{id}/google-rating` → 404; `POST /reports/producer-info` → 404 (slug or id); `GET /producers/{id}/kashrut-cert/{code}` → 404 before any fetch (`_servable_kashrut_certs` checks `kind`). Admin `total_producers`, `new_producers_this_week` and the monthly series (dashboard + `/admin/analytics`) count `kind='producer'`; `pending_producers` and recent activity still include organizers (they are approved through the same queue).
 > **MEH-2460 (2026-10-28) — registering as an organizer:** `POST /auth/register/producer` accepts `kind` (`producer` default \| `organizer`). For an organizer the schema drops any `category_ids` (and skips the ≥1 rule), and writes `has_physical_location=true, offers_delivery=false, delivery_nationwide=false`, no delivery cities/areas, no license — the one shape CHECK `producer_location_mode` accepts with no delivery claim (the row is never shown as a business). `GET /auth/me` → `UserOut.producer_kind`. Submission gate (`services/submission_gate.py`): an organizer needs image + description + ≥1 active event dated today-or-later (Israel) + verified WhatsApp — codes `image` · `description` · `upcoming_event` · `phone_verified` (`ORGANIZER_SUBMISSION_REQUIREMENTS`); never product / category / location. `ProducerOwnerOut.upcoming_events_count` (filled by `GET`/`PUT /producers/me` for organizers, 0 otherwise) feeds the client mirror. An organizer row stores no `address` / `lat` / `lng` and gets no `producer_locations` row (no map point). The registration placeholder description («אכתוב אחר כך» → `auth.register.producer.default_description`) counts as missing (`DEFAULT_PRODUCER_DESCRIPTIONS`, parity-tested against `lib/producer-completeness.js`). Onboarding follow-up emails (`services/onboarding_followup.py`) select `kind='producer'` only. Edit hub: an organizer sees the profile + contact groups; a deep link or `?group=` into another group stays on the hub, and the «חובה» chips follow her gate (bio required).
-> **MEH-2461 (2026-10-28) — public organizer page:** `GET /organizers/{slug}` (`routers/organizers.py`) → `OrganizerPublicOut` {id, name, slug, description, short_description, city, images, phone, instagram, website, facebook, upcoming_events: `EventOut[]`} for an **approved organizer only** — 404 «מארגן לא נמצא» for a business slug, a pending organizer or an unknown slug; upcoming = active, dated today-or-later (Israel), soonest first. No address / license / business fields. `GET /organizers` → `[{slug, name}]` (approved organizers with a slug) — the sitemap's source for `/organizers/{slug}`. `organizers` is a reserved slug (backend `slug_utils.RESERVED_SLUGS`, frontend `lib/slug.js` RESERVED). Both routes: 120/min (parity with `/producers/by-slug` and `/events/{id}`), `Cache-Control: public, s-maxage=30, stale-while-revalidate=30` on 200 only. Event JSON-LD (`lib/seo.js buildEventJsonLd`) points an organizer's event at `/organizers/{slug}` (no URL when the organizer has no slug).
+> **MEH-2475 (2026-10-28) — organizer page fields + organizer city:** `OrganizerPublicOut` also carries the dashboard's profile + contact fields (null when unfilled). `PUT /producers/me` writes `city` for `kind='organizer'` only (stripped, 1–100 chars, blank → 422 «יש לבחור עיר»); for a business `city` is still ignored, because its city follows the primary location row (MEH-1938 ruling A) and an organizer has no location rows. Editor: `OrganizerCityCard` in the dashboard «קשר» group (anchor `#organizer-city`).
+> **MEH-2461 (2026-10-28) — public organizer page:** `GET /organizers/{slug}` (`routers/organizers.py`) → `OrganizerPublicOut` {id, name, slug, description, short_description, city, images, phone, instagram, website, facebook, owner_bio, owner_photo_url, contact_name, established_year, primary_contact_method, contact_email, whatsapp_group, external_order_form (MEH-2475), upcoming_events: `EventOut[]`} for an **approved organizer only** — 404 «מארגן לא נמצא» for a business slug, a pending organizer or an unknown slug; upcoming = active, dated today-or-later (Israel), soonest first. No address / license / business fields. `GET /organizers` → `[{slug, name}]` (approved organizers with a slug) — the sitemap's source for `/organizers/{slug}`. `organizers` is a reserved slug (backend `slug_utils.RESERVED_SLUGS`, frontend `lib/slug.js` RESERVED). Both routes: 120/min (parity with `/producers/by-slug` and `/events/{id}`), `Cache-Control: public, s-maxage=30, stale-while-revalidate=30` on 200 only. Event JSON-LD (`lib/seo.js buildEventJsonLd`) points an organizer's event at `/organizers/{slug}` (no URL when the organizer has no slug).
 >
 > **MEH-2469 (2026-10-28) — event end time:** `events.end_time TIME NULL` (revision `b7e3c1d9a2f4`, Expand-only). `EventCreate` / `EventUpdate` / `EventOut` carry `end_time`; an end time needs a start time and must be after it (same day) → 422 «שעת הסיום צריכה להיות אחרי שעת ההתחלה» — on create via the schema, on `PUT /events/{id}` against the values the row will hold. Shown as «09:30–15:00»; JSON-LD `endDate`.
 >
@@ -294,8 +296,8 @@ delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
 -- producer_followers (MEH-2392) and referral_clicks (MEH-2393): dropped in
--- e5b2d8f4a913. users.referral_code: unwritten since #3690, excluded from the
--- User mapper, dropped in MEH-2393 chunk 3.
+-- e5b2d8f4a913. users.referral_code (+ ix_users_referral_code): dropped in
+-- 1cd44149cc20 (MEH-2393 chunk 3).
 
 producer_reviews (
   id uuid PK, producer_id FK, user_id FK,
@@ -579,6 +581,32 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > checked path per caller, not two to the same state. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
+> **MEH-2435 chunk 4 — cancel email.** When that owner route writes
+> `cancelled` (cancel before the deadline, close after it, or cancel a funded
+> group), every participant gets «מהמקור — הקבוצה "{title}" בוטלה», naming the
+> business, no link, no contact details
+> (`services/group_buy_notifications.py:notify_participant_cancelled`).
+> Recipients are read under the row lock before the commit; the send runs as a
+> background task and a failed send never fails the 200. Once by construction:
+> cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
+> nothing. No latch column. An admin cancel (admin route) sends nothing.
+>
+> **MEH-2453 (MEH-2435 chunk 5) — how a participant from another city gets the
+> product.** `POST /group-buys`: `fulfillment_note` is now **required** — a
+> string, stripped, ≤1000 chars, at least 3 letters (the MEH-555 floor, so "."
+> or «כן» is refused too); missing / `null` → 422, too few letters → 422 with
+> «יש לכתוב מתי ואיך מקבלים את המוצרים» (`GroupBuyCreate._require_fulfillment_note`).
+> The column stays nullable (no migration): rows created before this keep NULL
+> and the public page keeps hiding an empty note. The funded email to each
+> participant gains «לדף העסק: {frontend_url}/producer/{producer_id}» above the
+> group link — a link, never contact details (privacy contract unchanged). The
+> public group page reads `GET /producers/{producer_id}` once (not on its
+> 30-second refresh), validates the delivery slice with
+> `GroupBuyProducerDeliverySchema`, then mounts the same «מגיעים אלייך?»
+> `DeliveryChecker` as the business page (the «מאת {name}» link beside it is
+> MEH-2472's). If that fetch fails (e.g. a business that is not public → 404),
+> no checker shows. No new route.
+>
 > **MEH-2437 — the business's own group buys.** `GET /producers/me/group-buys`
 > (`require_producer`; a producer user with no business → 403 `לא נמצא עסק
 > מקושר`, like `/producers/me/recipes`). Returns `list[GroupBuyOut]` — the same
@@ -790,6 +818,12 @@ DELETE /favorites/{producer_id}    auth
 
 ### Home products — מהמטבח של השכן (`app/routers/home_products.py`)
 
+> **Not served.** The router is unmounted since MEH-1406 (brand LOCK kill-switch,
+> `router_registry.py` comments out its `include_router`) — every route below
+> answers FastAPI's `404 {"detail":"Not Found"}`. Kept for the decommission card
+> MEH-796. The static contract audit ignores unmounted routers (MEH-2411), so a
+> frontend call to any of these is reported as an orphan.
+
 ```
 GET    /home-products                     public — filter: city
 GET    /home-products/{product_id}        public
@@ -844,6 +878,7 @@ GET    /experiences                    public  — filter: category, city. Only 
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
+                                         MEH-2476: `host` = {id, name, producer_id, producer_slug, producer_name, producer_phone} — the producer_* four only when the host's business is public (approved, kind=producer), else null. Same on every experience response.
 POST   /experiences                    auth    — require_verified_producer (MEH-2246: producer role first → 403 "Producer access required", then email-verified → 403 {code: email_unverified}; was require_verified_email). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
 PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate.
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
@@ -1119,6 +1154,12 @@ GET  /search            public — q (max 100 chars), limit (1–20, default 8)
 GET  /search/trending   public — top 5 queries with results_count>0, cached 1hr
                                  rate-limited 30/minute per IP
 ```
+
+**What a producer hit matches on (MEH-2478).** `GET /search` matches a business on
+`name` · `description` · `short_description` (the card tagline); `GET /producers?q=`
+matches the same three plus `city`, category names, product names + descriptions and
+delivery-area cities (`producer_listing._token_search_filter`). Both use the same
+per-token ilike patterns (`hebrew_search.token_patterns`, escaped).
 
 ### Chat widget (`app/routers/chat.py`)
 

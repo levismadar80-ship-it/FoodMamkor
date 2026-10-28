@@ -171,6 +171,8 @@ export const ProducerListSchema = z.object({
     // served field the parse silently drops is the same trap either way — but
     // it is a LATENT gap, not a repaired feature. Stated so nobody inherits
     // "we fixed click-to-call" from this comment.
+    // MEH-2477 (28/10): now built — DeliveryBlock.jsx PickupRow renders it as a
+    // tel: link. The paragraph above is the history of why it was missing.
     //
     // Permissive per field, like every sibling above: a partial row must never
     // drop a whole producer from the all-or-nothing parse.
@@ -488,6 +490,15 @@ export const OrganizerPageSchema = z.object({
   instagram: z.string().nullable().optional(),
   website: z.string().nullable().optional(),
   facebook: z.string().nullable().optional(),
+  // MEH-2475: the dashboard's profile + contact fields.
+  owner_bio: z.string().nullable().optional(),
+  owner_photo_url: z.string().nullable().optional(),
+  contact_name: z.string().nullable().optional(),
+  established_year: z.number().int().nullable().optional(),
+  primary_contact_method: z.string().nullable().optional(),
+  contact_email: z.string().nullable().optional(),
+  whatsapp_group: z.string().nullable().optional(),
+  external_order_form: z.string().nullable().optional(),
   upcoming_events: z
     .array(
       z.object({

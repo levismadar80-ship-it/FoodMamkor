@@ -74,7 +74,7 @@ describe("MapProducerCard — fulfillment tags, all four cells (MEH-2046)", () =
     expect(screen.queryByTestId("map-fulfillment-delivery")).toBeNull();
   });
 
-  it("neither → the neutral 'בתיאום אישי' tag, still rendered", () => {
+  it("neither → the neutral arranged tag, still rendered", () => {
     // The cell most likely to be dropped, and the one the uniform-height
     // guarantee depends on: an absent block here would make these cards shorter
     // than every other card in the list.
@@ -116,6 +116,57 @@ describe("MapProducerCard — fulfillment tags, all four cells (MEH-2046)", () =
   });
 });
 
+describe("MapProducerCard — the 'neither' cell splits on a store with hours (MEH-2438 follow-up)", () => {
+  // The «בתיאום אישי» research (27/10): the business address is not "pickup",
+  // so a shop with fixed opening hours fell into the "arranged" cell. A store
+  // with hours now reads «קנייה במקום»; everything else in the cell keeps the
+  // arranged tag. The cell still renders exactly one tag either way (🔒 §5).
+  const store = { delivers: false, offers_pickup: false, has_physical_location: true };
+  const primaryWithHours = [{ id: 1, is_primary: true, opening_hours: "Sun-Thu 09:00-18:00" }];
+
+  it("a store whose primary location has hours → on_site, not arranged", () => {
+    renderCard({ ...store, locations: primaryWithHours });
+
+    expect(screen.getByTestId("map-fulfillment-on_site")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-fulfillment-arranged")).toBeNull();
+    expect(screen.getByTestId("map-fulfillment").children).toHaveLength(1);
+  });
+
+  it("legacy business-level hours count too (same resolver as the detail page)", () => {
+    renderCard({ ...store, locations: [], opening_hours: "Fri 08:00-13:00" });
+
+    expect(screen.getByTestId("map-fulfillment-on_site")).toBeInTheDocument();
+  });
+
+  it("a store with no hours stays arranged", () => {
+    renderCard({ ...store, locations: [{ id: 1, is_primary: true, opening_hours: "  " }] });
+
+    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-fulfillment-on_site")).toBeNull();
+  });
+
+  it("hours without a physical location stay arranged", () => {
+    renderCard({ ...store, has_physical_location: false, opening_hours: "Fri 08:00-13:00" });
+
+    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
+  });
+
+  it("hours with the location flag absent stay arranged (a missing flag is false here)", () => {
+    // The API always sends has_physical_location; a payload without it must
+    // not claim a walk-in shop the detail page would show no location for.
+    renderCard({ delivers: false, offers_pickup: false, opening_hours: "Fri 08:00-13:00" });
+
+    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
+  });
+
+  it("hours never replace a declared service tag", () => {
+    renderCard({ delivers: true, offers_pickup: false, has_physical_location: true, locations: primaryWithHours });
+
+    expect(screen.getByTestId("map-fulfillment-delivery_only")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-fulfillment-on_site")).toBeNull();
+  });
+});
+
 describe("MapProducerCard — the tags read the server predicates ONLY (MEH-2046)", () => {
   it("the legacy operands do not produce a delivery tag", () => {
     // The inverse pin. `has_delivery` is a column no backend delivery predicate
@@ -137,7 +188,7 @@ describe("MapProducerCard — the tags read the server predicates ONLY (MEH-2046
 
   it("a missing flag is treated as false, not as unknown", () => {
     // A payload that predates the field (or a surface that skips
-    // attach_badge_fields) must degrade to the honest "בתיאום אישי" rather than
+    // attach_badge_fields) must degrade to the honest arranged tag rather than
     // crashing or claiming a service.
     renderCard({});
 
@@ -159,7 +210,7 @@ describe("fulfillment copy — asserted against messages/he.json itself", () => 
   // Deliberately NOT through the component: `useTranslations` is mocked above,
   // so a component-level copy assertion would be checking the mock. These read
   // the real message files, which is where the copy actually lives.
-  it("carries all five strings, in both locales, with identical keys", async () => {
+  it("carries all six strings, in both locales, with identical keys", async () => {
     const he = (await import("@/messages/he.json")).default.map.producer_card.fulfillment;
     const en = (await import("@/messages/en.json")).default.map.producer_card.fulfillment;
 
@@ -168,6 +219,7 @@ describe("fulfillment copy — asserted against messages/he.json itself", () => 
       "arranged",
       "delivery",
       "delivery_only",
+      "on_site",
       "pickup",
       "pickup_only",
     ]);
@@ -190,6 +242,9 @@ describe("fulfillment copy — asserted against messages/he.json itself", () => 
     expect(he.pickup_only).toBe("איסוף עצמי");
     expect(he.delivery).toBe("משלוח");
     expect(he.delivery_only).toBe("משלוח");
-    expect(he.arranged).toBe("בתיאום אישי");
+    // MEH-2438 follow-up: one phrase across the site — «בתיאום מראש» is what
+    // the delivery block, the city groups and the dashboard already say.
+    expect(he.arranged).toBe("בתיאום מראש");
+    expect(he.on_site).toBe("קנייה במקום");
   });
 });

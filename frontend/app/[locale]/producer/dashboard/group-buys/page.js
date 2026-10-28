@@ -1,7 +1,7 @@
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
@@ -21,6 +21,7 @@ import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
+import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -28,6 +29,15 @@ const STATUS_CLS = {
   cancelled: STATUS_CLASSES.neutral,
   fulfilled: STATUS_CLASSES.success,
 };
+
+// MEH-2453: the server's floor for the fulfillment note (GroupBuyCreate,
+// MEH-555 pattern): at least 3 letters once stripped, counted over the same
+// scripts as _LETTER_REGEX (Hebrew, Latin, Arabic). "." or "כן" is not an
+// answer to "how do I get this". GroupBuyNoteLetterContract.test.js pins the
+// class below to _LETTER_REGEX, so the two cannot drift apart.
+const NOTE_MIN_LETTERS = 3;
+const NOTE_LETTER = /[\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]/g;
+const countLetters = (text) => (text.match(NOTE_LETTER) || []).length;
 
 function NewGroupBuyForm({ producerCity, onCreated }) {
   const t = useTranslations("group_buys.dashboard.form");
@@ -50,6 +60,10 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
   const [unverified, setUnverified] = useState(false);
+  // MEH-2453: the note is required. Native `required` lets whitespace through,
+  // so the blank check is ours; the error sits under the field, not at the end.
+  const [noteError, setNoteError] = useState(false);
+  const noteRef = useRef(null);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -65,10 +79,17 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     e.preventDefault();
     setError("");
     setUnverified(false);
+    const fulfillmentNote = form.fulfillment_note.trim();
+    if (countLetters(fulfillmentNote) < NOTE_MIN_LETTERS) {
+      setNoteError(true);
+      noteRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post("/group-buys", {
         ...form,
+        fulfillment_note: fulfillmentNote,
         price_per_unit_regular: Number(form.price_per_unit_regular),
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
@@ -215,20 +236,46 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           onChange={(val) => setForm({ ...form, city: val })}
         />
 
-        {/* MEH-1457: optional "מתי ואיך מקבלים" — free text (OFN "Ready for"). */}
-        <div className="sm:col-span-2">
-          <label htmlFor="gb-fulfillment" className="block text-sm font-medium mb-1">
+        {/* MEH-1457: "מתי ואיך מקבלים" — free text (OFN "Ready for").
+            MEH-2453: required, with a helper saying who reads it. A textarea,
+            so it cannot ride ui/Input; the label marker, helper and error
+            copy Input's markup and aria wiring. */}
+        <div className="sm:col-span-2 flex flex-col gap-1.5">
+          <label htmlFor="gb-fulfillment" className="text-sm font-medium text-text">
             {t("fulfillment_label")}
+            <span className="text-error" aria-hidden="true">
+              {" *"}
+            </span>
           </label>
           <textarea
             id="gb-fulfillment"
+            ref={noteRef}
             value={form.fulfillment_note}
-            onChange={set("fulfillment_note")}
+            onChange={(e) => {
+              setNoteError(false);
+              set("fulfillment_note")(e);
+            }}
             placeholder={t("fulfillment_placeholder")}
+            required
+            maxLength={1000}
+            aria-invalid={noteError || undefined}
+            aria-describedby={
+              noteError ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
+            }
             rows={2}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-start resize-none"
+            className={`w-full border rounded-[8px] px-3 py-2 text-start resize-none ${
+              noteError ? "border-error" : "border-border"
+            }`}
             dir="rtl"
           />
+          <p id="gb-fulfillment-helper" className="text-xs text-fg-muted">
+            {t("fulfillment_helper")}
+          </p>
+          {noteError && (
+            <p id="gb-fulfillment-error" role="alert" className="text-xs text-error">
+              {t("fulfillment_required")}
+            </p>
+          )}
         </div>
       </div>
 
@@ -243,6 +290,88 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         {submitting ? t("submitting") : t("submit")}
       </button>
     </form>
+  );
+}
+
+// MEH-2435 (chunk 3): what the owner may do to a group buy, by state. Mirrors
+// OWNER_TRANSITIONS in backend/app/routers/group_buys.py — the server stays the
+// authority (anything else is a 409); this only decides which buttons show.
+// "close" and "cancel" both write cancelled; they differ in what the owner is
+// told, because past the deadline she is not cancelling a live group.
+const ACTION_TARGET = { cancel: "cancelled", close: "cancelled", deliver: "fulfilled" };
+
+function ownerActions(gb, deadlinePassed) {
+  if (gb.status === "open") return deadlinePassed ? ["close"] : ["cancel"];
+  if (gb.status === "funded") return ["deliver", "cancel"];
+  return [];
+}
+
+// Same dialog contract as the product delete confirm (ProductsSection.jsx,
+// MEH-1447): a state flag rather than window.confirm, aria-modal, Escape and
+// «חזרה» close it, both buttons locked while the request is in flight.
+function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose }) {
+  const t = useTranslations("group_buys.dashboard.actions");
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape" && !busy) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
+
+  const { gb, action } = pending;
+  const destructive = action !== "deliver";
+  return (
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="group-buy-action-title"
+        data-testid="group-buy-action-dialog"
+        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+      >
+        <p id="group-buy-action-title" className="font-medium text-base text-text">
+          {t(`${action}_title`)}
+        </p>
+        <p className="text-sm text-fg-muted">{t(`${action}_body`)}</p>
+        {action === "cancel" && gb.status === "funded" && (
+          <p data-testid="group-buy-cancel-funded-note" className="text-sm font-medium text-text">
+            {t("cancel_funded_note", { count: gb.commits_count })}
+          </p>
+        )}
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-3 justify-start pt-1">
+          <button
+            type="button"
+            data-testid="group-buy-action-confirm"
+            // stale: the server refused (409) because the group changed while
+            // the dialog was open. Confirming again would only repeat the 409;
+            // «חזרה» returns her to the card, which now shows the real state.
+            disabled={busy || stale}
+            onClick={onConfirm}
+            className={`px-4 py-2 min-h-[44px] rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
+              destructive ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-primary-dark"
+            }`}
+          >
+            {/* The close and deliver confirms reuse their button's own label —
+                the approved copy names a confirm label only for cancel. */}
+            {action === "cancel" ? t("cancel_confirm") : t(action)}
+          </button>
+          {/* Focus lands on the safe choice, so a keyboard user starts inside
+              the dialog and Enter never confirms by accident. */}
+          <button
+            type="button"
+            autoFocus
+            disabled={busy}
+            onClick={onClose}
+            className="px-4 py-2 min-h-[44px] rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            {t("back")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -262,6 +391,13 @@ export default function ProducerGroupBuysPage() {
   // state + hint instead (availability-card idiom, dashboard/page.js:457).
   // null = unknown (fetch failed) → fail-open to enabled; backend still gates.
   const [producerStatus, setProducerStatus] = useState(null);
+  // MEH-2435 (chunk 3): the open confirm dialog — { gb, action } | null.
+  const [pending, setPending] = useState(null);
+  const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionStale, setActionStale] = useState(false);
+  const tActions = useTranslations("group_buys.dashboard.actions");
+  const tError = useTranslations("error");
 
   useEffect(() => {
     if (authLoading) return;
@@ -284,9 +420,67 @@ export default function ProducerGroupBuysPage() {
       ]);
       setProducerCity(dashRes.data?.producer?.city || "");
       setProducerStatus(dashRes.data?.producer?.status || null);
-      setItems(Array.isArray(gbRes.data) ? gbRes.data : []);
+      // Rule 19, per row (the /favorites precedent): one malformed group buy
+      // costs its own card, not the owner's whole list.
+      const rows = Array.isArray(gbRes.data) ? gbRes.data : [];
+      setItems(
+        rows.flatMap((row) => {
+          const parsed = OwnerGroupBuySchema.safeParse(row);
+          return parsed.success ? [{ ...row, ...parsed.data }] : [];
+        }),
+      );
     } catch {
       setItems([]);
+    }
+  };
+
+  const openAction = (gb, action) => {
+    setActionError("");
+    setActionStale(false);
+    setPending({ gb, action });
+  };
+
+  const closeAction = useCallback(() => {
+    setPending(null);
+    setActionError("");
+    setActionStale(false);
+  }, []);
+
+  const confirmAction = async () => {
+    if (!pending || acting) return;
+    const { gb, action } = pending;
+    setActing(true);
+    setActionError("");
+    try {
+      const res = await api.patch(`/group-buys/${gb.id}/status`, {
+        status: ACTION_TARGET[action],
+      });
+      const parsed = GroupBuyStatusResultSchema.safeParse(res.data);
+      if (parsed.success) {
+        setItems((prev) =>
+          prev.map((it) => (it.id === gb.id ? { ...it, status: parsed.data.status } : it)),
+        );
+      } else {
+        // The change went through but the answer is not readable — fetch the
+        // list again rather than guess the new status.
+        load();
+      }
+      setPending(null);
+      showToast.success(
+        tActions(ACTION_TARGET[action] === "fulfilled" ? "toast_fulfilled" : "toast_cancelled"),
+      );
+    } catch (err) {
+      // 409 = the group changed under her (e.g. a participant left and a
+      // funded group fell back to open); the server's Hebrew detail says so.
+      // Lock the confirm and refresh the list so the card shows the state the
+      // server actually holds.
+      setActionError(detailToMessage(err.response?.data?.detail) || tError("generic"));
+      if (err.response?.status === 409) {
+        setActionStale(true);
+        load();
+      }
+    } finally {
+      setActing(false);
     }
   };
 
@@ -392,12 +586,14 @@ export default function ProducerGroupBuysPage() {
         <div className="space-y-4">
           {items.map((gb) => {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
-            // nothing moves the status server-side and the owner has no
-            // control over it (admin-only PATCH, group_buys.py:303). Display
-            // only; the status itself is a separate card. deadline is a full
-            // UTC timestamp (form sends toISOString, line 76), so an instant
-            // compare is right here, unlike the date-only event lists.
+            // nothing moves the status server-side on its own. Display only;
+            // since MEH-2435 the owner closes it with «סגירת הקבוצה» below.
+            // deadline is a full UTC timestamp (form sends toISOString), so an
+            // instant compare is right here, unlike the date-only event lists.
+            // It reads the device clock: a skewed clock only swaps «ביטול» and
+            // «סגירה», since the server takes both as open → cancelled.
             const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
+            const actions = ownerActions(gb, deadlinePassed);
             const cls = deadlinePassed
               ? STATUS_CLASSES.neutral
               : STATUS_CLS[gb.status] || STATUS_CLASSES.neutral;
@@ -443,10 +639,46 @@ export default function ProducerGroupBuysPage() {
                     {t("view_public")}
                   </Link>
                 </div>
+
+                {/* MEH-2435 (chunk 3): only the moves this state allows;
+                    cancelled and fulfilled cards get no action row at all. */}
+                {actions.length > 0 && (
+                  <div
+                    data-testid="group-buy-actions"
+                    className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border"
+                  >
+                    {actions.map((action) => (
+                      <button
+                        key={action}
+                        type="button"
+                        data-testid={`group-buy-action-${action}`}
+                        onClick={() => openAction(gb, action)}
+                        className={
+                          action === "deliver"
+                            ? "px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium bg-primary text-white hover:bg-primary-dark transition"
+                            : "px-4 py-2 min-h-[44px] rounded-[8px] text-sm border border-border text-red-700 hover:bg-red-50 transition"
+                        }
+                      >
+                        {tActions(action)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
+      )}
+
+      {pending && (
+        <GroupBuyActionDialog
+          pending={pending}
+          busy={acting}
+          stale={actionStale}
+          error={actionError}
+          onConfirm={confirmAction}
+          onClose={closeAction}
+        />
       )}
     </div>
   );

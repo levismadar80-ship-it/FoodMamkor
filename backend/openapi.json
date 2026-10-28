@@ -1994,6 +1994,51 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "producer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Id"
+          },
+          "producer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Name"
+          },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
+          "producer_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Slug"
           }
         },
         "required": [
@@ -2722,16 +2767,9 @@
             "title": "Description"
           },
           "fulfillment_note": {
-            "anyOf": [
-              {
-                "maxLength": 1000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fulfillment Note"
+            "maxLength": 1000,
+            "title": "Fulfillment Note",
+            "type": "string"
           },
           "max_participants": {
             "anyOf": [
@@ -2805,7 +2843,8 @@
           "price_per_unit_regular",
           "price_per_unit_group",
           "min_participants",
-          "deadline"
+          "deadline",
+          "fulfillment_note"
         ],
         "title": "GroupBuyCreate",
         "type": "object"
@@ -3500,6 +3539,28 @@
             ],
             "title": "City"
           },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
           "description": {
             "anyOf": [
               {
@@ -3510,6 +3571,28 @@
               }
             ],
             "title": "Description"
+          },
+          "established_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Established Year"
+          },
+          "external_order_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Order Form"
           },
           "facebook": {
             "anyOf": [
@@ -3550,6 +3633,28 @@
             "title": "Name",
             "type": "string"
           },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
+          },
+          "owner_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Photo Url"
+          },
           "phone": {
             "anyOf": [
               {
@@ -3560,6 +3665,17 @@
               }
             ],
             "title": "Phone"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
           },
           "short_description": {
             "anyOf": [
@@ -3594,6 +3710,17 @@
               }
             ],
             "title": "Website"
+          },
+          "whatsapp_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Group"
           }
         },
         "required": [
@@ -19974,7 +20101,7 @@
     },
     "/producers/{producer_id}/google-rating": {
       "get": {
-        "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 only when the producer id itself does not exist.",
+        "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 when the producer id does not exist or is an organizer (MEH-2465).",
         "operationId": "get_google_rating_producers__producer_id__google_rating_get",
         "parameters": [
           {
@@ -20178,7 +20305,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {

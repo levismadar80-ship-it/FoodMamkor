@@ -14,8 +14,18 @@ in the PR body.
 """
 
 from datetime import timedelta
+from unittest.mock import patch
 
-from app.models.models import Event, Producer, ProducerLocation
+import app.routers.producers as producers_module
+from app.models.models import (
+    Event,
+    Favorite,
+    KashrutBadgeRequest,
+    Producer,
+    ProducerLocation,
+    ProducerReview,
+)
+from app.routers import google_rating
 from app.utils.clock import israel_today, utc_now
 from conftest import auth_header, make_producer, make_user
 from sqlalchemy import text
@@ -294,6 +304,8 @@ class TestOrganizerNeverVerified:
                 "min_participants": 3,
                 "deadline": (utc_now() + timedelta(days=10)).isoformat(),
                 "city": "תל אביב",
+                # MEH-2453: required — without it the 422 would mask the gate.
+                "fulfillment_note": "איסוף מתל אביב",
             },
             headers=auth_header(owner),
         )
@@ -309,3 +321,167 @@ class TestOrganizerNeverVerified:
         rows = {row["id"]: row for row in resp.json()}
         assert str(organizer.id) in rows
         assert rows[str(organizer.id)]["kind"] == "organizer"
+
+
+class TestOrganizerRefusedByExistenceOnlyGates:
+    """MEH-2465 — endpoints that used to ask only «does the row exist?».
+
+    Each write refuses an organizer; each read never serves one. Favorites,
+    review reads, report-info and the admin counts carry a business control on
+    the same path. The review-POST, Google-rating and kashrut cases pin the
+    refusal to the kind gate instead (exact 409 detail; a 404 from a route
+    whose old code answered 200; a fetch that must never start).
+    """
+
+    def test_favorite_add_refused_for_organizer(self, client, db):
+        organizer = _organizer(db)
+        business = _business(db)
+        user = make_user(db, email="meh2465-fav@example.com")
+        assert (
+            client.post(
+                f"/users/me/favorites/{business.id}", headers=auth_header(user)
+            ).status_code
+            == 201
+        )
+        resp = client.post(
+            f"/users/me/favorites/{organizer.id}", headers=auth_header(user)
+        )
+        assert resp.status_code == 404
+        assert (
+            db.query(Favorite).filter(Favorite.producer_id == organizer.id).count() == 0
+        )
+
+    def test_favorites_list_never_serializes_organizer(self, client, db):
+        organizer = _organizer(db)
+        business = _business(db)
+        user = make_user(db, email="meh2465-favlist@example.com")
+        # a row written before the gate existed
+        db.add(Favorite(user_id=user.id, producer_id=organizer.id))
+        db.add(Favorite(user_id=user.id, producer_id=business.id))
+        db.commit()
+        resp = client.get("/users/me/favorites", headers=auth_header(user))
+        assert resp.status_code == 200
+        names = {f["producer"]["name"] for f in resp.json()}
+        assert names == {BUSINESS_NAME}
+
+    def test_review_post_refused_for_organizer(self, client, db):
+        organizer = _organizer(db)
+        user = make_user(db, email="meh2465-review@example.com")
+        resp = client.post(
+            f"/producers/{organizer.id}/reviews",
+            json={"stars": 5, "body": "שוק מצוין, הכול היה טרי ונעים"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 409
+        assert resp.json()["detail"] == "אי אפשר לכתוב ביקורת על מארגן"
+        assert (
+            db.query(ProducerReview)
+            .filter(ProducerReview.producer_id == organizer.id)
+            .count()
+            == 0
+        )
+
+    def test_public_review_reads_exclude_organizer(self, client, db):
+        organizer = _organizer(db)
+        business = _business(db)
+        user = make_user(db, email="meh2465-reads@example.com")
+        for producer in (organizer, business):
+            db.add(
+                ProducerReview(
+                    producer_id=producer.id,
+                    user_id=user.id,
+                    stars=5,
+                    body="ביקורת שנכתבה לפני השער",
+                )
+            )
+        db.commit()
+        # control: the business's review is served on both routes
+        assert client.get(f"/producers/{business.id}/reviews").json()["total"] == 1
+        assert (
+            len(client.get("/reviews", params={"producer_id": str(business.id)}).json())
+            == 1
+        )
+        nested = client.get(f"/producers/{organizer.id}/reviews").json()
+        assert nested["total"] == 0 and nested["reviews"] == []
+        assert (
+            client.get("/reviews", params={"producer_id": str(organizer.id)}).json()
+            == []
+        )
+
+    def test_google_rating_404_for_organizer(self, client, db, monkeypatch):
+        organizer = _organizer(db)
+        organizer.google_place_id = "ChIJ-meh2465"
+        db.commit()
+        monkeypatch.setattr(
+            google_rating,
+            "_fetch_place_details",
+            lambda place_id: {
+                "rating": 4.9,
+                "user_rating_count": 300,
+                "google_maps_uri": "https://maps.google.com/?cid=1",
+            },
+        )
+        assert client.get(f"/producers/{organizer.id}/google-rating").status_code == 404
+
+    def test_report_info_404_for_organizer(self, client, db):
+        organizer = _organizer(db)
+        business = _business(db)
+        with patch("app.routers.report_info.send_email") as mock_send:
+            ok = client.post(
+                "/reports/producer-info",
+                json={"producer_slug": BUSINESS_SLUG, "message": "הטלפון שגוי"},
+            )
+            assert ok.status_code == 204  # control
+            mock_send.reset_mock()
+            for identifier in (ORGANIZER_SLUG, str(organizer.id)):
+                resp = client.post(
+                    "/reports/producer-info",
+                    json={"producer_slug": identifier, "message": "הטלפון שגוי"},
+                )
+                assert resp.status_code == 404
+            mock_send.assert_not_called()
+        assert business  # keeps the control row referenced
+
+    def test_kashrut_cert_404_for_organizer(self, client, db, monkeypatch):
+        organizer = _organizer(db)
+        organizer.kashrut_badges = ["badatz"]
+        organizer.kashrut_expires_at = utc_now() + timedelta(days=90)
+        db.add(
+            KashrutBadgeRequest(
+                producer_id=organizer.id,
+                badge_code="badatz",
+                cert_url="https://res.cloudinary.com/demo/image/upload/v1/k.jpg",
+                status="approved",
+            )
+        )
+        db.commit()
+        calls = []
+
+        def fake_stream(method, url, **kwargs):
+            calls.append(url)
+            raise AssertionError(
+                "the organizer's cert must be refused before any fetch"
+            )
+
+        monkeypatch.setattr(producers_module.httpx, "stream", fake_stream)
+        resp = client.get(f"/producers/{organizer.id}/kashrut-cert/badatz")
+        assert resp.status_code == 404
+        assert calls == []
+
+    def test_admin_business_counts_exclude_organizer(self, client, db):
+        _organizer(db)
+        _business(db)
+        admin = make_user(db, role="admin", email="meh2465-admin@example.com")
+        dash = client.get("/admin/dashboard", headers=auth_header(admin))
+        assert dash.status_code == 200
+        stats = dash.json()["stats"]
+        assert stats["total_producers"] == 1
+        assert stats["new_producers_this_week"] == 1
+        assert sum(m["producers"] for m in dash.json()["monthly_producers"]) == 1
+        # review #3723: the older /admin/stats carries the same key.
+        stats_old = client.get("/admin/stats", headers=auth_header(admin))
+        assert stats_old.status_code == 200
+        assert stats_old.json()["total_producers"] == 1
+        analytics = client.get("/admin/analytics", headers=auth_header(admin))
+        assert analytics.status_code == 200
+        assert sum(m["producers"] for m in analytics.json()["monthly"]) == 1

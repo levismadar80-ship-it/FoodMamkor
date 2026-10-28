@@ -24,7 +24,7 @@ graph LR
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
-    App --> Experiences[experiences.router<br/>/experiences/*]
+    App --> Experiences[experiences.router<br/>/experiences/*<br/>MEH-2476: host carries her public business]
     App --> Reviews[reviews.router<br/>/producers/:id/reviews/*]
     App --> Reports[reports.router<br/>/reports/*]
     App --> Upload[upload.router<br/>/upload/*]
@@ -53,13 +53,13 @@ graph TD
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
-    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
+    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b<br/>404 for an organizer MEH-2465]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
-    GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist]
+    GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
 ```
 
 ## 3. Auth + account self-service
@@ -79,7 +79,7 @@ graph TD
     Account --> Delete[DELETE /users/me<br/>🔑 cascade delete<br/>App Store requirement]
 
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑]
-    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑]
+    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
 ```
 
@@ -91,7 +91,7 @@ graph TD
     Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities]
     Dashboard --> Avail[POST /producers/me/availability<br/>👤 toggle is_available_today]
-    Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile]
+    Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending: notification-only, no DB write;<br/>MEH-2210 rejected: cap 3 → 409, completeness gate → 422, else → pending + resubmission_count+1; other statuses 409; 3/hr]
@@ -106,7 +106,7 @@ graph TD
 
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug]
-    Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source]
+    Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]

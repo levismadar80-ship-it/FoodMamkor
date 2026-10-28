@@ -24,6 +24,14 @@ vi.mock("@sentry/nextjs", () => ({
   captureMessage: (...a) => captureMessage(...a),
   captureException: vi.fn(),
 }));
+// MEH-2475: OwnerCard (shared with the business page) reads next-intl's hook.
+vi.mock("next-intl", () => ({
+  useTranslations: (namespace) => (k) => `${namespace}.${k}`,
+}));
+vi.mock("@/components/ImageWithFallback", () => ({
+  // eslint-disable-next-line @next/next/no-img-element -- test stub
+  default: ({ src, alt }) => <img src={src} alt={alt} />,
+}));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...rest }) => (
     <a href={href} {...rest}>
@@ -188,5 +196,58 @@ describe("MEH-2461 organizer page", () => {
   it("a scanner-shaped slug never reaches the API", async () => {
     await expect(renderPage("wp-admin.php")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // ── MEH-2475: what the organizer fills in the dashboard reaches the page ──
+
+  it("MEH-2475: the owner story renders under the organizer heading; absent when empty", async () => {
+    respond(200, { ...ORG, owner_bio: "התחלנו בחצר של סבתא", contact_name: "נועה" });
+    await renderPage();
+    const card = screen.getByTestId("owner-card");
+    expect(card.textContent).toContain("organizers.page.owner_heading");
+    expect(card.textContent).toContain("התחלנו בחצר של סבתא");
+  });
+
+  it("MEH-2475: no owner story → no owner card", async () => {
+    respond(200, ORG);
+    await renderPage();
+    expect(screen.queryByTestId("owner-card")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2475: the preferred channel comes first; email / group / form appear only when filled", async () => {
+    respond(200, {
+      ...ORG,
+      primary_contact_method: "email",
+      contact_email: "market@example.com",
+      whatsapp_group: "https://chat.whatsapp.com/AbC",
+      external_order_form: "forms.example.com/stand",
+    });
+    await renderPage();
+    const links = screen.getByTestId("organizer-contact").querySelectorAll("a");
+    expect(links[0].getAttribute("href")).toBe("mailto:market@example.com");
+    expect(links[0].getAttribute("data-primary")).toBe("true");
+    expect(screen.getByTestId("organizer-contact-whatsapp_group").getAttribute("href")).toBe(
+      "https://chat.whatsapp.com/AbC",
+    );
+    expect(screen.getByTestId("organizer-contact-external_order").getAttribute("href")).toBe(
+      "https://forms.example.com/stand",
+    );
+    // WhatsApp from the phone stays available as a secondary channel
+    expect(screen.getByTestId("organizer-contact-whatsapp")).toBeInTheDocument();
+  });
+
+  it("MEH-2475: phone as the preferred channel → a call link, not a WhatsApp link built from it", async () => {
+    respond(200, { ...ORG, primary_contact_method: "phone" });
+    await renderPage();
+    const call = screen.getByTestId("organizer-contact-phone");
+    expect(call.getAttribute("href")).toBe("tel:0521234567");
+    expect(call.getAttribute("data-primary")).toBe("true");
+    expect(screen.queryByTestId("organizer-contact-whatsapp")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2475: the founding year shows as a quiet «since» line only when set", async () => {
+    respond(200, { ...ORG, established_year: 2015 });
+    await renderPage();
+    expect(screen.getByTestId("organizer-since").textContent).toContain("2015");
   });
 });
