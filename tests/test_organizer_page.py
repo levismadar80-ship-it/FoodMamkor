@@ -163,6 +163,10 @@ class TestOrganizerPageCarriesWhatSheFills:
         _organizer(db)
         body = client.get(f"/organizers/{ORG_SLUG}").json()
         for field in self.FILLED:
+            if field == "primary_contact_method":
+                # the column defaults to WhatsApp (models.py), never null
+                assert body[field] == "whatsapp"
+                continue
             assert field in body and body[field] is None, field
 
 
