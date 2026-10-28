@@ -2504,7 +2504,8 @@
       "free": "Free",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
-      "organizer_line": "Organizer: {name}"
+      "organizer_line": "Organizer: {name}",
+      "add_to_calendar": "Add to calendar"
     },
     "calendar": {
       "previous_month": "Previous month",

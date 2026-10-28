@@ -2504,7 +2504,8 @@
       "free": "חינם",
       "breadcrumb_home": "בית",
       "breadcrumb_events": "אירועים",
-      "organizer_line": "מארגן: {name}"
+      "organizer_line": "מארגן: {name}",
+      "add_to_calendar": "הוספה ליומן"
     },
     "calendar": {
       "previous_month": "חודש קודם",
