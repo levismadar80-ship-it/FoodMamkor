@@ -1770,6 +1770,7 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · 📸 סטורי · מחקו (אדום, danger). אין «שגריר» (MEH-2509).
 - ✅ → admin-recipes-kebab.spec.ts («סטורי» opens the story-card panel under the row; its close button removes it) — סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
 - ~~שגריר מהתפריט~~ — הוסר ב-MEH-2509 (כפילות של «בחירת העורכת»).
+- [ ] MEH-2516 — אין ייבוא Excel/CSV — `/admin/producers` בנייד ובמחשב; **תוצאה מצופה:** בסרגל יש «ייצוא» ו«בית עסק חדש» בלבד, אין כפתור ייבוא; `POST /admin/producers/import` מחזיר 404/405.
 - ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
 - ✅ → admin-recipes-kebab.spec.ts (a second click, a click outside and Escape close the menu; Escape returns focus to ⋮) — פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
 - [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.

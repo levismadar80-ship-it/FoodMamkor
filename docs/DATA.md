@@ -1021,7 +1021,6 @@ POST   /admin/producers/{id}/reject            admin — terminal → status=rej
                                                preset_key is ALSO persisted to producers.rejection_reason_code
                                                (NULL for a free-text-only body); approve clears both columns.
 POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status != pending, MEH-769 precedent; MEH-2124 dropped the second status); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
-POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 
 # Home products moderation
 GET    /admin/home-products/flagged            admin
