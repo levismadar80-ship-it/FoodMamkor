@@ -29,6 +29,7 @@
  */
 
 import { producerPoints } from "./producerPoints.js";
+import { isDefaultDescription } from "./producer-completeness.js";
 
 // The machine-readable codes. These MUST match
 // backend/app/services/submission_gate.py — they cross the API boundary in
@@ -49,6 +50,42 @@ export const SUBMISSION_REQUIREMENTS = [
   MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
 ];
+
+// MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing — no
+// product / category / location requirement. Its page is a description and
+// its events. Mirrors ORGANIZER_SUBMISSION_REQUIREMENTS in
+// backend/app/services/submission_gate.py (parity: SubmissionGateParity.test.js).
+export const ORGANIZER_MISSING_DESCRIPTION = "description";
+export const ORGANIZER_MISSING_EVENT = "upcoming_event";
+
+export const ORGANIZER_SUBMISSION_REQUIREMENTS = [
+  MISSING_IMAGE,
+  ORGANIZER_MISSING_DESCRIPTION,
+  ORGANIZER_MISSING_EVENT,
+  MISSING_PHONE_VERIFIED,
+];
+
+/** True for an organizer row. One predicate for every branch on kind. */
+export function isOrganizer(producer) {
+  return producer?.kind === "organizer";
+}
+
+function organizerMissingItems(producer) {
+  const missing = [];
+  if ((producer.images || []).length === 0) missing.push(MISSING_IMAGE);
+  // Review #3711 F4: the STORY step's «אכתוב אחר כך» writes a placeholder
+  // description — it is not a description, and it calls her «בית עסק».
+  const description = (producer.description || "").trim();
+  if (!description || isDefaultDescription(description)) {
+    missing.push(ORGANIZER_MISSING_DESCRIPTION);
+  }
+  // GET /producers/me fills upcoming_events_count for organizers only
+  // (submission_gate.attach_upcoming_events_count). Absent → 0 → missing:
+  // fail-closed, same as every check here.
+  if ((producer.upcoming_events_count ?? 0) < 1) missing.push(ORGANIZER_MISSING_EVENT);
+  if (!producer.phone_verified) missing.push(MISSING_PHONE_VERIFIED);
+  return missing;
+}
 
 /**
  * True for a business with no physical location that delivers. Exported so
@@ -97,6 +134,7 @@ function hasLocation(producer) {
  */
 export function submissionMissingItems(producer) {
   if (!producer) return [...SUBMISSION_REQUIREMENTS];
+  if (isOrganizer(producer)) return organizerMissingItems(producer);
 
   const missing = [];
 
