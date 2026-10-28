@@ -37,7 +37,10 @@ def get_favorites(
             joinedload(Favorite.producer).selectinload(Producer.delivery_areas),
             joinedload(Favorite.producer).selectinload(Producer.locations),
         )
-        .filter(Favorite.user_id == user.id)
+        # MEH-2465: an organizer is never a business card (ADR-036) — a
+        # favorite written before the add-gate below existed stays in the
+        # table but is not served.
+        .filter(Favorite.user_id == user.id, Producer.kind == "producer")
         .all()
     )
     # MEH-1660: ProducerListOut serialises computed badge fields
@@ -58,7 +61,12 @@ def add_favorite(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    # MEH-2465: an organizer cannot be saved as a business (ADR-036).
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == producer_id, Producer.kind == "producer")
+        .first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 

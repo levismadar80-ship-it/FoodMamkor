@@ -458,7 +458,8 @@ jobs:
           # MEH-1338: alert_log (frequency-cap ledger for fire_alerts) — 36 -> 37.
           # MEH-2079 chunk A: producer_analytics_daily (anonymous daily
           # roll-up so the raw analytics tables can be pruned) — 42 -> 43.
-          EXPECTED_TABLES=43
+          # MEH-2392/2393: producer_followers + referral_clicks dropped — 43 -> 41.
+          EXPECTED_TABLES=41
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables

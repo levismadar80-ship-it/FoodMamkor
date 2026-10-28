@@ -297,6 +297,8 @@
           "address_pick_from_list": "בחרו כתובת מהרשימה כדי שהעסק יופיע במפה.",
           "multi_location_label": "יש לכם יותר מנקודת מכירה או איסוף אחת?",
           "multi_location_hint": "אפשר להוסיף את כל הנקודות בלוח הבקרה אחרי ההרשמה.",
+          "organizer_label": "אני מארגן/ת שווקים או אירועים (לא מוכר/ת מוצרים)",
+          "organizer_hint": "מארגנים מקבלים עמוד עם האירועים שלהם. הם לא מופיעים ברשימת בתי העסק ובמפה.",
           "tagline_label": "במשפט אחד",
           "tagline_placeholder": "מה שהכי חשוב שידעו עליכם",
           "description_label": "ספרו על העסק שלכם",
@@ -766,6 +768,7 @@
       "sections": {
         "about": "אודות",
         "location": "הגעה ומיקום",
+        "location_no_hours": "אין שעות קבועות — כדאי לתאם לפני שמגיעים",
         "similar": {
           "heading": "בתי עסק דומים",
           "in_area": "{category} · באזור שלך"
@@ -786,7 +789,8 @@
             "gluten_free": "ללא גלוטן",
             "vegan": "טבעוני",
             "vegetarian": "צמחוני",
-            "lactose_free": "ללא לקטוז"
+            "lactose_free": "ללא לקטוז",
+            "no_added_sugar": "ללא סוכר מוסף"
           },
           "sheet_open_aria": "פרטים על {name}",
           "sheet_close_aria": "סגירת פרטי המוצר",
@@ -1349,7 +1353,8 @@
         "pickup": "איסוף עצמי",
         "delivery_only": "משלוח",
         "pickup_only": "איסוף עצמי",
-        "arranged": "בתיאום אישי"
+        "arranged": "בתיאום מראש",
+        "on_site": "קנייה במקום"
       }
     },
     "mini": {
@@ -1457,6 +1462,7 @@
         "pending": "ממתינים",
         "suspended": "מושהים",
         "rejected": "נדחו",
+        "drafts": "טיוטות",
         "incomplete_title": "הצג רק עסקים שחסרים להם פרטים נדרשים",
         "show_all": "הצג הכל",
         "incomplete_label": "פרטים חסרים",
@@ -1513,6 +1519,8 @@
           "pickup_points": "נקודות איסוף",
           "license_pending": "רישיון ממתין",
           "license_pending_title": "בקטגוריה הדורשת רישיון, ללא מספר רישיון — יש לאמת לפני אישור.",
+          "organizer": "מארגן",
+          "organizer_title": "מארגן שווקים ואירועים — לא בית עסק: בלי רישיון, בלי מוצרים, בלי תג מאומת.",
           "dedup": "כפילות?",
           "dedup_name_title": "שם זהה לעסק אחר — בדקי אם מדובר בכפילות.",
           "dedup_city_title": "עיר זהה לעסק אחר — בדקי אם מדובר בכפילות.",
@@ -2468,7 +2476,8 @@
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
-      "free": "חינם"
+      "free": "חינם",
+      "organizer_line": "מארגן: {name}"
     },
     "categories": {
       "all": "הכל",
@@ -2498,7 +2507,9 @@
       "participants_limit": "עד {n} משתתפים",
       "free": "חינם",
       "breadcrumb_home": "בית",
-      "breadcrumb_events": "אירועים"
+      "breadcrumb_events": "אירועים",
+      "organizer_line": "מארגן: {name}",
+      "add_to_calendar": "הוספה ליומן"
     },
     "calendar": {
       "previous_month": "חודש קודם",
@@ -2546,7 +2557,14 @@
       "sold_out": "אזל",
       "spots_count": "{spots} מתוך {max}",
       "breadcrumb_home": "בית",
-      "breadcrumb_experiences": "חוויות"
+      "breadcrumb_experiences": "חוויות",
+      "duration_minutes": "{count} דקות",
+      "duration_hours": "{count, plural, one {שעה} two {שעתיים} other {# שעות}}",
+      "duration_hours_half": "{count, plural, one {שעה וחצי} two {שעתיים וחצי} other {# שעות וחצי}}",
+      "duration_mixed": "{hours} ו-{minutes} דקות",
+      "recurring": "מתקיימת באופן קבוע: {schedule}",
+      "recurring_bare": "מתקיימת באופן קבוע",
+      "starts_from": "החל מ-{date}"
     },
     "new": {
       "crumb_current": "חוויה חדשה",
@@ -3226,6 +3244,7 @@
   "share": {
     "trigger": "שתפו",
     "modal_title": "שתפו לינק לעסק",
+    "modal_title_event": "שתפו את האירוע",
     "copy_link": "שתפו לינק",
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
@@ -4047,7 +4066,8 @@
         "edit": "עריכה",
         "insights": "תובנות",
         "tools": "כלים",
-        "view_page": "צפייה בדף"
+        "view_page": "צפייה בדף",
+        "organizer_events": "האירועים שלכם"
       },
       "load_error": {
         "title": "לא הצלחנו לטעון את לוח הבקרה",
@@ -4631,6 +4651,7 @@
       },
       "manage_events": {
         "heading": "האירועים שלי",
+        "organizer_heading": "האירועים שלכם",
         "create_cta": "אירוע חדש",
         "empty_title": "עדיין אין אירועים",
         "empty_description": "יום פתוח, דוכן בשוק או קטיף — אירוע חד-פעמי שמופיע בעמוד העסק שלך ומביא לקוחות חדשות.",
@@ -4713,7 +4734,9 @@
           "product": "מוצר ראשון בקטלוג",
           "category": "קטגוריה אחת לפחות",
           "location": "מיקום או אזורי משלוח",
-          "phone_verified": "אימות מספר הוואטסאפ"
+          "phone_verified": "אימות מספר הוואטסאפ",
+          "description": "כמה מילים על השוק או האירועים",
+          "upcoming_event": "אירוע קרוב אחד לפחות"
         }
       },
       "request_review": {
@@ -4722,6 +4745,15 @@
         "hint": "שלחו לכל לקוחה שקנתה — לא רק למי שבטוח תפרגן. ככה הביקורות נשארות אמינות.",
         "cta": "העתקת קישור",
         "cta_copied": "הועתק ✓"
+      },
+      "organizer_city": {
+        "heading": "העיר שלכם",
+        "label": "עיר",
+        "hint": "מופיעה בעמוד המארגן מתחת לשם.",
+        "save": "שמירה",
+        "saving": "שומרים...",
+        "saved": "העיר עודכנה",
+        "error": "לא הצלחנו לשמור — נסו שוב"
       }
     }
   },
@@ -4787,6 +4819,8 @@
       "field_category_label": "קטגוריה",
       "field_date_label": "תאריך",
       "field_time_label": "שעה",
+      "field_end_time_label": "שעת סיום (לא חובה)",
+      "error_end_time_after_start": "שעת הסיום צריכה להיות אחרי שעת ההתחלה",
       "field_time_hint": "אופציונלי — אם לא הוזן, יוצג רק תאריך",
       "field_location_label": "מיקום ספציפי",
       "field_location_placeholder": "כתובת מדויקת או הוראות הגעה",
@@ -5383,5 +5417,21 @@
       "switch_account": "החלפת חשבון"
     },
     "submit_error": "לא הצלחנו לשייך את העמוד. נסו שוב בעוד רגע."
+  },
+  "organizers": {
+    "page": {
+      "events_heading": "אירועים קרובים",
+      "empty": "אין אירועים קרובים כרגע",
+      "whatsapp": "וואטסאפ",
+      "instagram": "אינסטגרם",
+      "website": "אתר",
+      "facebook": "פייסבוק",
+      "owner_heading": "מאחורי האירועים",
+      "since_prefix": "פעילים מאז",
+      "phone": "התקשרו",
+      "email": "אימייל",
+      "whatsapp_group": "קבוצת וואטסאפ",
+      "external_order": "טופס הזמנה"
+    }
   }
 }

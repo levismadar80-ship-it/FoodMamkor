@@ -32,6 +32,7 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.email import send_email
+from app.services.producer_listing import is_business  # MEH-2459
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
 # never re-declare the literal.
@@ -1482,6 +1483,14 @@ def grant_verified(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2459: an organizer holds no license, exemption or cosmetics — there
+    # is no qualifying document to verify, so the «מאומת» tier is never
+    # grantable (ADR-036). 409, not 422: the request is well-formed, the row
+    # is in a state that rules it out.
+    if producer.kind == "organizer":
+        raise HTTPException(
+            status_code=409, detail="מארגן שווקים ואירועים לא מקבל תג מאומת"
+        )
     # tz-aware (MEH-762 D1, mirrors MEH-759) — NOT naive utcnow; the column
     # is TIMESTAMPTZ. Public exposure is date-granularity only (Chunk 3).
     producer.verified_at = datetime.now(timezone.utc)
@@ -1588,12 +1597,15 @@ def upload_story_card(
 @router.get("/stats")
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return {
-        "total_producers": db.query(Producer).count(),
+        # MEH-2465 (review #3723): businesses only, matching /admin/dashboard.
+        "total_producers": db.query(Producer)
+        .filter(Producer.kind == "producer")
+        .count(),
         "pending_producers": db.query(Producer)
         .filter(Producer.status == "pending")
         .count(),
         "approved_producers": db.query(Producer)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .count(),
         "total_users": db.query(User).count(),
         "total_home_products": db.query(HomeProduct)

@@ -7,6 +7,7 @@ import { ExperienceMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal m
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Event JSON-LD
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was hardcoded HE
 // static const. Fetches experience title server-side for D1 title format;
@@ -115,18 +116,40 @@ export async function generateMetadata(props) {
   };
 }
 
+// MEH-2478: server-rendered Event + BreadcrumbList JSON-LD — same pattern as
+// events/[id]/page.js EventJsonLd. The builder returns null (no markup) for an
+// experience without a concrete date or a city: Google requires both.
+function ExperienceJsonLd({ experience, locale }) {
+  const jsonLd = buildExperienceJsonLd(experience, locale);
+  if (!jsonLd) return null;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+    />
+  );
+}
+
 // ExperienceDetailClient uses useSearchParams() for the ?pending=1
 // "just submitted" banner — wrap in Suspense per Next.js 14 rules.
-export default function ExperienceDetailPage() {
+export default async function ExperienceDetailPage(props) {
+  const params = await props.params;
+  // Same request as generateMetadata (revalidate:60 dedupes it), which already
+  // 404s a missing experience; belt-and-braces for the body.
+  const experience = await getExperience(params.id);
+  if (!experience) notFound();
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
-          טעינת החוויה...
-        </div>
-      }
-    >
-      <ExperienceDetailClient />
-    </Suspense>
+    <>
+      <ExperienceJsonLd experience={experience} locale={params.locale} />
+      <Suspense
+        fallback={
+          <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
+            טעינת החוויה...
+          </div>
+        }
+      >
+        <ExperienceDetailClient />
+      </Suspense>
+    </>
   );
 }

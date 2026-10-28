@@ -11,7 +11,7 @@
  * Related:  lib/submission-gate.js (SUBMISSION_REQUIREMENTS — the owner of the
  *           gate), components/EditAccordionCard.jsx (the consumer),
  *           app/[locale]/producer/dashboard/edit/page.js (anchor registry).
- * History:  MEH-2138 chunk C (creation).
+ * History:  MEH-2138 chunk C (creation); MEH-2460 (organizer requirement set).
  */
 
 import {
@@ -20,6 +20,8 @@ import {
   MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
   MISSING_PRODUCT,
+  ORGANIZER_MISSING_DESCRIPTION,
+  ORGANIZER_SUBMISSION_REQUIREMENTS,
   SUBMISSION_REQUIREMENTS,
 } from "./submission-gate";
 
@@ -53,11 +55,24 @@ const CODE_TO_ANCHOR = {
   // Recorded here rather than buried in the PR so the next reader can disagree
   // with it deliberately.
   [MISSING_PHONE_VERIFIED]: "contact-channels",
+
+  // MEH-2460: an organizer's gate asks for a real description, typed on the
+  // bio card. (ORGANIZER_MISSING_EVENT has no card on this hub — events live on
+  // their own dashboard page — so it maps to nothing, like any unmapped code.)
+  [ORGANIZER_MISSING_DESCRIPTION]: "bio",
 };
 
 /** Anchor ids whose card is on the submit-gate critical path. */
 export const REQUIRED_ANCHORS = new Set(
   SUBMISSION_REQUIREMENTS.map((code) => CODE_TO_ANCHOR[code]).filter(Boolean),
+);
+
+/** The same, for an organizer (kind='organizer', ADR-036) — derived from her
+ *  own gate, so «חובה» never lands on a card her gate does not read (products,
+ *  categories, locations) and never misses one it does (bio). */
+// Not exported: chipKeyFor is the one consumer (Knip dead-code ratchet).
+const ORGANIZER_REQUIRED_ANCHORS = new Set(
+  ORGANIZER_SUBMISSION_REQUIREMENTS.map((code) => CODE_TO_ANCHOR[code]).filter(Boolean),
 );
 
 /**
@@ -68,6 +83,7 @@ export const REQUIRED_ANCHORS = new Set(
  * which is the same absence-vs-negative confusion the empty states had before
  * this change.
  */
-export function chipKeyFor(anchorId) {
-  return REQUIRED_ANCHORS.has(anchorId) ? "chip_required" : "chip_optional";
+export function chipKeyFor(anchorId, kind = "producer") {
+  const required = kind === "organizer" ? ORGANIZER_REQUIRED_ANCHORS : REQUIRED_ANCHORS;
+  return required.has(anchorId) ? "chip_required" : "chip_optional";
 }
