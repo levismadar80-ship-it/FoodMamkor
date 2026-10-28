@@ -4155,6 +4155,12 @@ class GroupBuyCommitRequest(BaseModel):
 # GroupBuy.status; which of them a caller may move to is decided in the router.
 class GroupBuyStatusUpdate(BaseModel):
     status: Literal["open", "funded", "cancelled", "fulfilled"]
+    # MEH-2489: the status the dashboard showed when the owner pressed the
+    # button. Optional, so a caller that omits it behaves exactly as before;
+    # when sent and the row has moved on (a last participant joined, open →
+    # funded), the router refuses with 409 instead of acting on a state she
+    # never saw.
+    expected_status: Literal["open", "funded", "cancelled", "fulfilled"] | None = None
 
 
 class GroupBuyStatusOut(BaseModel):

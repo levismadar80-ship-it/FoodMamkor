@@ -230,7 +230,11 @@ describe("confirming", () => {
     fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(patch).toHaveBeenCalledTimes(1);
-    expect(patch).toHaveBeenCalledWith(`/group-buys/${gb.id}/status`, { status: target });
+    // MEH-2489: the status the card showed rides along as expected_status.
+    expect(patch).toHaveBeenCalledWith(`/group-buys/${gb.id}/status`, {
+      status: target,
+      expected_status: gb.status,
+    });
     expect(toastSuccess).toHaveBeenCalledWith(`${A}.${toast}`);
     const [card] = screen.getAllByTestId("manage-group-buy-card");
     expect(card).toHaveTextContent(`group_buys.dashboard.status.${target}`);
@@ -244,7 +248,12 @@ describe("confirming", () => {
     const second = screen.getAllByTestId("manage-group-buy-card")[1];
     fireEvent.click(within(second).getByTestId("group-buy-action-cancel"));
     fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
-    await waitFor(() => expect(patch).toHaveBeenCalledWith("/group-buys/b/status", { status: "cancelled" }));
+    await waitFor(() =>
+      expect(patch).toHaveBeenCalledWith("/group-buys/b/status", {
+        status: "cancelled",
+        expected_status: "open",
+      }),
+    );
     const [first] = screen.getAllByTestId("manage-group-buy-card");
     expect(actionIds(first)).toEqual(["group-buy-action-cancel"]);
   });
