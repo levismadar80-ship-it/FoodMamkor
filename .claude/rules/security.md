@@ -74,6 +74,19 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   tool?*** — the honest sentence is: denied to the filesystem tools, open to
   the API, and held until the merge-time gate is live by convention plus the
   staged patches under `docs/ci/`.
+  **As of 28/10/2026 the API half is closed too — measured, MEH-2486.** From a
+  CC sandbox session, `PUT /repos/…/contents/.github/workflows/<file>` **and**
+  `POST /repos/…/git/refs` (creating the branch) both answered `403 Write access
+  to this GitHub API path is not permitted through this proxy`, while PR
+  creation and merge through the REST API still worked in the same session. So
+  a workflow change today is: CC prepares and verifies the exact patch (`git
+  apply --check` against staging, YAML incl. any embedded filter block), a human
+  — or Claude in Chrome in Sapir's browser, via the GitHub web editor — commits
+  it, and CC verifies the PR diff byte-for-byte before merging (#3740). Do
+  **not** write `.github/**` from the shell to get around the `Edit` deny; that
+  is routing around a decision, not a third path. Re-measure before relying on
+  either half of this paragraph — it is an as-of, and the proxy policy has
+  changed once already.
 
 ---
 
