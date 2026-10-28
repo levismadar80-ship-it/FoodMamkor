@@ -104,7 +104,7 @@ function hookState(producersCount) {
     geoActive: false, cityActive: false, dayActive: false, geoEmptyNotice: false,
     handleNearMe: vi.fn(), handleSurprise: vi.fn(), handleDeliveryCta: vi.fn(),
     handleDaySelected: vi.fn(), handleCitySelected: vi.fn(), handleClearLocation: vi.fn(),
-    handleWhatsAppClick: vi.fn(), navigateToChip: vi.fn(),
+    navigateToChip: vi.fn(),
     handleClearCategory: vi.fn(), handleLoadMore: vi.fn(), handleAdvanceFromStep0: vi.fn(),
   };
 }

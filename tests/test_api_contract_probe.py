@@ -18,7 +18,6 @@ import sys
 import types
 from pathlib import Path
 
-
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "check_api_contract.py"
 _spec = importlib.util.spec_from_file_location("check_api_contract", SCRIPT)
 cac = importlib.util.module_from_spec(_spec)
