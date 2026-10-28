@@ -334,10 +334,10 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         business = _business(db)
         user = make_user(db, email="meh2465-fav@example.com")
         assert (
-            client.post(f"/favorites/{business.id}", headers=auth_header(user)).status_code
+            client.post(f"/users/me/favorites/{business.id}", headers=auth_header(user)).status_code
             == 201
         )
-        resp = client.post(f"/favorites/{organizer.id}", headers=auth_header(user))
+        resp = client.post(f"/users/me/favorites/{organizer.id}", headers=auth_header(user))
         assert resp.status_code == 404
         assert db.query(Favorite).filter(Favorite.producer_id == organizer.id).count() == 0
 
@@ -349,7 +349,7 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         db.add(Favorite(user_id=user.id, producer_id=organizer.id))
         db.add(Favorite(user_id=user.id, producer_id=business.id))
         db.commit()
-        resp = client.get("/favorites", headers=auth_header(user))
+        resp = client.get("/users/me/favorites", headers=auth_header(user))
         assert resp.status_code == 200
         names = {f["producer"]["name"] for f in resp.json()}
         assert names == {BUSINESS_NAME}
