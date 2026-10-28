@@ -49,8 +49,11 @@ from app.services.onboarding_followup import SITE_DOMAIN
 # can never disagree. This module owns the COPY, not the decision.
 from app.services.submission_gate import (
     MISSING_IMAGE,
+    MISSING_LOCATION,
     MISSING_PHONE_VERIFIED,
     MISSING_PRODUCT,
+    ORGANIZER_MISSING_DESCRIPTION,
+    ORGANIZER_MISSING_EVENT,
     submission_missing_items,
 )
 
@@ -198,9 +201,31 @@ _MISSING_ITEM_PRODUCT = (
 #
 # The count in the day-3/day-7 subject is therefore taken from THIS list, not
 # from the gate's — see `_build_email`.
+# MEH-2465 follow-up (28/10): the three lines that closed the hole above.
+# Decided by CC under Sapir's delegation («תחליט בעצמך», 28/10 15:14). Each
+# opens with the dashboard checklist's own label for the same code
+# (he.json dashboard.producer.draft.missing.*), so the email and the checklist
+# name an item the same way, and adds why it matters — the shape of the three
+# lines Sapir approved above.
+_MISSING_ITEM_LOCATION = (
+    "📍 מיקום או אזורי משלוח — בוחרים כתובת מתוך ההצעות או מסמנים לאן "
+    "אתם שולחים, וכך לקוחות מוצאים אתכם במפה ובחיפוש לפי עיר."
+)
+_MISSING_ITEM_DESCRIPTION = (
+    "✍️ כמה מילים על השוק או האירועים — זה מה שמבקרים קוראים בעמוד "
+    "שלכם לפני שהם מגיעים."
+)
+_MISSING_ITEM_UPCOMING_EVENT = (
+    "📅 אירוע קרוב אחד לפחות — העמוד שלכם מציג את האירועים הקרובים, "
+    "ובלי אירוע אין למבקרים לאן להגיע."
+)
+
 _ITEM_COPY: dict[str, str] = {
     MISSING_IMAGE: _MISSING_ITEM_PHOTO,
     MISSING_PRODUCT: _MISSING_ITEM_PRODUCT,
+    MISSING_LOCATION: _MISSING_ITEM_LOCATION,
+    ORGANIZER_MISSING_DESCRIPTION: _MISSING_ITEM_DESCRIPTION,
+    ORGANIZER_MISSING_EVENT: _MISSING_ITEM_UPCOMING_EVENT,
     MISSING_PHONE_VERIFIED: _MISSING_ITEM_PHONE,
 }
 
