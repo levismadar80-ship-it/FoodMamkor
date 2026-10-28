@@ -28,7 +28,7 @@ import math
 from sqlalchemy.orm import Session
 
 from app.data.cities import city_key
-from app.models import City
+from app.models.models import City
 
 Centroid = tuple[float, float]
 

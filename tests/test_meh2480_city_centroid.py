@@ -13,7 +13,8 @@ History:  MEH-2480 (creation) — 28/10/2026 Google Places answered 403 for ever
           lookup and «שליחה לבדיקה» was unreachable for every new business.
 """
 
-from app.models import City, Producer, ProducerLocation, User
+from app.models import Producer, ProducerLocation, User
+from app.models.models import City
 from app.services.city_centroid import city_centroid
 from app.services.submission_gate import MISSING_LOCATION, submission_missing_items
 from tests.conftest import auth_header, make_category, make_producer, make_user
