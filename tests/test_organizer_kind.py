@@ -324,9 +324,11 @@ class TestOrganizerNeverVerified:
 class TestOrganizerRefusedByExistenceOnlyGates:
     """MEH-2465 — endpoints that used to ask only «does the row exist?».
 
-    Each write refuses an organizer; each read never serves one. Every case
-    carries a business control on the same path, so a red means the gate
-    discriminates on `kind`, not that the path is broken.
+    Each write refuses an organizer; each read never serves one. Favorites,
+    review reads, report-info and the admin counts carry a business control on
+    the same path. The review-POST, Google-rating and kashrut cases pin the
+    refusal to the kind gate instead (exact 409 detail; a 404 from a route
+    whose old code answered 200; a fetch that must never start).
     """
 
     def test_favorite_add_refused_for_organizer(self, client, db):
@@ -474,6 +476,10 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         assert stats["total_producers"] == 1
         assert stats["new_producers_this_week"] == 1
         assert sum(m["producers"] for m in dash.json()["monthly_producers"]) == 1
+        # review #3723: the older /admin/stats carries the same key.
+        stats_old = client.get("/admin/stats", headers=auth_header(admin))
+        assert stats_old.status_code == 200
+        assert stats_old.json()["total_producers"] == 1
         analytics = client.get("/admin/analytics", headers=auth_header(admin))
         assert analytics.status_code == 200
         assert sum(m["producers"] for m in analytics.json()["monthly"]) == 1

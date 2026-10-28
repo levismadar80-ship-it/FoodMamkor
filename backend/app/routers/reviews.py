@@ -370,6 +370,7 @@ def create_review_nested(
 
     Guards (checked in order):
       1. Producer must exist.
+      1b. Producer must be a business — an organizer gets 409 (MEH-2465).
       2. Producer owner cannot review their own business.
       2b. Producer owner cannot review a business sharing a category with
           hers (MEH-2076 — conflict of interest; cross-category stays open).
