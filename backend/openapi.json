@@ -20062,7 +20062,7 @@
     },
     "/producers/{producer_id}/google-rating": {
       "get": {
-        "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 only when the producer id itself does not exist.",
+        "description": "Live Google rating for a producer, or 204 when the line must not render.\n\n204 (empty, no layout hole client-side) when: no mapped place_id, the live\nprofile has < MIN_REVIEWS reviews, no server key, or any Google API error.\n404 when the producer id does not exist or is an organizer (MEH-2465).",
         "operationId": "get_google_rating_producers__producer_id__google_rating_get",
         "parameters": [
           {
@@ -20266,7 +20266,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {
