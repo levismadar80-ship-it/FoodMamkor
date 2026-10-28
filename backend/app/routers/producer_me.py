@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import and_, func, text
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -12,7 +12,6 @@ from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
-from app.services.producer_listing import is_business  # MEH-2459
 from app.services.city_centroid import city_centroid  # MEH-2480
 from app.rate_limit import limiter
 from app.services.availability_validation import (
@@ -1157,41 +1156,6 @@ def dashboard(
 # ============================================================
 
 
-def _rank_in_city(db: Session, producer, israel_day):
-    """MEH-57: 1-based rank among approved producers in the same city, by 30d
-    views descending. None when the producer has no city.
-
-    Extracted from `producer_analytics` under MEH-160 — inlining it pushed the
-    endpoint over PLR0915's 50-statement cap.
-
-    MEH-160: ranks on the same unit the dashboard displays. The LEFT JOIN here
-    is why `unique_views_count` gates its NULL arm on the row id — a producer
-    with zero views still yields one all-NULL row, and an ungated
-    `hash IS NULL` would score every view-less rival a 1.
-    """
-    if not producer.city:
-        return None
-    cutoff_30d = utc_now() - timedelta(days=30)
-    rank_views = unique_views_count(israel_day)
-    city_ranks = (
-        db.query(Producer.id, rank_views.label("views"))
-        .outerjoin(
-            ProducerPageView,
-            and_(
-                ProducerPageView.producer_id == Producer.id,
-                ProducerPageView.created_at >= cutoff_30d,
-            ),
-        )
-        .filter(Producer.city == producer.city, is_business())  # MEH-2459
-        .group_by(Producer.id)
-        .order_by(rank_views.desc())
-        .all()
-    )
-    return next(
-        (i + 1 for i, row in enumerate(city_ranks) if row.id == producer.id), None
-    )
-
-
 @dataclass
 class WindowFilter:
     """MEH-447: collapse the 2 optional kwargs of _count_in_window into a
@@ -1443,8 +1407,6 @@ def producer_analytics(
     )
     top_cities = [{"city": row.city, "count": int(row.count)} for row in top_city_rows]
 
-    rank_in_city = _rank_in_city(db, producer, israel_day)
-
     # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
     #
     # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
@@ -1480,30 +1442,6 @@ def producer_analytics(
         if profile_views["last_30d"] > 0
         else 0.0
     )
-
-    # MEH-57 ── profile_strength: 0-100 score from 5-item checklist.
-    # MEH-794: the home-product item was removed with /neighbor (MEH-793);
-    # its 25% was redistributed +5 across the remaining 5 signals so a
-    # fully-complete profile still reaches 100.
-    has_delivery_area = (
-        db.query(func.count(DeliveryArea.id))
-        .filter(DeliveryArea.producer_id == pid)
-        .scalar()
-        or 0
-    ) > 0
-    strength_score = sum(
-        [
-            20 if (producer.images or []) else 0,
-            25
-            if (producer.description or "").strip()
-            and len((producer.description or "").strip()) >= 50
-            else 0,
-            15 if has_delivery_area else 0,
-            20 if int(total_reviews) > 0 else 0,
-            20 if producer.phone_verified else 0,
-        ]
-    )
-    profile_strength = int(strength_score)
 
     # MEH-57 ── weekly_trend: compare last 7d views vs previous 7d (days 14→7).
     now = utc_now()
@@ -1546,9 +1484,10 @@ def producer_analytics(
         "home_products_count": int(home_products_count),
         "views_by_day": views_by_day,
         "top_cities": top_cities,
-        "rank_in_city": rank_in_city,
+        # MEH-2529: `rank_in_city` (a per-request city ranking query) and
+        # `profile_strength` (a second completeness score beside the
+        # dashboard's own, MEH-1002) were computed here and read by no screen.
         "conversion_rate": conversion_rate,
-        "profile_strength": profile_strength,
         "weekly_trend": weekly_trend,
     }
 
