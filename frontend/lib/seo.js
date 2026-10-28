@@ -24,6 +24,7 @@ import {
 } from "./constants";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
+import { instagramUrl } from "./social-links";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -90,15 +91,18 @@ export function buildTitle(producer) {
 }
 
 /**
- * Build the meta description. Prefer producer.description (truncated to
- * 160 chars — Google's rough display limit) over a generated fallback.
+ * Build the meta description: «tagline — description» (either alone when the
+ * other is empty), truncated to 160 chars — Google's rough display limit —
+ * over a generated fallback.
  */
 export function buildDescription(producer) {
   if (!producer) return "";
-  if (producer.description) {
-    return producer.description.length > 160
-      ? producer.description.slice(0, 157) + "..."
-      : producer.description;
+  // MEH-2474: the card tagline is the owner's own one-line summary — it leads
+  // when present, joined to the description (audit MEH-2470 finding 11).
+  const tagline = producer.short_description?.trim() || "";
+  const text = [tagline, producer.description?.trim() || ""].filter(Boolean).join(" — ");
+  if (text) {
+    return text.length > 160 ? text.slice(0, 157) + "..." : text;
   }
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";
@@ -285,6 +289,18 @@ export function buildJsonLd(producer, locale = "he") {
     if (raw) {
       business.sameAs = [/^https?:\/\//i.test(raw) ? raw : `https://${raw}`];
     }
+  }
+  // MEH-2474: the owner's social profiles are part of the entity's identity
+  // (schema.org sameAs). Instagram is stored as a handle; Facebook as a URL
+  // and only an http(s) one is emitted.
+  const social = [
+    instagramUrl(producer.instagram),
+    /^https?:\/\//i.test(producer.facebook?.trim() || "") ? producer.facebook.trim() : null,
+  ].filter(Boolean);
+  // Deduped: an owner may enter the same URL as website and Facebook.
+  if (social.length) business.sameAs = [...new Set([...(business.sameAs || []), ...social])];
+  if (/^\d{4}$/.test(String(producer.established_year ?? ""))) {
+    business.foundingDate = String(producer.established_year);
   }
 
   if (producer.images?.length > 0) business.image = producer.images;
