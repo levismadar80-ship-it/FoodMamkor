@@ -24,6 +24,9 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * Control: the root font size really is the target, and the page measured
  *        more than 3 controls. A page that did not scale, or did not render,
  *        cannot pass by being empty.
+ * Limit: the root size is set after load, so this sees CSS reflow only. A
+ *        layout that measures the font size once in JS at mount would not see
+ *        it. Every fix in MEH-2522 is CSS, and no such measurement exists today.
  */
 
 const ROUTES = ["/", "/producers", "/group-buys", "/events", "/about/process", "/join"];
