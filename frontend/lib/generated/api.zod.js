@@ -5199,7 +5199,7 @@ export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#
  *
  * 204 (empty, no layout hole client-side) when: no mapped place_id, the live
  * profile has < MIN_REVIEWS reviews, no server key, or any Google API error.
- * 404 only when the producer id itself does not exist.
+ * 404 when the producer id does not exist or is an organizer (MEH-2465).
  * @summary Get Google Rating
  */
 export const GetGoogleRatingProducersProducerIdGoogleRatingGetResponse = /*#__PURE__*/ zod.object({
@@ -5269,6 +5269,7 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  *
  * Guards (checked in order):
  *   1. Producer must exist.
+ *   1b. Producer must be a business — an organizer gets 409 (MEH-2465).
  *   2. Producer owner cannot review their own business.
  *   2b. Producer owner cannot review a business sharing a category with
  *       hers (MEH-2076 — conflict of interest; cross-category stays open).
