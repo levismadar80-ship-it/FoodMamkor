@@ -188,7 +188,6 @@ function ProducersAdminPage() {
         onRequestChanges={h.openRequestChanges}
         onReject={h.openReject}
         onToggleStatus={h.toggleStatus}
-        onToggleAmbassador={h.toggleAmbassador}
         onDeleteProducer={h.deleteProducer}
         onUploadStoryCard={h.handleStoryCardUpload}
         isBusy={h.isBusy}
