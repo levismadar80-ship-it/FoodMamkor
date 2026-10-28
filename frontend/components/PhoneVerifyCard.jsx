@@ -30,7 +30,7 @@ const SENT_AT_KEY = "mehamakor.otp_sent_at";
 
 /** When the last code was sent in this tab, or 0. Storage may be absent or
  *  throw (private mode, cleared data) — then it is simply 0. */
-export function readOtpSentAt() {
+function readOtpSentAt() {
   try {
     const raw = globalThis.sessionStorage?.getItem(SENT_AT_KEY);
     const ts = raw ? Number(raw) : 0;
@@ -48,7 +48,7 @@ function rememberOtpSent() {
   }
 }
 
-export function forgetOtpSent() {
+function forgetOtpSent() {
   try {
     globalThis.sessionStorage?.removeItem(SENT_AT_KEY);
   } catch {
