@@ -4739,6 +4739,15 @@
         "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
         "cta": "Copy link",
         "cta_copied": "Copied ✓"
+      },
+      "organizer_city": {
+        "heading": "Your city",
+        "label": "City",
+        "hint": "Shown on your organizer page under your name.",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "City updated",
+        "error": "Couldn't save — try again"
       }
     }
   },
@@ -5410,7 +5419,13 @@
       "whatsapp": "WhatsApp",
       "instagram": "Instagram",
       "website": "Website",
-      "facebook": "Facebook"
+      "facebook": "Facebook",
+      "owner_heading": "Behind the events",
+      "since_prefix": "Active since",
+      "phone": "Call",
+      "email": "Email",
+      "whatsapp_group": "WhatsApp group",
+      "external_order": "Order form"
     }
   }
 }
