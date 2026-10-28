@@ -78,7 +78,7 @@ export default function HomeClient({
     // consumer on this page. The handler itself is kept in use-home-page (see
     // the note beside its export there); only the prop pass-through went, the
     // same way MEH-1684 dropped `scrollToProducers` from this list.
-    handleWhatsAppClick, handleRemoveChip, handleToggleChip, handleClearChips,
+    handleRemoveChip, handleToggleChip, handleClearChips,
     filterSheetOpen, closeFilterSheet, toggleFilterSheet,
     handleClearCategory, handleLoadMore,
   } = useHomePage({ initialProducers, initialCategories });

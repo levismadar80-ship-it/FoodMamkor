@@ -15,11 +15,22 @@ import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+from urllib.parse import urlsplit
 
 REPO = Path(__file__).resolve().parent.parent
 FRONTEND = REPO / "frontend"
 BACKEND_ROUTERS = REPO / "backend" / "app" / "routers"
 BACKEND_MAIN = REPO / "backend" / "app" / "main.py"
+# MEH-2411: the ONE place routers are mounted. A router file that exists but is
+# not included here serves nothing — home_products since MEH-1406 — and reading
+# it as live is how the static audit passed two frontend calls to it.
+BACKEND_REGISTRY = REPO / "backend" / "app" / "router_registry.py"
+# `app.include_router(<module>.<var>` at line start; a `#`-commented include
+# does not match, which is the point.
+INCLUDE_ROUTER_RE = re.compile(
+    r"""^[ \t]*app\.include_router\(\s*(?P<module>\w+)\.(?P<var>\w+)\b""",
+    re.MULTILINE,
+)
 
 # Dynamic frontend paths where a non-id variable segment evaluates to one of
 # several known literals, each of which IS wired on the backend. Add a new
@@ -188,8 +199,32 @@ def _emit_route(text: str, m: re.Match, full: str, file_rel: str, out: list):
         out.append((verb.upper(), normalise(full), file_rel, line))
 
 
+def mounted_routers() -> set[tuple[str, str]]:
+    """(module, router variable) pairs that router_registry.py includes.
+
+    Raises instead of returning an empty set: an empty answer would make every
+    frontend call an orphan for the wrong reason, or — if a caller treated it as
+    "no filter" — silently restore the bug this exists to close.
+    """
+    pairs = {
+        (m.group("module"), m.group("var"))
+        for m in INCLUDE_ROUTER_RE.finditer(
+            BACKEND_REGISTRY.read_text(encoding="utf-8")
+        )
+    }
+    if not pairs:
+        raise SystemExit(f"no app.include_router(...) found in {BACKEND_REGISTRY}")
+    missing = sorted(
+        {mod for mod, _ in pairs if not (BACKEND_ROUTERS / f"{mod}.py").exists()}
+    )
+    if missing:
+        raise SystemExit(f"router_registry.py includes modules with no file: {missing}")
+    return pairs
+
+
 def extract_backend_routes() -> list[tuple[str, str, str, int]]:
     routes: list[tuple[str, str, str, int]] = []
+    mounted = mounted_routers()
     for f in BACKEND_ROUTERS.glob("*.py"):
         text = f.read_text(encoding="utf-8")
         file_rel = str(f.relative_to(REPO))
@@ -200,6 +235,8 @@ def extract_backend_routes() -> list[tuple[str, str, str, int]]:
         for m in ROUTE_DECORATOR_RE.finditer(text):
             if m.group("var") not in routers:
                 continue
+            if (f.stem, m.group("var")) not in mounted:
+                continue  # MEH-2411: declared but not served
             full = (routers[m.group("var")] + m.group("path")) or "/"
             _emit_route(text, m, full, file_rel, routes)
     text = BACKEND_MAIN.read_text(encoding="utf-8")
@@ -300,7 +337,13 @@ def run_static():
 #        which is exactly the MEH-2077 case. Requests are sent with
 #        allow_redirects=False (see run_probe), so this is the status of the
 #        route itself, not of whatever it pointed at.
-#   404  the path is not served — deploy drift. The original, kept.
+#   404  the path is not served — deploy drift. The original, kept — but only
+#        for the ROUTING 404. Starlette answers an unmatched path with exactly
+#        {"detail": "Not Found"}; a handler that matched and found no row for
+#        the placeholder UUID answers in its own words ("בית עסק לא נמצא",
+#        "Event not found" — measured on staging 28/10, MEH-2411). That second
+#        404 proves the route is served, the same way a 401 does. HTML or no
+#        JSON at all is the edge answering, not the app — still drift.
 #   405  the path is served under a different verb — a method mismatch, the
 #        same defect static mode reports.
 #   5xx  the app errored (e.g. MEH-1906's by-slug 500 on staging).
@@ -319,9 +362,27 @@ def _is_2xx(status: object) -> bool:
     return isinstance(status, int) and 200 <= status < 300
 
 
-def _verdict(method: str, path: str, status: object) -> tuple[bool, str]:
+ROUTING_404_DETAIL = "Not Found"
+
+
+def _is_handler_404(detail: object) -> bool:
+    """True when a 404 body came from a route handler, not from routing.
+
+    Any JSON `detail` other than Starlette's literal "Not Found" — a string, or
+    the list/dict a handler may raise with. A missing body is the edge, not the
+    app. Backend handlers carry a Hebrew/explicit detail by rule
+    (backend/app/routers/CLAUDE.md), so a handler that raised a bare 404 would
+    read as drift: the loud direction, not the silent one.
+    """
+    return detail is not None and detail != "" and detail != ROUTING_404_DETAIL
+
+
+def _verdict(
+    method: str, path: str, status: object, detail: object = None
+) -> tuple[bool, str]:
     """Decide, for THIS route, whether `status` is an answer the app may give.
 
+    `detail` is the JSON `detail` of the response, or None when there was none.
     Returns (accepted, reason). `reason` is empty when accepted.
     """
     if not isinstance(status, int):
@@ -332,6 +393,8 @@ def _verdict(method: str, path: str, status: object) -> tuple[bool, str]:
             "is the route's own status; no route in this app redirects by design"
         )
     if status == 404:
+        if _is_handler_404(detail):
+            return True, ""  # MEH-2411: route served, placeholder row absent
         return False, "path not served by this deployment (deploy drift)"
     if status == 405:
         return False, f"path is served but not for {method} (method mismatch)"
@@ -340,6 +403,11 @@ def _verdict(method: str, path: str, status: object) -> tuple[bool, str]:
     if status in ACCEPTED_STATUSES:
         return True, ""
     return False, "status outside the accepted contract"
+
+
+def _row_detail(row) -> object:
+    """A probe row is (method, path, status, url[, detail]); detail optional."""
+    return row[4] if len(row) > 4 else None
 
 
 def _aggregate_alarms(rows) -> list[str]:
@@ -368,7 +436,7 @@ def _aggregate_alarms(rows) -> list[str]:
         ]
     alarms = []
     counts = Counter(
-        str(s) for m, p, s, _ in rows if not _verdict(m, p, s)[0]
+        str(r[2]) for r in rows if not _verdict(r[0], r[1], r[2], _row_detail(r))[0]
     )
     for status, n in counts.most_common():
         if n > total * UNIFORM_FAILURE_RATIO:
@@ -378,7 +446,7 @@ def _aggregate_alarms(rows) -> list[str]:
                 f"threshold. That is one environment-level fact (unreachable or "
                 f"redirected), not {n} broken routes."
             )
-    if not any(_is_2xx(s) for _, _, s, _ in rows):
+    if not any(_is_2xx(r[2]) for r in rows):
         alarms.append(
             f"not one of {total} probed routes returned 2xx — no route answered "
             f"successfully. Every public GET returning 2xx is the baseline of a "
@@ -392,9 +460,12 @@ def _probe_url(base: str, path: str) -> str:
 
 
 BYPASS_ENV = "VERCEL_AUTOMATION_BYPASS_SECRET"
+# MEH-2411: the only host behind Deployment Protection that CI probes. Production
+# is public, so `--cross-env` no longer hands it the secret.
+BYPASS_HOSTS = frozenset({"staging.mehamakor.online"})
 
 
-def _probe_headers(env=None) -> dict:
+def _probe_headers(env=None, base_url: str | None = None) -> dict:
     """Request headers for the probe (MEH-2404).
 
     staging sits behind Vercel Deployment Protection, so without the
@@ -409,19 +480,41 @@ def _probe_headers(env=None) -> dict:
     env = os.environ if env is None else env
     headers = {"User-Agent": "meh-245-probe/1.0"}
     secret = env.get(BYPASS_ENV, "").strip()
-    if secret:
+    host = urlsplit(base_url).hostname if base_url else None
+    if secret and (base_url is None or host in BYPASS_HOSTS):
         headers["x-vercel-protection-bypass"] = secret
     return headers
+
+
+def _probe_targets(frontend_calls) -> list[tuple[str, str]]:
+    """Unique (method, path) pairs to request.
+
+    A path whose variable segment is a closed set of literals
+    (KNOWN_DYNAMIC_EXPANSIONS) is probed once per literal: putting the
+    placeholder UUID in an action slot asks for a path that does not exist on
+    purpose, and the probe would report its own construction (MEH-2411).
+    """
+    targets: set[tuple[str, str]] = set()
+    for m, p, *_ in frontend_calls:
+        targets.update(KNOWN_DYNAMIC_EXPANSIONS.get((m, p), [(m, p)]))
+    return sorted(targets)
+
+
+def _response_detail(r) -> object:
+    try:
+        body = r.json()
+    except Exception:
+        return None
+    return body.get("detail") if isinstance(body, dict) else None
 
 
 def run_probe(base_url: str, static_result):
     import requests  # lazy — not needed for static mode
 
     session = requests.Session()
-    session.headers.update(_probe_headers())
-    unique = sorted({(m, p) for m, p, _, _ in static_result["frontend_calls"]})
+    session.headers.update(_probe_headers(base_url=base_url))
     rows = []
-    for method, path in unique:
+    for method, path in _probe_targets(static_result["frontend_calls"]):
         url = _probe_url(base_url, path)
         try:
             # allow_redirects=False is load-bearing, not a default: requests
@@ -433,21 +526,40 @@ def run_probe(base_url: str, static_result):
             # status; do not assert that a response arrived.
             r = session.request(method, url, timeout=10, allow_redirects=False)
             status: object = r.status_code
+            detail = _response_detail(r) if status == 404 else None
         except Exception as exc:
             status = f"ERR:{type(exc).__name__}"
-        rows.append((method, path, status, url))
+            detail = None
+        rows.append((method, path, status, url, detail))
     return rows
 
 
 def run_cross_env(staging_url: str, prod_url: str, static_result):
     staging = run_probe(staging_url, static_result)
     prod = run_probe(prod_url, static_result)
-    s_idx = {(m, p): s for m, p, s, _ in staging}
-    p_idx = {(m, p): s for m, p, s, _ in prod}
+    # MEH-2411: rows carry each side's 404 detail too, so "served here,
+    # missing there" (handler 404 vs routing 404) counts as drift.
+    s_idx = {(r[0], r[1]): r for r in staging}
+    p_idx = {(r[0], r[1]): r for r in prod}
+    missing = (None, None, "MISSING", "", None)
     return [
-        (m, p, s_idx.get((m, p), "MISSING"), p_idx.get((m, p), "MISSING"))
+        (
+            m,
+            p,
+            s_idx.get((m, p), missing)[2],
+            p_idx.get((m, p), missing)[2],
+            _row_detail(s_idx.get((m, p), missing)),
+            _row_detail(p_idx.get((m, p), missing)),
+        )
         for (m, p) in sorted(set(s_idx) | set(p_idx))
     ]
+
+
+def _cross_env_answer(status: object, detail: object) -> str:
+    """What one side said, at the resolution drift is judged on (MEH-2411)."""
+    if status == 404:
+        return "404 served" if _is_handler_404(detail) else "404 missing"
+    return str(status)
 
 
 def _print_static(result, *, json_output: bool) -> int:
@@ -496,9 +608,9 @@ def _print_probe(rows) -> int:
     stated — a summary line that cannot go stale (testing.md)."""
     total = len(rows)
     failures = [
-        (method, path, status, reason)
-        for method, path, status, _ in rows
-        for accepted, reason in [_verdict(method, path, status)]
+        (r[0], r[1], r[2], reason)
+        for r in rows
+        for accepted, reason in [_verdict(r[0], r[1], r[2], _row_detail(r))]
         if not accepted
     ]
     alarms = _aggregate_alarms(rows)
@@ -507,15 +619,19 @@ def _print_probe(rows) -> int:
     print(f"Accepted:      {total - len(failures)}")
     print(f"Failed:        {len(failures)}")
     print("\nStatus breakdown:")
-    counts = Counter(str(s) for _, _, s, _ in rows)
+    counts = Counter(str(r[2]) for r in rows)
     for status, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
         share = f"{n / total:.0%}" if total else "—"
         print(f"  {status:<12} {n:>4}  ({share})")
 
     print(f"\n{'VERDICT':<8} {'STATUS':<10} {'METHOD':<6} PATH")
-    for method, path, status, _ in rows:
-        accepted, _reason = _verdict(method, path, status)
-        print(f"{'ok' if accepted else 'FAIL':<8} {str(status):<10} {method:<6} {path}")
+    for r in rows:
+        method, path, status = r[0], r[1], r[2]
+        accepted, _reason = _verdict(method, path, status, _row_detail(r))
+        note = "  (handler 404 — served)" if status == 404 and accepted else ""
+        print(
+            f"{'ok' if accepted else 'FAIL':<8} {str(status):<10} {method:<6} {path}{note}"
+        )
 
     if failures:
         print(f"\nFailing routes ({len(failures)}):")
@@ -540,13 +656,16 @@ def _print_probe(rows) -> int:
 
 def _print_cross_env(rows) -> int:
     drift = 0
-    print(f"{'METHOD':<6} {'STAGING':<10} {'PROD':<10} PATH")
-    for method, path, s, p in rows:
+    print(f"{'METHOD':<6} {'STAGING':<12} {'PROD':<12} PATH")
+    for method, path, s, p, *details in rows:
+        s_detail, p_detail = (details + [None, None])[:2]
+        s_ans, p_ans = _cross_env_answer(s, s_detail), _cross_env_answer(p, p_detail)
         tag = ""
-        if str(s) != str(p):
+        if s_ans != p_ans:
             drift += 1
-            tag = "  ← DEPLOY DRIFT" if str(s) in ("200", "204") and str(p) == "404" else "  ← mismatch"
-        print(f"{method:<6} {str(s):<10} {str(p):<10} {path}{tag}")
+            served_here = str(s) in ("200", "204") or s_ans == "404 served"
+            tag = "  ← DEPLOY DRIFT" if served_here and p_ans == "404 missing" else "  ← mismatch"
+        print(f"{method:<6} {s_ans:<12} {p_ans:<12} {path}{tag}")
     print(f"\nRoutes compared: {len(rows)}")
     print(f"Drift count: {drift}")
 
@@ -556,7 +675,7 @@ def _print_cross_env(rows) -> int:
     # Each side is judged on its own before their difference means anything.
     alarms = []
     for label, idx in (("staging", 2), ("prod", 3)):
-        side = [(r[0], r[1], r[idx], "") for r in rows]
+        side = [(r[0], r[1], r[idx], "", r[idx + 2] if len(r) > 4 else None) for r in rows]
         alarms += [f"{label}: {a}" for a in _aggregate_alarms(side)]
     if alarms:
         print("\nAGGREGATE:")
@@ -608,41 +727,110 @@ def probe_self_test() -> int:
     )
     all_401 = [("GET", f"/r{i}", 401, "u") for i in range(10)]
 
-    if not _aggregate_alarms(all_302):
-        failures.append("uniform 302 raised no aggregate alarm")
-    if _aggregate_alarms(all_200):
-        failures.append("all-2xx raised an aggregate alarm")
-    if _aggregate_alarms(one_404):
-        failures.append("1-in-10 404 tripped the 20% uniform-failure threshold")
-    if _aggregate_alarms(healthy_mix):
-        failures.append(
+    # Each check: (passed, failure message). Counts in the OK line are derived
+    # from these lists, never typed (testing.md, MEH-2411).
+    aggregate_checks = [
+        (bool(_aggregate_alarms(all_302)), "uniform 302 raised no aggregate alarm"),
+        (not _aggregate_alarms(all_200), "all-2xx raised an aggregate alarm"),
+        (
+            not _aggregate_alarms(one_404),
+            "1-in-10 404 tripped the 20% uniform-failure threshold",
+        ),
+        (
+            not _aggregate_alarms(healthy_mix),
             "a healthy 401/422/200 mix raised an aggregate alarm — the guard "
-            "would red every good run"
-        )
-    if not _aggregate_alarms(all_401):
-        failures.append("an all-401 wall (zero 2xx anywhere) raised no alarm")
-    if not _aggregate_alarms([]):
-        failures.append("a zero-route probe reported no alarm — an empty run must not pass")
+            "would red every good run",
+        ),
+        (
+            bool(_aggregate_alarms(all_401)),
+            "an all-401 wall (zero 2xx anywhere) raised no alarm",
+        ),
+        (
+            bool(_aggregate_alarms([])),
+            "a zero-route probe reported no alarm — an empty run must not pass",
+        ),
+    ]
 
     # Discrimination against the implementation this replaces. The old rule was
     # `any(str(status) == "404")`; on the all-302 fixture it is GREEN. If this
     # case ever stops holding, the self-test has stopped testing the change.
-    if any(str(s) == "404" for _, _, s, _ in all_302):
-        failures.append("fixture bug: the all-302 rows contain a 404")
-    if not [r for r in all_302 if not _verdict(r[0], r[1], r[2])[0]]:
-        failures.append("all-302 fixture produced no per-route failure")
+    discrimination_checks = [
+        (
+            not any(str(s) == "404" for _, _, s, _ in all_302),
+            "fixture bug: the all-302 rows contain a 404",
+        ),
+        (
+            bool([r for r in all_302 if not _verdict(r[0], r[1], r[2])[0]]),
+            "all-302 fixture produced no per-route failure",
+        ),
+    ]
+
+    # MEH-2411: a 404 is drift only when ROUTING produced it. Bodies are the
+    # ones measured on staging 28/10.
+    detail_checks = [
+        (
+            _verdict("GET", "/producers/{_}", 404, "בית עסק לא נמצא")[0],
+            "handler 404 (Hebrew detail) rejected",
+        ),
+        (
+            _verdict("GET", "/events/{_}", 404, "Event not found")[0],
+            "handler 404 (English detail) rejected",
+        ),
+        (
+            not _verdict("GET", "/x", 404, ROUTING_404_DETAIL)[0],
+            "routing 404 {'detail':'Not Found'} accepted",
+        ),
+        (not _verdict("GET", "/x", 404, None)[0], "404 with no JSON body accepted"),
+        (not _verdict("GET", "/x", 404, "")[0], "404 with an empty detail accepted"),
+        # A wall of handler 404s is a served surface, not an environment fact.
+        (
+            not _aggregate_alarms(
+                [("GET", f"/r{i}", 404, "u", "לא נמצא") for i in range(9)]
+                + [("GET", "/ok", 200, "u")]
+            ),
+            "handler 404s counted toward the uniform-failure alarm",
+        ),
+    ]
 
     # MEH-2404: the bypass header rides only when the secret is set, and the
-    # browser-only cookie header never does.
-    if "x-vercel-protection-bypass" in _probe_headers({}):
-        failures.append("bypass header sent with no secret in the environment")
-    if "x-vercel-protection-bypass" in _probe_headers({BYPASS_ENV: "  "}):
-        failures.append("bypass header sent for a blank secret")
+    # browser-only cookie header never does. MEH-2411: and only to staging.
     with_secret = _probe_headers({BYPASS_ENV: "s3cret"})
-    if with_secret.get("x-vercel-protection-bypass") != "s3cret":
-        failures.append("secret in the environment did not reach the bypass header")
-    if "x-vercel-set-bypass-cookie" in with_secret:
-        failures.append("cookie header sent — it turns every first hit into a 307")
+    bypass_checks = [
+        (
+            "x-vercel-protection-bypass" not in _probe_headers({}),
+            "bypass header sent with no secret in the environment",
+        ),
+        (
+            "x-vercel-protection-bypass" not in _probe_headers({BYPASS_ENV: "  "}),
+            "bypass header sent for a blank secret",
+        ),
+        (
+            with_secret.get("x-vercel-protection-bypass") == "s3cret",
+            "secret in the environment did not reach the bypass header",
+        ),
+        (
+            "x-vercel-set-bypass-cookie" not in with_secret,
+            "cookie header sent — it turns every first hit into a 307",
+        ),
+        (
+            "x-vercel-protection-bypass"
+            in _probe_headers(
+                {BYPASS_ENV: "s3cret"}, "https://staging.mehamakor.online"
+            ),
+            "bypass header not sent to staging",
+        ),
+        (
+            "x-vercel-protection-bypass"
+            not in _probe_headers({BYPASS_ENV: "s3cret"}, "https://mehamakor.co.il"),
+            "bypass header sent to production",
+        ),
+    ]
+
+    for passed, message in (
+        aggregate_checks + discrimination_checks + detail_checks + bypass_checks
+    ):
+        if not passed:
+            failures.append(message)
 
     if failures:
         print("PROBE SELF-TEST FAILED")
@@ -650,9 +838,10 @@ def probe_self_test() -> int:
             print("  -", f)
         return 1
     print(
-        f"probe self-test OK — {len(ran)} status cases, 6 aggregate cases, "
-        "1 discrimination case against the 404-only rule this replaces, "
-        "4 bypass-header cases"
+        f"probe self-test OK — {len(ran)} status cases, {len(aggregate_checks)} aggregate "
+        f"cases, {len(discrimination_checks)} discrimination cases against the 404-only "
+        f"rule this replaces, {len(detail_checks)} routing-vs-handler 404 cases, "
+        f"{len(bypass_checks)} bypass-header cases"
     )
     return 0
 

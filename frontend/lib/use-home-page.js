@@ -92,7 +92,7 @@ function normalizeDays(values) {
  * Behavior is bit-identical to the prior inline implementation:
  *   - 13 useState calls in declaration order
  *   - 7 useEffect blocks in declaration order
- *   - handlers (updateURL, loadProducers, handleWhatsAppClick,
+ *   - handlers (updateURL, loadProducers,
  *     scrollToProducers, navigateToChip, handleNearMe, handleCitySelected)
  *     close over the same state via the same reference identities they
  *     did before extraction. MEH-1774 renamed toggleChip → navigateToChip:
@@ -453,14 +453,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // ?category= deep-link support (initFilters + updateURL + the grid's
   // active pill/clear) is kept for backward compat with old shared URLs.
 
-  const handleWhatsAppClick = async (productId) => {
-    if (!user) return;
-    try {
-      await api.post(`/home-products/${productId}/whatsapp-click`);
-    } catch {
-      // ignore
-    }
-  };
+  // MEH-2411: handleWhatsAppClick removed — it posted to
+  // /home-products/{id}/whatsapp-click, a router unmounted since MEH-1406
+  // (brand LOCK), and nothing on the page called it.
 
   const scrollToProducers = () => {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
@@ -988,7 +983,6 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     handleClearDays,
     handleCitySelected,
     handleClearLocation,
-    handleWhatsAppClick,
     scrollToProducers,
     // MEH-1774's deep-link hop. MEH-2173 unwired it from the grid: the home
     // attribute row now FILTERS in place (the sheet does, so the promoted chips

@@ -195,7 +195,7 @@ describe("MEH-1627 anonymous retry after failed refresh", () => {
     // success-shaped code path.
     installAdapter({ refreshResult: "fail", protectedScript: ["401", "200"] });
 
-    await expect(api.post("/home-products", { name: "x" })).rejects.toMatchObject(
+    await expect(api.post("/producers/me/products", { name: "x" })).rejects.toMatchObject(
       { response: { status: 401 } }
     );
 
