@@ -111,3 +111,17 @@ def test_fire_alerts_silent_for_unapproved(db, monkeypatch, status):
         db, hidden.id, "new_product", AlertContent(title="t", body="b", url="/no")
     )
     assert calls == ["/ok"]
+
+
+def test_review_reads_unchanged_for_unapproved(client, db):
+    """The public review list is deliberately NOT gated (DATA.md, MEH-2513):
+    the owner's page preview of her own suspended business reads it."""
+    hidden = make_producer(db, name="עסק מוסתר", status="inactive")
+    user = make_user(db)
+    db.add(
+        ProducerReview(
+            producer_id=hidden.id, user_id=user.id, stars=5, body="נכתבה לפני ההשעיה"
+        )
+    )
+    db.commit()
+    assert client.get(f"/producers/{hidden.id}/reviews").json()["total"] == 1
