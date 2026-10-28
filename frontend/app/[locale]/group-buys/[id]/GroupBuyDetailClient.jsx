@@ -335,9 +335,25 @@ export default function GroupBuyDetailClient({ id }) {
             <h1 className="font-headline-md text-2xl font-bold text-text mt-2 mb-1">
               {gb.title}
             </h1>
-            {gb.producer_name && (
-              <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
+            {/* MEH-2472: the product being bought, and a way to the business
+                that sells it (both were in the payload and never rendered). */}
+            {gb.product_name && (
+              <p className="text-base font-medium text-text" data-testid="group-buy-product-name">
+                {gb.product_name}
+              </p>
             )}
+            {gb.producer_name &&
+              (gb.producer_id ? (
+                <Link
+                  href={`/producer/${gb.producer_id}`}
+                  data-testid="group-buy-producer-link"
+                  className="inline-block text-sm text-primary hover:underline"
+                >
+                  {t("by_producer", { name: gb.producer_name })}
+                </Link>
+              ) : (
+                <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
+              ))}
             {gb.description && (
               <p className="text-sm text-text mt-3 leading-relaxed">{gb.description}</p>
             )}
