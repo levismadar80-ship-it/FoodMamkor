@@ -16,7 +16,7 @@ listing a business under «מאומת» whose page no longer shows the badge.
 Clock: every date is relative to `israel_today()` (testing.md, MEH-2290).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.utils.clock import israel_today
 from tests.conftest import make_category, make_producer
@@ -134,3 +134,24 @@ def test_verified_filter_agrees_with_the_badge(client, db):
     assert "מאומת שפג" in unverified
     assert "לא מאומת" in unverified
     assert "מאומת בתוקף" not in unverified
+
+
+def test_expiry_boundary_with_the_clock_frozen_at_the_utc_edge(client, db, monkeypatch):
+    # 21:30 UTC is already the next Israel day (testing.md). Freeze the
+    # consumer's clock so "today" and "yesterday" are the Israel ones,
+    # whatever hour the suite runs.
+    import app.services.verification_status as vs
+
+    frozen = date(2026, 10, 26)  # the Monday after the October clock change
+    monkeypatch.setattr(vs, "israel_today", lambda: frozen)
+    cat = make_category(db, name="בשר")
+    today = make_producer(db, name="תוקף עד היום הקפוא", category=cat)
+    _verify(db, today, expires=frozen)
+    lapsed = make_producer(db, name="פג אתמול הקפוא", category=cat)
+    _verify(db, lapsed, expires=frozen - timedelta(days=1))
+
+    assert _tier(client, today) == "verified"
+    assert _tier(client, lapsed) is None
+    verified = _listed_names(client, verified="true")
+    assert "תוקף עד היום הקפוא" in verified
+    assert "פג אתמול הקפוא" not in verified
