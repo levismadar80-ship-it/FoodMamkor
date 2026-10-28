@@ -36,8 +36,8 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
-// EventCard rewritten as the date-rail EntryRow (the page's signature
-// gesture); experiences render through the SAME EntryRow (gold accent),
+// EventCard rewritten as the date-rail EventEntryRow (components/) (the page's signature
+// gesture); experiences render through the SAME EventEntryRow (gold accent),
 // so the old experience card is no longer imported here (the route-as-tab
 // merge deleted its last route consumer, the old /experiences client, and
 // MEH-2248 deleted the component itself). Calendar view keeps

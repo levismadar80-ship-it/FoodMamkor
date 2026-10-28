@@ -83,7 +83,7 @@ export function toEventEntry(row, tab, t) {
 // The date-rail row — the page's signature gesture. Date leads (Frank
 // Ruhl day numeral on a colored tick down the start edge); Latin
 // numerals (time, price) are Cormorant italic, Hebrew stays upright.
-export default function EventEntryRow({ entry, freeLabel }) {
+export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   const locale = useLocale();
   const isExp = entry.accent === "gold";
   const Icon = CATEGORY_ICON[entry.category] ?? CalendarBlank;
@@ -104,9 +104,14 @@ export default function EventEntryRow({ entry, freeLabel }) {
 
   // MEH-2468: a third column only when there is an image — a row without one
   // keeps today's two-column layout (no empty placeholder box).
-  const cols = entry.image
-    ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]"
-    : "grid-cols-[64px_1fr] md:grid-cols-[104px_1fr]";
+  // `compact`: the home preview lays rows 3-up from lg, ~400px each — too
+  // narrow for date rail + body + thumbnail (title and organizer wrapped at
+  // 1440), so the thumbnail drops there and the row goes back to two columns.
+  const cols = !entry.image
+    ? "grid-cols-[64px_1fr] md:grid-cols-[104px_1fr]"
+    : compact
+      ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
+      : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
 
   return (
     <Link
@@ -163,7 +168,7 @@ export default function EventEntryRow({ entry, freeLabel }) {
         <div
           aria-hidden="true"
           data-testid="event-row-image"
-          className="my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-border bg-cover bg-center"
+          className={`my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-border bg-cover bg-center${compact ? " lg:hidden" : ""}`}
           style={{ backgroundImage: `url(${optimizeCloudinary(entry.image, { aspectRatio: "1:1", width: 224 })})` }}
         />
       )}

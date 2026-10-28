@@ -44,7 +44,7 @@ export function UpcomingEventsPreview() {
           doesn't strand the price at the far end. */}
       <div className="border-t border-border lg:border-t-0 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:[&>*]:border-t">
         {events.map((ev) => (
-          <EventEntryRow key={ev.id} entry={toEventEntry(ev, "events", tList)} freeLabel={t("home.events.free")} />
+          <EventEntryRow key={ev.id} entry={toEventEntry(ev, "events", tList)} freeLabel={t("home.events.free")} compact />
         ))}
       </div>
     </section>

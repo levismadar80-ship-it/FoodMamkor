@@ -80,6 +80,8 @@ describe("UpcomingEventsPreview", () => {
     expect(screen.getByText("ארוחת שף בגינה")).toBeInTheDocument();
     // The /events row (MEH-2468): one thumbnail, for the one imaged event.
     expect(screen.getAllByTestId("event-row-image")).toHaveLength(1);
+    // 3-up from lg is too narrow for the thumbnail (CI review, 1440 capture).
+    expect(screen.getByTestId("event-row-image").className).toContain("lg:hidden");
     // MEH-1143's fixed image area (Leaf + «מהמקור») is gone.
     expect(screen.queryByTestId("event-image-missing")).toBeNull();
     expect(screen.queryByText(BRAND_NAME)).toBeNull();
