@@ -27,6 +27,8 @@ def compute_trust_tier(producer) -> int:
     MEH-1492) — the one the About page describes. The column is still stored;
     it no longer affects the tier.
     """
+    # The About page states 10 / 4.5 (about.consumer.community_leader);
+    # frontend/__tests__/TrustCopyMeh2527.test.js pins this line (MEH-2527).
     if (getattr(producer, "reviews_count", 0) or 0) >= 10 and (
         getattr(producer, "avg_rating", 0) or 0
     ) >= 4.5:
