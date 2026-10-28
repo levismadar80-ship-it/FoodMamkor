@@ -581,6 +581,16 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > checked path per caller, not two to the same state. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
+> **MEH-2435 chunk 4 — cancel email.** When that owner route writes
+> `cancelled` (cancel before the deadline, close after it, or cancel a funded
+> group), every participant gets «מהמקור — הקבוצה "{title}" בוטלה», naming the
+> business, no link, no contact details
+> (`services/group_buy_notifications.py:notify_participant_cancelled`).
+> Recipients are read under the row lock before the commit; the send runs as a
+> background task and a failed send never fails the 200. Once by construction:
+> cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
+> nothing. No latch column. An admin cancel (admin route) sends nothing.
+>
 > **MEH-2437 — the business's own group buys.** `GET /producers/me/group-buys`
 > (`require_producer`; a producer user with no business → 403 `לא נמצא עסק
 > מקושר`, like `/producers/me/recipes`). Returns `list[GroupBuyOut]` — the same

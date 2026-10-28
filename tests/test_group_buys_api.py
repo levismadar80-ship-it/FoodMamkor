@@ -15,6 +15,7 @@ from conftest import auth_header, make_producer, make_user
 
 from app.models.models import GroupBuy, GroupBuyCommit
 from app.services.group_buy_notifications import (
+    notify_participant_cancelled,
     notify_participant_funded,
     notify_producer_funded,
 )
@@ -966,3 +967,186 @@ class TestOwnerStatusChange:
             assert resp.status_code == 400, (final, resp.json())
             assert self._status_in_db(db, gb) == final
             assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1
+
+
+# ---------- cancel email to participants (MEH-2435 chunk 4) ----------
+class TestCancelNotification:
+    """The business cancels (or closes) its group buy → each participant hears.
+
+    Wording approved by Sapir 27/10 16:42Z. Same best-effort shape as the
+    funded email: background task, a failed send never fails the cancel. Sent
+    once by construction: cancelled is final for the owner (OWNER_TRANSITIONS),
+    and the transition check runs under the row lock, so a second cancel is a
+    409 that sends nothing.
+    """
+
+    SUBJECT_TAIL = "בוטלה"
+
+    @staticmethod
+    def _capture_sends(monkeypatch):
+        sends = []
+        monkeypatch.setattr(
+            "app.services.group_buy_notifications.send_email",
+            lambda to, subject, body, html=None: sends.append(
+                {"to": to, "subject": subject, "body": body}
+            ),
+        )
+        return sends
+
+    def _cancel_sends(self, sends):
+        return [s for s in sends if s["subject"].endswith(self.SUBJECT_TAIL)]
+
+    @staticmethod
+    def _join(client, db, gb, *emails):
+        for email in emails:
+            buyer = make_user(db, email=email)
+            resp = client.post(
+                f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+            )
+            assert resp.status_code == 201, resp.text
+
+    @staticmethod
+    def _patch(client, gb, status, user):
+        return client.patch(
+            f"/group-buys/{gb.id}/status", json={"status": status}, headers=auth_header(user)
+        )
+
+    def test_template_wording_and_no_contact_details(self):
+        sent = {}
+
+        def _capture(to, subject, body, html=None):
+            sent.update(to=to, subject=subject, body=body)
+
+        with mock.patch("app.services.group_buy_notifications.send_email", _capture):
+            notify_participant_cancelled("buyer@test.com", "רכש קמח מלא", "מאפיית הגליל")
+
+        assert sent["to"] == "buyer@test.com"
+        assert sent["subject"] == 'מהמקור — הקבוצה "רכש קמח מלא" בוטלה'
+        assert sent["body"] == (
+            "שלום,\n\n"
+            'הקבוצה שהצטרפת אליה, "רכש קמח מלא", בוטלה על ידי מאפיית הגליל.\n'
+            "לשאלות צרו קשר עם מאפיית הגליל.\n\n"
+            "בברכה,\nצוות מהמקור"
+        )
+        assert _contact_details_in(sent["body"]) == []
+
+    def test_owner_cancels_open_group_every_participant_is_told(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own1@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_b1@test.com", "cn_b2@test.com")
+
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+
+        cancels = self._cancel_sends(sends)
+        assert sorted(s["to"] for s in cancels) == ["cn_b1@test.com", "cn_b2@test.com"]
+        # The business is not a participant and gets nothing.
+        assert all(s["to"] != owner.email for s in sends)
+        for s in cancels:
+            assert producer.name in s["body"]
+            assert "רכש קמח מלא" in s["subject"]
+
+    def test_owner_cancels_funded_group(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own2@test.com")
+        gb = _make_group_buy(db, producer, min_participants=2)
+        self._join(client, db, gb, "cn_f1@test.com", "cn_f2@test.com")
+        assert len(sends) == 3  # the funded emails: business + 2 participants
+
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+        assert sorted(s["to"] for s in self._cancel_sends(sends)) == [
+            "cn_f1@test.com",
+            "cn_f2@test.com",
+        ]
+
+    def test_closing_after_the_deadline_also_tells_participants(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own3@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_c1@test.com")
+        gb.deadline = utc_now() - timedelta(days=1)
+        db.commit()
+
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+        assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_c1@test.com"]
+
+    def test_no_participants_no_email(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own4@test.com")
+        gb = _make_group_buy(db, producer)
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+        assert sends == []
+
+    def test_marking_delivered_sends_no_cancel_email(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own5@test.com")
+        gb = _make_group_buy(db, producer, min_participants=1)
+        self._join(client, db, gb, "cn_d1@test.com")
+        before = len(sends)
+
+        assert self._patch(client, gb, "fulfilled", owner).status_code == 200
+        assert len(sends) == before
+        assert self._cancel_sends(sends) == []
+
+    def test_second_cancel_is_409_and_sends_nothing_more(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own6@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_r1@test.com")
+
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+        assert len(self._cancel_sends(sends)) == 1
+        assert self._patch(client, gb, "cancelled", owner).status_code == 409
+        assert len(self._cancel_sends(sends)) == 1
+
+    def test_refused_cancel_sends_nothing(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, _ = _producer_user(db, email="cn_own7@test.com")
+        _, other = _producer_user(db, email="cn_other7@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_x1@test.com")
+
+        assert self._patch(client, gb, "cancelled", other).status_code == 403
+        assert sends == []
+
+    def test_email_failure_never_fails_the_cancel(self, client, db, monkeypatch):
+        def _boom(*args, **kwargs):
+            raise RuntimeError("Resend is down")
+
+        producer, owner = _producer_user(db, email="cn_own8@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_e1@test.com", "cn_e2@test.com")
+        monkeypatch.setattr("app.services.group_buy_notifications.send_email", _boom)
+
+        resp = self._patch(client, gb, "cancelled", owner)
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+
+    def test_owner_who_joined_her_own_group_is_not_emailed(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="cn_own9@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_o1@test.com")
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(owner)
+        )
+        assert resp.status_code == 201, resp.text
+
+        assert self._patch(client, gb, "cancelled", owner).status_code == 200
+        assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_o1@test.com"]
+
+    def test_admin_cancel_through_the_admin_route_sends_nothing(self, client, db, monkeypatch):
+        sends = self._capture_sends(monkeypatch)
+        producer, _ = _producer_user(db, email="cn_own10@test.com")
+        admin = make_user(db, role="admin", email="cn_adm10@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_a1@test.com")
+
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status?status=cancelled", headers=auth_header(admin)
+        )
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
+        assert sends == []
