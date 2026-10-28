@@ -120,6 +120,88 @@ class TestListAndGet:
         assert resp.status_code == 404
 
 
+# ---------- MEH-2484: only an approved business's group buys are public ----------
+#
+# LOCK «בתי עסק מאושרים בלבד». A group buy whose business was rejected or is
+# still pending must not reach the public list (and through it the sitemap),
+# its public page, or a stranger's join. Each case carries an approved-business
+# control on the same path, so a red names the gate and not the fixture.
+class TestApprovedBusinessOnly:
+    def test_list_hides_a_non_approved_business(self, client, db):
+        approved, _ = _producer_user(db, email="gb-ok@test.com")
+        _make_group_buy(db, approved, city="approved-city")
+        # "inactive" is what the admin suspend action writes (admin.py).
+        for i, status in enumerate(("pending", "rejected", "inactive")):
+            hidden, _ = _producer_user(
+                db, email=f"gb-hidden{i}@test.com", status=status
+            )
+            _make_group_buy(db, hidden, city=f"{status}-city")
+        cities = {g["city"] for g in client.get("/group-buys").json()}
+        assert "approved-city" in cities
+        assert "pending-city" not in cities
+        assert "rejected-city" not in cities
+        assert "inactive-city" not in cities
+
+    def test_detail_is_404_for_a_stranger_when_the_business_is_not_approved(
+        self, client, db
+    ):
+        producer, _ = _producer_user(db, email="gb-pend@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        stranger = make_user(db, email="gb-stranger@test.com")
+        assert client.get(f"/group-buys/{gb.id}").status_code == 404
+        resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(stranger))
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "קבוצת הרכש לא נמצאה"
+
+    def test_detail_stays_visible_to_its_owner_and_to_admin(self, client, db):
+        producer, owner = _producer_user(db, email="gb-own@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        admin = make_user(db, email="gb-admin@test.com", role="admin")
+        assert (
+            client.get(f"/group-buys/{gb.id}", headers=auth_header(owner)).status_code
+            == 200
+        )
+        assert (
+            client.get(f"/group-buys/{gb.id}", headers=auth_header(admin)).status_code
+            == 200
+        )
+
+    def test_stranger_cannot_join_when_the_business_is_not_approved(self, client, db):
+        producer, _ = _producer_user(db, email="gb-rej@test.com", status="rejected")
+        gb = _make_group_buy(db, producer)
+        buyer = make_user(db, email="gb-buyer@test.com")
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(buyer),
+        )
+        assert resp.status_code == 404
+        assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
+
+    def test_another_business_owner_does_not_get_the_owner_carve_out(self, client, db):
+        hidden, _ = _producer_user(db, email="gb-a@test.com", status="inactive")
+        gb = _make_group_buy(db, hidden)
+        _, other_owner = _producer_user(db, email="gb-b@test.com")
+        resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(other_owner))
+        assert resp.status_code == 404
+
+    def test_a_participant_can_still_leave_after_the_business_is_hidden(self, client, db):
+        # Guard against over-gating: leaving is never blocked by the visibility
+        # rule, only joining is.
+        producer, _ = _producer_user(db, email="gb-leave@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        buyer = make_user(db, email="gb-leaver@test.com")
+        joined = client.post(
+            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+        )
+        assert joined.status_code == 201
+        producer.status = "inactive"
+        db.commit()
+        left = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(buyer))
+        assert left.status_code == 200
+        assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
+
+
 # ---------- the owner's own list (MEH-2437) ----------
 class TestMyGroupBuys:
     """GET /producers/me/group-buys — the business's own group buys, every
