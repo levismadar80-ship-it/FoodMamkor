@@ -70,7 +70,7 @@ function mintMessage(producerId, t, fallbackError) {
 // resolves. Without ClipboardItem, fall back to writeText after the mint —
 // fine in browsers with a transient-activation window; if it is refused the
 // caller shows the text to copy by hand.
-export function writeClipboard(textPromise) {
+function writeClipboard(textPromise) {
   const clip = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
   if (clip?.write && typeof ClipboardItem !== "undefined") {
     const blob = textPromise.then((s) => new Blob([s], { type: "text/plain" }));
